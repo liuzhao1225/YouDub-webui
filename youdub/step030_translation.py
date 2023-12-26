@@ -124,8 +124,8 @@ def _translate(summary, transcript, target_language='简体中文'):
                     timeout=240
                 )
                 translation = response.choices[0].message.content.replace('\n', '')
-                logger.info(text)
-                logger.info(translation)
+                logger.info(f'原文：{text}')
+                logger.info(f'译文：{translation}')
                 success, translation = valid_translation(text, translation)
                 if not success:
                     retry_message += 'Only translate the following sentence and give me the final translation.'
