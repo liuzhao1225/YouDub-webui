@@ -116,6 +116,7 @@ def tts(text, output_path, speaker_wav):
             file_to_save = open(output_path, "wb")
             file_to_save.write(base64.b64decode(data))
             logger.info(f'火山TTS {text} 保存成功')
+            time.sleep(0.1)
     except Exception as e:
         logger.warning(e)
 

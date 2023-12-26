@@ -6,6 +6,14 @@
   - [简介](#简介)
   - [主要特点](#主要特点)
   - [安装与使用指南](#安装与使用指南)
+    - [1. 克隆仓库](#1-克隆仓库)
+    - [2. 安装依赖](#2-安装依赖)
+      - [自动安装](#自动安装)
+      - [手动安装](#手动安装)
+    - [3. 环境设置](#3-环境设置)
+    - [4. 运行程序](#4-运行程序)
+      - [自动运行](#自动运行)
+      - [手动运行](#手动运行)
   - [使用步骤](#使用步骤)
     - [1. **全自动 (Do Everything)**](#1-全自动-do-everything)
     - [2. **下载视频 (Download Video)**](#2-下载视频-download-video)
@@ -24,78 +32,80 @@
   - [支持与联系方式](#支持与联系方式)
 
 ## 简介
-`YouDub-webui` 是 [`YouDub`](https://github.com/liuzhao1225/YouDub) 的网页交互版本。这个工具通过其网页界面简化了操作流程，使用户能够更方便地访问和使用 [`YouDub`](https://github.com/liuzhao1225/YouDub) 的强大功能。。[`YouDub`](https://github.com/liuzhao1225/YouDub) 是一个创新的开源工具，专注于将 YouTube 等平台的优质视频翻译和配音为中文版本。此工具融合了先进的 AI 技术，包括语音识别、大型语言模型翻译以及 AI 声音克隆技术，为中文用户提供具有原始 YouTuber 音色的中文配音视频。更多示例和信息，欢迎访问我的[bilibili视频主页](https://space.bilibili.com/1263732318)。你也可以加入我们的微信群，扫描下方的[二维码](#支持与联系方式)即可。
+`YouDub-webui` 是 [`YouDub`](https://github.com/liuzhao1225/YouDub) 项目的网页交互版本，基于 `Gradio` 构建，为用户提供简易操作界面来访问和使用 [`YouDub`](https://github.com/liuzhao1225/YouDub) 的强大功能。[`YouDub`](https://github.com/liuzhao1225/YouDub) 是一个开创性的开源工具，旨在将 YouTube 和其他平台上的高质量视频翻译和配音成中文版本。该工具结合了最新的 AI 技术，包括语音识别、大型语言模型翻译，以及 AI 声音克隆技术，提供与原视频相似的中文配音，为中文用户提供卓越的观看体验。
+
+`YouDub-webui` 适用于多种场景，包括教育、娱乐和专业翻译，特别适合那些希望将国外优秀视频内容本地化的用户。此工具的简洁界面使得即使是非技术用户也能轻松上手，实现视频的快速中文化处理。
+
+了解更多关于 `YouDub-webui` 的信息和示例，请访问我们的 [bilibili 视频主页](https://space.bilibili.com/1263732318)。为了更好地服务社区，我们也设立了微信群组，欢迎通过扫描下方的[二维码](#支持与联系方式)加入我们，共同探讨和贡献于 `YouDub-webui` 的发展。
+
+
+当然，我将重新撰写 `YouDub-webui` 的主要特点部分。
+
+---
 
 ## 主要特点
-- **视频下载**: 通过视频链接下载 YouTube 视频。
-- **AI 语音识别**：有效转换视频中的语音为文字。
-- **大型语言模型翻译**：快速且精准地将文本翻译成中文。
-- **AI 声音克隆**：生成与原视频配音相似的中文语音。
-- **视频处理**：集成的功能实现音视频的同步处理。
+`YouDub-webui` 融合了多项先进技术，提供了一套完整的视频中文化工具包，其主要特点包括：
+
+- **视频下载**: 支持通过链接直接下载 YouTube 视频。无论是单个视频、播放列表还是频道内的多个视频，均能轻松下载。
+- **AI 语音识别**: 利用先进的 AI 技术，将视频中的语音高效转换为文字。不仅提供精确的语音到文本转换，还能自动对齐时间并识别不同说话者，极大地增强了信息的丰富性和准确性。
+- **大型语言模型翻译**: 结合大型语言模型如 GPT，实现快速且精准的中文翻译。无论是俚语还是专业术语，均能得到恰当的翻译，确保内容的准确性与地道性。
+- **AI 声音克隆**: 通过 AI 声音克隆技术，生成与原视频配音相似的中文语音。这不仅提升了视频的观看体验，也保留了原视频的情感和语调特色。
+- **视频处理**: 综合了音视频同步处理、字幕添加、视频播放速度调整和帧率设置等多项功能。用户可以根据需要生成高质量的最终视频，实现无缝的观看体验。
+
+`YouDub-webui` 的这些特点使其成为一个强大且易于使用的视频中文化工具，无论是个人用户还是专业团队，都能从中受益。
+
 
 ## 安装与使用指南
-1. **克隆仓库**：
-   ```bash
-   git clone https://github.com/liuzhao1225/YouDub-webui.git
-   ```
-2. **安装依赖**：
-   1. **自动安装**
-   
-        进入 `YouDub-webui` 目录并运行 `run_windows.bat`。
-        这个脚本会自动在当前目录下创建 `venv` 虚拟环境，并安装所需依赖。这个脚本会自动安装 CUDA 12.1 版本的 PyTorch。
 
-   2. **手动安装**
-   
-        进入 `YouDub-webui` 目录并安装所需依赖：
-        ```bash
-        cd YouDub-webui
-        pip install -r requirements.txt
-        ```
-        由于 `TTS` 的依赖限定的比较傻逼，所以将 `TTS`移出了 `requirements.txt`，需要手动安装。安装 `TTS` 依赖的步骤如下：
-        ```bash
-        pip install TTS
-        ```
+为了使用 `YouDub-webui`，请遵循以下步骤来安装和配置您的环境：
 
-        默认安装为 CPU 版本的 PyTorch 如果你需要手动安装特定 CUDA 版本的 PyTorch，可以参考以下步骤：
-        首先，根据你的环境和 PyTorch 的版本，从 [PyTorch 官方网站](https://pytorch.org/) 获取适用的安装命令。例如，如果你的 CUDA 版本是 11.8，你可以使用如下命令安装 PyTorch：
-        ```bash
-        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-        ```
-3. **环境设置**
+### 1. 克隆仓库
+首先，克隆 `YouDub-webui` 仓库到您的本地系统：
+```bash
+git clone https://github.com/liuzhao1225/YouDub-webui.git
+```
 
-      在运行程序之前，需要进行以下环境设置：
+### 2. 安装依赖
+您可以选择自动安装或手动安装依赖：
 
-      **环境变量配置**：将 `.env.example` 文件改名为 `.env`，并填入相应的环境变量。以下是需要配置的环境变量：
+#### 自动安装
+- 进入 `YouDub-webui` 目录，运行 `run_windows.bat` 脚本。
+- 脚本会在当前目录创建一个 `venv` 虚拟环境，并自动安装所需依赖，包括 CUDA 12.1 版本的 PyTorch。
 
-      - `OPENAI_API_KEY`: OpenAI API 的密钥，一般格式为 `sk-xxx`。
-      - `MODEL_NAME`: 使用的模型名称，如 'gpt-4' 或 'gpt-3.5-turbo'。对于翻译任务，使用 'gpt-3.5-turbo'足够了。'gpt-4'太贵了，一天干了我一百多刀。
-      - `OPENAI_API_BASE`: 如果你使用的是 OpenAI 官方的 API，可以将此项留空。如果你有自己部署的支持 OpenAI API 的大模型，可以填入相应的 OpenAI API 访问的 base_url。
-      - `HF_TOKEN`: 如果使用 speaker diarization 功能，需要提供你的 Hugging Face token，并同意 [pyannote's speaker diarization agreement](https://huggingface.co/pyannote/speaker-diarization-3.1)。`HF_TOKEN` 可以在 [Hugging Face 设置](https://huggingface.co/settings/tokens) 中获取。
-      - `HF_ENDPOINT`: 如果在从 `huggingface` 下载模型时报错，你可以在 `.env` 文件中添加：
-  
-        ```
-        HF_ENDPOINT=https://hf-mirror.com
-        ```
+#### 手动安装
+- 进入 `YouDub-webui` 目录，使用以下命令安装依赖：
+  ```bash
+  cd YouDub-webui
+  pip install -r requirements.txt
+  ```
+- 由于 TTS 依赖的特殊性，所以将 TTS 移出了 `requirements.txt`，需要手动安装：
+  ```bash
+  pip install TTS
+  ```
+- 默认安装为 CPU 版本的 PyTorch 如果你需要手动安装特定 CUDA 版本的 PyTorch，可根据您的 CUDA 版本从 [PyTorch 官方网站](https://pytorch.org/) 获取安装命令。
 
-      - `APPID` 和 `ACCESS_TOKEN`: 如果使用火山引擎的 TTS，需要提供火山引擎的 APPID 和 ACCESS_TOKEN，此项可能需要付费。
+### 3. 环境设置
+在运行前，请配置环境变量：
 
-4. **运行程序**：
-   1. **自动运行**
+- **环境变量配置**：将 `.env.example` 改名为 `.env` 并填入以下环境变量：
+  - `OPENAI_API_KEY`: OpenAI API 密钥，格式通常为 `sk-xxx`。
+  - `MODEL_NAME`: 模型名称，如 'gpt-4' 或 'gpt-3.5-turbo'。
+  - `OPENAI_API_BASE`: OpenAI API 基础 URL，如果使用自己部署的模型，请填入。
+  - `HF_TOKEN`: Hugging Face token，用于 speaker diarization 功能。
+  - `HF_ENDPOINT`: 如果从 `huggingface` 下载模型时出错，可以添加此环境变量。
+  - `APPID` 和 `ACCESS_TOKEN`: 火山引擎 TTS 所需的凭据。
 
-        进入 `YouDub-webui` 目录并运行 `run_windows.bat`。
+### 4. 运行程序
+选择以下任一方式运行程序：
 
-    2. **手动运行**
-        使用以下命令启动主程序：
+#### 自动运行
+- 在 `YouDub-webui` 目录下运行 `run_windows.bat`。
 
-        ```
-        python app.py
-        ```
-
-   如果在从 `huggingface` 下载模型时报错，你可以在 `.env` 文件中添加：
-
-   ```
-   HF_ENDPOINT=https://hf-mirror.com
-   ```
+#### 手动运行
+- 使用以下命令启动主程序：
+  ```bash
+  python app.py
+  ```
 
 ## 使用步骤
 
@@ -192,7 +202,7 @@
 
 
 ## 贡献指南
-欢迎对 `YouDub-webui` 进行贡献。您可以通过 GitHub Issue 或 Pull Request 提交改进建议或报告问题。
+欢迎对 `YouDub-webui` 进行贡献。您可以通过 [GitHub Issues](https://github.com/liuzhao1225/YouDub-webui/issues) 或 [Pull Request](https://github.com/liuzhao1225/YouDub-webui/pulls) 提交改进建议或报告问题。
 
 ## 许可协议
 `YouDub-webui` 遵循 Apache License 2.0。使用本工具时，请确保遵守相关的法律和规定，包括版权法、数据保护法和隐私法。未经原始内容创作者和/或版权所有者许可，请勿使用此工具。
