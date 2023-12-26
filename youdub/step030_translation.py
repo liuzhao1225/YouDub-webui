@@ -28,15 +28,14 @@ def summarize(info, transcript, target_language='简体中文'):
     info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
     # info_message = ''
     
-    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nDetailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary", ""}}\n```'
+    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary", ""}}\n```'
     
     messages = [
         {'role': 'system', 'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
         {'role': 'user', 'content': full_description},
     ]
-    retry = 0
     retry_message=''
-    while retry < 30 and retry != -1:
+    while True:
         try:
             messages = [
                 {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
@@ -55,7 +54,7 @@ def summarize(info, transcript, target_language='简体中文'):
                 'title': summary['title'],
                 'summary': summary['summary'],
             }
-            retry = -1
+            break
         except Exception as e:
             retry += 1
             retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary", ""}\n```'
@@ -69,9 +68,7 @@ def summarize(info, transcript, target_language='简体中文'):
         {'role': 'user',
             'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"}}\n```. Remember to tranlate both the title and the summary into {target_language} in JSON.'},
     ]
-    retry = 0
-    while retry < 30 and retry != -1:
-        
+    while True:
         try:
             response = openai.ChatCompletion.create(
                 model=model_name,
@@ -90,7 +87,6 @@ def summarize(info, transcript, target_language='简体中文'):
             }
             return result
         except Exception as e:
-            retry += 1
             logger.warning(f'总结翻译失败\n{e}')
             time.sleep(1)
 
@@ -125,7 +121,7 @@ def _translate(summary, transcript, target_language='简体中文'):
     info = f'This is a video called "{summary["title"]}". {summary["summary"]}.'
     full_translation = []
     fixed_message = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nPlease translate the sentence into {target_language}.'},
+        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.'},
         {'role': 'user', 'content': 'What language do you need to translate the title into?'},
         {'role': 'assistant', 'content': target_language}]
     
@@ -133,12 +129,12 @@ def _translate(summary, transcript, target_language='简体中文'):
         text = line['text']
         history = ''.join(full_translation[:-30])
         
-        retry_message = 'Only translate the following sentence and give me the final translation.'
+        retry_message = 'Only translate the quoted sentence and give me the final translation.'
         retry = 0
-        while retry < 30 and retry != -1:
+        while retry < 50 and retry != -1:
             messages = fixed_message + \
                 [{'role': 'user', 'content': '\n'.join(
-                    [history, retry_message, f'Please translate the single following sentence into {target_language}: "{text}"'])}]
+                    [history, retry_message, f'Translate the following sentence into {target_language}: \n"{text}"'])}]
             try:
                 response = openai.ChatCompletion.create(
                     model=model_name,

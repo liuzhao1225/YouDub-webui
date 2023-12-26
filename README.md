@@ -7,6 +7,13 @@
   - [主要特点](#主要特点)
   - [安装与使用指南](#安装与使用指南)
   - [使用步骤](#使用步骤)
+    - [1. **全自动 (Do Everything)**](#1-全自动-do-everything)
+    - [2. **下载视频 (Download Video)**](#2-下载视频-download-video)
+    - [3. **人声分离 (Demucs Interface)**](#3-人声分离-demucs-interface)
+    - [4. **语音识别 (Whisper Inference)**](#4-语音识别-whisper-inference)
+    - [5. **字幕翻译 (Translation Interface)**](#5-字幕翻译-translation-interface)
+    - [6. **语音合成 (TTS Interface)**](#6-语音合成-tts-interface)
+    - [7. **视频合成 (Synthesize Video Interface)**](#7-视频合成-synthesize-video-interface)
   - [技术细节](#技术细节)
     - [AI 语音识别](#ai-语音识别)
     - [大型语言模型翻译](#大型语言模型翻译)
@@ -34,14 +41,14 @@
 2. **安装依赖**：
    1. **自动安装**
    
-        进入 `YouDub` 目录并运行 `run_windows.bat`。
+        进入 `YouDub-webui` 目录并运行 `run_windows.bat`。
         这个脚本会自动在当前目录下创建 `venv` 虚拟环境，并安装所需依赖。这个脚本会自动安装 CUDA 12.1 版本的 PyTorch。
 
    2. **手动安装**
    
-        进入 `YouDub` 目录并安装所需依赖：
+        进入 `YouDub-webui` 目录并安装所需依赖：
         ```bash
-        cd YouDub
+        cd YouDub-webui
         pip install -r requirements.txt
         ```
         由于 `TTS` 的依赖限定的比较傻逼，所以将 `TTS`移出了 `requirements.txt`，需要手动安装。安装 `TTS` 依赖的步骤如下：
@@ -71,14 +78,11 @@
         ```
 
       - `APPID` 和 `ACCESS_TOKEN`: 如果使用火山引擎的 TTS，需要提供火山引擎的 APPID 和 ACCESS_TOKEN，此项可能需要付费。
-  
-
-      **TTS 设置**：如果不希望使用付费的火山引擎 TTS，可以在 `main.py` 中将 `from youdub.tts_bytedance import TTS_Clone` 改为 `from youdub.tts_paddle import TTS_Clone`，但这可能会影响生成效果。
 
 4. **运行程序**：
    1. **自动运行**
 
-        进入 `YouDub` 目录并运行 `run_windows.bat`。
+        进入 `YouDub-webui` 目录并运行 `run_windows.bat`。
 
     2. **手动运行**
         使用以下命令启动主程序：
@@ -94,29 +98,106 @@
    ```
 
 ## 使用步骤
-1. **下载视频**：在 `YouDub` 网页中输入 YouTube 视频链接，点击 `Download` 按钮下载视频。下载完成后，会在 `YouDub` 目录下生成一个 `videos` 文件夹，其中包含下载的视频文件。
-  
+
+### 1. **全自动 (Do Everything)**
+
+此界面是一个一站式的解决方案，它将执行从视频下载到视频合成的所有步骤。
+
+- **Root Folder**: 设置视频文件的根目录。
+- **Video URL**: 输入视频或播放列表或频道的URL。
+- **Number of videos to download**: 设置要下载的视频数量。
+- **Resolution**: 选择下载视频的分辨率。
+- **Demucs Model**: 选择用于音频分离的Demucs模型。
+- **Demucs Device**: 选择音频分离的处理设备。
+- **Number of shifts**: 设置音频分离时的移位数。
+- **Whisper Model**: 选择用于语音识别的Whisper模型。
+- **Whisper Download Root**: 设置Whisper模型的下载根目录。
+- **Whisper Batch Size**: 设置Whisper处理的批量大小。
+- **Whisper Diarization**: 选择是否进行说话者分离。
+- **Translation Target Language**: 选择字幕的目标翻译语言。
+- **Force Bytedance**: 选择是否强制使用Bytedance语音合成。
+- **Subtitles**: 选择是否在视频中包含字幕。
+- **Speed Up**: 设置视频播放速度。
+- **FPS**: 设置视频的帧率。
+- **Max Workers**: 设置处理任务的最大工作线程数。
+- **Max Retries**: 设置任务失败后的最大重试次数。
+
+### 2. **下载视频 (Download Video)**
+
+此界面用于单独下载视频。
+
+- **Video URL**: 输入视频或播放列表或频道的URL。
+- **Output Folder**: 设置视频下载后的输出文件夹。
+- **Resolution**: 选择下载视频的分辨率。
+- **Number of videos to download**: 设置要下载的视频数量。
+
+### 3. **人声分离 (Demucs Interface)**
+
+此界面用于从视频中分离人声。
+
+- **Folder**: 设置包含视频的文件夹。
+- **Model**: 选择用于音频分离的Demucs模型。
+- **Device**: 选择音频分离的处理设备。
+- **Progress Bar in Console**: 选择是否在控制台显示进度条。
+- **Number of shifts**: 设置音频分离时的移位数。
+
+### 4. **语音识别 (Whisper Inference)**
+
+此界面用于从视频音频中进行语音识别。
+
+- **Folder**: 设置包含视频的文件夹。
+- **Model**: 选择用于语音识别的Whisper模型。
+- **Download Root**: 设置Whisper模型的下载根目录。
+- **Device**: 选择语音识别的处理设备。
+- **Batch Size**: 设置Whisper处理的批量大小。
+- **Diarization**: 选择是否进行说话者分离。
+
+### 5. **字幕翻译 (Translation Interface)**
+
+此界面用于将识别出的语音转换为字幕并翻译。
+
+- **Folder**: 设置包含视频的文件夹。
+- **Target Language**: 选择字幕的目标翻译语言。
+
+### 6. **语音合成 (TTS Interface)**
+
+此界面用于将翻译后的文字转换为语音。
+
+- **Folder**: 设置包含视频的文件夹。
+- **Force Bytedance**: 选择是否强制使用Bytedance语音合成。
+
+### 7. **视频合成 (Synthesize Video Interface)**
+
+此界面用于将视频、字幕和语音合成为最终视频。
+
+- **Folder**: 设置包含视频的文件夹。
+- **Subtitles**: 选择是否在视频中包含字幕。
+- **Speed Up**: 设置视频播放速度。
+- **FPS**: 设置视频的帧率。
+- **Resolution**: 选择视频的分辨率。
+
 ## 技术细节
 
 ### AI 语音识别
-目前，我们的 AI 语音识别功能是基于 [WhisperX](https://github.com/m-bain/whisperX) 实现的。Whisper 是 OpenAI 开发的一款强大的语音识别系统，能够精确地将语音转换为文本。考虑到未来的效率和性能提升，我们计划评估并可能迁移到 [WhisperX](https://github.com/m-bain/whisperX)，这是一个更高效的语音识别系统，旨在进一步提高处理速度和准确度。
+我们的 AI 语音识别功能现在基于 [WhisperX](https://github.com/m-bain/whisperX) 实现。WhisperX 是一个高效的语音识别系统，建立在 OpenAI 开发的 Whisper 系统之上。它不仅能够精确地将语音转换为文本，还能自动对齐时间，并识别每句话的说话人物。这种先进的处理方式不仅提高了处理速度和准确度，还为用户提供了更丰富的信息，例如说话者的识别。
 
 ### 大型语言模型翻译
-我们的翻译功能支持使用 OpenAI API 提供的各种模型，包括官方的 GPT 模型。此外，我们也在探索使用类似 [api-for-open-llm](https://github.com/xusenlinzy/api-for-open-llm) 这样的项目，以便更灵活地整合和利用不同的大型语言模型进行翻译工作。
+我们的翻译功能继续使用 OpenAI API 提供的各种模型，包括官方的 GPT 模型。同时，我们也在利用诸如 [api-for-open-llm](https://github.com/xusenlinzy/api-for-open-llm) 这样的项目，这使我们能够更灵活地整合和利用不同的大型语言模型进行翻译工作，确保翻译质量和效率。
 
 ### AI 声音克隆
-声音克隆方面，我们目前使用的是 [Paddle Speech](https://github.com/PaddlePaddle/PaddleSpeech)。虽然 Paddle Speech 提供了高质量的语音合成能力，但目前尚无法在同一句话中同时生成中文和英文。在此之前，我们也考虑过使用 [Coqui AI TTS](https://github.com/coqui-ai/TTS)，它能够进行高效的声音克隆，但同样面临一些限制。
+在声音克隆方面，我们已经转向使用 [Coqui AI TTS](https://github.com/coqui-ai/TTS)。同时，对于单一说话人的情况，我们采用了火山引擎进行 TTS，以获得更优质的音质。火山引擎的高级技术能够生成极其自然且流畅的语音，适用于各种应用场景，提升了最终产品的整体质量。
 
 ### 视频处理
-我们的视频处理功能强调音视频的同步处理，例如确保音频与视频画面的完美对齐，以及生成准确的字幕，从而为用户提供一个无缝的观看体验。
+在视频处理方面，我们依然强调音视频的同步处理。我们的目标是确保音频与视频画面的完美对齐，并生成准确的字幕，从而为用户提供一个无缝且沉浸式的观看体验。我们的处理流程和技术确保了视频内容的高质量和观看的连贯性。
+
 
 ## 贡献指南
-欢迎对 `YouDub` 进行贡献。您可以通过 GitHub Issue 或 Pull Request 提交改进建议或报告问题。
+欢迎对 `YouDub-webui` 进行贡献。您可以通过 GitHub Issue 或 Pull Request 提交改进建议或报告问题。
 
 ## 许可协议
-`YouDub` 遵循 Apache License 2.0。使用本工具时，请确保遵守相关的法律和规定，包括版权法、数据保护法和隐私法。未经原始内容创作者和/或版权所有者许可，请勿使用此工具。
+`YouDub-webui` 遵循 Apache License 2.0。使用本工具时，请确保遵守相关的法律和规定，包括版权法、数据保护法和隐私法。未经原始内容创作者和/或版权所有者许可，请勿使用此工具。
 
 ## 支持与联系方式
-如需帮助或有任何疑问，请通过 [GitHub Issues](https://github.com/liuzhao1225/YouDub/issues) 联系我们。你也可以加入我们的微信群，扫描下方的二维码即可：
+如需帮助或有任何疑问，请通过 [GitHub Issues](https://github.com/liuzhao1225/YouDub-webui/issues) 联系我们。你也可以加入我们的微信群，扫描下方的二维码即可：
 
 ![WeChat Group](docs/1e5bad6485828197234ab8722f3f646.jpg)
