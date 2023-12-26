@@ -17,6 +17,12 @@ diarize_model = None
 align_model = None
 language_code = None
 align_metadata = None
+
+def init_whisperx():
+    load_whisper_model()
+    load_align_model()
+    load_diarize_model()
+    
 def load_whisper_model(model_name: str = 'large', download_root = 'models/ASR/whisper', device='auto'):
     global whisper_model
     if whisper_model is not None:

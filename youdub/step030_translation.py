@@ -25,17 +25,17 @@ def get_necessary_info(info: dict):
 
 def summarize(info, transcript, target_language='简体中文'):
     transcript = ' '.join(line['text'] for line in transcript)
-    info_message = f'This is a video called "{info["title"]}" by {info["uploader"]}. ' \
-        + f'It was uploaded on {info["upload_date"]}. ' \
+    info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
+    # info_message = ''
     
-    full_description = f'The following is the full content of the video:\n{transcript}\n{info_message}\nIn Json format:\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```\nSummarize the video in JSON format: '
+    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nSummarize the video in JSON format:\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'
     
     messages = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.'},
+        {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
         {'role': 'user', 'content': full_description},
     ]
     retry = 0
-    while retry < 10 and retry != -1:
+    while retry < 30 and retry != -1:
         try:
             response = openai.ChatCompletion.create(
                 model=model_name,
@@ -46,11 +46,27 @@ def summarize(info, transcript, target_language='简体中文'):
             logger.info(summary)
             summary = re.findall(r'\{.*?\}', summary)[0]
             summary = json.loads(summary)
-            messages = [
-                {'role': 'system', 'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format.'},
-                {'role': 'user',
-                    'content': f'The title of the video is "{summary["title"]}". The summary of the video is "{summary["summary"]}". Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"}}\n```. Remember to tranlate both the title and the summary into {target_language} in JSON.'},
-            ]
+            summary = {
+                'title': summary['title'],
+                'summary': summary['summary'],
+            }
+            retry = -1
+        except Exception as e:
+            retry += 1
+            logger.warning('总结失败')
+            time.sleep(1)
+            
+    title = summary['title']
+    summary = summary['summary']
+    messages = [
+        {'role': 'system', 'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"}}\n```.'},
+        {'role': 'user',
+            'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"}}\n```. Remember to tranlate both the title and the summary into {target_language} in JSON.'},
+    ]
+    retry = 0
+    while retry < 30 and retry != -1:
+        
+        try:
             response = openai.ChatCompletion.create(
                 model=model_name,
                 messages=messages,
@@ -64,12 +80,12 @@ def summarize(info, transcript, target_language='简体中文'):
                 'title': summary['title'],
                 'author': info['uploader'],
                 'summary': summary['summary'],
-                'language': target_language,
+                'language': target_language
             }
             return result
         except Exception as e:
             retry += 1
-            logger.warning('总结失败')
+            logger.warning('总结翻译失败')
             time.sleep(1)
 
 
@@ -178,5 +194,5 @@ def translate_all_transcript_under_folder(folder, target_language):
     return f'Translated all videos under {folder}'
 
 if __name__ == '__main__':
-    translate_all_transcript_under_folder('videos', '简体中文')
+    translate_all_transcript_under_folder(r'videos\UCI Open\20121214 Chem 201 Organic Reaction Mechanisms I Lecture 01 Arrow Pushing Part 1', '简体中文')
     

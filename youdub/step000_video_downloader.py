@@ -1,21 +1,24 @@
 import os
 import re
+from loguru import logger
 import yt_dlp
 
 
 def sanitize_title(title):
     # Replace invalid file path characters with an underscore
-    return re.sub(r'[\/:*?"<>|]', '', title)
+    return re.sub(r'[~!@#$%^&*()+=;\',./{}:"<>?]', '', title)
 
 def download_single_video(info, folder_path, resolution='1080p'):
     sanitized_title = sanitize_title(info['title'])
     sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
     upload_date = info.get('upload_date', 'Unknown')
-    output_folder = os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}')
-    if os.path.exists(os.path.join(output_folder, 'download.mp4')):
-        return output_folder
     if upload_date == 'Unknown':
         return None
+    
+    output_folder = os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}')
+    if os.path.exists(os.path.join(output_folder, 'download.mp4')):
+        logger.info(f'Video already downloaded in {output_folder}')
+        return output_folder
     
     ydl_opts = {
     'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
@@ -27,7 +30,9 @@ def download_single_video(info, folder_path, resolution='1080p'):
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([info['webpage_url']])
-    return os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}')
+    logger.info(f'Video downloaded in {output_folder}')
+    return output_folder
+
 def download_videos(info_list, folder_path, resolution='1080p'):
     for info in info_list:
         download_single_video(info, folder_path, resolution)

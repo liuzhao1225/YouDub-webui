@@ -9,6 +9,10 @@ import gc
 auto_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 separator = None
 
+def init_demucs():
+    global separator
+    separator = load_model()
+    
 def load_model(model_name: str = "htdemucs_ft", device: str = 'auto', progress: bool = True, shifts: int=5) -> Separator:
     logger.info(f'Loading Demucs model: {model_name}')
     t_start = time.time()
@@ -75,20 +79,14 @@ def extract_audio_from_video(folder: str) -> bool:
 def separate_all_audio_under_folder(root_folder: str, model_name: str = "htdemucs_ft", device: str = 'auto', progress: bool = True, shifts: int = 5) -> None:
     global separator
     for subdir, dirs, files in os.walk(root_folder):
-        if 'download.mp4' in files and 'audio.wav' not in files:
+        if 'download.mp4' not in files:
+            continue
+        if 'audio.wav' not in files:
             extract_audio_from_video(subdir)
         if 'audio_vocals.wav' not in files:
             separate_audio(subdir, model_name, device, progress, shifts)
 
     logger.info(f'All audio separated under {root_folder}')
-    # if separator is not None:
-    #     gc.collect()
-    #     torch.cuda.empty_cache()
-    #     del separator
-    #     separator = None
-    #     gc.collect()
-    #     torch.cuda.empty_cache()
-    #     logger.info(f'Demucs model unloaded')
     return f'All audio separated under {root_folder}'
     
 if __name__ == '__main__':

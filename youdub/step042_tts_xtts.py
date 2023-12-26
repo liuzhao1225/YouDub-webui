@@ -7,9 +7,11 @@ import time
 from .utils import save_wav
 model = None
 
-
+def init_TTS():
+    load_model()
+    
 def load_model(model_path="tts_models/multilingual/multi-dataset/xtts_v2", device='auto'):
-    global model, language_code
+    global model
     if model is not None:
         return
 

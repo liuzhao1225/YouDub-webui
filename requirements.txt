@@ -1,20 +1,10 @@
-torch==2.1.1+cu121
-audiostretchy==1.3.5
-gradio==4.12.0
-librosa==0.10.1
-loguru==0.7.2
-numpy==1.26.2
-openai==0.28.0
-OpenCC==1.1.7
-opencc_python_reimplemented==0.1.7
-Pillow==10.1.0
-pyannote.audio==3.1.0
-pyannote.core==5.0.0
-pyannote.database==5.0.1
-pyannote.metrics==3.2.1
-pyannote.pipeline==3.0.1
-python-dotenv==1.0.0
-Requests==2.31.0
-scipy==1.11.4
-git+https://github.com/facebookresearch/demucs#egg=demucs # demucs
-git+https://github.com/m-bain/whisperx.git # whisperx
+gradio
+loguru
+yt-dlp
+git+https://github.com/facebookresearch/demucs#egg=demucs
+scipy
+librosa
+git+https://github.com/m-bain/whisperx.git
+python-dotenv
+openai
+audiostretchy

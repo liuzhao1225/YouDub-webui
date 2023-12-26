@@ -58,13 +58,17 @@ def format_timestamp(seconds):
     minutes, seconds = divmod(seconds, 60)
     return f"{hours:02}:{minutes:02}:{seconds:02},{millisec:03}"
 
-def generate_srt(translation, srt_path, speed_up=1):
+def generate_srt(translation, srt_path, speed_up=1, max_line_char=30):
     translation = split_text(translation)
     with open(srt_path, 'w', encoding='utf-8') as f:
         for i, line in enumerate(translation):
             start = format_timestamp(line['start']/speed_up)
             end = format_timestamp(line['end']/speed_up)
             text = line['translation']
+            line = len(text)//(max_line_char+1) + 1
+            avg = min(round(len(text)/line), max_line_char)
+            text = '\n'.join([text[i*avg:(i+1)*avg]
+                             for i in range(line)])
             f.write(f'{i+1}\n')
             f.write(f'{start} --> {end}\n')
             f.write(f'{text}\n\n')
