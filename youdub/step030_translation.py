@@ -28,15 +28,20 @@ def summarize(info, transcript, target_language='简体中文'):
     info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
     # info_message = ''
     
-    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nSummarize the video in JSON format:\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'
+    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nDetailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary", ""}}\n```'
     
     messages = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
+        {'role': 'system', 'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
         {'role': 'user', 'content': full_description},
     ]
     retry = 0
+    retry_message=''
     while retry < 30 and retry != -1:
         try:
+            messages = [
+                {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
+                {'role': 'user', 'content': full_description+retry_message},
+            ]
             response = openai.ChatCompletion.create(
                 model=model_name,
                 messages=messages,
@@ -53,7 +58,8 @@ def summarize(info, transcript, target_language='简体中文'):
             retry = -1
         except Exception as e:
             retry += 1
-            logger.warning('总结失败')
+            retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary", ""}\n```'
+            logger.warning(f'总结失败\n{e}')
             time.sleep(1)
             
     title = summary['title']
@@ -85,7 +91,7 @@ def summarize(info, transcript, target_language='简体中文'):
             return result
         except Exception as e:
             retry += 1
-            logger.warning('总结翻译失败')
+            logger.warning(f'总结翻译失败\n{e}')
             time.sleep(1)
 
 

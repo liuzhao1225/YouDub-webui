@@ -4,7 +4,11 @@ from PIL import Image
 
 
 def resize_thumbnail(folder, size=(1280, 960)):
-    image_path = os.path.join(folder, 'download.webp')
+    image_suffix = ['.jpg', '.jpeg', '.png', '.bmp', '.webp']
+    for suffix in image_suffix:
+        image_path = os.path.join(folder, f'download{suffix}')
+        if os.path.exists(image_path):
+            break
     with Image.open(image_path) as img:
         # Calculate the ratio and the size to maintain aspect ratio
         img_ratio = img.width / img.height

@@ -21,11 +21,11 @@ def download_single_video(info, folder_path, resolution='1080p'):
         return output_folder
     
     ydl_opts = {
-    'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-    'writeinfojson': True,
-    'writethumbnail': True,
-    'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}', 'download'),
-    'ignoreerrors': True
+        'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'writeinfojson': True,
+        'writethumbnail': True,
+        'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}', 'download'),
+        'ignoreerrors': True
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
