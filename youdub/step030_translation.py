@@ -56,7 +56,6 @@ def summarize(info, transcript, target_language='简体中文'):
             }
             break
         except Exception as e:
-            retry += 1
             retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary", ""}\n```'
             logger.warning(f'总结失败\n{e}')
             time.sleep(1)

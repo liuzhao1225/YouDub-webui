@@ -11,7 +11,7 @@ from .step060_genrate_info import generate_all_info_under_folder
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import concurrent
 
-def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size, whisper_diarization, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution):
+def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size, whisper_diarization, whisper_min_speakers, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution):
     try:
         folder = download_single_video(info, root_folder, resolution)
         if folder is None:
@@ -25,7 +25,9 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
         separate_all_audio_under_folder(
             folder, model_name=demucs_model, device=device, progress=True, shifts=shifts)
         transcribe_all_audio_under_folder(
-            folder, model_name=whisper_model, download_root=whisper_download_root, device=device, batch_size=whisper_batch_size, diarization=whisper_diarization, max_speakers=whisper_max_speakers)
+            folder, model_name=whisper_model, download_root=whisper_download_root, device=device, batch_size=whisper_batch_size, diarization=whisper_diarization, 
+            min_speakers=whisper_min_speakers,
+            max_speakers=whisper_max_speakers)
         
         translate_all_transcript_under_folder(
             folder, target_language=translation_target_language
@@ -39,7 +41,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
         return False
 
 
-def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=2, max_retries=5):
+def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, whisper_min_speakers=None, whisper_max_speakers=None,translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=2, max_retries=5):
     video_info_list = get_info_list_from_url(url, num_videos)
     init_demucs()
     init_TTS()
@@ -51,7 +53,7 @@ def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_mod
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures_to_info = {executor.submit(process_video, info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size,
-                                           whisper_diarization, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution): info for info in video_info_list}
+                                           whisper_diarization, whisper_min_speakers, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution): info for info in video_info_list}
 
         while futures_to_info:
             for future in as_completed(futures_to_info):
