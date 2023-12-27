@@ -69,7 +69,7 @@ git clone https://github.com/liuzhao1225/YouDub-webui.git
 您可以选择自动安装或手动安装依赖：
 
 #### 自动安装
-- 进入 `YouDub-webui` 目录，运行 `run_windows.bat` 脚本。
+- 进入 `YouDub-webui` 目录，运行 `setup_windows` 脚本。
 - 脚本会在当前目录创建一个 `venv` 虚拟环境，并自动安装所需依赖，包括 CUDA 12.1 版本的 PyTorch。
 
 #### 手动安装
