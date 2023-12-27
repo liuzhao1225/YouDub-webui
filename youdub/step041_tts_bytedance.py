@@ -104,21 +104,25 @@ def tts(text, output_path, speaker_wav):
     speaker_to_voice_type = gererate_speaker_to_voice_type(folder)
     speaker = os.path.basename(speaker_wav).replace('.wav', '')
     voice_type = speaker_to_voice_type[speaker]
-    try:
-        global request_json
-        request_json["audio"]["voice_type"] = voice_type
-        request_json["request"]["text"] = text
-        request_json["request"]["reqid"] = str(uuid.uuid4())
-        resp = requests.post(api_url, json.dumps(request_json), headers=header)
-        # print(f"resp body: \n{resp.json()}")
-        if "data" in resp.json():
-            data = resp.json()["data"]
-            file_to_save = open(output_path, "wb")
-            file_to_save.write(base64.b64decode(data))
-            logger.info(f'火山TTS {text} 保存成功')
-            time.sleep(0.1)
-    except Exception as e:
-        logger.warning(e)
+    for retry in range(3):
+        try:
+            global request_json
+            request_json["audio"]["voice_type"] = voice_type
+            request_json["request"]["text"] = text
+            request_json["request"]["reqid"] = str(uuid.uuid4())
+            resp = requests.post(api_url, json.dumps(request_json), headers=header)
+            # print(f"resp body: \n{resp.json()}")
+            if "data" in resp.json():
+                data = resp.json()["data"]
+                with open(output_path, "wb") as f:
+                    f.write(base64.b64decode(data))
+                # file_to_save = open(output_path, "wb")
+                # file_to_save.write(base64.b64decode(data))
+                logger.info(f'火山TTS {text} 保存成功')
+                time.sleep(0.1)
+                break
+        except Exception as e:
+            logger.warning(e)
 
 def get_available_speakers():
     if not os.path.exists('voice_type'):

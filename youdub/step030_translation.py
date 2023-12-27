@@ -101,7 +101,7 @@ def translation_postprocess(result):
     return result
 
 def valid_translation(text, translation):
-    forbidden = ['翻译', '这句', '\n']
+    forbidden = ['翻译', '这句', '\n', '简体中文', '中文']
     for word in forbidden:
         if word in translation:
             return False, f"Don't include {word} in the translation. Only translate the following sentence and give me the result."
