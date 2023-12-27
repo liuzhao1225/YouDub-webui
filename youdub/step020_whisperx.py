@@ -84,7 +84,7 @@ def merge_segments(transcript, ending='!"\').:;?]}~'):
 
     return merged_transcription
 
-def transcribe_audio(folder, model_name: str = 'large', download_root='models/ASR/whisper', device='auto', batch_size=32, diarization=True, max_speakers=None):
+def transcribe_audio(folder, model_name: str = 'large', download_root='models/ASR/whisper', device='auto', batch_size=32, diarization=True,min_speakers=None, max_speakers=None):
     if os.path.exists(os.path.join(folder, 'transcript.json')):
         logger.info(f'Transcript already exists in {folder}')
         return True
@@ -109,7 +109,7 @@ def transcribe_audio(folder, model_name: str = 'large', download_root='models/AS
     
     if diarization:
         load_diarize_model(device)
-        diarize_segments = diarize_model(wav_path, max_speakers=max_speakers)
+        diarize_segments = diarize_model(wav_path,min_speakers=min_speakers, max_speakers=max_speakers)
         rec_result = whisperx.assign_word_speakers(diarize_segments, rec_result)
         
     transcript = [{'start': segement['start'], 'end': segement['end'], 'text': segement['text'].strip(), 'speaker': segement.get('speaker', 'SPEAKER_00')} for segement in rec_result['segments']]
@@ -142,11 +142,12 @@ def generate_speaker_audio(folder, transcript):
             speaker_folder, f"{speaker}.wav")
         save_wav(audio, speaker_file_path)
             
-def transcribe_all_audio_under_folder(folder, model_name: str = 'large', download_root='models/ASR/whisper', device='auto', batch_size=32, diarization=True, max_speakers=None):
+
+def transcribe_all_audio_under_folder(folder, model_name: str = 'large', download_root='models/ASR/whisper', device='auto', batch_size=32, diarization=True, min_speakers=None, max_speakers=None):
     for root, dirs, files in os.walk(folder):
         if 'audio_vocals.wav' in files and 'transcript.json' not in files:
             transcribe_audio(root, model_name,
-                             download_root, device, batch_size, diarization, max_speakers)
+                             download_root, device, batch_size, diarization, min_speakers, max_speakers)
     return f'Transcribed all audio under {folder}'
 
 if __name__ == '__main__':
