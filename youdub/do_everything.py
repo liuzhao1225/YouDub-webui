@@ -11,7 +11,7 @@ from .step060_genrate_info import generate_all_info_under_folder
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import concurrent
 
-def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size, whisper_diarization, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution):
+def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size, whisper_diarization, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution):
     try:
         folder = download_single_video(info, root_folder, resolution)
         if folder is None:
@@ -25,7 +25,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
         separate_all_audio_under_folder(
             folder, model_name=demucs_model, device=device, progress=True, shifts=shifts)
         transcribe_all_audio_under_folder(
-            folder, model_name=whisper_model, download_root=whisper_download_root, device=device, batch_size=whisper_batch_size, diarization=whisper_diarization)
+            folder, model_name=whisper_model, download_root=whisper_download_root, device=device, batch_size=whisper_batch_size, diarization=whisper_diarization, max_speakers=whisper_max_speakers)
         
         translate_all_transcript_under_folder(
             folder, target_language=translation_target_language
