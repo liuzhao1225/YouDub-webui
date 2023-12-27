@@ -33,16 +33,17 @@ def tts(text, output_path, speaker_wav, model_name="tts_models/multilingual/mult
     
     if model is None:
         load_model(model_name, device)
-        
-    try:
-        wav = model.tts(text, speaker_wav=speaker_wav, language=language)
-        wav = np.array(wav)
-        save_wav(wav, output_path)
-        logger.info(f'TTS {text}')
-    except Exception as e:
-        logger.warning(f'TTS {text} 失败')
-        logger.warning(e)
-        return None
+    
+    for retry in range(3):
+        try:
+            wav = model.tts(text, speaker_wav=speaker_wav, language=language)
+            wav = np.array(wav)
+            save_wav(wav, output_path)
+            logger.info(f'TTS {text}')
+            break
+        except Exception as e:
+            logger.warning(f'TTS {text} 失败')
+            logger.warning(e)
 
 
 if __name__ == '__main__':
