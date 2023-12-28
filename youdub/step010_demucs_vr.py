@@ -5,7 +5,6 @@ from loguru import logger
 import time
 from .utils import save_wav
 import torch
-import gc
 auto_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 separator = None
 
@@ -14,12 +13,16 @@ def init_demucs():
     separator = load_model()
     
 def load_model(model_name: str = "htdemucs_ft", device: str = 'auto', progress: bool = True, shifts: int=5) -> Separator:
+    global separator
+    if separator is not None:
+        logger.info(f'Demucs model already loaded')
+        return
+    
     logger.info(f'Loading Demucs model: {model_name}')
     t_start = time.time()
     separator = Separator(model_name, device=auto_device if device=='auto' else device, progress=progress, shifts=shifts)
     t_end = time.time()
     logger.info(f'Demucs model loaded in {t_end - t_start:.2f} seconds')
-    return separator
 
 
 def separate_audio(folder: str, model_name: str = "htdemucs_ft", device: str = 'auto', progress: bool = True, shifts: int = 5) -> None:
@@ -35,8 +38,7 @@ def separate_audio(folder: str, model_name: str = "htdemucs_ft", device: str = '
         return
     
     logger.info(f'Separating audio from {folder}')
-    if separator is None:
-        separator = load_model(model_name, device, progress, shifts)
+    load_model(model_name, device, progress, shifts)
     t_start = time.time()
     origin, separated = separator.separate_audio_file(audio_path)
     t_end = time.time()
@@ -73,6 +75,7 @@ def extract_audio_from_video(folder: str) -> bool:
     logger.info(f'Extracting audio from {folder}')
     os.system(
         f'ffmpeg -loglevel error -i "{video_path}" -vn -acodec pcm_s16le -ar 44100 -ac 2 "{audio_path}"')
+    time.sleep(1)
     logger.info(f'Audio extracted from {folder}')
     return True
     

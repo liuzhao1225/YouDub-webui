@@ -1,4 +1,5 @@
 import os
+import time
 from loguru import logger
 from .step000_video_downloader import get_info_list_from_url, download_single_video
 from .step010_demucs_vr import separate_all_audio_under_folder, init_demucs
@@ -18,7 +19,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
             folder = download_single_video(info, root_folder, resolution)
             if folder is None:
                 logger.warning(f'Failed to download video {info["title"]}')
-                return
+                return True
             # if os.path.exists(folder, 'video.mp4') and os.path.exists(folder, 'video.txt') and os.path.exists(folder, 'video.png'):
             if os.path.exists(os.path.join(folder, 'video.mp4')) and os.path.exists(os.path.join(folder, 'video.txt')) and os.path.exists(os.path.join(folder, 'video.png')):
                 logger.info(f'Video already processed in {folder}')
@@ -38,6 +39,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
             synthesize_all_video_under_folder(folder, subtitles=subtitles, speed_up=speed_up, fps=fps, resolution=target_resolution)
             generate_all_info_under_folder(folder)
             if auto_upload_video:
+                time.sleep(1)
                 upload_all_videos_under_folder(folder)
             return True
         except Exception as e:
@@ -46,7 +48,9 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
 
 
 def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, whisper_min_speakers=None, whisper_max_speakers=None, translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=2, max_retries=5, auto_upload_video=True):
-    video_info_list = get_info_list_from_url(url, num_videos)
+    url = url.replace(' ', '').replace('，', '\n').replace(',', '\n')
+    urls = url.split('\n')
+    video_info_list = get_info_list_from_url(urls, num_videos)
     init_demucs()
     init_TTS()
     init_whisperx()
@@ -69,4 +73,4 @@ def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_mod
             else:
                 fail_list.append(info)
 
-    return f'Success: {len(success_list)}\nFail: {len(fail_list)}\n{fail_list}'
+    return f'Success: {len(success_list)}\nFail: {len(fail_list)}'

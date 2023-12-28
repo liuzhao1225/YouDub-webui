@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import time
 
 from loguru import logger
 
@@ -122,6 +123,7 @@ def synthesize_video(folder, subtitles=True, speed_up=1.05, fps=30, resolution='
         '-y'
     ]
     subprocess.run(ffmpeg_command)
+    time.sleep(1)
     
 
 def synthesize_all_video_under_folder(folder, subtitles=True, speed_up=1.05, fps=30, resolution='1080p'):
@@ -131,5 +133,5 @@ def synthesize_all_video_under_folder(folder, subtitles=True, speed_up=1.05, fps
                              speed_up=speed_up, fps=fps, resolution=resolution)
     return f'Synthesized all videos under {folder}'
 if __name__ == '__main__':
-    folder = r'videos'
+    folder = r'videos\TED-Ed\20220915 How friendship affects your brain - Shannon Odell'
     synthesize_all_video_under_folder(folder, subtitles=True)

@@ -54,6 +54,8 @@ def summarize(info, transcript, target_language='简体中文'):
                 'title': summary['title'].replace('title:', '').strip(),
                 'summary': summary['summary'].replace('summary:', '').strip(),
             }
+            if 'title' in summary['title']:
+                raise Exception('Invalid summary')
             break
         except Exception as e:
             retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary", ""}\n```'
@@ -78,6 +80,8 @@ def summarize(info, transcript, target_language='简体中文'):
             logger.info(summary)
             summary = re.findall(r'\{.*?\}', summary)[0]
             summary = json.loads(summary)
+            if target_language in summary['title'] or target_language in summary['summary']:
+                raise Exception('Invalid translation')
             result = {
                 'title': summary['title'],
                 'author': info['uploader'],
