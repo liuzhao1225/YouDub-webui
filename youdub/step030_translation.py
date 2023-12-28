@@ -28,10 +28,11 @@ def summarize(info, transcript, target_language='简体中文'):
     info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
     # info_message = ''
     
-    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary", ""}}\n```'
+    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary": ""}}\n```'
     
     messages = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
+        {'role': 'system',
+            'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
         {'role': 'user', 'content': full_description},
     ]
     retry_message=''
@@ -52,22 +53,24 @@ def summarize(info, transcript, target_language='简体中文'):
             summary = json.loads(summary)
             summary = {
                 'title': summary['title'].replace('title:', '').strip(),
-                'summary': summary['summary'].replace('summary:', '').strip(),
+                'summary': summary['summary'].replace('summary:', '').strip()
             }
             if 'title' in summary['title']:
                 raise Exception('Invalid summary')
             break
         except Exception as e:
-            retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary", ""}\n```'
+            retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary": ""}\n```'
             logger.warning(f'总结失败\n{e}')
             time.sleep(1)
             
     title = summary['title']
     summary = summary['summary']
+    tags = info['tags']
     messages = [
-        {'role': 'system', 'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"}}\n```.'},
+        {'role': 'system',
+            'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video", "tags": [list of tags in {target_language}]}}\n```.'},
         {'role': 'user',
-            'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"}}\n```. Remember to tranlate both the title and the summary into {target_language} in JSON.'},
+            'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Tags: {tags}.\nPlease translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"， "tags": []}}\n```. Remember to tranlate both the title and the summary and tags into {target_language} in JSON.'},
     ]
     while True:
         try:
@@ -86,6 +89,7 @@ def summarize(info, transcript, target_language='简体中文'):
                 'title': summary['title'],
                 'author': info['uploader'],
                 'summary': summary['summary'],
+                'tags': summary['tags'],
                 'language': target_language
             }
             return result
@@ -199,5 +203,6 @@ def translate_all_transcript_under_folder(folder, target_language):
     return f'Translated all videos under {folder}'
 
 if __name__ == '__main__':
-    translate_all_transcript_under_folder(r'videos\UCI Open\20121214 Chem 201 Organic Reaction Mechanisms I Lecture 01 Arrow Pushing Part 1', '简体中文')
+    translate_all_transcript_under_folder(
+        r'videos\test\20230119 When are you actually an adult - Shannon Odell', '简体中文')
     
