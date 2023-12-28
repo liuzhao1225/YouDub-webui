@@ -6,7 +6,7 @@ import yt_dlp
 
 def sanitize_title(title):
     # Replace invalid file path characters with an underscore
-    return re.sub(r'[~!@#$%^&*()+=;\',./{}:"<>?]', '', title)
+    return re.sub(r'[~!@#$%^&*()+=;\',./{}:"`<>?]', '', title)
 
 def download_single_video(info, folder_path, resolution='1080p'):
     sanitized_title = sanitize_title(info['title'])
