@@ -6,6 +6,7 @@ from youdub.step030_translation import translate_all_transcript_under_folder
 from youdub.step040_tts import generate_all_wavs_under_folder
 from youdub.step050_synthesize_video import synthesize_all_video_under_folder
 from youdub.step060_genrate_info import generate_all_info_under_folder
+from youdub.step070_upload_bilibili import upload_all_videos_under_folder
 from youdub.do_everything import do_everything
 import os
 
@@ -38,6 +39,7 @@ do_everything_interface = gr.Interface(
         gr.Radio(['4320p', '2160p', '1440p', '1080p', '720p', '480p', '360p', '240p', '144p'], label='Resolution', value='1080p'),
         gr.Slider(minimum=1, maximum=100, step=1, label='Max Workers', value=1),
         gr.Slider(minimum=1, maximum=10, step=1, label='Max Retries', value=3),
+        gr.Checkbox(label='Auto Upload Video', value=True),
     ],
     outputs='text',
     allow_flagging='never',
@@ -129,6 +131,14 @@ genearte_info_interface = gr.Interface(
     allow_flagging='never',
 )
 
+upload_bilibili_interface = gr.Interface(
+    fn = upload_all_videos_under_folder,
+    inputs = [
+        gr.Textbox(label='Folder', value='videos'),  # Changed 'default' to 'value'
+    ],
+    outputs='text',
+    allow_flagging='never',
+)
 
 app = gr.TabbedInterface(
     interface_list=[do_everything_interface,youtube_interface, demucs_interface,

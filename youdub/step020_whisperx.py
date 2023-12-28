@@ -125,7 +125,7 @@ def generate_speaker_audio(folder, transcript):
     audio_data, samplerate = librosa.load(wav_path, sr=24000)
     speaker_dict = dict()
     length = len(audio_data)
-    delay = 0.1
+    delay = 0.05
     for segment in transcript:
         start = max(0, int((segment['start'] - delay) * samplerate))
         end = min(int((segment['end']+delay) * samplerate), length)

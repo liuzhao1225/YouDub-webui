@@ -51,8 +51,8 @@ def summarize(info, transcript, target_language='简体中文'):
             summary = re.findall(r'\{.*?\}', summary)[0]
             summary = json.loads(summary)
             summary = {
-                'title': summary['title'],
-                'summary': summary['summary'],
+                'title': summary['title'].replace('title:', '').strip(),
+                'summary': summary['summary'].replace('summary:', '').strip(),
             }
             break
         except Exception as e:

@@ -8,10 +8,11 @@ from .step040_tts import generate_all_wavs_under_folder
 from .step042_tts_xtts import init_TTS
 from .step050_synthesize_video import synthesize_all_video_under_folder
 from .step060_genrate_info import generate_all_info_under_folder
+from .step070_upload_bilibili import upload_all_videos_under_folder
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size, whisper_diarization, whisper_min_speakers, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution, max_retries):
+def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size, whisper_diarization, whisper_min_speakers, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution, max_retries, auto_upload_video):
     for retry in range(max_retries):
         try:
             folder = download_single_video(info, root_folder, resolution)
@@ -36,13 +37,15 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
             generate_all_wavs_under_folder(folder, force_bytedance=force_bytedance)
             synthesize_all_video_under_folder(folder, subtitles=subtitles, speed_up=speed_up, fps=fps, resolution=target_resolution)
             generate_all_info_under_folder(folder)
+            if auto_upload_video:
+                upload_all_videos_under_folder(folder)
             return True
         except Exception as e:
             logger.error(f'Error processing video {info["title"]}: {e}')
     return False
 
 
-def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, whisper_min_speakers=None, whisper_max_speakers=None, translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=2, max_retries=5):
+def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, whisper_min_speakers=None, whisper_max_speakers=None, translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=2, max_retries=5, auto_upload_video=True):
     video_info_list = get_info_list_from_url(url, num_videos)
     init_demucs()
     init_TTS()
@@ -53,7 +56,7 @@ def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_mod
 
     def process_and_track(info):
         success = process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size,
-                                whisper_diarization, whisper_min_speakers, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution, max_retries)
+                                whisper_diarization, whisper_min_speakers, whisper_max_speakers, translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution, max_retries, auto_upload_video)
         return (info, success)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
