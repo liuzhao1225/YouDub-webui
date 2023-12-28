@@ -2,10 +2,10 @@
 SETLOCAL
 
 :: Check for Python 3.10
-py -3.10 -c "print('Python 3.10 is installed.')" >nul 2>&1
+py -c "print('Python 3.10 is installed.')" >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    echo Python 3.10 is not installed.
-    echo Please download and install Python 3.10 from https://www.python.org/downloads/
+    echo Python is not installed.
+    echo Please download and install Python from https://www.python.org/downloads/
     pause
     EXIT /B
 )
@@ -13,7 +13,7 @@ IF %ERRORLEVEL% NEQ 0 (
 :: Create a virtual environment if it doesn't exist
 IF NOT EXIST "venv" (
     echo Creating virtual environment...
-    py -3.10 -m venv venv
+    py -m venv venv
 )
 
 :: Activate the virtual environment
