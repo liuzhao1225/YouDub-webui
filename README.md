@@ -51,6 +51,7 @@
 - **大型语言模型翻译**: 结合大型语言模型如 GPT，实现快速且精准的中文翻译。无论是俚语还是专业术语，均能得到恰当的翻译，确保内容的准确性与地道性。
 - **AI 声音克隆**: 通过 AI 声音克隆技术，生成与原视频配音相似的中文语音。这不仅提升了视频的观看体验，也保留了原视频的情感和语调特色。
 - **视频处理**: 综合了音视频同步处理、字幕添加、视频播放速度调整和帧率设置等多项功能。用户可以根据需要生成高质量的最终视频，实现无缝的观看体验。
+- **自动上传**: 支持将最终视频自动上传到 Bilibili 平台。用户可以在不离开 `YouDub-webui` 的情况下，将视频上传到 Bilibili 平台，实现一键式的视频中文化处理。
 
 `YouDub-webui` 的这些特点使其成为一个强大且易于使用的视频中文化工具，无论是个人用户还是专业团队，都能从中受益。
 
@@ -94,6 +95,7 @@ git clone https://github.com/liuzhao1225/YouDub-webui.git
   - `HF_TOKEN`: Hugging Face token，用于 speaker diarization 功能。
   - `HF_ENDPOINT`: 如果从 `huggingface` 下载模型时出错，可以添加此环境变量。
   - `APPID` 和 `ACCESS_TOKEN`: 火山引擎 TTS 所需的凭据。
+  - `BILI_BASE64`: Bilibili API 所需的凭据。获取方法请参考 [bilibili-toolman 准备凭据](https://github.com/mos9527/bilibili-toolman?tab=readme-ov-file#%E5%87%86%E5%A4%87%E5%87%AD%E6%8D%AE)。
 
 ### 4. 运行程序
 选择以下任一方式运行程序：
@@ -131,6 +133,7 @@ git clone https://github.com/liuzhao1225/YouDub-webui.git
 - **FPS**: 设置视频的帧率。
 - **Max Workers**: 设置处理任务的最大工作线程数。
 - **Max Retries**: 设置任务失败后的最大重试次数。
+- **Auto Upload Video**: 选择是否自动上传视频到Bilibili。
 
 ### 2. **下载视频 (Download Video)**
 
