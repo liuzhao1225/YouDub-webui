@@ -110,6 +110,7 @@ def translation_postprocess(result):
 
 def valid_translation(text, translation):
     forbidden = ['翻译', '这句', '\n', '简体中文', '中文']
+    translation = translation.strip()
     for word in forbidden:
         if word in translation:
             return False, f"Don't include {word} in the translation. Only translate the following sentence and give me the result."
@@ -138,7 +139,7 @@ def _translate(summary, transcript, target_language='简体中文'):
         
         retry_message = 'Only translate the quoted sentence and give me the final translation.'
         retry = 0
-        while retry < 50 and retry != -1:
+        while retry < 30 and retry != -1:
             messages = fixed_message + \
                 [{'role': 'user', 'content': '\n'.join(
                     [history, retry_message, f'Translate the following sentence into {target_language}: \n"{text}"'])}]
@@ -160,6 +161,8 @@ def _translate(summary, transcript, target_language='简体中文'):
             except Exception as e:
                 retry += 1
                 logger.warning('翻译失败')
+                if retry == 30:
+                    full_translation.append(translation)
                 time.sleep(1)
     return full_translation
 
