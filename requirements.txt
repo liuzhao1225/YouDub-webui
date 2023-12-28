@@ -8,3 +8,4 @@ git+https://github.com/m-bain/whisperx.git
 python-dotenv
 openai==0.28
 audiostretchy
+bilibili_toolman
