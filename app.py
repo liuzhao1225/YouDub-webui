@@ -142,8 +142,8 @@ upload_bilibili_interface = gr.Interface(
 
 app = gr.TabbedInterface(
     interface_list=[do_everything_interface,youtube_interface, demucs_interface,
-                    whisper_inference, translation_interface, tts_interafce, syntehsize_video_interface,],
-    tab_names=['全自动', '下载视频', '人声分离', '语音识别', '字幕翻译', '语音合成', '视频合成'],
+                    whisper_inference, translation_interface, tts_interafce, syntehsize_video_interface, upload_bilibili_interface],
+    tab_names=['全自动', '下载视频', '人声分离', '语音识别', '字幕翻译', '语音合成', '视频合成', '上传B站'],
     title='YouDub')
 if __name__ == '__main__':
     app.launch()
