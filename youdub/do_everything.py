@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from loguru import logger
@@ -21,9 +22,16 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                 logger.warning(f'Failed to download video {info["title"]}')
                 return True
             # if os.path.exists(folder, 'video.mp4') and os.path.exists(folder, 'video.txt') and os.path.exists(folder, 'video.png'):
-            if os.path.exists(os.path.join(folder, 'video.mp4')) and os.path.exists(os.path.join(folder, 'video.txt')) and os.path.exists(os.path.join(folder, 'video.png')):
-                logger.info(f'Video already processed in {folder}')
-                return
+            # if os.path.exists(os.path.join(folder, 'video.mp4')) and os.path.exists(os.path.join(folder, 'video.txt')) and os.path.exists(os.path.join(folder, 'video.png')):
+            #     if auto_upload_video and os.path.exists(os.path.join(folder, 'bilibili.json')):
+            #         with open(os.path.join(folder, 'bilibili.json'), 'r', encoding='utf-8') as f:
+            #             bilibili_info = json.load(f)
+            #         if bilibili_info['results'][0]['code'] == 0:
+            #             logger.info(f'Video already uploaded in {folder}')
+            #             return True
+            #     else:
+            #         logger.info(f'Video already processed in {folder}')
+            #         return True
             logger.info(f'Process video in {folder}')
             separate_all_audio_under_folder(
                 folder, model_name=demucs_model, device=device, progress=True, shifts=shifts)
@@ -47,16 +55,23 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
     return False
 
 
-def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, whisper_min_speakers=None, whisper_max_speakers=None, translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=2, max_retries=5, auto_upload_video=True):
-    url = url.replace(' ', '').replace('，', '\n').replace(',', '\n')
-    urls = url.split('\n')
-    video_info_list = get_info_list_from_url(urls, num_videos)
-    init_demucs()
-    init_TTS()
-    init_whisperx()
-
+def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_model='htdemucs_ft', device='auto', shifts=5, whisper_model='large', whisper_download_root='models/ASR/whisper', whisper_batch_size=32, whisper_diarization=True, whisper_min_speakers=None, whisper_max_speakers=None, translation_target_language='简体中文', force_bytedance=False, subtitles=True, speed_up=1.05, fps=30, target_resolution='1080p', max_workers=3, max_retries=5, auto_upload_video=True):
     success_list = []
     fail_list = []
+
+    url = url.replace(' ', '').replace('，', '\n').replace(',', '\n')
+    urls = url.split('\n')
+    
+    # 使用线程池执行任务
+    with ThreadPoolExecutor() as executor:
+        # Submitting the tasks
+        video_info_future = executor.submit(get_info_list_from_url, urls, num_videos)
+        executor.submit(init_demucs)
+        executor.submit(init_TTS)
+        executor.submit(init_whisperx)
+
+        # Waiting for the get_info_list_from_url task to complete and storing its result
+        video_info_list = video_info_future.result()
 
     def process_and_track(info):
         success = process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root, whisper_batch_size,
