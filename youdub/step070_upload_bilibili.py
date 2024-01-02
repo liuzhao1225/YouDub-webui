@@ -69,15 +69,19 @@ def upload_video(folder):
     submission.thread = 201  # 科普 201, 科技
     submission.copyright = submission.COPYRIGHT_ORIGINAL
     # Submit the submission
-    try:
-        response = session.SubmitSubmission(submission, seperate_parts=False)
-        logger.info(f"Submission successful: {response}")
-        with open(os.path.join(folder, 'bilibili.json'), 'w', encoding='utf-8') as f:
-            json.dump(response, f, ensure_ascii=False, indent=4)
-        return True
-    except Exception as e:
-        logger.error("Error submitting:", str(e))
-        return False
+    for retry in range(3):
+        try:
+            response = session.SubmitSubmission(submission, seperate_parts=False)
+            if response['results'][0]['code'] != 0:
+                raise Exception('Submission failed.')
+            logger.info(f"Submission successful: {response}")
+            with open(os.path.join(folder, 'bilibili.json'), 'w', encoding='utf-8') as f:
+                json.dump(response, f, ensure_ascii=False, indent=4)
+            return True
+        except Exception as e:
+            logger.error("Error submitting:", str(e))
+            time.sleep(10)
+    return False
 
 def upload_all_videos_under_folder(folder):
     for dir, _, files in os.walk(folder):

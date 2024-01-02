@@ -133,5 +133,5 @@ def synthesize_all_video_under_folder(folder, subtitles=True, speed_up=1.05, fps
                              speed_up=speed_up, fps=fps, resolution=resolution)
     return f'Synthesized all videos under {folder}'
 if __name__ == '__main__':
-    folder = r'videos\TED-Ed\20220915 How friendship affects your brain - Shannon Odell'
+    folder = r'videos\3Blue1Brown\20230314 But what is the Central Limit Theorem'
     synthesize_all_video_under_folder(folder, subtitles=True)

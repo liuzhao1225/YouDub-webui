@@ -17,14 +17,14 @@ do_everything_interface = gr.Interface(
         gr.Textbox(label='Root Folder', value='videos'),  # Changed 'default' to 'value'
         gr.Textbox(label='Video URL', placeholder='Video or Playlist or Channel URL',
                    value='https://www.bilibili.com/list/1263732318'),  # Changed 'default' to 'value'
-        gr.Slider(minimum=1, maximum=100, step=1, label='Number of videos to download', value=50),
+        gr.Slider(minimum=1, maximum=500, step=1, label='Number of videos to download', value=100),
         gr.Radio(['4320p', '2160p', '1440p', '1080p', '720p', '480p', '360p', '240p', '144p'], label='Resolution', value='1080p'),
         gr.Radio(['htdemucs', 'htdemucs_ft', 'htdemucs_6s', 'hdemucs_mmi', 'mdx', 'mdx_extra', 'mdx_q', 'mdx_extra_q', 'SIG'], label='Demucs Model', value='htdemucs_ft'),
         gr.Radio(['auto', 'cuda', 'cpu'], label='Demucs Device', value='auto'),
-        gr.Slider(minimum=0, maximum=10, step=1, label='Number of shifts', value=4),
+        gr.Slider(minimum=0, maximum=10, step=1, label='Number of shifts', value=2),
         gr.Radio(['large', 'medium', 'small', 'base', 'tiny'], label='Whisper Model', value='large'),
         gr.Textbox(label='Whisper Download Root', value='models/ASR/whisper'),
-        gr.Slider(minimum=1, maximum=128, step=1, label='Whisper Batch Size', value=16),
+        gr.Slider(minimum=1, maximum=128, step=1, label='Whisper Batch Size', value=32),
         gr.Checkbox(label='Whisper Diarization', value=True),
         gr.Radio([None, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                  label='Whisper Min Speakers', value=None),

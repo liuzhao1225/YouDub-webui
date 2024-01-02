@@ -21,7 +21,7 @@ def preprocess_text(text):
     return text
     
     
-def adjust_audio_length(wav_path, desired_length, sample_rate = 24000, min_speed_factor = 2/3, max_speed_factor = 1.1):
+def adjust_audio_length(wav_path, desired_length, sample_rate = 24000, min_speed_factor = 0.6, max_speed_factor = 1.1):
     wav, sample_rate = librosa.load(wav_path, sr=sample_rate)
     current_length = len(wav)/sample_rate
     speed_factor = max(
@@ -68,11 +68,13 @@ def generate_wavs(folder, force_bytedance=False):
             next_line = transcript[i+1]
             next_end = next_line['end']
             end = min(start + length, next_end)
-                
         wav, length = adjust_audio_length(output_path, end-start)
+
         full_wav = np.concatenate((full_wav, wav))
         line['end'] = start + length
     save_wav(full_wav, os.path.join(folder, 'audio_tts.wav'))
+    with open(transcript_path, 'w', encoding='utf-8') as f:
+        json.dump(transcript, f, indent=2, ensure_ascii=False)
     
     instruments_wav, sr = librosa.load(os.path.join(folder, 'audio_instruments.wav'), sr=24000)
     len_full_wav = len(full_wav)

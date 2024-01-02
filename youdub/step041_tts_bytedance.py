@@ -110,7 +110,7 @@ def tts(text, output_path, speaker_wav):
             request_json["audio"]["voice_type"] = voice_type
             request_json["request"]["text"] = text
             request_json["request"]["reqid"] = str(uuid.uuid4())
-            resp = requests.post(api_url, json.dumps(request_json), headers=header)
+            resp = requests.post(api_url, json.dumps(request_json), headers=header, timeout=60)
             # print(f"resp body: \n{resp.json()}")
             if "data" in resp.json():
                 data = resp.json()["data"]

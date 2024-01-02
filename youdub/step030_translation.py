@@ -70,7 +70,7 @@ def summarize(info, transcript, target_language='简体中文'):
         {'role': 'system',
             'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video", "tags": [list of tags in {target_language}]}}\n```.'},
         {'role': 'user',
-            'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Tags: {tags}.\nPlease translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video"， "tags": []}}\n```. Remember to tranlate both the title and the summary and tags into {target_language} in JSON.'},
+            'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Tags: {tags}.\nPlease translate the above title and summary and tags into {target_language} in JSON format. ```json\n{{"title": "", "summary", ""， "tags": []}}\n```. Remember to tranlate the title and the summary and tags into {target_language} in JSON.'},
     ]
     while True:
         try:
@@ -109,19 +109,21 @@ def translation_postprocess(result):
     return result
 
 def valid_translation(text, translation):
+    if len(text) <= 10:
+        if len(translation) > 15:
+            return False, f'Only translate the following sentence and give me the result.'
+    elif len(translation) > len(text)*0.75:
+        return False, f'The translation is too long. Only translate the following sentence and give me the result.'
+    
+    if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
+        translation = translation[1:-1]
+        return True, translation_postprocess(translation)
+    
     forbidden = ['翻译', '这句', '\n', '简体中文', '中文']
     translation = translation.strip()
     for word in forbidden:
         if word in translation:
             return False, f"Don't include {word} in the translation. Only translate the following sentence and give me the result."
-    if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
-        translation = translation[1:-1]
-        
-    if len(text) <= 10 and len(translation) > 10:
-        if len(translation) > 20:
-            return False, f'Only translate the following sentence and give me the result.'
-    elif len(translation) > len(text)*0.75:
-        return False, f'The translation is too long. Only translate the following sentence and give me the result.'
     
     return True, translation_postprocess(translation)
     

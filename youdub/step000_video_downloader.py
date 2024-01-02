@@ -4,9 +4,16 @@ from loguru import logger
 import yt_dlp
 
 
+import re
+
+
 def sanitize_title(title):
-    # Replace invalid file path characters with an underscore
-    return re.sub(r'[~!@#$%^&*()+=;\',./{}:"`<>?]', '', title)
+    # Only keep numbers, letters, Chinese characters, and spaces
+    title = re.sub(r'[^\w\u4e00-\u9fff \d_-]', '', title)
+    # Replace multiple spaces with a single space
+    title = re.sub(r'\s+', ' ', title)
+    return title
+
 
 def download_single_video(info, folder_path, resolution='1080p'):
     sanitized_title = sanitize_title(info['title'])
