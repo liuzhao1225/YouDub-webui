@@ -213,4 +213,4 @@ git clone https://github.com/liuzhao1225/YouDub-webui.git
 ## 支持与联系方式
 如需帮助或有任何疑问，请通过 [GitHub Issues](https://github.com/liuzhao1225/YouDub-webui/issues) 联系我们。你也可以加入我们的微信群，扫描下方的二维码即可：
 
-![WeChat Group](https://github.com/liuzhao1225/YouDub/blob/main/docs/wechat.jpg)
+![WeChat Group](https://github.com/liuzhao1225/YouDub/blob/main/docs/362ac8df0334eb69d6e529f08ef401d.jpg)
