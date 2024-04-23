@@ -22,7 +22,8 @@ CALL venv\Scripts\activate
 :: Upgrade pip and install requirements
 echo Upgrading pip and installing requirements...
 python -m pip install --upgrade pip
-pip install -r requirements.txt     
+pip install -r requirements.txt
+
 
 echo Setup complete.
 pause
