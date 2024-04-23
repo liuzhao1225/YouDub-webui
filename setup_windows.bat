@@ -22,9 +22,7 @@ CALL venv\Scripts\activate
 :: Upgrade pip and install requirements
 echo Upgrading pip and installing requirements...
 python -m pip install --upgrade pip
-pip install -r requirements.txt
-pip install TTS
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install -r requirements.txt     
 
 echo Setup complete.
 pause
