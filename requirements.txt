@@ -283,7 +283,7 @@ librosa==0.10.0.post2
     #   -r requirements.in
     #   torch-audiomentations
     #   tts
-lightning==2.2.2
+lightning==2.2.3
     # via pyannote-audio
 lightning-utilities==0.11.2
     # via
@@ -336,9 +336,7 @@ nltk==3.8.1
     #   tts
     #   whisperx
 num2words==0.5.13
-    # via
-    #   gruut
-    #   tts
+    # via gruut
 numba==0.56.4
     # via
     #   librosa
@@ -475,11 +473,11 @@ pycryptodome==3.20.0
     # via bilibili-toolman
 pycryptodomex==3.20.0
     # via yt-dlp
-pydantic==2.7.0
+pydantic==2.7.1
     # via
     #   fastapi
     #   gradio
-pydantic-core==2.18.1
+pydantic-core==2.18.2
     # via pydantic
 pydub==0.25.1
     # via gradio
@@ -506,7 +504,7 @@ python-dotenv==1.0.1
     # via -r requirements.in
 python-multipart==0.0.9
     # via gradio
-pytorch-lightning==2.2.2
+pytorch-lightning==2.2.3
     # via lightning
 pytorch-metric-learning==2.5.0
     # via pyannote-audio
@@ -672,7 +670,6 @@ toolz==0.12.1
     # via altair
 torch==2.0.1
     # via
-    #   -r requirements.in
     #   accelerate
     #   asteroid-filterbanks
     #   clean-fid
