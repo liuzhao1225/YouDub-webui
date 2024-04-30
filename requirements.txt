@@ -6,6 +6,6 @@ scipy
 librosa
 git+https://github.com/m-bain/whisperx.git
 python-dotenv
-openai==0.28
+openai
 audiostretchy
 bilibili_toolman

@@ -17,11 +17,11 @@ do_everything_interface = gr.Interface(
         gr.Textbox(label='Root Folder', value='videos'),  # Changed 'default' to 'value'
         gr.Textbox(label='Video URL', placeholder='Video or Playlist or Channel URL',
                    value='https://www.bilibili.com/list/1263732318'),  # Changed 'default' to 'value'
-        gr.Slider(minimum=1, maximum=500, step=1, label='Number of videos to download', value=100),
+        gr.Slider(minimum=1, maximum=500, step=1, label='Number of videos to download', value=20),
         gr.Radio(['4320p', '2160p', '1440p', '1080p', '720p', '480p', '360p', '240p', '144p'], label='Resolution', value='1080p'),
         gr.Radio(['htdemucs', 'htdemucs_ft', 'htdemucs_6s', 'hdemucs_mmi', 'mdx', 'mdx_extra', 'mdx_q', 'mdx_extra_q', 'SIG'], label='Demucs Model', value='htdemucs_ft'),
         gr.Radio(['auto', 'cuda', 'cpu'], label='Demucs Device', value='auto'),
-        gr.Slider(minimum=0, maximum=10, step=1, label='Number of shifts', value=2),
+        gr.Slider(minimum=0, maximum=10, step=1, label='Number of shifts', value=5),
         gr.Radio(['large', 'medium', 'small', 'base', 'tiny'], label='Whisper Model', value='large'),
         gr.Textbox(label='Whisper Download Root', value='models/ASR/whisper'),
         gr.Slider(minimum=1, maximum=128, step=1, label='Whisper Batch Size', value=32),
@@ -32,7 +32,7 @@ do_everything_interface = gr.Interface(
                  label='Whisper Max Speakers', value=None),
         gr.Dropdown(['简体中文', '繁体中文', 'English', 'Deutsch', 'Français', 'русский'],
                     label='Translation Target Language', value='简体中文'),
-        gr.Checkbox(label='Force Bytedance', value=False),
+        gr.Checkbox(label='Force Bytedance', value=True),
         gr.Checkbox(label='Subtitles', value=True),
         gr.Slider(minimum=0.5, maximum=2, step=0.05, label='Speed Up', value=1.05),
         gr.Slider(minimum=1, maximum=60, step=1, label='FPS', value=30),

@@ -15,6 +15,18 @@ def sanitize_title(title):
     return title
 
 
+def get_target_folder(info, folder_path):
+    sanitized_title = sanitize_title(info['title'])
+    sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
+    upload_date = info.get('upload_date', 'Unknown')
+    if upload_date == 'Unknown':
+        return None
+
+    output_folder = os.path.join(
+        folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}')
+
+    return output_folder
+
 def download_single_video(info, folder_path, resolution='1080p'):
     sanitized_title = sanitize_title(info['title'])
     sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
@@ -27,7 +39,9 @@ def download_single_video(info, folder_path, resolution='1080p'):
         logger.info(f'Video already downloaded in {output_folder}')
         return output_folder
     
+    resolution = resolution.replace('p', '')
     ydl_opts = {
+        # 'res': '1080',
         'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'writeinfojson': True,
         'writethumbnail': True,
@@ -56,18 +70,21 @@ def get_info_list_from_url(url, num_videos):
         'ignoreerrors': True
     }
 
-    video_info_list = []
+    # video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         for u in url:
             result = ydl.extract_info(u, download=False)
             if 'entries' in result:
                 # Playlist
-                video_info_list.extend(result['entries'])
+                # video_info_list.extend(result['entries'])
+                for video_info in result['entries']:
+                    yield video_info
             else:
                 # Single video
-                video_info_list.append(result)
+                # video_info_list.append(result)
+                yield result
     
-    return video_info_list
+    # return video_info_list
 
 def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
     resolution = resolution.replace('p', '')
@@ -99,6 +116,6 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
 
 if __name__ == '__main__':
     # Example usage
-    url = 'https://www.youtube.com/watch?v=anyN8lj51Ds'
+    url = 'https://www.youtube.com/watch?v=3LPJfIKxwWc'
     folder_path = 'videos'
     download_from_url(url, folder_path)

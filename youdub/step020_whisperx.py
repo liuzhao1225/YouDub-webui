@@ -23,7 +23,9 @@ def init_whisperx():
     load_align_model()
     load_diarize_model()
     
-def load_whisper_model(model_name: str = 'large', download_root = 'models/ASR/whisper', device='auto'):
+def load_whisper_model(model_name: str = 'large-v3', download_root = 'models/ASR/whisper', device='auto'):
+    if model_name == 'large':
+        model_name = 'large-v3'
     global whisper_model
     if whisper_model is not None:
         return

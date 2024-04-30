@@ -165,3 +165,6 @@ flagged/
 videos/
 voice_type/
 download_list.txt
+get_upload_link.txt
+launch.json
+remove_mp4.py

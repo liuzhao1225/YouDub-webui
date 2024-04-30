@@ -2,16 +2,24 @@
 import json
 import os
 import re
-import openai
+from openai import OpenAI
 from dotenv import load_dotenv
 import time
 from loguru import logger
 
 load_dotenv()
-openai.api_key = os.getenv('OPENAI_API_KEY')
-openai.api_base = os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1')
-model_name = os.getenv('MODEL_NAME', 'gpt-3.5-turbo')
 
+model_name = os.getenv('MODEL_NAME', 'gpt-3.5-turbo')
+print(f'using model {model_name}')
+if model_name == "01ai/Yi-34B-Chat-4bits":
+    extra_body = {
+        'repetition_penalty': 1.1,
+        'stop_token_ids': [7]
+    }
+else:
+    extra_body = {
+        'repetition_penalty': 1.1,
+    }
 def get_necessary_info(info: dict):
     return {
         'title': info['title'],
@@ -23,8 +31,19 @@ def get_necessary_info(info: dict):
     }
 
 
+def ensure_transcript_length(transcript, max_length=4000):
+    mid = len(transcript)//2
+    before, after = transcript[:mid], transcript[mid:]
+    length = max_length//2
+    return before[:length] + after[-length:]
 def summarize(info, transcript, target_language='简体中文'):
+    client = OpenAI(
+    # This is the default and can be omitted
+    base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
+    api_key=os.getenv('OPENAI_API_KEY')
+)
     transcript = ' '.join(line['text'] for line in transcript)
+    transcript = ensure_transcript_length(transcript, max_length=2000)
     info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
     # info_message = ''
     
@@ -36,18 +55,22 @@ def summarize(info, transcript, target_language='简体中文'):
         {'role': 'user', 'content': full_description},
     ]
     retry_message=''
-    while True:
+    success = False
+    for retry in range(5):
         try:
             messages = [
                 {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
                 {'role': 'user', 'content': full_description+retry_message},
             ]
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
-                timeout=240
+                timeout=240,
+                extra_body=extra_body
             )
             summary = response.choices[0].message.content.replace('\n', '')
+            if '视频标题' in summary:
+                raise Exception("包含“视频标题”")
             logger.info(summary)
             summary = re.findall(r'\{.*?\}', summary)[0]
             summary = json.loads(summary)
@@ -57,12 +80,15 @@ def summarize(info, transcript, target_language='简体中文'):
             }
             if 'title' in summary['title']:
                 raise Exception('Invalid summary')
+            success = True
             break
         except Exception as e:
             retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary": ""}\n```'
             logger.warning(f'总结失败\n{e}')
             time.sleep(1)
-            
+    if not success:
+        raise Exception(f'总结失败')
+        
     title = summary['title']
     summary = summary['summary']
     tags = info['tags']
@@ -74,10 +100,11 @@ def summarize(info, transcript, target_language='简体中文'):
     ]
     while True:
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
-                timeout=240
+                timeout=240,
+                extra_body=extra_body
             )
             summary = response.choices[0].message.content.replace('\n', '')
             logger.info(summary)
@@ -85,8 +112,11 @@ def summarize(info, transcript, target_language='简体中文'):
             summary = json.loads(summary)
             if target_language in summary['title'] or target_language in summary['summary']:
                 raise Exception('Invalid translation')
+            title = summary['title'].strip()
+            if (title.startswith('"') and title.endswith('"')) or (title.startswith('“') and title.endswith('”')) or (title.startswith('‘') and title.endswith('’')) or (title.startswith("'") and title.endswith("'")) or (title.startswith('《') and title.endswith('》')):
+                title = title[1:-1]
             result = {
-                'title': summary['title'],
+                'title': title,
                 'author': info['uploader'],
                 'summary': summary['summary'],
                 'tags': summary['tags'],
@@ -109,63 +139,174 @@ def translation_postprocess(result):
     return result
 
 def valid_translation(text, translation):
+    
+    if (translation.startswith('```') and translation.endswith('```')):
+        translation = translation[3:-3]
+        return True, translation_postprocess(translation)
+    
+    if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
+        translation = translation[1:-1]
+        return True, translation_postprocess(translation)
+    
+    if '翻译' in translation and '：“' in translation and '”' in translation:
+        translation = translation.split('：“')[-1].split('”')[0]
+        return True, translation_postprocess(translation)
+    
+    if '翻译' in translation and '："' in translation and '"' in translation:
+        translation = translation.split('："')[-1].split('"')[0]
+        return True, translation_postprocess(translation)
+
+    if '翻译' in translation and ':"' in translation and '"' in translation:
+        translation = translation.split('："')[-1].split('"')[0]
+        return True, translation_postprocess(translation)
+    
     if len(text) <= 10:
         if len(translation) > 15:
             return False, f'Only translate the following sentence and give me the result.'
     elif len(translation) > len(text)*0.75:
         return False, f'The translation is too long. Only translate the following sentence and give me the result.'
     
-    if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
-        translation = translation[1:-1]
-        return True, translation_postprocess(translation)
-    
-    forbidden = ['翻译', '这句', '\n', '简体中文', '中文']
+    forbidden = ['翻译', '这句', '\n', '简体中文', '中文', 'translate', 'Translate', 'translation', 'Translation']
     translation = translation.strip()
     for word in forbidden:
         if word in translation:
-            return False, f"Don't include {word} in the translation. Only translate the following sentence and give me the result."
+            
+            return False, f"Don't include `{word}` in the translation. Only translate the following sentence and give me the result."
     
     return True, translation_postprocess(translation)
+# def split_sentences(translation, punctuations=['。', '？', '！', '\n', '”', '"']):
+#     def is_punctuation(char):
+#         return char in punctuations
+    
+#     output_data = []
+#     for item in translation:
+#         start = item['start'] 
+#         text = item['text']
+#         speaker = item['speaker']
+#         translation = item['translation']
+#         sentence_start = 0
+#         duration_per_char = (item['end'] - item['start']) / len(translation)
+#         for i, char in enumerate(translation):
+#             # If the character is a punctuation, split the sentence
+#             if not is_punctuation(char) and i != len(translation) - 1:
+#                 continue
+#             if i - sentence_start < 5 and i != len(translation) - 1:
+#                 continue
+#             if i < len(translation) - 1 and is_punctuation(translation[i+1]):
+#                 continue
+#             sentence = translation[sentence_start:i+1]
+#             sentence_end = start + duration_per_char * len(sentence)
+
+#             # Append the new item
+#             output_data.append({
+#                 "start": round(start, 3),
+#                 "end": round(sentence_end, 3),
+#                 "text": text,
+#                 "speaker": speaker,
+#                 "translation": sentence
+#             })
+
+#             # Update the start for the next sentence
+#             start = sentence_end
+#             sentence_start = i + 1
+#     return output_data
+
+
+def split_text_into_sentences(para):
+    para = re.sub('([。！？\?])([^，。！？\?”’》])', r"\1\n\2", para)  # 单字符断句符
+    para = re.sub('(\.{6})([^，。！？\?”’》])', r"\1\n\2", para)  # 英文省略号
+    para = re.sub('(\…{2})([^，。！？\?”’》])', r"\1\n\2", para)  # 中文省略号
+    para = re.sub('([。！？\?][”’])([^，。！？\?”’》])', r'\1\n\2', para)
+    # 如果双引号前有终止符，那么双引号才是句子的终点，把分句符\n放到双引号后，注意前面的几句都小心保留了双引号
+    para = para.rstrip()  # 段尾如果有多余的\n就去掉它
+    # 很多规则中会考虑分号;，但是这里我把它忽略不计，破折号、英文双引号等同样忽略，需要的再做些简单调整即可。
+    return para.split("\n")
+
+def split_sentences(translation):
+    output_data = []
+    for item in translation:
+        start = item['start']
+        text = item['text']
+        speaker = item['speaker']
+        translation_text = item['translation']
+        sentences = split_text_into_sentences(translation_text)
+        duration_per_char = (item['end'] - item['start']
+                             ) / len(translation_text)
+        sentence_start = 0
+        for sentence in sentences:
+            sentence_end = start + duration_per_char * len(sentence)
+
+            # Append the new item
+            output_data.append({
+                "start": round(start, 3),
+                "end": round(sentence_end, 3),
+                "text": text,
+                "speaker": speaker,
+                "translation": sentence
+            })
+
+            # Update the start for the next sentence
+            start = sentence_end
+            sentence_start += len(sentence)
+    return output_data
     
 def _translate(summary, transcript, target_language='简体中文'):
+    client = OpenAI(
+        # This is the default and can be omitted
+        base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
+        api_key=os.getenv('OPENAI_API_KEY')
+    )
     info = f'This is a video called "{summary["title"]}". {summary["summary"]}.'
     full_translation = []
     fixed_message = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.'},
-        {'role': 'user', 'content': 'What language do you need to translate the title into?'},
-        {'role': 'assistant', 'content': target_language}]
+        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.下面我让你来充当翻译家，你的目标是把任何语言翻译成中文，请翻译时不要带翻译腔，而是要翻译得自然、流畅和地道，使用优美和高雅的表达方式。请将人工智能的“agent”翻译为“智能体”，强化学习中是`Q-Learning`而不是`Queue Learning`。数学公式写成plain text，不要使用latex。确保翻译正确和简洁。注意信达雅。'},
+        {'role': 'user', 'content': '使用地道的中文Translate:"Knowledge is power."'},
+        {'role': 'assistant', 'content': '翻译：“知识就是力量。”'},
+        {'role': 'user', 'content': '使用地道的中文Translate:"To be or not to be, that is the question."'},
+        {'role': 'assistant', 'content': '翻译：“生存还是毁灭，这是一个值得考虑的问题。”'},]
     
+    history = []
     for line in transcript:
         text = line['text']
-        history = ''.join(full_translation[:-30])
+        # history = ''.join(full_translation[:-10])
         
         retry_message = 'Only translate the quoted sentence and give me the final translation.'
-        retry = 0
-        while retry < 30 and retry != -1:
+        for retry in range(30):
             messages = fixed_message + \
-                [{'role': 'user', 'content': '\n'.join(
-                    [history, retry_message, f'Translate the following sentence into {target_language}: \n"{text}"'])}]
+                history[-30:] + [{'role': 'user',
+                                  'content': f'使用地道的中文Translate:"{text}"'}]
+            
             try:
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model=model_name,
                     messages=messages,
-                    timeout=240
+                    timeout=240,
+                    extra_body=extra_body
                 )
                 translation = response.choices[0].message.content.replace('\n', '')
                 logger.info(f'原文：{text}')
                 logger.info(f'译文：{translation}')
                 success, translation = valid_translation(text, translation)
                 if not success:
-                    retry_message += 'Only translate the following sentence and give me the final translation.'
+                    retry_message += translation
                     raise Exception('Invalid translation')
-                full_translation.append(translation)
-                retry = -1
+                break
             except Exception as e:
-                retry += 1
-                logger.warning('翻译失败')
-                if retry == 30:
-                    full_translation.append(translation)
+                logger.error(e)
+                if e == 'Internal Server Error':
+                    client = OpenAI(
+                        # This is the default and can be omitted
+                        base_url=os.getenv(
+                            'OPENAI_API_BASE', 'https://api.openai.com/v1'),
+                        api_key=os.getenv('OPENAI_API_KEY')
+                    )
+                # logger.warning('翻译失败')
                 time.sleep(1)
+        full_translation.append(translation)
+        history.append({'role': 'user', 'content': f'Translate:"{text}"'})
+        history.append({'role': 'assistant', 'content': f'翻译：“{translation}”'})
+        time.sleep(0.1)
+
     return full_translation
 
 def translate(folder, target_language='简体中文'):
@@ -186,17 +327,21 @@ def translate(folder, target_language='简体中文'):
         transcript = json.load(f)
     
     summary_path = os.path.join(folder, 'summary.json')
-    summary = summarize(info, transcript, target_language)
-    if summary is None:
-        logger.error(f'Failed to summarize {folder}')
-        return False
-    with open(summary_path, 'w', encoding='utf-8') as f:
-        json.dump(summary, f, indent=2, ensure_ascii=False)
+    if os.path.exists(summary_path):
+        summary = json.load(open(summary_path, 'r', encoding='utf-8'))
+    else:
+        summary = summarize(info, transcript, target_language)
+        if summary is None:
+            logger.error(f'Failed to summarize {folder}')
+            return False
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
 
     translation_path = os.path.join(folder, 'translation.json')
     translation = _translate(summary, transcript, target_language)
     for i, line in enumerate(transcript):
         line['translation'] = translation[i]
+    transcript = split_sentences(transcript)
     with open(translation_path, 'w', encoding='utf-8') as f:
         json.dump(transcript, f, indent=2, ensure_ascii=False)
     return True
@@ -209,5 +354,4 @@ def translate_all_transcript_under_folder(folder, target_language):
 
 if __name__ == '__main__':
     translate_all_transcript_under_folder(
-        r'videos\test\20230119 When are you actually an adult - Shannon Odell', '简体中文')
-    
+        r'videos\TED-Ed\20240227 Can you solve the magical maze riddle - Alex Rosenthal', '简体中文')
