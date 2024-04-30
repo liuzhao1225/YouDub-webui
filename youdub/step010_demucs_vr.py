@@ -3,7 +3,7 @@ from demucs.api import Separator
 import os
 from loguru import logger
 import time
-from .utils import save_wav
+from .utils import save_wav, normalize_wav
 import torch
 auto_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 separator = None
@@ -24,7 +24,14 @@ def load_model(model_name: str = "htdemucs_ft", device: str = 'auto', progress: 
     t_end = time.time()
     logger.info(f'Demucs model loaded in {t_end - t_start:.2f} seconds')
 
-
+def reload_model(model_name: str = "htdemucs_ft", device: str = 'auto', progress: bool = True, shifts: int=5) -> Separator:
+    global separator
+    logger.info(f'Reloading Demucs model: {model_name}')
+    t_start = time.time()
+    separator = Separator(model_name, device=auto_device if device=='auto' else device, progress=progress, shifts=shifts)
+    t_end = time.time()
+    logger.info(f'Demucs model reloaded in {t_end - t_start:.2f} seconds')
+    
 def separate_audio(folder: str, model_name: str = "htdemucs_ft", device: str = 'auto', progress: bool = True, shifts: int = 5) -> None:
     global separator
     audio_path = os.path.join(folder, 'audio.wav')
@@ -40,7 +47,14 @@ def separate_audio(folder: str, model_name: str = "htdemucs_ft", device: str = '
     logger.info(f'Separating audio from {folder}')
     load_model(model_name, device, progress, shifts)
     t_start = time.time()
-    origin, separated = separator.separate_audio_file(audio_path)
+    try:
+        origin, separated = separator.separate_audio_file(audio_path)
+    except:
+        # reload_model(model_name, device, progress, shifts)
+                # origin, separated = separator.separate_audio_file(audio_path)
+        time.sleep(5)
+        logger.error(f'Error separating audio from {folder}')
+        raise Exception(f'Error separating audio from {folder}')
     t_end = time.time()
     logger.info(f'Audio separated in {t_end - t_start:.2f} seconds')
     
@@ -73,8 +87,12 @@ def extract_audio_from_video(folder: str) -> bool:
         logger.info(f'Audio already extracted in {folder}')
         return True
     logger.info(f'Extracting audio from {folder}')
+
     os.system(
         f'ffmpeg -loglevel error -i "{video_path}" -vn -acodec pcm_s16le -ar 44100 -ac 2 "{audio_path}"')
+    # load wav and use save_wav_norm to normalize the wav
+    # normalize_wav(audio_path)
+    
     time.sleep(1)
     logger.info(f'Audio extracted from {folder}')
     return True

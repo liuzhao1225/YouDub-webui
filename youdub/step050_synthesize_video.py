@@ -73,11 +73,29 @@ def generate_srt(translation, srt_path, speed_up=1, max_line_char=30):
             f.write(f'{i+1}\n')
             f.write(f'{start} --> {end}\n')
             f.write(f'{text}\n\n')
-            
-def convert_resolution(resolution='1080p'):
-    height = int(resolution[:-1])
-    width = int(height * 16 / 9)
-    return f'{width}x{height}'
+
+
+def get_aspect_ratio(video_path):
+    command = ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
+               '-show_entries', 'stream=width,height', '-of', 'json', video_path]
+    result = subprocess.run(command, capture_output=True, text=True)
+    dimensions = json.loads(result.stdout)['streams'][0]
+    return dimensions['width'] / dimensions['height']
+
+
+def convert_resolution(aspect_ratio, resolution='1080p'):
+    if aspect_ratio < 1:
+        width = int(resolution[:-1])
+        height = int(width / aspect_ratio)
+    else:
+        height = int(resolution[:-1])
+        width = int(height * aspect_ratio)
+    # make sure width and height are divisibal by 2
+    width = width - width % 2
+    height = height - height % 2
+    
+    # return f'{width}x{height}'
+    return width, height
     
 def synthesize_video(folder, subtitles=True, speed_up=1.05, fps=30, resolution='1080p'):
     if os.path.exists(os.path.join(folder, 'video.mp4')):
@@ -98,11 +116,14 @@ def synthesize_video(folder, subtitles=True, speed_up=1.05, fps=30, resolution='
     output_video = os.path.join(folder, 'video.mp4')
     generate_srt(translation, srt_path, speed_up)
     srt_path = srt_path.replace('\\', '/')
-    resolution = convert_resolution(resolution)
-
+    aspect_ratio = get_aspect_ratio(input_video)
+    width, height = convert_resolution(aspect_ratio, resolution)
+    resolution = f'{width}x{height}'
+    font_size = int(width/128)
+    outline = int(round(font_size/8))
     video_speed_filter = f"setpts=PTS/{speed_up}"
     audio_speed_filter = f"atempo={speed_up}"
-    subtitle_filter = f"subtitles={srt_path}:force_style='FontName=Arial,FontSize=20,PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline=2,WrapStyle=2'"
+    subtitle_filter = f"subtitles={srt_path}:force_style='FontName=Arial,FontSize={font_size},PrimaryColour=&HFFFFFF,OutlineColour=&H000000,Outline={outline},WrapStyle=2'"
     
     if subtitles:
         filter_complex = f"[0:v]{video_speed_filter},{subtitle_filter}[v];[1:a]{audio_speed_filter}[a]"
@@ -133,5 +154,5 @@ def synthesize_all_video_under_folder(folder, subtitles=True, speed_up=1.05, fps
                              speed_up=speed_up, fps=fps, resolution=resolution)
     return f'Synthesized all videos under {folder}'
 if __name__ == '__main__':
-    folder = r'videos\3Blue1Brown\20230314 But what is the Central Limit Theorem'
+    folder = r'videos\3Blue1Brown\20231207 Im still astounded this is true'
     synthesize_all_video_under_folder(folder, subtitles=True)

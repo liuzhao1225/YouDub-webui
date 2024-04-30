@@ -6,7 +6,7 @@ import librosa
 from loguru import logger
 import numpy as np
 
-from .utils import save_wav
+from .utils import save_wav, save_wav_norm
 from .step041_tts_bytedance import tts as bytedance_tts
 from .step042_tts_xtts import tts as xtts_tts
 from .cn_tx import TextNorm
@@ -52,7 +52,9 @@ def generate_wavs(folder, force_bytedance=False):
         text = preprocess_text(line['translation'])
         output_path = os.path.join(output_folder, f'{str(i).zfill(4)}.wav')
         speaker_wav = os.path.join(folder, 'SPEAKER', f'{speaker}.wav')
-        if num_speakers == 1 or force_bytedance:
+        if num_speakers == 1:
+            bytedance_tts(text, output_path, speaker_wav, voice_type='BV701_streaming')
+        elif force_bytedance:
             bytedance_tts(text, output_path, speaker_wav)
         else:
             xtts_tts(text, output_path, speaker_wav)
@@ -72,6 +74,9 @@ def generate_wavs(folder, force_bytedance=False):
 
         full_wav = np.concatenate((full_wav, wav))
         line['end'] = start + length
+        
+    vocal_wav, sr = librosa.load(os.path.join(folder, 'audio_vocals.wav'), sr=24000)
+    full_wav = full_wav / np.max(np.abs(full_wav)) * np.max(np.abs(vocal_wav))
     save_wav(full_wav, os.path.join(folder, 'audio_tts.wav'))
     with open(transcript_path, 'w', encoding='utf-8') as f:
         json.dump(transcript, f, indent=2, ensure_ascii=False)
@@ -89,8 +94,8 @@ def generate_wavs(folder, force_bytedance=False):
         full_wav = np.pad(
             full_wav, (0, len_instruments_wav - len_full_wav), mode='constant')
     combined_wav = full_wav + instruments_wav
-    combined_wav /= np.max(np.abs(combined_wav))
-    save_wav(combined_wav, os.path.join(folder, 'audio_combined.wav'))
+    # combined_wav /= np.max(np.abs(combined_wav))
+    save_wav_norm(combined_wav, os.path.join(folder, 'audio_combined.wav'))
     logger.info(f'Generated {os.path.join(folder, "audio_combined.wav")}')
         
 
