@@ -215,4 +215,4 @@ git clone https://github.com/liuzhao1225/YouDub-webui.git
 加入我们的Discord服务器进行讨论和获取支持：[Discord服务器](https://discord.gg/vbkYnN2Rrm)
 你也可以加入我们的微信群，扫描下方的二维码即可：
 
-![WeChat Group](https://github.com/liuzhao1225/YouDub/blob/main/docs/20240506.jpg)
+![WeChat Group](https://github.com/liuzhao1225/YouDub/blob/main/docs/d50300d5db9d8cc71861174fc5d33b1.jpg)
