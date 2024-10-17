@@ -3,7 +3,7 @@ from youdub.step000_video_downloader import download_from_url
 from youdub.step010_demucs_vr import separate_all_audio_under_folder
 from youdub.step020_whisperx import transcribe_all_audio_under_folder
 from youdub.step030_translation import translate_all_transcript_under_folder
-from youdub.step040_tts import generate_all_wavs_under_folder
+# from youdub.step040_tts import generate_all_wavs_under_folder
 from youdub.step050_synthesize_video import synthesize_all_video_under_folder
 from youdub.step060_genrate_info import generate_all_info_under_folder
 from youdub.step070_upload_bilibili import upload_all_videos_under_folder
@@ -11,6 +11,7 @@ from youdub.do_everything import do_everything
 import os
 
 
+# 创建一个Gradio界面，用于执行所有功能
 do_everything_interface = gr.Interface(
     fn=do_everything,
     inputs=[
@@ -44,7 +45,8 @@ do_everything_interface = gr.Interface(
     outputs='text',
     allow_flagging='never',
 )
-    
+
+# 创建一个Gradio界面，用于从URL下载视频
 youtube_interface = gr.Interface(
     fn=download_from_url,
     inputs=[
@@ -58,6 +60,7 @@ youtube_interface = gr.Interface(
     allow_flagging='never',
 )
 
+# 创建一个Gradio界面，用于在文件夹中分离音频
 demucs_interface = gr.Interface(
     fn=separate_all_audio_under_folder,
     inputs = [
@@ -71,6 +74,7 @@ demucs_interface = gr.Interface(
     allow_flagging='never',
 )
 
+# 创建一个Gradio界面，用于进行音频转录
 # transcribe_all_audio_under_folder(folder, model_name: str = 'large', download_root='models/ASR/whisper', device='auto', batch_size=32)
 whisper_inference = gr.Interface(
     fn = transcribe_all_audio_under_folder,
@@ -90,6 +94,7 @@ whisper_inference = gr.Interface(
     allow_flagging='never',
 )
 
+# 创建一个Gradio界面，用于翻译转录文本
 translation_interface = gr.Interface(
     fn=translate_all_transcript_under_folder,
     inputs = [
@@ -100,8 +105,9 @@ translation_interface = gr.Interface(
     outputs='text',
 )
 
+# 创建一个Gradio界面，用于生成语音
 tts_interafce = gr.Interface(
-    fn=generate_all_wavs_under_folder,
+    fn=synthesize_all_video_under_folder,
     inputs = [
         gr.Textbox(label='Folder', value='videos'),  # Changed 'default' to 'value'
         gr.Checkbox(label='Force Bytedance', value=False),
@@ -109,6 +115,8 @@ tts_interafce = gr.Interface(
     outputs='text',
     allow_flagging='never',
 )
+
+# 创建一个Gradio界面，用于合成视频
 syntehsize_video_interface = gr.Interface(
     fn=synthesize_all_video_under_folder,
     inputs = [
@@ -122,6 +130,7 @@ syntehsize_video_interface = gr.Interface(
     allow_flagging='never',
 )
 
+# 创建一个Gradio界面，用于生成信息
 genearte_info_interface = gr.Interface(
     fn = generate_all_info_under_folder,
     inputs = [
@@ -131,6 +140,7 @@ genearte_info_interface = gr.Interface(
     allow_flagging='never',
 )
 
+# 创建一个Gradio界面，用于上传视频到B站
 upload_bilibili_interface = gr.Interface(
     fn = upload_all_videos_under_folder,
     inputs = [
@@ -140,6 +150,7 @@ upload_bilibili_interface = gr.Interface(
     allow_flagging='never',
 )
 
+# 创建一个带标签的Gradio界面，整合所有功能
 app = gr.TabbedInterface(
     interface_list=[do_everything_interface,youtube_interface, demucs_interface,
                     whisper_inference, translation_interface, tts_interafce, syntehsize_video_interface, upload_bilibili_interface],

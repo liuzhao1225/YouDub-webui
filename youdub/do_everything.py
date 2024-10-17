@@ -38,7 +38,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                 if bilibili_info['results'][0]['code'] == 0:
                     logger.info(f'Video already uploaded in {folder}')
                     return True
-                
+            # 下载视频
             folder = download_single_video(info, root_folder, resolution)
             if folder is None:
                 logger.warning(f'Failed to download video {info["title"]}')
@@ -52,18 +52,23 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
             #         logger.info(f'Video already uploaded in {folder}')
             #         return True
             logger.info(f'Process video in {folder}')
+            # 音频分离
             separate_all_audio_under_folder(
                 folder, model_name=demucs_model, device=device, progress=True, shifts=shifts)
+            # WhisperX识别语音
             transcribe_all_audio_under_folder(
                 folder, model_name=whisper_model, download_root=whisper_download_root, device=device, batch_size=whisper_batch_size, diarization=whisper_diarization, 
                 min_speakers=whisper_min_speakers,
                 max_speakers=whisper_max_speakers)
-            
+            # 翻译语音
             translate_all_transcript_under_folder(
                 folder, target_language=translation_target_language
             )
+            # TODO 生成音频
             generate_all_wavs_under_folder(folder, force_bytedance=force_bytedance)
+            # 合成视频
             synthesize_all_video_under_folder(folder, subtitles=subtitles, speed_up=speed_up, fps=fps, resolution=target_resolution)
+            # 生成信息文件
             generate_all_info_under_folder(folder)
             if auto_upload_video:
                 time.sleep(1)
