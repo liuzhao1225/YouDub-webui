@@ -45,7 +45,7 @@ def download_single_video(info, folder_path, resolution='1080p'):
         'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'writeinfojson': True,
         'writethumbnail': True,
-        'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}', 'download'),
+        'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}',  'download.%(ext)s'),
         'ignoreerrors': True
     }
 
@@ -116,6 +116,6 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
 
 if __name__ == '__main__':
     # Example usage
-    url = 'https://www.youtube.com/watch?v=3LPJfIKxwWc'
+    url = 'https://www.tiktok.com/@albainlove/video/7414251053576703265?is_from_webapp=1&sender_device=pc'
     folder_path = 'videos'
     download_from_url(url, folder_path)

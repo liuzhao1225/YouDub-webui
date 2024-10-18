@@ -354,4 +354,4 @@ def translate_all_transcript_under_folder(folder, target_language):
 
 if __name__ == '__main__':
     translate_all_transcript_under_folder(
-        r'videos\TED-Ed\20240227 Can you solve the magical maze riddle - Alex Rosenthal', '简体中文')
+        r'videos/albainlove/20240913 Meme MemeCut fyp#', '简体中文')
