@@ -39,14 +39,14 @@ def transport_video():
     transport_jobs = db.fetchall('SELECT id, dwn_url FROM transport_job WHERE state = 0')
     for transport_job in transport_jobs:
         try:
-            do_everything(root_folder, transport_job.dwn_url, num_videos, resolution, demucs_model,
+            do_everything(transport_job,root_folder, transport_job['dwn_url'], num_videos, resolution, demucs_model,
                           device, shifts, whisper_model, whisper_download_root,
                           whisper_batch_size, whisper_diarization, whisper_min_speakers,
                           whisper_max_speakers, translation_target_language, force_bytedance,
                           subtitles, speed_up, fps, target_resolution, max_workers,
                           max_retries, auto_upload_video)
         except Exception as e:
-            loguru.logger.error(f"处理视频时出错: {transport_job.dwn_url} - 错误信息: {str(e)}")
+            loguru.logger.error(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
 
 
 if __name__ == '__main__':
