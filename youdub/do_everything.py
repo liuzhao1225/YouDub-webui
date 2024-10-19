@@ -6,8 +6,8 @@ from .step000_video_downloader import get_info_list_from_url, download_single_vi
 from .step010_demucs_vr import separate_all_audio_under_folder, init_demucs
 from .step020_whisperx import transcribe_all_audio_under_folder, init_whisperx
 from .step030_translation import translate_all_transcript_under_folder
-from .step040_tts import generate_all_wavs_under_folder
-from .step042_tts_xtts import init_TTS
+# from .step040_tts import generate_all_wavs_under_folder
+# from .step042_tts_xtts import init_TTS
 from .step050_synthesize_video import synthesize_all_video_under_folder
 from .step060_genrate_info import generate_all_info_under_folder
 from .step070_upload_bilibili import upload_all_videos_under_folder
@@ -91,7 +91,7 @@ def do_everything(root_folder, url, num_videos=5, resolution='1080p', demucs_mod
         # Submitting the tasks
         # video_info_future = executor.submit(get_info_list_from_url, urls, num_videos)
         executor.submit(init_demucs)
-        executor.submit(init_TTS)
+        # executor.submit(init_TTS)
         executor.submit(init_whisperx)
 
         # Waiting for the get_info_list_from_url task to complete and storing its result

@@ -27,7 +27,7 @@ def init_whisperx():
     
 def load_whisper_model(model_name: str = 'large-v3', download_root = 'models/ASR/whisper', device='auto'):
     if model_name == 'large':
-        model_name = 'large-v3'
+        model_name = 'medium'
     global whisper_model
     if whisper_model is not None:
         return

@@ -1,10 +1,14 @@
 import os
 import re
+from datetime import datetime, timedelta
+
 from loguru import logger
 import yt_dlp
 
 
 import re
+
+from yt_dlp import DateRange
 
 
 def sanitize_title(title):
@@ -40,12 +44,23 @@ def download_single_video(info, folder_path, resolution='1080p'):
         return output_folder
     
     resolution = resolution.replace('p', '')
+    # 计算前一天和当天的日期
+    today = datetime.now()
+    yesterday = today - timedelta(days=2)
+
+    today_str = today.strftime('%Y%m%d')
+    yesterday_str = yesterday.strftime('%Y%m%d')
+
+    # 创建日期范围对象
+    date_range = DateRange(yesterday_str, yesterday_str)
+
     ydl_opts = {
         # 'res': '1080',
-        'format': f'bestvideo[ext=mp4][height<={resolution}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': f'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'writeinfojson': True,
         'writethumbnail': True,
         'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}',  'download.%(ext)s'),
+        'daterange': date_range,
         'ignoreerrors': True
     }
 
@@ -116,6 +131,6 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
 
 if __name__ == '__main__':
     # Example usage
-    url = 'https://www.tiktok.com/@albainlove/video/7414251053576703265?is_from_webapp=1&sender_device=pc'
+    url = 'https://www.youtube.com/@1MILLIONDanceStudioofficial/shorts'
     folder_path = 'videos'
     download_from_url(url, folder_path)

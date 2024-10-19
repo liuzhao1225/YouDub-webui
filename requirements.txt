@@ -9,3 +9,6 @@ python-dotenv
 openai
 audiostretchy
 bilibili_toolman
+apscheduler
+pymysql
+dbutils
