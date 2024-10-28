@@ -12,3 +12,12 @@ bilibili_toolman
 apscheduler
 pymysql
 dbutils
+requests
+playwright
+eventlet
+schedule
+cf_clearance
+biliup
+xhs
+qrcode
+loguru

@@ -31,7 +31,7 @@ def get_target_folder(info, folder_path):
 
     return output_folder
 
-def download_single_video(info, folder_path, resolution='1080p'):
+def download_single_video(info, folder_path, resolution='480p', cookies=None):
     sanitized_title = sanitize_title(info['title'])
     sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
     upload_date = info.get('upload_date', 'Unknown')
@@ -60,20 +60,24 @@ def download_single_video(info, folder_path, resolution='1080p'):
         'writeinfojson': True,
         'writethumbnail': True,
         'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}',  'download.%(ext)s'),
-        'daterange': date_range,
+        # 'daterange': date_range,
         'ignoreerrors': True
     }
+    
+    # 添加cookies支持
+    if cookies:
+        ydl_opts['cookiefile'] = cookies
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([info['webpage_url']])
     logger.info(f'Video downloaded in {output_folder}')
     return output_folder
 
-def download_videos(info_list, folder_path, resolution='1080p'):
+def download_videos(info_list, folder_path, resolution='1080p', cookies=None):
     for info in info_list:
-        download_single_video(info, folder_path, resolution)
+        download_single_video(info, folder_path, resolution, cookies)
 
-def get_info_list_from_url(url, num_videos):
+def get_info_list_from_url(url, num_videos, cookies=None):
     if isinstance(url, str):
         url = [url]
 
@@ -84,6 +88,10 @@ def get_info_list_from_url(url, num_videos):
         'playlistend': num_videos,
         'ignoreerrors': True
     }
+    
+    # 添加cookies支持
+    if cookies:
+        ydl_opts['cookiefile'] = cookies
 
     # video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -101,7 +109,7 @@ def get_info_list_from_url(url, num_videos):
     
     # return video_info_list
 
-def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
+def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookies=None):
     resolution = resolution.replace('p', '')
     if isinstance(url, str):
         url = [url]
@@ -113,6 +121,10 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
         'playlistend': num_videos,
         'ignoreerrors': True
     }
+    
+    # 添加cookies支持
+    if cookies:
+        ydl_opts['cookiefile'] = cookies
 
     video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -126,11 +138,12 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
                 video_info_list.append(result)
 
     # Now download videos with sanitized titles
-    download_videos(video_info_list, folder_path, resolution)
+    download_videos(video_info_list, folder_path, resolution, cookies)
 
 
 if __name__ == '__main__':
     # Example usage
-    url = 'https://www.youtube.com/@1MILLIONDanceStudioofficial/shorts'
+    url = 'https://www.youtube.com/watch?v=MU0nObp-Yy0'
     folder_path = 'videos'
-    download_from_url(url, folder_path)
+    download_from_url(url, folder_path,cookies='cookies/cookies.txt')
+
