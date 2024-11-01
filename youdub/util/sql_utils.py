@@ -64,6 +64,7 @@ class MySQLConnectionPool:
     def execute(self, sql, args=None):
         with self.pool as cursor:
             cursor.execute(sql, args)
+            return cursor.lastrowid
 
     def executemany(self, sql, args):
         with self.pool as cursor:

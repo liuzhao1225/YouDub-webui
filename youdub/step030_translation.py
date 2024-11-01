@@ -48,7 +48,7 @@ def summarize(info, transcript, target_language='简体中文'):
     # info_message = ''
     
     full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary": ""}}\n```'
-    
+
     messages = [
         {'role': 'system',
             'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
@@ -124,10 +124,96 @@ def summarize(info, transcript, target_language='简体中文'):
             }
             return result
         except Exception as e:
-            logger.warning(f'总结翻译失败\n{e}')
+            logger.error(f'总结翻译失败\n{e}')
             time.sleep(1)
 
 
+
+def title_rize(info, target_language='简体中文'):
+    client = OpenAI(
+        # This is the default and can be omitted
+        base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
+        api_key=os.getenv('OPENAI_API_KEY')
+    )
+    # info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". '
+    # info_message = ''
+
+    # full_description = f'The following is the full content of the video:\n{info_message}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": ""}}\n```'
+
+    # messages = [
+    #     {'role': 'system',
+    #      'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video"}}\n```'},
+    #     {'role': 'user', 'content': full_description},
+    # ]
+    # retry_message=''
+    # success = False
+    # for retry in range(5):
+    #     try:
+    #         messages = [
+    #             {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video"}}\n```'},
+    #             {'role': 'user', 'content': full_description+retry_message},
+    #         ]
+    #         response = client.chat.completions.create(
+    #             model=model_name,
+    #             messages=messages,
+    #             timeout=240,
+    #             extra_body=extra_body
+    #         )
+    #         summary = response.choices[0].message.content.replace('\n', '')
+    #         if '视频标题' in summary:
+    #             raise Exception("包含“视频标题”")
+    #         logger.info(summary)
+    #         summary = re.findall(r'\{.*?\}', summary)[0]
+    #         summary = json.loads(summary)
+    #         summary = {
+    #             'title': summary['title'].replace('title:', '').strip(),
+    #         }
+    #         if 'title' in summary['title']:
+    #             raise Exception('Invalid summary')
+    #         success = True
+    #         break
+    #     except Exception as e:
+    #         retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary": ""}\n```'
+    #         logger.warning(f'总结失败\n{e}')
+    #         time.sleep(1)
+    # if not success:
+    #     raise Exception(f'总结失败')
+
+    title = info["title"]
+    tags = info['tags']
+    messages = [
+        {'role': 'system',
+         'content': f'You are a native speaker of {target_language}. Please translate the title  into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video" "tags": [list of tags in {target_language}]}}\n```.'},
+        {'role': 'user',
+         'content': f'The title of the video is "{title}". Tags: {tags}.\nPlease translate the above title and tags into {target_language} in JSON format. ```json\n{{"title": "", ""， "tags": []}}\n```. Remember to tranlate the title  and tags into {target_language} in JSON.'},
+    ]
+    while True:
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                timeout=240,
+                extra_body=extra_body
+            )
+            summary = response.choices[0].message.content.replace('\n', '')
+            logger.info(summary)
+            summary = re.findall(r'\{.*?\}', summary)[0]
+            summary = json.loads(summary)
+            if target_language in summary['title'] :
+                raise Exception('Invalid translation')
+            title = summary['title'].strip()
+            if (title.startswith('"') and title.endswith('"')) or (title.startswith('“') and title.endswith('”')) or (title.startswith('‘') and title.endswith('’')) or (title.startswith("'") and title.endswith("'")) or (title.startswith('《') and title.endswith('》')):
+                title = title[1:-1]
+            result = {
+                'title': title,
+                'author': info['uploader'],
+                'tags': summary['tags'],
+                'language': target_language
+            }
+            return result
+        except Exception as e:
+            logger.warning(f'总结翻译失败\n{e}')
+            time.sleep(1)
 def translation_postprocess(result):
     result = re.sub(r'\（[^)]*\）', '', result)
     result = result.replace('...', '，')
@@ -346,12 +432,39 @@ def translate(folder, target_language='简体中文'):
         json.dump(transcript, f, indent=2, ensure_ascii=False)
     return True
 
+def translate_title(folder, target_language='简体中文'):
+    if os.path.exists(os.path.join(folder, 'translation.json')):
+        logger.info(f'Translation already exists in {folder}')
+        return True
+
+    info_path = os.path.join(folder, 'download.info.json')
+    if not os.path.exists(info_path):
+        return False
+    # info_path = r'videos\Lex Clips\20231222 Jeff Bezos on fear of death ｜ Lex Fridman Podcast Clips\download.info.json'
+    with open(info_path, 'r', encoding='utf-8') as f:
+        info = json.load(f)
+    info = get_necessary_info(info)
+
+    summary_path = os.path.join(folder, 'summary.json')
+    if not os.path.exists(summary_path):
+        summary = title_rize(info, target_language)
+        if summary is None:
+            logger.error(f'Failed to summarize {folder}')
+            return False
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
+    return True
+
 def translate_all_transcript_under_folder(folder, target_language):
     for root, dirs, files in os.walk(folder):
         if 'transcript.json' in files and 'translation.json' not in files:
             translate(root, target_language)
     return f'Translated all videos under {folder}'
 
+def translate_all_title_under_folder(folder, target_language):
+    for root, dirs, files in os.walk(folder):
+        translate_title(root, target_language)
+    return f'Translated all videos under {folder}'
 if __name__ == '__main__':
-    translate_all_transcript_under_folder(
-        r'videos/albainlove/20240913 Meme MemeCut fyp#', '简体中文')
+    translate_title(
+        r'videos/z a m/20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam', '简体中文')

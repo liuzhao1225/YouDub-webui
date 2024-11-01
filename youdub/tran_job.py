@@ -1,18 +1,33 @@
 import argparse
+import json
+import os
+import sys
+import time
 from datetime import datetime
 
-import loguru
 from apscheduler.schedulers.blocking import BlockingScheduler
+from loguru import logger
 from sqlalchemy.testing import db
-from util.sql_utils import getdb
-from youdub.do_everything import do_everything
 
-loguru.logger.add("error.log", format="{time} {level} {message}", level="ERROR")
+from social_auto_upload.uploader.douyin_uploader.main import DouYinVideo
+from util.sql_utils import getdb
+from social_auto_upload.utils.files_times import get_title_and_hashtags
+# from utils.files_times import get_title_and_hashtags
+from youdub.do_everything import do_everything
+from youdub.step030_translation import translate_all_title_under_folder
+from youdub.step060_genrate_info import generate_all_info_under_folder
+from youdub.util.ffmpeg_utils import deduplicate_video
+import glob
+import json
+from datetime import datetime
+
+
+print(sys.path)
 db = getdb()
 
 
 def transport_video():
-    root_folder = "your_root_folder"  # 设置根文件夹路径
+    root_folder = "social-auto-upload/videos"  # 设置根文件夹路径
 
     # 定义所有参数
     num_videos = 5  # 视频数量
@@ -36,17 +51,79 @@ def transport_video():
     max_retries = 5  # 最大重试次数
     auto_upload_video = True  # 是否自动上传视频
 
-    transport_jobs = db.fetchall('SELECT id, dwn_url FROM transport_job WHERE state = 0')
+    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0 order by  id desc ')
     for transport_job in transport_jobs:
         try:
-            do_everything(transport_job,root_folder, transport_job['dwn_url'], num_videos, resolution, demucs_model,
+            do_everything(transport_job, root_folder, transport_job['dwn_url'], num_videos, resolution, demucs_model,
                           device, shifts, whisper_model, whisper_download_root,
                           whisper_batch_size, whisper_diarization, whisper_min_speakers,
                           whisper_max_speakers, translation_target_language, force_bytedance,
                           subtitles, speed_up, fps, target_resolution, max_workers,
                           max_retries, auto_upload_video)
         except Exception as e:
-            loguru.logger.error(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
+            logger.error(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
+
+
+# 补充处理数据
+def replenish_job():
+    # 查询符合条件的 transport_job
+    jobs_to_replenish = db.fetchall(
+        "SELECT * FROM transport_job_des WHERE state != 0 AND TIMESTAMPDIFF(MINUTE, update_time, now()) > 30")
+
+    for job in jobs_to_replenish:
+        try:
+            folder = job['file_path'].replace('\\', '/').replace('\\\\', '/')
+            # 根据不同的状态调用不同的方法
+            if job['state'] == 1:
+                # 调用处理状态1的方法
+                translate_all_title_under_folder(
+                    folder, target_language='简体中文'
+                )
+                # 生成信息文件
+                generate_all_info_under_folder(folder)
+                db.execute(
+                    "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
+                    (2, folder, job['id'])
+                )
+            elif job['state'] == 2:
+                json_file_path = os.path.join(folder, 'download.info.json')
+                with open(json_file_path, 'r', encoding='utf-8') as f:
+                    info = json.load(f)
+                # 去重视频
+                deduplicate_video(info, folder)
+                db.execute(
+                    "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
+                    (3, folder, job['id'])
+                )
+            elif job['state'] == 3:
+                # 上传视频
+                video_text = os.path.join(folder, 'video.txt')
+                title, tags = get_title_and_hashtags(video_text)
+                video_file = os.path.join(folder, 'download_final.mp4')
+                # 获取当前日期
+                today = datetime.now().strftime('%Y-%m-%d')
+
+                # 遍历 cookies 文件夹
+                cookie_files = glob.glob('youdub/social-auto-upload/cookies/douyin_uploader/*.json')
+                for cookie_file in cookie_files:
+                    user_id = os.path.basename(cookie_file).split('_')[0]
+                    # 查询该用户当天发布的条数
+                    sql = """
+                        SELECT COUNT(*) FROM transport_job_des 
+                        WHERE user_id = %s AND state = 0 AND DATE(update_time) = %s
+                    """
+                    count = db.fetchone(sql, (user_id, today))[0]
+                    # 如果发布条数小于5条，则发布
+                    if count < 5:
+                        app = DouYinVideo(title, video_file, tags, time.localtime(), cookie_file)
+                        app.main()
+                        db.execute(
+                            "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,user_id = %s WHERE `id`=%s",
+                            (0, folder, job['user_id'], job['id'])
+                        )
+            # 可以继续添加其他状态的处理逻辑
+        except Exception as e:
+            logger.error(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
 
 
 if __name__ == '__main__':
@@ -58,7 +135,6 @@ if __name__ == '__main__':
     else:
         scheduler = BlockingScheduler()
         now = datetime.now()
-        initial_execution_time = datetime.now().replace(hour=now.hour, minute=now.minute, second=now.second,
-                                                        microsecond=0)
-        scheduler.add_job(transport_video, 'interval', minutes=32, max_instances=1)  # 每30分钟执行一次
+        scheduler.add_job(transport_video, 'interval', minutes=32, max_instances=1, next_run_time=now)
+        scheduler.add_job(replenish_job, 'interval', minutes=5, max_instances=1, next_run_time=now)
         scheduler.start()
