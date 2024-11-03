@@ -155,6 +155,9 @@ def add_pip_to_video(background_video, pip_video, output_video, opacity=1.0):
 # 去重视频
 def deduplicate_video(info, output_folder):
     video_path = os.path.join(output_folder, 'download.mp4')
+    if not os.path.exists(video_path):
+        logger.error(f'视频还没下载完毕请稍等: {video_path}')
+        return
     duration = info.get('duration')
     logger.info(duration)
     if duration is None:
@@ -176,13 +179,12 @@ def deduplicate_video(info, output_folder):
     # 竖屏视频才旋转
     if best_format['height'] < best_format['width']:
         video_stream = rotate_video(video_stream)
-        # 旋转缩略图并替换原文件
-        thumbnail_path = os.path.join(output_folder, 'download.webp')
-        if os.path.exists(thumbnail_path):
-            temp_thumbnail_path = os.path.join(output_folder, 'temp_download.webp')
-            ffmpeg.input(thumbnail_path).filter('transpose', 1).output(temp_thumbnail_path).run()
-            os.replace(temp_thumbnail_path, thumbnail_path)
-            logger.info(f'Thumbnail rotated and saved to {thumbnail_path}')
+        # # 旋转缩略图并替换原文件
+        # thumbnail_path = os.path.join(output_folder, 'download.webp')
+        # if os.path.exists(thumbnail_path):
+        #     temp_thumbnail_path = os.path.join(output_folder, 'download.jpg')
+        #     ffmpeg.input(thumbnail_path).filter('transpose', 1).output(temp_thumbnail_path).run()
+        #     logger.info(f'Thumbnail rotated and saved to {thumbnail_path}')
     # 增加水印
     video_stream = add_random_watermarks(video_stream, 'paster', 100, 100)
     # 随机镜像
@@ -227,10 +229,10 @@ def get_best_bitrate_format(info):
 
 if __name__ == '__main__':
     start_time = time.time()
-    # video_path = "E:\IDEA\workspace\YouDub-webui\youdub\social_auto_upload\\videos\mang2goon\\20190810 190810 모모랜드 Momoland 낸시 Nancy 뿜뿜 BBoomBBoom 둔내 토마토축제 4K 60P 직캠 Fancam\download.mp4"
-    # output_path = "E:\IDEA\workspace\YouDub-webui\youdub\social_auto_upload\\videos\mang2goon\\20190810 190810 모모랜드 Momoland 낸시 Nancy 뿜뿜 BBoomBBoom 둔내 토마토축제 4K 60P 직캠 Fancam\download1.mp4"
-    video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
-    output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
+    video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
+    output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download1.mp4"
+    # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
+    # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
     probe = ffmpeg.probe(video_path)
     duration = float(probe['format']['duration'])
     audio_stream1, video_stream1 = get_video_audio(video_path, 10, duration - 10 - 10)

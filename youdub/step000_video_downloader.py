@@ -55,15 +55,20 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None):
     date_range = DateRange(yesterday_str, yesterday_str)
 
     ydl_opts = {
-        # 'res': '1080',
-        # 'format': f'worst',
-        'format': f'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        # 修改格式选择，确保不下载以 'av01' 开头的编码格式的视频
+        'format': 'bestvideo[vcodec!^=av01]+bestaudio/best[vcodec!^=av01]',
         'writeinfojson': True,
-        'writethumbnail': True,
+        'postprocessors': [{
+            'key': 'EmbedThumbnail',
+            'already_have_thumbnail': False,
+        }, {
+            'key': 'FFmpegVideoRemuxer',
+            'preferedformat': 'mp4',
+        }],
         'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}',
                                 'download.%(ext)s'),
-        # 'daterange': date_range,
-        'ignoreerrors': True
+        'ignoreerrors': True,
+        'download_archive': f"download/{info['uploader']}download_archive.txt"
     }
 
     # 添加cookies支持
@@ -71,8 +76,12 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None):
         ydl_opts['cookiefile'] = cookies
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([info['webpage_url']])
-    logger.info(f'Video downloaded in {output_folder}')
+        error_code =ydl.download([info['webpage_url']])
+    if error_code:
+        print('下载视频失败，等待下次下载')
+        return output_folder, False
+    else:
+        print('视频下载成功')
     return output_folder, True
 
 
@@ -87,9 +96,9 @@ def get_info_list_from_url(url, num_videos, cookies=None):
 
     # Download JSON information first
     ydl_opts = {
-        'format': 'best',
+        # 修改这里的格式选择，确保不下载以 'av01' 开头的编码格式的视频
+        'format': 'best[vcodec!^=av01]',
         'dumpjson': True,
-
         'ignoreerrors': True
     }
     if num_videos:
@@ -122,7 +131,8 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
 
     # Download JSON information first
     ydl_opts = {
-        'format': 'best',
+        # 修改这里的格式选择，确保不下载以 'av01' 开头的编码格式的视频
+        'format': 'best[vcodec!^=av01]',
         'dumpjson': True,
         'dump_single_json': True,
         'ignoreerrors': True
@@ -150,6 +160,7 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
 
 if __name__ == '__main__':
     # Example usage
-    url = 'https://www.youtube.com/watch?v=MU0nObp-Yy0'
+    url = 'https://www.youtube.com/watch?v=RHJluugFABg'
+    # url = 'https://www.youtube.com/watch?v=D6NQ1DYZ6Xs'
     folder_path = 'videos'
     download_from_url(url, folder_path, cookies='cookies/cookies.txt')

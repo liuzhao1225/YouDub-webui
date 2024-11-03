@@ -51,8 +51,8 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
             # 替换原来的 f-string SQL 语句
             sql = """
                 INSERT INTO `transport_job_des`
-                (`tj_id`, `video_id`, `video_url`, `title`, `remark`, `file_path`, `state`) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (`tj_id`, `video_id`, `video_url`, `title`, `remark`, `file_path`, `state`,update_time) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s,now())
             """
             args = (
                 transport_job['id'],
@@ -168,10 +168,10 @@ def do_everything(transport_job, root_folder, url, num_videos=5, resolution='108
         except Exception as e:
             logger.error(f'处理视频 {info["title"]} 时发生错误：{e}')
             fail_list.append(info)
-    if len(infos) == 1 and len(success_list) > 0:
-        db.execute(
-            "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
-            (1, transport_job.id)
-        )
+    # if len(infos) == 1 and len(success_list) > 0:
+    #     db.execute(
+    #         "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
+    #         (1, transport_job.id)
+    #     )
 
     return f'Success: {len(success_list)}\nFail: {len(fail_list)}'

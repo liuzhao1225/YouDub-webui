@@ -58,7 +58,7 @@ def generate_summary_txt(folder):
 def generate_info(folder):
     # 生成摘要文本和调整缩略图
     generate_summary_txt(folder)
-    resize_thumbnail(folder)
+    # resize_thumbnail(folder)
     
 def generate_all_info_under_folder(root_folder):
     # 遍历根文件夹下的所有文件夹

@@ -1,10 +1,14 @@
 import argparse
 import json
+from math import log
 import os
+import random
 import sys
 import time
 from datetime import datetime
+import asyncio  # 添加在文件开头的导入部分
 
+import ffmpeg
 from apscheduler.schedulers.blocking import BlockingScheduler
 from loguru import logger
 from sqlalchemy.testing import db
@@ -21,13 +25,12 @@ import glob
 import json
 from datetime import datetime
 
-
 print(sys.path)
 db = getdb()
 
 
 def transport_video():
-    root_folder = "social-auto-upload/videos"  # 设置根文件夹路径
+    root_folder = "../social_auto_upload/videos"  # 设置根文件夹路径
 
     # 定义所有参数
     num_videos = 5  # 视频数量
@@ -51,7 +54,7 @@ def transport_video():
     max_retries = 5  # 最大重试次数
     auto_upload_video = True  # 是否自动上传视频
 
-    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0 order by  id desc ')
+    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0  ')
     for transport_job in transport_jobs:
         try:
             do_everything(transport_job, root_folder, transport_job['dwn_url'], num_videos, resolution, demucs_model,
@@ -68,7 +71,7 @@ def transport_video():
 def replenish_job():
     # 查询符合条件的 transport_job
     jobs_to_replenish = db.fetchall(
-        "SELECT * FROM transport_job_des WHERE state != 0 AND TIMESTAMPDIFF(MINUTE, update_time, now()) > 30")
+        "SELECT * FROM transport_job_des WHERE state != 0 ")
 
     for job in jobs_to_replenish:
         try:
@@ -97,33 +100,58 @@ def replenish_job():
                 )
             elif job['state'] == 3:
                 # 上传视频
-                video_text = os.path.join(folder, 'video.txt')
-                title, tags = get_title_and_hashtags(video_text)
-                video_file = os.path.join(folder, 'download_final.mp4')
-                # 获取当前日期
-                today = datetime.now().strftime('%Y-%m-%d')
-
-                # 遍历 cookies 文件夹
-                cookie_files = glob.glob('youdub/social-auto-upload/cookies/douyin_uploader/*.json')
-                for cookie_file in cookie_files:
-                    user_id = os.path.basename(cookie_file).split('_')[0]
-                    # 查询该用户当天发布的条数
-                    sql = """
-                        SELECT COUNT(*) FROM transport_job_des 
-                        WHERE user_id = %s AND state = 0 AND DATE(update_time) = %s
-                    """
-                    count = db.fetchone(sql, (user_id, today))[0]
-                    # 如果发布条数小于5条，则发布
-                    if count < 5:
-                        app = DouYinVideo(title, video_file, tags, time.localtime(), cookie_file)
-                        app.main()
-                        db.execute(
-                            "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,user_id = %s WHERE `id`=%s",
-                            (0, folder, job['user_id'], job['id'])
-                        )
+                up_video(folder, job['id'])
             # 可以继续添加其他状态的处理逻辑
         except Exception as e:
             logger.error(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
+
+
+def up_video(folder, tjd_id):
+    video_text = os.path.join(folder, 'video.txt')
+    title, tags = get_title_and_hashtags(video_text)
+    video_file = os.path.join(folder, 'download_final.mp4')
+    # thumbnail_webp = os.path.join(folder, 'download.webp')
+    # thumbnail_path = os.path.join(folder, 'download.jpg')
+    # if not os.path.exists(thumbnail_path):
+    #     ffmpeg.input(thumbnail_webp).output(thumbnail_path).run()
+    # 获取当前日期
+    today = datetime.now().strftime('%Y-%m-%d')
+    # 遍历 cookies 文件夹
+    cookie_files = glob.glob('../social_auto_upload/cookies/douyin_uploader/*.json')
+    cookie_file = random.choice(cookie_files)
+    try:
+        user_id = os.path.basename(cookie_file).split('_')[0]
+        # 查询该用户当天发布的条数
+        sql = """
+                        SELECT COUNT(*) as count, max(update_time) as update_time FROM transport_job_des 
+                        WHERE user_id = %s AND state = 0 AND DATE(update_time) = %s
+                    """
+        result = db.fetchone(sql, (user_id, today))
+        count = result['count']
+        last_update_time = result['update_time']
+
+        # 检查最后更新时间是否在30分钟之前
+        if last_update_time:
+            time_diff = datetime.now() - last_update_time
+            if time_diff.total_seconds() < 1800:  # 1800秒 = 30分钟
+                logger.info(f'{user_id}上次发布距离现在小于30分钟，等会再发布')
+                return
+
+        # 如果发布条数大于5条，则不再
+        if count >= 5:
+            logger.info(f'{user_id}已发布5条，明日再发布')
+            return
+        app = DouYinVideo(title, video_file, tags, 0, cookie_file)
+        # 使用 asyncio 运行异步方法
+        up_state = asyncio.run(app.main())
+        if up_state:
+            db.execute(
+                "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,user_id = %s WHERE `id`=%s",
+                (0, folder, user_id, tjd_id)
+            )
+
+    except Exception as e:
+        logger.error(f"处理补充任务发布时出错: {tjd_id} - 错误信息: {str(e)}")
 
 
 if __name__ == '__main__':
@@ -136,5 +164,5 @@ if __name__ == '__main__':
         scheduler = BlockingScheduler()
         now = datetime.now()
         scheduler.add_job(transport_video, 'interval', minutes=32, max_instances=1, next_run_time=now)
-        scheduler.add_job(replenish_job, 'interval', minutes=5, max_instances=1, next_run_time=now)
+        # scheduler.add_job(replenish_job, 'interval', minutes=5, max_instances=1, next_run_time=now)
         scheduler.start()
