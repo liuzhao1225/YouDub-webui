@@ -47,7 +47,7 @@ def summarize(info, transcript, target_language='简体中文'):
     info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
     # info_message = ''
     
-    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary": ""}}\n```'
+    full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary": ""}}\nTo remove dates from the text\n```'
 
     messages = [
         {'role': 'system',

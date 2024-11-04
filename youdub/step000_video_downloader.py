@@ -11,12 +11,13 @@ from yt_dlp import DateRange
 
 
 def sanitize_title(title):
-    # Only keep numbers, letters, Chinese characters, and spaces
+    # 只保留数字、字母、中文字符和空格
     title = re.sub(r'[^\w\u4e00-\u9fff \d_-]', '', title)
-    # Replace multiple spaces with a single space
+    # 将多个空格替换为一个空格
     title = re.sub(r'\s+', ' ', title)
+    # 将最后的空格替换为下划线
+    title = title.rstrip().replace(' ', '_')
     return title
-
 
 def get_target_folder(info, folder_path):
     sanitized_title = sanitize_title(info['title'])
@@ -25,23 +26,28 @@ def get_target_folder(info, folder_path):
     if upload_date == 'Unknown':
         return None
 
-    output_folder = os.path.join(
-        folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}')
+    output_folder = os.path.join(folder_path, sanitized_uploader, f"{info['id']}_{upload_date}_{sanitized_title}")
 
     return output_folder
 
 
-def download_single_video(info, folder_path, resolution='480p', cookies=None):
-    sanitized_title = sanitize_title(info['title'])
-    sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
-    upload_date = info.get('upload_date', 'Unknown')
-    if upload_date == 'Unknown':
-        return None, False
-
-    output_folder = os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}')
+# 这个函数用于下载单个视频
+# 参数:
+# - info: 包含视频信息的字典
+# - folder_path: 下载文件夹的路径
+# - resolution: 视频分辨率，默认为 '480p'
+# - cookies: cookies 文件路径，默认为 None
+# - use_archive: 是否使用已下载列表，默认为 True
+# 返回值:
+# - 下载文件夹的路径
+# - 下载状态码，0 表示未下载，1 表示已下载，2 表示下载失败，3下载成功
+def download_single_video(info, folder_path, resolution='480p', cookies=None, use_archive=True):
+    output_folder = get_target_folder(info, folder_path)
+    if output_folder is None:
+        return None, 0
     if os.path.exists(os.path.join(output_folder, 'download.mp4')):
-        logger.info(f'Video already downloaded in {output_folder}')
-        return output_folder, False
+        logger.info(f'{info["id"]}视频已下载在 {output_folder}')
+        return output_folder, 1
 
     resolution = resolution.replace('p', '')
     # 计算前一天和当天的日期
@@ -57,6 +63,7 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None):
     ydl_opts = {
         # 修改格式选择，确保不下载以 'av01' 开头的编码格式的视频
         'format': 'bestvideo[vcodec!^=av01]+bestaudio/best[vcodec!^=av01]',
+        # 'format_sort': ['+codec:avc:m4a'],
         'writeinfojson': True,
         'postprocessors': [{
             'key': 'EmbedThumbnail',
@@ -65,24 +72,25 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None):
             'key': 'FFmpegVideoRemuxer',
             'preferedformat': 'mp4',
         }],
-        'outtmpl': os.path.join(folder_path, sanitized_uploader, f'{upload_date} {sanitized_title}',
-                                'download.%(ext)s'),
-        'ignoreerrors': True,
-        'download_archive': f"download/{info['uploader']}download_archive.txt"
+        'outtmpl': os.path.join(output_folder, 'download.%(ext)s'),
+        # 'ignoreerrors': True,
+        'concurrent_fragment_downloads': 5  # 增加线程数
     }
-
+    # 是否使用已下载列表
+    if use_archive:
+        ydl_opts['download_archive'] = f"download/download_archive.txt"
     # 添加cookies支持
     if cookies:
         ydl_opts['cookiefile'] = cookies
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        error_code =ydl.download([info['webpage_url']])
+        error_code = ydl.download([info['webpage_url']])
     if error_code:
-        print('下载视频失败，等待下次下载')
-        return output_folder, False
+        logger.info('下载视频失败，等待下次下载')
+        return output_folder, 2
     else:
-        print('视频下载成功')
-    return output_folder, True
+        logger.info('视频下载成功')
+    return output_folder, 3
 
 
 def download_videos(info_list, folder_path, resolution='1080p', cookies=None):
@@ -90,7 +98,7 @@ def download_videos(info_list, folder_path, resolution='1080p', cookies=None):
         download_single_video(info, folder_path, resolution, cookies)
 
 
-def get_info_list_from_url(url, num_videos, cookies=None):
+def get_info_list_from_url(url, num_videos,page_num, cookies=None):
     if isinstance(url, str):
         url = [url]
 
@@ -98,11 +106,14 @@ def get_info_list_from_url(url, num_videos, cookies=None):
     ydl_opts = {
         # 修改这里的格式选择，确保不下载以 'av01' 开头的编码格式的视频
         'format': 'best[vcodec!^=av01]',
+        # 'format_sort': ['+codec:avc:m4a'],
         'dumpjson': True,
-        'ignoreerrors': True
+        # 'ignoreerrors': True,
+        'download_archive': f"download/download_archive.txt"
     }
     if num_videos:
-        ydl_opts['playlistend'] = num_videos
+        ydl_opts['playlistend'] = num_videos*page_num
+        ydl_opts['playliststart'] = num_videos*(page_num-1)
     # 添加cookies支持
     if cookies:
         ydl_opts['cookiefile'] = cookies
@@ -133,9 +144,10 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
     ydl_opts = {
         # 修改这里的格式选择，确保不下载以 'av01' 开头的编码格式的视频
         'format': 'best[vcodec!^=av01]',
+        # 'format_sort': ['+codec:avc:m4a'],
         'dumpjson': True,
         'dump_single_json': True,
-        'ignoreerrors': True
+        # 'ignoreerrors': True
     }
     if num_videos:
         ydl_opts['playlistend']: num_videos
@@ -159,8 +171,11 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
 
 
 if __name__ == '__main__':
-    # Example usage
-    url = 'https://www.youtube.com/watch?v=RHJluugFABg'
-    # url = 'https://www.youtube.com/watch?v=D6NQ1DYZ6Xs'
-    folder_path = 'videos'
-    download_from_url(url, folder_path, cookies='cookies/cookies.txt')
+    # # Example usage
+    # url = 'https://www.youtube.com/watch?v=RHJluugFABg'
+    # # url = 'https://www.youtube.com/watch?v=D6NQ1DYZ6Xs'
+    # folder_path = 'videos'
+    # download_from_url(url, folder_path, cookies='cookies/cookies.txt')
+    infos = get_info_list_from_url('https://www.youtube.com/@pharkil/videos', 5, cookies='cookies/cookies.txt')
+    for info in infos:
+        print(info)
