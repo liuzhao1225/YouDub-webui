@@ -2,6 +2,8 @@
 import json
 import os
 import re
+import traceback
+
 from openai import OpenAI
 from dotenv import load_dotenv
 import time
@@ -126,6 +128,7 @@ def summarize(info, transcript, target_language='简体中文'):
         except Exception as e:
             logger.error(f'总结翻译失败\n{e}')
             time.sleep(1)
+            traceback.print_exc()
 
 
 

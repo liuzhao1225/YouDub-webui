@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import traceback
 from datetime import datetime
 
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -15,7 +16,6 @@ from youdub.step030_translation import translate_all_title_under_folder
 from youdub.step060_genrate_info import generate_all_info_under_folder
 from youdub.util.ffmpeg_utils import deduplicate_video
 
-print(sys.path)
 db = getdb()
 
 root_folder = "../social_auto_upload/videos"  # 设置根文件夹路径
@@ -68,7 +68,7 @@ def transport_video():
                     )
                     break
         except Exception as e:
-            logger.error(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
+            logger.exception(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
 
 
 # 补充处理数据
@@ -115,6 +115,7 @@ def replenish_job():
             # 可以继续添加其他状态的处理逻辑
         except Exception as e:
             logger.error(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
+            traceback.print_exc()
 
 
 if __name__ == '__main__':

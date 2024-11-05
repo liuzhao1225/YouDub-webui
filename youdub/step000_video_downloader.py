@@ -75,7 +75,7 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
             'preferedformat': 'mp4',
         }],
         'outtmpl': os.path.join(output_folder, 'download.%(ext)s'),
-        # 'ignoreerrors': True,
+        'ignoreerrors': True,
         'concurrent_fragment_downloads': 5,  # 增加线程数
         'match_filter': duration_filter,  # 添加过滤器
     }
@@ -84,7 +84,8 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
         ydl_opts['download_archive'] = f"download/download_archive.txt"
     # 添加cookies支持
     if cookies:
-        ydl_opts['cookiefile'] = cookies
+        # ydl_opts['cookiefile'] = cookies
+        ydl_opts['cookiesfrombrowser'] = ('chrome',)
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download([info['webpage_url']])
@@ -117,7 +118,7 @@ def get_info_list_from_url(url, num_videos,page_num, cookies=None):
         'format': 'best[vcodec!^=av01]',
         # 'format_sort': ['+codec:avc:m4a'],
         'dumpjson': True,
-        # 'ignoreerrors': True,
+        'ignoreerrors': True,
         'download_archive': f"download/download_archive.txt",
         'match_filter': duration_filter,  # 添加过滤器
     }
@@ -126,7 +127,8 @@ def get_info_list_from_url(url, num_videos,page_num, cookies=None):
         ydl_opts['playliststart'] = num_videos*(page_num-1)
     # 添加cookies支持
     if cookies:
-        ydl_opts['cookiefile'] = cookies
+        # ydl_opts['cookiefile'] = cookies
+        ydl_opts['cookiesfrombrowser'] = ('chrome',)
 
     # video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -157,14 +159,14 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
         # 'format_sort': ['+codec:avc:m4a'],
         'dumpjson': True,
         'dump_single_json': True,
-        'match_filter': duration_filter,  # 添加过滤器
-        # 'ignoreerrors': True
+        'ignoreerrors': True
     }
     if num_videos:
         ydl_opts['playlistend']: num_videos
     # 添加cookies支持
     if cookies:
-        ydl_opts['cookiefile'] = cookies
+        # ydl_opts['cookiefile'] = cookies
+        ydl_opts['cookiesfrombrowser'] = ('chrome',)
 
     video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:

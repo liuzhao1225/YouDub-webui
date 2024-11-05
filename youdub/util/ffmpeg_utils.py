@@ -1,6 +1,7 @@
 import os
 import random
 import time
+import traceback
 
 import ffmpeg
 from loguru import logger
@@ -156,6 +157,7 @@ def deduplicate_video(info, output_folder):
     video_path = os.path.join(output_folder, 'download.mp4')
     if not os.path.exists(video_path):
         logger.error(f'视频还没下载完毕请稍等: {video_path}')
+        traceback.print_exc()
         return
     duration = info.get('duration')
     logger.info(duration)

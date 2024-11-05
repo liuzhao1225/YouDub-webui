@@ -5,6 +5,7 @@ import os
 import random
 import threading
 import time
+import traceback
 from functools import wraps
 # from .step040_tts import generate_all_wavs_under_folder
 # from .step042_tts_xtts import init_TTS
@@ -114,6 +115,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                 return True
         except Exception as e:
             logger.error(f'处理视频 {info["title"]} 时发生错误：{e}')
+            traceback.print_exc()
     return False
 
 
@@ -170,6 +172,7 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
         except Exception as e:
             logger.error(f'处理视频 {info["title"]} 时发生错误：{e}')
             fail_list.append(info)
+            traceback.print_exc()
     return dwn_count, inf_count
 
 
@@ -222,3 +225,4 @@ def up_video(folder, tjd_id):
             return
         except Exception as e:
             logger.error(f"处理补充任务发布时出错: {tjd_id} - 错误信息: {str(e)}")
+            traceback.print_exc()
