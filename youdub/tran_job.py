@@ -44,27 +44,29 @@ def transport_video():
     max_retries = 5  # 最大重试次数
     auto_upload_video = True  # 是否自动上传视频
 
-    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0 order by id desc ')
+    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0')
     for transport_job in transport_jobs:
         try:
             dwn_count = 0
             page_num = 1
             while dwn_count < num_videos:
-                dwn_count, conf_count = do_everything(transport_job, root_folder, transport_job['dwn_url'],
-                                                      num_videos, page_num,
-                                                      resolution, demucs_model,
-                                                      device, shifts, whisper_model, whisper_download_root,
-                                                      whisper_batch_size, whisper_diarization, whisper_min_speakers,
-                                                      whisper_max_speakers, translation_target_language,
-                                                      force_bytedance,
-                                                      subtitles, speed_up, fps, target_resolution, max_workers,
-                                                      max_retries, auto_upload_video)
+                now_dwn_count, conf_count = do_everything(transport_job, root_folder, transport_job['dwn_url'],
+                                                          num_videos, page_num,
+                                                          resolution, demucs_model,
+                                                          device, shifts, whisper_model, whisper_download_root,
+                                                          whisper_batch_size, whisper_diarization, whisper_min_speakers,
+                                                          whisper_max_speakers, translation_target_language,
+                                                          force_bytedance,
+                                                          subtitles, speed_up, fps, target_resolution, max_workers,
+                                                          max_retries, auto_upload_video)
+                dwn_count += now_dwn_count
                 page_num += 1
                 if conf_count == 1:
                     db.execute(
                         "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
-                        (1, transport_job.id)
+                        (1, transport_job['id'])
                     )
+                    break
         except Exception as e:
             logger.error(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
 
@@ -100,9 +102,9 @@ def replenish_job():
                     "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
                     (3, folder, job['id'])
                 )
-            # elif job['state'] == 3:
-            # 上传视频
-            # up_video(folder, job['id'])
+            elif job['state'] == 3:
+                # 上传视频
+                up_video(folder, job['id'])
             elif job['state'] == 4:
                 folder, dw_state = download_single_video(info, root_folder, resolution, 'cookies/cookies.txt', False)
                 if dw_state == 1 or dw_state == 3:

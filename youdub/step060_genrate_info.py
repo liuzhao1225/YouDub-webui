@@ -42,6 +42,8 @@ def resize_thumbnail(folder, size=(1280, 960)):
         return new_img_path
 
 def generate_summary_txt(folder):
+    if not os.path.exists(os.path.join(folder, 'summary.json')):
+        return
     with open(os.path.join(folder, 'summary.json'), 'r', encoding='utf-8') as f:
         summary = json.load(f)
     # 构建标题
@@ -50,7 +52,7 @@ def generate_summary_txt(folder):
     title_without_date = re.sub(
         r'\b(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[./]\d{1,2}[./]\d{4}|\d{6,8})\b', '', title)
     # summary = summary['summary']
-    txt = f'{title_without_date.replace(summary["author"],"").replace(summary["author"].replace(" ",""),"")}\n{os.getenv("OPENAI_API_KEY")}'
+    txt = f'{title_without_date.replace(summary["author"],"").replace(summary["author"].replace(" ",""),"")}\n{os.getenv("VIDEO_TOPIC")}'
     # 将标题和摘要写入video.txt文件
     with open(os.path.join(folder, 'video.txt'), 'w', encoding='utf-8') as f:
         f.write(txt)
@@ -70,4 +72,4 @@ def generate_all_info_under_folder(root_folder):
 
 if __name__ == '__main__':
     # 生成videos文件夹下的所有信息
-    generate_all_info_under_folder('videos')
+    generate_all_info_under_folder('../social_auto_upload/videos')

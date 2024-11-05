@@ -60,6 +60,8 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
     # 创建日期范围对象
     date_range = DateRange(yesterday_str, yesterday_str)
 
+
+
     ydl_opts = {
         # 修改格式选择，确保不下载以 'av01' 开头的编码格式的视频
         'format': 'bestvideo[vcodec!^=av01]+bestaudio/best[vcodec!^=av01]',
@@ -74,7 +76,8 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
         }],
         'outtmpl': os.path.join(output_folder, 'download.%(ext)s'),
         # 'ignoreerrors': True,
-        'concurrent_fragment_downloads': 5  # 增加线程数
+        'concurrent_fragment_downloads': 5,  # 增加线程数
+        'match_filter': duration_filter,  # 添加过滤器
     }
     # 是否使用已下载列表
     if use_archive:
@@ -93,6 +96,12 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
     return output_folder, 3
 
 
+def duration_filter(info_dict):
+    duration = info_dict.get('duration', 0)
+    if duration > 600:  # 600秒等于10分钟
+        return f"视频时长超过10分钟: {duration}秒"
+    return None
+
 def download_videos(info_list, folder_path, resolution='1080p', cookies=None):
     for info in info_list:
         download_single_video(info, folder_path, resolution, cookies)
@@ -109,7 +118,8 @@ def get_info_list_from_url(url, num_videos,page_num, cookies=None):
         # 'format_sort': ['+codec:avc:m4a'],
         'dumpjson': True,
         # 'ignoreerrors': True,
-        'download_archive': f"download/download_archive.txt"
+        'download_archive': f"download/download_archive.txt",
+        'match_filter': duration_filter,  # 添加过滤器
     }
     if num_videos:
         ydl_opts['playlistend'] = num_videos*page_num
@@ -147,6 +157,7 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
         # 'format_sort': ['+codec:avc:m4a'],
         'dumpjson': True,
         'dump_single_json': True,
+        'match_filter': duration_filter,  # 添加过滤器
         # 'ignoreerrors': True
     }
     if num_videos:

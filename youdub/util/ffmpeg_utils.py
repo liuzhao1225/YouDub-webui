@@ -74,13 +74,13 @@ def save_stream_to_video(video_stream, audio_stream, output_path, vbr):
             maxrate=maxrate,      # 最大码率限制
             bufsize=bufsize,      # 添加缓冲区大小设置
             # rc='vbr',            # 明确指定使用VBR模式
-            preset='p4',  # 平衡速度和质量
             # qmin=20,  # 保证最高质量
             # qmax=23,  # 限制质量下限
             # profile='high',
+            preset='p5',  # 提高质量的预设
             spatial_aq=1,  # 保持空间细节
             temporal_aq=1,  # 保持动态质量
-            rc_lookahead=20,  # 较小的前向分析窗口
+            rc_lookahead=32,  # 增加前向分析窗口
             b_ref_mode='middle'  # 保持好的压缩率
         )
 
@@ -97,12 +97,11 @@ def save_stream_to_video(video_stream, audio_stream, output_path, vbr):
             vcodec='libx264',
             acodec='copy',
             video_bitrate=vbr,
-            preset='faster',  # 快速预设
-            # crf=16,  # 保持高质量
-            # profile='high',
+            preset='slow',  # 提高质量的预设
+            crf=18,  # 使用CRF模式提高质量
             tune='film',
             threads='auto',
-            x264opts='rc-lookahead=30:ref=3:subme=7'  # 优化的编码参数
+            x264opts='rc-lookahead=40:ref=4:subme=9'  # 优化的编码参数
         )
 
         ffmpeg_command = ffmpeg.compile(stream)
