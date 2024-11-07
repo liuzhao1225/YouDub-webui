@@ -5,6 +5,8 @@ import traceback
 
 import ffmpeg
 from loguru import logger
+import cv2
+import numpy as np
 
 
 def get_video_audio(input_path, start_seconds, duration):
@@ -180,12 +182,19 @@ def deduplicate_video(info, output_folder):
     # 竖屏视频才旋转
     if best_format['height'] < best_format['width']:
         video_stream = rotate_video(video_stream)
-        # # 旋转缩略图并替换原文件
-        # thumbnail_path = os.path.join(output_folder, 'download.webp')
-        # if os.path.exists(thumbnail_path):
-        #     temp_thumbnail_path = os.path.join(output_folder, 'download.jpg')
-        #     ffmpeg.input(thumbnail_path).filter('transpose', 1).output(temp_thumbnail_path).run()
-        #     logger.info(f'Thumbnail rotated and saved to {thumbnail_path}')
+    # 旋转缩略图并替换原文件
+    thumbnail_path = os.path.join(output_folder, 'download.jpg')
+    if os.path.exists(thumbnail_path):
+        # 校验缩略图是否横屏，横屏需要旋转
+        thumbnail_info = ffmpeg.probe(thumbnail_path)
+        thumbnail_width = int(thumbnail_info['streams'][0]['width'])
+        thumbnail_height = int(thumbnail_info['streams'][0]['height'])
+        
+        if thumbnail_width > thumbnail_height:
+            temp_thumbnail_path = os.path.join(output_folder, 'temp_download.webp')
+            ffmpeg.input(thumbnail_path).filter('transpose', 1).output(temp_thumbnail_path).run()
+            os.replace(temp_thumbnail_path, thumbnail_path)
+            logger.info(f'缩略图已旋转并保存到 {thumbnail_path}')
     # 增加水印
     video_stream = add_random_watermarks(video_stream, 'paster', 100, 100)
     # 随机镜像
@@ -213,7 +222,7 @@ def calculate_bitrate(resolution):
         return '2500k'
     elif width >= 640 and height >= 360:  # 360p
         return '1000k'
-        return '1000k'  # 其他情况
+    return '1000k'  # 其他情况
 
 
 # 获取最佳码率格式
@@ -228,21 +237,65 @@ def get_best_bitrate_format(info):
     return best_format
 
 
+def random_shift_channel(frame, max_shift=30):
+    # 分离RGB通道
+    b, g, r = cv2.split(frame)
+    
+    # 随机生成偏移角度和半径
+    angle = random.uniform(0, 2 * np.pi)
+    radius = random.uniform(0, max_shift)
+    
+    # 计算偏移量
+    x_shift = int(radius * np.cos(angle))
+    y_shift = int(radius * np.sin(angle))
+    
+    # 应用位置偏移
+    b = np.roll(b, shift=(y_shift, x_shift), axis=(0, 1))
+    g = np.roll(g, shift=(-y_shift, -x_shift), axis=(0, 1))
+    r = np.roll(r, shift=(y_shift, -x_shift), axis=(0, 1))
+    
+    # 合并通道
+    shifted_frame = cv2.merge((b, g, r))
+    
+    return shifted_frame
+
+
+def process_video(input_path, output_path):
+    # 打开视频文件
+    cap = cv2.VideoCapture(input_path)
+    # 使用 'mp4v' 编码格式
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = cap.get(cv2.CAP_PROP_FPS)  # 获取原始视频的帧率
+    out = cv2.VideoWriter(output_path, fourcc, fps, (int(cap.get(3)), int(cap.get(4))))
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        # 对每一帧应用相同的随机颜色偏移
+        shifted_frame = random_shift_channel(frame, max_shift=5)
+        
+        # 写入输出视频
+        out.write(shifted_frame)
+
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
 if __name__ == '__main__':
     start_time = time.time()
     video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
     output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download1.mp4"
     # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
     # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
-    probe = ffmpeg.probe(video_path)
-    duration = float(probe['format']['duration'])
-    audio_stream1, video_stream1 = get_video_audio(video_path, 10, duration - 10 - 10)
-    video_stream1 = rotate_video(video_stream1)
-    video_stream1 = add_random_watermarks(video_stream1, '../paster', 100, 100)
-    save_stream_to_video(video_stream1, audio_stream1,
-                         output_path,
-                         '22454k')
-
+    # probe = ffmpeg.probe(video_path)
+    # duration = float(probe['format']['duration'])
+    # audio_stream1, video_stream1 = get_video_audio(video_path, 10, duration - 10 - 10)
+    # video_stream1 = rotate_video(video_stream1)
+    # video_stream1 = add_random_watermarks(video_stream1, '../paster', 100, 100)
+    # save_stream_to_video(video_stream1, audio_stream1,
+    #                      output_path,
+    #                      '22454k')
     end_time = time.time()
     processing_time = end_time - start_time
 
