@@ -126,7 +126,7 @@ def summarize(info, transcript, target_language='简体中文'):
             }
             return result
         except Exception as e:
-            logger.error(f'总结翻译失败\n{e}')
+            logger.exception(f'总结翻译失败\n{e}')
             time.sleep(1)
             traceback.print_exc()
 
@@ -381,7 +381,7 @@ def _translate(summary, transcript, target_language='简体中文'):
                     raise Exception('Invalid translation')
                 break
             except Exception as e:
-                logger.error(e)
+                logger.exception(e)
                 if e == 'Internal Server Error':
                     client = OpenAI(
                         # This is the default and can be omitted
@@ -421,7 +421,7 @@ def translate(folder, target_language='简体中文'):
     else:
         summary = summarize(info, transcript, target_language)
         if summary is None:
-            logger.error(f'Failed to summarize {folder}')
+            logger.exception(f'Failed to summarize {folder}')
             return False
         with open(summary_path, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
@@ -452,7 +452,7 @@ def translate_title(folder, target_language='简体中文'):
     if not os.path.exists(summary_path):
         summary = title_rize(info, target_language)
         if summary is None:
-            logger.error(f'Failed to summarize {folder}')
+            logger.exception(f'Failed to summarize {folder}')
             return False
         with open(summary_path, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)

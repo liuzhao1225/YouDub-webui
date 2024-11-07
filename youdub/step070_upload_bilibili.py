@@ -18,7 +18,7 @@ def bili_login():
         logger.info(f"bilibili登陆成功。")
         return session
     except Exception as e:
-        logger.error(e)
+        logger.exception(e)
         raise Exception('bilibili登陆失败，请更换SESSDATA和bili_jct。')
 
 def upload_video(folder):
@@ -94,14 +94,14 @@ def upload_video(folder):
             submission.source = webpage_url
             response = session.SubmitSubmission(submission, seperate_parts=False)
             if response['results'][0]['code'] != 0:
-                logger.error(response)
+                logger.exception(response)
                 raise Exception(response)
             logger.info(f"Submission successful: {response}")
             with open(os.path.join(folder, 'bilibili.json'), 'w', encoding='utf-8') as f:
                 json.dump(response, f, ensure_ascii=False, indent=4)
             return True
         except Exception as e:
-            logger.error(f"Error submitting:\n{e}")
+            logger.exception(f"Error submitting:\n{e}")
             time.sleep(10)
     raise Exception('上传失败')
 

@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import sys
+import threading
 import traceback
 from datetime import datetime
 
@@ -15,6 +16,7 @@ from youdub.step000_video_downloader import download_single_video
 from youdub.step030_translation import translate_all_title_under_folder
 from youdub.step060_genrate_info import generate_all_info_under_folder
 from youdub.util.ffmpeg_utils import deduplicate_video
+from youdub.util.lock_util import with_timeout_lock
 
 db = getdb()
 
@@ -50,25 +52,20 @@ def transport_video():
             dwn_count = 0
             page_num = 1
             while dwn_count < num_videos:
-                now_dwn_count, conf_count = do_everything(transport_job, root_folder, transport_job['dwn_url'],
-                                                          num_videos, page_num,
-                                                          resolution, demucs_model,
-                                                          device, shifts, whisper_model, whisper_download_root,
-                                                          whisper_batch_size, whisper_diarization, whisper_min_speakers,
-                                                          whisper_max_speakers, translation_target_language,
-                                                          force_bytedance,
-                                                          subtitles, speed_up, fps, target_resolution, max_workers,
-                                                          max_retries, auto_upload_video)
+                now_dwn_count = do_everything(transport_job, root_folder, transport_job['dwn_url'],
+                                              num_videos, page_num,
+                                              resolution, demucs_model,
+                                              device, shifts, whisper_model, whisper_download_root,
+                                              whisper_batch_size, whisper_diarization, whisper_min_speakers,
+                                              whisper_max_speakers, translation_target_language,
+                                              force_bytedance,
+                                              subtitles, speed_up, fps, target_resolution, max_workers,
+                                              max_retries, auto_upload_video)
                 dwn_count += now_dwn_count
                 page_num += 1
-                if conf_count == 1:
-                    db.execute(
-                        "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
-                        (1, transport_job['id'])
-                    )
-                    break
         except Exception as e:
-            logger.exception(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {str(e)}")
+            logger.exception(f"处理视频时出错: {transport_job['dwn_url']} - 错误信息: {e}")
+            traceback.print_exc()
 
 
 # 补充处理数据
@@ -106,16 +103,23 @@ def replenish_job():
                 # 上传视频
                 up_video(folder, job['id'])
             elif job['state'] == 4:
-                folder, dw_state = download_single_video(info, root_folder, resolution, 'cookies/cookies.txt', False)
-                if dw_state == 1 or dw_state == 3:
-                    db.execute(
-                        "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
-                        (1, folder, job['id'])
-                    )
+                threading.Thread(target=re_dl, args=(info, job)).start()
             # 可以继续添加其他状态的处理逻辑
         except Exception as e:
-            logger.error(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
-            traceback.print_exc()
+            logger.exception(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
+
+
+@with_timeout_lock(timeout=1, max_workers=1)
+def re_dl(info, job):
+    try:
+        folder, dw_state = download_single_video(info, root_folder, resolution, 'cookies/cookies.txt', False)
+        if dw_state == 1 or dw_state == 3:
+            db.execute(
+                "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
+                (1, folder, job['id'])
+            )
+    except Exception as e:
+        logger.info(f'有其他下载任务在执行{e}')
 
 
 if __name__ == '__main__':

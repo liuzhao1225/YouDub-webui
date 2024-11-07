@@ -3,8 +3,8 @@ import os
 import re
 import librosa
 
-from loguru import logger
 import numpy as np
+from loguru import logger
 
 from .utils import save_wav, save_wav_norm
 from .step041_tts_bytedance import tts as bytedance_tts

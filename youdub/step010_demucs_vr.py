@@ -55,7 +55,7 @@ def separate_audio(folder: str, model_name: str = "htdemucs_ft", device: str = '
         # reload_model(model_name, device, progress, shifts)
                 # origin, separated = separator.separate_audio_file(audio_path)
         time.sleep(5)
-        logger.error(f'Error separating audio from {folder}')
+        logger.exception(f'Error separating audio from {folder}')
         raise Exception(f'Error separating audio from {folder}')
     t_end = time.time()
     logger.info(f'Audio separated in {t_end - t_start:.2f} seconds')
