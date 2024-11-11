@@ -21,3 +21,5 @@ biliup
 xhs
 qrcode
 loguru
+Flask
+gevent

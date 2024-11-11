@@ -4,13 +4,19 @@ import time
 import traceback
 
 import ffmpeg
+from PIL import Image
 from loguru import logger
 import cv2
 import numpy as np
+import subprocess
 
 
-def get_video_audio(input_path, start_seconds, duration):
+def get_video_audio(input_path, duration):
     try:
+        # 获取开头和结尾去除的秒数
+        start_seconds = int(os.getenv('VIDEO_SPLIT_START_SECONDS', 2))
+        end_seconds = int(os.getenv('VIDEO_SPLIT_END_SECONDS', 2))
+        duration = duration - start_seconds - end_seconds
         # 首先尝试使用CUDA硬件加速
         stream = ffmpeg.input(input_path, ss=start_seconds, t=duration, hwaccel='cuda')
         audio = stream.audio
@@ -167,7 +173,7 @@ def deduplicate_video(info, output_folder):
         # 从 video_stream 中获取 duration
         probe = ffmpeg.probe(video_path)
         duration = float(probe['format']['duration'])
-    audio_stream, video_stream = get_video_audio(video_path, 2, duration - 2 - 2)
+    audio_stream, video_stream = get_video_audio(video_path,duration)
     best_format = get_best_bitrate_format(info)
     vbr = best_format['vbr']
     if vbr is None or vbr == "":
@@ -183,18 +189,11 @@ def deduplicate_video(info, output_folder):
     if best_format['height'] < best_format['width']:
         video_stream = rotate_video(video_stream)
     # 旋转缩略图并替换原文件
-    thumbnail_path = os.path.join(output_folder, 'download.jpg')
-    if os.path.exists(thumbnail_path):
-        # 校验缩略图是否横屏，横屏需要旋转
-        thumbnail_info = ffmpeg.probe(thumbnail_path)
-        thumbnail_width = int(thumbnail_info['streams'][0]['width'])
-        thumbnail_height = int(thumbnail_info['streams'][0]['height'])
-        
-        if thumbnail_width > thumbnail_height:
-            temp_thumbnail_path = os.path.join(output_folder, 'temp_download.webp')
-            ffmpeg.input(thumbnail_path).filter('transpose', 1).output(temp_thumbnail_path).run()
-            os.replace(temp_thumbnail_path, thumbnail_path)
-            logger.info(f'缩略图已旋转并保存到 {thumbnail_path}')
+    thumbnail_path_jpg = os.path.join(output_folder, 'download.jpg')
+    thumbnail_path_webp = os.path.join(output_folder, 'download.webp')
+    thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
+    # 旋转封面
+    rotate_if_landscape(thumbnail_path)
     # 增加水印
     video_stream = add_random_watermarks(video_stream, 'paster', 100, 100)
     # 随机镜像
@@ -205,8 +204,21 @@ def deduplicate_video(info, output_folder):
     logger.info(f'开始对视频做去重处理')
     rotated_video_path = video_path.replace('.mp4', '_final.mp4')
     save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
-    logger.info(f'Video downloaded and rotated in {output_folder}')
+    logger.info(f'视频已去重至 {output_folder}')
 
+# 旋转图片
+def rotate_if_landscape(image_path):
+    with Image.open(image_path) as img:
+        width, height = img.size
+        # 判断是否为横屏
+        if width > height:
+            # 旋转图像 90 度
+            img = img.rotate(-90, expand=True)
+            # 检查文件扩展名
+            if not image_path.lower().endswith('.jpg'):
+                # 如果不是 jpg，修改文件名为 jpg
+                image_path = image_path.rsplit('.', 1)[0] + '.jpg'
+            img.save(image_path)
 
 # 根据分辨率计算合适的码率
 def calculate_bitrate(resolution):
@@ -285,20 +297,25 @@ def process_video(input_path, output_path):
 if __name__ == '__main__':
     start_time = time.time()
     video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
-    output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download1.mp4"
+    output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
     # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
     # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
-    # probe = ffmpeg.probe(video_path)
-    # duration = float(probe['format']['duration'])
-    # audio_stream1, video_stream1 = get_video_audio(video_path, 10, duration - 10 - 10)
+    probe = ffmpeg.probe(video_path)
+    duration = float(probe['format']['duration'])
+    audio_stream1, video_stream1 = get_video_audio(video_path,  duration)
     # video_stream1 = rotate_video(video_stream1)
+    root_folder = '../../social_auto_upload/videos'
+    background_video = random.choice([os.path.join(root, f) for root, _, files in os.walk(root_folder) for f in files if f.endswith('.mp4')])
+    video_stream1 = add_pip_to_video(video_stream1 ,background_video, 0)
     # video_stream1 = add_random_watermarks(video_stream1, '../paster', 100, 100)
-    # save_stream_to_video(video_stream1, audio_stream1,
-    #                      output_path,
-    #                      '22454k')
+    save_stream_to_video(video_stream1, audio_stream1,
+                         output_path,
+                         '22454k')
+    output_folder = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam"
+    # random_shift_rgb(video_path, output_path)
     end_time = time.time()
     processing_time = end_time - start_time
-
+    # rotate_if_landscape('E:\IDEA\workspace\YouDub-webui\social_auto_upload\\videos\B_cut\AyUStJDt3Ls_20231221_섹시걸그룹_막내의_Hot한_변신_하윤_Kokain_2_Phút_Hơn_HandClap_2023_K-XF_231210\download.webp')
     logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
     # video_path = "E:\IDEA\workspace\YouDub-webui\youdub/videos\z a m/20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
 
@@ -307,3 +324,8 @@ if __name__ == '__main__':
     # command = f'ffmpeg -i "{video_path}" -vf "transpose=1" -c:v copy -c:a copy "{rotated_video_path}"'
     # logger.info(command)
     # subprocess.run(command, shell=True)
+    # for root, _, files in os.walk('E:\IDEA\workspace\YouDub-webui\social_auto_upload\\videos'):
+    #     for filename in files:
+    #         if filename.lower().endswith('.webp'):
+    #             image_path = os.path.join(root, filename)
+    #             rotate_if_landscape(image_path)

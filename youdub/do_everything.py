@@ -16,7 +16,15 @@ from datetime import datetime
 
 from loguru import logger
 
-from social_auto_upload.uploader.douyin_uploader.main import DouYinVideo
+from social_auto_upload.uploader.douyin_uploader.main import DouYinVideo, douyin_setup
+from social_auto_upload.uploader.ks_uploader.main import ks_setup, KSVideo
+from social_auto_upload.uploader.tencent_uploader.main import weixin_setup, TencentVideo
+from social_auto_upload.uploader.tk_uploader.main_chrome import tiktok_setup, TiktokVideo
+from social_auto_upload.uploader.xhs_uploader.main import XHSVideo
+from social_auto_upload.utils.base_social_media import SOCIAL_MEDIA_DOUYIN, SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_KUAISHOU, \
+    SOCIAL_MEDIA_TIKTOK, SOCIAL_MEDIA_XHS
+from social_auto_upload.utils.constant import TencentZoneTypes
+from social_auto_upload.utils.file_util import get_account_file
 from social_auto_upload.utils.files_times import get_title_and_hashtags
 from util.sql_utils import getdb
 from youdub.entity.download_entity import DownloadEntity
@@ -33,20 +41,27 @@ db = getdb()
 
 def get_pub_user_config():
     # 从环境变量中获取pub_user配置
-    pub_user_config = os.getenv('PUB_USER', '{}')
+    pub_user_config = os.getenv('PUB_USER_CONF', '{}')
     return json.loads(pub_user_config)
 
 
 # 校验用户是否发布超过配置
-def check_user_publish(user_id, count, last_update_time):
-    pub_user_config = get_pub_user_config()
-    user_config = pub_user_config.get(str(user_id), {})
-    pub_count_limit = user_config.get('pub_count', 5)  # 默认值为5
-    pub_interval = int(user_config.get('pub_interval', 3600))
+def check_user_publish(user_id, platform):
+    today = datetime.now().strftime('%Y-%m-%d')
+    # 查询该用户当天发布的条数
+    sql = """
+                            SELECT COUNT(*) as count, max(update_time) as update_time FROM transport_job_pub 
+                            WHERE user_id = %s AND state = 1 AND DATE(update_time) = %s and platform = %s
+                        """
+    result = db.fetchone(sql, (user_id, today, platform))
+    count = result['count']
+    last_update_time = result['update_time']
+    pub_count_limit = get_config(user_id, f'{platform}_pub_count')
+    pub_interval = int(get_config(user_id, 'pub_interval'))
 
     # 新增：检查当前时间是否在6点之后
     current_time = datetime.now().time()
-    if current_time < datetime.strptime("06:00", "%H:%M").time():
+    if current_time < datetime.strptime(get_config(user_id, 'start_time'), "%H:%M").time():
         logger.info(f'{user_id}当前时间早于6点，暂时不允许发布')
         return True
 
@@ -54,20 +69,29 @@ def check_user_publish(user_id, count, last_update_time):
     if last_update_time:
         time_diff = datetime.now() - last_update_time
         if time_diff.total_seconds() < pub_interval:
-            logger.info(f'{user_id}上次发布距离现在小于{pub_interval}秒，等会再发布')
+            logger.info(
+                f'{user_id}在{platform}上次发布距离现在{time_diff.total_seconds()}秒，小于{pub_interval}秒，等会再发布')
             return True
 
     if count >= pub_count_limit:
-        logger.info(f'{user_id}已发布{pub_count_limit}条，明日再发布')
+        logger.info(f'{user_id}在{platform}已发布{pub_count_limit}条，可发布{count}条，明日再发布')
         return True
 
     return False
 
 
+def get_config(user_id, key):
+    pub_user_config = get_pub_user_config()
+    user_config = pub_user_config.get(str(user_id), {})
+    base_config = json.loads(os.getenv('PUB_USER_CONF_BASE', '{}'))
+    value = user_config.get(key, base_config.get(key))  # 默认值为5
+    return value
+
+
 def process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model, whisper_download_root,
                   whisper_batch_size, whisper_diarization, whisper_min_speakers, whisper_max_speakers,
                   translation_target_language, force_bytedance, subtitles, speed_up, fps, target_resolution,
-                  max_retries, auto_upload_video, cookie_file):
+                  max_retries, auto_upload_video):
     # only work during 21:00-8:00
     local_time = time.localtime()
 
@@ -84,7 +108,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                 return False
 
             # 下载视频
-            folder, dw_state = download_single_video(info, root_folder, resolution, cookie_file)
+            folder, dw_state = download_single_video(info, root_folder, resolution)
             folder = folder.replace('\\', '/').replace('\\\\', '/')
             if folder is None:
                 logger.info(f'{info["id"]}下载视频 {info["title"]} 失败')
@@ -104,7 +128,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                 tjd = db.fetchone(f"select * from transport_job_des where video_id='{info['id']}'")
                 if tjd:
                     logger.info(f'{info["id"]}视频已经处理过：{info["title"]}')
-                    return False
+                    return False, dw_state
                 # 替换原来的 f-string SQL 语句
                 tjd_id = insert_tjd(folder, info, transport_job, 1)
                 # 翻译标题
@@ -124,7 +148,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                     (3, folder, tjd_id)
                 )
                 # 上传视频
-                threading.Thread(target=up_video, args=(folder, tjd_id)).start()
+                # threading.Thread(target=up_video, args=(folder, tjd_id)).start()
                 return True
         except Exception as e:
             logger.exception(f'处理视频 {info["title"]} 时发生错误：{e}')
@@ -166,77 +190,101 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
 
     dwn_count = 0
     download_e = DownloadEntity(2)  # 使用类实例来包装 url_type
-    infos = get_info_list_from_url(urls, num_videos, page_num, download_e, cookies='cookies/cookies.txt')
+    infos = get_info_list_from_url(urls, num_videos, page_num, download_e)
     for info in infos:
         if info is None:
             logger.info(f'{urls}未解析出有用的数据')
             break
         try:
             info['transport_job'] = transport_job
-            success = process_video(info, root_folder, resolution, demucs_model, device, shifts, whisper_model,
-                                    whisper_download_root, whisper_batch_size,
-                                    whisper_diarization, whisper_min_speakers, whisper_max_speakers,
-                                    translation_target_language, force_bytedance, subtitles, speed_up, fps,
-                                    target_resolution, max_retries, auto_upload_video,
-                                    cookie_file='cookies/cookies.txt')
+            success, dw_state = process_video(info, root_folder, resolution, demucs_model, device, shifts,
+                                              whisper_model,
+                                              whisper_download_root, whisper_batch_size,
+                                              whisper_diarization, whisper_min_speakers, whisper_max_speakers,
+                                              translation_target_language, force_bytedance, subtitles, speed_up, fps,
+                                              target_resolution, max_retries, auto_upload_video)
             if success:
-                print(f'-----------------------succ{download_e.url_type}')
-                if download_e.url_type == 1:
-                    db.execute(
-                        "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
-                        (1, transport_job['id'])
-                    )
                 success_list.append(info)
                 dwn_count += 1
             else:
-                print(f'-----------------------err{download_e.url_type}')
                 fail_list.append(info)
+            if download_e.url_type == 1 and dw_state == 1:
+                db.execute(
+                    "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
+                    (1, transport_job['id'])
+                )
         except Exception as e:
             logger.exception(f'处理视频 {info["title"]} 时发生错误：{e}')
             fail_list.append(info)
             traceback.print_exc()
-    return dwn_count
+    return dwn_count, download_e
 
 
 # 上传视频
-@with_timeout_lock(timeout=60)
-def up_video(folder, tjd_id):
+@with_timeout_lock(timeout=60, max_workers=2)
+def up_video(folder, tjd_id, platform):
+    sql_check = """
+                        SELECT * FROM transport_job_pub 
+                        WHERE tjd_id = %s and platform =%s
+                        """
+    transport_job_pub = db.fetchone(sql_check, (tjd_id, platform))
+    user_id = None
+    if transport_job_pub:
+        user_id = transport_job_pub['user_id']
+        if transport_job_pub['state'] == 1:
+            logger.info(f"{transport_job_pub['user_id']}在{platform}平台上，tjd_id为{tjd_id}的任务之前发布成功过")
+            return True
     video_text = os.path.join(folder, 'video.txt')
     title, tags = get_title_and_hashtags(video_text)
     video_file = os.path.join(folder, 'download_final.mp4')
     thumbnail_path = os.path.join(folder, 'download.jpg')
-    # 获取当前日期
-    today = datetime.now().strftime('%Y-%m-%d')
+    thumbnail_path = thumbnail_path if os.path.exists(thumbnail_path) else None
     # 遍历 cookies 文件夹
-    cookie_files = glob.glob('../social_auto_upload/cookies/douyin_uploader/*.json')
+    cookie_files = glob.glob(f'../social_auto_upload/cookies/{platform}_uploader/*.json')
+    if user_id:
+        cookie_files = [get_account_file(user_id, platform)]
     for cookie_file in cookie_files:
         try:
             user_id = os.path.basename(cookie_file).split('_')[0]
-            # 查询该用户当天发布的条数
-            sql = """
-                            SELECT COUNT(*) as count, max(update_time) as update_time FROM transport_job_des 
-                            WHERE user_id = %s AND state = 0 AND DATE(update_time) = %s
-                        """
-            result = db.fetchone(sql, (user_id, today))
-            count = result['count']
-            last_update_time = result['update_time']
-
             # 使用配置校验发布条数
-            if check_user_publish(user_id, count, last_update_time):
+            if check_user_publish(user_id, platform):
                 continue
-
-            # if 'pharkil' in folder and user_id == '57779263751':
-            #     continue
-            app = DouYinVideo(title, video_file, tags, 0, cookie_file,
-                              thumbnail_path if os.path.exists(thumbnail_path) else None)
+            if platform == SOCIAL_MEDIA_DOUYIN:
+                asyncio.run(douyin_setup(cookie_file, handle=False))
+                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
+            elif platform == SOCIAL_MEDIA_TIKTOK:
+                asyncio.run(tiktok_setup(cookie_file, handle=True))
+                app = TiktokVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
+            elif platform == SOCIAL_MEDIA_TENCENT:
+                asyncio.run(weixin_setup(cookie_file, handle=True))
+                category = TencentZoneTypes.DANCE.value  # 标记原创需要否则不需要传
+                app = TencentVideo(title, video_file, tags, 0, cookie_file, category)
+            elif platform == SOCIAL_MEDIA_KUAISHOU:
+                asyncio.run(ks_setup(cookie_file, handle=True))
+                app = KSVideo(title, video_file, tags, 0, cookie_file)
+            elif platform == SOCIAL_MEDIA_XHS:
+                app = XHSVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
+            else:
+                print("不支持的平台")
+                continue
             # 使用 asyncio 运行异步方法
             up_state, up_test_msg = asyncio.run(app.main())
             logger.info(f'发布完毕{up_state}消息{up_test_msg}')
             db.execute(
-                "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,user_id = %s,up_test_msg= %s WHERE `id`=%s",
-                (0 if up_state else 99, folder, user_id, up_test_msg, tjd_id)
+                "INSERT INTO `transport_job_pub`(`tjd_id`, `user_id`, `platform`, `up_test_msg`, `state`, `create_time`, `update_time`) VALUES ( %s, %s, %s, %s, %s, NOW(), NOW())",
+                (tjd_id, user_id, platform, up_test_msg, 1 if up_state else 0)
             )
-            return
+            if not up_state:
+                db.execute(
+                    "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,up_test_msg= %s WHERE `id`=%s",
+                    (99, folder, up_test_msg, tjd_id)
+                )
+            else:
+                db.execute(
+                    "UPDATE `transport_job_des` SET file_path=%s  WHERE `id`=%s",
+                    (folder, tjd_id)
+                )
+            return True
         except Exception as e:
             logger.exception(f"处理补充任务发布时出错: {tjd_id} - 错误信息: {str(e)}")
             traceback.print_exc()

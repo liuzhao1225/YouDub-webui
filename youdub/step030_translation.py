@@ -470,4 +470,4 @@ def translate_all_title_under_folder(folder, target_language):
     return f'Translated all videos under {folder}'
 if __name__ == '__main__':
     translate_title(
-        r'videos/z a m/20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam', '简体中文')
+        r'videos\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam', '简体中文')

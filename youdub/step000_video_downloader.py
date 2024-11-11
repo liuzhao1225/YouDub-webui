@@ -9,6 +9,8 @@ from loguru import logger
 
 from youdub.util.lock_util import with_timeout_lock
 
+from PIL import Image
+
 
 def sanitize_title(title):
     # 只保留数字、字母、中文字符和空格
@@ -42,7 +44,7 @@ def get_target_folder(info, folder_path):
 # 返回值:
 # - 下载文件夹的路径
 # - 下载状态码，0 表示未下载，1 表示已下载，2 表示下载失败，3下载成功
-def download_single_video(info, folder_path, resolution='480p', cookies=None, use_archive=True):
+def download_single_video(info, folder_path, resolution='480p'):
     output_folder = get_target_folder(info, folder_path)
     if output_folder is None:
         return None, 0
@@ -61,38 +63,24 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
     # 创建日期范围对象
     date_range = DateRange(yesterday_str, yesterday_str)
 
-    ydl_opts = {
-        # 修改格式选择，确保不下载以 'av01' 开头的编码格式的视频
-        'format': 'bestvideo[vcodec!^=av01]+bestaudio/best[vcodec!^=av01]',
-        # 'format_sort': ['+codec:avc:m4a'],
-
-        'writeinfojson': True,
-        'writethumbnail': True,
-        'postprocessors': [
-            #     {
-            #     'key': 'EmbedThumbnail',
-            #     'already_have_thumbnail': False,
-            # },
-            {
-                'key': 'FFmpegThumbnailsConvertor',
-                'format': 'jpg',  # 将缩略图转换为 JPG 格式
-            },
-            {
-                'key': 'FFmpegVideoRemuxer',
-                'preferedformat': 'mp4',
-            }],
-        'outtmpl': os.path.join(output_folder, 'download.%(ext)s'),
-        'ignoreerrors': True,
-        'concurrent_fragment_downloads': 5,  # 增加线程数
-        'match_filter': duration_filter,  # 添加过滤器
-    }
-    # 是否使用已下载列表
-    if use_archive:
-        ydl_opts['download_archive'] = f"download/download_archive.txt"
-    # 添加cookies支持
-    if cookies:
-        ydl_opts['cookiefile'] = cookies
-        # ydl_opts['cookiesfrombrowser'] = ('chrome',)
+    ydl_opts = get_ydl_opts()
+    ydl_opts['writeinfojson'] = True
+    ydl_opts['writethumbnail'] = True
+    ydl_opts['postprocessors'] = [
+        #     {
+        #     'key': 'EmbedThumbnail',
+        #     'already_have_thumbnail': False,
+        # },
+        # {
+        #     'key': 'FFmpegThumbnailsConvertor',
+        #     'format': 'jpg',  # 将缩略图转换为 JPG 格式
+        # },
+        {
+            'key': 'FFmpegVideoRemuxer',
+            'preferedformat': 'mp4',
+        }]
+    ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
+    ydl_opts['concurrent_fragment_downloads'] = 5
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         error_code = ydl.download([info['webpage_url']])
@@ -104,6 +92,31 @@ def download_single_video(info, folder_path, resolution='480p', cookies=None, us
     return output_folder, 3
 
 
+# 获取下载配置信息
+def get_ydl_opts():
+    ydl_opts = {
+        # 修改格式选择，确保不下载以 'av01' 开头的编码格式的视频
+        'format': 'bestvideo[vcodec!^=av01]+bestaudio/best[vcodec!^=av01]',
+        # 'format_sort': ['+codec:avc:m4a'],
+        'match_filter': duration_filter,  # 添加过滤器
+        'ignoreerrors': True,
+    }
+
+    # 是否使用已下载列表
+    if bool(os.getenv('USE_ARCHIVE')):
+        ydl_opts['download_archive'] = f"download/download_archive.txt"
+    # 添加cookies支持
+    cookies = os.getenv('VIDEO_COOKIES', None)
+    if cookies:
+        ydl_opts['cookiefile'] = cookies
+        # ydl_opts['cookiesfrombrowser'] = ('chrome',)
+    # 添加代理
+    proxy_url = os.getenv('PROXY_URL', None)
+    if proxy_url:
+        ydl_opts['proxy'] = proxy_url
+    return ydl_opts
+
+
 def duration_filter(info_dict):
     duration = info_dict.get('duration', 0)
     if duration > 600:  # 600秒等于10分钟
@@ -111,32 +124,20 @@ def duration_filter(info_dict):
     return None
 
 
-def download_videos(info_list, folder_path, resolution='1080p', cookies=None):
+def download_videos(info_list, folder_path, resolution='1080p'):
     for info in info_list:
-        download_single_video(info, folder_path, resolution, cookies)
+        download_single_video(info, folder_path, resolution)
 
 
-def get_info_list_from_url(url, num_videos, page_num, download_e, cookies=None):
+def get_info_list_from_url(url, num_videos, page_num, download_e):
     if isinstance(url, str):
         url = [url]
-
-    # Download JSON information first
-    ydl_opts = {
-        # 修改这里的格式选择，确保不下载以 'av01' 开头的编码格式的视频
-        'format': 'best[vcodec!^=av01]',
-        # 'format_sort': ['+codec:avc:m4a'],
-        'dumpjson': True,
-        'ignoreerrors': True,
-        'download_archive': f"download/download_archive.txt",
-        'match_filter': duration_filter,  # 添加过滤器
-    }
+    ydl_opts = get_ydl_opts()
+    ydl_opts['dumpjson'] = True
     if num_videos:
         ydl_opts['playliststart'] = num_videos * (page_num - 1) + 1
         ydl_opts['playlistend'] = num_videos * page_num
     # 添加cookies支持
-    if cookies:
-        ydl_opts['cookiefile'] = cookies
-        # ydl_opts['cookiesfrombrowser'] = ('chrome',)
 
     # video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -157,26 +158,16 @@ def get_info_list_from_url(url, num_videos, page_num, download_e, cookies=None):
     # return video_info_list
 
 
-def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookies=None):
+def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
     resolution = resolution.replace('p', '')
     if isinstance(url, str):
         url = [url]
 
     # Download JSON information first
-    ydl_opts = {
-        # 修改这里的格式选择，确保不下载以 'av01' 开头的编码格式的视频
-        'format': 'best[vcodec!^=av01]',
-        # 'format_sort': ['+codec:avc:m4a'],
-        'dumpjson': True,
-        'dump_single_json': True,
-        'ignoreerrors': True
-    }
+    ydl_opts = get_ydl_opts()
+    ydl_opts['dumpjson'] = True
     if num_videos:
-        ydl_opts['playlistend']: num_videos
-    # 添加cookies支持
-    if cookies:
-        ydl_opts['cookiefile'] = cookies
-        # ydl_opts['cookiesfrombrowser'] = ('chrome',)
+        ydl_opts['playlistend'] = num_videos
 
     video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -190,15 +181,14 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5, cookie
                 video_info_list.append(result)
 
     # Now download videos with sanitized titles
-    download_videos(video_info_list, folder_path, resolution, cookies)
-
+    download_videos(video_info_list, folder_path, resolution)
 
 if __name__ == '__main__':
-    # # Example usage
-    # url = 'https://www.youtube.com/watch?v=RHJluugFABg'
-    # # url = 'https://www.youtube.com/watch?v=D6NQ1DYZ6Xs'
-    # folder_path = 'videos'
-    # download_from_url(url, folder_path, cookies='cookies/cookies.txt')
-    infos = get_info_list_from_url('https://www.youtube.com/@pharkil/videos', 5, cookies='cookies/cookies.txt')
-    for info in infos:
-        print(info)
+    # Example usage
+    url = 'https://www.youtube.com/watch?v=_5XPJr5aUgw'
+    # url = 'https://www.youtube.com/watch?v=D6NQ1DYZ6Xs'
+    folder_path = 'videos'
+    download_from_url(url, folder_path)
+    # infos = get_info_list_from_url('https://www.youtube.com/@pharkil/videos', 5, cookies='cookies/cookies.txt')
+    # for info in infos:
+    #     print(info)

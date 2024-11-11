@@ -52,7 +52,7 @@ def transport_video():
             dwn_count = 0
             page_num = 1
             while dwn_count < num_videos:
-                now_dwn_count = do_everything(transport_job, root_folder, transport_job['dwn_url'],
+                now_dwn_count, download_e = do_everything(transport_job, root_folder, transport_job['dwn_url'],
                                               num_videos, page_num,
                                               resolution, demucs_model,
                                               device, shifts, whisper_model, whisper_download_root,
@@ -61,6 +61,8 @@ def transport_video():
                                               force_bytedance,
                                               subtitles, speed_up, fps, target_resolution, max_workers,
                                               max_retries, auto_upload_video)
+                if download_e.url_type == 1:
+                    break
                 dwn_count += now_dwn_count
                 page_num += 1
         except Exception as e:
@@ -72,7 +74,7 @@ def transport_video():
 def replenish_job():
     # 查询符合条件的 transport_job
     jobs_to_replenish = db.fetchall(
-        "SELECT * FROM transport_job_des WHERE state != 0 and state !=99 order by id desc ")
+        "SELECT  tjd.*,tj.platform FROM transport_job_des tjd left join transport_job tj on tjd.tj_id = tj.id WHERE tjd.state != 0 and tjd.state !=99 ")
 
     for job in jobs_to_replenish:
         try:
@@ -101,18 +103,39 @@ def replenish_job():
                 )
             elif job['state'] == 3:
                 # 上传视频
-                up_video(folder, job['id'])
+                platforms = job['platform'].split(',')
+                tjd_id = job['id']
+                all_success = True
+                for platform in platforms:
+                    try:
+                        up_sta = up_video(folder, tjd_id, platform)
+                        if not up_sta:
+                            all_success = False
+                    except Exception as e:
+                        logger.exception(f"上传视频时出错: {tjd_id} - 平台: {platform} - 错误信息: {str(e)}")
+                        all_success = False
+                if all_success:
+                    db.execute(
+                        "UPDATE `transport_job_des` SET `state`=%s WHERE `id`=%s",
+                        (0, tjd_id)
+                    )
             elif job['state'] == 4:
-                threading.Thread(target=re_dl, args=(info, job)).start()
+                threading.Thread(target=dl_err_pass, args=(info, job)).start()
             # 可以继续添加其他状态的处理逻辑
         except Exception as e:
             logger.exception(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
+# 不想看到超时异常，先暂时捕获
+def dl_err_pass(info, job):
+    try:
+        re_dl(info, job)
+    except:
+        pass
 
 
-@with_timeout_lock(timeout=1, max_workers=1)
+@with_timeout_lock(timeout=1, max_workers=5)
 def re_dl(info, job):
     try:
-        folder, dw_state = download_single_video(info, root_folder, resolution, 'cookies/cookies.txt', False)
+        folder, dw_state = download_single_video(info, root_folder, resolution)
         if dw_state == 1 or dw_state == 3:
             db.execute(
                 "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
