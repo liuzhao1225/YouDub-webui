@@ -5,7 +5,10 @@ import sys
 import threading
 import traceback
 from datetime import datetime
-
+# 获取当前文件所在目录的父目录（项目根目录）
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 将项目根目录添加到系统路径
+sys.path.append(root_dir)
 from apscheduler.schedulers.blocking import BlockingScheduler
 from loguru import logger
 from sqlalchemy.testing import db
@@ -20,7 +23,10 @@ from youdub.util.lock_util import with_timeout_lock
 
 db = getdb()
 
-root_folder = "../social_auto_upload/videos"  # 设置根文件夹路径
+# 获取项目根目录的绝对路径
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 构建videos文件夹的绝对路径
+root_folder = os.path.join(root_dir, "social_auto_upload", "videos")
 resolution = '1080p'  # 视频分辨率
 
 

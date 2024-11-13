@@ -107,10 +107,10 @@ class MySQLConnectionPool:
 
 def getdb():
     cfg = {
-        'host': '49.232.31.208',
+        'host': 'mysql.sqlpub.com',
         'port': 3306,
-        'user': 'root',
-        'passwd': 'leyuan521',
+        'user': 'leyuan',
+        'passwd': 'Re6dVqW89d4JgZIc',
         'db': 'video_tools'
     }
 

@@ -300,17 +300,17 @@ if __name__ == '__main__':
     output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
     # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
     # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
-    probe = ffmpeg.probe(video_path)
-    duration = float(probe['format']['duration'])
-    audio_stream1, video_stream1 = get_video_audio(video_path,  duration)
-    # video_stream1 = rotate_video(video_stream1)
-    root_folder = '../../social_auto_upload/videos'
-    background_video = random.choice([os.path.join(root, f) for root, _, files in os.walk(root_folder) for f in files if f.endswith('.mp4')])
-    video_stream1 = add_pip_to_video(video_stream1 ,background_video, 0)
+    # probe = ffmpeg.probe(video_path)
+    # duration = float(probe['format']['duration'])
+    # audio_stream1, video_stream1 = get_video_audio(video_path,  duration)
+    # # video_stream1 = rotate_video(video_stream1)
+    # root_folder = '../../social_auto_upload/videos'
+    # background_video = random.choice([os.path.join(root, f) for root, _, files in os.walk(root_folder) for f in files if f.endswith('.mp4')])
+    process_video(video_path ,output_path)
     # video_stream1 = add_random_watermarks(video_stream1, '../paster', 100, 100)
-    save_stream_to_video(video_stream1, audio_stream1,
-                         output_path,
-                         '22454k')
+    # save_stream_to_video(video_stream1, audio_stream1,
+    #                      output_path,
+    #                      '22454k')
     output_folder = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam"
     # random_shift_rgb(video_path, output_path)
     end_time = time.time()

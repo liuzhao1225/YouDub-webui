@@ -38,7 +38,10 @@ from .util.lock_util import with_timeout_lock
 
 db = getdb()
 
-
+# 获取项目根目录的绝对路径
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 构建videos文件夹的绝对路径
+cookie_path = os.path.join(root_dir, "social_auto_upload", "cookies")
 def get_pub_user_config():
     # 从环境变量中获取pub_user配置
     pub_user_config = os.getenv('PUB_USER_CONF', '{}')
@@ -61,8 +64,9 @@ def check_user_publish(user_id, platform):
 
     # 新增：检查当前时间是否在6点之后
     current_time = datetime.now().time()
-    if current_time < datetime.strptime(get_config(user_id, 'start_time'), "%H:%M").time():
-        logger.info(f'{user_id}当前时间早于6点，暂时不允许发布')
+    start_time_con = get_config(user_id, 'start_time')
+    if current_time < datetime.strptime(start_time_con, "%H:%M").time():
+        logger.info(f'{user_id}当前时间早于{start_time_con}点，暂时不允许发布')
         return True
 
     # 检查最后更新时间是否在30分钟之前
@@ -240,7 +244,7 @@ def up_video(folder, tjd_id, platform):
     thumbnail_path = os.path.join(folder, 'download.jpg')
     thumbnail_path = thumbnail_path if os.path.exists(thumbnail_path) else None
     # 遍历 cookies 文件夹
-    cookie_files = glob.glob(f'../social_auto_upload/cookies/{platform}_uploader/*.json')
+    cookie_files = glob.glob(f'{cookie_path}/{platform}_uploader/*.json')
     if user_id:
         cookie_files = [get_account_file(user_id, platform)]
     for cookie_file in cookie_files:
