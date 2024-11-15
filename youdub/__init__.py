@@ -4,7 +4,7 @@ BASE_DIR = Path(__file__).parent.resolve()
 
 from loguru import logger
 
-
+# 自动搬运视频
 def setup_logger():
     """初始化全局日志配置"""
     # 移除默认的处理器
