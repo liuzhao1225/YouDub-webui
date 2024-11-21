@@ -26,7 +26,7 @@ from social_auto_upload.utils.base_social_media import SOCIAL_MEDIA_DOUYIN, SOCI
 from social_auto_upload.utils.constant import TencentZoneTypes
 from social_auto_upload.utils.file_util import get_account_file
 from social_auto_upload.utils.files_times import get_title_and_hashtags
-from util.sql_utils import getdb
+from youdub.util.sql_utils import getdb
 from youdub.entity.download_entity import DownloadEntity
 from youdub.util.ffmpeg_utils import deduplicate_video
 from .step000_video_downloader import get_info_list_from_url, download_single_video, get_target_folder
@@ -42,6 +42,8 @@ db = getdb()
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 构建videos文件夹的绝对路径
 cookie_path = os.path.join(root_dir, "social_auto_upload", "cookies")
+
+
 def get_pub_user_config():
     # 从环境变量中获取pub_user配置
     pub_user_config = os.getenv('PUB_USER_CONF', '{}')
@@ -109,25 +111,25 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
             folder = get_target_folder(info, root_folder)
             if folder is None:
                 logger.info(f'无法获取视频 {info["title"]} 的目标文件夹')
-                return False
+                return False, 0
 
             # 下载视频
             folder, dw_state = download_single_video(info, root_folder, resolution)
             folder = folder.replace('\\', '/').replace('\\\\', '/')
             if folder is None:
                 logger.info(f'{info["id"]}下载视频 {info["title"]} 失败')
-                return False
+                return False, dw_state
             elif dw_state == 2:
                 json_file_path = os.path.join(folder, 'download.info.json')
                 if not os.path.exists(json_file_path):
                     logger.info(f'{info["id"]}下载失败，并且没有info.json,直接返回：{info["title"]}')
-                    return False
+                    return False, dw_state
                 tjd = db.fetchone(f"select * from transport_job_des where video_id='{info['id']}'")
                 if tjd:
                     logger.info(f'{info["id"]}视频已经处理过：{info["title"]}')
-                    return False
+                    return False, dw_state
                 insert_tjd(folder, info, transport_job, 4)
-                return True
+                return True, dw_state
             elif dw_state == 3 or dw_state == 1:
                 tjd = db.fetchone(f"select * from transport_job_des where video_id='{info['id']}'")
                 if tjd:
@@ -146,18 +148,21 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                     (2, folder, tjd_id)
                 )
                 # 去重视频
+                start_time = time.time()
                 deduplicate_video(info, folder)
+                end_time = time.time()
+                logger.info(f"去重视频处理完成，耗时: {end_time - start_time:.2f} 秒")
                 db.execute(
                     "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
                     (3, folder, tjd_id)
                 )
                 # 上传视频
                 # threading.Thread(target=up_video, args=(folder, tjd_id)).start()
-                return True
+                return True, dw_state
         except Exception as e:
             logger.exception(f'处理视频 {info["title"]} 时发生错误：{e}')
             traceback.print_exc()
-    return False
+    return False, 0
 
 
 # 新增数据
@@ -212,7 +217,7 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
                 dwn_count += 1
             else:
                 fail_list.append(info)
-            if download_e.url_type == 1 and dw_state == 1:
+            if download_e.url_type == 1 and (dw_state == 1 or dw_state == 3):
                 db.execute(
                     "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
                     (1, transport_job['id'])
@@ -226,18 +231,24 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
 
 # 上传视频
 @with_timeout_lock(timeout=60, max_workers=2)
-def up_video(folder, tjd_id, platform):
-    sql_check = """
-                        SELECT * FROM transport_job_pub 
-                        WHERE tjd_id = %s and platform =%s
-                        """
-    transport_job_pub = db.fetchone(sql_check, (tjd_id, platform))
+def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None):
     user_id = None
-    if transport_job_pub:
-        user_id = transport_job_pub['user_id']
-        if transport_job_pub['state'] == 1:
-            logger.info(f"{transport_job_pub['user_id']}在{platform}平台上，tjd_id为{tjd_id}的任务之前发布成功过")
-            return True
+    if check_job:
+        sql_check = """
+                            SELECT * FROM transport_job_pub 
+                            WHERE tjd_id = %s and platform =%s
+                            """
+        transport_job_pub = db.fetchone(sql_check, (tjd_id, platform))
+        if transport_job_pub:
+            user_id = transport_job_pub['user_id']
+            if transport_job_pub['state'] == 1:
+                logger.info(f"{transport_job_pub['user_id']}在{platform}平台上，tjd_id为{tjd_id}的任务之前发布成功过")
+                return True,1
+    elif account:
+        user_id = account.get('shop_user_id', '')
+    if tj_user_ids and user_id not in tj_user_ids:
+        logger.info(f"{tjd_id}：{user_id}不再可发布用户{tj_user_ids}内")
+        return False, 0
     video_text = os.path.join(folder, 'video.txt')
     title, tags = get_title_and_hashtags(video_text)
     video_file = os.path.join(folder, 'download_final.mp4')
@@ -247,6 +258,7 @@ def up_video(folder, tjd_id, platform):
     cookie_files = glob.glob(f'{cookie_path}/{platform}_uploader/*.json')
     if user_id:
         cookie_files = [get_account_file(user_id, platform)]
+    success_up = True
     for cookie_file in cookie_files:
         try:
             user_id = os.path.basename(cookie_file).split('_')[0]
@@ -274,21 +286,25 @@ def up_video(folder, tjd_id, platform):
             # 使用 asyncio 运行异步方法
             up_state, up_test_msg = asyncio.run(app.main())
             logger.info(f'发布完毕{up_state}消息{up_test_msg}')
-            db.execute(
-                "INSERT INTO `transport_job_pub`(`tjd_id`, `user_id`, `platform`, `up_test_msg`, `state`, `create_time`, `update_time`) VALUES ( %s, %s, %s, %s, %s, NOW(), NOW())",
-                (tjd_id, user_id, platform, up_test_msg, 1 if up_state else 0)
-            )
-            if not up_state:
+            if check_job:
                 db.execute(
-                    "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,up_test_msg= %s WHERE `id`=%s",
-                    (99, folder, up_test_msg, tjd_id)
+                    "INSERT INTO `transport_job_pub`(`tjd_id`, `user_id`, `platform`, `up_test_msg`, `state`, `create_time`, `update_time`) VALUES ( %s, %s, %s, %s, %s, NOW(), NOW())",
+                    (tjd_id, user_id, platform, up_test_msg, 1 if up_state else 0)
                 )
-            else:
-                db.execute(
-                    "UPDATE `transport_job_des` SET file_path=%s  WHERE `id`=%s",
-                    (folder, tjd_id)
-                )
-            return True
+                if not up_state:
+                    db.execute(
+                        "UPDATE `transport_job_des` SET `state`=%s, file_path=%s ,up_test_msg= %s WHERE `id`=%s",
+                        (99, folder, up_test_msg, tjd_id)
+                    )
+                    return False, 0
+                else:
+                    db.execute(
+                        "UPDATE `transport_job_des` SET file_path=%s  WHERE `id`=%s",
+                        (folder, tjd_id)
+                    )
+            return True,1
         except Exception as e:
             logger.exception(f"处理补充任务发布时出错: {tjd_id} - 错误信息: {str(e)}")
             traceback.print_exc()
+            success_up = False,0
+    return success_up,0

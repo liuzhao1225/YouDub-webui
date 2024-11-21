@@ -186,7 +186,7 @@ def title_rize(info, target_language='简体中文'):
     tags = info['tags']
     messages = [
         {'role': 'system',
-         'content': f'You are a native speaker of {target_language}. Please translate the title  into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video" "tags": [list of tags in {target_language}]}}\n```.'},
+         'content': f'You are a native speaker of {target_language}. Please translate the title  into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video" "tags": [list of tags in {target_language}]}}\n need remove dates or time from the text and Delete keywords related to 18+```.'},
         {'role': 'user',
          'content': f'The title of the video is "{title}". Tags: {tags}.\nPlease translate the above title and tags into {target_language} in JSON format. ```json\n{{"title": "", ""， "tags": []}}\n```. Remember to tranlate the title  and tags into {target_language} in JSON.'},
     ]

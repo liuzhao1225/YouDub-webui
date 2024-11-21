@@ -3,8 +3,12 @@ import json
 import os
 import sys
 import threading
+import time
 import traceback
 from datetime import datetime
+
+from dotenv import load_dotenv
+
 # 获取当前文件所在目录的父目录（项目根目录）
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 将项目根目录添加到系统路径
@@ -20,7 +24,7 @@ from youdub.step030_translation import translate_all_title_under_folder
 from youdub.step060_genrate_info import generate_all_info_under_folder
 from youdub.util.ffmpeg_utils import deduplicate_video
 from youdub.util.lock_util import with_timeout_lock
-
+load_dotenv()
 db = getdb()
 
 # 获取项目根目录的绝对路径
@@ -80,7 +84,7 @@ def transport_video():
 def replenish_job():
     # 查询符合条件的 transport_job
     jobs_to_replenish = db.fetchall(
-        "SELECT  tjd.*,tj.platform FROM transport_job_des tjd left join transport_job tj on tjd.tj_id = tj.id WHERE tjd.state != 0 and tjd.state !=99 ")
+        "SELECT  tjd.*,tj.platform,tj.user_id tj_user_id FROM transport_job_des tjd left join transport_job tj on tjd.tj_id = tj.id WHERE tjd.state != 0 and tjd.state !=99 order by id desc ")
 
     for job in jobs_to_replenish:
         try:
@@ -88,6 +92,11 @@ def replenish_job():
             json_file_path = os.path.join(folder, 'download.info.json')
             with open(json_file_path, 'r', encoding='utf-8') as f:
                 info = json.load(f)
+            # if job['state'] != 4:
+            #     db.execute(
+            #         "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
+            #         (1, job['id'])
+            #     )
             # 根据不同的状态调用不同的方法
             if job['state'] == 1:
                 # 调用处理状态1的方法
@@ -102,7 +111,10 @@ def replenish_job():
                 )
             elif job['state'] == 2:
                 # 去重视频
+                start_time = time.time()
                 deduplicate_video(info, folder)
+                end_time = time.time()
+                logger.info(f"去重视频处理完成，耗时: {end_time - start_time:.2f} 秒")
                 db.execute(
                     "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
                     (3, folder, job['id'])
@@ -110,24 +122,28 @@ def replenish_job():
             elif job['state'] == 3:
                 # 上传视频
                 platforms = job['platform'].split(',')
+                tj_user_ids = job['tj_user_id'].split(',') if job['tj_user_id'] else None
                 tjd_id = job['id']
                 all_success = True
+                plat_up_count = 0
                 for platform in platforms:
                     try:
-                        up_sta = up_video(folder, tjd_id, platform)
+                        up_sta, up_count = up_video(folder, platform, tjd_id=tjd_id,tj_user_ids=tj_user_ids)
                         if not up_sta:
                             all_success = False
+                        else:
+                            if up_count == 1:
+                                plat_up_count += 1
                     except Exception as e:
                         logger.exception(f"上传视频时出错: {tjd_id} - 平台: {platform} - 错误信息: {str(e)}")
                         all_success = False
-                if all_success:
+                if all_success and plat_up_count > 0:
                     db.execute(
                         "UPDATE `transport_job_des` SET `state`=%s WHERE `id`=%s",
                         (0, tjd_id)
                     )
             elif job['state'] == 4:
                 threading.Thread(target=dl_err_pass, args=(info, job)).start()
-            # 可以继续添加其他状态的处理逻辑
         except Exception as e:
             logger.exception(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
 # 不想看到超时异常，先暂时捕获
@@ -138,7 +154,7 @@ def dl_err_pass(info, job):
         pass
 
 
-@with_timeout_lock(timeout=1, max_workers=5)
+@with_timeout_lock(timeout=1, max_workers=3)
 def re_dl(info, job):
     try:
         folder, dw_state = download_single_video(info, root_folder, resolution)
@@ -146,6 +162,10 @@ def re_dl(info, job):
             db.execute(
                 "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
                 (1, folder, job['id'])
+            )
+            db.execute(
+                "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
+                (1, job['tj_id'])
             )
     except Exception as e:
         logger.info(f'有其他下载任务在执行{e}')
@@ -160,6 +180,6 @@ if __name__ == '__main__':
     else:
         scheduler = BlockingScheduler()
         now = datetime.now()
-        scheduler.add_job(transport_video, 'interval', minutes=32, max_instances=1, next_run_time=now)
         scheduler.add_job(replenish_job, 'interval', minutes=5, max_instances=1, next_run_time=now)
+        scheduler.add_job(transport_video, 'interval', minutes=32, max_instances=1, next_run_time=now)
         scheduler.start()
