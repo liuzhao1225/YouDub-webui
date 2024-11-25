@@ -10,6 +10,7 @@ import numpy as np
 import subprocess
 
 from lxml.etree import PI
+from sympy import true
 
 from Crawler.lib.logger import logger
 from youdub.util.lock_util import with_timeout_lock
@@ -96,15 +97,19 @@ def save_stream_to_video(video_stream, audio_stream, output_path, vbr):
                 'cq:v': 24,                    # 视频流的恒定质量参数
                 'aspect': '0.562',             # 设置视频宽高比
                 'c:a': 'aac',                  # 音频编码器使用AAC
+                'ar': 44100,                   # 设置音频采样率为44.1kHz
+                'b:a': '192k',                 # 设置音频比特率为192kbps
+                'ac': 2,                       # 设置音频通道数为2（立体声）
                 'strict': '-2',                # 允许实验性编码器
                 'rtbufsize': '30M',            # 实时缓冲区大小为30MB
-                'max_muxing_queue_size': 1024  # 设置最大复用队列大小
+                'max_muxing_queue_size': 1024, # 设置最大复用队列大小
+                'r': 60                        # 设置输出视频的帧率
             }
         )
 
         # 打印 ffmpeg 命令
         ffmpeg_command = ffmpeg.compile(stream)
-        logger.info("FFmpeg command:", ' '.join(ffmpeg_command))
+        logger.info("FFmpeg command: " + ' '.join(ffmpeg_command))
 
         ffmpeg.run(stream, overwrite_output=True)
     except ffmpeg.Error as e:
@@ -171,7 +176,7 @@ def add_pip_to_video(background_video, pip_video, output_video, opacity=1.0):
 
 
 # 目录内短视频拼接去重，用于带货视频生成
-def concat_videos(input_folder):
+def concat_videos(input_folder, output_path):
     # 获取目标时长（默认为60秒，可以从环境变量中获取）
     target_duration = float(os.getenv('SHORT_VIDEO_DURATION', 60))
     
@@ -184,19 +189,20 @@ def concat_videos(input_folder):
         logger.error(f'目录 {input_folder} 中没有找到视频文件')
         return
 
-    # 初始化视频和音频流列表
-    video_streams = []  # 存储视频流
-    audio_streams = []  # 存储音频流
+    # 初始化临时文件列表和总时长
+    temp_files = []
     total_duration = 0
     video_index = 0
     total_video_index = 0
 
+    # 使用while循环，直到达到目标时长或处理完所有视频
     while total_duration < target_duration and video_index < len(video_files):
         video_file = video_files[video_index]
         video_index += 1
         total_video_index += 1
         if video_index >= len(video_files):
             video_index = 0
+            
         try:
             # 获取当前视频的时长和尺寸信息
             probe = ffmpeg.probe(video_file)
@@ -205,36 +211,20 @@ def concat_videos(input_folder):
             height = int(video_info['height'])
             current_duration = float(probe['format']['duration'])
             
-            # 分别获取视频和音频流
-            stream = ffmpeg.input(video_file)
-            video_stream = stream.video
-            audio_stream = stream.audio
+            # 处理当前视频
+            video_stream = ffmpeg.input(video_file)
+            audio_stream = video_stream.audio
+            # 应用视频特效
+            video_stream = apply_video_effects(video_stream, width, height, current_duration, total_video_index > len(video_files), False)
             
-            # 横屏视频才旋转
-            if height < width:
-                video_stream = rotate_video(video_stream)
-            if total_video_index > len(video_files):
-                flip_modes = ['h', 'v', 'hv', 'r90', 'l90', 'r180', 'r270', 'l270']
-                chosen_flip = random.choice(flip_modes)
-                if chosen_flip:
-                    video_stream = flip_video(video_stream, chosen_flip)
-                # 添加特效叠加
-                video_stream = add_video_effect(
-                    video_stream,
-                    effect_dir='../data/video/effects',  # 特效视频目录
-                    duration=current_duration,
-                    width=width,
-                    height=height
-                )
-            else:
-                # 随机翻转
-                if random.choice([True, False]):
-                    video_stream = ffmpeg.filter(video_stream, 'hflip')
-
-            # 分别添加视频和音频流到对应列表
-            video_streams.append(video_stream)
-            audio_streams.append(audio_stream)
+            # 生成临时文件路径
+            temp_file = os.path.join(input_folder, f'temp_{len(temp_files)}.mp4')
             
+            # 保存处理后的视频到临时文件
+            save_stream_to_video(video_stream, audio_stream, temp_file, '20000k')
+            
+            # 添加临时文件到列表
+            temp_files.append(temp_file)
             total_duration += current_duration
             logger.info(f'添加视频: {os.path.basename(video_file)}, 时长: {current_duration:.2f}秒, 累计时长: {total_duration:.2f}秒')
 
@@ -242,38 +232,59 @@ def concat_videos(input_folder):
             logger.exception(f'处理视频 {video_file} 时出错: ',e)
             continue
 
-    if not video_streams:
+    if not temp_files:
         logger.error('没有足够的视频文件进行拼接')
-        return
+        raise Exception('没有足够的视频文件进行拼接')
 
-    logger.info(f'完成视频收集，总时长: {total_duration:.2f}秒，使用了 {len(video_streams)} 个视频片段')
+    logger.info(f'完成视频处理，总时长: {total_duration:.2f}秒，使用了 {len(temp_files)} 个视频片段')
 
     try:
-        # 分别拼接视频和音频流
-        concatenated_video = ffmpeg.concat(*video_streams, v=1, a=0)
-        concatenated_audio = ffmpeg.concat(*audio_streams, v=0, a=1)
-        # 调整视频属性
-        concatenated_audio = adjust_video_properties(
-            concatenated_audio,
-            saturation=random.uniform(0.95, 1.05),
-            brightness=random.uniform(0, 0.05),
-            contrast=random.uniform(0.95, 1.05)
-        )
-        paster_dir = '../data/video/paster'
-        # 添加水印
-        if paster_dir and os.path.exists(paster_dir):
-            concatenated_video = add_random_watermarks(concatenated_video, paster_dir, 100, 100)
-        rotated_video_path = os.path.join(input_folder, 'download_final.mp4')
+        # 创建包含所有临时文件路径的文本文件
+        concat_list = os.path.join(input_folder, 'concat_list.txt')
+        with open(concat_list, 'w', encoding='utf-8') as f:
+            for temp_file in temp_files:
+                f.write(f"file '{os.path.basename(temp_file)}'\n")
 
-        # 保存拼接后的视频
-        save_stream_to_video(concatenated_video, concatenated_audio, rotated_video_path, '20000k')
-        logger.info(f'视频已保存至: {rotated_video_path}')
-        return rotated_video_path
+        # 修改拼接命令，添加时间戳处理参数
+        concat_command = [
+            'ffmpeg', '-f', 'concat', '-safe', '0',
+            '-i', concat_list,
+            '-c', 'copy',
+            '-async', '1',
+            '-vsync', '2',
+            '-fflags', '+genpts',   # 生成表示时间戳
+            '-reset_timestamps', '1',  # 添加重置时间戳参数
+            output_path
+        ]
+        
+        subprocess.run(concat_command, check=True)
+        
+        # 清理临时文件
+        for temp_file in temp_files:
+            try:
+                os.remove(temp_file)
+            except OSError:
+                pass
+        try:
+            os.remove(concat_list)
+        except OSError:
+            pass
+
+        logger.info(f'视频已保存至: {output_path}')
         
     except Exception as e:
         logger.exception(f'拼接视频时出错: {str(e)}')
-        return None
-
+        # 清理临时文件
+        for temp_file in temp_files:
+            try:
+                os.remove(temp_file)
+            except OSError:
+                pass
+        try:
+            os.remove(concat_list)
+        except OSError:
+            pass
+        raise Exception(e)
 
 # 去重视频
 @with_timeout_lock(timeout=1, max_workers=1)
@@ -300,24 +311,52 @@ def deduplicate_video(info, output_folder):
     else:
         vbr = f'{vbr}k'
 
-    # 竖屏视频才旋转
-    if best_format['height'] < best_format['width']:
-        video_stream = rotate_video(video_stream)
-        
     # 旋转缩略图并替换原文件
     thumbnail_path_jpg = os.path.join(output_folder, 'download.jpg')
     thumbnail_path_webp = os.path.join(output_folder, 'download.webp')
     thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
     # 旋转封面
     rotate_if_landscape(thumbnail_path)
+    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration)
+    logger.info(f'开始对视频做去重处理')
+    rotated_video_path = video_path.replace('.mp4', '_final.mp4')
+    save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
+    logger.info(f'视频已去重至 {output_folder}')
+
+
+def apply_video_effects(video_stream, width, height, duration,need_flip=False,_hflip =True):
+    # 竖屏视频才旋转
+    if height < width:
+        video_stream = rotate_video(video_stream)
     paster_dir = '../data/video/paster'
     # 添加水印
     if paster_dir and os.path.exists(paster_dir):
         video_stream = add_random_watermarks(video_stream, paster_dir, 100, 100)
-    # 随机翻转
-    if random.choice([True, False]):
-        video_stream = ffmpeg.filter(video_stream, 'hflip')
 
+    if need_flip:
+        flip_modes = ['h', 'v', 'hv', 'r90', 'l90', 'r180', 'r270', 'l270']
+        chosen_flip = random.choice(flip_modes)
+        if chosen_flip:
+            video_stream = flip_video(video_stream, chosen_flip)
+        print(f'******************************{chosen_flip}')
+        if chosen_flip in ['r90', 'l90', 'l270']:
+            width, height = height, width
+        print(f'************{width}******************{height}') 
+        # 添加抖动效果
+        video_stream = add_shake_effect(video_stream, intensity=random.uniform(0, 1))
+        # 添加特效叠加
+        video_stream = add_video_effect(
+            video_stream,
+            effect_dir='../data/video/effects',  # 特效视频目录
+            duration=duration,
+            width=width,
+            height=height
+        )
+    elif _hflip:
+         # 随机翻转
+        if random.choice([True, False]):
+            video_stream = ffmpeg.filter(video_stream, 'hflip')
+        
     # 调整视频属性
     video_stream = adjust_video_properties(
         video_stream,
@@ -325,10 +364,8 @@ def deduplicate_video(info, output_folder):
         brightness=random.uniform(0, 0.05),
         contrast=random.uniform(0.95, 1.05)
     )
-    logger.info(f'开始对视频做去重处理')
-    rotated_video_path = video_path.replace('.mp4', '_final.mp4')
-    save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
-    logger.info(f'视频已去重至 {output_folder}')
+    return video_stream
+
 
 # 旋转图片
 def rotate_if_landscape(image_path):
@@ -488,7 +525,7 @@ def add_video_effect(input_stream, effect_dir, width, height, duration):
         ffmpeg.input(effect_video, stream_loop=-1, t=duration)  # 循环特效视频并设置时长
         .filter('scale', width, height)  # 调整特效素材大小
         .filter('format', 'rgba')
-        .filter('colorchannelmixer', aa=0.5)  # 设置透明度
+        .filter('colorchannelmixer', aa=random.uniform(0.1, 0.5))  # 设置透明度
     ))
 
 def speed_change_video(input_stream, speed_factor=1.0):
@@ -577,17 +614,25 @@ def add_shake_effect(input_stream, intensity=5):
     
     Args:
         input_stream: 输入视频流
-        intensity: 抖动强度 (1-10)
+        intensity: 抖动强度 (0-10)
+            0: 无抖动
+            1-3: 轻微抖动
+            4-7: 中等抖动
+            8-10: 剧烈抖动
     
     Returns:
         处理后的视频流
     """
-    if not 1 <= intensity <= 10:
+    print(f'************{intensity}******************') 
+
+    if intensity == 0:
+        return input_stream
+    if not 0 < intensity <= 10:
         raise ValueError("抖动强度必须在1到10之间")
     
-    # 计算抖动参数
-    frequency = intensity * 2
-    amplitude = intensity * 0.5
+    # 调整计算参数使抖动更加柔和
+    frequency = intensity  # 降低频率
+    amplitude = intensity * 0.2  # 降低幅度系数，使最小抖动更加轻微
     
     # 生成抖动表达式
     expr = f"{amplitude}*sin({frequency}*t)"

@@ -231,7 +231,7 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
 
 # 上传视频
 @with_timeout_lock(timeout=60, max_workers=2)
-def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None):
+async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None,goods =None):
     user_id = None
     if check_job:
         sql_check = """
@@ -243,7 +243,7 @@ def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user
             user_id = transport_job_pub['user_id']
             if transport_job_pub['state'] == 1:
                 logger.info(f"{transport_job_pub['user_id']}在{platform}平台上，tjd_id为{tjd_id}的任务之前发布成功过")
-                return True,1
+                return True, 1
     elif account:
         user_id = account.get('shop_user_id', '')
     if tj_user_ids and user_id not in tj_user_ids:
@@ -263,28 +263,28 @@ def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user
         try:
             user_id = os.path.basename(cookie_file).split('_')[0]
             # 使用配置校验发布条数
-            if check_user_publish(user_id, platform):
+            if not account and check_user_publish(user_id, platform):
                 continue
             if platform == SOCIAL_MEDIA_DOUYIN:
-                asyncio.run(douyin_setup(cookie_file, handle=False))
+                await douyin_setup(cookie_file, handle=False)
                 app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
             elif platform == SOCIAL_MEDIA_TIKTOK:
-                asyncio.run(tiktok_setup(cookie_file, handle=True))
+                await tiktok_setup(cookie_file, handle=True)
                 app = TiktokVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
             elif platform == SOCIAL_MEDIA_TENCENT:
-                asyncio.run(weixin_setup(cookie_file, handle=True))
+                await weixin_setup(cookie_file, handle=True)
                 category = TencentZoneTypes.DANCE.value  # 标记原创需要否则不需要传
                 app = TencentVideo(title, video_file, tags, 0, cookie_file, category)
             elif platform == SOCIAL_MEDIA_KUAISHOU:
-                asyncio.run(ks_setup(cookie_file, handle=True))
-                app = KSVideo(title, video_file, tags, 0, cookie_file)
+                await ks_setup(cookie_file, handle=True)
+                app = KSVideo(title, video_file, tags, 0, cookie_file,goods=goods)
             elif platform == SOCIAL_MEDIA_XHS:
                 app = XHSVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
             else:
                 print("不支持的平台")
                 continue
             # 使用 asyncio 运行异步方法
-            up_state, up_test_msg = asyncio.run(app.main())
+            up_state, up_test_msg = await app.main()
             logger.info(f'发布完毕{up_state}消息{up_test_msg}')
             if check_job:
                 db.execute(
@@ -302,9 +302,9 @@ def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user
                         "UPDATE `transport_job_des` SET file_path=%s  WHERE `id`=%s",
                         (folder, tjd_id)
                     )
-            return True,1
+            return True, 1
         except Exception as e:
             logger.exception(f"处理补充任务发布时出错: {tjd_id} - 错误信息: {str(e)}")
             traceback.print_exc()
-            success_up = False,0
-    return success_up,0
+            success_up = False
+    return success_up, 0

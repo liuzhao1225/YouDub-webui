@@ -109,8 +109,8 @@ def getdb():
     cfg = {
         'host': 'mysql.sqlpub.com',
         'port': 3306,
-        'user': 'leyuan',
-        'passwd': 'Re6dVqW89d4JgZIc',
+        'user': 'leyuan1',
+        'passwd': 'RlRljJpzwJEFuPlC',
         'db': 'video_tools'
     }
 

@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import os
 import sys
@@ -128,7 +129,7 @@ def replenish_job():
                 plat_up_count = 0
                 for platform in platforms:
                     try:
-                        up_sta, up_count = up_video(folder, platform, tjd_id=tjd_id,tj_user_ids=tj_user_ids)
+                        up_sta, up_count = asyncio.run(up_video(folder, platform, tjd_id=tjd_id,tj_user_ids=tj_user_ids))
                         if not up_sta:
                             all_success = False
                         else:
