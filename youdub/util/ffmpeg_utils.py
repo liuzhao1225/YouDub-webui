@@ -75,6 +75,7 @@ def add_random_watermarks(input_stream, paster_dir, img_w, img_h):
     for i, image_path in enumerate(selected_images):
         watermark = (ffmpeg
             .input(image_path, stream_loop=-1)
+            .filter('fps', fps=60)
             .filter('scale', w=img_w, h=img_h)
             .filter('format', 'rgba'))
             
@@ -87,7 +88,7 @@ def add_random_watermarks(input_stream, paster_dir, img_w, img_h):
     return result
 
 
-def save_stream_to_video(video_stream, audio_stream, output_path, vbr):
+def save_stream_to_video(video_stream, audio_stream, output_path, vbr, video_width=None, video_height=None):
     try:
         stream = ffmpeg.output(
             video_stream, audio_stream, output_path,
@@ -176,7 +177,7 @@ def add_pip_to_video(background_video, pip_video, output_video, opacity=1.0):
 
 
 # 目录内短视频拼接去重，用于带货视频生成
-def concat_videos(input_folder, output_path):
+def concat_videos(input_folder, output_path,video_width, video_height):
     # 获取目标时长（默认为60秒，可以从环境变量中获取）
     target_duration = float(os.getenv('SHORT_VIDEO_DURATION', 60))
     
@@ -206,22 +207,23 @@ def concat_videos(input_folder, output_path):
         try:
             # 获取当前视频的时长和尺寸信息
             probe = ffmpeg.probe(video_file)
-            video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
-            width = int(video_info['width'])
-            height = int(video_info['height'])
+            # video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
+            # width = int(video_info['width'])
+            # height = int(video_info['height'])
             current_duration = float(probe['format']['duration'])
             
             # 处理当前视频
             video_stream = ffmpeg.input(video_file)
             audio_stream = video_stream.audio
             # 应用视频特效
-            video_stream = apply_video_effects(video_stream, width, height, current_duration, total_video_index > len(video_files), False)
-            
-            # 生成临时文件路径
+            video_stream = apply_video_effects(video_stream, video_width, video_height, current_duration, total_video_index > len(video_files), False)
+            if video_width and video_height:
+                video_stream = video_stream.filter('scale', video_width, video_height)
+
+        # 生成临时文件路径
             temp_file = os.path.join(input_folder, f'temp_{len(temp_files)}.mp4')
-            
             # 保存处理后的视频到临时文件
-            save_stream_to_video(video_stream, audio_stream, temp_file, '20000k')
+            save_stream_to_video(video_stream, audio_stream, temp_file, '20000k',video_width, video_height)
             
             # 添加临时文件到列表
             temp_files.append(temp_file)
@@ -324,7 +326,7 @@ def deduplicate_video(info, output_folder):
     logger.info(f'视频已去重至 {output_folder}')
 
 
-def apply_video_effects(video_stream, width, height, duration,need_flip=False,_hflip =True):
+def apply_video_effects(video_stream, width, height, duration, need_flip=False, _hflip =True):
     # 竖屏视频才旋转
     if height < width:
         video_stream = rotate_video(video_stream)
@@ -334,14 +336,10 @@ def apply_video_effects(video_stream, width, height, duration,need_flip=False,_h
         video_stream = add_random_watermarks(video_stream, paster_dir, 100, 100)
 
     if need_flip:
-        flip_modes = ['h', 'v', 'hv', 'r90', 'l90', 'r180', 'r270', 'l270']
+        flip_modes = ['h', 'v', 'hv', 'r90', 'l90', 'r180']
         chosen_flip = random.choice(flip_modes)
         if chosen_flip:
-            video_stream = flip_video(video_stream, chosen_flip)
-        print(f'******************************{chosen_flip}')
-        if chosen_flip in ['r90', 'l90', 'l270']:
-            width, height = height, width
-        print(f'************{width}******************{height}') 
+            video_stream = flip_video(video_stream, chosen_flip, width, height)
         # 添加抖动效果
         video_stream = add_shake_effect(video_stream, intensity=random.uniform(0, 1))
         # 添加特效叠加
@@ -457,7 +455,7 @@ def process_video(input_path, output_path):
     cv2.destroyAllWindows()
 
 # 在adjust_video_properties函数之前添加新的翻转函数
-def flip_video(input_stream, flip_mode='h'):
+def flip_video(input_stream, flip_mode='h', width =None, height=None):
     """
     翻转视频流
     
@@ -470,31 +468,38 @@ def flip_video(input_stream, flip_mode='h'):
             'r90'  - 顺时针旋转90度
             'l90'  - 逆时针旋转90度
             'r180' - 顺时针旋转180度
-            'r270' - 顺时针旋转270度
-            'l270' - 逆时针旋转270度
+        keep_original_dimensions (bool): 是否保持原始视频的宽高比。
+            当设置为True时，对于90度和270度旋转的视频会进行缩放填充以保持原始尺寸。
     
     Returns:
         ffmpeg.Stream: 处理后的视频流
     """
-    # 定义支持的翻转模式
-    VALID_MODES = {
+    valid_modes = {
         'h': lambda x: ffmpeg.filter(x, 'hflip'),
         'v': lambda x: ffmpeg.filter(x, 'vflip'),
         'hv': lambda x: ffmpeg.filter(ffmpeg.filter(x, 'hflip'), 'vflip'),
-        'r90': lambda x: ffmpeg.filter(x, 'transpose', 1),    # 顺时针90度
-        'l90': lambda x: ffmpeg.filter(x, 'transpose', 2),    # 逆时针90度
+        'r90': lambda x: rotate_and_scale(x, 1, width, height),    # 顺时针90度
+        'l90': lambda x: rotate_and_scale(x, 2, width, height),    # 逆时针90度
         'r180': lambda x: ffmpeg.filter(x, 'transpose', 1).filter('transpose', 1),  # 顺时针180度
-        'r270': lambda x: ffmpeg.filter(x, 'transpose', 2).filter('transpose', 2),  # 顺时针270度
-        'l270': lambda x: ffmpeg.filter(x, 'transpose', 1),   # 逆时针270度 (等同于顺时针90度)
     }
     
     if not isinstance(input_stream, (ffmpeg.Stream, ffmpeg.nodes.FilterableStream)):
         raise TypeError("input_stream必须是有效的ffmpeg流对象")
         
-    if flip_mode not in VALID_MODES:
-        raise ValueError(f"不支持的翻转模式: {flip_mode}。支持的模式: {', '.join(VALID_MODES.keys())}")
+    if flip_mode not in valid_modes:
+        raise ValueError(f"不支持的翻转模式: {flip_mode}。支持的模式: {', '.join(valid_modes.keys())}")
     
-    return VALID_MODES[flip_mode](input_stream)
+    return valid_modes[flip_mode](input_stream)
+
+
+def rotate_and_scale(stream, transpose_params, width, height):
+    """旋转视频并在需要时进行缩放填充"""
+    rotated = ffmpeg.filter(stream, 'transpose', transpose_params)
+    return (
+        rotated
+        .filter('scale', w=width, h=height, force_original_aspect_ratio='increase')
+        .filter('crop', w=width, h=height)
+    )
 
 def get_random_effect_video(effect_dir):
     # 获取effect_dir目录下所有的视频文件
@@ -608,7 +613,7 @@ def add_video_filter(input_stream, filter_type='vintage'):
         
     return FILTER_EFFECTS[filter_type](input_stream)
 
-def add_shake_effect(input_stream, intensity=5):
+def add_shake_effect(input_stream, intensity):
     """
     添加视频抖动效果
     

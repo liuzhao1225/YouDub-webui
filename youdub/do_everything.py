@@ -245,7 +245,7 @@ async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,t
                 logger.info(f"{transport_job_pub['user_id']}在{platform}平台上，tjd_id为{tjd_id}的任务之前发布成功过")
                 return True, 1
     elif account:
-        user_id = account.get('shop_user_id', '')
+        user_id = account.get('creator_id', '')
     if tj_user_ids and user_id not in tj_user_ids:
         logger.info(f"{tjd_id}：{user_id}不再可发布用户{tj_user_ids}内")
         return False, 0
@@ -267,7 +267,7 @@ async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,t
                 continue
             if platform == SOCIAL_MEDIA_DOUYIN:
                 await douyin_setup(cookie_file, handle=False)
-                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
+                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path,goods=goods)
             elif platform == SOCIAL_MEDIA_TIKTOK:
                 await tiktok_setup(cookie_file, handle=True)
                 app = TiktokVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)
