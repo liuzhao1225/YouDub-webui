@@ -212,29 +212,50 @@ async def get_goods_info(
             page = None
             browser = None
             while total_pub_succ < pub_count:
-                if platform == SOCIAL_MEDIA_KUAISHOU:
-                    que_succ, res = await get_ks_goods(headers, query_type, req)
-                elif platform == SOCIAL_MEDIA_DOUYIN:
-                    que_succ, res, page, browser = await get_dy_goods(account_id, req, playwright, page, browser)
-                elif platform == SOCIAL_MEDIA_TENCENT:
-                    que_succ, res = await get_tx_goods(headers, query_type, req)
-                elif platform == SOCIAL_MEDIA_TIKTOK:
-                    que_succ, res = await get_tk_goods(headers, query_type, req)
-                elif platform == SOCIAL_MEDIA_BILIBILI:
-                    que_succ, res = await get_bl_goods(headers, query_type, req)
-                elif platform == SOCIAL_MEDIA_XHS:
-                    que_succ, res = await get_xhs_goods(headers, query_type, req)
-                elif platform == SOCIAL_MEDIA_JD:
-                    que_succ, res = await get_jd_goods(headers, query_type, req)
+                # 首先从数据库查询status=1的商品数据
+                db_goods = await goods_db.query_by_status(
+                    lUserId=account_id, 
+                    platform=platform,
+                    status=1,
+                    limit=int(os.getenv('DB_QUERY_LIMIT', 10))
+                )
+                
+                if db_goods:
+                    # 如果数据库中有数据,构造GoodsResponse对象
+                    res = GoodsResponse(
+                        pcursor="0",
+                        result=1,
+                        data=db_goods  # 直接使用返回的GoodsData列表
+                    )
+                    que_succ = True
+                    
+                if not db_goods:
+                    # 数据库中没有数据,调用相应平台的API
+                    if platform == SOCIAL_MEDIA_KUAISHOU:
+                        que_succ, res = await get_ks_goods(headers, query_type, req)
+                    elif platform == SOCIAL_MEDIA_DOUYIN:
+                        que_succ, res, page, browser = await get_dy_goods(account_id, req, playwright, page, browser)
+                    elif platform == SOCIAL_MEDIA_TENCENT:
+                        que_succ, res = await get_tx_goods(headers, query_type, req)
+                    elif platform == SOCIAL_MEDIA_TIKTOK:
+                        que_succ, res = await get_tk_goods(headers, query_type, req)
+                    elif platform == SOCIAL_MEDIA_BILIBILI:
+                        que_succ, res = await get_bl_goods(headers, query_type, req)
+                    elif platform == SOCIAL_MEDIA_XHS:
+                        que_succ, res = await get_xhs_goods(headers, query_type, req)
+                    elif platform == SOCIAL_MEDIA_JD:
+                        que_succ, res = await get_jd_goods(headers, query_type, req)
 
                 sleep_time = int(os.getenv('QUERY_SLEEP_TIME', 10))
                 logger.info(
                     f'获取商品信息成功，账号: {account_id},休眠{sleep_time}秒, 实体: {request_entity.to_dict()}, 返回: {res}')
+                
                 if not que_succ or res == {} or res.result != 1:
                     empty_count += 1
                     await asyncio.sleep(sleep_time)
                 else:
-                    req.pcursor = res.pcursor
+                    if not db_goods:  # 只有在非数据库查询的情况下更新pcursor
+                        req.pcursor = res.pcursor
                     empty_count = 0
                     for goods in res.data:
                         try:
@@ -255,7 +276,9 @@ async def get_goods_info(
                                     break
                                 total_pub_succ += 1
                                 word_pub_succ += 1
-                                if goods.isAdd == 0:
+                                
+                                # 只有在非数据库查询的情况下才添加货架
+                                if not db_goods and goods.isAdd == 0:
                                     # 添加货架
                                     if platform == SOCIAL_MEDIA_KUAISHOU:
                                         await add_ks_shelver(goods, headers, query_type)
@@ -272,7 +295,15 @@ async def get_goods_info(
                                     elif platform == SOCIAL_MEDIA_JD:
                                         await add_jd_shelver(goods, headers, query_type)
                                 video_dir = f'../data/douyin/videos/{account_id}/{goods.itemTitle.replace(" ", "")}'
-
+                                # 保存数据
+                                goods_dict = goods.model_dump()
+                                goods_dict = convert_nested_to_str(goods_dict)
+                                goods_dict['lUserId'] = account_id
+                                goods_dict['keywords'] = req.key_word
+                                goods_dict['platform'] = platform
+                                # 保存并获取记录ID
+                                record_id = await goods_db.save(goods_dict)
+                                logger.info(f'商品信息已保存，记录ID: {record_id}')
                                 output_path = os.path.join(video_dir, 'download_final.mp4')
                                 await dwn_video(video_dir, goods, account, output_path)
                                 if os.path.exists(output_path):
@@ -298,13 +329,7 @@ async def get_goods_info(
                                     if up_sta and up_count > 0:
                                         shutil.rmtree(video_dir)
                                         latest_publish_time = datetime.datetime.now()
-                                        # 保存数据
-                                        goods_dict = goods.model_dump()
-                                        goods_dict = convert_nested_to_str(goods_dict)
-                                        goods_dict['lUserId'] = account_id
-                                        goods_dict['keywords'] = req.key_word
-                                        goods_dict['platform'] = platform
-                                        await goods_db.save(goods_dict)
+                                        await goods_db.update_status(record_id)
                         except Exception as e:
                             logger.exception(f'{account_id}处理商品信息失败，继续下一个商品', e)
 
