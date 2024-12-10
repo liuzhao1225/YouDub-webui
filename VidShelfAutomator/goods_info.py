@@ -24,7 +24,8 @@ from Crawler.service.weibo.models import accounts as weibo_accounts
 from Crawler.service.xhs.models import accounts as xhs_accounts
 from Crawler.service.douyin.views import search
 from Crawler.utils.error_code import ErrorCode
-from social_auto_upload.utils.base_social_media import SOCIAL_MEDIA_BILIBILI, SOCIAL_MEDIA_DOUYIN, SOCIAL_MEDIA_JD, SOCIAL_MEDIA_KUAISHOU, SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_TIKTOK, SOCIAL_MEDIA_XHS
+from social_auto_upload.utils.base_social_media import SOCIAL_MEDIA_BILIBILI, SOCIAL_MEDIA_DOUYIN, SOCIAL_MEDIA_JD, \
+    SOCIAL_MEDIA_KUAISHOU, SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_TIKTOK, SOCIAL_MEDIA_XHS
 from youdub.do_everything import up_video
 from youdub.util.download_util import fetch_data
 from youdub.util.ffmpeg_utils import concat_videos
@@ -36,6 +37,7 @@ from Crawler.service.kuaishou.kfx.logic.entity.goods_res import GoodsResponse, G
 from Crawler.service.kuaishou.kfx.models import accounts as kuaishou_accounts, goods_db
 import random
 import time
+
 # 从环境变量获取URL类型代码映射
 url_type_code_dict = json.loads(os.getenv('URL_TYPE_CODE_DICT', '{"0":"video"}'))
 
@@ -43,7 +45,7 @@ url_type_code_dict = json.loads(os.getenv('URL_TYPE_CODE_DICT', '{"0":"video"}')
 # 查询抖音商品信息
 async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, browser):
     que_succ, res, page, browser = await get_goods(account_id, playwright, req, page, browser)
-    
+
     # 创建GoodsResponse实例
     good_res = GoodsResponse(
         pcursor=str(req.pcursor),
@@ -71,8 +73,9 @@ async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, brow
                     seller_name = str(goods.get('shop_info', {}).get('shop_name', ''))
                     # 从商品ID
                     product_id = str(goods.get('product_id', ''))
+                    detail_url = goods.get('base_info', {}).get('detail_url', '')
                     is_in_cart = bool(goods.get('event_info', {}).get('is_in_cart', False))
-                    
+
                     goods_data = GoodsData(
                         itemTitle=title,
                         zkFinalPrice=price,
@@ -82,6 +85,7 @@ async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, brow
                         isAdd=1 if is_in_cart else 0,
                         # 添加必需的字段
                         sellerName=seller_name,
+                        itemLinkUrl=detail_url,
                         ext=goods  # 直接使用完整的goods对象作为ext
                     )
                     goods_datas.append(goods_data)
@@ -89,21 +93,26 @@ async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, brow
 
     return que_succ, good_res, page, browser
 
+
 # 查询视频号商品信息
 async def get_tx_goods(headers, query_type, req):
     pass
+
 
 # 查询tiktok商品信息
 async def get_tk_goods(headers, query_type, req):
     pass
 
+
 # 查询bilibil商品信息
 async def get_bl_goods(headers, query_type, req):
     pass
 
+
 # 查询小红书商品信息
 async def get_xhs_goods(headers, query_type, req):
     pass
+
 
 # 查询京东商品信息
 async def get_jd_goods(headers, query_type, req):
@@ -138,7 +147,7 @@ async def get_goods_info(
         query_type: int,
         request_entity: Union[ThemeGoodsReq, HotRankingReq, GoodsInfoHomeReq],
         platform,
-        playwright = None
+        playwright=None
 ):
     """
     获取商品信息
@@ -188,13 +197,18 @@ async def get_goods_info(
             # 获取今日关键词统计
             repeat_days = int(os.getenv('GOODS_REPEAT_DAYS', 7))
             past_date = (datetime.datetime.now() - datetime.timedelta(days=repeat_days)).strftime('%Y-%m-%d')
-            today_keywords_stats = await goods_db.get_keywords_statistics(date=time.strftime('%Y-%m-%d'), lUserId=account_id,platform =platform)
+            today_keywords_stats = await goods_db.get_keywords_statistics(date=time.strftime('%Y-%m-%d'),
+                                                                          lUserId=account_id, platform=platform)
             empty_count = 0
             word_pub_succ = today_keywords_stats.get(req.key_word, 0)
             # 获取今日已添加的商品ID列表
-            today_items = await goods_db.query_by_lUserId(account_id, date=past_date,platform=platform)
+            today_items = await goods_db.query_by_lUserId(account_id, date=past_date, platform=platform)
             today_item_ids = {item['relItemId'] for item in today_items}
             total_pub_succ = len(today_items)
+            if today_items:
+                latest_publish_time = today_items[0].get('ct', None)
+            else:
+                latest_publish_time = None
             page = None
             browser = None
             while total_pub_succ < pub_count:
@@ -214,23 +228,21 @@ async def get_goods_info(
                     que_succ, res = await get_jd_goods(headers, query_type, req)
 
                 sleep_time = int(os.getenv('QUERY_SLEEP_TIME', 10))
-                logger.info(f'获取商品信息成功，账号: {account_id},休眠{sleep_time}秒, 实体: {request_entity.to_dict()}, 返回: {res}')
+                logger.info(
+                    f'获取商品信息成功，账号: {account_id},休眠{sleep_time}秒, 实体: {request_entity.to_dict()}, 返回: {res}')
                 if not que_succ or res == {} or res.result != 1:
                     empty_count += 1
                     await asyncio.sleep(sleep_time)
                 else:
                     req.pcursor = res.pcursor
                     empty_count = 0
-                    if today_items:
-                        latest_publish_time = today_items[0].get('ct',None)
-                    else:
-                        latest_publish_time = None
                     for goods in res.data:
                         try:
                             # 校验数据是否符合
                             if check_goods(query_type, request_entity, goods, today_item_ids):
                                 if word_pub_succ >= int(os.getenv('KEYWORD_PUB_LIMIT')):
-                                    logger.info(f'账号: {account_id}在关键字{req.key_word}已经发布了{word_pub_succ}条,超出配置: {os.getenv("KEYWORD_PUB_LIMIT")}')
+                                    logger.info(
+                                        f'账号: {account_id}在关键字{req.key_word}已经发布了{word_pub_succ}条,超出配置: {os.getenv("KEYWORD_PUB_LIMIT")}')
                                     word_pub_succ = 0  # 如果达到关键词发布限制，则重置关键词发布成功次数
                                     req.key_word = keywords.pop(0) if keywords else req.key_word
                                     req.pcursor = 0
@@ -259,7 +271,7 @@ async def get_goods_info(
                                         await add_xhs_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_JD:
                                         await add_jd_shelver(goods, headers, query_type)
-                                video_dir = f'../data/douyin/videos/{account_id}/{goods.itemTitle}'
+                                video_dir = f'../data/douyin/videos/{account_id}/{goods.itemTitle.replace(" ", "")}'
 
                                 output_path = os.path.join(video_dir, 'download_final.mp4')
                                 await dwn_video(video_dir, goods, account, output_path)
@@ -268,16 +280,19 @@ async def get_goods_info(
                                         current_time = datetime.datetime.now()
                                         # 将字符串格式的时间转换为datetime对象进行比较
                                         if isinstance(latest_publish_time, str):
-                                            latest_publish_time = datetime.datetime.strptime(latest_publish_time, '%Y-%m-%d %H:%M:%S')
+                                            latest_publish_time = datetime.datetime.strptime(latest_publish_time,
+                                                                                             '%Y-%m-%d %H:%M:%S')
                                         time_diff = (current_time - latest_publish_time).total_seconds()
                                         publish_interval = int(os.getenv('PUBLISH_INTERVAL', 1200))
 
                                         if time_diff < publish_interval:
-                                            logger.info(f'距离上次发布时间间隔{time_diff}秒，小于设定的{publish_interval}秒，跳过本次发布')
+                                            logger.info(
+                                                f'距离上次发布时间间隔{time_diff}秒，小于设定的{publish_interval}秒，跳过本次发布')
                                             continue
 
                                     logger.info('开始发布商品信息...')
-                                    up_sta, up_count = await up_video(folder=video_dir, platform=platform, account=account,check_job=False,goods=goods)
+                                    up_sta, up_count = await up_video(folder=video_dir, platform=platform,
+                                                                      account=account, check_job=False, goods=goods)
                                     logger.info(f"上传视频完毕: - 状态: {up_sta}-视频路径：{output_path}")
                                     # 上传完成后删除文件
                                     if up_sta and up_count > 0:
@@ -296,6 +311,7 @@ async def get_goods_info(
                 if empty_count > 3:
                     logger.info(f'连续三次没查到数据，继续下一个{request_entity.to_dict()}')
                     break
+            await browser.close()
         except Exception as e:
             logger.exception(f'{account_id}发布视频时处理失败，继续下一个用户', e)
     return False, '请先添加账号'
@@ -345,7 +361,8 @@ async def dwn_video(video_dir, goods, account, output_path):
     # 循环查询直到获取足够数量的视频
     while len(downloaded_videos) < video_count and dwn_empty_count < 3:
         try:
-            logger.info(f'搜索视频中，当前已下载：{len(downloaded_videos)}个，目标数量：{video_count}个，连续未获取次数：{dwn_empty_count}，offset：{offset}')
+            logger.info(
+                f'搜索视频中，当前已下载：{len(downloaded_videos)}个，目标数量：{video_count}个，连续未获取次数：{dwn_empty_count}，offset：{offset}')
 
             search_reply = await search(goods.itemTitle, offset, limit)
             if search_reply['code'] != ErrorCode.OK.value:
@@ -366,7 +383,7 @@ async def dwn_video(video_dir, goods, account, output_path):
                 # 打乱视频列表顺序
                 random.shuffle(video_list)
                 valid_desc = False
-                desc_title =None
+                desc_title = None
                 desc_topics = None
                 for video in video_list:
                     random_video = video
@@ -407,7 +424,7 @@ async def dwn_video(video_dir, goods, account, output_path):
 
                     if video_id in downloaded_ids:
                         continue
-                    
+
                     # 获取视频信息
                     video_data = aweme_info.get('video', {})
 
@@ -417,17 +434,17 @@ async def dwn_video(video_dir, goods, account, output_path):
                     # height = video_data.get('height')
                     # if width and height:
                     #     resolutions.append((width, height))
-                    
+
                     # play_addr中的信息
                     play_addr = video_data.get('play_addr', {})
                     width = play_addr.get('width')
                     height = play_addr.get('height')
                     if width and height:
                         resolutions.append((width, height))
-                    
+
                     # 判断链接类型
                     url_type = url_type_code_dict.get(str(aweme_info.get("aweme_type")), 'video')
-                    
+
                     if url_type != 'video':
                         continue
                     duration_ms = video_data.get('duration', 0)
@@ -468,7 +485,8 @@ async def dwn_video(video_dir, goods, account, output_path):
                 dwn_empty_count += 1
                 await asyncio.sleep(int(os.getenv('QUERY_SLEEP_TIME', 5)))
         except Exception as e:
-            logger.exception(f'循环处理视频时失败: shop_user_id={account.get("shop_user_id", "")}, 错误信息={str(e)}', e)
+            logger.exception(f'循环处理视频时失败: shop_user_id={account.get("shop_user_id", "")}, 错误信息={str(e)}',
+                             e)
 
     if len(downloaded_videos) < video_count:
         logger.warning(f'未能获取足够数量的视频，当前已下载: {len(downloaded_videos)}个，目标数量: {video_count}个')
@@ -491,7 +509,7 @@ async def dwn_video(video_dir, goods, account, output_path):
                 # 如果出现次数相同，选择分辨率最高的
                 max_resolution = max(resolutions, key=lambda x: x[0] * x[1])
                 final_width, final_height = max_resolution
-        concat_videos(video_dir, output_path,final_width, final_height)
+        concat_videos(video_dir, output_path, final_width, final_height)
         logger.info(f'带货视频已合并到{output_path}')
     return downloaded_videos
 
@@ -537,7 +555,8 @@ def check_goods(query_type, request_entity: GoodsInfoHomeReq, goods, today_item_
                 f'商品佣金比率不匹配，商品佣金比率: {goods.commissionRate}%, 大于设置的最大佣金比率: {request_entity.rate_end}')
             return False
     if commission_rate_start is not None and float(goods.profitAmount) < float(commission_rate_start):
-        logger.info(f'商品{goods.itemTitle}佣金不匹配，商品佣金: {goods.profitAmount}, 小于设置的最小佣金: {commission_rate_start}')
+        logger.info(
+            f'商品{goods.itemTitle}佣金不匹配，商品佣金: {goods.profitAmount}, 小于设置的最小佣金: {commission_rate_start}')
         return False
     elif goods.relItemId in today_item_ids:
         logger.info(f'商品 {goods.itemTitle} 在{os.getenv("GOODS_REPEAT_DAYS", 7)}天内已发布过，跳过')
@@ -545,6 +564,8 @@ def check_goods(query_type, request_entity: GoodsInfoHomeReq, goods, today_item_
     return True
 
     # 将所有复杂类型的子节点转换为字符串
+
+
 def convert_nested_to_str(obj):
     if isinstance(obj, dict):
         result = {}

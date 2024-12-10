@@ -336,10 +336,6 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
         video_stream = add_random_watermarks(video_stream, paster_dir, 100, 100)
 
     if need_flip:
-        flip_modes = ['h', 'v', 'hv', 'r90', 'l90', 'r180']
-        chosen_flip = random.choice(flip_modes)
-        if chosen_flip:
-            video_stream = flip_video(video_stream, chosen_flip, width, height)
         # 添加抖动效果
         video_stream = add_shake_effect(video_stream, intensity=random.uniform(0, 1))
         # 添加特效叠加
@@ -350,6 +346,10 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
             width=width,
             height=height
         )
+        flip_modes = ['h', 'v', 'hv', 'r90', 'l90', 'r180']
+        chosen_flip = random.choice(flip_modes)
+        if chosen_flip:
+            video_stream = flip_video(video_stream, chosen_flip, width, height)
     elif _hflip:
          # 随机翻转
         if random.choice([True, False]):
