@@ -1,0 +1,2 @@
+data/video/effects/*.mp4 filter=lfs diff=lfs merge=lfs -text
+data/video/effects/*.mov filter=lfs diff=lfs merge=lfs -text
