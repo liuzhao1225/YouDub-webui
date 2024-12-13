@@ -206,7 +206,7 @@ async def get_goods_info(
             today_item_ids = {item['relItemId'] for item in today_items}
             total_pub_succ = len(today_items)
             if today_items:
-                latest_publish_time = today_items[0].get('ct', None)
+                latest_publish_time = today_items[0].get('ut', None)
             else:
                 latest_publish_time = None
             page = None
@@ -216,7 +216,7 @@ async def get_goods_info(
                 db_goods = await goods_db.query_by_status(
                     lUserId=account_id, 
                     platform=platform,
-                    status=1,
+                    status=0,
                     limit=int(os.getenv('DB_QUERY_LIMIT', 10))
                 )
                 
@@ -267,16 +267,17 @@ async def get_goods_info(
                                     word_pub_succ = 0  # 如果达到关键词发布限制，则重置关键词发布成功次数
                                     req.key_word = keywords.pop(0) if keywords else req.key_word
                                     req.pcursor = 0
-                                    await browser.close()
-                                    page = None
-                                    browser = None
+                                    if browser:
+                                        await browser.close()
+                                        page = None
+                                        browser = None
                                     break
                                 elif total_pub_succ > pub_count:
                                     logger.info(f'账号: {account_id}已经发布了{total_pub_succ}条,超出配置: {pub_count}')
                                     break
                                 total_pub_succ += 1
                                 word_pub_succ += 1
-                                
+                                record_id = goods.id
                                 # 只有在非数据库查询的情况下才添加货架
                                 if not db_goods and goods.isAdd == 0:
                                     # 添加货架
@@ -294,15 +295,16 @@ async def get_goods_info(
                                         await add_xhs_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_JD:
                                         await add_jd_shelver(goods, headers, query_type)
+                                    # 保存数据
+                                    goods_dict = goods.model_dump()
+                                    goods_dict = convert_nested_to_str(goods_dict)
+                                    goods_dict['lUserId'] = account_id
+                                    goods_dict['keywords'] = req.key_word
+                                    goods_dict['platform'] = platform
+                                    # 保存并获取记录ID
+                                    record_id = await goods_db.save(goods_dict)
                                 video_dir = f'../data/douyin/videos/{account_id}/{goods.itemTitle.replace(" ", "")}'
-                                # 保存数据
-                                goods_dict = goods.model_dump()
-                                goods_dict = convert_nested_to_str(goods_dict)
-                                goods_dict['lUserId'] = account_id
-                                goods_dict['keywords'] = req.key_word
-                                goods_dict['platform'] = platform
-                                # 保存并获取记录ID
-                                record_id = await goods_db.save(goods_dict)
+
                                 logger.info(f'商品信息已保存，记录ID: {record_id}')
                                 output_path = os.path.join(video_dir, 'download_final.mp4')
                                 await dwn_video(video_dir, goods, account, output_path)
@@ -329,14 +331,15 @@ async def get_goods_info(
                                     if up_sta and up_count > 0:
                                         shutil.rmtree(video_dir)
                                         latest_publish_time = datetime.datetime.now()
-                                        await goods_db.update_status(record_id)
+                                        await goods_db.update_status(record_id, 1)
                         except Exception as e:
                             logger.exception(f'{account_id}处理商品信息失败，继续下一个商品', e)
 
                 if empty_count > 3:
                     logger.info(f'连续三次没查到数据，继续下一个{request_entity.to_dict()}')
                     break
-            await browser.close()
+            if browser:
+                await browser.close()
         except Exception as e:
             logger.exception(f'{account_id}发布视频时处理失败，继续下一个用户', e)
     return False, '请先添加账号'

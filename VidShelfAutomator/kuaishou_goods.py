@@ -38,7 +38,7 @@ async def auto_pub():
         if platform == SOCIAL_MEDIA_DOUYIN:
             async with async_playwright() as playwright:
                 await get_goods_info(1, GoodsInfoHomeReq(key_word=""), platform, playwright)
-        else:
+        elif platform == SOCIAL_MEDIA_KUAISHOU:
             await get_goods_info(1, GoodsInfoHomeReq(key_word=""), platform, playwright)
     # shop_user_id = await shop_login(SOCIAL_MEDIA_KUAISHOU, None)
     # await creator_login(SOCIAL_MEDIA_KUAISHOU,shop_user_id)
