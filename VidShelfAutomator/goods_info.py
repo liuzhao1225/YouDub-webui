@@ -30,7 +30,7 @@ from youdub.do_everything import up_video
 from youdub.util.download_util import fetch_data
 from youdub.util.ffmpeg_utils import concat_videos
 from Crawler.service.kuaishou.kfx.logic.Enum.goods_emnu import QueryType
-from Crawler.service.kuaishou.kfx.logic.common import common_request
+from Crawler.service.kuaishou.kfx.logic.common import common_request, common_get
 from Crawler.service.kuaishou.kfx.logic.entity import goods_add_shelves_req
 from Crawler.service.kuaishou.kfx.logic.entity.goods_req import ThemeGoodsReq, HotRankingReq, GoodsInfoHomeReq
 from Crawler.service.kuaishou.kfx.logic.entity.goods_res import GoodsResponse, GoodsData
@@ -120,7 +120,7 @@ async def get_jd_goods(headers, query_type, req):
 
 
 async def add_dy_shelver(page, title):
-    await add_chat(page=page, title=title)
+    return await add_chat(page=page, title=title)
 
 
 async def add_tx_shelver(goods, headers, query_type):
@@ -181,13 +181,16 @@ async def get_goods_info(
     random.shuffle(_accounts)
     query_type = QueryType.get_by_type(query_type)
     for account in _accounts:
+        if datetime.datetime.now().hour < 8:
+            logger.info("当前时间在八点之前，不执行后续代码")
+            continue
         account_id = account.get('shop_user_id', '')
         try:
             headers = {
                 "Cookie": account.get('cookie', ''),
                 "Referer": query_type.referer,
             }
-            pub_count = account.get('pub_count', 100)
+            pub_count = account.get('pub_count', 0)
             if account.get('expired', 0) == 1:
                 continue
             keywords = account.get('keywords', '').split(',')
@@ -195,15 +198,16 @@ async def get_goods_info(
             req = create_request_entity(query_type, request_entity, 0)
             req.key_word = keywords.pop(0) if keywords else req.key_word
             # 获取今日关键词统计
-            repeat_days = int(os.getenv('GOODS_REPEAT_DAYS', 7))
-            past_date = (datetime.datetime.now() - datetime.timedelta(days=repeat_days)).strftime('%Y-%m-%d')
             today_keywords_stats = await goods_db.get_keywords_statistics(date=time.strftime('%Y-%m-%d'),
                                                                           lUserId=account_id, platform=platform)
             empty_count = 0
             word_pub_succ = today_keywords_stats.get(req.key_word, 0)
             # 获取今日已添加的商品ID列表
-            today_items = await goods_db.query_by_lUserId(account_id, date=past_date, platform=platform)
-            today_item_ids = {item['relItemId'] for item in today_items}
+            repeat_days = int(os.getenv('GOODS_REPEAT_DAYS', 7))
+            past_date = (datetime.datetime.now() - datetime.timedelta(days=repeat_days)).strftime('%Y-%m-%d')
+            repeat_day_items = await goods_db.query_by_lUserId(account_id, date=past_date, platform=platform)
+            today_items = await goods_db.query_by_lUserId(account_id, date=datetime.datetime.now(), platform=platform)
+            repeat_day__ids = {item['relItemId'] for item in repeat_day_items}
             total_pub_succ = len(today_items)
             if today_items:
                 latest_publish_time = today_items[0].get('ut', None)
@@ -212,6 +216,10 @@ async def get_goods_info(
             page = None
             browser = None
             while total_pub_succ < pub_count:
+                # 查询status为99的商品ID列表
+                failed_goods = await goods_db.query_by_lUserId(account_id, platform=platform,status =99)
+                failed_item_ids = {item['relItemId'] for item in failed_goods}
+                    
                 # 首先从数据库查询status=1的商品数据
                 db_goods = await goods_db.query_by_status(
                     lUserId=account_id, 
@@ -260,7 +268,7 @@ async def get_goods_info(
                     for goods in res.data:
                         try:
                             # 校验数据是否符合
-                            if check_goods(query_type, request_entity, goods, today_item_ids):
+                            if check_goods(query_type, request_entity, goods, repeat_day__ids,failed_item_ids):
                                 if word_pub_succ >= int(os.getenv('KEYWORD_PUB_LIMIT')):
                                     logger.info(
                                         f'账号: {account_id}在关键字{req.key_word}已经发布了{word_pub_succ}条,超出配置: {os.getenv("KEYWORD_PUB_LIMIT")}')
@@ -275,16 +283,15 @@ async def get_goods_info(
                                 elif total_pub_succ > pub_count:
                                     logger.info(f'账号: {account_id}已经发布了{total_pub_succ}条,超出配置: {pub_count}')
                                     break
-                                total_pub_succ += 1
-                                word_pub_succ += 1
                                 record_id = goods.id
                                 # 只有在非数据库查询的情况下才添加货架
                                 if not db_goods and goods.isAdd == 0:
+                                    shelver_succ = True
                                     # 添加货架
                                     if platform == SOCIAL_MEDIA_KUAISHOU:
-                                        await add_ks_shelver(goods, headers, query_type)
+                                        shelver_res, shelver_succ = await add_ks_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_DOUYIN:
-                                        await add_dy_shelver(page, title=goods.itemTitle)
+                                        shelver_succ = await add_dy_shelver(page, title=goods.itemTitle)
                                     elif platform == SOCIAL_MEDIA_TENCENT:
                                         await add_tx_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_TIKTOK:
@@ -301,8 +308,17 @@ async def get_goods_info(
                                     goods_dict['lUserId'] = account_id
                                     goods_dict['keywords'] = req.key_word
                                     goods_dict['platform'] = platform
-                                    # 保存并获取记录ID
-                                    record_id = await goods_db.save(goods_dict)
+                                    if shelver_succ:
+                                        goods_dict['status'] = 0
+                                        # 保存并获取记录ID
+                                        record_id = await goods_db.save(goods_dict)
+                                    else:
+                                        goods_dict['status'] = 99
+                                        # 保存并获取记录ID
+                                        record_id = await goods_db.save(goods_dict)
+                                        continue
+                                total_pub_succ += 1
+                                word_pub_succ += 1
                                 video_dir = f'../data/douyin/videos/{account_id}/{goods.itemTitle.replace(" ", "")}'
 
                                 logger.info(f'商品信息已保存，记录ID: {record_id}')
@@ -350,10 +366,12 @@ async def add_ks_shelver(goods, headers, query_type):
     shelver_res, shelver_succ = await common_request(shelves_req.to_dict(), headers,
                                                      f'{query_type.host}/gateway/distribute/match/shelf/item/save')
     shelver_res_data = shelver_res.get('data', None)
-    if shelver_res_data and shelver_res_data.get('remindContent',
-                                                 None) == '该店铺正处于电商新手期，每日支付订单量上限约为1500单，请确认是否继续添加':
-        await common_request(shelves_req.to_dict(), headers,
-                             f'{query_type.host}/gateway/distribute/match/shelf/item/save')
+    if shelver_res_data and '该店铺正处于电商新手期，每日支付订单量上限约为' in shelver_res_data.get('remindContent', ''):
+        ignore_res, ignore_state = await common_get( headers, f'{query_type.host}/gateway/distribute/match/shelf/remind/type/ignore?itemId={goods.relItemId}&remindType=10')
+        if ignore_state and 'SUCCESS' == ignore_res.get('error_msg', ''):
+            shelver_res, shelver_succ = await common_request(shelves_req.to_dict(), headers, f'{query_type.host}/gateway/distribute/match/shelf/item/save')
+
+    return shelver_res,  shelver_res.get('pickSuccess', False)
 
 
 # 查询快手商品信息
@@ -562,7 +580,7 @@ def create_request_entity(query_type, request_entity, pcursor):
 
 
 # 校验返回数据是否符合规则
-def check_goods(query_type, request_entity: GoodsInfoHomeReq, goods, today_item_ids):
+def check_goods(query_type, request_entity: GoodsInfoHomeReq, goods, repeat_day__ids,failed_item_ids):
     commission_rate_start = os.getenv('COMMISSION_RATE_START')
     if query_type not in [QueryType.KEYWORD_COLLECTION, QueryType.CUSTOM_PRODUCT_ID, QueryType.CATEGORY_COLLECTION,
                           QueryType.ALL_PRODUCTS]:
@@ -586,8 +604,11 @@ def check_goods(query_type, request_entity: GoodsInfoHomeReq, goods, today_item_
         logger.info(
             f'商品{goods.itemTitle}佣金不匹配，商品佣金: {goods.profitAmount}, 小于设置的最小佣金: {commission_rate_start}')
         return False
-    elif goods.relItemId in today_item_ids:
+    elif goods.relItemId in repeat_day__ids:
         logger.info(f'商品 {goods.itemTitle} 在{os.getenv("GOODS_REPEAT_DAYS", 7)}天内已发布过，跳过')
+        return False
+    if goods.relItemId in failed_item_ids:
+        logger.info(f'商品 {goods.itemTitle} 已发布失败，跳过')
         return False
     return True
 

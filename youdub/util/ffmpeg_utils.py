@@ -458,7 +458,7 @@ def process_video(input_path, output_path):
 def flip_video(input_stream, flip_mode='h', width =None, height=None):
     """
     翻转视频流
-    
+
     Args:
         input_stream: ffmpeg视频流对象
         flip_mode (str): 翻转模式
@@ -470,7 +470,7 @@ def flip_video(input_stream, flip_mode='h', width =None, height=None):
             'r180' - 顺时针旋转180度
         keep_original_dimensions (bool): 是否保持原始视频的宽高比。
             当设置为True时，对于90度和270度旋转的视频会进行缩放填充以保持原始尺寸。
-    
+
     Returns:
         ffmpeg.Stream: 处理后的视频流
     """
@@ -482,13 +482,13 @@ def flip_video(input_stream, flip_mode='h', width =None, height=None):
         'l90': lambda x: rotate_and_scale(x, 2, width, height),    # 逆时针90度
         'r180': lambda x: ffmpeg.filter(x, 'transpose', 1).filter('transpose', 1),  # 顺时针180度
     }
-    
+
     if not isinstance(input_stream, (ffmpeg.Stream, ffmpeg.nodes.FilterableStream)):
         raise TypeError("input_stream必须是有效的ffmpeg流对象")
-        
+
     if flip_mode not in valid_modes:
         raise ValueError(f"不支持的翻转模式: {flip_mode}。支持的模式: {', '.join(valid_modes.keys())}")
-    
+
     return valid_modes[flip_mode](input_stream)
 
 
@@ -512,12 +512,12 @@ def get_random_effect_video(effect_dir):
 def add_video_effect(input_stream, effect_dir, width, height, duration):
     """
     为视频添加特效叠加效果
-    
+
     Args:
         input_stream: 输入视频流
         effect_dir: 特效视频目录路径
         duration: 视频时长
-        
+
     Returns:
         处理后的视频流
     """
@@ -525,7 +525,7 @@ def add_video_effect(input_stream, effect_dir, width, height, duration):
     if effect_video is None:
         logger.warning('未找到特效视频，返回原始视频流')
         return input_stream
-        
+
     return (input_stream.overlay(
         ffmpeg.input(effect_video, stream_loop=-1, t=duration)  # 循环特效视频并设置时长
         .filter('scale', width, height)  # 调整特效素材大小
@@ -536,17 +536,17 @@ def add_video_effect(input_stream, effect_dir, width, height, duration):
 def speed_change_video(input_stream, speed_factor=1.0):
     """
     改变视频播放速度
-    
+
     Args:
         input_stream: ffmpeg视频流对象
         speed_factor: 速度因子 (0.5=减半速度, 2.0=倍速)
-    
+
     Returns:
         ffmpeg.Stream: 处理后的视频流
     """
     if not 0.5 <= speed_factor <= 2.0:
         raise ValueError("速度因子必须在0.5到2.0之间")
-        
+
     # 视频速度调整
     video = input_stream.filter('setpts', f'{1/speed_factor}*PTS')
     return video
@@ -554,14 +554,14 @@ def speed_change_video(input_stream, speed_factor=1.0):
 def add_transition_effect(input_stream, effect_type='fade'):
     """
     添加视频转场效果
-    
+
     Args:
         input_stream: 输入视频流
         effect_type: 转场效果类型
             'fade' - 淡入淡出
             'wipe' - 擦除效果
             'dissolve' - 溶解效果
-    
+
     Returns:
         处理后的视频流
     """
@@ -573,16 +573,16 @@ def add_transition_effect(input_stream, effect_type='fade'):
         'wipe': lambda x: x.filter('wipe', duration=1),
         'dissolve': lambda x: x.filter('dissolve', duration=1)
     }
-    
+
     if effect_type not in TRANSITION_EFFECTS:
         raise ValueError(f"不支持的转场效果: {effect_type}")
-        
+
     return TRANSITION_EFFECTS[effect_type](input_stream)
 
 def add_video_filter(input_stream, filter_type='vintage'):
     """
     添加视频滤镜效果
-    
+
     Args:
         input_stream: 输入视频流
         filter_type: 滤镜类型
@@ -590,7 +590,7 @@ def add_video_filter(input_stream, filter_type='vintage'):
             'vignette' - 暗角效果
             'film' - 电影效果
             'blur' - 模糊效果
-    
+
     Returns:
         处理后的视频流
     """
@@ -607,16 +607,16 @@ def add_video_filter(input_stream, filter_type='vintage'):
         ),
         'blur': lambda x: x.filter('gblur', sigma=1.2)
     }
-    
+
     if filter_type not in FILTER_EFFECTS:
         raise ValueError(f"不支持的滤镜效果: {filter_type}")
-        
+
     return FILTER_EFFECTS[filter_type](input_stream)
 
 def add_shake_effect(input_stream, intensity):
     """
     添加视频抖动效果
-    
+
     Args:
         input_stream: 输入视频流
         intensity: 抖动强度 (0-10)
@@ -624,24 +624,24 @@ def add_shake_effect(input_stream, intensity):
             1-3: 轻微抖动
             4-7: 中等抖动
             8-10: 剧烈抖动
-    
+
     Returns:
         处理后的视频流
     """
-    print(f'************{intensity}******************') 
+    print(f'************{intensity}******************')
 
     if intensity == 0:
         return input_stream
     if not 0 < intensity <= 10:
         raise ValueError("抖动强度必须在1到10之间")
-    
+
     # 调整计算参数使抖动更加柔和
     frequency = intensity  # 降低频率
     amplitude = intensity * 0.2  # 降低幅度系数，使最小抖动更加轻微
-    
+
     # 生成抖动表达式
     expr = f"{amplitude}*sin({frequency}*t)"
-    
+
     # 应用抖动效果
     return input_stream.filter(
         'rotate',
@@ -653,7 +653,7 @@ def add_shake_effect(input_stream, intensity):
 def process_video_stream_advanced(input_stream, effects=None):
     """
     高级视频处理流程
-    
+
     Args:
         input_stream: 输入视频流
         effects: 字典，包含要应用的效果及其参数
@@ -663,43 +663,43 @@ def process_video_stream_advanced(input_stream, effects=None):
                 'filter': 'vintage',
                 'shake': 3
             }
-    
+
     Returns:
         处理后的视频流
     """
     if effects is None:
         effects = {}
-    
+
     # 应用速度变化
     if 'speed' in effects:
         input_stream = speed_change_video(input_stream, effects['speed'])
-    
+
     # 应用转场效果
     if 'transition' in effects:
         input_stream = add_transition_effect(input_stream, effects['transition'])
-    
+
     # 应用滤镜效果
     if 'filter' in effects:
         input_stream = add_video_filter(input_stream, effects['filter'])
-    
+
     # 应用抖动效果
     if 'shake' in effects:
         input_stream = add_shake_effect(input_stream, effects['shake'])
-    
+
     return input_stream
 
 if __name__ == '__main__':
-    # start_time = time.time()
-    # video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
-    # output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
-    # # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
-    # # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
-    # # probe = ffmpeg.probe(video_path)
-    # # duration = float(probe['format']['duration'])
-    # # audio_stream1, video_stream1 = get_video_audio(video_path,  duration)
-    # # # video_stream1 = rotate_video(video_stream1)
-    # # root_folder = '../../social_auto_upload/videos'
-    # # background_video = random.choice([os.path.join(root, f) for root, _, files in os.walk(root_folder) for f in files if f.endswith('.mp4')])
+    start_time = time.time()
+    video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
+    output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
+    # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
+    # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
+    probe = ffmpeg.probe(video_path)
+    duration = float(probe['format']['duration'])
+    audio_stream1, video_stream1 = get_video_audio(video_path,  duration)
+    # video_stream1 = rotate_video(video_stream1)
+    # root_folder = '../../social_auto_upload/videos'
+    # background_video = random.choice([os.path.join(root, f) for root, _, files in os.walk(root_folder) for f in files if f.endswith('.mp4')])
     # process_video(video_path ,output_path)
     # # video_stream1 = add_random_watermarks(video_stream1, '../paster', 100, 100)
     # # save_stream_to_video(video_stream1, audio_stream1,
@@ -724,24 +724,24 @@ if __name__ == '__main__':
     #             image_path = os.path.join(root, filename)
     #             rotate_if_landscape(image_path)
    # 输入视频和特效素材路径
-    input_video = "D:\system\Videos\oYGCdCDADRJGfvgiCWE7fFedBFBLrFIOAgoRLr.mp4"
-    effect_dir = "D:\system\Videos\exx"
-    effect_video = get_random_effect_video(effect_dir)
-    if effect_video is None:
-        logger.error('无法找到特效视频，程序终止')
-        exit(1)
-    output_video = "D:/system/Videos/14.mp4"
-    probe = ffmpeg.probe(input_video)
-    video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
-    width = video_info['width']
-    height = video_info['height']
-    duration = float(probe['format']['duration'])  # 获取输入视频的时长
-    audio_stream1, video_stream1 = get_video_audio(input_video,  duration)
-    flip_modes = ['h', 'v', 'hv']
-    chosen_flip = random.choice('hv')
-    if chosen_flip:
-        video_stream1 = flip_video(video_stream1, chosen_flip)
-    # video_stream1 =add_video_effect(video_stream1,effect_dir,width,height,duration)
-    save_stream_to_video(video_stream1, audio_stream1,
-                         output_video,
-                         '22454k')
+    # input_video = "D:\system\Videos\oYGCdCDADRJGfvgiCWE7fFedBFBLrFIOAgoRLr.mp4"
+    # effect_dir = "D:\system\Videos\exx"
+    # effect_video = get_random_effect_video(effect_dir)
+    # if effect_video is None:
+    #     logger.error('无法找到特效视频，程序终止')
+    #     exit(1)
+    # output_video = "D:/system/Videos/14.mp4"
+    # probe = ffmpeg.probe(input_video)
+    # video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
+    # width = video_info['width']
+    # height = video_info['height']
+    # duration = float(probe['format']['duration'])  # 获取输入视频的时长
+    # audio_stream1, video_stream1 = get_video_audio(input_video,  duration)
+    # flip_modes = ['h', 'v', 'hv']
+    # chosen_flip = random.choice('hv')
+    # if chosen_flip:
+    #     video_stream1 = flip_video(video_stream1, chosen_flip)
+    # # video_stream1 =add_video_effect(video_stream1,effect_dir,width,height,duration)
+    # save_stream_to_video(video_stream1, audio_stream1,
+    #                      output_video,
+    #                      '22454k')
