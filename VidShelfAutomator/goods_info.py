@@ -37,6 +37,7 @@ from Crawler.service.kuaishou.kfx.logic.entity.goods_res import GoodsResponse, G
 from Crawler.service.kuaishou.kfx.models import accounts as kuaishou_accounts, goods_db
 import random
 import time
+import re
 
 # 从环境变量获取URL类型代码映射
 url_type_code_dict = json.loads(os.getenv('URL_TYPE_CODE_DICT', '{"0":"video"}'))
@@ -319,7 +320,7 @@ async def get_goods_info(
                                         continue
                                 total_pub_succ += 1
                                 word_pub_succ += 1
-                                video_dir = f'../data/douyin/videos/{account_id}/{goods.itemTitle.replace(" ", "")}'
+                                video_dir = f'../data/douyin/videos/{account_id}/{sanitize_filename(goods.itemTitle)}'
 
                                 logger.info(f'商品信息已保存，记录ID: {record_id}')
                                 output_path = os.path.join(video_dir, 'download_final.mp4')
@@ -452,7 +453,7 @@ async def dwn_video(video_dir, goods, account, output_path):
                 desc_topics = desc_topics if desc_topics else f"#{goods.itemTitle}"
 
                 # 组合最终的描述文本
-                final_desc = f"{desc_title}\n{desc_topics}"
+                final_desc = f"{desc_title}\n#无限回购的宝藏单品 {desc_topics}"
 
                 with open(os.path.join(video_dir, 'video.txt'), 'w', encoding='utf-8') as f:
                     f.write(final_desc)
@@ -629,3 +630,16 @@ def convert_nested_to_str(obj):
                 result[k] = str(v)
         return result
     return obj
+
+def sanitize_filename(filename):
+    """
+    清理文件名，移除Windows不允许的特殊字符
+    """
+    # Windows不允许的特殊字符
+    invalid_chars = r'[<>:"/\\|?*（）]'
+    # 替换特殊字符为空字符串
+    clean_name = re.sub(invalid_chars, '', filename)
+    # 移除前后的空格和点
+    clean_name = clean_name.strip('. ')
+    # 如果文件名为空，返回默认名称
+    return clean_name if clean_name else 'default_name'
