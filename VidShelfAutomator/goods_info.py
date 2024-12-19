@@ -418,13 +418,13 @@ async def dwn_video(video_dir, goods, account, output_path):
                 continue
 
             video_list = search_reply.get('data', [])
-
             if not video_list:
                 logger.info('没有更多视频了')
                 dwn_empty_count += 1
                 await asyncio.sleep(int(os.getenv('QUERY_SLEEP_TIME', 5)))
                 continue
-
+            # 更新offset到下一页
+            offset += len(video_list)
             # 随机选择一个视频的desc并写入video.txt
             if not os.path.exists(os.path.join(video_dir, 'video.txt')):
                 # 打乱视频列表顺序
@@ -523,9 +523,6 @@ async def dwn_video(video_dir, goods, account, output_path):
                 except Exception as e:
                     logger.exception(f'视频下载出错:, 错误信息', e)
                     continue
-
-            # 更新offset到下一页
-            offset += 1
 
             # 如果这一页没有成功下载任何视频
             if not page_downloaded:
