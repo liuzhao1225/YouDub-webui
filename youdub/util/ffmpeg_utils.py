@@ -2,6 +2,7 @@ import os
 import random
 import time
 import traceback
+import glob
 
 import ffmpeg
 from PIL import Image
@@ -10,7 +11,6 @@ import numpy as np
 import subprocess
 
 from lxml.etree import PI
-from sympy import true
 
 from Crawler.lib.logger import logger
 from youdub.util.lock_util import with_timeout_lock
@@ -175,11 +175,33 @@ def add_pip_to_video(background_video, pip_video, output_video, opacity=1.0):
     ffmpeg.output(output, output_video, shortest=None).run()
 
 
+def get_video_files_recursive(directory):
+    """
+    递归获取目录及其子目录下的所有视频文件
+    
+    Args:
+        directory: 根目录路径
+        
+    Returns:
+        list: 视频文件路径列表
+    """
+    video_extensions = ('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv')
+    video_files = []
+    
+    # 使用glob递归搜索所有视频文件
+    for ext in video_extensions:
+        video_files.extend(glob.glob(os.path.join(directory, '**', f'*{ext}'), recursive=True))
+    
+    return video_files
+
 
 # 目录内短视频拼接去重，用于带货视频生成
-def concat_videos(input_folder, output_path,video_width, video_height):
+def concat_videos(input_folder, output_path,video_width, video_height,video_count):
     # 获取目标时长（默认为60秒，可以从环境变量中获取）
-    target_duration = float(os.getenv('SHORT_VIDEO_DURATION', 60))
+    if video_count == 1:
+        target_duration = 1
+    else:
+        target_duration = float(os.getenv('SHORT_VIDEO_DURATION', 60))
     
     # 获取input_folder目录下所有的视频文件
     video_files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.endswith('.mp4')]
@@ -207,23 +229,32 @@ def concat_videos(input_folder, output_path,video_width, video_height):
         try:
             # 获取当前视频的时长和尺寸信息
             probe = ffmpeg.probe(video_file)
-            # video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
-            # width = int(video_info['width'])
-            # height = int(video_info['height'])
             current_duration = float(probe['format']['duration'])
             
             # 处理当前视频
             video_stream = ffmpeg.input(video_file)
             audio_stream = video_stream.audio
-            # 应用视频特效
-            video_stream = apply_video_effects(video_stream, video_width, video_height, current_duration, total_video_index > len(video_files), False)
             if video_width and video_height:
                 video_stream = video_stream.filter('scale', video_width, video_height)
+            # 应用视频特效
+            video_stream = apply_video_effects(video_stream, video_width, video_height, current_duration, total_video_index > len(video_files), False)
+            # base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
+            # overlay_files = get_video_files_recursive(base_dir)
+            # overlay_videos = random.sample(overlay_files, 3)
+            # # 叠加3个画中画视频
+            # for i, overlay_video in enumerate(overlay_videos):
+            #     overlay = (
+            #         ffmpeg.input(overlay_video, stream_loop=-1, t=current_duration)
+            #         .filter('scale', video_width, video_height)
+            #         .filter('format', 'rgba')
+            #         .filter('colorchannelmixer', aa=0.03)
+            #     )
+            #     video_stream = ffmpeg.overlay(video_stream, overlay)
 
-        # 生成临时文件路径
+            # 生成临时文件路径
             temp_file = os.path.join(input_folder, f'temp_{len(temp_files)}.mp4')
             # 保存处理后的视频到临时文件
-            save_stream_to_video(video_stream, audio_stream, temp_file, '20000k',video_width, video_height)
+            save_stream_to_video(video_stream, audio_stream, temp_file, '20000k', video_width, video_height)
             
             # 添加临时文件到列表
             temp_files.append(temp_file)
@@ -231,7 +262,7 @@ def concat_videos(input_folder, output_path,video_width, video_height):
             logger.info(f'添加视频: {os.path.basename(video_file)}, 时长: {current_duration:.2f}秒, 累计时长: {total_duration:.2f}秒')
 
         except Exception as e:
-            logger.exception(f'处理视频 {video_file} 时出错: ',e)
+            logger.exception(f'处理视频 {video_file} 时出错: ', e)
             continue
 
     if not temp_files:
@@ -305,7 +336,7 @@ def deduplicate_video(info, output_folder):
         duration = float(probe['format']['duration'])
     audio_stream, video_stream = get_video_audio(video_path,duration)
     best_format = get_best_bitrate_format(info)
-    vbr = best_format['vbr']
+    vbr = best_format.get("vbr",0)
     if vbr is None or vbr == "":
         best_format = max(info['formats'], key=lambda x: x.get('height', 0) or 0)
         best_resolution = best_format.get('resolution', '3840x2160')
@@ -314,11 +345,11 @@ def deduplicate_video(info, output_folder):
         vbr = f'{vbr}k'
 
     # 旋转缩略图并替换原文件
-    thumbnail_path_jpg = os.path.join(output_folder, 'download.jpg')
-    thumbnail_path_webp = os.path.join(output_folder, 'download.webp')
-    thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
+    # thumbnail_path_jpg = os.path.join(output_folder, 'download.jpg')
+    # thumbnail_path_webp = os.path.join(output_folder, 'download.webp')
+    # thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
     # 旋转封面
-    rotate_if_landscape(thumbnail_path)
+    # rotate_if_landscape(thumbnail_path)
     video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration)
     logger.info(f'开始对视频做去重处理')
     rotated_video_path = video_path.replace('.mp4', '_final.mp4')
@@ -327,6 +358,9 @@ def deduplicate_video(info, output_folder):
 
 
 def apply_video_effects(video_stream, width, height, duration, need_flip=False, _hflip =True):
+    # 随机决定是否应用缩放和平移效果
+    video_stream = random_zoom_and_pan(video_stream, width, height)
+    
     # 竖屏视频才旋转
     if height < width:
         video_stream = rotate_video(video_stream)
@@ -362,6 +396,19 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
         brightness=random.uniform(0, 0.05),
         contrast=random.uniform(0.95, 1.05)
     )
+
+    base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
+    video_files = get_video_files_recursive(base_dir)
+    overlay_videos = random.sample(video_files, 3)
+    # 叠加3个画中画视频
+    for i, overlay_video in enumerate(overlay_videos):
+        overlay = (
+            ffmpeg.input(overlay_video, stream_loop=-1, t=duration)
+            .filter('scale', width, height)
+            .filter('format', 'rgba')
+            .filter('colorchannelmixer', aa=0.015)
+        )
+        video_stream = ffmpeg.overlay(video_stream, overlay)
     return video_stream
 
 
@@ -400,10 +447,12 @@ def calculate_bitrate(resolution):
 def get_best_bitrate_format(info):
     best_format = None
     max_bitrate = 0
-
-    for fmt in info['formats']:
-        if fmt.get('vbr') and fmt['vbr'] > max_bitrate:
-            best_format = fmt
+    if info.get("platform",None) == 'douyin':
+        return info['formats'][0]
+    else:
+        for fmt in info['formats']:
+            if fmt.get('vbr') and fmt['vbr'] > max_bitrate:
+                best_format = fmt
 
     return best_format
 
@@ -688,60 +737,128 @@ def process_video_stream_advanced(input_stream, effects=None):
 
     return input_stream
 
+def add_transparent_overlay(
+    input_video: str,
+    overlay_video: str,
+    output_path: str,
+    opacity: float = 0.0
+) -> None:
+    """
+    为视频添加全屏透明画中画效果，画中画视频会循环播放以匹配主视频时长
+    
+    Args:
+        input_video: 主视频路径
+        overlay_video: 要叠加的视频路径
+        output_path: 输出视频路径
+        opacity: 透明度 (0.0 完全透明 - 1.0 完全不透明)
+    """
+    try:
+        # 获取主视频信息
+        probe = ffmpeg.probe(input_video)
+        video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+        width = int(video_info['width'])
+        height = int(video_info['height'])
+        duration = float(probe['format']['duration'])  # 获取主视频时长
+
+        # 设置主视频流
+        main = ffmpeg.input(input_video)
+        
+        # 设置画中画视频流，缩放至与主视频相同大小，并循环播放
+        overlay = (
+            ffmpeg.input(overlay_video, stream_loop=-1, t=duration)  # stream_loop=-1表示无限循环，t=duration限制总时长
+            .filter('scale', width, height)
+            .filter('format', 'rgba')
+            .filter('colorchannelmixer', aa=opacity)  # 设置透明度
+        )
+
+        # 合并视频流
+        output = ffmpeg.overlay(main, overlay)
+        
+        # 输出处理后的视频
+        output = ffmpeg.output(output, output_path)
+        
+        # 打印 ffmpeg 命令
+        ffmpeg_command = ffmpeg.compile(output)
+        logger.info("FFmpeg command: " + ' '.join(ffmpeg_command))
+        
+        # 执行FFmpeg命令
+        output.run(overwrite_output=True)
+        
+    except ffmpeg.Error as e:
+        logger.error(f'FFmpeg 错误: {e.stderr.decode()}')
+    except Exception as e:
+        logger.error(f'发生错误: {str(e)}')
+        traceback.print_exc()
+
+def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2)):
+    """
+    随机放大视频并进行水平和垂直方向的平移，最后裁剪回原始尺寸
+    
+    Args:
+        input_stream: 输入视频流
+        width: 原始视频宽度
+        height: 原始视频高度
+        zoom_range: 放大倍数范围，默认(1.1, 1.2)
+        
+    Returns:
+        处理后的视频流
+    """
+    # 随机生成缩放比例
+    zoom = random.uniform(zoom_range[0], zoom_range[1])
+    
+    # 计算可移动的最大距离（基于缩放后的尺寸）
+    # 将移动范围从比例转换为像素，比如1.2倍放大就是可以移动原始尺寸的0.2
+    max_move_x = int((zoom - 1.0) * width)  # 使用实际宽度
+    max_move_y = int((zoom - 1.0) * height)  # 使用实际高度
+
+    # 随机生成x和y方向的移动距离
+    # 水平方向移动
+    x_move = random.randint(0, max_move_x) * random.choice([-1, 1])
+    # 垂直方向移动
+    y_move = random.randint(0, max_move_y) * random.choice([-1, 1])
+
+    # 应用缩放和平移效果
+    return (input_stream
+        .filter('scale', f'iw*{zoom}', f'ih*{zoom}')  # 放大
+        .filter('crop',
+                width, height,  # 直接使用原始尺寸
+                f'(in_w-{width})/2 + {x_move}',  # x偏移
+                f'(in_h-{height})/2 + {y_move}')  # y偏移
+    )
+
+
 if __name__ == '__main__':
     start_time = time.time()
+
+    # 测试视频路径
     video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
     output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
-    # video_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
-    # output_path ="E:\IDEA\workspace\YouDub-webui\youdub\\videos\z a m\\20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download1.mp4"
-    probe = ffmpeg.probe(video_path)
-    duration = float(probe['format']['duration'])
-    audio_stream1, video_stream1 = get_video_audio(video_path,  duration)
-    # video_stream1 = rotate_video(video_stream1)
-    # root_folder = '../../social_auto_upload/videos'
-    # background_video = random.choice([os.path.join(root, f) for root, _, files in os.walk(root_folder) for f in files if f.endswith('.mp4')])
-    # process_video(video_path ,output_path)
-    # # video_stream1 = add_random_watermarks(video_stream1, '../paster', 100, 100)
-    # # save_stream_to_video(video_stream1, audio_stream1,
-    # #                      output_path,
-    # #                      '22454k')
-    # output_folder = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam"
-    # # random_shift_rgb(video_path, output_path)
-    # end_time = time.time()
-    # processing_time = end_time - start_time
-    # # rotate_if_landscape('E:\IDEA\workspace\YouDub-webui\social_auto_upload\\videos\B_cut\AyUStJDt3Ls_20231221_섹시걸그룹_막내의_Hot한_변신_하윤_Kokain_2_Phút_Hơn_HandClap_2023_K-XF_231210\download.webp')
-    # logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
-    # video_path = "E:\IDEA\workspace\YouDub-webui\youdub/videos\z a m/20240928 걸크러쉬 신곡 DRIVE 240928 걸크러쉬 Girl Crush 하윤 - DRIVE 드라이브 진도의날 청계광장 직캠 fancam by zam\download.mp4"
 
-    # # 使用 ffmpeg 旋转视频
-    # rotated_video_path = video_path.replace('.mp4', '_rotated.mp4')
-    # command = f'ffmpeg -i "{video_path}" -vf "transpose=1" -c:v copy -c:a copy "{rotated_video_path}"'
-    # logger.info(command)
-    # subprocess.run(command, shell=True)
-    # for root, _, files in os.walk('E:\IDEA\workspace\YouDub-webui\social_auto_upload\\videos'):
-    #     for filename in files:
-    #         if filename.lower().endswith('.webp'):
-    #             image_path = os.path.join(root, filename)
-    #             rotate_if_landscape(image_path)
-   # 输入视频和特效素材路径
-    # input_video = "D:\system\Videos\oYGCdCDADRJGfvgiCWE7fFedBFBLrFIOAgoRLr.mp4"
-    # effect_dir = "D:\system\Videos\exx"
-    # effect_video = get_random_effect_video(effect_dir)
-    # if effect_video is None:
-    #     logger.error('无法找到特效视频，程序终止')
-    #     exit(1)
-    # output_video = "D:/system/Videos/14.mp4"
-    # probe = ffmpeg.probe(input_video)
-    # video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
-    # width = video_info['width']
-    # height = video_info['height']
-    # duration = float(probe['format']['duration'])  # 获取输入视频的时长
-    # audio_stream1, video_stream1 = get_video_audio(input_video,  duration)
-    # flip_modes = ['h', 'v', 'hv']
-    # chosen_flip = random.choice('hv')
-    # if chosen_flip:
-    #     video_stream1 = flip_video(video_stream1, chosen_flip)
-    # # video_stream1 =add_video_effect(video_stream1,effect_dir,width,height,duration)
-    # save_stream_to_video(video_stream1, audio_stream1,
-    #                      output_video,
-    #                      '22454k')
+    overlay_video = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download1.mp4"
+
+    try:
+        # 获取视频信息
+        probe = ffmpeg.probe(video_path)
+        video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+        width = int(video_info['width'])
+        height = int(video_info['height'])
+
+        # 创建输入流
+        input_stream = ffmpeg.input(video_path)
+
+        # 应用缩放和平移效果
+        processed_stream = random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2))
+
+        # 保存处理后的视频
+        audio_stream = input_stream.audio
+        save_stream_to_video(processed_stream, audio_stream, output_path, '5000k')
+
+        end_time = time.time()
+        processing_time = end_time - start_time
+        logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
+        
+    except Exception as e:
+        logger.error(f"处理视频时出错: {str(e)}")
+        traceback.print_exc()
+
+    # 其他现有的测试代码...
