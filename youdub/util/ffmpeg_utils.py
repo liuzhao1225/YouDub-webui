@@ -22,12 +22,12 @@ def get_video_audio(input_path, duration):
         start_seconds = int(os.getenv('VIDEO_SPLIT_START_SECONDS', 2))
         end_seconds = int(os.getenv('VIDEO_SPLIT_END_SECONDS', 2))
         duration = float(duration) - start_seconds - end_seconds
-        
+
         # 将秒数转换为 HH:MM:SS.mmm 格式
         # 先将浮点数转换为整数再进行格式化
-        start_time = f"{int(start_seconds)//3600:02d}:{(int(start_seconds)%3600)//60:02d}:{int(start_seconds)%60:02d}.000"
-        end_time = f"{int(duration+start_seconds)//3600:02d}:{(int(duration+start_seconds)%3600)//60:02d}:{int(duration+start_seconds)%60:02d}.000"
-        
+        start_time = f"{int(start_seconds) // 3600:02d}:{(int(start_seconds) % 3600) // 60:02d}:{int(start_seconds) % 60:02d}.000"
+        end_time = f"{int(duration + start_seconds) // 3600:02d}:{(int(duration + start_seconds) % 3600) // 60:02d}:{int(duration + start_seconds) % 60:02d}.000"
+
         # 首先尝试使用CUDA硬件加速
         if duration > 60:
             stream = ffmpeg.input(input_path, ss=start_time, to=end_time)
@@ -53,11 +53,12 @@ def rotate_video(input_stream, angle=90):
         input_stream = ffmpeg.filter(input_stream, 'transpose', 2)
     return input_stream
 
+
 # 添加水印
 def add_random_watermarks(input_stream, paster_dir, img_w, img_h):
     # 获取所有水印图像的路径
     watermark_images = [os.path.join(paster_dir, f) for f in os.listdir(paster_dir) if
-                       f.endswith(('.gif', '.png', '.jpg', '.jpeg'))]
+                        f.endswith(('.gif', '.png', '.jpg', '.jpeg'))]
 
     # 定义四个角的位置
     positions = [
@@ -69,21 +70,21 @@ def add_random_watermarks(input_stream, paster_dir, img_w, img_h):
 
     # 随机选择四个水印图像
     selected_images = random.sample(watermark_images, 4)
-    
+
     # 逐个添加水印
     result = input_stream
     for i, image_path in enumerate(selected_images):
         watermark = (ffmpeg
-            .input(image_path, stream_loop=-1)
-            .filter('fps', fps=60)
-            .filter('scale', w=img_w, h=img_h)
-            .filter('format', 'rgba'))
-            
+                     .input(image_path, stream_loop=-1)
+                     .filter('fps', fps=60)
+                     .filter('scale', w=img_w, h=img_h)
+                     .filter('format', 'rgba'))
+
         result = (ffmpeg
-            .overlay(result, watermark,
-                    x=positions[i]['x'],
-                    y=positions[i]['y'],
-                    shortest=1))
+                  .overlay(result, watermark,
+                           x=positions[i]['x'],
+                           y=positions[i]['y'],
+                           shortest=1))
 
     return result
 
@@ -187,22 +188,22 @@ def get_video_files_recursive(directory):
     """
     video_extensions = ('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv')
     video_files = []
-    
+
     # 使用glob递归搜索所有视频文件
     for ext in video_extensions:
         video_files.extend(glob.glob(os.path.join(directory, '**', f'*{ext}'), recursive=True))
-    
+
     return video_files
 
 
 # 目录内短视频拼接去重，用于带货视频生成
-def concat_videos(input_folder, output_path,video_width, video_height,video_count):
+def concat_videos(input_folder, output_path, video_width, video_height, video_count):
     # 获取目标时长（默认为60秒，可以从环境变量中获取）
     if video_count == 1:
         target_duration = 1
     else:
         target_duration = float(os.getenv('SHORT_VIDEO_DURATION', 60))
-    
+
     # 获取input_folder目录下所有的视频文件
     video_files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.endswith('.mp4')]
     random.shuffle(video_files)  # 随机打乱视频顺序
@@ -225,19 +226,20 @@ def concat_videos(input_folder, output_path,video_width, video_height,video_coun
         total_video_index += 1
         if video_index >= len(video_files):
             video_index = 0
-            
+
         try:
             # 获取当前视频的时长和尺寸信息
             probe = ffmpeg.probe(video_file)
             current_duration = float(probe['format']['duration'])
-            
+
             # 处理当前视频
             video_stream = ffmpeg.input(video_file)
             audio_stream = video_stream.audio
             if video_width and video_height:
                 video_stream = video_stream.filter('scale', video_width, video_height)
             # 应用视频特效
-            video_stream = apply_video_effects(video_stream, video_width, video_height, current_duration, total_video_index > len(video_files), False)
+            video_stream = apply_video_effects(video_stream, video_width, video_height, current_duration,
+                                               total_video_index > len(video_files), False)
             # base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
             # overlay_files = get_video_files_recursive(base_dir)
             # overlay_videos = random.sample(overlay_files, 3)
@@ -255,11 +257,12 @@ def concat_videos(input_folder, output_path,video_width, video_height,video_coun
             temp_file = os.path.join(input_folder, f'temp_{len(temp_files)}.mp4')
             # 保存处理后的视频到临时文件
             save_stream_to_video(video_stream, audio_stream, temp_file, '20000k', video_width, video_height)
-            
+
             # 添加临时文件到列表
             temp_files.append(temp_file)
             total_duration += current_duration
-            logger.info(f'添加视频: {os.path.basename(video_file)}, 时长: {current_duration:.2f}秒, 累计时长: {total_duration:.2f}秒')
+            logger.info(
+                f'添加视频: {os.path.basename(video_file)}, 时长: {current_duration:.2f}秒, 累计时长: {total_duration:.2f}秒')
 
         except Exception as e:
             logger.exception(f'处理视频 {video_file} 时出错: ', e)
@@ -285,13 +288,13 @@ def concat_videos(input_folder, output_path,video_width, video_height,video_coun
             '-c', 'copy',
             '-async', '1',
             '-vsync', '2',
-            '-fflags', '+genpts',   # 生成表示时间戳
+            '-fflags', '+genpts',  # 生成表示时间戳
             '-reset_timestamps', '1',  # 添加重置时间戳参数
             output_path
         ]
-        
+
         subprocess.run(concat_command, check=True)
-        
+
         # 清理临时文件
         for temp_file in temp_files:
             try:
@@ -304,7 +307,7 @@ def concat_videos(input_folder, output_path,video_width, video_height,video_coun
             pass
 
         logger.info(f'视频已保存至: {output_path}')
-        
+
     except Exception as e:
         logger.exception(f'拼接视频时出错: {str(e)}')
         # 清理临时文件
@@ -319,6 +322,7 @@ def concat_videos(input_folder, output_path,video_width, video_height,video_coun
             pass
         raise Exception(e)
 
+
 # 去重视频
 @with_timeout_lock(timeout=1, max_workers=1)
 def deduplicate_video(info, output_folder):
@@ -327,16 +331,16 @@ def deduplicate_video(info, output_folder):
         logger.error(f'视频还没下载完毕请稍等: {video_path}')
         traceback.print_exc()
         return
-        
+
     duration = info.get('duration')
     logger.info(duration)
     if duration is None:
         # 从 video_stream 中获取 duration
         probe = ffmpeg.probe(video_path)
         duration = float(probe['format']['duration'])
-    audio_stream, video_stream = get_video_audio(video_path,duration)
+    audio_stream, video_stream = get_video_audio(video_path, duration)
     best_format = get_best_bitrate_format(info)
-    vbr = best_format.get("vbr",0)
+    vbr = best_format.get("vbr", 0)
     if vbr is None or vbr == "":
         best_format = max(info['formats'], key=lambda x: x.get('height', 0) or 0)
         best_resolution = best_format.get('resolution', '3840x2160')
@@ -350,17 +354,18 @@ def deduplicate_video(info, output_folder):
     # thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
     # 旋转封面
     # rotate_if_landscape(thumbnail_path)
-    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration)
+    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration,is_random=False)
     logger.info(f'开始对视频做去重处理')
     rotated_video_path = video_path.replace('.mp4', '_final.mp4')
     save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
     logger.info(f'视频已去重至 {output_folder}')
 
 
-def apply_video_effects(video_stream, width, height, duration, need_flip=False, _hflip =True):
+def apply_video_effects(video_stream, width, height, duration, need_flip=False, _hflip=True, is_random=True):
     # 随机决定是否应用缩放和平移效果
-    video_stream = random_zoom_and_pan(video_stream, width, height)
-    
+    if is_random:
+        video_stream = random_zoom_and_pan(video_stream, width, height)
+
     # 竖屏视频才旋转
     if height < width:
         video_stream = rotate_video(video_stream)
@@ -384,11 +389,11 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
         chosen_flip = random.choice(flip_modes)
         if chosen_flip:
             video_stream = flip_video(video_stream, chosen_flip, width, height)
-    elif _hflip:
-         # 随机翻转
-        if random.choice([True, False]):
-            video_stream = ffmpeg.filter(video_stream, 'hflip')
-        
+    # elif _hflip:
+    #     # 随机翻转
+    #     if random.choice([True, False]):
+    #         video_stream = ffmpeg.filter(video_stream, 'hflip')
+
     # 调整视频属性
     video_stream = adjust_video_properties(
         video_stream,
@@ -406,7 +411,7 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
             ffmpeg.input(overlay_video, stream_loop=-1, t=duration)
             .filter('scale', width, height)
             .filter('format', 'rgba')
-            .filter('colorchannelmixer', aa=0.015)
+            .filter('colorchannelmixer', aa=0.01)
         )
         video_stream = ffmpeg.overlay(video_stream, overlay)
     return video_stream
@@ -425,6 +430,7 @@ def rotate_if_landscape(image_path):
                 # 如果不是 jpg，修改文件名为 jpg
                 image_path = image_path.rsplit('.', 1)[0] + '.jpg'
             img.save(image_path)
+
 
 # 根据分辨率计算合适的码率
 def calculate_bitrate(resolution):
@@ -447,7 +453,7 @@ def calculate_bitrate(resolution):
 def get_best_bitrate_format(info):
     best_format = None
     max_bitrate = 0
-    if info.get("platform",None) == 'douyin':
+    if info.get("platform", None) == 'douyin':
         return info['formats'][0]
     else:
         for fmt in info['formats']:
@@ -503,8 +509,9 @@ def process_video(input_path, output_path):
     out.release()
     cv2.destroyAllWindows()
 
+
 # 在adjust_video_properties函数之前添加新的翻转函数
-def flip_video(input_stream, flip_mode='h', width =None, height=None):
+def flip_video(input_stream, flip_mode='h', width=None, height=None):
     """
     翻转视频流
 
@@ -527,8 +534,8 @@ def flip_video(input_stream, flip_mode='h', width =None, height=None):
         'h': lambda x: ffmpeg.filter(x, 'hflip'),
         'v': lambda x: ffmpeg.filter(x, 'vflip'),
         'hv': lambda x: ffmpeg.filter(ffmpeg.filter(x, 'hflip'), 'vflip'),
-        'r90': lambda x: rotate_and_scale(x, 1, width, height),    # 顺时针90度
-        'l90': lambda x: rotate_and_scale(x, 2, width, height),    # 逆时针90度
+        'r90': lambda x: rotate_and_scale(x, 1, width, height),  # 顺时针90度
+        'l90': lambda x: rotate_and_scale(x, 2, width, height),  # 逆时针90度
         'r180': lambda x: ffmpeg.filter(x, 'transpose', 1).filter('transpose', 1),  # 顺时针180度
     }
 
@@ -550,6 +557,7 @@ def rotate_and_scale(stream, transpose_params, width, height):
         .filter('crop', w=width, h=height)
     )
 
+
 def get_random_effect_video(effect_dir):
     # 获取effect_dir目录下所有的视频文件
     effect_videos = [os.path.join(effect_dir, f) for f in os.listdir(effect_dir) if f.endswith(('.mp4', '.mov'))]
@@ -557,6 +565,7 @@ def get_random_effect_video(effect_dir):
         logger.error(f'目录 {effect_dir} 中没有找到特效视频文件')
         return None
     return random.choice(effect_videos)
+
 
 def add_video_effect(input_stream, effect_dir, width, height, duration):
     """
@@ -582,6 +591,7 @@ def add_video_effect(input_stream, effect_dir, width, height, duration):
         .filter('colorchannelmixer', aa=random.uniform(0.1, 0.5))  # 设置透明度
     ))
 
+
 def speed_change_video(input_stream, speed_factor=1.0):
     """
     改变视频播放速度
@@ -597,8 +607,9 @@ def speed_change_video(input_stream, speed_factor=1.0):
         raise ValueError("速度因子必须在0.5到2.0之间")
 
     # 视频速度调整
-    video = input_stream.filter('setpts', f'{1/speed_factor}*PTS')
+    video = input_stream.filter('setpts', f'{1 / speed_factor}*PTS')
     return video
+
 
 def add_transition_effect(input_stream, effect_type='fade'):
     """
@@ -617,7 +628,7 @@ def add_transition_effect(input_stream, effect_type='fade'):
     TRANSITION_EFFECTS = {
         'fade': lambda x: (
             x.filter('fade', type='in', duration=1)
-             .filter('fade', type='out', duration=1, start_time='duration-1')
+            .filter('fade', type='out', duration=1, start_time='duration-1')
         ),
         'wipe': lambda x: x.filter('wipe', duration=1),
         'dissolve': lambda x: x.filter('dissolve', duration=1)
@@ -627,6 +638,7 @@ def add_transition_effect(input_stream, effect_type='fade'):
         raise ValueError(f"不支持的转场效果: {effect_type}")
 
     return TRANSITION_EFFECTS[effect_type](input_stream)
+
 
 def add_video_filter(input_stream, filter_type='vintage'):
     """
@@ -646,13 +658,13 @@ def add_video_filter(input_stream, filter_type='vintage'):
     FILTER_EFFECTS = {
         'vintage': lambda x: (
             x.filter('colorbalance', rs=0.1, gs=0.1, bs=0.1)
-             .filter('curves', r='0/0.11 1/0.95', g='0/0 1/0.95', b='0/0.22 1/0.95')
+            .filter('curves', r='0/0.11 1/0.95', g='0/0 1/0.95', b='0/0.22 1/0.95')
         ),
-        'vignette': lambda x: x.filter('vignette', angle=PI/4),
+        'vignette': lambda x: x.filter('vignette', angle=PI / 4),
         'film': lambda x: (
             x.filter('unsharp')
-             .filter('noise', alls=7, allf='t')
-             .filter('eq', contrast=1.1)
+            .filter('noise', alls=7, allf='t')
+            .filter('eq', contrast=1.1)
         ),
         'blur': lambda x: x.filter('gblur', sigma=1.2)
     }
@@ -661,6 +673,7 @@ def add_video_filter(input_stream, filter_type='vintage'):
         raise ValueError(f"不支持的滤镜效果: {filter_type}")
 
     return FILTER_EFFECTS[filter_type](input_stream)
+
 
 def add_shake_effect(input_stream, intensity):
     """
@@ -698,6 +711,7 @@ def add_shake_effect(input_stream, intensity):
         fillcolor='black',
         bilinear=1
     )
+
 
 def process_video_stream_advanced(input_stream, effects=None):
     """
@@ -737,11 +751,12 @@ def process_video_stream_advanced(input_stream, effects=None):
 
     return input_stream
 
+
 def add_transparent_overlay(
-    input_video: str,
-    overlay_video: str,
-    output_path: str,
-    opacity: float = 0.0
+        input_video: str,
+        overlay_video: str,
+        output_path: str,
+        opacity: float = 0.0
 ) -> None:
     """
     为视频添加全屏透明画中画效果，画中画视频会循环播放以匹配主视频时长
@@ -762,7 +777,7 @@ def add_transparent_overlay(
 
         # 设置主视频流
         main = ffmpeg.input(input_video)
-        
+
         # 设置画中画视频流，缩放至与主视频相同大小，并循环播放
         overlay = (
             ffmpeg.input(overlay_video, stream_loop=-1, t=duration)  # stream_loop=-1表示无限循环，t=duration限制总时长
@@ -773,22 +788,23 @@ def add_transparent_overlay(
 
         # 合并视频流
         output = ffmpeg.overlay(main, overlay)
-        
+
         # 输出处理后的视频
         output = ffmpeg.output(output, output_path)
-        
+
         # 打印 ffmpeg 命令
         ffmpeg_command = ffmpeg.compile(output)
         logger.info("FFmpeg command: " + ' '.join(ffmpeg_command))
-        
+
         # 执行FFmpeg命令
         output.run(overwrite_output=True)
-        
+
     except ffmpeg.Error as e:
         logger.error(f'FFmpeg 错误: {e.stderr.decode()}')
     except Exception as e:
         logger.error(f'发生错误: {str(e)}')
         traceback.print_exc()
+
 
 def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2)):
     """
@@ -805,7 +821,7 @@ def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2)):
     """
     # 随机生成缩放比例
     zoom = random.uniform(zoom_range[0], zoom_range[1])
-    
+
     # 计算可移动的最大距离（基于缩放后的尺寸）
     # 将移动范围从比例转换为像素，比如1.2倍放大就是可以移动原始尺寸的0.2
     max_move_x = int((zoom - 1.0) * width)  # 使用实际宽度
@@ -819,12 +835,12 @@ def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2)):
 
     # 应用缩放和平移效果
     return (input_stream
-        .filter('scale', f'iw*{zoom}', f'ih*{zoom}')  # 放大
-        .filter('crop',
-                width, height,  # 直接使用原始尺寸
-                f'(in_w-{width})/2 + {x_move}',  # x偏移
-                f'(in_h-{height})/2 + {y_move}')  # y偏移
-    )
+            .filter('scale', f'iw*{zoom}', f'ih*{zoom}')  # 放大
+            .filter('crop',
+                    width, height,  # 直接使用原始尺寸
+                    f'(in_w-{width})/2 + {x_move}',  # x偏移
+                    f'(in_h-{height})/2 + {y_move}')  # y偏移
+            )
 
 
 if __name__ == '__main__':
@@ -834,25 +850,21 @@ if __name__ == '__main__':
     video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
     output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
 
-    overlay_video = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download1.mp4"
-
     try:
-        # 获取视频信息
-        probe = ffmpeg.probe(video_path)
-        video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
-        width = int(video_info['width'])
-        height = int(video_info['height'])
-
-        # 创建输入流
-        input_stream = ffmpeg.input(video_path)
-
-        # 应用缩放和平移效果
-        processed_stream = random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2))
-
-        # 保存处理后的视频
-        audio_stream = input_stream.audio
-        save_stream_to_video(processed_stream, audio_stream, output_path, '5000k')
-
+        # 直接使用ffmpeg命令行来修改元数据
+        fake_duration = 10  # 设置假的时长为10秒
+        duration_str = f"{int(fake_duration//3600):02d}:{int((fake_duration%3600)//60):02d}:{fake_duration%60:06.3f}"
+        
+        command = [
+            'ffmpeg', '-i', video_path,
+            '-c', 'copy',  # 使用copy模式，不重新编码
+            '-metadata', f'duration={fake_duration}',
+            '-metadata', f'DURATION={duration_str}',
+            output_path
+        ]
+        
+        subprocess.run(command, check=True)
+        
         end_time = time.time()
         processing_time = end_time - start_time
         logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
