@@ -2,14 +2,20 @@ import os
 import re
 from datetime import datetime, timedelta
 
+import asyncio
+
+import aiofiles
 import yt_dlp
 from yt_dlp import DateRange
+from yt_dlp import YoutubeDL
 
 from loguru import logger
+from yt_dlp.extractor.tiktok import TikTokBaseIE
 
-from youdub.util.lock_util import with_timeout_lock
+from app.api.endpoints import download
+from crawlers.hybrid.hybrid_crawler import HybridCrawler
 
-from PIL import Image
+HybridCrawler = HybridCrawler()
 
 
 def sanitize_title(title):
@@ -26,8 +32,8 @@ def get_target_folder(info, folder_path):
     sanitized_title = sanitize_title(info['title'])
     sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
     upload_date = info.get('upload_date', 'Unknown')
-    if upload_date == 'Unknown':
-        return None
+    # if upload_date == 'Unknown':
+    #     return None
 
     output_folder = os.path.join(folder_path, sanitized_uploader, f"{info['id']}_{upload_date}_{sanitized_title}")
 
@@ -51,44 +57,61 @@ def download_single_video(info, folder_path, resolution='480p'):
     if os.path.exists(os.path.join(output_folder, 'download.mp4')):
         logger.info(f'{info["id"]}视频已下载在 {output_folder}')
         return output_folder, 1
-
-    resolution = resolution.replace('p', '')
-    # 计算前一天和当天的日期
-    today = datetime.now()
-    yesterday = today - timedelta(days=2)
-
-    today_str = today.strftime('%Y%m%d')
-    yesterday_str = yesterday.strftime('%Y%m%d')
-
-    # 创建日期范围对象
-    date_range = DateRange(yesterday_str, yesterday_str)
-
-    ydl_opts = get_ydl_opts()
-    ydl_opts['writeinfojson'] = True
-    ydl_opts['writethumbnail'] = True
-    ydl_opts['postprocessors'] = [
-        #     {
-        #     'key': 'EmbedThumbnail',
-        #     'already_have_thumbnail': False,
-        # },
-        # {
-        #     'key': 'FFmpegThumbnailsConvertor',
-        #     'format': 'jpg',  # 将缩略图转换为 JPG 格式
-        # },
-        {
-            'key': 'FFmpegVideoRemuxer',
-            'preferedformat': 'mp4',
-        }]
-    ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
-    ydl_opts['concurrent_fragment_downloads'] = 5
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        error_code = ydl.download([info['webpage_url']])
-    if error_code:
-        logger.info('下载视频失败，等待下次下载')
-        return output_folder, 2
+    if info.get("platform", None) == 'douyin':
+        return asyncio.run(download_video(info, output_folder))
     else:
-        logger.info('视频下载成功')
+        resolution = resolution.replace('p', '')
+        # 计算前一天和当天的日期
+        today = datetime.now()
+        yesterday = today - timedelta(days=2)
+
+        today_str = today.strftime('%Y%m%d')
+        yesterday_str = yesterday.strftime('%Y%m%d')
+
+        # 创建日期范围对象
+        date_range = DateRange(yesterday_str, yesterday_str)
+
+        ydl_opts = get_ydl_opts()
+        ydl_opts['writeinfojson'] = True
+        ydl_opts['writethumbnail'] = True
+        ydl_opts['postprocessors'] = [
+            #     {
+            #     'key': 'EmbedThumbnail',
+            #     'already_have_thumbnail': False,
+            # },
+            # {
+            #     'key': 'FFmpegThumbnailsConvertor',
+            #     'format': 'jpg',  # 将缩略图转换为 JPG 格式
+            # },
+            {
+                'key': 'FFmpegVideoRemuxer',
+                'preferedformat': 'mp4',
+            }]
+        ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
+        ydl_opts['concurrent_fragment_downloads'] = 5
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            error_code = ydl.download([info['webpage_url']])
+        if error_code:
+            logger.info('下载视频失败，等待下次下载')
+            return output_folder, 2
+        else:
+            logger.info('视频下载成功')
+        return output_folder, 3
+
+
+async def download_video(info, output_folder):
+    url = info.get('nwm_video_url_HQ')
+    file_path = os.path.join(output_folder, 'download.mp4')
+    # 判断文件是否存在，存在就直接返回
+    if os.path.exists(file_path):
+        return output_folder, 3
+    # 获取视频文件
+    __headers = await HybridCrawler.DouyinWebCrawler.get_douyin_headers()
+    response = await download.fetch_data(url, headers=__headers)
+    # 保存文件
+    async with aiofiles.open(file_path, 'wb') as out_file:
+        await out_file.write(response.content)
     return output_folder, 3
 
 
@@ -129,7 +152,7 @@ def download_videos(info_list, folder_path, resolution='1080p'):
         download_single_video(info, folder_path, resolution)
 
 
-def get_info_list_from_url(url, num_videos, page_num, download_e):
+def get_info_list_from_url(url, num_videos, page_num, download_e,root_folder):
     if isinstance(url, str):
         url = [url]
     ydl_opts = get_ydl_opts()
@@ -137,23 +160,68 @@ def get_info_list_from_url(url, num_videos, page_num, download_e):
     if num_videos:
         ydl_opts['playliststart'] = num_videos * (page_num - 1) + 1
         ydl_opts['playlistend'] = num_videos * page_num
-    # 添加cookies支持
-
     # video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         for u in url:
-            result = ydl.extract_info(u, download=False)
-            if 'entries' in result:
-                # Playlist
-                # video_info_list.extend(result['entries'])
-                for video_info in result['entries']:
-                    download_e.url_type = 2
-                    yield video_info
-            else:
-                # Single video
-                # video_info_list.append(result)
+            # 添加cookies支持
+            if "douyin" in u:
+                dy_res = asyncio.run(HybridCrawler.hybrid_parsing_single_video(url=u, minimal=False))
+                # 在使用TikTokBaseIE之前，需要正确初始化下载器
+                ydl_opts = {
+                    'format': 'best',
+                    'writeinfojson': True,
+                    # 可以根据需要添加其他选项
+                }
+                # 初始化TikTok提取器
+                tikTokBaseIE = TikTokBaseIE(ydl)
+                dy_info_dict =tikTokBaseIE._parse_aweme_video_app(aweme_detail=dy_res)
+
+                dy_info_dict['platform'] = 'douyin'
+
+                wm_video_url_HQ = dy_res['video']['play_addr']['url_list'][0]
+                nwm_video_url_HQ = wm_video_url_HQ.replace('playwm', 'play')
+                dy_info_dict['nwm_video_url_HQ'] = nwm_video_url_HQ
+                dy_info_dict['webpage_url'] = u
+                dy_info_dict['upload_date'] = dy_res['create_time']
+                # 添加分类和标签信息
+                categories = []
+                # 从video_tag中提取标签信息
+                if 'video_tag' in dy_res:
+                    for tag in dy_res['video_tag']:
+                        tag_name = tag.get('tag_name')
+                        if tag_name:
+                            if tag.get('level') == 1:
+                                categories.append(tag_name)
+                            categories.append(tag_name)
+
+                # 从text_extra中提取话题标签
+                if 'text_extra' in dy_res:
+                    for text in dy_res['text_extra']:
+                        if text.get('hashtag_name'):
+                            categories.append(text['hashtag_name'])
+
+                dy_info_dict['categories'] = categories if categories else []
+                dy_info_dict['tags'] = dy_res['caption'] if dy_res['caption'] else []
+                output_folder = get_target_folder(dy_info_dict, root_folder)
+                ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
+                ydl = YoutubeDL(ydl_opts)
+                dy_infofn = ydl.prepare_filename(dy_info_dict, 'infojson')
+                ydl._write_info_json('video', dy_info_dict, dy_infofn)
                 download_e.url_type = 1
-                yield result
+                yield dy_info_dict
+            else:
+                result = ydl.extract_info(u, download=False)
+                if 'entries' in result:
+                    # Playlist
+                    # video_info_list.extend(result['entries'])
+                    for video_info in result['entries']:
+                        download_e.url_type = 2
+                        yield video_info
+                else:
+                    # Single video
+                    # video_info_list.append(result)
+                    download_e.url_type = 1
+                    yield result
 
     # return video_info_list
 
@@ -172,7 +240,7 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
     video_info_list = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         for u in url:
-            result = ydl.extract_info(u, download=False)
+            result = ydl.extract_info(u, download=True)
             if 'entries' in result:
                 # Playlist
                 video_info_list.extend(result['entries'])
@@ -183,12 +251,39 @@ def download_from_url(url, folder_path, resolution='1080p', num_videos=5):
     # Now download videos with sanitized titles
     download_videos(video_info_list, folder_path, resolution)
 
+
 if __name__ == '__main__':
     # Example usage
-    url = 'https://www.youtube.com/watch?v=_5XPJr5aUgw'
+    url = 'https://www.douyin.com/video/7449317235476221195'
     # url = 'https://www.youtube.com/watch?v=D6NQ1DYZ6Xs'
     folder_path = 'videos'
-    download_from_url(url, folder_path)
+    # download_from_url(url, folder_path)
+
+    dy_res =asyncio.run(HybridCrawler.hybrid_parsing_single_video(url=url, minimal=False))
+    ydl_opts = {
+        'format': 'best',
+        'writeinfojson': True,
+        # 可以根据需要添加其他选项
+    }
+    ydl = YoutubeDL(ydl_opts)
+
+    # 初始化TikTok提取器
+    tikTokBaseIE = TikTokBaseIE(ydl)
+    dy_info_dict =tikTokBaseIE._parse_aweme_video_app(aweme_detail=dy_res)
+    output_folder = get_target_folder(dy_info_dict, folder_path)
+    ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
+    ydl = YoutubeDL(ydl_opts)
+    dy_infofn = ydl.prepare_filename(dy_info_dict, 'infojson')
+    dy_info_dict['platform'] = 'douyin'
+
+    uri = dy_info_dict['video']['play_addr']['uri']
+    wm_video_url_HQ = dy_info_dict['video']['play_addr']['url_list'][0]
+    nwm_video_url_HQ = wm_video_url_HQ.replace('playwm', 'play')
+    dy_info_dict['nwm_video_url_HQ'] = nwm_video_url_HQ
+
+    ydl._write_info_json('video', dy_info_dict, dy_infofn)
+    # 然后再调用解析方法
+    print(dy_info_dict)
     # infos = get_info_list_from_url('https://www.youtube.com/@pharkil/videos', 5, cookies='cookies/cookies.txt')
     # for info in infos:
     #     print(info)

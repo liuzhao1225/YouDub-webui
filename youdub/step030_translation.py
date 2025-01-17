@@ -464,10 +464,24 @@ def translate_all_transcript_under_folder(folder, target_language):
             translate(root, target_language)
     return f'Translated all videos under {folder}'
 
-def translate_all_title_under_folder(folder, target_language):
-    for root, dirs, files in os.walk(folder):
-        translate_title(root, target_language)
-    return f'Translated all videos under {folder}'
+def translate_all_title_under_folder(folder, target_language,info):
+    if info.get("platform", None) != 'douyin':
+        for root, dirs, files in os.walk(folder):
+            translate_title(root, target_language)
+        return f'Translated all videos under {folder}'
+    else:
+        summary_path = os.path.join(folder, 'summary.json')
+        if not os.path.exists(summary_path):
+            new_title = info.get("title", None).replace(info.get("tags", None),'')
+            summary = {
+                'title': new_title if new_title else os.getenv("VIDEO_TITLE"),
+                'author': info['uploader'],
+                'tags': info.get("tags", None),
+                'language': target_language
+            }
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+        return f'Translated all videos under {folder}'
 if __name__ == '__main__':
     translate_title(
         r'videos\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam', '简体中文')

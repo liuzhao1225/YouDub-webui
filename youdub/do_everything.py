@@ -1,17 +1,11 @@
-import asyncio
 import glob
 import json
-from math import fabs
 import os
-import random
-import re
-import threading
 import time
 import traceback
 
 # from .step040_tts import generate_all_wavs_under_folder
 # from .step042_tts_xtts import init_TTS
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from loguru import logger
@@ -26,15 +20,13 @@ from social_auto_upload.utils.base_social_media import SOCIAL_MEDIA_DOUYIN, SOCI
 from social_auto_upload.utils.constant import TencentZoneTypes
 from social_auto_upload.utils.file_util import get_account_file
 from social_auto_upload.utils.files_times import get_title_and_hashtags
-from youdub.util.sql_utils import getdb
 from youdub.entity.download_entity import DownloadEntity
-from youdub.util.ffmpeg_utils import deduplicate_video
 from .step000_video_downloader import get_info_list_from_url, download_single_video, get_target_folder
-from .step010_demucs_vr import init_demucs
-from .step020_whisperx import init_whisperx
 from .step030_translation import translate_all_title_under_folder
 from .step060_genrate_info import generate_all_info_under_folder
+from .util.ffmpeg_utils import deduplicate_video
 from .util.lock_util import with_timeout_lock
+from .util.sql_utils import getdb
 
 db = getdb()
 
@@ -51,7 +43,7 @@ def get_pub_user_config():
 
 
 # 校验用户是否发布超过配置
-def check_user_publish(user_id, platform):
+def check_user_publish(user_id, platform,tj_user_ids):
     today = datetime.now().strftime('%Y-%m-%d')
     # 查询该用户当天发布的条数
     sql = """
@@ -82,7 +74,9 @@ def check_user_publish(user_id, platform):
     if count >= pub_count_limit:
         logger.info(f'{user_id}在{platform}已发布{pub_count_limit}条，可发布{count}条，明日再发布')
         return True
-
+    if tj_user_ids and user_id not in tj_user_ids:
+        logger.info(f"={user_id}不再可发布用户{tj_user_ids}内")
+        return False
     return False
 
 
@@ -139,7 +133,7 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
                 tjd_id = insert_tjd(folder, info, transport_job, 1)
                 # 翻译标题
                 translate_all_title_under_folder(
-                    folder, target_language=translation_target_language
+                    folder, target_language=translation_target_language, info=info
                 )
                 # 生成信息文件
                 generate_all_info_under_folder(folder)
@@ -199,7 +193,7 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
 
     dwn_count = 0
     download_e = DownloadEntity(2)  # 使用类实例来包装 url_type
-    infos = get_info_list_from_url(urls, num_videos, page_num, download_e)
+    infos = get_info_list_from_url(urls, num_videos, page_num, download_e,root_folder)
     for info in infos:
         if info is None:
             logger.info(f'{urls}未解析出有用的数据')
@@ -231,7 +225,7 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
 
 # 上传视频
 @with_timeout_lock(timeout=60, max_workers=2)
-async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None,goods =None):
+async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None,goods =None,check_video=True):
     user_id = None
     if check_job:
         sql_check = """
@@ -263,11 +257,11 @@ async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,t
         try:
             user_id = os.path.basename(cookie_file).split('_')[0]
             # 使用配置校验发布条数
-            if not account and check_user_publish(user_id, platform):
+            if not account and check_user_publish(user_id, platform,tj_user_ids):
                 continue
             if platform == SOCIAL_MEDIA_DOUYIN:
                 await douyin_setup(cookie_file, handle=False)
-                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path,goods=goods)
+                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path,goods=goods,check_video=check_video)
             elif platform == SOCIAL_MEDIA_TIKTOK:
                 await tiktok_setup(cookie_file, handle=True)
                 app = TiktokVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)

@@ -3,32 +3,21 @@ import datetime
 import os
 import shutil
 from collections import Counter
-from http.cookies import SimpleCookie
-from typing import Union, List
-import aiohttp
+from typing import Union
 import json
-
-from playwright.async_api import async_playwright
 
 from Crawler.lib.logger import logger
 from Crawler.service.douyin.logic.common import COMMON_HEADERS
-from Crawler.service.douyin.logic.entity import goods_info_req
-from Crawler.service.douyin.logic.entity.goods_info_req import GoodsInfoRequest
-from Crawler.service.douyin.logic.search import request_search_goods
 from Crawler.service.douyin.models import accounts as douyin_accounts
 from Crawler.service.bilibili.models import accounts as bilibili_accounts
-from Crawler.service.douyin.utils.buyin_util import get_goods, add_chat
+from Crawler.service.douyin.utils.buyin_util import get_goods, add_chat, leaderboard
 from Crawler.service.jd.models import accounts as jd_accounts
-from Crawler.service.taobao.models import accounts as taobao_accounts
-from Crawler.service.weibo.models import accounts as weibo_accounts
 from Crawler.service.xhs.models import accounts as xhs_accounts
 from Crawler.service.douyin.views import search
 from Crawler.utils.error_code import ErrorCode
 from social_auto_upload.utils.base_social_media import SOCIAL_MEDIA_BILIBILI, SOCIAL_MEDIA_DOUYIN, SOCIAL_MEDIA_JD, \
     SOCIAL_MEDIA_KUAISHOU, SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_TIKTOK, SOCIAL_MEDIA_XHS
 from youdub.do_everything import up_video
-from youdub.util.download_util import fetch_data
-from youdub.util.ffmpeg_utils import concat_videos
 from Crawler.service.kuaishou.kfx.logic.Enum.goods_emnu import QueryType
 from Crawler.service.kuaishou.kfx.logic.common import common_request, common_get
 from Crawler.service.kuaishou.kfx.logic.entity import goods_add_shelves_req
@@ -39,58 +28,108 @@ import random
 import time
 import re
 
+from youdub.util.download_util import fetch_data
+from youdub.util.ffmpeg_utils import concat_videos
+
 # 从环境变量获取URL类型代码映射
 url_type_code_dict = json.loads(os.getenv('URL_TYPE_CODE_DICT', '{"0":"video"}'))
 
 
 # 查询抖音商品信息
-async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, browser):
-    que_succ, res, page, browser = await get_goods(account_id, playwright, req, page, browser)
+async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, browser,query_type):
+    if query_type != QueryType.KEYWORD_COLLECTION:
+        que_succ, res, page, browser = await leaderboard(account_id, playwright, req, page,browser)
+        # 创建GoodsResponse实例
+        good_res = GoodsResponse(
+            pcursor=str(req.pcursor),
+            result=0,
+            data=[]  # 初始化空列表
+        )
 
-    # 创建GoodsResponse实例
-    good_res = GoodsResponse(
-        pcursor=str(req.pcursor),
-        result=0,
-        data=[]  # 初始化空列表
-    )
+        if que_succ:
+            # 检查res是否为字典类型且包含必要的数据
+            if isinstance(res, dict) and 'data' in res and isinstance(res['data'], dict):
+                promotions = res['data'].get('promotions', [])
+                if promotions:
+                    good_res.result = 1
+                    goods_datas = []
+                    for goods in promotions:
+                        # 从base_info中获取标题
+                        title = goods.get('title', '')
 
-    if que_succ:
-        # 检查res是否为字典类型且包含必要的数据
-        if isinstance(res, dict) and 'data' in res and isinstance(res['data'], dict):
-            promotions = res['data'].get('promotions', [])
-            if promotions:
-                good_res.result = 1
-                goods_datas = []
-                for goods in promotions:
-                    # 从base_info中获取标题
-                    title = goods.get('base_info', {}).get('title', '')
+                        # 从price_info中获取价格
+                        price = str(float(goods.get('price', 0)) / 100)  # 转换为元并转为字符串
 
-                    # 从price_info中获取价格
-                    price = str(float(goods.get('price_info', {}).get('price', 0)) / 100)  # 转换为元并转为字符串
+                        # 从cos_info中获取佣金比例和佣金
+                        commission_rate = str(float(goods.get('cos_ratio', 0)))  # 转为字符串
+                        commission = str(float(goods.get('cos_fee', 0)) / 100)  # 转换为元并转为字符串
+                        seller_name = str(goods.get('shop_name', ''))
+                        # 从商品ID
+                        product_id = str(goods.get('product_id', ''))
+                        detail_url = goods.get('detail_url', '')
+                        is_in_cart = bool(goods.get('in_cart', False))
 
-                    # 从cos_info中获取佣金比例和佣金
-                    commission_rate = str(float(goods.get('cos_info', {}).get('cos_ratio', 0)))  # 转为字符串
-                    commission = str(float(goods.get('cos_info', {}).get('cos_fee', 0)) / 100)  # 转换为元并转为字符串
-                    seller_name = str(goods.get('shop_info', {}).get('shop_name', ''))
-                    # 从商品ID
-                    product_id = str(goods.get('product_id', ''))
-                    detail_url = goods.get('base_info', {}).get('detail_url', '')
-                    is_in_cart = bool(goods.get('event_info', {}).get('is_in_cart', False))
+                        goods_data = GoodsData(
+                            itemTitle=title,
+                            zkFinalPrice=price,
+                            commissionRate=commission_rate,
+                            profitAmount=commission,
+                            relItemId=product_id,
+                            isAdd=1 if is_in_cart else 0,
+                            # 添加必需的字段
+                            sellerName=seller_name,
+                            itemLinkUrl=detail_url,
+                            ext=goods  # 直接使用完整的goods对象作为ext
+                        )
+                        goods_datas.append(goods_data)
+                    good_res.data = goods_datas
+    else:
+        que_succ, res, page, browser = await get_goods(account_id, playwright, req, page, browser)
 
-                    goods_data = GoodsData(
-                        itemTitle=title,
-                        zkFinalPrice=price,
-                        commissionRate=commission_rate,
-                        profitAmount=commission,
-                        relItemId=product_id,
-                        isAdd=1 if is_in_cart else 0,
-                        # 添加必需的字段
-                        sellerName=seller_name,
-                        itemLinkUrl=detail_url,
-                        ext=goods  # 直接使用完整的goods对象作为ext
-                    )
-                    goods_datas.append(goods_data)
-                good_res.data = goods_datas
+        # 创建GoodsResponse实例
+        good_res = GoodsResponse(
+            pcursor=str(req.pcursor),
+            result=0,
+            data=[]  # 初始化空列表
+        )
+
+        if que_succ:
+            # 检查res是否为字典类型且包含必要的数据
+            if isinstance(res, dict) and 'data' in res and isinstance(res['data'], dict):
+                promotions = res['data'].get('promotions', [])
+                if promotions:
+                    good_res.result = 1
+                    goods_datas = []
+                    for goods in promotions:
+                        # 从base_info中获取标题
+                        title = goods.get('base_info', {}).get('title', '')
+
+                        # 从price_info中获取价格
+                        price = str(float(goods.get('price_info', {}).get('price', 0)) / 100)  # 转换为元并转为字符串
+
+                        # 从cos_info中获取佣金比例和佣金
+                        commission_rate = str(float(goods.get('cos_info', {}).get('cos_ratio', 0)))  # 转为字符串
+                        commission = str(float(goods.get('cos_info', {}).get('cos_fee', 0)) / 100)  # 转换为元并转为字符串
+                        seller_name = str(goods.get('shop_info', {}).get('shop_name', ''))
+                        # 从商品ID
+                        product_id = str(goods.get('product_id', ''))
+                        detail_url = goods.get('base_info', {}).get('detail_url', '')
+                        is_in_cart = bool(goods.get('event_info', {}).get('is_in_cart', False))
+
+                        goods_data = GoodsData(
+                            itemTitle=title,
+                            zkFinalPrice=price,
+                            commissionRate=commission_rate,
+                            profitAmount=commission,
+                            relItemId=product_id,
+                            isAdd=1 if is_in_cart else 0,
+                            # 添加必需的字段
+                            sellerName=seller_name,
+                            itemLinkUrl=detail_url,
+                            ext=goods  # 直接使用完整的goods对象作为ext
+                        )
+                        goods_datas.append(goods_data)
+                    good_res.data = goods_datas
 
     return que_succ, good_res, page, browser
 
@@ -120,8 +159,8 @@ async def get_jd_goods(headers, query_type, req):
     pass
 
 
-async def add_dy_shelver(page, title):
-    return await add_chat(page=page, title=title)
+async def add_dy_shelver(page, title,query_type):
+    return await add_chat(page=page, title=title,query_type=query_type)
 
 
 async def add_tx_shelver(goods, headers, query_type):
@@ -182,7 +221,7 @@ async def get_goods_info(
     random.shuffle(_accounts)
     query_type = QueryType.get_by_type(query_type)
     for account in _accounts:
-        if datetime.datetime.now().hour < 8:
+        if datetime.datetime.now().hour < 7:
             logger.info("当前时间在八点之前，不执行后续代码")
             continue
         account_id = account.get('shop_user_id', '')
@@ -204,7 +243,7 @@ async def get_goods_info(
             empty_count = 0
             word_pub_succ = today_keywords_stats.get(req.key_word, 0)
             # 获取今日已添加的商品ID列表
-            repeat_days = int(os.getenv('GOODS_REPEAT_DAYS', 7))
+            repeat_days = int(os.getenv('GOODS_REPEAT_DAYS', 30))
             past_date = (datetime.datetime.now() - datetime.timedelta(days=repeat_days)).strftime('%Y-%m-%d')
             repeat_day_items = await goods_db.query_by_lUserId(account_id, date=past_date, platform=platform)
             today_items = await goods_db.query_by_lUserId(account_id, date=datetime.datetime.now(), platform=platform)
@@ -243,7 +282,7 @@ async def get_goods_info(
                     if platform == SOCIAL_MEDIA_KUAISHOU:
                         que_succ, res = await get_ks_goods(headers, query_type, req)
                     elif platform == SOCIAL_MEDIA_DOUYIN:
-                        que_succ, res, page, browser = await get_dy_goods(account_id, req, playwright, page, browser)
+                        que_succ, res, page, browser = await get_dy_goods(account_id, req, playwright, page, browser,query_type)
                     elif platform == SOCIAL_MEDIA_TENCENT:
                         que_succ, res = await get_tx_goods(headers, query_type, req)
                     elif platform == SOCIAL_MEDIA_TIKTOK:
@@ -256,9 +295,9 @@ async def get_goods_info(
                         que_succ, res = await get_jd_goods(headers, query_type, req)
 
                 sleep_time = int(os.getenv('QUERY_SLEEP_TIME', 10))
-                logger.info(
-                    f'获取商品信息成功，账号: {account_id},休眠{sleep_time}秒, 实体: {request_entity.to_dict()}, 返回: {res}')
-                
+                # logger.info(
+                #     f'获取商品信息成功，账号: {account_id},休眠{sleep_time}秒, 实体: {request_entity.to_dict()}, 返回: {res}')
+
                 if not que_succ or res == {} or res.result != 1:
                     empty_count += 1
                     await asyncio.sleep(sleep_time)
@@ -285,14 +324,13 @@ async def get_goods_info(
                                     logger.info(f'账号: {account_id}已经发布了{total_pub_succ}条,超出配置: {pub_count}')
                                     break
                                 record_id = goods.id
-                                # 只有在非数据库查询的情况下才添加货架
-                                if not db_goods and goods.isAdd == 0:
-                                    shelver_succ = True
+                                shelver_succ = True
+                                if goods.isAdd == 0:
                                     # 添加货架
                                     if platform == SOCIAL_MEDIA_KUAISHOU:
                                         shelver_res, shelver_succ = await add_ks_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_DOUYIN:
-                                        shelver_succ = await add_dy_shelver(page, title=goods.itemTitle)
+                                        shelver_succ = await add_dy_shelver(page, title=goods.itemTitle,query_type=query_type)
                                     elif platform == SOCIAL_MEDIA_TENCENT:
                                         await add_tx_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_TIKTOK:
@@ -303,12 +341,14 @@ async def get_goods_info(
                                         await add_xhs_shelver(goods, headers, query_type)
                                     elif platform == SOCIAL_MEDIA_JD:
                                         await add_jd_shelver(goods, headers, query_type)
+                                if not db_goods:
                                     # 保存数据
                                     goods_dict = goods.model_dump()
                                     goods_dict = convert_nested_to_str(goods_dict)
                                     goods_dict['lUserId'] = account_id
                                     goods_dict['keywords'] = req.key_word
                                     goods_dict['platform'] = platform
+                                    goods_dict['isAdd'] = 1
                                     if shelver_succ:
                                         goods_dict['status'] = 0
                                         # 保存并获取记录ID
@@ -333,8 +373,7 @@ async def get_goods_info(
                                             latest_publish_time = datetime.datetime.strptime(latest_publish_time,
                                                                                              '%Y-%m-%d %H:%M:%S')
                                         time_diff = (current_time - latest_publish_time).total_seconds()
-                                        publish_interval = int(os.getenv('PUBLISH_INTERVAL', 1200))
-
+                                        publish_interval = int(account.get('publish_interval', 1200))
                                         if time_diff < publish_interval:
                                             logger.info(
                                                 f'距离上次发布时间间隔{time_diff}秒，小于设定的{publish_interval}秒，跳过本次发布')
@@ -342,7 +381,7 @@ async def get_goods_info(
 
                                     logger.info('开始发布商品信息...')
                                     up_sta, up_count = await up_video(folder=video_dir, platform=platform,
-                                                                      account=account, check_job=False, goods=goods)
+                                                                      account=account, check_job=False, goods=goods,check_video=False)
                                     logger.info(f"上传视频完毕: - 状态: {up_sta}-视频路径：{output_path}")
                                     # 上传完成后删除文件
                                     if up_sta and up_count > 0:
@@ -385,12 +424,13 @@ async def get_ks_goods(headers, query_type, req):
 
 # 根据关键词下载视频
 async def dwn_video(video_dir, goods, account, output_path):
-    video_count = int(os.getenv('GOODS_VIDEO_COUNT', 5))
+    video_count = int(account.get('create_video_count', 5))
     os.makedirs(video_dir, exist_ok=True)
     downloaded_videos = [f for f in os.listdir(video_dir) if f.endswith('.mp4')]
     dwn_empty_count = 0  # 连续未获取到视频的次数
     offset = 0  # 查询偏移量
     limit = int(os.getenv('DWN_SEARCH_PAGE_SIZE', 10))  # 每页数量
+    search_id =None
     dwn_txt = f"../data/douyin/dwn_txt/{account.get('shop_user_id', '')}_download.txt"
     # 如果输出文件已存在，直接返回
     if os.path.exists(output_path):
@@ -411,20 +451,21 @@ async def dwn_video(video_dir, goods, account, output_path):
             logger.info(
                 f'搜索视频中，当前已下载：{len(downloaded_videos)}个，目标数量：{video_count}个，连续未获取次数：{dwn_empty_count}，offset：{offset}')
 
-            search_reply = await search(goods.itemTitle, offset, limit)
-            if search_reply['code'] != ErrorCode.OK.value:
-                logger.error(f'搜索失败：{search_reply}')
+            search_res = await search(goods.itemTitle, offset, limit, search_id)
+            if search_res['code'] != ErrorCode.OK.value:
+                logger.error(f'搜索失败：{search_res}')
                 dwn_empty_count += 1
                 continue
-
-            video_list = search_reply.get('data', [])
+            search_reply = search_res.get('data', {})
+            video_list = search_reply.get('list', [])
             if not video_list:
                 logger.info('没有更多视频了')
                 dwn_empty_count += 1
                 await asyncio.sleep(int(os.getenv('QUERY_SLEEP_TIME', 5)))
                 continue
             # 更新offset到下一页
-            offset += len(video_list)
+            offset = search_reply['cursor']
+            search_id = search_reply['search_id']
             # 随机选择一个视频的desc并写入video.txt
             if not os.path.exists(os.path.join(video_dir, 'video.txt')):
                 # 打乱视频列表顺序
@@ -453,7 +494,7 @@ async def dwn_video(video_dir, goods, account, output_path):
                 desc_topics = desc_topics if desc_topics else f"#{goods.itemTitle}"
 
                 # 组合最终的描述文本
-                final_desc = f"{desc_title}\n#无限回购的宝藏单品 {desc_topics}"
+                final_desc = f"{desc_title}\n {desc_topics}"
 
                 with open(os.path.join(video_dir, 'video.txt'), 'w', encoding='utf-8') as f:
                     f.write(final_desc)
@@ -504,7 +545,7 @@ async def dwn_video(video_dir, goods, account, output_path):
                     url_list = play_addr.get('url_list', [])
 
                     if url_list and video_id:
-                        download_url = url_list[-1]
+                        download_url = url_list[0]
                         os.makedirs(video_dir, exist_ok=True)
                         video_path = os.path.join(video_dir, f'{video_id}.mp4')
                         headers_dy = {"cookie": account.get('cookie', '')}
@@ -553,7 +594,7 @@ async def dwn_video(video_dir, goods, account, output_path):
                 # 如果出现次数相同，选择分辨率最高的
                 max_resolution = max(resolutions, key=lambda x: x[0] * x[1])
                 final_width, final_height = max_resolution
-        concat_videos(video_dir, output_path, final_width, final_height)
+        concat_videos(video_dir, output_path, final_width, final_height,video_count)
         logger.info(f'带货视频已合并到{output_path}')
     return downloaded_videos
 
@@ -633,7 +674,7 @@ def sanitize_filename(filename):
     清理文件名，移除Windows不允许的特殊字符
     """
     # Windows不允许的特殊字符
-    invalid_chars = r'[<>:"/\\|?*（）]'
+    invalid_chars = r'[<>:"/\\|?*（）#《》]'
     # 替换特殊字符为空字符串
     clean_name = re.sub(invalid_chars, '', filename)
     # 移除前后的空格和点

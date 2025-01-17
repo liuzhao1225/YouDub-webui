@@ -52,7 +52,11 @@ def generate_summary_txt(folder):
     title_without_date = re.sub(
         r'\b(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[./]\d{1,2}[./]\d{4}|\d{6,8})\b', '', title)
     # summary = summary['summary']
-    txt = f'{title_without_date.replace(summary["author"],"").replace(summary["author"].replace(" ",""),"")}\n{os.getenv("VIDEO_TOPIC")}'
+    txt = f'{title_without_date.replace(summary["author"],"").replace(summary["author"].replace(" ",""),"")}\n'
+    if isinstance(summary.get('tags', ''), str):
+        txt += summary.get('tags', '').replace('@','#')
+    else:
+        txt += os.getenv("VIDEO_TOPIC")
     # 将标题和摘要写入video.txt文件
     with open(os.path.join(folder, 'video.txt'), 'w', encoding='utf-8') as f:
         f.write(txt)

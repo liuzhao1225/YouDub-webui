@@ -35,11 +35,16 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 # 补充处理数据
 async def auto_pub():
     for platform in get_platforms():
-        if platform == SOCIAL_MEDIA_DOUYIN:
-            async with async_playwright() as playwright:
+        async with async_playwright() as playwright:
+            if platform == SOCIAL_MEDIA_DOUYIN:
+                # await get_goods_info(1, GoodsInfoHomeReq(key_word=""), platform, playwright)
+                rank_types = ['爆款榜', '热推榜', '趋势榜', '常销榜']
+                date_types = ['昨日', '本周', '本月']
+                for rank_type in rank_types:
+                    for date_type in date_types:
+                        await get_goods_info(10, GoodsInfoHomeReq(order_type=rank_type, rate_start="≥10%", request_type=date_type, item_tag_code="短视频"), platform, playwright)
+            elif platform == SOCIAL_MEDIA_KUAISHOU:
                 await get_goods_info(1, GoodsInfoHomeReq(key_word=""), platform, playwright)
-        elif platform == SOCIAL_MEDIA_KUAISHOU:
-            await get_goods_info(1, GoodsInfoHomeReq(key_word=""), platform, playwright)
     # shop_user_id = await shop_login(SOCIAL_MEDIA_KUAISHOU, None)
     # await creator_login(SOCIAL_MEDIA_KUAISHOU,shop_user_id)
     # shop_user_id = await shop_login(SOCIAL_MEDIA_DOUYIN, None)

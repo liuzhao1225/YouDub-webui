@@ -10,6 +10,10 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
+from youdub.util.ffmpeg_utils import deduplicate_video
+from youdub.util.lock_util import with_timeout_lock
+from youdub.util.sql_utils import getdb
+
 # 获取当前文件所在目录的父目录（项目根目录）
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 将项目根目录添加到系统路径
@@ -18,13 +22,10 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from loguru import logger
 from sqlalchemy.testing import db
 
-from util.sql_utils import getdb
 from youdub.do_everything import do_everything, up_video
 from youdub.step000_video_downloader import download_single_video
 from youdub.step030_translation import translate_all_title_under_folder
 from youdub.step060_genrate_info import generate_all_info_under_folder
-from youdub.util.ffmpeg_utils import deduplicate_video
-from youdub.util.lock_util import with_timeout_lock
 load_dotenv()
 db = getdb()
 
@@ -57,7 +58,7 @@ def transport_video():
     max_retries = 5  # 最大重试次数
     auto_upload_video = True  # 是否自动上传视频
 
-    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0')
+    transport_jobs = db.fetchall('SELECT * FROM transport_job WHERE state = 0 order by  id desc ')
     for transport_job in transport_jobs:
         try:
             dwn_count = 0
@@ -102,23 +103,13 @@ def replenish_job():
             if job['state'] == 1:
                 # 调用处理状态1的方法
                 translate_all_title_under_folder(
-                    folder, target_language='简体中文'
+                    folder, target_language='简体中文',info=info
                 )
                 # 生成信息文件
                 generate_all_info_under_folder(folder)
                 db.execute(
                     "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
                     (2, folder, job['id'])
-                )
-            elif job['state'] == 2:
-                # 去重视频
-                start_time = time.time()
-                deduplicate_video(info, folder)
-                end_time = time.time()
-                logger.info(f"去重视频处理完成，耗时: {end_time - start_time:.2f} 秒")
-                db.execute(
-                    "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
-                    (3, folder, job['id'])
                 )
             elif job['state'] == 3:
                 # 上传视频
@@ -145,6 +136,16 @@ def replenish_job():
                     )
             elif job['state'] == 4:
                 threading.Thread(target=dl_err_pass, args=(info, job)).start()
+            elif job['state'] == 2:
+                # 去重视频
+                start_time = time.time()
+                deduplicate_video(info, folder)
+                end_time = time.time()
+                logger.info(f"去重视频处理完成，耗时: {end_time - start_time:.2f} 秒")
+                db.execute(
+                    "UPDATE `transport_job_des` SET `state`=%s, file_path=%s WHERE `id`=%s",
+                    (3, folder, job['id'])
+                )
         except Exception as e:
             logger.exception(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
 # 不想看到超时异常，先暂时捕获

@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import time
@@ -91,11 +92,13 @@ def add_random_watermarks(input_stream, paster_dir, img_w, img_h):
 
 def save_stream_to_video(video_stream, audio_stream, output_path, vbr, video_width=None, video_height=None):
     try:
+        # 使用硬件加速和优化参数
         stream = ffmpeg.output(
             video_stream, audio_stream, output_path,
             **{
                 'c:v': 'hevc_nvenc',          # 使用NVIDIA的HEVC编码器
                 'b_ref_mode': 'disabled',      # 禁用B帧参考
+                 'rc': 'vbr',
                 'cq:v': 24,                    # 视频流的恒定质量参数
                 'aspect': '0.562',             # 设置视频宽高比
                 'c:a': 'aac',                  # 音频编码器使用AAC
@@ -122,8 +125,8 @@ def save_stream_to_video(video_stream, audio_stream, output_path, vbr, video_wid
             vcodec='libx264',
             acodec='copy',
             video_bitrate=vbr,
-            preset='slow',  # 提高质量的预设
-            crf=18,  # 使用CRF模式提高质量
+            preset='fast',  # 使用快速预设
+            crf=18,         # 使用CRF模式提高质量
             tune='film',
             threads='auto',
             x264opts='rc-lookahead=40:ref=4:subme=9'  # 优化的编码参数
@@ -179,10 +182,10 @@ def add_pip_to_video(background_video, pip_video, output_video, opacity=1.0):
 def get_video_files_recursive(directory):
     """
     递归获取目录及其子目录下的所有视频文件
-    
+
     Args:
         directory: 根目录路径
-        
+
     Returns:
         list: 视频文件路径列表
     """
@@ -239,7 +242,7 @@ def concat_videos(input_folder, output_path, video_width, video_height, video_co
                 video_stream = video_stream.filter('scale', video_width, video_height)
             # 应用视频特效
             video_stream = apply_video_effects(video_stream, video_width, video_height, current_duration,
-                                               total_video_index > len(video_files), False)
+                                               need_flip=total_video_index > len(video_files), _hflip=False)
             # base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
             # overlay_files = get_video_files_recursive(base_dir)
             # overlay_videos = random.sample(overlay_files, 3)
@@ -354,7 +357,8 @@ def deduplicate_video(info, output_folder):
     # thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
     # 旋转封面
     # rotate_if_landscape(thumbnail_path)
-    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration,is_random=False)
+    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration, _hflip=False)
+
     logger.info(f'开始对视频做去重处理')
     rotated_video_path = video_path.replace('.mp4', '_final.mp4')
     save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
@@ -389,10 +393,10 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
         chosen_flip = random.choice(flip_modes)
         if chosen_flip:
             video_stream = flip_video(video_stream, chosen_flip, width, height)
-    # elif _hflip:
-    #     # 随机翻转
-    #     if random.choice([True, False]):
-    #         video_stream = ffmpeg.filter(video_stream, 'hflip')
+    elif _hflip:
+        # 随机翻转
+        if random.choice([True, False]):
+            video_stream = ffmpeg.filter(video_stream, 'hflip')
 
     # 调整视频属性
     video_stream = adjust_video_properties(
@@ -404,16 +408,34 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
 
     base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
     video_files = get_video_files_recursive(base_dir)
-    overlay_videos = random.sample(video_files, 3)
-    # 叠加3个画中画视频
+    overlay_videos = random.sample(video_files, 4)
+    # 叠加4个画中画视频
     for i, overlay_video in enumerate(overlay_videos):
         overlay = (
             ffmpeg.input(overlay_video, stream_loop=-1, t=duration)
-            .filter('scale', width, height)
+            .filter('scale', width // 2, height // 2)  # 确保每个视频占四分之一大小
             .filter('format', 'rgba')
             .filter('colorchannelmixer', aa=0.01)
         )
-        video_stream = ffmpeg.overlay(video_stream, overlay)
+
+        # 计算每个画中画视频的位置
+        x_pos = (i % 2) * (width // 2)
+        y_pos = (i // 2) * (height // 2)
+
+        video_stream = ffmpeg.overlay(video_stream, overlay, x=x_pos, y=y_pos, shortest=1)  # 使用shortest参数
+
+    # 优化模糊背景处理
+    background_video = random.choice(video_files)
+    video_stream = add_blurred_background(
+        input_stream=video_stream,
+        background_stream=ffmpeg.input(background_video),
+        width=width,
+        height=height,
+        duration=duration,  # 传入视频时长
+        x_percent=random.uniform(1, 3),  # 左右各预留1-3%的边框
+        y_percent=random.uniform(1, 2)   # 上下各预留1-3%的边框
+    )
+
     return video_stream
 
 
@@ -588,7 +610,7 @@ def add_video_effect(input_stream, effect_dir, width, height, duration):
         ffmpeg.input(effect_video, stream_loop=-1, t=duration)  # 循环特效视频并设置时长
         .filter('scale', width, height)  # 调整特效素材大小
         .filter('format', 'rgba')
-        .filter('colorchannelmixer', aa=random.uniform(0.1, 0.5))  # 设置透明度
+        .filter('colorchannelmixer', aa=random.uniform(0.01, 0.05))  # 设置透明度
     ))
 
 
@@ -756,11 +778,11 @@ def add_transparent_overlay(
         input_video: str,
         overlay_video: str,
         output_path: str,
-        opacity: float = 0.0
+        opacity: float = 0.01
 ) -> None:
     """
     为视频添加全屏透明画中画效果，画中画视频会循环播放以匹配主视频时长
-    
+
     Args:
         input_video: 主视频路径
         overlay_video: 要叠加的视频路径
@@ -806,16 +828,16 @@ def add_transparent_overlay(
         traceback.print_exc()
 
 
-def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2)):
+def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.05, 1.1)):
     """
     随机放大视频并进行水平和垂直方向的平移，最后裁剪回原始尺寸
-    
+
     Args:
         input_stream: 输入视频流
         width: 原始视频宽度
         height: 原始视频高度
-        zoom_range: 放大倍数范围，默认(1.1, 1.2)
-        
+        zoom_range: 放大倍数范围，默认(1.05, 1.1)
+
     Returns:
         处理后的视频流
     """
@@ -835,39 +857,329 @@ def random_zoom_and_pan(input_stream, width, height, zoom_range=(1.1, 1.2)):
 
     # 应用缩放和平移效果
     return (input_stream
-            .filter('scale', f'iw*{zoom}', f'ih*{zoom}')  # 放大
+            .filter('scale',
+                   f'iw*{zoom}',
+                   f'ih*{zoom}',
+                   flags='fast_bilinear')  # 使用更快的缩放算法
             .filter('crop',
                     width, height,  # 直接使用原始尺寸
                     f'(in_w-{width})/2 + {x_move}',  # x偏移
                     f'(in_h-{height})/2 + {y_move}')  # y偏移
             )
 
+def concat_videos_horizontally(random_video,
+                             fixed_video,
+                             fixed_video_position,
+                             output_path):
+    """
+    将两个视频左右拼接在一起，以固定视频长度为准
+
+    Args:
+        random_video: 随机视频路径
+        fixed_video: 固定视频路径
+        fixed_video_position: 固定视频位置 ('left' 或 'right')
+        output_path: 输出视频路径
+    """
+    try:
+        # 确定左右视频位置
+
+        # 获取固定视频信息
+        fixed_probe = ffmpeg.probe(fixed_video)
+        fixed_duration = float(fixed_probe['format']['duration'])
+        fixed_video_info = next(s for s in fixed_probe['streams'] if s['codec_type'] == 'video')
+        fixed_width = int(fixed_video_info['width'])
+        fixed_height = int(fixed_video_info['height'])
+
+        # 获取随机视频信息
+        random_probe = ffmpeg.probe(random_video)
+        random_video_info = next(s for s in random_probe['streams'] if s['codec_type'] == 'video')
+        random_width = int(random_video_info['width'])
+        random_height = int(random_video_info['height'])
+
+        # 计算等高缩放后的宽度
+        target_height = fixed_height
+        scaled_random_width = int(random_width * (target_height / random_height))
+
+        # 计算最终合并后的尺寸
+        final_width = scaled_random_width + fixed_width
+        final_height = target_height
+
+        # 设置视频流
+        random_stream = (
+            ffmpeg.input(random_video, stream_loop=-1, t=fixed_duration)
+            .filter('scale', scaled_random_width, target_height)
+        )
+
+        fixed_stream = (
+            ffmpeg.input(fixed_video)
+            .filter('scale', fixed_width, target_height)
+        )
+
+        # 根据位置设置左右视频流
+        left_stream = fixed_stream if fixed_video_position == 'left' else random_stream
+        right_stream = random_stream if fixed_video_position == 'left' else fixed_stream
+
+        # 使用hstack滤镜水平拼接视频
+        video_stream = ffmpeg.filter([left_stream, right_stream], 'hstack', inputs=2)
+
+        # 应用视频特效
+        if os.path.exists('../data/video/paster'):
+            video_stream = add_random_watermarks(video_stream, '../data/video/paster', 100, 100)
+
+        # 调整视频属性
+        video_stream = adjust_video_properties(
+            video_stream,
+            saturation=random.uniform(0.95, 1.05),
+            brightness=random.uniform(0, 0.05),
+            contrast=random.uniform(0.95, 1.05)
+        )
+
+        # 添加模糊背景
+        base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
+        video_files = get_video_files_recursive(base_dir)
+        if video_files:
+            # video_stream = add_blurred_background(
+            #     input_stream=video_stream,
+            #     background_stream=ffmpeg.input(random.choice(video_files)),
+            #     width=final_width,
+            #     height=final_height,
+            #     duration=fixed_duration,
+            #     x_percent=random.uniform(1, 3),
+            #     y_percent=random.uniform(1, 2)
+            # )
+            # 计算边框尺寸
+            x_margin = int(final_width * 2 / 100)
+            y_margin = int(final_height * 1 / 100)
+
+            # 计算中心视频的尺寸
+            center_width = final_width - (2 * x_margin)
+            center_height = final_height - (2 * y_margin)
+
+            # 设置背景视频循环播放并匹配输入视频时长
+            looped_background = (ffmpeg.input(random.choice(video_files))
+                                 .filter('loop', loop=-1, size=10000)  # 设置循环，-1表示无限循环
+                                 .filter('trim', duration=fixed_duration)  # 裁剪到与输入视频相同的时长
+                                 .filter('scale', final_width, final_height, force_original_aspect_ratio='increase')  # 保持宽高比缩放
+                                 .filter('crop', final_width, final_height)
+                                 .filter('boxblur', 10))  # 添加模糊效果
+
+            # 优化中心视频的缩放，使用智能缩放逻辑
+            scaled_input = video_stream.filter('scale', center_width, center_height)
+
+            # 叠加视频
+            video_stream = ffmpeg.overlay(looped_background, scaled_input, x=x_margin, y=y_margin)
+
+        # 输出处理后的视频
+        output = ffmpeg.output(
+            video_stream,
+            ffmpeg.input(fixed_video).audio,
+            output_path,
+            **{
+                'c:v': 'hevc_nvenc',          # 使用NVIDIA的HEVC编码器
+                'b_ref_mode': 'disabled',      # 禁用B帧参考
+                'cq:v': 24,                    # 视频流的恒定质量参数
+                'preset': 'p4',                # NVENC的快速预设
+                'rc': 'vbr',                   # 使用可变比特率
+                'c:a': 'aac',                  # 音频编码器使用AAC
+                'b:a': '192k',                 # 音频比特率
+                'ar': 44100,                   # 音频采样率
+                'ac': 2,                       # 音频通道数
+                'max_muxing_queue_size': 1024  # 最大复用队列大小
+            }
+        )
+
+        # 打印 ffmpeg 命令
+        ffmpeg_command = ffmpeg.compile(output)
+        logger.info("FFmpeg command: " + ' '.join(ffmpeg_command))
+
+        # 执行FFmpeg命令
+        output.run(overwrite_output=True)
+
+        logger.info(f"视频已成功拼接并保存至: {output_path}")
+        logger.info(f"最终视频尺寸: {final_width}x{final_height}")
+
+    except ffmpeg.Error as e:
+        logger.error(f'FFmpeg 错误: {e.stderr.decode() if e.stderr else str(e)}')
+        raise
+    except Exception as e:
+        logger.error(f'发生错误: {str(e)}')
+        traceback.print_exc()
+        raise
+
+def add_blurred_background(input_stream, background_stream, width, height, duration, x_percent=5, y_percent=5):
+    """
+    将输入视频叠加到模糊背景的中间位置，并保留可配置的边框。
+    背景视频会循环播放以匹配输入视频的长度。
+    同时兼容横屏和竖屏视频。
+
+    Args:
+        input_stream: 主视频流
+        background_stream: 背景视频流
+        width: 输出视频宽度
+        height: 输出视频高度
+        duration: 输入视频的时长（秒）
+        x_percent: 左右边框占比(%)
+        y_percent: 上下边框占比(%)
+
+    Returns:
+        ffmpeg.Stream: 处理后的视频流
+    """
+    # 计算边框尺寸
+    x_margin = int(width * x_percent / 100)
+    y_margin = int(height * y_percent / 100)
+
+    # 计算中心视频的尺寸
+    center_width = width - (2 * x_margin)
+    center_height = height - (2 * y_margin)
+
+    # 设置背景视频循环播放并匹配输入视频时长
+    looped_background = (background_stream
+         .filter('loop', loop='-1', size=str(int(duration * 60)))  # 设置循环帧数
+         .filter('trim', duration=duration)  # 裁剪到与输入视频相同的时长
+         .filter('scale', width/20, height/20)  # 降低缩放比例以提高速度
+         .filter('boxblur', 5)  # 降低模糊强度
+         .filter('scale', width, height, force_original_aspect_ratio='increase')  # 保持宽高比缩放
+         .filter('crop', width, height))  # 添加模糊效果
+
+    # 优化中心视频的缩放，使用智能缩放逻辑
+    scaled_input = input_stream.filter('scale', center_width, center_height)
+
+    # 叠加视频
+    return ffmpeg.overlay(looped_background, scaled_input, x=x_margin, y=y_margin)
+
+def get_random_video(directory, exclude_path=None):
+    """
+    从指定目录随机获取一个视频文件
+
+    Args:
+        directory: 视频目录路径
+        exclude_path: 要排除的视频路径
+
+    Returns:
+        str: 随机视频的完整路径
+    """
+    video_extensions = ('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv')
+    video_files = []
+
+    # 获取所有视频文件
+    for ext in video_extensions:
+        video_files.extend(glob.glob(os.path.join(directory, f'*{ext}')))
+
+    # 如果有需要排除的文件，从列表中移除
+    if exclude_path and exclude_path in video_files:
+        video_files.remove(exclude_path)
+
+    if not video_files:
+        raise Exception(f"在目录 {directory} 中没有找到可用的视频文件")
+
+    return random.choice(video_files)
+
+def merge_video_audio(video_path1, video_path2, output_path):
+    """
+    使用 ffmpeg-python 合并视频和音频流
+
+    Args:
+        video_path1: 第一个视频文件路径
+        video_path2: 第二个视频文件路径
+        output_path: 输出文件路径
+    """
+    try:
+        # 输入视频和音频
+        video_input1 = ffmpeg.input(video_path1)
+        video_input2 = ffmpeg.input(video_path2)
+
+        # 合并视频和音频流
+        output = ffmpeg.output(
+            video_input1['v'],  # 从第一个视频获取视频流
+            video_input2['v'],  # 从第二个视频获取视频流
+            video_input1['a:0'],  # 从第一个视频获取第一个音频流
+            video_input2['a:0'],  # 从第二个视频获取第一个音频流
+            output_path,
+            vcodec='copy',  # 视频流不重新编码
+            acodec='copy',  # 音频流不重新编码
+            strict='experimental'  # 允许实验性编码器
+        )
+
+        # 打印 ffmpeg 命令
+        ffmpeg_command = ffmpeg.compile(output)
+        print("FFmpeg command: " + ' '.join(ffmpeg_command))
+
+        # 执行合并
+        ffmpeg.run(output, overwrite_output=True)
+        logger.info(f"视频和音频已合并至: {output_path}")
+
+    except ffmpeg.Error as e:
+        error_message = e.stderr.decode() if e.stderr else "No error message available"
+        logger.error(f"合并视频和音频时出错: {error_message}")
+        traceback.print_exc()
+
 
 if __name__ == '__main__':
     start_time = time.time()
 
-    # 测试视频路径
-    video_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
-    output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download2.mp4"
-
     try:
-        # 直接使用ffmpeg命令行来修改元数据
-        fake_duration = 10  # 设置假的时长为10秒
-        duration_str = f"{int(fake_duration//3600):02d}:{int((fake_duration%3600)//60):02d}:{fake_duration%60:06.3f}"
-        
-        command = [
-            'ffmpeg', '-i', video_path,
-            '-c', 'copy',  # 使用copy模式，不重新编码
-            '-metadata', f'duration={fake_duration}',
-            '-metadata', f'DURATION={duration_str}',
-            output_path
-        ]
-        
-        subprocess.run(command, check=True)
-        
+        # 测试视频路径
+        input_video = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\download.mp4"
+        background_video = r"E:\IDEA\workspace\YouDub-webui\data\douyin\videos\zf\zfy\oo62QRII5IJhejIODTfFmMAQGeAZLCgXfE4cvI.mp4"
+        output_path = "E:\IDEA\workspace\YouDub-webui\youdub\\videos\\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam\output_with_background.mp4"
+        with open(r'E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Angel_Wings\IG78VChJg0c_20240929_4K60P_240929_世_界_級_的_李_多_慧_迄今為止最強Solo舞完整版_在舞台上每一秒都是經典_Dragon_Beauties_味全龍_小龍女_李多慧_이다혜_台北大巨蛋\download.info.json', 'r', encoding='utf-8') as f:
+            info = json.load(f)
+        deduplicate_video(info, r'E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Angel_Wings\IG78VChJg0c_20240929_4K60P_240929_世_界_級_的_李_多_慧_迄今為止最強Solo舞完整版_在舞台上每一秒都是經典_Dragon_Beauties_味全龍_小龍女_李多慧_이다혜_台北大巨蛋')
+        # # 获取输入视频信息
+        # probe = ffmpeg.probe(input_video)
+        # video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+        # width = int(video_info['width'])
+        # height = int(video_info['height'])
+        # duration = float(probe['format']['duration'])  # 获取视频时长
+        #
+        # # 创建输入流
+        # input_stream = ffmpeg.input(input_video)
+        # background_stream = ffmpeg.input(background_video)
+        #
+        # # 获取音频流
+        # audio_stream = input_stream.audio
+        #
+        # # 应用模糊背景效果
+        # video_stream = add_blurred_background(
+        #     input_stream=input_stream,
+        #     background_stream=background_stream,
+        #     width=width,
+        #     height=height,
+        #     duration=duration,  # 传入视频时长
+        #     x_percent=3,  # 左右各预留10%的边框
+        #     y_percent=2   # 上下各预留10%的边框
+        # )
+        #
+        # # 输出处理后的视频
+        # output = ffmpeg.output(
+        #     video_stream,
+        #     audio_stream,  # 保留原始音频
+        #     output_path,
+        #     **{
+        #         'c:v': 'hevc_nvenc',          # 使用NVIDIA的HEVC编码器
+        #         'b_ref_mode': 'disabled',      # 禁用B帧参考
+        #         'cq:v': 24,                    # 视频流的恒定质量参数
+        #         'preset': 'p4',                # NVENC的快速预设
+        #         'rc': 'vbr',                   # 使用可变比特率
+        #         'c:a': 'aac',                  # 音频编码器使用AAC
+        #         'b:a': '192k',                 # 音频比特率
+        #         'ar': 44100,                   # 音频采样率
+        #         'ac': 2,                       # 音频通道数
+        #         'max_muxing_queue_size': 1024  # 最大复用队列大小
+        #     }
+        # )
+        #
+        # # 打印 ffmpeg 命令
+        # ffmpeg_command = ffmpeg.compile(output)
+        # logger.info("FFmpeg command: " + ' '.join(ffmpeg_command))
+        #
+        # # 执行FFmpeg命令
+        # output.run(overwrite_output=True)
+
         end_time = time.time()
         processing_time = end_time - start_time
-        logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
+        print(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
+        logger.info(f"输出视频保存至: {output_path}")
         
     except Exception as e:
         logger.error(f"处理视频时出错: {str(e)}")
