@@ -15,6 +15,7 @@ from lxml.etree import PI
 
 from Crawler.lib.logger import logger
 from youdub.util.lock_util import with_timeout_lock
+from youdub.util.modify_video_duration import modify_video_duration
 
 
 def get_video_audio(input_path, duration):
@@ -297,7 +298,7 @@ def concat_videos(input_folder, output_path, video_width, video_height, video_co
         ]
 
         subprocess.run(concat_command, check=True)
-
+        modify_video_duration(output_path, 6)
         # 清理临时文件
         for temp_file in temp_files:
             try:
@@ -362,6 +363,7 @@ def deduplicate_video(info, output_folder):
     logger.info(f'开始对视频做去重处理')
     rotated_video_path = video_path.replace('.mp4', '_final.mp4')
     save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
+    modify_video_duration(rotated_video_path, 6)
     logger.info(f'视频已去重至 {output_folder}')
 
 
