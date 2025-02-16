@@ -23,6 +23,7 @@ from social_auto_upload.utils.files_times import get_title_and_hashtags
 from youdub.do_everything import cookie_path
 from youdub.util.download_util import fetch_data
 from youdub.util.ffmpeg_utils import concat_videos_horizontally, get_random_video
+from youdub.util.video_metadata_processor import add_metadata_to_video, VideoType
 
 
 async def down(videos_dir):
@@ -130,47 +131,53 @@ def zhangfen(videos_dir, fixed_video_dir, output_dir):
     try:
         cookie_files = glob.glob(f'{cookie_path}/{SOCIAL_MEDIA_DOUYIN}_uploader/*.json')
         for cookie_file in cookie_files:
-            fixed_video_position = random.choice(['left', 'right'])
-            user_id, username = get_user_info_from_filename(cookie_file)
-            if user_id is None or user_id == '57779263751':
-                continue
-            
-            # 从fixed_video_dir目录随机选择一个视频文件
-            fixed_video_files = list(Path(fixed_video_dir).glob('*.mp4'))
-            if not fixed_video_files:
-                loguru.logger.error(f"在 {fixed_video_dir} 目录下没有找到视频文件")
-                continue
-            fixed_video = str(random.choice(fixed_video_files))
-            
-            # 确保输出目录存在
-            os.makedirs(output_dir, exist_ok=True)
+            try:
+                fixed_video_position = random.choice(['left', 'right'])
+                user_id, username = get_user_info_from_filename(cookie_file)
+                if user_id is None or ( user_id != '70436727108') :
+                    continue
 
-            # 根据配置选择随机视频的位置
-            random_video = get_random_video(videos_dir, fixed_video)
+                # 从fixed_video_dir目录随机选择一个视频文件
+                fixed_video_files = list(Path(fixed_video_dir).glob('*.mp4'))
+                if not fixed_video_files:
+                    loguru.logger.error(f"在 {fixed_video_dir} 目录下没有找到视频文件")
+                    continue
+                fixed_video = str(random.choice(fixed_video_files))
 
+                # 确保输出目录存在
+                os.makedirs(output_dir, exist_ok=True)
 
-            # 生成输出文件名
-            output_filename = f"{user_id}_{int(time.time())}.mp4"
-            output_path = os.path.join(output_dir, output_filename)
+                # 根据配置选择随机视频的位置
+                random_video = get_random_video(videos_dir, fixed_video)
 
-            # 测试水平拼接视频
-            concat_videos_horizontally(
-                random_video,
-                fixed_video,
-                fixed_video_position,
-                output_path
-            )
-            modify_video_duration(output_path, 1)
-            end_time = time.time()
-            processing_time = end_time - start_time
-            loguru.logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
-            loguru.logger.info(f"输出路径: {output_path}")
-            video_text = os.path.join(videos_dir, 'video.txt')
-            title, tags = get_title_and_hashtags(video_text)
-            app = DouYinVideo(title, output_path, tags, 0, cookie_file, None)
-            asyncio.run(app.main())
-            os.remove(random_video)
-            os.remove(output_path)
+                # 生成输出文件名
+                output_filename = f"{user_id}_{int(time.time())}.mp4"
+                output_path = os.path.join(output_dir, output_filename)
+                output_tem = os.path.join(output_dir, f"{user_id}_tem_{int(time.time())}.mp4")
+                # 测试水平拼接视频
+                concat_videos_horizontally(
+                    random_video,
+                    fixed_video,
+                    fixed_video_position,
+                    output_tem
+                )
+
+                # add_metadata_to_video(output_tem, output_path, VideoType.XINGTU)
+                output_path = output_tem
+                modify_video_duration(output_path, 6)
+                end_time = time.time()
+                processing_time = end_time - start_time
+                loguru.logger.info(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
+                loguru.logger.info(f"输出路径: {output_path}")
+                video_text = os.path.join(videos_dir, 'video.txt')
+                title, tags = get_title_and_hashtags(video_text)
+                app = DouYinVideo(title, output_path, tags, 0, cookie_file, None)
+                asyncio.run(app.main())
+                os.remove(random_video)
+                os.remove(output_path)
+                os.remove(output_tem)
+            except:
+                pass
     except Exception as e:
         loguru.logger.error(f"处理视频时出错: {str(e)}")
         traceback.print_exc()

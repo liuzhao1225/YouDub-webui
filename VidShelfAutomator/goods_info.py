@@ -34,11 +34,27 @@ from youdub.util.ffmpeg_utils import concat_videos
 # 从环境变量获取URL类型代码映射
 url_type_code_dict = json.loads(os.getenv('URL_TYPE_CODE_DICT', '{"0":"video"}'))
 
+# 添加一个变量来记录上次调用时间
+_last_dy_goods_call_time = None
 
 # 查询抖音商品信息
-async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, browser,query_type):
+async def get_dy_goods(account_id, req: GoodsInfoHomeReq, playwright, page, browser, query_type):
+    global _last_dy_goods_call_time
+    
+    # 检查是否需要等待
+    if _last_dy_goods_call_time:
+        current_time = datetime.datetime.now()
+        time_diff = (current_time - _last_dy_goods_call_time).total_seconds()
+        if time_diff < 120:  # 120秒 = 2分钟
+            wait_time = 120 - time_diff
+            logger.info(f'需要等待 {wait_time:.1f} 秒以满足2分钟间隔要求')
+            await asyncio.sleep(wait_time)
+    
+    # 更新最后调用时间
+    _last_dy_goods_call_time = datetime.datetime.now()
+    
     if query_type != QueryType.KEYWORD_COLLECTION:
-        que_succ, res, page, browser = await leaderboard(account_id, playwright, req, page,browser)
+        que_succ, res, page, browser = await leaderboard(account_id, playwright, req, page, browser)
         # 创建GoodsResponse实例
         good_res = GoodsResponse(
             pcursor=str(req.pcursor),
@@ -253,6 +269,10 @@ async def get_goods_info(
                 latest_publish_time = today_items[0].get('ut', None)
             else:
                 latest_publish_time = None
+            if latest_publish_time:
+                publish_interval = int(account.get('publish_interval', 1200))
+                if should_skip_publish(latest_publish_time, publish_interval):
+                    continue
             page = None
             browser = None
             while total_pub_succ < pub_count:
@@ -307,6 +327,12 @@ async def get_goods_info(
                     empty_count = 0
                     for goods in res.data:
                         try:
+                            if latest_publish_time:
+                                publish_interval = int(account.get('publish_interval', 1200))
+                                if should_skip_publish(latest_publish_time, publish_interval):
+                                    # 跳出整个while循环
+                                    total_pub_succ = pub_count + 1  # 确保跳出while循环
+                                    break
                             # 校验数据是否符合
                             if check_goods(query_type, request_entity, goods, repeat_day__ids,failed_item_ids):
                                 if word_pub_succ >= int(os.getenv('KEYWORD_PUB_LIMIT')):
@@ -366,19 +392,6 @@ async def get_goods_info(
                                 output_path = os.path.join(video_dir, 'download_final.mp4')
                                 await dwn_video(video_dir, goods, account, output_path)
                                 if os.path.exists(output_path):
-                                    if latest_publish_time:
-                                        current_time = datetime.datetime.now()
-                                        # 将字符串格式的时间转换为datetime对象进行比较
-                                        if isinstance(latest_publish_time, str):
-                                            latest_publish_time = datetime.datetime.strptime(latest_publish_time,
-                                                                                             '%Y-%m-%d %H:%M:%S')
-                                        time_diff = (current_time - latest_publish_time).total_seconds()
-                                        publish_interval = int(account.get('publish_interval', 1200))
-                                        if time_diff < publish_interval:
-                                            logger.info(
-                                                f'距离上次发布时间间隔{time_diff}秒，小于设定的{publish_interval}秒，跳过本次发布')
-                                            continue
-
                                     logger.info('开始发布商品信息...')
                                     up_sta, up_count = await up_video(folder=video_dir, platform=platform,
                                                                       account=account, check_job=False, goods=goods,check_video=False)
@@ -681,3 +694,30 @@ def sanitize_filename(filename):
     clean_name = clean_name.strip('. ')
     # 如果文件名为空，返回默认名称
     return clean_name if clean_name else 'default_name'
+
+def should_skip_publish(latest_publish_time, publish_interval):
+    """
+    检查是否应该跳过本次发布
+    
+    Args:
+        latest_publish_time: 上次发布时间
+        publish_interval: 发布间隔(秒)
+        
+    Returns:
+        bool: True表示应该跳过，False表示可以发布
+    """
+    if not latest_publish_time:
+        return False
+        
+    current_time = datetime.datetime.now()
+    # 将字符串格式的时间转换为datetime对象进行比较
+    if isinstance(latest_publish_time, str):
+        latest_publish_time = datetime.datetime.strptime(latest_publish_time,
+                                                         '%Y-%m-%d %H:%M:%S')
+    time_diff = (current_time - latest_publish_time).total_seconds()
+    
+    if time_diff < publish_interval:
+        logger.info(
+            f'距离上次发布时间间隔{time_diff}秒，小于设定的{publish_interval}秒，跳过本次发布')
+        return True
+    return False

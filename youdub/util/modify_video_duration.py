@@ -160,6 +160,43 @@ def modify_video_duration(input_file, target_duration):
         raise ValueError(f"处理失败: {str(e)}")
 
 if __name__ == "__main__":
-    video_path = r"/youdub/videos/20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam/download_final.mp4"
-    new_duration = 10  # 10秒
-    modify_video_duration(video_path, new_duration)
+    # video_path = r"/youdub/videos/20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam/download_final.mp4"
+    # new_duration = 10  # 10秒
+    # modify_video_duration(video_path, new_duration)
+    import ffmpeg
+    import os
+
+    input_file_1 = r"E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Catchy_Trend\WQfWQBVb9hI_20241028_street_style_fashion_chinese_girl_chinesefashion_chinafashion_shorts\download.mp4"
+    input_file_2 = r"E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Catchy_Trend\WQfWQBVb9hI_20241028_street_style_fashion_chinese_girl_chinesefashion_chinafashion_shorts\download_final.mp4"
+    output_file = r"E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Catchy_Trend\WQfWQBVb9hI_20241028_street_style_fashion_chinese_girl_chinesefashion_chinafashion_shorts\d1.mp4"
+    output_file2 = r"E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Catchy_Trend\WQfWQBVb9hI_20241028_street_style_fashion_chinese_girl_chinesefashion_chinafashion_shorts\d2.mp4"
+    output_file3 = r"E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\Catchy_Trend\WQfWQBVb9hI_20241028_street_style_fashion_chinese_girl_chinesefashion_chinafashion_shorts\d3.mp4"
+
+
+    import ffmpeg
+
+    # 设置分割的时间点（秒数）
+    split_time = 5  # 例如，30秒
+
+
+    # # 分割成两个部分（禁用关键帧）
+    # ffmpeg.input(input_file_1, ss=0, to=split_time).output(output_file, g=1000, vsync=0).run()  # 前30秒
+    # ffmpeg.input(input_file_1, ss=split_time).output(output_file2, g=1000, vsync=0).run()  # 从30秒开始
+    #
+    # # 合成两个视频（禁用关键帧并使时间戳不连续）
+    # input1 = ffmpeg.input(output_file)
+    # input2 = ffmpeg.input(output_file2)
+    #
+    # # 使用合适的 filter_complex 参数进行视频合成
+    # ffmpeg.output(input1, input2, output_file3,
+    #               filter_complex='[0:v][1:v]concat=n=2:v=1:a=0', vsync=0).run()
+    # 首先，将两个视频流输入到 `ffmpeg.input()`
+    # ffmpeg.input(input_file_1, ss=0, to=split_time).output(output_file).run()  # 视频前30秒
+    # ffmpeg.input(input_file_1, ss=split_time).output(output_file2).run()
+    # input1 = ffmpeg.input(output_file)
+    # input2 = ffmpeg.input(output_file2)
+    #
+    # # 使用合适的 filter_complex 参数进行视频合成
+    # ffmpeg.output(input1, input2, output_file3,
+    #               filter_complex='[0:v][1:v]concat=n=2:v=1:a=0', vsync=0).run()
+# ffmpeg.input('video1.mp4').input('video2.mp4').output('output.mp4', filter_complex='[0:v][1:v]concat=n=2:v=1:a=0', vsync=0).run()

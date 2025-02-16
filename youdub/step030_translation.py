@@ -22,6 +22,8 @@ else:
     extra_body = {
         'repetition_penalty': 1.1,
     }
+
+
 def get_necessary_info(info: dict):
     return {
         'title': info['title'],
@@ -34,35 +36,38 @@ def get_necessary_info(info: dict):
 
 
 def ensure_transcript_length(transcript, max_length=4000):
-    mid = len(transcript)//2
+    mid = len(transcript) // 2
     before, after = transcript[:mid], transcript[mid:]
-    length = max_length//2
+    length = max_length // 2
     return before[:length] + after[-length:]
+
+
 def summarize(info, transcript, target_language='简体中文'):
     client = OpenAI(
-    # This is the default and can be omitted
-    base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
-    api_key=os.getenv('OPENAI_API_KEY')
-)
+        # This is the default and can be omitted
+        base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
+        api_key=os.getenv('OPENAI_API_KEY')
+    )
     transcript = ' '.join(line['text'] for line in transcript)
     transcript = ensure_transcript_length(transcript, max_length=2000)
-    info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". ' 
+    info_message = f'Title: "{info["title"]}" Author: "{info["uploader"]}". '
     # info_message = ''
-    
+
     full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary": ""}}\nTo remove dates from the text\n```'
 
     messages = [
         {'role': 'system',
-            'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
+         'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
         {'role': 'user', 'content': full_description},
     ]
-    retry_message=''
+    retry_message = ''
     success = False
     for retry in range(5):
         try:
             messages = [
-                {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
-                {'role': 'user', 'content': full_description+retry_message},
+                {'role': 'system',
+                 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
+                {'role': 'user', 'content': full_description + retry_message},
             ]
             response = client.chat.completions.create(
                 model=model_name,
@@ -90,15 +95,15 @@ def summarize(info, transcript, target_language='简体中文'):
             time.sleep(1)
     if not success:
         raise Exception(f'总结失败')
-        
+
     title = summary['title']
     summary = summary['summary']
     tags = info['tags']
     messages = [
         {'role': 'system',
-            'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video", "tags": [list of tags in {target_language}]}}\n```.'},
+         'content': f'You are a native speaker of {target_language}. Please translate the title and summary into {target_language} in JSON format. ```json\n{{"title": "the {target_language} title of the video", "summary", "the {target_language} summary of the video", "tags": [list of tags in {target_language}]}}\n```.'},
         {'role': 'user',
-            'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Tags: {tags}.\nPlease translate the above title and summary and tags into {target_language} in JSON format. ```json\n{{"title": "", "summary", ""， "tags": []}}\n```. Remember to tranlate the title and the summary and tags into {target_language} in JSON.'},
+         'content': f'The title of the video is "{title}". The summary of the video is "{summary}". Tags: {tags}.\nPlease translate the above title and summary and tags into {target_language} in JSON format. ```json\n{{"title": "", "summary", ""， "tags": []}}\n```. Remember to tranlate the title and the summary and tags into {target_language} in JSON.'},
     ]
     while True:
         try:
@@ -115,7 +120,9 @@ def summarize(info, transcript, target_language='简体中文'):
             if target_language in summary['title'] or target_language in summary['summary']:
                 raise Exception('Invalid translation')
             title = summary['title'].strip()
-            if (title.startswith('"') and title.endswith('"')) or (title.startswith('“') and title.endswith('”')) or (title.startswith('‘') and title.endswith('’')) or (title.startswith("'") and title.endswith("'")) or (title.startswith('《') and title.endswith('》')):
+            if (title.startswith('"') and title.endswith('"')) or (title.startswith('“') and title.endswith('”')) or (
+                    title.startswith('‘') and title.endswith('’')) or (
+                    title.startswith("'") and title.endswith("'")) or (title.startswith('《') and title.endswith('》')):
                 title = title[1:-1]
             result = {
                 'title': title,
@@ -129,7 +136,6 @@ def summarize(info, transcript, target_language='简体中文'):
             logger.exception(f'总结翻译失败\n{e}')
             time.sleep(1)
             traceback.print_exc()
-
 
 
 def title_rize(info, target_language='简体中文'):
@@ -202,10 +208,12 @@ def title_rize(info, target_language='简体中文'):
             logger.info(summary)
             summary = re.findall(r'\{.*?\}', summary)[0]
             summary = json.loads(summary)
-            if target_language in summary['title'] :
+            if target_language in summary['title']:
                 raise Exception('Invalid translation')
             title = summary['title'].strip()
-            if (title.startswith('"') and title.endswith('"')) or (title.startswith('“') and title.endswith('”')) or (title.startswith('‘') and title.endswith('’')) or (title.startswith("'") and title.endswith("'")) or (title.startswith('《') and title.endswith('》')):
+            if (title.startswith('"') and title.endswith('"')) or (title.startswith('“') and title.endswith('”')) or (
+                    title.startswith('‘') and title.endswith('’')) or (
+                    title.startswith("'") and title.endswith("'")) or (title.startswith('《') and title.endswith('》')):
                 title = title[1:-1]
             result = {
                 'title': title,
@@ -217,6 +225,8 @@ def title_rize(info, target_language='简体中文'):
         except Exception as e:
             logger.warning(f'总结翻译失败\n{e}')
             time.sleep(1)
+
+
 def translation_postprocess(result):
     result = re.sub(r'\（[^)]*\）', '', result)
     result = result.replace('...', '，')
@@ -227,20 +237,21 @@ def translation_postprocess(result):
     result = result.replace('变压器', "Transformer")
     return result
 
+
 def valid_translation(text, translation):
-    
     if (translation.startswith('```') and translation.endswith('```')):
         translation = translation[3:-3]
         return True, translation_postprocess(translation)
-    
-    if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
+
+    if (translation.startswith('“') and translation.endswith('”')) or (
+            translation.startswith('"') and translation.endswith('"')):
         translation = translation[1:-1]
         return True, translation_postprocess(translation)
-    
+
     if '翻译' in translation and '：“' in translation and '”' in translation:
         translation = translation.split('：“')[-1].split('”')[0]
         return True, translation_postprocess(translation)
-    
+
     if '翻译' in translation and '："' in translation and '"' in translation:
         translation = translation.split('："')[-1].split('"')[0]
         return True, translation_postprocess(translation)
@@ -248,25 +259,26 @@ def valid_translation(text, translation):
     if '翻译' in translation and ':"' in translation and '"' in translation:
         translation = translation.split('："')[-1].split('"')[0]
         return True, translation_postprocess(translation)
-    
+
     if len(text) <= 10:
         if len(translation) > 15:
             return False, f'Only translate the following sentence and give me the result.'
-    elif len(translation) > len(text)*0.75:
+    elif len(translation) > len(text) * 0.75:
         return False, f'The translation is too long. Only translate the following sentence and give me the result.'
-    
+
     forbidden = ['翻译', '这句', '\n', '简体中文', '中文', 'translate', 'Translate', 'translation', 'Translation']
     translation = translation.strip()
     for word in forbidden:
         if word in translation:
-            
             return False, f"Don't include `{word}` in the translation. Only translate the following sentence and give me the result."
-    
+
     return True, translation_postprocess(translation)
+
+
 # def split_sentences(translation, punctuations=['。', '？', '！', '\n', '”', '"']):
 #     def is_punctuation(char):
 #         return char in punctuations
-    
+
 #     output_data = []
 #     for item in translation:
 #         start = item['start'] 
@@ -311,6 +323,7 @@ def split_text_into_sentences(para):
     # 很多规则中会考虑分号;，但是这里我把它忽略不计，破折号、英文双引号等同样忽略，需要的再做些简单调整即可。
     return para.split("\n")
 
+
 def split_sentences(translation):
     output_data = []
     for item in translation:
@@ -338,7 +351,8 @@ def split_sentences(translation):
             start = sentence_end
             sentence_start += len(sentence)
     return output_data
-    
+
+
 def _translate(summary, transcript, target_language='简体中文'):
     client = OpenAI(
         # This is the default and can be omitted
@@ -348,23 +362,24 @@ def _translate(summary, transcript, target_language='简体中文'):
     info = f'This is a video called "{summary["title"]}". {summary["summary"]}.'
     full_translation = []
     fixed_message = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.下面我让你来充当翻译家，你的目标是把任何语言翻译成中文，请翻译时不要带翻译腔，而是要翻译得自然、流畅和地道，使用优美和高雅的表达方式。请将人工智能的“agent”翻译为“智能体”，强化学习中是`Q-Learning`而不是`Queue Learning`。数学公式写成plain text，不要使用latex。确保翻译正确和简洁。注意信达雅。'},
+        {'role': 'system',
+         'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.下面我让你来充当翻译家，你的目标是把任何语言翻译成中文，请翻译时不要带翻译腔，而是要翻译得自然、流畅和地道，使用优美和高雅的表达方式。请将人工智能的“agent”翻译为“智能体”，强化学习中是`Q-Learning`而不是`Queue Learning`。数学公式写成plain text，不要使用latex。确保翻译正确和简洁。注意信达雅。'},
         {'role': 'user', 'content': '使用地道的中文Translate:"Knowledge is power."'},
         {'role': 'assistant', 'content': '翻译：“知识就是力量。”'},
         {'role': 'user', 'content': '使用地道的中文Translate:"To be or not to be, that is the question."'},
-        {'role': 'assistant', 'content': '翻译：“生存还是毁灭，这是一个值得考虑的问题。”'},]
-    
+        {'role': 'assistant', 'content': '翻译：“生存还是毁灭，这是一个值得考虑的问题。”'}, ]
+
     history = []
     for line in transcript:
         text = line['text']
         # history = ''.join(full_translation[:-10])
-        
+
         retry_message = 'Only translate the quoted sentence and give me the final translation.'
         for retry in range(30):
             messages = fixed_message + \
-                history[-30:] + [{'role': 'user',
-                                  'content': f'使用地道的中文Translate:"{text}"'}]
-            
+                       history[-30:] + [{'role': 'user',
+                                         'content': f'使用地道的中文Translate:"{text}"'}]
+
             try:
                 response = client.chat.completions.create(
                     model=model_name,
@@ -398,11 +413,12 @@ def _translate(summary, transcript, target_language='简体中文'):
 
     return full_translation
 
+
 def translate(folder, target_language='简体中文'):
     if os.path.exists(os.path.join(folder, 'translation.json')):
         logger.info(f'Translation already exists in {folder}')
         return True
-    
+
     info_path = os.path.join(folder, 'download.info.json')
     if not os.path.exists(info_path):
         return False
@@ -410,11 +426,11 @@ def translate(folder, target_language='简体中文'):
     with open(info_path, 'r', encoding='utf-8') as f:
         info = json.load(f)
     info = get_necessary_info(info)
-    
+
     transcript_path = os.path.join(folder, 'transcript.json')
     with open(transcript_path, 'r', encoding='utf-8') as f:
         transcript = json.load(f)
-    
+
     summary_path = os.path.join(folder, 'summary.json')
     if os.path.exists(summary_path):
         summary = json.load(open(summary_path, 'r', encoding='utf-8'))
@@ -434,6 +450,7 @@ def translate(folder, target_language='简体中文'):
     with open(translation_path, 'w', encoding='utf-8') as f:
         json.dump(transcript, f, indent=2, ensure_ascii=False)
     return True
+
 
 def translate_title(folder, target_language='简体中文'):
     if os.path.exists(os.path.join(folder, 'translation.json')):
@@ -458,13 +475,15 @@ def translate_title(folder, target_language='简体中文'):
             json.dump(summary, f, indent=2, ensure_ascii=False)
     return True
 
+
 def translate_all_transcript_under_folder(folder, target_language):
     for root, dirs, files in os.walk(folder):
         if 'transcript.json' in files and 'translation.json' not in files:
             translate(root, target_language)
     return f'Translated all videos under {folder}'
 
-def translate_all_title_under_folder(folder, target_language,info):
+
+def translate_all_title_under_folder(folder, target_language, info):
     if info.get("platform", None) != 'douyin':
         for root, dirs, files in os.walk(folder):
             translate_title(root, target_language)
@@ -472,16 +491,26 @@ def translate_all_title_under_folder(folder, target_language,info):
     else:
         summary_path = os.path.join(folder, 'summary.json')
         if not os.path.exists(summary_path):
-            new_title = info.get("title", None).replace(info.get("tags", None),'')
+            # 修复：正确处理标题和标签
+            title = info.get("title", '')
+            tags = info.get("tags", [])
+            # 从标题中移除所有标签
+            new_title = title
+            new_tags = ''
+            for tag in tags:
+                new_tags += tag
+            new_title = new_title.replace(str(new_tags), '').strip()
             summary = {
                 'title': new_title if new_title else os.getenv("VIDEO_TITLE"),
                 'author': info['uploader'],
-                'tags': info.get("tags", None),
+                'tags': new_tags,
                 'language': target_language
             }
             with open(summary_path, 'w', encoding='utf-8') as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
         return f'Translated all videos under {folder}'
+
+
 if __name__ == '__main__':
     translate_title(
         r'videos\20160519 160519 레이샤 LAYSHA 고은 - Chocolate Cream 신한대축제 직캠 fancam by zam', '简体中文')

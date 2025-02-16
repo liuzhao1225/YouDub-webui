@@ -16,9 +16,10 @@ from lxml.etree import PI
 from Crawler.lib.logger import logger
 from youdub.util.lock_util import with_timeout_lock
 from youdub.util.modify_video_duration import modify_video_duration
+from youdub.util.video_metadata_processor import add_metadata_to_video, VideoType
 
 
-def get_video_audio(input_path, duration):
+def get_video_audio(input_path, duration,info=None):
     try:
         # 获取开头和结尾去除的秒数
         start_seconds = int(os.getenv('VIDEO_SPLIT_START_SECONDS', 2))
@@ -31,7 +32,7 @@ def get_video_audio(input_path, duration):
         end_time = f"{int(duration + start_seconds) // 3600:02d}:{(int(duration + start_seconds) % 3600) // 60:02d}:{int(duration + start_seconds) % 60:02d}.000"
 
         # 首先尝试使用CUDA硬件加速
-        if duration > 60:
+        if duration > 60 or (info and info.get("platform", None) != 'douyin'):
             stream = ffmpeg.input(input_path, ss=start_time, to=end_time)
         else:
             stream = ffmpeg.input(input_path)
@@ -202,6 +203,7 @@ def get_video_files_recursive(directory):
 
 # 目录内短视频拼接去重，用于带货视频生成
 def concat_videos(input_folder, output_path, video_width, video_height, video_count):
+    output_temp_video = output_path.replace('_temp.mp4', '_final.mp4')
     # 获取目标时长（默认为60秒，可以从环境变量中获取）
     if video_count == 1:
         target_duration = 1
@@ -294,10 +296,12 @@ def concat_videos(input_folder, output_path, video_width, video_height, video_co
             '-vsync', '2',
             '-fflags', '+genpts',  # 生成表示时间戳
             '-reset_timestamps', '1',  # 添加重置时间戳参数
-            output_path
+            output_temp_video
         ]
 
         subprocess.run(concat_command, check=True)
+
+        add_metadata_to_video(output_temp_video, output_path, VideoType.JIANYING)
         modify_video_duration(output_path, 6)
         # 清理临时文件
         for temp_file in temp_files:
@@ -342,7 +346,7 @@ def deduplicate_video(info, output_folder):
         # 从 video_stream 中获取 duration
         probe = ffmpeg.probe(video_path)
         duration = float(probe['format']['duration'])
-    audio_stream, video_stream = get_video_audio(video_path, duration)
+    audio_stream, video_stream = get_video_audio(video_path, duration,info)
     best_format = get_best_bitrate_format(info)
     vbr = best_format.get("vbr", 0)
     if vbr is None or vbr == "":
@@ -358,23 +362,25 @@ def deduplicate_video(info, output_folder):
     # thumbnail_path = thumbnail_path_jpg if os.path.exists(thumbnail_path_jpg) else thumbnail_path_webp
     # 旋转封面
     # rotate_if_landscape(thumbnail_path)
-    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration, _hflip=False)
+    video_stream = apply_video_effects(video_stream, best_format['width'], best_format['height'], duration, _hflip=False,info=info)
 
     logger.info(f'开始对视频做去重处理')
-    rotated_video_path = video_path.replace('.mp4', '_final.mp4')
+    rotated_video_path = video_path.replace('.mp4', '_temp.mp4')
+    output_final_video = video_path.replace('_temp.mp4', '_final.mp4')
     save_stream_to_video(video_stream, audio_stream, rotated_video_path, vbr)
-    modify_video_duration(rotated_video_path, 6)
-    logger.info(f'视频已去重至 {output_folder}')
+    add_metadata_to_video(rotated_video_path, output_final_video, VideoType.JIANYING)
+    modify_video_duration(output_final_video, 6)
+    logger.info(f'视频已去重至 {output_final_video}')
 
 
-def apply_video_effects(video_stream, width, height, duration, need_flip=False, _hflip=True, is_random=True):
+def apply_video_effects(video_stream, width, height, duration, need_flip=False, _hflip=True, is_random=True,info=None):
     # 随机决定是否应用缩放和平移效果
     if is_random:
         video_stream = random_zoom_and_pan(video_stream, width, height)
-
-    # 竖屏视频才旋转
-    if height < width:
-        video_stream = rotate_video(video_stream)
+    if info is None or info.get("platform", None) != 'douyin':
+        # 竖屏视频才旋转
+        if height < width:
+            video_stream = rotate_video(video_stream)
     paster_dir = '../data/video/paster'
     # 添加水印
     if paster_dir and os.path.exists(paster_dir):
@@ -408,7 +414,7 @@ def apply_video_effects(video_stream, width, height, duration, need_flip=False, 
         contrast=random.uniform(0.95, 1.05)
     )
 
-    base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
+    base_dir = r'E:\IDEA\workspace\YouDub-webui\social_auto_upload\videos\movies_room'
     video_files = get_video_files_recursive(base_dir)
     overlay_videos = random.sample(video_files, 4)
     # 叠加4个画中画视频
@@ -937,39 +943,39 @@ def concat_videos_horizontally(random_video,
         )
 
         # 添加模糊背景
-        base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
-        video_files = get_video_files_recursive(base_dir)
-        if video_files:
-            # video_stream = add_blurred_background(
-            #     input_stream=video_stream,
-            #     background_stream=ffmpeg.input(random.choice(video_files)),
-            #     width=final_width,
-            #     height=final_height,
-            #     duration=fixed_duration,
-            #     x_percent=random.uniform(1, 3),
-            #     y_percent=random.uniform(1, 2)
-            # )
-            # 计算边框尺寸
-            x_margin = int(final_width * 2 / 100)
-            y_margin = int(final_height * 1 / 100)
-
-            # 计算中心视频的尺寸
-            center_width = final_width - (2 * x_margin)
-            center_height = final_height - (2 * y_margin)
-
-            # 设置背景视频循环播放并匹配输入视频时长
-            looped_background = (ffmpeg.input(random.choice(video_files))
-                                 .filter('loop', loop=-1, size=10000)  # 设置循环，-1表示无限循环
-                                 .filter('trim', duration=fixed_duration)  # 裁剪到与输入视频相同的时长
-                                 .filter('scale', final_width, final_height, force_original_aspect_ratio='increase')  # 保持宽高比缩放
-                                 .filter('crop', final_width, final_height)
-                                 .filter('boxblur', 10))  # 添加模糊效果
-
-            # 优化中心视频的缩放，使用智能缩放逻辑
-            scaled_input = video_stream.filter('scale', center_width, center_height)
-
-            # 叠加视频
-            video_stream = ffmpeg.overlay(looped_background, scaled_input, x=x_margin, y=y_margin)
+        # base_dir = r'E:\IDEA\workspace\YouDub-webui\data'
+        # video_files = get_video_files_recursive(base_dir)
+        # if video_files:
+        #     # video_stream = add_blurred_background(
+        #     #     input_stream=video_stream,
+        #     #     background_stream=ffmpeg.input(random.choice(video_files)),
+        #     #     width=final_width,
+        #     #     height=final_height,
+        #     #     duration=fixed_duration,
+        #     #     x_percent=random.uniform(1, 3),
+        #     #     y_percent=random.uniform(1, 2)
+        #     # )
+        #     # 计算边框尺寸
+        #     x_margin = int(final_width * 2 / 100)
+        #     y_margin = int(final_height * 1 / 100)
+        #
+        #     # 计算中心视频的尺寸
+        #     center_width = final_width - (2 * x_margin)
+        #     center_height = final_height - (2 * y_margin)
+        #
+        #     # 设置背景视频循环播放并匹配输入视频时长
+        #     looped_background = (ffmpeg.input(random.choice(video_files))
+        #                          .filter('loop', loop=-1, size=10000)  # 设置循环，-1表示无限循环
+        #                          .filter('trim', duration=fixed_duration)  # 裁剪到与输入视频相同的时长
+        #                          .filter('scale', final_width, final_height, force_original_aspect_ratio='increase')  # 保持宽高比缩放
+        #                          .filter('crop', final_width, final_height)
+        #                          .filter('boxblur', 10))  # 添加模糊效果
+        #
+        #     # 优化中心视频的缩放，使用智能缩放逻辑
+        #     scaled_input = video_stream.filter('scale', center_width, center_height)
+        #
+        #     # 叠加视频
+        #     video_stream = ffmpeg.overlay(looped_background, scaled_input, x=x_margin, y=y_margin)
 
         # 输出处理后的视频
         output = ffmpeg.output(
@@ -1035,8 +1041,9 @@ def add_blurred_background(input_stream, background_stream, width, height, durat
     center_height = height - (2 * y_margin)
 
     # 设置背景视频循环播放并匹配输入视频时长
+    # 修改循环参数设置，使用较小的循环次数
     looped_background = (background_stream
-         .filter('loop', loop='-1', size=str(int(duration * 60)))  # 设置循环帧数
+         .filter('loop', loop=str(duration))  # 设置最大允许的循环帧数
          .filter('trim', duration=duration)  # 裁剪到与输入视频相同的时长
          .filter('scale', width/20, height/20)  # 降低缩放比例以提高速度
          .filter('boxblur', 5)  # 降低模糊强度
@@ -1182,7 +1189,7 @@ if __name__ == '__main__':
         processing_time = end_time - start_time
         print(f"视频处理完成，总耗时: {processing_time:.2f} 秒")
         logger.info(f"输出视频保存至: {output_path}")
-        
+
     except Exception as e:
         logger.error(f"处理视频时出错: {str(e)}")
         traceback.print_exc()

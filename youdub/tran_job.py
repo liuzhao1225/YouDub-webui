@@ -120,14 +120,14 @@ def replenish_job():
                 plat_up_count = 0
                 for platform in platforms:
                     try:
-                        up_sta, up_count = asyncio.run(up_video(folder, platform, tjd_id=tjd_id,tj_user_ids=tj_user_ids))
+                        up_sta, up_count = asyncio.run(up_video(folder, platform, tjd_id=tjd_id,tj_user_ids=tj_user_ids,info = info))
                         if not up_sta:
                             all_success = False
                         else:
                             if up_count == 1:
                                 plat_up_count += 1
                     except Exception as e:
-                        logger.exception(f"上传视频时出错: {tjd_id} - 平台: {platform} - 错误信息: {str(e)}")
+                        logger.exception(f"上传视频时出错: {tjd_id} - 平台: {platform} - 错误信息:  {traceback.format_exc()}")
                         all_success = False
                 if all_success and plat_up_count > 0:
                     db.execute(
@@ -147,8 +147,10 @@ def replenish_job():
                     (3, folder, job['id'])
                 )
         except Exception as e:
-            logger.exception(f"处理补充任务时出错: {job['id']} - 错误信息: {str(e)}")
-# 不想看到超时异常，先暂时捕获
+            logger.exception(f"处理补充任务时出错: job_id={job['id']}, file_path={job.get('file_path', 'unknown')}\n"
+                           f"错误详情: {str(e)}\n"
+                           f"完整堆栈: {traceback.format_exc()}")
+
 def dl_err_pass(info, job):
     try:
         re_dl(info, job)

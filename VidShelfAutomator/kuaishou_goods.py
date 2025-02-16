@@ -31,7 +31,7 @@ sys.path.append(root_dir)
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-
+# 自动挂车商品
 # 补充处理数据
 async def auto_pub():
     for platform in get_platforms():
@@ -78,7 +78,7 @@ async def shop_login(platform, user_id):
                                             creator_id=user_id))
     elif platform == SOCIAL_MEDIA_DOUYIN:
         shop_user_id = await dy_shop_login()
-        await dy_add_account(dy_param(shop_user_id=shop_user_id, creator_id=user_id, cookie=""))
+        await dy_add_account(dy_param(shop_user_id=shop_user_id, creator_id=user_id, cookie=None))
     # elif platform == SOCIAL_MEDIA_TENCENT:
     #     que_succ, res = await get_tx_goods(headers, query_type, req)
     # elif platform == SOCIAL_MEDIA_TIKTOK:

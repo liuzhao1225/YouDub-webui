@@ -163,9 +163,15 @@ def process_video(info, root_folder, resolution, demucs_model, device, shifts, w
 def insert_tjd(folder, info, transport_job, state):
     sql = """
                 INSERT INTO `transport_job_des`
-                (`tj_id`, `video_id`, `video_url`, `title`, `remark`, `file_path`, `state`) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (`tj_id`, `video_id`, `video_url`, `title`, `remark`, `file_path`, `state`, `playlet_title`, `playlet_theater`) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
+    
+    # 从 anchor_info 中获取 playlet_title 和 playlet_theater
+    anchor_info = info.get('anchor_info', {})
+    playlet_title = anchor_info.get('title', '')
+    playlet_theater = anchor_info.get('title_tag', '')
+    
     args = (
         transport_job['id'],
         info['id'],
@@ -173,7 +179,9 @@ def insert_tjd(folder, info, transport_job, state):
         info['title'],
         info['description'],
         folder,
-        state
+        state,
+        playlet_title,
+        playlet_theater
     )
     tjd_id = db.execute(sql, args)
     return tjd_id
@@ -199,25 +207,31 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
             logger.info(f'{urls}未解析出有用的数据')
             break
         try:
-            info['transport_job'] = transport_job
-            success, dw_state = process_video(info, root_folder, resolution, demucs_model, device, shifts,
-                                              whisper_model,
-                                              whisper_download_root, whisper_batch_size,
-                                              whisper_diarization, whisper_min_speakers, whisper_max_speakers,
-                                              translation_target_language, force_bytedance, subtitles, speed_up, fps,
-                                              target_resolution, max_retries, auto_upload_video)
-            if success:
-                success_list.append(info)
-                dwn_count += 1
-            else:
-                fail_list.append(info)
-            if download_e.url_type == 1 and (dw_state == 1 or dw_state == 3):
+            if info.get('filter_reason',None) and info.get('filter_reason',None):
                 db.execute(
                     "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
-                    (1, transport_job['id'])
+                    (2, transport_job['id'])
                 )
+            else:
+                info['transport_job'] = transport_job
+                success, dw_state = process_video(info, root_folder, resolution, demucs_model, device, shifts,
+                                                  whisper_model,
+                                                  whisper_download_root, whisper_batch_size,
+                                                  whisper_diarization, whisper_min_speakers, whisper_max_speakers,
+                                                  translation_target_language, force_bytedance, subtitles, speed_up, fps,
+                                                  target_resolution, max_retries, auto_upload_video)
+                if success:
+                    success_list.append(info)
+                    dwn_count += 1
+                else:
+                    fail_list.append(info)
+                if download_e.url_type == 1 and (dw_state == 1 or dw_state == 3):
+                    db.execute(
+                        "UPDATE `transport_job` SET `state`=%s WHERE `id`=%s",
+                        (1, transport_job['id'])
+                    )
         except Exception as e:
-            logger.exception(f'处理视频 {info["title"]} 时发生错误：{e}')
+            logger.exception(f'处理视频 {info.get("title", None)} 时发生错误：{e}')
             fail_list.append(info)
             traceback.print_exc()
     return dwn_count, download_e
@@ -225,7 +239,7 @@ def do_everything(transport_job, root_folder, url, num_videos=5, page_num=1, res
 
 # 上传视频
 @with_timeout_lock(timeout=60, max_workers=2)
-async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None,goods =None,check_video=True):
+async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,tj_user_ids=None,goods =None,check_video=True,info=None):
     user_id = None
     if check_job:
         sql_check = """
@@ -261,7 +275,7 @@ async def up_video(folder, platform, tjd_id=None, check_job=True,account =None,t
                 continue
             if platform == SOCIAL_MEDIA_DOUYIN:
                 await douyin_setup(cookie_file, handle=False)
-                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path,goods=goods,check_video=check_video)
+                app = DouYinVideo(title, video_file, tags, 0, cookie_file, thumbnail_path,goods=goods,check_video=check_video,info=info)
             elif platform == SOCIAL_MEDIA_TIKTOK:
                 await tiktok_setup(cookie_file, handle=True)
                 app = TiktokVideo(title, video_file, tags, 0, cookie_file, thumbnail_path)

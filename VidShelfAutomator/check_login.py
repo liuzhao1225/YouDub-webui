@@ -3,6 +3,8 @@ import os
 import logging
 import asyncio
 
+from Crawler.service.douyin.utils.trend_insight_util import juliang_setup
+from VidShelfAutomator.kuaishou_goods import shop_login
 from social_auto_upload.uploader.douyin_uploader.main import douyin_setup
 from social_auto_upload.uploader.ks_uploader.main import ks_setup
 from social_auto_upload.uploader.tencent_uploader.main import weixin_setup
@@ -11,7 +13,7 @@ from social_auto_upload.utils.base_social_media import get_platforms, SOCIAL_MED
     SOCIAL_MEDIA_TENCENT, SOCIAL_MEDIA_KUAISHOU
 from youdub.do_everything import cookie_path
 
-
+# 检查登录
 def get_user_info_from_filename(file_path):
     # 从文件路径中获取文件名
     filename = os.path.basename(file_path)
@@ -54,6 +56,12 @@ if __name__ == '__main__':
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
-    # 运行主函数
-    asyncio.run(check_login())
-
+    # -----------------上传账号登录
+    # asyncio.run(check_login())
+    # 巨量算数登录
+    # asyncio.run(juliang_setup('None',True))
+    # 店铺登录
+    # shop_user_id = await shop_login(SOCIAL_MEDIA_KUAISHOU, None)
+    # await creator_login(SOCIAL_MEDIA_KUAISHOU,shop_user_id)
+    shop_user_id = asyncio.run( shop_login(SOCIAL_MEDIA_DOUYIN, None))
+    # await creator_login(SOCIAL_MEDIA_DOUYIN,shop_user_id)

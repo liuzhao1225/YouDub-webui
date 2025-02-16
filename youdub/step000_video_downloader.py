@@ -18,19 +18,22 @@ from crawlers.hybrid.hybrid_crawler import HybridCrawler
 HybridCrawler = HybridCrawler()
 
 
-def sanitize_title(title):
+def sanitize_title(title, max_length=50):
     # 只保留数字、字母、中文字符和空格
     title = re.sub(r'[^\w\u4e00-\u9fff \d_-]', '', title)
     # 将多个空格替换为一个空格
     title = re.sub(r'\s+', ' ', title)
     # 将最后的空格替换为下划线
     title = title.rstrip().replace(' ', '_')
+    if len(title) > max_length:
+        title = title[:max_length]
     return title
 
 
 def get_target_folder(info, folder_path):
-    sanitized_title = sanitize_title(info['title'])
-    sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'))
+    # 使用更短的长度限制来为路径的其他部分预留空间
+    sanitized_title = sanitize_title(info['title'], max_length=50)
+    sanitized_uploader = sanitize_title(info.get('uploader', 'Unknown'), max_length=20)
     upload_date = info.get('upload_date', 'Unknown')
     # if upload_date == 'Unknown':
     #     return None
@@ -166,49 +169,75 @@ def get_info_list_from_url(url, num_videos, page_num, download_e,root_folder):
             # 添加cookies支持
             if "douyin" in u:
                 dy_res = asyncio.run(HybridCrawler.hybrid_parsing_single_video(url=u, minimal=False))
-                # 在使用TikTokBaseIE之前，需要正确初始化下载器
-                ydl_opts = {
-                    'format': 'best',
-                    'writeinfojson': True,
-                    # 可以根据需要添加其他选项
-                }
-                # 初始化TikTok提取器
-                tikTokBaseIE = TikTokBaseIE(ydl)
-                dy_info_dict =tikTokBaseIE._parse_aweme_video_app(aweme_detail=dy_res)
+                if dy_res.get('filter_reason', None):
+                    yield dy_res
+                else:
+                    # 在使用TikTokBaseIE之前，需要正确初始化下载器
+                    ydl_opts = {
+                        'format': 'best',
+                        'writeinfojson': True,
+                        # 可以根据需要添加其他选项
+                    }
+                    # 初始化TikTok提取器
+                    tikTokBaseIE = TikTokBaseIE(ydl)
+                    dy_info_dict =tikTokBaseIE._parse_aweme_video_app(aweme_detail=dy_res)
 
-                dy_info_dict['platform'] = 'douyin'
+                    dy_info_dict['platform'] = 'douyin'
 
-                wm_video_url_HQ = dy_res['video']['play_addr']['url_list'][0]
-                nwm_video_url_HQ = wm_video_url_HQ.replace('playwm', 'play')
-                dy_info_dict['nwm_video_url_HQ'] = nwm_video_url_HQ
-                dy_info_dict['webpage_url'] = u
-                dy_info_dict['upload_date'] = dy_res['create_time']
-                # 添加分类和标签信息
-                categories = []
-                # 从video_tag中提取标签信息
-                if 'video_tag' in dy_res:
-                    for tag in dy_res['video_tag']:
-                        tag_name = tag.get('tag_name')
-                        if tag_name:
-                            if tag.get('level') == 1:
+                    wm_video_url_HQ = dy_res['video']['play_addr']['url_list'][0]
+                    nwm_video_url_HQ = wm_video_url_HQ.replace('playwm', 'play')
+                    dy_info_dict['nwm_video_url_HQ'] = nwm_video_url_HQ
+                    dy_info_dict['webpage_url'] = u
+                    dy_info_dict['upload_date'] = dy_res['create_time']
+                    # 添加分类和标签信息
+                    categories = []
+                    # 从video_tag中提取标签信息
+                    if 'video_tag' in dy_res:
+                        for tag in dy_res['video_tag']:
+                            tag_name = tag.get('tag_name')
+                            if tag_name:
                                 categories.append(tag_name)
-                            categories.append(tag_name)
 
-                # 从text_extra中提取话题标签
-                if 'text_extra' in dy_res:
-                    for text in dy_res['text_extra']:
-                        if text.get('hashtag_name'):
-                            categories.append(text['hashtag_name'])
+                    # 从text_extra中提取话题标签
+                    if 'text_extra' in dy_res:
+                        for text in dy_res['text_extra']:
+                            if text.get('hashtag_name'):
+                                categories.append(text['hashtag_name'])
 
-                dy_info_dict['categories'] = categories if categories else []
-                dy_info_dict['tags'] = dy_res['caption'] if dy_res['caption'] else []
-                output_folder = get_target_folder(dy_info_dict, root_folder)
-                ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
-                ydl = YoutubeDL(ydl_opts)
-                dy_infofn = ydl.prepare_filename(dy_info_dict, 'infojson')
-                ydl._write_info_json('video', dy_info_dict, dy_infofn)
-                download_e.url_type = 1
-                yield dy_info_dict
+                    dy_info_dict['categories'] = categories if categories else []
+                    dy_info_dict['tags'] = dy_res.get('caption',{})
+                    anchor_info = dy_res.get('anchor_info',{})
+                    dy_info_dict['anchor_info'] = anchor_info
+                    
+                    # 从标题中提取信息
+                    video_title = dy_info_dict.get('title', '')
+                    playlet_title = anchor_info.get("title", None)
+                    
+                    # 尝试从《》中提取标题
+                    title_match = re.search(r'《(.+?)》', video_title) or re.search(r'《(.+?)》', playlet_title)
+                    if title_match:
+                        extracted_title = title_match.group(1)
+                    else:
+                        # 如果没有《》，则处理 playlet_title
+                        extracted_title = playlet_title
+                        # 从环境变量获取替换模式，如果没有则使用默认值
+                        replace_patterns = os.getenv('TITLE_REPLACE_PATTERNS').split(',')
+                        
+                        for pattern in replace_patterns:
+                            if pattern:  # 确保不是空字符串
+                                extracted_title = extracted_title.replace(pattern.strip(), '').strip()
+                    
+                    # 更新标题
+                    dy_info_dict['title'] = extracted_title if extracted_title else video_title
+                    
+                    video_title = dy_info_dict.get('title',None)
+                    output_folder = get_target_folder(dy_info_dict, root_folder)
+                    ydl_opts['outtmpl'] = os.path.join(output_folder, 'download.%(ext)s')
+                    ydl = YoutubeDL(ydl_opts)
+                    dy_infofn = ydl.prepare_filename(dy_info_dict, 'infojson')
+                    ydl._write_info_json('video', dy_info_dict, dy_infofn)
+                    download_e.url_type = 1
+                    yield dy_info_dict
             else:
                 result = ydl.extract_info(u, download=False)
                 if 'entries' in result:
