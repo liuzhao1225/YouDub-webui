@@ -1,11 +1,10 @@
 gradio
 loguru
 yt-dlp
-git+https://github.com/facebookresearch/demucs#egg=demucs
 scipy
 librosa
 git+https://github.com/m-bain/whisperx.git
 python-dotenv
 openai
 audiostretchy
-bilibili_toolman
+bilibili_api

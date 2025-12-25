@@ -35,6 +35,13 @@ def split_text(input_data,
             if i < len(text) - 1 and is_punctuation(text[i+1]):
                 continue
             sentence = text[sentence_start:i+1]
+            sentence = sentence.replace('，', '')
+            sentence = sentence.replace('。', '')
+            sentence = sentence.replace('？', '')
+            sentence = sentence.replace('！', '')
+            sentence = sentence.replace('；', '')
+            sentence = sentence.replace('：', '')
+
             sentence_end = start + duration_per_char * len(sentence)
 
             # Append the new item
@@ -154,5 +161,10 @@ def synthesize_all_video_under_folder(folder, subtitles=True, speed_up=1.05, fps
                              speed_up=speed_up, fps=fps, resolution=resolution)
     return f'Synthesized all videos under {folder}'
 if __name__ == '__main__':
-    folder = r'videos\3Blue1Brown\20231207 Im still astounded this is true'
-    synthesize_all_video_under_folder(folder, subtitles=True)
+    import sys
+    folder = sys.argv[1]
+    subtitles = sys.argv[2].lower() == 'true'
+    speed_up = float(sys.argv[3])
+    fps = int(sys.argv[4])
+    resolution = sys.argv[5]
+    synthesize_all_video_under_folder(folder, subtitles=subtitles, speed_up=speed_up, fps=fps, resolution=resolution)

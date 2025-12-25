@@ -1,0 +1,2 @@
+loguru
+git+https://github.com/facebookresearch/demucs#egg=demucs

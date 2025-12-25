@@ -5,15 +5,29 @@ import librosa
 
 from loguru import logger
 import numpy as np
-
+import torch
+# import time
 from .utils import save_wav, save_wav_norm
-from .step041_tts_bytedance import tts as bytedance_tts
-from .step042_tts_xtts import tts as xtts_tts
 from .cn_tx import TextNorm
+# from indextts.infer_v2 import IndexTTS2
+from indextts.infer import IndexTTS
 from audiostretchy.stretch import stretch_audio
+
 normalizer = TextNorm()
+tts = None
+
 def preprocess_text(text):
+    text = text.replace('Paragon', '模范')
+    text = text.replace('Paragons', '模范们')
+    text = text.replace('帕拉贡', '模范')
+    text = text.replace('帕贡', '模范')
+    text = text.replace('塞拉斯', '西拉斯')
     text = text.replace('AI', '人工智能')
+    text = text.replace('标签射手', '图钉射手')
+    text = text.replace('标签塔', '图钉塔')
+    text = text.replace('税务射手', '图钉射手')
+    text = text.replace('飞艇塔', '模范')
+
     text = re.sub(r'(?<!^)([A-Z])', r' \1', text)
     text = normalizer(text)
     # 使用正则表达式在字母和数字之间插入空格
@@ -32,7 +46,23 @@ def adjust_audio_length(wav_path, desired_length, sample_rate = 24000, min_speed
     wav, sample_rate = librosa.load(target_path, sr=sample_rate)
     return wav[:int(desired_length*sample_rate)], desired_length
 
-def generate_wavs(folder, force_bytedance=False):
+def load_tts_model():
+    global tts
+    if tts is not None:
+        return
+    # tts = IndexTTS2(cfg_path="checkpoints/config.yaml", model_dir="checkpoints", use_fp16=True, use_cuda_kernel=True, use_deepspeed=False)
+    tts = IndexTTS(cfg_path="checkpoints/config.yaml", model_dir="checkpoints")
+
+def unload_tts_model():
+    global tts
+    if tts is not None:
+        del tts
+        tts = None
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+        logger.info(f'TTS model unloaded')
+
+def generate_wavs(folder):
     transcript_path = os.path.join(folder, 'translation.json')
     output_folder = os.path.join(folder, 'wavs')
     if not os.path.exists(output_folder):
@@ -45,19 +75,20 @@ def generate_wavs(folder, force_bytedance=False):
         speakers.add(line['speaker'])
     num_speakers = len(speakers)
     logger.info(f'Found {num_speakers} speakers')
-    
+
     full_wav = np.zeros((0, ))
+    load_tts_model()
+
     for i, line in enumerate(transcript):
+        
         speaker = line['speaker']
         text = preprocess_text(line['translation'])
         output_path = os.path.join(output_folder, f'{str(i).zfill(4)}.wav')
         speaker_wav = os.path.join(folder, 'SPEAKER', f'{speaker}.wav')
-        if num_speakers == 1:
-            bytedance_tts(text, output_path, speaker_wav, voice_type='BV701_streaming')
-        elif force_bytedance:
-            bytedance_tts(text, output_path, speaker_wav)
-        else:
-            xtts_tts(text, output_path, speaker_wav)
+
+        # tts.infer(spk_audio_prompt=speaker_wav, text=text, output_path=output_path, emo_alpha=0.6, use_emo_text=True, verbose=True)
+        tts.infer(speaker_wav, text, output_path)
+
         start = line['start']
         end = line['end']
         length = end-start
@@ -74,37 +105,52 @@ def generate_wavs(folder, force_bytedance=False):
 
         full_wav = np.concatenate((full_wav, wav))
         line['end'] = start + length
-        
-    vocal_wav, sr = librosa.load(os.path.join(folder, 'audio_vocals.wav'), sr=24000)
-    full_wav = full_wav / np.max(np.abs(full_wav)) * np.max(np.abs(vocal_wav))
-    save_wav(full_wav, os.path.join(folder, 'audio_tts.wav'))
-    with open(transcript_path, 'w', encoding='utf-8') as f:
-        json.dump(transcript, f, indent=2, ensure_ascii=False)
     
-    instruments_wav, sr = librosa.load(os.path.join(folder, 'audio_instruments.wav'), sr=24000)
-    len_full_wav = len(full_wav)
-    len_instruments_wav = len(instruments_wav)
-    
-    if len_full_wav > len_instruments_wav:
-        # 如果 full_wav 更长，将 instruments_wav 延伸到相同长度
-        instruments_wav = np.pad(
-            instruments_wav, (0, len_full_wav - len_instruments_wav), mode='constant')
-    elif len_instruments_wav > len_full_wav:
-        # 如果 instruments_wav 更长，将 full_wav 延伸到相同长度
-        full_wav = np.pad(
-            full_wav, (0, len_instruments_wav - len_full_wav), mode='constant')
-    combined_wav = full_wav + instruments_wav
-    # combined_wav /= np.max(np.abs(combined_wav))
-    save_wav_norm(combined_wav, os.path.join(folder, 'audio_combined.wav'))
-    logger.info(f'Generated {os.path.join(folder, "audio_combined.wav")}')
+    try:
+        vocal_wav, sr = librosa.load(os.path.join(folder, 'audio_vocals.wav'), sr=24000)
+        full_wav = full_wav / np.max(np.abs(full_wav)) * np.max(np.abs(vocal_wav))
+        save_wav(full_wav, os.path.join(folder, 'audio_tts.wav'))
+        with open(transcript_path, 'w', encoding='utf-8') as f:
+            json.dump(transcript, f, indent=2, ensure_ascii=False)
         
+        instruments_wav, sr = librosa.load(os.path.join(folder, 'audio_instruments.wav'), sr=24000)
+        len_full_wav = len(full_wav)
+        len_instruments_wav = len(instruments_wav)
+        
+        
+        if len_full_wav > len_instruments_wav:
+            # 如果 full_wav 更长，将 instruments_wav 延伸到相同长度
+            instruments_wav = np.pad(
+                instruments_wav, (0, len_full_wav - len_instruments_wav), mode='constant')
+        elif len_instruments_wav > len_full_wav:
+            # 如果 instruments_wav 更长，将 full_wav 延伸到相同长度
+            full_wav = np.pad(
+                full_wav, (0, len_instruments_wav - len_full_wav), mode='constant')
+        combined_wav = full_wav + instruments_wav
+        # combined_wav /= np.max(np.abs(combined_wav))
+        save_wav_norm(combined_wav, os.path.join(folder, 'audio_combined.wav'))
+        logger.info(f'Generated {os.path.join(folder, "audio_combined.wav")}')
+    except Exception as e:
+        logger.error(f"Error generating combined wav: {e}")
 
-def generate_all_wavs_under_folder(root_folder, force_bytedance=False):
+
+
+def generate_all_wavs_under_folder(root_folder):
     for root, dirs, files in os.walk(root_folder):
         if 'translation.json' in files and 'audio_combined.wav' not in files:
-            generate_wavs(root, force_bytedance)
+            try:
+                generate_wavs(root)
+            except Exception as e:
+                unload_tts_model()
+                raise e
     return f'Generated all wavs under {root_folder}'
 
 if __name__ == '__main__':
-    folder = r'videos\TED-Ed\20211214 Would you raise the bird that murdered your children？ - Steve Rothstein'
-    generate_wavs(folder, force_bytedance=False)
+    import sys
+
+    folder = sys.argv[1]
+
+    output = generate_all_wavs_under_folder(
+        folder
+    )
+    print(output)

@@ -159,11 +159,18 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+.vs/
+.vscode/
+.gradio/
+
 playground/
 models/
 flagged/
 videos/
 voice_type/
+checkpoints/
+
+cookies.txt
 download_list.txt
 get_upload_link.txt
 launch.json

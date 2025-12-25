@@ -952,6 +952,8 @@ def normalize_nsw(raw_text):
     if matchers:
         # print('date')
         for matcher in matchers:
+            if matcher[0] == '':
+                continue
             text = text.replace(matcher[0], Date(
                 date=matcher[0]).date2chntext(), 1)
 

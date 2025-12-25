@@ -2,24 +2,32 @@
 import json
 import os
 import re
+import openai
 from openai import OpenAI
 from dotenv import load_dotenv
 import time
 from loguru import logger
 
-load_dotenv()
+model_list = ["gemini-2.5-flash-lite", "gemini-2.5-flash-preview-05-20-nothinking", "gemini-2.5-flash-preview-04-17-nothinking", "gpt-5-nano"]
 
-model_name = os.getenv('MODEL_NAME', 'gpt-3.5-turbo')
-print(f'using model {model_name}')
-if model_name == "01ai/Yi-34B-Chat-4bits":
-    extra_body = {
-        'repetition_penalty': 1.1,
-        'stop_token_ids': [7]
-    }
-else:
-    extra_body = {
-        'repetition_penalty': 1.1,
-    }
+def init_translation(): 
+    # 清除之前的MODEL_NAME环境变量
+    os.environ.pop('MODEL_NAME', None)
+
+    load_dotenv()
+    global model_name, extra_body
+    model_name = os.getenv('MODEL_NAME', 'gpt-5-nano')
+    print(f'using model {model_name}')
+    # if model_name == "01ai/Yi-34B-Chat-4bits":
+    #     extra_body = {
+    #         'repetition_penalty': 1.1,
+    #         'stop_token_ids': [7]
+    #     }
+    # else:
+    #     extra_body = {
+    #         'repetition_penalty': 1.1,
+    #     }
+
 def get_necessary_info(info: dict):
     return {
         'title': info['title'],
@@ -36,10 +44,12 @@ def ensure_transcript_length(transcript, max_length=4000):
     before, after = transcript[:mid], transcript[mid:]
     length = max_length//2
     return before[:length] + after[-length:]
+
 def summarize(info, transcript, target_language='简体中文'):
+    global model_name
     client = OpenAI(
     # This is the default and can be omitted
-    base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
+    base_url=os.getenv('OPENAI_API_BASE', 'https://sg.uiuiapi.com'),
     api_key=os.getenv('OPENAI_API_KEY')
 )
     transcript = ' '.join(line['text'] for line in transcript)
@@ -48,7 +58,7 @@ def summarize(info, transcript, target_language='简体中文'):
     # info_message = ''
     
     full_description = f'The following is the full content of the video:\n{info_message}\n{transcript}\n{info_message}\nAccording to the above content, detailedly Summarize the video in JSON format:\n```json\n{{"title": "", "summary": ""}}\n```'
-    
+    logger.info(full_description)
     messages = [
         {'role': 'system',
             'content': f'You are a expert in the field of this video. Please detailedly summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
@@ -59,15 +69,16 @@ def summarize(info, transcript, target_language='简体中文'):
     for retry in range(5):
         try:
             messages = [
-                {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
+                {'role': 'system', 'content': f'You are a expert in the field of this video. Please summarize the video in JSON format. Make sure the summary is concise and accurate.\n```json\n{{"title": "the title of the video", "summary", "the summary of the video"}}\n```'},
                 {'role': 'user', 'content': full_description+retry_message},
             ]
             response = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
                 timeout=240,
-                extra_body=extra_body
+                # extra_body=extra_body
             )
+            logger.info(response)
             summary = response.choices[0].message.content.replace('\n', '')
             if '视频标题' in summary:
                 raise Exception("包含“视频标题”")
@@ -85,6 +96,7 @@ def summarize(info, transcript, target_language='简体中文'):
         except Exception as e:
             retry_message += '\nSummarize the video in JSON format:\n```json\n{"title": "", "summary": ""}\n```'
             logger.warning(f'总结失败\n{e}')
+            model_name = model_list[retry % len(model_list)]
             time.sleep(1)
     if not success:
         raise Exception(f'总结失败')
@@ -104,7 +116,7 @@ def summarize(info, transcript, target_language='简体中文'):
                 model=model_name,
                 messages=messages,
                 timeout=240,
-                extra_body=extra_body
+                # extra_body=extra_body
             )
             summary = response.choices[0].message.content.replace('\n', '')
             logger.info(summary)
@@ -136,6 +148,9 @@ def translation_postprocess(result):
         '————', '：').replace('——', '：').replace('°', '度')
     result = result.replace("AI", '人工智能')
     result = result.replace('变压器', "Transformer")
+    result = result.replace('Paragon', '模范')
+    result = result.replace('帕拉贡', '模范')
+    result = result.replace('**', '')
     return result
 
 def valid_translation(text, translation):
@@ -148,16 +163,28 @@ def valid_translation(text, translation):
         translation = translation[1:-1]
         return True, translation_postprocess(translation)
     
-    if '翻译' in translation and '：“' in translation and '”' in translation:
-        translation = translation.split('：“')[-1].split('”')[0]
+    # if '翻译' in translation and '：“' in translation and '”' in translation:
+    #     translation = translation.split('：“')[-1].split('”')[0]
+    #     return True, translation_postprocess(translation)
+    
+    # if '翻译' in translation and '："' in translation and '"' in translation:
+    #     translation = translation.split('："')[-1].split('"')[0]
+    #     return True, translation_postprocess(translation)
+
+    # if '翻译' in translation and ':"' in translation and '"' in translation:
+    #     translation = translation.split('："')[-1].split('"')[0]
+    #     return True, translation_postprocess(translation)
+
+    if translation.startswith('翻译：'):
+        translation = translation[len('翻译：'):]
+        if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
+            translation = translation[1:-1]
         return True, translation_postprocess(translation)
     
-    if '翻译' in translation and '："' in translation and '"' in translation:
-        translation = translation.split('："')[-1].split('"')[0]
-        return True, translation_postprocess(translation)
-
-    if '翻译' in translation and ':"' in translation and '"' in translation:
-        translation = translation.split('："')[-1].split('"')[0]
+    if translation.startswith('翻译:'):
+        translation = translation[len('翻译:'):]
+        if (translation.startswith('“') and translation.endswith('”')) or (translation.startswith('"') and translation.endswith('"')):
+            translation = translation[1:-1]
         return True, translation_postprocess(translation)
     
     if len(text) <= 10:
@@ -214,13 +241,19 @@ def valid_translation(text, translation):
 
 def split_text_into_sentences(para):
     para = re.sub('([。！？\?])([^，。！？\?”’》])', r"\1\n\2", para)  # 单字符断句符
+    logger.info(f'After first split: {para}')
     para = re.sub('(\.{6})([^，。！？\?”’》])', r"\1\n\2", para)  # 英文省略号
+    logger.info(f'After second split: {para}')
     para = re.sub('(\…{2})([^，。！？\?”’》])', r"\1\n\2", para)  # 中文省略号
+    logger.info(f'After third split: {para}')
     para = re.sub('([。！？\?][”’])([^，。！？\?”’》])', r'\1\n\2', para)
+    logger.info(f'After fourth split: {para}')
     # 如果双引号前有终止符，那么双引号才是句子的终点，把分句符\n放到双引号后，注意前面的几句都小心保留了双引号
     para = para.rstrip()  # 段尾如果有多余的\n就去掉它
+    logger.info(f'After rstrip: {para}')
     # 很多规则中会考虑分号;，但是这里我把它忽略不计，破折号、英文双引号等同样忽略，需要的再做些简单调整即可。
-    return para.split("\n")
+    sentences = para.split("\n")    
+    return [s for s in sentences if s]  # 过滤掉空字符串
 
 def split_sentences(translation):
     output_data = []
@@ -234,6 +267,7 @@ def split_sentences(translation):
                              ) / len(translation_text)
         sentence_start = 0
         for sentence in sentences:
+            logger.info(f'Splitting sentence: {sentence}')
             sentence_end = start + duration_per_char * len(sentence)
 
             # Append the new item
@@ -251,6 +285,7 @@ def split_sentences(translation):
     return output_data
     
 def _translate(summary, transcript, target_language='简体中文'):
+
     client = OpenAI(
         # This is the default and can be omitted
         base_url=os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1'),
@@ -258,8 +293,12 @@ def _translate(summary, transcript, target_language='简体中文'):
     )
     info = f'This is a video called "{summary["title"]}". {summary["summary"]}.'
     full_translation = []
+
     fixed_message = [
-        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.下面我让你来充当翻译家，你的目标是把任何语言翻译成中文，请翻译时不要带翻译腔，而是要翻译得自然、流畅和地道，使用优美和高雅的表达方式。请将人工智能的“agent”翻译为“智能体”，强化学习中是`Q-Learning`而不是`Queue Learning`。数学公式写成plain text，不要使用latex。确保翻译正确和简洁。注意信达雅。'},
+        {'role': 'system', 'content': f'You are a expert in the field of this video.\n{info}\nTranslate the sentence into {target_language}.下面假设你是一个中文社区的自媒体创作者，你的目标是把任何语言翻译成中文，请翻译时不要带翻译腔，而是要翻译得自然、流畅和地道，使用优美和风趣的表达方式。不要使用任何特殊格式如lataX、markdown。原文为语音识别结果，可能存在错误，不要强行翻译，识别错误的地方请根据上下文修复，并直接给出翻译结果。\
+            若视频内容是气球塔防6，注意以下内容：MOAB、BFB、ZOMG、DDT、BAD、CHIMPS等专业术语请保留原文，\
+            把以下英雄名称翻译成对应的中文名称：Quincy-昆西, Gwendolin-格温多琳, Striker Jones-先锋琼斯, Obyn Greenfoot-奥本, Rosalia-罗莎莉娅, Captain Churchill-上尉丘吉尔, Benjamin-本杰明, Pat Fusty-帕特, Ezili-艾泽里, Adora-阿多拉, Etienne-艾蒂安, Sauda-萨乌达, Admiral Brickell-海军上将布里克尔, Psi-灵机, Geraldo-杰拉尔多, Corvus-科沃斯, Silas-西拉斯。\
+            把以下猴子名称翻译成对应的中文名称：Dart Monkey-飞镖猴, Boomerang Monkey-回旋镖猴, Bomb Shooter-大炮, Tack Shooter-图钉塔, Ice Monkey-冰猴, Glue Gunner-胶水猴, Desperado-亡命猴, Sniper Monkey-狙击猴, Monkey Sub-潜水艇猴, Monkey Buccaneer-海盗猴, Monkey Ace-王牌飞行员, Heli Pilot-直升机, Mortar Monkey-迫击炮猴, Dartling Gunner-机枪猴, Wizard Monkey-法师猴, Super Monkey-超猴, Ninja Monkey-忍者猴, Alchemist-炼金术士, Druid-德鲁伊, Mer Monkey-人鱼猴, Banana Farm-香蕉农场, Spike Factory-刺钉工厂, Monkey Village-猴村, Engineer Monkey-工程师猴, Beast Handler-驯兽大师。'},
         {'role': 'user', 'content': '使用地道的中文Translate:"Knowledge is power."'},
         {'role': 'assistant', 'content': '翻译：“知识就是力量。”'},
         {'role': 'user', 'content': '使用地道的中文Translate:"To be or not to be, that is the question."'},
@@ -281,7 +320,7 @@ def _translate(summary, transcript, target_language='简体中文'):
                     model=model_name,
                     messages=messages,
                     timeout=240,
-                    extra_body=extra_body
+                    # extra_body=extra_body
                 )
                 translation = response.choices[0].message.content.replace('\n', '')
                 logger.info(f'原文：{text}')
@@ -347,11 +386,17 @@ def translate(folder, target_language='简体中文'):
     return True
 
 def translate_all_transcript_under_folder(folder, target_language):
+    init_translation()
     for root, dirs, files in os.walk(folder):
         if 'transcript.json' in files and 'translation.json' not in files:
             translate(root, target_language)
     return f'Translated all videos under {folder}'
 
 if __name__ == '__main__':
-    translate_all_transcript_under_folder(
-        r'videos\TED-Ed\20240227 Can you solve the magical maze riddle - Alex Rosenthal', '简体中文')
+    import sys
+    folder = sys.argv[1]
+    target_language = sys.argv[2]
+    translate_all_transcript_under_folder(folder, target_language)
+    # test_str = "废弃工厂”可是最长的地图，足足有60.7个“红气球秒”那么长；而“金发女郎”地图最短，只有可怜的4个“红气球秒”。"
+    # sentences = split_text_into_sentences(test_str)
+    # print(sentences)
