@@ -3326,8 +3326,8 @@
   },
   {
     "url": "https://www.youtube.com/watch?v=neYUw4rexRc",
-    "step": 2,
-    "status": "pending",
+    "step": 8,
+    "status": "success",
     "folder": "videos\\TheNeoGod\\20240518 How Far can Every GOD BOOSTED 0-0-0 Tower Get Bloons TD 6",
     "root_folder": "videos",
     "num_videos": 1,
@@ -3351,8 +3351,8 @@
   },
   {
     "url": "https://www.youtube.com/watch?v=vmOkhTF5yOo",
-    "step": 1,
-    "status": "pending",
+    "step": 8,
+    "status": "success",
     "folder": "videos\\Hbomb\\20240827 Everything You Need to Know about Monklish - the Monkeys Secret Language",
     "root_folder": "videos",
     "num_videos": 1,
