@@ -169,7 +169,7 @@ flagged/
 videos/
 voice_type/
 checkpoints/
-
+tasks.json
 cookies.txt
 download_list.txt
 get_upload_link.txt
