@@ -293,7 +293,7 @@ def _translate(summary, transcript, target_language='简体中文'):
                 break
             except Exception as e:
                 logger.error(e)
-                if e == 'Internal Server Error':
+                if str(e) == 'Internal Server Error':
                     client = OpenAI(
                         # This is the default and can be omitted
                         base_url=os.getenv(
