@@ -66,21 +66,56 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 
 ### 1. Prepare the runtime
 
-Recommended environment:
+Verified and recommended runtime:
 
-- Python 3.12
-- Node.js 20+
-- FFmpeg / ffprobe
-- CUDA GPU. CPU can be configured, but full video processing will be slow.
+- **Windows 10/11 + PowerShell 5.1+**: recommended for local development and covered first in this README.
+- **Linux / WSL2 / macOS**: backend and frontend commands are provided for POSIX shells. CUDA, FFmpeg, PyTorch, and audio dependencies still need to match your platform.
+- **CUDA GPU**: recommended for complete video processing. `DEVICE=cpu` can be used for some flows, but transcription, separation, and TTS will be very slow.
+
+Base dependencies:
+
+- Python 3.12.
+- Node.js 20+.
+- FFmpeg / ffprobe available on `PATH`.
 - A working YouTube proxy when processing YouTube videos.
 - Netscape-format YouTube cookies, recommended for YouTube videos.
 - An OpenAI-compatible Chat Completions base URL, API key, and model name.
 
 The first run may download or load large ASR, TTS, and audio-processing models. Leave enough disk space and time for that setup.
 
-### 2. Clone
+Platform notes:
+
+- Windows PowerShell uses `.venv\Scripts\...`; do not copy `.venv/bin/...` commands there.
+- macOS/Linux use `.venv/bin/...`.
+- If multiple Python installs exist, check `py -0p` on Windows or `python3.12 --version` on macOS/Linux first.
+- Proxy settings, cookies, model cache, and work folders stay local. Quote paths that contain spaces, or put them in `.env`.
+
+Common system dependency examples:
+
+```powershell
+# Windows PowerShell (choose a package manager already available on your machine)
+winget install Gyan.FFmpeg
+winget install OpenJS.NodeJS.LTS
+```
 
 ```bash
+# Ubuntu / Debian / WSL2
+sudo apt update
+sudo apt install -y ffmpeg nodejs npm
+```
+
+```bash
+# macOS (Homebrew)
+brew install ffmpeg node
+```
+
+If your system package manager does not provide Python 3.12, install it from python.org, pyenv, conda/mamba, or your distro's recommended channel. The important part is to create the virtual environment with Python 3.12.
+
+### 2. Clone
+
+The clone commands are the same on Windows PowerShell, macOS, and Linux:
+
+```powershell
 git clone https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 git submodule update --init --recursive
@@ -90,10 +125,29 @@ Demucs is included as a source submodule, so do not skip `git submodule update`.
 
 ### 3. Install dependencies
 
+#### Windows PowerShell
+
+Python:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -U pip
+.\.venv\Scripts\pip.exe install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
+```
+
+Frontend:
+
+```powershell
+npm --prefix apps/web install --registry=https://registry.npmmirror.com
+```
+
+#### macOS / Linux / WSL2
+
 Python:
 
 ```bash
 python3.12 -m venv .venv
+.venv/bin/python -m pip install -U pip
 .venv/bin/pip install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
@@ -106,6 +160,14 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.
 
 ### 4. Configure
+
+Windows PowerShell:
+
+```powershell
+Copy-Item env.txt.example .env
+```
+
+macOS / Linux / WSL2:
 
 ```bash
 cp env.txt.example .env
@@ -134,6 +196,22 @@ Common localhost, LAN, and Tailscale `:3000` frontend origins are allowed by def
 
 ### 5. Run
 
+#### Windows PowerShell
+
+Backend:
+
+```powershell
+.\.venv\Scripts\uvicorn.exe backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Frontend:
+
+```powershell
+npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
+```
+
+#### macOS / Linux / WSL2
+
 Backend:
 
 ```bash
@@ -151,6 +229,8 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+When opening the app from LAN, WSL2, or another machine, use the actual frontend host IP or hostname, for example `http://192.168.1.20:3000`. The backend listens on `0.0.0.0:8000`, and the frontend listens on `0.0.0.0:3000`.
 
 ## Using the Web UI
 
@@ -218,13 +298,21 @@ YouTube / Bilibili URL
 
 Backend tests:
 
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\pytest.exe backend/tests
+```
+
+macOS / Linux / WSL2:
+
 ```bash
 .venv/bin/pytest backend/tests
 ```
 
 Frontend checks:
 
-```bash
+```powershell
 npm --prefix apps/web run lint
 npm --prefix apps/web run build
 ```

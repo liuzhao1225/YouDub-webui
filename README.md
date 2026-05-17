@@ -66,21 +66,56 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 
 ### 1. 准备运行环境
 
-建议环境：
+已验证和推荐的运行方式：
 
-- Python 3.12
-- Node.js 20+
-- FFmpeg / ffprobe
-- CUDA GPU（CPU 可配置，但完整视频处理会很慢）
+- **Windows 10/11 + PowerShell 5.1+**：推荐开发环境，也是本文档优先覆盖的平台。
+- **Linux / WSL2 / macOS**：后端和前端命令按 POSIX shell 给出；CUDA、FFmpeg、PyTorch/音频依赖需要按各平台实际环境安装。
+- **CUDA GPU**：推荐用于完整视频处理。`DEVICE=cpu` 可以运行部分流程，但完整转写、分离、TTS 会非常慢。
+
+基础依赖：
+
+- Python 3.12。
+- Node.js 20+。
+- FFmpeg / ffprobe，并确保命令在 `PATH` 中可用。
 - 可访问 YouTube 的代理（处理 YouTube 视频时需要）
 - Netscape 格式的 YouTube Cookie（处理 YouTube 视频时推荐配置）
 - OpenAI 兼容 Chat Completions API 的 base URL、API key 和模型名
 
 首次运行会下载或加载较大的 ASR、TTS、音频处理模型，请预留磁盘空间和网络时间。
 
-### 2. 克隆项目
+平台注意事项：
+
+- Windows PowerShell 使用 `.venv\Scripts\...`，不要照抄 `.venv/bin/...`。
+- macOS/Linux 使用 `.venv/bin/...`。
+- 如果系统里同时存在多个 Python，请先确认 `py -0p`（Windows）或 `python3.12 --version`（macOS/Linux）的结果。
+- 代理、Cookie、模型缓存和工作目录都保存在本机；路径中含空格时，建议使用引号或写入 `.env`。
+
+常见系统依赖安装示例：
+
+```powershell
+# Windows PowerShell（任选你本机已有的包管理器）
+winget install Gyan.FFmpeg
+winget install OpenJS.NodeJS.LTS
+```
 
 ```bash
+# Ubuntu / Debian / WSL2
+sudo apt update
+sudo apt install -y ffmpeg nodejs npm
+```
+
+```bash
+# macOS（Homebrew）
+brew install ffmpeg node
+```
+
+如果你的系统包管理器无法提供 Python 3.12，建议从 Python 官网、pyenv、conda/mamba 或发行版推荐方式安装；关键是后续创建虚拟环境时确认使用的是 3.12。
+
+### 2. 克隆项目
+
+Windows PowerShell、macOS 和 Linux 通用：
+
+```powershell
 git clone https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 git submodule update --init --recursive
@@ -90,10 +125,29 @@ Demucs 以源码子模块引入，请不要跳过 `git submodule update`。
 
 ### 3. 安装依赖
 
+#### Windows PowerShell
+
+Python 依赖：
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -U pip
+.\.venv\Scripts\pip.exe install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
+```
+
+前端依赖：
+
+```powershell
+npm --prefix apps/web install --registry=https://registry.npmmirror.com
+```
+
+#### macOS / Linux / WSL2
+
 Python 依赖：
 
 ```bash
 python3.12 -m venv .venv
+.venv/bin/python -m pip install -U pip
 .venv/bin/pip install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
@@ -106,6 +160,14 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
 
 ### 4. 配置环境
+
+Windows PowerShell：
+
+```powershell
+Copy-Item env.txt.example .env
+```
+
+macOS / Linux / WSL2：
 
 ```bash
 cp env.txt.example .env
@@ -134,6 +196,22 @@ cp env.txt.example .env
 
 ### 5. 启动服务
 
+#### Windows PowerShell
+
+后端：
+
+```powershell
+.\.venv\Scripts\uvicorn.exe backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+前端：
+
+```powershell
+npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
+```
+
+#### macOS / Linux / WSL2
+
 后端：
 
 ```bash
@@ -151,6 +229,8 @@ npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
 ```text
 http://localhost:3000
 ```
+
+如果从局域网、WSL2 或远程机器访问，浏览器里使用运行前端机器的实际 IP 或主机名，例如 `http://192.168.1.20:3000`。后端默认监听 `0.0.0.0:8000`，前端默认监听 `0.0.0.0:3000`。
 
 ## 页面里怎么用
 
@@ -218,13 +298,21 @@ YouTube / Bilibili URL
 
 后端测试：
 
+Windows PowerShell：
+
+```powershell
+.\.venv\Scripts\pytest.exe backend/tests
+```
+
+macOS / Linux / WSL2：
+
 ```bash
 .venv/bin/pytest backend/tests
 ```
 
 前端检查：
 
-```bash
+```powershell
 npm --prefix apps/web run lint
 npm --prefix apps/web run build
 ```
