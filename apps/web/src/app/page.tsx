@@ -57,12 +57,23 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    refreshTasks().catch((err) => setError(err.message))
-    const interval = window.setInterval(() => {
-      refreshTasks().catch((err) => setError(err.message))
-    }, 2000)
-    return () => window.clearInterval(interval)
-  }, [refreshTasks])
+    let cancelled = false
+    const load = async () => {
+      try {
+        const { tasks: list } = await listTasks()
+        if (cancelled) return
+        setTasks(list)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load tasks")
+      }
+    }
+    load()
+    const interval = window.setInterval(load, 2000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [])
 
   async function submitTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
