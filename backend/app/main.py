@@ -34,6 +34,7 @@ class YouTubeCookieUpdate(BaseModel):
 class OpenAISettingsUpdate(BaseModel):
     base_url: str
     api_key: str = ""
+    clear_api_key: bool = False
     model: str
     translate_concurrency: str = ""
 
@@ -57,6 +58,20 @@ def normalize_proxy_port(value: str) -> str:
     if port < 1 or port > 65535:
         raise HTTPException(status_code=422, detail="Proxy port must be between 1 and 65535.")
     return str(port)
+
+
+def normalize_translate_concurrency(value: str) -> str:
+    concurrency = value.strip()
+    if not concurrency:
+        return ""
+    if not all("0" <= char <= "9" for char in concurrency):
+        raise HTTPException(status_code=422, detail="Translate concurrency must be numeric.")
+    workers = int(concurrency)
+    if workers < 1 or workers > 200:
+        raise HTTPException(
+            status_code=422, detail="Translate concurrency must be between 1 and 200."
+        )
+    return concurrency
 
 
 @asynccontextmanager
@@ -264,7 +279,11 @@ def get_openai_settings() -> dict:
 @app.post("/api/settings/openai")
 def save_openai_settings(payload: OpenAISettingsUpdate) -> dict:
     database.save_openai_settings(
-        payload.base_url, payload.api_key, payload.model, payload.translate_concurrency
+        payload.base_url,
+        payload.api_key,
+        payload.model,
+        normalize_translate_concurrency(payload.translate_concurrency),
+        clear_api_key=payload.clear_api_key,
     )
     return get_openai_settings()
 

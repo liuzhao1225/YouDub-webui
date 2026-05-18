@@ -111,9 +111,11 @@ export function SettingsDialog() {
     setMessageKey(null)
     try {
       const cookie = cookieDirty ? await saveCookie(settings.cookie) : null
+      const clearApiKey = apiKeyDirty && !settings.apiKey.trim()
       const openai = await saveOpenAISettings({
         base_url: settings.baseUrl,
         api_key: apiKeyDirty ? settings.apiKey : "",
+        clear_api_key: clearApiKey,
         model: settings.model,
         translate_concurrency: settings.translateConcurrency,
       })

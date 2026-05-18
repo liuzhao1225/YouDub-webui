@@ -293,11 +293,18 @@ def get_openai_settings() -> dict[str, str]:
 
 
 def save_openai_settings(
-    base_url: str, api_key: str, model: str, translate_concurrency: str = ""
+    base_url: str,
+    api_key: str,
+    model: str,
+    translate_concurrency: str = "",
+    *,
+    clear_api_key: bool = False,
 ) -> None:
     set_setting("openai.base_url", base_url.strip())
     cleaned_api_key = api_key.strip()
-    if cleaned_api_key and set(cleaned_api_key) != {"*"}:
+    if clear_api_key:
+        set_setting("openai.api_key", "")
+    elif cleaned_api_key and set(cleaned_api_key) != {"*"}:
         set_setting("openai.api_key", cleaned_api_key)
     set_setting("openai.model", model.strip())
     if translate_concurrency.strip():

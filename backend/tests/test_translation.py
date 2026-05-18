@@ -160,6 +160,11 @@ def test_translate_batch_uses_shared_system_prompt(monkeypatch):
     assert len(set(captured)) == 1, "system prompt must be identical across calls for prompt cache"
 
 
+@pytest.mark.parametrize("value", ["abc", "1.5", "0", "-1", "201", ""])
+def test_concurrency_from_bad_saved_values_falls_back_to_default(value):
+    assert openai_translate._concurrency_from({"translate_concurrency": value}) == 50
+
+
 def test_translate_sentence_retries_on_empty_dst(monkeypatch):
     calls = {"n": 0}
 

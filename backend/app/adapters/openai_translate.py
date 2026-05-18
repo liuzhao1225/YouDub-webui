@@ -227,8 +227,13 @@ def _full_text(data: dict[str, Any], texts: list[str]) -> str:
 
 
 def _concurrency_from(settings: dict[str, str]) -> int:
-    raw = str(settings.get("translate_concurrency") or DEFAULT_CONCURRENCY).strip()
-    return max(1, int(raw or DEFAULT_CONCURRENCY))
+    raw = str(settings.get("translate_concurrency") or "").strip()
+    if not raw or not all("0" <= char <= "9" for char in raw):
+        return DEFAULT_CONCURRENCY
+    concurrency = int(raw)
+    if concurrency < 1 or concurrency > 200:
+        return DEFAULT_CONCURRENCY
+    return concurrency
 
 
 def translate_asr(

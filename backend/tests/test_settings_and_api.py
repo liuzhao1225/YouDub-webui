@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import config, database
@@ -46,12 +47,73 @@ def test_masked_openai_key_is_not_saved_back(monkeypatch, tmp_path):
 
     response = client.post(
         "/api/settings/openai",
-        json={"base_url": "https://example.com/v1", "api_key": "********", "model": "next-model"},
+        json={
+            "base_url": "https://example.com/v1",
+            "api_key": "********",
+            "clear_api_key": False,
+            "model": "next-model",
+        },
     )
 
     assert response.status_code == 200
     settings = database.get_openai_settings()
     assert settings["api_key"] == "sk-test-secret"
+    assert settings["model"] == "next-model"
+
+
+def test_openai_key_can_be_cleared(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://example.com/v1", "sk-test-secret", "test-model")
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "https://example.com/v1",
+            "api_key": "",
+            "clear_api_key": True,
+            "model": "next-model",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["api_key"] == ""
+    assert body["has_api_key"] is False
+    settings = database.get_openai_settings()
+    assert settings["api_key"] == ""
+    assert settings["model"] == "next-model"
+
+
+@pytest.mark.parametrize(
+    ("api_key", "expected"),
+    [
+        ("", "sk-test-secret"),
+        ("********", "sk-test-secret"),
+        ("sk-new", "sk-new"),
+    ],
+)
+def test_openai_key_save_modes_without_clear(monkeypatch, tmp_path, api_key, expected):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://example.com/v1", "sk-test-secret", "test-model")
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "https://example.com/v1",
+            "api_key": api_key,
+            "clear_api_key": False,
+            "model": "next-model",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["api_key"] == "********"
+    assert body["has_api_key"] is True
+    settings = database.get_openai_settings()
+    assert settings["api_key"] == expected
     assert settings["model"] == "next-model"
 
 
@@ -307,13 +369,78 @@ def test_openai_settings_persists_translate_concurrency(monkeypatch, tmp_path):
             "base_url": "https://example.com/v1",
             "api_key": "",
             "model": "model",
-            "translate_concurrency": "32",
+            "translate_concurrency": " 32 ",
         },
     )
 
     assert response.status_code == 200
     assert response.json()["translate_concurrency"] == "32"
     assert database.get_openai_settings()["translate_concurrency"] == "32"
+
+
+@pytest.mark.parametrize("value", ["abc", "1.5", "0", "-1", "201"])
+def test_openai_settings_rejects_invalid_translate_concurrency(monkeypatch, tmp_path, value):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://example.com/v1", "sk-test", "model", "64")
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "https://example.com/v1",
+            "api_key": "",
+            "clear_api_key": False,
+            "model": "model",
+            "translate_concurrency": value,
+        },
+    )
+
+    assert response.status_code == 422
+    assert database.get_openai_settings()["translate_concurrency"] == "64"
+
+
+def test_openai_settings_empty_translate_concurrency_preserves_existing(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://example.com/v1", "sk-test", "model", "64")
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "https://example.com/v1",
+            "api_key": "",
+            "clear_api_key": False,
+            "model": "next-model",
+            "translate_concurrency": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["translate_concurrency"] == "64"
+    settings = database.get_openai_settings()
+    assert settings["translate_concurrency"] == "64"
+    assert settings["model"] == "next-model"
+
+
+@pytest.mark.parametrize("value", ["1", "200"])
+def test_openai_settings_accepts_translate_concurrency_boundaries(monkeypatch, tmp_path, value):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "https://example.com/v1",
+            "api_key": "",
+            "clear_api_key": False,
+            "model": "model",
+            "translate_concurrency": value,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["translate_concurrency"] == value
+    assert database.get_openai_settings()["translate_concurrency"] == value
 
 
 def test_resume_task_requeues_failed_task(monkeypatch, tmp_path):
