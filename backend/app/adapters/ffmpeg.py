@@ -230,11 +230,18 @@ def subtitle_style_for_orientation(orientation: str, font: str, lang: str = "zh"
     return _subtitle_style(font, size=sizes[orientation], margin_v=margin_v)
 
 
-def subtitle_filter(video_file: Path, subtitle_file: Path) -> str:
+def _subtitle_filter_path(subtitle_file: Path, session: Path) -> str:
+    try:
+        return subtitle_file.resolve().relative_to(session.resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError("Subtitle file must be inside the session directory.") from exc
+
+
+def subtitle_filter(video_file: Path, subtitle_file: Path, session: Path) -> str:
     lang = subtitle_file.stem.rsplit(".", 1)[-1]
     font = SUBTITLE_FONTS.get(lang, "Arial")
     style = subtitle_style_for_orientation(get_video_orientation(video_file), font, lang)
-    sub_path = subtitle_file.as_posix()
+    sub_path = _subtitle_filter_path(subtitle_file, session)
     return f"subtitles=filename='{sub_path}':force_style='{style}'"
 
 
@@ -276,7 +283,7 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
             "-i",
             str(mixed_audio),
             "-vf",
-            subtitle_filter(video_file, subtitles),
+            subtitle_filter(video_file, subtitles, session),
             "-map",
             "0:v:0",
             "-map",
@@ -295,5 +302,6 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
             str(final_video),
         ],
         check=True,
+        cwd=session,
     )
     return final_video

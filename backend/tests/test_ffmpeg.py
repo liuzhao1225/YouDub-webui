@@ -47,10 +47,10 @@ def test_subtitle_filter_picks_chinese_font_for_zh_srt(monkeypatch, tmp_path):
     monkeypatch.setattr(ffmpeg, "get_video_orientation", lambda _: "landscape")
     sub_zh = tmp_path / "subtitles.zh.srt"
     sub_zh.write_text("", encoding="utf-8")
-    assert "FontName=Noto Sans CJK SC" in ffmpeg.subtitle_filter(tmp_path / "v.mp4", sub_zh)
+    assert "FontName=Noto Sans CJK SC" in ffmpeg.subtitle_filter(tmp_path / "v.mp4", sub_zh, tmp_path)
     sub_en = tmp_path / "subtitles.en.srt"
     sub_en.write_text("", encoding="utf-8")
-    assert "FontName=Arial" in ffmpeg.subtitle_filter(tmp_path / "v.mp4", sub_en)
+    assert "FontName=Arial" in ffmpeg.subtitle_filter(tmp_path / "v.mp4", sub_en, tmp_path)
 
 
 def test_merge_video_burns_portrait_subtitles(monkeypatch, tmp_path):
@@ -75,9 +75,11 @@ def test_merge_video_burns_portrait_subtitles(monkeypatch, tmp_path):
         encoding="utf-8",
     )
     commands: list[list[str]] = []
+    cwd_values: list[Path | None] = []
 
     def fake_run(cmd, capture_output=False, text=False, check=False, **kwargs):
         commands.append(cmd)
+        cwd_values.append(kwargs.get("cwd"))
         if cmd[0] == "ffprobe":
             return subprocess.CompletedProcess(cmd, 0, stdout="720,1280\n", stderr="")
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -96,10 +98,11 @@ def test_merge_video_burns_portrait_subtitles(monkeypatch, tmp_path):
     assert len(commands) == 3
     final_command = commands[-1]
     filter_arg = final_command[final_command.index("-vf") + 1]
-    assert filter_arg.startswith("subtitles=filename='")
+    assert filter_arg.startswith("subtitles=filename='metadata/subtitles.zh.srt'")
     assert "FontSize=12" in filter_arg
     assert "MarginV=70" in filter_arg
     assert "-c:s" not in final_command
+    assert cwd_values[-1] == session
 
 
 def test_split_subtitle_text_breaks_on_punctuation_and_keeps_protected():
