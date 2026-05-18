@@ -102,7 +102,60 @@ def test_merge_video_burns_portrait_subtitles(monkeypatch, tmp_path):
     assert "FontSize=12" in filter_arg
     assert "MarginV=70" in filter_arg
     assert "-c:s" not in final_command
-    assert cwd_values[-1] == session
+    assert cwd_values[-1] == session.resolve()
+
+
+def test_merge_video_uses_absolute_media_paths_when_cwd_is_session(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    session = Path("workfolder") / "uploader" / "title__videoid"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    timings = metadata_dir / "timings.json"
+    timings.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {
+                        "start_time": 0,
+                        "end_time": 1200,
+                        "actual_start_time": 0,
+                        "actual_end_time": 1200,
+                        "zh": "你好",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    commands: list[list[str]] = []
+    cwd_values: list[Path | None] = []
+
+    def fake_run(cmd, capture_output=False, text=False, check=False, **kwargs):
+        commands.append(cmd)
+        cwd_values.append(kwargs.get("cwd"))
+        if cmd[0] == "ffprobe":
+            return subprocess.CompletedProcess(cmd, 0, stdout="720,1280\n", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        session / "media" / "video_source.mp4",
+        session / "tmp" / "audio_dubbing.wav",
+        session / "media" / "audio_bgm.wav",
+        timings,
+        session,
+    )
+
+    mix_command = commands[0]
+    final_command = commands[-1]
+    assert Path(mix_command[mix_command.index("-i") + 1]).is_absolute()
+    assert Path(mix_command[mix_command.index("-i", mix_command.index("-i") + 1) + 1]).is_absolute()
+    assert Path(mix_command[-1]).is_absolute()
+    assert Path(final_command[final_command.index("-i") + 1]).is_absolute()
+    assert Path(final_command[final_command.index("-i", final_command.index("-i") + 1) + 1]).is_absolute()
+    assert Path(final_command[-1]).is_absolute()
+    assert cwd_values[-1] == session.resolve()
 
 
 def test_split_subtitle_text_breaks_on_punctuation_and_keeps_protected():

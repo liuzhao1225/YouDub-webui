@@ -254,23 +254,29 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
     if final_video.exists():
         return final_video
 
+    session_dir = session.resolve()
+    video_input = video_file.resolve()
+    dubbing_input = dubbing_file.resolve()
+    bgm_input = bgm_file.resolve()
     subtitles = write_srt(timings_file, session)
     mixed_audio = tmp_dir / "audio_mixed.m4a"
+    mixed_audio_output = mixed_audio.resolve()
+    final_video_output = final_video.resolve()
     subprocess.run(
         [
             "ffmpeg",
             "-y",
             "-i",
-            str(dubbing_file),
+            str(dubbing_input),
             "-i",
-            str(bgm_file),
+            str(bgm_input),
             "-filter_complex",
             "[0:a]volume=1.0[a0];[1:a]volume=0.30[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0[aout]",
             "-map",
             "[aout]",
             "-c:a",
             "aac",
-            str(mixed_audio),
+            str(mixed_audio_output),
         ],
         check=True,
     )
@@ -279,11 +285,11 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
             "ffmpeg",
             "-y",
             "-i",
-            str(video_file),
+            str(video_input),
             "-i",
-            str(mixed_audio),
+            str(mixed_audio_output),
             "-vf",
-            subtitle_filter(video_file, subtitles, session),
+            subtitle_filter(video_input, subtitles, session_dir),
             "-map",
             "0:v:0",
             "-map",
@@ -299,9 +305,9 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
             "-movflags",
             "+faststart",
             "-shortest",
-            str(final_video),
+            str(final_video_output),
         ],
         check=True,
-        cwd=session,
+        cwd=session_dir,
     )
     return final_video
