@@ -42,6 +42,12 @@ def _require(value, name: str):
     return value
 
 
+def _require_existing(path: Path, name: str) -> Path:
+    if not path.exists():
+        raise RuntimeError(f"Missing cached pipeline artifact: {name} ({path})")
+    return path
+
+
 class PipelineRunner:
     def __init__(self, task_id: str):
         self.task_id = task_id
@@ -114,7 +120,8 @@ class PipelineRunner:
 
     def _run_stage(self, stage: str) -> None:
         if self._stage_status(stage) == "succeeded":
-            self._stage_handlers[stage](database.get_task(self.task_id))
+            database.update_task(self.task_id, current_stage=stage)
+            self._restore_cached_stage(stage, database.get_task(self.task_id))
             self.log(f"[{stage}] Reused cached output")
             return
         database.update_task(self.task_id, current_stage=stage)
@@ -136,6 +143,51 @@ class PipelineRunner:
             last_message="Completed",
         )
         self.log(f"[{stage}] Completed")
+
+    def _restore_cached_stage(self, stage: str, task: dict | None) -> None:
+        if not task:
+            raise RuntimeError("Missing task while restoring cached pipeline artifacts.")
+        session_path = task.get("session_path")
+        if not session_path:
+            raise RuntimeError("Missing cached pipeline artifact: session_path")
+
+        session = _require_existing(Path(session_path), "session")
+        self.artifacts.session = session
+
+        if stage == "download":
+            self.artifacts.video_file = _require_existing(session / "media" / "video_source.mp4", "video_file")
+            return
+        if stage == "separate":
+            self.artifacts.vocals_file = _require_existing(session / "media" / "audio_vocals.wav", "vocals_file")
+            self.artifacts.bgm_file = _require_existing(session / "media" / "audio_bgm.wav", "bgm_file")
+            return
+        if stage == "asr":
+            self.artifacts.asr_file = _require_existing(session / "metadata" / "asr.json", "asr_file")
+            return
+        if stage == "asr_fix":
+            self.artifacts.asr_fixed_file = _require_existing(session / "metadata" / "asr_fixed.json", "asr_fixed_file")
+            return
+        if stage == "translate":
+            source = detect_source(task["url"])
+            self.artifacts.translation_file = _require_existing(
+                session / "metadata" / f"translation.{source.target_language}.json",
+                "translation_file",
+            )
+            return
+        if stage == "split_audio":
+            self.artifacts.vocals_dir = _require_existing(session / "segments" / "vocals", "vocals_dir")
+            return
+        if stage == "tts":
+            self.artifacts.tts_dir = _require_existing(session / "segments" / "tts", "tts_dir")
+            return
+        if stage == "merge_audio":
+            self.artifacts.dubbing_file = _require_existing(session / "tmp" / "audio_dubbing.wav", "dubbing_file")
+            self.artifacts.timings_file = _require_existing(session / "metadata" / "timings.json", "timings_file")
+            return
+        if stage == "merge_video":
+            self.artifacts.final_video = _require_existing(session / "media" / "video_final.mp4", "final_video")
+            return
+        raise RuntimeError(f"Unknown pipeline stage: {stage}")
 
     def _download(self, task: dict) -> None:
         from .adapters.ytdlp import download_video
