@@ -138,11 +138,15 @@ class PipelineRunner:
         self.log(f"[{stage}] Completed")
 
     def _download(self, task: dict) -> None:
+        from .adapters.local_video import import_local_video
         from .adapters.ytdlp import download_video
 
         source = detect_source(task["url"])
-        proxy_port = database.get_ytdlp_settings()["proxy_port"]
-        session, info = download_video(task["url"], WORKFOLDER, source, proxy_port)
+        if task["url"].startswith("local://upload/"):
+            session, info = import_local_video(task["url"], WORKFOLDER)
+        else:
+            proxy_port = database.get_ytdlp_settings()["proxy_port"]
+            session, info = download_video(task["url"], WORKFOLDER, source, proxy_port)
         self.artifacts.session = session
         self.artifacts.video_file = session / "media" / "video_source.mp4"
         title = (info.get("title") or "").strip() or None
@@ -222,7 +226,14 @@ class PipelineRunner:
         session = _require(self.artifacts.session, "session")
         translation_file = _require(self.artifacts.translation_file, "translation_file")
         vocals_dir = _require(self.artifacts.vocals_dir, "vocals_dir")
-        self.artifacts.tts_dir = generate_tts(translation_file, vocals_dir, session)
+        self.artifacts.tts_dir = generate_tts(
+            translation_file,
+            vocals_dir,
+            session,
+            on_progress=lambda current, total, message: self.stage_message(
+                "tts", f"{message} ({current}/{total})"
+            ),
+        )
         wav_count = len(list(self.artifacts.tts_dir.glob("*.wav")))
         self.stage_message("tts", f"Generated {wav_count} TTS clips -> {self.artifacts.tts_dir}")
 

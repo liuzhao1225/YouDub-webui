@@ -3,7 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from ..config import REPO_ROOT, device
+from ..config import REPO_ROOT, device, disable_torchcodec
+from ..utils.video import save_audio_tensor
 
 
 def _device() -> str:
@@ -23,8 +24,9 @@ def separate_audio(video_file: Path, session: Path) -> tuple[Path, Path]:
     if not demucs_path.exists():
         raise RuntimeError("Demucs submodule is missing. Run: git submodule update --init --recursive")
     sys.path.insert(0, str(demucs_path))
+    disable_torchcodec()
 
-    from demucs.api import Separator, save_audio
+    from demucs.api import Separator
 
     media_dir = session / "media"
     vocals_file = media_dir / "audio_vocals.wav"
@@ -42,6 +44,6 @@ def separate_audio(video_file: Path, session: Path) -> tuple[Path, Path]:
             continue
         bgm = source if bgm is None else bgm + source
 
-    save_audio(vocals, str(vocals_file), samplerate=separator.samplerate)
-    save_audio(bgm, str(bgm_file), samplerate=separator.samplerate)
+    save_audio_tensor(vocals_file, vocals, separator.samplerate)
+    save_audio_tensor(bgm_file, bgm, separator.samplerate)
     return vocals_file, bgm_file

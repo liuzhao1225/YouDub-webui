@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FormEvent, useCallback, useEffect, useState } from "react"
-import { ChevronRight, Play } from "lucide-react"
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react"
+import { ChevronRight, Play, Upload } from "lucide-react"
 
 import {
   TaskSummary,
   createTask,
   listTasks,
+  uploadLocalTask,
 } from "@/lib/api"
 import { statusBadgeClass } from "@/lib/status"
 import { AppHeader } from "@/components/app-header"
@@ -47,9 +48,12 @@ export default function Home() {
   const router = useRouter()
   const [youtubeUrl, setYoutubeUrl] = useState("")
   const [bilibiliUrl, setBilibiliUrl] = useState("")
+  const [localFile, setLocalFile] = useState<File | null>(null)
+  const [localDirection, setLocalDirection] = useState<"en-zh" | "zh-en">("en-zh")
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const refreshTasks = useCallback(async () => {
     const { tasks: list } = await listTasks()
@@ -68,12 +72,18 @@ export default function Home() {
     event.preventDefault()
     setError("")
     const submittedUrl = youtubeUrl.trim() || bilibiliUrl.trim()
-    if (!submittedUrl) return
+    if (!submittedUrl && !localFile) return
     setSubmitting(true)
     try {
-      const created = await createTask(submittedUrl)
+      const created = localFile
+        ? await uploadLocalTask(localFile, localDirection)
+        : await createTask(submittedUrl)
       setYoutubeUrl("")
       setBilibiliUrl("")
+      setLocalFile(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
       refreshTasks().catch(() => undefined)
       router.push(`/tasks/${created.id}`)
     } catch (err) {
@@ -84,7 +94,11 @@ export default function Home() {
   }
 
   const queued = activeCount(tasks)
-  const canSubmit = Boolean((youtubeUrl.trim() || bilibiliUrl.trim()) && !submitting)
+  const hasUrl = Boolean(youtubeUrl.trim() || bilibiliUrl.trim())
+  const hasLocalFile = Boolean(localFile)
+  const canSubmit = Boolean((hasUrl || hasLocalFile) && !submitting)
+  const disableUrls = hasLocalFile
+  const disableLocal = hasUrl
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#fff5f5_0%,#f2fbff_48%,#fff4fa_100%)] text-foreground">
@@ -104,7 +118,7 @@ export default function Home() {
                   value={youtubeUrl}
                   onChange={(event) => setYoutubeUrl(event.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  disabled={Boolean(bilibiliUrl.trim())}
+                  disabled={Boolean(bilibiliUrl.trim()) || disableUrls}
                 />
               </div>
               <div className="space-y-2">
@@ -114,8 +128,34 @@ export default function Home() {
                   value={bilibiliUrl}
                   onChange={(event) => setBilibiliUrl(event.target.value)}
                   placeholder="https://www.bilibili.com/video/BV..."
-                  disabled={Boolean(youtubeUrl.trim())}
+                  disabled={Boolean(youtubeUrl.trim()) || disableUrls}
                 />
+              </div>
+              <div className="grid gap-3 rounded-lg border border-border/70 p-3 sm:grid-cols-[1fr_180px]">
+                <div className="space-y-2">
+                  <Label htmlFor="local-video">Local video file</Label>
+                  <Input
+                    ref={fileInputRef}
+                    id="local-video"
+                    type="file"
+                    accept="video/*,.mkv,.webm,.avi,.flv,.wmv"
+                    disabled={disableLocal}
+                    onChange={(event) => setLocalFile(event.target.files?.[0] || null)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="local-direction">Direction</Label>
+                  <select
+                    id="local-direction"
+                    value={localDirection}
+                    disabled={disableLocal}
+                    onChange={(event) => setLocalDirection(event.target.value as "en-zh" | "zh-en")}
+                    className="h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="en-zh">English to Chinese</option>
+                    <option value="zh-en">Chinese to English</option>
+                  </select>
+                </div>
               </div>
               <div className="flex items-center justify-between gap-3">
                 {queued > 0 ? (
@@ -126,7 +166,7 @@ export default function Home() {
                   <span />
                 )}
                 <Button type="submit" disabled={!canSubmit}>
-                  <Play className="size-4" />
+                  {hasLocalFile ? <Upload className="size-4" /> : <Play className="size-4" />}
                   {submitting ? "Submitting" : "Create task"}
                 </Button>
               </div>

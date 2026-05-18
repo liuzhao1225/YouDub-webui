@@ -83,6 +83,42 @@ def test_task_id_is_video_id_and_dedupes_existing(monkeypatch, tmp_path):
     assert enqueued == ["abcdefghijk"]
 
 
+def test_upload_local_video_creates_task_and_keeps_file(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/tasks/upload",
+        data={"direction": "zh-en"},
+        files={"file": ("clip.mp4", b"fake-video", "video/mp4")},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["id"] in enqueued
+    assert body["title"] == "clip"
+    assert body["url"].startswith(f"local://upload/{body['id']}?")
+    assert "direction=zh-en" in body["url"]
+    assert (config.WORKFOLDER / "_uploads" / body["id"] / "clip.mp4").read_bytes() == b"fake-video"
+
+
+def test_delete_local_video_removes_uploaded_file(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = TestClient(main.app)
+    created = client.post(
+        "/api/tasks/upload",
+        data={"direction": "en-zh"},
+        files={"file": ("clip.mp4", b"fake-video", "video/mp4")},
+    ).json()
+
+    response = client.delete(f"/api/tasks/{created['id']}")
+
+    assert response.status_code == 204
+    assert not (config.WORKFOLDER / "_uploads" / created["id"]).exists()
+
+
 def test_different_videos_create_separate_tasks(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []

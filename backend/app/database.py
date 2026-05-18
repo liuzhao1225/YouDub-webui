@@ -281,9 +281,11 @@ def get_setting(key: str, default: str = "") -> str:
 
 
 def get_openai_settings() -> dict[str, str]:
+    from .adapters.openai_client import normalize_openai_base_url
+
     defaults = openai_defaults()
     return {
-        "base_url": get_setting("openai.base_url", defaults["base_url"]),
+        "base_url": normalize_openai_base_url(get_setting("openai.base_url", defaults["base_url"])),
         "api_key": get_setting("openai.api_key", defaults["api_key"]),
         "model": get_setting("openai.model", defaults["model"]),
         "translate_concurrency": get_setting(
@@ -295,7 +297,9 @@ def get_openai_settings() -> dict[str, str]:
 def save_openai_settings(
     base_url: str, api_key: str, model: str, translate_concurrency: str = ""
 ) -> None:
-    set_setting("openai.base_url", base_url.strip())
+    from .adapters.openai_client import normalize_openai_base_url
+
+    set_setting("openai.base_url", normalize_openai_base_url(base_url))
     cleaned_api_key = api_key.strip()
     if cleaned_api_key and set(cleaned_api_key) != {"*"}:
         set_setting("openai.api_key", cleaned_api_key)

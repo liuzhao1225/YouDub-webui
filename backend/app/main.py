@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import os
 import shutil
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import quote
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from . import database, worker
 from .adapters.openai_translate import list_models as list_openai_models
+from .adapters.local_video import remove_upload, upload_dir
 from .config import WORKFOLDER, YOUTUBE_COOKIE_PATH, ensure_runtime_dirs
 from .pipeline import run_task
 from .youtube import extract_video_id
@@ -25,6 +28,19 @@ def mask_secret(value: str) -> str:
 
 class TaskCreate(BaseModel):
     url: str
+
+
+ALLOWED_LOCAL_DIRECTIONS = {"en-zh", "zh-en"}
+ALLOWED_VIDEO_SUFFIXES = {
+    ".mp4",
+    ".mov",
+    ".m4v",
+    ".mkv",
+    ".webm",
+    ".avi",
+    ".flv",
+    ".wmv",
+}
 
 
 class YouTubeCookieUpdate(BaseModel):
@@ -129,6 +145,35 @@ def create_task(payload: TaskCreate) -> dict:
     return database.get_task(task_id)
 
 
+@app.post("/api/tasks/upload", status_code=201)
+def upload_local_video(
+    direction: str = Form("en-zh"),
+    file: UploadFile = File(...),
+) -> dict:
+    if direction not in ALLOWED_LOCAL_DIRECTIONS:
+        raise HTTPException(status_code=422, detail="Direction must be en-zh or zh-en.")
+    original_name = Path(file.filename or "local-video").name
+    suffix = Path(original_name).suffix.lower()
+    if suffix not in ALLOWED_VIDEO_SUFFIXES:
+        raise HTTPException(status_code=422, detail="Unsupported video file type.")
+
+    task_id = str(uuid.uuid4())
+    directory = upload_dir(WORKFOLDER, task_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    upload_path = directory / original_name
+    with upload_path.open("wb") as handle:
+        shutil.copyfileobj(file.file, handle)
+    if upload_path.stat().st_size == 0:
+        remove_upload(WORKFOLDER, task_id)
+        raise HTTPException(status_code=422, detail="Uploaded video is empty.")
+
+    url = f"local://upload/{task_id}?direction={direction}&filename={quote(original_name)}"
+    database.create_task(url, task_id=task_id)
+    database.update_task(task_id, title=Path(original_name).stem)
+    worker.enqueue(task_id)
+    return database.get_task(task_id)
+
+
 @app.get("/api/tasks/current")
 def current_task() -> dict | None:
     return database.get_current_task()
@@ -176,6 +221,8 @@ def delete_task(task_id: str) -> Response:
     if task["status"] == "running":
         raise HTTPException(status_code=409, detail="Cannot delete a running task.")
     _purge_task(task)
+    if task.get("url", "").startswith("local://upload/"):
+        remove_upload(WORKFOLDER, task_id)
     return Response(status_code=204)
 
 

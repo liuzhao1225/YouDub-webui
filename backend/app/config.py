@@ -7,6 +7,41 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name, "")
+    if not value:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
+def use_torchcodec() -> bool:
+    return _env_flag("USE_TORCHCODEC", default=False)
+
+
+def disable_torchcodec() -> None:
+    os.environ.setdefault("YOUDUB_DISABLE_TORCHCODEC", "1")
+    if use_torchcodec():
+        return
+    try:
+        from .utils.video import patch_torchaudio_no_torchcodec
+
+        patch_torchaudio_no_torchcodec()
+    except Exception:
+        pass
+    try:
+        from transformers import utils as transformers_utils
+        from transformers.utils import import_utils
+
+        import_utils.is_torchcodec_available.cache_clear()
+        import_utils.is_torchcodec_available = lambda: False
+        transformers_utils.is_torchcodec_available = lambda: False
+    except Exception:
+        pass
+
+
+disable_torchcodec()
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
 COOKIE_DIR = DATA_DIR / "cookies"

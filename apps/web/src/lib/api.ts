@@ -129,6 +129,22 @@ export function createTask(url: string) {
   })
 }
 
+export async function uploadLocalTask(file: File, direction: "en-zh" | "zh-en") {
+  const form = new FormData()
+  form.append("direction", direction)
+  form.append("file", file)
+  const response = await fetch(`${API_BASE}/api/tasks/upload`, {
+    method: "POST",
+    body: form,
+    cache: "no-store",
+  })
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    throw new Error(body.detail || `Request failed: ${response.status}`)
+  }
+  return response.json() as Promise<Task>
+}
+
 export function getCookieInfo() {
   return request<CookieInfo>("/api/cookies/youtube")
 }

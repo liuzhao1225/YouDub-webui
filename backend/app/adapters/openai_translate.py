@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from ..sources import SourceConfig
 from ._translate_prompts import PREPROCESS_PROMPT, TRANSLATE_RULES
+from .openai_client import normalize_openai_base_url
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class TranslationItem(BaseModel):
 def list_models(*, base_url: str, api_key: str) -> list[str]:
     if not api_key:
         raise ValueError("OpenAI API key is not configured.")
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    client = OpenAI(api_key=api_key, base_url=normalize_openai_base_url(base_url))
     response = client.models.list()
     seen: set[str] = set()
     models: list[str] = []
@@ -60,7 +61,7 @@ def list_models(*, base_url: str, api_key: str) -> list[str]:
 def _client(base_url: str, api_key: str) -> OpenAI:
     if not api_key:
         raise ValueError("OpenAI API key is not configured.")
-    return OpenAI(api_key=api_key, base_url=base_url)
+    return OpenAI(api_key=api_key, base_url=normalize_openai_base_url(base_url))
 
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
