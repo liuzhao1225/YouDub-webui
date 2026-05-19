@@ -7,6 +7,10 @@ from urllib.parse import parse_qs, urlparse
 YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 BILIBILI_BV_RE = re.compile(r"BV[A-Za-z0-9]{10}")
 BILIBILI_HOSTS = {"bilibili.com", "www.bilibili.com", "m.bilibili.com"}
+LOCAL_UPLOAD_SCHEME = "local"
+LOCAL_UPLOAD_HOST = "upload"
+LOCAL_UPLOAD_DIRECTIONS = {"en-zh", "zh-en"}
+LOCAL_UPLOAD_TASK_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def _extract_youtube_id(parsed) -> str | None:
@@ -59,3 +63,32 @@ def is_youtube_url(url: str) -> bool:
 
 def is_bilibili_url(url: str) -> bool:
     return urlparse(url.strip()).netloc.lower() in BILIBILI_HOSTS
+
+
+def local_upload_task_id(url: str) -> str:
+    parsed = urlparse(url.strip())
+    if parsed.scheme != LOCAL_UPLOAD_SCHEME or parsed.netloc != LOCAL_UPLOAD_HOST:
+        return ""
+    candidate = parsed.path.strip("/").split("/", maxsplit=1)[0]
+    if not LOCAL_UPLOAD_TASK_ID_RE.match(candidate):
+        return ""
+    return candidate
+
+
+def local_upload_direction(url: str) -> str:
+    parsed = urlparse(url.strip())
+    if not local_upload_task_id(url):
+        return ""
+    return parse_qs(parsed.query).get("direction", [""])[0]
+
+
+def is_local_upload_url(url: str) -> bool:
+    return bool(local_upload_task_id(url)) and local_upload_direction(url) in LOCAL_UPLOAD_DIRECTIONS
+
+
+def is_local_en_to_zh_url(url: str) -> bool:
+    return is_local_upload_url(url) and local_upload_direction(url) == "en-zh"
+
+
+def is_local_zh_to_en_url(url: str) -> bool:
+    return is_local_upload_url(url) and local_upload_direction(url) == "zh-en"

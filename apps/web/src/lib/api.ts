@@ -1,10 +1,12 @@
-function defaultApiBase(): string {
-  if (typeof window === "undefined") return "http://localhost:8000"
-  return `${window.location.protocol}//${window.location.hostname}:8000`
+function configuredApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
+  if (configured) return configured.replace(/\/$/, "")
+
+  if (typeof window === "undefined") return "http://127.0.0.1:8000"
+  return ""
 }
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || defaultApiBase()
+export const API_BASE = configuredApiBase()
 
 export type StageStatus = "pending" | "running" | "succeeded" | "failed"
 export type TaskStatus = "queued" | "running" | "succeeded" | "failed"
@@ -57,6 +59,8 @@ export type OpenAIModels = {
 export type YtdlpSettings = {
   proxy_port: string
 }
+
+export type LocalDirection = "en-zh" | "zh-en"
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -127,6 +131,23 @@ export function createTask(url: string) {
     method: "POST",
     body: JSON.stringify({ url }),
   })
+}
+
+export async function uploadLocalTask(file: File, direction: LocalDirection) {
+  const form = new FormData()
+  form.append("direction", direction)
+  form.append("file", file)
+
+  const response = await fetch(`${API_BASE}/api/tasks/upload`, {
+    method: "POST",
+    body: form,
+    cache: "no-store",
+  })
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    throw new Error(body.detail || `Request failed: ${response.status}`)
+  }
+  return response.json() as Promise<Task>
 }
 
 export function getCookieInfo() {

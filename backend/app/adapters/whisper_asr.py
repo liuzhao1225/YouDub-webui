@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from pydub import AudioSegment
 
@@ -11,14 +12,48 @@ from ..config import device
 _MODEL = None
 
 
+def _whisper_cache_file(whisper, name: str, download_root: str | None) -> Path | None:
+    if not download_root:
+        return None
+    model_url = getattr(whisper, "_MODELS", {}).get(name)
+    if not model_url:
+        return None
+    filename = Path(urlparse(model_url).path).name
+    if not filename:
+        return None
+    return Path(download_root).expanduser() / filename
+
+
+def _is_checksum_error(exc: RuntimeError) -> bool:
+    return "sha256 checksum" in str(exc).lower()
+
+
+def _remove_corrupt_whisper_cache(whisper, name: str, download_root: str | None) -> bool:
+    cache_file = _whisper_cache_file(whisper, name, download_root)
+    if not cache_file or not cache_file.exists():
+        return False
+    cache_file.unlink()
+    return True
+
+
 def _load_model():
     global _MODEL
-    if _MODEL is None:
-        import whisper
+    if _MODEL is not None:
+        return _MODEL
 
-        name = os.getenv("WHISPER_MODEL", "large-v3-turbo")
-        download_root = os.getenv("WHISPER_DOWNLOAD_ROOT") or None
+    import whisper
+
+    name = os.getenv("WHISPER_MODEL", "large-v3-turbo")
+    download_root = os.getenv("WHISPER_DOWNLOAD_ROOT") or None
+    try:
         _MODEL = whisper.load_model(name, device=device(), download_root=download_root)
+    except RuntimeError as exc:
+        if not _is_checksum_error(exc):
+            raise
+        if not _remove_corrupt_whisper_cache(whisper, name, download_root):
+            raise
+        _MODEL = whisper.load_model(name, device=device(), download_root=download_root)
+
     return _MODEL
 
 

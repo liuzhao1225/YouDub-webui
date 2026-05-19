@@ -496,3 +496,51 @@ def test_ytdlp_proxy_port_rejects_invalid_value(monkeypatch, tmp_path):
     response = client.post("/api/settings/ytdlp", json={"proxy_port": "70000"})
 
     assert response.status_code == 422
+
+
+def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/tasks/upload",
+        data={"direction": "zh-en"},
+        files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["title"] == "clip"
+    assert body["url"].startswith(f"local://upload/{body['id']}?direction=zh-en")
+    assert enqueued == [body["id"]]
+    saved = list((config.WORKFOLDER / "_uploads" / body["id"]).iterdir())
+    assert len(saved) == 1
+    assert saved[0].read_bytes() == b"mp4data"
+
+
+def test_create_task_rejects_local_upload_url(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = TestClient(main.app)
+    response = client.post("/api/tasks", json={"url": "local://upload/fake?direction=en-zh"})
+    assert response.status_code == 422
+
+
+def test_delete_local_video_removes_upload(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = TestClient(main.app)
+    upload = client.post(
+        "/api/tasks/upload",
+        data={"direction": "en-zh"},
+        files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
+    )
+    task_id = upload.json()["id"]
+    upload_root = config.WORKFOLDER / "_uploads" / task_id
+    assert upload_root.exists()
+
+    response = client.delete(f"/api/tasks/{task_id}")
+
+    assert response.status_code == 204
+    assert not upload_root.exists()
+    assert database.get_task(task_id) is None

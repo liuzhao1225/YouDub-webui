@@ -224,6 +224,12 @@ npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
 npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
 ```
 
+前端默认通过同源 `/api/...` 请求访问后端，并由 Next.js 代理到 `http://127.0.0.1:8000`。如果后端不在本机 `8000` 端口，启动前端时设置 `NEXT_SERVER_API_BASE_URL`，例如：
+
+```bash
+NEXT_SERVER_API_BASE_URL=http://192.168.1.10:8000 npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
+```
+
 打开：
 
 ```text

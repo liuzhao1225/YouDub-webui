@@ -192,3 +192,17 @@ def test_write_srt_splits_long_sentence_into_multiple_entries(tmp_path):
     blocks = [b for b in content.strip().split("\n\n") if b.strip()]
     assert len(blocks) >= 3
     assert all("-->" in b for b in blocks)
+
+
+def test_probe_video_size_uses_configured_ffprobe(monkeypatch):
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, capture_output=False, text=False, **kwargs):
+        commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="1920,1080\n", stderr="")
+
+    monkeypatch.setenv("FFPROBE_PATH", "/opt/bin/ffprobe")
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    assert ffmpeg.probe_video_size(Path("video.mp4")) == (1920, 1080)
+    assert commands[0][0] == "/opt/bin/ffprobe"

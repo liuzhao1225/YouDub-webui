@@ -2,13 +2,15 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FormEvent, useCallback, useEffect, useState } from "react"
-import { ChevronRight, Play } from "lucide-react"
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react"
+import { ChevronRight, Play, Upload } from "lucide-react"
 
 import {
   TaskSummary,
+  LocalDirection,
   createTask,
   listTasks,
+  uploadLocalTask,
 } from "@/lib/api"
 import { useI18n } from "@/lib/i18n"
 import { statusBadgeClass } from "@/lib/status"
@@ -24,6 +26,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 function isActive(status: string) {
   return status === "queued" || status === "running"
@@ -47,46 +56,61 @@ function activeCount(tasks: TaskSummary[]) {
 export default function Home() {
   const router = useRouter()
   const { activeTasksText, stageLabel, statusLabel, t } = useI18n()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [youtubeUrl, setYoutubeUrl] = useState("")
   const [bilibiliUrl, setBilibiliUrl] = useState("")
+  const [localFile, setLocalFile] = useState<File | null>(null)
+  const [localDirection, setLocalDirection] = useState<LocalDirection>("en-zh")
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
-  const refreshTasks = useCallback(async () => {
+  async function refreshTasks() {
     const { tasks: list } = await listTasks()
     setTasks(list)
-  }, [])
+  }
 
   useEffect(() => {
     let cancelled = false
-    const load = async () => {
+
+    const loadTasks = async () => {
       try {
         const { tasks: list } = await listTasks()
-        if (cancelled) return
-        setTasks(list)
+        if (!cancelled) setTasks(list)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : t.home.loadError)
       }
     }
-    load()
-    const interval = window.setInterval(load, 2000)
+
+    loadTasks()
+    const interval = window.setInterval(loadTasks, 2000)
     return () => {
       cancelled = true
       window.clearInterval(interval)
     }
   }, [t.home.loadError])
 
+  function selectLocalFile(event: ChangeEvent<HTMLInputElement>) {
+    setError("")
+    setLocalFile(event.target.files?.[0] || null)
+  }
+
   async function submitTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
     const submittedUrl = youtubeUrl.trim() || bilibiliUrl.trim()
-    if (!submittedUrl) return
+    if (!submittedUrl && !localFile) return
     setSubmitting(true)
     try {
-      const created = await createTask(submittedUrl)
+      const created = localFile
+        ? await uploadLocalTask(localFile, localDirection)
+        : await createTask(submittedUrl)
       setYoutubeUrl("")
       setBilibiliUrl("")
+      setLocalFile(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
       refreshTasks().catch(() => undefined)
       router.push(`/tasks/${created.id}`)
     } catch (err) {
@@ -97,7 +121,9 @@ export default function Home() {
   }
 
   const queued = activeCount(tasks)
-  const canSubmit = Boolean((youtubeUrl.trim() || bilibiliUrl.trim()) && !submitting)
+  const hasUrl = Boolean(youtubeUrl.trim() || bilibiliUrl.trim())
+  const hasLocalFile = Boolean(localFile)
+  const canSubmit = Boolean((hasUrl || hasLocalFile) && !submitting)
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#fff5f5_0%,#f2fbff_48%,#fff4fa_100%)] text-foreground">
@@ -117,7 +143,7 @@ export default function Home() {
                   value={youtubeUrl}
                   onChange={(event) => setYoutubeUrl(event.target.value)}
                   placeholder="https://www.youtube.com/watch?v=..."
-                  disabled={Boolean(bilibiliUrl.trim())}
+                  disabled={Boolean(bilibiliUrl.trim()) || hasLocalFile}
                 />
               </div>
               <div className="space-y-2">
@@ -127,8 +153,37 @@ export default function Home() {
                   value={bilibiliUrl}
                   onChange={(event) => setBilibiliUrl(event.target.value)}
                   placeholder="https://www.bilibili.com/video/BV..."
-                  disabled={Boolean(youtubeUrl.trim())}
+                  disabled={Boolean(youtubeUrl.trim()) || hasLocalFile}
                 />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
+                <div className="space-y-2">
+                  <Label htmlFor="local-video">{t.home.localVideoLabel}</Label>
+                  <Input
+                    ref={fileInputRef}
+                    id="local-video"
+                    type="file"
+                    accept="video/*,.mp4,.mov,.m4v,.mkv,.webm,.avi,.flv,.wmv"
+                    onChange={selectLocalFile}
+                    disabled={hasUrl}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="local-direction">{t.home.localDirectionLabel}</Label>
+                  <Select
+                    value={localDirection}
+                    onValueChange={(value) => setLocalDirection(value as LocalDirection)}
+                    disabled={hasUrl}
+                  >
+                    <SelectTrigger id="local-direction" className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en-zh">{t.home.localEnZh}</SelectItem>
+                      <SelectItem value="zh-en">{t.home.localZhEn}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex items-center justify-between gap-3">
                 {queued > 0 ? (
@@ -139,7 +194,7 @@ export default function Home() {
                   <span />
                 )}
                 <Button type="submit" disabled={!canSubmit}>
-                  <Play className="size-4" />
+                  {hasLocalFile ? <Upload className="size-4" /> : <Play className="size-4" />}
                   {submitting ? t.home.submitting : t.home.createTask}
                 </Button>
               </div>

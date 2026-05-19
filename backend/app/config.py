@@ -41,6 +41,14 @@ def openai_defaults() -> dict[str, str]:
     }
 
 
+def ffmpeg_binary() -> str:
+    return os.getenv("FFMPEG_PATH", "").strip() or "ffmpeg"
+
+
+def ffprobe_binary() -> str:
+    return os.getenv("FFPROBE_PATH", "").strip() or "ffprobe"
+
+
 def ytdlp_defaults() -> dict[str, str]:
     return {
         "proxy_port": os.getenv("YTDLP_PROXY_PORT", ""),

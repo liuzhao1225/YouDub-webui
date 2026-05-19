@@ -5,6 +5,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from ..config import ffmpeg_binary, ffprobe_binary
+
 SUBTITLE_PUNCTUATION = {"，", ",", "；", ";", "：", ":", "。", "?", "？", "!", "！", "、"}
 SUBTITLE_PROTECTED_PAIRS = {"《": "》", "（": "）", "【": "】", "「": "」", "『": "』"}
 SUBTITLE_CLOSING_QUOTES = {'"', "'", "」", "』", "》", "）", "】", "\u201d", "\u2019", "]"}
@@ -187,7 +189,7 @@ def write_srt(translation_file: Path, session: Path) -> Path:
 def probe_video_size(video_file: Path) -> tuple[int, int] | None:
     result = subprocess.run(
         [
-            "ffprobe",
+            ffprobe_binary(),
             "-v",
             "error",
             "-select_streams",
@@ -264,7 +266,7 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
     final_video_output = final_video.resolve()
     subprocess.run(
         [
-            "ffmpeg",
+            ffmpeg_binary(),
             "-y",
             "-i",
             str(dubbing_input),
@@ -282,7 +284,7 @@ def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_fi
     )
     subprocess.run(
         [
-            "ffmpeg",
+            ffmpeg_binary(),
             "-y",
             "-i",
             str(video_input),

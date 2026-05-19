@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 pydantic
+python-multipart
 openai
 yt-dlp[default]
 dora-search>=0.1.12

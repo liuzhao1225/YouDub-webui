@@ -224,6 +224,12 @@ Frontend:
 npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
 ```
 
+By default, the frontend calls same-origin `/api/...` URLs and Next.js proxies them to `http://127.0.0.1:8000`. If the backend is not on local port `8000`, set `NEXT_SERVER_API_BASE_URL` when starting the frontend, for example:
+
+```bash
+NEXT_SERVER_API_BASE_URL=http://192.168.1.10:8000 npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
+```
+
 Open:
 
 ```text

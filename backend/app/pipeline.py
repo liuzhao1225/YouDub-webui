@@ -9,6 +9,7 @@ from . import database
 from .config import WORKFOLDER
 from .sources import detect_source
 from .stages import STAGES
+from .youtube import is_local_upload_url
 
 
 @dataclass
@@ -190,11 +191,16 @@ class PipelineRunner:
         raise RuntimeError(f"Unknown pipeline stage: {stage}")
 
     def _download(self, task: dict) -> None:
-        from .adapters.ytdlp import download_video
-
         source = detect_source(task["url"])
-        proxy_port = database.get_ytdlp_settings()["proxy_port"]
-        session, info = download_video(task["url"], WORKFOLDER, source, proxy_port)
+        if is_local_upload_url(task["url"]):
+            from .adapters.local_video import import_local_video
+
+            session, info = import_local_video(task["url"], WORKFOLDER, source)
+        else:
+            from .adapters.ytdlp import download_video
+
+            proxy_port = database.get_ytdlp_settings()["proxy_port"]
+            session, info = download_video(task["url"], WORKFOLDER, source, proxy_port)
         self.artifacts.session = session
         self.artifacts.video_file = session / "media" / "video_source.mp4"
         title = (info.get("title") or "").strip() or None

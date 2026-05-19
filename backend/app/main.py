@@ -2,19 +2,27 @@ from __future__ import annotations
 
 import os
 import shutil
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import quote
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from . import database, worker
+from .adapters.local_video import remove_upload, upload_dir
 from .adapters.openai_translate import list_models as list_openai_models
 from .config import WORKFOLDER, YOUTUBE_COOKIE_PATH, ensure_runtime_dirs
 from .pipeline import run_task
-from .youtube import extract_video_id
+from .sanitize import sanitize_text
+from .youtube import LOCAL_UPLOAD_DIRECTIONS, extract_video_id, is_local_upload_url
+
+ALLOWED_VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".flv", ".wmv"}
+LOCAL_UPLOAD_CHUNK_SIZE = 1024 * 1024
+MAX_LOCAL_UPLOAD_BYTES = int(os.getenv("LOCAL_UPLOAD_MAX_BYTES", str(4 * 1024 * 1024 * 1024)))
 
 
 def mask_secret(value: str) -> str:
@@ -144,6 +152,58 @@ def create_task(payload: TaskCreate) -> dict:
     return database.get_task(task_id)
 
 
+def _clean_upload_filename(filename: str | None) -> str:
+    original = Path(filename or "").name.strip()
+    if not original:
+        raise HTTPException(status_code=422, detail="Video filename is required.")
+    suffix = Path(original).suffix.lower()
+    if suffix not in ALLOWED_VIDEO_SUFFIXES:
+        raise HTTPException(status_code=422, detail="Unsupported video file type.")
+    safe_stem = sanitize_text(Path(original).stem) or "video"
+    return f"{safe_stem}{suffix}"
+
+
+def _save_uploaded_file(file: UploadFile, destination: Path) -> int:
+    total = 0
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("wb") as handle:
+        while True:
+            chunk = file.file.read(LOCAL_UPLOAD_CHUNK_SIZE)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_LOCAL_UPLOAD_BYTES:
+                destination.unlink(missing_ok=True)
+                raise HTTPException(status_code=413, detail="Uploaded video is too large.")
+            handle.write(chunk)
+    if total == 0:
+        destination.unlink(missing_ok=True)
+        raise HTTPException(status_code=422, detail="Uploaded video is empty.")
+    return total
+
+
+@app.post("/api/tasks/upload", status_code=201)
+def upload_local_video(direction: str = Form("en-zh"), file: UploadFile = File(...)) -> dict:
+    if direction not in LOCAL_UPLOAD_DIRECTIONS:
+        raise HTTPException(status_code=422, detail="Unsupported local video direction.")
+
+    original_name = Path(file.filename or "").name.strip()
+    stored_name = _clean_upload_filename(original_name)
+    task_id = str(uuid.uuid4())
+    target_dir = upload_dir(WORKFOLDER, task_id)
+    try:
+        _save_uploaded_file(file, target_dir / stored_name)
+    except HTTPException:
+        remove_upload(WORKFOLDER, task_id)
+        raise
+
+    url = f"local://upload/{task_id}?direction={direction}&filename={quote(original_name)}"
+    database.create_task(url, task_id=task_id)
+    database.update_task(task_id, title=Path(original_name).stem)
+    worker.enqueue(task_id)
+    return database.get_task(task_id)
+
+
 @app.get("/api/tasks/current")
 def current_task() -> dict | None:
     return database.get_current_task()
@@ -191,6 +251,8 @@ def delete_task(task_id: str) -> Response:
     if task["status"] == "running":
         raise HTTPException(status_code=409, detail="Cannot delete a running task.")
     _purge_task(task)
+    if is_local_upload_url(task["url"]):
+        remove_upload(WORKFOLDER, task["id"])
     return Response(status_code=204)
 
 
