@@ -20,3 +20,4 @@ audiostretchy
 numpy
 pytest
 httpx
+socksio
