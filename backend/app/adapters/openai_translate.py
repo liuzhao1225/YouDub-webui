@@ -61,13 +61,7 @@ def list_models(*, base_url: str, api_key: str) -> list[str]:
 def _client(base_url: str, api_key: str) -> OpenAI:
     if not api_key:
         raise ValueError("OpenAI API key is not configured.")
-    url = normalize_openai_base_url(base_url)
-    from urllib.parse import urlparse
-    host = urlparse(url).hostname or ""
-    if host in ("localhost", "127.0.0.1", "::1") or host.endswith(".local"):
-        from httpx import Client
-        return OpenAI(api_key=api_key, base_url=url, http_client=Client(proxy=None))
-    return OpenAI(api_key=api_key, base_url=url)
+    return OpenAI(api_key=api_key, base_url=normalize_openai_base_url(base_url))
 
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
