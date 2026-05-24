@@ -12,6 +12,13 @@ from ..config import device
 _MODEL = None
 
 
+def _whisper_device() -> str:
+    d = device()
+    if d == "mps":
+        return "cpu"
+    return d
+
+
 def _whisper_cache_file(whisper, name: str, download_root: str | None) -> Path | None:
     if not download_root:
         return None
@@ -46,13 +53,13 @@ def _load_model():
     name = os.getenv("WHISPER_MODEL", "large-v3-turbo")
     download_root = os.getenv("WHISPER_DOWNLOAD_ROOT") or None
     try:
-        _MODEL = whisper.load_model(name, device=device(), download_root=download_root)
+        _MODEL = whisper.load_model(name, device=_whisper_device(), download_root=download_root)
     except RuntimeError as exc:
         if not _is_checksum_error(exc):
             raise
         if not _remove_corrupt_whisper_cache(whisper, name, download_root):
             raise
-        _MODEL = whisper.load_model(name, device=device(), download_root=download_root)
+        _MODEL = whisper.load_model(name, device=_whisper_device(), download_root=download_root)
 
     return _MODEL
 

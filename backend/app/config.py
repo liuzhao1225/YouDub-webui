@@ -29,7 +29,13 @@ def device() -> str:
     configured = os.getenv("DEVICE") or os.getenv("CUDA_DEVICE")
     if configured:
         return configured
-    return "cuda"
+    import torch
+
+    if torch.cuda.is_available():
+        return "cuda"
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
 
 
 def openai_defaults() -> dict[str, str]:
