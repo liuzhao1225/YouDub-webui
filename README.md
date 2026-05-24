@@ -136,6 +136,7 @@ Python 依赖：
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -U pip
+.\.venv\Scripts\pip.exe install --index-url https://download.pytorch.org/whl/cu128 -r requirements-cuda.txt
 .\.venv\Scripts\pip.exe install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
@@ -152,6 +153,7 @@ Python 依赖：
 ```bash
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -U pip
+.venv/bin/pip install --index-url https://download.pytorch.org/whl/cu128 -r requirements-cuda.txt
 .venv/bin/pip install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
@@ -162,6 +164,8 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 ```
 
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
+
+`requirements-cuda.txt` 用于安装支持 CUDA 的 PyTorch，以便 Whisper、Demucs 和 VoxCPM 等本地模型使用 NVIDIA GPU 推理。如果只使用 CPU 推理，可以跳过这一步，直接安装 `requirements.txt`。示例命令默认使用 PyTorch 的 `cu128` wheel 源；如果需要手动安装特定 CUDA 版本的 PyTorch，请根据您的 CUDA / 驱动环境从 [PyTorch 官方网站](https://pytorch.org/) 获取对应安装命令。
 
 ### 4. 配置环境
 

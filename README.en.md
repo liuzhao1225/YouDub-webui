@@ -136,6 +136,7 @@ Python:
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -U pip
+.\.venv\Scripts\pip.exe install --index-url https://download.pytorch.org/whl/cu128 -r requirements-cuda.txt
 .\.venv\Scripts\pip.exe install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
@@ -152,6 +153,7 @@ Python:
 ```bash
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -U pip
+.venv/bin/pip install --index-url https://download.pytorch.org/whl/cu128 -r requirements-cuda.txt
 .venv/bin/pip install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
@@ -162,6 +164,8 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 ```
 
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.
+
+`requirements-cuda.txt` installs a CUDA-enabled PyTorch build so local models such as Whisper, Demucs, and VoxCPM can use an NVIDIA GPU for inference. If you only use CPU inference, skip this step and install `requirements.txt` directly. The example command uses PyTorch's `cu128` wheel index by default; if you need a specific CUDA build, get the matching install command for your CUDA / driver environment from the [official PyTorch website](https://pytorch.org/).
 
 ### 4. Configure
 
