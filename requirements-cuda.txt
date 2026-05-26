@@ -1,6 +1,0 @@
-# CUDA-enabled PyTorch packages.
-#
-# Install this before requirements.txt when you want GPU inference.
-# For CPU inference, skip this file.
-torch
-torchaudio

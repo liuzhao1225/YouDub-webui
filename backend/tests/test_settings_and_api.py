@@ -527,6 +527,19 @@ def test_create_task_rejects_local_upload_url(monkeypatch, tmp_path):
     assert response.status_code == 422
 
 
+def test_create_task_rejects_unavailable_cuda_runtime(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        main,
+        "validate_runtime_device",
+        lambda: (_ for _ in ()).throw(RuntimeError("DEVICE=cuda is not available")),
+    )
+    client = TestClient(main.app)
+    response = client.post("/api/tasks", json={"url": "https://www.youtube.com/watch?v=okvideoxxxx"})
+    assert response.status_code == 409
+    assert response.json()["detail"] == "DEVICE=cuda is not available"
+
+
 def test_delete_local_video_removes_upload(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     client = TestClient(main.app)
