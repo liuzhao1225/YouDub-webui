@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from backend.app.adapters import demucs as demucs_adapter
@@ -18,3 +20,8 @@ def test_separate_audio_reports_incomplete_demucs_submodule(tmp_path, monkeypatc
 
     with pytest.raises(RuntimeError, match="Download ZIP"):
         demucs_adapter.separate_audio(tmp_path / "video.mp4", tmp_path / "session")
+
+
+def test_demucs_device_uses_central_resolver(monkeypatch):
+    monkeypatch.setattr(demucs_adapter, "resolve_device", lambda component: SimpleNamespace(selected="mps"))
+    assert demucs_adapter._device() == "mps"

@@ -74,7 +74,7 @@ Verified and recommended runtime:
 
 - **Windows 10/11 + PowerShell 5.1+**: recommended for local development and covered first in this README.
 - **Linux / WSL2 / macOS**: backend and frontend commands are provided for POSIX shells. CUDA, FFmpeg, PyTorch, and audio dependencies still need to match your platform.
-- **CUDA GPU**: recommended for complete video processing. `DEVICE=cpu` can be used for some flows, but transcription, separation, and TTS will be very slow.
+- **CUDA GPU**: recommended for complete video processing. `DEVICE=cpu` can be used for some flows, but transcription, separation, and TTS will be very slow; with `DEVICE=mps`, Whisper automatically falls back to CPU to avoid the MPS float64 limitation.
 
 Base dependencies:
 
@@ -209,14 +209,15 @@ Common environment variables:
 | --- | --- |
 | `WORKFOLDER` | Per-task media, audio segments, and intermediate artifacts. |
 | `MODEL_CACHE_DIR` | ModelScope cache directory, used by VoxCPM2 by default. |
-| `DEVICE` | Model runtime device, for example `cuda`, `cuda:0`, or `cpu`. |
+| `DEVICE` | Model runtime device, for example `auto`, `cuda`, `cuda:0`, `mps`, `mps:0`, or `cpu`; `auto` selects CUDA, then MPS, then CPU. |
+| `DEMUCS_DEVICE` / `WHISPER_DEVICE` | Optional component-level device overrides. Empty values use `DEVICE`. Whisper falls back to CPU when MPS is selected because word timestamp alignment depends on float64 DTW, which MPS does not support. |
 | `OPENAI_BASE_URL` | OpenAI-compatible API endpoint, for example `https://api.openai.com/v1`. |
 | `OPENAI_API_KEY` | API key used by the translation stage. |
 | `OPENAI_MODEL` | Chat Completions model used by the translation stage. |
 | `OPENAI_TRANSLATE_CONCURRENCY` | Parallel requests during translation. Default: `50`. |
 | `YTDLP_PROXY_PORT` | Local proxy port used by yt-dlp, for example `7890`. |
 | `HTTP_PROXY` | Proxy URL read by yt-dlp when no UI proxy port is set. |
-| `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 ModelScope model ID or local model directory. |
+| `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 ModelScope model ID or local model directory. VoxCPM currently selects CUDA/MPS/CPU inside the upstream package, and task logs report it as `voxcpm=library-auto`. |
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 inference controls. |
 | `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | Additional frontend origins. |
 

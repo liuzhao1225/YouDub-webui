@@ -7,6 +7,7 @@ from typing import Callable
 
 from . import database
 from .config import WORKFOLDER
+from .devices import device_plan_summary
 from .runtime_checks import validate_runtime_device
 from .sources import detect_source
 from .stages import STAGES
@@ -76,6 +77,7 @@ class PipelineRunner:
 
         try:
             validate_runtime_device()
+            self.log(f"Device plan: {device_plan_summary()}")
             for stage in STAGES:
                 self._run_stage(stage.name)
             database.update_task(

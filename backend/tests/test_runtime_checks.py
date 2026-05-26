@@ -4,10 +4,17 @@ import types
 
 import pytest
 
+from backend.app import devices
 from backend.app import runtime_checks
 
 
-def fake_torch(cuda_available: bool, cuda_version: str | None = None, device_count: int = 1):
+def fake_torch(
+    cuda_available: bool,
+    cuda_version: str | None = None,
+    device_count: int = 1,
+    mps_built: bool = True,
+    mps_available: bool = False,
+):
     return types.SimpleNamespace(
         __version__="2.11.0",
         version=types.SimpleNamespace(cuda=cuda_version),
@@ -15,13 +22,19 @@ def fake_torch(cuda_available: bool, cuda_version: str | None = None, device_cou
             is_available=lambda: cuda_available,
             device_count=lambda: device_count,
         ),
+        backends=types.SimpleNamespace(
+            mps=types.SimpleNamespace(
+                is_built=lambda: mps_built,
+                is_available=lambda: mps_available,
+            ),
+        ),
     )
 
 
 def test_validate_runtime_device_skips_cpu(monkeypatch):
-    monkeypatch.setattr(runtime_checks, "device", lambda: "cpu")
+    monkeypatch.setattr(devices, "default_device", lambda: "cpu")
     monkeypatch.setattr(
-        runtime_checks,
+        devices,
         "_load_torch",
         lambda: (_ for _ in ()).throw(AssertionError("torch should not be loaded")),
     )
@@ -30,15 +43,15 @@ def test_validate_runtime_device_skips_cpu(monkeypatch):
 
 
 def test_validate_runtime_device_accepts_cuda(monkeypatch):
-    monkeypatch.setattr(runtime_checks, "device", lambda: "cuda:0")
-    monkeypatch.setattr(runtime_checks, "_load_torch", lambda: fake_torch(True, "12.8"))
+    monkeypatch.setattr(devices, "default_device", lambda: "cuda:0")
+    monkeypatch.setattr(devices, "_load_torch", lambda: fake_torch(True, "12.8"))
 
     runtime_checks.validate_runtime_device()
 
 
 def test_validate_runtime_device_rejects_unavailable_cuda(monkeypatch):
-    monkeypatch.setattr(runtime_checks, "device", lambda: "cuda")
-    monkeypatch.setattr(runtime_checks, "_load_torch", lambda: fake_torch(False, None))
+    monkeypatch.setattr(devices, "default_device", lambda: "cuda")
+    monkeypatch.setattr(devices, "_load_torch", lambda: fake_torch(False, None))
 
     with pytest.raises(RuntimeError, match="CUDA is not available") as exc:
         runtime_checks.validate_runtime_device()
@@ -47,8 +60,23 @@ def test_validate_runtime_device_rejects_unavailable_cuda(monkeypatch):
 
 
 def test_validate_runtime_device_rejects_missing_cuda_index(monkeypatch):
-    monkeypatch.setattr(runtime_checks, "device", lambda: "cuda:1")
-    monkeypatch.setattr(runtime_checks, "_load_torch", lambda: fake_torch(True, "12.8", device_count=1))
+    monkeypatch.setattr(devices, "default_device", lambda: "cuda:1")
+    monkeypatch.setattr(devices, "_load_torch", lambda: fake_torch(True, "12.8", device_count=1))
 
     with pytest.raises(RuntimeError, match="only 1 CUDA"):
+        runtime_checks.validate_runtime_device()
+
+
+def test_validate_runtime_device_accepts_mps_for_demucs_and_cpu_for_whisper(monkeypatch):
+    monkeypatch.setattr(devices, "default_device", lambda: "mps")
+    monkeypatch.setattr(devices, "_load_torch", lambda: fake_torch(False, mps_available=True))
+
+    runtime_checks.validate_runtime_device()
+
+
+def test_validate_runtime_device_rejects_unavailable_mps(monkeypatch):
+    monkeypatch.setattr(devices, "default_device", lambda: "mps")
+    monkeypatch.setattr(devices, "_load_torch", lambda: fake_torch(False, mps_available=False))
+
+    with pytest.raises(RuntimeError, match="MPS is not available"):
         runtime_checks.validate_runtime_device()

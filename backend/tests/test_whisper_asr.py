@@ -26,7 +26,7 @@ def test_load_model_removes_corrupt_cache_and_retries(monkeypatch, tmp_path):
     monkeypatch.setenv("WHISPER_MODEL", "tiny")
     monkeypatch.setenv("WHISPER_DOWNLOAD_ROOT", str(tmp_path))
     monkeypatch.setattr(whisper_asr, "_MODEL", None)
-    monkeypatch.setattr(whisper_asr, "device", lambda: "cpu")
+    monkeypatch.setattr(whisper_asr, "resolve_device", lambda component: SimpleNamespace(selected="cpu"))
 
     assert whisper_asr._load_model() is model
     assert calls["count"] == 2

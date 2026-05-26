@@ -3,19 +3,12 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from ..config import REPO_ROOT, device
+from ..config import REPO_ROOT
+from ..devices import resolve_device
 
 
 def _device() -> str:
-    value = device()
-    if value != "auto":
-        return value
-    try:
-        import torch
-
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    except Exception:
-        return "cpu"
+    return resolve_device("demucs").selected
 
 
 def separate_audio(video_file: Path, session: Path) -> tuple[Path, Path]:
