@@ -17,6 +17,7 @@ from .adapters.local_video import remove_upload, upload_dir
 from .adapters.openai_translate import list_models as list_openai_models
 from .config import WORKFOLDER, YOUTUBE_COOKIE_PATH, ensure_runtime_dirs
 from .pipeline import run_task
+from .runtime_checks import validate_runtime_device
 from .sanitize import sanitize_text
 from .youtube import LOCAL_UPLOAD_DIRECTIONS, extract_video_id, is_local_upload_url
 
@@ -136,6 +137,13 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _ensure_runtime_ready() -> None:
+    try:
+        validate_runtime_device()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
 @app.post("/api/tasks", status_code=201)
 def create_task(payload: TaskCreate) -> dict:
     try:
@@ -147,6 +155,7 @@ def create_task(payload: TaskCreate) -> dict:
     if existing_id:
         return database.get_task(existing_id)
 
+    _ensure_runtime_ready()
     task_id = database.create_task(payload.url.strip(), task_id=video_id)
     worker.enqueue(task_id)
     return database.get_task(task_id)
@@ -187,6 +196,7 @@ def upload_local_video(direction: str = Form("en-zh"), file: UploadFile = File(.
     if direction not in LOCAL_UPLOAD_DIRECTIONS:
         raise HTTPException(status_code=422, detail="Unsupported local video direction.")
 
+    _ensure_runtime_ready()
     original_name = Path(file.filename or "").name.strip()
     stored_name = _clean_upload_filename(original_name)
     task_id = str(uuid.uuid4())
@@ -264,6 +274,7 @@ def rerun_task(task_id: str) -> dict:
     if task["status"] == "running":
         raise HTTPException(status_code=409, detail="Cannot rerun a running task.")
 
+    _ensure_runtime_ready()
     url = task["url"]
     _purge_task(task)
     new_id = database.create_task(url, task_id=task_id)
@@ -278,6 +289,7 @@ def resume_task(task_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Task not found.")
     if task["status"] != "failed":
         raise HTTPException(status_code=409, detail="Only failed tasks can be resumed.")
+    _ensure_runtime_ready()
     database.reset_failed_for_resume(task_id)
     worker.enqueue(task_id)
     return database.get_task(task_id)

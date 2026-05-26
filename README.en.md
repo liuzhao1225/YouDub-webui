@@ -163,6 +163,30 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.
 
+#### Optional: NVIDIA CUDA GPU
+
+If you want Whisper, Demucs, or VoxCPM to use an NVIDIA GPU, install the CUDA-enabled PyTorch wheels before installing `requirements.txt`:
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\pip.exe install -r requirements-pytorch-cu128.txt
+```
+
+Linux / WSL2:
+
+```bash
+.venv/bin/pip install -r requirements-pytorch-cu128.txt
+```
+
+`requirements-pytorch-cu128.txt` uses PyTorch's `cu128` wheel index by default. Different NVIDIA driver or CUDA environments may need a different PyTorch CUDA build, so use the [official PyTorch installation page](https://pytorch.org/get-started/locally/) when you need a matching command. CPU users and macOS users do not need this step; set `DEVICE=cpu` in `.env` when CUDA-enabled PyTorch is not installed.
+
+Verify that CUDA is actually available after installation:
+
+```bash
+.venv/bin/python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
+```
+
 ### 4. Configure
 
 Windows PowerShell:

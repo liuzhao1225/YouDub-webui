@@ -163,6 +163,30 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
 
+#### 可选：NVIDIA CUDA GPU
+
+如果要用 NVIDIA GPU 跑 Whisper、Demucs 或 VoxCPM，请在安装 `requirements.txt` 之前先安装 CUDA 版 PyTorch：
+
+Windows PowerShell：
+
+```powershell
+.\.venv\Scripts\pip.exe install -r requirements-pytorch-cu128.txt
+```
+
+Linux / WSL2：
+
+```bash
+.venv/bin/pip install -r requirements-pytorch-cu128.txt
+```
+
+`requirements-pytorch-cu128.txt` 默认使用 PyTorch 的 `cu128` wheel 源。不同 NVIDIA 驱动或 CUDA 环境可能需要不同的 PyTorch CUDA 版本，请按 [PyTorch 官方安装页](https://pytorch.org/get-started/locally/) 选择匹配命令。CPU 用户和 macOS 用户不需要执行这一步；如果没有安装 CUDA 版 PyTorch，请在 `.env` 中设置 `DEVICE=cpu`。
+
+安装后可以验证 CUDA 是否真的可用：
+
+```bash
+.venv/bin/python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
+```
+
 ### 4. 配置环境
 
 Windows PowerShell：
