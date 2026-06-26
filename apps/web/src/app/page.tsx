@@ -3,11 +3,15 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react"
-import { ChevronRight, Play, Upload } from "lucide-react"
+import { ChevronLeft, ChevronRight, Play, Search, Upload } from "lucide-react"
 
 import {
   ExecutionMode,
   LocalDirection,
+  TaskListExecutionMode,
+  TaskListResponse,
+  TaskListSort,
+  TaskListStatus,
   TaskSummary,
   createTask,
   listTasks,
@@ -32,8 +36,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select"
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 function isActive(status: string) {
   return status === "queued" || status === "running"
@@ -58,9 +63,23 @@ function activeCount(tasks: TaskSummary[]) {
   return tasks.filter((t) => isActive(t.status)).length
 }
 
+function selectedLabel<T extends string>(options: { value: T; label: string }[], value: T) {
+  return options.find((option) => option.value === value)?.label || value
+}
+
+function pageRangeText(language: string, start: number, end: number, total: number) {
+  if (language === "zh") return `显示 ${start}-${end} / 共 ${total} 个任务`
+  return `Showing ${start}-${end} of ${total} tasks`
+}
+
+function pageIndexText(language: string, page: number, totalPages: number) {
+  if (language === "zh") return `第 ${page} / ${totalPages} 页`
+  return `Page ${page} / ${totalPages}`
+}
+
 export default function Home() {
   const router = useRouter()
-  const { activeTasksText, stageLabel, statusLabel, t } = useI18n()
+  const { activeTasksText, language, stageLabel, statusLabel, t } = useI18n()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const subtitleInputRef = useRef<HTMLInputElement>(null)
   const [youtubeUrl, setYoutubeUrl] = useState("")
@@ -70,12 +89,75 @@ export default function Home() {
   const [localDirection, setLocalDirection] = useState<LocalDirection>("en-zh")
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("auto")
   const [tasks, setTasks] = useState<TaskSummary[]>([])
+  const [taskTotal, setTaskTotal] = useState(0)
+  const [taskPage, setTaskPage] = useState(1)
+  const [taskPageSize, setTaskPageSize] = useState(20)
+  const [taskQuery, setTaskQuery] = useState("")
+  const [taskStatus, setTaskStatus] = useState<TaskListStatus>("all")
+  const [taskExecutionMode, setTaskExecutionMode] = useState<TaskListExecutionMode>("all")
+  const [taskSort, setTaskSort] = useState<TaskListSort>("created_desc")
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
+  const localDirectionOptions: { value: LocalDirection; label: string }[] = [
+    { value: "en-zh", label: t.home.localEnZh },
+    { value: "zh-en", label: t.home.localZhEn },
+  ]
+
+  const executionModeOptions: { value: ExecutionMode; label: string }[] = [
+    { value: "auto", label: t.home.executionAuto },
+    { value: "manual", label: t.home.executionManual },
+  ]
+
+  const statusOptions: { value: TaskListStatus; label: string }[] = [
+    { value: "all", label: t.home.allStatuses },
+    { value: "queued", label: statusLabel("queued") },
+    { value: "running", label: statusLabel("running") },
+    { value: "paused", label: statusLabel("paused") },
+    { value: "succeeded", label: statusLabel("succeeded") },
+    { value: "failed", label: statusLabel("failed") },
+  ]
+
+  const modeOptions: { value: TaskListExecutionMode; label: string }[] = [
+    { value: "all", label: t.home.allModes },
+    { value: "auto", label: t.home.modeAuto },
+    { value: "manual", label: t.home.modeManual },
+  ]
+
+  const sortOptions: { value: TaskListSort; label: string }[] = [
+    { value: "created_desc", label: t.home.sortCreatedDesc },
+    { value: "created_asc", label: t.home.sortCreatedAsc },
+    { value: "started_desc", label: t.home.sortStartedDesc },
+    { value: "started_asc", label: t.home.sortStartedAsc },
+    { value: "completed_desc", label: t.home.sortCompletedDesc },
+    { value: "completed_asc", label: t.home.sortCompletedAsc },
+    { value: "status_asc", label: t.home.sortStatusAsc },
+    { value: "status_desc", label: t.home.sortStatusDesc },
+    { value: "title_asc", label: t.home.sortTitleAsc },
+    { value: "title_desc", label: t.home.sortTitleDesc },
+  ]
+
+  function applyTaskList(result: TaskListResponse) {
+    const lastPage = Math.max(1, Math.ceil(result.total / result.page_size))
+    setTaskTotal(result.total)
+    if (result.total > 0 && result.tasks.length === 0 && result.page > lastPage) {
+      setTasks([])
+      setTaskPage(lastPage)
+      return
+    }
+    setTasks(result.tasks)
+  }
+
   async function refreshTasks() {
-    const { tasks: list } = await listTasks()
-    setTasks(list)
+    const result = await listTasks({
+      page: taskPage,
+      page_size: taskPageSize,
+      q: taskQuery,
+      status: taskStatus,
+      execution_mode: taskExecutionMode,
+      sort: taskSort,
+    })
+    applyTaskList(result)
   }
 
   useEffect(() => {
@@ -83,8 +165,15 @@ export default function Home() {
 
     const loadTasks = async () => {
       try {
-        const { tasks: list } = await listTasks()
-        if (!cancelled) setTasks(list)
+        const result = await listTasks({
+          page: taskPage,
+          page_size: taskPageSize,
+          q: taskQuery,
+          status: taskStatus,
+          execution_mode: taskExecutionMode,
+          sort: taskSort,
+        })
+        if (!cancelled) applyTaskList(result)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : t.home.loadError)
       }
@@ -96,7 +185,11 @@ export default function Home() {
       cancelled = true
       window.clearInterval(interval)
     }
-  }, [t.home.loadError])
+  }, [taskExecutionMode, taskPage, taskPageSize, taskQuery, taskSort, taskStatus, t.home.loadError])
+
+  function resetTaskPage() {
+    setTaskPage(1)
+  }
 
   function selectLocalFile(event: ChangeEvent<HTMLInputElement>) {
     setError("")
@@ -141,6 +234,11 @@ export default function Home() {
   const hasUrl = Boolean(youtubeUrl.trim() || bilibiliUrl.trim())
   const hasLocalFile = Boolean(localFile)
   const canSubmit = Boolean((hasUrl || hasLocalFile) && !submitting)
+  const totalPages = Math.max(1, Math.ceil(taskTotal / taskPageSize))
+  const displayPage = Math.min(taskPage, totalPages)
+  const pageStart = taskTotal === 0 ? 0 : (displayPage - 1) * taskPageSize + 1
+  const pageEnd = Math.min(taskTotal, displayPage * taskPageSize)
+  const hasTaskFilters = Boolean(taskQuery.trim()) || taskStatus !== "all" || taskExecutionMode !== "all"
 
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#fff5f5_0%,#f2fbff_48%,#fff4fa_100%)] text-foreground">
@@ -193,11 +291,16 @@ export default function Home() {
                     disabled={hasUrl}
                   >
                     <SelectTrigger id="local-direction" className="h-10">
-                      <SelectValue />
+                      <span className="min-w-0 truncate text-left">
+                        {selectedLabel(localDirectionOptions, localDirection)}
+                      </span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en-zh">{t.home.localEnZh}</SelectItem>
-                      <SelectItem value="zh-en">{t.home.localZhEn}</SelectItem>
+                      {localDirectionOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -223,11 +326,16 @@ export default function Home() {
                   onValueChange={(value) => setExecutionMode(value as ExecutionMode)}
                 >
                   <SelectTrigger id="execution-mode" className="h-10">
-                    <SelectValue />
+                    <span className="min-w-0 truncate text-left">
+                      {selectedLabel(executionModeOptions, executionMode)}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">{t.home.executionAuto}</SelectItem>
-                    <SelectItem value="manual">{t.home.executionManual}</SelectItem>
+                    {executionModeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -256,15 +364,140 @@ export default function Home() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t.home.taskHistory} ({tasks.length})</CardTitle>
+            <CardTitle>{t.home.taskHistory} ({taskTotal})</CardTitle>
           </CardHeader>
           <CardContent className="px-0">
+            <div className="border-b border-border/60 px-4 pb-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_140px_140px_180px_120px]">
+                <div className="relative sm:col-span-2 lg:col-span-1">
+                  <Label htmlFor="task-search" className="sr-only">
+                    {t.home.taskSearchPlaceholder}
+                  </Label>
+                  <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                  <Input
+                    id="task-search"
+                    className="h-9 pl-8"
+                    value={taskQuery}
+                    onChange={(event) => {
+                      setTaskQuery(event.target.value)
+                      resetTaskPage()
+                    }}
+                    placeholder={t.home.taskSearchPlaceholder}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="task-status-filter" className="sr-only">
+                    {t.home.taskStatusFilter}
+                  </Label>
+                  <Select
+                    value={taskStatus}
+                    onValueChange={(value) => {
+                      setTaskStatus(value as TaskListStatus)
+                      resetTaskPage()
+                    }}
+                  >
+                    <SelectTrigger id="task-status-filter" className="h-9">
+                      <span className="min-w-0 truncate text-left">
+                        {selectedLabel(statusOptions, taskStatus)}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="task-mode-filter" className="sr-only">
+                    {t.home.taskModeFilter}
+                  </Label>
+                  <Select
+                    value={taskExecutionMode}
+                    onValueChange={(value) => {
+                      setTaskExecutionMode(value as TaskListExecutionMode)
+                      resetTaskPage()
+                    }}
+                  >
+                    <SelectTrigger id="task-mode-filter" className="h-9">
+                      <span className="min-w-0 truncate text-left">
+                        {selectedLabel(modeOptions, taskExecutionMode)}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {modeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="task-sort" className="sr-only">
+                    {t.home.taskSort}
+                  </Label>
+                  <Select
+                    value={taskSort}
+                    onValueChange={(value) => {
+                      setTaskSort(value as TaskListSort)
+                      resetTaskPage()
+                    }}
+                  >
+                    <SelectTrigger id="task-sort" className="h-9">
+                      <span className="min-w-0 truncate text-left">
+                        {selectedLabel(sortOptions, taskSort)}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sortOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="task-page-size" className="sr-only">
+                    {t.home.taskPageSize}
+                  </Label>
+                  <Select
+                    value={String(taskPageSize)}
+                    onValueChange={(value) => {
+                      setTaskPageSize(Number(value))
+                      resetTaskPage()
+                    }}
+                  >
+                    <SelectTrigger id="task-page-size" className="h-9">
+                      <span className="min-w-0 truncate text-left">
+                        {taskPageSize}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZE_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={String(option)}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {tasks.length === 0 ? (
               <div className="px-6 py-12 text-center text-sm text-muted-foreground">
-                {t.home.empty}
+                {hasTaskFilters ? t.home.noMatchingTasks : t.home.empty}
               </div>
             ) : (
-              <ScrollArea className="max-h-[70dvh]">
+              <ScrollArea className="max-h-[56dvh] overflow-hidden">
                 <ul className="flex flex-col">
                   {tasks.map((item) => (
                     <li key={item.id} className="border-b border-border/60 last:border-b-0">
@@ -276,7 +509,7 @@ export default function Home() {
                           <p className="truncate text-left font-medium text-zinc-900">
                             {item.title || shortUrl(item.url)}
                           </p>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                             <Badge className={statusBadgeClass(item.status)}>{statusLabel(item.status)}</Badge>
                             <span>{formatTime(item.created_at)}</span>
                             {isActive(item.status) && item.current_stage ? (
@@ -294,6 +527,37 @@ export default function Home() {
                 </ul>
               </ScrollArea>
             )}
+
+            {taskTotal > 0 ? (
+              <div className="flex flex-col gap-3 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <span>{pageRangeText(language, pageStart, pageEnd, taskTotal)}</span>
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <span>{pageIndexText(language, displayPage, totalPages)}</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTaskPage((page) => Math.max(1, page - 1))}
+                      disabled={displayPage <= 1}
+                    >
+                      <ChevronLeft className="size-4" />
+                      {t.home.previousPage}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTaskPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={displayPage >= totalPages}
+                    >
+                      {t.home.nextPage}
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>

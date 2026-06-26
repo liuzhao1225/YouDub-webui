@@ -90,5 +90,19 @@
   }
   html {
     @apply font-sans;
+    overflow-y: scroll;
+    scrollbar-color: #cbd5e1 #f8fafc;
+    scrollbar-gutter: stable;
+  }
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border: 3px solid #f8fafc;
+    border-radius: 999px;
   }
 }

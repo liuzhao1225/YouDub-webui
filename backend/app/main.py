@@ -5,9 +5,10 @@ import shutil
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 from urllib.parse import quote
 
-from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel
@@ -30,6 +31,21 @@ ALLOWED_SUBTITLE_SUFFIXES = {".srt"}
 LOCAL_UPLOAD_CHUNK_SIZE = 1024 * 1024
 MAX_LOCAL_UPLOAD_BYTES = int(os.getenv("LOCAL_UPLOAD_MAX_BYTES", str(4 * 1024 * 1024 * 1024)))
 MAX_LOCAL_SUBTITLE_BYTES = int(os.getenv("LOCAL_SUBTITLE_MAX_BYTES", str(20 * 1024 * 1024)))
+
+TaskListStatus = Literal["all", "queued", "running", "paused", "succeeded", "failed"]
+TaskListExecutionMode = Literal["all", "auto", "manual"]
+TaskListSort = Literal[
+    "created_desc",
+    "created_asc",
+    "started_desc",
+    "started_asc",
+    "completed_desc",
+    "completed_asc",
+    "status_asc",
+    "status_desc",
+    "title_asc",
+    "title_desc",
+]
 
 
 def mask_secret(value: str) -> str:
@@ -285,8 +301,22 @@ def current_task() -> dict | None:
 
 
 @app.get("/api/tasks")
-def list_tasks(limit: int = 100) -> dict:
-    return {"tasks": database.list_tasks(limit=limit)}
+def list_tasks(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    q: str = Query("", max_length=200),
+    status: TaskListStatus = "all",
+    execution_mode: TaskListExecutionMode = "all",
+    sort: TaskListSort = "created_desc",
+) -> dict:
+    return database.list_tasks_page(
+        page=page,
+        page_size=page_size,
+        query=q,
+        status=status,
+        execution_mode=execution_mode,
+        sort=sort,
+    )
 
 
 @app.get("/api/tasks/{task_id}")

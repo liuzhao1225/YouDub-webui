@@ -193,15 +193,102 @@ def latest_task_id() -> str | None:
     return row["id"] if row else None
 
 
+TASK_SUMMARY_COLUMNS = (
+    "id, url, title, status, current_stage, final_video_path, error_message, "
+    "created_at, started_at, completed_at, execution_mode"
+)
+
+TASK_LIST_SORTS = {
+    "created_desc": "created_at DESC, rowid DESC",
+    "created_asc": "created_at ASC, rowid ASC",
+    "started_desc": "started_at IS NULL ASC, started_at DESC, rowid DESC",
+    "started_asc": "started_at IS NULL ASC, started_at ASC, rowid ASC",
+    "completed_desc": "completed_at IS NULL ASC, completed_at DESC, rowid DESC",
+    "completed_asc": "completed_at IS NULL ASC, completed_at ASC, rowid ASC",
+    "status_asc": (
+        "CASE status "
+        "WHEN 'queued' THEN 1 "
+        "WHEN 'running' THEN 2 "
+        "WHEN 'paused' THEN 3 "
+        "WHEN 'failed' THEN 4 "
+        "WHEN 'succeeded' THEN 5 "
+        "ELSE 99 END ASC, created_at DESC, rowid DESC"
+    ),
+    "status_desc": (
+        "CASE status "
+        "WHEN 'queued' THEN 1 "
+        "WHEN 'running' THEN 2 "
+        "WHEN 'paused' THEN 3 "
+        "WHEN 'failed' THEN 4 "
+        "WHEN 'succeeded' THEN 5 "
+        "ELSE 99 END DESC, created_at DESC, rowid DESC"
+    ),
+    "title_asc": "LOWER(COALESCE(NULLIF(TRIM(title), ''), url)) ASC, created_at DESC, rowid DESC",
+    "title_desc": "LOWER(COALESCE(NULLIF(TRIM(title), ''), url)) DESC, created_at DESC, rowid DESC",
+}
+
+
 def list_tasks(limit: int = 100) -> list[dict[str, Any]]:
     with connect() as conn:
         rows = conn.execute(
-            "SELECT id, url, title, status, current_stage, final_video_path, error_message, "
-            "created_at, started_at, completed_at, execution_mode FROM tasks "
+            f"SELECT {TASK_SUMMARY_COLUMNS} FROM tasks "
             "ORDER BY created_at DESC, rowid DESC LIMIT ?",
             (limit,),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def list_tasks_page(
+    *,
+    page: int = 1,
+    page_size: int = 20,
+    query: str = "",
+    status: str = "all",
+    execution_mode: str = "all",
+    sort: str = "created_desc",
+) -> dict[str, Any]:
+    page = max(page, 1)
+    page_size = max(page_size, 1)
+    offset = (page - 1) * page_size
+    where_parts: list[str] = []
+    params: list[Any] = []
+
+    needle = query.strip().lower()
+    if needle:
+        pattern = f"%{needle}%"
+        where_parts.append(
+            "(LOWER(COALESCE(title, '')) LIKE ? "
+            "OR LOWER(url) LIKE ? "
+            "OR LOWER(id) LIKE ?)"
+        )
+        params.extend([pattern, pattern, pattern])
+    if status != "all":
+        where_parts.append("status = ?")
+        params.append(status)
+    if execution_mode != "all":
+        where_parts.append("execution_mode = ?")
+        params.append(execution_mode)
+
+    where_sql = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
+    order_sql = TASK_LIST_SORTS.get(sort, TASK_LIST_SORTS["created_desc"])
+
+    with connect() as conn:
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM tasks{where_sql}",
+            params,
+        ).fetchone()[0]
+        rows = conn.execute(
+            f"SELECT {TASK_SUMMARY_COLUMNS} FROM tasks{where_sql} "
+            f"ORDER BY {order_sql} LIMIT ? OFFSET ?",
+            [*params, page_size, offset],
+        ).fetchall()
+
+    return {
+        "tasks": [dict(row) for row in rows],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 def get_task(task_id: str) -> dict[str, Any] | None:

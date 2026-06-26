@@ -98,6 +98,36 @@ export type TaskSummary = {
   execution_mode?: ExecutionMode
 }
 
+export type TaskListStatus = "all" | TaskStatus
+export type TaskListExecutionMode = "all" | ExecutionMode
+export type TaskListSort =
+  | "created_desc"
+  | "created_asc"
+  | "started_desc"
+  | "started_asc"
+  | "completed_desc"
+  | "completed_asc"
+  | "status_asc"
+  | "status_desc"
+  | "title_asc"
+  | "title_desc"
+
+export type TaskListParams = {
+  page?: number
+  page_size?: number
+  q?: string
+  status?: TaskListStatus
+  execution_mode?: TaskListExecutionMode
+  sort?: TaskListSort
+}
+
+export type TaskListResponse = {
+  tasks: TaskSummary[]
+  total: number
+  page: number
+  page_size: number
+}
+
 export function getCurrentTask() {
   return request<Task | null>("/api/tasks/current")
 }
@@ -110,8 +140,17 @@ export async function getTaskLog(taskId: string): Promise<string> {
   return response.text()
 }
 
-export function listTasks(limit = 100) {
-  return request<{ tasks: TaskSummary[] }>(`/api/tasks?limit=${limit}`)
+export function listTasks(params: TaskListParams | number = {}) {
+  const normalized = typeof params === "number" ? { page_size: params } : params
+  const search = new URLSearchParams()
+
+  Object.entries(normalized).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return
+    search.set(key, String(value))
+  })
+
+  const query = search.toString()
+  return request<TaskListResponse>(`/api/tasks${query ? `?${query}` : ""}`)
 }
 
 export function getTask(taskId: string) {

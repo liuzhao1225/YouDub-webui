@@ -159,6 +159,34 @@ def test_different_videos_create_separate_tasks(monkeypatch, tmp_path):
     assert enqueued == ["abcdefghijk", "zyxwvutsrqp"]
 
 
+def make_history_task(
+    task_id: str,
+    *,
+    url: str | None = None,
+    title: str | None = None,
+    status: str = "queued",
+    execution_mode: str = "auto",
+    created_at: str = "2024-01-01T00:00:00+00:00",
+    started_at: str | None = None,
+    completed_at: str | None = None,
+) -> str:
+    task_url = url or f"https://example.com/{task_id}"
+    database.create_task(task_url, task_id=task_id, execution_mode=execution_mode)
+    database.update_task(
+        task_id,
+        title=title,
+        status=status,
+        created_at=created_at,
+        started_at=started_at,
+        completed_at=completed_at,
+    )
+    return task_id
+
+
+def task_ids(response):
+    return [task["id"] for task in response.json()["tasks"]]
+
+
 def test_list_tasks_returns_history_newest_first(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     older = database.create_task("https://www.youtube.com/watch?v=oldvideoidx")
@@ -171,8 +199,120 @@ def test_list_tasks_returns_history_newest_first(monkeypatch, tmp_path):
     body = response.json()
     ids = [task["id"] for task in body["tasks"]]
     assert ids == [newer, older]
+    assert body["total"] == 2
+    assert body["page"] == 1
+    assert body["page_size"] == 20
     assert "stages" not in body["tasks"][0]
     assert set(body["tasks"][0].keys()) >= {"id", "url", "title", "status", "final_video_path"}
+
+
+def test_list_tasks_search_matches_title_url_and_id(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    alpha = make_history_task("alpha-task", title="Alpha Clip")
+    beta = make_history_task("beta-task", url="https://example.com/special-url-token")
+    gamma = make_history_task("gamma-task")
+    client = TestClient(main.app)
+
+    assert task_ids(client.get("/api/tasks?q=alpha")) == [alpha]
+    assert task_ids(client.get("/api/tasks?q=special-url-token")) == [beta]
+    assert task_ids(client.get("/api/tasks?q=gamma-task")) == [gamma]
+
+
+def test_list_tasks_filters_status_and_execution_mode(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    target = make_history_task(
+        "manual-success",
+        status="succeeded",
+        execution_mode="manual",
+        created_at="2024-01-03T00:00:00+00:00",
+    )
+    make_history_task(
+        "auto-success",
+        status="succeeded",
+        execution_mode="auto",
+        created_at="2024-01-02T00:00:00+00:00",
+    )
+    make_history_task(
+        "manual-failed",
+        status="failed",
+        execution_mode="manual",
+        created_at="2024-01-01T00:00:00+00:00",
+    )
+    client = TestClient(main.app)
+
+    response = client.get("/api/tasks?status=succeeded&execution_mode=manual")
+
+    assert response.status_code == 200
+    assert task_ids(response) == [target]
+    assert response.json()["total"] == 1
+
+
+def test_list_tasks_paginates_with_total(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    for index in range(1, 6):
+        make_history_task(
+            f"page-task-{index}",
+            created_at=f"2024-01-0{index}T00:00:00+00:00",
+        )
+    client = TestClient(main.app)
+
+    response = client.get("/api/tasks?page=2&page_size=2")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert task_ids(response) == ["page-task-3", "page-task-2"]
+    assert body["total"] == 5
+    assert body["page"] == 2
+    assert body["page_size"] == 2
+
+
+def test_list_tasks_sorts_by_created_status_and_title(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    charlie = make_history_task(
+        "charlie-task",
+        title="Charlie",
+        status="succeeded",
+        created_at="2024-01-01T00:00:00+00:00",
+    )
+    alpha = make_history_task(
+        "alpha-task",
+        title="Alpha",
+        status="queued",
+        created_at="2024-01-02T00:00:00+00:00",
+    )
+    bravo = make_history_task(
+        "bravo-task",
+        title="Bravo",
+        status="running",
+        created_at="2024-01-03T00:00:00+00:00",
+    )
+    client = TestClient(main.app)
+
+    assert task_ids(client.get("/api/tasks?sort=created_asc")) == [charlie, alpha, bravo]
+    assert task_ids(client.get("/api/tasks?sort=status_asc")) == [alpha, bravo, charlie]
+    assert task_ids(client.get("/api/tasks?sort=status_desc")) == [charlie, bravo, alpha]
+    assert task_ids(client.get("/api/tasks?sort=title_asc")) == [alpha, bravo, charlie]
+    assert task_ids(client.get("/api/tasks?sort=title_desc")) == [charlie, bravo, alpha]
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "page=0",
+        "page_size=0",
+        "page_size=101",
+        "status=done",
+        "execution_mode=batch",
+        "sort=unknown",
+    ],
+)
+def test_list_tasks_rejects_invalid_query_params(monkeypatch, tmp_path, query):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = TestClient(main.app)
+
+    response = client.get(f"/api/tasks?{query}")
+
+    assert response.status_code == 422
 
 
 def test_task_detail_includes_stage_progress(monkeypatch, tmp_path):
