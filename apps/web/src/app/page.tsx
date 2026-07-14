@@ -194,6 +194,10 @@ export default function Home() {
   function selectLocalFile(event: ChangeEvent<HTMLInputElement>) {
     setError("")
     setLocalFile(event.target.files?.[0] || null)
+    setLocalSubtitleFile(null)
+    if (subtitleInputRef.current) {
+      subtitleInputRef.current.value = ""
+    }
   }
 
   function selectLocalSubtitleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -318,6 +322,23 @@ export default function Home() {
                 <p className="text-xs text-muted-foreground">
                   {t.home.localSubtitleHelp}
                 </p>
+                {localFile ? (
+                  <div
+                    data-testid="local-upload-selection"
+                    className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground"
+                    aria-live="polite"
+                  >
+                    <p>
+                      {t.home.currentLocalVideo}: <span className="font-medium text-foreground">{localFile.name}</span>
+                    </p>
+                    <p>
+                      {t.home.subtitleForCurrentVideo}:{" "}
+                      <span className="font-medium text-foreground">
+                        {localSubtitleFile?.name || t.home.noSubtitleSelected}
+                      </span>
+                    </p>
+                  </div>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="execution-mode">{t.home.executionModeLabel}</Label>
