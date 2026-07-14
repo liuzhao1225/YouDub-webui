@@ -1,12 +1,64 @@
-function configuredApiBase(): string {
-  const configured = process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
-  if (configured) return configured.replace(/\/$/, "")
+export const AUTH_UNAUTHORIZED_EVENT = "youdub:auth-unauthorized"
 
-  if (typeof window === "undefined") return "http://127.0.0.1:8000"
-  return ""
+const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
+let csrfToken = ""
+
+export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+  }
 }
 
-export const API_BASE = configuredApiBase()
+export type AuthSession = {
+  authenticated: true
+  csrf_token: string
+  expires_at: string
+}
+
+type ResponseOptions = {
+  emitUnauthorized?: boolean
+}
+
+function errorMessage(body: unknown, status: number) {
+  if (body && typeof body === "object" && "detail" in body) {
+    const detail = (body as { detail?: unknown }).detail
+    if (typeof detail === "string" && detail.trim()) return detail
+  }
+  return `Request failed: ${status}`
+}
+
+function emitUnauthorized() {
+  csrfToken = ""
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT))
+  }
+}
+
+async function parseResponse<T>(response: Response, options: ResponseOptions = {}): Promise<T> {
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    if (response.status === 401 && options.emitUnauthorized !== false) emitUnauthorized()
+    throw new ApiError(errorMessage(body, response.status), response.status)
+  }
+  if (response.status === 204) return undefined as T
+  return response.json() as Promise<T>
+}
+
+function requestHeaders(options?: RequestInit) {
+  const headers = new Headers(options?.headers)
+  const method = (options?.method || "GET").toUpperCase()
+  if (options?.body && !(options.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json")
+  }
+  if (UNSAFE_METHODS.has(method) && csrfToken) {
+    headers.set("X-CSRF-Token", csrfToken)
+  }
+  return headers
+}
 
 export type StageStatus = "pending" | "running" | "succeeded" | "failed"
 export type TaskStatus = "queued" | "running" | "paused" | "succeeded" | "failed"
@@ -65,23 +117,50 @@ export type YtdlpSettings = {
 
 export type LocalDirection = "en-zh" | "zh-en"
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+async function request<T>(
+  path: string,
+  options?: RequestInit,
+  responseOptions?: ResponseOptions,
+): Promise<T> {
+  const response = await fetch(path, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    },
+    headers: requestHeaders(options),
+    credentials: "include",
     cache: "no-store",
   })
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
-    throw new Error(body.detail || `Request failed: ${response.status}`)
+  return parseResponse<T>(response, responseOptions)
+}
+
+export async function getAuthSession() {
+  const session = await request<AuthSession>(
+    "/api/auth/session",
+    undefined,
+    { emitUnauthorized: false },
+  )
+  csrfToken = session.csrf_token
+  return session
+}
+
+export async function login(password: string) {
+  csrfToken = ""
+  const session = await request<AuthSession>(
+    "/api/auth/login",
+    {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    },
+    { emitUnauthorized: false },
+  )
+  csrfToken = session.csrf_token
+  return session
+}
+
+export async function logout() {
+  try {
+    await request<void>("/api/auth/logout", { method: "POST" })
+  } finally {
+    csrfToken = ""
   }
-  if (response.status === 204) {
-    return undefined as T
-  }
-  return response.json()
 }
 
 export type TaskSummary = {
@@ -133,10 +212,11 @@ export function getCurrentTask() {
 }
 
 export async function getTaskLog(taskId: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/api/tasks/${taskId}/log`, { cache: "no-store" })
-  if (!response.ok) {
-    throw new Error(`Failed to load log: ${response.status}`)
-  }
+  const response = await fetch(`/api/tasks/${taskId}/log`, {
+    cache: "no-store",
+    credentials: "include",
+  })
+  if (!response.ok) return parseResponse<string>(response)
   return response.text()
 }
 
@@ -201,16 +281,17 @@ export async function uploadLocalTask(
   }
   form.append("execution_mode", executionMode)
 
-  const response = await fetch(`${API_BASE}/api/tasks/upload`, {
+  const options: RequestInit = {
     method: "POST",
     body: form,
+  }
+  const response = await fetch("/api/tasks/upload", {
+    ...options,
+    headers: requestHeaders(options),
+    credentials: "include",
     cache: "no-store",
   })
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}))
-    throw new Error(body.detail || `Request failed: ${response.status}`)
-  }
-  return response.json() as Promise<Task>
+  return parseResponse<Task>(response)
 }
 
 export function getCookieInfo() {
@@ -263,9 +344,9 @@ export function saveYtdlpSettings(settings: YtdlpSettings) {
 }
 
 export function finalVideoUrl(taskId: string) {
-  return `${API_BASE}/api/tasks/${taskId}/artifact/final-video`
+  return `/api/tasks/${taskId}/artifact/final-video`
 }
 
 export function finalVideoDownloadUrl(taskId: string) {
-  return `${API_BASE}/api/tasks/${taskId}/artifact/final-video?download=1`
+  return `/api/tasks/${taskId}/artifact/final-video?download=1`
 }

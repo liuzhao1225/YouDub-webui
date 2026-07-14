@@ -8,12 +8,14 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import quote
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, Response, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, PlainTextResponse
-from pydantic import BaseModel
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from pydantic import BaseModel, SecretStr
 
-from . import database, worker
+from . import auth, database, worker
 from .adapters.local_subtitles import parse_srt, uploaded_subtitle_dir
 from .adapters.local_video import remove_upload, uploaded_video_dir
 from .adapters.openai_client import validate_openai_base_url
@@ -85,6 +87,10 @@ class YtdlpSettingsUpdate(BaseModel):
     proxy_port: str = ""
 
 
+class LoginRequest(BaseModel):
+    password: SecretStr
+
+
 def normalize_proxy_port(value: str) -> str:
     proxy_port = value.strip()
     if not proxy_port:
@@ -113,26 +119,42 @@ def normalize_translate_concurrency(value: str) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    auth.validate_auth_configuration()
     ensure_runtime_dirs()
     database.init_db()
+    database.delete_expired_auth_sessions(database.now_iso())
     database.backfill_titles_from_metadata()
     database.fail_stale_active_tasks()
     worker.start(run_task)
     yield
 
 
-app = FastAPI(title="YouDub API", lifespan=lifespan)
+app = FastAPI(
+    title="YouDub API",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+
+
+@app.exception_handler(RequestValidationError)
+async def redact_login_validation_error(
+    request: Request, exc: RequestValidationError
+) -> Response:
+    if request.url.path == "/api/auth/login":
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid credentials."},
+            headers={"Cache-Control": "no-store"},
+        )
+    return await request_validation_exception_handler(request, exc)
 
 
 DEFAULT_CORS_ORIGIN_REGEX = (
     r"^https?://("
     r"localhost|"
-    r"127(?:\.\d{1,3}){3}|"
-    r"0\.0\.0\.0|"
-    r"10(?:\.\d{1,3}){3}|"
-    r"192\.168(?:\.\d{1,3}){2}|"
-    r"172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}|"
-    r"100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])(?:\.\d{1,3}){2}|"
+    r"127\.0\.0\.1|"
     r"\[::1\]"
     r"):3000$"
 )
@@ -142,6 +164,8 @@ def cors_origins() -> list[str]:
     defaults = ["http://localhost:3000", "http://127.0.0.1:3000"]
     configured = os.getenv("CORS_ALLOW_ORIGINS", "")
     extra = [origin.strip() for origin in configured.split(",") if origin.strip()]
+    if "*" in extra:
+        raise RuntimeError("CORS_ALLOW_ORIGINS cannot contain '*' when credentials are enabled.")
     return [*defaults, *extra]
 
 
@@ -150,10 +174,18 @@ def cors_origin_regex() -> str:
     return configured or DEFAULT_CORS_ORIGIN_REGEX
 
 
+_cors_origins = cors_origins()
+_cors_origin_regex = cors_origin_regex()
+
+app.add_middleware(
+    auth.AuthMiddleware,
+    allowed_origins=_cors_origins,
+    allowed_origin_regex=_cors_origin_regex,
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins(),
-    allow_origin_regex=cors_origin_regex(),
+    allow_origins=_cors_origins,
+    allow_origin_regex=_cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -163,6 +195,113 @@ app.add_middleware(
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+def _clear_replaced_login_cookie(
+    response: Response,
+    old_token: str,
+    settings: auth.AuthSettings | None = None,
+) -> None:
+    if not old_token:
+        return
+    if settings is not None:
+        auth.clear_session_cookie(response, settings)
+        return
+    response.delete_cookie(
+        key=auth.SESSION_COOKIE_NAME,
+        path=auth.SESSION_COOKIE_PATH,
+        httponly=True,
+    )
+
+
+@app.post("/api/auth/login")
+def login(payload: LoginRequest, request: Request) -> JSONResponse:
+    old_token = request.cookies.get(auth.SESSION_COOKIE_NAME, "")
+    auth.revoke_session_token(old_token)
+    client_host = request.client.host if request.client else "unknown"
+
+    try:
+        settings = auth.validate_auth_configuration()
+    except auth.AuthConfigurationError:
+        response = JSONResponse(
+            status_code=503,
+            content={"detail": "Authentication is not configured."},
+            headers={"Cache-Control": "no-store"},
+        )
+        _clear_replaced_login_cookie(response, old_token)
+        return response
+
+    rate_limit = auth.reserve_login_attempt(client_host)
+    if not rate_limit.allowed:
+        response = JSONResponse(
+            status_code=429,
+            content={"detail": "Too many login attempts."},
+            headers={
+                "Cache-Control": "no-store",
+                "Retry-After": str(rate_limit.retry_after_seconds),
+            },
+        )
+        _clear_replaced_login_cookie(response, old_token, settings)
+        return response
+
+    try:
+        password_matches = auth.verify_password(
+            payload.password.get_secret_value(), settings
+        )
+    except auth.AuthConfigurationError:
+        auth.clear_login_attempts(client_host)
+        response = JSONResponse(
+            status_code=503,
+            content={"detail": "Authentication is not configured."},
+            headers={"Cache-Control": "no-store"},
+        )
+        _clear_replaced_login_cookie(response, old_token, settings)
+        return response
+
+    if not password_matches:
+        response = JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid credentials."},
+            headers={"Cache-Control": "no-store"},
+        )
+        _clear_replaced_login_cookie(response, old_token, settings)
+        return response
+
+    auth.clear_login_attempts(client_host)
+    token, session = auth.create_session(settings)
+    response = JSONResponse(
+        content={
+            "authenticated": True,
+            "csrf_token": session.csrf_token,
+            "expires_at": session.expires_at,
+        },
+        headers={"Cache-Control": "no-store"},
+    )
+    auth.set_session_cookie(response, token, settings, session.expires_at)
+    return response
+
+
+@app.get("/api/auth/session")
+def auth_session(request: Request) -> JSONResponse:
+    session: auth.AuthenticatedSession = request.state.auth_session
+    return JSONResponse(
+        content={
+            "authenticated": True,
+            "csrf_token": session.csrf_token,
+            "expires_at": session.expires_at,
+        },
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/api/auth/logout", status_code=204)
+def logout(request: Request) -> Response:
+    session: auth.AuthenticatedSession = request.state.auth_session
+    settings: auth.AuthSettings = request.state.auth_settings
+    database.delete_auth_session(session.token_hash)
+    response = Response(status_code=204, headers={"Cache-Control": "no-store"})
+    auth.clear_session_cookie(response, settings)
+    return response
 
 
 def _ensure_runtime_ready() -> None:

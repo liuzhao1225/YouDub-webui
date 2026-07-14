@@ -3,6 +3,7 @@ uvicorn[standard]
 python-dotenv
 pydantic
 python-multipart
+pwdlib[argon2]>=0.3,<1
 openai
 yt-dlp[default]
 dora-search>=0.1.12

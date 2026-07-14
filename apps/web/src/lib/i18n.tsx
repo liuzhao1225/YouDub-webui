@@ -23,6 +23,7 @@ type Messages = {
   home: Record<string, string>
   task: Record<string, string>
   settings: Record<string, string>
+  auth: Record<string, string>
   status: Record<string, string>
   stages: Record<string, string>
 }
@@ -160,6 +161,19 @@ const messages: Record<UiLanguage, Messages> = {
       saveError: "Failed to save settings",
       noModels: "No models returned.",
       loadModelsError: "Failed to load models",
+    },
+    auth: {
+      title: "Sign in to YouDub",
+      password: "Password",
+      signIn: "Sign in",
+      signingIn: "Signing in",
+      invalidCredentials: "Incorrect password.",
+      loginError: "Unable to sign in. Please try again.",
+      sessionLoading: "Checking your session...",
+      sessionError: "Unable to check your session.",
+      retry: "Try again",
+      logout: "Sign out",
+      loggingOut: "Signing out",
     },
     status: {
       queued: "queued",
@@ -312,6 +326,19 @@ const messages: Record<UiLanguage, Messages> = {
       saveError: "保存设置失败",
       noModels: "没有返回可用模型。",
       loadModelsError: "加载模型失败",
+    },
+    auth: {
+      title: "登录 YouDub",
+      password: "访问密码",
+      signIn: "登录",
+      signingIn: "登录中",
+      invalidCredentials: "密码错误。",
+      loginError: "登录失败，请重试。",
+      sessionLoading: "正在检查登录状态...",
+      sessionError: "无法检查登录状态。",
+      retry: "重试",
+      logout: "退出登录",
+      loggingOut: "退出中",
     },
     status: {
       queued: "排队中",

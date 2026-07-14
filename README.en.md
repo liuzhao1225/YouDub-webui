@@ -205,12 +205,32 @@ cp env.txt.example .env
 
 The application reads `.env` at runtime. Do not commit API keys, cookies, downloaded media, or generated artifacts.
 
+Authentication is mandatory by default, and the backend refuses to start without `YOUDUB_AUTH_PASSWORD_HASH`. Generate an Argon2id hash locally with an interactive password prompt; these commands do not put the plaintext password in shell history.
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
+```
+
+macOS / Linux / WSL2:
+
+```bash
+.venv/bin/python -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
+```
+
+Copy the complete hash into `YOUDUB_AUTH_PASSWORD_HASH` in `.env`. Never put the plaintext password there, and never commit a real hash to Git.
+
 Common environment variables:
 
 | Variable | Purpose |
 | --- | --- |
 | `WORKFOLDER` | Per-task media, audio segments, and intermediate artifacts. |
 | `MODEL_CACHE_DIR` | ModelScope cache directory, used by VoxCPM2 by default. |
+| `YOUDUB_AUTH_PASSWORD_HASH` | Required Argon2id login-password hash; plaintext passwords are rejected. |
+| `YOUDUB_AUTH_SESSION_TTL_SECONDS` | Absolute session lifetime. Default: `604800` seconds (7 days). |
+| `YOUDUB_AUTH_COOKIE_SECURE` | Must be `true` under HTTPS; use `false` only for trusted local HTTP development. |
+| `YOUDUB_AUTH_COOKIE_SAMESITE` | Session Cookie SameSite policy: `lax` or `strict`; `strict` is recommended with the same-origin proxy. |
 | `DEVICE` | Model runtime device, for example `auto`, `cuda`, `cuda:0`, `mps`, `mps:0`, or `cpu`; `auto` selects CUDA, then MPS, then CPU. |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | Optional component-level device overrides. Empty values use `DEVICE`. Whisper falls back to CPU when MPS is selected because word timestamp alignment depends on float64 DTW, which MPS does not support. |
 | `OPENAI_BASE_URL` | OpenAI-compatible API endpoint, for example `https://api.openai.com/v1`. |
@@ -224,9 +244,9 @@ Common environment variables:
 | `NO_PROXY` | Comma-separated proxy bypass list. Include `localhost,127.0.0.1,::1` when using a local OpenAI-compatible service so local requests stay direct. |
 | `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 ModelScope model ID or local model directory. VoxCPM currently selects CUDA/MPS/CPU inside the upstream package, and task logs report it as `voxcpm=library-auto`. |
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 inference controls. |
-| `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | Additional frontend origins. |
+| `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | Explicitly trusted cross-origin frontends; `*` is not allowed. Same-origin Next proxying needs no entry. |
 
-Common localhost, LAN, and Tailscale `:3000` frontend origins are allowed by default. If you open the frontend through a custom hostname, add the full origin to `CORS_ALLOW_ORIGINS`, for example `http://youdub.example.com:3000`.
+By default, CORS allows only `localhost`, `127.0.0.1`, and `::1` on port `3000`. Prefer the same-origin Next.js `/api` proxy. If the browser must call a different backend origin directly, add the exact trusted origin to `CORS_ALLOW_ORIGINS`, for example `https://youdub.example.com`. CORS is not authentication or CSRF protection; the backend still validates the HttpOnly session Cookie and a per-session CSRF token.
 
 ### 5. Run
 
@@ -272,15 +292,18 @@ http://localhost:3000
 
 When opening the app from LAN, WSL2, or another machine, use the actual frontend host IP or hostname, for example `http://192.168.1.20:3000`. The backend listens on `0.0.0.0:8000`, and the frontend listens on `0.0.0.0:3000`.
 
+Browsers should always open the frontend URL and let Next.js forward `/api`; never place authentication data in `NEXT_PUBLIC_*`, URL queries, or browser storage. For LAN or public access, put the frontend behind an HTTPS reverse proxy and set `YOUDUB_AUTH_COOKIE_SECURE=true`. Plain HTTP is suitable only for trusted local development.
+
 ## Using the Web UI
 
-1. Open Settings in the top-right corner.
-2. Paste Netscape-format YouTube cookies.
-3. Set the yt-dlp proxy port, such as `7890` or `20171`.
-4. Enter the OpenAI base URL and API key.
-5. Click `Get models` to fetch model IDs, or enter a model manually.
-6. Tune `Translate concurrency` based on your API provider's rate limits.
-7. Return to the home page and submit a YouTube URL, Bilibili URL, or local video.
+1. Sign in with the access password whose hash you configured.
+2. Open Settings in the top-right corner.
+3. Paste Netscape-format YouTube cookies.
+4. Set the yt-dlp proxy port, such as `7890` or `20171`.
+5. Enter the OpenAI base URL and API key.
+6. Click `Get models` to fetch model IDs, or enter a model manually.
+7. Tune `Translate concurrency` based on your API provider's rate limits.
+8. Return to the home page and submit a YouTube URL, Bilibili URL, or local video.
    - Local videos can include an already translated `.srt` file. When provided, YouDub skips Whisper and OpenAI translation, then uses that subtitle file for TTS and burned subtitles.
    - The translation direction determines the subtitle target language. For example, `English -> Chinese` treats the uploaded SRT as Chinese subtitles.
 8. Open the task detail page to watch stage progress, logs, and the final video.

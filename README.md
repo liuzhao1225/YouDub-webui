@@ -205,12 +205,32 @@ cp env.txt.example .env
 
 应用运行时读取 `.env`。不要提交 API key、Cookie、下载视频或生成产物。
 
+后端默认强制认证；`YOUDUB_AUTH_PASSWORD_HASH` 未配置时会拒绝启动。请在本机交互式输入访问密码并生成 Argon2id 哈希，命令不会把明文密码写入 shell 历史：
+
+Windows PowerShell：
+
+```powershell
+.\.venv\Scripts\python.exe -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
+```
+
+macOS / Linux / WSL2：
+
+```bash
+.venv/bin/python -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
+```
+
+把输出的整行哈希填入 `.env` 的 `YOUDUB_AUTH_PASSWORD_HASH`。不要填写明文密码，也不要把真实哈希提交到 Git。
+
 常用环境变量：
 
 | 变量 | 说明 |
 | --- | --- |
 | `WORKFOLDER` | 每个任务的媒体、分段音频和中间产物目录。 |
 | `MODEL_CACHE_DIR` | ModelScope 模型缓存目录，默认用于 VoxCPM2。 |
+| `YOUDUB_AUTH_PASSWORD_HASH` | 必填的登录密码 Argon2id 哈希；不接受明文密码。 |
+| `YOUDUB_AUTH_SESSION_TTL_SECONDS` | 登录会话绝对有效期，默认 `604800` 秒（7 天）。 |
+| `YOUDUB_AUTH_COOKIE_SECURE` | HTTPS 部署必须设为 `true`；仅可信的本机 HTTP 开发可设为 `false`。 |
+| `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
 | `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
@@ -224,9 +244,9 @@ cp env.txt.example .env
 | `NO_PROXY` | 逗号分隔的代理绕过列表；使用本地 OpenAI 兼容服务时建议包含 `localhost,127.0.0.1,::1`，避免本地请求绕行系统代理。 |
 | `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 的 ModelScope 模型名或本地模型目录；VoxCPM 当前由上游包内部选择 CUDA/MPS/CPU，任务日志会显示为 `voxcpm=library-auto`。 |
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 推理参数。 |
-| `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | 自定义前端访问来源。 |
+| `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | 显式允许的跨源前端来源；不能使用 `*`。同源 Next 代理不需要配置。 |
 
-常见本机、局域网和 Tailscale 的 `:3000` 前端来源已默认允许；如果通过自定义域名访问前端，把完整 origin 追加到 `CORS_ALLOW_ORIGINS`，例如 `http://youdub.example.com:3000`。
+默认 CORS 只允许 `localhost`、`127.0.0.1` 和 `::1` 的 `:3000`。推荐始终使用 Next.js 同源 `/api` 代理；如果浏览器确实直连不同 origin 的后端，必须把完整、可信的 origin 追加到 `CORS_ALLOW_ORIGINS`，例如 `https://youdub.example.com`。CORS 不是认证或 CSRF 防护，后端仍会校验 HttpOnly 会话 Cookie 和每会话 CSRF token。
 
 ### 5. 启动服务
 
@@ -272,15 +292,18 @@ http://localhost:3000
 
 如果从局域网、WSL2 或远程机器访问，浏览器里使用运行前端机器的实际 IP 或主机名，例如 `http://192.168.1.20:3000`。后端默认监听 `0.0.0.0:8000`，前端默认监听 `0.0.0.0:3000`。
 
+浏览器应始终访问前端地址，由 Next.js 转发 `/api`；不要把认证信息放进 `NEXT_PUBLIC_*`、URL query 或前端存储。通过局域网或公网访问时，请在前端前面配置 HTTPS 反向代理并设置 `YOUDUB_AUTH_COOKIE_SECURE=true`。明文 HTTP 只适用于可信的本机开发环境。
+
 ## 页面里怎么用
 
-1. 打开右上角 Settings。
-2. 粘贴 Netscape 格式 YouTube Cookie。
-3. 设置 yt-dlp 代理端口，例如 `7890` 或 `20171`。
-4. 填写 OpenAI base URL 和 API key。
-5. 点击 `Get models` 拉取模型列表，或手动输入模型名。
-6. 按 API 提供商额度调整 `Translate concurrency`。
-7. 回到首页，提交 YouTube URL、Bilibili URL，或上传本地视频。
+1. 使用生成哈希时设置的访问密码登录。
+2. 打开右上角 Settings。
+3. 粘贴 Netscape 格式 YouTube Cookie。
+4. 设置 yt-dlp 代理端口，例如 `7890` 或 `20171`。
+5. 填写 OpenAI base URL 和 API key。
+6. 点击 `Get models` 拉取模型列表，或手动输入模型名。
+7. 按 API 提供商额度调整 `Translate concurrency`。
+8. 回到首页，提交 YouTube URL、Bilibili URL，或上传本地视频。
    - 本地视频可额外上传一份已翻译好的 `.srt` 字幕；上传后会跳过 Whisper 识别和 OpenAI 翻译，直接用这份字幕生成配音与压制字幕。
    - 翻译方向决定字幕目标语言，例如选择“英文 -> 中文”时，上传的 SRT 会被视为中文字幕。
 8. 进入任务详情页查看阶段进度、运行日志和最终视频。

@@ -64,6 +64,22 @@ def init_db() -> None:
               value TEXT NOT NULL,
               updated_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS auth_sessions (
+              token_hash TEXT PRIMARY KEY,
+              credential_version TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              expires_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at
+            ON auth_sessions(expires_at);
+
+            CREATE TABLE IF NOT EXISTS auth_login_attempts (
+              client_hash TEXT PRIMARY KEY,
+              window_started_at TEXT NOT NULL,
+              attempt_count INTEGER NOT NULL
+            );
             """
         )
         defaults = openai_defaults()
@@ -87,6 +103,108 @@ def init_db() -> None:
         stage_columns = {row["name"] for row in conn.execute("PRAGMA table_info(task_stages)").fetchall()}
         if "progress" not in stage_columns:
             conn.execute("ALTER TABLE task_stages ADD COLUMN progress INTEGER")
+
+
+def create_auth_session(
+    *,
+    token_hash: str,
+    credential_version: str,
+    created_at: str,
+    expires_at: str,
+) -> None:
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO auth_sessions (
+              token_hash, credential_version, created_at, expires_at
+            ) VALUES (?, ?, ?, ?)
+            """,
+            (token_hash, credential_version, created_at, expires_at),
+        )
+
+
+def get_auth_session(token_hash: str) -> dict[str, str] | None:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT token_hash, credential_version, created_at, expires_at
+            FROM auth_sessions
+            WHERE token_hash = ?
+            """,
+            (token_hash,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def delete_auth_session(token_hash: str) -> bool:
+    with connect() as conn:
+        cursor = conn.execute("DELETE FROM auth_sessions WHERE token_hash = ?", (token_hash,))
+        return cursor.rowcount > 0
+
+
+def delete_expired_auth_sessions(expires_before: str) -> int:
+    with connect() as conn:
+        cursor = conn.execute(
+            "DELETE FROM auth_sessions WHERE expires_at <= ?",
+            (expires_before,),
+        )
+        return cursor.rowcount
+
+
+def reserve_auth_login_attempt(
+    *,
+    client_hash: str,
+    now: str,
+    stale_before: str,
+    max_attempts: int,
+) -> tuple[bool, str]:
+    """Atomically reserve one login attempt across processes sharing SQLite."""
+    with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute(
+            "DELETE FROM auth_login_attempts WHERE window_started_at <= ?",
+            (stale_before,),
+        )
+        row = conn.execute(
+            """
+            SELECT window_started_at, attempt_count
+            FROM auth_login_attempts
+            WHERE client_hash = ?
+            """,
+            (client_hash,),
+        ).fetchone()
+        if row and int(row["attempt_count"]) >= max_attempts:
+            return False, str(row["window_started_at"])
+
+        if row:
+            conn.execute(
+                """
+                UPDATE auth_login_attempts
+                SET attempt_count = attempt_count + 1
+                WHERE client_hash = ?
+                """,
+                (client_hash,),
+            )
+            return True, str(row["window_started_at"])
+
+        conn.execute(
+            """
+            INSERT INTO auth_login_attempts (
+              client_hash, window_started_at, attempt_count
+            ) VALUES (?, ?, 1)
+            """,
+            (client_hash, now),
+        )
+        return True, now
+
+
+def delete_auth_login_attempt(client_hash: str) -> bool:
+    with connect() as conn:
+        cursor = conn.execute(
+            "DELETE FROM auth_login_attempts WHERE client_hash = ?",
+            (client_hash,),
+        )
+        return cursor.rowcount > 0
 
 
 def backfill_titles_from_metadata() -> None:

@@ -7,9 +7,10 @@ import threading
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import config, database
+from backend.app import auth, config, database
 from backend.app import main
 from backend.app import worker
+from backend.tests.conftest import TEST_AUTH_PASSWORD
 
 
 def configure_tmp_runtime(monkeypatch, tmp_path):
@@ -28,10 +29,21 @@ def configure_tmp_runtime(monkeypatch, tmp_path):
     database.init_db()
 
 
+def authenticated_client() -> TestClient:
+    client = TestClient(main.app)
+    response = client.post(
+        "/api/auth/login",
+        json={"password": TEST_AUTH_PASSWORD},
+    )
+    assert response.status_code == 200
+    client.headers[auth.CSRF_HEADER_NAME] = response.json()["csrf_token"]
+    return client
+
+
 def test_openai_key_is_masked(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     database.save_openai_settings("https://example.com/v1", "sk-test-secret", "test-model")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get("/api/settings/openai")
 
@@ -45,7 +57,7 @@ def test_openai_key_is_masked(monkeypatch, tmp_path):
 def test_masked_openai_key_is_not_saved_back(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     database.save_openai_settings("https://example.com/v1", "sk-test-secret", "test-model")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai",
@@ -66,7 +78,7 @@ def test_masked_openai_key_is_not_saved_back(monkeypatch, tmp_path):
 def test_openai_key_can_be_cleared(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     database.save_openai_settings("https://example.com/v1", "sk-test-secret", "test-model")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai",
@@ -98,7 +110,7 @@ def test_openai_key_can_be_cleared(monkeypatch, tmp_path):
 def test_openai_key_save_modes_without_clear(monkeypatch, tmp_path, api_key, expected):
     configure_tmp_runtime(monkeypatch, tmp_path)
     database.save_openai_settings("https://example.com/v1", "sk-test-secret", "test-model")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai",
@@ -121,7 +133,7 @@ def test_openai_key_save_modes_without_clear(monkeypatch, tmp_path, api_key, exp
 
 def test_cookie_response_does_not_leak_content(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post("/api/cookies/youtube", json={"content": "secret-cookie-content"})
 
@@ -134,7 +146,7 @@ def test_task_id_is_video_id_and_dedupes_existing(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
-    client = TestClient(main.app)
+    client = authenticated_client()
     payload = {"url": "https://www.youtube.com/watch?v=abcdefghijk"}
 
     first = client.post("/api/tasks", json=payload)
@@ -151,7 +163,7 @@ def test_different_videos_create_separate_tasks(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     a = client.post("/api/tasks", json={"url": "https://www.youtube.com/watch?v=abcdefghijk"})
     b = client.post("/api/tasks", json={"url": "https://youtu.be/zyxwvutsrqp"})
@@ -193,7 +205,7 @@ def test_list_tasks_returns_history_newest_first(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     older = database.create_task("https://www.youtube.com/watch?v=oldvideoidx")
     newer = database.create_task("https://www.youtube.com/watch?v=newvideoidx")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get("/api/tasks")
 
@@ -213,7 +225,7 @@ def test_list_tasks_search_matches_title_url_and_id(monkeypatch, tmp_path):
     alpha = make_history_task("alpha-task", title="Alpha Clip")
     beta = make_history_task("beta-task", url="https://example.com/special-url-token")
     gamma = make_history_task("gamma-task")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     assert task_ids(client.get("/api/tasks?q=alpha")) == [alpha]
     assert task_ids(client.get("/api/tasks?q=special-url-token")) == [beta]
@@ -240,7 +252,7 @@ def test_list_tasks_filters_status_and_execution_mode(monkeypatch, tmp_path):
         execution_mode="manual",
         created_at="2024-01-01T00:00:00+00:00",
     )
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get("/api/tasks?status=succeeded&execution_mode=manual")
 
@@ -256,7 +268,7 @@ def test_list_tasks_paginates_with_total(monkeypatch, tmp_path):
             f"page-task-{index}",
             created_at=f"2024-01-0{index}T00:00:00+00:00",
         )
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get("/api/tasks?page=2&page_size=2")
 
@@ -288,7 +300,7 @@ def test_list_tasks_sorts_by_created_status_and_title(monkeypatch, tmp_path):
         status="running",
         created_at="2024-01-03T00:00:00+00:00",
     )
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     assert task_ids(client.get("/api/tasks?sort=created_asc")) == [charlie, alpha, bravo]
     assert task_ids(client.get("/api/tasks?sort=status_asc")) == [alpha, bravo, charlie]
@@ -310,7 +322,7 @@ def test_list_tasks_sorts_by_created_status_and_title(monkeypatch, tmp_path):
 )
 def test_list_tasks_rejects_invalid_query_params(monkeypatch, tmp_path, query):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get(f"/api/tasks?{query}")
 
@@ -321,7 +333,7 @@ def test_task_detail_includes_stage_progress(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     task_id = database.create_task("https://www.youtube.com/watch?v=progressapi")
     database.update_stage(task_id, "tts", progress=42, last_message="Prepared 21/50 TTS clips")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get(f"/api/tasks/{task_id}")
 
@@ -341,7 +353,7 @@ def test_delete_task_removes_session_log_and_record(monkeypatch, tmp_path):
     log_file = database.log_path(task_id)
     log_file.write_text("hello", encoding="utf-8")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.delete(f"/api/tasks/{task_id}")
 
     assert response.status_code == 204
@@ -352,7 +364,7 @@ def test_delete_task_removes_session_log_and_record(monkeypatch, tmp_path):
 
 def test_delete_task_returns_404_for_unknown(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.delete("/api/tasks/does-not-exist")
 
@@ -364,7 +376,7 @@ def test_delete_task_rejects_running_task(monkeypatch, tmp_path):
     task_id = database.create_task("https://www.youtube.com/watch?v=runningvidx", task_id="runningvidx")
     database.update_task(task_id, status="running")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.delete(f"/api/tasks/{task_id}")
 
     assert response.status_code == 409
@@ -384,7 +396,7 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     log_file = database.log_path(task_id)
     log_file.write_text("old run", encoding="utf-8")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/rerun")
 
     assert response.status_code == 200
@@ -399,7 +411,7 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
 
 def test_rerun_task_returns_404_for_unknown(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post("/api/tasks/missing/rerun")
 
@@ -413,7 +425,7 @@ def test_rerun_task_rejects_running_task(monkeypatch, tmp_path):
     task_id = database.create_task("https://www.youtube.com/watch?v=runrerunvid", task_id="runrerunvid")
     database.update_task(task_id, status="running")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/rerun")
 
     assert response.status_code == 409
@@ -429,7 +441,7 @@ def test_delete_task_skips_session_outside_workfolder(monkeypatch, tmp_path):
     (outside / "media" / "video_source.mp4").write_bytes(b"mp4")
     database.update_task(task_id, session_path=str(outside))
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.delete(f"/api/tasks/{task_id}")
 
     assert response.status_code == 204
@@ -447,16 +459,19 @@ def test_cors_origins_include_runtime_configuration(monkeypatch):
     assert "http://100.94.222.54:3000" in origins
 
 
-def test_cors_origin_regex_allows_common_development_hosts(monkeypatch):
+def test_default_cors_origin_regex_only_allows_loopback_development_hosts(monkeypatch):
     monkeypatch.delenv("CORS_ALLOW_ORIGIN_REGEX", raising=False)
 
     regex = re.compile(main.cors_origin_regex())
 
-    assert regex.fullmatch("http://0.0.0.0:3000")
-    assert regex.fullmatch("http://192.168.1.2:3000")
-    assert regex.fullmatch("http://10.0.0.5:3000")
-    assert regex.fullmatch("http://172.27.2.90:3000")
-    assert regex.fullmatch("http://100.94.222.54:3000")
+    assert regex.fullmatch("http://localhost:3000")
+    assert regex.fullmatch("http://127.0.0.1:3000")
+    assert regex.fullmatch("http://[::1]:3000")
+    assert not regex.fullmatch("http://0.0.0.0:3000")
+    assert not regex.fullmatch("http://192.168.1.2:3000")
+    assert not regex.fullmatch("http://10.0.0.5:3000")
+    assert not regex.fullmatch("http://172.27.2.90:3000")
+    assert not regex.fullmatch("http://100.94.222.54:3000")
     assert not regex.fullmatch("http://example.com:3000")
     assert not regex.fullmatch("http://192.168.1.2:4000")
 
@@ -471,7 +486,7 @@ def test_openai_models_use_form_key_without_leaking_it(monkeypatch, tmp_path):
         return ["gpt-test", "qwen-test"]
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai/models",
@@ -495,7 +510,7 @@ def test_openai_models_can_use_saved_key(monkeypatch, tmp_path):
         return ["saved-model"]
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post("/api/settings/openai/models", json={"base_url": "", "api_key": ""})
 
@@ -515,7 +530,7 @@ def test_openai_models_reject_changed_base_without_explicit_key(monkeypatch, tmp
         return []
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai/models",
@@ -537,7 +552,7 @@ def test_openai_models_reject_invalid_base_url(monkeypatch, tmp_path):
         return []
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai/models",
@@ -559,7 +574,7 @@ def test_openai_models_allow_equivalent_saved_base_without_key(monkeypatch, tmp_
         return ["saved-model"]
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai/models",
@@ -577,7 +592,7 @@ def test_openai_models_hide_upstream_exception_details(monkeypatch, tmp_path):
         raise ValueError(f"upstream rejected {api_key}")
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai/models",
@@ -591,7 +606,7 @@ def test_openai_models_hide_upstream_exception_details(monkeypatch, tmp_path):
 
 def test_openai_settings_reject_invalid_base_url(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai",
@@ -617,7 +632,7 @@ def test_openai_settings_reject_base_change_that_would_reuse_saved_key(monkeypat
         return ["saved-model"]
 
     monkeypatch.setattr(main, "list_openai_models", fake_list_models)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     update_response = client.post(
         "/api/settings/openai",
@@ -789,7 +804,7 @@ def test_openai_settings_read_uses_one_consistent_snapshot(monkeypatch, tmp_path
 def test_openai_settings_include_translate_concurrency(monkeypatch, tmp_path):
     monkeypatch.delenv("OPENAI_TRANSLATE_CONCURRENCY", raising=False)
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.get("/api/settings/openai")
 
@@ -799,7 +814,7 @@ def test_openai_settings_include_translate_concurrency(monkeypatch, tmp_path):
 
 def test_openai_settings_persists_translate_concurrency(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
     saved_base_url = database.get_openai_settings()["base_url"]
 
     response = client.post(
@@ -821,7 +836,7 @@ def test_openai_settings_persists_translate_concurrency(monkeypatch, tmp_path):
 def test_openai_settings_rejects_invalid_translate_concurrency(monkeypatch, tmp_path, value):
     configure_tmp_runtime(monkeypatch, tmp_path)
     database.save_openai_settings("https://example.com/v1", "sk-test", "model", "64")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai",
@@ -841,7 +856,7 @@ def test_openai_settings_rejects_invalid_translate_concurrency(monkeypatch, tmp_
 def test_openai_settings_empty_translate_concurrency_preserves_existing(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     database.save_openai_settings("https://example.com/v1", "sk-test", "model", "64")
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/settings/openai",
@@ -864,7 +879,7 @@ def test_openai_settings_empty_translate_concurrency_preserves_existing(monkeypa
 @pytest.mark.parametrize("value", ["1", "200"])
 def test_openai_settings_accepts_translate_concurrency_boundaries(monkeypatch, tmp_path, value):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
     saved_base_url = database.get_openai_settings()["base_url"]
 
     response = client.post(
@@ -892,7 +907,7 @@ def test_resume_task_requeues_failed_task(monkeypatch, tmp_path):
     database.update_stage(task_id, "asr", status="failed", progress=33, error_message="boom")
     database.update_stage(task_id, "download", status="succeeded")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/resume")
 
     assert response.status_code == 200
@@ -912,7 +927,7 @@ def test_resume_task_rejects_non_failed(monkeypatch, tmp_path):
     task_id = database.create_task("https://www.youtube.com/watch?v=okvideoxxxx", task_id="okvideoxxxx")
     database.update_task(task_id, status="succeeded")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/resume")
 
     assert response.status_code == 409
@@ -930,7 +945,7 @@ def test_continue_task_requeues_paused_manual_task(monkeypatch, tmp_path):
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda tid: enqueued.append(tid))
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/continue")
 
     assert response.status_code == 200
@@ -952,7 +967,7 @@ def test_continue_task_can_switch_to_auto(monkeypatch, tmp_path):
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda tid: enqueued.append(tid))
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(
         f"/api/tasks/{task_id}/continue",
         json={"execution_mode": "auto"},
@@ -970,7 +985,7 @@ def test_continue_task_rejects_auto_task(monkeypatch, tmp_path):
     task_id = database.create_task("https://www.youtube.com/watch?v=autocontinue", task_id="autocontinue")
     database.update_task(task_id, status="paused")
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/continue")
 
     assert response.status_code == 409
@@ -997,7 +1012,7 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda tid: enqueued.append(tid))
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/stages/translate/redo")
 
     assert response.status_code == 200
@@ -1040,7 +1055,7 @@ def test_redo_stage_runtime_failure_preserves_artifacts_and_state(monkeypatch, t
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda tid: enqueued.append(tid))
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/stages/translate/redo")
 
     assert response.status_code == 409
@@ -1061,7 +1076,7 @@ def test_redo_stage_rejects_auto_task(monkeypatch, tmp_path):
     database.update_task(task_id, status="paused")
     database.update_stage(task_id, "download", status="succeeded", completed_at=database.now_iso())
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/stages/download/redo")
 
     assert response.status_code == 409
@@ -1077,7 +1092,7 @@ def test_redo_stage_rejects_pending_stage(monkeypatch, tmp_path):
     database.update_task(task_id, status="paused")
     database.update_stage(task_id, "download", status="succeeded", completed_at=database.now_iso())
 
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post(f"/api/tasks/{task_id}/stages/translate/redo")
 
     assert response.status_code == 409
@@ -1085,7 +1100,7 @@ def test_redo_stage_rejects_pending_stage(monkeypatch, tmp_path):
 
 def test_ytdlp_proxy_port_settings(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     saved = client.post("/api/settings/ytdlp", json={"proxy_port": "7890"})
     loaded = client.get("/api/settings/ytdlp")
@@ -1097,7 +1112,7 @@ def test_ytdlp_proxy_port_settings(monkeypatch, tmp_path):
 
 def test_ytdlp_proxy_port_rejects_invalid_value(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post("/api/settings/ytdlp", json={"proxy_port": "70000"})
 
@@ -1108,7 +1123,7 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/tasks/upload",
@@ -1130,7 +1145,7 @@ def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/tasks/upload",
@@ -1157,7 +1172,7 @@ def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
 
 def test_upload_local_video_rejects_non_srt_subtitle(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/tasks/upload",
@@ -1176,7 +1191,7 @@ def test_upload_local_video_rejects_malformed_srt_and_cleans_upload(monkeypatch,
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
-    client = TestClient(main.app)
+    client = authenticated_client()
 
     response = client.post(
         "/api/tasks/upload",
@@ -1196,7 +1211,7 @@ def test_upload_local_video_rejects_malformed_srt_and_cleans_upload(monkeypatch,
 
 def test_create_task_rejects_local_upload_url(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post("/api/tasks", json={"url": "local://upload/fake?direction=en-zh"})
     assert response.status_code == 422
 
@@ -1208,7 +1223,7 @@ def test_create_task_rejects_unavailable_cuda_runtime(monkeypatch, tmp_path):
         "validate_runtime_device",
         lambda: (_ for _ in ()).throw(RuntimeError("DEVICE=cuda is not available")),
     )
-    client = TestClient(main.app)
+    client = authenticated_client()
     response = client.post("/api/tasks", json={"url": "https://www.youtube.com/watch?v=okvideoxxxx"})
     assert response.status_code == 409
     assert response.json()["detail"] == "DEVICE=cuda is not available"
@@ -1216,7 +1231,7 @@ def test_create_task_rejects_unavailable_cuda_runtime(monkeypatch, tmp_path):
 
 def test_delete_local_video_removes_upload(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
-    client = TestClient(main.app)
+    client = authenticated_client()
     upload = client.post(
         "/api/tasks/upload",
         data={"direction": "en-zh"},

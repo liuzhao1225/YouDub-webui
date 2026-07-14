@@ -289,6 +289,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               <video
                 key={task.id}
                 src={finalVideoUrl(task.id)}
+                crossOrigin="use-credentials"
                 controls
                 preload="metadata"
                 className="w-full rounded-md border border-emerald-200 bg-black"
