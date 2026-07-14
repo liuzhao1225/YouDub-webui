@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react"
 import { Eye, EyeOff, RefreshCw, Settings } from "lucide-react"
 
 import {
+  ApiError,
   getCookieInfo,
   getOpenAIModels,
   getOpenAISettings,
@@ -46,7 +47,13 @@ type SettingsForm = {
 const SAVED_API_KEY_MASK = "********"
 const SAVED_COOKIE_SENTINEL = "__YOUDUB_SAVED_COOKIE__"
 
-type MessageKey = "keySaved" | "saved"
+type MessageKey = "keySaved"
+type SaveSection = "cookie" | "openai" | "ytdlp"
+type SaveResult = {
+  section: SaveSection
+  status: "saved" | "failed" | "unchanged"
+  httpStatus?: number
+}
 
 const defaultSettings: SettingsForm = {
   cookie: "",
@@ -73,11 +80,12 @@ export function SettingsDialog() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [cookieDirty, setCookieDirty] = useState(false)
   const [apiKeyDirty, setApiKeyDirty] = useState(false)
+  const [saveResults, setSaveResults] = useState<SaveResult[]>([])
+  const [saving, setSaving] = useState(false)
 
   const cookieValue =
     settings.cookie === SAVED_COOKIE_SENTINEL ? t.settings.savedCookie : settings.cookie
-  const visibleMessage =
-    messageKey === "keySaved" ? t.settings.keySaved : messageKey === "saved" ? t.settings.saved : message
+  const visibleMessage = messageKey === "keySaved" ? t.settings.keySaved : message
 
   useEffect(() => {
     if (!open) return
@@ -96,6 +104,7 @@ export function SettingsDialog() {
         setShowApiKey(false)
         setCookieDirty(false)
         setApiKeyDirty(false)
+        setSaveResults([])
         setMessage("")
         setMessageKey(openai.has_api_key ? "keySaved" : null)
       })
@@ -105,34 +114,94 @@ export function SettingsDialog() {
       })
   }, [open])
 
+  async function refreshSettingsFromServer() {
+    const [cookieResult, openaiResult, ytdlpResult] = await Promise.allSettled([
+      getCookieInfo(),
+      getOpenAISettings(),
+      getYtdlpSettings(),
+    ])
+
+    setSettings((current) => {
+      const refreshed = { ...current }
+      if (cookieResult.status === "fulfilled") {
+        refreshed.cookie = cookieResult.value.exists ? SAVED_COOKIE_SENTINEL : ""
+      }
+      if (openaiResult.status === "fulfilled") {
+        const openai = openaiResult.value
+        refreshed.baseUrl = openai.base_url
+        refreshed.apiKey = openai.has_api_key ? openai.api_key || SAVED_API_KEY_MASK : ""
+        refreshed.model = openai.model
+        refreshed.translateConcurrency = openai.translate_concurrency || "50"
+      }
+      if (ytdlpResult.status === "fulfilled") {
+        refreshed.proxyPort = ytdlpResult.value.proxy_port
+      }
+      return refreshed
+    })
+
+    if (cookieResult.status === "fulfilled") setCookieDirty(false)
+    if (openaiResult.status === "fulfilled") {
+      setApiKeyDirty(false)
+      setShowApiKey(false)
+      setModelOptions(uniqueModels([openaiResult.value.model]))
+      setModelsLoaded(false)
+    }
+
+    return [cookieResult, openaiResult, ytdlpResult].every(
+      (result) => result.status === "fulfilled",
+    )
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setMessage("")
     setMessageKey(null)
+    setSaveResults([])
+    setSaving(true)
+    const results: SaveResult[] = []
+
+    async function saveSection(section: SaveSection, action: () => Promise<unknown>) {
+      try {
+        await action()
+        results.push({ section, status: "saved" })
+      } catch (err) {
+        results.push({
+          section,
+          status: "failed",
+          httpStatus: err instanceof ApiError ? err.status : undefined,
+        })
+      }
+    }
+
     try {
-      const cookie = cookieDirty ? await saveCookie(settings.cookie) : null
+      if (cookieDirty) {
+        await saveSection("cookie", () => saveCookie(settings.cookie))
+      } else {
+        results.push({ section: "cookie", status: "unchanged" })
+      }
       const clearApiKey = apiKeyDirty && !settings.apiKey.trim()
-      const openai = await saveOpenAISettings({
+      await saveSection("openai", () => saveOpenAISettings({
         base_url: settings.baseUrl,
         api_key: apiKeyDirty ? settings.apiKey : "",
         clear_api_key: clearApiKey,
         model: settings.model,
         translate_concurrency: settings.translateConcurrency,
-      })
-      const ytdlp = await saveYtdlpSettings({ proxy_port: settings.proxyPort })
-      setMessageKey("saved")
+      }))
+      await saveSection("ytdlp", () => saveYtdlpSettings({ proxy_port: settings.proxyPort }))
+      setSaveResults(results)
       setSettings((current) => ({
         ...current,
-        apiKey: openai.has_api_key ? openai.api_key || SAVED_API_KEY_MASK : "",
-        cookie: cookieDirty ? (cookie?.exists ? SAVED_COOKIE_SENTINEL : "") : current.cookie,
-        translateConcurrency: openai.translate_concurrency || current.translateConcurrency,
-        proxyPort: ytdlp.proxy_port,
+        cookie: cookieDirty ? "" : current.cookie,
+        apiKey: apiKeyDirty ? "" : current.apiKey,
       }))
-      setCookieDirty(false)
-      setApiKeyDirty(false)
-    } catch (err) {
-      setMessageKey(null)
-      setMessage(err instanceof Error ? err.message : t.settings.saveError)
+      if (cookieDirty) setCookieDirty(false)
+      if (apiKeyDirty) setApiKeyDirty(false)
+      setShowApiKey(false)
+
+      const refreshed = await refreshSettingsFromServer()
+      if (!refreshed) setMessage(t.settings.reloadError)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -156,6 +225,18 @@ export function SettingsDialog() {
     } finally {
       setModelsLoading(false)
     }
+  }
+
+  const saveSectionLabels: Record<SaveSection, string> = {
+    cookie: t.settings.cookie,
+    openai: t.settings.openaiSaveSection,
+    ytdlp: t.settings.ytdlpSaveSection,
+  }
+
+  function saveResultText(result: SaveResult) {
+    if (result.status === "saved") return t.settings.saveSucceeded
+    if (result.status === "unchanged") return t.settings.saveUnchanged
+    return `${t.settings.saveFailed}${result.httpStatus ? ` (HTTP ${result.httpStatus})` : ""}`
   }
 
   return (
@@ -333,11 +414,32 @@ export function SettingsDialog() {
                   {t.settings.concurrencyHelp}
                 </p>
               </div>
+              {saveResults.length > 0 ? (
+                <div
+                  data-testid="settings-save-results"
+                  className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+                  aria-live="polite"
+                >
+                  <p className="font-medium">{t.settings.saveResultsTitle}</p>
+                  <ul className="mt-1 space-y-1">
+                    {saveResults.map((result) => (
+                      <li
+                        key={result.section}
+                        className={result.status === "failed" ? "text-red-700" : "text-muted-foreground"}
+                      >
+                        {saveSectionLabels[result.section]}: {saveResultText(result)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               {visibleMessage ? <p className="text-sm text-muted-foreground">{visibleMessage}</p> : null}
             </div>
           </div>
           <DialogFooter className="shrink-0">
-            <Button type="submit">{t.settings.save}</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? t.settings.saving : t.settings.save}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
