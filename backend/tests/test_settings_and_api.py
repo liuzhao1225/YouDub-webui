@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 import threading
@@ -7,9 +8,10 @@ import threading
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app import auth, config, database
+from backend.app import auth, config, database, pipeline
 from backend.app import main
 from backend.app import worker
+from backend.app.adapters import local_subtitles
 from backend.tests.conftest import TEST_AUTH_PASSWORD
 
 
@@ -1043,6 +1045,103 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
     assert translate_stage["status"] == "pending"
     assert split_stage["status"] == "pending"
     assert enqueued == [task_id]
+
+
+@pytest.mark.parametrize(
+    ("stage_name", "upstream_name", "generated_name"),
+    [
+        ("asr_fix", "asr.json", "asr_fixed.json"),
+        ("translate", "asr_fixed.json", "translation.zh.json"),
+    ],
+)
+def test_uploaded_srt_stage_redo_regenerates_from_original_subtitle(
+    monkeypatch,
+    tmp_path,
+    stage_name,
+    upstream_name,
+    generated_name,
+):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    workfolder = main.WORKFOLDER
+    monkeypatch.setattr(pipeline, "WORKFOLDER", workfolder)
+    monkeypatch.setattr(main, "validate_runtime_device", lambda: None)
+    monkeypatch.setattr(pipeline, "validate_runtime_device", lambda: None)
+    monkeypatch.setattr(pipeline, "device_plan_summary", lambda: "test-device")
+
+    task_id = f"uploaded-srt-redo-{stage_name}"
+    task_url = f"local://upload/{task_id}?direction=en-zh&filename=clip.mp4"
+    subtitle_dir = local_subtitles.uploaded_subtitle_dir(workfolder, task_id)
+    subtitle_dir.mkdir(parents=True)
+    subtitle_file = subtitle_dir / "clip.zh.srt"
+    subtitle_file.write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\n你好\n\n"
+        "2\n00:00:01,200 --> 00:00:02,000\n世界\n",
+        encoding="utf-8",
+    )
+    subtitle_before = subtitle_file.read_bytes()
+
+    session = workfolder / "local" / f"clip__{task_id}"
+    media = session / "media"
+    metadata = session / "metadata"
+    media.mkdir(parents=True)
+    metadata.mkdir(parents=True)
+    (media / "video_source.mp4").write_bytes(b"video")
+    (media / "audio_vocals.wav").write_bytes(b"vocals")
+    (media / "audio_bgm.wav").write_bytes(b"bgm")
+    (metadata / "local_info.json").write_text(
+        json.dumps({"subtitle_path": str(subtitle_file)}),
+        encoding="utf-8",
+    )
+    (metadata / "asr.json").write_bytes(b'{"upstream":"asr"}')
+    (metadata / "asr_fixed.json").write_bytes(b'{"upstream":"asr_fixed"}')
+    (metadata / "translation.zh.json").write_bytes(b'{"downstream":"translation"}')
+    upstream_file = metadata / upstream_name
+    upstream_before = upstream_file.read_bytes()
+
+    database.create_task(task_url, task_id=task_id, execution_mode="manual")
+    database.update_task(task_id, status="paused", session_path=str(session))
+    for completed_stage in ("download", "separate", "asr", "asr_fix", "translate"):
+        database.update_stage(
+            task_id,
+            completed_stage,
+            status="succeeded",
+            completed_at=database.now_iso(),
+        )
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda tid: enqueued.append(tid))
+
+    response = authenticated_client().post(
+        f"/api/tasks/{task_id}/stages/{stage_name}/redo"
+    )
+
+    assert response.status_code == 200
+    assert enqueued == [task_id]
+    assert not (metadata / generated_name).exists()
+
+    pipeline.PipelineRunner(task_id).run()
+
+    task = database.get_task(task_id)
+    stages = {stage["name"]: stage for stage in task["stages"]}
+    assert task["status"] == "paused"
+    assert stages[stage_name]["status"] == "succeeded"
+    stage_order = [stage["name"] for stage in task["stages"]]
+    assert all(
+        stages[name]["status"] == "pending"
+        for name in stage_order[stage_order.index(stage_name) + 1 :]
+    )
+    assert upstream_file.read_bytes() == upstream_before
+    assert subtitle_file.read_bytes() == subtitle_before
+    generated = json.loads((metadata / generated_name).read_text(encoding="utf-8"))
+    if stage_name == "asr_fix":
+        assert [item["text"] for item in generated["result"]["utterances"]] == [
+            "你好",
+            "世界",
+        ]
+    else:
+        assert [item["dst"] for item in generated["translation"]] == [
+            "你好",
+            "世界",
+        ]
 
 
 def test_redo_stage_runtime_failure_preserves_artifacts_and_state(monkeypatch, tmp_path):

@@ -180,15 +180,15 @@ class PipelineRunner:
             return None
         return _require_existing(Path(subtitle_path), "uploaded_subtitle_file")
 
-    def _write_uploaded_subtitle_artifacts(self, task: dict) -> tuple[Path, Path, Path]:
-        from .adapters.local_subtitles import write_uploaded_subtitle_artifacts
+    def _write_uploaded_asr_artifact(self, task: dict) -> Path:
+        from .adapters.local_subtitles import write_uploaded_asr_artifact
 
         session = _require(self.artifacts.session, "session")
         subtitle_file = self._uploaded_subtitle_path(task)
         if not subtitle_file:
             raise RuntimeError("Missing uploaded subtitle file.")
         source = detect_source(task["url"])
-        return write_uploaded_subtitle_artifacts(subtitle_file, session, source)
+        return write_uploaded_asr_artifact(subtitle_file, session, source)
 
     def _run_stage(self, stage: str) -> None:
         self._progress_state.pop(stage, None)
@@ -294,14 +294,13 @@ class PipelineRunner:
         session = _require(self.artifacts.session, "session")
         subtitle_file = self._uploaded_subtitle_path(task)
         if subtitle_file:
-            asr_file, asr_fixed_file, translation_file = self._write_uploaded_subtitle_artifacts(task)
-            self.artifacts.asr_file = asr_file
-            self.artifacts.asr_fixed_file = asr_fixed_file
-            self.artifacts.translation_file = translation_file
-            items = _json.loads(translation_file.read_text(encoding="utf-8"))["translation"]
+            self.artifacts.asr_file = self._write_uploaded_asr_artifact(task)
+            items = _json.loads(
+                self.artifacts.asr_file.read_text(encoding="utf-8")
+            )["result"]["utterances"]
             self.stage_message(
                 "asr",
-                f"Used uploaded SRT subtitles ({len(items)} cues) -> {asr_file.name}; skipped Whisper",
+                f"Used uploaded SRT subtitles ({len(items)} cues) -> {self.artifacts.asr_file.name}; skipped Whisper",
             )
             return
 
@@ -322,10 +321,15 @@ class PipelineRunner:
         import json as _json
 
         session = _require(self.artifacts.session, "session")
-        if self._uploaded_subtitle_path(task):
-            self.artifacts.asr_fixed_file = _require_existing(
-                session / "metadata" / "asr_fixed.json",
-                "asr_fixed_file",
+        subtitle_file = self._uploaded_subtitle_path(task)
+        if subtitle_file:
+            from .adapters.local_subtitles import write_uploaded_asr_fixed_artifact
+
+            source = detect_source(task["url"])
+            self.artifacts.asr_fixed_file = write_uploaded_asr_fixed_artifact(
+                subtitle_file,
+                session,
+                source,
             )
             sentences = _json.loads(
                 self.artifacts.asr_fixed_file.read_text(encoding="utf-8")
@@ -353,10 +357,14 @@ class PipelineRunner:
 
         session = _require(self.artifacts.session, "session")
         source = detect_source(task["url"])
-        if self._uploaded_subtitle_path(task):
-            self.artifacts.translation_file = _require_existing(
-                session / "metadata" / f"translation.{source.target_language}.json",
-                "translation_file",
+        subtitle_file = self._uploaded_subtitle_path(task)
+        if subtitle_file:
+            from .adapters.local_subtitles import write_uploaded_translation_artifact
+
+            self.artifacts.translation_file = write_uploaded_translation_artifact(
+                subtitle_file,
+                session,
+                source,
             )
             items = _json.loads(
                 self.artifacts.translation_file.read_text(encoding="utf-8")

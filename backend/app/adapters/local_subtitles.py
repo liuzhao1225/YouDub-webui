@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .. import runtime_security
 from ..sources import SourceConfig
 from .local_video import upload_dir
 
@@ -97,13 +98,10 @@ def _translation_items(cues: list[SubtitleCue], source: SourceConfig) -> list[di
     ]
 
 
-def write_uploaded_subtitle_artifacts(
+def _uploaded_subtitle_payloads(
     subtitle_file: Path,
-    session: Path,
     source: SourceConfig,
-) -> tuple[Path, Path, Path]:
-    metadata_dir = session / "metadata"
-    metadata_dir.mkdir(parents=True, exist_ok=True)
+) -> tuple[dict[str, Any], dict[str, Any]]:
     content = subtitle_file.read_text(encoding="utf-8-sig")
     cues = parse_srt(content)
     translation = _translation_items(cues, source)
@@ -124,14 +122,59 @@ def write_uploaded_subtitle_artifacts(
         }
     }
     translation_payload = {"translation": translation}
+    return asr_payload, translation_payload
 
+
+def _write_json_artifact(path: Path, payload: dict[str, Any]) -> Path:
+    content = json.dumps(payload, ensure_ascii=False, indent=2)
+    runtime_security.atomic_write_private_text(path, content)
+    return path
+
+
+def write_uploaded_asr_artifact(
+    subtitle_file: Path,
+    session: Path,
+    source: SourceConfig,
+) -> Path:
+    asr_payload, _ = _uploaded_subtitle_payloads(subtitle_file, source)
+    return _write_json_artifact(session / "metadata" / "asr.json", asr_payload)
+
+
+def write_uploaded_asr_fixed_artifact(
+    subtitle_file: Path,
+    session: Path,
+    source: SourceConfig,
+) -> Path:
+    asr_payload, _ = _uploaded_subtitle_payloads(subtitle_file, source)
+    return _write_json_artifact(session / "metadata" / "asr_fixed.json", asr_payload)
+
+
+def write_uploaded_translation_artifact(
+    subtitle_file: Path,
+    session: Path,
+    source: SourceConfig,
+) -> Path:
+    _, translation_payload = _uploaded_subtitle_payloads(subtitle_file, source)
+    return _write_json_artifact(
+        session / "metadata" / f"translation.{source.target_language}.json",
+        translation_payload,
+    )
+
+
+def write_uploaded_subtitle_artifacts(
+    subtitle_file: Path,
+    session: Path,
+    source: SourceConfig,
+) -> tuple[Path, Path, Path]:
+    asr_payload, translation_payload = _uploaded_subtitle_payloads(
+        subtitle_file, source
+    )
+
+    metadata_dir = session / "metadata"
     asr_file = metadata_dir / "asr.json"
     asr_fixed_file = metadata_dir / "asr_fixed.json"
     translation_file = metadata_dir / f"translation.{source.target_language}.json"
-    asr_file.write_text(json.dumps(asr_payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    asr_fixed_file.write_text(json.dumps(asr_payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    translation_file.write_text(
-        json.dumps(translation_payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    _write_json_artifact(asr_file, asr_payload)
+    _write_json_artifact(asr_fixed_file, asr_payload)
+    _write_json_artifact(translation_file, translation_payload)
     return asr_file, asr_fixed_file, translation_file

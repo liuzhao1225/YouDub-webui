@@ -73,6 +73,80 @@ def test_write_uploaded_subtitle_artifacts_outputs_pipeline_schema(tmp_path):
     }
 
 
+@pytest.mark.parametrize(
+    ("writer_name", "target_name"),
+    [
+        ("write_uploaded_asr_artifact", "asr.json"),
+        ("write_uploaded_asr_fixed_artifact", "asr_fixed.json"),
+        ("write_uploaded_translation_artifact", "translation.zh.json"),
+    ],
+)
+def test_uploaded_subtitle_stage_writer_only_replaces_its_own_artifact(
+    tmp_path, writer_name, target_name
+):
+    subtitle = tmp_path / "subtitles.srt"
+    subtitle.write_text(
+        "1\n00:00:00,000 --> 00:00:01,200\n你好世界\n",
+        encoding="utf-8",
+    )
+    subtitle_before = subtitle.read_bytes()
+    metadata = tmp_path / "metadata"
+    metadata.mkdir()
+    artifact_names = ("asr.json", "asr_fixed.json", "translation.zh.json")
+    sentinels = {name: f"sentinel:{name}".encode() for name in artifact_names}
+    for name, content in sentinels.items():
+        (metadata / name).write_bytes(content)
+
+    writer = getattr(local_subtitles, writer_name)
+    output = writer(
+        subtitle,
+        tmp_path,
+        detect_source("local://upload/task-id?direction=en-zh"),
+    )
+
+    assert output == metadata / target_name
+    assert subtitle.read_bytes() == subtitle_before
+    for name, content in sentinels.items():
+        if name == target_name:
+            assert (metadata / name).read_bytes() != content
+        else:
+            assert (metadata / name).read_bytes() == content
+
+
+@pytest.mark.parametrize(
+    "writer_name",
+    [
+        "write_uploaded_asr_artifact",
+        "write_uploaded_asr_fixed_artifact",
+        "write_uploaded_translation_artifact",
+    ],
+)
+def test_uploaded_subtitle_stage_writer_failure_preserves_all_artifacts(
+    tmp_path, writer_name
+):
+    subtitle = tmp_path / "invalid.srt"
+    subtitle.write_text("invalid subtitle", encoding="utf-8")
+    subtitle_before = subtitle.read_bytes()
+    metadata = tmp_path / "metadata"
+    metadata.mkdir()
+    artifact_names = ("asr.json", "asr_fixed.json", "translation.zh.json")
+    sentinels = {name: f"sentinel:{name}".encode() for name in artifact_names}
+    for name, content in sentinels.items():
+        (metadata / name).write_bytes(content)
+
+    writer = getattr(local_subtitles, writer_name)
+    with pytest.raises(ValueError):
+        writer(
+            subtitle,
+            tmp_path,
+            detect_source("local://upload/task-id?direction=en-zh"),
+        )
+
+    assert subtitle.read_bytes() == subtitle_before
+    for name, content in sentinels.items():
+        assert (metadata / name).read_bytes() == content
+
+
 def test_split_audio_by_uploaded_subtitle_translation(monkeypatch, tmp_path):
     translation = tmp_path / "metadata" / "translation.zh.json"
     translation.parent.mkdir()
