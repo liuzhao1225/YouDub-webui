@@ -440,8 +440,8 @@ This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 <a href="https://www.star-history.com/?repos=liuzhao1225%2FYouDub-webui&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&theme=dark&legend=bottom-right" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&legend=bottom-right" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&legend=bottom-right" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&theme=dark&legend=top-left&sealed_token=t9OTxsr7OPV9qT-QQDeYzphpOYSdcpyBno9hGLqvDQRBHhqogTh1auFAaWJaAaQQnFRCJ4eVCWm76U0W4uQAuak3r64RzoKrpjGYaNl2LetvfzQ4Y91giQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&legend=top-left&sealed_token=t9OTxsr7OPV9qT-QQDeYzphpOYSdcpyBno9hGLqvDQRBHhqogTh1auFAaWJaAaQQnFRCJ4eVCWm76U0W4uQAuak3r64RzoKrpjGYaNl2LetvfzQ4Y91giQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&legend=top-left&sealed_token=t9OTxsr7OPV9qT-QQDeYzphpOYSdcpyBno9hGLqvDQRBHhqogTh1auFAaWJaAaQQnFRCJ4eVCWm76U0W4uQAuak3r64RzoKrpjGYaNl2LetvfzQ4Y91giQ" />
  </picture>
 </a>
