@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { use, useEffect, useMemo, useState } from "react"
+import { use, useCallback, useMemo, useState } from "react"
 import {
   CheckCircle2,
   Circle,
@@ -24,12 +24,14 @@ import {
   finalVideoUrl,
   getTask,
   getTaskLog,
+  isAbortError,
   redoStage,
   rerunTask,
   resumeTask,
 } from "@/lib/api"
 import { useI18n } from "@/lib/i18n"
 import { statusBadgeClass } from "@/lib/status"
+import { SerialPollingContext, useSerialPolling } from "@/lib/use-serial-polling"
 import { AppHeader } from "@/components/app-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -104,7 +106,24 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [redoConfirmStage, setRedoConfirmStage] = useState<string | null>(null)
   const [redoError, setRedoError] = useState("")
 
+  const pollTask = useCallback(async ({ signal, isCurrent }: SerialPollingContext) => {
+    try {
+      const next = await getTask(id, signal)
+      if (!isCurrent()) return
+      setTask(next)
+      const logText = await getTaskLog(id, signal)
+      if (isCurrent()) setLog(logText)
+    } catch (err) {
+      if (isCurrent() && !isAbortError(err)) {
+        setError(err instanceof Error ? err.message : t.task.loadError)
+      }
+    }
+  }, [id, t.task.loadError])
+
+  const invalidatePolling = useSerialPolling(pollTask)
+
   const handleDelete = async () => {
+    invalidatePolling()
     setDeleting(true)
     setDeleteError("")
     try {
@@ -117,10 +136,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleRerun = async () => {
+    invalidatePolling()
     setRerunning(true)
     setRerunError("")
     try {
       const next = await rerunTask(id)
+      invalidatePolling()
       setRerunOpen(false)
       setTask(next)
       setLog("")
@@ -132,10 +153,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleResume = async () => {
+    invalidatePolling()
     setResuming(true)
     setResumeError("")
     try {
       const next = await resumeTask(id)
+      invalidatePolling()
       setTask(next)
     } catch (err) {
       setResumeError(err instanceof Error ? err.message : t.task.resumeError)
@@ -145,10 +168,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleContinue = async (executionMode?: ExecutionMode) => {
+    invalidatePolling()
     setContinuing(true)
     setContinueError("")
     try {
       const next = await continueTask(id, executionMode)
+      invalidatePolling()
       setTask(next)
     } catch (err) {
       setContinueError(err instanceof Error ? err.message : t.task.continueError)
@@ -158,10 +183,12 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleRedoStage = async (stageName: string) => {
+    invalidatePolling()
     setRedoingStage(stageName)
     setRedoError("")
     try {
       const next = await redoStage(id, stageName)
+      invalidatePolling()
       setTask(next)
       return true
     } catch (err) {
@@ -185,28 +212,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const isManual = task?.execution_mode === "manual"
   const canRedoStage = isManual && !isRunning && !isQueued
   const redoConfirmStageInfo = task?.stages.find((stage) => stage.name === redoConfirmStage)
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const next = await getTask(id)
-        if (cancelled) return
-        setTask(next)
-        const logText = await getTaskLog(id)
-        if (cancelled) return
-        setLog(logText)
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : t.task.loadError)
-      }
-    }
-    load()
-    const interval = window.setInterval(load, 2000)
-    return () => {
-      cancelled = true
-      window.clearInterval(interval)
-    }
-  }, [id, t.task.loadError])
 
   const progress = useMemo(() => {
     if (!task?.stages?.length) return 0

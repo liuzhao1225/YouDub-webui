@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react"
+import { ChangeEvent, FormEvent, useCallback, useRef, useState } from "react"
 import { ChevronLeft, ChevronRight, Play, Search, Upload } from "lucide-react"
 
 import {
@@ -14,11 +14,13 @@ import {
   TaskListStatus,
   TaskSummary,
   createTask,
+  isAbortError,
   listTasks,
   uploadLocalTask,
 } from "@/lib/api"
 import { useI18n } from "@/lib/i18n"
 import { statusBadgeClass } from "@/lib/status"
+import { SerialPollingContext, useSerialPolling } from "@/lib/use-serial-polling"
 import { AppHeader } from "@/components/app-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -137,7 +139,7 @@ export default function Home() {
     { value: "title_desc", label: t.home.sortTitleDesc },
   ]
 
-  function applyTaskList(result: TaskListResponse) {
+  const applyTaskList = useCallback((result: TaskListResponse) => {
     const lastPage = Math.max(1, Math.ceil(result.total / result.page_size))
     setTaskTotal(result.total)
     if (result.total > 0 && result.tasks.length === 0 && result.page > lastPage) {
@@ -146,46 +148,36 @@ export default function Home() {
       return
     }
     setTasks(result.tasks)
-  }
+  }, [])
 
-  async function refreshTasks() {
-    const result = await listTasks({
-      page: taskPage,
-      page_size: taskPageSize,
-      q: taskQuery,
-      status: taskStatus,
-      execution_mode: taskExecutionMode,
-      sort: taskSort,
-    })
-    applyTaskList(result)
-  }
-
-  useEffect(() => {
-    let cancelled = false
-
-    const loadTasks = async () => {
-      try {
-        const result = await listTasks({
-          page: taskPage,
-          page_size: taskPageSize,
-          q: taskQuery,
-          status: taskStatus,
-          execution_mode: taskExecutionMode,
-          sort: taskSort,
-        })
-        if (!cancelled) applyTaskList(result)
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : t.home.loadError)
+  const pollTasks = useCallback(async ({ signal, isCurrent }: SerialPollingContext) => {
+    try {
+      const result = await listTasks({
+        page: taskPage,
+        page_size: taskPageSize,
+        q: taskQuery,
+        status: taskStatus,
+        execution_mode: taskExecutionMode,
+        sort: taskSort,
+      }, signal)
+      if (isCurrent()) applyTaskList(result)
+    } catch (err) {
+      if (isCurrent() && !isAbortError(err)) {
+        setError(err instanceof Error ? err.message : t.home.loadError)
       }
     }
+  }, [
+    applyTaskList,
+    taskExecutionMode,
+    taskPage,
+    taskPageSize,
+    taskQuery,
+    taskSort,
+    taskStatus,
+    t.home.loadError,
+  ])
 
-    loadTasks()
-    const interval = window.setInterval(loadTasks, 2000)
-    return () => {
-      cancelled = true
-      window.clearInterval(interval)
-    }
-  }, [taskExecutionMode, taskPage, taskPageSize, taskQuery, taskSort, taskStatus, t.home.loadError])
+  useSerialPolling(pollTasks)
 
   function resetTaskPage() {
     setTaskPage(1)
@@ -225,7 +217,6 @@ export default function Home() {
       if (subtitleInputRef.current) {
         subtitleInputRef.current.value = ""
       }
-      refreshTasks().catch(() => undefined)
       router.push(`/tasks/${created.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : t.home.createError)

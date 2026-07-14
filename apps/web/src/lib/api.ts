@@ -13,6 +13,10 @@ export class ApiError extends Error {
   }
 }
 
+export function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === "AbortError"
+}
+
 export type AuthSession = {
   authenticated: true
   csrf_token: string
@@ -211,16 +215,17 @@ export function getCurrentTask() {
   return request<Task | null>("/api/tasks/current")
 }
 
-export async function getTaskLog(taskId: string): Promise<string> {
+export async function getTaskLog(taskId: string, signal?: AbortSignal): Promise<string> {
   const response = await fetch(`/api/tasks/${taskId}/log`, {
     cache: "no-store",
     credentials: "include",
+    signal,
   })
   if (!response.ok) return parseResponse<string>(response)
   return response.text()
 }
 
-export function listTasks(params: TaskListParams | number = {}) {
+export function listTasks(params: TaskListParams | number = {}, signal?: AbortSignal) {
   const normalized = typeof params === "number" ? { page_size: params } : params
   const search = new URLSearchParams()
 
@@ -230,11 +235,14 @@ export function listTasks(params: TaskListParams | number = {}) {
   })
 
   const query = search.toString()
-  return request<TaskListResponse>(`/api/tasks${query ? `?${query}` : ""}`)
+  return request<TaskListResponse>(
+    `/api/tasks${query ? `?${query}` : ""}`,
+    signal ? { signal } : undefined,
+  )
 }
 
-export function getTask(taskId: string) {
-  return request<Task>(`/api/tasks/${taskId}`)
+export function getTask(taskId: string, signal?: AbortSignal) {
+  return request<Task>(`/api/tasks/${taskId}`, signal ? { signal } : undefined)
 }
 
 export function deleteTask(taskId: string) {
