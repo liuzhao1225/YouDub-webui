@@ -493,13 +493,36 @@ def test_sqlite_sidecar_disappearance_and_unlinked_fd_are_allowed(
     root = _make_safe_directory(tmp_path / "sqlite-ephemeral-unit")
     sidecar = root / "youdub.sqlite-journal"
     real_open = os.open
+    real_lstat = os.lstat
 
     sidecar.write_bytes(b"journal")
+    unlinked_values = list(real_lstat(sidecar))
+    unlinked_values[3] = 0
+    unlinked_metadata = os.stat_result(unlinked_values)
+    open_calls = []
+
+    def lstat_after_sqlite_unlink(path):
+        if Path(path) == sidecar:
+            return unlinked_metadata
+        return real_lstat(path)
+
+    monkeypatch.setattr(runtime_security.os, "lstat", lstat_after_sqlite_unlink)
+    monkeypatch.setattr(
+        runtime_security.os,
+        "open",
+        lambda *args, **kwargs: open_calls.append(args),
+    )
+    metadata = runtime_security.secure_sqlite_sidecar_file(sidecar)
+
+    assert metadata is not None
+    assert metadata.st_nlink == 0
+    assert open_calls == []
 
     def disappear_before_open(path, flags, mode=0o777):
         Path(path).unlink()
         raise FileNotFoundError(path)
 
+    monkeypatch.setattr(runtime_security.os, "lstat", real_lstat)
     monkeypatch.setattr(runtime_security.os, "open", disappear_before_open)
     assert runtime_security.secure_sqlite_sidecar_file(sidecar) is None
 

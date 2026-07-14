@@ -465,9 +465,11 @@ def secure_sqlite_sidecar_file(path: Path | str) -> os.stat_result | None:
         _validate_sqlite_sidecar_metadata(
             target,
             metadata,
-            allow_unlinked=False,
+            allow_unlinked=True,
         )
         if not POSIX_STRONG_PERMISSIONS:
+            return metadata
+        if metadata.st_nlink == 0:
             return metadata
 
         try:
