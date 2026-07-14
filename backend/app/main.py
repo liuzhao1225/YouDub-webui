@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import uuid
@@ -34,6 +35,8 @@ ALLOWED_SUBTITLE_SUFFIXES = {".srt"}
 LOCAL_UPLOAD_CHUNK_SIZE = 1024 * 1024
 MAX_LOCAL_UPLOAD_BYTES = int(os.getenv("LOCAL_UPLOAD_MAX_BYTES", str(4 * 1024 * 1024 * 1024)))
 MAX_LOCAL_SUBTITLE_BYTES = int(os.getenv("LOCAL_SUBTITLE_MAX_BYTES", str(20 * 1024 * 1024)))
+
+logger = logging.getLogger(__name__)
 
 TaskListStatus = Literal["all", "queued", "running", "paused", "succeeded", "failed"]
 TaskListExecutionMode = Literal["all", "auto", "manual"]
@@ -394,6 +397,17 @@ def _validate_uploaded_srt(path: Path) -> None:
         raise HTTPException(status_code=400, detail=f"Invalid SRT subtitle file: {exc}") from exc
 
 
+def _rollback_local_upload(task_id: str) -> None:
+    try:
+        remove_upload(WORKFOLDER, task_id)
+    except Exception:
+        logger.exception("Failed to remove local upload files for task %s", task_id)
+    try:
+        database.delete_task(task_id)
+    except Exception:
+        logger.exception("Failed to remove local upload database record for task %s", task_id)
+
+
 @app.post("/api/tasks/upload", status_code=201)
 def upload_local_video(
     direction: str = Form("en-zh"),
@@ -404,9 +418,14 @@ def upload_local_video(
     if direction not in LOCAL_UPLOAD_DIRECTIONS:
         raise HTTPException(status_code=422, detail="Unsupported local video direction.")
 
-    _ensure_runtime_ready()
     original_name = Path(file.filename or "").name.strip()
     stored_name = _clean_upload_filename(original_name)
+    stored_subtitle_name = None
+    if subtitle_file is not None:
+        stored_subtitle_name = _clean_subtitle_filename(subtitle_file.filename)
+    normalized_execution_mode = normalize_execution_mode(execution_mode)
+    _ensure_runtime_ready()
+
     task_id = str(uuid.uuid4())
     try:
         _save_uploaded_file(
@@ -415,9 +434,8 @@ def upload_local_video(
             max_bytes=MAX_LOCAL_UPLOAD_BYTES,
             too_large_detail="Uploaded video is too large.",
         )
-        if subtitle_file is not None and subtitle_file.filename:
-            subtitle_name = _clean_subtitle_filename(subtitle_file.filename)
-            subtitle_path = uploaded_subtitle_dir(WORKFOLDER, task_id) / subtitle_name
+        if subtitle_file is not None and stored_subtitle_name is not None:
+            subtitle_path = uploaded_subtitle_dir(WORKFOLDER, task_id) / stored_subtitle_name
             _save_uploaded_file(
                 subtitle_file,
                 subtitle_path,
@@ -425,19 +443,22 @@ def upload_local_video(
                 too_large_detail="Uploaded subtitle is too large.",
             )
             _validate_uploaded_srt(subtitle_path)
-    except HTTPException:
-        remove_upload(WORKFOLDER, task_id)
-        raise
 
-    url = f"local://upload/{task_id}?direction={direction}&filename={quote(original_name)}"
-    database.create_task(
-        url,
-        task_id=task_id,
-        execution_mode=normalize_execution_mode(execution_mode),
-    )
-    database.update_task(task_id, title=Path(original_name).stem)
-    worker.enqueue(task_id)
-    return database.get_task(task_id)
+        url = f"local://upload/{task_id}?direction={direction}&filename={quote(original_name)}"
+        database.create_task(
+            url,
+            task_id=task_id,
+            execution_mode=normalized_execution_mode,
+        )
+        database.update_task(task_id, title=Path(original_name).stem)
+        task = database.get_task(task_id)
+        if task is None:
+            raise RuntimeError(f"Local upload task {task_id} was not persisted.")
+        worker.enqueue(task_id)
+        return task
+    except Exception:
+        _rollback_local_upload(task_id)
+        raise
 
 
 @app.get("/api/tasks/current")

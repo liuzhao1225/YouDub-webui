@@ -4,6 +4,7 @@ import json
 import re
 import sqlite3
 import threading
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -1287,6 +1288,73 @@ def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
     assert subtitle_files[0].read_bytes().startswith(b"1\n00:00:00,000")
 
 
+@pytest.mark.parametrize(
+    ("data", "files", "expected_detail"),
+    [
+        (
+            {"direction": "fr-zh", "execution_mode": "auto"},
+            {"file": ("clip.mp4", b"mp4data", "video/mp4")},
+            "Unsupported local video direction.",
+        ),
+        (
+            {"direction": "en-zh", "execution_mode": "batch"},
+            {"file": ("clip.mp4", b"mp4data", "video/mp4")},
+            "execution_mode must be one of: auto, manual",
+        ),
+        (
+            {"direction": "en-zh", "execution_mode": "auto"},
+            {"file": (".", b"mp4data", "video/mp4")},
+            "Video filename is required.",
+        ),
+        (
+            {"direction": "en-zh", "execution_mode": "auto"},
+            {"file": ("clip.txt", b"mp4data", "text/plain")},
+            "Unsupported video file type.",
+        ),
+        (
+            {"direction": "en-zh", "execution_mode": "auto"},
+            {
+                "file": ("clip.mp4", b"mp4data", "video/mp4"),
+                "subtitle_file": (".", b"subtitle", "application/x-subrip"),
+            },
+            "Subtitle filename is required.",
+        ),
+        (
+            {"direction": "en-zh", "execution_mode": "auto"},
+            {
+                "file": ("clip.mp4", b"mp4data", "video/mp4"),
+                "subtitle_file": ("clip.vtt", b"WEBVTT", "text/vtt"),
+            },
+            "Only .srt subtitle files are supported.",
+        ),
+    ],
+)
+def test_upload_local_video_validates_parameters_before_writing(
+    monkeypatch,
+    tmp_path,
+    data,
+    files,
+    expected_detail,
+):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    write_attempts: list[Path] = []
+
+    def record_write(_file, destination, **_kwargs):
+        write_attempts.append(destination)
+        raise AssertionError("invalid upload parameters must be rejected before writing")
+
+    monkeypatch.setattr(main, "_save_uploaded_file", record_write)
+    client = authenticated_client()
+
+    response = client.post("/api/tasks/upload", data=data, files=files)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == expected_detail
+    assert write_attempts == []
+    assert database.list_tasks() == []
+    assert not any((config.WORKFOLDER / "_uploads").glob("*"))
+
+
 def test_upload_local_video_rejects_non_srt_subtitle(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     client = authenticated_client()
@@ -1322,6 +1390,71 @@ def test_upload_local_video_rejects_malformed_srt_and_cleans_upload(monkeypatch,
     assert response.status_code == 400
     assert "Invalid SRT subtitle file" in response.json()["detail"]
     assert enqueued == []
+    assert database.list_tasks() == []
+    assert not any((config.WORKFOLDER / "_uploads").glob("*"))
+
+
+def test_upload_local_video_database_failure_rolls_back_task_and_files(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    def fail_title_update(_task_id, **_fields):
+        raise sqlite3.OperationalError("injected title update failure")
+
+    monkeypatch.setattr(database, "update_task", fail_title_update)
+
+    with pytest.raises(sqlite3.OperationalError, match="injected title update failure"):
+        client.post(
+            "/api/tasks/upload",
+            data={"direction": "en-zh", "execution_mode": "auto"},
+            files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
+        )
+
+    assert enqueued == []
+    assert database.list_tasks() == []
+    assert not any((config.WORKFOLDER / "_uploads").glob("*"))
+
+
+def test_upload_local_video_unexpected_write_failure_removes_partial_upload(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = authenticated_client()
+
+    def fail_after_partial_write(_file, destination, **_kwargs):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(b"partial")
+        raise OSError("injected upload write failure")
+
+    monkeypatch.setattr(main, "_save_uploaded_file", fail_after_partial_write)
+
+    with pytest.raises(OSError, match="injected upload write failure"):
+        client.post(
+            "/api/tasks/upload",
+            data={"direction": "en-zh", "execution_mode": "auto"},
+            files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
+        )
+
+    assert database.list_tasks() == []
+    assert not any((config.WORKFOLDER / "_uploads").glob("*"))
+
+
+def test_upload_local_video_enqueue_failure_rolls_back_task_and_files(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = authenticated_client()
+
+    def fail_enqueue(_task_id):
+        raise RuntimeError("injected enqueue failure")
+
+    monkeypatch.setattr(main.worker, "enqueue", fail_enqueue)
+
+    with pytest.raises(RuntimeError, match="injected enqueue failure"):
+        client.post(
+            "/api/tasks/upload",
+            data={"direction": "en-zh", "execution_mode": "auto"},
+            files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
+        )
+
     assert database.list_tasks() == []
     assert not any((config.WORKFOLDER / "_uploads").glob("*"))
 
