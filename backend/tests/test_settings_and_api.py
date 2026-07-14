@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import sqlite3
+import threading
 
 import pytest
 from fastapi.testclient import TestClient
@@ -502,6 +504,288 @@ def test_openai_models_can_use_saved_key(monkeypatch, tmp_path):
     assert captured == {"base_url": "https://saved.example/v1", "api_key": "sk-saved"}
 
 
+def test_openai_models_reject_changed_base_without_explicit_key(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://saved.example/v1", "sk-saved", "saved-model")
+    called = False
+
+    def fake_list_models(*, base_url: str, api_key: str) -> list[str]:
+        nonlocal called
+        called = True
+        return []
+
+    monkeypatch.setattr(main, "list_openai_models", fake_list_models)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai/models",
+        json={"base_url": "https://other.example/v1", "api_key": ""},
+    )
+
+    assert response.status_code == 422
+    assert called is False
+    assert "sk-saved" not in response.text
+
+
+def test_openai_models_reject_invalid_base_url(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    called = False
+
+    def fake_list_models(*, base_url: str, api_key: str) -> list[str]:
+        nonlocal called
+        called = True
+        return []
+
+    monkeypatch.setattr(main, "list_openai_models", fake_list_models)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai/models",
+        json={"base_url": "ftp://api.example.com/v1", "api_key": "sk-temporary"},
+    )
+
+    assert response.status_code == 422
+    assert called is False
+    assert "sk-temporary" not in response.text
+
+
+def test_openai_models_allow_equivalent_saved_base_without_key(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://saved.example/v1", "sk-saved", "saved-model")
+    captured = {}
+
+    def fake_list_models(*, base_url: str, api_key: str) -> list[str]:
+        captured.update(base_url=base_url, api_key=api_key)
+        return ["saved-model"]
+
+    monkeypatch.setattr(main, "list_openai_models", fake_list_models)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai/models",
+        json={"base_url": "https://saved.example/v1/chat/completions", "api_key": ""},
+    )
+
+    assert response.status_code == 200
+    assert captured == {"base_url": "https://saved.example/v1", "api_key": "sk-saved"}
+
+
+def test_openai_models_hide_upstream_exception_details(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+
+    def fake_list_models(*, base_url: str, api_key: str) -> list[str]:
+        raise ValueError(f"upstream rejected {api_key}")
+
+    monkeypatch.setattr(main, "list_openai_models", fake_list_models)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai/models",
+        json={"base_url": "https://other.example/v1", "api_key": "sk-temporary"},
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Failed to fetch models from the OpenAI-compatible API."
+    assert "sk-temporary" not in response.text
+
+
+def test_openai_settings_reject_invalid_base_url(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = TestClient(main.app)
+
+    response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "ftp://api.example.com/v1",
+            "api_key": "sk-temporary",
+            "model": "model",
+            "translate_concurrency": "10",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "sk-temporary" not in response.text
+
+
+def test_openai_settings_reject_base_change_that_would_reuse_saved_key(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://saved.example/v1", "sk-saved", "saved-model")
+    captured = {}
+
+    def fake_list_models(*, base_url: str, api_key: str) -> list[str]:
+        captured.update(base_url=base_url, api_key=api_key)
+        return ["saved-model"]
+
+    monkeypatch.setattr(main, "list_openai_models", fake_list_models)
+    client = TestClient(main.app)
+
+    update_response = client.post(
+        "/api/settings/openai",
+        json={
+            "base_url": "https://other.example/v1",
+            "api_key": "",
+            "model": "other-model",
+            "translate_concurrency": "10",
+        },
+    )
+    models_response = client.post(
+        "/api/settings/openai/models",
+        json={"base_url": "", "api_key": ""},
+    )
+
+    assert update_response.status_code == 422
+    assert "sk-saved" not in update_response.text
+    assert models_response.status_code == 200
+    assert captured == {"base_url": "https://saved.example/v1", "api_key": "sk-saved"}
+
+
+def test_openai_settings_update_is_atomically_visible(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://saved.example/v1", "sk-saved", "saved-model")
+    base_update_started = threading.Event()
+    allow_update_to_finish = threading.Event()
+    writer_errors: list[Exception] = []
+
+    def pause_after_base_update() -> int:
+        base_update_started.set()
+        assert allow_update_to_finish.wait(timeout=5)
+        return 0
+
+    def connect_with_pause() -> sqlite3.Connection:
+        conn = sqlite3.connect(database.DB_PATH)
+        conn.row_factory = sqlite3.Row
+        conn.create_function("pause_after_base_update", 0, pause_after_base_update)
+        return conn
+
+    monkeypatch.setattr(database, "connect", connect_with_pause)
+    with database.connect() as conn:
+        conn.execute(
+            """
+            CREATE TRIGGER pause_openai_base_update
+            AFTER UPDATE ON settings
+            WHEN NEW.key = 'openai.base_url'
+            BEGIN
+              SELECT pause_after_base_update();
+            END
+            """
+        )
+
+    def update_settings() -> None:
+        try:
+            database.save_openai_settings(
+                "https://other.example/v1",
+                "sk-other",
+                "other-model",
+                "10",
+            )
+        except Exception as exc:  # pragma: no cover - asserted below
+            writer_errors.append(exc)
+
+    writer = threading.Thread(target=update_settings)
+    writer.start()
+    assert base_update_started.wait(timeout=5)
+
+    during_update = database.get_openai_settings()
+    assert during_update["base_url"] == "https://saved.example/v1"
+    assert during_update["api_key"] == "sk-saved"
+
+    allow_update_to_finish.set()
+    writer.join(timeout=5)
+    assert writer.is_alive() is False
+    assert writer_errors == []
+
+    after_update = database.get_openai_settings()
+    assert after_update["base_url"] == "https://other.example/v1"
+    assert after_update["api_key"] == "sk-other"
+
+
+def test_openai_settings_read_uses_one_consistent_snapshot(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.save_openai_settings("https://saved.example/v1", "sk-saved", "saved-model")
+    with database.connect() as conn:
+        assert conn.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+
+    original_connect = database.connect
+    reader_started = threading.Event()
+    allow_reader_to_finish = threading.Event()
+    reader_results: list[dict[str, str]] = []
+    reader_errors: list[Exception] = []
+
+    class PausingCursor:
+        def __init__(self, cursor: sqlite3.Cursor):
+            self.cursor = cursor
+
+        def fetchall(self):
+            first_row = self.cursor.fetchone()
+            reader_started.set()
+            assert allow_reader_to_finish.wait(timeout=5)
+            remaining_rows = self.cursor.fetchall()
+            return ([first_row] if first_row is not None else []) + remaining_rows
+
+    class PausingConnection:
+        def __init__(self, conn: sqlite3.Connection):
+            self.conn = conn
+
+        def __enter__(self):
+            self.conn.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.conn.__exit__(*args)
+
+        def execute(self, sql, parameters=()):
+            cursor = self.conn.execute(sql, parameters)
+            if "FROM settings WHERE key IN" in sql:
+                return PausingCursor(cursor)
+            return cursor
+
+    reader_thread: threading.Thread
+
+    def connect_with_pausing_reader():
+        conn = original_connect()
+        if threading.current_thread() is reader_thread:
+            return PausingConnection(conn)
+        return conn
+
+    monkeypatch.setattr(database, "connect", connect_with_pausing_reader)
+
+    def read_settings() -> None:
+        try:
+            reader_results.append(database.get_openai_settings())
+        except Exception as exc:  # pragma: no cover - asserted below
+            reader_errors.append(exc)
+
+    reader_thread = threading.Thread(target=read_settings)
+    reader_thread.start()
+    assert reader_started.wait(timeout=5)
+
+    database.save_openai_settings(
+        "https://other.example/v1",
+        "sk-other",
+        "other-model",
+        "10",
+    )
+    allow_reader_to_finish.set()
+    reader_thread.join(timeout=5)
+
+    assert reader_thread.is_alive() is False
+    assert reader_errors == []
+    assert reader_results == [
+        {
+            "base_url": "https://saved.example/v1",
+            "api_key": "sk-saved",
+            "model": "saved-model",
+            "translate_concurrency": "50",
+        }
+    ]
+    assert database.get_openai_settings() == {
+        "base_url": "https://other.example/v1",
+        "api_key": "sk-other",
+        "model": "other-model",
+        "translate_concurrency": "10",
+    }
+
+
 def test_openai_settings_include_translate_concurrency(monkeypatch, tmp_path):
     monkeypatch.delenv("OPENAI_TRANSLATE_CONCURRENCY", raising=False)
     configure_tmp_runtime(monkeypatch, tmp_path)
@@ -516,11 +800,12 @@ def test_openai_settings_include_translate_concurrency(monkeypatch, tmp_path):
 def test_openai_settings_persists_translate_concurrency(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     client = TestClient(main.app)
+    saved_base_url = database.get_openai_settings()["base_url"]
 
     response = client.post(
         "/api/settings/openai",
         json={
-            "base_url": "https://example.com/v1",
+            "base_url": saved_base_url,
             "api_key": "",
             "model": "model",
             "translate_concurrency": " 32 ",
@@ -580,11 +865,12 @@ def test_openai_settings_empty_translate_concurrency_preserves_existing(monkeypa
 def test_openai_settings_accepts_translate_concurrency_boundaries(monkeypatch, tmp_path, value):
     configure_tmp_runtime(monkeypatch, tmp_path)
     client = TestClient(main.app)
+    saved_base_url = database.get_openai_settings()["base_url"]
 
     response = client.post(
         "/api/settings/openai",
         json={
-            "base_url": "https://example.com/v1",
+            "base_url": saved_base_url,
             "api_key": "",
             "clear_api_key": False,
             "model": "model",

@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from . import database, worker
 from .adapters.local_subtitles import parse_srt, uploaded_subtitle_dir
 from .adapters.local_video import remove_upload, uploaded_video_dir
+from .adapters.openai_client import validate_openai_base_url
 from .adapters.openai_translate import list_models as list_openai_models
 from .config import WORKFOLDER, YOUTUBE_COOKIE_PATH, ensure_runtime_dirs
 from .pipeline import run_task
@@ -490,27 +491,49 @@ def get_openai_settings() -> dict:
 
 @app.post("/api/settings/openai")
 def save_openai_settings(payload: OpenAISettingsUpdate) -> dict:
-    database.save_openai_settings(
-        payload.base_url,
-        payload.api_key,
-        payload.model,
-        normalize_translate_concurrency(payload.translate_concurrency),
-        clear_api_key=payload.clear_api_key,
-    )
+    try:
+        database.save_openai_settings(
+            payload.base_url,
+            payload.api_key,
+            payload.model,
+            normalize_translate_concurrency(payload.translate_concurrency),
+            clear_api_key=payload.clear_api_key,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return get_openai_settings()
 
 
 @app.post("/api/settings/openai/models")
 def get_openai_models(payload: OpenAIModelsRequest) -> dict:
     settings = database.get_openai_settings()
-    base_url = payload.base_url.strip() or settings["base_url"]
-    api_key = payload.api_key.strip() or settings["api_key"]
+    try:
+        saved_base_url = validate_openai_base_url(settings["base_url"])
+        requested_base_url = payload.base_url.strip()
+        base_url = (
+            validate_openai_base_url(requested_base_url)
+            if requested_base_url
+            else saved_base_url
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    requested_api_key = payload.api_key.strip()
+    if requested_base_url and base_url != saved_base_url and not requested_api_key:
+        raise HTTPException(
+            status_code=422,
+            detail="An API key is required when testing a different OpenAI base URL.",
+        )
+    api_key = requested_api_key or settings["api_key"]
+    if not api_key:
+        raise HTTPException(status_code=400, detail="OpenAI API key is not configured.")
     try:
         models = list_openai_models(base_url=base_url, api_key=api_key)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch models: {exc}") from exc
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to fetch models from the OpenAI-compatible API.",
+        ) from exc
     return {"models": models}
 
 

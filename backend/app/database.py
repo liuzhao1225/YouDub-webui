@@ -436,12 +436,27 @@ def get_openai_settings() -> dict[str, str]:
     from .adapters.openai_client import normalize_openai_base_url
 
     defaults = openai_defaults()
+    keys = {
+        "base_url": "openai.base_url",
+        "api_key": "openai.api_key",
+        "model": "openai.model",
+        "translate_concurrency": "openai.translate_concurrency",
+    }
+    placeholders = ", ".join("?" for _ in keys)
+    with connect() as conn:
+        rows = conn.execute(
+            f"SELECT key, value FROM settings WHERE key IN ({placeholders})",
+            tuple(keys.values()),
+        ).fetchall()
+    saved = {row["key"]: row["value"] for row in rows}
     return {
-        "base_url": normalize_openai_base_url(get_setting("openai.base_url", defaults["base_url"])),
-        "api_key": get_setting("openai.api_key", defaults["api_key"]),
-        "model": get_setting("openai.model", defaults["model"]),
-        "translate_concurrency": get_setting(
-            "openai.translate_concurrency", defaults["translate_concurrency"]
+        "base_url": normalize_openai_base_url(
+            saved.get(keys["base_url"], defaults["base_url"])
+        ),
+        "api_key": saved.get(keys["api_key"], defaults["api_key"]),
+        "model": saved.get(keys["model"], defaults["model"]),
+        "translate_concurrency": saved.get(
+            keys["translate_concurrency"], defaults["translate_concurrency"]
         ),
     }
 
@@ -454,17 +469,53 @@ def save_openai_settings(
     *,
     clear_api_key: bool = False,
 ) -> None:
-    from .adapters.openai_client import normalize_openai_base_url
+    from .adapters.openai_client import validate_openai_base_url
 
-    set_setting("openai.base_url", normalize_openai_base_url(base_url))
+    validated_base_url = validate_openai_base_url(base_url)
+    defaults = openai_defaults()
     cleaned_api_key = api_key.strip()
-    if clear_api_key:
-        set_setting("openai.api_key", "")
-    elif cleaned_api_key and set(cleaned_api_key) != {"*"}:
-        set_setting("openai.api_key", cleaned_api_key)
-    set_setting("openai.model", model.strip())
-    if translate_concurrency.strip():
-        set_setting("openai.translate_concurrency", translate_concurrency.strip())
+    has_explicit_api_key = bool(cleaned_api_key) and set(cleaned_api_key) != {"*"}
+    updated_at = now_iso()
+
+    with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+
+        def current_value(key: str, default: str) -> str:
+            row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+            return row["value"] if row else default
+
+        current_base_url = validate_openai_base_url(
+            current_value("openai.base_url", defaults["base_url"])
+        )
+        current_api_key = current_value("openai.api_key", defaults["api_key"])
+        if (
+            validated_base_url != current_base_url
+            and current_api_key
+            and not has_explicit_api_key
+            and not clear_api_key
+        ):
+            raise ValueError("A new API key is required when changing the OpenAI base URL.")
+
+        updates = {
+            "openai.base_url": validated_base_url,
+            "openai.model": model.strip(),
+        }
+        if clear_api_key:
+            updates["openai.api_key"] = ""
+        elif has_explicit_api_key:
+            updates["openai.api_key"] = cleaned_api_key
+        if translate_concurrency.strip():
+            updates["openai.translate_concurrency"] = translate_concurrency.strip()
+
+        conn.executemany(
+            """
+            INSERT INTO settings (key, value, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE
+            SET value = excluded.value, updated_at = excluded.updated_at
+            """,
+            [(key, value, updated_at) for key, value in updates.items()],
+        )
 
 
 def get_ytdlp_settings() -> dict[str, str]:
