@@ -1,6 +1,9 @@
 export const AUTH_UNAUTHORIZED_EVENT = "youdub:auth-unauthorized"
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
+const MAX_VALIDATION_ITEMS_INSPECTED = 20
+const MAX_VALIDATION_MESSAGES = 3
+const MAX_VALIDATION_MESSAGE_LENGTH = 240
 let csrfToken = ""
 
 export class ApiError extends Error {
@@ -31,6 +34,23 @@ function errorMessage(body: unknown, status: number) {
   if (body && typeof body === "object" && "detail" in body) {
     const detail = (body as { detail?: unknown }).detail
     if (typeof detail === "string" && detail.trim()) return detail
+    if (Array.isArray(detail)) {
+      const messages: string[] = []
+      for (const item of detail.slice(0, MAX_VALIDATION_ITEMS_INSPECTED)) {
+        if (item && typeof item === "object" && "msg" in item) {
+          const message = (item as { msg?: unknown }).msg
+          if (typeof message === "string" && message.trim()) {
+            const characters = Array.from(message.trim())
+            const normalized = characters.length > MAX_VALIDATION_MESSAGE_LENGTH
+              ? `${characters.slice(0, MAX_VALIDATION_MESSAGE_LENGTH - 1).join("")}…`
+              : message.trim()
+            if (!messages.includes(normalized)) messages.push(normalized)
+          }
+        }
+        if (messages.length >= MAX_VALIDATION_MESSAGES) break
+      }
+      if (messages.length > 0) return messages.join("; ")
+    }
   }
   return `Request failed: ${status}`
 }

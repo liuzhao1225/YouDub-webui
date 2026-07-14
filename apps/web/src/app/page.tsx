@@ -41,6 +41,11 @@ import {
 } from "@/components/ui/select"
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+const TASK_SEARCH_MAX_LENGTH = 200
+
+function truncateSearchQuery(value: string) {
+  return Array.from(value).slice(0, TASK_SEARCH_MAX_LENGTH).join("")
+}
 
 function isActive(status: string) {
   return status === "queued" || status === "running"
@@ -96,6 +101,7 @@ export default function Home() {
   const [taskExecutionMode, setTaskExecutionMode] = useState<TaskListExecutionMode>("all")
   const [taskSort, setTaskSort] = useState<TaskListSort>("created_desc")
   const [error, setError] = useState("")
+  const [taskListError, setTaskListError] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
   const localDirectionOptions: { value: LocalDirection; label: string }[] = [
@@ -162,10 +168,13 @@ export default function Home() {
         execution_mode: taskExecutionMode,
         sort: taskSort,
       }, signal)
-      if (isCurrent()) applyTaskList(result)
+      if (isCurrent()) {
+        setTaskListError("")
+        applyTaskList(result)
+      }
     } catch (err) {
       if (isCurrent() && !isAbortError(err)) {
-        setError(err instanceof Error ? err.message : t.home.loadError)
+        setTaskListError(err instanceof Error ? err.message : t.home.loadError)
       }
     }
   }, [
@@ -392,7 +401,7 @@ export default function Home() {
                     className="h-9 pl-8"
                     value={taskQuery}
                     onChange={(event) => {
-                      setTaskQuery(event.target.value)
+                      setTaskQuery(truncateSearchQuery(event.target.value))
                       resetTaskPage()
                     }}
                     placeholder={t.home.taskSearchPlaceholder}
@@ -504,6 +513,12 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {taskListError ? (
+              <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {taskListError}
+              </div>
+            ) : null}
 
             {tasks.length === 0 ? (
               <div className="px-6 py-12 text-center text-sm text-muted-foreground">
