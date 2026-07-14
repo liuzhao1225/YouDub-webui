@@ -8,6 +8,7 @@ from pathlib import Path
 from backend.app import database
 from backend.app import pipeline
 from backend.app.pipeline import PipelineRunner
+from backend.app.stages import STAGES
 
 
 def configure_db(monkeypatch, tmp_path):
@@ -243,6 +244,76 @@ def test_pipeline_manual_pauses_after_each_stage(monkeypatch, tmp_path):
     assert task["stages"][2]["status"] == "pending"
 
 
+def test_pipeline_manual_completes_immediately_after_final_stage(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=manualfinal",
+        task_id="manualfinal",
+        execution_mode="manual",
+    )
+    session = _cached_session(tmp_path)
+    final_path = session / "media" / "video_final.mp4"
+    visited: list[str] = []
+
+    def make_stage_handler(stage_name: str):
+        def handler(self, _task):
+            visited.append(stage_name)
+            if stage_name == "download":
+                self.artifacts.session = session
+                self.artifacts.video_file = session / "media" / "video_source.mp4"
+                database.update_task(self.task_id, session_path=str(session), title="manual-final")
+            elif stage_name == "separate":
+                self.artifacts.vocals_file = session / "media" / "audio_vocals.wav"
+                self.artifacts.bgm_file = session / "media" / "audio_bgm.wav"
+            elif stage_name == "asr":
+                self.artifacts.asr_file = session / "metadata" / "asr.json"
+            elif stage_name == "asr_fix":
+                self.artifacts.asr_fixed_file = session / "metadata" / "asr_fixed.json"
+            elif stage_name == "translate":
+                self.artifacts.translation_file = session / "metadata" / "translation.zh.json"
+            elif stage_name == "split_audio":
+                self.artifacts.vocals_dir = session / "segments" / "vocals"
+            elif stage_name == "tts":
+                self.artifacts.tts_dir = session / "segments" / "tts"
+            elif stage_name == "merge_audio":
+                self.artifacts.dubbing_file = session / "tmp" / "audio_dubbing.wav"
+                self.artifacts.timings_file = session / "metadata" / "timings.json"
+            elif stage_name == "merge_video":
+                self.artifacts.final_video = final_path
+
+        return handler
+
+    for stage in STAGES:
+        monkeypatch.setattr(PipelineRunner, f"_{stage.name}", make_stage_handler(stage.name))
+
+    for index, stage in enumerate(STAGES):
+        if index > 0:
+            database.queue_task_for_continue(task_id)
+
+        PipelineRunner(task_id).run()
+        task = database.get_task(task_id)
+        stage_statuses = [entry["status"] for entry in task["stages"]]
+
+        assert stage_statuses[: index + 1] == ["succeeded"] * (index + 1)
+        assert stage_statuses[index + 1 :] == ["pending"] * (len(STAGES) - index - 1)
+        if index < len(STAGES) - 1:
+            assert task["status"] == "paused"
+            assert task["current_stage"] == stage.name
+            assert task["final_video_path"] is None
+            assert task["completed_at"] is None
+        else:
+            assert task["status"] == "succeeded"
+            assert task["current_stage"] == "done"
+            assert task["final_video_path"] == str(final_path)
+            assert task["completed_at"] is not None
+
+    assert visited == [stage.name for stage in STAGES]
+    assert [stage["progress"] for stage in task["stages"]] == [100] * len(STAGES)
+    log_content = database.log_path(task_id).read_text(encoding="utf-8")
+    assert "Task succeeded" in log_content
+    assert "Paused after [merge_video]" not in log_content
+
+
 def test_pipeline_manual_switch_to_auto_runs_remaining_stages(monkeypatch, tmp_path):
     configure_db(monkeypatch, tmp_path)
     task_id = database.create_task(
@@ -369,4 +440,3 @@ def test_pipeline_uses_uploaded_srt_and_skips_model_stages(monkeypatch, tmp_path
     assert "skipped Whisper" in log_content
     assert "skipped sentence splitting" in log_content
     assert "skipped OpenAI translation" in log_content
-

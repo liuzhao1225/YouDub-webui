@@ -100,7 +100,7 @@ class PipelineRunner:
                     self.log(f"[{stage.name}] Reused cached output")
                     continue
                 self._run_stage(stage.name)
-                if execution_mode == "manual":
+                if execution_mode == "manual" and stage != STAGES[-1]:
                     database.update_task(self.task_id, status="paused")
                     self.log(f"Paused after [{stage.name}], waiting for manual continue")
                     return
