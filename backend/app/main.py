@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, SecretStr
 
-from . import auth, database, worker
+from . import auth, database, runtime_security, worker
 from .adapters.local_subtitles import parse_srt, uploaded_subtitle_dir
 from .adapters.local_video import remove_upload, uploaded_video_dir
 from .adapters.openai_client import validate_openai_base_url
@@ -119,8 +119,8 @@ def normalize_translate_concurrency(value: str) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    auth.validate_auth_configuration()
     ensure_runtime_dirs()
+    auth.validate_auth_configuration()
     database.init_db()
     database.delete_expired_auth_sessions(database.now_iso())
     database.backfill_titles_from_metadata()
@@ -363,19 +363,24 @@ def _clean_subtitle_filename(filename: str | None) -> str:
 
 def _save_uploaded_file(file: UploadFile, destination: Path, *, max_bytes: int, too_large_detail: str) -> int:
     total = 0
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with destination.open("wb") as handle:
-        while True:
-            chunk = file.file.read(LOCAL_UPLOAD_CHUNK_SIZE)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > max_bytes:
-                destination.unlink(missing_ok=True)
-                raise HTTPException(status_code=413, detail=too_large_detail)
-            handle.write(chunk)
+    created = False
+    try:
+        with runtime_security.open_private_binary_exclusive(destination) as handle:
+            created = True
+            while True:
+                chunk = file.file.read(LOCAL_UPLOAD_CHUNK_SIZE)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > max_bytes:
+                    raise HTTPException(status_code=413, detail=too_large_detail)
+                handle.write(chunk)
+    except Exception:
+        if created:
+            runtime_security.remove_private_file(destination, missing_ok=True)
+        raise
     if total == 0:
-        destination.unlink(missing_ok=True)
+        runtime_security.remove_private_file(destination, missing_ok=True)
         raise HTTPException(status_code=422, detail="Uploaded file is empty.")
     return total
 
@@ -599,20 +604,20 @@ def final_video(task_id: str, download: bool = False) -> FileResponse:
 
 @app.get("/api/cookies/youtube")
 def get_youtube_cookie() -> dict:
-    exists = YOUTUBE_COOKIE_PATH.exists()
-    size = YOUTUBE_COOKIE_PATH.stat().st_size if exists else 0
-    updated_at = YOUTUBE_COOKIE_PATH.stat().st_mtime if exists else None
+    metadata = runtime_security.private_file_stat(YOUTUBE_COOKIE_PATH)
+    exists = metadata is not None
+    size = metadata.st_size if metadata else 0
+    updated_at = metadata.st_mtime if metadata else None
     return {"exists": exists, "size": size, "updated_at": updated_at, "content": ""}
 
 
 @app.post("/api/cookies/youtube")
 def save_youtube_cookie(payload: YouTubeCookieUpdate) -> dict:
-    YOUTUBE_COOKIE_PATH.parent.mkdir(parents=True, exist_ok=True)
     content = payload.content.strip()
     if content:
-        YOUTUBE_COOKIE_PATH.write_text(content + "\n", encoding="utf-8")
-    elif YOUTUBE_COOKIE_PATH.exists():
-        YOUTUBE_COOKIE_PATH.unlink()
+        runtime_security.atomic_write_private_text(YOUTUBE_COOKIE_PATH, content + "\n")
+    else:
+        runtime_security.remove_private_file(YOUTUBE_COOKIE_PATH, missing_ok=True)
     return get_youtube_cookie()
 
 

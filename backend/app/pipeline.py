@@ -7,7 +7,7 @@ from pathlib import Path
 from time import monotonic
 from typing import Callable
 
-from . import database
+from . import database, runtime_security
 from .config import WORKFOLDER
 from .devices import device_plan_summary
 from .runtime_checks import validate_runtime_device
@@ -34,9 +34,8 @@ class PipelineArtifacts:
 
 def _write_log(task_id: str, message: str) -> None:
     path = database.log_path(task_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
     timestamp = database.now_iso()
-    with path.open("a", encoding="utf-8") as handle:
+    with runtime_security.open_private_append_text(path) as handle:
         for line in message.rstrip().splitlines() or [""]:
             handle.write(f"[{timestamp}] {line}\n")
 

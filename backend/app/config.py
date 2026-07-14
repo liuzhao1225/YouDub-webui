@@ -1,13 +1,25 @@
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+from . import runtime_security
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+runtime_security.apply_private_umask()
+
+
+def _load_runtime_environment(repo_root: Path) -> None:
+    runtime_security.prepare_repository_root(repo_root)
+    runtime_security.secure_secret_aliases(repo_root / ".env", repo_root / "env.txt")
+    load_dotenv(repo_root / ".env")
+
+
+_load_runtime_environment(REPO_ROOT)
+
 DATA_DIR = REPO_ROOT / "data"
 COOKIE_DIR = DATA_DIR / "cookies"
 DB_PATH = DATA_DIR / "youdub.sqlite"
@@ -16,13 +28,53 @@ WORKFOLDER = Path(os.getenv("WORKFOLDER", str(REPO_ROOT / "workfolder"))).expand
 LOG_DIR = DATA_DIR / "logs"
 MODEL_CACHE_DIR = Path(os.getenv("MODEL_CACHE_DIR", str(DATA_DIR / "modelscope"))).expanduser()
 
+_RUNTIME_SECURITY_LOCK = threading.Lock()
+_RUNTIME_SECURITY_SIGNATURE: tuple[str, ...] | None = None
+
 
 def ensure_runtime_dirs() -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    COOKIE_DIR.mkdir(parents=True, exist_ok=True)
-    WORKFOLDER.mkdir(parents=True, exist_ok=True)
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    MODEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    global _RUNTIME_SECURITY_SIGNATURE
+    signature = tuple(
+        os.path.abspath(os.fspath(path))
+        for path in (
+            DATA_DIR,
+            COOKIE_DIR,
+            WORKFOLDER,
+            LOG_DIR,
+            MODEL_CACHE_DIR,
+            DB_PATH,
+            REPO_ROOT / ".env",
+            REPO_ROOT / "env.txt",
+        )
+    )
+    with _RUNTIME_SECURITY_LOCK:
+        if _RUNTIME_SECURITY_SIGNATURE == signature:
+            return
+
+        runtime_security.validate_model_cache_location(
+            MODEL_CACHE_DIR,
+            private_roots=(DATA_DIR, WORKFOLDER),
+            protected_paths=(
+                COOKIE_DIR,
+                LOG_DIR,
+                DB_PATH,
+                REPO_ROOT / ".env",
+                REPO_ROOT / "env.txt",
+            ),
+        )
+        for directory in (DATA_DIR, COOKIE_DIR, WORKFOLDER, LOG_DIR):
+            runtime_security.ensure_private_directory(directory)
+        runtime_security.ensure_model_cache_directory(MODEL_CACHE_DIR)
+        runtime_security.migrate_private_runtime(
+            private_roots=(DATA_DIR, WORKFOLDER),
+            exclude_roots=(MODEL_CACHE_DIR,),
+            ephemeral_files=runtime_security.sqlite_sidecar_paths(DB_PATH),
+        )
+        runtime_security.secure_secret_aliases(
+            REPO_ROOT / ".env", REPO_ROOT / "env.txt"
+        )
+        runtime_security.secure_sqlite_files(DB_PATH)
+        _RUNTIME_SECURITY_SIGNATURE = signature
 
 
 def device() -> str:

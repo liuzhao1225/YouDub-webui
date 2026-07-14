@@ -294,6 +294,21 @@ http://localhost:3000
 
 浏览器应始终访问前端地址，由 Next.js 转发 `/api`；不要把认证信息放进 `NEXT_PUBLIC_*`、URL query 或前端存储。通过局域网或公网访问时，请在前端前面配置 HTTPS 反向代理并设置 `YOUDUB_AUTH_COOKIE_SECURE=true`。明文 HTTP 只适用于可信的本机开发环境。
 
+### 运行时文件权限
+
+在 POSIX 系统上，后端会在读取 `.env`、连接 SQLite 或启动 worker 前永久设置进程 `umask 0077`。启动迁移只检查文件系统元数据，不读取或改写文件内容，并执行以下策略：
+
+- `data/`、Cookie、日志和 `WORKFOLDER` 下的目录收紧为 `0700`，普通文件收紧为 `0600`。
+- SQLite 主库和 `-journal`、`-wal`、`-shm` sidecar、`.env`、`env.txt`、Cookie、上传与新生成产物保持 owner-only。
+- 符号链接、特殊文件、异主文件和不安全的可写祖先会让启动失败；服务不会在权限迁移失败后继续启动 worker。
+- `MODEL_CACHE_DIR` 根目录必须由 root 或服务账号拥有且不可被其他用户写入；服务账号拥有的缓存根会收紧为 `0700`。缓存内部不做递归 chmod 或内容校验，因此部署前必须确认已有模型缓存可信。
+
+建议用专用 OS 用户运行服务，并确保仓库及自定义 `WORKFOLDER` 的父目录不允许其他组或用户重命名目录项。该边界防护其他 UID 或不可信组用户，不防同 UID 进程、调试器或 root；更强隔离请使用独立账号、容器或系统服务沙箱。
+
+首次启用或执行权限迁移时，应先停止仍会创建或删除运行时文件的旧实例；如果并行启动因 fail-closed 校验失败，请停止旧实例后重试启动。
+
+Windows 的 `chmod`/`umask` 不等价于 NTFS ACL。Windows 部署需由管理员把仓库、`.env`、`env.txt`、`data` 和 `WORKFOLDER` 的 DACL 限制到服务账号；应用会做兼容性检查，但不能替代正确的 NTFS ACL。真实 `.env`、`env.txt`、Cookie、SQLite、`data/` 和 `workfolder/` 已被 `.gitignore` 排除，不要强制加入 Git。
+
 ## 页面里怎么用
 
 1. 使用生成哈希时设置的访问密码登录。

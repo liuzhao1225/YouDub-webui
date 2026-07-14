@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from . import config, runtime_security
 from .config import DB_PATH, ensure_runtime_dirs, openai_defaults, ytdlp_defaults
 from .stages import STAGES
 
@@ -20,13 +21,22 @@ def now_iso() -> str:
 
 
 def connect() -> sqlite3.Connection:
-    ensure_runtime_dirs()
+    if Path(DB_PATH).absolute() == Path(config.DB_PATH).absolute():
+        ensure_runtime_dirs()
+    runtime_security.secure_sqlite_database_file(DB_PATH)
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        runtime_security.secure_sqlite_database_file(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception:
+        conn.close()
+        raise
 
 
 def init_db() -> None:
+    if Path(DB_PATH).absolute() == Path(config.DB_PATH).absolute():
+        ensure_runtime_dirs()
     with connect() as conn:
         conn.executescript(
             """
@@ -650,4 +660,6 @@ def save_ytdlp_settings(proxy_port: str) -> None:
 def log_path(task_id: str) -> Path:
     from .config import LOG_DIR
 
+    if Path(DB_PATH).absolute() != Path(config.DB_PATH).absolute():
+        return Path(DB_PATH).absolute().parent / "logs" / f"{task_id}.log"
     return LOG_DIR / f"{task_id}.log"

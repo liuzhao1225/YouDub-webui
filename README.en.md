@@ -294,6 +294,21 @@ When opening the app from LAN, WSL2, or another machine, use the actual frontend
 
 Browsers should always open the frontend URL and let Next.js forward `/api`; never place authentication data in `NEXT_PUBLIC_*`, URL queries, or browser storage. For LAN or public access, put the frontend behind an HTTPS reverse proxy and set `YOUDUB_AUTH_COOKIE_SECURE=true`. Plain HTTP is suitable only for trusted local development.
 
+### Runtime File Permissions
+
+On POSIX systems, the backend permanently sets process `umask 0077` before reading `.env`, opening SQLite, or starting the worker. Startup migration inspects filesystem metadata only; it does not read or rewrite file contents. The policy is:
+
+- Directories under `data/`, Cookie and log storage, and `WORKFOLDER` are restricted to `0700`; regular files are restricted to `0600`.
+- The SQLite database and its `-journal`, `-wal`, and `-shm` sidecars, `.env`, `env.txt`, cookies, uploads, and newly generated artifacts remain owner-only.
+- Symlinks, special files, foreign-owned nodes, or unsafe writable ancestors make startup fail closed; the worker does not start after a migration failure.
+- The `MODEL_CACHE_DIR` root must be owned by root or the service account and must not be writable by other users. A service-owned cache root is restricted to `0700`. Its contents are not recursively chmodded or validated, so any existing model cache must be trusted before deployment.
+
+Run the service under a dedicated OS account, and ensure that the repository and any custom `WORKFOLDER` parent cannot be renamed by untrusted groups or users. This boundary protects against other UIDs and untrusted groups; it does not protect against same-UID processes, debuggers, or root. Use a dedicated account, container, or service sandbox for stronger isolation.
+
+Before the first permission migration, stop any older instance that may still create or delete runtime files. If a concurrent startup fails closed during migration, stop the older instance and retry startup.
+
+On Windows, `chmod` and `umask` are not substitutes for NTFS ACLs. Restrict the DACL for the repository, `.env`, `env.txt`, `data`, and `WORKFOLDER` to the service account; the application's compatibility checks cannot replace correct ACLs. Real `.env`, `env.txt`, cookie, SQLite, `data/`, and `workfolder/` files are covered by `.gitignore`; never force-add them to Git.
+
 ## Using the Web UI
 
 1. Sign in with the access password whose hash you configured.

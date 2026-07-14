@@ -10,6 +10,7 @@ import time
 import requests
 import yt_dlp
 
+from .. import runtime_security
 from ..sanitize import sanitize_text
 from ..sources import SourceConfig
 from ..youtube import extract_video_id
@@ -41,8 +42,7 @@ def _bootstrap_bilibili_cookie(cookie_path: Path) -> None:
     cookies.setdefault("SESSDATA", "anonymous_for_webpage_playinfo")
     for name, value in cookies.items():
         lines.append("\t".join([".bilibili.com", "TRUE", "/", "FALSE", str(expires), name, value]))
-    cookie_path.parent.mkdir(parents=True, exist_ok=True)
-    cookie_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    runtime_security.atomic_write_private_text(cookie_path, "\n".join(lines) + "\n")
 
 
 def _proxy_url(proxy_port: str = "") -> str:
@@ -55,7 +55,8 @@ def _ensure_cookie(source: SourceConfig) -> None:
     cookie_path = source.cookie_path
     if not cookie_path or source.name != "bilibili":
         return
-    if cookie_path.exists() and cookie_path.stat().st_size > 0:
+    metadata = runtime_security.private_file_stat(cookie_path)
+    if metadata and metadata.st_size > 0:
         return
     _bootstrap_bilibili_cookie(cookie_path)
 
@@ -69,8 +70,10 @@ def _ydl_base(source: SourceConfig, proxy_port: str = "") -> dict[str, Any]:
         "http_headers": {"User-Agent": DEFAULT_USER_AGENT},
     }
     cookie_path = source.cookie_path
-    if cookie_path and cookie_path.exists() and cookie_path.stat().st_size > 0:
-        opts["cookiefile"] = str(cookie_path)
+    if cookie_path:
+        metadata = runtime_security.private_file_stat(cookie_path)
+        if metadata and metadata.st_size > 0:
+            opts["cookiefile"] = str(cookie_path)
     if not source.use_proxy:
         opts["proxy"] = ""
         return opts
