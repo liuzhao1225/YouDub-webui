@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import Home from "@/app/page"
 import { LanguageProvider } from "@/lib/i18n"
+import uploadContract from "@/lib/upload-contract.json"
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(),
@@ -59,6 +60,9 @@ describe("本地视频字幕选择", () => {
 
     const videoInput = screen.getByLabelText("本地视频文件") as HTMLInputElement
     const subtitleInput = screen.getByLabelText("已翻译 SRT 字幕（可选）") as HTMLInputElement
+    expect(videoInput.accept).toBe(uploadContract.video_extensions.join(","))
+    expect(videoInput.accept).not.toContain("video/*")
+    expect(videoInput.accept).not.toContain(".3gp")
     const videoA = new File(["video-a"], "video-a.mp4", { type: "video/mp4" })
     const subtitleA = new File(["subtitle-a"], "subtitle-a.srt", { type: "application/x-subrip" })
     const videoB = new File(["video-b"], "video-b.mp4", { type: "video/mp4" })

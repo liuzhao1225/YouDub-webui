@@ -21,6 +21,7 @@ import {
 import { useI18n } from "@/lib/i18n"
 import { statusBadgeClass } from "@/lib/status"
 import { SerialPollingContext, useSerialPolling } from "@/lib/use-serial-polling"
+import uploadContract from "@/lib/upload-contract.json"
 import { AppHeader } from "@/components/app-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -42,6 +43,7 @@ import {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 const TASK_SEARCH_MAX_LENGTH = 200
+const LOCAL_VIDEO_ACCEPT = uploadContract.video_extensions.join(",")
 
 function truncateSearchQuery(value: string) {
   return Array.from(value).slice(0, TASK_SEARCH_MAX_LENGTH).join("")
@@ -283,7 +285,7 @@ export default function Home() {
                     ref={fileInputRef}
                     id="local-video"
                     type="file"
-                    accept="video/*,.mp4,.mov,.m4v,.mkv,.webm,.avi,.flv,.wmv"
+                    accept={LOCAL_VIDEO_ACCEPT}
                     onChange={selectLocalFile}
                     disabled={hasUrl}
                   />

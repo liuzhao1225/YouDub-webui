@@ -1302,6 +1302,28 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
     assert saved[0].read_bytes() == b"mp4data"
 
 
+def test_frontend_video_accept_contract_matches_backend_allowlist():
+    contract_path = (
+        Path(__file__).resolve().parents[2]
+        / "apps"
+        / "web"
+        / "src"
+        / "lib"
+        / "upload-contract.json"
+    )
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    extensions = contract["video_extensions"]
+
+    assert len(extensions) == len(set(extensions))
+    assert all(
+        extension.startswith(".") and extension == extension.lower()
+        for extension in extensions
+    )
+    assert set(extensions) == main.ALLOWED_VIDEO_SUFFIXES
+    for extension in extensions:
+        assert main._clean_upload_filename(f"clip{extension.upper()}") == f"clip{extension}"
+
+
 def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
@@ -1352,6 +1374,11 @@ def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
         (
             {"direction": "en-zh", "execution_mode": "auto"},
             {"file": ("clip.txt", b"mp4data", "text/plain")},
+            "Unsupported video file type.",
+        ),
+        (
+            {"direction": "en-zh", "execution_mode": "auto"},
+            {"file": ("clip.3gp", b"mp4data", "video/mp4")},
             "Unsupported video file type.",
         ),
         (

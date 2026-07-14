@@ -1,0 +1,12 @@
+{
+  "video_extensions": [
+    ".mp4",
+    ".mov",
+    ".m4v",
+    ".mkv",
+    ".webm",
+    ".avi",
+    ".flv",
+    ".wmv"
+  ]
+}
