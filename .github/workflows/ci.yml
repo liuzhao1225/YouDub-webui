@@ -1,0 +1,100 @@
+name: 质量与安全门禁
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: 前端质量与安全
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: 安装前端依赖
+        run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+
+      - name: 运行前端测试
+        run: npm test -- --reporter=verbose
+
+      - name: 运行 ESLint
+        run: npm run lint
+
+      - name: 运行 TypeScript 检查
+        run: ./node_modules/.bin/tsc --noEmit
+
+      - name: 构建生产版本
+        run: npm run build
+
+      - name: 审计生产依赖
+        run: npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org
+
+  backend:
+    name: 后端测试
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: 配置 Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-test.txt
+
+      - name: 安装后端测试依赖
+        id: pip_aliyun
+        continue-on-error: true
+        run: python -m pip install -r backend/requirements-test.txt -i https://mirrors.aliyun.com/pypi/simple/
+
+      - name: 阿里云失败后使用清华镜像重试
+        if: steps.pip_aliyun.outcome == 'failure'
+        run: python -m pip install -r backend/requirements-test.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+
+      - name: 检查轻量依赖边界
+        run: |
+          python -m pip check
+          python - <<'PY'
+          from importlib.util import find_spec
+
+          excluded = (
+              "torch", "whisper", "demucs", "voxcpm", "modelscope",
+              "librosa", "audiostretchy", "spacy", "openunmix",
+          )
+          installed = [name for name in excluded if find_spec(name) is not None]
+          if installed:
+              raise SystemExit(f"CI 测试环境意外安装了重型依赖: {', '.join(installed)}")
+          PY
+
+      - name: 运行后端全量测试
+        run: python -m pytest backend/tests -q

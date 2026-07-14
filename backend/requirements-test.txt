@@ -1,0 +1,17 @@
+# Lightweight CPU-only dependencies for the complete backend unit-test suite.
+# Keep this list aligned with imports exercised by backend/tests. Runtime ML
+# packages such as Torch, Whisper, OpenUnmix, librosa, AudioStretchy and VoxCPM
+# are mocked or lazily imported by tests and intentionally do not belong here.
+fastapi
+pydantic
+python-dotenv
+python-multipart
+pwdlib[argon2]>=0.3,<1
+openai
+yt-dlp
+requests
+numpy
+soundfile
+pydub
+pytest
+httpx[socks]

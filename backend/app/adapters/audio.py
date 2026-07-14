@@ -3,10 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import librosa
 import numpy as np
 import soundfile as sf
-from audiostretchy.stretch import stretch_audio
 from pydub import AudioSegment
 
 BASE_FACTOR_MIN = 0.8
@@ -35,6 +33,8 @@ def split_audio_by_translation(vocals_file: Path, translation_file: Path, sessio
 
 
 def _audio_duration(file: Path) -> tuple[float, int]:
+    import librosa
+
     y, sr = librosa.load(str(file), sr=None)
     return len(y) / sr, sr
 
@@ -53,9 +53,13 @@ def _base_speed_factor(translation: list[dict], tts_files: list[Path]) -> float:
 
 
 def _stretch_segment(audio_file: Path, ratio: float, target_sec: float, cache_dir: Path) -> tuple[np.ndarray, int]:
+    import librosa
+
     if abs(ratio - 1.0) < SPEED_NOOP_EPSILON:
         y, sr = librosa.load(str(audio_file), sr=None)
         return y, sr
+    from audiostretchy.stretch import stretch_audio
+
     out_path = cache_dir / audio_file.name
     stretch_audio(str(audio_file), str(out_path), ratio=ratio)
     y, sr = librosa.load(str(out_path), sr=None)
