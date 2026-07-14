@@ -173,6 +173,24 @@ def test_different_videos_create_separate_tasks(monkeypatch, tmp_path):
     assert enqueued == ["abcdefghijk", "zyxwvutsrqp"]
 
 
+def test_deceptive_video_host_is_rejected_without_task_or_enqueue(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    response = client.post(
+        "/api/tasks",
+        json={
+            "url": "https://youtube.com.evil.example/watch?v=abcdefghijk"
+        },
+    )
+
+    assert response.status_code == 422
+    assert database.list_tasks() == []
+    assert enqueued == []
+
+
 def make_history_task(
     task_id: str,
     *,

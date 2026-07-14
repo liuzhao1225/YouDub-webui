@@ -13,7 +13,7 @@ import yt_dlp
 from .. import runtime_security
 from ..sanitize import sanitize_text
 from ..sources import SourceConfig
-from ..youtube import extract_video_id
+from ..youtube import extract_video_id, validate_video_url
 
 
 FORMAT_CANDIDATES = (
@@ -131,11 +131,15 @@ def _download_with_format_candidates(
 def download_video(
     url: str, workfolder: Path, source: SourceConfig, proxy_port: str = ""
 ) -> tuple[Path, dict[str, Any]]:
-    video_id = extract_video_id(url)
+    validated = validate_video_url(url)
+    if validated.source != source.name:
+        raise ValueError("The submitted URL does not match the selected video source.")
+    canonical_url = validated.url
+    video_id = validated.video_id
     _ensure_cookie(source)
     info_opts = _ydl_base(source, proxy_port)
     with yt_dlp.YoutubeDL(info_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
+        info = ydl.extract_info(canonical_url, download=False)
 
     if str(info.get("id", video_id)) != video_id:
         raise ValueError("The resolved video id does not match the submitted URL.")
@@ -153,7 +157,7 @@ def download_video(
     if video_file.exists() and video_file.stat().st_size > 0:
         return session, info
 
-    _download_with_format_candidates(url, video_file, source, proxy_port)
+    _download_with_format_candidates(canonical_url, video_file, source, proxy_port)
 
     if not video_file.exists() or video_file.stat().st_size == 0:
         raise RuntimeError("yt-dlp finished without producing media/video_source.mp4")

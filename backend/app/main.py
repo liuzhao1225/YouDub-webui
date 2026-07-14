@@ -27,7 +27,7 @@ from .sanitize import sanitize_text
 from .sources import detect_source
 from .stage_reset import remove_stage_artifacts
 from .stages import STAGE_NAMES
-from .youtube import LOCAL_UPLOAD_DIRECTIONS, extract_video_id, is_local_upload_url
+from .youtube import LOCAL_UPLOAD_DIRECTIONS, is_local_upload_url, validate_video_url
 
 ALLOWED_VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".flv", ".wmv"}
 ALLOWED_SUBTITLE_SUFFIXES = {".srt"}
@@ -321,18 +321,18 @@ def normalize_execution_mode(value: str) -> str:
 @app.post("/api/tasks", status_code=201)
 def create_task(payload: TaskCreate) -> dict:
     try:
-        video_id = extract_video_id(payload.url)
+        validated_url = validate_video_url(payload.url)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    existing_id = database.find_task_by_video_id(video_id)
+    existing_id = database.find_task_by_video_id(validated_url.video_id)
     if existing_id:
         return database.get_task(existing_id)
 
     _ensure_runtime_ready()
     task_id = database.create_task(
-        payload.url.strip(),
-        task_id=video_id,
+        validated_url.url,
+        task_id=validated_url.video_id,
         execution_mode=normalize_execution_mode(payload.execution_mode),
     )
     worker.enqueue(task_id)
