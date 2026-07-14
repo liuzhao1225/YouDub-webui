@@ -61,10 +61,6 @@ function shortUrl(url: string) {
   return url.replace(/^https?:\/\/(www\.)?/, "")
 }
 
-function activeCount(tasks: TaskSummary[]) {
-  return tasks.filter((t) => isActive(t.status)).length
-}
-
 function selectedLabel<T extends string>(options: { value: T; label: string }[], value: T) {
   return options.find((option) => option.value === value)?.label || value
 }
@@ -92,6 +88,7 @@ export default function Home() {
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("auto")
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [taskTotal, setTaskTotal] = useState(0)
+  const [activeTaskCount, setActiveTaskCount] = useState<number | null>(null)
   const [taskPage, setTaskPage] = useState(1)
   const [taskPageSize, setTaskPageSize] = useState(20)
   const [taskQuery, setTaskQuery] = useState("")
@@ -142,6 +139,11 @@ export default function Home() {
   const applyTaskList = useCallback((result: TaskListResponse) => {
     const lastPage = Math.max(1, Math.ceil(result.total / result.page_size))
     setTaskTotal(result.total)
+    setActiveTaskCount(
+      Number.isInteger(result.active_count) && result.active_count >= 0
+        ? result.active_count
+        : null,
+    )
     if (result.total > 0 && result.tasks.length === 0 && result.page > lastPage) {
       setTasks([])
       setTaskPage(lastPage)
@@ -225,7 +227,6 @@ export default function Home() {
     }
   }
 
-  const queued = activeCount(tasks)
   const hasUrl = Boolean(youtubeUrl.trim() || bilibiliUrl.trim())
   const hasLocalFile = Boolean(localFile)
   const canSubmit = Boolean((hasUrl || hasLocalFile) && !submitting)
@@ -352,9 +353,9 @@ export default function Home() {
                 </Select>
               </div>
               <div className="flex items-center justify-between gap-3">
-                {queued > 0 ? (
+                {activeTaskCount !== null && activeTaskCount > 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    {activeTasksText(queued)}
+                    {activeTasksText(activeTaskCount)}
                   </p>
                 ) : (
                   <span />

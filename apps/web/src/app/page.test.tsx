@@ -38,6 +38,7 @@ describe("本地视频字幕选择", () => {
         return new Response(JSON.stringify({
           tasks: [],
           total: 0,
+          active_count: 0,
           page: 1,
           page_size: 20,
         }), {
@@ -118,6 +119,7 @@ describe("任务列表轮询", () => {
           execution_mode: "auto",
         }],
         total: 1,
+        active_count: 37,
         page: 1,
         page_size: 20,
       }), {
@@ -158,6 +160,7 @@ describe("任务列表轮询", () => {
           execution_mode: "auto",
         }],
         total: 1,
+        active_count: 2,
         page: 1,
         page_size: 20,
       }), {
@@ -168,6 +171,57 @@ describe("任务列表轮询", () => {
     })
 
     expect(screen.getByText("新列表任务")).toBeInTheDocument()
+    expect(screen.getByText("37 个任务正在排队或运行")).toBeInTheDocument()
     expect(screen.queryByText("迟到的旧任务")).not.toBeInTheDocument()
+  })
+})
+
+describe("全局活跃任务数", () => {
+  it("切换到已完成筛选后仍显示超过单页容量的全局活跃数", async () => {
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), "http://localhost")
+      if (url.pathname !== "/api/tasks") throw new Error(`未预期的请求: ${url.pathname}`)
+      const succeededOnly = url.searchParams.get("status") === "succeeded"
+      return new Response(JSON.stringify({
+        tasks: succeededOnly ? [{
+          id: "completed-task",
+          url: "https://example.com/completed",
+          title: "已完成筛选结果",
+          status: "succeeded",
+          current_stage: "done",
+          final_video_path: null,
+          error_message: null,
+          created_at: "2026-07-14T00:00:00Z",
+          started_at: null,
+          completed_at: "2026-07-14T01:00:00Z",
+          execution_mode: "auto",
+        }] : [],
+        total: succeededOnly ? 1 : 0,
+        active_count: succeededOnly ? 37 : 0,
+        page: 1,
+        page_size: 20,
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const user = userEvent.setup()
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1))
+    await user.click(screen.getByLabelText("状态"))
+    await user.click(await screen.findByRole("option", { name: "已完成" }))
+
+    expect(await screen.findByText("已完成筛选结果")).toBeInTheDocument()
+    expect(screen.getByText("37 个任务正在排队或运行")).toBeInTheDocument()
+    expect(mocks.fetch.mock.calls.some(([input]) => (
+      new URL(String(input), "http://localhost").searchParams.get("status") === "succeeded"
+    ))).toBe(true)
   })
 })

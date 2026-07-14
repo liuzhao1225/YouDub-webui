@@ -235,6 +235,7 @@ def test_list_tasks_returns_history_newest_first(monkeypatch, tmp_path):
     ids = [task["id"] for task in body["tasks"]]
     assert ids == [newer, older]
     assert body["total"] == 2
+    assert body["active_count"] == 2
     assert body["page"] == 1
     assert body["page_size"] == 20
     assert "stages" not in body["tasks"][0]
@@ -299,6 +300,48 @@ def test_list_tasks_paginates_with_total(monkeypatch, tmp_path):
     assert body["total"] == 5
     assert body["page"] == 2
     assert body["page_size"] == 2
+
+
+def test_list_tasks_active_count_ignores_filters_search_and_pagination(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    for index in range(3):
+        make_history_task(
+            f"queued-task-{index}",
+            status="queued",
+            execution_mode="auto",
+            created_at=f"2024-01-0{index + 1}T00:00:00+00:00",
+        )
+    for index in range(2):
+        make_history_task(
+            f"running-task-{index}",
+            status="running",
+            execution_mode="auto",
+            created_at=f"2024-01-0{index + 4}T00:00:00+00:00",
+        )
+    make_history_task("paused-task", status="paused", execution_mode="manual")
+    succeeded = make_history_task(
+        "visible-success",
+        title="Visible completed task",
+        status="succeeded",
+        execution_mode="manual",
+    )
+    client = authenticated_client()
+
+    filtered = client.get(
+        "/api/tasks?q=visible&status=succeeded&execution_mode=manual&page=1&page_size=1"
+    )
+
+    assert filtered.status_code == 200
+    assert task_ids(filtered) == [succeeded]
+    assert filtered.json()["total"] == 1
+    assert filtered.json()["active_count"] == 5
+
+    empty = client.get("/api/tasks?q=no-match&page=99&page_size=1")
+
+    assert empty.status_code == 200
+    assert empty.json()["tasks"] == []
+    assert empty.json()["total"] == 0
+    assert empty.json()["active_count"] == 5
 
 
 def test_list_tasks_sorts_by_created_status_and_title(monkeypatch, tmp_path):

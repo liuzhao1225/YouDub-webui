@@ -207,6 +207,7 @@ export type TaskListParams = {
 export type TaskListResponse = {
   tasks: TaskSummary[]
   total: number
+  active_count: number
   page: number
   page_size: number
 }

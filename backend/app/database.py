@@ -399,12 +399,15 @@ def list_tasks_page(
 
     where_sql = f" WHERE {' AND '.join(where_parts)}" if where_parts else ""
     order_sql = TASK_LIST_SORTS.get(sort, TASK_LIST_SORTS["created_desc"])
+    active_placeholders = ", ".join("?" for _ in ACTIVE_STATUSES)
 
     with connect() as conn:
-        total = conn.execute(
-            f"SELECT COUNT(*) FROM tasks{where_sql}",
-            params,
-        ).fetchone()[0]
+        counts = conn.execute(
+            "SELECT "
+            f"(SELECT COUNT(*) FROM tasks{where_sql}) AS filtered_total, "
+            f"(SELECT COUNT(*) FROM tasks WHERE status IN ({active_placeholders})) AS active_count",
+            [*params, *ACTIVE_STATUSES],
+        ).fetchone()
         rows = conn.execute(
             f"SELECT {TASK_SUMMARY_COLUMNS} FROM tasks{where_sql} "
             f"ORDER BY {order_sql} LIMIT ? OFFSET ?",
@@ -413,7 +416,8 @@ def list_tasks_page(
 
     return {
         "tasks": [dict(row) for row in rows],
-        "total": total,
+        "total": counts["filtered_total"],
+        "active_count": counts["active_count"],
         "page": page,
         "page_size": page_size,
     }
