@@ -134,6 +134,52 @@ def test_openai_key_save_modes_without_clear(monkeypatch, tmp_path, api_key, exp
     assert settings["model"] == "next-model"
 
 
+def test_openai_defaults_use_atlas_cloud_aliases_when_openai_key_is_absent(monkeypatch):
+    for key in (
+        "OPENAI_API_KEY",
+        "OPENAI_BASE_URL",
+        "OPENAI_API_BASE",
+        "OPENAI_MODEL",
+        "OPENAI_MODEL_NAME",
+        "ATLASCLOUD_API_KEY",
+        "ATLAS_CLOUD_API_KEY",
+        "ATLASCLOUD_BASE_URL",
+        "ATLAS_CLOUD_BASE_URL",
+        "ATLASCLOUD_MODEL",
+        "ATLAS_CLOUD_MODEL",
+        "OPENAI_TRANSLATE_CONCURRENCY",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("ATLAS_CLOUD_API_KEY", "atlas-test-key")
+
+    assert config.openai_defaults() == {
+        "base_url": "https://api.atlascloud.ai/v1",
+        "api_key": "atlas-test-key",
+        "model": "deepseek-ai/deepseek-v4-pro",
+        "translate_concurrency": "50",
+    }
+
+
+def test_openai_defaults_prefer_openai_key_over_atlas_cloud_aliases(monkeypatch):
+    for key in (
+        "OPENAI_BASE_URL",
+        "OPENAI_API_BASE",
+        "OPENAI_MODEL",
+        "OPENAI_MODEL_NAME",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
+    monkeypatch.setenv("ATLASCLOUD_API_KEY", "atlas-test-key")
+
+    defaults = config.openai_defaults()
+
+    assert defaults["api_key"] == "openai-test-key"
+    assert defaults["base_url"] == "https://api.openai.com/v1"
+    assert defaults["model"] == "gpt-4o-mini"
+
+
 def test_cookie_response_does_not_leak_content(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     client = authenticated_client()

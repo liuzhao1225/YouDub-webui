@@ -84,10 +84,33 @@ def device() -> str:
     return "cuda"
 
 
+def _first_env(*names: str) -> str:
+    for name in names:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
 def openai_defaults() -> dict[str, str]:
+    atlas_api_key = _first_env("ATLASCLOUD_API_KEY", "ATLAS_CLOUD_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if atlas_api_key and not openai_api_key:
+        return {
+            "base_url": _first_env(
+                "ATLASCLOUD_BASE_URL",
+                "ATLAS_CLOUD_BASE_URL",
+            )
+            or "https://api.atlascloud.ai/v1",
+            "api_key": atlas_api_key,
+            "model": _first_env("ATLASCLOUD_MODEL", "ATLAS_CLOUD_MODEL")
+            or "deepseek-ai/deepseek-v4-pro",
+            "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
+        }
+
     return {
         "base_url": os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE") or "https://api.openai.com/v1",
-        "api_key": os.getenv("OPENAI_API_KEY", ""),
+        "api_key": openai_api_key,
         "model": os.getenv("OPENAI_MODEL") or os.getenv("OPENAI_MODEL_NAME") or "gpt-4o-mini",
         "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
     }
