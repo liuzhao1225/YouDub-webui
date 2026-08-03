@@ -13,6 +13,7 @@ from backend.app import auth, config, database, pipeline
 from backend.app import main
 from backend.app import worker
 from backend.app.adapters import local_subtitles
+from backend.app.sources import detect_source
 from backend.tests.conftest import TEST_AUTH_PASSWORD
 
 
@@ -1300,6 +1301,26 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
     saved = list((config.WORKFOLDER / "_uploads" / body["id"] / "video").iterdir())
     assert len(saved) == 1
     assert saved[0].read_bytes() == b"mp4data"
+
+
+def test_upload_local_video_accepts_japanese_to_chinese_direction(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    response = client.post(
+        "/api/tasks/upload",
+        data={"direction": "ja-zh"},
+        files={"file": ("japanese.mp4", b"mp4data", "video/mp4")},
+    )
+
+    assert response.status_code == 201
+    task = response.json()
+    assert task["url"].startswith(f"local://upload/{task['id']}?direction=ja-zh")
+    assert detect_source(task["url"]).asr_language == "ja"
+    assert detect_source(task["url"]).target_language == "zh"
+    assert enqueued == [task["id"]]
 
 
 def test_frontend_video_accept_contract_matches_backend_allowlist():
