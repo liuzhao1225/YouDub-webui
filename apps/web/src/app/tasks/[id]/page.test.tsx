@@ -34,6 +34,7 @@ function taskWithStatus(status: TaskStatus): Task {
     started_at: null,
     completed_at: null,
     execution_mode: "manual",
+    output_mode: "dubbing",
     stages: [{
       task_id: "task-race",
       name: "download",
@@ -103,6 +104,7 @@ describe("任务详情轮询", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "执行下一阶段" })).toBeInTheDocument()
     })
+    expect(screen.getByText("仅翻译声音")).toBeInTheDocument()
 
     await waitFor(() => expect(taskGetCount).toBe(2), { timeout: 3500 })
 

@@ -158,6 +158,78 @@ def test_merge_video_uses_absolute_media_paths_when_cwd_is_session(monkeypatch, 
     assert cwd_values[-1] == session.resolve()
 
 
+def test_merge_video_subtitles_only_preserves_original_audio(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    translation = metadata_dir / "translation.zh.json"
+    translation.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {"start_time": 0, "end_time": 1000, "zh": "你好"}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        if cmd[0] == "ffprobe":
+            return subprocess.CompletedProcess(cmd, 0, stdout="1920,1080\n", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        None,
+        None,
+        translation,
+        session,
+        output_mode="subtitles",
+    )
+
+    assert len(commands) == 2
+    final_command = commands[-1]
+    assert final_command.count("-i") == 1
+    assert "-vf" in final_command
+    assert final_command[final_command.index("-map", final_command.index("-map") + 1) + 1] == "0:a?"
+    assert final_command[final_command.index("-c:a") + 1] == "copy"
+    assert "-shortest" not in final_command
+
+
+def test_merge_video_dubbing_only_does_not_generate_subtitles(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    timings = metadata_dir / "timings.json"
+    timings.write_text('{"translation": []}', encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        tmp_path / "dubbing.wav",
+        tmp_path / "bgm.wav",
+        timings,
+        session,
+        output_mode="dubbing",
+    )
+
+    assert len(commands) == 2
+    assert "-vf" not in commands[-1]
+    assert not (metadata_dir / "subtitles.zh.srt").exists()
+    assert commands[-1][commands[-1].index("-c:a") + 1] == "aac"
+
+
 def test_split_subtitle_text_breaks_on_punctuation_and_keeps_protected():
     out = ffmpeg.split_subtitle_text("我们今天讨论一下宇宙的边界，那是一个神秘话题；不过别担心，我会详细解释。")
     assert len(out) >= 3

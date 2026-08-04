@@ -14,6 +14,8 @@ from .stages import STAGES
 ACTIVE_STATUSES = ("queued", "running")
 EXECUTION_MODES = ("auto", "manual")
 DEFAULT_EXECUTION_MODE = "auto"
+OUTPUT_MODES = ("subtitles", "dubbing", "both")
+DEFAULT_OUTPUT_MODE = "both"
 
 
 def now_iso() -> str:
@@ -52,7 +54,8 @@ def init_db() -> None:
               created_at TEXT NOT NULL,
               started_at TEXT,
               completed_at TEXT,
-              execution_mode TEXT NOT NULL DEFAULT 'auto'
+              execution_mode TEXT NOT NULL DEFAULT 'auto',
+              output_mode TEXT NOT NULL DEFAULT 'both'
             );
 
             CREATE TABLE IF NOT EXISTS task_stages (
@@ -109,6 +112,10 @@ def init_db() -> None:
         if "execution_mode" not in task_columns:
             conn.execute(
                 "ALTER TABLE tasks ADD COLUMN execution_mode TEXT NOT NULL DEFAULT 'auto'"
+            )
+        if "output_mode" not in task_columns:
+            conn.execute(
+                "ALTER TABLE tasks ADD COLUMN output_mode TEXT NOT NULL DEFAULT 'both'"
             )
         stage_columns = {row["name"] for row in conn.execute("PRAGMA table_info(task_stages)").fetchall()}
         if "progress" not in stage_columns:
@@ -269,22 +276,33 @@ def normalize_execution_mode(value: str | None) -> str:
     return mode
 
 
+def normalize_output_mode(value: str | None) -> str:
+    mode = (value or DEFAULT_OUTPUT_MODE).strip().lower()
+    if mode not in OUTPUT_MODES:
+        raise ValueError(f"output_mode must be one of: {', '.join(OUTPUT_MODES)}")
+    return mode
+
+
 def create_task(
     url: str,
     task_id: str | None = None,
     *,
     execution_mode: str = DEFAULT_EXECUTION_MODE,
+    output_mode: str = DEFAULT_OUTPUT_MODE,
 ) -> str:
     new_id = task_id or str(uuid.uuid4())
     created_at = now_iso()
     mode = normalize_execution_mode(execution_mode)
+    normalized_output_mode = normalize_output_mode(output_mode)
     with connect() as conn:
         conn.execute(
             """
-            INSERT INTO tasks (id, url, status, current_stage, created_at, execution_mode)
-            VALUES (?, ?, 'queued', ?, ?, ?)
+            INSERT INTO tasks (
+              id, url, status, current_stage, created_at, execution_mode, output_mode
+            )
+            VALUES (?, ?, 'queued', ?, ?, ?, ?)
             """,
-            (new_id, url, STAGES[0].name, created_at, mode),
+            (new_id, url, STAGES[0].name, created_at, mode, normalized_output_mode),
         )
         conn.executemany(
             """
@@ -323,7 +341,7 @@ def latest_task_id() -> str | None:
 
 TASK_SUMMARY_COLUMNS = (
     "id, url, title, status, current_stage, final_video_path, error_message, "
-    "created_at, started_at, completed_at, execution_mode"
+    "created_at, started_at, completed_at, execution_mode, output_mode"
 )
 
 TASK_LIST_SORTS = {

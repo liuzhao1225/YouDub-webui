@@ -62,6 +62,107 @@ def test_pipeline_marks_all_stages_succeeded(monkeypatch, tmp_path):
     assert [stage["progress"] for stage in task["stages"]] == [100] * 9
 
 
+def test_subtitles_only_pipeline_skips_dubbing_stages(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=subtitleonly",
+        task_id="subtitleonly",
+        output_mode="subtitles",
+    )
+    final_path = tmp_path / "video_final.mp4"
+    final_path.write_bytes(b"mp4")
+    visited: list[str] = []
+
+    def record_stage(name):
+        def handler(self, task):
+            visited.append(name)
+
+        return handler
+
+    for name in ("download", "separate", "asr", "asr_fix", "translate"):
+        monkeypatch.setattr(PipelineRunner, f"_{name}", record_stage(name))
+
+    def fail_dubbing_stage(self, task):
+        raise AssertionError("dubbing stage should be skipped")
+
+    for name in ("_split_audio", "_tts", "_merge_audio"):
+        monkeypatch.setattr(PipelineRunner, name, fail_dubbing_stage)
+
+    def merge_video(self, task):
+        visited.append("merge_video")
+        self.artifacts.final_video = final_path
+
+    monkeypatch.setattr(PipelineRunner, "_merge_video", merge_video)
+
+    PipelineRunner(task_id).run()
+
+    task = database.get_task(task_id)
+    stages = {stage["name"]: stage for stage in task["stages"]}
+    assert task["status"] == "succeeded"
+    assert task["output_mode"] == "subtitles"
+    assert visited == ["download", "separate", "asr", "asr_fix", "translate", "merge_video"]
+    assert [stages[name]["status"] for name in ("split_audio", "tts", "merge_audio")] == [
+        "skipped",
+        "skipped",
+        "skipped",
+    ]
+    assert all(stages[name]["progress"] == 100 for name in ("split_audio", "tts", "merge_audio"))
+
+
+def test_merge_video_stage_uses_translation_and_original_audio_for_subtitles_only(
+    monkeypatch,
+    tmp_path,
+):
+    from backend.app.adapters import ffmpeg
+
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=submergevid",
+        task_id="submergevid",
+        output_mode="subtitles",
+    )
+    session = tmp_path / "session"
+    media = session / "media"
+    metadata = session / "metadata"
+    media.mkdir(parents=True)
+    metadata.mkdir()
+    video = media / "video_source.mp4"
+    translation = metadata / "translation.zh.json"
+    video.write_bytes(b"video")
+    translation.write_text('{"translation": []}', encoding="utf-8")
+    runner = PipelineRunner(task_id)
+    runner.artifacts.session = session
+    runner.artifacts.video_file = video
+    runner.artifacts.translation_file = translation
+    received: dict[str, object] = {}
+
+    def fake_merge_video(video_file, dubbing_file, bgm_file, timings_file, session_dir, *, output_mode):
+        received.update(
+            video_file=video_file,
+            dubbing_file=dubbing_file,
+            bgm_file=bgm_file,
+            timings_file=timings_file,
+            session_dir=session_dir,
+            output_mode=output_mode,
+        )
+        final = media / "video_final.mp4"
+        final.write_bytes(b"final")
+        return final
+
+    monkeypatch.setattr(ffmpeg, "merge_video", fake_merge_video)
+
+    runner._merge_video(database.get_task(task_id))
+
+    assert received == {
+        "video_file": video,
+        "dubbing_file": None,
+        "bgm_file": None,
+        "timings_file": translation,
+        "session_dir": session,
+        "output_mode": "subtitles",
+    }
+
+
 def test_pipeline_skips_already_succeeded_stages(monkeypatch, tmp_path):
     configure_db(monkeypatch, tmp_path)
     task_id = database.create_task("https://www.youtube.com/watch?v=resumevidxxx", task_id="resumevidxxx")

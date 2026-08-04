@@ -75,6 +75,7 @@ class PipelineRunner:
             return
 
         execution_mode = task.get("execution_mode") or database.DEFAULT_EXECUTION_MODE
+        output_mode = task.get("output_mode") or database.DEFAULT_OUTPUT_MODE
         status = task["status"]
         if status not in ("queued", "paused"):
             return
@@ -93,11 +94,19 @@ class PipelineRunner:
             validate_runtime_device()
             self.log(f"Device plan: {device_plan_summary()}")
             for stage in STAGES:
-                if self._stage_status(stage.name) == "succeeded":
+                stage_status = self._stage_status(stage.name)
+                if stage_status == "skipped":
+                    self.log(f"[{stage.name}] Reused skipped stage")
+                    continue
+                if stage_status == "succeeded":
                     database.update_task(self.task_id, current_stage=stage.name)
                     database.update_stage(self.task_id, stage.name, progress=100)
                     self._restore_cached_stage(stage.name, database.get_task(self.task_id))
                     self.log(f"[{stage.name}] Reused cached output")
+                    continue
+                current_task = database.get_task(self.task_id)
+                if self._should_skip_stage(stage.name, output_mode, current_task):
+                    self._skip_stage(stage.name, output_mode)
                     continue
                 self._run_stage(stage.name)
                 if execution_mode == "manual" and stage != STAGES[-1]:
@@ -159,6 +168,32 @@ class PipelineRunner:
             if entry["name"] == stage:
                 return entry["status"]
         return None
+
+    def _should_skip_stage(self, stage: str, output_mode: str, task: dict | None) -> bool:
+        if output_mode == "subtitles" and stage in {"split_audio", "tts", "merge_audio"}:
+            return True
+        return (
+            output_mode == "subtitles"
+            and stage == "separate"
+            and task is not None
+            and self._uploaded_subtitle_path(task) is not None
+        )
+
+    def _skip_stage(self, stage: str, output_mode: str) -> None:
+        completed_at = database.now_iso()
+        message = f"Skipped for output mode: {output_mode}"
+        database.update_task(self.task_id, current_stage=stage)
+        database.update_stage(
+            self.task_id,
+            stage,
+            status="skipped",
+            progress=100,
+            started_at=completed_at,
+            completed_at=completed_at,
+            last_message=message,
+            error_message=None,
+        )
+        self.log(f"[{stage}] {message}")
 
     def _local_info(self) -> dict | None:
         session = self.artifacts.session
@@ -435,10 +470,24 @@ class PipelineRunner:
 
         session = _require(self.artifacts.session, "session")
         video_file = _require(self.artifacts.video_file, "video_file")
-        dubbing_file = _require(self.artifacts.dubbing_file, "dubbing_file")
-        bgm_file = _require(self.artifacts.bgm_file, "bgm_file")
-        timings_file = _require(self.artifacts.timings_file, "timings_file")
-        self.artifacts.final_video = merge_video(video_file, dubbing_file, bgm_file, timings_file, session)
+        task = database.get_task(self.task_id) or {}
+        output_mode = task.get("output_mode") or database.DEFAULT_OUTPUT_MODE
+        if output_mode == "subtitles":
+            dubbing_file = None
+            bgm_file = None
+            subtitle_source = _require(self.artifacts.translation_file, "translation_file")
+        else:
+            dubbing_file = _require(self.artifacts.dubbing_file, "dubbing_file")
+            bgm_file = _require(self.artifacts.bgm_file, "bgm_file")
+            subtitle_source = _require(self.artifacts.timings_file, "timings_file")
+        self.artifacts.final_video = merge_video(
+            video_file,
+            dubbing_file,
+            bgm_file,
+            subtitle_source,
+            session,
+            output_mode=output_mode,
+        )
         size_mb = self.artifacts.final_video.stat().st_size / (1024 * 1024)
         self.stage_message("merge_video", f"Final video: {self.artifacts.final_video} ({size_mb:.1f} MB)")
 

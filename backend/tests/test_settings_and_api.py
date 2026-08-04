@@ -163,6 +163,84 @@ def test_task_id_is_video_id_and_dedupes_existing(monkeypatch, tmp_path):
     assert enqueued == ["abcdefghijk"]
 
 
+def test_create_task_persists_selected_output_mode(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    response = client.post(
+        "/api/tasks",
+        json={
+            "url": "https://www.youtube.com/watch?v=outputmodex",
+            "output_mode": "dubbing",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["output_mode"] == "dubbing"
+    assert enqueued == ["outputmodex"]
+
+
+def test_create_task_rejects_invalid_output_mode(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = authenticated_client()
+
+    response = client.post(
+        "/api/tasks",
+        json={
+            "url": "https://www.youtube.com/watch?v=badoutputxx",
+            "output_mode": "captions",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "output_mode must be one of: subtitles, dubbing, both"
+    assert database.list_tasks() == []
+
+
+def test_init_db_adds_output_mode_to_existing_tasks_table(monkeypatch, tmp_path):
+    legacy_db = tmp_path / "legacy.sqlite"
+    with sqlite3.connect(legacy_db) as conn:
+        conn.execute(
+            """
+            CREATE TABLE tasks (
+              id TEXT PRIMARY KEY,
+              url TEXT NOT NULL,
+              title TEXT,
+              status TEXT NOT NULL,
+              current_stage TEXT,
+              session_path TEXT,
+              final_video_path TEXT,
+              error_message TEXT,
+              created_at TEXT NOT NULL,
+              started_at TEXT,
+              completed_at TEXT,
+              execution_mode TEXT NOT NULL DEFAULT 'auto'
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO tasks (id, url, status, created_at)
+            VALUES ('legacy-task', 'https://example.com/legacy', 'succeeded', '2024-01-01T00:00:00Z')
+            """
+        )
+
+    monkeypatch.setattr(database, "DB_PATH", legacy_db)
+    database.init_db()
+
+    task = database.get_task("legacy-task")
+    assert task is not None
+    assert task["output_mode"] == "both"
+    created = database.create_task(
+        "https://example.com/new",
+        task_id="new-task",
+        output_mode="dubbing",
+    )
+    assert database.get_task(created)["output_mode"] == "dubbing"
+
+
 def test_different_videos_create_separate_tasks(monkeypatch, tmp_path):
     configure_tmp_runtime(monkeypatch, tmp_path)
     enqueued: list[str] = []
@@ -453,7 +531,11 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
 
-    task_id = database.create_task("https://www.youtube.com/watch?v=rerunvideox", task_id="rerunvideox")
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=rerunvideox",
+        task_id="rerunvideox",
+        output_mode="subtitles",
+    )
     session = config.WORKFOLDER / "uploader" / "title__rerunvideox"
     (session / "media").mkdir(parents=True)
     (session / "media" / "video_source.mp4").write_bytes(b"old")
@@ -468,6 +550,7 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     body = response.json()
     assert body["id"] == task_id
     assert body["status"] == "queued"
+    assert body["output_mode"] == "subtitles"
     assert body["session_path"] is None
     assert enqueued == [task_id]
     assert not session.exists()
@@ -1289,7 +1372,7 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
 
     response = client.post(
         "/api/tasks/upload",
-        data={"direction": "zh-en"},
+        data={"direction": "zh-en", "output_mode": "dubbing"},
         files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
     )
 
@@ -1297,6 +1380,7 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
     body = response.json()
     assert body["title"] == "clip"
     assert body["url"].startswith(f"local://upload/{body['id']}?direction=zh-en")
+    assert body["output_mode"] == "dubbing"
     assert enqueued == [body["id"]]
     saved = list((config.WORKFOLDER / "_uploads" / body["id"] / "video").iterdir())
     assert len(saved) == 1
@@ -1386,6 +1470,11 @@ def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
             {"direction": "en-zh", "execution_mode": "batch"},
             {"file": ("clip.mp4", b"mp4data", "video/mp4")},
             "execution_mode must be one of: auto, manual",
+        ),
+        (
+            {"direction": "en-zh", "output_mode": "captions"},
+            {"file": ("clip.mp4", b"mp4data", "video/mp4")},
+            "output_mode must be one of: subtitles, dubbing, both",
         ),
         (
             {"direction": "en-zh", "execution_mode": "auto"},
