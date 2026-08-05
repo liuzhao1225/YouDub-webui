@@ -82,10 +82,10 @@ if (-not (Test-Path $envFile)) {
 
 $pythonCommand = Join-Path $appRoot "runtime\python\python.exe"
 $pythonArguments = @()
-if (-not (Test-Path $pythonCommand)) {
+if (-not (Test-Path $pythonCommand -PathType Leaf)) {
     $pythonCommand = Join-Path $appRoot ".venv\Scripts\python.exe"
 }
-if (-not (Test-Path $pythonCommand)) {
+if (-not (Test-Path $pythonCommand -PathType Leaf)) {
     $launcher = Get-Command py.exe -ErrorAction SilentlyContinue
     if ($null -ne $launcher) {
         $pythonCommand = $launcher.Source

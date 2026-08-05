@@ -29,12 +29,12 @@ function Get-PythonInvocation {
     param([Parameter(Mandatory = $true)][string]$Root)
 
     $bundled = Join-Path $Root "runtime\python\python.exe"
-    if (Test-Path $bundled) {
+    if (Test-Path $bundled -PathType Leaf) {
         return @($bundled)
     }
 
     $venv = Join-Path $Root ".venv\Scripts\python.exe"
-    if (Test-Path $venv) {
+    if (Test-Path $venv -PathType Leaf) {
         return @($venv)
     }
 
@@ -96,13 +96,18 @@ if ($pythonInvocation.Count -gt 1) {
     $pythonArguments = @($pythonInvocation[1..($pythonInvocation.Count - 1)])
 }
 
-$runtimePython = Join-Path $appRoot ".venv\Scripts\python.exe"
-if (-not (Test-Path $runtimePython) -and $pythonCommand -like "*\py.exe") {
-    Invoke-Checked $pythonCommand ($pythonArguments + @("-m", "venv", $runtimePython))
-    $pythonCommand = $runtimePython
-    $pythonArguments = @()
-} elseif (-not (Test-Path $runtimePython) -and $pythonCommand -notlike "*\runtime\python\python.exe") {
-    Invoke-Checked $pythonCommand ($pythonArguments + @("-m", "venv", $runtimePython))
+$venvRoot = Join-Path $appRoot ".venv"
+$runtimePython = Join-Path $venvRoot "Scripts\python.exe"
+if (-not (Test-Path $runtimePython -PathType Leaf) -and $pythonCommand -notlike "*\runtime\python\python.exe") {
+    if (Test-Path $runtimePython -PathType Container) {
+        # Earlier releases passed the interpreter path to "python -m venv" and created a
+        # directory here. Remove it so venv can write the real python.exe.
+        Remove-Item -LiteralPath $runtimePython -Recurse -Force
+    }
+    Invoke-Checked $pythonCommand ($pythonArguments + @("-m", "venv", $venvRoot))
+    if (-not (Test-Path $runtimePython -PathType Leaf)) {
+        throw "Virtual environment creation did not produce: $runtimePython"
+    }
     $pythonCommand = $runtimePython
     $pythonArguments = @()
 }
@@ -165,7 +170,7 @@ if (-not (Test-Path $envFile)) {
 }
 
 $envContent = Get-Content -LiteralPath $envFile -Raw
-$existingHash = [regex]::Match($envContent, "(?m)^YOUDUB_AUTH_PASSWORD_HASH=(.+)$")
+$existingHash = [regex]::Match($envContent, "(?m)^YOUDUB_AUTH_PASSWORD_HASH=(.*)$")
 if (-not $existingHash.Success -or [string]::IsNullOrWhiteSpace($existingHash.Groups[1].Value)) {
     Write-Host "Create the local YouDub login password." -ForegroundColor Cyan
     $hashArguments = $pythonArguments + @(
@@ -180,11 +185,26 @@ if (-not $existingHash.Success -or [string]::IsNullOrWhiteSpace($existingHash.Gr
     if ([string]::IsNullOrWhiteSpace($hash)) {
         throw "Authentication hash generation returned an empty value."
     }
-    if ($existingHash.Success) {
-        $envContent = [regex]::Replace($envContent, "(?m)^YOUDUB_AUTH_PASSWORD_HASH=.*$", "YOUDUB_AUTH_PASSWORD_HASH=$hash")
-    } else {
-        $envContent = $envContent.TrimEnd() + "`r`nYOUDUB_AUTH_PASSWORD_HASH=$hash`r`n"
+    $hashLine = "YOUDUB_AUTH_PASSWORD_HASH=$hash"
+    $rewritten = New-Object Collections.Generic.List[string]
+    $applied = $false
+    foreach ($line in @($envContent -split "\r?\n")) {
+        if ($line -match "^YOUDUB_AUTH_PASSWORD_HASH=") {
+            if (-not $applied) {
+                $rewritten.Add($hashLine)
+                $applied = $true
+            }
+            continue
+        }
+        $rewritten.Add($line)
     }
+    if (-not $applied) {
+        while ($rewritten.Count -gt 0 -and [string]::IsNullOrWhiteSpace($rewritten[$rewritten.Count - 1])) {
+            $rewritten.RemoveAt($rewritten.Count - 1)
+        }
+        $rewritten.Add($hashLine)
+    }
+    $envContent = ($rewritten -join "`r`n").TrimEnd() + "`r`n"
     [IO.File]::WriteAllText($envFile, $envContent, (New-Object System.Text.UTF8Encoding -ArgumentList $false))
 }
 

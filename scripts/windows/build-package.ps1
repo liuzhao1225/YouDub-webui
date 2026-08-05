@@ -123,6 +123,7 @@ Copy-Item (Join-Path $appRoot "scripts\windows\start-youdub.bat") (Join-Path $re
 Copy-Item (Join-Path $appRoot "scripts\windows\setup-youdub.ps1") (Join-Path $releaseRoot "setup-youdub.ps1") -Force
 Copy-Item (Join-Path $appRoot "scripts\windows\setup-youdub.bat") (Join-Path $releaseRoot "setup-youdub.bat") -Force
 Copy-Item (Join-Path $appRoot "scripts\windows\stop-youdub.ps1") (Join-Path $releaseRoot "stop-youdub.ps1") -Force
+Copy-Item (Join-Path $appRoot "scripts\windows\stop-youdub.bat") (Join-Path $releaseRoot "stop-youdub.bat") -Force
 
 if (-not [string]::IsNullOrWhiteSpace($PythonRuntimeDirectory)) {
     Copy-DirectoryContents $PythonRuntimeDirectory (Join-Path $releaseRoot "runtime\python")
