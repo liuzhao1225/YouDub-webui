@@ -165,6 +165,25 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.
 
+### Windows directory package
+
+The repository includes PowerShell scripts for a Windows directory package. The package keeps `backend/`, `submodule/demucs/`, and the Next.js standalone server in place instead of forcing dynamically loaded CUDA, Demucs, and model paths into one EXE.
+
+On a build machine with Python 3.12, Node.js 20+, initialized submodules, and FFmpeg, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows/build-package.ps1 `
+  -OutputDirectory .\dist\YouDub `
+  -FfmpegDirectory C:\tools\ffmpeg `
+  -Force
+```
+
+The default local ports are `8000` for the API and `3000` for the web UI. To use another API port, pass `-ApiPort` while building and use the same value when starting the package.
+
+If `-PythonRuntimeDirectory`, `-NodeRuntimeDirectory`, and `-FfmpegDirectory` are all supplied, those directories are copied under `runtime\` and the target machine does not need separate Python, Node.js, or FFmpeg installs. The Python runtime must already contain the project dependencies; a complete runtime package skips pip installation on first run. Otherwise, copy the release directory to the target machine and run `setup-youdub.bat`; it creates `.venv`, installs CUDA PyTorch and project dependencies, and builds the frontend.
+
+After setup, double-click `start-youdub.bat` to start the backend, frontend, and browser. Backend and frontend logs are written to `data\logs`. The target machine still needs an NVIDIA driver. Models are downloaded on first use by default; a fully offline package must include the model caches separately. Never put a real `.env`, API key, cookie, or database in the release archive.
+
 #### Optional: NVIDIA CUDA GPU
 
 If you want Whisper, Demucs, or VoxCPM to use an NVIDIA GPU, install the CUDA-enabled PyTorch wheels before installing `requirements.txt`:

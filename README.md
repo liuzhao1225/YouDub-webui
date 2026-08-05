@@ -165,6 +165,25 @@ npm --prefix apps/web install --registry=https://registry.npmmirror.com
 
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
 
+### Windows 目录包
+
+项目提供了 Windows PowerShell 目录包脚本。它保留 `backend/`、`submodule/demucs/` 和 Next.js standalone 服务，避免把依赖动态加载的 CUDA、Demucs 和模型路径强行塞进单个 EXE。
+
+在有 Python 3.12、Node.js 20+、已初始化子模块和 FFmpeg 的构建机上执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows/build-package.ps1 `
+  -OutputDirectory .\dist\YouDub `
+  -FfmpegDirectory C:\tools\ffmpeg `
+  -Force
+```
+
+默认前后端使用本机 `8000`/`3000` 端口；如需改 API 端口，构建时传入 `-ApiPort`，启动时使用同一个端口参数。
+
+如果同时传入 `-PythonRuntimeDirectory`、`-NodeRuntimeDirectory` 和 `-FfmpegDirectory`，这些目录会被复制到发布包的 `runtime\` 下，目标机可以不安装 Python、Node.js 或 FFmpeg。Python 运行时目录必须已经包含项目依赖；完整运行时包初始化时不会联网安装 pip 依赖。否则把发布目录复制到目标机后运行 `setup-youdub.bat`，脚本会创建 `.venv`、安装 CUDA PyTorch 和项目依赖，并构建前端。
+
+准备完成后双击 `start-youdub.bat` 即可启动后端、前端并打开浏览器。后端和前端日志位于 `data\logs`。NVIDIA 驱动仍必须由目标机安装，模型默认在首次运行时下载；要做完全离线包，需要额外复制模型缓存。不要把真实 `.env`、API key、Cookie 或数据库放入发布压缩包。
+
 #### 可选：NVIDIA CUDA GPU
 
 如果要用 NVIDIA GPU 跑 Whisper、Demucs 或 VoxCPM，请在安装 `requirements.txt` 之前先安装 CUDA 版 PyTorch：
