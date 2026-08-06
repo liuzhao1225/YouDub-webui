@@ -256,7 +256,7 @@ Common environment variables:
 | `OPENAI_API_KEY` | API key used by the translation stage. |
 | `OPENAI_MODEL` | Chat Completions model used by the translation stage. |
 | `OPENAI_TRANSLATE_CONCURRENCY` | Parallel requests during translation. Default: `50`. |
-| `LOCAL_UPLOAD_MAX_BYTES` | Maximum local video upload size. Default: 4 GiB. |
+| `LOCAL_UPLOAD_MAX_BYTES` | Maximum local video upload size. Default: 4 GiB. Uploads are proxied through the Next `/api` rewrite, so raising this above 8 GiB also requires raising `experimental.proxyClientMaxBodySize` in [next.config.ts](apps/web/next.config.ts) and rebuilding the frontend; otherwise the request body is silently truncated. |
 | `LOCAL_SUBTITLE_MAX_BYTES` | Maximum optional local SRT subtitle upload size. Default: 20 MiB. |
 | `YTDLP_PROXY_PORT` | Local proxy port used by yt-dlp, for example `7890`. |
 | `HTTP_PROXY` / `ALL_PROXY` | yt-dlp reads `HTTP_PROXY` when no UI proxy port is set; HTTPX/OpenAI SDK also reads these environment proxies. |

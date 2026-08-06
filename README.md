@@ -256,7 +256,7 @@ macOS / Linux / WSL2：
 | `OPENAI_API_KEY` | 翻译阶段使用的 API key。 |
 | `OPENAI_MODEL` | 翻译阶段使用的 Chat Completions 模型。 |
 | `OPENAI_TRANSLATE_CONCURRENCY` | 翻译阶段的并发请求数，默认 `50`。 |
-| `LOCAL_UPLOAD_MAX_BYTES` | 本地视频上传大小上限，默认 4 GiB。 |
+| `LOCAL_UPLOAD_MAX_BYTES` | 本地视频上传大小上限，默认 4 GiB。上传经由 Next 的 `/api` 代理转发，若要调到 8 GiB 以上，需同步调大 [next.config.ts](apps/web/next.config.ts) 的 `experimental.proxyClientMaxBodySize` 并重新构建前端，否则请求体会被静默截断。 |
 | `LOCAL_SUBTITLE_MAX_BYTES` | 可选本地 SRT 字幕上传大小上限，默认 20 MiB。 |
 | `YTDLP_PROXY_PORT` | yt-dlp 使用的本机代理端口，例如 `7890`。 |
 | `HTTP_PROXY` / `ALL_PROXY` | 未在 UI 中设置代理端口时，yt-dlp 可读取 `HTTP_PROXY`；HTTPX/OpenAI SDK 也会读取这些环境代理。 |
