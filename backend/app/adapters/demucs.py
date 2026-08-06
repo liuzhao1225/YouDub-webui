@@ -1,15 +1,39 @@
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Callable
 
-from ..config import REPO_ROOT
+import numpy as np
+import soundfile as sf
+
+from ..config import REPO_ROOT, ffmpeg_binary
 from ..devices import resolve_device
+
+
+SHIFTS = 3
+# Demucs allocates one full-length float32 tensor per model in the bag, per shift
+# (4 sources * 2 channels * 4 bytes = 32 bytes per sample). A two hour track needs
+# ~34 GiB that way, so the track is separated in windows and streamed to disk
+# instead. Peak memory then scales with the window, not the video.
+DEFAULT_CHUNK_SECONDS = 600
+# Extra audio carried past each window so Demucs sees context across the seam, and
+# blended with the previous window to keep the junction inaudible.
+OVERLAP_SECONDS = 10
+FINALIZE_BLOCK_FRAMES = 1 << 20
 
 
 def _device() -> str:
     return resolve_device("demucs").selected
+
+
+def _chunk_seconds() -> int:
+    raw = os.getenv("DEMUCS_CHUNK_SECONDS", "").strip()
+    if not raw.isdigit() or int(raw) <= 0:
+        return DEFAULT_CHUNK_SECONDS
+    return int(raw)
 
 
 def _demucs_progress(info: dict, shifts: int) -> int:
@@ -24,48 +48,197 @@ def _demucs_progress(info: dict, shifts: int) -> int:
     return max(0, min(99, int(completed_units / total_units * 100)))
 
 
+def _chunk_plan(
+    total_frames: int, chunk_frames: int, overlap_frames: int
+) -> list[tuple[int, int, int]]:
+    """Split a track into windows.
+
+    Returns ``(own_start, own_stop, window_stop)`` per window. ``own_*`` is the range
+    the window is responsible for writing; the window itself is read up to
+    ``window_stop`` so Demucs keeps context past the seam. A trailing remainder
+    shorter than the overlap is folded into the previous window instead of becoming
+    a degenerate one.
+    """
+    if total_frames <= 0 or chunk_frames <= 0:
+        return []
+
+    plan: list[tuple[int, int, int]] = []
+    start = 0
+    while start < total_frames:
+        stop = min(start + chunk_frames, total_frames)
+        if total_frames - stop <= overlap_frames:
+            stop = total_frames
+        plan.append((start, stop, min(stop + overlap_frames, total_frames)))
+        start = stop
+    return plan
+
+
+def _crossfade(tail: np.ndarray, head: np.ndarray) -> np.ndarray:
+    """Linearly blend the previous window's context tail into the next window's head."""
+    length = min(len(tail), len(head))
+    if length <= 0:
+        return head
+    ramp = np.linspace(0.0, 1.0, length, endpoint=False, dtype=np.float32)
+    ramp = ramp.reshape(-1, *([1] * (head.ndim - 1)))
+    blended = head.copy()
+    blended[:length] = tail[:length] * (1.0 - ramp) + head[:length] * ramp
+    return blended
+
+
+def _extract_audio(video_file: Path, destination: Path, sample_rate: int, channels: int) -> Path:
+    """Decode the source audio once so windows can be read back without re-decoding."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.unlink(missing_ok=True)
+    subprocess.run(
+        [
+            ffmpeg_binary(),
+            "-y",
+            "-loglevel",
+            "error",
+            "-i",
+            str(video_file),
+            "-vn",
+            "-ac",
+            str(channels),
+            "-ar",
+            str(sample_rate),
+            "-c:a",
+            "pcm_s16le",
+            str(destination),
+        ],
+        check=True,
+    )
+    if not destination.exists() or destination.stat().st_size == 0:
+        raise RuntimeError(f"FFmpeg produced no audio for separation: {video_file}")
+    return destination
+
+
+def _finalize(
+    source: Path, destination: Path, peak: float, sample_rate: int, channels: int
+) -> None:
+    """Rescale by the global peak and write the 16-bit WAV the pipeline expects.
+
+    Demucs' own ``save_audio`` applies ``prevent_clip(mode="rescale")`` over the whole
+    track. That needs the global peak, which is only known after every window has been
+    separated, so the scale is applied in this second streaming pass.
+    """
+    scale = 1.0 / max(1.01 * peak, 1.0)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with sf.SoundFile(source) as reader, sf.SoundFile(
+        destination, "w", samplerate=sample_rate, channels=channels, subtype="PCM_16"
+    ) as writer:
+        while True:
+            block = reader.read(FINALIZE_BLOCK_FRAMES, dtype="float32", always_2d=True)
+            if len(block) == 0:
+                break
+            writer.write(block * scale)
+
+
 def separate_audio(
     video_file: Path,
     session: Path,
     progress_callback: Callable[[int, str], None] | None = None,
 ) -> tuple[Path, Path]:
-    demucs_path = _demucs_source_path()
-    sys.path.insert(0, str(demucs_path))
-
-    from demucs.api import Separator, save_audio
-
     media_dir = session / "media"
     vocals_file = media_dir / "audio_vocals.wav"
     bgm_file = media_dir / "audio_bgm.wav"
     if vocals_file.exists() and bgm_file.exists():
         return vocals_file, bgm_file
 
-    shifts = 3
+    demucs_path = _demucs_source_path()
+    sys.path.insert(0, str(demucs_path))
+
+    import torch
+    from demucs.api import Separator
+
+    progress_state = {"index": 0, "total": 1}
 
     def report_progress(info: dict) -> None:
         if progress_callback is None:
             return
-        progress = _demucs_progress(info, shifts)
-        progress_callback(progress, f"Separating audio {progress}%")
+        total = max(1, progress_state["total"])
+        within = _demucs_progress(info, SHIFTS) / 100.0
+        overall = max(0, min(99, int((progress_state["index"] + within) / total * 100)))
+        progress_callback(
+            overall, f"Separating audio {overall}% (part {progress_state['index'] + 1}/{total})"
+        )
 
     separator = Separator(
         model="htdemucs_ft",
         device=_device(),
         progress=True,
-        shifts=shifts,
+        shifts=SHIFTS,
         callback=report_progress,
     )
-    _, separated = separator.separate_audio_file(str(video_file))
+    sample_rate = separator.samplerate
+    channels = separator.audio_channels
 
-    vocals = separated["vocals"]
-    bgm = None
-    for stem, source in separated.items():
-        if stem == "vocals":
-            continue
-        bgm = source if bgm is None else bgm + source
+    tmp_dir = session / "tmp"
+    source_wav = tmp_dir / "demucs_input.wav"
+    vocals_raw = tmp_dir / "demucs_vocals.raw.wav"
+    bgm_raw = tmp_dir / "demucs_bgm.raw.wav"
+    for path in (source_wav, vocals_raw, bgm_raw):
+        path.unlink(missing_ok=True)
 
-    save_audio(vocals, str(vocals_file), samplerate=separator.samplerate)
-    save_audio(bgm, str(bgm_file), samplerate=separator.samplerate)
+    try:
+        _extract_audio(video_file, source_wav, sample_rate, channels)
+
+        peaks = {"vocals": 0.0, "bgm": 0.0}
+        with sf.SoundFile(source_wav) as reader:
+            plan = _chunk_plan(
+                len(reader), _chunk_seconds() * sample_rate, OVERLAP_SECONDS * sample_rate
+            )
+            if not plan:
+                raise RuntimeError(f"Extracted audio is empty: {source_wav}")
+            progress_state["total"] = len(plan)
+
+            writers = {
+                "vocals": sf.SoundFile(
+                    vocals_raw, "w", samplerate=sample_rate, channels=channels, subtype="FLOAT"
+                ),
+                "bgm": sf.SoundFile(
+                    bgm_raw, "w", samplerate=sample_rate, channels=channels, subtype="FLOAT"
+                ),
+            }
+            tails: dict[str, np.ndarray | None] = {"vocals": None, "bgm": None}
+            try:
+                for index, (own_start, own_stop, window_stop) in enumerate(plan):
+                    progress_state["index"] = index
+                    reader.seek(own_start)
+                    window = reader.read(
+                        window_stop - own_start, dtype="float32", always_2d=True
+                    )
+                    mix = torch.from_numpy(np.ascontiguousarray(window.T))
+                    _, stems = separator.separate_tensor(mix, sample_rate)
+
+                    bgm = None
+                    for name, stem in stems.items():
+                        if name == "vocals":
+                            continue
+                        bgm = stem if bgm is None else bgm + stem
+                    if bgm is None:
+                        raise RuntimeError("Demucs returned no accompaniment stems.")
+
+                    own_frames = own_stop - own_start
+                    for name, stem in (("vocals", stems["vocals"]), ("bgm", bgm)):
+                        samples = stem.detach().cpu().numpy().T
+                        core = samples[:own_frames]
+                        previous = tails[name]
+                        if previous is not None:
+                            core = _crossfade(previous, core)
+                        peaks[name] = max(peaks[name], float(np.abs(core).max(initial=0.0)))
+                        writers[name].write(core)
+                        tails[name] = samples[own_frames:].copy()
+            finally:
+                for writer in writers.values():
+                    writer.close()
+
+        _finalize(vocals_raw, vocals_file, peaks["vocals"], sample_rate, channels)
+        _finalize(bgm_raw, bgm_file, peaks["bgm"], sample_rate, channels)
+    finally:
+        for path in (source_wav, vocals_raw, bgm_raw):
+            path.unlink(missing_ok=True)
+
     return vocals_file, bgm_file
 
 
