@@ -98,6 +98,10 @@ def _extract_audio(video_file: Path, destination: Path, sample_rate: int, channe
             "-i",
             str(video_file),
             "-vn",
+            # Demucs' own loader reads streams=0. Pin the same stream so multi-track
+            # sources keep using the audio the pipeline used before.
+            "-map",
+            "0:a:0",
             "-ac",
             str(channels),
             "-ar",

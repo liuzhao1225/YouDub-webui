@@ -108,6 +108,8 @@ def test_extract_audio_decodes_to_model_rate_and_channels(tmp_path, monkeypatch)
 
     command = recorded["command"]
     assert "-vn" in command
+    # Demucs' own loader reads streams=0; multi-track sources must not switch track.
+    assert command[command.index("-map") + 1] == "0:a:0"
     assert command[command.index("-ar") + 1] == "44100"
     assert command[command.index("-ac") + 1] == "2"
     assert command[command.index("-c:a") + 1] == "pcm_s16le"
