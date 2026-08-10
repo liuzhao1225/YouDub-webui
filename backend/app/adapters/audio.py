@@ -39,6 +39,25 @@ def _audio_duration(file: Path) -> tuple[float, int]:
     return len(y) / sr, sr
 
 
+def _load_audio(file: Path) -> tuple[np.ndarray, int]:
+    import librosa
+
+    return librosa.load(str(file), sr=None)
+
+
+def _is_original_audio_item(item: dict) -> bool:
+    text = item.get("dst") or item.get("zh", "")
+    return isinstance(text, str) and not text.strip()
+
+
+def _resample(y: np.ndarray, source_rate: int, target_rate: int) -> np.ndarray:
+    if source_rate == target_rate:
+        return y
+    import librosa
+
+    return librosa.resample(y, orig_sr=source_rate, target_sr=target_rate)
+
+
 def _base_speed_factor(translation: list[dict], tts_files: list[Path]) -> float:
     cur_total = 0.0
     des_total = 0.0
@@ -107,14 +126,26 @@ def merge_tts_audio(translation_file: Path, tts_dir: Path, session: Path) -> tup
                 [final_audio, _silence((real_start_ms - last_end_ms) / 1000.0, sample_rate)]
             )
 
-        current_sec, _ = _audio_duration(tts_file)
-        desired_sec = (segment["end_time"] - real_start_ms) / 1000.0
-        speed = base * _local_factor(current_sec, base, desired_sec)
-        target_sec = current_sec * speed
-        y, _ = _stretch_segment(tts_file, speed, target_sec, cache_dir)
+        if _is_original_audio_item(segment):
+            y, source_rate = _load_audio(tts_file)
+            y = _resample(y, source_rate, sample_rate)
+            offset = max(0, int(round((real_start_ms - segment["start_time"]) * sample_rate / 1000)))
+            desired_samples = max(
+                0,
+                int(round((segment["end_time"] - real_start_ms) * sample_rate / 1000)),
+            )
+            y = y[offset:offset + desired_samples]
+            real_end_ms = real_start_ms + len(y) / sample_rate * 1000.0
+        else:
+            current_sec, _ = _audio_duration(tts_file)
+            desired_sec = (segment["end_time"] - real_start_ms) / 1000.0
+            speed = base * _local_factor(current_sec, base, desired_sec)
+            target_sec = current_sec * speed
+            y, source_rate = _stretch_segment(tts_file, speed, target_sec, cache_dir)
+            y = _resample(y, source_rate, sample_rate)
+            adjusted_sec = len(y) / sample_rate
+            real_end_ms = max(real_start_ms + adjusted_sec * 1000.0, float(segment["end_time"]))
 
-        adjusted_sec = len(y) / sample_rate
-        real_end_ms = max(real_start_ms + adjusted_sec * 1000.0, float(segment["end_time"]))
         final_audio = np.concatenate([final_audio, y])
         segment["actual_start_time"] = int(real_start_ms)
         segment["actual_end_time"] = int(real_end_ms)

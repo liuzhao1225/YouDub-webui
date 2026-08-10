@@ -450,6 +450,7 @@ class PipelineRunner:
             vocals_dir,
             session,
             progress_callback=lambda progress, message: self.stage_progress("tts", progress, message),
+            original_vocals_file=vocals_file,
         )
         wav_count = len(list(self.artifacts.tts_dir.glob("*.wav")))
         self.stage_message("tts", f"Generated {wav_count} TTS clips -> {self.artifacts.tts_dir}")

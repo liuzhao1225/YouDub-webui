@@ -235,18 +235,18 @@ def test_concurrency_from_bad_saved_values_falls_back_to_default(value):
     assert openai_translate._concurrency_from({"translate_concurrency": value}) == 50
 
 
-def test_translate_sentence_retries_on_empty_dst(monkeypatch):
+def test_translate_sentence_accepts_empty_dst_for_filler_only_sentence(monkeypatch):
     calls = {"n": 0}
 
     def fake_call_json(client, model, system, user):
         calls["n"] += 1
-        return {"dst": ""} if calls["n"] == 1 else {"dst": "ok"}
+        return {"dst": ""}
 
     monkeypatch.setattr(openai_translate, "_call_json", fake_call_json)
 
-    out = openai_translate.translate_sentence("hello", "en", object(), "m", "sys")
-    assert out == "ok"
-    assert calls["n"] == 2
+    out = openai_translate.translate_sentence("um", "en", object(), "m", "sys")
+    assert out == ""
+    assert calls["n"] == 1
 
 
 def test_translate_sentence_raises_after_retries(monkeypatch):
@@ -286,6 +286,8 @@ def test_translate_system_prompt_contains_meta_summary_hotwords(monkeypatch):
     assert "Alice" in system
     assert "Long description" in system
     assert "Recap of the talk." in system
+    assert "Content-only translation priority" in system
+    assert "return an empty string in `dst`" in system
     assert "LEGO -> 乐高" in system
 
 

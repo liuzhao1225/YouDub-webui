@@ -134,6 +134,13 @@ Summary: {summary}
 """
 
 
+CONTENT_ONLY_TRANSLATION_RULES = """# Content-only translation priority (highest priority; overrides earlier filler guidance)
+Translate the proposition, facts, requests, and meaningful emotion in each utterance. Do not translate or add standalone discourse fillers, hesitation sounds, acknowledgements, or sentence-ending particles when they carry no information. Examples include English "um", "uh", filler "well", "you know", "like", or "so"; Japanese "えっと", "あの", "まあ", "ね", "よ", or "さ"; and Chinese "嗯", "啊", "哦", "呢", "吧", or "啦" when they are only modal particles.
+
+Omit those fillers from the output instead of replacing them with target-language fillers. If a filler occurs with meaningful words, remove only the filler and translate the meaningful content. Keep an interjection only when it conveys a concrete reaction or changes the meaning; never invent one. If the entire utterance is filler, return an empty string in `dst`. Never remove a word when it has lexical meaning in context.
+"""
+
+
 TRANSLATE_RULES = {
     ("en", "zh"): _EN_TO_ZH_RULES,
     ("ja", "zh"): _JA_TO_ZH_RULES,

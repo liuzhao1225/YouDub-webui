@@ -85,12 +85,33 @@ def _fallback_references(vocals_dir: Path, items: list[dict], min_ms: int) -> tu
     return fallbacks, global_fallback
 
 
+def _target_text(item: dict) -> object:
+    return item.get("dst") or item.get("zh", "")
+
+
+def _is_empty_target(item: dict) -> bool:
+    text = _target_text(item)
+    return isinstance(text, str) and not text.strip()
+
+
 def _tts_text(item: dict) -> str:
-    text = item.get("dst") or item.get("zh", "")
+    text = _target_text(item)
     if not isinstance(text, str) or not text.strip():
         raise ValueError("target text must be a non-empty string")
     text = text.replace("\n", " ")
     return re.sub(r"\s+", " ", text)
+
+
+def _write_original_target_audio(
+    output_file: Path,
+    item: dict,
+    original_audio: AudioSegment,
+) -> None:
+    start = max(0, int(item.get("start_time", 0)))
+    end = min(len(original_audio), int(item.get("end_time", start)))
+    if end <= start:
+        raise ValueError(f"Original audio does not cover target segment {start}-{end} ms")
+    original_audio[start:end].export(output_file, format="wav")
 
 
 def generate_tts(
@@ -98,6 +119,8 @@ def generate_tts(
     vocals_dir: Path,
     session: Path,
     progress_callback: Callable[[int, str], None] | None = None,
+    *,
+    original_vocals_file: Path | None = None,
 ) -> Path:
     output_dir = session / "segments" / "tts"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -107,6 +130,23 @@ def generate_tts(
     if total == 0:
         if progress_callback:
             progress_callback(100, "No TTS clips to generate")
+        return output_dir
+
+    has_empty_targets = any(_is_empty_target(item) for item in items)
+    original_audio = None
+    if has_empty_targets:
+        if original_vocals_file is None:
+            raise ValueError("original_vocals_file is required when a translation item is empty")
+        original_audio = AudioSegment.from_file(original_vocals_file)
+
+    if not any(not _is_empty_target(item) for item in items):
+        for index, item in enumerate(items, start=1):
+            output_file = output_dir / f"{index:04d}.wav"
+            assert original_audio is not None
+            _write_original_target_audio(output_file, item, original_audio)
+            if progress_callback:
+                progress = round(index / total * 100)
+                progress_callback(progress, f"Prepared {index}/{total} TTS clips")
         return output_dir
 
     model = _load_model()
@@ -119,6 +159,13 @@ def generate_tts(
 
     for index, item in enumerate(items, start=1):
         output_file = output_dir / f"{index:04d}.wav"
+        if _is_empty_target(item):
+            assert original_audio is not None
+            _write_original_target_audio(output_file, item, original_audio)
+            if progress_callback:
+                progress = round(index / total * 100)
+                progress_callback(progress, f"Prepared {index}/{total} TTS clips")
+            continue
         if not output_file.exists():
             reference = vocals_dir / f"{index:04d}.wav"
             text = _tts_text(item)

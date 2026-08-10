@@ -177,6 +177,73 @@ def test_empty_translation_skips_tts(mock_load, tmp_path):
 
 
 @patch.object(voxcpm_mod, "_load_model")
+def test_empty_target_copies_original_audio_without_tts_generation(mock_load, tmp_path):
+    session = tmp_path / "session"
+    vocals_dir = session / "segments" / "vocals"
+    _make_synthetic_wav(vocals_dir / "0001.wav", duration_ms=600)
+    ref_0002 = _make_synthetic_wav(vocals_dir / "0002.wav", duration_ms=2000)
+    original_vocals = _make_synthetic_wav(session / "media" / "audio_vocals.wav", duration_ms=2500)
+    translation = _write_translation_json(
+        session / "metadata" / "translation.en.json",
+        [
+            {"dst": "", "start_time": 0, "end_time": 500},
+            {"dst": "Meaningful sentence.", "start_time": 600, "end_time": 1800},
+        ],
+    )
+
+    mock_tts_model = MagicMock()
+    mock_tts_model.sample_rate = 16000
+    mock_model = MagicMock()
+    mock_model.tts_model = mock_tts_model
+    mock_model.generate.return_value = np.zeros(1600, dtype=np.float32)
+    mock_load.return_value = mock_model
+
+    voxcpm_mod.generate_tts(
+        translation,
+        vocals_dir,
+        session,
+        original_vocals_file=original_vocals,
+    )
+
+    original_segment = session / "segments" / "tts" / "0001.wav"
+    assert original_segment.exists()
+    assert sf.info(original_segment).samplerate == 16000
+    assert sf.info(original_segment).frames == 8000
+    original_samples, _ = sf.read(original_vocals, dtype="float32")
+    copied_samples, _ = sf.read(original_segment, dtype="float32")
+    assert np.allclose(copied_samples, original_samples[:8000], atol=2 / 32768)
+    mock_model.generate.assert_called_once_with(
+        text="Meaningful sentence.",
+        reference_wav_path=str(ref_0002),
+        cfg_value=2.0,
+        inference_timesteps=10,
+    )
+
+
+@patch.object(voxcpm_mod, "_load_model")
+def test_all_empty_targets_copy_original_audio_without_loading_model(mock_load, tmp_path):
+    session = tmp_path / "session"
+    vocals_dir = session / "segments" / "vocals"
+    _make_synthetic_wav(vocals_dir / "0001.wav", duration_ms=600)
+    original_vocals = _make_synthetic_wav(session / "media" / "audio_vocals.wav", duration_ms=2500)
+    translation = _write_translation_json(
+        session / "metadata" / "translation.en.json",
+        [{"dst": "", "start_time": 100, "end_time": 600}],
+    )
+
+    voxcpm_mod.generate_tts(
+        translation,
+        vocals_dir,
+        session,
+        original_vocals_file=original_vocals,
+    )
+
+    copied = session / "segments" / "tts" / "0001.wav"
+    assert sf.info(copied).frames == 8000
+    mock_load.assert_not_called()
+
+
+@patch.object(voxcpm_mod, "_load_model")
 def test_calls_progress_callback(mock_load, tmp_path):
     """Progress callback is invoked for each item and reports 100 at the end."""
     session = tmp_path / "session"

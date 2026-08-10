@@ -11,7 +11,11 @@ from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError
 
 from ..sources import SourceConfig
-from ._translate_prompts import PREPROCESS_PROMPT, TRANSLATE_RULES
+from ._translate_prompts import (
+    CONTENT_ONLY_TRANSLATION_RULES,
+    PREPROCESS_PROMPT,
+    TRANSLATE_RULES,
+)
 from .openai_client import normalize_openai_base_url
 
 log = logging.getLogger(__name__)
@@ -145,12 +149,13 @@ def preprocess(
 
 def _translate_system(source: SourceConfig, meta: dict[str, Any], pre: PreprocessResponse) -> str:
     rules = TRANSLATE_RULES[(source.asr_language, source.target_language)]
-    return rules.format(
+    formatted = rules.format(
         summary=pre.summary or "(none)",
         hotwords=_format_terms(pre.hotwords, "{src} -> {dst}", "(none)"),
         corrections=_format_terms(pre.corrections, "{wrong} -> {correct}", "(none)"),
         **_meta_view(meta),
     )
+    return f"{formatted}\n\n{CONTENT_ONLY_TRANSLATION_RULES}"
 
 
 def _post_process(text: str, target_language: str) -> str:
@@ -172,8 +177,6 @@ def translate_sentence(
         try:
             data = _call_json(client, model, system, text)
             item = TranslationItem.model_validate(data)
-            if not item.dst.strip():
-                raise ValueError("empty dst")
             return _post_process(item.dst, target_language)
         except (json.JSONDecodeError, ValidationError, ValueError) as exc:
             last_error = exc
