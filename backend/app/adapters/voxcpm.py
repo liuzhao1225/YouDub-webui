@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Callable
 
 import soundfile as sf
 from pydub import AudioSegment
 
+from .. import runtime_security
 from ..config import MODEL_CACHE_DIR
 
 _MODEL = None
@@ -105,13 +108,43 @@ def _tts_text(item: dict) -> str:
 def _write_original_target_audio(
     output_file: Path,
     item: dict,
-    original_audio: AudioSegment,
+    original_vocals_file: Path,
 ) -> None:
     start = max(0, int(item.get("start_time", 0)))
-    end = min(len(original_audio), int(item.get("end_time", start)))
+    end = int(item.get("end_time", start))
     if end <= start:
         raise ValueError(f"Original audio does not cover target segment {start}-{end} ms")
-    original_audio[start:end].export(output_file, format="wav")
+    with sf.SoundFile(original_vocals_file) as source:
+        start_frame = min(
+            source.frames,
+            max(0, int(start * source.samplerate / 1000)),
+        )
+        end_frame = min(source.frames, int(end * source.samplerate / 1000))
+        if end_frame <= start_frame:
+            raise ValueError(f"Original audio does not cover target segment {start}-{end} ms")
+        source.seek(start_frame)
+        frames = source.read(
+            end_frame - start_frame,
+            dtype="float32",
+            always_2d=True,
+        )
+        if len(frames) <= 0:
+            raise ValueError(f"Original audio does not cover target segment {start}-{end} ms")
+
+        encoded = io.BytesIO()
+        sf.write(
+            encoded,
+            frames,
+            source.samplerate,
+            format="WAV",
+            subtype="PCM_16",
+        )
+        encoded.seek(0)
+
+    runtime_security.remove_private_file(output_file, missing_ok=True)
+    with runtime_security.open_private_binary_exclusive(output_file) as handle:
+        shutil.copyfileobj(encoded, handle)
+        handle.flush()
 
 
 def generate_tts(
@@ -133,17 +166,15 @@ def generate_tts(
         return output_dir
 
     has_empty_targets = any(_is_empty_target(item) for item in items)
-    original_audio = None
     if has_empty_targets:
         if original_vocals_file is None:
             raise ValueError("original_vocals_file is required when a translation item is empty")
-        original_audio = AudioSegment.from_file(original_vocals_file)
 
     if not any(not _is_empty_target(item) for item in items):
         for index, item in enumerate(items, start=1):
             output_file = output_dir / f"{index:04d}.wav"
-            assert original_audio is not None
-            _write_original_target_audio(output_file, item, original_audio)
+            assert original_vocals_file is not None
+            _write_original_target_audio(output_file, item, original_vocals_file)
             if progress_callback:
                 progress = round(index / total * 100)
                 progress_callback(progress, f"Prepared {index}/{total} TTS clips")
@@ -160,8 +191,8 @@ def generate_tts(
     for index, item in enumerate(items, start=1):
         output_file = output_dir / f"{index:04d}.wav"
         if _is_empty_target(item):
-            assert original_audio is not None
-            _write_original_target_audio(output_file, item, original_audio)
+            assert original_vocals_file is not None
+            _write_original_target_audio(output_file, item, original_vocals_file)
             if progress_callback:
                 progress = round(index / total * 100)
                 progress_callback(progress, f"Prepared {index}/{total} TTS clips")

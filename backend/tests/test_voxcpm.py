@@ -243,6 +243,25 @@ def test_all_empty_targets_copy_original_audio_without_loading_model(mock_load, 
     mock_load.assert_not_called()
 
 
+def test_original_target_audio_decodes_only_requested_range(monkeypatch, tmp_path):
+    source = tmp_path / "media" / "audio_vocals.wav"
+    source.parent.mkdir(parents=True)
+    source_samples = np.linspace(-0.75, 0.75, 4000, dtype=np.float32)
+    sf.write(source, source_samples, 8000)
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    voxcpm_mod._write_original_target_audio(
+        output,
+        {"start_time": 125, "end_time": 375},
+        source,
+    )
+
+    copied, sample_rate = sf.read(output, dtype="float32")
+    assert sample_rate == 8000
+    assert len(copied) == 2000
+    assert np.allclose(copied, source_samples[1000:3000], atol=2 / 32768)
+
+
 @patch.object(voxcpm_mod, "_load_model")
 def test_calls_progress_callback(mock_load, tmp_path):
     """Progress callback is invoked for each item and reports 100 at the end."""

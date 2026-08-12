@@ -445,6 +445,7 @@ class PipelineRunner:
         session = _require(self.artifacts.session, "session")
         translation_file = _require(self.artifacts.translation_file, "translation_file")
         vocals_dir = _require(self.artifacts.vocals_dir, "vocals_dir")
+        vocals_file = _require(self.artifacts.vocals_file, "vocals_file")
         self.artifacts.tts_dir = generate_tts(
             translation_file,
             vocals_dir,
