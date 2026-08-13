@@ -185,7 +185,7 @@ def test_empty_translation_skips_tts(mock_load, tmp_path):
 
 
 @patch.object(voxcpm_mod, "_load_model")
-def test_empty_target_copies_original_audio_without_tts_generation(mock_load, tmp_path):
+def test_original_mode_copies_original_audio_with_non_empty_caption(mock_load, tmp_path):
     session = tmp_path / "session"
     vocals_dir = session / "segments" / "vocals"
     _make_synthetic_wav(vocals_dir / "0001.wav", duration_ms=600)
@@ -194,8 +194,18 @@ def test_empty_target_copies_original_audio_without_tts_generation(mock_load, tm
     translation = _write_translation_json(
         session / "metadata" / "translation.en.json",
         [
-            {"dst": "", "start_time": 0, "end_time": 500},
-            {"dst": "Meaningful sentence.", "start_time": 600, "end_time": 1800},
+            {
+                "dst": "（呻吟）",
+                "audio_mode": "original",
+                "start_time": 0,
+                "end_time": 500,
+            },
+            {
+                "dst": "Meaningful sentence.",
+                "audio_mode": "tts",
+                "start_time": 600,
+                "end_time": 1800,
+            },
         ],
     )
 

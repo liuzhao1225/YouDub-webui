@@ -15,7 +15,7 @@ def _write_wav(path: Path, samples: np.ndarray, sample_rate: int = 8000) -> Path
     return path
 
 
-def test_merge_tts_audio_keeps_original_audio_for_empty_translation(
+def test_merge_tts_audio_keeps_original_audio_for_original_mode(
     monkeypatch, tmp_path
 ):
     session = tmp_path / "session"
@@ -29,8 +29,18 @@ def test_merge_tts_audio_keeps_original_audio_for_empty_translation(
         json.dumps(
             {
                 "translation": [
-                    {"dst": "", "start_time": 0, "end_time": 500},
-                    {"dst": "Meaningful.", "start_time": 700, "end_time": 1200},
+                    {
+                        "dst": "（笑声）",
+                        "audio_mode": "original",
+                        "start_time": 0,
+                        "end_time": 500,
+                    },
+                    {
+                        "dst": "Meaningful.",
+                        "audio_mode": "tts",
+                        "start_time": 700,
+                        "end_time": 1200,
+                    },
                 ]
             }
         ),

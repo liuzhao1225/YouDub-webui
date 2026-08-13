@@ -12,6 +12,7 @@ import soundfile as sf
 from pydub import AudioSegment
 
 from .. import runtime_security
+from ..audio_mode import is_original_audio, target_text
 from ..config import MODEL_CACHE_DIR
 
 _MODEL = None
@@ -93,17 +94,8 @@ def _fallback_references(vocals_dir: Path, items: list[dict], min_ms: int) -> tu
     return fallbacks, global_fallback
 
 
-def _target_text(item: dict) -> object:
-    return item.get("dst") or item.get("zh", "")
-
-
-def _is_empty_target(item: dict) -> bool:
-    text = _target_text(item)
-    return isinstance(text, str) and not text.strip()
-
-
 def _tts_text(item: dict) -> str:
-    text = _target_text(item)
+    text = target_text(item)
     if not isinstance(text, str) or not text.strip():
         raise ValueError("target text must be a non-empty string")
     text = text.replace("\n", " ")
@@ -170,12 +162,12 @@ def generate_tts(
             progress_callback(100, "No TTS clips to generate")
         return output_dir
 
-    has_empty_targets = any(_is_empty_target(item) for item in items)
-    if has_empty_targets:
+    has_original_audio = any(is_original_audio(item) for item in items)
+    if has_original_audio:
         if original_vocals_file is None:
-            raise ValueError("original_vocals_file is required when a translation item is empty")
+            raise ValueError("original_vocals_file is required for original audio items")
 
-    if not any(not _is_empty_target(item) for item in items):
+    if not any(not is_original_audio(item) for item in items):
         for index, item in enumerate(items, start=1):
             output_file = output_dir / f"{index:04d}.wav"
             assert original_vocals_file is not None
@@ -195,7 +187,7 @@ def generate_tts(
 
     for index, item in enumerate(items, start=1):
         output_file = output_dir / f"{index:04d}.wav"
-        if _is_empty_target(item):
+        if is_original_audio(item):
             assert original_vocals_file is not None
             _write_original_target_audio(output_file, item, original_vocals_file)
             if progress_callback:
