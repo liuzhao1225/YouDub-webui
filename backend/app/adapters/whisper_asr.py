@@ -36,6 +36,11 @@ def _remove_corrupt_whisper_cache(whisper, name: str, download_root: str | None)
     return True
 
 
+def release_model() -> None:
+    global _MODEL
+    _MODEL = None
+
+
 def _load_model():
     global _MODEL
     if _MODEL is not None:

@@ -6,6 +6,14 @@ from types import SimpleNamespace
 from backend.app.adapters import whisper_asr
 
 
+def test_release_model_clears_cached_model(monkeypatch):
+    monkeypatch.setattr(whisper_asr, "_MODEL", object())
+
+    whisper_asr.release_model()
+
+    assert whisper_asr._MODEL is None
+
+
 def test_load_model_removes_corrupt_cache_and_retries(monkeypatch, tmp_path):
     calls = {"count": 0}
     model = object()

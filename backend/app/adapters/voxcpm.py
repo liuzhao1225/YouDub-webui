@@ -38,6 +38,11 @@ def _model_path() -> Path:
     return Path(downloaded)
 
 
+def release_model() -> None:
+    global _MODEL
+    _MODEL = None
+
+
 def _load_model():
     global _MODEL
     if _MODEL is None:

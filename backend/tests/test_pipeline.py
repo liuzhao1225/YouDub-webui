@@ -302,6 +302,43 @@ def test_pipeline_fails_when_succeeded_stage_cache_is_missing(monkeypatch, tmp_p
     assert stages["separate"]["status"] == "pending"
 
 
+def test_stage_releases_memory_after_handler_failure(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=releasefail")
+    released: list[str] = []
+
+    def fail_asr(self, task):
+        raise RuntimeError("asr exploded")
+
+    monkeypatch.setattr(PipelineRunner, "_download", _noop_stage)
+    monkeypatch.setattr(PipelineRunner, "_separate", _noop_stage)
+    monkeypatch.setattr(PipelineRunner, "_asr", fail_asr)
+    monkeypatch.setattr(pipeline.gpu_memory, "release_stage_memory", released.append)
+
+    PipelineRunner(task_id).run()
+
+    assert released == ["download", "separate", "asr"]
+
+
+def test_run_task_releases_memory_after_unhandled_runner_failure(monkeypatch):
+    released: list[str] = []
+
+    def fail_run(self):
+        raise RuntimeError("runner exploded")
+
+    monkeypatch.setattr(PipelineRunner, "run", fail_run)
+    monkeypatch.setattr(pipeline.gpu_memory, "release_task_memory", lambda: released.append("task"))
+
+    try:
+        pipeline.run_task("task-id")
+    except RuntimeError as exc:
+        assert str(exc) == "runner exploded"
+    else:
+        raise AssertionError("run_task must propagate unhandled runner errors")
+
+    assert released == ["task"]
+
+
 def test_pipeline_failure_stops_following_stages(monkeypatch, tmp_path):
     configure_db(monkeypatch, tmp_path)
     task_id = database.create_task("https://www.youtube.com/watch?v=abcdefghijk")

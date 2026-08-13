@@ -10,6 +10,14 @@ import soundfile as sf
 from backend.app.adapters import voxcpm as voxcpm_mod
 
 
+def test_release_model_clears_cached_model(monkeypatch):
+    monkeypatch.setattr(voxcpm_mod, "_MODEL", object())
+
+    voxcpm_mod.release_model()
+
+    assert voxcpm_mod._MODEL is None
+
+
 def _make_synthetic_wav(path: Path, duration_ms: int = 1500) -> Path:
     """Create a minimal WAV file for testing."""
     rate = 16000

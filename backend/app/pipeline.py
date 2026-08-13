@@ -7,7 +7,7 @@ from pathlib import Path
 from time import monotonic
 from typing import Callable
 
-from . import database, runtime_security
+from . import database, gpu_memory, runtime_security
 from .config import WORKFOLDER
 from .devices import device_plan_summary
 from .runtime_checks import validate_runtime_device
@@ -238,16 +238,19 @@ class PipelineRunner:
             error_message=None,
         )
         self.stage_message(stage, "Started")
-        self._stage_handlers[stage](database.get_task(self.task_id))
-        database.update_stage(
-            self.task_id,
-            stage,
-            status="succeeded",
-            progress=100,
-            completed_at=database.now_iso(),
-            last_message="Completed",
-        )
-        self.log(f"[{stage}] Completed")
+        try:
+            self._stage_handlers[stage](database.get_task(self.task_id))
+            database.update_stage(
+                self.task_id,
+                stage,
+                status="succeeded",
+                progress=100,
+                completed_at=database.now_iso(),
+                last_message="Completed",
+            )
+            self.log(f"[{stage}] Completed")
+        finally:
+            gpu_memory.release_stage_memory(stage)
 
     def _restore_cached_stage(self, stage: str, task: dict | None) -> None:
         if not task:
@@ -495,4 +498,7 @@ class PipelineRunner:
 
 
 def run_task(task_id: str) -> None:
-    PipelineRunner(task_id).run()
+    try:
+        PipelineRunner(task_id).run()
+    finally:
+        gpu_memory.release_task_memory()
