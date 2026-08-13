@@ -288,6 +288,7 @@ def test_translate_system_prompt_contains_meta_summary_hotwords(monkeypatch):
     assert "Recap of the talk." in system
     assert "Content-only translation priority" in system
     assert "return an empty string in `dst`" in system
+    assert "非常短的语气词" not in system
     assert "LEGO -> 乐高" in system
 
 

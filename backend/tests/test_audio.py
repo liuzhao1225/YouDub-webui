@@ -65,3 +65,64 @@ def test_merge_tts_audio_keeps_original_audio_for_empty_translation(
     assert timings[0]["actual_start_time"] == 0
     assert timings[0]["actual_end_time"] == 500
     assert meaningful_file.exists()
+
+
+def test_base_speed_factor_ignores_original_audio(monkeypatch, tmp_path):
+    original_file = tmp_path / "original.wav"
+    translated_file = tmp_path / "translated.wav"
+    durations = {original_file: (10.0, 8000), translated_file: (2.0, 8000)}
+    monkeypatch.setattr(audio, "_audio_duration", lambda path: durations[path])
+
+    factor = audio._base_speed_factor(
+        [
+            {"dst": "", "start_time": 0, "end_time": 1000},
+            {"dst": "Translated.", "start_time": 1000, "end_time": 2000},
+        ],
+        [original_file, translated_file],
+    )
+
+    assert factor == audio.BASE_FACTOR_MIN
+
+
+def test_merge_tts_audio_keeps_delayed_original_audio(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    tts_dir = session / "segments" / "tts"
+    translation_file = session / "metadata" / "translation.en.json"
+    meaningful = np.zeros(8000, dtype=np.float32)
+    original = np.linspace(-0.75, 0.75, 4000, dtype=np.float32)
+    _write_wav(tts_dir / "0001.wav", meaningful)
+    original_file = _write_wav(tts_dir / "0002.wav", original)
+    translation_file.parent.mkdir(parents=True, exist_ok=True)
+    translation_file.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {"dst": "Meaningful.", "start_time": 0, "end_time": 500},
+                    {"dst": "", "start_time": 500, "end_time": 1000},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_load(path: Path):
+        samples, sample_rate = sf.read(path, dtype="float32")
+        return samples, sample_rate
+
+    monkeypatch.setattr(audio, "_load_audio", fake_load)
+    monkeypatch.setattr(audio, "_audio_duration", lambda path: (1.0 if path.name == "0001.wav" else 0.5, 8000))
+    monkeypatch.setattr(audio, "_base_speed_factor", lambda *_args: 1.0)
+    monkeypatch.setattr(
+        audio,
+        "_stretch_segment",
+        lambda path, _ratio, _target, _cache: (sf.read(path, dtype="float32")[0], 8000),
+    )
+
+    dubbing_file, timings_file = audio.merge_tts_audio(translation_file, tts_dir, session)
+
+    mixed, _ = sf.read(dubbing_file, dtype="float32")
+    source_samples, _ = sf.read(original_file, dtype="float32")
+    assert np.allclose(mixed[8000:12000], source_samples, atol=1e-6)
+    timings = json.loads(timings_file.read_text(encoding="utf-8"))["translation"]
+    assert timings[1]["actual_start_time"] == 1000
+    assert timings[1]["actual_end_time"] == 1500

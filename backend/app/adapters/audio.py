@@ -62,6 +62,8 @@ def _base_speed_factor(translation: list[dict], tts_files: list[Path]) -> float:
     cur_total = 0.0
     des_total = 0.0
     for segment, tts_file in zip(translation, tts_files):
+        if _is_original_audio_item(segment):
+            continue
         dur, _ = _audio_duration(tts_file)
         cur_total += dur
         des_total += max(0.0, (segment["end_time"] - segment["start_time"]) / 1000.0)
@@ -129,12 +131,11 @@ def merge_tts_audio(translation_file: Path, tts_dir: Path, session: Path) -> tup
         if _is_original_audio_item(segment):
             y, source_rate = _load_audio(tts_file)
             y = _resample(y, source_rate, sample_rate)
-            offset = max(0, int(round((real_start_ms - segment["start_time"]) * sample_rate / 1000)))
             desired_samples = max(
                 0,
-                int(round((segment["end_time"] - real_start_ms) * sample_rate / 1000)),
+                int(round((segment["end_time"] - segment["start_time"]) * sample_rate / 1000)),
             )
-            y = y[offset:offset + desired_samples]
+            y = y[:desired_samples]
             real_end_ms = real_start_ms + len(y) / sample_rate * 1000.0
         else:
             current_sec, _ = _audio_duration(tts_file)
