@@ -102,7 +102,16 @@ winget install Gyan.FFmpeg.Shared
 winget install OpenJS.NodeJS.LTS
 ```
 
-Windows 上建议安装 FFmpeg 的 shared/full-shared 版本；安装后请确认 `ffmpeg -version` 和 `ffprobe -version` 可用，并且 FFmpeg 的 DLL 目录在 `PATH` 中，否则音频分离阶段可能无法加载 TorchCodec/FFmpeg 运行库。
+Windows 必须安装 FFmpeg 的 shared/full-shared 版本。进入该版本的 `bin` 目录后执行以下检查；`av*.dll` 至少应列出 `avcodec-*.dll`、`avformat-*.dll` 和 `avutil-*.dll`。只有 `ffmpeg.exe`、`ffplay.exe`、`ffprobe.exe` 且没有 `av*.dll` 的目录属于静态构建，TorchCodec 无法使用它提供运行库。
+
+```powershell
+$ffmpegBin = "C:\path\to\ffmpeg\bin"
+Get-ChildItem "$ffmpegBin\av*.dll"
+& "$ffmpegBin\ffmpeg.exe" -version
+& "$ffmpegBin\ffprobe.exe" -version
+```
+
+记下通过检查的 `bin` 目录；在第 4 步创建 `.env` 后填入该实际路径。Python 3.8+ 的 DLL 加载规则需要应用显式注册搜索目录；单独修改 `PATH` 无法保证 TorchCodec 找到这些 DLL。YouDub 启动时会读取 `FFMPEG_PATH`，检查同目录的 `av*.dll`，并通过 `os.add_dll_directory()` 注册该目录。配置错误会在启动阶段直接给出原因。
 
 ```bash
 # Ubuntu / Debian / WSL2
@@ -207,6 +216,13 @@ cp env.txt.example .env
 
 应用运行时读取 `.env`。不要提交 API key、Cookie、下载视频或生成产物。
 
+Windows 用户把第 1 步确认过的 shared/full-shared FFmpeg 实际路径写入刚创建的 `.env`：
+
+```dotenv
+FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
+FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
+```
+
 后端默认强制认证；`YOUDUB_AUTH_PASSWORD_HASH` 未配置时会拒绝启动。请在本机交互式输入访问密码并生成 Argon2id 哈希，命令不会把明文密码写入 shell 历史：
 
 Windows PowerShell：
@@ -235,6 +251,7 @@ macOS / Linux / WSL2：
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
 | `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
+| `FFMPEG_PATH` / `FFPROBE_PATH` | 可选的媒体程序完整路径；Windows 上使用 TorchCodec 时，`FFMPEG_PATH` 必须指向 shared/full-shared 构建。 |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
 | `OPENAI_API_KEY` | 翻译阶段使用的 API key。 |
 | `OPENAI_MODEL` | 翻译阶段使用的 Chat Completions 模型。 |

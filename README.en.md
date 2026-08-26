@@ -102,7 +102,16 @@ winget install Gyan.FFmpeg.Shared
 winget install OpenJS.NodeJS.LTS
 ```
 
-On Windows, install a shared/full-shared FFmpeg build. After installation, confirm that `ffmpeg -version` and `ffprobe -version` work and that the FFmpeg DLL directory is available on `PATH`; otherwise the audio separation stage may fail to load the TorchCodec/FFmpeg runtime libraries.
+Windows requires a shared/full-shared FFmpeg build. Run the following checks from that build's `bin` directory. The `av*.dll` command should list at least `avcodec-*.dll`, `avformat-*.dll`, and `avutil-*.dll`. A directory containing only `ffmpeg.exe`, `ffplay.exe`, and `ffprobe.exe` is a static build and cannot provide TorchCodec's runtime libraries.
+
+```powershell
+$ffmpegBin = "C:\path\to\ffmpeg\bin"
+Get-ChildItem "$ffmpegBin\av*.dll"
+& "$ffmpegBin\ffmpeg.exe" -version
+& "$ffmpegBin\ffprobe.exe" -version
+```
+
+Keep the verified `bin` directory handy and add its actual path after creating `.env` in step 4. Python 3.8+ requires applications to register DLL search directories explicitly; changing `PATH` alone does not guarantee that TorchCodec can find these DLLs. At startup, YouDub reads `FFMPEG_PATH`, checks for `av*.dll` in the same directory, and registers it with `os.add_dll_directory()`. Configuration errors are reported immediately during startup.
 
 ```bash
 # Ubuntu / Debian / WSL2
@@ -207,6 +216,13 @@ cp env.txt.example .env
 
 The application reads `.env` at runtime. Do not commit API keys, cookies, downloaded media, or generated artifacts.
 
+On Windows, add the shared/full-shared FFmpeg paths verified in step 1 to the `.env` file you just created:
+
+```dotenv
+FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
+FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
+```
+
 Authentication is mandatory by default, and the backend refuses to start without `YOUDUB_AUTH_PASSWORD_HASH`. Generate an Argon2id hash locally with an interactive password prompt; these commands do not put the plaintext password in shell history.
 
 Windows PowerShell:
@@ -235,6 +251,7 @@ Common environment variables:
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | Session Cookie SameSite policy: `lax` or `strict`; `strict` is recommended with the same-origin proxy. |
 | `DEVICE` | Model runtime device, for example `auto`, `cuda`, `cuda:0`, `mps`, `mps:0`, or `cpu`; `auto` selects CUDA, then MPS, then CPU. |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | Optional component-level device overrides. Empty values use `DEVICE`. Whisper falls back to CPU when MPS is selected because word timestamp alignment depends on float64 DTW, which MPS does not support. |
+| `FFMPEG_PATH` / `FFPROBE_PATH` | Optional full paths to the media binaries. On Windows with TorchCodec, `FFMPEG_PATH` must point to a shared/full-shared build. |
 | `OPENAI_BASE_URL` | OpenAI-compatible API endpoint, for example `https://api.openai.com/v1`. |
 | `OPENAI_API_KEY` | API key used by the translation stage. |
 | `OPENAI_MODEL` | Chat Completions model used by the translation stage. |
