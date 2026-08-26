@@ -15,6 +15,7 @@ from backend.app.sources import detect_source
 
 YT_SOURCE = detect_source("https://www.youtube.com/watch?v=abcdefghijk")
 BB_SOURCE = detect_source("https://www.bilibili.com/video/BV1xx411c7mD")
+JA_SOURCE = detect_source("local://upload/japanese-task?direction=ja-zh")
 
 
 def _write_asr(path, n: int, full_text: str | None = None) -> None:
@@ -118,6 +119,24 @@ def test_translate_asr_writes_schema_with_speaker_and_lang(tmp_path, monkeypatch
     assert {i["dst_lang"] for i in items} == {"zh"}
     assert {i["speaker"] for i in items} == {"1"}
     assert items[0]["start_time"] == 0
+
+
+def test_translate_asr_writes_japanese_to_chinese_language_metadata(tmp_path, monkeypatch):
+    metadata = tmp_path / "metadata"
+    metadata.mkdir()
+    asr_file = metadata / "asr.json"
+    _write_asr(asr_file, 1, full_text="今日はいい天気です。")
+
+    _stub_preprocess(monkeypatch)
+    _stub_translate_batch(monkeypatch, lambda _text: "今天天气很好。")
+
+    out = openai_translate.translate_asr(asr_file, tmp_path, _settings(), JA_SOURCE)
+    item = json.loads(out.read_text(encoding="utf-8"))["translation"][0]
+
+    assert out.name == "translation.zh.json"
+    assert item["src_lang"] == "ja"
+    assert item["dst_lang"] == "zh"
+    assert item["dst"] == "今天天气很好。"
 
 
 def test_translate_asr_output_filename_uses_target_lang(tmp_path, monkeypatch):
@@ -268,3 +287,31 @@ def test_translate_system_prompt_contains_meta_summary_hotwords(monkeypatch):
     assert "Long description" in system
     assert "Recap of the talk." in system
     assert "LEGO -> 乐高" in system
+
+
+def test_japanese_to_chinese_uses_dedicated_language_names_and_prompt(monkeypatch):
+    captured: list[str] = []
+
+    def fake_call_json(client, model, system, user):
+        captured.append(user)
+        return {"summary": "摘要", "hotwords": [], "corrections": []}
+
+    monkeypatch.setattr(openai_translate, "_call_json", fake_call_json)
+    monkeypatch.setattr(openai_translate, "_client", lambda *a, **kw: object())
+
+    openai_translate.preprocess(
+        "今日はいい天気です。",
+        {},
+        JA_SOURCE,
+        base_url="u",
+        api_key="k",
+        model="m",
+    )
+    system = openai_translate._translate_system(JA_SOURCE, {}, PreprocessResponse())
+
+    assert JA_SOURCE.asr_language_name == "Japanese"
+    assert JA_SOURCE.target_language_name == "Simplified Chinese"
+    assert "转录原始语言：Japanese" in captured[0]
+    assert "请将日文逐句翻译" in system
+    assert "一句日文原文" in system
+    assert "一句英文原文" not in system
