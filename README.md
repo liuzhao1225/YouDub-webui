@@ -144,7 +144,9 @@ py -3.12 -m venv .venv
 前端依赖：
 
 ```powershell
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+Push-Location apps/web
+npm ci --registry=https://registry.npmmirror.com
+Pop-Location
 ```
 
 #### macOS / Linux / WSL2
@@ -160,7 +162,7 @@ python3.12 -m venv .venv
 前端依赖：
 
 ```bash
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
 ```
 
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
