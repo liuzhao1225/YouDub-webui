@@ -15,6 +15,7 @@ from backend.app import auth, config, database, pipeline
 from backend.app import main
 from backend.app import worker
 from backend.app.adapters import local_subtitles
+from backend.app.sources import detect_source
 from backend.tests.conftest import TEST_AUTH_PASSWORD
 
 
@@ -473,6 +474,46 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     assert enqueued == [task_id]
     assert not session.exists()
     assert not log_file.exists()
+
+
+def test_rerun_failed_japanese_local_task_preserves_direction_and_upload(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    upload = client.post(
+        "/api/tasks/upload",
+        data={"direction": "ja-zh"},
+        files={"file": ("japanese.mp4", b"japanese-video", "video/mp4")},
+    )
+
+    assert upload.status_code == 201
+    original_task = upload.json()
+    task_id = original_task["id"]
+    original_url = original_task["url"]
+    uploaded_file = config.WORKFOLDER / "_uploads" / task_id / "video" / "japanese.mp4"
+    assert uploaded_file.read_bytes() == b"japanese-video"
+
+    database.update_task(
+        task_id,
+        status="failed",
+        error_message="injected failure",
+        completed_at=database.now_iso(),
+    )
+    rerun = client.post(f"/api/tasks/{task_id}/rerun")
+
+    assert rerun.status_code == 200
+    rerun_task = rerun.json()
+    assert rerun_task["id"] == task_id
+    assert rerun_task["url"] == original_url
+    assert "direction=ja-zh" in rerun_task["url"]
+    assert "filename=japanese.mp4" in rerun_task["url"]
+    assert uploaded_file.read_bytes() == b"japanese-video"
+    source = detect_source(rerun_task["url"])
+    assert source.asr_language == "ja"
+    assert source.target_language == "zh"
+    assert enqueued == [task_id, task_id]
 
 
 def test_rerun_task_returns_404_for_unknown(monkeypatch, tmp_path):
