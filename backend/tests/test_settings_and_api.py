@@ -6,6 +6,7 @@ import sqlite3
 import sys
 import threading
 import types
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -163,6 +164,148 @@ def test_task_id_is_video_id_and_dedupes_existing(monkeypatch, tmp_path):
     assert first.json()["id"] == "abcdefghijk"
     assert second.json()["id"] == "abcdefghijk"
     assert enqueued == ["abcdefghijk"]
+
+
+def test_concurrent_create_same_video_is_atomic_and_enqueues_once(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    clients = [authenticated_client(), authenticated_client()]
+    payload = {
+        "url": "https://www.youtube.com/watch?v=concurrent1",
+        "output_mode": "subtitles",
+    }
+    barrier = threading.Barrier(2)
+    original_find = database.find_task_by_video_id
+
+    def synchronized_find(video_id, output_mode=database.DEFAULT_OUTPUT_MODE):
+        result = original_find(video_id, output_mode)
+        barrier.wait(timeout=5)
+        return result
+
+    monkeypatch.setattr(database, "find_task_by_video_id", synchronized_find)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(client.post, "/api/tasks", json=payload) for client in clients]
+        responses = [future.result(timeout=10) for future in futures]
+
+    assert [response.status_code for response in responses] == [201, 201]
+    assert {response.json()["id"] for response in responses} == {"concurrent1-subtitles"}
+    assert enqueued == ["concurrent1-subtitles"]
+    assert [task["id"] for task in database.list_tasks()] == ["concurrent1-subtitles"]
+
+
+def test_atomic_video_create_rejects_deterministic_id_collision(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.create_task(
+        "https://www.youtube.com/watch?v=different01",
+        task_id="abcdefghijk",
+        output_mode="both",
+    )
+
+    with pytest.raises(sqlite3.IntegrityError, match="different video or output mode"):
+        database.create_or_get_video_task(
+            "https://www.youtube.com/watch?v=abcdefghijk",
+            "abcdefghijk",
+            output_mode="both",
+        )
+
+
+def test_same_video_dedupes_per_output_mode(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+    url = "https://www.youtube.com/watch?v=abcdefghijk"
+
+    subtitles = client.post(
+        "/api/tasks",
+        json={"url": url, "output_mode": "subtitles"},
+    )
+    subtitles_again = client.post(
+        "/api/tasks",
+        json={"url": url, "output_mode": "subtitles"},
+    )
+    dubbing = client.post(
+        "/api/tasks",
+        json={"url": url, "output_mode": "dubbing"},
+    )
+    both = client.post(
+        "/api/tasks",
+        json={"url": url, "output_mode": "both"},
+    )
+
+    assert [response.status_code for response in (subtitles, subtitles_again, dubbing, both)] == [
+        201,
+        201,
+        201,
+        201,
+    ]
+    assert subtitles.json()["id"] == "abcdefghijk-subtitles"
+    assert subtitles_again.json()["id"] == "abcdefghijk-subtitles"
+    assert dubbing.json()["id"] == "abcdefghijk-dubbing"
+    assert both.json()["id"] == "abcdefghijk"
+    assert [subtitles.json()["output_mode"], dubbing.json()["output_mode"], both.json()["output_mode"]] == [
+        "subtitles",
+        "dubbing",
+        "both",
+    ]
+    assert enqueued == ["abcdefghijk-subtitles", "abcdefghijk-dubbing", "abcdefghijk"]
+
+
+def test_create_task_rejects_invalid_output_mode_before_dedup(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    client = authenticated_client()
+    url = "https://www.youtube.com/watch?v=abcdefghijk"
+    assert client.post("/api/tasks", json={"url": url}).status_code == 201
+
+    response = client.post(
+        "/api/tasks",
+        json={"url": url, "output_mode": "captions"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "output_mode must be one of: subtitles, dubbing, both"
+    assert len(database.list_tasks()) == 1
+
+
+def test_init_db_migrates_existing_tasks_to_both_output_mode(monkeypatch, tmp_path):
+    legacy_db = tmp_path / "legacy.sqlite"
+    with sqlite3.connect(legacy_db) as conn:
+        conn.execute(
+            """
+            CREATE TABLE tasks (
+              id TEXT PRIMARY KEY,
+              url TEXT NOT NULL,
+              status TEXT NOT NULL,
+              current_stage TEXT,
+              session_path TEXT,
+              final_video_path TEXT,
+              error_message TEXT,
+              created_at TEXT NOT NULL,
+              started_at TEXT,
+              completed_at TEXT,
+              execution_mode TEXT NOT NULL DEFAULT 'auto'
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO tasks (id, url, status, created_at)
+            VALUES ('legacy-task', 'https://example.com/legacy', 'succeeded', '2024-01-01T00:00:00Z')
+            """
+        )
+
+    monkeypatch.setattr(database, "DB_PATH", legacy_db)
+    database.init_db()
+
+    assert database.get_task("legacy-task")["output_mode"] == "both"
+    created = database.create_task(
+        "https://example.com/new",
+        task_id="new-task",
+        output_mode="dubbing",
+    )
+    assert database.get_task(created)["output_mode"] == "dubbing"
 
 
 def test_different_videos_create_separate_tasks(monkeypatch, tmp_path):
@@ -455,7 +598,11 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
 
-    task_id = database.create_task("https://www.youtube.com/watch?v=rerunvideox", task_id="rerunvideox")
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=rerunvideox",
+        task_id="rerunvideox-subtitles",
+        output_mode="subtitles",
+    )
     session = config.WORKFOLDER / "uploader" / "title__rerunvideox"
     (session / "media").mkdir(parents=True)
     (session / "media" / "video_source.mp4").write_bytes(b"old")
@@ -470,6 +617,7 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     body = response.json()
     assert body["id"] == task_id
     assert body["status"] == "queued"
+    assert body["output_mode"] == "subtitles"
     assert body["session_path"] is None
     assert enqueued == [task_id]
     assert not session.exists()
@@ -1110,12 +1258,15 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
 
     task_id = database.create_task(
         "https://www.youtube.com/watch?v=redostgapi1",
-        task_id="redostgapi1",
+        task_id="redostgapi1-subtitles",
         execution_mode="manual",
+        output_mode="subtitles",
     )
     database.update_task(task_id, status="paused", session_path=str(session))
     for stage in ("download", "separate", "asr", "asr_fix", "translate"):
         database.update_stage(task_id, stage, status="succeeded", completed_at=database.now_iso())
+    for stage in ("split_audio", "tts", "merge_audio"):
+        database.update_stage(task_id, stage, status="skipped", completed_at=database.now_iso())
     enqueued: list[str] = []
     monkeypatch.setattr(main.worker, "enqueue", lambda tid: enqueued.append(tid))
 
@@ -1125,6 +1276,7 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "queued"
+    assert body["output_mode"] == "subtitles"
     assert not translation.exists()
     assert asr_fixed.exists()
     translate_stage = next(stage for stage in body["stages"] if stage["name"] == "translate")
@@ -1132,6 +1284,28 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
     assert translate_stage["status"] == "pending"
     assert split_stage["status"] == "pending"
     assert enqueued == [task_id]
+
+
+def test_redo_stage_rejects_skipped_stage(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=redoskipped",
+        task_id="redoskipped-subtitles",
+        execution_mode="manual",
+        output_mode="subtitles",
+    )
+    database.update_task(task_id, status="paused")
+    database.update_stage(
+        task_id,
+        "tts",
+        status="skipped",
+        completed_at=database.now_iso(),
+    )
+
+    response = authenticated_client().post(f"/api/tasks/{task_id}/stages/tts/redo")
+
+    assert response.status_code == 409
+    assert database.get_task(task_id)["stages"][6]["status"] == "skipped"
 
 
 @pytest.mark.parametrize(
@@ -1331,7 +1505,7 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
 
     response = client.post(
         "/api/tasks/upload",
-        data={"direction": "zh-en"},
+        data={"direction": "zh-en", "output_mode": "dubbing"},
         files={"file": ("clip.mp4", b"mp4data", "video/mp4")},
     )
 
@@ -1339,6 +1513,7 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
     body = response.json()
     assert body["title"] == "clip"
     assert body["url"].startswith(f"local://upload/{body['id']}?direction=zh-en")
+    assert body["output_mode"] == "dubbing"
     assert enqueued == [body["id"]]
     saved = list((config.WORKFOLDER / "_uploads" / body["id"] / "video").iterdir())
     assert len(saved) == 1
@@ -1522,6 +1697,11 @@ def test_upload_local_video_can_save_translated_srt(monkeypatch, tmp_path):
             {"direction": "en-zh", "execution_mode": "batch"},
             {"file": ("clip.mp4", b"mp4data", "video/mp4")},
             "execution_mode must be one of: auto, manual",
+        ),
+        (
+            {"direction": "en-zh", "output_mode": "captions"},
+            {"file": ("clip.mp4", b"mp4data", "video/mp4")},
+            "output_mode must be one of: subtitles, dubbing, both",
         ),
         (
             {"direction": "en-zh", "execution_mode": "auto"},

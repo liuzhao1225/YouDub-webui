@@ -63,6 +63,7 @@ def mask_secret(value: str) -> str:
 class TaskCreate(BaseModel):
     url: str
     execution_mode: str = "auto"
+    output_mode: str = "both"
 
 
 class ContinueTaskRequest(BaseModel):
@@ -321,25 +322,44 @@ def normalize_execution_mode(value: str) -> str:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def normalize_output_mode(value: str) -> str:
+    try:
+        return database.normalize_output_mode(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @app.post("/api/tasks", status_code=201)
 def create_task(payload: TaskCreate) -> dict:
     try:
         validated_url = validate_video_url(payload.url)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    normalized_execution_mode = normalize_execution_mode(payload.execution_mode)
+    normalized_output_mode = normalize_output_mode(payload.output_mode)
 
-    existing_id = database.find_task_by_video_id(validated_url.video_id)
+    existing_id = database.find_task_by_video_id(
+        validated_url.video_id,
+        normalized_output_mode,
+    )
     if existing_id:
-        return database.get_task(existing_id)
+        existing_task = database.get_task(existing_id)
+        if existing_task is not None:
+            return existing_task
 
     _ensure_runtime_ready()
-    task_id = database.create_task(
+    task_id, created = database.create_or_get_video_task(
         validated_url.url,
-        task_id=validated_url.video_id,
-        execution_mode=normalize_execution_mode(payload.execution_mode),
+        validated_url.video_id,
+        execution_mode=normalized_execution_mode,
+        output_mode=normalized_output_mode,
     )
-    worker.enqueue(task_id)
-    return database.get_task(task_id)
+    task = database.get_task(task_id)
+    if task is None:
+        raise RuntimeError(f"Task {task_id} was not persisted.")
+    if created:
+        worker.enqueue(task_id)
+    return task
 
 
 def _clean_upload_filename(filename: str | None) -> str:
@@ -414,6 +434,7 @@ def upload_local_video(
     file: UploadFile = File(...),
     subtitle_file: UploadFile | None = File(None),
     execution_mode: str = Form("auto"),
+    output_mode: str = Form("both"),
 ) -> dict:
     if direction not in LOCAL_UPLOAD_DIRECTIONS:
         raise HTTPException(status_code=422, detail="Unsupported local video direction.")
@@ -424,6 +445,7 @@ def upload_local_video(
     if subtitle_file is not None:
         stored_subtitle_name = _clean_subtitle_filename(subtitle_file.filename)
     normalized_execution_mode = normalize_execution_mode(execution_mode)
+    normalized_output_mode = normalize_output_mode(output_mode)
     _ensure_runtime_ready()
 
     task_id = str(uuid.uuid4())
@@ -449,6 +471,7 @@ def upload_local_video(
             url,
             task_id=task_id,
             execution_mode=normalized_execution_mode,
+            output_mode=normalized_output_mode,
         )
         database.update_task(task_id, title=Path(original_name).stem)
         task = database.get_task(task_id)
@@ -538,8 +561,14 @@ def rerun_task(task_id: str) -> dict:
     _ensure_runtime_ready()
     url = task["url"]
     execution_mode = task.get("execution_mode") or database.DEFAULT_EXECUTION_MODE
+    output_mode = task.get("output_mode") or database.DEFAULT_OUTPUT_MODE
     _purge_task(task)
-    new_id = database.create_task(url, task_id=task_id, execution_mode=execution_mode)
+    new_id = database.create_task(
+        url,
+        task_id=task_id,
+        execution_mode=execution_mode,
+        output_mode=output_mode,
+    )
     worker.enqueue(new_id)
     return database.get_task(new_id)
 
