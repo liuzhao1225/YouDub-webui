@@ -116,15 +116,21 @@ def _write_original_target_audio(
 
     with sf.SoundFile(original_vocals_file) as source:
         start_frame = max(0, int(start * source.samplerate / 1000))
-        end_frame = int(end * source.samplerate / 1000)
+        requested_end_frame = int(end * source.samplerate / 1000)
+        end_frame = requested_end_frame
         available_duration_ms = source.frames / source.samplerate * 1000
         range_error = (
             f"Original audio does not cover target segment {start}-{end} ms: "
-            f"requested frames {start_frame}-{end_frame}, available audio is "
+            f"requested frames {start_frame}-{requested_end_frame}, available audio is "
             f"{source.frames} frames ({available_duration_ms:.3f} ms)"
         )
-        if start_frame >= source.frames or end_frame > source.frames:
+        if start_frame >= source.frames:
             raise ValueError(range_error)
+        overflow_frames = requested_end_frame - source.frames
+        if overflow_frames > 0:
+            if overflow_frames * 1000 >= source.samplerate:
+                raise ValueError(range_error)
+            end_frame = source.frames
         if end_frame <= start_frame:
             raise ValueError(range_error)
         source.seek(start_frame)

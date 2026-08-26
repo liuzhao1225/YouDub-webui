@@ -339,6 +339,45 @@ def test_original_target_audio_accepts_end_at_source_boundary(tmp_path):
     assert np.allclose(copied, source_samples[4000:8000], atol=2 / 32768)
 
 
+def test_original_target_audio_accepts_sub_millisecond_rounded_tail(tmp_path):
+    source = tmp_path / "media" / "audio_vocals.wav"
+    source.parent.mkdir(parents=True)
+    source_samples = np.linspace(-0.75, 0.75, 44127, dtype=np.float32)
+    sf.write(source, source_samples, 44100)
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    voxcpm_mod._write_original_target_audio(
+        output,
+        {"start_time": 0, "end_time": 1001},
+        source,
+    )
+
+    copied, sample_rate = sf.read(output, dtype="float32")
+    assert sample_rate == 44100
+    assert len(copied) == 44127
+    assert np.allclose(copied, source_samples, atol=2 / 32768)
+
+
+def test_original_target_audio_rejects_one_millisecond_tail_overflow(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 0, "end_time": 501},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "0-501 ms" in message
+    assert "requested frames 0-8016" in message
+    assert "8000 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
 @pytest.mark.skipif(
     not runtime_security.POSIX_STRONG_PERMISSIONS,
     reason="symlink-safe private writes require POSIX semantics",
