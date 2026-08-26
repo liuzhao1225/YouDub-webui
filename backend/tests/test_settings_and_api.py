@@ -6,6 +6,7 @@ import sqlite3
 import sys
 import threading
 import types
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -163,6 +164,51 @@ def test_task_id_is_video_id_and_dedupes_existing(monkeypatch, tmp_path):
     assert first.json()["id"] == "abcdefghijk"
     assert second.json()["id"] == "abcdefghijk"
     assert enqueued == ["abcdefghijk"]
+
+
+def test_concurrent_create_same_video_is_atomic_and_enqueues_once(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    clients = [authenticated_client(), authenticated_client()]
+    payload = {
+        "url": "https://www.youtube.com/watch?v=concurrent1",
+        "output_mode": "subtitles",
+    }
+    barrier = threading.Barrier(2)
+    original_find = database.find_task_by_video_id
+
+    def synchronized_find(video_id, output_mode=database.DEFAULT_OUTPUT_MODE):
+        result = original_find(video_id, output_mode)
+        barrier.wait(timeout=5)
+        return result
+
+    monkeypatch.setattr(database, "find_task_by_video_id", synchronized_find)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(client.post, "/api/tasks", json=payload) for client in clients]
+        responses = [future.result(timeout=10) for future in futures]
+
+    assert [response.status_code for response in responses] == [201, 201]
+    assert {response.json()["id"] for response in responses} == {"concurrent1-subtitles"}
+    assert enqueued == ["concurrent1-subtitles"]
+    assert [task["id"] for task in database.list_tasks()] == ["concurrent1-subtitles"]
+
+
+def test_atomic_video_create_rejects_deterministic_id_collision(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    database.create_task(
+        "https://www.youtube.com/watch?v=different01",
+        task_id="abcdefghijk",
+        output_mode="both",
+    )
+
+    with pytest.raises(sqlite3.IntegrityError, match="different video or output mode"):
+        database.create_or_get_video_task(
+            "https://www.youtube.com/watch?v=abcdefghijk",
+            "abcdefghijk",
+            output_mode="both",
+        )
 
 
 def test_same_video_dedupes_per_output_mode(monkeypatch, tmp_path):

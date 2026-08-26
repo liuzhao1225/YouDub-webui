@@ -343,18 +343,23 @@ def create_task(payload: TaskCreate) -> dict:
         normalized_output_mode,
     )
     if existing_id:
-        return database.get_task(existing_id)
+        existing_task = database.get_task(existing_id)
+        if existing_task is not None:
+            return existing_task
 
     _ensure_runtime_ready()
-    task_id = database.video_task_id(validated_url.video_id, normalized_output_mode)
-    task_id = database.create_task(
+    task_id, created = database.create_or_get_video_task(
         validated_url.url,
-        task_id=task_id,
+        validated_url.video_id,
         execution_mode=normalized_execution_mode,
         output_mode=normalized_output_mode,
     )
-    worker.enqueue(task_id)
-    return database.get_task(task_id)
+    task = database.get_task(task_id)
+    if task is None:
+        raise RuntimeError(f"Task {task_id} was not persisted.")
+    if created:
+        worker.enqueue(task_id)
+    return task
 
 
 def _clean_upload_filename(filename: str | None) -> str:

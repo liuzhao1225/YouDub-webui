@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import uuid
 from pathlib import Path
 
 from ..audio_mode import target_text
@@ -267,12 +268,9 @@ def merge_video(
     tmp_dir.mkdir(parents=True, exist_ok=True)
     media_dir.mkdir(parents=True, exist_ok=True)
     final_video = media_dir / "video_final.mp4"
-    if final_video.exists():
-        return final_video
 
     session_dir = session.resolve()
     video_input = video_file.resolve()
-    final_video_output = final_video.resolve()
 
     mixed_audio_output: Path | None = None
     if include_dubbing:
@@ -300,22 +298,28 @@ def merge_video(
             check=True,
         )
 
-    command = [ffmpeg_binary(), "-y", "-i", str(video_input)]
-    if mixed_audio_output is not None:
-        command.extend(["-i", str(mixed_audio_output)])
-    if include_subtitles:
-        subtitles = write_srt(timings_file, session)
-        command.extend(["-vf", subtitle_filter(video_input, subtitles, session_dir)])
-    command.extend(["-map", "0:v:0"])
-    if mixed_audio_output is not None:
-        command.extend(["-map", "1:a:0"])
-    else:
-        command.extend(["-map", "0:a?"])
-    command.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "23"])
-    command.extend(["-c:a", "aac"])
-    command.extend(["-movflags", "+faststart"])
-    if mixed_audio_output is not None:
-        command.append("-shortest")
-    command.append(str(final_video_output))
-    subprocess.run(command, check=True, cwd=session_dir)
-    return final_video
+    temporary_video = media_dir / f".video_final.{uuid.uuid4().hex}.mp4"
+    try:
+        command = [ffmpeg_binary(), "-y", "-i", str(video_input)]
+        if mixed_audio_output is not None:
+            command.extend(["-i", str(mixed_audio_output)])
+        if include_subtitles:
+            subtitles = write_srt(timings_file, session)
+            command.extend(["-vf", subtitle_filter(video_input, subtitles, session_dir)])
+        command.extend(["-map", "0:v:0"])
+        if mixed_audio_output is not None:
+            command.extend(["-map", "1:a:0"])
+        else:
+            command.extend(["-map", "0:a?"])
+        command.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "23"])
+        command.extend(["-c:a", "aac"])
+        command.extend(["-movflags", "+faststart"])
+        if mixed_audio_output is not None:
+            command.append("-shortest")
+        command.append(str(temporary_video.resolve()))
+        subprocess.run(command, check=True, cwd=session_dir)
+        temporary_video.replace(final_video)
+        return final_video
+    except Exception:
+        temporary_video.unlink(missing_ok=True)
+        raise

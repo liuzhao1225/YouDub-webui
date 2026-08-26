@@ -319,11 +319,63 @@ def create_task(
     return new_id
 
 
+def create_or_get_video_task(
+    url: str,
+    video_id: str,
+    *,
+    execution_mode: str = DEFAULT_EXECUTION_MODE,
+    output_mode: str = DEFAULT_OUTPUT_MODE,
+) -> tuple[str, bool]:
+    from .youtube import extract_video_id
+
+    task_id = video_task_id(video_id, output_mode)
+    created_at = now_iso()
+    mode = normalize_execution_mode(execution_mode)
+    normalized_output_mode = normalize_output_mode(output_mode)
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO tasks (
+              id, url, status, current_stage, created_at, execution_mode, output_mode
+            )
+            VALUES (?, ?, 'queued', ?, ?, ?, ?)
+            ON CONFLICT(id) DO NOTHING
+            """,
+            (task_id, url, STAGES[0].name, created_at, mode, normalized_output_mode),
+        )
+        if cursor.rowcount == 1:
+            conn.executemany(
+                """
+                INSERT INTO task_stages (task_id, name, label, status)
+                VALUES (?, ?, ?, 'pending')
+                """,
+                [(task_id, stage.name, stage.label) for stage in STAGES],
+            )
+            return task_id, True
+
+        existing = conn.execute(
+            "SELECT id, url, output_mode FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+        if existing is None:
+            raise RuntimeError(f"Task {task_id} disappeared after an id conflict.")
+        try:
+            existing_video_id = extract_video_id(existing["url"])
+        except ValueError as exc:
+            raise sqlite3.IntegrityError(
+                f"Task id collision for {task_id}: existing URL is not a supported video URL."
+            ) from exc
+        if existing_video_id != video_id or existing["output_mode"] != normalized_output_mode:
+            raise sqlite3.IntegrityError(
+                f"Task id collision for {task_id}: existing task has different video or output mode."
+            )
+        return task_id, False
+
+
 def find_task_by_video_id(video_id: str, output_mode: str = DEFAULT_OUTPUT_MODE) -> str | None:
     from .youtube import extract_video_id
 
     mode = normalize_output_mode(output_mode)
-    expected_id = video_task_id(video_id, mode)
     with connect() as conn:
         rows = conn.execute(
             "SELECT id, url FROM tasks WHERE output_mode = ? AND url NOT LIKE 'local://%' "
@@ -331,8 +383,6 @@ def find_task_by_video_id(video_id: str, output_mode: str = DEFAULT_OUTPUT_MODE)
             (mode,),
         ).fetchall()
     for row in rows:
-        if row["id"] == expected_id:
-            return row["id"]
         try:
             if extract_video_id(row["url"]) == video_id:
                 return row["id"]
