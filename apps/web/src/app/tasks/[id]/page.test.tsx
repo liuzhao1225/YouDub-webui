@@ -34,6 +34,7 @@ function taskWithStatus(status: TaskStatus): Task {
     started_at: null,
     completed_at: null,
     execution_mode: "manual",
+    output_mode: "dubbing",
     stages: [{
       task_id: "task-race",
       name: "download",
@@ -103,6 +104,7 @@ describe("任务详情轮询", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "执行下一阶段" })).toBeInTheDocument()
     })
+    expect(screen.getByText("配音（无硬字幕）")).toBeInTheDocument()
 
     await waitFor(() => expect(taskGetCount).toBe(2), { timeout: 3500 })
 
@@ -120,5 +122,44 @@ describe("任务详情轮询", () => {
 
     expect(screen.getByText("排队中")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "执行下一阶段" })).not.toBeInTheDocument()
+  })
+
+  it("已跳过阶段计入完成进度并显示输出语义", async () => {
+    const completed = taskWithStatus("succeeded")
+    completed.output_mode = "subtitles"
+    completed.stages = [
+      { ...completed.stages[0], status: "succeeded", progress: 100 },
+      {
+        ...completed.stages[0],
+        name: "tts",
+        label: "VoxCPM",
+        status: "skipped",
+        progress: 100,
+        last_message: "Skipped for output mode: subtitles",
+      },
+    ]
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const path = String(input)
+      if (path === "/api/tasks/task-race") return jsonResponse(completed)
+      if (path === "/api/tasks/task-race/log") return new Response("done", { status: 200 })
+      throw new Error(`未预期的请求: ${path}`)
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const params = Promise.resolve({ id: "task-race" })
+    await act(async () => {
+      render(
+        <LanguageProvider>
+          <Suspense fallback={<div>loading</div>}>
+            <TaskDetailPage params={params} />
+          </Suspense>
+        </LanguageProvider>,
+      )
+      await params
+    })
+
+    expect(await screen.findByText("硬字幕（保留原音）")).toBeInTheDocument()
+    expect(screen.getByText("已跳过")).toBeInTheDocument()
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100")
   })
 })

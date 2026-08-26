@@ -4,6 +4,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from backend.app.adapters import ffmpeg
 
 
@@ -156,6 +158,92 @@ def test_merge_video_uses_absolute_media_paths_when_cwd_is_session(monkeypatch, 
     assert Path(final_command[final_command.index("-i", final_command.index("-i") + 1) + 1]).is_absolute()
     assert Path(final_command[-1]).is_absolute()
     assert cwd_values[-1] == session.resolve()
+
+
+def test_merge_video_subtitles_preserves_original_audio(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    translation = metadata_dir / "translation.zh.json"
+    translation.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {"start_time": 0, "end_time": 1000, "zh": "你好"}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        if cmd[0] == "ffprobe":
+            return subprocess.CompletedProcess(cmd, 0, stdout="1920,1080\n", stderr="")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        None,
+        None,
+        translation,
+        session,
+        output_mode="subtitles",
+    )
+
+    assert len(commands) == 2
+    final_command = commands[-1]
+    assert final_command.count("-i") == 1
+    assert "-vf" in final_command
+    assert final_command[final_command.index("-map", final_command.index("-map") + 1) + 1] == "0:a?"
+    assert final_command[final_command.index("-c:a") + 1] == "copy"
+    assert "-shortest" not in final_command
+
+
+def test_merge_video_dubbing_omits_hard_subtitles(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    timings = metadata_dir / "timings.json"
+    timings.write_text('{"translation": []}', encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        tmp_path / "dubbing.wav",
+        tmp_path / "bgm.wav",
+        timings,
+        session,
+        output_mode="dubbing",
+    )
+
+    assert len(commands) == 2
+    final_command = commands[-1]
+    assert "-vf" not in final_command
+    assert not (metadata_dir / "subtitles.zh.srt").exists()
+    assert final_command[final_command.index("-c:a") + 1] == "aac"
+    assert "-shortest" in final_command
+
+
+def test_merge_video_rejects_unknown_output_mode(tmp_path):
+    with pytest.raises(ValueError, match="output_mode must be one of"):
+        ffmpeg.merge_video(
+            tmp_path / "video.mp4",
+            None,
+            None,
+            tmp_path / "timings.json",
+            tmp_path / "session",
+            output_mode="captions",
+        )
 
 
 def test_split_subtitle_text_breaks_on_punctuation_and_keeps_protected():

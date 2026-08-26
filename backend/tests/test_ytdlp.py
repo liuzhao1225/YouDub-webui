@@ -122,6 +122,23 @@ def test_download_video_passes_only_the_canonical_url_to_both_ytdlp_sinks(
     assert (session / "media" / "video_source.mp4").read_bytes() == b"video"
 
 
+def test_output_mode_task_ids_use_separate_remote_sessions(tmp_path):
+    info = {
+        "id": "abcdefghijk",
+        "uploader": "tester",
+        "title": "same video",
+    }
+
+    subtitles = ytdlp._session_path(tmp_path, info, "abcdefghijk-subtitles")
+    dubbing = ytdlp._session_path(tmp_path, info, "abcdefghijk-dubbing")
+    both = ytdlp._session_path(tmp_path, info, "abcdefghijk")
+
+    assert len({subtitles, dubbing, both}) == 3
+    assert subtitles.name.endswith("__abcdefghijk-subtitles")
+    assert dubbing.name.endswith("__abcdefghijk-dubbing")
+    assert both.name.endswith("__abcdefghijk")
+
+
 def test_download_video_rejects_deceptive_url_before_cookie_or_ytdlp(
     monkeypatch, tmp_path
 ):

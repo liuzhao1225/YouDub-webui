@@ -91,7 +91,60 @@ describe("本地视频字幕选择", () => {
     const form = uploadCall?.[1]?.body as FormData
     expect((form.get("file") as File).name).toBe("video-b.mp4")
     expect(form.has("subtitle_file")).toBe(false)
+    expect(form.get("output_mode")).toBe("both")
     expect(mocks.push).toHaveBeenCalledWith("/tasks/task-b")
+  })
+})
+
+describe("任务输出选择", () => {
+  it("URL 任务可选择保留原音的硬字幕输出", async () => {
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input)
+      if (path === "/api/tasks" && init?.method === "POST") {
+        return new Response(JSON.stringify({ id: "abcdefghijk-subtitles" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      if (path.startsWith("/api/tasks")) {
+        return new Response(JSON.stringify({
+          tasks: [],
+          total: 0,
+          active_count: 0,
+          page: 1,
+          page_size: 20,
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      throw new Error(`未预期的请求: ${path}`)
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const user = userEvent.setup()
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    await user.type(
+      screen.getByLabelText("YouTube 链接（英文 -> 中文）"),
+      "https://www.youtube.com/watch?v=abcdefghijk",
+    )
+    await user.click(screen.getByLabelText("输出内容"))
+    await user.click(await screen.findByRole("option", { name: "硬字幕（保留原音）" }))
+    await user.click(screen.getByRole("button", { name: "创建任务" }))
+
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/tasks/abcdefghijk-subtitles"))
+    const createCall = mocks.fetch.mock.calls.find(
+      ([input, init]) => String(input) === "/api/tasks" && init?.method === "POST",
+    )
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+      execution_mode: "auto",
+      output_mode: "subtitles",
+    })
   })
 })
 

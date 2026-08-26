@@ -5,6 +5,7 @@ import { use, useCallback, useMemo, useState } from "react"
 import {
   CheckCircle2,
   Circle,
+  CircleMinus,
   Download,
   FileText,
   Loader2,
@@ -56,6 +57,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 
 function stageIcon(status: StageStatus) {
   if (status === "succeeded") return <CheckCircle2 className="size-5 text-[#00aeec]" />
+  if (status === "skipped") return <CircleMinus className="size-5 text-muted-foreground" />
   if (status === "failed") return <XCircle className="size-5 text-[#ff0033]" />
   if (status === "running") return <Loader2 className="size-5 animate-spin text-[#fb7299]" />
   return <Circle className="size-5 text-muted-foreground" />
@@ -215,7 +217,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const progress = useMemo(() => {
     if (!task?.stages?.length) return 0
-    const completed = task.stages.filter((stage) => stage.status === "succeeded").length
+    const completed = task.stages.filter(
+      (stage) => stage.status === "succeeded" || stage.status === "skipped",
+    ).length
     return Math.round((completed / task.stages.length) * 100)
   }, [task])
 
@@ -271,6 +275,14 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <dt className="text-muted-foreground">{t.task.executionMode}</dt>
                 <dd>
                   {task.execution_mode === "manual" ? t.task.executionManual : t.task.executionAuto}
+                </dd>
+                <dt className="text-muted-foreground">{t.task.outputMode}</dt>
+                <dd>
+                  {(task.output_mode || "both") === "subtitles"
+                    ? t.task.outputSubtitles
+                    : (task.output_mode || "both") === "dubbing"
+                      ? t.task.outputDubbing
+                      : t.task.outputBoth}
                 </dd>
                 {task.session_path ? (
                   <>
