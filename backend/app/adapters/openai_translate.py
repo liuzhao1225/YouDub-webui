@@ -155,7 +155,7 @@ def preprocess(
 
 
 def _translate_system(source: SourceConfig, meta: dict[str, Any], pre: PreprocessResponse) -> str:
-    rules = TRANSLATE_RULES[source.target_language]
+    rules = TRANSLATE_RULES[(source.asr_language, source.target_language)]
     formatted = rules.format(
         summary=pre.summary or "(none)",
         hotwords=_format_terms(pre.hotwords, "{src} -> {dst}", "(none)"),

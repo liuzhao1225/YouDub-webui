@@ -31,3 +31,43 @@ def test_load_model_removes_corrupt_cache_and_retries(monkeypatch, tmp_path):
     assert whisper_asr._load_model() is model
     assert calls["count"] == 2
     assert not cache_file.exists()
+
+
+def test_recognize_speech_passes_japanese_language_to_whisper(monkeypatch, tmp_path):
+    calls: list[dict] = []
+
+    class FakeModel:
+        def transcribe(self, path, **kwargs):
+            calls.append({"path": path, **kwargs})
+            return {
+                "text": "今日はいい天気です。",
+                "segments": [
+                    {
+                        "text": "今日はいい天気です。",
+                        "start": 0.0,
+                        "end": 1.25,
+                        "words": [],
+                    }
+                ],
+            }
+
+    class FakeAudio:
+        def __len__(self):
+            return 1250
+
+    vocals = tmp_path / "vocals.wav"
+    vocals.write_bytes(b"audio")
+    monkeypatch.setattr(whisper_asr, "_load_model", lambda: FakeModel())
+    monkeypatch.setattr(whisper_asr.AudioSegment, "from_file", lambda _path: FakeAudio())
+
+    output = whisper_asr.recognize_speech(vocals, tmp_path, language="ja")
+
+    assert calls == [
+        {
+            "path": str(vocals),
+            "language": "ja",
+            "word_timestamps": True,
+            "verbose": False,
+        }
+    ]
+    assert output == tmp_path / "metadata" / "asr.json"
