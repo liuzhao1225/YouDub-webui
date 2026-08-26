@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 import numpy as np
 import soundfile as sf
@@ -17,6 +17,7 @@ SHIFTS = 3
 DEFAULT_CHUNK_SECONDS = 600
 OVERLAP_SECONDS = 10
 FINALIZE_BLOCK_FRAMES = 1 << 20
+LARGE_WAVE_FORMAT = "RF64"
 
 
 def _device() -> str:
@@ -108,6 +109,8 @@ def _extract_audio(
             str(sample_rate),
             "-c:a",
             "pcm_s16le",
+            "-rf64",
+            "auto",
             str(destination),
         ],
         check=True,
@@ -133,12 +136,62 @@ def _finalize(
         samplerate=sample_rate,
         channels=channels,
         subtype="PCM_16",
+        format=LARGE_WAVE_FORMAT,
     ) as writer:
         while True:
             block = reader.read(FINALIZE_BLOCK_FRAMES, dtype="float32", always_2d=True)
             if len(block) == 0:
                 break
             writer.write(block * scale)
+
+
+def _separate_window(
+    *,
+    reader: sf.SoundFile,
+    separator: Any,
+    torch_module: Any,
+    sample_rate: int,
+    own_start: int,
+    own_stop: int,
+    window_stop: int,
+    writers: dict[str, sf.SoundFile],
+    tails: dict[str, np.ndarray | None],
+    peaks: dict[str, float],
+) -> None:
+    """Infer and write one window while retaining only overlap tails on return."""
+    reader.seek(own_start)
+    window = reader.read(
+        window_stop - own_start,
+        dtype="float32",
+        always_2d=True,
+    )
+    mix = torch_module.from_numpy(np.ascontiguousarray(window.T))
+    _, stems = separator.separate_tensor(mix, sample_rate)
+
+    vocals = stems.get("vocals")
+    if vocals is None:
+        raise RuntimeError("Demucs returned no vocals stem.")
+    bgm = None
+    for name, stem in stems.items():
+        if name == "vocals":
+            continue
+        bgm = stem if bgm is None else bgm + stem
+    if bgm is None:
+        raise RuntimeError("Demucs returned no accompaniment stems.")
+
+    own_frames = own_stop - own_start
+    for name, stem in (("vocals", vocals), ("bgm", bgm)):
+        samples = stem.detach().cpu().numpy().T
+        core = samples[:own_frames]
+        previous = tails[name]
+        if previous is not None:
+            core = _crossfade(previous, core)
+        peaks[name] = max(
+            peaks[name],
+            float(np.abs(core).max(initial=0.0)),
+        )
+        writers[name].write(core)
+        tails[name] = samples[own_frames:].copy()
 
 
 def separate_audio(
@@ -189,8 +242,8 @@ def separate_audio(
 
     tmp_dir = session / "tmp"
     source_wav = tmp_dir / "demucs_input.wav"
-    vocals_raw = tmp_dir / "demucs_vocals.raw.wav"
-    bgm_raw = tmp_dir / "demucs_bgm.raw.wav"
+    vocals_raw = tmp_dir / "demucs_vocals.raw.rf64"
+    bgm_raw = tmp_dir / "demucs_bgm.raw.rf64"
     temporary_files = (source_wav, vocals_raw, bgm_raw)
     for path in temporary_files:
         path.unlink(missing_ok=True)
@@ -207,6 +260,7 @@ def separate_audio(
                 samplerate=sample_rate,
                 channels=channels,
                 subtype="FLOAT",
+                format=LARGE_WAVE_FORMAT,
             ) as vocals_writer,
             sf.SoundFile(
                 bgm_raw,
@@ -214,6 +268,7 @@ def separate_audio(
                 samplerate=sample_rate,
                 channels=channels,
                 subtype="FLOAT",
+                format=LARGE_WAVE_FORMAT,
             ) as bgm_writer,
         ):
             plan = _chunk_plan(
@@ -229,39 +284,18 @@ def separate_audio(
 
             for index, (own_start, own_stop, window_stop) in enumerate(plan):
                 progress_state["index"] = index
-                reader.seek(own_start)
-                window = reader.read(
-                    window_stop - own_start,
-                    dtype="float32",
-                    always_2d=True,
+                _separate_window(
+                    reader=reader,
+                    separator=separator,
+                    torch_module=torch,
+                    sample_rate=sample_rate,
+                    own_start=own_start,
+                    own_stop=own_stop,
+                    window_stop=window_stop,
+                    writers=writers,
+                    tails=tails,
+                    peaks=peaks,
                 )
-                mix = torch.from_numpy(np.ascontiguousarray(window.T))
-                _, stems = separator.separate_tensor(mix, sample_rate)
-
-                vocals = stems.get("vocals")
-                if vocals is None:
-                    raise RuntimeError("Demucs returned no vocals stem.")
-                bgm = None
-                for name, stem in stems.items():
-                    if name == "vocals":
-                        continue
-                    bgm = stem if bgm is None else bgm + stem
-                if bgm is None:
-                    raise RuntimeError("Demucs returned no accompaniment stems.")
-
-                own_frames = own_stop - own_start
-                for name, stem in (("vocals", vocals), ("bgm", bgm)):
-                    samples = stem.detach().cpu().numpy().T
-                    core = samples[:own_frames]
-                    previous = tails[name]
-                    if previous is not None:
-                        core = _crossfade(previous, core)
-                    peaks[name] = max(
-                        peaks[name],
-                        float(np.abs(core).max(initial=0.0)),
-                    )
-                    writers[name].write(core)
-                    tails[name] = samples[own_frames:].copy()
 
                 emit_progress(int((index + 1) / len(plan) * 100))
 

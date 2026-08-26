@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import gc
 import sys
 import types
+import weakref
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -136,6 +138,7 @@ def test_extract_audio_pins_first_audio_stream_and_model_format(tmp_path, monkey
     assert command[command.index("-ar") + 1] == "44100"
     assert command[command.index("-ac") + 1] == "2"
     assert command[command.index("-c:a") + 1] == "pcm_s16le"
+    assert command[command.index("-rf64") + 1] == "auto"
     assert command[-1] == str(destination)
 
 
@@ -256,6 +259,8 @@ def test_separate_audio_streams_windows_crossfades_and_reports_progress(
     vocals, rate = sf.read(vocals_file, always_2d=True)
     bgm, _ = sf.read(bgm_file, always_2d=True)
     assert rate == sample_rate
+    assert sf.info(vocals_file).format == "RF64"
+    assert sf.info(bgm_file).format == "RF64"
     assert len(vocals) == total_frames
     assert len(bgm) == total_frames
     np.testing.assert_allclose(vocals, source * 0.5, atol=2e-4)
@@ -266,6 +271,90 @@ def test_separate_audio_streams_windows_crossfades_and_reports_progress(
     assert values[-1] == 99
     assert "part 5/5" in progress[-1][1]
     assert list((session / "tmp").iterdir()) == []
+
+
+def test_separate_audio_uses_rf64_for_large_temporary_stems(tmp_path, monkeypatch):
+    sample_rate, channels = 100, 2
+    monkeypatch.setenv("DEMUCS_CHUNK_SECONDS", "2")
+    _install_fake_demucs(monkeypatch, sample_rate, channels, [])
+    _install_fake_source(monkeypatch, np.zeros((100, channels), dtype=np.float32), sample_rate)
+    temporary_formats: list[tuple[str, str]] = []
+
+    def inspect_finalize(source, destination, peak, rate, output_channels):
+        info = sf.info(source)
+        temporary_formats.append((info.format, info.subtype))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(b"finalized")
+
+    monkeypatch.setattr(demucs_adapter, "_finalize", inspect_finalize)
+
+    demucs_adapter.separate_audio(tmp_path / "video.mp4", tmp_path / "session")
+
+    assert temporary_formats == [("RF64", "FLOAT"), ("RF64", "FLOAT")]
+
+
+def test_previous_window_tensors_are_released_before_next_inference(tmp_path, monkeypatch):
+    sample_rate, channels = 100, 2
+    monkeypatch.setattr(demucs_adapter, "OVERLAP_SECONDS", 1)
+    monkeypatch.setenv("DEMUCS_CHUNK_SECONDS", "2")
+    calls: list[int] = []
+    tracked: dict[int, list[weakref.ReferenceType]] = {0: [], 1: []}
+    release_checked: list[bool] = []
+
+    class TrackedTensor:
+        def __init__(self, array: np.ndarray, generation: int):
+            self.array = array
+            self.generation = generation
+            tracked.setdefault(generation, []).append(weakref.ref(self))
+
+        def __add__(self, other: "TrackedTensor") -> "TrackedTensor":
+            return TrackedTensor(self.array + other.array, self.generation)
+
+        def detach(self) -> "TrackedTensor":
+            return self
+
+        def cpu(self) -> "TrackedTensor":
+            return self
+
+        def numpy(self) -> np.ndarray:
+            return self.array
+
+    class TrackingSeparator:
+        def __init__(self, **kwargs):
+            self.samplerate = sample_rate
+            self.audio_channels = channels
+
+        def separate_tensor(self, wav, sr):
+            generation = len(calls)
+            if generation == 1:
+                gc.collect()
+                assert tracked[0]
+                assert all(reference() is None for reference in tracked[0])
+                release_checked.append(True)
+            calls.append(wav.array.shape[1])
+            return wav, {
+                "vocals": TrackedTensor(wav.array * 0.5, generation),
+                "drums": TrackedTensor(wav.array * 0.1, generation),
+                "bass": TrackedTensor(wav.array * 0.1, generation),
+                "other": TrackedTensor(wav.array * 0.1, generation),
+            }
+
+    fake_torch = types.ModuleType("torch")
+    fake_torch.from_numpy = lambda array: TrackedTensor(array, len(calls))
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    fake_demucs = types.ModuleType("demucs")
+    fake_api = types.ModuleType("demucs.api")
+    fake_api.Separator = TrackingSeparator
+    fake_demucs.api = fake_api
+    monkeypatch.setitem(sys.modules, "demucs", fake_demucs)
+    monkeypatch.setitem(sys.modules, "demucs.api", fake_api)
+    monkeypatch.setattr(demucs_adapter, "_demucs_source_path", lambda: Path("/fake/demucs"))
+    _install_fake_source(monkeypatch, np.zeros((500, channels), dtype=np.float32), sample_rate)
+
+    demucs_adapter.separate_audio(tmp_path / "video.mp4", tmp_path / "session")
+
+    assert calls == [300, 300]
+    assert release_checked == [True]
 
 
 def test_separate_audio_cleans_temporary_files_after_demucs_failure(tmp_path, monkeypatch):
