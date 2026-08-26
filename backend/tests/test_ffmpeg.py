@@ -160,7 +160,7 @@ def test_merge_video_uses_absolute_media_paths_when_cwd_is_session(monkeypatch, 
     assert cwd_values[-1] == session.resolve()
 
 
-def test_merge_video_subtitles_preserves_original_audio(monkeypatch, tmp_path):
+def test_merge_video_subtitles_transcodes_original_audio_to_aac(monkeypatch, tmp_path):
     session = tmp_path / "session"
     metadata_dir = session / "metadata"
     metadata_dir.mkdir(parents=True)
@@ -199,7 +199,7 @@ def test_merge_video_subtitles_preserves_original_audio(monkeypatch, tmp_path):
     assert final_command.count("-i") == 1
     assert "-vf" in final_command
     assert final_command[final_command.index("-map", final_command.index("-map") + 1) + 1] == "0:a?"
-    assert final_command[final_command.index("-c:a") + 1] == "copy"
+    assert final_command[final_command.index("-c:a") + 1] == "aac"
     assert "-shortest" not in final_command
 
 

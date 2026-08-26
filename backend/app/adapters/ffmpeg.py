@@ -312,7 +312,7 @@ def merge_video(
     else:
         command.extend(["-map", "0:a?"])
     command.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "23"])
-    command.extend(["-c:a", "aac" if mixed_audio_output is not None else "copy"])
+    command.extend(["-c:a", "aac"])
     command.extend(["-movflags", "+faststart"])
     if mixed_audio_output is not None:
         command.append("-shortest")
