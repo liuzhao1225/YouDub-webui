@@ -14,11 +14,11 @@ YouDub WebUI turns a single YouTube or Bilibili video into a dubbed video in the
 
 The most mature path is **YouTube English -> Chinese dubbing**. The app also supports **Bilibili Chinese -> English dubbing** through the same task pipeline.
 
-中文 README: [README.md](README.md)
+中文 README: [README.md](README.md) · Creator: [Zhao Liu](https://liuzhao1225.github.io/en/) (GitHub [@liuzhao1225](https://github.com/liuzhao1225), Bilibili [黑纹白斑马](https://space.bilibili.com/1263732318))
 
 ## Proven Creator Workflow
 
-**Author's Bilibili channel**: [黑纹白斑马](https://space.bilibili.com/1263732318) — 800K+ followers, 20K+ videos. The whole channel is translated and dubbed with YouDub WebUI, covering technology, games, science, animals, history, and more.
+**Author's Bilibili channel**: [黑纹白斑马](https://space.bilibili.com/1263732318) — 1M+ followers, 20K+ videos. The whole channel is translated and dubbed with YouDub WebUI, covering technology, games, science, animals, history, and more.
 
 This is not just a demo runner. YouDub WebUI is built for creators, developers, and small teams who want to own a complete local video-localization pipeline while keeping the system simple enough to inspect, debug, and modify.
 
@@ -144,7 +144,9 @@ py -3.12 -m venv .venv
 Frontend:
 
 ```powershell
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+Push-Location apps/web
+npm ci --registry=https://registry.npmmirror.com
+Pop-Location
 ```
 
 #### macOS / Linux / WSL2
@@ -160,7 +162,7 @@ python3.12 -m venv .venv
 Frontend:
 
 ```bash
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
 ```
 
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.

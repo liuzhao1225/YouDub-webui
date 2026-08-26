@@ -14,11 +14,11 @@ YouDub WebUI 可以把单个 YouTube 或 Bilibili 视频自动转换成目标语
 
 核心成熟场景是 **YouTube 英文 -> 中文配音**；同时已经支持 **Bilibili 中文 -> 英文配音**。
 
-English README: [README.en.md](README.en.md)
+English README: [README.en.md](README.en.md) · 作者：[刘朝 Zhao Liu](https://liuzhao1225.github.io/)（GitHub [@liuzhao1225](https://github.com/liuzhao1225)，Bilibili [黑纹白斑马](https://space.bilibili.com/1263732318)）
 
 ## 真实生产案例
 
-**作者的 B 站频道**：[黑纹白斑马](https://space.bilibili.com/1263732318)（粉丝 80 万+，视频 2 万+）的全站作品均使用 YouDub WebUI 自动翻译配音，覆盖科技、游戏、科普、动物、历史等题材。
+**作者的 B 站频道**：[黑纹白斑马](https://space.bilibili.com/1263732318)（粉丝 100 万+，视频 2 万+）的全站作品均使用 YouDub WebUI 自动翻译配音，覆盖科技、游戏、科普、动物、历史等题材。
 
 这不是一个只跑过 demo 的玩具项目。YouDub WebUI 的目标很明确：让个人创作者、开发者和小团队能够在本地掌控一条完整的视频本地化流水线，并且保留足够简单的架构，方便理解、调试和二次开发。
 
@@ -144,7 +144,9 @@ py -3.12 -m venv .venv
 前端依赖：
 
 ```powershell
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+Push-Location apps/web
+npm ci --registry=https://registry.npmmirror.com
+Pop-Location
 ```
 
 #### macOS / Linux / WSL2
@@ -160,7 +162,7 @@ python3.12 -m venv .venv
 前端依赖：
 
 ```bash
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
 ```
 
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
