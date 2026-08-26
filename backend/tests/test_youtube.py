@@ -6,6 +6,7 @@ from backend.app.youtube import (
     extract_video_id,
     is_bilibili_url,
     is_local_en_to_zh_url,
+    is_local_ja_to_zh_url,
     is_local_upload_url,
     is_local_zh_to_en_url,
     is_youtube_url,
@@ -154,6 +155,16 @@ def test_local_upload_helpers_parse_direction_and_task_id():
     assert is_local_upload_url(url)
     assert is_local_zh_to_en_url(url)
     assert not is_local_en_to_zh_url(url)
+
+
+def test_local_upload_helpers_accept_japanese_to_chinese():
+    url = "local://upload/japanese-task?direction=ja-zh&filename=demo.mp4"
+
+    assert local_upload_direction(url) == "ja-zh"
+    assert is_local_upload_url(url)
+    assert is_local_ja_to_zh_url(url)
+    assert not is_local_en_to_zh_url(url)
+    assert not is_local_zh_to_en_url(url)
 
 
 def test_local_upload_helpers_reject_missing_or_unknown_direction():
