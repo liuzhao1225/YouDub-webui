@@ -280,6 +280,65 @@ def test_original_target_audio_writes_exact_private_range(tmp_path):
         assert stat.S_IMODE(output.parent.stat().st_mode) == 0o700
 
 
+def test_original_target_audio_rejects_partially_out_of_range(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 250, "end_time": 750},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "250-750 ms" in message
+    assert "requested frames 4000-12000" in message
+    assert "8000 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
+def test_original_target_audio_rejects_fully_out_of_range(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 600, "end_time": 750},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "600-750 ms" in message
+    assert "requested frames 9600-12000" in message
+    assert "8000 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
+def test_original_target_audio_accepts_end_at_source_boundary(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    voxcpm_mod._write_original_target_audio(
+        output,
+        {"start_time": 250, "end_time": 500},
+        source,
+    )
+
+    copied, sample_rate = sf.read(output, dtype="float32")
+    source_samples, _ = sf.read(source, dtype="float32")
+    assert sample_rate == 16000
+    assert len(copied) == 4000
+    assert np.allclose(copied, source_samples[4000:8000], atol=2 / 32768)
+
+
 @pytest.mark.skipif(
     not runtime_security.POSIX_STRONG_PERMISSIONS,
     reason="symlink-safe private writes require POSIX semantics",
