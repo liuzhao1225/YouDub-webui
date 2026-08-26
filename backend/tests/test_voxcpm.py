@@ -13,6 +13,15 @@ from backend.app import runtime_security
 from backend.app.adapters import voxcpm as voxcpm_mod
 
 
+def test_release_model_clears_cached_model(monkeypatch):
+    model = object()
+    monkeypatch.setattr(voxcpm_mod, "_MODEL", model)
+
+    assert voxcpm_mod.release_model() is True
+    assert voxcpm_mod._MODEL is None
+    assert voxcpm_mod.release_model() is False
+
+
 def _make_synthetic_wav(path: Path, duration_ms: int = 1500) -> Path:
     """Create a minimal WAV file for testing."""
     rate = 16000

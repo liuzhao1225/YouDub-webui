@@ -442,6 +442,124 @@ def test_previous_window_tensors_are_released_before_next_inference(tmp_path, mo
     assert release_checked == [True]
 
 
+def test_traceback_does_not_retain_demucs_objects_after_window_write_failure(
+    tmp_path,
+    monkeypatch,
+):
+    sample_rate, channels = 100, 2
+    monkeypatch.setenv("DEMUCS_CHUNK_SECONDS", "2")
+    references: dict[str, weakref.ReferenceType] = {}
+
+    class TrackedTensor:
+        def __init__(self, array: np.ndarray):
+            self.array = array
+
+        def __add__(self, other: "TrackedTensor") -> "TrackedTensor":
+            return TrackedTensor(self.array + other.array)
+
+        def detach(self) -> "TrackedTensor":
+            return self
+
+        def cpu(self) -> "TrackedTensor":
+            return self
+
+        def numpy(self) -> np.ndarray:
+            return self.array
+
+    class TrackedStems:
+        def __init__(self, entries: dict[str, TrackedTensor]):
+            self.entries = entries
+
+        def get(self, name: str):
+            return self.entries.get(name)
+
+        def items(self):
+            return self.entries.items()
+
+    class TrackingSeparator:
+        def __init__(self, **kwargs):
+            self.samplerate = sample_rate
+            self.audio_channels = channels
+            references["separator"] = weakref.ref(self)
+
+        def separate_tensor(self, wav, sr):
+            origin = TrackedTensor(wav.array.copy())
+            stems = TrackedStems(
+                {
+                    "vocals": TrackedTensor(wav.array * 0.5),
+                    "drums": TrackedTensor(wav.array * 0.1),
+                    "bass": TrackedTensor(wav.array * 0.1),
+                    "other": TrackedTensor(wav.array * 0.1),
+                }
+            )
+            references["origin"] = weakref.ref(origin)
+            references["stems"] = weakref.ref(stems)
+            return origin, stems
+
+    def from_numpy(array):
+        mix = TrackedTensor(array)
+        references["mix"] = weakref.ref(mix)
+        return mix
+
+    fake_torch = types.ModuleType("torch")
+    fake_torch.from_numpy = from_numpy
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    fake_demucs = types.ModuleType("demucs")
+    fake_api = types.ModuleType("demucs.api")
+    fake_api.Separator = TrackingSeparator
+    fake_demucs.api = fake_api
+    monkeypatch.setitem(sys.modules, "demucs", fake_demucs)
+    monkeypatch.setitem(sys.modules, "demucs.api", fake_api)
+    monkeypatch.setattr(demucs_adapter, "_demucs_source_path", lambda: Path("/fake/demucs"))
+
+    original_sound_file = sf.SoundFile
+    source = np.zeros((100, channels), dtype=np.float32)
+
+    def fake_extract(video_file, destination, rate, output_channels):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with original_sound_file(
+            destination,
+            "w",
+            samplerate=sample_rate,
+            channels=channels,
+            subtype="FLOAT",
+        ) as writer:
+            writer.write(source)
+        return destination
+
+    class FailingWriter:
+        def __init__(self, handle):
+            self.handle = handle
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            self.handle.close()
+            return False
+
+        def write(self, data):
+            data = None
+            raise RuntimeError("injected stem write failure")
+
+    def sound_file_with_failing_writers(file, mode="r", *args, **kwargs):
+        handle = original_sound_file(file, mode, *args, **kwargs)
+        if mode == "w":
+            return FailingWriter(handle)
+        return handle
+
+    monkeypatch.setattr(demucs_adapter, "_extract_audio", fake_extract)
+    monkeypatch.setattr(demucs_adapter.sf, "SoundFile", sound_file_with_failing_writers)
+
+    with pytest.raises(RuntimeError, match="injected stem write failure") as exc_info:
+        demucs_adapter.separate_audio(tmp_path / "video.mp4", tmp_path / "session")
+
+    assert exc_info.traceback is not None
+    gc.collect()
+    assert set(references) == {"separator", "mix", "origin", "stems"}
+    assert all(reference() is None for reference in references.values())
+
+
 def test_separate_audio_cleans_temporary_files_after_demucs_failure(tmp_path, monkeypatch):
     sample_rate, channels = 100, 2
     monkeypatch.setattr(demucs_adapter, "OVERLAP_SECONDS", 1)

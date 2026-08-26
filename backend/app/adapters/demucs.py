@@ -195,39 +195,72 @@ def _separate_window(
     peaks: dict[str, float],
 ) -> None:
     """Infer and write one window while retaining only overlap tails on return."""
-    reader.seek(own_start)
-    window = reader.read(
-        window_stop - own_start,
-        dtype="float32",
-        always_2d=True,
-    )
-    mix = torch_module.from_numpy(np.ascontiguousarray(window.T))
-    _, stems = separator.separate_tensor(mix, sample_rate)
-
-    vocals = stems.get("vocals")
-    if vocals is None:
-        raise RuntimeError("Demucs returned no vocals stem.")
+    window = None
+    window_channels_first = None
+    mix = None
+    origin = None
+    stems = None
+    vocals = None
     bgm = None
-    for name, stem in stems.items():
-        if name == "vocals":
-            continue
-        bgm = stem if bgm is None else bgm + stem
-    if bgm is None:
-        raise RuntimeError("Demucs returned no accompaniment stems.")
-
-    own_frames = own_stop - own_start
-    for name, stem in (("vocals", vocals), ("bgm", bgm)):
-        samples = stem.detach().cpu().numpy().T
-        core = samples[:own_frames]
-        previous = tails[name]
-        if previous is not None:
-            core = _crossfade(previous, core)
-        peaks[name] = max(
-            peaks[name],
-            float(np.abs(core).max(initial=0.0)),
+    name = None
+    stem = None
+    samples = None
+    core = None
+    previous = None
+    completed = False
+    try:
+        reader.seek(own_start)
+        window = reader.read(
+            window_stop - own_start,
+            dtype="float32",
+            always_2d=True,
         )
-        writers[name].write(core)
-        tails[name] = samples[own_frames:].copy()
+        window_channels_first = np.ascontiguousarray(window.T)
+        mix = torch_module.from_numpy(window_channels_first)
+        origin, stems = separator.separate_tensor(mix, sample_rate)
+
+        vocals = stems.get("vocals")
+        if vocals is None:
+            raise RuntimeError("Demucs returned no vocals stem.")
+        for name, stem in stems.items():
+            if name == "vocals":
+                continue
+            bgm = stem if bgm is None else bgm + stem
+        if bgm is None:
+            raise RuntimeError("Demucs returned no accompaniment stems.")
+
+        own_frames = own_stop - own_start
+        for name, stem in (("vocals", vocals), ("bgm", bgm)):
+            samples = stem.detach().cpu().numpy().T
+            core = samples[:own_frames]
+            previous = tails[name]
+            if previous is not None:
+                core = _crossfade(previous, core)
+            peaks[name] = max(
+                peaks[name],
+                float(np.abs(core).max(initial=0.0)),
+            )
+            writers[name].write(core)
+            tails[name] = samples[own_frames:].copy()
+        completed = True
+    finally:
+        if not completed:
+            tails["vocals"] = None
+            tails["bgm"] = None
+        window = None
+        window_channels_first = None
+        mix = None
+        origin = None
+        stems = None
+        vocals = None
+        bgm = None
+        name = None
+        stem = None
+        samples = None
+        core = None
+        previous = None
+        separator = None
+        torch_module = None
 
 
 def separate_audio(
@@ -269,16 +302,6 @@ def separate_audio(
         total = max(1, progress_state["total"])
         emit_progress(int((progress_state["index"] + within) / total * 100))
 
-    separator = Separator(
-        model="htdemucs_ft",
-        device=_device(),
-        progress=True,
-        shifts=SHIFTS,
-        callback=report_progress,
-    )
-    sample_rate = separator.samplerate
-    channels = separator.audio_channels
-
     tmp_dir = session / "tmp"
     source_wav = tmp_dir / "demucs_input.wav"
     vocals_raw = tmp_dir / "demucs_vocals.raw.rf64"
@@ -287,7 +310,26 @@ def separate_audio(
     for path in temporary_files:
         path.unlink(missing_ok=True)
 
+    separator = None
+    sample_rate = 0
+    channels = 0
+    peaks = None
+    reader = None
+    vocals_writer = None
+    bgm_writer = None
+    plan = None
+    writers = None
+    tails = None
     try:
+        separator = Separator(
+            model="htdemucs_ft",
+            device=_device(),
+            progress=True,
+            shifts=SHIFTS,
+            callback=report_progress,
+        )
+        sample_rate = separator.samplerate
+        channels = separator.audio_channels
         _extract_audio(video_file, source_wav, sample_rate, channels)
         peaks = {"vocals": 0.0, "bgm": 0.0}
 
@@ -347,6 +389,18 @@ def separate_audio(
             path.unlink(missing_ok=True)
         raise
     finally:
+        separator = None
+        reader = None
+        vocals_writer = None
+        bgm_writer = None
+        plan = None
+        writers = None
+        if tails is not None:
+            tails["vocals"] = None
+            tails["bgm"] = None
+        tails = None
+        peaks = None
+        torch = None
         for path in temporary_files:
             path.unlink(missing_ok=True)
         vocals_pending.unlink(missing_ok=True)

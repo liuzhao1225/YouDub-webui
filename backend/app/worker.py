@@ -53,7 +53,12 @@ def _record_runner_failure(task_id: str, exc: Exception) -> None:
             logger.exception("Failed to mark task %s as failed", task_id)
 
         failed_stage = task.get("current_stage")
-        if failed_stage and failed_stage != "done":
+        stage_already_completed = any(
+            stage.get("name") == failed_stage
+            and stage.get("status") in {"succeeded", "skipped"}
+            for stage in task.get("stages", ())
+        )
+        if failed_stage and failed_stage != "done" and not stage_already_completed:
             try:
                 database.update_stage(
                     task_id,

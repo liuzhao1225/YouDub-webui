@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 import types
 from pathlib import Path
+
+import pytest
 
 from backend.app import database
 from backend.app import pipeline
@@ -401,6 +404,211 @@ def test_pipeline_failure_stops_following_stages(monkeypatch, tmp_path):
     assert stages["asr"]["progress"] == 0
     assert stages["translate"]["status"] == "pending"
     assert task["error_message"] == "asr exploded"
+
+
+def test_stage_releases_memory_after_success(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=releasesuccess")
+    released: list[str] = []
+    runner = PipelineRunner(task_id)
+    runner._stage_handlers["asr"] = lambda task: None
+    monkeypatch.setattr(pipeline.gpu_memory, "release_stage_memory", released.append)
+
+    runner._run_stage("asr")
+
+    stage = {entry["name"]: entry for entry in database.get_task(task_id)["stages"]}["asr"]
+    assert released == ["asr"]
+    assert stage["status"] == "succeeded"
+
+
+def test_stage_failure_and_release_failure_preserve_stage_error(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=dualrelease")
+
+    monkeypatch.setattr(PipelineRunner, "_download", _noop_stage)
+    monkeypatch.setattr(PipelineRunner, "_separate", _noop_stage)
+
+    def fail_asr(self, task):
+        raise RuntimeError("asr exploded")
+
+    def release_stage(stage):
+        if stage == "asr":
+            raise RuntimeError("release exploded")
+        return None
+
+    monkeypatch.setattr(PipelineRunner, "_asr", fail_asr)
+    monkeypatch.setattr(pipeline.gpu_memory, "release_stage_memory", release_stage)
+
+    PipelineRunner(task_id).run()
+
+    task = database.get_task(task_id)
+    assert task["status"] == "failed"
+    assert task["error_message"] == "asr exploded"
+    log_content = database.log_path(task_id).read_text(encoding="utf-8")
+    assert "release exploded" in log_content
+    assert "original stage failure preserved" in log_content
+
+
+def test_stage_release_and_log_failures_keep_original_stage_error(monkeypatch, tmp_path, caplog):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=tripleerror")
+
+    monkeypatch.setattr(PipelineRunner, "_download", _noop_stage)
+    monkeypatch.setattr(PipelineRunner, "_separate", _noop_stage)
+
+    def fail_asr(self, task):
+        raise RuntimeError("asr exploded")
+
+    def release_stage(stage):
+        if stage == "asr":
+            raise RuntimeError("release exploded")
+        return None
+
+    original_write_log = pipeline._write_log
+
+    def fail_error_logs(current_task_id, message):
+        if "GPU memory release also failed after stage asr" in message or message == "Task failed":
+            raise OSError("log disk exploded")
+        original_write_log(current_task_id, message)
+
+    monkeypatch.setattr(PipelineRunner, "_asr", fail_asr)
+    monkeypatch.setattr(pipeline.gpu_memory, "release_stage_memory", release_stage)
+    monkeypatch.setattr(pipeline, "_write_log", fail_error_logs)
+    caplog.set_level(logging.ERROR, logger=pipeline.__name__)
+
+    PipelineRunner(task_id).run()
+
+    task = database.get_task(task_id)
+    stages = {entry["name"]: entry for entry in task["stages"]}
+    assert task["status"] == "failed"
+    assert task["error_message"] == "asr exploded"
+    assert stages["asr"]["status"] == "failed"
+    assert stages["asr"]["error_message"] == "asr exploded"
+    assert "release exploded; original stage failure preserved" in caplog.text
+    assert "task failure log; primary error preserved" in caplog.text
+
+
+def test_release_failure_after_successful_handler_fails_stage(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=releaseerror")
+
+    monkeypatch.setattr(PipelineRunner, "_download", _noop_stage)
+    monkeypatch.setattr(PipelineRunner, "_separate", _noop_stage)
+    monkeypatch.setattr(PipelineRunner, "_asr", _noop_stage)
+
+    def release_stage(stage):
+        if stage == "asr":
+            raise RuntimeError("release exploded")
+        return None
+
+    monkeypatch.setattr(pipeline.gpu_memory, "release_stage_memory", release_stage)
+
+    PipelineRunner(task_id).run()
+
+    task = database.get_task(task_id)
+    stages = {entry["name"]: entry for entry in task["stages"]}
+    assert task["status"] == "failed"
+    assert task["error_message"] == "release exploded"
+    assert stages["asr"]["status"] == "failed"
+    assert stages["translate"]["status"] == "pending"
+
+
+def test_run_task_releases_memory_in_finally(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=taskfinally")
+    released: list[str] = []
+
+    monkeypatch.setattr(PipelineRunner, "run", lambda self: None)
+    monkeypatch.setattr(pipeline.gpu_memory, "release_task_memory", lambda: released.append("task"))
+
+    pipeline.run_task(task_id)
+
+    assert released == ["task"]
+
+
+def test_task_finally_release_failure_keeps_recorded_stage_error(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=finaldualerr")
+
+    monkeypatch.setattr(PipelineRunner, "_download", _noop_stage)
+
+    def fail_separate(self, task):
+        raise RuntimeError("separate exploded")
+
+    monkeypatch.setattr(PipelineRunner, "_separate", fail_separate)
+    monkeypatch.setattr(pipeline.gpu_memory, "release_stage_memory", lambda stage: None)
+    monkeypatch.setattr(
+        pipeline.gpu_memory,
+        "release_task_memory",
+        lambda: (_ for _ in ()).throw(RuntimeError("final release exploded")),
+    )
+
+    pipeline.run_task(task_id)
+
+    task = database.get_task(task_id)
+    assert task["status"] == "failed"
+    assert task["error_message"] == "separate exploded"
+    log_content = database.log_path(task_id).read_text(encoding="utf-8")
+    assert "final release exploded" in log_content
+
+
+def test_task_finally_release_failure_marks_succeeded_task_failed_without_changing_stages(
+    monkeypatch,
+    tmp_path,
+):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=finalsuccesserr")
+    completed_at = database.now_iso()
+    for stage in STAGES:
+        database.update_stage(
+            task_id,
+            stage.name,
+            status="succeeded",
+            progress=100,
+            completed_at=completed_at,
+        )
+    database.update_task(
+        task_id,
+        status="succeeded",
+        current_stage="done",
+        completed_at=completed_at,
+    )
+
+    monkeypatch.setattr(PipelineRunner, "run", lambda self: None)
+    monkeypatch.setattr(
+        pipeline.gpu_memory,
+        "release_task_memory",
+        lambda: (_ for _ in ()).throw(RuntimeError("final release exploded")),
+    )
+
+    with pytest.raises(RuntimeError, match="final release exploded"):
+        pipeline.run_task(task_id)
+
+    task = database.get_task(task_id)
+    assert task["status"] == "failed"
+    assert task["error_message"] == "final release exploded"
+    assert task["current_stage"] == "done"
+    assert [stage["status"] for stage in task["stages"]] == ["succeeded"] * len(STAGES)
+
+
+def test_unhandled_runner_and_task_release_failure_raise_original_error(monkeypatch, tmp_path):
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task("https://www.youtube.com/watch?v=unhandleddual")
+
+    def fail_run(self):
+        raise RuntimeError("runner exploded")
+
+    monkeypatch.setattr(PipelineRunner, "run", fail_run)
+    monkeypatch.setattr(
+        pipeline.gpu_memory,
+        "release_task_memory",
+        lambda: (_ for _ in ()).throw(RuntimeError("final release exploded")),
+    )
+
+    with pytest.raises(RuntimeError, match="runner exploded") as exc_info:
+        pipeline.run_task(task_id)
+
+    assert any("final release exploded" in note for note in exc_info.value.__notes__)
 
 
 def test_stage_progress_is_throttled(monkeypatch, tmp_path):
