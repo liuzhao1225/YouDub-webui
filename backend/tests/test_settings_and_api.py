@@ -1169,8 +1169,9 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
 
     task_id = database.create_task(
         "https://www.youtube.com/watch?v=redostgapi1",
-        task_id="redostgapi1",
+        task_id="redostgapi1-subtitles",
         execution_mode="manual",
+        output_mode="subtitles",
     )
     database.update_task(task_id, status="paused", session_path=str(session))
     for stage in ("download", "separate", "asr", "asr_fix", "translate"):
@@ -1186,6 +1187,7 @@ def test_redo_stage_requeues_manual_task(monkeypatch, tmp_path):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "queued"
+    assert body["output_mode"] == "subtitles"
     assert not translation.exists()
     assert asr_fixed.exists()
     translate_stage = next(stage for stage in body["stages"] if stage["name"] == "translate")

@@ -79,6 +79,8 @@ describe("本地视频字幕选择", () => {
     expect(screen.getByTestId("local-upload-selection")).toHaveTextContent("当前视频关联字幕: 未选择")
     expect(subtitleInput.files).toHaveLength(0)
 
+    await user.click(screen.getByLabelText("输出内容"))
+    await user.click(await screen.findByRole("option", { name: "配音（无硬字幕）" }))
     await user.click(screen.getByRole("button", { name: "创建任务" }))
 
     await waitFor(() => {
@@ -91,7 +93,7 @@ describe("本地视频字幕选择", () => {
     const form = uploadCall?.[1]?.body as FormData
     expect((form.get("file") as File).name).toBe("video-b.mp4")
     expect(form.has("subtitle_file")).toBe(false)
-    expect(form.get("output_mode")).toBe("both")
+    expect(form.get("output_mode")).toBe("dubbing")
     expect(mocks.push).toHaveBeenCalledWith("/tasks/task-b")
   })
 })
