@@ -14,7 +14,7 @@ BILIBILI_HOSTS = {"bilibili.com", "www.bilibili.com"}
 DEFAULT_HTTP_PORTS = {"http": 80, "https": 443}
 LOCAL_UPLOAD_SCHEME = "local"
 LOCAL_UPLOAD_HOST = "upload"
-LOCAL_UPLOAD_DIRECTIONS = {"en-zh", "zh-en"}
+LOCAL_UPLOAD_DIRECTIONS = {"en-zh", "ja-zh", "zh-en"}
 LOCAL_UPLOAD_TASK_ID_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -155,6 +155,10 @@ def is_local_upload_url(url: str) -> bool:
 
 def is_local_en_to_zh_url(url: str) -> bool:
     return is_local_upload_url(url) and local_upload_direction(url) == "en-zh"
+
+
+def is_local_ja_to_zh_url(url: str) -> bool:
+    return is_local_upload_url(url) and local_upload_direction(url) == "ja-zh"
 
 
 def is_local_zh_to_en_url(url: str) -> bool:
