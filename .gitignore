@@ -172,6 +172,7 @@ launch.json
 remove_mp4.py
 
 # YouDub full-stack runtime data
+AGENTS.md
 data/
 workfolder/
 env.txt
