@@ -202,6 +202,54 @@ def test_manual_subtitles_continue_skips_inapplicable_stages_and_finishes(monkey
     assert stages["merge_video"]["status"] == "succeeded"
 
 
+def test_tts_stage_passes_original_vocals_file(monkeypatch, tmp_path):
+    from backend.app.adapters import voxcpm
+
+    configure_db(monkeypatch, tmp_path)
+    task_id = database.create_task(
+        "https://www.youtube.com/watch?v=ttsoriginal",
+        task_id="ttsoriginal",
+    )
+    session = tmp_path / "session"
+    translation_file = session / "metadata" / "translation.zh.json"
+    vocals_dir = session / "segments" / "vocals"
+    vocals_file = session / "media" / "audio_vocals.wav"
+    translation_file.parent.mkdir(parents=True)
+    vocals_dir.mkdir(parents=True)
+    vocals_file.parent.mkdir(parents=True)
+    translation_file.write_text('{"translation": []}', encoding="utf-8")
+    vocals_file.write_bytes(b"vocals")
+
+    runner = PipelineRunner(task_id)
+    runner.artifacts.session = session
+    runner.artifacts.translation_file = translation_file
+    runner.artifacts.vocals_dir = vocals_dir
+    runner.artifacts.vocals_file = vocals_file
+    received: dict[str, object] = {}
+
+    def fake_generate_tts(translation, references, session_dir, **kwargs):
+        received.update(
+            translation=translation,
+            references=references,
+            session_dir=session_dir,
+            original_vocals_file=kwargs["original_vocals_file"],
+        )
+        output = session_dir / "segments" / "tts"
+        output.mkdir(parents=True, exist_ok=True)
+        return output
+
+    monkeypatch.setattr(voxcpm, "generate_tts", fake_generate_tts)
+
+    runner._tts(database.get_task(task_id))
+
+    assert received == {
+        "translation": translation_file,
+        "references": vocals_dir,
+        "session_dir": session,
+        "original_vocals_file": vocals_file,
+    }
+
+
 def test_pipeline_skips_already_succeeded_stages(monkeypatch, tmp_path):
     configure_db(monkeypatch, tmp_path)
     task_id = database.create_task("https://www.youtube.com/watch?v=resumevidxxx", task_id="resumevidxxx")

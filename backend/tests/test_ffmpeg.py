@@ -254,6 +254,33 @@ def test_split_subtitle_text_breaks_on_punctuation_and_keeps_protected():
     assert any("《三体，黑暗森林》" in s for s in protected)
 
 
+def test_write_srt_keeps_caption_for_original_audio_mode(tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    timings = metadata_dir / "timings.json"
+    timings.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {
+                        "start_time": 0,
+                        "end_time": 800,
+                        "dst": "（笑声）",
+                        "dst_lang": "zh",
+                        "audio_mode": "original",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    srt = ffmpeg.write_srt(timings, session)
+
+    assert "（笑声）" in srt.read_text(encoding="utf-8")
+
+
 def test_write_srt_splits_long_sentence_into_multiple_entries(tmp_path):
     session = tmp_path / "session"
     metadata_dir = session / "metadata"
