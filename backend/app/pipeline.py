@@ -117,6 +117,7 @@ class PipelineRunner:
             )
             self.log("Task succeeded")
         except Exception as exc:
+            failure_traceback = traceback.format_exc()
             current = database.get_task(self.task_id)
             failed_stage = current["current_stage"] if current else None
             if failed_stage and failed_stage != "done":
@@ -134,8 +135,11 @@ class PipelineRunner:
                 error_message=str(exc),
                 completed_at=database.now_iso(),
             )
-            self.log("Task failed")
-            self.log(traceback.format_exc())
+            self._log_messages_preserving_error(
+                ("Task failed", failure_traceback),
+                exc,
+                context="task failure",
+            )
 
     def log(self, message: str) -> None:
         _write_log(self.task_id, message)
@@ -247,11 +251,30 @@ class PipelineRunner:
     ) -> None:
         if report is None:
             return
+        self._log_messages_preserving_error(
+            (report.summary(),),
+            primary_exc,
+            context="GPU memory release report",
+        )
+
+    def _log_messages_preserving_error(
+        self,
+        messages: tuple[str, ...],
+        primary_exc: Exception,
+        *,
+        context: str,
+    ) -> None:
         try:
-            self.log(report.summary())
+            for message in messages:
+                self.log(message)
         except Exception as log_exc:
-            primary_exc.add_note(f"GPU memory release succeeded, but its task log failed: {log_exc}")
-            logger.exception("Failed to log GPU memory release report for task %s", self.task_id)
+            primary_exc.add_note(f"{context} log also failed: {log_exc}")
+            logger.error(
+                "Task %s failed to write %s log; primary error preserved",
+                self.task_id,
+                context,
+                exc_info=(type(log_exc), log_exc, log_exc.__traceback__),
+            )
 
     def _log_release_failure(self, scope: str, release_exc: Exception) -> None:
         try:
@@ -539,6 +562,18 @@ def run_task(task_id: str) -> None:
             note = f"GPU memory release also failed in task finally: {release_exc}"
             runner._log_secondary_release_failure("task", note, release_exc)
             return
+        if task is not None:
+            try:
+                database.update_task(
+                    task_id,
+                    status="failed",
+                    error_message=str(release_exc).strip() or type(release_exc).__name__,
+                    completed_at=database.now_iso(),
+                )
+            except Exception as task_update_exc:
+                release_exc.add_note(
+                    f"Failed to mark task failed after task-final release error: {task_update_exc}"
+                )
         runner._log_release_failure("task", release_exc)
         raise
 

@@ -128,6 +128,47 @@ def _read_counter(
     return _attempt(name, callback, failures, None)
 
 
+def _cuda_device_count(
+    cuda: object,
+    available: bool,
+    failures: list[tuple[str, Exception]],
+) -> int:
+    if not available:
+        return 0
+    callback = getattr(cuda, "device_count", None)
+    if not callable(callback):
+        failures.append(("CUDA.device_count", RuntimeError("device_count is unavailable")))
+        return 0
+    count = _attempt("CUDA.device_count", callback, failures, 0)
+    if not isinstance(count, int) or count < 1:
+        failures.append(
+            (
+                "CUDA.device_count",
+                RuntimeError(f"CUDA is available but device_count returned {count!r}"),
+            )
+        )
+        return 0
+    return count
+
+
+def _read_cuda_counter(
+    cuda: object,
+    index: int,
+    counter_name: str,
+    phase: str,
+    failures: list[tuple[str, Exception]],
+) -> int | None:
+    callback = getattr(cuda, counter_name, None)
+    if not callable(callback):
+        return None
+    return _attempt(
+        f"CUDA:{index}.{counter_name}({phase})",
+        lambda: callback(index),
+        failures,
+        None,
+    )
+
+
 def _release_loaded_models(
     modules: tuple[tuple[str, str], ...],
     failures: list[tuple[str, Exception]],
@@ -164,22 +205,20 @@ def _release_memory(
 
     cuda = getattr(torch, "cuda", None) if torch_loaded else None
     cuda_available = _is_available("CUDA", getattr(cuda, "is_available", None), failures)
+    cuda_device_count = _cuda_device_count(cuda, cuda_available, failures)
 
     torch_backends = getattr(torch, "backends", None) if torch_loaded else None
     mps_backend = getattr(torch_backends, "mps", None)
     mps = getattr(torch, "mps", None) if torch_loaded else None
     mps_available = _is_available("MPS", getattr(mps_backend, "is_available", None), failures)
 
-    cuda_before = (
-        _read_counter("CUDA.memory_allocated(before)", getattr(cuda, "memory_allocated", None), failures)
-        if cuda_available
-        else None
-    )
-    cuda_cached_before = (
-        _read_counter("CUDA.memory_reserved(before)", getattr(cuda, "memory_reserved", None), failures)
-        if cuda_available
-        else None
-    )
+    cuda_before = {
+        index: (
+            _read_cuda_counter(cuda, index, "memory_allocated", "before", failures),
+            _read_cuda_counter(cuda, index, "memory_reserved", "before", failures),
+        )
+        for index in range(cuda_device_count)
+    }
     mps_before = (
         _read_counter(
             "MPS.current_allocated_memory(before)",
@@ -215,16 +254,13 @@ def _release_memory(
         else:
             failures.append(("MPS.empty_cache", RuntimeError("empty_cache is unavailable")))
 
-    cuda_after = (
-        _read_counter("CUDA.memory_allocated(after)", getattr(cuda, "memory_allocated", None), failures)
-        if cuda_available
-        else None
-    )
-    cuda_cached_after = (
-        _read_counter("CUDA.memory_reserved(after)", getattr(cuda, "memory_reserved", None), failures)
-        if cuda_available
-        else None
-    )
+    cuda_after = {
+        index: (
+            _read_cuda_counter(cuda, index, "memory_allocated", "after", failures),
+            _read_cuda_counter(cuda, index, "memory_reserved", "after", failures),
+        )
+        for index in range(cuda_device_count)
+    }
     mps_after = (
         _read_counter(
             "MPS.current_allocated_memory(after)",
@@ -248,20 +284,29 @@ def _release_memory(
         error = MemoryReleaseError(scope, failures)
         raise error from failures[0][1]
 
+    cuda_reports = (
+        tuple(
+            DeviceMemory(
+                name=f"CUDA:{index}",
+                available=True,
+                allocated_before=cuda_before[index][0],
+                reserved_before=cuda_before[index][1],
+                allocated_after=cuda_after[index][0],
+                reserved_after=cuda_after[index][1],
+            )
+            for index in range(cuda_device_count)
+        )
+        if cuda_available
+        else (DeviceMemory(name="CUDA", available=False),)
+    )
+
     return MemoryReleaseReport(
         scope=scope,
         released_models=released_models,
         collected_objects=collected_objects,
         torch_loaded=torch_loaded,
         devices=(
-            DeviceMemory(
-                name="CUDA",
-                available=cuda_available,
-                allocated_before=cuda_before,
-                reserved_before=cuda_cached_before,
-                allocated_after=cuda_after,
-                reserved_after=cuda_cached_after,
-            ),
+            *cuda_reports,
             DeviceMemory(
                 name="MPS",
                 available=mps_available,
