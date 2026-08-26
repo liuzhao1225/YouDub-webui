@@ -266,6 +266,8 @@ Common environment variables:
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 inference controls. |
 | `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | Explicitly trusted cross-origin frontends; `*` is not allowed. Same-origin Next proxying needs no entry. |
 
+Demucs outputs use same-directory pending publication. Each actual handler run first removes old final files and stale pending files, then fully writes `.audio_vocals.pending.wav` and `.audio_bgm.pending.wav`. Only after both files have been closed successfully are they atomically replaced into `audio_vocals.wav` and `audio_bgm.wav`. A normal exception removes pending files and any single final already published. SIGKILL or power loss can leave pending files or one final; a failed/running stage recovery removes them and recomputes both outputs. A truly succeeded stage is restored from PipelineRunner stage metadata without invoking the handler again.
+
 By default, CORS allows only `localhost`, `127.0.0.1`, and `::1` on port `3000`. Prefer the same-origin Next.js `/api` proxy. If the browser must call a different backend origin directly, add the exact trusted origin to `CORS_ALLOW_ORIGINS`, for example `https://youdub.example.com`. CORS is not authentication or CSRF protection; the backend still validates the HttpOnly session Cookie and a per-session CSRF token.
 
 ### 5. Run

@@ -239,8 +239,11 @@ def separate_audio(
     media_dir = session / "media"
     vocals_file = media_dir / "audio_vocals.wav"
     bgm_file = media_dir / "audio_bgm.wav"
-    if vocals_file.exists() and bgm_file.exists():
-        return vocals_file, bgm_file
+    vocals_pending = media_dir / ".audio_vocals.pending.wav"
+    bgm_pending = media_dir / ".audio_bgm.pending.wav"
+    output_files = (vocals_file, bgm_file, vocals_pending, bgm_pending)
+    for path in output_files:
+        path.unlink(missing_ok=True)
 
     demucs_path = _demucs_source_path()
     sys.path.insert(0, str(demucs_path))
@@ -335,15 +338,19 @@ def separate_audio(
 
                 emit_progress(int((index + 1) / len(plan) * 100))
 
-        _finalize(vocals_raw, vocals_file, peaks["vocals"], sample_rate, channels)
-        _finalize(bgm_raw, bgm_file, peaks["bgm"], sample_rate, channels)
+        _finalize(vocals_raw, vocals_pending, peaks["vocals"], sample_rate, channels)
+        _finalize(bgm_raw, bgm_pending, peaks["bgm"], sample_rate, channels)
+        vocals_pending.replace(vocals_file)
+        bgm_pending.replace(bgm_file)
     except BaseException:
-        vocals_file.unlink(missing_ok=True)
-        bgm_file.unlink(missing_ok=True)
+        for path in output_files:
+            path.unlink(missing_ok=True)
         raise
     finally:
         for path in temporary_files:
             path.unlink(missing_ok=True)
+        vocals_pending.unlink(missing_ok=True)
+        bgm_pending.unlink(missing_ok=True)
 
     return vocals_file, bgm_file
 

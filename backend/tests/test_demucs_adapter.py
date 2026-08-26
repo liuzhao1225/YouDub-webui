@@ -352,6 +352,10 @@ def test_separate_audio_streams_windows_crossfades_and_reports_progress(
     assert values[-1] == 99
     assert "part 5/5" in progress[-1][1]
     assert list((session / "tmp").iterdir()) == []
+    assert sorted(path.name for path in (session / "media").iterdir()) == [
+        "audio_bgm.wav",
+        "audio_vocals.wav",
+    ]
 
 
 def test_separate_audio_uses_rf64_for_large_temporary_stems(tmp_path, monkeypatch):
@@ -458,6 +462,8 @@ def test_separate_audio_cleans_temporary_files_after_demucs_failure(tmp_path, mo
     assert list((session / "tmp").iterdir()) == []
     assert not (session / "media" / "audio_vocals.wav").exists()
     assert not (session / "media" / "audio_bgm.wav").exists()
+    assert not (session / "media" / ".audio_vocals.pending.wav").exists()
+    assert not (session / "media" / ".audio_bgm.pending.wav").exists()
 
 
 def test_separate_audio_removes_partial_outputs_when_finalization_fails(
@@ -486,21 +492,41 @@ def test_separate_audio_removes_partial_outputs_when_finalization_fails(
     assert list((session / "tmp").iterdir()) == []
     assert not (session / "media" / "audio_vocals.wav").exists()
     assert not (session / "media" / "audio_bgm.wav").exists()
+    assert not (session / "media" / ".audio_vocals.pending.wav").exists()
+    assert not (session / "media" / ".audio_bgm.pending.wav").exists()
 
 
-def test_separate_audio_reuses_existing_output(tmp_path, monkeypatch):
+def test_separate_audio_replaces_existing_final_and_pending_outputs(tmp_path, monkeypatch):
+    sample_rate, channels = 100, 2
+    monkeypatch.setenv("DEMUCS_CHUNK_SECONDS", "2")
+    calls: list[int] = []
+    _install_fake_demucs(monkeypatch, sample_rate, channels, calls)
+    source = np.full((100, channels), 0.4, dtype=np.float32)
+    _install_fake_source(monkeypatch, source, sample_rate)
+
     session = tmp_path / "session"
     media = session / "media"
     media.mkdir(parents=True)
-    (media / "audio_vocals.wav").write_bytes(b"cached")
-    (media / "audio_bgm.wav").write_bytes(b"cached")
-
-    def explode(*args, **kwargs):
-        raise AssertionError("separation must not run when outputs are cached")
-
-    monkeypatch.setattr(demucs_adapter, "_extract_audio", explode)
+    vocals_file = media / "audio_vocals.wav"
+    bgm_file = media / "audio_bgm.wav"
+    vocals_pending = media / ".audio_vocals.pending.wav"
+    bgm_pending = media / ".audio_bgm.pending.wav"
+    vocals_file.write_bytes(b"previous complete output")
+    bgm_file.write_bytes(b"partial")
+    vocals_pending.write_bytes(b"left by SIGKILL")
+    bgm_pending.write_bytes(b"left by power loss")
 
     vocals, bgm = demucs_adapter.separate_audio(tmp_path / "video.mp4", session)
 
-    assert vocals == media / "audio_vocals.wav"
-    assert bgm == media / "audio_bgm.wav"
+    assert calls == [100]
+    assert vocals == vocals_file
+    assert bgm == bgm_file
+    assert sf.info(vocals).format == "RF64"
+    assert sf.info(bgm).format == "RF64"
+    vocals_audio, _ = sf.read(vocals, dtype="float32", always_2d=True)
+    bgm_audio, _ = sf.read(bgm, dtype="float32", always_2d=True)
+    np.testing.assert_allclose(vocals_audio, source * 0.5, atol=2e-4)
+    np.testing.assert_allclose(bgm_audio, source * 0.3, atol=2e-4)
+    assert not vocals_pending.exists()
+    assert not bgm_pending.exists()
+    assert list((session / "tmp").iterdir()) == []
