@@ -5,6 +5,7 @@ import re
 import subprocess
 from pathlib import Path
 
+from ..audio_mode import target_text
 from ..config import ffmpeg_binary, ffprobe_binary
 
 SUBTITLE_PUNCTUATION = {"，", ",", "；", ";", "：", ":", "。", "?", "？", "!", "！", "、"}
@@ -159,10 +160,6 @@ def _dst_lang(translation: list[dict]) -> str:
     return "zh"
 
 
-def _dst_text(item: dict) -> str:
-    return item.get("dst") or item.get("zh") or ""
-
-
 def write_srt(translation_file: Path, session: Path) -> Path:
     data = json.loads(translation_file.read_text(encoding="utf-8"))
     translation = data["translation"]
@@ -174,7 +171,8 @@ def write_srt(translation_file: Path, session: Path) -> Path:
         start, end = _segment_times(item)
         if end <= start:
             continue
-        fragments = split_subtitle_text(_dst_text(item))
+        text = target_text(item)
+        fragments = split_subtitle_text(text if isinstance(text, str) else "")
         if not fragments:
             continue
         cursor = start
