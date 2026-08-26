@@ -102,7 +102,23 @@ winget install Gyan.FFmpeg.Shared
 winget install OpenJS.NodeJS.LTS
 ```
 
-Windows 上建议安装 FFmpeg 的 shared/full-shared 版本；安装后请确认 `ffmpeg -version` 和 `ffprobe -version` 可用，并且 FFmpeg 的 DLL 目录在 `PATH` 中，否则音频分离阶段可能无法加载 TorchCodec/FFmpeg 运行库。
+Windows 必须安装 FFmpeg 的 shared/full-shared 版本。进入该版本的 `bin` 目录后执行以下检查；`av*.dll` 至少应列出 `avcodec-*.dll`、`avformat-*.dll` 和 `avutil-*.dll`。只有 `ffmpeg.exe`、`ffplay.exe`、`ffprobe.exe` 且没有 `av*.dll` 的目录属于静态构建，TorchCodec 无法使用它提供运行库。
+
+```powershell
+$ffmpegBin = "C:\path\to\ffmpeg\bin"
+Get-ChildItem "$ffmpegBin\av*.dll"
+& "$ffmpegBin\ffmpeg.exe" -version
+& "$ffmpegBin\ffprobe.exe" -version
+```
+
+将实际路径写入项目根目录的 `.env`：
+
+```dotenv
+FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
+FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
+```
+
+Python 3.8+ 的 DLL 加载规则需要应用显式注册搜索目录；单独修改 `PATH` 无法保证 TorchCodec 找到这些 DLL。YouDub 启动时会读取 `FFMPEG_PATH`，检查同目录的 `av*.dll`，并通过 `os.add_dll_directory()` 注册该目录。配置错误会在启动阶段直接给出原因。
 
 ```bash
 # Ubuntu / Debian / WSL2

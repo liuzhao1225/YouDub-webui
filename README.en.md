@@ -102,7 +102,23 @@ winget install Gyan.FFmpeg.Shared
 winget install OpenJS.NodeJS.LTS
 ```
 
-On Windows, install a shared/full-shared FFmpeg build. After installation, confirm that `ffmpeg -version` and `ffprobe -version` work and that the FFmpeg DLL directory is available on `PATH`; otherwise the audio separation stage may fail to load the TorchCodec/FFmpeg runtime libraries.
+Windows requires a shared/full-shared FFmpeg build. Run the following checks from that build's `bin` directory. The `av*.dll` command should list at least `avcodec-*.dll`, `avformat-*.dll`, and `avutil-*.dll`. A directory containing only `ffmpeg.exe`, `ffplay.exe`, and `ffprobe.exe` is a static build and cannot provide TorchCodec's runtime libraries.
+
+```powershell
+$ffmpegBin = "C:\path\to\ffmpeg\bin"
+Get-ChildItem "$ffmpegBin\av*.dll"
+& "$ffmpegBin\ffmpeg.exe" -version
+& "$ffmpegBin\ffprobe.exe" -version
+```
+
+Add the actual paths to `.env` in the repository root:
+
+```dotenv
+FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
+FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
+```
+
+Python 3.8+ requires applications to register DLL search directories explicitly; changing `PATH` alone does not guarantee that TorchCodec can find these DLLs. At startup, YouDub reads `FFMPEG_PATH`, checks for `av*.dll` in the same directory, and registers it with `os.add_dll_directory()`. Configuration errors are reported immediately during startup.
 
 ```bash
 # Ubuntu / Debian / WSL2
