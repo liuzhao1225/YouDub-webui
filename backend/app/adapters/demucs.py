@@ -9,7 +9,7 @@ from typing import Any, Callable
 import numpy as np
 import soundfile as sf
 
-from ..config import REPO_ROOT, ffmpeg_binary
+from ..config import REPO_ROOT, ffmpeg_binary, ffprobe_binary
 from ..devices import resolve_device
 
 
@@ -83,13 +83,49 @@ def _crossfade(tail: np.ndarray, head: np.ndarray) -> np.ndarray:
     return blended
 
 
+def _probe_audio_channels(video_file: Path) -> int:
+    result = subprocess.run(
+        [
+            ffprobe_binary(),
+            "-v",
+            "error",
+            "-select_streams",
+            "a:0",
+            "-show_entries",
+            "stream=channels",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            str(video_file),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    raw = result.stdout.strip()
+    try:
+        channels = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"FFprobe returned an invalid channel count for the first audio stream: {raw!r}"
+        ) from exc
+    if channels <= 0:
+        raise RuntimeError(
+            f"FFprobe returned an invalid channel count for the first audio stream: {raw!r}"
+        )
+    return channels
+
+
 def _extract_audio(
     video_file: Path,
     destination: Path,
     sample_rate: int,
     channels: int,
 ) -> Path:
-    """Decode the first audio stream once so every window reads the same PCM source."""
+    """Decode the first stream with Demucs AudioFile's legacy channel semantics."""
+    if channels != 2:
+        raise RuntimeError(f"Demucs separation expects 2 audio channels, got {channels}.")
+    source_channels = _probe_audio_channels(video_file)
+    pan = "pan=stereo|c0=c0|c1=c0" if source_channels == 1 else "pan=stereo|c0=c0|c1=c1"
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.unlink(missing_ok=True)
     subprocess.run(
@@ -103,12 +139,12 @@ def _extract_audio(
             "-vn",
             "-map",
             "0:a:0",
-            "-ac",
-            str(channels),
+            "-af",
+            pan,
             "-ar",
             str(sample_rate),
             "-c:a",
-            "pcm_s16le",
+            "pcm_f32le",
             "-rf64",
             "auto",
             str(destination),

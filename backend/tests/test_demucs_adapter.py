@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import gc
+import shutil
+import subprocess
 import sys
 import types
 import weakref
@@ -130,14 +132,15 @@ def test_extract_audio_pins_first_audio_stream_and_model_format(tmp_path, monkey
         return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(demucs_adapter.subprocess, "run", fake_run)
+    monkeypatch.setattr(demucs_adapter, "_probe_audio_channels", lambda video_file: 6)
 
     demucs_adapter._extract_audio(tmp_path / "video.mp4", destination, 44100, 2)
 
     command = recorded["command"]
     assert command[command.index("-map") + 1] == "0:a:0"
     assert command[command.index("-ar") + 1] == "44100"
-    assert command[command.index("-ac") + 1] == "2"
-    assert command[command.index("-c:a") + 1] == "pcm_s16le"
+    assert command[command.index("-af") + 1] == "pan=stereo|c0=c0|c1=c1"
+    assert command[command.index("-c:a") + 1] == "pcm_f32le"
     assert command[command.index("-rf64") + 1] == "auto"
     assert command[-1] == str(destination)
 
@@ -151,9 +154,87 @@ def test_extract_audio_rejects_empty_output(tmp_path, monkeypatch):
         return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(demucs_adapter.subprocess, "run", fake_run)
+    monkeypatch.setattr(demucs_adapter, "_probe_audio_channels", lambda video_file: 2)
 
     with pytest.raises(RuntimeError, match="produced no audio"):
         demucs_adapter._extract_audio(tmp_path / "video.mp4", destination, 44100, 2)
+
+
+def test_probe_audio_channels_selects_first_audio_stream(tmp_path, monkeypatch):
+    recorded: dict[str, object] = {}
+
+    def fake_run(command, **kwargs):
+        recorded["command"] = command
+        recorded["kwargs"] = kwargs
+        return SimpleNamespace(stdout="6\n")
+
+    monkeypatch.setattr(demucs_adapter.subprocess, "run", fake_run)
+
+    assert demucs_adapter._probe_audio_channels(tmp_path / "video.mkv") == 6
+    command = recorded["command"]
+    assert isinstance(command, list)
+    assert command[command.index("-select_streams") + 1] == "a:0"
+    assert recorded["kwargs"] == {"check": True, "capture_output": True, "text": True}
+
+
+MEDIA_TOOLS_AVAILABLE = bool(shutil.which("ffmpeg") and shutil.which("ffprobe"))
+
+
+@pytest.mark.skipif(not MEDIA_TOOLS_AVAILABLE, reason="ffmpeg and ffprobe are required")
+def test_extract_audio_keeps_only_first_two_channels_from_surround(tmp_path):
+    sample_rate = 44100
+    source = tmp_path / "surround.wav"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "aevalsrc="
+            "0.1*sin(2*PI*220*t)|0.1*sin(2*PI*330*t)|"
+            "0.1*sin(2*PI*440*t)|0.1*sin(2*PI*550*t)|"
+            "0.1*sin(2*PI*880*t)|0.1*sin(2*PI*990*t):"
+            "s=44100:d=1:c=5.1",
+            "-c:a",
+            "pcm_f32le",
+            str(source),
+        ],
+        check=True,
+    )
+
+    output = demucs_adapter._extract_audio(source, tmp_path / "selected.wav", sample_rate, 2)
+    audio, rate = sf.read(output, dtype="float32", always_2d=True)
+    spectrum = np.abs(np.fft.rfft(audio, axis=0))
+    frequencies = np.fft.rfftfreq(len(audio), 1 / rate)
+    peak_frequencies = frequencies[np.argmax(spectrum, axis=0)]
+
+    assert rate == sample_rate
+    assert sf.info(output).subtype == "FLOAT"
+    assert peak_frequencies.tolist() == pytest.approx([220.0, 330.0], abs=1.0)
+    front_peak = float(spectrum.max())
+    for rear_frequency in (440, 550, 880, 990):
+        rear_bin = int(np.argmin(np.abs(frequencies - rear_frequency)))
+        assert float(spectrum[rear_bin].max()) < front_peak * 1e-4
+
+
+@pytest.mark.skipif(not MEDIA_TOOLS_AVAILABLE, reason="ffmpeg and ffprobe are required")
+def test_extract_audio_duplicates_mono_as_float32_stereo(tmp_path):
+    sample_rate = 44100
+    time = np.arange(sample_rate, dtype=np.float32) / sample_rate
+    mono = np.sin(2 * np.pi * 440 * time).astype(np.float32) * 0.1
+    source = tmp_path / "mono.wav"
+    sf.write(source, mono, sample_rate, subtype="FLOAT")
+
+    output = demucs_adapter._extract_audio(source, tmp_path / "selected.wav", sample_rate, 2)
+    audio, rate = sf.read(output, dtype="float32", always_2d=True)
+
+    assert rate == sample_rate
+    assert sf.info(output).subtype == "FLOAT"
+    assert audio.shape == (sample_rate, 2)
+    np.testing.assert_allclose(audio[:, 0], audio[:, 1], atol=0.0)
 
 
 class _FakeTensor:
