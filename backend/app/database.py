@@ -14,6 +14,8 @@ from .stages import STAGES
 ACTIVE_STATUSES = ("queued", "running")
 EXECUTION_MODES = ("auto", "manual")
 DEFAULT_EXECUTION_MODE = "auto"
+OUTPUT_MODES = ("subtitles", "dubbing", "both")
+DEFAULT_OUTPUT_MODE = "both"
 
 
 def now_iso() -> str:
@@ -52,7 +54,8 @@ def init_db() -> None:
               created_at TEXT NOT NULL,
               started_at TEXT,
               completed_at TEXT,
-              execution_mode TEXT NOT NULL DEFAULT 'auto'
+              execution_mode TEXT NOT NULL DEFAULT 'auto',
+              output_mode TEXT NOT NULL DEFAULT 'both'
             );
 
             CREATE TABLE IF NOT EXISTS task_stages (
@@ -109,6 +112,10 @@ def init_db() -> None:
         if "execution_mode" not in task_columns:
             conn.execute(
                 "ALTER TABLE tasks ADD COLUMN execution_mode TEXT NOT NULL DEFAULT 'auto'"
+            )
+        if "output_mode" not in task_columns:
+            conn.execute(
+                "ALTER TABLE tasks ADD COLUMN output_mode TEXT NOT NULL DEFAULT 'both'"
             )
         stage_columns = {row["name"] for row in conn.execute("PRAGMA table_info(task_stages)").fetchall()}
         if "progress" not in stage_columns:
@@ -269,22 +276,38 @@ def normalize_execution_mode(value: str | None) -> str:
     return mode
 
 
+def normalize_output_mode(value: str | None) -> str:
+    mode = (value or DEFAULT_OUTPUT_MODE).strip().lower()
+    if mode not in OUTPUT_MODES:
+        raise ValueError(f"output_mode must be one of: {', '.join(OUTPUT_MODES)}")
+    return mode
+
+
+def video_task_id(video_id: str, output_mode: str) -> str:
+    mode = normalize_output_mode(output_mode)
+    return video_id if mode == DEFAULT_OUTPUT_MODE else f"{video_id}-{mode}"
+
+
 def create_task(
     url: str,
     task_id: str | None = None,
     *,
     execution_mode: str = DEFAULT_EXECUTION_MODE,
+    output_mode: str = DEFAULT_OUTPUT_MODE,
 ) -> str:
     new_id = task_id or str(uuid.uuid4())
     created_at = now_iso()
     mode = normalize_execution_mode(execution_mode)
+    normalized_output_mode = normalize_output_mode(output_mode)
     with connect() as conn:
         conn.execute(
             """
-            INSERT INTO tasks (id, url, status, current_stage, created_at, execution_mode)
-            VALUES (?, ?, 'queued', ?, ?, ?)
+            INSERT INTO tasks (
+              id, url, status, current_stage, created_at, execution_mode, output_mode
+            )
+            VALUES (?, ?, 'queued', ?, ?, ?, ?)
             """,
-            (new_id, url, STAGES[0].name, created_at, mode),
+            (new_id, url, STAGES[0].name, created_at, mode, normalized_output_mode),
         )
         conn.executemany(
             """
@@ -296,14 +319,76 @@ def create_task(
     return new_id
 
 
-def find_task_by_video_id(video_id: str) -> str | None:
+def create_or_get_video_task(
+    url: str,
+    video_id: str,
+    *,
+    execution_mode: str = DEFAULT_EXECUTION_MODE,
+    output_mode: str = DEFAULT_OUTPUT_MODE,
+) -> tuple[str, bool]:
+    from .youtube import extract_video_id
+
+    task_id = video_task_id(video_id, output_mode)
+    created_at = now_iso()
+    mode = normalize_execution_mode(execution_mode)
+    normalized_output_mode = normalize_output_mode(output_mode)
     with connect() as conn:
-        row = conn.execute(
-            "SELECT id FROM tasks WHERE id = ? OR url LIKE ? "
-            "ORDER BY created_at DESC, rowid DESC LIMIT 1",
-            (video_id, f"%{video_id}%"),
+        cursor = conn.execute(
+            """
+            INSERT INTO tasks (
+              id, url, status, current_stage, created_at, execution_mode, output_mode
+            )
+            VALUES (?, ?, 'queued', ?, ?, ?, ?)
+            ON CONFLICT(id) DO NOTHING
+            """,
+            (task_id, url, STAGES[0].name, created_at, mode, normalized_output_mode),
+        )
+        if cursor.rowcount == 1:
+            conn.executemany(
+                """
+                INSERT INTO task_stages (task_id, name, label, status)
+                VALUES (?, ?, ?, 'pending')
+                """,
+                [(task_id, stage.name, stage.label) for stage in STAGES],
+            )
+            return task_id, True
+
+        existing = conn.execute(
+            "SELECT id, url, output_mode FROM tasks WHERE id = ?",
+            (task_id,),
         ).fetchone()
-    return row["id"] if row else None
+        if existing is None:
+            raise RuntimeError(f"Task {task_id} disappeared after an id conflict.")
+        try:
+            existing_video_id = extract_video_id(existing["url"])
+        except ValueError as exc:
+            raise sqlite3.IntegrityError(
+                f"Task id collision for {task_id}: existing URL is not a supported video URL."
+            ) from exc
+        if existing_video_id != video_id or existing["output_mode"] != normalized_output_mode:
+            raise sqlite3.IntegrityError(
+                f"Task id collision for {task_id}: existing task has different video or output mode."
+            )
+        return task_id, False
+
+
+def find_task_by_video_id(video_id: str, output_mode: str = DEFAULT_OUTPUT_MODE) -> str | None:
+    from .youtube import extract_video_id
+
+    mode = normalize_output_mode(output_mode)
+    with connect() as conn:
+        rows = conn.execute(
+            "SELECT id, url FROM tasks WHERE output_mode = ? AND url NOT LIKE 'local://%' "
+            "ORDER BY created_at DESC, rowid DESC",
+            (mode,),
+        ).fetchall()
+    for row in rows:
+        try:
+            if extract_video_id(row["url"]) == video_id:
+                return row["id"]
+        except ValueError:
+            continue
+    return None
 
 
 def has_active_task() -> bool:
@@ -323,7 +408,7 @@ def latest_task_id() -> str | None:
 
 TASK_SUMMARY_COLUMNS = (
     "id, url, title, status, current_stage, final_video_path, error_message, "
-    "created_at, started_at, completed_at, execution_mode"
+    "created_at, started_at, completed_at, execution_mode, output_mode"
 )
 
 TASK_LIST_SORTS = {

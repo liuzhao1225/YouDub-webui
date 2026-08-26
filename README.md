@@ -10,7 +10,7 @@
 
 一个被真实创作者工作流验证过的开源视频本地化工具。
 
-YouDub WebUI 可以把单个 YouTube、Bilibili 或本地视频自动转换成目标语言配音版：导入视频、分离人声与背景音、识别字幕、翻译、生成配音、混音、压制字幕，最后输出可在线播放和下载的新视频。
+YouDub WebUI 可以把单个 YouTube、Bilibili 或本地视频转换成目标语言版本：导入视频、识别并翻译内容，再按任务选择输出保留原音的硬字幕视频、无硬字幕的配音视频，或同时包含硬字幕与配音的视频。配音模式还会分离人声与背景音、生成配音并完成混音，最终视频可在网页中播放和下载。
 
 核心成熟场景是 **YouTube 英文 -> 中文配音**；同时已经支持 **Bilibili 中文 -> 英文配音**，并接入本地视频 **日文 -> 中文配音**。日译中方向已通过自动化参数链路和回归测试，尚未使用真实日语媒体完成模型效果验收。
 
@@ -251,6 +251,7 @@ macOS / Linux / WSL2：
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
 | `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
+| `DEMUCS_CHUNK_SECONDS` | 人声分离的分块长度，必须为正整数，默认 `600`（10 分钟）。内存峰值由单个“分块 + 10 秒上下文”的推理和两份 10 秒 overlap tail 决定；每块写出后，完整输入与输出张量会在下一块推理前释放，跨块只保留两份 tail，内存不会随视频总长或分块数累积。默认窗口约 2.8 GiB 仅作参考，实际峰值还取决于模型、`shifts`、设备和底层库。首音轨以 float32 解码：mono 复制为双声道，双声道及以上只取前两个声道。临时输入使用 FFmpeg WAV `-rf64 auto`，超过 RIFF 上限时自动切换 RF64；两份 float32 stem 和两份最终 PCM16 输出固定使用 RF64，消除普通 WAV 的 4 GiB 边界。临时字节数约为“时长秒 × 采样率 × 声道数 × (4 + 4 × 2)”；按 44.1 kHz 双声道估算为 3.55 GiB/小时，写入最终输出时还需 1.18 GiB/小时，建议至少预留 4.73 GiB/小时。临时文件在成功或失败后都会清理。 |
 | `RELEASE_GPU_MEMORY_AFTER_STAGE` | 默认 `true`。Demucs、Whisper、VoxCPM 阶段结束后释放模型引用和可用的 CUDA/MPS 缓存，并在任务结束时再次清理。单线程流水线在同一任务中不会再次使用这些模型；设为 `false` 可保留跨任务模型缓存、减少重新加载耗时，同时会增加显存持续占用和 OOM 风险。接受 `1/0`、`true/false`、`yes/no`、`on/off`。 |
 | `FFMPEG_PATH` / `FFPROBE_PATH` | 可选的媒体程序完整路径；Windows 上使用 TorchCodec 时，`FFMPEG_PATH` 必须指向 shared/full-shared 构建。 |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
@@ -265,6 +266,8 @@ macOS / Linux / WSL2：
 | `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 的 ModelScope 模型名或本地模型目录；VoxCPM 当前由上游包内部选择 CUDA/MPS/CPU，任务日志会显示为 `voxcpm=library-auto`。 |
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 推理参数。 |
 | `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | 显式允许的跨源前端来源；不能使用 `*`。同源 Next 代理不需要配置。 |
+
+Demucs 分离结果采用同目录 pending 发布：handler 每次实际执行时先删除旧 final 和遗留 pending，再完整生成 `.audio_vocals.pending.wav` 与 `.audio_bgm.pending.wav`；两份文件都关闭写完后，才分别原子替换 `audio_vocals.wav` 与 `audio_bgm.wav`。普通异常会删除 pending 和已经发布的单份 final。SIGKILL 或掉电可能留下 pending 或单份 final，failed/running stage 再次恢复时会先清理并完整重算。真正 succeeded 的 stage 由 PipelineRunner 根据 stage 元数据恢复，不会再次调用 handler。
 
 默认 CORS 只允许 `localhost`、`127.0.0.1` 和 `::1` 的 `:3000`。推荐始终使用 Next.js 同源 `/api` 代理；如果浏览器确实直连不同 origin 的后端，必须把完整、可信的 origin 追加到 `CORS_ALLOW_ORIGINS`，例如 `https://youdub.example.com`。CORS 不是认证或 CSRF 防护，后端仍会校验 HttpOnly 会话 Cookie 和每会话 CSRF token。
 
@@ -339,7 +342,8 @@ Windows 的 `chmod`/`umask` 不等价于 NTFS ACL。Windows 部署需由管理�
 6. 点击 `Get models` 拉取模型列表，或手动输入模型名。
 7. 按 API 提供商额度调整 `Translate concurrency`。
 8. 回到首页，提交 YouTube URL、Bilibili URL，或上传本地视频。
-   - 本地视频可额外上传一份已翻译好的 `.srt` 字幕；上传后会跳过 Whisper 识别和 OpenAI 翻译，直接用这份字幕生成配音与压制字幕。
+   - 在“输出内容”中选择“硬字幕（保留原音）”“配音（无硬字幕）”或“硬字幕和配音”。
+   - 本地视频可额外上传一份已翻译好的 `.srt` 字幕；上传后会跳过 Whisper 识别和 OpenAI 翻译，再按所选输出内容使用这份字幕。
    - 本地视频支持“英文 -> 中文”“日文 -> 中文”和“中文 -> 英文”。翻译方向也决定可选字幕的目标语言，例如选择“日文 -> 中文”时，上传的 SRT 会被视为中文字幕。
 9. 进入任务详情页查看阶段进度、运行日志和最终视频。
 
@@ -365,18 +369,20 @@ YouTube / Bilibili URL
   -> Whisper 识别语音并输出词级时间戳
   -> 句子与时间范围整理
   -> OpenAI 兼容 API 预处理全文并逐句并发翻译
-  -> 按句切分原始人声作为参考音频
-  -> VoxCPM2 生成目标语言配音
-  -> 对齐配音时长并与背景音混音
-  -> FFmpeg 压制字幕并输出最终 mp4
+  -> 按输出内容分支：
+     - subtitles：保留原音并压制硬字幕
+     - dubbing：生成并混合目标语言配音，不压制硬字幕
+     - both：生成并混合配音，同时压制硬字幕
+  -> FFmpeg 输出最终 mp4
 ```
 
-本地视频上传使用同一条后半段流水线，支持英文或日文识别后翻译为中文，以及中文识别后翻译为英文。日译中方向会把 `ja` 传给 Whisper，并使用专用日译中提示词。若同时上传已翻译 `.srt` 字幕，系统会从 SRT 生成内部字幕时间轴，跳过 Whisper 与 OpenAI 翻译阶段，然后继续切分参考音频、生成配音、混音并压制字幕。v1 仅支持本地视频搭配 `.srt`，不支持 URL 任务附加字幕。
+本地视频上传使用同一条后半段流水线，支持英文或日文识别后翻译为中文，以及中文识别后翻译为英文。日译中方向会把 `ja` 传给 Whisper，并使用专用日译中提示词。若同时上传已翻译 `.srt` 字幕，系统会从 SRT 生成内部字幕时间轴，跳过 Whisper 与 OpenAI 翻译阶段，再按所选输出内容继续处理。v1 仅支持本地视频搭配 `.srt`，不支持 URL 任务附加字幕。
 
 ## 功能亮点
 
 - **真实可用的端到端流程**：从 URL 到最终视频，不需要手动拆分音频、整理字幕或压制视频。
 - **双来源入口**：YouTube 英文 -> 中文是核心成熟场景；Bilibili 中文 -> 英文也已接入同一条任务流水线。
+- **三种输出模式**：可选择保留原音的硬字幕视频、无硬字幕的配音视频，或同时包含两者的视频。
 - **本地优先**：SQLite、Cookie、日志、中间产物和最终视频都保存在本机目录中。
 - **可观察任务进度**：任务历史、阶段状态、阶段耗时、运行日志和错误信息都可以在页面里查看。
 - **失败可恢复**：失败任务可以从失败阶段继续执行，已成功阶段会复用缓存产物。

@@ -122,12 +122,24 @@ def _write_original_target_audio(
         raise ValueError(f"Original audio does not cover target segment {start}-{end} ms")
 
     with sf.SoundFile(original_vocals_file) as source:
-        start_frame = min(source.frames, max(0, int(start * source.samplerate / 1000)))
-        end_frame = min(source.frames, int(end * source.samplerate / 1000))
+        start_frame = max(0, int(start * source.samplerate / 1000))
+        requested_end_frame = int(end * source.samplerate / 1000)
+        end_frame = requested_end_frame
+        available_duration_ms = source.frames / source.samplerate * 1000
+        range_error = (
+            f"Original audio does not cover target segment {start}-{end} ms: "
+            f"requested frames {start_frame}-{requested_end_frame}, available audio is "
+            f"{source.frames} frames ({available_duration_ms:.3f} ms)"
+        )
+        if start_frame >= source.frames:
+            raise ValueError(range_error)
+        overflow_scaled = end * source.samplerate - source.frames * 1000
+        if overflow_scaled > 0:
+            if overflow_scaled >= source.samplerate:
+                raise ValueError(range_error)
+            end_frame = source.frames
         if end_frame <= start_frame:
-            raise ValueError(
-                f"Original audio does not cover target segment {start}-{end} ms"
-            )
+            raise ValueError(range_error)
         source.seek(start_frame)
         frames = source.read(
             end_frame - start_frame,
@@ -135,9 +147,7 @@ def _write_original_target_audio(
             always_2d=True,
         )
         if len(frames) <= 0:
-            raise ValueError(
-                f"Original audio does not cover target segment {start}-{end} ms"
-            )
+            raise ValueError(range_error)
 
         encoded = io.BytesIO()
         sf.write(
