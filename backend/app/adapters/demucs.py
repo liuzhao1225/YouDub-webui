@@ -48,25 +48,38 @@ def separate_audio(
         progress = _demucs_progress(info, shifts)
         progress_callback(progress, f"Separating audio {progress}%")
 
-    separator = Separator(
-        model="htdemucs_ft",
-        device=_device(),
-        progress=True,
-        shifts=shifts,
-        callback=report_progress,
-    )
-    _, separated = separator.separate_audio_file(str(video_file))
-
-    vocals = separated["vocals"]
+    separator = None
+    separated = None
+    vocals = None
     bgm = None
-    for stem, source in separated.items():
-        if stem == "vocals":
-            continue
-        bgm = source if bgm is None else bgm + source
+    stem = None
+    source = None
+    try:
+        separator = Separator(
+            model="htdemucs_ft",
+            device=_device(),
+            progress=True,
+            shifts=shifts,
+            callback=report_progress,
+        )
+        _, separated = separator.separate_audio_file(str(video_file))
 
-    save_audio(vocals, str(vocals_file), samplerate=separator.samplerate)
-    save_audio(bgm, str(bgm_file), samplerate=separator.samplerate)
-    return vocals_file, bgm_file
+        vocals = separated["vocals"]
+        for stem, source in separated.items():
+            if stem == "vocals":
+                continue
+            bgm = source if bgm is None else bgm + source
+
+        save_audio(vocals, str(vocals_file), samplerate=separator.samplerate)
+        save_audio(bgm, str(bgm_file), samplerate=separator.samplerate)
+        return vocals_file, bgm_file
+    finally:
+        separator = None
+        separated = None
+        vocals = None
+        bgm = None
+        stem = None
+        source = None
 
 
 def _demucs_source_path() -> Path:

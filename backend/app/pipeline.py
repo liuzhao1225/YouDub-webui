@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import json
+import logging
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from time import monotonic
 from typing import Callable
 
-from . import database, runtime_security
+from . import database, gpu_memory, runtime_security
 from .config import WORKFOLDER
 from .devices import device_plan_summary
 from .runtime_checks import validate_runtime_device
 from .sources import detect_source
 from .stages import STAGES
 from .youtube import is_local_upload_url
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -203,7 +207,25 @@ class PipelineRunner:
             error_message=None,
         )
         self.stage_message(stage, "Started")
-        self._stage_handlers[stage](database.get_task(self.task_id))
+        try:
+            self._stage_handlers[stage](database.get_task(self.task_id))
+        except Exception as stage_exc:
+            try:
+                report = gpu_memory.release_stage_memory(stage)
+            except Exception as release_exc:
+                note = f"GPU memory release also failed after stage {stage}: {release_exc}"
+                stage_exc.add_note(note)
+                self._log_secondary_release_failure(stage, note, release_exc)
+            else:
+                self._log_release_report_preserving_error(report, stage_exc)
+            raise
+
+        try:
+            report = gpu_memory.release_stage_memory(stage)
+        except Exception as release_exc:
+            self._log_release_failure(stage, release_exc)
+            raise
+        self._log_release_report(report)
         database.update_stage(
             self.task_id,
             stage,
@@ -213,6 +235,50 @@ class PipelineRunner:
             last_message="Completed",
         )
         self.log(f"[{stage}] Completed")
+
+    def _log_release_report(self, report: gpu_memory.MemoryReleaseReport | None) -> None:
+        if report is not None:
+            self.log(report.summary())
+
+    def _log_release_report_preserving_error(
+        self,
+        report: gpu_memory.MemoryReleaseReport | None,
+        primary_exc: Exception,
+    ) -> None:
+        if report is None:
+            return
+        try:
+            self.log(report.summary())
+        except Exception as log_exc:
+            primary_exc.add_note(f"GPU memory release succeeded, but its task log failed: {log_exc}")
+            logger.exception("Failed to log GPU memory release report for task %s", self.task_id)
+
+    def _log_release_failure(self, scope: str, release_exc: Exception) -> None:
+        try:
+            self.log(f"[{scope}] GPU memory release failed: {release_exc}")
+            self.log("".join(traceback.format_exception(release_exc)))
+        except Exception:
+            logger.exception(
+                "Failed to write GPU memory release error to task %s log",
+                self.task_id,
+            )
+
+    def _log_secondary_release_failure(
+        self,
+        scope: str,
+        note: str,
+        release_exc: Exception,
+    ) -> None:
+        try:
+            self.log(f"[{scope}] {note}; original stage failure preserved")
+            self.log("".join(traceback.format_exception(release_exc)))
+        except Exception:
+            logger.error(
+                "Task %s %s; original stage failure preserved",
+                self.task_id,
+                note,
+                exc_info=(type(release_exc), release_exc, release_exc.__traceback__),
+            )
 
     def _restore_cached_stage(self, stage: str, task: dict | None) -> None:
         if not task:
@@ -446,4 +512,39 @@ class PipelineRunner:
 
 
 def run_task(task_id: str) -> None:
-    PipelineRunner(task_id).run()
+    runner = PipelineRunner(task_id)
+    try:
+        runner.run()
+    except Exception as task_exc:
+        try:
+            report = gpu_memory.release_task_memory()
+        except Exception as release_exc:
+            note = f"GPU memory release also failed in task finally: {release_exc}"
+            task_exc.add_note(note)
+            runner._log_secondary_release_failure("task", note, release_exc)
+        else:
+            runner._log_release_report_preserving_error(report, task_exc)
+        raise
+
+    try:
+        report = gpu_memory.release_task_memory()
+    except Exception as release_exc:
+        try:
+            task = database.get_task(task_id)
+        except Exception as task_read_exc:
+            release_exc.add_note(f"Failed to read task status after release failure: {task_read_exc}")
+            runner._log_release_failure("task", release_exc)
+            raise
+        if task is not None and task.get("status") == "failed":
+            note = f"GPU memory release also failed in task finally: {release_exc}"
+            runner._log_secondary_release_failure("task", note, release_exc)
+            return
+        runner._log_release_failure("task", release_exc)
+        raise
+
+    task = database.get_task(task_id)
+    if task is not None and task.get("status") == "failed":
+        failure = RuntimeError(str(task.get("error_message") or "pipeline failed"))
+        runner._log_release_report_preserving_error(report, failure)
+    else:
+        runner._log_release_report(report)

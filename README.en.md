@@ -251,6 +251,7 @@ Common environment variables:
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | Session Cookie SameSite policy: `lax` or `strict`; `strict` is recommended with the same-origin proxy. |
 | `DEVICE` | Model runtime device, for example `auto`, `cuda`, `cuda:0`, `mps`, `mps:0`, or `cpu`; `auto` selects CUDA, then MPS, then CPU. |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | Optional component-level device overrides. Empty values use `DEVICE`. Whisper falls back to CPU when MPS is selected because word timestamp alignment depends on float64 DTW, which MPS does not support. |
+| `RELEASE_GPU_MEMORY_AFTER_STAGE` | Defaults to `true`. Model references and available CUDA/MPS caches are released after the Demucs, Whisper, and VoxCPM stages, with another cleanup in task finalization. The single-thread pipeline does not use those models again in the same task. Set it to `false` to retain model caches across tasks and reduce reload latency while accepting higher persistent GPU memory use and OOM risk. Accepted values are `1/0`, `true/false`, `yes/no`, and `on/off`. |
 | `FFMPEG_PATH` / `FFPROBE_PATH` | Optional full paths to the media binaries. On Windows with TorchCodec, `FFMPEG_PATH` must point to a shared/full-shared build. |
 | `OPENAI_BASE_URL` | OpenAI-compatible API endpoint, for example `https://api.openai.com/v1`. |
 | `OPENAI_API_KEY` | API key used by the translation stage. |

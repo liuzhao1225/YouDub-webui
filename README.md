@@ -251,6 +251,7 @@ macOS / Linux / WSL2：
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
 | `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
+| `RELEASE_GPU_MEMORY_AFTER_STAGE` | 默认 `true`。Demucs、Whisper、VoxCPM 阶段结束后释放模型引用和可用的 CUDA/MPS 缓存，并在任务结束时再次清理。单线程流水线在同一任务中不会再次使用这些模型；设为 `false` 可保留跨任务模型缓存、减少重新加载耗时，同时会增加显存持续占用和 OOM 风险。接受 `1/0`、`true/false`、`yes/no`、`on/off`。 |
 | `FFMPEG_PATH` / `FFPROBE_PATH` | 可选的媒体程序完整路径；Windows 上使用 TorchCodec 时，`FFMPEG_PATH` 必须指向 shared/full-shared 构建。 |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
 | `OPENAI_API_KEY` | 翻译阶段使用的 API key。 |

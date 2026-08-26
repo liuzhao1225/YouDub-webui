@@ -26,6 +26,13 @@ _PROMPT_CACHE_GENERATION_DEFAULTS = {
 }
 
 
+def release_model() -> bool:
+    global _MODEL
+    was_loaded = _MODEL is not None
+    _MODEL = None
+    return was_loaded
+
+
 def _model_path() -> Path:
     configured_dir = os.getenv("VOXCPM_MODEL_DIR")
     if configured_dir:
