@@ -144,7 +144,9 @@ py -3.12 -m venv .venv
 Frontend:
 
 ```powershell
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+Push-Location apps/web
+npm ci --registry=https://registry.npmmirror.com
+Pop-Location
 ```
 
 #### macOS / Linux / WSL2
@@ -160,7 +162,7 @@ python3.12 -m venv .venv
 Frontend:
 
 ```bash
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
 ```
 
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.
