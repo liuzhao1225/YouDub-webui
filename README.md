@@ -251,6 +251,7 @@ macOS / Linux / WSL2：
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
 | `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
+| `DEMUCS_CHUNK_SECONDS` | 人声分离的分块长度，必须为正整数，默认 `600`（10 分钟）。内存占用与分块长度成正比，默认窗口约需 2.8 GiB。分离期间 `session/tmp` 会额外保存 1 份 PCM16 输入和 2 份 float32 分离结果；按 44.1 kHz 双声道估算，每小时音频约需 3.0 GiB 临时空间，写入两份最终 PCM16 输出时还需预留约 1.2 GiB。临时文件在成功或失败后都会清理。 |
 | `FFMPEG_PATH` / `FFPROBE_PATH` | 可选的媒体程序完整路径；Windows 上使用 TorchCodec 时，`FFMPEG_PATH` 必须指向 shared/full-shared 构建。 |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
 | `OPENAI_API_KEY` | 翻译阶段使用的 API key。 |

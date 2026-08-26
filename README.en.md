@@ -251,6 +251,7 @@ Common environment variables:
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | Session Cookie SameSite policy: `lax` or `strict`; `strict` is recommended with the same-origin proxy. |
 | `DEVICE` | Model runtime device, for example `auto`, `cuda`, `cuda:0`, `mps`, `mps:0`, or `cpu`; `auto` selects CUDA, then MPS, then CPU. |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | Optional component-level device overrides. Empty values use `DEVICE`. Whisper falls back to CPU when MPS is selected because word timestamp alignment depends on float64 DTW, which MPS does not support. |
+| `DEMUCS_CHUNK_SECONDS` | Source-separation window length. It must be a positive integer and defaults to `600` (10 minutes). Memory scales with the window; the default uses about 2.8 GiB. During separation, `session/tmp` additionally holds one PCM16 input and two float32 separated streams. At 44.1 kHz stereo, allow about 3.0 GiB of temporary space per input hour, plus about 1.2 GiB while the two final PCM16 outputs are written. Temporary files are removed after success or failure. |
 | `FFMPEG_PATH` / `FFPROBE_PATH` | Optional full paths to the media binaries. On Windows with TorchCodec, `FFMPEG_PATH` must point to a shared/full-shared build. |
 | `OPENAI_BASE_URL` | OpenAI-compatible API endpoint, for example `https://api.openai.com/v1`. |
 | `OPENAI_API_KEY` | API key used by the translation stage. |
