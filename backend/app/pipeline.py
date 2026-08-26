@@ -104,6 +104,7 @@ class PipelineRunner:
                     self._restore_cached_stage(stage.name, database.get_task(self.task_id))
                     self.log(f"[{stage.name}] Reused cached output")
                     continue
+                database.update_task(self.task_id, current_stage=stage.name)
                 current_task = database.get_task(self.task_id)
                 if self._should_skip_stage(stage.name, output_mode, current_task):
                     self._skip_stage(stage.name, output_mode)

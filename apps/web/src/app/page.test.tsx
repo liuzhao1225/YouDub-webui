@@ -204,6 +204,49 @@ describe("任务输出选择", () => {
 })
 
 describe("任务列表轮询", () => {
+  it("为同一视频的三种输出任务显示可区分的本地化标签", async () => {
+    const commonTask = {
+      url: "https://www.youtube.com/watch?v=samevideo01",
+      title: "同一个视频",
+      status: "succeeded",
+      current_stage: "done",
+      final_video_path: null,
+      error_message: null,
+      created_at: "2026-07-14T00:00:00Z",
+      started_at: "2026-07-14T00:00:01Z",
+      completed_at: "2026-07-14T00:01:00Z",
+      execution_mode: "auto",
+    }
+    mocks.fetch.mockResolvedValue(new Response(JSON.stringify({
+      tasks: [
+        { ...commonTask, id: "samevideo01-subtitles", output_mode: "subtitles" },
+        { ...commonTask, id: "samevideo01-dubbing", output_mode: "dubbing" },
+        { ...commonTask, id: "samevideo01", output_mode: "both" },
+      ],
+      total: 3,
+      active_count: 0,
+      page: 1,
+      page_size: 20,
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }))
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    expect(await screen.findByTestId("task-output-mode-samevideo01-subtitles"))
+      .toHaveTextContent("硬字幕（保留原音）")
+    expect(screen.getByTestId("task-output-mode-samevideo01-dubbing"))
+      .toHaveTextContent("配音（无硬字幕）")
+    expect(screen.getByTestId("task-output-mode-samevideo01"))
+      .toHaveTextContent("硬字幕和配音")
+  })
+
   it("筛选变化后丢弃已取消请求的迟到响应", async () => {
     let resolveOldRequest!: (response: Response) => void
     const oldRequest = new Promise<Response>((resolve) => {

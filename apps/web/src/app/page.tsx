@@ -578,6 +578,9 @@ export default function Home() {
                           </p>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                             <Badge className={statusBadgeClass(item.status)}>{statusLabel(item.status)}</Badge>
+                            <span data-testid={`task-output-mode-${item.id}`}>
+                              {selectedLabel(outputModeOptions, item.output_mode || "both")}
+                            </span>
                             <span>{formatTime(item.created_at)}</span>
                             {isActive(item.status) && item.current_stage ? (
                               <span>· {stageLabel(item.current_stage)}</span>
