@@ -410,11 +410,13 @@ class PipelineRunner:
         session = _require(self.artifacts.session, "session")
         translation_file = _require(self.artifacts.translation_file, "translation_file")
         vocals_dir = _require(self.artifacts.vocals_dir, "vocals_dir")
+        vocals_file = _require(self.artifacts.vocals_file, "vocals_file")
         self.artifacts.tts_dir = generate_tts(
             translation_file,
             vocals_dir,
             session,
             progress_callback=lambda progress, message: self.stage_progress("tts", progress, message),
+            original_vocals_file=vocals_file,
         )
         wav_count = len(list(self.artifacts.tts_dir.glob("*.wav")))
         self.stage_message("tts", f"Generated {wav_count} TTS clips -> {self.artifacts.tts_dir}")

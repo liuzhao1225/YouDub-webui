@@ -5,13 +5,17 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from openai import OpenAI
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from ..sources import SourceConfig
-from ._translate_prompts import PREPROCESS_PROMPT, TRANSLATE_RULES
+from ._translate_prompts import (
+    CONTENT_ONLY_TRANSLATION_RULES,
+    PREPROCESS_PROMPT,
+    TRANSLATE_RULES,
+)
 from .openai_client import normalize_openai_base_url
 
 log = logging.getLogger(__name__)
@@ -41,6 +45,13 @@ class PreprocessResponse(BaseModel):
 
 class TranslationItem(BaseModel):
     dst: str
+    audio_mode: Literal["tts", "original"]
+
+    @model_validator(mode="after")
+    def validate_tts_text(self) -> "TranslationItem":
+        if self.audio_mode == "tts" and not self.dst.strip():
+            raise ValueError("dst must be non-empty when audio_mode is tts")
+        return self
 
 
 def list_models(*, base_url: str, api_key: str) -> list[str]:
@@ -145,12 +156,13 @@ def preprocess(
 
 def _translate_system(source: SourceConfig, meta: dict[str, Any], pre: PreprocessResponse) -> str:
     rules = TRANSLATE_RULES[(source.asr_language, source.target_language)]
-    return rules.format(
+    formatted = rules.format(
         summary=pre.summary or "(none)",
         hotwords=_format_terms(pre.hotwords, "{src} -> {dst}", "(none)"),
         corrections=_format_terms(pre.corrections, "{wrong} -> {correct}", "(none)"),
         **_meta_view(meta),
     )
+    return f"{formatted}\n\n{CONTENT_ONLY_TRANSLATION_RULES}"
 
 
 def _post_process(text: str, target_language: str) -> str:
@@ -166,15 +178,13 @@ def translate_sentence(
     client: OpenAI,
     model: str,
     system: str,
-) -> str:
+) -> TranslationItem:
     last_error: Exception | None = None
     for attempt in range(TRANSLATE_RETRY):
         try:
             data = _call_json(client, model, system, text)
             item = TranslationItem.model_validate(data)
-            if not item.dst.strip():
-                raise ValueError("empty dst")
-            return _post_process(item.dst, target_language)
+            return item.model_copy(update={"dst": _post_process(item.dst, target_language)})
         except (json.JSONDecodeError, ValidationError, ValueError) as exc:
             last_error = exc
             log.warning("translate attempt %d failed for %r: %s", attempt + 1, text[:60], exc)
@@ -191,7 +201,7 @@ def translate_batch(
     api_key: str,
     model: str,
     concurrency: int = DEFAULT_CONCURRENCY,
-) -> list[str]:
+) -> list[TranslationItem]:
     if not texts:
         return []
     system = _translate_system(source, meta, pre)
@@ -279,21 +289,22 @@ def translate_asr(
         log.info("Wrote translation preprocess artifact to %s", preprocess_artifact_path(session))
     else:
         log.info("Reusing translation preprocess artifact from %s", preprocess_artifact_path(session))
-    dst_list = translate_batch(
+    translated_items = translate_batch(
         texts, source, meta, pre, **api, concurrency=_concurrency_from(settings)
     )
 
     translation = [
         {
             "src": text,
-            "dst": dst,
+            "dst": translated.dst,
+            "audio_mode": translated.audio_mode,
             "src_lang": source.asr_language,
             "dst_lang": source.target_language,
             "start_time": utt["start_time"],
             "end_time": utt["end_time"],
             "speaker": _speaker(utt),
         }
-        for text, dst, utt in zip(texts, dst_list, utterances)
+        for text, translated, utt in zip(texts, translated_items, utterances)
     ]
     output_file.write_text(
         json.dumps({"translation": translation}, ensure_ascii=False, indent=2),

@@ -52,7 +52,7 @@ _EN_TO_ZH_RULES = """你是一个专业的中文翻译助手。请将英文逐�
 # 规则
 1) 准确自然。忠实传达原意，口语保持口语感，书面保持克制；避免直译腔与过度文学化；不擅自增删信息。
 2) 逐句对齐。一句对一句，长句长译，短句短译；保持代词指代清晰；并列短句用中文逗号、分号自然处理。
-3) 一致性与保留项。人名、地名、品牌、型号、库/框架/算法名、缩写（GPU、API、Transformer 等）默认保留原文大小写；广为接受的中文译法须使用，如 LEGO -> 乐高；首次出现的专名可写「中文（原文）」或保留原文，后续保持一致；文件名、函数名、类名、命令、路径、URL、邮箱、哈希、版本号一律保留原样；subscribe the channel 译为「关注」而非「订阅」；AI Agent 译为「AI 智能体」；非常短的语气词（aha、wow、oh、ah、um、uh）保留原文。
+3) 一致性与保留项。人名、地名、品牌、型号、库/框架/算法名、缩写（GPU、API、Transformer 等）默认保留原文大小写；广为接受的中文译法须使用，如 LEGO -> 乐高；首次出现的专名可写「中文（原文）」或保留原文，后续保持一致；文件名、函数名、类名、命令、路径、URL、邮箱、哈希、版本号一律保留原样；subscribe the channel 译为「关注」而非「订阅」；AI Agent 译为「AI 智能体」。
 4) 纠错。明显错误直接修正后再翻译，不解释、不标注。
 5) 数字与单位。数字不加英文千分位逗号（写 6000，不写 6,000）；超大数字（10^8 及以上）改写为「亿/百万」等中文计数；百分数、比值、温度、货币、尺寸保持原单位与格式（3.5%、$12.99、1080p、5 km），不做单位换算；序号保持格式：Section 3 -> 第3节，Figure 2 -> 图2，Table 5 -> 表5。
 6) 标点与排版。使用中文标点（，。！？；：「」（））；破折号「——」**禁用**，改用括号或逗号分句；省略号用「…」；引号统一「」或「""」；长句用逗号细分；必须使用标点。
@@ -62,8 +62,9 @@ _EN_TO_ZH_RULES = """你是一个专业的中文翻译助手。请将英文逐�
 10) 表述强度。粗口保留力度（妈的 / 卧槽 / 我去 / 操 / 他妈的，按语境选用）；美式 so 常作语气词「嗯啊哦」，需按语境判断不要僵硬译为「所以」。
 
 # 输出格式（极其重要）
-- user 每次只会给一句英文原文，你必须返回严格的 JSON 对象：{{"dst": "<对应中文译文>"}}
+- user 每次只会给一句英文原文，你必须返回严格的 JSON 对象：{{"dst": "<对应中文译文>", "audio_mode": "tts 或 original"}}
 - dst 字段中只能放中文译文本身，不要解释、不要前后缀、不要引号、不要编号、不要 markdown。
+- audio_mode 只能填写 tts 或 original。包含可翻译词义的对话、旁白、呼救、喊话及感叹使用 tts，即使说话时带有哭腔或喊叫；只有非语言人声时使用 original，包括无词义的尖叫、笑声、哭泣、抽泣、呻吟、叹气、喘息、咳嗽、打喷嚏、动物叫声和用力声，dst 写自然的声音字幕，如「（笑声）」或「（喘息声）」。片段同时包含语言和非语言声音时，省略声音标记、翻译语言内容并使用 tts。
 - 不得输出除该 JSON 对象以外的任何字符。
 """
 
@@ -95,8 +96,9 @@ _JA_TO_ZH_RULES = """你是一个专业的日译中字幕翻译助手。请将�
 10) 表述强度。敬语、随意语、吐槽和粗口都应保留原有语气强度，不刻意强化或弱化。
 
 # 输出格式（极其重要）
-- user 每次只会给一句日文原文，你必须返回严格的 JSON 对象：{{"dst": "<对应中文译文>"}}
+- user 每次只会给一句日文原文，你必须返回严格的 JSON 对象：{{"dst": "<对应中文译文>", "audio_mode": "tts 或 original"}}
 - dst 字段中只能放中文译文本身，不要解释、不要前后缀、不要编号、不要 markdown。
+- audio_mode 只能填写 tts 或 original。包含可翻译词义的对话、旁白、呼救、喊话及感叹使用 tts，即使说话时带有哭腔或喊叫；只有非语言人声时使用 original，包括无词义的尖叫、笑声、哭泣、抽泣、呻吟、叹气、喘息、咳嗽、打喷嚏、动物叫声和用力声，dst 写自然的声音字幕，如「（笑声）」或「（喘息声）」。片段同时包含语言和非语言声音时，省略声音标记、翻译语言内容并使用 tts。
 - 不得输出除该 JSON 对象以外的任何字符。
 """
 
@@ -128,9 +130,17 @@ Summary: {summary}
 10) Filler words and short interjections (啊, 嗯, 哦) become natural English fillers (uh, um, oh) only if needed; otherwise drop.
 
 # Output format (strict)
-- The user will send exactly ONE Chinese sentence per turn. You MUST reply with a strict JSON object: {{"dst": "<the English translation>"}}
+- The user will send exactly ONE Chinese sentence per turn. You MUST reply with a strict JSON object: {{"dst": "<the English translation>", "audio_mode": "tts or original"}}
 - The dst field contains only the translated English sentence, no quotes, labels, prefixes, numbering or markdown.
+- audio_mode must be exactly tts or original. Use tts for dialogue, narration, calls for help, shouted words, and meaningful verbal interjections, even when spoken while crying or shouting. Use original only when the utterance contains no translatable words and consists of non-verbal vocal sounds such as screams, laughter, crying, sobbing, moans, sighs, breathing, coughing, sneezing, animal calls, or exertion sounds; put a natural sound caption such as "(laughter)" or "(breathing)" in dst. If an utterance mixes speech with non-verbal sounds, omit the sound marker, translate the speech, and use tts.
 - Output nothing other than that JSON object.
+"""
+
+
+CONTENT_ONLY_TRANSLATION_RULES = """# Content-only translation priority (highest priority; overrides earlier filler guidance)
+Translate the proposition, facts, requests, and meaningful emotion in each utterance. Do not translate or add standalone discourse fillers, hesitation sounds, acknowledgements, or sentence-ending particles when they carry no information. Examples include English "um", "uh", filler "well", "you know", "like", or "so"; and Chinese "嗯", "啊", "哦", "呢", "吧", or "啦" when they are only modal particles.
+
+Omit those fillers from the output instead of replacing them with target-language fillers. If a filler occurs with meaningful words, remove only the filler and translate the meaningful content. Keep an interjection only when it conveys a concrete reaction or changes the meaning; never invent one. If the entire utterance is a speech filler, return an empty string in `dst` with `audio_mode` set to `original`. Non-verbal vocal sounds are not speech fillers: when the utterance has no translatable words and consists only of screams, laughter, crying, sobbing, moans, sighs, breathing, coughing, sneezing, animal calls, or exertion sounds, describe it naturally in `dst` and set `audio_mode` to `original`. If any translatable speech is present, translate the speech and set `audio_mode` to `tts`, even when it is shouted or mixed with non-verbal sounds. Never remove a word when it has lexical meaning in context.
 """
 
 

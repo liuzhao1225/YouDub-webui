@@ -88,6 +88,7 @@ def _translation_items(cues: list[SubtitleCue], source: SourceConfig) -> list[di
         {
             "src": "",
             "dst": cue.text,
+            "audio_mode": "tts",
             "src_lang": source.asr_language,
             "dst_lang": source.target_language,
             "start_time": cue.start_time,

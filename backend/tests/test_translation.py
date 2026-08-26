@@ -47,7 +47,10 @@ def _stub_translate_batch(monkeypatch, transform):
 
     def fake(texts, source, meta, pre, **kw):
         seen.append({"texts": list(texts), "source": source, "meta": meta, "pre": pre, **kw})
-        return [transform(t) for t in texts]
+        return [
+            openai_translate.TranslationItem(dst=transform(t), audio_mode="tts")
+            for t in texts
+        ]
 
     monkeypatch.setattr(openai_translate, "translate_batch", fake)
     return seen
@@ -115,6 +118,7 @@ def test_translate_asr_writes_schema_with_speaker_and_lang(tmp_path, monkeypatch
     out = openai_translate.translate_asr(asr_file, tmp_path, _settings(), YT_SOURCE)
     items = json.loads(out.read_text(encoding="utf-8"))["translation"]
     assert [i["dst"] for i in items] == ["zh:S0.", "zh:S1."]
+    assert {i["audio_mode"] for i in items} == {"tts"}
     assert {i["src_lang"] for i in items} == {"en"}
     assert {i["dst_lang"] for i in items} == {"zh"}
     assert {i["speaker"] for i in items} == {"1"}
@@ -137,6 +141,7 @@ def test_translate_asr_writes_japanese_to_chinese_language_metadata(tmp_path, mo
     assert item["src_lang"] == "ja"
     assert item["dst_lang"] == "zh"
     assert item["dst"] == "今天天气很好。"
+    assert item["audio_mode"] == "tts"
 
 
 def test_translate_asr_output_filename_uses_target_lang(tmp_path, monkeypatch):
@@ -186,19 +191,30 @@ def test_translate_asr_invokes_translate_batch_with_all_texts_at_once(tmp_path, 
 
 
 def test_translate_batch_replaces_em_dash_for_zh_target(monkeypatch):
-    monkeypatch.setattr(openai_translate, "_call_json", lambda *a, **kw: {"dst": "你好——世界"})
+    monkeypatch.setattr(
+        openai_translate,
+        "_call_json",
+        lambda *a, **kw: {"dst": "你好——世界", "audio_mode": "tts"},
+    )
     monkeypatch.setattr(openai_translate, "_client", lambda *a, **kw: object())
 
     out = openai_translate.translate_batch(
         ["Hello world."], YT_SOURCE, {}, PreprocessResponse(),
         base_url="u", api_key="k", model="m",
     )
-    assert out == ["你好，世界"]
+    assert [item.model_dump() for item in out] == [
+        {"dst": "你好，世界", "audio_mode": "tts"}
+    ]
 
 
 def test_translate_batch_does_not_replace_em_dash_for_en_target(monkeypatch):
     monkeypatch.setattr(
-        openai_translate, "_call_json", lambda *a, **kw: {"dst": "He said—wait—and left."}
+        openai_translate,
+        "_call_json",
+        lambda *a, **kw: {
+            "dst": "He said—wait—and left.",
+            "audio_mode": "tts",
+        },
     )
     monkeypatch.setattr(openai_translate, "_client", lambda *a, **kw: object())
 
@@ -206,7 +222,9 @@ def test_translate_batch_does_not_replace_em_dash_for_en_target(monkeypatch):
         ["他说——等等——就走了。"], BB_SOURCE, {}, PreprocessResponse(),
         base_url="u", api_key="k", model="m",
     )
-    assert out == ["He said—wait—and left."]
+    assert [item.model_dump() for item in out] == [
+        {"dst": "He said—wait—and left.", "audio_mode": "tts"}
+    ]
 
 
 def test_translate_batch_uses_shared_system_prompt(monkeypatch):
@@ -216,7 +234,7 @@ def test_translate_batch_uses_shared_system_prompt(monkeypatch):
     def fake_call_json(client, model, system, user):
         with lock:
             captured.append(system)
-        return {"dst": f"dst:{user}"}
+        return {"dst": f"dst:{user}", "audio_mode": "tts"}
 
     monkeypatch.setattr(openai_translate, "_call_json", fake_call_json)
     monkeypatch.setattr(openai_translate, "_client", lambda *a, **kw: object())
@@ -226,7 +244,8 @@ def test_translate_batch_uses_shared_system_prompt(monkeypatch):
         texts, BB_SOURCE, {}, PreprocessResponse(),
         base_url="u", api_key="k", model="m", concurrency=4,
     )
-    assert out == [f"dst:s{i}" for i in range(5)]
+    assert [item.dst for item in out] == [f"dst:s{i}" for i in range(5)]
+    assert {item.audio_mode for item in out} == {"tts"}
     assert len(set(captured)) == 1, "system prompt must be identical across calls for prompt cache"
 
 
@@ -235,18 +254,48 @@ def test_concurrency_from_bad_saved_values_falls_back_to_default(value):
     assert openai_translate._concurrency_from({"translate_concurrency": value}) == 50
 
 
-def test_translate_sentence_retries_on_empty_dst(monkeypatch):
+def test_translate_sentence_accepts_empty_dst_for_filler_only_sentence(monkeypatch):
     calls = {"n": 0}
 
     def fake_call_json(client, model, system, user):
         calls["n"] += 1
-        return {"dst": ""} if calls["n"] == 1 else {"dst": "ok"}
+        return {"dst": "", "audio_mode": "original"}
 
     monkeypatch.setattr(openai_translate, "_call_json", fake_call_json)
 
-    out = openai_translate.translate_sentence("hello", "en", object(), "m", "sys")
-    assert out == "ok"
-    assert calls["n"] == 2
+    out = openai_translate.translate_sentence("um", "en", object(), "m", "sys")
+    assert out.dst == ""
+    assert out.audio_mode == "original"
+    assert calls["n"] == 1
+
+
+def test_translate_sentence_keeps_mixed_speech_in_tts_mode(monkeypatch):
+    monkeypatch.setattr(
+        openai_translate,
+        "_call_json",
+        lambda *args, **kwargs: {"dst": "救命！", "audio_mode": "tts"},
+    )
+
+    out = openai_translate.translate_sentence(
+        "[laughs] Help!", "zh", object(), "m", "sys"
+    )
+
+    assert out.model_dump() == {"dst": "救命！", "audio_mode": "tts"}
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"dst": "Hello"},
+        {"dst": "Hello", "audio_mode": "invalid"},
+        {"dst": "", "audio_mode": "tts"},
+    ],
+)
+def test_translate_sentence_rejects_invalid_audio_mode_contract(monkeypatch, response):
+    monkeypatch.setattr(openai_translate, "_call_json", lambda *args, **kwargs: response)
+
+    with pytest.raises(RuntimeError, match="translate_sentence failed"):
+        openai_translate.translate_sentence("x", "en", object(), "m", "sys")
 
 
 def test_translate_sentence_raises_after_retries(monkeypatch):
@@ -286,10 +335,18 @@ def test_translate_system_prompt_contains_meta_summary_hotwords(monkeypatch):
     assert "Alice" in system
     assert "Long description" in system
     assert "Recap of the talk." in system
+    assert "Content-only translation priority" in system
+    assert "speech filler" in system
+    assert "screams, laughter, crying, sobbing, moans" in system
+    assert "If any translatable speech is present" in system
+    assert "呼救、喊话及感叹使用 tts" in system
+    assert "动物叫声和用力声" in system
+    assert '"audio_mode": "tts 或 original"' in system
+    assert "非常短的语气词" not in system
     assert "LEGO -> 乐高" in system
 
 
-def test_japanese_to_chinese_uses_dedicated_language_names_and_prompt(monkeypatch):
+def test_japanese_to_chinese_prompt_and_audio_mode_response_contract(monkeypatch):
     captured: list[str] = []
 
     def fake_call_json(client, model, system, user):
@@ -315,3 +372,48 @@ def test_japanese_to_chinese_uses_dedicated_language_names_and_prompt(monkeypatc
     assert "请将日文逐句翻译" in system
     assert "一句日文原文" in system
     assert "一句英文原文" not in system
+    assert '"audio_mode": "tts 或 original"' in system
+    assert "只有非语言人声时使用 original" in system
+    assert "Content-only translation priority" in system
+
+    captured_systems: list[str] = []
+
+    def valid_translation(client, model, current_system, user):
+        captured_systems.append(current_system)
+        return {"dst": "今天天气很好。", "audio_mode": "tts"}
+
+    monkeypatch.setattr(openai_translate, "_call_json", valid_translation)
+    translated = openai_translate.translate_batch(
+        ["今日はいい天気です。"],
+        JA_SOURCE,
+        {},
+        PreprocessResponse(),
+        base_url="u",
+        api_key="k",
+        model="m",
+        concurrency=1,
+    )
+
+    assert [item.model_dump() for item in translated] == [
+        {"dst": "今天天气很好。", "audio_mode": "tts"}
+    ]
+    assert "请将日文逐句翻译" in captured_systems[0]
+    assert '"audio_mode": "tts 或 original"' in captured_systems[0]
+    assert "Content-only translation priority" in captured_systems[0]
+
+    monkeypatch.setattr(
+        openai_translate,
+        "_call_json",
+        lambda *args, **kwargs: {"dst": "今天天气很好。"},
+    )
+    with pytest.raises(RuntimeError, match="translate_sentence failed"):
+        openai_translate.translate_batch(
+            ["今日はいい天気です。"],
+            JA_SOURCE,
+            {},
+            PreprocessResponse(),
+            base_url="u",
+            api_key="k",
+            model="m",
+            concurrency=1,
+        )

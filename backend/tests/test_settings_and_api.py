@@ -1378,6 +1378,7 @@ def test_upload_japanese_direction_reaches_pipeline_model_parameters(monkeypatch
                         {
                             "src": "今日はいい天気です。",
                             "dst": "今天天气很好。",
+                            "audio_mode": "tts",
                             "src_lang": source.asr_language,
                             "dst_lang": source.target_language,
                         }
