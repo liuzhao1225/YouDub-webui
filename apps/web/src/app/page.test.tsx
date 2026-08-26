@@ -96,6 +96,59 @@ describe("本地视频字幕选择", () => {
     expect(form.get("output_mode")).toBe("dubbing")
     expect(mocks.push).toHaveBeenCalledWith("/tasks/task-b")
   })
+
+  it("可选择日译中并以 ja-zh 方向提交本地视频", async () => {
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const path = String(input)
+      if (path === "/api/tasks/upload") {
+        return new Response(JSON.stringify({ id: "japanese-task" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      if (path.startsWith("/api/tasks")) {
+        return new Response(JSON.stringify({
+          tasks: [],
+          total: 0,
+          active_count: 0,
+          page: 1,
+          page_size: 20,
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      throw new Error(`未预期的请求: ${path}`)
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const user = userEvent.setup()
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    await user.upload(
+      screen.getByLabelText("本地视频文件"),
+      new File(["video"], "japanese.mp4", { type: "video/mp4" }),
+    )
+    await user.click(screen.getByLabelText("翻译方向"))
+    await user.click(await screen.findByRole("option", { name: "日文 -> 中文" }))
+    await user.click(screen.getByRole("button", { name: "创建任务" }))
+
+    await waitFor(() => {
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/tasks/upload",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+    const uploadCall = mocks.fetch.mock.calls.find(([input]) => String(input) === "/api/tasks/upload")
+    const form = uploadCall?.[1]?.body as FormData
+    expect(form.get("direction")).toBe("ja-zh")
+    expect((form.get("file") as File).name).toBe("japanese.mp4")
+    expect(mocks.push).toHaveBeenCalledWith("/tasks/japanese-task")
+  })
 })
 
 describe("任务输出选择", () => {

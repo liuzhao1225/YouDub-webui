@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+import sys
 import threading
+import types
 from pathlib import Path
 
 import pytest
@@ -13,6 +15,7 @@ from backend.app import auth, config, database, pipeline
 from backend.app import main
 from backend.app import worker
 from backend.app.adapters import local_subtitles
+from backend.app.sources import detect_source
 from backend.tests.conftest import TEST_AUTH_PASSWORD
 
 
@@ -573,6 +576,46 @@ def test_rerun_task_purges_session_and_requeues(monkeypatch, tmp_path):
     assert enqueued == [task_id]
     assert not session.exists()
     assert not log_file.exists()
+
+
+def test_rerun_failed_japanese_local_task_preserves_direction_and_upload(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    upload = client.post(
+        "/api/tasks/upload",
+        data={"direction": "ja-zh"},
+        files={"file": ("japanese.mp4", b"japanese-video", "video/mp4")},
+    )
+
+    assert upload.status_code == 201
+    original_task = upload.json()
+    task_id = original_task["id"]
+    original_url = original_task["url"]
+    uploaded_file = config.WORKFOLDER / "_uploads" / task_id / "video" / "japanese.mp4"
+    assert uploaded_file.read_bytes() == b"japanese-video"
+
+    database.update_task(
+        task_id,
+        status="failed",
+        error_message="injected failure",
+        completed_at=database.now_iso(),
+    )
+    rerun = client.post(f"/api/tasks/{task_id}/rerun")
+
+    assert rerun.status_code == 200
+    rerun_task = rerun.json()
+    assert rerun_task["id"] == task_id
+    assert rerun_task["url"] == original_url
+    assert "direction=ja-zh" in rerun_task["url"]
+    assert "filename=japanese.mp4" in rerun_task["url"]
+    assert uploaded_file.read_bytes() == b"japanese-video"
+    source = detect_source(rerun_task["url"])
+    assert source.asr_language == "ja"
+    assert source.target_language == "zh"
+    assert enqueued == [task_id, task_id]
 
 
 def test_rerun_task_returns_404_for_unknown(monkeypatch, tmp_path):
@@ -1429,6 +1472,120 @@ def test_upload_local_video_creates_task_and_saved_file(monkeypatch, tmp_path):
     saved = list((config.WORKFOLDER / "_uploads" / body["id"] / "video").iterdir())
     assert len(saved) == 1
     assert saved[0].read_bytes() == b"mp4data"
+
+
+def test_upload_japanese_direction_reaches_pipeline_model_parameters(monkeypatch, tmp_path):
+    configure_tmp_runtime(monkeypatch, tmp_path)
+    enqueued: list[str] = []
+    monkeypatch.setattr(main.worker, "enqueue", lambda task_id: enqueued.append(task_id))
+    client = authenticated_client()
+
+    response = client.post(
+        "/api/tasks/upload",
+        data={"direction": "ja-zh"},
+        files={"file": ("japanese.mp4", b"mp4data", "video/mp4")},
+    )
+
+    assert response.status_code == 201
+    task_id = response.json()["id"]
+    task = database.get_task(task_id)
+    assert task is not None
+    assert task["url"].startswith(f"local://upload/{task_id}?direction=ja-zh")
+    assert enqueued == [task_id]
+
+    session = tmp_path / "session"
+    (session / "media").mkdir(parents=True)
+    (session / "metadata").mkdir()
+    vocals_file = session / "media" / "audio_vocals.wav"
+    vocals_file.write_bytes(b"vocals")
+    seen: dict[str, object] = {}
+
+    def fake_recognize_speech(vocals, current_session, language):
+        seen["whisper_language"] = language
+        assert vocals == vocals_file
+        output = current_session / "metadata" / "asr.json"
+        output.write_text(
+            json.dumps(
+                {
+                    "audio_info": {"duration": 1000},
+                    "result": {
+                        "text": "今日はいい天気です。",
+                        "utterances": [
+                            {
+                                "text": "今日はいい天気です。",
+                                "start_time": 0,
+                                "end_time": 1000,
+                                "words": [],
+                            }
+                        ],
+                    },
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        return output
+
+    def fake_fix_asr_sentences(asr_file, current_session, language):
+        seen["sentence_fixer_language"] = language
+        output = current_session / "metadata" / "asr_fixed.json"
+        output.write_text(asr_file.read_text(encoding="utf-8"), encoding="utf-8")
+        return output
+
+    def fake_translate_asr(asr_file, current_session, settings, source):
+        seen["translation_source"] = (
+            source.name,
+            source.asr_language,
+            source.target_language,
+        )
+        assert asr_file.name == "asr_fixed.json"
+        assert settings["model"]
+        output = current_session / "metadata" / "translation.zh.json"
+        output.write_text(
+            json.dumps(
+                {
+                    "translation": [
+                        {
+                            "src": "今日はいい天気です。",
+                            "dst": "今天天气很好。",
+                            "audio_mode": "tts",
+                            "src_lang": source.asr_language,
+                            "dst_lang": source.target_language,
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        return output
+
+    whisper_module = types.ModuleType("backend.app.adapters.whisper_asr")
+    whisper_module.recognize_speech = fake_recognize_speech
+    fixer_module = types.ModuleType("backend.app.adapters.asr_sentence_fixer")
+    fixer_module.fix_asr_sentences = fake_fix_asr_sentences
+    translate_module = types.ModuleType("backend.app.adapters.openai_translate")
+    translate_module.translate_asr = fake_translate_asr
+    translate_module.preprocess_artifact_path = (
+        lambda current_session: current_session / "metadata" / "translation_preprocess.json"
+    )
+    monkeypatch.setitem(sys.modules, "backend.app.adapters.whisper_asr", whisper_module)
+    monkeypatch.setitem(sys.modules, "backend.app.adapters.asr_sentence_fixer", fixer_module)
+    monkeypatch.setitem(sys.modules, "backend.app.adapters.openai_translate", translate_module)
+
+    runner = pipeline.PipelineRunner(task_id)
+    runner.artifacts.session = session
+    runner.artifacts.vocals_file = vocals_file
+    runner._asr(task)
+    runner._asr_fix(task)
+    runner._translate(task)
+
+    assert seen == {
+        "whisper_language": "ja",
+        "sentence_fixer_language": "ja",
+        "translation_source": ("local", "ja", "zh"),
+    }
+    assert runner.artifacts.translation_file == session / "metadata" / "translation.zh.json"
 
 
 def test_frontend_video_accept_contract_matches_backend_allowlist():

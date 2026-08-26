@@ -110,6 +110,7 @@ export default function Home() {
 
   const localDirectionOptions: { value: LocalDirection; label: string }[] = [
     { value: "en-zh", label: t.home.localEnZh },
+    { value: "ja-zh", label: t.home.localJaZh },
     { value: "zh-en", label: t.home.localZhEn },
   ]
 

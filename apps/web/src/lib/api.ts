@@ -141,7 +141,7 @@ export type YtdlpSettings = {
   proxy_port: string
 }
 
-export type LocalDirection = "en-zh" | "zh-en"
+export type LocalDirection = "en-zh" | "ja-zh" | "zh-en"
 
 async function request<T>(
   path: string,
