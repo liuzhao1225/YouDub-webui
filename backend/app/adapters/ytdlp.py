@@ -83,11 +83,15 @@ def _ydl_base(source: SourceConfig, proxy_port: str = "") -> dict[str, Any]:
     return opts
 
 
-def _session_path(workfolder: Path, info: dict[str, Any]) -> Path:
+def _session_path(
+    workfolder: Path,
+    info: dict[str, Any],
+    task_id: str | None = None,
+) -> Path:
     uploader = sanitize_text(str(info.get("uploader") or "unknown"))
     title = sanitize_text(str(info.get("title") or "untitled"))
     video_id = str(info.get("id") or extract_video_id(str(info.get("webpage_url") or "")))
-    return workfolder / uploader / f"{title}__{video_id}"
+    return workfolder / uploader / f"{title}__{task_id or video_id}"
 
 
 def _is_format_unavailable(exc: Exception) -> bool:
@@ -129,7 +133,12 @@ def _download_with_format_candidates(
 
 
 def download_video(
-    url: str, workfolder: Path, source: SourceConfig, proxy_port: str = ""
+    url: str,
+    workfolder: Path,
+    source: SourceConfig,
+    proxy_port: str = "",
+    *,
+    task_id: str | None = None,
 ) -> tuple[Path, dict[str, Any]]:
     validated = validate_video_url(url)
     if validated.source != source.name:
@@ -144,7 +153,7 @@ def download_video(
     if str(info.get("id", video_id)) != video_id:
         raise ValueError("The resolved video id does not match the submitted URL.")
 
-    session = _session_path(workfolder, info)
+    session = _session_path(workfolder, info, task_id)
     media_dir = session / "media"
     metadata_dir = session / "metadata"
     media_dir.mkdir(parents=True, exist_ok=True)
