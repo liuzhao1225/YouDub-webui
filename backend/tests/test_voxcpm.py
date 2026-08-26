@@ -378,6 +378,29 @@ def test_original_target_audio_rejects_one_millisecond_tail_overflow(tmp_path):
     assert not output.exists()
 
 
+def test_original_target_audio_rejects_quantized_one_millisecond_tail_overflow(
+    tmp_path,
+):
+    source = tmp_path / "media" / "audio_vocals.wav"
+    source.parent.mkdir(parents=True)
+    source_samples = np.linspace(-0.75, 0.75, 22050, dtype=np.float32)
+    sf.write(source, source_samples, 44100)
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 0, "end_time": 501},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "0-501 ms" in message
+    assert "requested frames 0-22094" in message
+    assert "22050 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
 @pytest.mark.skipif(
     not runtime_security.POSIX_STRONG_PERMISSIONS,
     reason="symlink-safe private writes require POSIX semantics",

@@ -126,9 +126,9 @@ def _write_original_target_audio(
         )
         if start_frame >= source.frames:
             raise ValueError(range_error)
-        overflow_frames = requested_end_frame - source.frames
-        if overflow_frames > 0:
-            if overflow_frames * 1000 >= source.samplerate:
+        overflow_scaled = end * source.samplerate - source.frames * 1000
+        if overflow_scaled > 0:
+            if overflow_scaled >= source.samplerate:
                 raise ValueError(range_error)
             end_frame = source.frames
         if end_frame <= start_frame:
