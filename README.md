@@ -194,6 +194,14 @@ Linux / WSL2：
 
 `requirements-pytorch-cu128.txt` 默认使用 PyTorch 的 `cu128` wheel 源。不同 NVIDIA 驱动或 CUDA 环境可能需要不同的 PyTorch CUDA 版本，请按 [PyTorch 官方安装页](https://pytorch.org/get-started/locally/) 选择匹配命令。CPU 用户和 macOS 用户不需要执行这一步；如果没有安装 CUDA 版 PyTorch，请在 `.env` 中设置 `DEVICE=cpu`。
 
+Windows 上 VoxCPM 的 `torch.compile` 加速需要 Triton。如果启动时出现 `Warning: torch.compile disabled - triton is not installed`，VoxCPM 仍可正常工作，但 TTS 会使用较慢的未编译路径（[Issue #127 的 Windows 环境实测约慢 2 倍](https://github.com/liuzhao1225/YouDub-webui/issues/127)）。Windows CUDA 用户可选择安装社区维护的 [`triton-windows`](https://github.com/triton-lang/triton-windows)：
+
+```powershell
+.\.venv\Scripts\pip.exe install -U triton-windows
+```
+
+`triton-windows` 未纳入默认依赖。安装前请按其项目文档选择与当前 PyTorch 版本匹配的 Triton 版本。
+
 安装后可以验证 CUDA 是否真的可用：
 
 ```bash
