@@ -138,6 +138,79 @@ def test_openai_key_save_modes_without_clear(monkeypatch, tmp_path, api_key, exp
     assert settings["model"] == "next-model"
 
 
+ATLAS_UPGRADE_ENV_KEYS = (
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "OPENAI_API_BASE",
+    "OPENAI_MODEL",
+    "OPENAI_MODEL_NAME",
+    "ATLASCLOUD_API_KEY",
+    "ATLAS_CLOUD_API_KEY",
+    "ATLASCLOUD_BASE_URL",
+    "ATLAS_CLOUD_BASE_URL",
+    "ATLASCLOUD_MODEL",
+    "ATLAS_CLOUD_MODEL",
+    "OPENAI_TRANSLATE_CONCURRENCY",
+)
+
+
+def _init_pre_atlas_database(monkeypatch, tmp_path):
+    """Seed a database the way an instance created before Atlas support would."""
+    for key in ATLAS_UPGRADE_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(database, "DB_PATH", tmp_path / "upgrade.sqlite")
+    database.init_db()
+    return database.get_openai_settings()
+
+
+def test_existing_database_upgrades_to_atlas_defaults(monkeypatch, tmp_path):
+    before = _init_pre_atlas_database(monkeypatch, tmp_path)
+    assert before["base_url"] == config.LEGACY_OPENAI_DEFAULT_BASE_URL
+    assert before["api_key"] == ""
+    assert before["model"] == config.LEGACY_OPENAI_DEFAULT_MODEL
+
+    # Upgrading and configuring Atlas must reach the translation path: the
+    # settings rows already exist, so INSERT OR IGNORE alone would keep the old
+    # OpenAI endpoint, empty key and old model.
+    monkeypatch.setenv("ATLASCLOUD_API_KEY", "atlas-upgrade-key")
+    database.init_db()
+
+    after = database.get_openai_settings()
+    assert after["base_url"] == "https://api.atlascloud.ai/v1"
+    assert after["api_key"] == "atlas-upgrade-key"
+    assert after["model"] == "deepseek-ai/deepseek-v4-pro"
+
+
+def test_existing_database_upgrade_keeps_user_customized_openai_settings(monkeypatch, tmp_path):
+    _init_pre_atlas_database(monkeypatch, tmp_path)
+    database.save_openai_settings(
+        base_url="https://self-hosted.example.com/v1",
+        api_key="user-supplied-key",
+        model="user-model",
+    )
+
+    monkeypatch.setenv("ATLASCLOUD_API_KEY", "atlas-upgrade-key")
+    database.init_db()
+
+    after = database.get_openai_settings()
+    assert after["base_url"] == "https://self-hosted.example.com/v1"
+    assert after["api_key"] == "user-supplied-key"
+    assert after["model"] == "user-model"
+
+
+def test_existing_database_upgrade_keeps_custom_endpoint_without_saved_key(monkeypatch, tmp_path):
+    _init_pre_atlas_database(monkeypatch, tmp_path)
+    # A custom endpoint with no stored key is still a deliberate choice.
+    database.set_setting("openai.base_url", "https://proxy.example.com/v1")
+
+    monkeypatch.setenv("ATLASCLOUD_API_KEY", "atlas-upgrade-key")
+    database.init_db()
+
+    after = database.get_openai_settings()
+    assert after["base_url"] == "https://proxy.example.com/v1"
+    assert after["api_key"] == ""
+
+
 def test_openai_defaults_use_atlas_cloud_aliases_when_openai_key_is_absent(monkeypatch):
     for key in (
         "OPENAI_API_KEY",

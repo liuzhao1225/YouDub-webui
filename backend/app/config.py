@@ -126,26 +126,44 @@ def _first_env(*names: str) -> str:
     return ""
 
 
-def openai_defaults() -> dict[str, str]:
+# Values init_db() seeded before Atlas Cloud support existed. A settings row that
+# still holds one of these was never customized by the user, so an upgrade may
+# safely repoint it (see database._migrate_openai_defaults_to_atlascloud).
+LEGACY_OPENAI_DEFAULT_BASE_URL = "https://api.openai.com/v1"
+LEGACY_OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
+
+
+def atlascloud_defaults() -> dict[str, str] | None:
+    """Atlas Cloud defaults when the environment selects it, otherwise None.
+
+    Atlas is only selected when its key is present and no OpenAI key is set, so
+    an explicit OpenAI key always wins.
+    """
     atlas_api_key = _first_env("ATLASCLOUD_API_KEY", "ATLAS_CLOUD_API_KEY")
-    openai_api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if atlas_api_key and not openai_api_key:
-        return {
-            "base_url": _first_env(
-                "ATLASCLOUD_BASE_URL",
-                "ATLAS_CLOUD_BASE_URL",
-            )
-            or "https://api.atlascloud.ai/v1",
-            "api_key": atlas_api_key,
-            "model": _first_env("ATLASCLOUD_MODEL", "ATLAS_CLOUD_MODEL")
-            or "deepseek-ai/deepseek-v4-pro",
-            "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
-        }
+    if not atlas_api_key or os.getenv("OPENAI_API_KEY", "").strip():
+        return None
+    return {
+        "base_url": _first_env(
+            "ATLASCLOUD_BASE_URL",
+            "ATLAS_CLOUD_BASE_URL",
+        )
+        or "https://api.atlascloud.ai/v1",
+        "api_key": atlas_api_key,
+        "model": _first_env("ATLASCLOUD_MODEL", "ATLAS_CLOUD_MODEL")
+        or "deepseek-ai/deepseek-v4-pro",
+        "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
+    }
+
+
+def openai_defaults() -> dict[str, str]:
+    atlas = atlascloud_defaults()
+    if atlas is not None:
+        return atlas
 
     return {
-        "base_url": os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE") or "https://api.openai.com/v1",
-        "api_key": openai_api_key,
-        "model": os.getenv("OPENAI_MODEL") or os.getenv("OPENAI_MODEL_NAME") or "gpt-4o-mini",
+        "base_url": os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE") or LEGACY_OPENAI_DEFAULT_BASE_URL,
+        "api_key": os.getenv("OPENAI_API_KEY", "").strip(),
+        "model": os.getenv("OPENAI_MODEL") or os.getenv("OPENAI_MODEL_NAME") or LEGACY_OPENAI_DEFAULT_MODEL,
         "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
     }
 
