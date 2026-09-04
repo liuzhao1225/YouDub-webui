@@ -1,13 +1,25 @@
 from __future__ import annotations
 
 import json
+import stat
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import numpy as np
+import pytest
 import soundfile as sf
 
+from backend.app import runtime_security
 from backend.app.adapters import voxcpm as voxcpm_mod
+
+
+def test_release_model_clears_cached_model(monkeypatch):
+    model = object()
+    monkeypatch.setattr(voxcpm_mod, "_MODEL", model)
+
+    assert voxcpm_mod.release_model() is True
+    assert voxcpm_mod._MODEL is None
+    assert voxcpm_mod.release_model() is False
 
 
 def _make_synthetic_wav(path: Path, duration_ms: int = 1500) -> Path:
@@ -174,6 +186,312 @@ def test_empty_translation_skips_tts(mock_load, tmp_path):
     result = voxcpm_mod.generate_tts(translation, tmp_path, session)
     assert result == session / "segments" / "tts"
     mock_load.assert_not_called()
+
+
+@patch.object(voxcpm_mod, "_load_model")
+def test_original_mode_copies_original_audio_with_non_empty_caption(mock_load, tmp_path):
+    session = tmp_path / "session"
+    vocals_dir = session / "segments" / "vocals"
+    _make_synthetic_wav(vocals_dir / "0001.wav", duration_ms=600)
+    ref_0002 = _make_synthetic_wav(vocals_dir / "0002.wav", duration_ms=2000)
+    original_vocals = _make_synthetic_wav(
+        session / "media" / "audio_vocals.wav", duration_ms=2500
+    )
+    translation = _write_translation_json(
+        session / "metadata" / "translation.en.json",
+        [
+            {
+                "dst": "（呻吟）",
+                "audio_mode": "original",
+                "start_time": 0,
+                "end_time": 500,
+            },
+            {
+                "dst": "Meaningful sentence.",
+                "audio_mode": "tts",
+                "start_time": 600,
+                "end_time": 1800,
+            },
+        ],
+    )
+
+    mock_tts_model = MagicMock()
+    mock_tts_model.sample_rate = 16000
+    mock_model = MagicMock()
+    mock_model.tts_model = mock_tts_model
+    mock_model.generate.return_value = np.zeros(1600, dtype=np.float32)
+    mock_load.return_value = mock_model
+
+    voxcpm_mod.generate_tts(
+        translation,
+        vocals_dir,
+        session,
+        original_vocals_file=original_vocals,
+    )
+
+    copied = session / "segments" / "tts" / "0001.wav"
+    original_samples, _ = sf.read(original_vocals, dtype="float32")
+    copied_samples, _ = sf.read(copied, dtype="float32")
+    assert sf.info(copied).frames == 8000
+    assert np.allclose(copied_samples, original_samples[:8000], atol=2 / 32768)
+    mock_model.generate.assert_called_once_with(
+        text="Meaningful sentence.",
+        reference_wav_path=str(ref_0002),
+        cfg_value=2.0,
+        inference_timesteps=10,
+    )
+
+
+@patch.object(voxcpm_mod, "_load_model")
+def test_legacy_empty_target_copies_original_audio_without_loading_model(mock_load, tmp_path):
+    session = tmp_path / "session"
+    vocals_dir = session / "segments" / "vocals"
+    _make_synthetic_wav(vocals_dir / "0001.wav", duration_ms=600)
+    original_vocals = _make_synthetic_wav(
+        session / "media" / "audio_vocals.wav", duration_ms=2500
+    )
+    translation = _write_translation_json(
+        session / "metadata" / "translation.en.json",
+        [{"dst": "", "start_time": 100, "end_time": 600}],
+    )
+
+    voxcpm_mod.generate_tts(
+        translation,
+        vocals_dir,
+        session,
+        original_vocals_file=original_vocals,
+    )
+
+    copied = session / "segments" / "tts" / "0001.wav"
+    assert sf.info(copied).frames == 8000
+    mock_load.assert_not_called()
+
+
+def test_original_target_audio_writes_exact_private_range(tmp_path):
+    source = tmp_path / "media" / "audio_vocals.wav"
+    source.parent.mkdir(parents=True)
+    source_samples = np.linspace(-0.75, 0.75, 4000, dtype=np.float32)
+    sf.write(source, source_samples, 8000)
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    voxcpm_mod._write_original_target_audio(
+        output,
+        {"start_time": 125, "end_time": 375},
+        source,
+    )
+
+    copied, sample_rate = sf.read(output, dtype="float32")
+    assert sample_rate == 8000
+    assert len(copied) == 2000
+    assert np.allclose(copied, source_samples[1000:3000], atol=2 / 32768)
+    if runtime_security.POSIX_STRONG_PERMISSIONS:
+        assert stat.S_IMODE(output.stat().st_mode) == 0o600
+        assert stat.S_IMODE(output.parent.stat().st_mode) == 0o700
+
+
+def test_original_target_audio_rejects_partially_out_of_range(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 250, "end_time": 750},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "250-750 ms" in message
+    assert "requested frames 4000-12000" in message
+    assert "8000 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
+def test_original_target_audio_rejects_fully_out_of_range(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 600, "end_time": 750},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "600-750 ms" in message
+    assert "requested frames 9600-12000" in message
+    assert "8000 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
+def test_original_target_audio_accepts_end_at_source_boundary(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    voxcpm_mod._write_original_target_audio(
+        output,
+        {"start_time": 250, "end_time": 500},
+        source,
+    )
+
+    copied, sample_rate = sf.read(output, dtype="float32")
+    source_samples, _ = sf.read(source, dtype="float32")
+    assert sample_rate == 16000
+    assert len(copied) == 4000
+    assert np.allclose(copied, source_samples[4000:8000], atol=2 / 32768)
+
+
+def test_original_target_audio_accepts_sub_millisecond_rounded_tail(tmp_path):
+    source = tmp_path / "media" / "audio_vocals.wav"
+    source.parent.mkdir(parents=True)
+    source_samples = np.linspace(-0.75, 0.75, 44127, dtype=np.float32)
+    sf.write(source, source_samples, 44100)
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    voxcpm_mod._write_original_target_audio(
+        output,
+        {"start_time": 0, "end_time": 1001},
+        source,
+    )
+
+    copied, sample_rate = sf.read(output, dtype="float32")
+    assert sample_rate == 44100
+    assert len(copied) == 44127
+    assert np.allclose(copied, source_samples, atol=2 / 32768)
+
+
+def test_original_target_audio_rejects_one_millisecond_tail_overflow(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 0, "end_time": 501},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "0-501 ms" in message
+    assert "requested frames 0-8016" in message
+    assert "8000 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
+def test_original_target_audio_rejects_quantized_one_millisecond_tail_overflow(
+    tmp_path,
+):
+    source = tmp_path / "media" / "audio_vocals.wav"
+    source.parent.mkdir(parents=True)
+    source_samples = np.linspace(-0.75, 0.75, 22050, dtype=np.float32)
+    sf.write(source, source_samples, 44100)
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+
+    with pytest.raises(ValueError) as exc_info:
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 0, "end_time": 501},
+            source,
+        )
+
+    message = str(exc_info.value)
+    assert "0-501 ms" in message
+    assert "requested frames 0-22094" in message
+    assert "22050 frames (500.000 ms)" in message
+    assert not output.exists()
+
+
+@pytest.mark.skipif(
+    not runtime_security.POSIX_STRONG_PERMISSIONS,
+    reason="symlink-safe private writes require POSIX semantics",
+)
+def test_original_target_audio_rejects_symlink_output(tmp_path):
+    source = _make_synthetic_wav(
+        tmp_path / "media" / "audio_vocals.wav", duration_ms=500
+    )
+    victim = tmp_path / "victim.wav"
+    victim.write_bytes(b"keep-me")
+    output = tmp_path / "segments" / "tts" / "0001.wav"
+    output.parent.mkdir(parents=True)
+    output.symlink_to(victim)
+
+    with pytest.raises(runtime_security.RuntimeSecurityError):
+        voxcpm_mod._write_original_target_audio(
+            output,
+            {"start_time": 0, "end_time": 250},
+            source,
+        )
+
+    assert output.is_symlink()
+    assert victim.read_bytes() == b"keep-me"
+
+
+@patch.object(voxcpm_mod, "_load_model")
+def test_original_segments_are_excluded_from_tts_fallback_references(mock_load, tmp_path):
+    session = tmp_path / "session"
+    vocals_dir = session / "segments" / "vocals"
+    nonverbal_ref = _make_synthetic_wav(vocals_dir / "0001.wav", duration_ms=2000)
+    speech_ref = _make_synthetic_wav(vocals_dir / "0002.wav", duration_ms=600)
+    original_vocals = _make_synthetic_wav(
+        session / "media" / "audio_vocals.wav", duration_ms=2500
+    )
+    translation = _write_translation_json(
+        session / "metadata" / "translation.en.json",
+        [
+            {
+                "dst": "（笑声）",
+                "audio_mode": "original",
+                "start_time": 0,
+                "end_time": 500,
+                "speaker": "1",
+            },
+            {
+                "dst": "Keep speaking.",
+                "audio_mode": "tts",
+                "start_time": 600,
+                "end_time": 1200,
+                "speaker": "1",
+            },
+        ],
+    )
+
+    mock_tts_model = MagicMock()
+    mock_tts_model.sample_rate = 16000
+    mock_cache = {"ref_audio_feat": MagicMock(), "mode": "reference"}
+    mock_tts_model.build_prompt_cache.return_value = mock_cache
+    fake_wav_tensor = MagicMock()
+    fake_wav_tensor.squeeze.return_value.cpu.return_value.numpy.return_value = np.zeros(
+        1600, dtype=np.float32
+    )
+    mock_tts_model.generate_with_prompt_cache.return_value = (
+        fake_wav_tensor,
+        MagicMock(),
+        MagicMock(),
+    )
+    mock_model = MagicMock()
+    mock_model.tts_model = mock_tts_model
+    mock_load.return_value = mock_model
+
+    voxcpm_mod.generate_tts(
+        translation,
+        vocals_dir,
+        session,
+        original_vocals_file=original_vocals,
+    )
+
+    mock_tts_model.build_prompt_cache.assert_called_once_with(
+        reference_wav_path=str(speech_ref)
+    )
+    assert str(nonverbal_ref) not in str(mock_tts_model.mock_calls)
 
 
 @patch.object(voxcpm_mod, "_load_model")

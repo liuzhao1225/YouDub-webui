@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import json
+import logging
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from time import monotonic
 from typing import Callable
 
-from . import database, runtime_security
+from . import database, gpu_memory, runtime_security
 from .config import WORKFOLDER
 from .devices import device_plan_summary
 from .runtime_checks import validate_runtime_device
 from .sources import detect_source
 from .stages import STAGES
 from .youtube import is_local_upload_url
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -75,6 +79,7 @@ class PipelineRunner:
             return
 
         execution_mode = task.get("execution_mode") or database.DEFAULT_EXECUTION_MODE
+        output_mode = task.get("output_mode") or database.DEFAULT_OUTPUT_MODE
         status = task["status"]
         if status not in ("queued", "paused"):
             return
@@ -93,11 +98,20 @@ class PipelineRunner:
             validate_runtime_device()
             self.log(f"Device plan: {device_plan_summary()}")
             for stage in STAGES:
-                if self._stage_status(stage.name) == "succeeded":
+                stage_status = self._stage_status(stage.name)
+                if stage_status == "skipped":
+                    self.log(f"[{stage.name}] Reused skipped stage")
+                    continue
+                if stage_status == "succeeded":
                     database.update_task(self.task_id, current_stage=stage.name)
                     database.update_stage(self.task_id, stage.name, progress=100)
                     self._restore_cached_stage(stage.name, database.get_task(self.task_id))
                     self.log(f"[{stage.name}] Reused cached output")
+                    continue
+                database.update_task(self.task_id, current_stage=stage.name)
+                current_task = database.get_task(self.task_id)
+                if self._should_skip_stage(stage.name, output_mode, current_task):
+                    self._skip_stage(stage.name, output_mode)
                     continue
                 self._run_stage(stage.name)
                 if execution_mode == "manual" and stage != STAGES[-1]:
@@ -113,6 +127,7 @@ class PipelineRunner:
             )
             self.log("Task succeeded")
         except Exception as exc:
+            failure_traceback = traceback.format_exc()
             current = database.get_task(self.task_id)
             failed_stage = current["current_stage"] if current else None
             if failed_stage and failed_stage != "done":
@@ -130,8 +145,11 @@ class PipelineRunner:
                 error_message=str(exc),
                 completed_at=database.now_iso(),
             )
-            self.log("Task failed")
-            self.log(traceback.format_exc())
+            self._log_messages_preserving_error(
+                ("Task failed", failure_traceback),
+                exc,
+                context="task failure",
+            )
 
     def log(self, message: str) -> None:
         _write_log(self.task_id, message)
@@ -159,6 +177,32 @@ class PipelineRunner:
             if entry["name"] == stage:
                 return entry["status"]
         return None
+
+    def _should_skip_stage(self, stage: str, output_mode: str, task: dict | None) -> bool:
+        if output_mode == "subtitles" and stage in {"split_audio", "tts", "merge_audio"}:
+            return True
+        return (
+            output_mode == "subtitles"
+            and stage == "separate"
+            and task is not None
+            and self._uploaded_subtitle_path(task) is not None
+        )
+
+    def _skip_stage(self, stage: str, output_mode: str) -> None:
+        completed_at = database.now_iso()
+        message = f"Skipped for output mode: {output_mode}"
+        database.update_task(self.task_id, current_stage=stage)
+        database.update_stage(
+            self.task_id,
+            stage,
+            status="skipped",
+            progress=100,
+            started_at=completed_at,
+            completed_at=completed_at,
+            last_message=message,
+            error_message=None,
+        )
+        self.log(f"[{stage}] {message}")
 
     def _local_info(self) -> dict | None:
         session = self.artifacts.session
@@ -203,7 +247,25 @@ class PipelineRunner:
             error_message=None,
         )
         self.stage_message(stage, "Started")
-        self._stage_handlers[stage](database.get_task(self.task_id))
+        try:
+            self._stage_handlers[stage](database.get_task(self.task_id))
+        except Exception as stage_exc:
+            try:
+                report = gpu_memory.release_stage_memory(stage)
+            except Exception as release_exc:
+                note = f"GPU memory release also failed after stage {stage}: {release_exc}"
+                stage_exc.add_note(note)
+                self._log_secondary_release_failure(stage, note, release_exc)
+            else:
+                self._log_release_report_preserving_error(report, stage_exc)
+            raise
+
+        try:
+            report = gpu_memory.release_stage_memory(stage)
+        except Exception as release_exc:
+            self._log_release_failure(stage, release_exc)
+            raise
+        self._log_release_report(report)
         database.update_stage(
             self.task_id,
             stage,
@@ -213,6 +275,69 @@ class PipelineRunner:
             last_message="Completed",
         )
         self.log(f"[{stage}] Completed")
+
+    def _log_release_report(self, report: gpu_memory.MemoryReleaseReport | None) -> None:
+        if report is not None:
+            self.log(report.summary())
+
+    def _log_release_report_preserving_error(
+        self,
+        report: gpu_memory.MemoryReleaseReport | None,
+        primary_exc: Exception,
+    ) -> None:
+        if report is None:
+            return
+        self._log_messages_preserving_error(
+            (report.summary(),),
+            primary_exc,
+            context="GPU memory release report",
+        )
+
+    def _log_messages_preserving_error(
+        self,
+        messages: tuple[str, ...],
+        primary_exc: Exception,
+        *,
+        context: str,
+    ) -> None:
+        try:
+            for message in messages:
+                self.log(message)
+        except Exception as log_exc:
+            primary_exc.add_note(f"{context} log also failed: {log_exc}")
+            logger.error(
+                "Task %s failed to write %s log; primary error preserved",
+                self.task_id,
+                context,
+                exc_info=(type(log_exc), log_exc, log_exc.__traceback__),
+            )
+
+    def _log_release_failure(self, scope: str, release_exc: Exception) -> None:
+        try:
+            self.log(f"[{scope}] GPU memory release failed: {release_exc}")
+            self.log("".join(traceback.format_exception(release_exc)))
+        except Exception:
+            logger.exception(
+                "Failed to write GPU memory release error to task %s log",
+                self.task_id,
+            )
+
+    def _log_secondary_release_failure(
+        self,
+        scope: str,
+        note: str,
+        release_exc: Exception,
+    ) -> None:
+        try:
+            self.log(f"[{scope}] {note}; original stage failure preserved")
+            self.log("".join(traceback.format_exception(release_exc)))
+        except Exception:
+            logger.error(
+                "Task %s %s; original stage failure preserved",
+                self.task_id,
+                note,
+                exc_info=(type(release_exc), release_exc, release_exc.__traceback__),
+            )
 
     def _restore_cached_stage(self, stage: str, task: dict | None) -> None:
         if not task:
@@ -269,7 +394,13 @@ class PipelineRunner:
             from .adapters.ytdlp import download_video
 
             proxy_port = database.get_ytdlp_settings()["proxy_port"]
-            session, info = download_video(task["url"], WORKFOLDER, source, proxy_port)
+            session, info = download_video(
+                task["url"],
+                WORKFOLDER,
+                source,
+                proxy_port,
+                task_id=self.task_id,
+            )
         self.artifacts.session = session
         self.artifacts.video_file = session / "media" / "video_source.mp4"
         title = (info.get("title") or "").strip() or None
@@ -410,11 +541,13 @@ class PipelineRunner:
         session = _require(self.artifacts.session, "session")
         translation_file = _require(self.artifacts.translation_file, "translation_file")
         vocals_dir = _require(self.artifacts.vocals_dir, "vocals_dir")
+        vocals_file = _require(self.artifacts.vocals_file, "vocals_file")
         self.artifacts.tts_dir = generate_tts(
             translation_file,
             vocals_dir,
             session,
             progress_callback=lambda progress, message: self.stage_progress("tts", progress, message),
+            original_vocals_file=vocals_file,
         )
         wav_count = len(list(self.artifacts.tts_dir.glob("*.wav")))
         self.stage_message("tts", f"Generated {wav_count} TTS clips -> {self.artifacts.tts_dir}")
@@ -430,18 +563,78 @@ class PipelineRunner:
         self.artifacts.timings_file = timings
         self.stage_message("merge_audio", f"Dubbing -> {dubbing.name}, timings -> {timings.name}")
 
-    def _merge_video(self, _: dict) -> None:
+    def _merge_video(self, task: dict) -> None:
         from .adapters.ffmpeg import merge_video
 
         session = _require(self.artifacts.session, "session")
         video_file = _require(self.artifacts.video_file, "video_file")
-        dubbing_file = _require(self.artifacts.dubbing_file, "dubbing_file")
-        bgm_file = _require(self.artifacts.bgm_file, "bgm_file")
-        timings_file = _require(self.artifacts.timings_file, "timings_file")
-        self.artifacts.final_video = merge_video(video_file, dubbing_file, bgm_file, timings_file, session)
+        output_mode = task.get("output_mode") or database.DEFAULT_OUTPUT_MODE
+        if output_mode == "subtitles":
+            dubbing_file = None
+            bgm_file = None
+            subtitle_source = _require(self.artifacts.translation_file, "translation_file")
+        else:
+            dubbing_file = _require(self.artifacts.dubbing_file, "dubbing_file")
+            bgm_file = _require(self.artifacts.bgm_file, "bgm_file")
+            subtitle_source = _require(self.artifacts.timings_file, "timings_file")
+        self.artifacts.final_video = merge_video(
+            video_file,
+            dubbing_file,
+            bgm_file,
+            subtitle_source,
+            session,
+            output_mode=output_mode,
+        )
         size_mb = self.artifacts.final_video.stat().st_size / (1024 * 1024)
         self.stage_message("merge_video", f"Final video: {self.artifacts.final_video} ({size_mb:.1f} MB)")
 
 
 def run_task(task_id: str) -> None:
-    PipelineRunner(task_id).run()
+    runner = PipelineRunner(task_id)
+    try:
+        runner.run()
+    except Exception as task_exc:
+        try:
+            report = gpu_memory.release_task_memory()
+        except Exception as release_exc:
+            note = f"GPU memory release also failed in task finally: {release_exc}"
+            task_exc.add_note(note)
+            runner._log_secondary_release_failure("task", note, release_exc)
+        else:
+            runner._log_release_report_preserving_error(report, task_exc)
+        raise
+
+    try:
+        report = gpu_memory.release_task_memory()
+    except Exception as release_exc:
+        try:
+            task = database.get_task(task_id)
+        except Exception as task_read_exc:
+            release_exc.add_note(f"Failed to read task status after release failure: {task_read_exc}")
+            runner._log_release_failure("task", release_exc)
+            raise
+        if task is not None and task.get("status") == "failed":
+            note = f"GPU memory release also failed in task finally: {release_exc}"
+            runner._log_secondary_release_failure("task", note, release_exc)
+            return
+        if task is not None:
+            try:
+                database.update_task(
+                    task_id,
+                    status="failed",
+                    error_message=str(release_exc).strip() or type(release_exc).__name__,
+                    completed_at=database.now_iso(),
+                )
+            except Exception as task_update_exc:
+                release_exc.add_note(
+                    f"Failed to mark task failed after task-final release error: {task_update_exc}"
+                )
+        runner._log_release_failure("task", release_exc)
+        raise
+
+    task = database.get_task(task_id)
+    if task is not None and task.get("status") == "failed":
+        failure = RuntimeError(str(task.get("error_message") or "pipeline failed"))
+        runner._log_release_report_preserving_error(report, failure)
+    else:
+        runner._log_release_report(report)

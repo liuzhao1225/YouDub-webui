@@ -4,6 +4,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from backend.app.adapters import ffmpeg
 
 
@@ -82,6 +84,7 @@ def test_merge_video_burns_portrait_subtitles(monkeypatch, tmp_path):
         cwd_values.append(kwargs.get("cwd"))
         if cmd[0] == "ffprobe":
             return subprocess.CompletedProcess(cmd, 0, stdout="720,1280\n", stderr="")
+        Path(cmd[-1]).write_bytes(b"media")
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
@@ -135,6 +138,7 @@ def test_merge_video_uses_absolute_media_paths_when_cwd_is_session(monkeypatch, 
         cwd_values.append(kwargs.get("cwd"))
         if cmd[0] == "ffprobe":
             return subprocess.CompletedProcess(cmd, 0, stdout="720,1280\n", stderr="")
+        Path(cmd[-1]).write_bytes(b"media")
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
 
     monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
@@ -158,12 +162,199 @@ def test_merge_video_uses_absolute_media_paths_when_cwd_is_session(monkeypatch, 
     assert cwd_values[-1] == session.resolve()
 
 
+def test_merge_video_subtitles_transcodes_original_audio_to_aac(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    translation = metadata_dir / "translation.zh.json"
+    translation.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {"start_time": 0, "end_time": 1000, "zh": "你好"}
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        if cmd[0] == "ffprobe":
+            return subprocess.CompletedProcess(cmd, 0, stdout="1920,1080\n", stderr="")
+        Path(cmd[-1]).write_bytes(b"media")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        None,
+        None,
+        translation,
+        session,
+        output_mode="subtitles",
+    )
+
+    assert len(commands) == 2
+    final_command = commands[-1]
+    assert final_command.count("-i") == 1
+    assert "-vf" in final_command
+    assert final_command[final_command.index("-map", final_command.index("-map") + 1) + 1] == "0:a?"
+    assert final_command[final_command.index("-c:a") + 1] == "aac"
+    assert "-shortest" not in final_command
+
+
+def test_merge_video_dubbing_omits_hard_subtitles(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    timings = metadata_dir / "timings.json"
+    timings.write_text('{"translation": []}', encoding="utf-8")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        Path(cmd[-1]).write_bytes(b"media")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        tmp_path / "dubbing.wav",
+        tmp_path / "bgm.wav",
+        timings,
+        session,
+        output_mode="dubbing",
+    )
+
+    assert len(commands) == 2
+    final_command = commands[-1]
+    assert "-vf" not in final_command
+    assert not (metadata_dir / "subtitles.zh.srt").exists()
+    assert final_command[final_command.index("-c:a") + 1] == "aac"
+    assert "-shortest" in final_command
+
+
+def test_merge_video_replaces_corrupt_final_with_fresh_ffmpeg_output(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    media_dir = session / "media"
+    metadata_dir.mkdir(parents=True)
+    media_dir.mkdir()
+    translation = metadata_dir / "translation.zh.json"
+    translation.write_text('{"translation": []}', encoding="utf-8")
+    final_video = media_dir / "video_final.mp4"
+    final_video.write_bytes(b"corrupt")
+    commands: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        if cmd[0] == "ffprobe":
+            return subprocess.CompletedProcess(cmd, 0, stdout="1920,1080\n", stderr="")
+        Path(cmd[-1]).write_bytes(b"fresh mp4")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    result = ffmpeg.merge_video(
+        tmp_path / "video.mp4",
+        None,
+        None,
+        translation,
+        session,
+        output_mode="subtitles",
+    )
+
+    ffmpeg_output = Path(commands[-1][-1])
+    assert result == final_video
+    assert final_video.read_bytes() == b"fresh mp4"
+    assert ffmpeg_output != final_video
+    assert ffmpeg_output.parent == media_dir.resolve()
+    assert ffmpeg_output.suffix == ".mp4"
+    assert list(media_dir.glob(".video_final.*.mp4")) == []
+
+
+def test_merge_video_failure_cleans_temporary_output_and_preserves_visible_failure(monkeypatch, tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    media_dir = session / "media"
+    metadata_dir.mkdir(parents=True)
+    media_dir.mkdir()
+    translation = metadata_dir / "translation.zh.json"
+    translation.write_text('{"translation": []}', encoding="utf-8")
+    final_video = media_dir / "video_final.mp4"
+    final_video.write_bytes(b"corrupt")
+
+    def fake_run(cmd, **kwargs):
+        if cmd[0] == "ffprobe":
+            return subprocess.CompletedProcess(cmd, 0, stdout="1920,1080\n", stderr="")
+        Path(cmd[-1]).write_bytes(b"partial")
+        raise subprocess.CalledProcessError(1, cmd)
+
+    monkeypatch.setattr(ffmpeg.subprocess, "run", fake_run)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        ffmpeg.merge_video(
+            tmp_path / "video.mp4",
+            None,
+            None,
+            translation,
+            session,
+            output_mode="subtitles",
+        )
+
+    assert final_video.read_bytes() == b"corrupt"
+    assert list(media_dir.glob(".video_final.*.mp4")) == []
+
+
+def test_merge_video_rejects_unknown_output_mode(tmp_path):
+    with pytest.raises(ValueError, match="output_mode must be one of"):
+        ffmpeg.merge_video(
+            tmp_path / "video.mp4",
+            None,
+            None,
+            tmp_path / "timings.json",
+            tmp_path / "session",
+            output_mode="captions",
+        )
+
+
 def test_split_subtitle_text_breaks_on_punctuation_and_keeps_protected():
     out = ffmpeg.split_subtitle_text("我们今天讨论一下宇宙的边界，那是一个神秘话题；不过别担心，我会详细解释。")
     assert len(out) >= 3
     assert all(len(s) >= 2 for s in out)
     protected = ffmpeg.split_subtitle_text("他说《三体，黑暗森林》是经典，必读。")
     assert any("《三体，黑暗森林》" in s for s in protected)
+
+
+def test_write_srt_keeps_caption_for_original_audio_mode(tmp_path):
+    session = tmp_path / "session"
+    metadata_dir = session / "metadata"
+    metadata_dir.mkdir(parents=True)
+    timings = metadata_dir / "timings.json"
+    timings.write_text(
+        json.dumps(
+            {
+                "translation": [
+                    {
+                        "start_time": 0,
+                        "end_time": 800,
+                        "dst": "（笑声）",
+                        "dst_lang": "zh",
+                        "audio_mode": "original",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    srt = ffmpeg.write_srt(timings, session)
+
+    assert "（笑声）" in srt.read_text(encoding="utf-8")
 
 
 def test_write_srt_splits_long_sentence_into_multiple_entries(tmp_path):

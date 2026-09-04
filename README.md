@@ -10,15 +10,15 @@
 
 一个被真实创作者工作流验证过的开源视频本地化工具。
 
-YouDub WebUI 可以把单个 YouTube 或 Bilibili 视频自动转换成目标语言配音版：下载视频、分离人声与背景音、识别字幕、翻译、生成配音、混音、压制字幕，最后输出可在线播放和下载的新视频。
+YouDub WebUI 可以把单个 YouTube、Bilibili 或本地视频转换成目标语言版本：导入视频、识别并翻译内容，再按任务选择输出保留原音的硬字幕视频、无硬字幕的配音视频，或同时包含硬字幕与配音的视频。配音模式还会分离人声与背景音、生成配音并完成混音，最终视频可在网页中播放和下载。
 
-核心成熟场景是 **YouTube 英文 -> 中文配音**；同时已经支持 **Bilibili 中文 -> 英文配音**。
+核心成熟场景是 **YouTube 英文 -> 中文配音**；同时已经支持 **Bilibili 中文 -> 英文配音**，并接入本地视频 **日文 -> 中文配音**。日译中方向已通过自动化参数链路和回归测试，尚未使用真实日语媒体完成模型效果验收。
 
-English README: [README.en.md](README.en.md)
+English README: [README.en.md](README.en.md) · 作者：[刘朝 Zhao Liu](https://liuzhao1225.github.io/)（GitHub [@liuzhao1225](https://github.com/liuzhao1225)，Bilibili [黑纹白斑马](https://space.bilibili.com/1263732318)）
 
 ## 真实生产案例
 
-**作者的 B 站频道**：[黑纹白斑马](https://space.bilibili.com/1263732318)（粉丝 80 万+，视频 2 万+）的全站作品均使用 YouDub WebUI 自动翻译配音，覆盖科技、游戏、科普、动物、历史等题材。
+**作者的 B 站频道**：[黑纹白斑马](https://space.bilibili.com/1263732318)（粉丝 100 万+，视频 2 万+，累计播放 6.8 亿+）的全站作品均使用 YouDub WebUI 自动翻译配音，覆盖科技、游戏、科普、动物、历史等题材。
 
 这不是一个只跑过 demo 的玩具项目。YouDub WebUI 的目标很明确：让个人创作者、开发者和小团队能够在本地掌控一条完整的视频本地化流水线，并且保留足够简单的架构，方便理解、调试和二次开发。
 
@@ -102,7 +102,16 @@ winget install Gyan.FFmpeg.Shared
 winget install OpenJS.NodeJS.LTS
 ```
 
-Windows 上建议安装 FFmpeg 的 shared/full-shared 版本；安装后请确认 `ffmpeg -version` 和 `ffprobe -version` 可用，并且 FFmpeg 的 DLL 目录在 `PATH` 中，否则音频分离阶段可能无法加载 TorchCodec/FFmpeg 运行库。
+Windows 必须安装 FFmpeg 的 shared/full-shared 版本。进入该版本的 `bin` 目录后执行以下检查；`av*.dll` 至少应列出 `avcodec-*.dll`、`avformat-*.dll` 和 `avutil-*.dll`。只有 `ffmpeg.exe`、`ffplay.exe`、`ffprobe.exe` 且没有 `av*.dll` 的目录属于静态构建，TorchCodec 无法使用它提供运行库。
+
+```powershell
+$ffmpegBin = "C:\path\to\ffmpeg\bin"
+Get-ChildItem "$ffmpegBin\av*.dll"
+& "$ffmpegBin\ffmpeg.exe" -version
+& "$ffmpegBin\ffprobe.exe" -version
+```
+
+记下通过检查的 `bin` 目录；在第 4 步创建 `.env` 后填入该实际路径。Python 3.8+ 的 DLL 加载规则需要应用显式注册搜索目录；单独修改 `PATH` 无法保证 TorchCodec 找到这些 DLL。YouDub 启动时会读取 `FFMPEG_PATH`，检查同目录的 `av*.dll`，并通过 `os.add_dll_directory()` 注册该目录。配置错误会在启动阶段直接给出原因。
 
 ```bash
 # Ubuntu / Debian / WSL2
@@ -144,7 +153,9 @@ py -3.12 -m venv .venv
 前端依赖：
 
 ```powershell
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+Push-Location apps/web
+npm ci --registry=https://registry.npmmirror.com
+Pop-Location
 ```
 
 #### macOS / Linux / WSL2
@@ -160,7 +171,7 @@ python3.12 -m venv .venv
 前端依赖：
 
 ```bash
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
 ```
 
 如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
@@ -183,6 +194,14 @@ Linux / WSL2：
 
 `requirements-pytorch-cu128.txt` 默认使用 PyTorch 的 `cu128` wheel 源。不同 NVIDIA 驱动或 CUDA 环境可能需要不同的 PyTorch CUDA 版本，请按 [PyTorch 官方安装页](https://pytorch.org/get-started/locally/) 选择匹配命令。CPU 用户和 macOS 用户不需要执行这一步；如果没有安装 CUDA 版 PyTorch，请在 `.env` 中设置 `DEVICE=cpu`。
 
+Windows 上 VoxCPM 的 `torch.compile` 加速需要 Triton。如果启动时出现 `Warning: torch.compile disabled - triton is not installed`，VoxCPM 仍可正常工作，但 TTS 会使用较慢的未编译路径（[Issue #127 的 Windows 环境实测约慢 2 倍](https://github.com/liuzhao1225/YouDub-webui/issues/127)）。Windows CUDA 用户可选择安装社区维护的 [`triton-windows`](https://github.com/triton-lang/triton-windows)：
+
+```powershell
+.\.venv\Scripts\pip.exe install -U triton-windows
+```
+
+`triton-windows` 未纳入默认依赖。安装前请按其项目文档选择与当前 PyTorch 版本匹配的 Triton 版本。
+
 安装后可以验证 CUDA 是否真的可用：
 
 ```bash
@@ -204,6 +223,13 @@ cp env.txt.example .env
 ```
 
 应用运行时读取 `.env`。不要提交 API key、Cookie、下载视频或生成产物。
+
+Windows 用户把第 1 步确认过的 shared/full-shared FFmpeg 实际路径写入刚创建的 `.env`：
+
+```dotenv
+FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
+FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
+```
 
 后端默认强制认证；`YOUDUB_AUTH_PASSWORD_HASH` 未配置时会拒绝启动。请在本机交互式输入访问密码并生成 Argon2id 哈希，命令不会把明文密码写入 shell 历史：
 
@@ -233,6 +259,9 @@ macOS / Linux / WSL2：
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
 | `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
+| `DEMUCS_CHUNK_SECONDS` | 人声分离的分块长度，必须为正整数，默认 `600`（10 分钟）。内存峰值由单个“分块 + 10 秒上下文”的推理和两份 10 秒 overlap tail 决定；每块写出后，完整输入与输出张量会在下一块推理前释放，跨块只保留两份 tail，内存不会随视频总长或分块数累积。默认窗口约 2.8 GiB 仅作参考，实际峰值还取决于模型、`shifts`、设备和底层库。首音轨以 float32 解码：mono 复制为双声道，双声道及以上只取前两个声道。临时输入使用 FFmpeg WAV `-rf64 auto`，超过 RIFF 上限时自动切换 RF64；两份 float32 stem 和两份最终 PCM16 输出固定使用 RF64，消除普通 WAV 的 4 GiB 边界。临时字节数约为“时长秒 × 采样率 × 声道数 × (4 + 4 × 2)”；按 44.1 kHz 双声道估算为 3.55 GiB/小时，写入最终输出时还需 1.18 GiB/小时，建议至少预留 4.73 GiB/小时。临时文件在成功或失败后都会清理。 |
+| `RELEASE_GPU_MEMORY_AFTER_STAGE` | 默认 `true`。Demucs、Whisper、VoxCPM 阶段结束后释放模型引用和可用的 CUDA/MPS 缓存，并在任务结束时再次清理。单线程流水线在同一任务中不会再次使用这些模型；设为 `false` 可保留跨任务模型缓存、减少重新加载耗时，同时会增加显存持续占用和 OOM 风险。接受 `1/0`、`true/false`、`yes/no`、`on/off`。 |
+| `FFMPEG_PATH` / `FFPROBE_PATH` | 可选的媒体程序完整路径；Windows 上使用 TorchCodec 时，`FFMPEG_PATH` 必须指向 shared/full-shared 构建。 |
 | `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
 | `OPENAI_API_KEY` | 翻译阶段使用的 API key。 |
 | `OPENAI_MODEL` | 翻译阶段使用的 Chat Completions 模型。 |
@@ -245,6 +274,8 @@ macOS / Linux / WSL2：
 | `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 的 ModelScope 模型名或本地模型目录；VoxCPM 当前由上游包内部选择 CUDA/MPS/CPU，任务日志会显示为 `voxcpm=library-auto`。 |
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 推理参数。 |
 | `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | 显式允许的跨源前端来源；不能使用 `*`。同源 Next 代理不需要配置。 |
+
+Demucs 分离结果采用同目录 pending 发布：handler 每次实际执行时先删除旧 final 和遗留 pending，再完整生成 `.audio_vocals.pending.wav` 与 `.audio_bgm.pending.wav`；两份文件都关闭写完后，才分别原子替换 `audio_vocals.wav` 与 `audio_bgm.wav`。普通异常会删除 pending 和已经发布的单份 final。SIGKILL 或掉电可能留下 pending 或单份 final，failed/running stage 再次恢复时会先清理并完整重算。真正 succeeded 的 stage 由 PipelineRunner 根据 stage 元数据恢复，不会再次调用 handler。
 
 默认 CORS 只允许 `localhost`、`127.0.0.1` 和 `::1` 的 `:3000`。推荐始终使用 Next.js 同源 `/api` 代理；如果浏览器确实直连不同 origin 的后端，必须把完整、可信的 origin 追加到 `CORS_ALLOW_ORIGINS`，例如 `https://youdub.example.com`。CORS 不是认证或 CSRF 防护，后端仍会校验 HttpOnly 会话 Cookie 和每会话 CSRF token。
 
@@ -319,9 +350,10 @@ Windows 的 `chmod`/`umask` 不等价于 NTFS ACL。Windows 部署需由管理�
 6. 点击 `Get models` 拉取模型列表，或手动输入模型名。
 7. 按 API 提供商额度调整 `Translate concurrency`。
 8. 回到首页，提交 YouTube URL、Bilibili URL，或上传本地视频。
-   - 本地视频可额外上传一份已翻译好的 `.srt` 字幕；上传后会跳过 Whisper 识别和 OpenAI 翻译，直接用这份字幕生成配音与压制字幕。
-   - 翻译方向决定字幕目标语言，例如选择“英文 -> 中文”时，上传的 SRT 会被视为中文字幕。
-8. 进入任务详情页查看阶段进度、运行日志和最终视频。
+   - 在“输出内容”中选择“硬字幕（保留原音）”“配音（无硬字幕）”或“硬字幕和配音”。
+   - 本地视频可额外上传一份已翻译好的 `.srt` 字幕；上传后会跳过 Whisper 识别和 OpenAI 翻译，再按所选输出内容使用这份字幕。
+   - 本地视频支持“英文 -> 中文”“日文 -> 中文”和“中文 -> 英文”。翻译方向也决定可选字幕的目标语言，例如选择“日文 -> 中文”时，上传的 SRT 会被视为中文字幕。
+9. 进入任务详情页查看阶段进度、运行日志和最终视频。
 
 API key 和 Cookie 会在页面中脱敏显示，后端不会把 Cookie 明文返回给前端。
 
@@ -345,18 +377,20 @@ YouTube / Bilibili URL
   -> Whisper 识别语音并输出词级时间戳
   -> 句子与时间范围整理
   -> OpenAI 兼容 API 预处理全文并逐句并发翻译
-  -> 按句切分原始人声作为参考音频
-  -> VoxCPM2 生成目标语言配音
-  -> 对齐配音时长并与背景音混音
-  -> FFmpeg 压制字幕并输出最终 mp4
+  -> 按输出内容分支：
+     - subtitles：保留原音并压制硬字幕
+     - dubbing：生成并混合目标语言配音，不压制硬字幕
+     - both：生成并混合配音，同时压制硬字幕
+  -> FFmpeg 输出最终 mp4
 ```
 
-本地视频上传使用同一条后半段流水线。若同时上传已翻译 `.srt` 字幕，系统会从 SRT 生成内部字幕时间轴，跳过 Whisper 与 OpenAI 翻译阶段，然后继续切分参考音频、生成配音、混音并压制字幕。v1 仅支持本地视频搭配 `.srt`，不支持 URL 任务附加字幕。
+本地视频上传使用同一条后半段流水线，支持英文或日文识别后翻译为中文，以及中文识别后翻译为英文。日译中方向会把 `ja` 传给 Whisper，并使用专用日译中提示词。若同时上传已翻译 `.srt` 字幕，系统会从 SRT 生成内部字幕时间轴，跳过 Whisper 与 OpenAI 翻译阶段，再按所选输出内容继续处理。v1 仅支持本地视频搭配 `.srt`，不支持 URL 任务附加字幕。
 
 ## 功能亮点
 
 - **真实可用的端到端流程**：从 URL 到最终视频，不需要手动拆分音频、整理字幕或压制视频。
 - **双来源入口**：YouTube 英文 -> 中文是核心成熟场景；Bilibili 中文 -> 英文也已接入同一条任务流水线。
+- **三种输出模式**：可选择保留原音的硬字幕视频、无硬字幕的配音视频，或同时包含两者的视频。
 - **本地优先**：SQLite、Cookie、日志、中间产物和最终视频都保存在本机目录中。
 - **可观察任务进度**：任务历史、阶段状态、阶段耗时、运行日志和错误信息都可以在页面里查看。
 - **失败可恢复**：失败任务可以从失败阶段继续执行，已成功阶段会复用缓存产物。

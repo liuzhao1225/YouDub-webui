@@ -12,6 +12,13 @@ from ..devices import resolve_device
 _MODEL = None
 
 
+def release_model() -> bool:
+    global _MODEL
+    was_loaded = _MODEL is not None
+    _MODEL = None
+    return was_loaded
+
+
 def _whisper_cache_file(whisper, name: str, download_root: str | None) -> Path | None:
     if not download_root:
         return None

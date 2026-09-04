@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import uuid
 from pathlib import Path
 
+from ..audio_mode import target_text
 from ..config import ffmpeg_binary, ffprobe_binary
 
 SUBTITLE_PUNCTUATION = {"，", ",", "；", ";", "：", ":", "。", "?", "？", "!", "！", "、"}
@@ -159,10 +161,6 @@ def _dst_lang(translation: list[dict]) -> str:
     return "zh"
 
 
-def _dst_text(item: dict) -> str:
-    return item.get("dst") or item.get("zh") or ""
-
-
 def write_srt(translation_file: Path, session: Path) -> Path:
     data = json.loads(translation_file.read_text(encoding="utf-8"))
     translation = data["translation"]
@@ -174,7 +172,8 @@ def write_srt(translation_file: Path, session: Path) -> Path:
         start, end = _segment_times(item)
         if end <= start:
             continue
-        fragments = split_subtitle_text(_dst_text(item))
+        text = target_text(item)
+        fragments = split_subtitle_text(text if isinstance(text, str) else "")
         if not fragments:
             continue
         cursor = start
@@ -247,69 +246,80 @@ def subtitle_filter(video_file: Path, subtitle_file: Path, session: Path) -> str
     return f"subtitles=filename='{sub_path}':force_style='{style}'"
 
 
-def merge_video(video_file: Path, dubbing_file: Path, bgm_file: Path, timings_file: Path, session: Path) -> Path:
+def merge_video(
+    video_file: Path,
+    dubbing_file: Path | None,
+    bgm_file: Path | None,
+    timings_file: Path,
+    session: Path,
+    *,
+    output_mode: str = "both",
+) -> Path:
+    if output_mode not in {"subtitles", "dubbing", "both"}:
+        raise ValueError("output_mode must be one of: subtitles, dubbing, both")
+
+    include_dubbing = output_mode in {"dubbing", "both"}
+    include_subtitles = output_mode in {"subtitles", "both"}
+    if include_dubbing and (dubbing_file is None or bgm_file is None):
+        raise ValueError("Dubbing and background audio are required for this output mode.")
+
     tmp_dir = session / "tmp"
     media_dir = session / "media"
     tmp_dir.mkdir(parents=True, exist_ok=True)
     media_dir.mkdir(parents=True, exist_ok=True)
     final_video = media_dir / "video_final.mp4"
-    if final_video.exists():
-        return final_video
 
     session_dir = session.resolve()
     video_input = video_file.resolve()
-    dubbing_input = dubbing_file.resolve()
-    bgm_input = bgm_file.resolve()
-    subtitles = write_srt(timings_file, session)
-    mixed_audio = tmp_dir / "audio_mixed.m4a"
-    mixed_audio_output = mixed_audio.resolve()
-    final_video_output = final_video.resolve()
-    subprocess.run(
-        [
-            ffmpeg_binary(),
-            "-y",
-            "-i",
-            str(dubbing_input),
-            "-i",
-            str(bgm_input),
-            "-filter_complex",
-            "[0:a]volume=1.0[a0];[1:a]volume=0.30[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0[aout]",
-            "-map",
-            "[aout]",
-            "-c:a",
-            "aac",
-            str(mixed_audio_output),
-        ],
-        check=True,
-    )
-    subprocess.run(
-        [
-            ffmpeg_binary(),
-            "-y",
-            "-i",
-            str(video_input),
-            "-i",
-            str(mixed_audio_output),
-            "-vf",
-            subtitle_filter(video_input, subtitles, session_dir),
-            "-map",
-            "0:v:0",
-            "-map",
-            "1:a:0",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "fast",
-            "-crf",
-            "23",
-            "-c:a",
-            "aac",
-            "-movflags",
-            "+faststart",
-            "-shortest",
-            str(final_video_output),
-        ],
-        check=True,
-        cwd=session_dir,
-    )
-    return final_video
+
+    mixed_audio_output: Path | None = None
+    if include_dubbing:
+        assert dubbing_file is not None
+        assert bgm_file is not None
+        dubbing_input = dubbing_file.resolve()
+        bgm_input = bgm_file.resolve()
+        mixed_audio_output = (tmp_dir / "audio_mixed.m4a").resolve()
+        subprocess.run(
+            [
+                ffmpeg_binary(),
+                "-y",
+                "-i",
+                str(dubbing_input),
+                "-i",
+                str(bgm_input),
+                "-filter_complex",
+                "[0:a]volume=1.0[a0];[1:a]volume=0.30[a1];[a0][a1]amix=inputs=2:duration=longest:normalize=0[aout]",
+                "-map",
+                "[aout]",
+                "-c:a",
+                "aac",
+                str(mixed_audio_output),
+            ],
+            check=True,
+        )
+
+    temporary_video = media_dir / f".video_final.{uuid.uuid4().hex}.mp4"
+    try:
+        command = [ffmpeg_binary(), "-y", "-i", str(video_input)]
+        if mixed_audio_output is not None:
+            command.extend(["-i", str(mixed_audio_output)])
+        if include_subtitles:
+            subtitles = write_srt(timings_file, session)
+            command.extend(["-vf", subtitle_filter(video_input, subtitles, session_dir)])
+        command.extend(["-map", "0:v:0"])
+        if mixed_audio_output is not None:
+            command.extend(["-map", "1:a:0"])
+        else:
+            command.extend(["-map", "0:a?"])
+        command.extend(["-c:v", "libx264", "-preset", "fast", "-crf", "23"])
+        command.extend(["-c:a", "aac"])
+        command.extend(["-movflags", "+faststart"])
+        if mixed_audio_output is not None:
+            command.append("-shortest")
+        command.append(str(temporary_video.resolve()))
+        subprocess.run(command, check=True, cwd=session_dir)
+        temporary_video.replace(final_video)
+        return final_video
+    except Exception:
+        temporary_video.unlink(missing_ok=True)
+        raise

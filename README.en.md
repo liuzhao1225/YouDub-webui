@@ -10,15 +10,15 @@
 
 An open-source video localization tool proven in a real creator workflow.
 
-YouDub WebUI turns a single YouTube or Bilibili video into a dubbed video in the target language. It downloads the source video, separates vocals from background audio, transcribes speech, translates the transcript, generates new voiceover, mixes audio, burns subtitles, and produces a final video that can be played or downloaded from the web UI.
+YouDub WebUI turns a YouTube, Bilibili, or local video into a target-language version. It imports, transcribes, and translates the source, then produces hard subtitles with the original audio, dubbing without hard subtitles, or both together. Dubbing modes also separate vocals and background audio, generate voiceover, and mix the result into a final video that can be played or downloaded from the web UI.
 
-The most mature path is **YouTube English -> Chinese dubbing**. The app also supports **Bilibili Chinese -> English dubbing** through the same task pipeline.
+The most mature path is **YouTube English -> Chinese dubbing**. The app also supports **Bilibili Chinese -> English dubbing** and includes **local-video Japanese -> Chinese dubbing** in the same task pipeline. The Japanese path has automated parameter-flow and regression coverage, but has not yet completed model-quality acceptance with real Japanese media.
 
-中文 README: [README.md](README.md)
+中文 README: [README.md](README.md) · Creator: [Zhao Liu](https://liuzhao1225.github.io/en/) (GitHub [@liuzhao1225](https://github.com/liuzhao1225), Bilibili [黑纹白斑马](https://space.bilibili.com/1263732318))
 
 ## Proven Creator Workflow
 
-**Author's Bilibili channel**: [黑纹白斑马](https://space.bilibili.com/1263732318) — 800K+ followers, 20K+ videos. The whole channel is translated and dubbed with YouDub WebUI, covering technology, games, science, animals, history, and more.
+**Author's Bilibili channel**: [黑纹白斑马](https://space.bilibili.com/1263732318) — 1M+ followers, 20K+ videos, and 680M+ total views. The whole channel is translated and dubbed with YouDub WebUI, covering technology, games, science, animals, history, and more.
 
 This is not just a demo runner. YouDub WebUI is built for creators, developers, and small teams who want to own a complete local video-localization pipeline while keeping the system simple enough to inspect, debug, and modify.
 
@@ -102,7 +102,16 @@ winget install Gyan.FFmpeg.Shared
 winget install OpenJS.NodeJS.LTS
 ```
 
-On Windows, install a shared/full-shared FFmpeg build. After installation, confirm that `ffmpeg -version` and `ffprobe -version` work and that the FFmpeg DLL directory is available on `PATH`; otherwise the audio separation stage may fail to load the TorchCodec/FFmpeg runtime libraries.
+Windows requires a shared/full-shared FFmpeg build. Run the following checks from that build's `bin` directory. The `av*.dll` command should list at least `avcodec-*.dll`, `avformat-*.dll`, and `avutil-*.dll`. A directory containing only `ffmpeg.exe`, `ffplay.exe`, and `ffprobe.exe` is a static build and cannot provide TorchCodec's runtime libraries.
+
+```powershell
+$ffmpegBin = "C:\path\to\ffmpeg\bin"
+Get-ChildItem "$ffmpegBin\av*.dll"
+& "$ffmpegBin\ffmpeg.exe" -version
+& "$ffmpegBin\ffprobe.exe" -version
+```
+
+Keep the verified `bin` directory handy and add its actual path after creating `.env` in step 4. Python 3.8+ requires applications to register DLL search directories explicitly; changing `PATH` alone does not guarantee that TorchCodec can find these DLLs. At startup, YouDub reads `FFMPEG_PATH`, checks for `av*.dll` in the same directory, and registers it with `os.add_dll_directory()`. Configuration errors are reported immediately during startup.
 
 ```bash
 # Ubuntu / Debian / WSL2
@@ -144,7 +153,9 @@ py -3.12 -m venv .venv
 Frontend:
 
 ```powershell
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+Push-Location apps/web
+npm ci --registry=https://registry.npmmirror.com
+Pop-Location
 ```
 
 #### macOS / Linux / WSL2
@@ -160,7 +171,7 @@ python3.12 -m venv .venv
 Frontend:
 
 ```bash
-npm --prefix apps/web install --registry=https://registry.npmmirror.com
+(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
 ```
 
 Use Aliyun first. If a specific Python package is temporarily unavailable there, retry only that package with the Tsinghua mirror instead of mixing multiple mirrors in one resolver command.
@@ -205,6 +216,13 @@ cp env.txt.example .env
 
 The application reads `.env` at runtime. Do not commit API keys, cookies, downloaded media, or generated artifacts.
 
+On Windows, add the shared/full-shared FFmpeg paths verified in step 1 to the `.env` file you just created:
+
+```dotenv
+FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
+FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
+```
+
 Authentication is mandatory by default, and the backend refuses to start without `YOUDUB_AUTH_PASSWORD_HASH`. Generate an Argon2id hash locally with an interactive password prompt; these commands do not put the plaintext password in shell history.
 
 Windows PowerShell:
@@ -233,6 +251,9 @@ Common environment variables:
 | `YOUDUB_AUTH_COOKIE_SAMESITE` | Session Cookie SameSite policy: `lax` or `strict`; `strict` is recommended with the same-origin proxy. |
 | `DEVICE` | Model runtime device, for example `auto`, `cuda`, `cuda:0`, `mps`, `mps:0`, or `cpu`; `auto` selects CUDA, then MPS, then CPU. |
 | `DEMUCS_DEVICE` / `WHISPER_DEVICE` | Optional component-level device overrides. Empty values use `DEVICE`. Whisper falls back to CPU when MPS is selected because word timestamp alignment depends on float64 DTW, which MPS does not support. |
+| `DEMUCS_CHUNK_SECONDS` | Source-separation window length. It must be a positive integer and defaults to `600` (10 minutes). Peak memory is bounded by one “window + 10 seconds of context” inference and two 10-second overlap tails. After each window is written, full input and output tensors are released before the next inference; only the two tails cross the window boundary, so memory does not accumulate with video length or window count. About 2.8 GiB for the default window is a reference estimate; the model, `shifts`, device, and backend libraries affect the actual peak. The first audio stream is decoded as float32: mono is duplicated to stereo, while inputs with two or more channels keep only the first two channels. The temporary input uses FFmpeg WAV `-rf64 auto`, which switches to RF64 beyond the RIFF limit. Both float32 stems and both final PCM16 outputs always use RF64, removing the classic WAV 4 GiB boundary. Temporary bytes are approximately “duration seconds × sample rate × channels × (4 + 4 × 2)”: 3.55 GiB per hour at 44.1 kHz stereo. The final outputs add 1.18 GiB per hour while being written, so allow at least 4.73 GiB per input hour. Temporary files are removed after success or failure. |
+| `RELEASE_GPU_MEMORY_AFTER_STAGE` | Defaults to `true`. Model references and available CUDA/MPS caches are released after the Demucs, Whisper, and VoxCPM stages, with another cleanup in task finalization. The single-thread pipeline does not use those models again in the same task. Set it to `false` to retain model caches across tasks and reduce reload latency while accepting higher persistent GPU memory use and OOM risk. Accepted values are `1/0`, `true/false`, `yes/no`, and `on/off`. |
+| `FFMPEG_PATH` / `FFPROBE_PATH` | Optional full paths to the media binaries. On Windows with TorchCodec, `FFMPEG_PATH` must point to a shared/full-shared build. |
 | `OPENAI_BASE_URL` | OpenAI-compatible API endpoint, for example `https://api.openai.com/v1`. |
 | `OPENAI_API_KEY` | API key used by the translation stage. |
 | `OPENAI_MODEL` | Chat Completions model used by the translation stage. |
@@ -245,6 +266,8 @@ Common environment variables:
 | `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 ModelScope model ID or local model directory. VoxCPM currently selects CUDA/MPS/CPU inside the upstream package, and task logs report it as `voxcpm=library-auto`. |
 | `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 inference controls. |
 | `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | Explicitly trusted cross-origin frontends; `*` is not allowed. Same-origin Next proxying needs no entry. |
+
+Demucs outputs use same-directory pending publication. Each actual handler run first removes old final files and stale pending files, then fully writes `.audio_vocals.pending.wav` and `.audio_bgm.pending.wav`. Only after both files have been closed successfully are they atomically replaced into `audio_vocals.wav` and `audio_bgm.wav`. A normal exception removes pending files and any single final already published. SIGKILL or power loss can leave pending files or one final; a failed/running stage recovery removes them and recomputes both outputs. A truly succeeded stage is restored from PipelineRunner stage metadata without invoking the handler again.
 
 By default, CORS allows only `localhost`, `127.0.0.1`, and `::1` on port `3000`. Prefer the same-origin Next.js `/api` proxy. If the browser must call a different backend origin directly, add the exact trusted origin to `CORS_ALLOW_ORIGINS`, for example `https://youdub.example.com`. CORS is not authentication or CSRF protection; the backend still validates the HttpOnly session Cookie and a per-session CSRF token.
 
@@ -319,9 +342,10 @@ On Windows, `chmod` and `umask` are not substitutes for NTFS ACLs. Restrict the 
 6. Click `Get models` to fetch model IDs, or enter a model manually.
 7. Tune `Translate concurrency` based on your API provider's rate limits.
 8. Return to the home page and submit a YouTube URL, Bilibili URL, or local video.
-   - Local videos can include an already translated `.srt` file. When provided, YouDub skips Whisper and OpenAI translation, then uses that subtitle file for TTS and burned subtitles.
-   - The translation direction determines the subtitle target language. For example, `English -> Chinese` treats the uploaded SRT as Chinese subtitles.
-8. Open the task detail page to watch stage progress, logs, and the final video.
+   - Under `Output content`, choose `Hard subtitles (original audio)`, `Dubbing (no hard subtitles)`, or `Hard subtitles and dubbing`.
+   - Local videos can include an already translated `.srt` file. When provided, YouDub skips Whisper and OpenAI translation, then uses that file according to the selected output content.
+   - Local videos support `English -> Chinese`, `Japanese -> Chinese`, and `Chinese -> English`. The direction also determines the optional subtitle's target language; for example, `Japanese -> Chinese` treats the uploaded SRT as Chinese subtitles.
+9. Open the task detail page to watch stage progress, logs, and the final video.
 
 API keys and cookies are masked in the UI. The backend does not return plaintext cookie content to the frontend.
 
@@ -345,18 +369,20 @@ YouTube / Bilibili URL
   -> Whisper transcribes speech with word timestamps
   -> Sentence and timing normalization
   -> OpenAI-compatible API preprocesses the full transcript and translates sentences in parallel
-  -> Original vocals are split into per-sentence reference clips
-  -> VoxCPM2 generates target-language voiceover
-  -> Voiceover timing is aligned and mixed with background audio
-  -> FFmpeg burns subtitles and renders the final mp4
+  -> Branch by output content:
+     - subtitles: preserve original audio and burn hard subtitles
+     - dubbing: generate and mix target-language dubbing without hard subtitles
+     - both: generate and mix dubbing, then burn hard subtitles
+  -> FFmpeg renders the final mp4
 ```
 
-Local video uploads use the same later pipeline stages. If an already translated `.srt` file is uploaded with the video, YouDub converts the SRT into its internal timed translation format, skips Whisper and OpenAI translation, then continues with reference-audio splitting, TTS, audio mixing, and burned subtitles. In v1 this is limited to local video uploads with `.srt`; URL tasks cannot attach subtitle files.
+Local video uploads use the same later pipeline stages, supporting English or Japanese speech translated into Chinese and Chinese speech translated into English. The Japanese path passes `ja` to Whisper and uses a dedicated Japanese-to-Chinese prompt. If an already translated `.srt` file is uploaded with the video, YouDub converts the SRT into its internal timed translation format, skips Whisper and OpenAI translation, then continues according to the selected output content. In v1 this is limited to local video uploads with `.srt`; URL tasks cannot attach subtitle files.
 
 ## Highlights
 
 - **Real end-to-end workflow**: URL in, final video out. No manual audio slicing, subtitle editing, or video rendering steps.
 - **Two source paths**: YouTube English -> Chinese is the primary mature workflow; Bilibili Chinese -> English is wired into the same task pipeline.
+- **Three output modes**: Produce hard subtitles with original audio, dubbing without hard subtitles, or both together.
 - **Local-first storage**: SQLite state, cookies, logs, intermediate artifacts, and final videos stay on your machine.
 - **Observable task progress**: Task history, stage status, stage duration, logs, and errors are visible in the web UI.
 - **Resume after failure**: Failed tasks can resume from the failed stage, reusing cached outputs from stages that already succeeded.

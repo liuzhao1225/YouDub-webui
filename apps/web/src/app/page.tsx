@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Play, Search, Upload } from "lucide-react"
 import {
   ExecutionMode,
   LocalDirection,
+  OutputMode,
   TaskListExecutionMode,
   TaskListResponse,
   TaskListSort,
@@ -93,6 +94,7 @@ export default function Home() {
   const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null)
   const [localDirection, setLocalDirection] = useState<LocalDirection>("en-zh")
   const [executionMode, setExecutionMode] = useState<ExecutionMode>("auto")
+  const [outputMode, setOutputMode] = useState<OutputMode>("both")
   const [tasks, setTasks] = useState<TaskSummary[]>([])
   const [taskTotal, setTaskTotal] = useState(0)
   const [activeTaskCount, setActiveTaskCount] = useState<number | null>(null)
@@ -108,12 +110,19 @@ export default function Home() {
 
   const localDirectionOptions: { value: LocalDirection; label: string }[] = [
     { value: "en-zh", label: t.home.localEnZh },
+    { value: "ja-zh", label: t.home.localJaZh },
     { value: "zh-en", label: t.home.localZhEn },
   ]
 
   const executionModeOptions: { value: ExecutionMode; label: string }[] = [
     { value: "auto", label: t.home.executionAuto },
     { value: "manual", label: t.home.executionManual },
+  ]
+
+  const outputModeOptions: { value: OutputMode; label: string }[] = [
+    { value: "subtitles", label: t.home.outputSubtitles },
+    { value: "dubbing", label: t.home.outputDubbing },
+    { value: "both", label: t.home.outputBoth },
   ]
 
   const statusOptions: { value: TaskListStatus; label: string }[] = [
@@ -218,8 +227,14 @@ export default function Home() {
     setSubmitting(true)
     try {
       const created = localFile
-        ? await uploadLocalTask(localFile, localDirection, localSubtitleFile, executionMode)
-        : await createTask(submittedUrl, executionMode)
+        ? await uploadLocalTask(
+          localFile,
+          localDirection,
+          localSubtitleFile,
+          executionMode,
+          outputMode,
+        )
+        : await createTask(submittedUrl, executionMode, outputMode)
       setYoutubeUrl("")
       setBilibiliUrl("")
       setLocalFile(null)
@@ -343,25 +358,47 @@ export default function Home() {
                   </div>
                 ) : null}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="execution-mode">{t.home.executionModeLabel}</Label>
-                <Select
-                  value={executionMode}
-                  onValueChange={(value) => setExecutionMode(value as ExecutionMode)}
-                >
-                  <SelectTrigger id="execution-mode" className="h-10">
-                    <span className="min-w-0 truncate text-left">
-                      {selectedLabel(executionModeOptions, executionMode)}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {executionModeOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="output-mode">{t.home.outputModeLabel}</Label>
+                  <Select
+                    value={outputMode}
+                    onValueChange={(value) => setOutputMode(value as OutputMode)}
+                  >
+                    <SelectTrigger id="output-mode" className="h-10">
+                      <span className="min-w-0 truncate text-left">
+                        {selectedLabel(outputModeOptions, outputMode)}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {outputModeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="execution-mode">{t.home.executionModeLabel}</Label>
+                  <Select
+                    value={executionMode}
+                    onValueChange={(value) => setExecutionMode(value as ExecutionMode)}
+                  >
+                    <SelectTrigger id="execution-mode" className="h-10">
+                      <span className="min-w-0 truncate text-left">
+                        {selectedLabel(executionModeOptions, executionMode)}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {executionModeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex items-center justify-between gap-3">
                 {activeTaskCount !== null && activeTaskCount > 0 ? (
@@ -541,6 +578,9 @@ export default function Home() {
                           </p>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                             <Badge className={statusBadgeClass(item.status)}>{statusLabel(item.status)}</Badge>
+                            <span data-testid={`task-output-mode-${item.id}`}>
+                              {selectedLabel(outputModeOptions, item.output_mode || "both")}
+                            </span>
                             <span>{formatTime(item.created_at)}</span>
                             {isActive(item.status) && item.current_stage ? (
                               <span>· {stageLabel(item.current_stage)}</span>

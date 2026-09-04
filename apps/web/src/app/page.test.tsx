@@ -79,6 +79,8 @@ describe("本地视频字幕选择", () => {
     expect(screen.getByTestId("local-upload-selection")).toHaveTextContent("当前视频关联字幕: 未选择")
     expect(subtitleInput.files).toHaveLength(0)
 
+    await user.click(screen.getByLabelText("输出内容"))
+    await user.click(await screen.findByRole("option", { name: "配音（无硬字幕）" }))
     await user.click(screen.getByRole("button", { name: "创建任务" }))
 
     await waitFor(() => {
@@ -91,11 +93,160 @@ describe("本地视频字幕选择", () => {
     const form = uploadCall?.[1]?.body as FormData
     expect((form.get("file") as File).name).toBe("video-b.mp4")
     expect(form.has("subtitle_file")).toBe(false)
+    expect(form.get("output_mode")).toBe("dubbing")
     expect(mocks.push).toHaveBeenCalledWith("/tasks/task-b")
+  })
+
+  it("可选择日译中并以 ja-zh 方向提交本地视频", async () => {
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const path = String(input)
+      if (path === "/api/tasks/upload") {
+        return new Response(JSON.stringify({ id: "japanese-task" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      if (path.startsWith("/api/tasks")) {
+        return new Response(JSON.stringify({
+          tasks: [],
+          total: 0,
+          active_count: 0,
+          page: 1,
+          page_size: 20,
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      throw new Error(`未预期的请求: ${path}`)
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const user = userEvent.setup()
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    await user.upload(
+      screen.getByLabelText("本地视频文件"),
+      new File(["video"], "japanese.mp4", { type: "video/mp4" }),
+    )
+    await user.click(screen.getByLabelText("翻译方向"))
+    await user.click(await screen.findByRole("option", { name: "日文 -> 中文" }))
+    await user.click(screen.getByRole("button", { name: "创建任务" }))
+
+    await waitFor(() => {
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "/api/tasks/upload",
+        expect.objectContaining({ method: "POST" }),
+      )
+    })
+    const uploadCall = mocks.fetch.mock.calls.find(([input]) => String(input) === "/api/tasks/upload")
+    const form = uploadCall?.[1]?.body as FormData
+    expect(form.get("direction")).toBe("ja-zh")
+    expect((form.get("file") as File).name).toBe("japanese.mp4")
+    expect(mocks.push).toHaveBeenCalledWith("/tasks/japanese-task")
+  })
+})
+
+describe("任务输出选择", () => {
+  it("URL 任务可选择保留原音的硬字幕输出", async () => {
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input)
+      if (path === "/api/tasks" && init?.method === "POST") {
+        return new Response(JSON.stringify({ id: "abcdefghijk-subtitles" }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      if (path.startsWith("/api/tasks")) {
+        return new Response(JSON.stringify({
+          tasks: [],
+          total: 0,
+          active_count: 0,
+          page: 1,
+          page_size: 20,
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      throw new Error(`未预期的请求: ${path}`)
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const user = userEvent.setup()
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    await user.type(
+      screen.getByLabelText("YouTube 链接（英文 -> 中文）"),
+      "https://www.youtube.com/watch?v=abcdefghijk",
+    )
+    await user.click(screen.getByLabelText("输出内容"))
+    await user.click(await screen.findByRole("option", { name: "硬字幕（保留原音）" }))
+    await user.click(screen.getByRole("button", { name: "创建任务" }))
+
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/tasks/abcdefghijk-subtitles"))
+    const createCall = mocks.fetch.mock.calls.find(
+      ([input, init]) => String(input) === "/api/tasks" && init?.method === "POST",
+    )
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+      execution_mode: "auto",
+      output_mode: "subtitles",
+    })
   })
 })
 
 describe("任务列表轮询", () => {
+  it("为同一视频的三种输出任务显示可区分的本地化标签", async () => {
+    const commonTask = {
+      url: "https://www.youtube.com/watch?v=samevideo01",
+      title: "同一个视频",
+      status: "succeeded",
+      current_stage: "done",
+      final_video_path: null,
+      error_message: null,
+      created_at: "2026-07-14T00:00:00Z",
+      started_at: "2026-07-14T00:00:01Z",
+      completed_at: "2026-07-14T00:01:00Z",
+      execution_mode: "auto",
+    }
+    mocks.fetch.mockResolvedValue(new Response(JSON.stringify({
+      tasks: [
+        { ...commonTask, id: "samevideo01-subtitles", output_mode: "subtitles" },
+        { ...commonTask, id: "samevideo01-dubbing", output_mode: "dubbing" },
+        { ...commonTask, id: "samevideo01", output_mode: "both" },
+      ],
+      total: 3,
+      active_count: 0,
+      page: 1,
+      page_size: 20,
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }))
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    render(
+      <LanguageProvider>
+        <Home />
+      </LanguageProvider>,
+    )
+
+    expect(await screen.findByTestId("task-output-mode-samevideo01-subtitles"))
+      .toHaveTextContent("硬字幕（保留原音）")
+    expect(screen.getByTestId("task-output-mode-samevideo01-dubbing"))
+      .toHaveTextContent("配音（无硬字幕）")
+    expect(screen.getByTestId("task-output-mode-samevideo01"))
+      .toHaveTextContent("硬字幕和配音")
+  })
+
   it("筛选变化后丢弃已取消请求的迟到响应", async () => {
     let resolveOldRequest!: (response: Response) => void
     const oldRequest = new Promise<Response>((resolve) => {

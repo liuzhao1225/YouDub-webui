@@ -65,6 +65,7 @@ def test_write_uploaded_subtitle_artifacts_outputs_pipeline_schema(tmp_path):
     assert translation[0] == {
         "src": "",
         "dst": "你好世界",
+        "audio_mode": "tts",
         "src_lang": "en",
         "dst_lang": "zh",
         "start_time": 0,

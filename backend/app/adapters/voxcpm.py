@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Callable
 
 import soundfile as sf
 from pydub import AudioSegment
 
+from .. import runtime_security
+from ..audio_mode import is_original_audio, target_text
 from ..config import MODEL_CACHE_DIR
 
 _MODEL = None
@@ -20,6 +24,13 @@ _PROMPT_CACHE_GENERATION_DEFAULTS = {
     "retry_badcase_max_times": 3,
     "retry_badcase_ratio_threshold": 6.0,
 }
+
+
+def release_model() -> bool:
+    global _MODEL
+    was_loaded = _MODEL is not None
+    _MODEL = None
+    return was_loaded
 
 
 def _model_path() -> Path:
@@ -65,13 +76,20 @@ def _speaker(item: dict) -> str:
 
 
 def _fallback_references(vocals_dir: Path, items: list[dict], min_ms: int) -> tuple[dict[str, Path], Path]:
-    files = sorted(vocals_dir.glob("*.wav"))
+    files = [
+        vocals_dir / f"{index:04d}.wav"
+        for index, item in enumerate(items, start=1)
+        if not is_original_audio(item)
+        and (vocals_dir / f"{index:04d}.wav").exists()
+    ]
     if not files:
         raise FileNotFoundError("No vocal segments were generated for VoxCPM references.")
 
     global_fallback = _first_reference(files, min_ms) or files[0]
     speaker_files: dict[str, list[Path]] = {}
     for index, item in enumerate(items, start=1):
+        if is_original_audio(item):
+            continue
         reference = vocals_dir / f"{index:04d}.wav"
         if reference.exists():
             speaker_files.setdefault(_speaker(item), []).append(reference)
@@ -86,11 +104,65 @@ def _fallback_references(vocals_dir: Path, items: list[dict], min_ms: int) -> tu
 
 
 def _tts_text(item: dict) -> str:
-    text = item.get("dst") or item.get("zh", "")
+    text = target_text(item)
     if not isinstance(text, str) or not text.strip():
         raise ValueError("target text must be a non-empty string")
     text = text.replace("\n", " ")
     return re.sub(r"\s+", " ", text)
+
+
+def _write_original_target_audio(
+    output_file: Path,
+    item: dict,
+    original_vocals_file: Path,
+) -> None:
+    start = max(0, int(item.get("start_time", 0)))
+    end = int(item.get("end_time", start))
+    if end <= start:
+        raise ValueError(f"Original audio does not cover target segment {start}-{end} ms")
+
+    with sf.SoundFile(original_vocals_file) as source:
+        start_frame = max(0, int(start * source.samplerate / 1000))
+        requested_end_frame = int(end * source.samplerate / 1000)
+        end_frame = requested_end_frame
+        available_duration_ms = source.frames / source.samplerate * 1000
+        range_error = (
+            f"Original audio does not cover target segment {start}-{end} ms: "
+            f"requested frames {start_frame}-{requested_end_frame}, available audio is "
+            f"{source.frames} frames ({available_duration_ms:.3f} ms)"
+        )
+        if start_frame >= source.frames:
+            raise ValueError(range_error)
+        overflow_scaled = end * source.samplerate - source.frames * 1000
+        if overflow_scaled > 0:
+            if overflow_scaled >= source.samplerate:
+                raise ValueError(range_error)
+            end_frame = source.frames
+        if end_frame <= start_frame:
+            raise ValueError(range_error)
+        source.seek(start_frame)
+        frames = source.read(
+            end_frame - start_frame,
+            dtype="float32",
+            always_2d=True,
+        )
+        if len(frames) <= 0:
+            raise ValueError(range_error)
+
+        encoded = io.BytesIO()
+        sf.write(
+            encoded,
+            frames,
+            source.samplerate,
+            format="WAV",
+            subtype="PCM_16",
+        )
+        encoded.seek(0)
+
+    runtime_security.remove_private_file(output_file, missing_ok=True)
+    with runtime_security.open_private_binary_exclusive(output_file) as handle:
+        shutil.copyfileobj(encoded, handle)
+        handle.flush()
 
 
 def generate_tts(
@@ -98,6 +170,8 @@ def generate_tts(
     vocals_dir: Path,
     session: Path,
     progress_callback: Callable[[int, str], None] | None = None,
+    *,
+    original_vocals_file: Path | None = None,
 ) -> Path:
     output_dir = session / "segments" / "tts"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -107,6 +181,20 @@ def generate_tts(
     if total == 0:
         if progress_callback:
             progress_callback(100, "No TTS clips to generate")
+        return output_dir
+
+    has_original_audio = any(is_original_audio(item) for item in items)
+    if has_original_audio and original_vocals_file is None:
+        raise ValueError("original_vocals_file is required for original audio items")
+
+    if all(is_original_audio(item) for item in items):
+        for index, item in enumerate(items, start=1):
+            output_file = output_dir / f"{index:04d}.wav"
+            assert original_vocals_file is not None
+            _write_original_target_audio(output_file, item, original_vocals_file)
+            if progress_callback:
+                progress = round(index / total * 100)
+                progress_callback(progress, f"Prepared {index}/{total} TTS clips")
         return output_dir
 
     model = _load_model()
@@ -119,6 +207,13 @@ def generate_tts(
 
     for index, item in enumerate(items, start=1):
         output_file = output_dir / f"{index:04d}.wav"
+        if is_original_audio(item):
+            assert original_vocals_file is not None
+            _write_original_target_audio(output_file, item, original_vocals_file)
+            if progress_callback:
+                progress = round(index / total * 100)
+                progress_callback(progress, f"Prepared {index}/{total} TTS clips")
+            continue
         if not output_file.exists():
             reference = vocals_dir / f"{index:04d}.wav"
             text = _tts_text(item)
