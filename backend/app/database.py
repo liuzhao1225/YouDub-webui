@@ -7,7 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from . import config, runtime_security
-from .config import DB_PATH, ensure_runtime_dirs, openai_defaults, ytdlp_defaults
+from .config import (
+    DB_PATH,
+    LEGACY_OPENAI_DEFAULT_BASE_URL,
+    LEGACY_OPENAI_DEFAULT_MODEL,
+    atlascloud_defaults,
+    ensure_runtime_dirs,
+    openai_defaults,
+    ytdlp_defaults,
+)
 from .stages import STAGES
 
 
@@ -34,6 +42,39 @@ def connect() -> sqlite3.Connection:
     except Exception:
         conn.close()
         raise
+
+
+def _migrate_openai_defaults_to_atlascloud(conn: sqlite3.Connection) -> None:
+    """Repoint an untouched OpenAI install at Atlas Cloud after an upgrade.
+
+    The seeding above uses INSERT OR IGNORE, so an instance created before Atlas
+    Cloud support keeps its existing openai.* rows and never picks up
+    ATLASCLOUD_*: get_openai_settings() would keep returning the old endpoint,
+    an empty key and the old model even though the operator configured Atlas.
+
+    Only rows the user never customized are rewritten - an empty saved key plus
+    a base URL and model still equal to the pre-Atlas defaults. Any user-supplied
+    key, endpoint or model is left untouched.
+    """
+    atlas = atlascloud_defaults()
+    if atlas is None:
+        return
+    rows = conn.execute(
+        "SELECT key, value FROM settings WHERE key IN "
+        "('openai.api_key', 'openai.base_url', 'openai.model')"
+    ).fetchall()
+    saved = {row["key"]: (row["value"] or "").strip() for row in rows}
+    if saved.get("openai.api_key"):
+        return
+    if saved.get("openai.base_url", "") not in ("", LEGACY_OPENAI_DEFAULT_BASE_URL):
+        return
+    if saved.get("openai.model", "") not in ("", LEGACY_OPENAI_DEFAULT_MODEL):
+        return
+    for key in ("base_url", "api_key", "model"):
+        conn.execute(
+            "UPDATE settings SET value = ?, updated_at = ? WHERE key = ?",
+            (atlas[key], now_iso(), f"openai.{key}"),
+        )
 
 
 def init_db() -> None:
@@ -101,6 +142,7 @@ def init_db() -> None:
                 "INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",
                 (f"openai.{key}", value, now_iso()),
             )
+        _migrate_openai_defaults_to_atlascloud(conn)
         for key, value in ytdlp_defaults().items():
             conn.execute(
                 "INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?, ?, ?)",

@@ -1,7 +1,7 @@
 "use client"
 
 import { FormEvent, useEffect, useState } from "react"
-import { Eye, EyeOff, RefreshCw, Settings } from "lucide-react"
+import { Cloud, Eye, EyeOff, RefreshCw, Settings } from "lucide-react"
 
 import {
   ApiError,
@@ -62,6 +62,11 @@ const defaultSettings: SettingsForm = {
   model: "gpt-4o-mini",
   translateConcurrency: "50",
   proxyPort: "",
+}
+
+const ATLAS_CLOUD_PRESET = {
+  baseUrl: "https://api.atlascloud.ai/v1",
+  model: "deepseek-ai/deepseek-v4-pro",
 }
 
 function uniqueModels(models: string[]) {
@@ -227,6 +232,16 @@ export function SettingsDialog() {
     }
   }
 
+  function applyAtlasCloudPreset() {
+    setSettings((current) => ({
+      ...current,
+      baseUrl: ATLAS_CLOUD_PRESET.baseUrl,
+      model: ATLAS_CLOUD_PRESET.model,
+    }))
+    setMessageKey(null)
+    setMessage(t.settings.atlasCloudPresetApplied)
+  }
+
   const saveSectionLabels: Record<SaveSection, string> = {
     cookie: t.settings.cookie,
     openai: t.settings.openaiSaveSection,
@@ -310,7 +325,18 @@ export function SettingsDialog() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="baseUrl">{t.settings.baseUrl}</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="baseUrl">{t.settings.baseUrl}</Label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={applyAtlasCloudPreset}
+                  >
+                    <Cloud className="size-3.5" />
+                    {t.settings.atlasCloudPreset}
+                  </Button>
+                </div>
                 <Input
                   id="baseUrl"
                   value={settings.baseUrl}

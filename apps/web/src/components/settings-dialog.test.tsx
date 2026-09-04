@@ -23,6 +23,48 @@ afterEach(() => {
 })
 
 describe("设置分项保存反馈", () => {
+  it("可以一键填入 Atlas Cloud OpenAI 兼容翻译配置", async () => {
+    mocks.fetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input)
+      const method = init?.method || "GET"
+
+      if (method === "GET" && path === "/api/cookies/youtube") {
+        return jsonResponse({ exists: false, size: 0, updated_at: null, content: "" })
+      }
+      if (method === "GET" && path === "/api/settings/openai") {
+        return jsonResponse({
+          base_url: "https://api.openai.com/v1",
+          api_key: "",
+          has_api_key: false,
+          model: "gpt-4o-mini",
+          translate_concurrency: "50",
+        })
+      }
+      if (method === "GET" && path === "/api/settings/ytdlp") {
+        return jsonResponse({ proxy_port: "" })
+      }
+      throw new Error(`未预期的请求: ${method} ${path}`)
+    })
+    vi.stubGlobal("fetch", mocks.fetch)
+
+    const user = userEvent.setup()
+    render(
+      <LanguageProvider>
+        <SettingsDialog />
+      </LanguageProvider>,
+    )
+
+    await user.click(screen.getByRole("button", { name: "设置" }))
+    const baseUrlInput = await screen.findByLabelText("OpenAI Base URL")
+    const modelInput = screen.getByLabelText("模型")
+
+    await user.click(screen.getByRole("button", { name: "Atlas Cloud" }))
+
+    expect(baseUrlInput).toHaveValue("https://api.atlascloud.ai/v1")
+    expect(modelInput).toHaveValue("deepseek-ai/deepseek-v4-pro")
+    expect(screen.getByText("已填入 Atlas Cloud 端点和默认文本模型。")).toBeInTheDocument()
+  })
+
   it("前两项成功而最后一项失败时逐项展示结果并回读服务端状态", async () => {
     mocks.fetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = String(input)
