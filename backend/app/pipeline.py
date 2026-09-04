@@ -510,9 +510,13 @@ class PipelineRunner:
 
         asr_file = _require(self.artifacts.asr_fixed_file, "asr_fixed_file")
         settings = database.get_openai_settings()
+        use_litellm = database.get_litellm_enabled()
+        settings["use_litellm"] = "1" if use_litellm else ""
+        transport = "LiteLLM" if use_litellm else "OpenAI"
         self.stage_message(
             "translate",
-            f"Using model {settings['model']} at {settings['base_url']} ({source.asr_language}->{source.target_language})",
+            f"Using model {settings['model']} at {settings['base_url']} via {transport} "
+            f"({source.asr_language}->{source.target_language})",
         )
         self.artifacts.translation_file = translate_asr(asr_file, session, settings, source)
         items = _json.loads(self.artifacts.translation_file.read_text(encoding="utf-8"))["translation"]

@@ -124,6 +124,7 @@ def openai_defaults() -> dict[str, str]:
         "api_key": os.getenv("OPENAI_API_KEY", ""),
         "model": os.getenv("OPENAI_MODEL") or os.getenv("OPENAI_MODEL_NAME") or "gpt-4o-mini",
         "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
+        "use_litellm": os.getenv("OPENAI_USE_LITELLM", ""),
     }
 
 

@@ -649,6 +649,24 @@ def get_setting(key: str, default: str = "") -> str:
     return row["value"] if row else default
 
 
+_LITELLM_SETTING_KEY = "openai.use_litellm"
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def get_litellm_enabled() -> bool:
+    """Whether translation should route through LiteLLM instead of the OpenAI SDK.
+
+    Defaults to the ``OPENAI_USE_LITELLM`` environment variable; a saved value
+    (set via the settings API) takes precedence.
+    """
+    default = openai_defaults()["use_litellm"]
+    return get_setting(_LITELLM_SETTING_KEY, default).strip().lower() in _TRUTHY
+
+
+def set_litellm_enabled(enabled: bool) -> None:
+    set_setting(_LITELLM_SETTING_KEY, "1" if enabled else "")
+
+
 def get_openai_settings() -> dict[str, str]:
     from .adapters.openai_client import normalize_openai_base_url
 

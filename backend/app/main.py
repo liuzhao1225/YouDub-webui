@@ -80,6 +80,7 @@ class OpenAISettingsUpdate(BaseModel):
     clear_api_key: bool = False
     model: str
     translate_concurrency: str = ""
+    use_litellm: bool | None = None
 
 
 class OpenAIModelsRequest(BaseModel):
@@ -680,6 +681,7 @@ def get_openai_settings() -> dict:
         "has_api_key": bool(settings["api_key"]),
         "model": settings["model"],
         "translate_concurrency": settings["translate_concurrency"],
+        "use_litellm": database.get_litellm_enabled(),
     }
 
 
@@ -695,6 +697,8 @@ def save_openai_settings(payload: OpenAISettingsUpdate) -> dict:
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if payload.use_litellm is not None:
+        database.set_litellm_enabled(payload.use_litellm)
     return get_openai_settings()
 
 
