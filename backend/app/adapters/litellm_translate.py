@@ -10,8 +10,8 @@ Why this is more than the existing base-URL setting: the OpenAI client can only
 reach OpenAI-wire-compatible endpoints. LiteLLM additionally routes to providers
 whose authentication is *not* OpenAI-compatible (AWS Bedrock SigV4, Google
 Vertex AI ADC, Azure AD) by model prefix, using each provider's native
-credentials from the environment. ``litellm`` is imported lazily so it stays an
-optional dependency (see ``requirements-litellm.txt``).
+credentials from the environment. ``litellm`` (listed in ``requirements.txt``)
+is imported lazily, so it is only loaded when the LiteLLM transport is used.
 """
 
 from __future__ import annotations

@@ -5,6 +5,7 @@ pydantic
 python-multipart
 pwdlib[argon2]>=0.3,<1
 openai
+litellm>=1.89.0,<2.0.0
 yt-dlp[default]
 dora-search>=0.1.12
 diffq>=0.2.1
