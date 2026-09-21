@@ -4,6 +4,8 @@
 
 # YouDub WebUI
 
+China mirror on AtomGit: [YouDub-webui](https://atomgit.com/liuzhao1225/YouDub-webui). Code syncs one way from the [primary GitHub repository](https://github.com/liuzhao1225/YouDub-webui); releases, issues, and pull requests are maintained on GitHub.
+
 <p align="center">
   <strong>QQ group: 618246010</strong>
 </p>

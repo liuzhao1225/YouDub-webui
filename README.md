@@ -4,6 +4,8 @@
 
 # YouDub WebUI | [人才招聘](#人才招聘)
 
+国内 AtomGit 托管：[YouDub-webui](https://atomgit.com/liuzhao1225/YouDub-webui)。代码从 [GitHub 主仓库](https://github.com/liuzhao1225/YouDub-webui)单向同步；Release、Issue 和 PR 统一在 GitHub 维护。
+
 <p align="center">
   <strong>QQ 交流群：618246010</strong>
 </p>
