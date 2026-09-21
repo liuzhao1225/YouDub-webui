@@ -69,10 +69,20 @@ def list_models(*, base_url: str, api_key: str) -> list[str]:
     return models
 
 
-def _client(base_url: str, api_key: str) -> OpenAI:
+def _client(base_url: str, api_key: str, *, use_litellm: bool = False) -> Any:
+    if use_litellm:
+        # LiteLLM falls back to each provider's native env vars, so an API key
+        # is optional here (unlike the OpenAI path below).
+        from .litellm_translate import LiteLLMClient
+
+        return LiteLLMClient(base_url=base_url, api_key=api_key)
     if not api_key:
         raise ValueError("OpenAI API key is not configured.")
     return OpenAI(api_key=api_key, base_url=normalize_openai_base_url(base_url))
+
+
+def _use_litellm_from(settings: dict[str, str]) -> bool:
+    return str(settings.get("use_litellm") or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -134,6 +144,7 @@ def preprocess(
     base_url: str,
     api_key: str,
     model: str,
+    use_litellm: bool = False,
 ) -> PreprocessResponse:
     user = PREPROCESS_PROMPT.format(
         src_language_name=source.asr_language_name,
@@ -141,7 +152,7 @@ def preprocess(
         full_text=full_text,
         **_meta_view(meta),
     )
-    client = _client(base_url, api_key)
+    client = _client(base_url, api_key, use_litellm=use_litellm)
     last_error: Exception | None = None
     for attempt in range(PREPROCESS_RETRY + 1):
         try:
@@ -201,11 +212,12 @@ def translate_batch(
     api_key: str,
     model: str,
     concurrency: int = DEFAULT_CONCURRENCY,
+    use_litellm: bool = False,
 ) -> list[TranslationItem]:
     if not texts:
         return []
     system = _translate_system(source, meta, pre)
-    client = _client(base_url, api_key)
+    client = _client(base_url, api_key, use_litellm=use_litellm)
     log.info(
         "translate_batch: %d sentences, concurrency=%d", len(texts), concurrency,
     )
@@ -282,15 +294,17 @@ def translate_asr(
     meta = _read_meta(session)
 
     api = {key: settings[key] for key in API_SETTING_KEYS if key in settings}
+    use_litellm = _use_litellm_from(settings)
     pre = load_preprocess_artifact(session)
     if pre is None:
-        pre = preprocess(full_text, meta, source, **api)
+        pre = preprocess(full_text, meta, source, **api, use_litellm=use_litellm)
         write_preprocess_artifact(session, pre)
         log.info("Wrote translation preprocess artifact to %s", preprocess_artifact_path(session))
     else:
         log.info("Reusing translation preprocess artifact from %s", preprocess_artifact_path(session))
     translated_items = translate_batch(
-        texts, source, meta, pre, **api, concurrency=_concurrency_from(settings)
+        texts, source, meta, pre, **api,
+        concurrency=_concurrency_from(settings), use_litellm=use_litellm,
     )
 
     translation = [
