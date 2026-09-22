@@ -16,6 +16,7 @@ from .storage import data_directory
 
 MODEL_NAME = "Qwen3-ForcedAligner-0.6B-hf"
 MAX_AUDIO_DURATION_MS = 300_000
+TIMESTAMP_GRID_MS = 80  # The pinned Qwen model processor's timestamp class width.
 
 
 def model_directory() -> Path:
@@ -51,9 +52,12 @@ def word_cues(parts: list[str], words: object, start_ms: int, end_ms: int) -> li
             raise _invalid("Qwen returned an invalid word timestamp.")
         begin, end = [round(value * 1000) for value in values]
         letters = _letters(word["text"])
-        if not letters or begin < previous_end or end < begin or end > end_ms - start_ms:
+        duration = end_ms - start_ms
+        if not letters or begin < previous_end or end < begin or end > duration + TIMESTAMP_GRID_MS:
             raise _invalid("Qwen word timing lies outside the complete dubbed audio or is not monotonic.")
-        timed.append((cursor, cursor + len(letters), begin, end))
+        # A final predicted 80 ms class can straddle the audio endpoint. Map
+        # that class to the endpoint; retain the unmodified decode in words.json.
+        timed.append((cursor, cursor + len(letters), min(begin, duration), min(end, duration)))
         normalized += letters
         cursor += len(letters)
         previous_end = end
@@ -121,12 +125,16 @@ def align(
         results = payload["clips"]
         if [item["segment_id"] for item in results] != [segment.id for segment, _ in rows]:
             raise ValueError("Alignment IDs differ")
-        cues = []
+        cues, endpoint_intervals = [], 0
         for (segment, text), result in zip(rows, results, strict=True):
             cues.extend(word_cues(split_text(text), result["words"], segment.start_ms, segment.end_ms))
+            endpoint_intervals += sum(round(word["end_time"] * 1000) > segment.end_ms - segment.start_ms
+                                      for word in result["words"])
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise _invalid("The Qwen alignment output does not match the speech clips.") from exc
     (folder / "cues.json").write_text(json.dumps([
         {"start_ms": start, "end_ms": end, "text": text} for start, end, text in cues
     ], ensure_ascii=False, indent=2), encoding="utf-8")
+    if endpoint_intervals:
+        progress(None, f"Mapped {endpoint_intervals} final word intervals within Qwen's {TIMESTAMP_GRID_MS} ms grid to audio endpoints")
     return cues

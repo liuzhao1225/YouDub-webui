@@ -259,11 +259,25 @@ def test_complete_utterance_produces_multiple_cues_inside_its_final_dubbed_span(
     assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
 
 
-def test_qwen_export_changes_only_translated_cue_times_and_preserves_final_audio(monkeypatch, context):
+@pytest.mark.parametrize("earlier_dubbed_start", [False, True])
+def test_qwen_export_changes_only_translated_cue_times_and_preserves_final_audio(monkeypatch, context, earlier_dubbed_start):
     from backend.app.v1 import forced_alignment
     from backend.app.v1.contracts import ModelSelection
 
     context = add_dubbing(context, "both")
+    if earlier_dubbed_start:
+        # Tail scheduling may place this complete clip before its source ASR
+        # start. Its subtitle must use that actual placement, including when
+        # it falls before 650ms on the unchanged source subtitle timeline.
+        path = context.input_files["alignment"]
+        payload = json.loads(path.read_text())
+        payload["segments"][1].update(dubbed_start_ms=500, dubbed_end_ms=760)
+        path.write_text(json.dumps(payload))
+        audio, rate = sf.read(context.input_files["mixed_audio"], always_2d=True)
+        shifted = np.zeros_like(audio)
+        shifted[:320 * 48] = audio[:320 * 48]
+        shifted[500 * 48:760 * 48] = audio[720 * 48:980 * 48]
+        sf.write(context.input_files["mixed_audio"], shifted, rate, subtype="PCM_16")
     context = replace(context, config=context.config.model_copy(update={
         "subtitle_alignment": ModelSelection(adapter="qwen_forced_aligner", model=forced_alignment.MODEL_NAME, device="cpu"),
     }))
@@ -296,9 +310,10 @@ def test_qwen_export_changes_only_translated_cue_times_and_preserves_final_audio
     result = export.run(context, lambda *args: None)
 
     assert len(commands) == 2
+    second_time = "00:00:00,580 --> 00:00:00,660" if earlier_dubbed_start else "00:00:00,800 --> 00:00:00,880"
     assert result.output_files["translated_subtitles"].read_text() == (
         "1\n00:00:00,080 --> 00:00:00,240\n你好，世界！\n\n"
-        "2\n00:00:00,800 --> 00:00:00,880\n结束了。\n"
+        f"2\n{second_time}\n结束了。\n"
     )
     assert result.output_files["source_subtitles"].read_text() == (
         "1\n00:00:00,000 --> 00:00:00,200\nHello,\n\n"

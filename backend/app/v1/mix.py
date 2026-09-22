@@ -5,7 +5,9 @@ clamp(0.99 * sum(source durations) / sum(TTS durations), 0.8, 1.2), and local
 is clamp((source_end - scheduled_start) / (TTS_duration * base), 0.75, 1.25).
 These are the production pipeline's bounds. FFmpeg atempo uses the reciprocal
 multiplier. Scheduling always advances by actual output samples, never by the
-estimated duration or the old source end. No speech samples are trimmed.
+estimated duration or the old source end. The final placement works backward
+from the video end, borrowing preceding silence when the tail needs room.
+No speech samples are trimmed or re-timed by that placement.
 """
 
 from __future__ import annotations
@@ -108,7 +110,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     base = min(1.2, max(0.8, 0.99 * sum(segment.end_ms - segment.start_ms for segment in transcript.segments)
                         / sum(milliseconds for _, milliseconds in inputs.values())))
     previous_end = 0
-    aligned = []
+    planned = []
     for index, segment in enumerate(transcript.segments):
         context.check_cancel()
         path, raw_duration = inputs[segment.id]
@@ -117,16 +119,29 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         local = min(1.25, max(0.75, (segment.end_ms - start_ms) / (raw_duration * base)))
         samples = _decode(context, path, adjusted / f"{index + 1:04d}.wav", duration_ratio=base * local)
         end_sample = start_sample + len(samples)
-        if end_sample > total_samples:
+        planned.append([start_sample, len(samples)])
+        previous_end = end_sample
+        progress((index + 1) / (len(transcript.segments) + 1), f"Adjusted {index + 1}/{len(transcript.segments)} speech clips")
+
+    # Place every complete clip before allocating its final interval. Moving a
+    # tail cluster into earlier silence preserves audio, rate and video length.
+    next_start = total_samples
+    for item in reversed(planned):
+        item[0] = min(item[0], next_start - item[1])
+        if item[0] < 0:
             raise ApiError(422, "AUDIO_EXCEEDS_VIDEO", "The complete dubbed speech does not fit the source video.",
                            stage="mix", action="adjust_settings")
+        next_start = item[0]
+    aligned = []
+    for index, (segment, (start_sample, count)) in enumerate(zip(transcript.segments, planned, strict=True)):
+        context.check_cancel()
+        samples, _ = sf.read(adjusted / f"{index + 1:04d}.wav", dtype="float32", always_2d=True)
+        end_sample = start_sample + count
         final_audio[start_sample:end_sample] = samples
         aligned.append(AlignedSegment(
             segment_id=segment.id, source_start_ms=segment.start_ms, source_end_ms=segment.end_ms,
-            dubbed_start_ms=round(start_ms), dubbed_end_ms=round(end_sample * 1000 / SAMPLE_RATE),
+            dubbed_start_ms=round(start_sample * 1000 / SAMPLE_RATE), dubbed_end_ms=round(end_sample * 1000 / SAMPLE_RATE),
         ))
-        previous_end = end_sample
-        progress((index + 1) / (len(transcript.segments) + 1), f"Aligned {index + 1}/{len(transcript.segments)} speech clips")
     if background is not None:
         samples = _decode(context, background, adjusted / "background.wav")
         count = min(len(samples), total_samples)

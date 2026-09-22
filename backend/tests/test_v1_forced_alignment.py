@@ -53,6 +53,23 @@ def test_zero_duration_tokens_retain_text_in_a_positive_duration_cue(parts, word
     assert "".join(cue[2] for cue in expected) == "".join(parts)
 
 
+@pytest.mark.parametrize("tail_seconds", [1.068, 1.080])
+def test_final_timestamp_class_crossing_audio_end_maps_to_endpoint_without_changing_raw_words(tail_seconds):
+    words = [word("完整", 0.08, 0.64), word("配音", 0.80, tail_seconds)]
+    original = json.dumps(words, ensure_ascii=False)
+
+    assert forced_alignment.word_cues(["完整配音。"], words, 5000, 6000) == [(5080, 6000, "完整配音。")]
+    assert json.dumps(words, ensure_ascii=False) == original
+
+
+def test_final_timestamp_class_mapped_to_zero_duration_keeps_its_text():
+    words = [word("Hello", 0.16, 0.80), word("world", 1.04, 1.08)]
+    original = json.dumps(words)
+
+    assert forced_alignment.word_cues(["Hello,", "world!"], words, 1000, 2000) == [(1160, 2000, "Hello,world!")]
+    assert json.dumps(words) == original
+
+
 @pytest.mark.parametrize("words", [
     None,
     [],
@@ -60,7 +77,7 @@ def test_zero_duration_tokens_retain_text_in_a_positive_duration_cue(parts, word
     [word("different", 0, 0.5)],
     [word("hello", -0.1, 0.5)],
     [word("hello", 0.5, 0.1)],
-    [word("hello", 0, 1.01)],
+    [word("hello", 0, 1.081)],
     [word("hello", 0, float("nan"))],
     [word("hello", 0, float("inf"))],
     [word("hello", False, 0.5)],
@@ -96,9 +113,10 @@ def alignment_context(tmp_path, monkeypatch):
                         stage="export", config=config, input_files={}, work_dir=work)
 
 
-def test_align_passes_complete_adjusted_clips_and_retains_raw_word_evidence(monkeypatch, alignment_context):
+@pytest.mark.parametrize("first_clip_end_ms", [8000, 7172])
+def test_align_passes_complete_adjusted_clips_and_retains_raw_word_evidence(monkeypatch, alignment_context, first_clip_end_ms):
     context = alignment_context
-    rows = [(Segment(id="first", start_ms=5000, end_ms=8000, text="Original one"), "欢迎来到YouDub，字幕按声音显示。"),
+    rows = [(Segment(id="first", start_ms=5000, end_ms=first_clip_end_ms, text="Original one"), "欢迎来到YouDub，字幕按声音显示。"),
             (Segment(id="second", start_ms=9000, end_ms=11000, text="Original two"), "完整的一句话。")]
     original_clips = {path: path.read_bytes() for path in (context.work_dir / "adjusted").glob("*.wav")}
     raw = json.dumps({"model": forced_alignment.MODEL_NAME, "clips": [
@@ -119,10 +137,13 @@ def test_align_passes_complete_adjusted_clips_and_retains_raw_word_evidence(monk
         return subprocess.CompletedProcess(command, 0, "", "")
 
     monkeypatch.setattr(media, "_run_media", infer)
-    cues = forced_alignment.align(context, rows, export._display_parts, lambda *args: None)
+    progress = []
+    cues = forced_alignment.align(context, rows, export._display_parts, lambda value, message: progress.append(message))
 
     assert len(calls) == 1
-    assert cues == [(5160, 6040, "欢迎来到YouDub，"), (6600, 7240, "字幕按声音显示。"), (9080, 10360, "完整的一句话。")]
+    assert cues == [(5160, 6040, "欢迎来到YouDub，"), (6600, min(7240, first_clip_end_ms), "字幕按声音显示。"), (9080, 10360, "完整的一句话。")]
+    if first_clip_end_ms == 7172:
+        assert any("Mapped 1 final word intervals" in message and "80 ms" in message for message in progress)
     evidence = context.work_dir / "subtitle_alignment"
     assert (evidence / "words.json").read_text() == raw
     assert json.loads((evidence / "cues.json").read_text()) == [

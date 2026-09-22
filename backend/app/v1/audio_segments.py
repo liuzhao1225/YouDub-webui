@@ -54,7 +54,7 @@ class Alignment(Contract):
         for aligned, source in zip(self.segments, transcript.segments, strict=True):
             if (aligned.source_start_ms, aligned.source_end_ms) != (source.start_ms, source.end_ms):
                 raise ValueError("Alignment must preserve original source timestamps")
-            if (source.end_ms > duration_ms or aligned.dubbed_start_ms < max(previous_end, source.start_ms)
+            if (source.end_ms > duration_ms or aligned.dubbed_start_ms < previous_end
                     or aligned.dubbed_end_ms > duration_ms):
                 raise ValueError("Dubbed segments must fit the video without overlap")
             previous_end = aligned.dubbed_end_ms

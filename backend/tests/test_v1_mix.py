@@ -121,6 +121,59 @@ def test_real_mix_fails_on_speech_overflow_without_trimming(context):
     assert not (context.work_dir / "alignment.json").exists()
 
 
+def test_real_mix_borrows_earlier_silence_to_keep_the_complete_tail(context):
+    require_ffmpeg()
+    context.input_files["media_info"].write_text(json.dumps({"duration_ms": 1700, "width": 320, "height": 180}))
+    write_tone(context.work_dir / "tts/000001.wav", 1000, 440)
+    write_tone(context.work_dir / "tts/000002.wav", 1400, 660)
+    write_manifest(context)
+    original_transcript = context.input_files["transcript"].read_bytes()
+    original_clips = [(context.work_dir / f"tts/{index:06d}.wav").read_bytes() for index in (1, 2)]
+
+    result = mix.run(context, lambda value, message: None)
+
+    timeline = Alignment.model_validate_json(result.output_files["alignment"].read_bytes())
+    samples, rate = sf.read(result.output_files["mixed_audio"], dtype="float32", always_2d=True)
+    assert rate == 48000 and samples.shape == (1700 * 48, 2)
+    adjusted = [sf.read(context.work_dir / f"adjusted/{index:04d}.wav", always_2d=True)[0] for index in (1, 2)]
+    # The preferred source start plus these complete clips overflows. Their
+    # combined audio fits when the earlier silent portion is used.
+    total_speech_frames = sum(len(clip) for clip in adjusted)
+    assert total_speech_frames < len(samples) < 500 * 48 + total_speech_frames
+    start = len(samples) - total_speech_frames
+    assert not samples[:start].any()
+    for item, clip in zip(timeline.segments, adjusted, strict=True):
+        end = start + len(clip)
+        assert np.allclose(samples[start:end], clip, atol=1 / 32768)
+        assert (item.dubbed_start_ms, item.dubbed_end_ms) == (round(start / 48), round(end / 48))
+        start = end
+    assert start == len(samples)
+    assert timeline.segments[0].dubbed_start_ms < 500
+    assert timeline.segments[1].dubbed_start_ms < 1100
+    assert timeline.segments[-1].dubbed_end_ms == 1700
+    assert [(item.source_start_ms, item.source_end_ms) for item in timeline.segments] == [(500, 1000), (1100, 1700)]
+    assert context.input_files["transcript"].read_bytes() == original_transcript
+    assert [(context.work_dir / f"tts/{index:06d}.wav").read_bytes() for index in (1, 2)] == original_clips
+
+
+def test_real_mix_fails_when_combined_complete_clips_exceed_all_available_time(context):
+    require_ffmpeg()
+    context.input_files["media_info"].write_text(json.dumps({"duration_ms": 1700, "width": 320, "height": 180}))
+    write_tone(context.work_dir / "tts/000001.wav", 1000, 440)
+    write_tone(context.work_dir / "tts/000002.wav", 2000, 660)
+    write_manifest(context)
+
+    with pytest.raises(ApiError) as error:
+        mix.run(context, lambda value, message: None)
+
+    assert error.value.content["error"]["code"] == "AUDIO_EXCEEDS_VIDEO"
+    adjusted = [sf.info(context.work_dir / f"adjusted/{index:04d}.wav") for index in (1, 2)]
+    assert all(clip.frames < 1700 * 48 for clip in adjusted)
+    assert sum(clip.frames for clip in adjusted) > 1700 * 48
+    assert not (context.work_dir / "mixed.wav").exists()
+    assert not (context.work_dir / "alignment.json").exists()
+
+
 def test_overlapping_source_speech_is_explicitly_unsupported(monkeypatch, context):
     path = context.input_files["transcript"]
     payload = json.loads(path.read_text())
