@@ -1,0 +1,196 @@
+{
+  "date": "2026-09-22",
+  "platform": "macOS arm64",
+  "device": "cpu",
+  "source": "Generated test video with macOS Samantha English speech; no user media",
+  "translation": "Explicit manual Chinese test fixture. Real remote translation is not verified.",
+  "models": {
+    "asr": "OpenAI Whisper tiny / openai-whisper 20250625",
+    "separation": "Demucs htdemucs / vendored source",
+    "tts": "VoxCPM2 / voxcpm 2.0.3"
+  },
+  "model_sha256": {
+    "whisper_tiny": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9",
+    "demucs_htdemucs": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4",
+    "voxcpm2": {
+      "config.json": {
+        "bytes": 4336,
+        "sha256": "405f0dcd92f7feba6011ed4eac5c8d4f74cba9712f07fd5cfa3063bbdd95402c"
+      },
+      "tokenizer.json": {
+        "bytes": 3676772,
+        "sha256": "f8984687e4a92a3503d521396d454b7d68e9fdaab2a0288eb3536c7c1aa4bc20"
+      },
+      "tokenizer_config.json": {
+        "bytes": 5059,
+        "sha256": "e78a3ebb48a0b9437efd1823b6b726c823da89e49dd8bcc90c02419d9baa772b"
+      },
+      "special_tokens_map.json": {
+        "bytes": 1632,
+        "sha256": "068594063e37662c02b21acf42ebb334ef6a74fb810e68a2368f88f08351de76"
+      },
+      "tokenization_voxcpm2.py": {
+        "bytes": 2895,
+        "sha256": "84489ea32b6ee0cae22ed5480cacb6df85c46624c3119be9a2021c3649a12729"
+      },
+      "model.safetensors": {
+        "bytes": 4580080592,
+        "sha256": "f7f964cfa9da23653baec6e6f7750719977ad944ed9f95fe52fe3a620506891d"
+      },
+      "audiovae.pth": {
+        "bytes": 376951122,
+        "sha256": "94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1"
+      }
+    }
+  },
+  "transcript": {
+    "detected_language": "en",
+    "segments": [
+      {
+        "id": "segment-000001",
+        "start_ms": 0,
+        "end_ms": 6700,
+        "text": " Welcome to UDob, today we are testing video translation, the original voice and subtitle timing should stay clear."
+      }
+    ]
+  },
+  "manual_translation": {
+    "source_language": "en",
+    "target_language": "zh",
+    "segments": [
+      {
+        "segment_id": "segment-000001",
+        "text": "欢迎使用 YouDub。今天我们测试视频翻译，原声和字幕的时间应该保持清楚准确。"
+      }
+    ]
+  },
+  "speech_clips": {
+    "clips": [
+      {
+        "segment_id": "segment-000001",
+        "path": "tts/000001.wav",
+        "duration_ms": 7040,
+        "sample_rate_hz": 48000,
+        "channels": 1
+      }
+    ]
+  },
+  "source_and_transcript_unchanged": true,
+  "results": [
+    {
+      "mode": "subtitles",
+      "files": {
+        "video": {
+          "path": "subtitles/output/video.mp4",
+          "bytes": 86576,
+          "sha256": "b7e26c47f5344322a7b40e8ca64fce7ab70922cdc47070b117b6e852af5f0374"
+        },
+        "source_subtitles": {
+          "path": "subtitles/output/source.srt",
+          "bytes": 148,
+          "sha256": "6ca4a82182dc9d962a8cacdd439eaa4196f381cd72c71609b28d1986ca001741"
+        },
+        "translated_subtitles": {
+          "path": "subtitles/output/translated.srt",
+          "bytes": 139,
+          "sha256": "0666cdd4c89ca3ee5e08417e1b47b157bdadc6b86e5752c77d883feaff2fceea"
+        }
+      },
+      "video_duration_ms": 6919
+    },
+    {
+      "mode": "dubbing",
+      "files": {
+        "video": {
+          "path": "dubbing/output/video.mp4",
+          "bytes": 122247,
+          "sha256": "6463d115f00ee2102cce345dc905c03c5de26da60d8c121a59b10596fc02eb96"
+        },
+        "audio": {
+          "path": "dubbing/output/audio.wav",
+          "bytes": 1321004,
+          "sha256": "e5820eca531b5335b7a460db1c0685869ad32ae6e3a11ffda4599bbcf070c424"
+        }
+      },
+      "video_duration_ms": 6880,
+      "audio_duration_ms": 6880,
+      "alignment": {
+        "segments": [
+          {
+            "segment_id": "segment-000001",
+            "source_start_ms": 0,
+            "source_end_ms": 6700,
+            "dubbed_start_ms": 0,
+            "dubbed_end_ms": 6680
+          }
+        ]
+      }
+    },
+    {
+      "mode": "both",
+      "files": {
+        "video": {
+          "path": "both/output/video.mp4",
+          "bytes": 133732,
+          "sha256": "5f7ea675ca916945efcb94aa859559ae3f8b9db2606a7b6f10a2b7211134c00c"
+        },
+        "audio": {
+          "path": "both/output/audio.wav",
+          "bytes": 1321004,
+          "sha256": "e5820eca531b5335b7a460db1c0685869ad32ae6e3a11ffda4599bbcf070c424"
+        },
+        "source_subtitles": {
+          "path": "both/output/source.srt",
+          "bytes": 148,
+          "sha256": "6ca4a82182dc9d962a8cacdd439eaa4196f381cd72c71609b28d1986ca001741"
+        },
+        "translated_subtitles": {
+          "path": "both/output/translated.srt",
+          "bytes": 139,
+          "sha256": "292c07470becdb572e1de9fa419aa4e5924501668b16272b73bd2f43c24d3105"
+        }
+      },
+      "video_duration_ms": 6880,
+      "audio_duration_ms": 6880,
+      "alignment": {
+        "segments": [
+          {
+            "segment_id": "segment-000001",
+            "source_start_ms": 0,
+            "source_end_ms": 6700,
+            "dubbed_start_ms": 0,
+            "dubbed_end_ms": 6680
+          }
+        ]
+      }
+    }
+  ],
+  "pending": [
+    "Real remote translation with approved credential source",
+    "Complete end-to-end task acceptance",
+    "Human audio quality review",
+    "Windows machine validation"
+  ],
+  "source_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+  "transcript_sha256": "471b5db48704e1cf786b53557f3018dea24cf5cb683620a0173c25bfd1af3e4b",
+  "browser_validation": {
+    "browser": "Chrome",
+    "surface": "Task detail page, authenticated temporary backend",
+    "mode": "both",
+    "duration_seconds": 6.88,
+    "ended": true,
+    "media_error": null,
+    "chinese_subtitles_visible": true,
+    "download_bytes": 133732,
+    "download_sha256": "5f7ea675ca916945efcb94aa859559ae3f8b9db2606a7b6f10a2b7211134c00c",
+    "download_matches_export": true,
+    "http_statuses": {
+      "login": 200,
+      "list": 200,
+      "detail": 200,
+      "video_range": 206,
+      "download": 200
+    },
+    "audio_quality_reviewed": false
+  }
+}
