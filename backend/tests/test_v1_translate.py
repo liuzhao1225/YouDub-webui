@@ -90,6 +90,7 @@ def test_translation_preserves_source_and_matches_ids_in_serial_batches(context,
     translated = read_translation(result.output_files["translation"], original, stage="translate")
     assert len(translated.match(original)) == 23
     assert [len(json.loads(call["messages"][1]["content"])["segments"]) for call in provider.calls] == [20, 3]
+    assert [call["max_completion_tokens"] for call in provider.calls] == [65535, 65535]
     assert states == ["pending", "succeeded", "pending", "succeeded"]
     assert provider.options == [{"base_url": "https://pinned.example/v1", "api_key": "pinned-key", "max_retries": 0, "timeout": 60.0}]
     assert provider.closed
@@ -221,6 +222,7 @@ def test_installed_sdk_parses_complete_responses_and_retains_all_batch_ids(conte
     assert len(translated.match(original)) == 23
     assert states == ["pending", "succeeded", "pending", "succeeded"]
     assert len(real_provider.calls) == 2
+    assert [call["max_completion_tokens"] for call in real_provider.calls] == [65535, 65535]
     assert all(client.is_closed for client in real_provider.clients)
 
 

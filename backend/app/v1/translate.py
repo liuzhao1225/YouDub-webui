@@ -59,6 +59,7 @@ async def _translate(context: StageContext, transcript: Transcript, progress: Ca
             try:
                 pending = asyncio.create_task(client.chat.completions.with_raw_response.create(
                     model=context.config.translation.model,
+                    max_completion_tokens=65535,
                     messages=[
                         {"role": "system", "content": (
                             f"Translate from {transcript.detected_language} to {context.config.target_language}. "

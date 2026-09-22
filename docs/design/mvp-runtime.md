@@ -32,6 +32,7 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 - 在设置中保存 OpenAI 兼容的 base URL 与 API key。翻译模型候选默认 `gpt-4.1-mini`，可用 `YOUDUB_TRANSLATION_MODELS` 配置逗号分隔列表；已保存的默认模型也会保留。目录可选表示前置条件满足，实际模型名称与权限由调用验证。
 - 英语、中文、日语是当前字幕链的语言范围。自动检测到其他语言或源语言与目标相同时，翻译前明确失败。
 - 翻译逐批请求，每批最多 20 段、源文本合计最多 6000 个字符；原始单段超过字符限制时明确失败。供应商需支持 Chat Completions JSON object 响应；不自动重试、拆句或重排源时间轴。
+- v1 翻译请求显式固定 `max_completion_tokens=65535`，当前 TaskConfig 不提供可降低该值的参数。供应商拒绝该上限时，任务明确失败且不自动换参数重试。火山方舟 `doubao-seed-evolving` 已接受该参数并完成三句真实翻译，见[输出上限验证](../validation/mvp-translation-output-limit-2026-09-22.json)。
 - 中文/日文字幕需要可用字体。macOS 默认 `Hiragino Sans GB`、Windows 默认 `Microsoft YaHei`、Linux 默认 `Noto Sans CJK SC`；Linux 需安装对应字体包，也可通过 `YOUDUB_SUBTITLE_FONT` 指定字体名。
 
 同步翻译在发出请求前持久化 pending。收到完整成功响应后标记 succeeded，再校验 JSON 与分段；明确拒绝标记 failed。超时、连接中断或等待期间取消保留 unknown 风险，禁止直接 retry。取消会关闭本机异步请求，远端是否继续执行由 `external_operation` 表达。
@@ -102,4 +103,6 @@ X-CSRF-Token: <session csrf token>
 
 Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，复制时核对内容一致并重建 `env.txt` 硬链接；之后仅在本机将 `YOUDUB_TTS_ENGINE` 改为 `voxcpm2`，硬链接保持不变。真实验收使用独立数据目录，临时凭据已清理。另按用户指示在本机默认 Settings 保存真实翻译连接和 VoxCPM2 `source_clone` 默认配置，密钥保存在系统凭据库；专名提示保持每任务可选，未全局写入 YouDub。
 
-以上模型调用均发生在用户新增“每次请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。后续新调用须按新规则核对兼容性；本轮记录不构成新上限的运行证据。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
+完整三模式验收发生在用户新增“每次请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。
+
+本机 Whisper tiny 的解码窗口为 448 tokens，VoxCPM2 配置 `max_length=8192`，无法满足将上述下限按字面应用于音频模型的要求。已停止新音频推理，等待用户明确该规则对音频模型的适用范围；没有降低上限或改写历史结果。Runtime 的 ready 表示本地依赖、权重与连接配置就绪，不构成音频模型支持 65,535 token 的证明。

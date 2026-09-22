@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "model": "doubao-seed-evolving",
+  "max_completion_tokens": 65535,
+  "http_status": 200,
+  "finish_reason": "stop",
+  "external_states": [
+    "pending",
+    "succeeded"
+  ],
+  "translation": {
+    "source_language": "en",
+    "target_language": "zh",
+    "segments": [
+      {
+        "segment_id": "segment-000001",
+        "text": "欢迎来到 YouDub。"
+      },
+      {
+        "segment_id": "segment-000002",
+        "text": "今天我们正在测试视频翻译，"
+      },
+      {
+        "segment_id": "segment-000003",
+        "text": "原始声音和字幕时间轴应保持清晰。"
+      }
+    ]
+  },
+  "usage": {
+    "completion_tokens": 154,
+    "prompt_tokens": 313,
+    "total_tokens": 467,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 80
+    }
+  },
+  "historical_transcript_unchanged": true,
+  "new_audio_model_requests": false,
+  "request_sha256": "c09fa4bcd252c7fba9299a7908884c4ade0ef003c7667941a4fa8652f670225b",
+  "raw_response_sha256": "4d3ca41194f0290214b4e3c55a231b8b0c9a326334abcf5db18cfe6eb606a122",
+  "date": "2026-09-22",
+  "implementation_file": "backend/app/v1/translate.py",
+  "implementation_sha256": "85c64a5dc6aed87a71a46ec74fa693b138cf88ee937b1d5616a254d14b05cf03",
+  "regression": "27 translation tests passed, including serialized SDK request bodies and no automatic retry.",
+  "scope": "Only the real v1 translation stage was called using the prior three source sentences. ASR/TTS were not rerun.",
+  "output_limit_policy": "The v1 translation request fixes max_completion_tokens at 65535; TaskConfig does not expose a lower configurable output limit.",
+  "audio_compatibility": {
+    "status": "awaiting_user_scope_clarification",
+    "whisper_tiny_n_text_ctx": 448,
+    "voxcpm2_max_length": 8192,
+    "conclusion": "Installed audio models cannot meet the literal 65535 output-token lower bound. No new audio inference after that rule."
+  }
+}
