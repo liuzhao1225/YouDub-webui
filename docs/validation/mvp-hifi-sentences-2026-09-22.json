@@ -1,0 +1,531 @@
+{
+  "date": "2026-09-22",
+  "code_commit": "477319f9a8a5921079440c73db01977e6cce835f",
+  "scope": "真实远端翻译、本地 Whisper tiny / Demucs htdemucs / VoxCPM2 CPU、逐句混音和三模式导出。6.88 秒合成单说话人英语输入。",
+  "implementation": {
+    "hifi_cloning_commit": "984ce5e",
+    "word_timed_sentences_commit": "6cd150d",
+    "frontend_commit": "477319f"
+  },
+  "source_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+  "model": "doubao-seed-evolving",
+  "provider_host": "ark.cn-beijing.volces.com",
+  "history_policy": "此轮所有模型调用在新增 65,535 输出 token 下限规则之前完成；历史请求参数和原始响应保持原样。本记录不证明新上限的兼容性，后续请求须按新规则单独核对。",
+  "tasks": [
+    {
+      "mode": "subtitles",
+      "task_id": "37d60c5e-2af0-47f9-9ac1-ab532e6e67f9",
+      "config": {
+        "source_language": "en",
+        "target_language": "zh",
+        "output_mode": "subtitles",
+        "keep_background": false,
+        "asr": {
+          "adapter": "whisper",
+          "model": "tiny",
+          "device": "cpu",
+          "initial_prompt": "YouDub."
+        },
+        "translation": {
+          "adapter": "openai",
+          "model": "doubao-seed-evolving",
+          "device": "remote"
+        },
+        "tts": null,
+        "separation": null
+      },
+      "transcript": {
+        "detected_language": "en",
+        "segments": [
+          {
+            "id": "segment-000001",
+            "start_ms": 0,
+            "end_ms": 1040,
+            "text": " Welcome to YouDub."
+          },
+          {
+            "id": "segment-000002",
+            "start_ms": 1180,
+            "end_ms": 3400,
+            "text": " Today we are testing video translation,"
+          },
+          {
+            "id": "segment-000003",
+            "start_ms": 3880,
+            "end_ms": 6680,
+            "text": " the original voice and subtitle timing should stay clear."
+          }
+        ]
+      },
+      "translation_result": {
+        "source_language": "en",
+        "target_language": "zh",
+        "segments": [
+          {
+            "segment_id": "segment-000001",
+            "text": "欢迎使用 YouDub。"
+          },
+          {
+            "segment_id": "segment-000002",
+            "text": "今天我们正在测试视频翻译，"
+          },
+          {
+            "segment_id": "segment-000003",
+            "text": "原始语音和字幕的时间节奏应保持清晰。"
+          }
+        ]
+      },
+      "files": {
+        "video": {
+          "bytes": 89053,
+          "sha256": "5b25b5ab7f225951e7a5250abdf5c139df8b706c33eacbf6783dff569a117f62",
+          "duration_ms": 6919,
+          "timeline": "source"
+        },
+        "source_subtitles": {
+          "bytes": 218,
+          "sha256": "07a64dd12e6d919511ab6d6c9edff8b1e24bf31a40129040a1ff3ab05652647e",
+          "duration_ms": null,
+          "timeline": "source"
+        },
+        "translated_subtitles": {
+          "bytes": 216,
+          "sha256": "18e52bc26ab6a68fd2cc5be54f0423ea689f57a70cd58ce45feae982d13f6dc6",
+          "duration_ms": null,
+          "timeline": "source"
+        }
+      },
+      "head_http_status": 200,
+      "range_http_status": 206,
+      "input_unchanged": true,
+      "attempt": 1,
+      "status": "succeeded",
+      "started_at": "2026-09-22T13:57:13.468Z",
+      "finished_at": "2026-09-22T13:57:21.847Z",
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      }
+    },
+    {
+      "mode": "both",
+      "task_id": "2ac8c678-423b-4537-a3ce-25afd10f1312",
+      "config": {
+        "source_language": "en",
+        "target_language": "zh",
+        "output_mode": "both",
+        "keep_background": true,
+        "asr": {
+          "adapter": "whisper",
+          "model": "tiny",
+          "device": "cpu",
+          "initial_prompt": "YouDub."
+        },
+        "translation": {
+          "adapter": "openai",
+          "model": "doubao-seed-evolving",
+          "device": "remote"
+        },
+        "tts": {
+          "adapter": "voxcpm",
+          "model": "VoxCPM2",
+          "device": "cpu",
+          "voice": {
+            "mode": "source_clone"
+          }
+        },
+        "separation": {
+          "adapter": "demucs",
+          "model": "htdemucs",
+          "device": "cpu"
+        }
+      },
+      "transcript": {
+        "detected_language": "en",
+        "segments": [
+          {
+            "id": "segment-000001",
+            "start_ms": 0,
+            "end_ms": 1040,
+            "text": " Welcome to YouDub,"
+          },
+          {
+            "id": "segment-000002",
+            "start_ms": 1200,
+            "end_ms": 3400,
+            "text": " today we are testing video translation,"
+          },
+          {
+            "id": "segment-000003",
+            "start_ms": 3880,
+            "end_ms": 6680,
+            "text": " the original voice and subtitle timing should stay clear."
+          }
+        ]
+      },
+      "translation_result": {
+        "source_language": "en",
+        "target_language": "zh",
+        "segments": [
+          {
+            "segment_id": "segment-000001",
+            "text": "欢迎来到 YouDub，"
+          },
+          {
+            "segment_id": "segment-000002",
+            "text": "今天我们正在测试视频翻译，"
+          },
+          {
+            "segment_id": "segment-000003",
+            "text": "原声和字幕时间轴应保持清晰。"
+          }
+        ]
+      },
+      "files": {
+        "video": {
+          "bytes": 138644,
+          "sha256": "62e5a2faff5e6858a3b1e527c81a1894d810a7f29d31da0b672f1d760e6a4a9e",
+          "duration_ms": 6880,
+          "timeline": "dubbed"
+        },
+        "audio": {
+          "bytes": 1321004,
+          "sha256": "4b415e536415e41d068489986e06aaacb7e683511b3f2c8973604260cf360742",
+          "duration_ms": 6880,
+          "timeline": "dubbed"
+        },
+        "source_subtitles": {
+          "bytes": 218,
+          "sha256": "1c318dd0de8051cd66403b624f6aa35b4c21c1065b260e35f48b791f52a51a48",
+          "duration_ms": null,
+          "timeline": "source"
+        },
+        "translated_subtitles": {
+          "bytes": 204,
+          "sha256": "22b08a3f47ccab7138aa600d4a75ea5c79aaee50223856605ba21da6cf60c540",
+          "duration_ms": null,
+          "timeline": "dubbed"
+        }
+      },
+      "head_http_status": 200,
+      "range_http_status": 206,
+      "input_unchanged": true,
+      "attempt": 1,
+      "status": "succeeded",
+      "started_at": "2026-09-22T13:57:23.583Z",
+      "finished_at": "2026-09-22T13:58:55.287Z",
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      }
+    },
+    {
+      "mode": "dubbing",
+      "task_id": "e816eb3f-683d-4036-a53b-e58005f91533",
+      "config": {
+        "source_language": "en",
+        "target_language": "zh",
+        "output_mode": "dubbing",
+        "keep_background": true,
+        "asr": {
+          "adapter": "whisper",
+          "model": "tiny",
+          "device": "cpu",
+          "initial_prompt": "YouDub."
+        },
+        "translation": {
+          "adapter": "openai",
+          "model": "doubao-seed-evolving",
+          "device": "remote"
+        },
+        "tts": {
+          "adapter": "voxcpm",
+          "model": "VoxCPM2",
+          "device": "cpu",
+          "voice": {
+            "mode": "source_clone"
+          }
+        },
+        "separation": {
+          "adapter": "demucs",
+          "model": "htdemucs",
+          "device": "cpu"
+        }
+      },
+      "transcript": {
+        "detected_language": "en",
+        "segments": [
+          {
+            "id": "segment-000001",
+            "start_ms": 0,
+            "end_ms": 1020,
+            "text": " Welcome to YouDub,"
+          },
+          {
+            "id": "segment-000002",
+            "start_ms": 1200,
+            "end_ms": 3400,
+            "text": " today we are testing video translation,"
+          },
+          {
+            "id": "segment-000003",
+            "start_ms": 3880,
+            "end_ms": 6700,
+            "text": " the original voice and subtitle timing should stay clear."
+          }
+        ]
+      },
+      "translation_result": {
+        "source_language": "en",
+        "target_language": "zh",
+        "segments": [
+          {
+            "segment_id": "segment-000001",
+            "text": "欢迎来到 YouDub，"
+          },
+          {
+            "segment_id": "segment-000002",
+            "text": "今天我们正在测试视频翻译，"
+          },
+          {
+            "segment_id": "segment-000003",
+            "text": "原始语音和字幕时间轴应保持清晰。"
+          }
+        ]
+      },
+      "files": {
+        "video": {
+          "bytes": 124219,
+          "sha256": "8567a2e919a74ca8a556ac935cd44949075175ecd07027fb8cca3550b4c15c86",
+          "duration_ms": 6880,
+          "timeline": "dubbed"
+        },
+        "audio": {
+          "bytes": 1321004,
+          "sha256": "a2eb1715428753a9f34934728d81d37225986f86ff524db88e9f7e7dba5ea6e6",
+          "duration_ms": 6880,
+          "timeline": "dubbed"
+        }
+      },
+      "head_http_status": 200,
+      "range_http_status": 206,
+      "input_unchanged": true,
+      "attempt": 1,
+      "status": "succeeded",
+      "started_at": "2026-09-22T13:58:56.697Z",
+      "finished_at": "2026-09-22T14:00:42.931Z",
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      }
+    }
+  ],
+  "media_validation": {
+    "passed": true,
+    "tasks": [
+      {
+        "mode": "subtitles",
+        "task_id": "37d60c5e-2af0-47f9-9ac1-ab532e6e67f9",
+        "full_media_decode": true,
+        "sentence_count": 3,
+        "proper_name": "YouDub",
+        "raw_asr_sha256": "2ad2f3230bd621d567675d4f8ec7471ab573cd6ae0270a241756bbc9a8f82600",
+        "raw_asr_segment_count": 1,
+        "sentence_text_preserved": true,
+        "video_audio_correlation_with_expected_source": 0.9989024105005307,
+        "expected_audio": "source first audio track",
+        "source_srt_matches_asr_timing": true,
+        "translated_srt_matches_declared_timeline": true
+      },
+      {
+        "mode": "both",
+        "task_id": "2ac8c678-423b-4537-a3ce-25afd10f1312",
+        "full_media_decode": true,
+        "sentence_count": 3,
+        "proper_name": "YouDub",
+        "raw_asr_sha256": "6c03ad5d37afd967438c87463084e330ac5e83a5eee85ff6ea12fdbb22f7df14",
+        "raw_asr_segment_count": 1,
+        "sentence_text_preserved": true,
+        "video_audio_correlation_with_expected_source": 0.9990986321239432,
+        "expected_audio": "output/audio.wav",
+        "reference": {
+          "duration_ms": 6680,
+          "sample_rate_hz": 16000,
+          "channels": 1,
+          "reference_text": " Welcome to YouDub,  today we are testing video translation,  the original voice and subtitle timing should stay clear.",
+          "complete_source_sentences": 3
+        },
+        "tts_durations_ms": [
+          1760,
+          2880,
+          3200
+        ],
+        "alignment": [
+          {
+            "segment_id": "segment-000001",
+            "source_start_ms": 0,
+            "source_end_ms": 1040,
+            "dubbed_start_ms": 0,
+            "dubbed_end_ms": 1045
+          },
+          {
+            "segment_id": "segment-000002",
+            "source_start_ms": 1200,
+            "source_end_ms": 3400,
+            "dubbed_start_ms": 1200,
+            "dubbed_end_ms": 3380
+          },
+          {
+            "segment_id": "segment-000003",
+            "source_start_ms": 3880,
+            "source_end_ms": 6680,
+            "dubbed_start_ms": 3880,
+            "dubbed_end_ms": 6662
+          }
+        ],
+        "complete_adjusted_clip_durations_match_schedule": true,
+        "hifi_call_evidence": "request.json contains source audio and matching prompt text; committed tts_process.py passes that audio as both prompt_wav_path and reference_wav_path. No subjective voice similarity claim.",
+        "source_srt_matches_asr_timing": true,
+        "translated_srt_matches_declared_timeline": true
+      },
+      {
+        "mode": "dubbing",
+        "task_id": "e816eb3f-683d-4036-a53b-e58005f91533",
+        "full_media_decode": true,
+        "sentence_count": 3,
+        "proper_name": "YouDub",
+        "raw_asr_sha256": "e30c9713253e3722c3d7e583104807c85c4899c2b9f35a6a4fb24fefcca6bd6f",
+        "raw_asr_segment_count": 1,
+        "sentence_text_preserved": true,
+        "video_audio_correlation_with_expected_source": 0.9993083943470402,
+        "expected_audio": "output/audio.wav",
+        "reference": {
+          "duration_ms": 6700,
+          "sample_rate_hz": 16000,
+          "channels": 1,
+          "reference_text": " Welcome to YouDub,  today we are testing video translation,  the original voice and subtitle timing should stay clear.",
+          "complete_source_sentences": 3
+        },
+        "tts_durations_ms": [
+          1760,
+          2720,
+          3680
+        ],
+        "alignment": [
+          {
+            "segment_id": "segment-000001",
+            "source_start_ms": 0,
+            "source_end_ms": 1020,
+            "dubbed_start_ms": 0,
+            "dubbed_end_ms": 1042
+          },
+          {
+            "segment_id": "segment-000002",
+            "source_start_ms": 1200,
+            "source_end_ms": 3400,
+            "dubbed_start_ms": 1200,
+            "dubbed_end_ms": 3388
+          },
+          {
+            "segment_id": "segment-000003",
+            "source_start_ms": 3880,
+            "source_end_ms": 6700,
+            "dubbed_start_ms": 3880,
+            "dubbed_end_ms": 6703
+          }
+        ],
+        "complete_adjusted_clip_durations_match_schedule": true,
+        "hifi_call_evidence": "request.json contains source audio and matching prompt text; committed tts_process.py passes that audio as both prompt_wav_path and reference_wav_path. No subjective voice similarity claim."
+      }
+    ],
+    "limitations": [
+      "Synthetic 6.88 second English single-speaker input; no Windows/GPU/multi-speaker validation.",
+      "Cloning quality requires listening; correlation validates audio track provenance only."
+    ]
+  },
+  "regression": {
+    "backend_tests_passed": 840,
+    "frontend_tests_passed": 43,
+    "frontend_typecheck": "passed",
+    "frontend_eslint": "passed",
+    "production_build": "passed",
+    "python_environment": "repository .venv; PYTHON_DOTENV_DISABLED=1 for tests",
+    "node_major": 22
+  },
+  "human_listening_review": {
+    "status": "pending",
+    "question": "新版极致克隆声音是否完整自然、三条字幕的切换是否可接受？",
+    "prior_acceptance": "用户认可了旧版本的声音完整清楚、时序可接受；随后指出专名和未分句问题。旧结论不覆盖此轮极致克隆。"
+  },
+  "limitations": [
+    "Windows、CUDA、长视频与多说话人场景未实机验收。",
+    "默认声音方式为 source_clone；Whisper 无说话人区分，未标注 speaker 的语音共用一个参考窗口。"
+  ],
+  "temporary_credentials_removed": true,
+  "browser_validation": {
+    "browser": "Chrome via CUA; native video controls",
+    "login": "passed",
+    "proper_name_input": {
+      "entered": "YouDub.",
+      "max_length": 500,
+      "retained_when_output_changed": true
+    },
+    "default_voice_selection": {
+      "model": "voxcpm / VoxCPM2 · cpu",
+      "voice": "Clone source voice"
+    },
+    "tasks": [
+      {
+        "mode": "subtitles",
+        "task_id": "37d60c5e-2af0-47f9-9ac1-ab532e6e67f9",
+        "status_shown": "Completed",
+        "ended": true,
+        "error": null,
+        "current_time_seconds": 6.919002,
+        "duration_seconds": 6.919002
+      },
+      {
+        "mode": "both",
+        "task_id": "2ac8c678-423b-4537-a3ce-25afd10f1312",
+        "status_shown": "Completed",
+        "ended": true,
+        "error": null,
+        "current_time_seconds": 6.88,
+        "duration_seconds": 6.88
+      },
+      {
+        "mode": "dubbing",
+        "task_id": "e816eb3f-683d-4036-a53b-e58005f91533",
+        "status_shown": "Completed",
+        "ended": true,
+        "error": null,
+        "current_time_seconds": 6.88,
+        "duration_seconds": 6.88
+      }
+    ],
+    "both_frames": [
+      {
+        "time_seconds": 0.5,
+        "text": "欢迎来到 YouDub，"
+      },
+      {
+        "time_seconds": 2,
+        "text": "今天我们正在测试视频翻译，"
+      },
+      {
+        "time_seconds": 5,
+        "text": "原声和字幕时间轴应保持清晰。"
+      }
+    ],
+    "frame_evidence": "Decoded frames visually inspected separately; first cue also visible in Chrome. SRT matches independent dubbed intervals.",
+    "both_browser_download": {
+      "clicked": true,
+      "server_http_status": 200,
+      "browser_saved_file_independently_verified": false
+    },
+    "download_limit": "本次已验证 API 下载的全部产物哈希；浏览器点击下载返回 200，本次未独立核对浏览器保存文件。",
+    "setup_correction": "Initial frontend build proxy used port 8000 while the temporary API used 8011 and the page returned 500. Stopped that temporary API and started it at the already-free port 8000; login and playback then passed. No product source change.",
+    "new_model_requests": false,
+    "temporary_services_stopped": true
+  }
+}

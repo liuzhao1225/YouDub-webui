@@ -322,7 +322,58 @@
   ],
   "all_outputs_downloaded_and_matched_disk": true,
   "temporary_real_credential_removed": true,
-  "browser_validation": "Pending current real outputs; earlier manual-fixture playback recorded separately",
-  "human_listening_review": "Pending user feedback",
+  "browser_validation": {
+    "browser": "Chrome via CUA; native video controls",
+    "completed_at": "2026-09-22T13:43:39.923781+00:00",
+    "tasks": [
+      {
+        "mode": "subtitles",
+        "task_id": "912d5aa5-529a-4af9-9bdb-2e0baa815d7f",
+        "ended": {
+          "current_time_seconds": 6.919002,
+          "duration_seconds": 6.919002,
+          "paused": true,
+          "ended": true,
+          "error": null
+        },
+        "download_bytes": 86163,
+        "download_sha256": "7a8f666040f89d65df4cd5cd4554674873410da9394de0d858ed840ee1dc03b1",
+        "download_matches_manifest": true
+      },
+      {
+        "mode": "both",
+        "task_id": "e083d510-4e12-4f4f-a455-371a540a7f17",
+        "ended": {
+          "current_time_seconds": 6.88,
+          "duration_seconds": 6.88,
+          "paused": true,
+          "ended": true,
+          "error": null
+        },
+        "download_bytes": 134067,
+        "download_sha256": "a6dd99c033fa70e47ec1d996fa4ec635d8580308b67ee1b0393e9ee465d6233d",
+        "download_matches_manifest": true
+      },
+      {
+        "mode": "dubbing",
+        "task_id": "40b1cf2e-4e05-4d4f-b204-fa260ac05c76",
+        "ended": {
+          "current_time_seconds": 6.88,
+          "duration_seconds": 6.88,
+          "paused": true,
+          "ended": true,
+          "error": null
+        },
+        "download_bytes": 123182,
+        "download_sha256": "c785d454737956b155b33c2fd6a5fc553a0a9dc60efac10d7bd3061b3fea4736",
+        "download_matches_manifest": true
+      }
+    ]
+  },
+  "human_listening_review": {
+    "feedback": "完整清楚，时序可接受",
+    "scope": "旧版 reference-only 克隆、未分句的约 7 秒 both 产物。用户随后指出 UDob 专名误识别和未分句问题。",
+    "follow_up_record": "mvp-hifi-sentences-2026-09-22.json"
+  },
   "windows_validation": "Not run; no Windows machine used"
 }
