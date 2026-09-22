@@ -98,6 +98,7 @@ def test_tts_preserves_source_and_translation_and_uses_each_speakers_longest_ref
     clips = model_process.clips
     assert [clip["segment_id"] for clip in clips] == ["one", "two", "three"]
     assert [clip["text"] for clip in clips] == [" 第一段。\n", "第二段。", " 第三段。 "]
+    assert [clip["reference_text"] for clip in clips] == ["Original A2", "Original B", "Original A2"]
     assert clips[0]["reference_path"] == clips[2]["reference_path"] != clips[1]["reference_path"]
     source, rate = sf.read(context.input_files["vocals"])
     reference_a, reference_rate = sf.read(clips[0]["reference_path"])
@@ -123,13 +124,67 @@ def test_unknown_speaker_group_does_not_reuse_a_named_speakers_reference(context
     assert len({clip["reference_path"] for clip in model_process.clips}) == 3
 
 
-def test_reference_is_capped_at_ten_seconds(context, model_process):
+def test_contiguous_sentences_share_a_complete_reference_window_and_matching_source_text(context, model_process):
     payload = json.loads(context.input_files["transcript"].read_text())
-    payload["segments"][2].update(start_ms=2000, end_ms=15000)
+    for segment in payload["segments"]:
+        segment["speaker_id"] = "speaker-a"
+    context.input_files["transcript"].write_text(json.dumps(payload))
+    tts.run(context, lambda *args: None)
+    assert len({clip["reference_path"] for clip in model_process.clips}) == 1
+    assert all(clip["reference_text"] == "Original A1 Original B Original A2" for clip in model_process.clips)
+    reference, rate = sf.read(model_process.clips[0]["reference_path"])
+    source, _ = sf.read(context.input_files["vocals"])
+    assert np.array_equal(reference, source[:3500 * rate // 1000])
+
+
+def test_reference_window_does_not_cut_a_sentence_at_ten_seconds(context, model_process):
+    payload = json.loads(context.input_files["transcript"].read_text())
+    for index, segment in enumerate(payload["segments"]):
+        segment.update(speaker_id="speaker-a", start_ms=index * 4000, end_ms=(index + 1) * 4000)
+    context.input_files["transcript"].write_text(json.dumps(payload))
+    sf.write(context.input_files["vocals"], np.full(16000 * 12, 0.1), 16000, subtype="PCM_16")
+    tts.run(context, lambda *args: None)
+    assert sf.info(model_process.clips[0]["reference_path"]).duration == 8
+    assert model_process.clips[0]["reference_text"] == "Original A1 Original B"
+
+
+def test_reference_window_prefers_speech_duration_over_silent_span():
+    transcript = Transcript.model_validate({"detected_language": "en", "segments": [
+        {"id": "one", "start_ms": 0, "end_ms": 1000, "text": "One.", "speaker_id": "a"},
+        {"id": "two", "start_ms": 9000, "end_ms": 10_000, "text": "Two.", "speaker_id": "a"},
+        {"id": "three", "start_ms": 10_000, "end_ms": 14_000, "text": "Three.", "speaker_id": "a"},
+    ]})
+    reference = tts.speaker_references(transcript)["a"]
+    assert [segment.id for segment in reference] == ["two", "three"]
+
+
+@pytest.mark.parametrize("duration_ms, expected_text, expected_duration", [
+    (10_000, "Original A2", 10), (10_001, "Original A1", 1), (13_000, "Original A1", 1),
+])
+def test_reference_uses_a_complete_utterance_within_ten_seconds(
+    context, model_process, duration_ms, expected_text, expected_duration,
+):
+    payload = json.loads(context.input_files["transcript"].read_text())
+    payload["segments"][2].update(start_ms=2000, end_ms=2000 + duration_ms)
     context.input_files["transcript"].write_text(json.dumps(payload))
     sf.write(context.input_files["vocals"], np.full(16000 * 16, 0.1), 16000, subtype="PCM_16")
     tts.run(context, lambda *args: None)
-    assert sf.info(model_process.clips[0]["reference_path"]).duration == 10
+    assert sf.info(model_process.clips[0]["reference_path"]).duration == expected_duration
+    assert model_process.clips[0]["reference_text"] == expected_text
+
+
+def test_missing_complete_reference_for_one_speaker_fails_before_extraction_or_inference(context, model_process):
+    payload = json.loads(context.input_files["transcript"].read_text())
+    payload["segments"][1].update(start_ms=1000, end_ms=11_001)
+    payload["segments"][2].update(start_ms=11_001, end_ms=12_501)
+    context.input_files["transcript"].write_text(json.dumps(payload))
+    sf.write(context.input_files["vocals"], np.full(16000 * 13, 0.1), 16000, subtype="PCM_16")
+    with pytest.raises(ApiError) as error:
+        tts.run(context, lambda *args: None)
+    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
+    assert "complete" in error.value.content["error"]["message"]
+    assert not model_process.commands
+    assert not (context.work_dir / "tts").exists()
 
 
 @pytest.mark.parametrize("invalid", ["preset", "missing-vocals", "wrong-target", "missing-translation-id"])
@@ -192,6 +247,7 @@ def test_cancel_terminates_and_reaps_actual_tts_process(context, monkeypatch):
 
 def child_request(context):
     clips = [{"segment_id": str(index), "text": text, "reference_path": str(context.input_files["vocals"]),
+              "reference_text": " Source reference transcript.\n",
               "output_path": str(context.work_dir.parent / f"child-{index}.wav")}
              for index, text in enumerate([" 精确译文。\n", "Second exact text."])]
     path = context.work_dir.parent / "request.json"
@@ -219,9 +275,25 @@ def test_child_loads_local_model_once_and_calls_generate_once_per_exact_text(con
         "local_files_only": True, "load_denoiser": False, "optimize": False, "device": "cpu",
     })]
     assert generated == [{"text": clip["text"], "reference_wav_path": clip["reference_path"],
+                          "prompt_wav_path": clip["reference_path"], "prompt_text": clip["reference_text"],
                           "normalize": False, "denoise": False, "retry_badcase": False} for clip in clips]
     assert all(sf.info(clip["output_path"]).samplerate == 48000 for clip in clips)
     assert all(sf.info(clip["output_path"]).frames == 4800 for clip in clips)
+
+
+@pytest.mark.parametrize("reference_text", [None, "", " \n", 12])
+def test_child_rejects_missing_reference_transcript_before_model_loading(context, monkeypatch, capsys, reference_text):
+    loaded = []
+    monkeypatch.setitem(sys.modules, "voxcpm", SimpleNamespace(VoxCPM=SimpleNamespace(
+        from_pretrained=lambda *args, **kwargs: loaded.append(True))))
+    clips, arguments = child_request(context)
+    clips[0]["reference_text"] = reference_text
+    request_path = Path(arguments[arguments.index("--request-path") + 1])
+    request_path.write_text(json.dumps({"clips": clips}))
+    assert tts_process.main(arguments) == 1
+    assert json.loads(capsys.readouterr().err.strip().splitlines()[-1])["code"] == "INPUT_MISSING"
+    assert not loaded
+    assert not any(Path(clip["output_path"]).exists() for clip in clips)
 
 
 def test_child_missing_model_package_is_explicit(context, monkeypatch, capsys):

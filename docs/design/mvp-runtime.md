@@ -37,7 +37,7 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 ### 配音链模型配置与边界
 
 - 仓库固定 `voxcpm==2.0.3`。将 [VoxCPM2 官方模型](https://modelscope.cn/models/OpenBMB/VoxCPM2)放入数据目录的 `models/voxcpm/VoxCPM2/`，或设置 `YOUDUB_VOXCPM_MODEL_DIR`。目录需含 config、tokenizer、主模型和 AudioVAE 权重。推理只加载本地文件，明确使用所选 CPU/CUDA；关闭自动下载、降噪和质量重试。
-- 当前提供 `source_clone`，尚未提供预设声线。参考音频按每个 speaker 的最长源分段选择，最多 10 秒。Whisper 本身不提供说话人区分；未标注 speaker 的分段按同一源音色配音。
+- 当前提供 `source_clone`，默认使用 VoxCPM2 官方[极致克隆](https://github.com/OpenBMB/VoxCPM/blob/main/README_zh.md#-极致克隆)：同时传入参考音频、同一提示音频及其源文本。参考窗口由连续同 speaker 的完整句组成，总跨度最多 10 秒，优先覆盖更多源语音；不截断句子或跨已标记的 speaker。Whisper 本身不提供说话人区分；未标注 speaker 的分段按同一源音色配音。官方建议参考音频约 5–30 秒；短参考仍需实际听感评估。尚未提供预设声线。
 - Demucs 使用仓库子模块和官方 `htdemucs` 权重 `955717e8-8726e21a.th`，置于数据目录的 `models/demucs/`，或设置 `YOUDUB_DEMUCS_MODELS_DIR`。它从原视频首音轨提取 44.1 kHz 双声道音频，保持完整音频长度；不使用已降采样的 ASR 输入做分离。
 - 混音输出 48 kHz、双声道 PCM16 WAV。配音按生产主干的有界时长倍率变速，并以实际样本数排程；源分段重叠返回 `UNSUPPORTED_OVERLAPPING_SPEECH`，完整配音放不进原视频返回 `AUDIO_EXCEEDS_VIDEO`，不截断语音。保留背景时使用 `(dub + 0.3 × background) / 1.3` 的固定混音增益。
 - prepare 按毫秒比较首视频与首音轨的起点，起点不同明确返回 `UNSUPPORTED_MEDIA`，避免提取后整体错位。任务创建保持异步语义，此类任务会在 prepare 失败。

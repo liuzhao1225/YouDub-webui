@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
             ids.add(clip["segment_id"])
             if not Path(clip["reference_path"]).is_file():
                 raise ValueError("Reference audio is missing")
+            if not isinstance(clip["reference_text"], str) or not clip["reference_text"].strip():
+                raise ValueError("Reference audio transcript is missing")
     except (OSError, ValueError, KeyError, TypeError):
         return _fail("INPUT_MISSING", "The speech generation request or reference audio is invalid.")
 
@@ -67,6 +69,7 @@ def main(argv: list[str] | None = None) -> int:
         for clip in clips:
             waveform = np.asarray(model.generate(
                 text=clip["text"], reference_wav_path=clip["reference_path"],
+                prompt_wav_path=clip["reference_path"], prompt_text=clip["reference_text"],
                 normalize=False, denoise=False, retry_badcase=False,
             ))
             if (waveform.ndim != 1 or waveform.size == 0 or not np.isfinite(waveform).all()

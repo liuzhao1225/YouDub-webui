@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 
@@ -35,13 +36,35 @@ def available_models() -> list[str]:
     return ["VoxCPM2"] if all(any(present(name) for name in choices) for choices in groups) else []
 
 
-def speaker_references(transcript: Transcript) -> dict[str | None, Segment]:
-    """Select the longest utterance independently for each original speaker."""
-    result: dict[str | None, Segment] = {}
+def speaker_references(transcript: Transcript) -> dict[str | None, list[Segment]]:
+    """Keep complete consecutive sentences from one speaker within ten seconds."""
+    result: dict[str | None, list[Segment]] = {}
+    best_duration: dict[str | None, int] = {}
+    window: deque[Segment] = deque()
+    speech_duration = 0
     for segment in transcript.segments:
-        previous = result.get(segment.speaker_id)
-        if previous is None or segment.end_ms - segment.start_ms > previous.end_ms - previous.start_ms:
-            result[segment.speaker_id] = segment
+        duration = segment.end_ms - segment.start_ms
+        if (duration > MAX_REFERENCE_DURATION_MS or
+                (window and (segment.speaker_id != window[-1].speaker_id or
+                             segment.start_ms < window[-1].end_ms))):
+            window.clear()
+            speech_duration = 0
+        if duration > MAX_REFERENCE_DURATION_MS:
+            continue
+        window.append(segment)
+        speech_duration += duration
+        while segment.end_ms - window[0].start_ms > MAX_REFERENCE_DURATION_MS:
+            removed = window.popleft()
+            speech_duration -= removed.end_ms - removed.start_ms
+        if speech_duration > best_duration.get(segment.speaker_id, 0):
+            result[segment.speaker_id] = list(window)
+            best_duration[segment.speaker_id] = speech_duration
+    if set(result) != {segment.speaker_id for segment in transcript.segments}:
+        raise ApiError(
+            422, "INVALID_MEDIA",
+            "Every source speaker needs a complete reference utterance of at most 10 seconds for VoxCPM2 cloning.",
+            field="tts.voice.mode", stage="tts",
+        )
     return result
 
 
@@ -100,14 +123,15 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     reference_dir.mkdir(parents=True, exist_ok=True)
     reference_paths = {}
     progress(0.0, "Preparing source speaker references")
-    for index, (speaker_id, segment) in enumerate(references.items(), start=1):
+    for index, (speaker_id, sentences) in enumerate(references.items(), start=1):
         context.check_cancel()
-        duration_ms = min(MAX_REFERENCE_DURATION_MS, segment.end_ms - segment.start_ms)
+        start_ms = sentences[0].start_ms
+        duration_ms = sentences[-1].end_ms - start_ms
         path = reference_dir / f"{index:06d}.wav"
         try:
             result = _run_media(
                 [ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-xerror",
-                 "-i", str(vocals.resolve()), "-ss", f"{segment.start_ms / 1000:.3f}",
+                 "-i", str(vocals.resolve()), "-ss", f"{start_ms / 1000:.3f}",
                  "-t", f"{duration_ms / 1000:.3f}", "-map", "0:a:0", "-vn", "-ac", "1",
                  "-ar", "16000", "-c:a", "pcm_s16le", str(path.resolve())],
                 check_cancel=context.check_cancel,
@@ -122,6 +146,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         reference_paths[speaker_id] = path
     clips = [{"segment_id": segment.id, "text": texts[segment.id],
               "reference_path": str(reference_paths[segment.speaker_id].resolve()),
+              "reference_text": " ".join(sentence.text for sentence in references[segment.speaker_id]),
               "output_path": str((output_dir / f"{index:06d}.wav").resolve())}
              for index, segment in enumerate(transcript.segments, start=1)]
     request_path = output_dir / "request.json"
