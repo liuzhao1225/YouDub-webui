@@ -1,0 +1,3913 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "YouDub Desktop MVP API",
+    "version": "0.1.0-draft.1",
+    "summary": "Windows 单机 MVP 详细接口草案",
+    "description": "设计与 Mock 契约，尚未实现或冻结。配套 youdub-desktop-v0.1.md 定义调度、文件和供应商语义。demo 模型与 runtime 限值均为合成示例；不表示真实可用服务。现有 /api/auth 保留 legacy detail 错误，/api/v1 使用 ErrorEnvelope。"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "当前同源 Web/桌面入口；代理到本机业务后端"
+    }
+  ],
+  "security": [
+    {
+      "SessionCookie": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "复用现有 Cookie 与 CSRF"
+    },
+    {
+      "name": "Runtime",
+      "description": "健康、设备和能力"
+    },
+    {
+      "name": "Settings",
+      "description": "默认值与受控连接配置"
+    },
+    {
+      "name": "Tasks",
+      "description": "Task 唯一业务对象"
+    },
+    {
+      "name": "Files",
+      "description": "任务产物与日志"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "读取本机服务就绪状态",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "后端就绪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "后端 degraded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "沿用现有密码登录",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "登录成功并设置 Cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            },
+            "headers": {
+              "Set-Cookie": {
+                "description": "youdub_session 会话 Cookie，HttpOnly，Path=/api；策略与当前环境一致。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "无效密码或格式",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin 不允许",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "登录尝试过于频繁",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "认证未配置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "operationId": "getSession",
+        "summary": "读取会话与 CSRF token",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "当前会话",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "会话不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "认证未配置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "撤销会话",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "204": {
+            "description": "会话撤销，无响应体"
+          },
+          "401": {
+            "description": "会话不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF 或 Origin 校验失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyAuthError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ]
+      }
+    },
+    "/api/v1/runtime": {
+      "get": {
+        "operationId": "getRuntime",
+        "summary": "读取实际可用模型、设备和输入/并发限制",
+        "tags": [
+          "Runtime"
+        ],
+        "responses": {
+          "200": {
+            "description": "运行环境快照",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Runtime"
+                },
+                "examples": {
+                  "mock": {
+                    "summary": "仅供界面联调；数值非产品承诺",
+                    "value": {
+                      "api_version": "v1",
+                      "contract_version": "0.1.0-draft.1",
+                      "instance_id": "d1b8b5af-55a1-47ac-8a81-0be8d74c5cb0",
+                      "status": "ready",
+                      "platform": "windows",
+                      "arch": "x64",
+                      "devices": [
+                        {
+                          "id": "cpu",
+                          "name": "CPU",
+                          "available": true,
+                          "unavailable_reason": null
+                        }
+                      ],
+                      "capabilities": [
+                        {
+                          "adapter": "demo_asr",
+                          "capability": "asr",
+                          "execution": "remote",
+                          "available": false,
+                          "unavailable_reason": "Mock provider; no production implementation registered.",
+                          "requires_api_key": true,
+                          "data_sent": [
+                            "audio"
+                          ],
+                          "models": [
+                            {
+                              "id": "demo-asr",
+                              "devices": [
+                                "remote"
+                              ],
+                              "source_languages": [
+                                "en"
+                              ],
+                              "target_languages": [],
+                              "voice_modes": [],
+                              "voices": [],
+                              "input_limits": {
+                                "max_audio_duration_ms": 600000,
+                                "max_text_chars": null,
+                                "max_reference_duration_ms": null
+                              }
+                            }
+                          ],
+                          "remote_operations": {
+                            "submit_mode": "async",
+                            "can_poll": true,
+                            "can_cancel": false,
+                            "can_lookup_request_key": false
+                          }
+                        }
+                      ],
+                      "limits": {
+                        "max_file_bytes": 1073741824,
+                        "max_video_duration_ms": 600000,
+                        "max_video_width": 1920,
+                        "max_video_height": 1920,
+                        "max_frame_rate": 60,
+                        "video_suffixes": [
+                          ".mp4",
+                          ".mov",
+                          ".mkv",
+                          ".webm"
+                        ],
+                        "video_codecs": [
+                          "h264"
+                        ],
+                        "audio_codecs": [
+                          "aac",
+                          "pcm_s16le",
+                          "opus"
+                        ],
+                        "max_active_tasks": 1,
+                        "cpu_heavy_slots": 1,
+                        "gpu_slots_per_device": 1,
+                        "remote_request_slots_per_connection": 2,
+                        "remote_pending_slots_per_connection": 1,
+                        "poll_interval_ms": 2000
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "description": "依赖检查不下载模型、不调用付费 API。模型缺失不阻止查看任务；available=false 时附原因。"
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "summary": "读取默认值和脱敏连接",
+        "tags": [
+          "Settings"
+        ],
+        "responses": {
+          "200": {
+            "description": "当前设置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                },
+                "examples": {
+                  "initial": {
+                    "value": {
+                      "defaults": null,
+                      "connections": [],
+                      "ui_language": "en"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchSettings",
+        "summary": "更新一个配置分组",
+        "tags": [
+          "Settings"
+        ],
+        "responses": {
+          "200": {
+            "description": "最新完整设置",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "description": "INTERNAL_ERROR 或 SETTINGS_PARTIALLY_APPLIED；部分提交后必须 GET 核对",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatch"
+              },
+              "examples": {
+                "language": {
+                  "value": {
+                    "ui_language": "en"
+                  }
+                },
+                "defaults": {
+                  "value": {
+                    "defaults": {
+                      "source_language": "en",
+                      "target_language": "zh",
+                      "output_mode": "subtitles",
+                      "keep_background": false,
+                      "asr": {
+                        "adapter": "demo_asr",
+                        "model": "demo-asr",
+                        "device": "remote"
+                      },
+                      "translation": {
+                        "adapter": "demo_translation",
+                        "model": "demo-llm",
+                        "device": "remote"
+                      },
+                      "tts": null,
+                      "separation": null
+                    }
+                  }
+                },
+                "clear_key": {
+                  "value": {
+                    "connection": {
+                      "adapter": "demo_tts",
+                      "api_key": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks": {
+      "post": {
+        "operationId": "createTask",
+        "summary": "导入本地视频、固定配置并入队",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "201": {
+            "description": "输入已保存，Task 已入队",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "examples": {
+                  "queued": {
+                    "summary": "Mock: 排队",
+                    "value": {
+                      "id": "8d129c98-8e49-4afb-af3a-0b4da4a5533f",
+                      "attempt": 1,
+                      "source_name": "demo.mp4",
+                      "source_size_bytes": 1048576,
+                      "source_duration_ms": null,
+                      "status": "queued",
+                      "current_stage": "prepare",
+                      "stage_progress": null,
+                      "wait_reason": null,
+                      "message": "Queued",
+                      "error": null,
+                      "external_operation": {
+                        "state": "none",
+                        "may_still_run": false
+                      },
+                      "allowed_actions": [
+                        "cancel"
+                      ],
+                      "created_at": "2026-09-22T10:00:00.000Z",
+                      "updated_at": "2026-09-22T10:00:00.000Z",
+                      "started_at": null,
+                      "finished_at": null,
+                      "config": {
+                        "source_language": "en",
+                        "target_language": "zh",
+                        "output_mode": "both",
+                        "keep_background": true,
+                        "asr": {
+                          "adapter": "demo_asr",
+                          "model": "demo-asr",
+                          "device": "remote"
+                        },
+                        "translation": {
+                          "adapter": "demo_translation",
+                          "model": "demo-llm",
+                          "device": "remote"
+                        },
+                        "tts": {
+                          "adapter": "demo_tts",
+                          "model": "demo-tts",
+                          "device": "remote",
+                          "voice": {
+                            "mode": "preset",
+                            "id": "demo-voice"
+                          }
+                        },
+                        "separation": {
+                          "adapter": "demo_separation",
+                          "model": "demo-separation",
+                          "device": "cpu"
+                        }
+                      },
+                      "pipeline_version": "desktop-v1",
+                      "resolved_connections": [
+                        {
+                          "adapter": "demo_asr",
+                          "base_url": "https://example.com/asr"
+                        },
+                        {
+                          "adapter": "demo_translation",
+                          "base_url": "https://example.com/translation"
+                        },
+                        {
+                          "adapter": "demo_tts",
+                          "base_url": "https://example.com/tts"
+                        }
+                      ],
+                      "outputs": {}
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri-reference"
+                },
+                "description": "/api/v1/tasks/{id}"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "TASK_EXISTS / IMPORT_IN_PROGRESS / IMPORT_RESIDUE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "FILE_TOO_LARGE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ],
+        "description": "同 ID 已创建返回 409，客户端 GET 原任务。未创建且无在途导入但有残留目录返回 IMPORT_RESIDUE。失败不自动使用新 ID 重发。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreate"
+              },
+              "encoding": {
+                "config": {
+                  "contentType": "application/json"
+                },
+                "file": {
+                  "contentType": "application/octet-stream"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listTasks",
+        "summary": "分页查询任务摘要",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "200": {
+            "description": "按 created_at DESC, id DESC",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskList"
+                },
+                "examples": {
+                  "mock": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "8d129c98-8e49-4afb-af3a-0b4da4a5533f",
+                          "attempt": 1,
+                          "source_name": "demo.mp4",
+                          "source_size_bytes": 1048576,
+                          "source_duration_ms": null,
+                          "status": "queued",
+                          "current_stage": "prepare",
+                          "stage_progress": null,
+                          "wait_reason": null,
+                          "message": "Queued",
+                          "error": null,
+                          "external_operation": {
+                            "state": "none",
+                            "may_still_run": false
+                          },
+                          "allowed_actions": [
+                            "cancel"
+                          ],
+                          "created_at": "2026-09-22T10:00:00.000Z",
+                          "updated_at": "2026-09-22T10:00:00.000Z",
+                          "started_at": null,
+                          "finished_at": null
+                        }
+                      ],
+                      "limit": 20,
+                      "offset": 0,
+                      "has_more": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "running",
+                "waiting",
+                "cancelling",
+                "cancelled",
+                "succeeded",
+                "failed"
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "与 status 互斥；true 表示 queued/running/waiting/cancelling。"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "description": "status 与 active 同时出现返回 INVALID_CONFIG。offset 分页不承诺跨请求固定快照。"
+      }
+    },
+    "/api/v1/tasks/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Task ID；客户端生成的小写 UUID。"
+        }
+      ],
+      "get": {
+        "operationId": "getTask",
+        "summary": "读取任务详情",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "200": {
+            "description": "当前任务；处理失败时仍返回 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                },
+                "examples": {
+                  "queued": {
+                    "summary": "Mock: 排队",
+                    "value": {
+                      "id": "8d129c98-8e49-4afb-af3a-0b4da4a5533f",
+                      "attempt": 1,
+                      "source_name": "demo.mp4",
+                      "source_size_bytes": 1048576,
+                      "source_duration_ms": null,
+                      "status": "queued",
+                      "current_stage": "prepare",
+                      "stage_progress": null,
+                      "wait_reason": null,
+                      "message": "Queued",
+                      "error": null,
+                      "external_operation": {
+                        "state": "none",
+                        "may_still_run": false
+                      },
+                      "allowed_actions": [
+                        "cancel"
+                      ],
+                      "created_at": "2026-09-22T10:00:00.000Z",
+                      "updated_at": "2026-09-22T10:00:00.000Z",
+                      "started_at": null,
+                      "finished_at": null,
+                      "config": {
+                        "source_language": "en",
+                        "target_language": "zh",
+                        "output_mode": "both",
+                        "keep_background": true,
+                        "asr": {
+                          "adapter": "demo_asr",
+                          "model": "demo-asr",
+                          "device": "remote"
+                        },
+                        "translation": {
+                          "adapter": "demo_translation",
+                          "model": "demo-llm",
+                          "device": "remote"
+                        },
+                        "tts": {
+                          "adapter": "demo_tts",
+                          "model": "demo-tts",
+                          "device": "remote",
+                          "voice": {
+                            "mode": "preset",
+                            "id": "demo-voice"
+                          }
+                        },
+                        "separation": {
+                          "adapter": "demo_separation",
+                          "model": "demo-separation",
+                          "device": "cpu"
+                        }
+                      },
+                      "pipeline_version": "desktop-v1",
+                      "resolved_connections": [
+                        {
+                          "adapter": "demo_asr",
+                          "base_url": "https://example.com/asr"
+                        },
+                        {
+                          "adapter": "demo_translation",
+                          "base_url": "https://example.com/translation"
+                        },
+                        {
+                          "adapter": "demo_tts",
+                          "base_url": "https://example.com/tts"
+                        }
+                      ],
+                      "outputs": {}
+                    }
+                  },
+                  "failed": {
+                    "summary": "Mock: 明确失败",
+                    "value": {
+                      "id": "8d129c98-8e49-4afb-af3a-0b4da4a5533f",
+                      "attempt": 1,
+                      "source_name": "demo.mp4",
+                      "source_size_bytes": 1048576,
+                      "source_duration_ms": null,
+                      "status": "failed",
+                      "current_stage": "tts",
+                      "stage_progress": null,
+                      "wait_reason": null,
+                      "message": "Queued",
+                      "error": {
+                        "code": "PROVIDER_REJECTED",
+                        "message": "The provider rejected the credential.",
+                        "field": "config.tts",
+                        "stage": "tts",
+                        "action": "adjust_settings"
+                      },
+                      "external_operation": {
+                        "state": "none",
+                        "may_still_run": false
+                      },
+                      "allowed_actions": [
+                        "retry",
+                        "rerun",
+                        "delete"
+                      ],
+                      "created_at": "2026-09-22T10:00:00.000Z",
+                      "updated_at": "2026-09-22T10:00:00.000Z",
+                      "started_at": "2026-09-22T10:00:00.000Z",
+                      "finished_at": "2026-09-22T10:00:00.000Z",
+                      "config": {
+                        "source_language": "en",
+                        "target_language": "zh",
+                        "output_mode": "both",
+                        "keep_background": true,
+                        "asr": {
+                          "adapter": "demo_asr",
+                          "model": "demo-asr",
+                          "device": "remote"
+                        },
+                        "translation": {
+                          "adapter": "demo_translation",
+                          "model": "demo-llm",
+                          "device": "remote"
+                        },
+                        "tts": {
+                          "adapter": "demo_tts",
+                          "model": "demo-tts",
+                          "device": "remote",
+                          "voice": {
+                            "mode": "preset",
+                            "id": "demo-voice"
+                          }
+                        },
+                        "separation": {
+                          "adapter": "demo_separation",
+                          "model": "demo-separation",
+                          "device": "cpu"
+                        }
+                      },
+                      "pipeline_version": "desktop-v1",
+                      "resolved_connections": [
+                        {
+                          "adapter": "demo_asr",
+                          "base_url": "https://example.com/asr"
+                        },
+                        {
+                          "adapter": "demo_translation",
+                          "base_url": "https://example.com/translation"
+                        },
+                        {
+                          "adapter": "demo_tts",
+                          "base_url": "https://example.com/tts"
+                        }
+                      ],
+                      "outputs": {}
+                    }
+                  },
+                  "cancelled_remote_unknown": {
+                    "summary": "Mock: 本机已停，远端状态未知",
+                    "value": {
+                      "id": "8d129c98-8e49-4afb-af3a-0b4da4a5533f",
+                      "attempt": 1,
+                      "source_name": "demo.mp4",
+                      "source_size_bytes": 1048576,
+                      "source_duration_ms": null,
+                      "status": "cancelled",
+                      "current_stage": "tts",
+                      "stage_progress": null,
+                      "wait_reason": null,
+                      "message": "Queued",
+                      "error": null,
+                      "external_operation": {
+                        "state": "unknown",
+                        "may_still_run": true
+                      },
+                      "allowed_actions": [
+                        "rerun",
+                        "delete"
+                      ],
+                      "created_at": "2026-09-22T10:00:00.000Z",
+                      "updated_at": "2026-09-22T10:00:00.000Z",
+                      "started_at": "2026-09-22T10:00:00.000Z",
+                      "finished_at": "2026-09-22T10:00:00.000Z",
+                      "config": {
+                        "source_language": "en",
+                        "target_language": "zh",
+                        "output_mode": "both",
+                        "keep_background": true,
+                        "asr": {
+                          "adapter": "demo_asr",
+                          "model": "demo-asr",
+                          "device": "remote"
+                        },
+                        "translation": {
+                          "adapter": "demo_translation",
+                          "model": "demo-llm",
+                          "device": "remote"
+                        },
+                        "tts": {
+                          "adapter": "demo_tts",
+                          "model": "demo-tts",
+                          "device": "remote",
+                          "voice": {
+                            "mode": "preset",
+                            "id": "demo-voice"
+                          }
+                        },
+                        "separation": {
+                          "adapter": "demo_separation",
+                          "model": "demo-separation",
+                          "device": "cpu"
+                        }
+                      },
+                      "pipeline_version": "desktop-v1",
+                      "resolved_connections": [
+                        {
+                          "adapter": "demo_asr",
+                          "base_url": "https://example.com/asr"
+                        },
+                        {
+                          "adapter": "demo_translation",
+                          "base_url": "https://example.com/translation"
+                        },
+                        {
+                          "adapter": "demo_tts",
+                          "base_url": "https://example.com/tts"
+                        }
+                      ],
+                      "outputs": {}
+                    }
+                  },
+                  "succeeded": {
+                    "summary": "Mock: both 输出完整",
+                    "value": {
+                      "id": "8d129c98-8e49-4afb-af3a-0b4da4a5533f",
+                      "attempt": 1,
+                      "source_name": "demo.mp4",
+                      "source_size_bytes": 1048576,
+                      "source_duration_ms": 120000,
+                      "status": "succeeded",
+                      "current_stage": "done",
+                      "stage_progress": 1,
+                      "wait_reason": null,
+                      "message": "Queued",
+                      "error": null,
+                      "external_operation": {
+                        "state": "none",
+                        "may_still_run": false
+                      },
+                      "allowed_actions": [
+                        "rerun",
+                        "delete"
+                      ],
+                      "created_at": "2026-09-22T10:00:00.000Z",
+                      "updated_at": "2026-09-22T10:00:00.000Z",
+                      "started_at": "2026-09-22T10:00:00.000Z",
+                      "finished_at": "2026-09-22T10:00:00.000Z",
+                      "config": {
+                        "source_language": "en",
+                        "target_language": "zh",
+                        "output_mode": "both",
+                        "keep_background": true,
+                        "asr": {
+                          "adapter": "demo_asr",
+                          "model": "demo-asr",
+                          "device": "remote"
+                        },
+                        "translation": {
+                          "adapter": "demo_translation",
+                          "model": "demo-llm",
+                          "device": "remote"
+                        },
+                        "tts": {
+                          "adapter": "demo_tts",
+                          "model": "demo-tts",
+                          "device": "remote",
+                          "voice": {
+                            "mode": "preset",
+                            "id": "demo-voice"
+                          }
+                        },
+                        "separation": {
+                          "adapter": "demo_separation",
+                          "model": "demo-separation",
+                          "device": "cpu"
+                        }
+                      },
+                      "pipeline_version": "desktop-v1",
+                      "resolved_connections": [
+                        {
+                          "adapter": "demo_asr",
+                          "base_url": "https://example.com/asr"
+                        },
+                        {
+                          "adapter": "demo_translation",
+                          "base_url": "https://example.com/translation"
+                        },
+                        {
+                          "adapter": "demo_tts",
+                          "base_url": "https://example.com/tts"
+                        }
+                      ],
+                      "outputs": {
+                        "video": {
+                          "url": "/api/v1/tasks/8d129c98-8e49-4afb-af3a-0b4da4a5533f/files/video",
+                          "file_name": "video.mp4",
+                          "mime_type": "video/mp4",
+                          "size_bytes": 1048576,
+                          "duration_ms": 120000,
+                          "timeline": "dubbed"
+                        },
+                        "audio": {
+                          "url": "/api/v1/tasks/8d129c98-8e49-4afb-af3a-0b4da4a5533f/files/audio",
+                          "file_name": "audio.wav",
+                          "mime_type": "audio/wav",
+                          "size_bytes": 4096,
+                          "duration_ms": 120000,
+                          "timeline": "dubbed"
+                        },
+                        "source_subtitles": {
+                          "url": "/api/v1/tasks/8d129c98-8e49-4afb-af3a-0b4da4a5533f/files/source_subtitles",
+                          "file_name": "source.srt",
+                          "mime_type": "application/x-subrip",
+                          "size_bytes": 4096,
+                          "duration_ms": null,
+                          "timeline": "source"
+                        },
+                        "translated_subtitles": {
+                          "url": "/api/v1/tasks/8d129c98-8e49-4afb-af3a-0b4da4a5533f/files/translated_subtitles",
+                          "file_name": "translated.srt",
+                          "mime_type": "application/x-subrip",
+                          "size_bytes": 4096,
+                          "duration_ms": null,
+                          "timeline": "dubbed"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "TASK_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTask",
+        "summary": "删除终态 Task 或无记录的同 ID 导入残留",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "204": {
+            "description": "受管文件和记录已删除，或本就不存在，无响应体"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "description": "TASK_BUSY：活动任务、在途导入/复制或已打开文件流",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "description": "FILE_DELETE_FAILED；保留记录，不宣称文件完全清理",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ],
+        "description": "不影响其它 Task 或用户另存文件。后端仅按规范 UUID 定位受管目录。先删文件后删记录；部分失败明确返回。取消后的远端请求可能继续运行。"
+      }
+    },
+    "/api/v1/tasks/{id}/cancel": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Task ID；客户端生成的小写 UUID。"
+        }
+      ],
+      "post": {
+        "operationId": "cancelTask",
+        "summary": "停止当前任务的本机处理",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "200": {
+            "description": "已终态，或 queued 已直接取消",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "已持久化 cancelling，尚待本地执行器退出",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "TASK_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ],
+        "description": "重复取消不再提交新的用户操作。不能用 202/cancelled 推断供应商已取消；查看 external_operation。"
+      }
+    },
+    "/api/v1/tasks/{id}/retry": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Task ID；客户端生成的小写 UUID。"
+        }
+      ],
+      "post": {
+        "operationId": "retryTask",
+        "summary": "原配置从头重试，attempt 增加一次",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "200": {
+            "description": "已重试或识别为同一 expected_attempt 的重发",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "TASK_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RETRY_NOT_ALLOWED / ATTEMPT_CONFLICT / TASK_BUSY / EXTERNAL_RESULT_UNKNOWN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryRequest"
+              },
+              "examples": {
+                "retry_first": {
+                  "value": {
+                    "expected_attempt": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "当前 attempt=expected 时只允许 failed/cancelled 且执行器已退出、外部风险明确。attempt=expected+1 时返回当前记录；其它 attempt 返回冲突。原输入/配置保留，work/output 清理，created_at 保留。可能重复计费；无自动模型重试。"
+      }
+    },
+    "/api/v1/tasks/{id}/rerun": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Task ID；客户端生成的小写 UUID。"
+        }
+      ],
+      "post": {
+        "operationId": "rerunTask",
+        "summary": "复制原视频并以新配置创建独立 Task",
+        "tags": [
+          "Tasks"
+        ],
+        "responses": {
+          "201": {
+            "description": "输入复制完成且新 Task 入队",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "TASK_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TASK_EXISTS / IMPORT_IN_PROGRESS / IMPORT_RESIDUE / TASK_BUSY / EXTERNAL_RESULT_UNKNOWN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": [],
+            "CsrfToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RerunRequest"
+              },
+              "examples": {
+                "new_task": {
+                  "value": {
+                    "id": "4ddc069a-a889-4b78-9cc4-1f558875c370",
+                    "config": {
+                      "source_language": "en",
+                      "target_language": "zh",
+                      "output_mode": "subtitles",
+                      "keep_background": false,
+                      "asr": {
+                        "adapter": "demo_asr",
+                        "model": "demo-asr",
+                        "device": "remote"
+                      },
+                      "translation": {
+                        "adapter": "demo_translation",
+                        "model": "demo-llm",
+                        "device": "remote"
+                      },
+                      "tts": null,
+                      "separation": null
+                    },
+                    "acknowledge_external_risk": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "仅允许终态源任务。新 ID 网络重发规则与创建相同；源任务远端结果未知时显式确认 acknowledge_external_risk=true。源 Task 不变，新任务 attempt=1。"
+      }
+    },
+    "/api/v1/tasks/{id}/files/{kind}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Task ID；客户端生成的小写 UUID。"
+        },
+        {
+          "name": "kind",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "video",
+              "audio",
+              "source_subtitles",
+              "translated_subtitles"
+            ]
+          }
+        },
+        {
+          "name": "download",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTaskFile",
+        "summary": "预览或下载完整产物",
+        "tags": [
+          "Files"
+        ],
+        "responses": {
+          "200": {
+            "description": "完整文件流",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "video/mp4",
+                    "audio/wav",
+                    "application/x-subrip"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/x-subrip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "video/audio 单段字节范围",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "video/mp4",
+                    "audio/wav",
+                    "application/x-subrip"
+                  ]
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/x-subrip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "TASK_NOT_FOUND / OUTPUT_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "RANGE_NOT_SATISFIABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "bytes */<size>"
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "parameters": [
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "video/audio 支持 bytes=start-end、bytes=start-、bytes=-suffix；多段与越界返回 416。字幕忽略 Range 返回完整文件。"
+          }
+        ],
+        "description": "只读取 outputs 登记的完整文件；任务目录相对路径由服务端解析。download=true 使用 attachment。"
+      },
+      "head": {
+        "operationId": "headTaskFile",
+        "summary": "查询文件大小与类型",
+        "tags": [
+          "Files"
+        ],
+        "responses": {
+          "200": {
+            "description": "与完整 GET 一致的元信息，无响应体；忽略 Range。",
+            "headers": {
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "video/mp4",
+                    "audio/wav",
+                    "application/x-subrip"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未登录，无响应体"
+          },
+          "404": {
+            "description": "任务或产物不存在，无响应体"
+          },
+          "503": {
+            "description": "运行时不可用，无响应体"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/log": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "description": "Task ID；客户端生成的小写 UUID。"
+        }
+      ],
+      "get": {
+        "operationId": "getTaskLog",
+        "summary": "读取脱敏任务日志",
+        "tags": [
+          "Files"
+        ],
+        "responses": {
+          "200": {
+            "description": "UTF-8 脱敏文本",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "download=true 时 attachment"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "TASK_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          },
+          "507": {
+            "$ref": "#/components/responses/DiskFull"
+          }
+        },
+        "parameters": [
+          {
+            "name": "lines",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 200
+            }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "description": "download=true 返回完整日志并忽略 lines。日志不含 key、Cookie 或原始请求头。"
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "youdub_session",
+        "description": "本机登录会话 Cookie，HttpOnly，Path=/api。"
+      },
+      "CsrfToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "写请求与 SessionCookie 同时提供；由登录/会话接口获取。"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "UNAUTHORIZED",
+              "CSRF_INVALID",
+              "ORIGIN_NOT_ALLOWED",
+              "TASK_NOT_FOUND",
+              "OUTPUT_NOT_FOUND",
+              "TASK_EXISTS",
+              "IMPORT_IN_PROGRESS",
+              "IMPORT_RESIDUE",
+              "TASK_BUSY",
+              "ATTEMPT_CONFLICT",
+              "RETRY_NOT_ALLOWED",
+              "EXTERNAL_RESULT_UNKNOWN",
+              "FILE_TOO_LARGE",
+              "UNSUPPORTED_MEDIA",
+              "RANGE_NOT_SATISFIABLE",
+              "INVALID_CONFIG",
+              "MODEL_NOT_READY",
+              "UNSUPPORTED_LANGUAGE",
+              "INVALID_PROVIDER_RESULT",
+              "INTERNAL_ERROR",
+              "FILE_DELETE_FAILED",
+              "SETTINGS_PARTIALLY_APPLIED",
+              "RUNTIME_UNAVAILABLE",
+              "DISK_FULL",
+              "APP_INTERRUPTED",
+              "WORKER_EXITED",
+              "REMOTE_QUERY_FAILED",
+              "REMOTE_TIMEOUT",
+              "PROVIDER_REJECTED",
+              "CANCEL_TIMEOUT",
+              "NO_AUDIO_TRACK",
+              "INVALID_MEDIA",
+              "INPUT_MISSING",
+              "STAGE_OUTPUT_MISSING",
+              "UNSUPPORTED_OVERLAPPING_SPEECH",
+              "AUDIO_EXCEEDS_VIDEO"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "prepare",
+                  "separate",
+                  "asr",
+                  "translate",
+                  "tts",
+                  "mix",
+                  "export"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "adjust_settings",
+              "retry",
+              "rerun",
+              "contact_support",
+              "none"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "field",
+          "stage",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "LegacyAuthError": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "additionalProperties": false
+      },
+      "AuthSession": {
+        "type": "object",
+        "properties": {
+          "authenticated": {
+            "const": true
+          },
+          "csrf_token": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "authenticated",
+          "csrf_token",
+          "expires_at"
+        ],
+        "additionalProperties": false
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "degraded"
+            ]
+          },
+          "instance_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          }
+        },
+        "required": [
+          "status",
+          "instance_id"
+        ],
+        "additionalProperties": false
+      },
+      "ModelSelection": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "device": {
+            "type": "string",
+            "pattern": "^(cpu|cuda:[0-9]+|remote)$"
+          }
+        },
+        "required": [
+          "adapter",
+          "model",
+          "device"
+        ],
+        "additionalProperties": false
+      },
+      "VoiceSelection": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "const": "preset"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "mode",
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "const": "source_clone"
+              }
+            },
+            "required": [
+              "mode"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "source_clone 使用当前视频的人声参考，不接受任意路径。首版限定单说话者且适配器已验证支持。"
+      },
+      "TtsSelection": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "device": {
+            "type": "string",
+            "pattern": "^(cpu|cuda:[0-9]+|remote)$"
+          },
+          "voice": {
+            "$ref": "#/components/schemas/VoiceSelection"
+          }
+        },
+        "required": [
+          "adapter",
+          "model",
+          "device",
+          "voice"
+        ],
+        "additionalProperties": false
+      },
+      "TaskConfig": {
+        "type": "object",
+        "properties": {
+          "source_language": {
+            "type": "string",
+            "pattern": "^(auto|[a-z]{2,3}(-[A-Za-z0-9]{2,8})*)$"
+          },
+          "target_language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+            "not": {
+              "const": "auto"
+            }
+          },
+          "output_mode": {
+            "type": "string",
+            "enum": [
+              "subtitles",
+              "dubbing",
+              "both"
+            ]
+          },
+          "keep_background": {
+            "type": "boolean"
+          },
+          "asr": {
+            "$ref": "#/components/schemas/ModelSelection"
+          },
+          "translation": {
+            "$ref": "#/components/schemas/ModelSelection"
+          },
+          "tts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TtsSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "separation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source_language",
+          "target_language",
+          "output_mode",
+          "keep_background",
+          "asr",
+          "translation",
+          "tts",
+          "separation"
+        ],
+        "additionalProperties": false,
+        "description": "语言、模型、设备须在 runtime 可用目录中。相同源/目标语言拒绝；auto 由 ASR 能力约束。请求禁止包含 API key/base_url。",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "output_mode": {
+                  "const": "subtitles"
+                }
+              },
+              "required": [
+                "output_mode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "tts": {
+                  "type": "null"
+                },
+                "separation": {
+                  "type": "null"
+                },
+                "keep_background": {
+                  "const": false
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "tts": {
+                  "$ref": "#/components/schemas/TtsSelection"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "anyOf": [
+                {
+                  "properties": {
+                    "keep_background": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "keep_background"
+                  ]
+                },
+                {
+                  "properties": {
+                    "tts": {
+                      "type": "object",
+                      "properties": {
+                        "voice": {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "const": "source_clone"
+                            }
+                          },
+                          "required": [
+                            "mode"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "voice"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tts"
+                  ]
+                }
+              ]
+            },
+            "then": {
+              "properties": {
+                "separation": {
+                  "$ref": "#/components/schemas/ModelSelection"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "separation": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ResolvedConnection": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "base_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          }
+        },
+        "required": [
+          "adapter",
+          "base_url"
+        ],
+        "additionalProperties": false
+      },
+      "ConnectionRead": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "base_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "has_api_key": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "adapter",
+          "base_url",
+          "has_api_key"
+        ],
+        "additionalProperties": false
+      },
+      "Settings": {
+        "type": "object",
+        "properties": {
+          "defaults": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConnectionRead"
+            }
+          },
+          "ui_language": {
+            "type": "string",
+            "enum": [
+              "en",
+              "zh",
+              "ja"
+            ]
+          }
+        },
+        "required": [
+          "defaults",
+          "connections",
+          "ui_language"
+        ],
+        "additionalProperties": false
+      },
+      "ConnectionPatch": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "base_url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "adapter"
+        ],
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "base_url"
+            ]
+          },
+          {
+            "required": [
+              "api_key"
+            ]
+          }
+        ],
+        "description": "api_key 省略保留，非空字符串替换，null 清除。按 adapter+base_url 绑定凭据。换地址不得复用其它地址的 key。"
+      },
+      "SettingsPatch": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "defaults": {
+                "$ref": "#/components/schemas/TaskConfig"
+              }
+            },
+            "required": [
+              "defaults"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "ui_language": {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "zh",
+                  "ja"
+                ]
+              }
+            },
+            "required": [
+              "ui_language"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "connection": {
+                "$ref": "#/components/schemas/ConnectionPatch"
+              }
+            },
+            "required": [
+              "connection"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "一次只更新一个分组。defaults 整体替换；单个连接局部更新。跨系统凭据和 SQLite 的部分提交明确返回错误。"
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(cpu|cuda:[0-9]+)$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "available",
+          "unavailable_reason"
+        ],
+        "additionalProperties": false
+      },
+      "Voice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "languages"
+        ],
+        "additionalProperties": false
+      },
+      "ModelInputLimits": {
+        "type": "object",
+        "properties": {
+          "max_audio_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_text_chars": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_reference_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "max_audio_duration_ms",
+          "max_text_chars",
+          "max_reference_duration_ms"
+        ],
+        "additionalProperties": false,
+        "description": "仅返回经适配器确认的限制。null 表示该约束不适用；约束未知的模型不得登记为 available。"
+      },
+      "ModelCapability": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "source_languages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "target_languages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "voice_modes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "preset",
+                "source_clone"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "voices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Voice"
+            }
+          },
+          "input_limits": {
+            "$ref": "#/components/schemas/ModelInputLimits"
+          }
+        },
+        "required": [
+          "id",
+          "devices",
+          "source_languages",
+          "target_languages",
+          "voice_modes",
+          "voices",
+          "input_limits"
+        ],
+        "additionalProperties": false
+      },
+      "RemoteOperations": {
+        "type": "object",
+        "properties": {
+          "submit_mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async"
+            ]
+          },
+          "can_poll": {
+            "type": "boolean"
+          },
+          "can_cancel": {
+            "type": "boolean"
+          },
+          "can_lookup_request_key": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "submit_mode",
+          "can_poll",
+          "can_cancel",
+          "can_lookup_request_key"
+        ],
+        "additionalProperties": false
+      },
+      "Capability": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "type": "string",
+            "enum": [
+              "separation",
+              "asr",
+              "translation",
+              "tts"
+            ]
+          },
+          "execution": {
+            "type": "string",
+            "enum": [
+              "local",
+              "remote"
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requires_api_key": {
+            "type": "boolean"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelCapability"
+            }
+          },
+          "data_sent": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "audio",
+                "text",
+                "reference_audio"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "remote_operations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RemoteOperations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "adapter",
+          "capability",
+          "execution",
+          "available",
+          "unavailable_reason",
+          "requires_api_key",
+          "models",
+          "data_sent",
+          "remote_operations"
+        ],
+        "additionalProperties": false,
+        "description": "available 是环境与实现可用性；凭据是否配置由 settings 返回。未列出或 unavailable 的模型不可创建任务。",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "execution": {
+                  "const": "local"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "remote_operations": {
+                  "type": "null"
+                },
+                "data_sent": {
+                  "maxItems": 0
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "remote_operations": {
+                  "$ref": "#/components/schemas/RemoteOperations"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "available": {
+                  "const": false
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "unavailable_reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "RuntimeLimits": {
+        "type": "object",
+        "properties": {
+          "max_file_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_video_duration_ms": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_video_width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_video_height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_frame_rate": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "video_suffixes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "video_codecs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "audio_codecs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "max_active_tasks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cpu_heavy_slots": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "gpu_slots_per_device": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "remote_request_slots_per_connection": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "remote_pending_slots_per_connection": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "poll_interval_ms": {
+            "type": "integer",
+            "minimum": 250
+          }
+        },
+        "required": [
+          "max_file_bytes",
+          "max_video_duration_ms",
+          "max_video_width",
+          "max_video_height",
+          "max_frame_rate",
+          "video_suffixes",
+          "video_codecs",
+          "audio_codecs",
+          "max_active_tasks",
+          "cpu_heavy_slots",
+          "gpu_slots_per_device",
+          "remote_request_slots_per_connection",
+          "remote_pending_slots_per_connection",
+          "poll_interval_ms"
+        ],
+        "additionalProperties": false
+      },
+      "Runtime": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "const": "v1"
+          },
+          "contract_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instance_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "degraded"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "windows",
+              "macos",
+              "linux"
+            ]
+          },
+          "arch": {
+            "type": "string",
+            "minLength": 1
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Device"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            }
+          },
+          "limits": {
+            "$ref": "#/components/schemas/RuntimeLimits"
+          }
+        },
+        "required": [
+          "api_version",
+          "contract_version",
+          "instance_id",
+          "status",
+          "platform",
+          "arch",
+          "devices",
+          "capabilities",
+          "limits"
+        ],
+        "additionalProperties": false,
+        "description": "例子中的容量与模型为 Mock；首发前必须用实测值替换并冻结。capabilities 只包括实际登记的实现。"
+      },
+      "OutputFile": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri-reference",
+            "pattern": "^/api/v1/tasks/"
+          },
+          "file_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "video/mp4",
+              "audio/wav",
+              "application/x-subrip"
+            ]
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timeline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "source",
+                  "dubbed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "url",
+          "file_name",
+          "mime_type",
+          "size_bytes",
+          "duration_ms",
+          "timeline"
+        ],
+        "additionalProperties": false
+      },
+      "Outputs": {
+        "type": "object",
+        "properties": {
+          "video": {
+            "$ref": "#/components/schemas/OutputFile"
+          },
+          "audio": {
+            "$ref": "#/components/schemas/OutputFile"
+          },
+          "source_subtitles": {
+            "$ref": "#/components/schemas/OutputFile"
+          },
+          "translated_subtitles": {
+            "$ref": "#/components/schemas/OutputFile"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "ExternalOperation": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "none",
+              "pending",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "unknown"
+            ]
+          },
+          "may_still_run": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "state",
+          "may_still_run"
+        ],
+        "additionalProperties": false,
+        "description": "Task cancelled 只保证本机停止。pending/unknown 不允许不经核实的 retry；显式 rerun 必须确认远端风险。",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "enum": [
+                    "pending",
+                    "unknown"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "may_still_run": {
+                  "const": true
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "may_still_run": {
+                  "const": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "cancelling",
+              "cancelled",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "current_stage": {
+            "type": "string",
+            "enum": [
+              "prepare",
+              "separate",
+              "asr",
+              "translate",
+              "tts",
+              "mix",
+              "export",
+              "done"
+            ]
+          },
+          "stage_progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wait_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "active_limit",
+                  "cpu",
+                  "gpu",
+                  "remote_limit",
+                  "remote_result"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "external_operation": {
+            "$ref": "#/components/schemas/ExternalOperation"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "cancel",
+                "retry",
+                "rerun",
+                "delete"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "attempt",
+          "source_name",
+          "source_size_bytes",
+          "source_duration_ms",
+          "status",
+          "current_stage",
+          "stage_progress",
+          "wait_reason",
+          "message",
+          "error",
+          "external_operation",
+          "allowed_actions",
+          "created_at",
+          "updated_at",
+          "started_at",
+          "finished_at"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "current_stage": {
+                  "const": "done"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "current_stage": {
+                  "not": {
+                    "const": "done"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "finished_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "finished_at": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source_duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "waiting",
+              "cancelling",
+              "cancelled",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "current_stage": {
+            "type": "string",
+            "enum": [
+              "prepare",
+              "separate",
+              "asr",
+              "translate",
+              "tts",
+              "mix",
+              "export",
+              "done"
+            ]
+          },
+          "stage_progress": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wait_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "active_limit",
+                  "cpu",
+                  "gpu",
+                  "remote_limit",
+                  "remote_result"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "external_operation": {
+            "$ref": "#/components/schemas/ExternalOperation"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "cancel",
+                "retry",
+                "rerun",
+                "delete"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/TaskConfig"
+          },
+          "pipeline_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resolved_connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolvedConnection"
+            }
+          },
+          "outputs": {
+            "$ref": "#/components/schemas/Outputs"
+          }
+        },
+        "required": [
+          "id",
+          "attempt",
+          "source_name",
+          "source_size_bytes",
+          "source_duration_ms",
+          "status",
+          "current_stage",
+          "stage_progress",
+          "wait_reason",
+          "message",
+          "error",
+          "external_operation",
+          "allowed_actions",
+          "created_at",
+          "updated_at",
+          "started_at",
+          "finished_at",
+          "config",
+          "pipeline_version",
+          "resolved_connections",
+          "outputs"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "succeeded"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "current_stage": {
+                  "const": "done"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "current_stage": {
+                  "not": {
+                    "const": "done"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "failed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "failed",
+                    "cancelled"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "finished_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "finished_at": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "succeeded"
+                },
+                "config": {
+                  "properties": {
+                    "output_mode": {
+                      "const": "subtitles"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "outputs": {
+                  "required": [
+                    "video",
+                    "source_subtitles",
+                    "translated_subtitles"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "succeeded"
+                },
+                "config": {
+                  "properties": {
+                    "output_mode": {
+                      "const": "dubbing"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "outputs": {
+                  "required": [
+                    "video",
+                    "audio"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "succeeded"
+                },
+                "config": {
+                  "properties": {
+                    "output_mode": {
+                      "const": "both"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "outputs": {
+                  "required": [
+                    "video",
+                    "audio",
+                    "source_subtitles",
+                    "translated_subtitles"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskSummary"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "limit",
+          "offset",
+          "has_more"
+        ],
+        "additionalProperties": false
+      },
+      "TaskCreate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary"
+          },
+          "config": {
+            "$ref": "#/components/schemas/TaskConfig"
+          }
+        },
+        "required": [
+          "id",
+          "file",
+          "config"
+        ],
+        "additionalProperties": false,
+        "description": "multipart config 部件为 application/json，完整 UTF-8 JSON 文本，不带 filename。解析器若返回文本，服务端继续 JSON 解析并校验 TaskConfig。"
+      },
+      "RetryRequest": {
+        "type": "object",
+        "properties": {
+          "expected_attempt": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "expected_attempt"
+        ],
+        "additionalProperties": false
+      },
+      "RerunRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "config": {
+            "$ref": "#/components/schemas/TaskConfig"
+          },
+          "acknowledge_external_risk": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id",
+          "config"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求或 multipart 无法解析；错误 code 为 INVALID_CONFIG。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "UNAUTHORIZED",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "CSRF_INVALID 或 ORIGIN_NOT_ALLOWED",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "参数、配置、语言或模型校验失败",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "明确内部错误",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "后端不就绪或数据库无法写入",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "DiskFull": {
+        "description": "磁盘空间不足",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      }
+    }
+  }
+}

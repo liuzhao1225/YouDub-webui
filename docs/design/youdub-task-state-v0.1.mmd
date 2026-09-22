@@ -1,0 +1,26 @@
+stateDiagram-v2
+    direction TB
+
+    state "queued · 等待派发" as queued
+    state "running · 执行当前步骤" as running
+    state "waiting · 等待远端结果" as waiting
+    state "cancelling · 正在停止" as cancelling
+    state "cancelled · 本机已停止" as cancelled
+    state "failed · 执行失败" as failed
+    state "succeeded · 成品已提交" as succeeded
+
+    [*] --> queued: 输入保存并创建 Task
+    queued --> running: 校验 attempt 与资源后派发
+    running --> queued: 步骤成功，进入下一阶段
+    running --> waiting: 远端已接受 / 查询仍 pending
+    waiting --> running: 到期查询 / 收集结果
+    running --> succeeded: export 核对文件并提交成功
+    running --> failed: 明确失败，执行器已退出
+    waiting --> failed: 查询失败 / 超时
+    queued --> cancelled: 取消，且无执行器
+    running --> cancelling: 请求取消
+    waiting --> cancelling: 请求取消
+    cancelling --> cancelled: 本地执行器已退出
+    failed --> queued: 显式 retry，attempt + 1，prepare
+    cancelled --> queued: 显式 retry，attempt + 1，prepare
+    succeeded --> [*]
