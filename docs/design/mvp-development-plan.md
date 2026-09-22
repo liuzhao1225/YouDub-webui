@@ -10,11 +10,16 @@
 - 阶段 3 已完成：cancel、retry、rerun、delete、日志；取消覆盖真实媒体子进程退出，文件读写与删除互斥。界面行为测试、生产构建及 Chrome 实际操作验收通过。
 - 阶段 4 已完成：真实 CPU Whisper tiny、火山方舟 `doubao-seed-evolving` 翻译与 FFmpeg 字幕导出通过正式 API 任务验证。ASR `be8900d`、字幕导出 `23f12c8`、翻译及执行接入 `30121fe` 已分批推送；真实供应商使用从 youdub-backend 同步的配置。
 - 阶段 5 主链已完成并推送：独立配音时间轴和三模式导出 `0de4485`、VoxCPM2 `3a66956`、Demucs `8d27fb8`、七阶段执行与能力目录 `5e22248`。随后按用户反馈，提交 `984ce5e` 接入极致克隆，`6cd150d` 增加专名提示与逐词分句，`477319f` 接通表单并优先选择 VoxCPM2 原声克隆。本机默认 Settings 已保存 VoxCPM2 `source_clone`。
-- 阶段 6 部分完成：2026-09-22 版本后端 840 项、前端 43 项、TypeScript、ESLint、生产构建及动作浏览器验收通过。当次三模式任务均在 attempt=1 成功，YouDub 拼写正确，三条独立 TTS 对应字幕；API 下载哈希、HEAD/Range、完整解码、音轨来源及 Chrome 完整播放通过。2026-09-23 用户对该版反馈“听感不行”，要求“一整句生成tts，只不过字幕要分段显示”，该版听感验收未通过。原始产物与自动检查结果保留；Windows 实机验收状态仍为未验证。
-- 当前修正：完整 ASR utterance 与翻译、TTS、mix 保持一对一，在 export 内生成一对多字幕；显示时间按可见字符权重在源区间或实际配音区间内估算，尚未进行强制对齐。超过 10 秒的原始 utterance 仅为克隆参考从同源 raw words 选取不超过 10 秒窗口，TTS 译文保持完整。媒体流程已参考核对本地与生产一致的 youdub-backend 提交 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`。修正代码 `e7d3d46` 已推送；后端 838 项检查与真实三模式任务通过，完整配音、三段字幕和产物核对通过，新样例的主观听感待用户反馈。详见[新验收记录](../validation/mvp-utterance-subtitles-2026-09-23.json)与[运行说明](mvp-runtime.md)。
+- 阶段 6 本轮 macOS 主干交付已完成：单视频三模式 API、正常页面、整句配音与独立字幕分段已有验收证据，黄仁勋真实样例的修正后 mix/export 阶段复验已生成成片。Windows/CUDA 实机验收列为后续范围，不作为本轮交付门槛；各项证据范围及限制见下文。
+- 历史验收：2026-09-22 版本后端 840 项、前端 43 项、TypeScript、ESLint、生产构建及动作浏览器验收通过。当次三模式任务均在 attempt=1 成功，YouDub 拼写正确，三条独立 TTS 对应字幕；API 下载哈希、HEAD/Range、完整解码、音轨来源及 Chrome 完整播放通过。2026-09-23 用户对该版反馈“听感不行”，要求“一整句生成tts，只不过字幕要分段显示”，该版听感验收未通过。原始产物与自动检查结果保留；Windows 实机验收状态仍为未验证。
+- 整句配音修正：完整 ASR utterance 与翻译、TTS、mix 保持一对一，在 export 内生成一对多字幕；该版显示时间按可见字符权重在源区间或实际配音区间内估算。超过 10 秒的原始 utterance 仅为克隆参考从同源 raw words 选取不超过 10 秒窗口，TTS 译文保持完整。媒体流程已参考核对本地与生产一致的 youdub-backend 提交 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`。修正代码 `e7d3d46` 已推送；后端 838 项检查与真实三模式任务通过，完整配音、三段字幕和产物核对通过，用户已反馈“可以不错”，接受本轮整句配音样例。详见[新验收记录](../validation/mvp-utterance-subtitles-2026-09-23.json)与[运行说明](mvp-runtime.md)。
 - 交付核对补充：正常 `.env` 启动和真实本机登录已通过，默认 VoxCPM2 配置可读回。外部 LLM 翻译固定 `max_completion_tokens=65535`，27 项关联回归及一次真实供应商请求通过。2026-09-23 用户明确该规则约束外部 LLM 接口参数，此前的范围误读阻塞已移除。历史参数和输出未改写。
-- 2026-09-23 完成审计：17 个 HTTP 操作均已接通，运行 DDL 与设计附件相同；修正启动命令和 schema 数量两处文档差异。使用正常 `.env`、现有本机登录与已保存配置，从 Chrome 文件选择器创建真实任务并播放至结束，API 下载字节核对通过，见[页面闭环证据](../validation/mvp-normal-ui-2026-09-23.json)。浏览器保存文件未独立核对；整句样例的主观听感仍待用户反馈。
-- 飞书主干同步：2026-09-23 [MVP 评审稿](https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd)已由 revision 43 更新至 45，读回确认 export 输入和整句 TTS／独立字幕分段两处约定；其余图表、附件保持原样。
+- 2026-09-23 完成审计：17 个 HTTP 操作均已接通，运行 DDL 与设计附件相同；修正启动命令和 schema 数量两处文档差异。使用正常 `.env`、现有本机登录与已保存配置，从 Chrome 文件选择器创建真实任务并播放至结束，API 下载字节核对通过，见[页面闭环证据](../validation/mvp-normal-ui-2026-09-23.json)。浏览器保存文件未独立核对；用户已接受此前整句配音样例。
+- 飞书主干同步：2026-09-23 [MVP 评审稿](https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd)已由 revision 43 更新至 45，读回确认 export 输入和整句 TTS／独立字幕分段两处约定；其余图表、附件保持原样。 随后可选 Qwen 对齐及真实阶段复验同步至 revision 58，读回确认 Backend 历史/当前本地基线、macOS 交付范围、完整对比播放、末端排程、一格内跨尾边界转换、模型精度，以及[字幕时间约定](https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd#doxcnOg2T1wr09ViP1qjlhwwkjf)与[配置和模型限制](https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd#doxcn0gLYoQ2rtOonzy21nMmALb)。
+
+- 本轮代码增量：`05e238e` 延长整批翻译读取超时并保留明确失败语义；`b2cf6f7` 接入 Qwen 整句配音字幕对齐与任务配置；`22a3d8e` 保留完整配音并修正尾部排程和对齐时间格。
+- 已完成的 Qwen 增量：both 模式新增可选 `subtitle_alignment`，Qwen 在 export 内对最终调整后整句干声和完整译文生成字词时间，再映射到配音时间轴；TTS 和 mix 保持一对一，省略该配置时沿用字符估算。接口与运行配置见[主干设计](youdub-desktop-v0.1.md)和[运行说明](mvp-runtime.md#可选字幕字词对齐)。
+- 实际样例改为 [README 的黄仁勋视频](../../README.md)《Jensen Huang on Nvidia’s Competition》，约 59.34 秒。该样例揭示的尾部配音容纳和 Qwen 一格内尾部边界问题已完成通用修正：mix 从末端反向使用已有空隙，字幕将最多 80 ms 的跨尾预测边界映射到音频终点并记录计数。两轮 API 失败状态保留：第一轮翻译超时，第二轮 mix 尾部超出 166 ms。修正后复用第二轮 25 条真实整句 TTS 的 mix/export 阶段复验已成功并生成成片，无新增 LLM/TTS 请求；357 个字词生成 35 条字幕，画面/WAV 时长 59.326 秒，完整解码及音轨来源核对通过；Qwen/字符估算两版在同步对比页均播放至 59.326 秒结束且无播放器错误。当前交付范围为真实阶段与本地产物，详见[本轮验收记录](../validation/mvp-jensen-qwen-2026-09-23.json)。用户要求继续小步开发推送，后续试听反馈不再作为推进门槛。
 
 ## 持续目标
 

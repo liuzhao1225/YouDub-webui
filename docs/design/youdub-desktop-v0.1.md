@@ -2,7 +2,7 @@
 
 配套传输契约：[OpenAPI 3.1](youdub-api-v0.1.openapi.json)；[SQLite DDL](youdub-schema-v0.1.sql)。[飞书正文](https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd)。
 
-2026-09-22 · MVP 主干版 · 接口与流程评审稿。先完成单视频闭环，再根据真实效果进行优化。
+2026-09-22 · MVP 主干版 · 接口与流程评审稿。2026-09-23 状态更新：本轮 macOS CPU 主干交付已完成，Windows/CUDA 实机验收列入后续范围。实际输出与验证范围见[当前运行说明](mvp-runtime.md)。
 
 本轮定义模块边界、处理流程、状态、数据结构与 HTTP 契约。独立 youdub-backend 作为媒体处理主要参考；详细实现、性能优化和具体故障案例后置。
 
@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | 任务管理 | 创建、查询、取消、重试、重新生成 | 保存 Task 与固定配置；按顺序派发步骤；返回进度、错误与成品入口 |
 | 视频处理流程 | 输入视频、固定配置、当前步骤 | 定义七阶段及跳过条件；组织音频、字幕与视频处理；返回步骤结果 |
-| 模型适配 | 音频或文本、模型选择、声音方式 | 统一分离、ASR、翻译、TTS 的调用与返回结构 |
+| 模型适配 | 音频或文本、模型选择、声音方式 | 统一分离、ASR、翻译、TTS 及可选字幕对齐的调用与返回结构 |
 
 ### 模块关系
 
@@ -43,7 +43,7 @@ prepare → separate → asr → translate → tts → mix → export
 | translate | 原文分段、目标语言 | 按 segment_id 对应的译文 |
 | tts | 译文、声音选择、必要的参考音频 | 分段音频及实际时长 |
 | mix | 分段配音、时间轴、可选背景音 | 最终音轨、配音时间轴 |
-| export | 源视频、字幕、最终音轨 | 可预览和下载的 MP4、WAV、SRT |
+| export | 源视频、原文/译文分段、源时间轴、可选配音时间轴和最终音轨；对齐时另读完整调整后干声 | 可预览和下载的 MP4、WAV、SRT |
 
 ### 输出模式
 
@@ -59,11 +59,11 @@ prepare → separate → asr → translate → tts → mix → export
 
 - 时间统一为整数毫秒，区间为 [start_ms, end_ms)。原始 ASR 响应单独原样保存。2026-09-23 按用户对听感的反馈，处理用 Segment 保留每条完整 ASR utterance 的原文、起止时间和 speaker，并按源顺序分配稳定 ID。标点和字幕显示长度不改变语音生成单元。
 - 翻译、TTS 和 mix 通过 segment_id 与完整 utterance 一对一对应；TTS 一次生成整句译文并返回实际音频时长，mix 单独生成配音时间轴。配音排程不覆盖原始 ASR 响应或源词时间戳。超过 10 秒的 utterance 可从同源 raw words 中选取不超过 10 秒的克隆参考窗口，使用匹配源文本；这仅影响参考音频选择，完整 TTS 译文保持不变。
-- export 将一个 Segment 展开为多个字幕 cue，cue 序号独立于 segment_id。字幕时间按各片段可见字符权重在父区间内估算，尚未进行强制对齐。原文字幕使用源区间；译文在 subtitles 模式使用源区间，在 both 模式使用最终配音区间。各片段完整保留文本和顺序，不改变 TTS 或 mix 的一对一关系。
+- export 将一个 Segment 展开为多个字幕 cue，cue 序号独立于 segment_id。默认按各片段可见字符权重在父区间内估算；原文字幕使用源区间，译文在 subtitles 模式使用源区间，在 both 模式使用最终配音区间。both 模式可选 Qwen 字词强制对齐：用完整调整后干声与完整译文取得字词时间，叠加对应 `dubbed_start_ms`；每条 cue 的首尾取模型对齐的词边界，落在词内部的显示边界合并。两种方式均完整保留文本及顺序，TTS 与 mix 继续按 segment_id 一对一处理。
 - `asr.initial_prompt` 是可选专名提示，最多 500 字符，随 Task 配置固定；适合填写人名、品牌名等。它用于引导识别，不直接替换识别结果。例如本次样例填写 `YouDub.` 后，Whisper tiny 直接识别出正确品牌名。
-- 桌面首版保持原视频画面时间轴，不加入广告裁剪或整体倍速。分段对齐的具体算法先复用并验证，再根据效果优化。
+- 桌面首版保持原视频画面时间轴，不加入广告裁剪或整体倍速。mix 沿用有界变速倍率，取得全部完整音频的样本数与首选起点后，从视频末端反向排程，必要时向前使用已有空隙。配音起点可以早于源分段起点，源 ASR 时间保持原值；音频顺序、样本完整性、变速倍率与画面总长保持不变。全部完整配音仍无法容纳、首段起点小于 0 时返回 `AUDIO_EXCEEDS_VIDEO`。这项尾部保障为本次 WebUI 新增。
 
-独立 [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) 的原始 utterances、整段音频生成与字幕显示分段为本轮媒体流程参考。2026-09-23 已核对本地及生产运行目录提交均为 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`。原 merge_audio / merge_video 包含服务端业务策略，桌面按本节输入输出选取可复用函数。
+独立 [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) 的原始 utterances、整段音频生成与字幕显示分段为本轮媒体流程参考。2026-09-23 整句配音修正轮曾核对本地及生产运行目录提交均为 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`；该结果保留为当时证据。本轮 Qwen 与尾部排程以同一本地提交作为参考，仅做本地源码核对。原 merge_audio / merge_video 包含服务端业务策略，桌面按本节输入输出选取可复用函数。
 
 ## Task 数据模型与状态
 
@@ -137,10 +137,13 @@ error = { code, message, field, stage, action }
 | transcribe | audio、language、model | detected_language、segments |
 | translate | segments、source、target、model | 带 segment_id 的译文列表 |
 | synthesize | text、voice、model | segment_id、path、duration_ms、sample_rate_hz、channels |
+| align_subtitles（export 内可选） | 完整调整后干声、对应译文、目标语言、model | segment_id、字词文本及相对起止时间；export 映射至配音时间轴 |
 
 本地模型和远端 API 使用同一能力边界。模型实现内部处理供应商字段；流程层只使用统一结构。声音模式为 preset 或 source_clone，适配器声明自己实际支持的模式。
 
 GET /runtime 返回可用设备、模型、语言、声音方式和输入限制。前端依据目录展示选项；未接入或不可用的模型不允许创建任务。正式 VoxCPM2 API 规范尚待提供，示例中的 demo_* 只用于 Mock。
+
+2026-09-23 增补：`TaskConfig.subtitle_alignment` 为可选 `ModelSelection`，默认 `null`。仅 both 模式可选择 `adapter=qwen_forced_aligner`、`model=Qwen3-ForcedAligner-0.6B-hf` 与可用 CPU/CUDA 设备；当前接入目标语言为 `en`、`zh`，单条完整干声上限 300 秒。Runtime 用 `capability=subtitle_alignment` 声明可用模型与限制；可选模型缺失不影响基础能力 ready，显式选用后的失败直接返回错误。原生解码结果单独原样保留；80 ms 时间格内跨越干声尾端的时间边界，在生成字幕时映射到实际音频终点，阶段日志记录转换的词区间数。越界超过一格或文本、单调性非法时直接报错。七阶段与两张业务表保持不变。模型和加载方式见[运行配置](mvp-runtime.md#可选字幕字词对齐)。
 
 ### 内部媒体结构
 
@@ -215,7 +218,7 @@ POST /api/v1/tasks 使用 multipart/form-data：id 为客户端生成的 UUID，
 }
 ```
 
-subtitles：tts/separation 为 null，keep_background=false。配音模式：tts 必填；保留背景或克隆源音色时 separation 必填，其余情况为 null。模型和设备选择必须来自 /runtime。
+subtitles：tts/separation 为 null，keep_background=false。配音模式：tts 必填；保留背景或克隆源音色时 separation 必填，其余情况为 null。`subtitle_alignment` 省略或为 null 时按字符估算；非空时必须为 both 模式，并从 /runtime 的 subtitle_alignment 能力中选择模型与设备。其余模型与设备同样来自 /runtime。
 
 ### 查询与结果
 
@@ -296,15 +299,15 @@ HTTP 使用 401/403 表示会话或访问校验，404 表示资源不存在，40
 - 结果可检查：视频能播放，原声/配音符合模式，字幕与相应时间轴匹配，末尾内容完整。
 - 状态可理解：缺模型、处理失败和用户停止有明确反馈；更改默认值不会改变已创建 Task 的配置。
 
-联调前需确定：默认模型与语言方向、声音模式、Windows 参考机器、输入文件上限，以及远端接口的请求/响应规范。没有真实样例证据的模型能力保持不可用。
+本轮已在 macOS CPU 完成主干交付，使用实际配置的模型、英语到中文方向和 VoxCPM2 原声克隆；能力目录与输入限制按已接入范围返回。Windows/CUDA 实机验收及对应设备配置列为后续任务，不作为本轮交付门槛。
 
-本轮收敛范围：不写调度 SQL、进程回收参数、竞态穷举、复杂重启恢复矩阵、性能 SLA 或具体降噪/对齐调优方案。它们在主干运行后，按实际问题进入下一轮设计。当前文档是接口与流程草稿，尚未代表 Windows 或模型实机验收通过。
+本轮保留单视频、七阶段、两张业务表和小步开发的范围；主干实现与 macOS 真实模型结果见[运行说明](mvp-runtime.md)。黄仁勋成片验证限定为复用完整 TTS 后的真实 mix/export 阶段与本地产物，两轮原 API failed 状态保持。模型常驻、性能优化、复杂恢复、Windows/CUDA 及多说话人能力按后续实际需求推进。
 
 ## 参考依据与接口附件
 
 | 来源 | 本轮用途 | 核对范围 |
 | --- | --- | --- |
-| [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) | 媒体流程、阶段输入输出、整句音频与字幕显示分段的主要参考 | 2026-09-23 只读核对本地与生产运行目录提交均为 1e738a89bfc27fa5602d0442b317ecedfacb20e5；本次核对范围为源码及提交一致性 |
+| [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) | 媒体流程、阶段输入输出、整句音频与字幕显示分段的主要参考 | 此前本地核对基线为 3ef9ef2a2fdb9060ab9b8276a916572f2ee9d5cb；2026-09-23 本轮本地代码参考为 1e738a89bfc27fa5602d0442b317ecedfacb20e5。整句修正轮的生产提交一致性核对保留为当时证据；本轮仅做本地源码核对 |
 | [YouDub WebUI](https://github.com/liuzhao1225/YouDub-webui/tree/d90e1c257104d69fedbc70d7935c7337e45a0950) | 现有前端、HTTP、认证和桌面交互改造 | 固定提交 d90e1c2；WebUI/backend 与独立 youdub-backend 分开标记 |
 | [OpenCreator](https://github.com/krillinai/OpenCreator/tree/a153ac073e6d03b55a142266aadce3d82109b37f) | 执行上下文、任务动作和能力目录的补充参考 | 固定提交 a153ac0；首版维持单 Task 与三个业务模块 |
 | [YouDub 爆款案例孵化方案](https://modelbest.feishu.cn/docx/MsuudcxtUoAkXuxoCv0cYF1Tnec) | Windows、单视频 Beta、英文优先与接口交付要求 | 需求输入；实现与验收状态分别确认 |

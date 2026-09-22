@@ -402,9 +402,13 @@
     ]
   },
   "human_listening_review": {
-    "status": "pending",
+    "status": "accepted",
     "question": "整句配音的声音连贯性是否可接受？",
-    "previous_version": "2026-09-22 的三条短 TTS 版本已被用户以听感不行否决，历史证据保留。"
+    "previous_version": "2026-09-22 的三条短 TTS 版本已被用户以听感不行否决，历史证据保留。",
+    "feedback": "可以不错",
+    "review_date": "2026-09-23",
+    "scope": "用户接受此前提供的整句配音样例，并提出使用 Qwen 强制对齐改善字幕显示。此反馈不代表后续黄仁勋视频的听感结论。",
+    "follow_up": "按用户要求使用 YouDub WebUI README 中的黄仁勋真实视频继续开发与验证；后续试听反馈不作为开发和推送的阻塞条件。"
   },
   "limitations": [
     "字幕时间是按字符权重估算，未执行生成语音强制对齐。",
