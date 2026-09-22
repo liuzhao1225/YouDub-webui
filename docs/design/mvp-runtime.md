@@ -88,8 +88,10 @@ X-CSRF-Token: <session csrf token>
 
 上述 both 产物经实际任务详情页在 Chrome 播放至 6.88 秒结束，`ended=true`、`error=null`，画面中的中文字幕可见。页面下载的 133732 字节视频与原产物 SHA-256 一致；视频 Range 返回 206，登录、列表、详情和下载返回 200。未评价听感或音质，未据此宣称远端翻译通过。
 
-另通过登录、Settings 和 `POST /api/v1/tasks` 公开接口，连续创建 both、subtitles、dubbing 三个任务，由未替换阶段函数的正式 worker 自动执行。Whisper、Demucs、VoxCPM2 与 FFmpeg 均真实运行；翻译适配器通过 OpenAI SDK 调用本机 HTTP 测试服务，返回明确的人工译文。三个任务均在 attempt=1 成功结束，执行时段无重叠，日志中的完成阶段与模式一致，外部调用状态为 succeeded 且无未知结果风险。全部产物通过 API 下载并与磁盘哈希核对，视频 HEAD/Range 返回 200/206，音视频完整解码通过。临时测试凭据与自启服务已清理；[API 编排验收记录](../validation/mvp-api-orchestration-2026-09-22.json)记录任务时间、阶段与产物。这证明真实本地模型的任务编排链可运行，真实远端翻译仍待验证。
+另通过登录、Settings 和 `POST /api/v1/tasks` 公开接口，连续创建 both、subtitles、dubbing 三个任务，由未替换阶段函数的正式 worker 自动执行。Whisper、Demucs、VoxCPM2 与 FFmpeg 均真实运行；翻译适配器通过 OpenAI SDK 调用本机 HTTP 测试服务，返回明确的人工译文。三个任务均在 attempt=1 成功结束，执行时段无重叠，日志中的完成阶段与模式一致，外部调用状态为 succeeded 且无未知结果风险。全部产物通过 API 下载并与磁盘哈希核对，视频 HEAD/Range 返回 200/206，音视频完整解码通过。临时测试凭据与自启服务已清理；[API 编排验收记录](../validation/mvp-api-orchestration-2026-09-22.json)记录任务时间、阶段与产物。该记录证明真实本地模型的任务编排链可运行；真实供应商验证见下文。
 
-最新后端全量 **783 项通过**；前端 **35 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应测试使用明确的 MockTransport，不代表真实远端翻译已验收。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
+配置来源明确后，使用火山方舟 `doubao-seed-evolving` 真实调用，再次通过正式 API 和 worker 完成 subtitles、both、dubbing 三个任务。此次翻译未替换为人工内容：现有 Chat Completions JSON object 请求与该配置兼容，三个任务均在 attempt=1 成功，步骤日志、外部回执和约定产物完整。所有产物下载后与磁盘哈希一致，音视频可完整解码。将 MP4 音轨解码到相同 PCM 格式后，字幕模式与源音轨、配音模式与输出 WAV 的相关系数均大于 0.998；该检查证明音轨来源一致，不评价主观音质。[真实供应商验收记录](../validation/mvp-real-provider-2026-09-22.json)保留了模型、配置、ASR、真实译文、阶段和产物哈希。当前真实产物的浏览器验收接续进行。
 
-当前尚未完成真实远端翻译闭环、使用真实翻译供应商的完整任务验收、人工音质试听及 Windows 实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，核对内容一致并重建 `env.txt` 硬链接；真实供应商联调接续进行。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
+最新后端全量 **783 项通过**；前端 **35 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应单元测试使用明确的 MockTransport，真实供应商验证另见上一段记录。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
+
+真实远端翻译与完整任务链已验证，人工音质试听及 Windows 实机验收尚未完成。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，核对内容一致并重建 `env.txt` 硬链接。验证在独立数据目录进行，临时导入的真实凭据已清理；不自动写入用户的默认 Settings。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
