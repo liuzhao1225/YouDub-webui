@@ -251,10 +251,15 @@ def _protected_path(path: str) -> bool:
     return path == "/api" or path.startswith("/api/")
 
 
-def _json_error(status_code: int, detail: str) -> JSONResponse:
+def _json_error(status_code: int, detail: str, request: Request | None = None, *, code: str = "UNAUTHORIZED") -> JSONResponse:
+    content = {"detail": detail}
+    if request is not None and request.url.path.startswith("/api/v1/"):
+        from .v1.errors import error_content
+
+        content = error_content(code, detail, action="none")
     return JSONResponse(
         status_code=status_code,
-        content={"detail": detail},
+        content=content,
         headers={"Cache-Control": "no-store"},
     )
 
@@ -304,12 +309,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
         try:
             settings = validate_auth_configuration()
         except AuthConfigurationError:
-            return _json_error(503, "Authentication is not configured.")
+            return _json_error(503, "Authentication is not configured.", request, code="RUNTIME_UNAVAILABLE")
 
         token = request.cookies.get(SESSION_COOKIE_NAME, "")
         session = authenticate_session(token, settings)
         if session is None:
-            response = _json_error(401, "Authentication required.")
+            response = _json_error(401, "Authentication required.", request)
             if token:
                 clear_session_cookie(response, settings)
             return response
@@ -320,8 +325,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if method not in SAFE_METHODS:
             csrf_token = request.headers.get(CSRF_HEADER_NAME, "")
             if not csrf_token or not secrets.compare_digest(csrf_token, session.csrf_token):
-                return _json_error(403, "CSRF validation failed.")
+                return _json_error(403, "CSRF validation failed.", request, code="CSRF_INVALID")
             if not self._origin_allowed(request):
-                return _json_error(403, "Origin is not allowed.")
+                return _json_error(403, "Origin is not allowed.", request, code="ORIGIN_NOT_ALLOWED")
 
         return await self._call_next_no_store(request, call_next)

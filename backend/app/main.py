@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import errno
 import os
 import shutil
+import sqlite3
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -29,6 +31,11 @@ from .sources import detect_source
 from .stage_reset import remove_stage_artifacts
 from .stages import STAGE_NAMES
 from .youtube import LOCAL_UPLOAD_DIRECTIONS, is_local_upload_url, validate_video_url
+from .v1.credentials import CredentialStoreError
+from .v1.errors import ApiError, error_content
+from .v1.router import router as v1_router
+from .v1.contracts import Health
+from .v1.runtime import INSTANCE_ID
 
 ALLOWED_VIDEO_SUFFIXES = {".mp4", ".mov", ".m4v", ".mkv", ".webm", ".avi", ".flv", ".wmv"}
 ALLOWED_SUBTITLE_SUFFIXES = {".srt"}
@@ -140,6 +147,32 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+app.include_router(v1_router)
+
+
+@app.exception_handler(ApiError)
+async def v1_api_error(request: Request, exc: ApiError) -> Response:
+    return JSONResponse(status_code=exc.status_code, content=exc.content)
+
+
+@app.exception_handler(CredentialStoreError)
+async def credential_store_error(request: Request, exc: CredentialStoreError) -> Response:
+    return JSONResponse(status_code=503, content=error_content(
+        "RUNTIME_UNAVAILABLE", str(exc), field="connection.api_key", action="contact_support",
+    ))
+
+
+@app.exception_handler(sqlite3.Error)
+@app.exception_handler(OSError)
+async def v1_storage_error(request: Request, exc: Exception) -> Response:
+    if not request.url.path.startswith("/api/v1/"):
+        raise exc
+    full = getattr(exc, "errno", None) == errno.ENOSPC or getattr(exc, "sqlite_errorcode", None) == sqlite3.SQLITE_FULL
+    logger.exception("MVP storage operation failed")
+    return JSONResponse(status_code=507 if full else 500, content=error_content(
+        "DISK_FULL" if full else "INTERNAL_ERROR",
+        "Storage is full." if full else "Storage operation failed.", action="contact_support",
+    ))
 
 
 @app.exception_handler(RequestValidationError)
@@ -152,6 +185,12 @@ async def redact_login_validation_error(
             content={"detail": "Invalid credentials."},
             headers={"Cache-Control": "no-store"},
         )
+    if request.url.path.startswith("/api/v1/"):
+        location = exc.errors()[0]["loc"] if exc.errors() else ()
+        field = ".".join(str(part) for part in location if part not in {"body", "query", "path"}) or None
+        return JSONResponse(status_code=422, content=error_content(
+            "INVALID_CONFIG", "Invalid request parameters.", field=field,
+        ))
     return await request_validation_exception_handler(request, exc)
 
 
@@ -196,9 +235,9 @@ app.add_middleware(
 )
 
 
-@app.get("/api/health")
+@app.get("/api/health", response_model=Health)
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ready", "instance_id": INSTANCE_ID}
 
 
 def _clear_replaced_login_cookie(
