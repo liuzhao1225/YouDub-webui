@@ -21,7 +21,7 @@
 
 `.env` 是配置来源，`env.txt` 为同一文件的硬链接；两者均被 Git 忽略。新 worktree 通过 `.worktreeinclude` 复制 `.env` 后，执行 `ln .env env.txt` 和 `test .env -ef env.txt` 重建并核对链接。配置复制到另一台机器后仍需按运行环境选择设备及模型目录；v1 翻译连接通过 Settings 保存到系统凭据库。
 
-Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg/FFprobe；当前 Runtime 不会把仅安装 Python 包视为完整模型能力。
+Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg/FFprobe；当前 Runtime 不会把仅安装 Python 包视为完整模型能力。生产构建会固定 API 代理地址：使用非默认端口时，在 `npm run build` 前设置 `NEXT_SERVER_API_BASE_URL`，后端启动端口应与其一致。常规后端测试使用 `PYTHON_DOTENV_DISABLED=1 .venv/bin/pytest backend/tests`，避免本机真实配置影响隔离测试。
 
 ### 字幕链模型配置
 
@@ -84,7 +84,7 @@ X-CSRF-Token: <session csrf token>
 
 任务动作另经 Chrome 实际验收：queued 取消、waiting 经 cancelling 到 cancelled、重试 attempt 1→2、终态删除返回首页且数据库与目录移除、日志下载字节相同。远端 unknown 保留请求 ID 并禁止 retry；重新生成可编辑配置和勾选风险，在模型不可用时禁止提交。此次使用隔离 Mock 数据库，未调用真实外部模型。
 
-本次真实 CPU Whisper tiny 已识别约 7 秒英语语音视频并保留原始文本和时间戳；tiny 将样例中的 YouDub 识别为 UDob，结果按原样保留。权重来自官方地址并核对完整 SHA-256。字幕导出使用真实 FFmpeg 验证了首音轨、视频尾帧字幕、中文及特殊路径和原视频未改写。
+早期真实 CPU Whisper tiny 已识别约 7 秒英语语音视频并保留原始文本和时间戳；未加专名提示时，tiny 将样例中的 YouDub 识别为 UDob，历史结果按原样保留。该问题的逐词分句与专名提示复验见下文。权重来自官方地址并核对完整 SHA-256。字幕导出使用真实 FFmpeg 验证了首音轨、视频尾帧字幕、中文及特殊路径和原视频未改写。
 
 同一语音样例已通过真实 Demucs、VoxCPM2 CPU 推理、混音和三模式导出。原始 TTS 为 7040 ms，排程后实际配音区间为 0–6680 ms，最终 WAV 和配音 MP4 为 6880 ms。该验证使用明确标记的人工译文，原视频和 ASR 文件哈希保持不变；[验证记录](../validation/mvp-local-media-2026-09-22.json)包含配置范围、模型哈希、分段与输出哈希。
 
@@ -92,8 +92,14 @@ X-CSRF-Token: <session csrf token>
 
 另通过登录、Settings 和 `POST /api/v1/tasks` 公开接口，连续创建 both、subtitles、dubbing 三个任务，由未替换阶段函数的正式 worker 自动执行。Whisper、Demucs、VoxCPM2 与 FFmpeg 均真实运行；翻译适配器通过 OpenAI SDK 调用本机 HTTP 测试服务，返回明确的人工译文。三个任务均在 attempt=1 成功结束，执行时段无重叠，日志中的完成阶段与模式一致，外部调用状态为 succeeded 且无未知结果风险。全部产物通过 API 下载并与磁盘哈希核对，视频 HEAD/Range 返回 200/206，音视频完整解码通过。临时测试凭据与自启服务已清理；[API 编排验收记录](../validation/mvp-api-orchestration-2026-09-22.json)记录任务时间、阶段与产物。该记录证明真实本地模型的任务编排链可运行；真实供应商验证见下文。
 
-配置来源明确后，使用火山方舟 `doubao-seed-evolving` 真实调用，再次通过正式 API 和 worker 完成 subtitles、both、dubbing 三个任务。此次翻译未替换为人工内容：现有 Chat Completions JSON object 请求与该配置兼容，三个任务均在 attempt=1 成功，步骤日志、外部回执和约定产物完整。所有产物下载后与磁盘哈希一致，音视频可完整解码。将 MP4 音轨解码到相同 PCM 格式后，字幕模式与源音轨、配音模式与输出 WAV 的相关系数均大于 0.998；该检查证明音轨来源一致，不评价主观音质。[真实供应商验收记录](../validation/mvp-real-provider-2026-09-22.json)保留了模型、配置、ASR、真实译文、阶段和产物哈希。当前真实产物的浏览器验收接续进行。
+配置来源明确后，使用火山方舟 `doubao-seed-evolving` 真实调用，再次通过正式 API 和 worker 完成 subtitles、both、dubbing 三个任务。此次翻译未替换为人工内容：现有 Chat Completions JSON object 请求与该配置兼容，三个任务均在 attempt=1 成功，步骤日志、外部回执和约定产物完整。所有产物下载后与磁盘哈希一致，音视频可完整解码。将 MP4 音轨解码到相同 PCM 格式后，字幕模式与源音轨、配音模式与输出 WAV 的相关系数均大于 0.998；该检查证明音轨来源一致，不评价主观音质。[真实供应商验收记录](../validation/mvp-real-provider-2026-09-22.json)保留了模型、配置、ASR、真实译文、阶段和产物哈希。三个旧版产物均在 Chrome 完整播放、下载哈希一致。用户认可该版声音完整清楚、时序可接受，随后指出专名和未分句问题。
 
-最新后端全量 **783 项通过**；前端 **35 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应单元测试使用明确的 MockTransport，真实供应商验证另见上一段记录。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
+提交 `984ce5e`、`6cd150d`、`477319f` 分别接入 VoxCPM2 极致克隆、逐词分句与专名提示、前端配置。在此版本重新运行同一视频，三个模式全部在 attempt=1 成功。每个任务填写 `asr.initial_prompt="YouDub."`，原始 ASR 正确识别 YouDub；处理 transcript 根据原始词时间戳拆成三句，三句依次翻译和配音。配音参考音频覆盖连续完整原文，both 为 6680 ms，dubbing 为 6700 ms；同时提供同一音频作为 reference/prompt 以及匹配原文。
 
-真实远端翻译与完整任务链已验证，人工音质试听及 Windows 实机验收尚未完成。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，核对内容一致并重建 `env.txt` 硬链接。验证在独立数据目录进行，临时导入的真实凭据已清理；不自动写入用户的默认 Settings。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
+本轮所有音视频完整解码、API 下载哈希与 HEAD/Range 均通过。原文 SRT 对应源时间轴，译文 SRT 对应实际配音时间轴，三段完整调整后音频均落在原视频范围内。Chrome 中三个视频都播放至结束且 `error=null`；表单显示 VoxCPM2 原声克隆默认值，专名提示上限为 500。both 的三条字幕已逐帧核对。浏览器点击下载返回 200，本次未独立核对浏览器保存文件；全部产物的 API 下载字节已核对。[极致克隆与分句验收记录](../validation/mvp-hifi-sentences-2026-09-22.json)保留本轮证据。新版听感正在等待用户反馈，旧版试听结论不覆盖本次声音变化。
+
+最新后端全量 **840 项通过**；前端 **43 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应单元测试使用明确的 MockTransport，真实供应商验证另见上文记录。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
+
+Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，复制时核对内容一致并重建 `env.txt` 硬链接；之后仅在本机将 `YOUDUB_TTS_ENGINE` 改为 `voxcpm2`，硬链接保持不变。真实验收使用独立数据目录，临时凭据已清理。另按用户指示在本机默认 Settings 保存真实翻译连接和 VoxCPM2 `source_clone` 默认配置，密钥保存在系统凭据库；专名提示保持每任务可选，未全局写入 YouDub。
+
+以上模型调用均发生在用户新增“每次请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。后续新调用须按新规则核对兼容性；本轮记录不构成新上限的运行证据。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
