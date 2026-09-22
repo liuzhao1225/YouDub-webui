@@ -8,7 +8,9 @@
 - `/api/v1/runtime` 返回 CPU/CUDA 设备、能力目录和输入限制。当前 v1 媒体执行链尚未接入，四个适配器明确显示不可用。
 - `GET /api/v1/settings` 读取默认配置、界面语言和脱敏连接；`PATCH` 每次更新一个配置组。
 - 登录和 CSRF 沿用现有机制。v1 的认证、参数、存储和凭据错误使用 `error.code/message/field/stage/action`。
-- Task、配置、产物与步骤结果的数据结构已经定义；任务接口和执行链在后续阶段接入。
+- Task 上传、配置与连接快照、列表/详情、日志，以及产物 GET/HEAD/Range 已接入。浏览器按 UUID 提交视频和 JSON 配置；失败导入保留同 ID 残留，后续删除接口负责清理。
+- v1 与原 WebUI 共用单线程 worker。一个 Task 持续占用执行位置，远端 waiting 保留查询 ID；重启时中断的本地步骤明确失败，已保存的远端等待继续查询。
+- `prepare` 已使用 FFprobe 检查媒体限制、FFmpeg 提取 16 kHz 单声道音频，原视频保留。ASR、翻译、配音、混音和导出仍待接入；测试适配器只存在于测试文件，Runtime 继续明确显示不可用。
 
 ## 本地运行
 
@@ -22,7 +24,7 @@ MVP 业务数据使用新目录中的 `desktop.sqlite`，保留旧 WebUI 数据�
 | macOS | `~/Library/Application Support/YouDub` |
 | Linux | `$XDG_DATA_HOME/youdub`，未设置时为 `~/.local/share/youdub` |
 
-新库只含 `tasks`、`settings` 两张业务表。旧认证机制继续使用现有认证存储；下一阶段统一执行入口时继续核对数据目录与认证边界。
+新库只含 `tasks`、`settings` 两张业务表。旧认证机制继续使用现有认证存储；两套任务入口共用执行器，v1 文件保存在新数据目录下的 `tasks/<UUID>/input|work|output`。
 
 ## 设置与密钥
 
@@ -46,4 +48,6 @@ X-CSRF-Token: <session csrf token>
 
 2026-09-22：契约、Runtime、Settings 及相关旧认证/API 回归通过；macOS 系统凭据库的实际写入、读取、删除通过。凭据验证使用临时测试值，验证后已删除。
 
-当前尚未完成 v1 视频上传、Task 执行、前端切换、真实模型三模式验收及 Windows 实机验收。Runtime 的输入限制是后续导入和执行链需要实际执行的准入限制。
+任务链已用真实合成视频和显式测试适配器验证上传、顺序执行、远端等待、错误、产物注册及文件下载；测试中的 ASR、翻译、导出结果不代表真实模型效果。媒体准备单独验证了真实 FFmpeg 输出和原视频未改写。
+
+当前尚未完成任务动作、前端切换、真实模型三模式验收及 Windows 实机验收。Runtime 的输入限制分别在导入和 prepare 实施；实际模型链未接通前，公开接口会拒绝不可用的模型组合。

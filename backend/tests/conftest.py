@@ -22,7 +22,8 @@ CHANGED_AUTH_PASSWORD_HASH = (
 
 
 @pytest.fixture(autouse=True)
-def default_test_device(monkeypatch):
+def default_test_device(monkeypatch, tmp_path):
+    monkeypatch.setenv("YOUDUB_DESKTOP_DATA_DIR", str(tmp_path / "desktop-runtime"))
     monkeypatch.setenv("DEVICE", "cpu")
     monkeypatch.setenv("YOUDUB_AUTH_PASSWORD_HASH", TEST_AUTH_PASSWORD_HASH)
     monkeypatch.setenv("YOUDUB_AUTH_SESSION_TTL_SECONDS", "3600")

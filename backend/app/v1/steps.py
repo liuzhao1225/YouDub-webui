@@ -17,6 +17,8 @@ class StageContext:
     config: TaskConfig
     input_files: dict[str, Path]
     work_dir: Path
+    remote_task_id: str | None = None
+    connections: dict[str, dict] = field(default_factory=dict, repr=False)
 
 
 @dataclass(frozen=True)

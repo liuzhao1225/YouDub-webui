@@ -33,7 +33,8 @@ from .stages import STAGE_NAMES
 from .youtube import LOCAL_UPLOAD_DIRECTIONS, is_local_upload_url, validate_video_url
 from .v1.credentials import CredentialStoreError
 from .v1.errors import ApiError, error_content
-from .v1.router import router as v1_router
+from .v1.router import get_store as get_v1_store, router as v1_router
+from .v1 import executor as v1_executor
 from .v1.contracts import Health
 from .v1.runtime import INSTANCE_ID
 
@@ -136,8 +137,19 @@ async def lifespan(app: FastAPI):
     database.delete_expired_auth_sessions(database.now_iso())
     database.backfill_titles_from_metadata()
     database.fail_stale_active_tasks()
-    worker.start(run_task)
+    store = get_v1_store()
+    pending = v1_executor.startup_tasks(store)
+    worker.start(dispatch_task)
+    for task_id in pending:
+        worker.enqueue(f"mvp-{task_id}")
     yield
+
+
+def dispatch_task(task_id: str) -> None:
+    if task_id.startswith("mvp-"):
+        v1_executor.run_task(get_v1_store(), task_id.removeprefix("mvp-"))
+    else:
+        run_task(task_id)
 
 
 app = FastAPI(
