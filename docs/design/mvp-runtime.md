@@ -19,6 +19,8 @@
 
 沿用仓库 [README](../../README.md) 的环境配置和启动方式，更新依赖后运行 `npm run dev:api`。应用读取 `.env`；新增 `keyring>=25.6,<26` 依赖，用于[系统凭据存储](https://keyring.readthedocs.io/en/latest/)。
 
+`.env` 是配置来源，`env.txt` 为同一文件的硬链接；两者均被 Git 忽略。新 worktree 通过 `.worktreeinclude` 复制 `.env` 后，执行 `ln .env env.txt` 和 `test .env -ef env.txt` 重建并核对链接。配置复制到另一台机器后仍需按运行环境选择设备及模型目录；v1 翻译连接通过 Settings 保存到系统凭据库。
+
 Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg/FFprobe；当前 Runtime 不会把仅安装 Python 包视为完整模型能力。
 
 ### 字幕链模型配置
@@ -90,4 +92,4 @@ X-CSRF-Token: <session csrf token>
 
 最新后端全量 **783 项通过**；前端 **35 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应测试使用明确的 MockTransport，不代表真实远端翻译已验收。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
 
-当前尚未完成真实远端翻译闭环、使用真实翻译供应商的完整任务验收、人工音质试听及 Windows 实机验收。已有 `.env` 与 `env.txt` 内容不一致，保持两份文件未覆盖；实际远端联调配置来源待用户确定。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
+当前尚未完成真实远端翻译闭环、使用真实翻译供应商的完整任务验收、人工音质试听及 Windows 实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，核对内容一致并重建 `env.txt` 硬链接；真实供应商联调接续进行。模型缺失或依赖不完整时，公开接口明确拒绝对应组合。
