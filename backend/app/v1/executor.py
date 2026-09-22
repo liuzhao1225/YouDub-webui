@@ -49,6 +49,15 @@ def stages_for(config: TaskConfig) -> tuple[str, ...]:
 def execute_stage(context: StageContext, progress) -> StepResult:
     if context.stage == "prepare":
         return media.prepare(context, progress)
+    if context.stage == "asr":
+        from .asr import run
+        return run(context, progress)
+    if context.stage == "translate":
+        from .translate import run
+        return run(context, progress)
+    if context.stage == "export":
+        from .export import run
+        return run(context, progress)
     raise ApiError(503, "MODEL_NOT_READY", f"The {context.stage} step has not been connected yet.", stage=context.stage)
 
 
@@ -126,6 +135,18 @@ def run_step(store: Store, record: dict, runner: StepRunner = execute_stage) -> 
         tasks.update_task(store, task_id, attempt, "running", stage_progress=value, status_message=safe)
         append_log(store, task_id, f"[{stage}] {safe}", connections)
 
+    def set_external_state(state: str):
+        if state not in {"pending", "succeeded", "failed"}:
+            raise ValueError("Invalid synchronous external operation state")
+        if state == "pending":
+            check_cancel()
+        saved["external_operation"] = {"state": state, "may_still_run": state == "pending"}
+        # Persist before sending text. Terminal receipts can still clear the
+        # external risk if cancellation arrived while the response was read.
+        if not tasks.update_task(store, task_id, attempt, {"running", "cancelling"}, stage_context_json=saved):
+            raise StageCancelled()
+        check_cancel()
+
     try:
         check_cancel()
         work = runtime_security.ensure_private_directory(store.root / "tasks" / task_id / "work")
@@ -134,7 +155,7 @@ def run_step(store: Store, record: dict, runner: StepRunner = execute_stage) -> 
         context = StageContext(task_id=task_id, attempt=attempt, stage=stage, config=config,
                                input_files={key: Path(value) for key, value in saved["input_files"].items()},
                                work_dir=work, remote_task_id=saved.get("remote_task_id"), connections=connections,
-                               check_cancel=check_cancel)
+                               check_cancel=check_cancel, set_external_state=set_external_state)
         result = runner(context, progress)
         if isinstance(result, Waiting):
             from pydantic import TypeAdapter

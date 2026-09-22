@@ -22,6 +22,23 @@ from backend.tests.conftest import TEST_AUTH_PASSWORD
 from backend.tests.test_v1_tasks import config, runtime, store  # shared isolated fixtures
 
 
+@pytest.mark.parametrize("terminal", [None, "succeeded", "failed"])
+def test_sync_remote_state_is_durable_before_call_and_cleared_only_on_receipt(client, store, config, video, terminal):
+    task_id = upload(client, video, config).json()["id"]
+
+    def remote(context, progress):
+        context.set_external_state("pending")
+        assert tasks.get_task(store, task_id)["external_operation"] == {"state": "pending", "may_still_run": True}
+        if terminal:
+            context.set_external_state(terminal)
+        raise ApiError(502, "INVALID_PROVIDER_RESULT", "Invalid test response")
+
+    executor.run_step(store, tasks.claim_next(store), remote)
+    result = tasks.get_task(store, task_id)
+    assert result["external_operation"] == {"state": terminal or "unknown", "may_still_run": terminal is None}
+    assert ("retry" in result["allowed_actions"]) == (terminal is not None)
+
+
 @pytest.fixture(scope="module")
 def video(tmp_path_factory):
     path = tmp_path_factory.mktemp("v1-task-media") / "sample.mp4"

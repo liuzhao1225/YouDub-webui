@@ -18,6 +18,10 @@ def _no_cancel() -> None:
     pass
 
 
+def _no_external_state(state: str) -> None:
+    pass
+
+
 @dataclass(frozen=True)
 class StageContext:
     task_id: str
@@ -29,6 +33,7 @@ class StageContext:
     remote_task_id: str | None = None
     connections: dict[str, dict] = field(default_factory=dict, repr=False)
     check_cancel: Callable[[], None] = field(default=_no_cancel, repr=False, compare=False)
+    set_external_state: Callable[[str], None] = field(default=_no_external_state, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
