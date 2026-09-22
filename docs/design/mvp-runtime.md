@@ -101,7 +101,9 @@ X-CSRF-Token: <session csrf token>
 
 最新后端全量 **840 项通过**；前端 **43 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应单元测试使用明确的 MockTransport，真实供应商验证另见上文记录。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
 
-Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，复制时核对内容一致并重建 `env.txt` 硬链接；之后仅在本机将 `YOUDUB_TTS_ENGINE` 改为 `voxcpm2`，硬链接保持不变。真实验收使用独立数据目录，临时凭据已清理。另按用户指示在本机默认 Settings 保存真实翻译连接和 VoxCPM2 `source_clone` 默认配置，密钥保存在系统凭据库；专名提示保持每任务可选，未全局写入 YouDub。
+Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，复制时核对内容一致并重建 `env.txt` 硬链接；随后在本机配置 `YOUDUB_TTS_ENGINE=voxcpm2`、CPU、WebUI 登录哈希和本机 HTTP Cookie，硬链接保持不变。真实媒体验收使用独立数据目录，临时凭据已清理。另按用户指示在本机默认 Settings 保存真实翻译连接和 VoxCPM2 `source_clone` 默认配置，密钥保存在系统凭据库；专名提示保持每任务可选，未全局写入 YouDub。
+
+正常启动另已核对：直接运行仓库 `.venv/bin/uvicorn backend.app.main:app`，应用自行读取 `.env`，前端使用 Node.js 22 的生产构建。通过 Next 同源代理，health、真实本机登录、session、Runtime、Settings 和任务列表全部返回 200，Runtime 为 ready，默认声音回读为 VoxCPM2 `source_clone`。该验证未替换配置函数、未导入测试认证、未创建模型任务；自启服务已停止。见[正常启动验收记录](../validation/mvp-standard-startup-2026-09-22.json)。
 
 完整三模式验收发生在用户新增“每次请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。
 

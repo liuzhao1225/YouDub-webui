@@ -1,0 +1,43 @@
+{
+  "health_http_status": 200,
+  "login_http_status": 200,
+  "session_http_status": 200,
+  "runtime_http_status": 200,
+  "runtime_status": "ready",
+  "settings_http_status": 200,
+  "default_asr": {
+    "adapter": "whisper",
+    "model": "tiny",
+    "device": "cpu",
+    "initial_prompt": null
+  },
+  "default_tts": {
+    "adapter": "voxcpm",
+    "model": "VoxCPM2",
+    "device": "cpu",
+    "voice": {
+      "mode": "source_clone"
+    }
+  },
+  "tasks_http_status": 200,
+  "tasks": {
+    "items": [],
+    "limit": 20,
+    "offset": 0,
+    "has_more": false
+  },
+  "normal_dotenv_loading": true,
+  "no_fixture_or_config_monkeypatch": true,
+  "new_model_requests": false,
+  "date": "2026-09-22",
+  "code_commit_at_startup": "838f91af75ef4e9a8343d8bf248fe5a68c3eb757",
+  "startup": ".venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000; Node 22 npm run start -- --hostname 127.0.0.1 --port 3000",
+  "local_config_repairs": [
+    "Initialized missing WebUI Argon2id login hash; retained only a 0600 ignored local password note.",
+    "Set DEVICE=cpu and localhost HTTP cookie mode.",
+    "Preserved .env/env.txt hard link."
+  ],
+  "source_credentials_in_report": false,
+  "temporary_services_stopped": true,
+  "evidence_scope": "Normal app startup, real saved defaults and authenticated API readback through the Next proxy. No video task was submitted."
+}

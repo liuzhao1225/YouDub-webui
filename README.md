@@ -4,6 +4,8 @@
 
 # YouDub WebUI | [人才招聘](#人才招聘)
 
+> **当前开发分支 `codex/mvp-mainline`**：v1 界面以本地单视频导入为入口，提供字幕、配音、字幕加配音三种输出，默认配音使用 VoxCPM2 原声克隆。启动方式、当前模型能力与验收边界见 [MVP 运行说明](docs/design/mvp-runtime.md)，接口见 [OpenAPI](docs/design/youdub-api-v0.1.openapi.json)，实施进度见 [开发计划](docs/design/mvp-development-plan.md)。下文保留原 WebUI 的功能与使用说明。
+
 国内 AtomGit 托管：[YouDub-webui](https://atomgit.com/liuzhao1225/YouDub-webui)。代码从 [GitHub 主仓库](https://github.com/liuzhao1225/YouDub-webui)单向同步；Release、Issue 和 PR 统一在 GitHub 维护。
 
 <p align="center">
