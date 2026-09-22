@@ -453,9 +453,24 @@
     "node_major": 22
   },
   "human_listening_review": {
-    "status": "pending",
+    "status": "rejected",
     "question": "新版极致克隆声音是否完整自然、三条字幕的切换是否可接受？",
-    "prior_acceptance": "用户认可了旧版本的声音完整清楚、时序可接受；随后指出专名和未分句问题。旧结论不覆盖此轮极致克隆。"
+    "prior_acceptance": "用户认可了旧版本的声音完整清楚、时序可接受；随后指出专名和未分句问题。旧结论不覆盖此轮极致克隆。",
+    "feedback_date": "2026-09-23",
+    "feedback": "听感不行",
+    "requested_change": "一整句生成tts，只不过字幕要分段显示"
+  },
+  "follow_up_correction": {
+    "date": "2026-09-23",
+    "status": "automated_validation_passed_listening_pending",
+    "backend_reference_commit": "1e738a89bfc27fa5602d0442b317ecedfacb20e5",
+    "backend_reference_scope": "已只读核对本地与生产运行目录提交一致。",
+    "processing_units": "每条完整 ASR utterance 保留原文、起止时间和 speaker，翻译、TTS、mix 按 segment_id 一对一处理。",
+    "subtitle_display": "export 将一个整句展开为多个字幕 cue；时间按可见字符权重在源区间或最终配音区间内估算，尚未进行强制对齐。",
+    "reference_audio": "超过 10 秒的源 utterance 仅为克隆参考从同源 raw words 中选取不超过 10 秒的窗口，使用对应源文本，完整 TTS 译文保持不变。",
+    "acceptance": "新样例三模式真实执行、838项后端检查与媒体核对通过；已提供整句配音样例，听感待用户反馈。",
+    "historical_evidence": "本文件原始任务配置、模型结果、产物哈希、时间轴及自动检查结果保持原样；它们记录旧版三条 TTS 的运行结果。",
+    "evidence": "mvp-utterance-subtitles-2026-09-23.json"
   },
   "limitations": [
     "Windows、CUDA、长视频与多说话人场景未实机验收。",

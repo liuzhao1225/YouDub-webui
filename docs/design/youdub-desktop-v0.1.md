@@ -57,12 +57,13 @@ prepare → separate → asr → translate → tts → mix → export
 
 ### 统一的数据约定
 
-- 时间统一为整数毫秒，区间为 [start_ms, end_ms)。原始 ASR 响应单独原样保存。2026-09-22 按用户反馈，处理用分段改为基于 ASR 逐词时间戳的句子/短句：按标点或真实词边界分段，保留字词顺序与说话人，不按字数比例编造时间；无逐词信息时保留源分段。
-- 翻译通过 segment_id 对应处理用句子；TTS 逐句返回实际音频时长；mix 单独生成配音时间轴。配音排程不覆盖原始 ASR 响应或源词时间戳。
+- 时间统一为整数毫秒，区间为 [start_ms, end_ms)。原始 ASR 响应单独原样保存。2026-09-23 按用户对听感的反馈，处理用 Segment 保留每条完整 ASR utterance 的原文、起止时间和 speaker，并按源顺序分配稳定 ID。标点和字幕显示长度不改变语音生成单元。
+- 翻译、TTS 和 mix 通过 segment_id 与完整 utterance 一对一对应；TTS 一次生成整句译文并返回实际音频时长，mix 单独生成配音时间轴。配音排程不覆盖原始 ASR 响应或源词时间戳。超过 10 秒的 utterance 可从同源 raw words 中选取不超过 10 秒的克隆参考窗口，使用匹配源文本；这仅影响参考音频选择，完整 TTS 译文保持不变。
+- export 将一个 Segment 展开为多个字幕 cue，cue 序号独立于 segment_id。字幕时间按各片段可见字符权重在父区间内估算，尚未进行强制对齐。原文字幕使用源区间；译文在 subtitles 模式使用源区间，在 both 模式使用最终配音区间。各片段完整保留文本和顺序，不改变 TTS 或 mix 的一对一关系。
 - `asr.initial_prompt` 是可选专名提示，最多 500 字符，随 Task 配置固定；适合填写人名、品牌名等。它用于引导识别，不直接替换识别结果。例如本次样例填写 `YouDub.` 后，Whisper tiny 直接识别出正确品牌名。
 - 桌面首版保持原视频画面时间轴，不加入广告裁剪或整体倍速。分段对齐的具体算法先复用并验证，再根据效果优化。
 
-独立 [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) 的当前本地实现直接使用 ASR 原始 utterances；asr_fixed.json 是兼容文件名（pipeline_stages.py:433）。原 merge_audio / merge_video 包含服务端业务策略，桌面按本节输入输出选取可复用函数，不把整套服务端流水线直接接入。
+独立 [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) 的原始 utterances、整段音频生成与字幕显示分段为本轮媒体流程参考。2026-09-23 已核对本地及生产运行目录提交均为 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`。原 merge_audio / merge_video 包含服务端业务策略，桌面按本节输入输出选取可复用函数。
 
 ## Task 数据模型与状态
 
@@ -303,12 +304,12 @@ HTTP 使用 401/403 表示会话或访问校验，404 表示资源不存在，40
 
 | 来源 | 本轮用途 | 核对范围 |
 | --- | --- | --- |
-| [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) | 媒体流程、阶段输入输出与异步模型调用的主要参考 | 按用户说明承载黑纹白斑马运行代码；本轮只核对本地源码 3ef9ef2a2fdb9060ab9b8276a916572f2ee9d5cb，未做生产在线验证 |
+| [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) | 媒体流程、阶段输入输出、整句音频与字幕显示分段的主要参考 | 2026-09-23 只读核对本地与生产运行目录提交均为 1e738a89bfc27fa5602d0442b317ecedfacb20e5；本次核对范围为源码及提交一致性 |
 | [YouDub WebUI](https://github.com/liuzhao1225/YouDub-webui/tree/d90e1c257104d69fedbc70d7935c7337e45a0950) | 现有前端、HTTP、认证和桌面交互改造 | 固定提交 d90e1c2；WebUI/backend 与独立 youdub-backend 分开标记 |
 | [OpenCreator](https://github.com/krillinai/OpenCreator/tree/a153ac073e6d03b55a142266aadce3d82109b37f) | 执行上下文、任务动作和能力目录的补充参考 | 固定提交 a153ac0；首版维持单 Task 与三个业务模块 |
 | [YouDub 爆款案例孵化方案](https://modelbest.feishu.cn/docx/MsuudcxtUoAkXuxoCv0cYF1Tnec) | Windows、单视频 Beta、英文优先与接口交付要求 | 需求输入；实现与验收状态分别确认 |
 
-后端本地核对位置：stage_pipeline.py:51 的九阶段定义、:265 的执行上下文/结果；pipeline_stages.py:350 的 ASR 提交/查询、:433 的原始分段保留；audio_merger.py 与 video_merger.py 的配音/合成边界。本地提交 3ef9ef2 尚未在 GitHub 找到，故本节不提供指向该提交的失效深链。
+后端源码核对模块：stage_pipeline.py 的阶段定义与执行上下文；pipeline_stages.py 的 ASR 提交/查询与原始 utterances 保留；audio_merger.py 与 video_merger.py 的整段配音和字幕显示边界。2026-09-23 参考提交更新为 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`；桌面修正的真实输出验收另见[当前运行说明](mvp-runtime.md)。
 
 桌面七阶段按本地导入与成品导出的目标重新划分。后台下载、投稿、发布后处理不进入首版流程；服务端已有降噪、广告与倍速策略按本产品范围重新选择。
 

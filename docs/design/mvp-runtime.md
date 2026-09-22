@@ -28,11 +28,12 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 - 安装 `openai-whisper`、`torch` 和 `openai`。将 [Whisper 官方](https://github.com/openai/whisper)兼容的 `.pt` 权重放入数据目录的 `models/whisper/`，例如 `tiny.pt`；可通过 `YOUDUB_WHISPER_MODELS_DIR` 指定目录。Runtime 只读文件元数据，不下载或加载模型；权重实际加载失败时任务会明确报错。
 - 当前 Whisper 读取音频还要求 `ffmpeg` 位于 PATH；prepare/export 支持现有 `FFMPEG_PATH`、`FFPROBE_PATH` 配置。选择 `.en` 权重时仅支持英语输入。
 - `asr.initial_prompt` 可填写最多 500 字符的专名提示，随 Task 配置固定并传给 Whisper。未提供时保持模型默认行为；不会把本产品名称写成所有视频的默认提示。
-- 原始 ASR JSON 保持不变。处理用 transcript 根据逐词时间戳在标点及词边界分句，长句限制约 8 秒，译文、配音和字幕按这些句子对应。没有逐词时间戳时保留源分段；不完整或矛盾的词表明确失败。
+- 原始 ASR JSON 保持不变。处理用 transcript 为每条完整 ASR utterance 分配稳定 ID，保留原文、起止时间和 speaker。翻译、TTS 和 mix 按该 ID 一对一处理整句；逗号、字幕长度和 8 秒时长均不拆分语音生成单元。
+- export 独立把一个整句拆成多个字幕显示片段，完整保留文本及顺序。字幕时间在所属源区间或最终配音区间内，按各片段的可见字符权重估算；这是显示时间估计，尚未进行强制对齐。原文字幕使用源区间；译文在 subtitles 模式使用源区间，在 both 模式使用 mix 输出的实际配音区间。该计算不改写 ASR 原词时间、TTS 音频或混音排程。
 - 在设置中保存 OpenAI 兼容的 base URL 与 API key。翻译模型候选默认 `gpt-4.1-mini`，可用 `YOUDUB_TRANSLATION_MODELS` 配置逗号分隔列表；已保存的默认模型也会保留。目录可选表示前置条件满足，实际模型名称与权限由调用验证。
 - 英语、中文、日语是当前字幕链的语言范围。自动检测到其他语言或源语言与目标相同时，翻译前明确失败。
 - 翻译逐批请求，每批最多 20 段、源文本合计最多 6000 个字符；原始单段超过字符限制时明确失败。供应商需支持 Chat Completions JSON object 响应；不自动重试、拆句或重排源时间轴。
-- 外部 LLM 接口的输出上限至少为 65,535。v1 翻译请求显式固定 `max_completion_tokens=65535`，当前 TaskConfig 不提供可降低该值的参数。供应商拒绝该上限时，任务明确失败且不自动换参数重试。火山方舟 `doubao-seed-evolving` 已接受该参数并完成三句真实翻译，见[输出上限验证](../validation/mvp-translation-output-limit-2026-09-22.json)。Whisper ASR 和 VoxCPM2 TTS 沿用各自原生限制，不适用这条外部 LLM 参数规则。
+- 外部 LLM 接口的输出上限至少为 65,535。v1 翻译请求显式固定 `max_completion_tokens=65535`，当前 TaskConfig 不提供可降低该值的参数。供应商拒绝该上限时，任务明确失败且不自动换参数重试。火山方舟 `doubao-seed-evolving` 已接受该参数并完成三句真实翻译，见[输出上限验证](../validation/mvp-translation-output-limit-2026-09-22.json)。
 - 中文/日文字幕需要可用字体。macOS 默认 `Hiragino Sans GB`、Windows 默认 `Microsoft YaHei`、Linux 默认 `Noto Sans CJK SC`；Linux 需安装对应字体包，也可通过 `YOUDUB_SUBTITLE_FONT` 指定字体名。
 
 同步翻译在发出请求前持久化 pending。收到完整成功响应后标记 succeeded，再校验 JSON 与分段；明确拒绝标记 failed。超时、连接中断或等待期间取消保留 unknown 风险，禁止直接 retry。取消会关闭本机异步请求，远端是否继续执行由 `external_operation` 表达。
@@ -40,7 +41,7 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 ### 配音链模型配置与边界
 
 - 仓库固定 `voxcpm==2.0.3`。将 [VoxCPM2 官方模型](https://modelscope.cn/models/OpenBMB/VoxCPM2)放入数据目录的 `models/voxcpm/VoxCPM2/`，或设置 `YOUDUB_VOXCPM_MODEL_DIR`。目录需含 config、tokenizer、主模型和 AudioVAE 权重。推理只加载本地文件，明确使用所选 CPU/CUDA；关闭自动下载、降噪和质量重试。
-- 当前提供 `source_clone`，默认使用 VoxCPM2 官方[极致克隆](https://github.com/OpenBMB/VoxCPM/blob/main/README_zh.md#-极致克隆)：同时传入参考音频、同一提示音频及其源文本。参考窗口由连续同 speaker 的完整句组成，总跨度最多 10 秒，优先覆盖更多源语音；不截断句子或跨已标记的 speaker。Whisper 本身不提供说话人区分；未标注 speaker 的分段按同一源音色配音。官方建议参考音频约 5–30 秒；短参考仍需实际听感评估。尚未提供预设声线。
+- 当前提供 `source_clone`，默认使用 VoxCPM2 官方[极致克隆](https://github.com/OpenBMB/VoxCPM/blob/main/README_zh.md#-极致克隆)：同时传入参考音频、同一提示音频及其源文本。参考窗口总跨度最多 10 秒，优先覆盖更多源语音；短 utterance 可按连续同 speaker 组成完整窗口。超过 10 秒的 utterance 仅在参考音频选择时，从同源原始词时间戳中选取不超过 10 秒的窗口，并使用对应源文本；该选择不拆分完整 TTS 译文，不跨已标记的 speaker。Whisper 本身不提供说话人区分；未标注 speaker 的分段按同一源音色配音。官方建议参考音频约 5–30 秒；短参考仍需实际听感评估。尚未提供预设声线。
 - Demucs 使用仓库子模块和官方 `htdemucs` 权重 `955717e8-8726e21a.th`，置于数据目录的 `models/demucs/`，或设置 `YOUDUB_DEMUCS_MODELS_DIR`。它从原视频首音轨提取 44.1 kHz 双声道音频，保持完整音频长度；不使用已降采样的 ASR 输入做分离。
 - 混音输出 48 kHz、双声道 PCM16 WAV。配音按生产主干的有界时长倍率变速，并以实际样本数排程；源分段重叠返回 `UNSUPPORTED_OVERLAPPING_SPEECH`，完整配音放不进原视频返回 `AUDIO_EXCEEDS_VIDEO`，不截断语音。保留背景时使用 `(dub + 0.3 × background) / 1.3` 的固定混音增益。
 - prepare 按毫秒比较首视频与首音轨的起点，起点不同明确返回 `UNSUPPORTED_MEDIA`，避免提取后整体错位。任务创建保持异步语义，此类任务会在 prepare 失败。
@@ -97,14 +98,16 @@ X-CSRF-Token: <session csrf token>
 
 提交 `984ce5e`、`6cd150d`、`477319f` 分别接入 VoxCPM2 极致克隆、逐词分句与专名提示、前端配置。在此版本重新运行同一视频，三个模式全部在 attempt=1 成功。每个任务填写 `asr.initial_prompt="YouDub."`，原始 ASR 正确识别 YouDub；处理 transcript 根据原始词时间戳拆成三句，三句依次翻译和配音。配音参考音频覆盖连续完整原文，both 为 6680 ms，dubbing 为 6700 ms；同时提供同一音频作为 reference/prompt 以及匹配原文。
 
-本轮所有音视频完整解码、API 下载哈希与 HEAD/Range 均通过。原文 SRT 对应源时间轴，译文 SRT 对应实际配音时间轴，三段完整调整后音频均落在原视频范围内。Chrome 中三个视频都播放至结束且 `error=null`；表单显示 VoxCPM2 原声克隆默认值，专名提示上限为 500。both 的三条字幕已逐帧核对。浏览器点击下载返回 200，本次未独立核对浏览器保存文件；全部产物的 API 下载字节已核对。[极致克隆与分句验收记录](../validation/mvp-hifi-sentences-2026-09-22.json)保留本轮证据。新版听感正在等待用户反馈，旧版试听结论不覆盖本次声音变化。
+该历史版本的所有音视频完整解码、API 下载哈希与 HEAD/Range 均通过。原文 SRT 对应源时间轴，译文 SRT 对应实际配音时间轴，三段完整调整后音频均落在原视频范围内。Chrome 中三个视频都播放至结束且 `error=null`；表单显示 VoxCPM2 原声克隆默认值，专名提示上限为 500。both 的三条字幕已逐帧核对。浏览器点击下载返回 200，当次未独立核对浏览器保存文件；全部产物的 API 下载字节已核对。[极致克隆与分句验收记录](../validation/mvp-hifi-sentences-2026-09-22.json)保留原始证据及自动检查结果。2026-09-23 用户明确反馈“听感不行”，要求“一整句生成tts，只不过字幕要分段显示”；该版三条 TTS 的听感验收未通过。
 
-最新后端全量 **840 项通过**；前端 **43 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应单元测试使用明确的 MockTransport，真实供应商验证另见上文记录。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。
+2026-09-23 提交 `e7d3d46` 恢复完整 ASR utterance → 整句翻译 → 整句 TTS → 整句混音排程的一对一关系，在 export 内生成一对多的字幕显示片段。媒体流程参考的 youdub-backend 本地与生产运行目录提交均已核对为 `1e738a89bfc27fa5602d0442b317ecedfacb20e5`，详见[参考依据](youdub-desktop-v0.1.md#参考依据与接口附件)。同一视频的三个模式均在 attempt=1 成功，后端 **838 项通过**。both 样例只有一次完整译文 TTS，原始配音 7200 ms，完整变速后的配音区间为 0–6680 ms；三条字幕在该区间内分别显示，YouDub 拼写正确。API 产物字节、HEAD/Range、完整解码、音轨来源及完整音频排程核对通过。详见[整句配音与字幕分段验收](../validation/mvp-utterance-subtitles-2026-09-23.json)。新样例已提供试听，声音连贯性待用户反馈。
+
+2026-09-22 版本后端全量 **840 项通过**；前端 **43 项测试**、TypeScript、ESLint 和生产构建通过。供应商响应单元测试使用明确的 MockTransport，真实供应商验证另见上文记录。依赖更新后，隔离后端的新进程登录、session、Runtime、Settings 和任务列表实际读回均为 200；`pip check` 通过。本次整句修正的回归和真实样例另行记录。
 
 Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，复制时核对内容一致并重建 `env.txt` 硬链接；随后在本机配置 `YOUDUB_TTS_ENGINE=voxcpm2`、CPU、WebUI 登录哈希和本机 HTTP Cookie，硬链接保持不变。真实媒体验收使用独立数据目录，临时凭据已清理。另按用户指示在本机默认 Settings 保存真实翻译连接和 VoxCPM2 `source_clone` 默认配置，密钥保存在系统凭据库；专名提示保持每任务可选，未全局写入 YouDub。
 
 正常启动另已核对：直接运行仓库 `.venv/bin/uvicorn backend.app.main:app`，应用自行读取 `.env`，前端使用 Node.js 22 的生产构建。通过 Next 同源代理，health、真实本机登录、session、Runtime、Settings 和任务列表全部返回 200，Runtime 为 ready，默认声音回读为 VoxCPM2 `source_clone`。该验证未替换配置函数、未导入测试认证、未创建模型任务；自启服务已停止。见[正常启动验收记录](../validation/mvp-standard-startup-2026-09-22.json)。
 
-完整三模式验收发生在用户新增“外部 LLM 接口请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。
+2026-09-22 的三模式验收发生在用户新增“外部 LLM 接口请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。2026-09-23 整句修正的三模式真实请求均使用此上限。
 
-2026-09-23 用户澄清：65,535 指调用外部 LLM 接口时的输出参数，Whisper 和 VoxCPM2 不属于该规则的适用对象。此前将其扩展到音频模型并判断容量冲突是实现代理的误读，该阻塞已移除。音频模型参数保持原生行为；历史请求和原始响应不变。
+2026-09-23 用户澄清：65,535 指调用外部 LLM 接口时的输出参数。规则已按该作用域执行，此前的范围误读阻塞已移除；历史请求和原始响应不变。
