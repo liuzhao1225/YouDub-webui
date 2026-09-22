@@ -52,10 +52,79 @@ def _subtitle_rows(transcript: Transcript, translation: Translation, duration_ms
 
 def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool) -> None:
     cues = []
-    for index, (segment, translation) in enumerate(rows, 1):
+    for segment, translation in rows:
         text = translation if translated else segment.text
-        cues.append(f"{index}\n{_srt_time(segment.start_ms)} --> {_srt_time(segment.end_ms)}\n{text}\n")
+        for start, end, part in _display_cues(text, segment.start_ms, segment.end_ms):
+            display_text = " ".join(part.split())
+            cues.append(f"{len(cues) + 1}\n{_srt_time(start)} --> {_srt_time(end)}\n{display_text}\n")
     path.write_text("\n".join(cues), encoding="utf-8", newline="\n")
+
+
+def _display_parts(text: str) -> list[str]:
+    """Split subtitle display text without changing a translation/TTS unit."""
+    pairs = {"《": "》", "（": "）", "【": "】", "「": "」", "『": "』", "(": ")", "[": "]"}
+    punctuation = frozenset("，,；;：:。?？!！、.")
+    closing = frozenset("\"'”’」』》）】)]")
+    stack, parts = [], []
+    start = index = 0
+    while index < len(text):
+        char = text[index]
+        if char in pairs:
+            stack.append(pairs[char])
+        elif stack and char == stack[-1]:
+            stack.pop()
+        elif not stack and char in punctuation:
+            # Keep decimal numbers and dotted words together.
+            if char == "." and index + 1 < len(text) and text[index + 1].isalnum():
+                index += 1
+                continue
+            end = index + 1
+            while end < len(text) and text[end] in closing | punctuation:
+                end += 1
+            parts.append(text[start:end])
+            start = end
+            index = end - 1
+        index += 1
+    if start < len(text):
+        if text[start:].strip():
+            parts.append(text[start:])
+        elif parts:
+            parts[-1] += text[start:]
+    # Merge tiny display fragments while preserving punctuation and source text.
+    merged, pending = [], ""
+    for part in parts:
+        pending += part
+        if sum(char.isalnum() for char in pending) >= 5:
+            merged.append(pending)
+            pending = ""
+    if pending:
+        if merged:
+            merged[-1] += pending
+        else:
+            merged.append(pending)
+    return merged
+
+
+def _display_cues(text: str, start_ms: int, end_ms: int) -> list[tuple[int, int, str]]:
+    """Estimate display timing inside a whole utterance's source/dubbed span.
+
+    This follows youdub-backend's character-weighted subtitle timing. These
+    estimates do not change source ASR timestamps or split the synthesized audio.
+    """
+    parts = _display_parts(text)
+    duration = end_ms - start_ms
+    if not parts or duration < len(parts):
+        raise _invalid("The subtitle interval cannot contain its display fragments.")
+    weights = [max(1, sum(char.isalnum() for char in part)) for part in parts]
+    total = sum(weights)
+    result, elapsed, start = [], 0, start_ms
+    for index, (part, weight) in enumerate(zip(parts, weights, strict=True)):
+        elapsed += weight
+        remaining = len(parts) - index - 1
+        end = end_ms if not remaining else min(end_ms - remaining, max(start + 1, start_ms + round(duration * elapsed / total)))
+        result.append((start, end, part))
+        start = end
+    return result
 
 
 def _font(language: str) -> str:

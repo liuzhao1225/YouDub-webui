@@ -187,6 +187,82 @@ def test_missing_complete_reference_for_one_speaker_fails_before_extraction_or_i
     assert not (context.work_dir / "tts").exists()
 
 
+@pytest.fixture
+def long_utterance_context(context):
+    words = [{"start": 2 + index * 2, "end": 4 + index * 2, "word": text}
+             for index, text in enumerate([" First,", " second,", " third,", " fourth,", " fifth,", " sixth."])]
+    text = "".join(word["word"] for word in words)
+    context.input_files["transcript"].write_text(json.dumps({"detected_language": "en", "segments": [
+        {"id": "whole", "start_ms": 2000, "end_ms": 14_000, "text": text, "speaker_id": "speaker-a"},
+    ]}))
+    context.input_files["translation"].write_text(json.dumps({
+        "source_language": "en", "target_language": "zh", "segments": [
+            {"segment_id": "whole", "text": "整句生成，连续表达，保留完整语气。"},
+        ],
+    }, ensure_ascii=False))
+    raw_path = context.work_dir.parent / "asr_raw.json"
+    raw_path.write_text(json.dumps({"language": "en", "segments": [
+        {"start": 2, "end": 14, "text": text, "speaker_id": "speaker-a", "words": words},
+    ]}))
+    context.input_files["asr_raw"] = raw_path
+    samples = np.arange(16 * 16000) / 16000
+    sf.write(context.input_files["vocals"], np.sin(2 * np.pi * 220 * samples) * 0.25,
+             16000, subtype="PCM_16")
+    return context
+
+
+def test_long_utterance_is_one_tts_call_with_an_exact_timed_word_reference(long_utterance_context, model_process):
+    context = long_utterance_context
+    before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation", "asr_raw")}
+    result = tts.run(context, lambda *args: None)
+    assert {name: context.input_files[name].read_bytes() for name in before} == before
+    assert len(model_process.commands) == len(model_process.clips) == 1
+    clip = model_process.clips[0]
+    assert clip["segment_id"] == "whole"
+    assert clip["text"] == "整句生成，连续表达，保留完整语气。"
+    assert clip["reference_text"] == " First, second, third, fourth, fifth,"
+    reference, rate = sf.read(clip["reference_path"])
+    source, _ = sf.read(context.input_files["vocals"])
+    assert len(reference) == 10 * rate
+    assert np.array_equal(reference, source[2 * rate:12 * rate])
+    transcript = Transcript.model_validate_json(before["transcript"])
+    assert [item.segment_id for item in read_speech_clips(result.output_files["speech_clips"], transcript).clips] == ["whole"]
+
+
+@pytest.mark.parametrize("invalid", ["missing-words", "word-text", "word-overlap", "raw-text", "raw-speaker"])
+def test_long_reference_requires_matching_complete_word_metadata(long_utterance_context, model_process, invalid):
+    context = long_utterance_context
+    raw = json.loads(context.input_files["asr_raw"].read_text())
+    segment = raw["segments"][0]
+    if invalid == "missing-words":
+        segment.pop("words")
+    elif invalid == "word-text":
+        segment["words"][0]["word"] = " Unrelated,"
+    elif invalid == "word-overlap":
+        segment["words"][1]["start"] = 3
+    elif invalid == "raw-text":
+        segment["text"] = "Unrelated transcript."
+    else:
+        segment["speaker_id"] = "other-speaker"
+    context.input_files["asr_raw"].write_text(json.dumps(raw))
+    with pytest.raises(ApiError) as error:
+        tts.run(context, lambda *args: None)
+    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
+    assert not model_process.commands
+    assert not (context.work_dir / "tts").exists()
+
+
+def test_word_reference_preserves_a_zero_duration_closing_token(long_utterance_context, model_process):
+    context = long_utterance_context
+    raw = json.loads(context.input_files["asr_raw"].read_text())
+    raw["segments"][0]["words"][4]["word"] = " fifth"
+    raw["segments"][0]["words"].insert(5, {"start": 12, "end": 12, "word": ","})
+    context.input_files["asr_raw"].write_text(json.dumps(raw))
+    tts.run(context, lambda *args: None)
+    assert model_process.clips[0]["reference_text"] == " First, second, third, fourth, fifth,"
+    assert sf.info(model_process.clips[0]["reference_path"]).duration == 10
+
+
 @pytest.mark.parametrize("invalid", ["preset", "missing-vocals", "wrong-target", "missing-translation-id"])
 def test_invalid_inputs_are_rejected_before_any_inference(context, model_process, invalid):
     if invalid == "preset":

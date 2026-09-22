@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 from collections import deque
@@ -36,8 +37,62 @@ def available_models() -> list[str]:
     return ["VoxCPM2"] if all(any(present(name) for name in choices) for choices in groups) else []
 
 
-def speaker_references(transcript: Transcript) -> dict[str | None, list[Segment]]:
-    """Keep complete consecutive sentences from one speaker within ten seconds."""
+def _reference_error(message: str) -> ApiError:
+    return ApiError(422, "INVALID_MEDIA", message, field="tts.voice.mode", stage="tts")
+
+
+def _reference_timestamp(value: object) -> int:
+    if type(value) not in {int, float} or not math.isfinite(value) or value < 0:
+        raise _reference_error("The source reference has an invalid ASR word timestamp.")
+    return round(value * 1000)
+
+
+def _word_reference(segment: Segment, raw: object) -> tuple[Segment, int]:
+    """Use original word boundaries for a reference only; preserve the TTS unit."""
+    if (not isinstance(raw, dict) or raw.get("text") != segment.text or
+            _reference_timestamp(raw.get("start")) != segment.start_ms or
+            _reference_timestamp(raw.get("end")) != segment.end_ms or
+            raw.get("speaker_id", raw.get("speaker")) != segment.speaker_id):
+        raise _reference_error("The raw ASR utterance does not match the source reference transcript.")
+    raw_words = raw.get("words")
+    if not isinstance(raw_words, list) or not raw_words:
+        raise _reference_error("A source utterance over 10 seconds needs complete ASR word timestamps for cloning.")
+    words: list[tuple[int, int, str]] = []
+    previous_end = segment.start_ms
+    for word in raw_words:
+        if not isinstance(word, dict) or not isinstance(word.get("word"), str) or not word["word"].strip():
+            raise _reference_error("The source reference contains an empty or invalid ASR word.")
+        start, end = _reference_timestamp(word.get("start")), _reference_timestamp(word.get("end"))
+        if start < previous_end or end < start or end > segment.end_ms:
+            raise _reference_error("ASR word timestamps overlap or lie outside the source reference utterance.")
+        words.append((start, end, word["word"]))
+        previous_end = end
+    if "".join(word[2] for word in words).strip() != segment.text.strip():
+        raise _reference_error("ASR word text does not match the complete source reference utterance.")
+
+    window: deque[tuple[int, int, str]] = deque()
+    best: list[tuple[int, int, str]] = []
+    speech_duration = best_duration = 0
+    for word in words:
+        window.append(word)
+        speech_duration += word[1] - word[0]
+        while window and word[1] - window[0][0] > MAX_REFERENCE_DURATION_MS:
+            removed = window.popleft()
+            speech_duration -= removed[1] - removed[0]
+        # Preserve a zero-duration closing token at the same measured boundary.
+        if speech_duration > best_duration or (
+            best and window and speech_duration == best_duration and
+            window[0][0] == best[0][0] and word[1] == best[-1][1]
+        ):
+            best, best_duration = list(window), speech_duration
+    if not best or best_duration <= 0:
+        raise _reference_error("No complete ASR word reference window fits within 10 seconds.")
+    return Segment(id=segment.id, start_ms=best[0][0], end_ms=best[-1][1],
+                   text="".join(word[2] for word in best), speaker_id=segment.speaker_id), best_duration
+
+
+def speaker_references(transcript: Transcript, asr_raw: Path | None = None) -> dict[str | None, list[Segment]]:
+    """Prefer whole utterances; use timed words when a speaker only has long ones."""
     result: dict[str | None, list[Segment]] = {}
     best_duration: dict[str | None, int] = {}
     window: deque[Segment] = deque()
@@ -59,12 +114,22 @@ def speaker_references(transcript: Transcript) -> dict[str | None, list[Segment]
         if speech_duration > best_duration.get(segment.speaker_id, 0):
             result[segment.speaker_id] = list(window)
             best_duration[segment.speaker_id] = speech_duration
-    if set(result) != {segment.speaker_id for segment in transcript.segments}:
-        raise ApiError(
-            422, "INVALID_MEDIA",
-            "Every source speaker needs a complete reference utterance of at most 10 seconds for VoxCPM2 cloning.",
-            field="tts.voice.mode", stage="tts",
-        )
+    missing = {segment.speaker_id for segment in transcript.segments} - set(result)
+    if not missing:
+        return result
+    try:
+        raw = json.loads(asr_raw.read_text(encoding="utf-8")) if asr_raw is not None else None
+    except (OSError, ValueError) as exc:
+        raise _reference_error("The raw ASR result required for a complete word reference is missing or invalid.") from exc
+    if (not isinstance(raw, dict) or not isinstance(raw.get("segments"), list) or
+            len(raw["segments"]) != len(transcript.segments)):
+        raise _reference_error("A speaker without a complete utterance under 10 seconds needs matching raw ASR words.")
+    for segment, raw_segment in zip(transcript.segments, raw["segments"], strict=True):
+        if segment.speaker_id in missing:
+            reference, duration = _word_reference(segment, raw_segment)
+            if duration > best_duration.get(segment.speaker_id, 0):
+                result[segment.speaker_id] = [reference]
+                best_duration[segment.speaker_id] = duration
     return result
 
 
@@ -117,7 +182,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     source_duration_ms = round(source_info.frames * 1000 / source_info.samplerate)
     if any(segment.end_ms > source_duration_ms for segment in transcript.segments):
         raise ApiError(422, "INVALID_MEDIA", "A source utterance lies outside the separated vocals.", stage="tts")
-    references = speaker_references(transcript)
+    references = speaker_references(transcript, context.input_files.get("asr_raw"))
     output_dir = context.work_dir / "tts"
     reference_dir = output_dir / "references"
     reference_dir.mkdir(parents=True, exist_ok=True)

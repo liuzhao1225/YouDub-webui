@@ -83,7 +83,7 @@ def word_result(words, *, speaker="narrator"):
     }]}
 
 
-def test_sentences_split_at_punctuation_with_real_word_times_and_stable_ids():
+def test_complete_utterance_keeps_all_clauses_in_one_speech_generation_unit():
     raw = word_result([
         (0, .36, " Welcome"), (.36, .6, " to"), (.6, 1.04, " Atlas,"),
         (1.2, 1.58, " today"), (1.58, 1.76, " we"), (1.76, 1.88, " are"),
@@ -94,55 +94,45 @@ def test_sentences_split_at_punctuation_with_real_word_times_and_stable_ids():
     ])
     before = deepcopy(raw)
     segments = asr.normalize_result(raw, duration_ms=7000)["segments"]
-    assert [(item["start_ms"], item["end_ms"], item["text"]) for item in segments] == [
-        (0, 1040, " Welcome to Atlas,"),
-        (1200, 3420, " today we are testing video translation,"),
-        (3880, 6700, " the original voice and subtitle timing should stay clear."),
+    assert segments == [
+        {"id": "segment-000001", "start_ms": 0, "end_ms": 6700,
+         "text": " Welcome to Atlas, today we are testing video translation,"
+                 " the original voice and subtitle timing should stay clear.", "speaker_id": "narrator"},
     ]
-    assert [item["id"] for item in segments] == ["segment-000001", "segment-000002", "segment-000003"]
-    assert all(item["speaker_id"] == "narrator" for item in segments)
-    assert "".join(item["text"] for item in segments) == raw["segments"][0]["text"]
     assert raw == before
 
 
 @pytest.mark.parametrize("punctuation", [".", "!", "?", ",", ";", ":", "。", "！", "？", "，", "；", "：", "、", "…"])
-def test_attached_punctuation_and_closing_quotes_end_a_sentence(punctuation):
+def test_punctuation_and_closing_quotes_do_not_split_the_source_utterance(punctuation):
     raw = word_result([(0, .5, "第一句" + punctuation + "”"), (.7, 1.3, "第二句。")])
     segments = asr.normalize_result(raw, duration_ms=2000)["segments"]
-    assert [item["text"] for item in segments] == ["第一句" + punctuation + "”", "第二句。"]
-    assert [(item["start_ms"], item["end_ms"]) for item in segments] == [(0, 500), (700, 1300)]
+    assert segments == [{"id": "segment-000001", "start_ms": 0, "end_ms": 1300,
+                         "text": "第一句" + punctuation + "”第二句。", "speaker_id": "narrator"}]
 
 
-def test_long_sentence_uses_existing_word_boundaries_without_proportional_timestamps():
+def test_utterance_longer_than_eight_seconds_keeps_its_complete_text_and_interval():
     raw = word_result([
         (.25, 1.5, " one"), (2, 4.75, " two"), (4.75, 7.9, " three"),
         (8.1, 8.5, " four"), (9, 10, " five"),
     ])
     segments = asr.normalize_result(raw, duration_ms=10000)["segments"]
-    assert [(item["start_ms"], item["end_ms"], item["text"]) for item in segments] == [
-        (250, 7900, " one two three"), (8100, 10000, " four five"),
-    ]
-    assert all(item["end_ms"] - item["start_ms"] <= 8000 for item in segments)
+    assert segments == [{"id": "segment-000001", "start_ms": 250, "end_ms": 10000,
+                         "text": " one two three four five", "speaker_id": "narrator"}]
 
 
-def test_zero_duration_words_are_kept_with_adjacent_timed_words():
-    raw = word_result([
-        (0, 0, " A"), (0, .5, " sentence"), (.5, .5, "."), (.5, .5, "”"),
-        (.8, 1.2, " Next"), (1.2, 1.2, " sentence."),
-    ])
+def test_source_utterance_bounds_are_preserved_when_words_cover_a_shorter_interval():
+    raw = word_result([(.2, .5, " First,"), (.8, 1.2, " second.")])
+    raw["segments"][0].update(start=0.1, end=1.5)
     segments = asr.normalize_result(raw, duration_ms=2000)["segments"]
-    assert [(item["start_ms"], item["end_ms"], item["text"]) for item in segments] == [
-        (0, 500, " A sentence.”"), (800, 1200, " Next sentence."),
-    ]
-    assert "".join(item["text"] for item in segments) == raw["segments"][0]["text"]
+    assert segments == [{"id": "segment-000001", "start_ms": 100, "end_ms": 1500,
+                         "text": " First, second.", "speaker_id": "narrator"}]
 
 
 def test_segment_boundary_whitespace_is_preserved_exactly():
     raw = word_result([(0, .5, " First."), (.8, 1.2, " Second. ")])
     raw["segments"][0]["text"] = "\n  First. Second.\t "
     segments = asr.normalize_result(raw, duration_ms=2000)["segments"]
-    assert [item["text"] for item in segments] == ["\n  First.", " Second.\t "]
-    assert "".join(item["text"] for item in segments) == raw["segments"][0]["text"]
+    assert [item["text"] for item in segments] == ["\n  First. Second.\t "]
 
 
 def test_no_word_timestamps_preserves_full_segment_even_when_long():
@@ -152,45 +142,20 @@ def test_no_word_timestamps_preserves_full_segment_even_when_long():
     ]
 
 
-@pytest.mark.parametrize("change", [
-    lambda segment: segment.update(words=None),
-    lambda segment: segment.update(words=[]),
-    lambda segment: segment["words"].pop(),
-    lambda segment: segment["words"].append({"start": 2, "end": 2.5, "word": " extra"}),
-    lambda segment: segment["words"][0].update(word=" Different"),
-    lambda segment: segment["words"][0].update(word=""),
-    lambda segment: segment["words"][0].update(word=" \n"),
-    lambda segment: segment["words"][0].update(word=None),
-    lambda segment: segment["words"][0].update(start=-1),
-    lambda segment: segment["words"][0].update(start=True),
-    lambda segment: segment["words"][0].update(end=float("nan")),
-    lambda segment: segment["words"][0].update(end=float("inf")),
-    lambda segment: segment["words"][0].update(end="1"),
-    lambda segment: segment["words"][0].update(start=.8, end=.3),
-    lambda segment: segment["words"][1].update(start=.4),
-    lambda segment: segment["words"][1].update(end=3),
-    lambda segment: segment["words"][1].update(end=2.0001),
-    lambda segment: segment["words"].reverse(),
+@pytest.mark.parametrize("words", [
+    None,
+    [],
+    [{"start": 1, "end": 1, "word": " One. Two."}],
+    [{"start": .3, "end": .7, "word": " Different"}],
+    [{"start": -1, "end": 3, "word": " One. Two."}],
 ])
-def test_inconsistent_word_text_or_timestamps_fail_without_dropping_words(change):
-    raw = word_result([(0, .5, " One."), (1, 2, " Two.")])
-    change(raw["segments"][0])
-    with pytest.raises(ApiError) as error:
-        asr.normalize_result(raw, duration_ms=3000)
-    assert ErrorEnvelope.model_validate(error.value.content).error.code == "INVALID_PROVIDER_RESULT"
-
-
-def test_all_zero_duration_words_fail_without_inventing_an_interval():
-    raw = word_result([(1, 1, " One"), (1, 1, " sentence.")])
-    raw["segments"][0].update(start=0, end=2)
-    with pytest.raises(ApiError, match="positive-duration"):
-        asr.normalize_result(raw, duration_ms=2000)
-
-
-def test_a_single_word_over_duration_limit_fails_without_splitting_a_word():
-    raw = word_result([(0, 9, " Long")])
-    with pytest.raises(ApiError, match="cannot be split safely"):
-        asr.normalize_result(raw, duration_ms=9000)
+def test_optional_word_metadata_does_not_change_or_block_the_complete_utterance(words):
+    raw = {"language": "en", "segments": [{"start": 0, "end": 2, "text": " One. Two.", "words": words}]}
+    before = deepcopy(raw)
+    assert asr.normalize_result(raw, duration_ms=2000)["segments"] == [
+        {"id": "segment-000001", "start_ms": 0, "end_ms": 2000, "text": " One. Two."},
+    ]
+    assert raw == before
 
 
 @pytest.mark.parametrize("change", [

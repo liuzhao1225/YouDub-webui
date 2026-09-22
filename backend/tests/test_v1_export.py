@@ -45,7 +45,7 @@ def context(tmp_path):
                         stage="export", config=config, input_files=files, work_dir=work)
 
 
-def test_srt_preserves_original_text_order_and_timing_and_joins_translation_by_id(monkeypatch, context):
+def test_srt_splits_display_only_preserves_inputs_and_joins_translation_by_id(monkeypatch, context):
     original = {name: path.read_bytes() for name, path in context.input_files.items()}
     commands = []
 
@@ -57,11 +57,12 @@ def test_srt_preserves_original_text_order_and_timing_and_joins_translation_by_i
     monkeypatch.setattr(media, "_run_media", render)
     result = export.run(context, lambda value, message: None)
     assert result.output_files["source_subtitles"].read_text() == (
-        "1\n00:00:00,000 --> 00:00:00,400\n  Hello,\nworld!  \n\n"
-        "2\n00:00:00,650 --> 00:00:01,000\nEnd of the clip.\n"
+        "1\n00:00:00,000 --> 00:00:00,200\nHello,\n\n"
+        "2\n00:00:00,200 --> 00:00:00,400\nworld!\n\n"
+        "3\n00:00:00,650 --> 00:00:01,000\nEnd of the clip.\n"
     )
     assert result.output_files["translated_subtitles"].read_text() == (
-        "1\n00:00:00,000 --> 00:00:00,400\n  你好，世界！  \n\n"
+        "1\n00:00:00,000 --> 00:00:00,400\n你好，世界！\n\n"
         "2\n00:00:00,650 --> 00:00:01,000\n结束了。\n"
     )
     assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
@@ -192,7 +193,7 @@ def test_dubbing_outputs_use_the_final_wav_and_separate_subtitle_timelines(monke
     if mode == "both":
         assert "00:00:00,650 --> 00:00:01,000" in result.output_files["source_subtitles"].read_text()
         translated = result.output_files["translated_subtitles"].read_text()
-        assert "00:00:00,000 --> 00:00:00,320\n  你好，世界！  " in translated
+        assert "00:00:00,000 --> 00:00:00,320\n你好，世界！" in translated
         assert "00:00:00,720 --> 00:00:00,980\n结束了。" in translated
         assert "-vf" in command
     else:
@@ -213,6 +214,49 @@ def test_dubbing_rejects_inconsistent_timeline_or_audio(context, bad_input):
     with pytest.raises(ApiError) as error:
         export.run(context, lambda value, message: None)
     assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("欢迎来到YouDub，今天测试视频翻译，保留完整连续配音。",
+     ["欢迎来到YouDub，", "今天测试视频翻译，", "保留完整连续配音。"]),
+    ("这里介绍《第一章，第二章》，然后继续说明流程。",
+     ["这里介绍《第一章，第二章》，", "然后继续说明流程。"]),
+    ('这是一个完整句子！”接着说明另一个句子。',
+     ['这是一个完整句子！”', "接着说明另一个句子。"]),
+    ("Use v1.2 with example.com. Then continue talking.",
+     ["Use v1.2 with example.com.", " Then continue talking."]),
+    ("好的，欢迎来到这里。结束。", ["好的，欢迎来到这里。结束。"]),
+])
+def test_subtitle_display_parts_preserve_content_and_protected_punctuation(text, expected):
+    assert export._display_parts(text) == expected
+    assert "".join(expected) == text
+
+
+def test_complete_utterance_produces_multiple_cues_inside_its_final_dubbed_span(monkeypatch, context):
+    context = add_dubbing(context, "both")
+    path = context.input_files["translation"]
+    payload = json.loads(path.read_text())
+    payload["segments"][1]["text"] = "欢迎来到YouDub，今天测试视频翻译，保留完整连续配音。"
+    path.write_text(json.dumps(payload, ensure_ascii=False))
+    original = {name: path.read_bytes() for name, path in context.input_files.items()}
+
+    def render(command, **kwargs):
+        Path(command[-1]).write_bytes(b"rendered-video")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(media, "_run_media", render)
+    result = export.run(context, lambda *args: None)
+    blocks = result.output_files["translated_subtitles"].read_text().strip().split("\n\n")
+    assert [block.splitlines()[2] for block in blocks] == [
+        "欢迎来到YouDub，", "今天测试视频翻译，", "保留完整连续配音。", "结束了。",
+    ]
+    times = [block.splitlines()[1].split(" --> ") for block in blocks]
+    assert times[0][0] == "00:00:00,000"
+    assert times[2][1] == "00:00:00,320"
+    assert times[3] == ["00:00:00,720", "00:00:00,980"]
+    assert all(start < end for start, end in times)
+    assert times[0][1] == times[1][0] and times[1][1] == times[2][0]
+    assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
 
 
 @pytest.mark.parametrize("mode", ["dubbing", "both"])
