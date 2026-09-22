@@ -3,10 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
 from .contracts import Stage, TaskConfig
+
+
+class StageCancelled(Exception):
+    """The current local step must stop before another Task can run."""
+
+
+def _no_cancel() -> None:
+    pass
 
 
 @dataclass(frozen=True)
@@ -19,6 +28,7 @@ class StageContext:
     work_dir: Path
     remote_task_id: str | None = None
     connections: dict[str, dict] = field(default_factory=dict, repr=False)
+    check_cancel: Callable[[], None] = field(default=_no_cancel, repr=False, compare=False)
 
 
 @dataclass(frozen=True)

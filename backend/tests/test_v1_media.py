@@ -4,8 +4,10 @@ import hashlib
 import json
 import shutil
 import subprocess
+import sys
 import wave
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,7 +16,7 @@ from backend.app.v1 import media
 from backend.app.v1.contracts import ErrorEnvelope, TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.runtime import RUNTIME_LIMITS
-from backend.app.v1.steps import StageContext
+from backend.app.v1.steps import StageCancelled, StageContext
 
 
 @pytest.fixture
@@ -50,7 +52,7 @@ def test_inspection_reads_first_streams_and_fractional_frame_rate(monkeypatch, t
         commands.append(command)
         return subprocess.CompletedProcess(command, 0, json.dumps(probe_data), "")
 
-    monkeypatch.setattr(media.subprocess, "run", run)
+    monkeypatch.setattr(media, "_run_media", run)
     monkeypatch.setattr(media, "ffprobe_binary", lambda: "/configured/ffprobe")
     info = media.inspect_video(source, RUNTIME_LIMITS)
     assert info == {"duration_ms": 1001, "width": 320, "height": 180,
@@ -61,7 +63,7 @@ def test_inspection_reads_first_streams_and_fractional_frame_rate(monkeypatch, t
 
 def test_container_duration_and_nominal_frame_rate_when_stream_fields_are_unavailable(monkeypatch, probe_data):
     probe_data["streams"][0].update(duration="N/A", avg_frame_rate="0/0", r_frame_rate="25/1")
-    monkeypatch.setattr(media, "_probe", lambda path: probe_data)
+    monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
     info = media.inspect_video(Path("source.mkv"), RUNTIME_LIMITS)
     assert info["duration_ms"] == 1050
     assert info["frame_rate"] == 25
@@ -80,7 +82,7 @@ def test_container_duration_and_nominal_frame_rate_when_stream_fields_are_unavai
 ])
 def test_rejected_media_has_contract_error(monkeypatch, probe_data, change, code, status):
     change(probe_data)
-    monkeypatch.setattr(media, "_probe", lambda path: probe_data)
+    monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
     with pytest.raises(ApiError) as error:
         media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)
     assert error.value.status_code == status
@@ -92,7 +94,7 @@ def test_rejected_media_has_contract_error(monkeypatch, probe_data, change, code
     ("max_video_height", 179), ("max_frame_rate", 29),
 ])
 def test_runtime_admission_limits_are_enforced(monkeypatch, probe_data, key, value):
-    monkeypatch.setattr(media, "_probe", lambda path: probe_data)
+    monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
     limits = deepcopy(RUNTIME_LIMITS)
     limits[key] = value
     with pytest.raises(ApiError) as error:
@@ -105,7 +107,7 @@ def test_runtime_admission_limits_are_enforced(monkeypatch, probe_data, key, val
 def test_probe_failure_does_not_expose_process_output(monkeypatch, tmp_path, returncode, stdout):
     source = tmp_path / "source.mp4"
     source.write_bytes(b"invalid")
-    monkeypatch.setattr(media.subprocess, "run", lambda command, **kwargs:
+    monkeypatch.setattr(media, "_run_media", lambda command, **kwargs:
                         subprocess.CompletedProcess(command, returncode, stdout, "private/source/file"))
     with pytest.raises(ApiError) as error:
         media.inspect_video(source, RUNTIME_LIMITS)
@@ -120,7 +122,7 @@ def test_missing_probe_is_runtime_error(monkeypatch, tmp_path):
     def missing(*args, **kwargs):
         raise FileNotFoundError("binary is missing")
 
-    monkeypatch.setattr(media.subprocess, "run", missing)
+    monkeypatch.setattr(media, "_run_media", missing)
     with pytest.raises(ApiError) as error:
         media.inspect_video(source, RUNTIME_LIMITS)
     assert error.value.status_code == 503
@@ -129,20 +131,82 @@ def test_missing_probe_is_runtime_error(monkeypatch, tmp_path):
 
 def test_prepare_decode_failure_propagates_and_does_not_publish_metadata(monkeypatch, tmp_path):
     context = context_for(tmp_path / "source.mp4", tmp_path / "prepare")
-    monkeypatch.setattr(media, "inspect_video", lambda path, limits: {"duration_ms": 1000})
+    monkeypatch.setattr(media, "inspect_video", lambda path, limits, **kwargs: {"duration_ms": 1000})
     commands = []
 
     def run(command, **kwargs):
         commands.append(command)
         return subprocess.CompletedProcess(command, 1, "", "decoder failure")
 
-    monkeypatch.setattr(media.subprocess, "run", run)
+    monkeypatch.setattr(media, "_run_media", run)
     with pytest.raises(ApiError) as error:
         media.prepare(context, lambda progress, message: None)
     assert error.value.content["error"]["code"] == "INVALID_MEDIA"
     assert commands[0][commands[0].index("-map") + 1] == "0:a:0"
     assert "-xerror" in commands[0]
     assert not (context.work_dir / "media.json").exists()
+
+
+@pytest.mark.parametrize("cancel_during", ["ffprobe", "ffmpeg"])
+def test_prepare_cancellation_waits_for_media_process_exit(monkeypatch, tmp_path, cancel_during):
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source-video")
+    context = context_for(source, tmp_path / "prepare")
+    real_popen = subprocess.Popen
+    processes = []
+    checks_while_running = 0
+
+    def slow_process(command, **kwargs):
+        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
+        processes.append(process)
+        return process
+
+    def check_cancel():
+        nonlocal checks_while_running
+        if processes and processes[0].poll() is None:
+            checks_while_running += 1
+            if checks_while_running == 2:
+                raise StageCancelled()
+
+    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
+    if cancel_during == "ffmpeg":
+        monkeypatch.setattr(media, "inspect_video", lambda path, limits, **kwargs: {"duration_ms": 1000})
+    with pytest.raises(StageCancelled):
+        media.prepare(replace(context, check_cancel=check_cancel), lambda progress, message: None)
+    assert len(processes) == 1
+    assert processes[0].returncode is not None
+    assert processes[0].wait(timeout=0) != 0
+    assert checks_while_running == 2
+    assert not (context.work_dir / "media.json").exists()
+
+
+def test_media_timeout_reaps_the_process(monkeypatch):
+    real_popen = subprocess.Popen
+    processes = []
+
+    def track_process(*args, **kwargs):
+        process = real_popen(*args, **kwargs)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(media.subprocess, "Popen", track_process)
+    with pytest.raises(subprocess.TimeoutExpired):
+        media._run_media([sys.executable, "-c", "import time; time.sleep(30)"], timeout=0.05)
+    assert processes[0].returncode is not None
+    assert processes[0].wait(timeout=0) != 0
+
+
+def test_probe_keeps_thirty_second_deadline(monkeypatch, tmp_path):
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source-video")
+
+    def timeout(command, *, check_cancel, timeout):
+        assert timeout == 30
+        raise subprocess.TimeoutExpired(command, timeout)
+
+    monkeypatch.setattr(media, "_run_media", timeout)
+    with pytest.raises(ApiError, match="inspection timed out"):
+        media.inspect_video(source, RUNTIME_LIMITS)
 
 
 def test_real_video_probe_and_prepare_preserve_source_and_extract_asr_audio(tmp_path):

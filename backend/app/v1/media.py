@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import subprocess
+import time
 from collections.abc import Callable
 from fractions import Fraction
 from pathlib import Path
@@ -20,13 +21,47 @@ def _invalid(message: str) -> ApiError:
     return ApiError(422, "INVALID_MEDIA", message, field="file", stage="prepare", action="none")
 
 
-def _probe(path: Path) -> dict[str, Any]:
+def _run_media(
+    command: list[str], *, check_cancel: Callable[[], None] | None = None, timeout: float | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Poll cancellation while draining process output, and always reap it."""
+    if check_cancel:
+        check_cancel()
+    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+        deadline = time.monotonic() + timeout if timeout is not None else None
+        try:
+            while True:
+                if check_cancel:
+                    check_cancel()
+                remaining = deadline - time.monotonic() if deadline is not None else None
+                if remaining is not None and remaining <= 0:
+                    raise subprocess.TimeoutExpired(command, timeout)
+                try:
+                    stdout, stderr = process.communicate(timeout=min(0.1, remaining) if remaining is not None else 0.1)
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
+            if check_cancel:
+                check_cancel()
+        except BaseException:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.communicate(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.communicate()
+            raise
+        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+
+def _probe(path: Path, check_cancel: Callable[[], None] | None = None) -> dict[str, Any]:
     if not path.is_file() or path.stat().st_size == 0:
         raise _invalid("The input media file is missing or empty.")
     try:
-        result = subprocess.run(
+        result = _run_media(
             [ffprobe_binary(), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path.resolve())],
-            capture_output=True, text=True, timeout=30,
+            check_cancel=check_cancel, timeout=30,
         )
     except FileNotFoundError as exc:
         raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffprobe is unavailable.", stage="prepare") from exc
@@ -63,13 +98,15 @@ def _duration_ms(data: dict[str, Any], stream: dict[str, Any] | None = None) -> 
     return max(1, round(seconds * 1000))
 
 
-def inspect_video(path: Path, limits: dict[str, Any]) -> dict[str, Any]:
+def inspect_video(
+    path: Path, limits: dict[str, Any], check_cancel: Callable[[], None] | None = None,
+) -> dict[str, Any]:
     """Inspect the exact first video/audio streams later used by ffmpeg.
 
     The importer owns file-name and byte-count admission. This function also
     works for a temporary upload path without the original file extension.
     """
-    data = _probe(path)
+    data = _probe(path, check_cancel=check_cancel)
     streams = data.get("streams")
     if not isinstance(streams, list) or any(not isinstance(stream, dict) for stream in streams):
         raise _invalid("The media stream information is invalid.")
@@ -107,17 +144,17 @@ def prepare(context: StageContext, progress: Callable[[float | None, str], None]
     """Extract the first audio stream without modifying or transcoding video."""
     source = context.input_files["video"]
     progress(0.0, "Inspecting source video")
-    info = inspect_video(source, RUNTIME_LIMITS)
+    info = inspect_video(source, RUNTIME_LIMITS, check_cancel=context.check_cancel)
     context.work_dir.mkdir(parents=True, exist_ok=True)
     audio_path = context.work_dir / "source.wav"
     info_path = context.work_dir / "media.json"
     progress(None, "Extracting source audio")
     try:
-        result = subprocess.run(
+        result = _run_media(
             [ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-xerror",
              "-i", str(source.resolve()), "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000",
              "-c:a", "pcm_s16le", str(audio_path.resolve())],
-            capture_output=True, text=True,
+            check_cancel=context.check_cancel,
         )
     except FileNotFoundError as exc:
         raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffmpeg is unavailable.", stage="prepare") from exc
