@@ -17,7 +17,7 @@
 
 ## 本地运行
 
-沿用仓库 [README](../../README.md) 的环境配置和启动方式，更新依赖后运行 `npm run dev:api`。应用读取 `.env`；新增 `keyring>=25.6,<26` 依赖，用于[系统凭据存储](https://keyring.readthedocs.io/en/latest/)。
+沿用仓库 [README](../../README.md) 的环境配置，在仓库根目录运行 `.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000`。应用读取 `.env`；新增 `keyring>=25.6,<26` 依赖，用于[系统凭据存储](https://keyring.readthedocs.io/en/latest/)。
 
 `.env` 是配置来源，`env.txt` 为同一文件的硬链接；两者均被 Git 忽略。新 worktree 通过 `.worktreeinclude` 复制 `.env` 后，执行 `ln .env env.txt` 和 `test .env -ef env.txt` 重建并核对链接。配置复制到另一台机器后仍需按运行环境选择设备及模型目录；v1 翻译连接通过 Settings 保存到系统凭据库。
 
@@ -107,6 +107,8 @@ X-CSRF-Token: <session csrf token>
 Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 已按用户指示从实际运行的 youdub-backend 同步 `.env`，复制时核对内容一致并重建 `env.txt` 硬链接；随后在本机配置 `YOUDUB_TTS_ENGINE=voxcpm2`、CPU、WebUI 登录哈希和本机 HTTP Cookie，硬链接保持不变。真实媒体验收使用独立数据目录，临时凭据已清理。另按用户指示在本机默认 Settings 保存真实翻译连接和 VoxCPM2 `source_clone` 默认配置，密钥保存在系统凭据库；专名提示保持每任务可选，未全局写入 YouDub。
 
 正常启动另已核对：直接运行仓库 `.venv/bin/uvicorn backend.app.main:app`，应用自行读取 `.env`，前端使用 Node.js 22 的生产构建。通过 Next 同源代理，health、真实本机登录、session、Runtime、Settings 和任务列表全部返回 200，Runtime 为 ready，默认声音回读为 VoxCPM2 `source_clone`。该验证未替换配置函数、未导入测试认证、未创建模型任务；自启服务已停止。见[正常启动验收记录](../validation/mvp-standard-startup-2026-09-22.json)。
+
+2026-09-23 补齐正常启动的页面闭环：Chrome 使用现有本机密码登录，在首页文件选择器导入同一视频，采用已保存的模型配置并填写任务专名提示 `YouDub.`，正式 worker 完成整句配音与字幕任务 `0446ee5f-8360-4346-9f13-a3c9337f8e68`。详情页显示 Completed，视频实际播放至 6.88 秒结束且无播放器错误；四份产物经 API 下载与磁盘逐字节一致，HEAD/Range 返回 200/206。点击页面下载链接后，浏览器保存文件的路径未独立核对，内部下载页面受浏览器安全策略限制。见[正常页面闭环记录](../validation/mvp-normal-ui-2026-09-23.json)。听感仍等待用户对整句配音样例的反馈。
 
 2026-09-22 的三模式验收发生在用户新增“外部 LLM 接口请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。2026-09-23 整句修正的三模式真实请求均使用此上限。
 
