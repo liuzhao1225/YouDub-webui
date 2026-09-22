@@ -5,12 +5,12 @@ from pathlib import Path
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, UploadFile
 
 from . import runtime as runtime_catalog
-from .contracts import Runtime, Settings, SettingsPatch, Task, TaskId, TaskList, TaskStatus
+from .contracts import RerunRequest, RetryRequest, Runtime, Settings, SettingsPatch, Task, TaskId, TaskList, TaskStatus
 from .errors import ApiError
-from . import executor, files, imports, tasks
+from . import actions, files, imports, tasks
 from .storage import Store, data_directory
 
 router = APIRouter(prefix="/api/v1")
@@ -72,7 +72,6 @@ def create_task(
     task_config = imports.parse_config(config)
     snapshot = runtime_snapshot(store.read_settings())
     task = imports.import_video(store, task_id, file, task_config, snapshot)
-    executor.append_log(store, task_id, "Task created and queued.")
     worker.enqueue(f"mvp-{task_id}")
     return task
 
@@ -89,6 +88,42 @@ def list_tasks(
 @router.get("/tasks/{task_id}", response_model=Task)
 def get_task(task_id: TaskId, store: Store = Depends(get_store)) -> dict:
     return tasks.get_task(store, task_id)
+
+
+@router.post("/tasks/{task_id}/cancel", response_model=Task)
+def cancel_task(task_id: TaskId, response: Response, store: Store = Depends(get_store)) -> dict:
+    from .. import worker
+
+    task = actions.cancel_task(store, task_id)
+    if task["status"] == "cancelling":
+        response.status_code = 202
+        worker.enqueue(f"mvp-{task_id}")
+    return task
+
+
+@router.post("/tasks/{task_id}/retry", response_model=Task)
+def retry_task(task_id: TaskId, request: RetryRequest, store: Store = Depends(get_store)) -> dict:
+    from .. import worker
+
+    task = actions.retry_task(store, task_id, request.expected_attempt)
+    if task["status"] == "queued":
+        worker.enqueue(f"mvp-{task_id}")
+    return task
+
+
+@router.post("/tasks/{task_id}/rerun", status_code=201, response_model=Task)
+def rerun_task(task_id: TaskId, request: RerunRequest, store: Store = Depends(get_store)) -> dict:
+    from .. import worker
+
+    task = actions.rerun_task(store, task_id, request, runtime_snapshot(store.read_settings()))
+    worker.enqueue(f"mvp-{task['id']}")
+    return task
+
+
+@router.delete("/tasks/{task_id}", status_code=204)
+def delete_task(task_id: TaskId, store: Store = Depends(get_store)) -> Response:
+    actions.delete_task(store, task_id)
+    return Response(status_code=204)
 
 
 @router.get("/tasks/{task_id}/files/{kind}")

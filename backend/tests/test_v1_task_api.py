@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import json
+import asyncio
 import shutil
 import subprocess
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from backend.app import auth, database, main, worker
 from backend.app.config import ffmpeg_binary
-from backend.app.v1 import executor, media, router, tasks
+from backend.app.v1 import actions, executor, files, media, router, tasks
 from backend.app.v1.contracts import Task, TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.runtime import RUNTIME_LIMITS
@@ -247,3 +249,108 @@ def test_shared_worker_dispatches_legacy_and_v1_without_new_executor_thread(monk
     main.dispatch_task("legacy-id")
     main.dispatch_task("mvp-123")
     assert calls == [("legacy", "legacy-id"), (store, "123")]
+
+
+def test_cancel_retry_rerun_and_delete_api(client, store, config, video):
+    task_id = upload(client, video, config).json()["id"]
+    url = f"/api/v1/tasks/{task_id}"
+    assert client.delete(url).json()["error"]["code"] == "TASK_BUSY"
+    assert client.post(url + "/cancel").json()["status"] == "cancelled"
+    retried = client.post(url + "/retry", json={"expected_attempt": 1})
+    assert retried.status_code == 200 and retried.json()["attempt"] == 2
+    assert client.post(url + "/retry", json={"expected_attempt": 1}).json()["attempt"] == 2
+    assert client.post(url + "/retry", json={"expected_attempt": 4}).status_code == 409
+    client.post(url + "/cancel")
+    new_id = str(uuid4())
+    rerun = client.post(url + "/rerun", json={"id": new_id, "config": config.model_dump(mode="json")})
+    assert rerun.status_code == 201 and rerun.json()["attempt"] == 1
+    assert client.delete(url).status_code == 204
+    assert client.get(url).status_code == 404
+    assert (store.root / "tasks" / new_id / "input/source.mp4").read_bytes() == video.read_bytes()
+
+
+def test_local_cancel_is_finalized_only_after_runner_stops(client, store, config, video):
+    task_id = upload(client, video, config).json()["id"]
+    seen = []
+
+    def step(context, progress):
+        seen.append(context.stage)
+        response = client.post(f"/api/v1/tasks/{task_id}/cancel")
+        assert response.status_code == 202 and response.json()["status"] == "cancelling"
+        assert client.delete(f"/api/v1/tasks/{task_id}").status_code == 409
+        context.check_cancel()
+        pytest.fail("cancelled local step continued")
+
+    executor.run_task(store, task_id, step)
+    result = tasks.get_task(store, task_id)
+    assert seen == ["prepare"] and result["status"] == "cancelled"
+    assert result["outputs"] == {} and result["error"] is None
+    assert "retry" in result["allowed_actions"]
+
+
+def test_cancellation_preserves_remote_acceptance_during_submit(client, store, config, video):
+    task_id = upload(client, video, config).json()["id"]
+
+    def accepted_after_cancel(context, progress):
+        client.post(f"/api/v1/tasks/{task_id}/cancel")
+        return Waiting("accepted-remote-id", "2099-01-01T00:00:00.000Z")
+
+    executor.run_task(store, task_id, accepted_after_cancel)
+    result = tasks.get_task(store, task_id)
+    assert result["status"] == "cancelled"
+    assert result["external_operation"] == {"state": "unknown", "may_still_run": True}
+    assert json.loads(tasks.get_record(store, task_id)["stage_context_json"])["remote_task_id"] == "accepted-remote-id"
+    url = f"/api/v1/tasks/{task_id}"
+    assert client.post(url + "/retry", json={"expected_attempt": 1}).json()["error"]["code"] == "EXTERNAL_RESULT_UNKNOWN"
+    body = {"id": str(uuid4()), "config": config.model_dump(mode="json")}
+    assert client.post(url + "/rerun", json=body).status_code == 409
+    assert client.post(url + "/rerun", json={**body, "acknowledge_external_risk": True}).status_code == 201
+
+
+def test_cancel_waiting_stops_polling_without_claiming_remote_cancellation(client, store, config, video):
+    task_id = upload(client, video, config).json()["id"]
+    executor.run_step(store, tasks.claim_next(store), lambda context, progress: Waiting("pending", "2099-01-01T00:00:00.000Z"))
+    assert client.post(f"/api/v1/tasks/{task_id}/cancel").status_code == 202
+    executor.run_task(store, task_id, lambda context, progress: pytest.fail("cancelled remote task was polled"))
+    assert tasks.get_task(store, task_id)["status"] == "cancelled"
+    assert tasks.get_task(store, task_id)["external_operation"]["may_still_run"]
+
+
+@pytest.mark.parametrize("cancel", [False, True])
+def test_invalid_poll_time_keeps_accepted_remote_receipt(client, store, config, video, cancel):
+    task_id = upload(client, video, config).json()["id"]
+
+    def invalid_receipt(context, progress):
+        if cancel:
+            client.post(f"/api/v1/tasks/{task_id}/cancel")
+        return Waiting("accepted-provider-operation", "2026-09-22T12:00:00Z")
+
+    executor.run_task(store, task_id, invalid_receipt)
+    task = tasks.get_task(store, task_id)
+    assert task["status"] == ("cancelled" if cancel else "failed")
+    assert task["external_operation"] == {"state": "unknown", "may_still_run": True}
+    assert "retry" not in task["allowed_actions"]
+    saved = json.loads(tasks.get_record(store, task_id)["stage_context_json"])
+    assert saved["remote_task_id"] == "accepted-provider-operation"
+
+
+def test_download_blocks_delete_until_response_is_closed(client, store, config, video):
+    task_id = upload(client, video, config).json()["id"]
+    executor.run_task(store, task_id, mock_pipeline)
+    scope = {"type": "http", "method": "GET", "path": "/", "headers": []}
+    response = files.output_response(store, task_id, "video", Request(scope), False)
+    with pytest.raises(ApiError) as error:
+        actions.delete_task(store, task_id)
+    assert error.value.content["error"]["code"] == "TASK_BUSY"
+
+    async def receive():
+        return {"type": "http.disconnect"}
+
+    async def send(message):
+        if message["type"] == "http.response.body":
+            raise ConnectionError("test client disconnected")
+
+    with pytest.raises(ConnectionError):
+        asyncio.run(response(scope, receive, send))
+    actions.delete_task(store, task_id)
+    assert tasks.get_record(store, task_id) is None

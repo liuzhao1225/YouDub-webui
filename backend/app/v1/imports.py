@@ -16,7 +16,56 @@ from .storage import Store
 
 _lock = threading.Lock()
 _inflight: set[tuple[Path, str]] = set()
+_readers: dict[tuple[Path, str], int] = {}
 _task_id = TypeAdapter(TaskId)
+
+
+def validate_task_id(task_id: str) -> None:
+    try:
+        _task_id.validate_python(task_id)
+    except ValidationError as exc:
+        raise ApiError(422, "INVALID_CONFIG", "A canonical UUID is required.", field="id") from exc
+
+
+def begin_task_write(store: Store, task_id: str, *, new: bool = False) -> None:
+    """Reserve files while importing, copying, resetting or deleting one Task."""
+    validate_task_id(task_id)
+    key = (store.path, task_id)
+    with _lock:
+        if new and tasks.get_record(store, task_id) is not None:
+            raise ApiError(409, "TASK_EXISTS", "A task with this ID already exists.", field="id", action="none")
+        if key in _inflight:
+            code = "IMPORT_IN_PROGRESS" if new else "TASK_BUSY"
+            raise ApiError(409, code, "Files for this ID are in use.", field="id", action="none")
+        if _readers.get(key, 0):
+            raise ApiError(409, "TASK_BUSY", "A task file is being read.", field="id", action="none")
+        if new and (store.root / "tasks" / task_id).exists():
+            raise ApiError(409, "IMPORT_RESIDUE", "An earlier upload left files under this ID. Delete the residual import before retrying.", field="id", action="none")
+        _inflight.add(key)
+
+
+def end_task_write(store: Store, task_id: str) -> None:
+    with _lock:
+        _inflight.remove((store.path, task_id))
+
+
+def begin_read(store: Store, task_id: str) -> None:
+    validate_task_id(task_id)
+    key = (store.path, task_id)
+    with _lock:
+        if key in _inflight:
+            raise ApiError(409, "TASK_BUSY", "Task files are being changed.", field="id", action="none")
+        _readers[key] = _readers.get(key, 0) + 1
+
+
+def end_read(store: Store, task_id: str) -> None:
+    key = (store.path, task_id)
+    with _lock:
+        remaining = _readers[key] - 1
+        if remaining:
+            _readers[key] = remaining
+        else:
+            del _readers[key]
 
 
 def parse_config(part: str | UploadFile) -> TaskConfig:
@@ -35,20 +84,8 @@ def parse_config(part: str | UploadFile) -> TaskConfig:
 
 
 def import_video(store: Store, task_id: str, file: UploadFile, config: TaskConfig, snapshot: dict) -> dict:
-    try:
-        _task_id.validate_python(task_id)
-    except ValidationError as exc:
-        raise ApiError(422, "INVALID_CONFIG", "A canonical UUID is required.", field="id") from exc
-    key = (store.path, task_id)
     root = store.root / "tasks" / task_id
-    with _lock:
-        if tasks.get_record(store, task_id) is not None:
-            raise ApiError(409, "TASK_EXISTS", "A task with this ID already exists.", field="id", action="none")
-        if key in _inflight:
-            raise ApiError(409, "IMPORT_IN_PROGRESS", "An upload with this ID is still in progress.", field="id", action="none")
-        if root.exists():
-            raise ApiError(409, "IMPORT_RESIDUE", "An earlier upload left files under this ID. Delete the residual import before retrying.", field="id", action="none")
-        _inflight.add(key)
+    begin_task_write(store, task_id, new=True)
     try:
         name = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
         if not name or any(ord(char) < 32 for char in name):
@@ -77,5 +114,4 @@ def import_video(store: Store, task_id: str, file: UploadFile, config: TaskConfi
         return tasks.create_task(store, task_id=task_id, source_name=name, source_size_bytes=size,
                                  input_path=destination, config=config, runtime=snapshot)
     finally:
-        with _lock:
-            _inflight.remove(key)
+        end_task_write(store, task_id)

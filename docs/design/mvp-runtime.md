@@ -8,9 +8,10 @@
 - `/api/v1/runtime` 返回 CPU/CUDA 设备、能力目录和输入限制。当前 v1 媒体执行链尚未接入，四个适配器明确显示不可用。
 - `GET /api/v1/settings` 读取默认配置、界面语言和脱敏连接；`PATCH` 每次更新一个配置组。
 - 登录和 CSRF 沿用现有机制。v1 的认证、参数、存储和凭据错误使用 `error.code/message/field/stage/action`。
-- Task 上传、配置与连接快照、列表/详情、日志，以及产物 GET/HEAD/Range 已接入。浏览器按 UUID 提交视频和 JSON 配置；失败导入保留同 ID 残留，后续删除接口负责清理。
+- Task 上传、配置与连接快照、列表/详情、日志，以及产物 GET/HEAD/Range 已接入。浏览器按 UUID 提交视频和 JSON 配置；失败导入保留同 ID 残留，可通过删除接口清理。
 - v1 与原 WebUI 共用单线程 worker。一个 Task 持续占用执行位置，远端 waiting 保留查询 ID；重启时中断的本地步骤明确失败，已保存的远端等待继续查询。
 - `prepare` 已使用 FFprobe 检查媒体限制、FFmpeg 提取 16 kHz 单声道音频，原视频保留。ASR、翻译、配音、混音和导出仍待接入；测试适配器只存在于测试文件，Runtime 继续明确显示不可用。
+- cancel、retry、rerun、delete 已接入：取消确认本机进程退出；retry 保留原配置及连接快照，attempt 加一并从 prepare 开始；rerun 复制原视频并使用新配置；delete 拒绝活动任务、进行中的文件写入和下载。
 
 ## 本地运行
 
@@ -50,4 +51,6 @@ X-CSRF-Token: <session csrf token>
 
 任务链已用真实合成视频和显式测试适配器验证上传、顺序执行、远端等待、错误、产物注册及文件下载；测试中的 ASR、翻译、导出结果不代表真实模型效果。媒体准备单独验证了真实 FFmpeg 输出和原视频未改写。
 
-当前尚未完成任务动作、前端切换、真实模型三模式验收及 Windows 实机验收。Runtime 的输入限制分别在导入和 prepare 实施；实际模型链未接通前，公开接口会拒绝不可用的模型组合。
+动作接口验证包含重试幂等、复制输入、文件失败保留记录、下载期间拒绝删除，以及真实子进程取消后退出。远端 waiting 的取消只保证本机停止；已接受的远端请求遇到结果校验错误时仍保留 ID 和 unknown 风险，禁止直接 retry，rerun 需要 `acknowledge_external_risk=true`。
+
+当前尚未完成前端切换、真实模型三模式验收及 Windows 实机验收。Runtime 的输入限制分别在导入和 prepare 实施；实际模型链未接通前，公开接口会拒绝不可用的模型组合。

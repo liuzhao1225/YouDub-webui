@@ -13,7 +13,7 @@ from . import media, tasks
 from .contracts import TaskConfig, Timestamp
 from .errors import ApiError, error_content
 from .credentials import CredentialStoreError
-from .steps import Completed, StageContext, StepResult, Waiting
+from .steps import Completed, StageCancelled, StageContext, StepResult, Waiting
 from .storage import Store, now_iso
 
 STAGES = ("prepare", "separate", "asr", "translate", "tts", "mix", "export")
@@ -115,31 +115,40 @@ def run_step(store: Store, record: dict, runner: StepRunner = execute_stage) -> 
     config = TaskConfig.model_validate_json(record["config_json"])
     connections = {}
 
+    def check_cancel():
+        current = tasks.get_record(store, task_id)
+        if current is None or current["attempt"] != attempt or current["status"] != "running":
+            raise StageCancelled()
+
     def progress(value: float | None, message: str):
+        check_cancel()
         safe = _redact(message, connections)
         tasks.update_task(store, task_id, attempt, "running", stage_progress=value, status_message=safe)
         append_log(store, task_id, f"[{stage}] {safe}", connections)
 
     try:
+        check_cancel()
         work = runtime_security.ensure_private_directory(store.root / "tasks" / task_id / "work")
         runtime_security.ensure_private_directory(store.root / "tasks" / task_id / "output")
         connections = _connections(store, saved)
         context = StageContext(task_id=task_id, attempt=attempt, stage=stage, config=config,
                                input_files={key: Path(value) for key, value in saved["input_files"].items()},
-                               work_dir=work, remote_task_id=saved.get("remote_task_id"), connections=connections)
+                               work_dir=work, remote_task_id=saved.get("remote_task_id"), connections=connections,
+                               check_cancel=check_cancel)
         result = runner(context, progress)
         if isinstance(result, Waiting):
             from pydantic import TypeAdapter
 
-            TypeAdapter(Timestamp).validate_python(result.next_poll_at)
-            if not result.remote_task_id:
+            saved["external_operation"] = {"state": "pending", "may_still_run": True}
+            if not isinstance(result.remote_task_id, str) or not result.remote_task_id.strip():
                 raise ApiError(500, "INVALID_PROVIDER_RESULT", "Provider returned an empty operation ID.", stage=stage)
             if saved.get("remote_task_id") and saved["remote_task_id"] != result.remote_task_id:
                 raise ApiError(500, "INVALID_PROVIDER_RESULT", "Polling changed the external operation ID.", stage=stage)
-            saved.update(remote_task_id=result.remote_task_id, next_poll_at=result.next_poll_at,
-                         external_operation={"state": "pending", "may_still_run": True})
-            tasks.update_task(store, task_id, attempt, "running", status="waiting", wait_reason="remote_result",
-                              stage_progress=None, stage_context_json=saved, status_message="Waiting for provider result.")
+            saved["remote_task_id"] = result.remote_task_id
+            TypeAdapter(Timestamp).validate_python(result.next_poll_at)
+            saved["next_poll_at"] = result.next_poll_at
+            updates = {"status": "waiting", "wait_reason": "remote_result", "stage_progress": None,
+                       "stage_context_json": saved, "status_message": "Waiting for provider result."}
         elif isinstance(result, Completed):
             for path in result.output_files.values():
                 if not Path(path).is_file() or Path(path).stat().st_size == 0:
@@ -160,29 +169,59 @@ def run_step(store: Store, record: dict, runner: StepRunner = execute_stage) -> 
             else:
                 stages = stages_for(config)
                 updates.update(status="queued", current_stage=stages[stages.index(stage) + 1], stage_progress=None)
-            tasks.update_task(store, task_id, attempt, "running", **updates)
         else:
             raise ApiError(500, "INVALID_PROVIDER_RESULT", "A step returned an invalid result.", stage=stage)
+        check_cancel()
+        # Finish all file writes before exposing a terminal/queued state. A
+        # concurrent delete or retry can then safely own the task directory.
+        append_log(store, task_id, f"[{stage}] {result.state}", connections)
+        if not tasks.update_task(store, task_id, attempt, "running", **updates):
+            check_cancel()
     except Exception as exc:
         current = tasks.get_record(store, task_id)
-        if current is None or current["attempt"] != attempt or current["status"] != "running":
+        if current is None or current["attempt"] != attempt:
+            if isinstance(exc, StageCancelled):
+                return
             raise
-        if saved.get("remote_task_id"):
+        if current["status"] == "cancelling":
+            complete_cancel(store, current, saved)
+            return
+        if current["status"] != "running":
+            raise
+        if saved["external_operation"]["may_still_run"]:
             saved["external_operation"] = {"state": "unknown", "may_still_run": True}
         error = exc.content["error"] if isinstance(exc, ApiError) else error_content(
             "WORKER_EXITED", f"The {stage} step failed ({type(exc).__name__}).", stage=stage, action="retry",
         )["error"]
         error = {**error, "message": _redact(error["message"], connections), "stage": stage}
-        tasks.update_task(store, task_id, attempt, "running", status="failed", error_json=error,
-                          stage_context_json=saved, finished_at=now_iso(), wait_reason=None, status_message=error["message"])
         append_log(store, task_id, f"[{stage}] {type(exc).__name__}: {exc}", connections)
-    else:
-        append_log(store, task_id, f"[{stage}] {result.state}", connections)
+        changed = tasks.update_task(store, task_id, attempt, "running", status="failed", error_json=error,
+                                    stage_context_json=saved, finished_at=now_iso(), wait_reason=None,
+                                    status_message=error["message"])
+        if not changed:
+            current = tasks.get_record(store, task_id)
+            if current is not None and current["attempt"] == attempt and current["status"] == "cancelling":
+                complete_cancel(store, current, saved)
+
+
+def complete_cancel(store: Store, record: dict, saved: dict | None = None) -> None:
+    """Called by the worker only after the current local step has stopped."""
+    saved = saved if saved is not None else json.loads(record["stage_context_json"])
+    if saved["external_operation"]["may_still_run"]:
+        saved["external_operation"] = {"state": "unknown", "may_still_run": True}
+    append_log(store, record["id"], "Local task processing stopped.")
+    tasks.update_task(store, record["id"], record["attempt"], "cancelling", status="cancelled",
+                      stage_context_json=saved, wait_reason=None, finished_at=now_iso(),
+                      error_json=None, status_message="Local task processing stopped.")
 
 
 def run_task(store: Store, task_id: str, runner: StepRunner = execute_stage) -> None:
     """Keep the shared worker slot while the current Task waits or advances."""
     while True:
+        with store.connect() as conn:
+            stopping = [dict(row) for row in conn.execute("SELECT * FROM tasks WHERE status='cancelling'")]
+        for record in stopping:
+            complete_cancel(store, record)
         requested = tasks.get_record(store, task_id)
         if requested is None or requested["status"] in TERMINAL:
             return
