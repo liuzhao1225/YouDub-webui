@@ -6,6 +6,7 @@ import sys
 from dataclasses import replace
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from backend.app.v1 import translate
@@ -92,7 +93,8 @@ def test_translation_preserves_source_and_matches_ids_in_serial_batches(context,
     assert [len(json.loads(call["messages"][1]["content"])["segments"]) for call in provider.calls] == [20, 3]
     assert [call["max_completion_tokens"] for call in provider.calls] == [65535, 65535]
     assert states == ["pending", "succeeded", "pending", "succeeded"]
-    assert provider.options == [{"base_url": "https://pinned.example/v1", "api_key": "pinned-key", "max_retries": 0, "timeout": 60.0}]
+    assert provider.options == [{"base_url": "https://pinned.example/v1", "api_key": "pinned-key", "max_retries": 0,
+                                 "timeout": httpx.Timeout(300.0, connect=10.0)}]
     assert provider.closed
 
 
@@ -178,8 +180,8 @@ def real_provider(monkeypatch):
     import openai
 
     original_client = openai.AsyncOpenAI
-    state = SimpleNamespace(calls=[], clients=[], body=None, content_type="application/json",
-                            wait=False, stopped=False)
+    state = SimpleNamespace(calls=[], clients=[], timeouts=[], body=None, content_type="application/json",
+                            wait=False, stopped=False, read_timeout=False)
 
     def forbid_network(*args, **kwargs):
         pytest.fail("Real SDK response tests must not resolve or contact any host")
@@ -189,6 +191,9 @@ def real_provider(monkeypatch):
     async def handle(request):
         body = json.loads(request.content)
         state.calls.append(body)
+        state.timeouts.append(request.extensions["timeout"])
+        if state.read_timeout:
+            raise httpx.ReadTimeout("Provider response exceeded the read timeout", request=request)
         if state.wait:
             try:
                 await asyncio.sleep(30)
@@ -223,6 +228,22 @@ def test_installed_sdk_parses_complete_responses_and_retains_all_batch_ids(conte
     assert states == ["pending", "succeeded", "pending", "succeeded"]
     assert len(real_provider.calls) == 2
     assert [call["max_completion_tokens"] for call in real_provider.calls] == [65535, 65535]
+    assert real_provider.timeouts == [{"connect": 10.0, "read": 300.0, "write": 300.0, "pool": 300.0}] * 2
+    assert all(client.is_closed for client in real_provider.clients)
+
+
+def test_installed_sdk_read_timeout_keeps_unknown_remote_completion_without_retry(context, real_provider):
+    real_provider.read_timeout = True
+    states = []
+    with pytest.raises(ApiError) as error:
+        translate.run(replace(context, set_external_state=states.append), lambda *args: None)
+    assert error.value.content["error"]["code"] == "REMOTE_TIMEOUT"
+    assert error.value.content["error"]["action"] == "rerun"
+    assert states == ["pending"]
+    assert len(real_provider.calls) == 1
+    assert real_provider.timeouts[0]["read"] == 300.0 and real_provider.timeouts[0]["connect"] == 10.0
+    assert real_provider.calls[0]["max_completion_tokens"] == 65535
+    assert not (context.work_dir / "translation.json").exists()
     assert all(client.is_closed for client in real_provider.clients)
 
 

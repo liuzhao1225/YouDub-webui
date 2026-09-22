@@ -39,6 +39,7 @@ def batches(transcript: Transcript) -> Iterator[list[Segment]]:
 
 async def _translate(context: StageContext, transcript: Transcript, progress: Callable) -> Translation:
     try:
+        import httpx
         from openai import AsyncOpenAI, APIConnectionError, APIResponseValidationError, APIStatusError, APITimeoutError
     except ImportError as exc:
         raise ApiError(503, "MODEL_NOT_READY", "Install the OpenAI SDK in the backend environment.",
@@ -51,7 +52,7 @@ async def _translate(context: StageContext, transcript: Transcript, progress: Ca
     # Validate every batch before any source text leaves the machine.
     groups = list(batches(transcript))
     async with AsyncOpenAI(base_url=connection["base_url"], api_key=connection["api_key"],
-                           max_retries=0, timeout=60.0) as client:
+                           max_retries=0, timeout=httpx.Timeout(300.0, connect=10.0)) as client:
         for index, batch in enumerate(groups):
             context.check_cancel()
             progress(index / len(groups), f"Translating batch {index + 1}/{len(groups)}")
