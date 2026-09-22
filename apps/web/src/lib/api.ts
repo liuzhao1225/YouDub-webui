@@ -6,13 +6,28 @@ const MAX_VALIDATION_MESSAGES = 3
 const MAX_VALIDATION_MESSAGE_LENGTH = 240
 let csrfToken = ""
 
+export type ApiErrorDetails = {
+  code?: string
+  field?: string | null
+  stage?: string | null
+  action?: string
+}
+
 export class ApiError extends Error {
   status: number
+  code?: string
+  field?: string | null
+  stage?: string | null
+  action?: string
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, details: ApiErrorDetails = {}) {
     super(message)
     this.name = "ApiError"
     this.status = status
+    this.code = details.code
+    this.field = details.field
+    this.stage = details.stage
+    this.action = details.action
   }
 }
 
@@ -28,6 +43,23 @@ export type AuthSession = {
 
 type ResponseOptions = {
   emitUnauthorized?: boolean
+  responseType?: "json" | "text"
+}
+
+function structuredError(body: unknown): (ApiErrorDetails & { message: string }) | undefined {
+  if (!body || typeof body !== "object" || !("error" in body)) return
+  const error = body.error
+  if (!error || typeof error !== "object" || !("message" in error)) return
+  if (typeof error.message !== "string" || !error.message.trim()) return
+  return {
+    message: error.message,
+    code: "code" in error && typeof error.code === "string" ? error.code : undefined,
+    field: "field" in error && (typeof error.field === "string" || error.field === null)
+      ? error.field : undefined,
+    stage: "stage" in error && (typeof error.stage === "string" || error.stage === null)
+      ? error.stage : undefined,
+    action: "action" in error && typeof error.action === "string" ? error.action : undefined,
+  }
 }
 
 function errorMessage(body: unknown, status: number) {
@@ -66,9 +98,11 @@ async function parseResponse<T>(response: Response, options: ResponseOptions = {
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
     if (response.status === 401 && options.emitUnauthorized !== false) emitUnauthorized()
-    throw new ApiError(errorMessage(body, response.status), response.status)
+    const error = structuredError(body)
+    throw new ApiError(error?.message ?? errorMessage(body, response.status), response.status, error)
   }
   if (response.status === 204) return undefined as T
+  if (options.responseType === "text") return response.text() as Promise<T>
   return response.json() as Promise<T>
 }
 
@@ -143,7 +177,7 @@ export type YtdlpSettings = {
 
 export type LocalDirection = "en-zh" | "ja-zh" | "zh-en"
 
-async function request<T>(
+export async function request<T>(
   path: string,
   options?: RequestInit,
   responseOptions?: ResponseOptions,
