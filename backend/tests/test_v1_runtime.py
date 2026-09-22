@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from backend.app.v1 import runtime
+from backend.app.v1.contracts import Runtime
 
 
 @pytest.fixture
@@ -66,6 +67,110 @@ def test_cuda_catalogue_queries_devices_without_loading_models(monkeypatch):
         get_device_name=lambda index: f"Test GPU {index}",
     )))
     assert [item["id"] for item in runtime._detect_devices()] == ["cpu", "cuda:0", "cuda:1"]
+
+
+@pytest.fixture
+def installed_runtime(monkeypatch, tmp_path):
+    models = tmp_path / "whisper-models"
+    models.mkdir()
+    (models / "tiny.pt").write_bytes(b"metadata-only test checkpoint")
+    (models / "small.en.pt").write_bytes(b"metadata-only English checkpoint")
+    (models / "large-v3.pt").touch()
+    monkeypatch.setenv("YOUDUB_WHISPER_MODELS_DIR", str(models))
+    monkeypatch.delenv("YOUDUB_TRANSLATION_MODELS", raising=False)
+    monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(runtime, "_detect_devices", lambda: [
+        {"id": "cpu", "name": "CPU", "available": True, "unavailable_reason": None},
+        {"id": "cuda:0", "name": "Test GPU", "available": True, "unavailable_reason": None},
+    ])
+    monkeypatch.setattr(runtime, "ffmpeg_binary", lambda: "ffmpeg")
+    monkeypatch.setattr(runtime, "ffprobe_binary", lambda: "ffprobe")
+    monkeypatch.setattr(runtime.shutil, "which", lambda name: f"/test/bin/{name}")
+    return [{"adapter": "openai", "base_url": "https://provider.invalid/v1", "has_api_key": True}]
+
+
+def test_real_catalogue_reads_local_metadata_and_remote_config_without_model_or_network(installed_runtime, monkeypatch):
+    import socket
+
+    from backend.app.v1 import asr
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Runtime must not load a model, instantiate a provider, or connect to the network")
+
+    monkeypatch.setattr(asr, "run", forbidden)
+    monkeypatch.setattr(socket, "create_connection", forbidden)
+    monkeypatch.setitem(sys.modules, "whisper", SimpleNamespace(load_model=forbidden))
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=forbidden))
+    result = runtime.build_runtime(connections=installed_runtime)
+    Runtime.model_validate(result)
+    assert result["status"] == "degraded"  # TTS and separation remain unconnected.
+    whisper, translation, tts, separation = result["capabilities"]
+    assert whisper["available"] and whisper["unavailable_reason"] is None
+    assert [model["id"] for model in whisper["models"]] == ["tiny", "small.en"]
+    assert whisper["models"][0]["source_languages"] == ["auto", "en", "zh", "ja"]
+    assert whisper["models"][1]["source_languages"] == ["auto", "en"]
+    assert all(model["devices"] == ["cpu", "cuda:0"] for model in whisper["models"])
+    assert all(model["input_limits"] == {"max_audio_duration_ms": 600000,
+                                         "max_text_chars": None, "max_reference_duration_ms": None}
+               for model in whisper["models"])
+    assert whisper["data_sent"] == [] and whisper["remote_operations"] is None
+    assert translation["available"] and translation["unavailable_reason"] is None
+    assert [model["id"] for model in translation["models"]] == ["gpt-4.1-mini"]
+    assert translation["data_sent"] == ["text"]
+    assert translation["remote_operations"] == {"submit_mode": "sync", "can_poll": False,
+                                                 "can_cancel": False, "can_lookup_request_key": False}
+    assert not tts["available"] and not separation["available"]
+    assert tts["models"] == separation["models"] == []
+
+
+def test_translation_models_use_configured_candidates_and_preserve_saved_default(installed_runtime, monkeypatch):
+    monkeypatch.setenv("YOUDUB_TRANSLATION_MODELS", " custom-one, custom-two, custom-one, ")
+    result = runtime.build_runtime(connections=installed_runtime, translation_model="saved-default")
+    capability = result["capabilities"][1]
+    assert [model["id"] for model in capability["models"]] == ["custom-one", "custom-two", "saved-default"]
+    assert all(model["devices"] == ["remote"] and model["source_languages"] == ["en", "zh", "ja"]
+               and model["target_languages"] == ["en", "zh", "ja"] for model in capability["models"])
+    monkeypatch.setenv("YOUDUB_TRANSLATION_MODELS", " , ")
+    capability = runtime.build_runtime(connections=installed_runtime)["capabilities"][1]
+    assert not capability["available"] and capability["models"] == []
+    assert "YOUDUB_TRANSLATION_MODELS" in capability["unavailable_reason"]
+
+
+@pytest.mark.parametrize("missing", ["whisper", "torch", "ffmpeg", "ffprobe", "checkpoint"])
+def test_whisper_is_unavailable_when_a_real_local_prerequisite_is_missing(installed_runtime, monkeypatch, tmp_path, missing):
+    if missing in {"whisper", "torch"}:
+        monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: None if name == missing else object())
+    elif missing in {"ffmpeg", "ffprobe"}:
+        monkeypatch.setattr(runtime.shutil, "which", lambda name: None if name == missing else f"/test/bin/{name}")
+    else:
+        monkeypatch.setenv("YOUDUB_WHISPER_MODELS_DIR", str(tmp_path / "missing-models"))
+    capability = runtime.build_runtime(connections=installed_runtime)["capabilities"][0]
+    assert not capability["available"] and capability["unavailable_reason"] and capability["models"] == []
+
+
+def test_configured_ffmpeg_without_path_ffmpeg_does_not_advertise_whisper(installed_runtime, monkeypatch):
+    monkeypatch.setattr(runtime, "ffmpeg_binary", lambda: "/configured/ffmpeg")
+    monkeypatch.setattr(runtime.shutil, "which", lambda name: None if name == "ffmpeg" else "/test/executable")
+    capability = runtime.build_runtime(connections=installed_runtime)["capabilities"][0]
+    assert not capability["available"]
+    assert "Whisper ASR" in capability["unavailable_reason"]
+    assert "PATH" in capability["unavailable_reason"]
+
+
+@pytest.mark.parametrize("missing", ["sdk", "connection", "key", "url"])
+def test_translation_is_unavailable_without_sdk_and_valid_public_connection(installed_runtime, monkeypatch, missing):
+    connections = deepcopy(installed_runtime)
+    if missing == "sdk":
+        monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: None if name == "openai" else object())
+    elif missing == "connection":
+        connections = []
+    elif missing == "key":
+        connections[0]["has_api_key"] = False
+    else:
+        connections[0]["base_url"] = "https://username:private-password@provider.invalid/v1"
+    capability = runtime.build_runtime(connections=connections)["capabilities"][1]
+    assert not capability["available"] and capability["unavailable_reason"] and capability["models"] == []
+    assert "private-password" not in capability["unavailable_reason"]
 
 
 def test_runtime_limits_are_independent_and_invalid_configuration_is_visible(monkeypatch):

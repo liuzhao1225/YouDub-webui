@@ -9,11 +9,15 @@ from __future__ import annotations
 import importlib.util
 import os
 import platform
+import shutil
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from typing import Any
 from urllib.parse import urlsplit
 from uuid import uuid4
+
+from ..config import ffmpeg_binary, ffprobe_binary
+from .segments import LANGUAGES
 
 
 CONTRACT_VERSION = "0.1.0-draft.1"
@@ -66,18 +70,73 @@ def _detect_devices() -> list[dict[str, Any]]:
     return devices
 
 
+def _model(
+    model_id: str, devices: list[str], source_languages: list[str], target_languages: list[str],
+    *, max_audio_duration_ms: int | None = None, max_text_chars: int | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": model_id, "devices": devices, "source_languages": source_languages,
+        "target_languages": target_languages, "voice_modes": [], "voices": [],
+        "input_limits": {"max_audio_duration_ms": max_audio_duration_ms,
+                         "max_text_chars": max_text_chars, "max_reference_duration_ms": None},
+    }
+
+
+def _whisper_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
+    if importlib.util.find_spec("whisper") is None or importlib.util.find_spec("torch") is None:
+        return [], "本地 Whisper 需要安装 openai-whisper 和 torch。"
+    if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
+        return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
+    # Whisper's own load_audio invokes `ffmpeg` by name, independently of the
+    # application's configured binary paths used by prepare/export.
+    if shutil.which("ffmpeg") is None:
+        return [], "Whisper ASR 还需要 PATH 中可执行的 ffmpeg；仅配置 FFMPEG_PATH 不足以读取音频。"
+    from .asr import available_models
+
+    available_devices = [device["id"] for device in devices if device["available"]]
+    if not available_devices:
+        return [], "没有可执行 Whisper 的 CPU/CUDA 设备。"
+    models = [_model(
+        name, available_devices.copy(), ["auto", "en"] if name.endswith(".en") else ["auto", *LANGUAGES], [],
+        max_audio_duration_ms=RUNTIME_LIMITS["max_video_duration_ms"],
+    ) for name in available_models()]
+    return models, None if models else "未找到非空的本地 Whisper .pt 权重；请安装到 Whisper 模型目录。"
+
+
+def _translation_models(
+    connections: Sequence[Mapping[str, Any]], translation_model: str | None,
+) -> tuple[list[dict[str, Any]], str | None]:
+    if importlib.util.find_spec("openai") is None:
+        return [], "OpenAI 兼容翻译需要安装 openai SDK。"
+    try:
+        _require_connection("openai", True, connections, "translation")
+    except CapabilityError as exc:
+        return [], str(exc)
+    # These are configured candidates, not a discovery/health response from the
+    # provider. No client is constructed and no remote request is made here.
+    configured = os.getenv("YOUDUB_TRANSLATION_MODELS", "gpt-4.1-mini")
+    candidates = [name.strip() for name in configured.split(",") if name.strip()]
+    if translation_model and translation_model.strip():
+        candidates.append(translation_model.strip())
+    from .translate import MAX_TEXT_CHARS
+    models = [_model(name, ["remote"], list(LANGUAGES), list(LANGUAGES), max_text_chars=MAX_TEXT_CHARS)
+              for name in dict.fromkeys(candidates)]
+    return models, None if models else "未配置翻译模型；请设置 YOUDUB_TRANSLATION_MODELS。"
+
+
 def build_runtime(
     instance_id: str | None = None,
     *,
     connections: Sequence[Mapping[str, Any]] | None = None,
     translation_model: str | None = None,
 ) -> dict[str, Any]:
-    """Return an actual runtime snapshot; configuration alone enables no model.
+    """Return locally verified capability prerequisites without inference/network.
 
     ``connections`` contains Settings' public connection records, without keys.
-    It and ``translation_model`` are the inputs for subsequent adapter wiring.
-    They do not currently change availability because no v1 adapter is wired.
+    A selectable remote model means its SDK and connection are configured; its
+    health, authorization and model name are checked by the real request later.
     """
+    devices = _detect_devices()
     capabilities = []
     for adapter, kind, execution in (
         ("whisper", "asr", "local"),
@@ -101,6 +160,14 @@ def build_runtime(
             } if remote else None,
         })
 
+    whisper_models, whisper_reason = _whisper_models(devices)
+    translation_models, translation_reason = _translation_models(connections or [], translation_model)
+    for capability, models, reason in (
+        (capabilities[0], whisper_models, whisper_reason),
+        (capabilities[1], translation_models, translation_reason),
+    ):
+        capability.update(available=bool(models), unavailable_reason=reason, models=models)
+
     limits = deepcopy(RUNTIME_LIMITS)
     limits["max_file_bytes"] = int(os.getenv("LOCAL_UPLOAD_MAX_BYTES", str(limits["max_file_bytes"])))
     if limits["max_file_bytes"] <= 0:
@@ -116,7 +183,7 @@ def build_runtime(
         "status": "degraded",
         "platform": platforms[system],
         "arch": platform.machine(),
-        "devices": _detect_devices(),
+        "devices": devices,
         "capabilities": capabilities,
         "limits": limits,
     }
