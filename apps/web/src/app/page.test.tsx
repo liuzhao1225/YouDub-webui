@@ -46,6 +46,7 @@ describe("v1 主工作台", () => {
     const input = await screen.findByLabelText("本地视频")
     expect(input).toHaveAttribute("accept", ".mp4,.mov")
     await user.upload(input, new File(["video"], "test.mp4", { type: "video/mp4" }))
+    await user.type(screen.getByLabelText("专名提示（可选）"), "YouDub")
     await user.selectOptions(screen.getByLabelText("输出内容"), "both")
     await user.click(screen.getByLabelText("保留背景音"))
     expect(screen.getByLabelText("音源分离模型")).toBeInTheDocument()
@@ -57,7 +58,7 @@ describe("v1 主工作台", () => {
     const body = init?.body as FormData
     expect(body.get("id")).toMatch(/^[0-9a-f-]{36}$/)
     expect((body.get("file") as File).name).toBe("test.mp4")
-    expect(JSON.parse(await readBlob(body.get("config") as Blob))).toEqual(testConfig)
+    expect(JSON.parse(await readBlob(body.get("config") as Blob))).toEqual({ ...testConfig, asr: { ...testConfig.asr, initial_prompt: "YouDub" } })
   })
 
   it("上传连接断开后查询和显式重新上传均保留同一个 ID", async () => {
@@ -91,11 +92,12 @@ describe("v1 主工作台", () => {
     mocks.fetch.mockImplementation(async (input, init) => init?.method === "PATCH" ? jsonResponse(testSettings()) : defaultResponse(input))
     mount()
     const user = userEvent.setup()
+    await user.type(await screen.findByLabelText("专名提示（可选）"), "Example brand")
     await user.click(await screen.findByRole("button", { name: "保存为默认配置" }))
     expect(await screen.findByRole("status")).toHaveTextContent("已有任务配置保持不变")
     const [path, init] = mocks.fetch.mock.calls.find(([, init]) => init?.method === "PATCH")!
     expect(path).toBe("/api/v1/settings")
-    expect(JSON.parse(String(init?.body))).toEqual({ defaults: testConfig })
+    expect(JSON.parse(String(init?.body))).toEqual({ defaults: { ...testConfig, asr: { ...testConfig.asr, initial_prompt: "Example brand" } } })
     expect(mocks.fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false)
   })
 

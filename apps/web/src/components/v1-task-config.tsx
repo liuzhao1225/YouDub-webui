@@ -1,6 +1,7 @@
 "use client"
 
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import type { Capability, ModelCapability, ModelSelection, Runtime, Settings, TaskConfig, TtsSelection } from "@/lib/v1-api"
 import { OUTPUT_LABELS, selectClass, useV1Text, type V1Text } from "@/lib/v1-ui"
 
@@ -27,12 +28,20 @@ function selectedModel(runtime: Runtime, kind: Kind, value: ModelSelection | nul
   return choices(runtime, kind).find((item) => selectionKey(item.value) === selectionKey(value))?.model
 }
 
-function firstTts(runtime: Runtime, target: string): TtsSelection {
-  const value = firstSelection(runtime, "tts")
+function prefersSourceClone(value: ModelSelection, model: ModelCapability | undefined) {
+  return value.adapter === "voxcpm" && value.model === "VoxCPM2" && model?.voice_modes.includes("source_clone")
+}
+
+function selectTts(runtime: Runtime, value: ModelSelection, target: string): TtsSelection {
   const model = selectedModel(runtime, "tts", value)
-  return { ...value, voice: model?.voice_modes.includes("preset")
+  return { ...value, voice: !prefersSourceClone(value, model) && model?.voice_modes.includes("preset")
     ? { mode: "preset", id: model.voices.find((item) => item.languages.includes(target))?.id ?? "" }
     : { mode: "source_clone" } }
+}
+
+function firstTts(runtime: Runtime, target: string): TtsSelection {
+  const preferred = choices(runtime, "tts").find((item) => prefersSourceClone(item.value, item.model) && item.model.target_languages.includes(target))
+  return selectTts(runtime, preferred?.value ?? firstSelection(runtime, "tts"), target)
 }
 
 function normalize(config: TaskConfig, runtime: Runtime): TaskConfig {
@@ -143,18 +152,19 @@ export function TaskConfigForm({ value, runtime, onChange }: {
       </select>
     </div>
     <div className="grid gap-4 sm:grid-cols-2">
-      <ModelField kind="asr" label={text("Speech recognition", "语音识别模型", "音声認識モデル")} value={value.asr} runtime={runtime} onChange={(asr) => change({ asr })} />
+      <ModelField kind="asr" label={text("Speech recognition", "语音识别模型", "音声認識モデル")} value={value.asr} runtime={runtime} onChange={(asr) => change({ asr: { ...value.asr, ...asr } })} />
       <ModelField kind="translation" label={text("Translation", "翻译模型", "翻訳モデル")} value={value.translation} runtime={runtime} onChange={(translation) => change({ translation })} />
       <LanguageField id="source-language" label={text("Source language", "原文语言", "入力言語")} value={value.source_language} options={sources} onChange={(source_language) => change({ source_language })} />
       <LanguageField id="target-language" label={text("Target language", "目标语言", "出力言語")} value={value.target_language} options={targets} onChange={(target_language) => change({ target_language })} />
     </div>
+    <div className="space-y-1.5">
+      <Label htmlFor="asr-initial-prompt">{text("Proper-name hint (optional)", "专名提示（可选）", "固有名詞のヒント（任意）")}</Label>
+      <Input id="asr-initial-prompt" maxLength={500} value={value.asr.initial_prompt ?? ""} aria-describedby="asr-initial-prompt-help"
+        onChange={(event) => change({ asr: { ...value.asr, initial_prompt: event.target.value || null } })} />
+      <p id="asr-initial-prompt-help" className="text-xs text-muted-foreground">{text("Add people or brand names to help speech recognition. Up to 500 characters.", "填写人名、品牌名，帮助语音识别。最多 500 字。", "人名やブランド名を入力すると音声認識の参考になります。500文字まで。")}</p>
+    </div>
     {value.output_mode !== "subtitles" && <div className="space-y-4 border-t pt-4">
-      <ModelField kind="tts" label={text("Voice model", "配音模型", "音声合成モデル")} value={value.tts} runtime={runtime} onChange={(selection) => {
-        const model = selectedModel(runtime, "tts", selection)
-        change({ tts: { ...selection, voice: model?.voice_modes.includes("preset")
-          ? { mode: "preset", id: model.voices.find((voice) => voice.languages.includes(value.target_language))?.id ?? "" }
-          : { mode: "source_clone" } } })
-      }} />
+      <ModelField kind="tts" label={text("Voice model", "配音模型", "音声合成モデル")} value={value.tts} runtime={runtime} onChange={(selection) => change({ tts: selectTts(runtime, selection, value.target_language) })} />
       {value.tts && <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5"><Label htmlFor="voice-mode">{text("Voice source", "声音方式", "声の選択方法")}</Label>
           <select id="voice-mode" className={selectClass} value={value.tts.voice.mode} onChange={(event) => change({ tts: { ...value.tts!, voice: event.target.value === "source_clone"

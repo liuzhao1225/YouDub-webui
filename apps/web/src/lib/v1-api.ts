@@ -36,6 +36,7 @@ export type ModelSelection = {
   device: "cpu" | `cuda:${number}` | "remote"
 }
 
+export type AsrSelection = ModelSelection & { initial_prompt?: string | null }
 export type VoiceSelection = { mode: "preset"; id: string } | { mode: "source_clone" }
 export type TtsSelection = ModelSelection & { voice: VoiceSelection }
 
@@ -44,7 +45,7 @@ export type TaskConfig = {
   target_language: string
   output_mode: OutputMode
   keep_background: boolean
-  asr: ModelSelection
+  asr: AsrSelection
   translation: ModelSelection
   tts: TtsSelection | null
   separation: ModelSelection | null
