@@ -10,7 +10,7 @@
   "source_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
   "model": "doubao-seed-evolving",
   "provider_host": "ark.cn-beijing.volces.com",
-  "history_policy": "此轮所有模型调用在新增 65,535 输出 token 下限规则之前完成；历史请求参数和原始响应保持原样。本记录不证明新上限的兼容性，后续请求须按新规则单独核对。",
+  "history_policy": "此轮调用在新增外部 LLM 接口输出 token 下限规则之前完成；历史请求参数和原始响应保持原样。后续外部 LLM 调用显式设置至少 65,535 的输出上限，兼容性另见 mvp-translation-output-limit-2026-09-22.json。2026-09-23 用户明确 Whisper ASR 与 VoxCPM2 TTS 不适用该规则。",
   "tasks": [
     {
       "mode": "subtitles",

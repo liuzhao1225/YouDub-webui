@@ -32,7 +32,7 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 - 在设置中保存 OpenAI 兼容的 base URL 与 API key。翻译模型候选默认 `gpt-4.1-mini`，可用 `YOUDUB_TRANSLATION_MODELS` 配置逗号分隔列表；已保存的默认模型也会保留。目录可选表示前置条件满足，实际模型名称与权限由调用验证。
 - 英语、中文、日语是当前字幕链的语言范围。自动检测到其他语言或源语言与目标相同时，翻译前明确失败。
 - 翻译逐批请求，每批最多 20 段、源文本合计最多 6000 个字符；原始单段超过字符限制时明确失败。供应商需支持 Chat Completions JSON object 响应；不自动重试、拆句或重排源时间轴。
-- v1 翻译请求显式固定 `max_completion_tokens=65535`，当前 TaskConfig 不提供可降低该值的参数。供应商拒绝该上限时，任务明确失败且不自动换参数重试。火山方舟 `doubao-seed-evolving` 已接受该参数并完成三句真实翻译，见[输出上限验证](../validation/mvp-translation-output-limit-2026-09-22.json)。
+- 外部 LLM 接口的输出上限至少为 65,535。v1 翻译请求显式固定 `max_completion_tokens=65535`，当前 TaskConfig 不提供可降低该值的参数。供应商拒绝该上限时，任务明确失败且不自动换参数重试。火山方舟 `doubao-seed-evolving` 已接受该参数并完成三句真实翻译，见[输出上限验证](../validation/mvp-translation-output-limit-2026-09-22.json)。Whisper ASR 和 VoxCPM2 TTS 沿用各自原生限制，不适用这条外部 LLM 参数规则。
 - 中文/日文字幕需要可用字体。macOS 默认 `Hiragino Sans GB`、Windows 默认 `Microsoft YaHei`、Linux 默认 `Noto Sans CJK SC`；Linux 需安装对应字体包，也可通过 `YOUDUB_SUBTITLE_FONT` 指定字体名。
 
 同步翻译在发出请求前持久化 pending。收到完整成功响应后标记 succeeded，再校验 JSON 与分段；明确拒绝标记 failed。超时、连接中断或等待期间取消保留 unknown 风险，禁止直接 retry。取消会关闭本机异步请求，远端是否继续执行由 `external_operation` 表达。
@@ -105,6 +105,6 @@ Windows、CUDA、长视频与多说话人场景尚未实机验收。2026-09-22 �
 
 正常启动另已核对：直接运行仓库 `.venv/bin/uvicorn backend.app.main:app`，应用自行读取 `.env`，前端使用 Node.js 22 的生产构建。通过 Next 同源代理，health、真实本机登录、session、Runtime、Settings 和任务列表全部返回 200，Runtime 为 ready，默认声音回读为 VoxCPM2 `source_clone`。该验证未替换配置函数、未导入测试认证、未创建模型任务；自启服务已停止。见[正常启动验收记录](../validation/mvp-standard-startup-2026-09-22.json)。
 
-完整三模式验收发生在用户新增“每次请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。
+完整三模式验收发生在用户新增“外部 LLM 接口请求显式输出上限至少 65,535”规则之前，历史请求参数及原始响应保持原样。随后单独验证 v1 文本翻译的 `max_completion_tokens=65535`，返回 HTTP 200、`finish_reason=stop`，三个 segment ID 完整；27 项翻译回归通过，SDK 序列化请求体的上限已核对。
 
-本机 Whisper tiny 的解码窗口为 448 tokens，VoxCPM2 配置 `max_length=8192`，无法满足将上述下限按字面应用于音频模型的要求。已停止新音频推理，等待用户明确该规则对音频模型的适用范围；没有降低上限或改写历史结果。Runtime 的 ready 表示本地依赖、权重与连接配置就绪，不构成音频模型支持 65,535 token 的证明。
+2026-09-23 用户澄清：65,535 指调用外部 LLM 接口时的输出参数，Whisper 和 VoxCPM2 不属于该规则的适用对象。此前将其扩展到音频模型并判断容量冲突是实现代理的误读，该阻塞已移除。音频模型参数保持原生行为；历史请求和原始响应不变。

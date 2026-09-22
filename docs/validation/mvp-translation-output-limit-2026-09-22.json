@@ -46,11 +46,11 @@
   "implementation_sha256": "85c64a5dc6aed87a71a46ec74fa693b138cf88ee937b1d5616a254d14b05cf03",
   "regression": "27 translation tests passed, including serialized SDK request bodies and no automatic retry.",
   "scope": "Only the real v1 translation stage was called using the prior three source sentences. ASR/TTS were not rerun.",
-  "output_limit_policy": "The v1 translation request fixes max_completion_tokens at 65535; TaskConfig does not expose a lower configurable output limit.",
+  "output_limit_policy": "The minimum output limit of 65535 applies only to external LLM API requests. The v1 translation request fixes max_completion_tokens at 65535; TaskConfig does not expose a lower configurable output limit. Whisper ASR and VoxCPM2 TTS retain their native limits.",
   "audio_compatibility": {
-    "status": "awaiting_user_scope_clarification",
+    "status": "not_applicable_to_external_llm_limit",
     "whisper_tiny_n_text_ctx": 448,
     "voxcpm2_max_length": 8192,
-    "conclusion": "Installed audio models cannot meet the literal 65535 output-token lower bound. No new audio inference after that rule."
+    "conclusion": "The user clarified on 2026-09-23 that this rule concerns external LLM API output parameters. Applying it to Whisper/VoxCPM2 was an agent interpretation error; audio-model capacity is not a blocker under the clarified scope. Historical request parameters and raw responses remain unchanged."
   }
 }
