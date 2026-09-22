@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import soundfile as sf
 
 from backend.app.v1 import export, media
 from backend.app.v1.contracts import ErrorEnvelope, TaskConfig
@@ -100,12 +101,11 @@ def test_cue_past_video_end_fails_instead_of_silently_truncating_tail(context):
 
 
 @pytest.mark.parametrize("mode", ["dubbing", "both"])
-def test_unconnected_dubbing_export_is_explicit(context, mode):
+def test_dubbing_requires_mix_artifacts(context, mode):
     context = replace(context, config=context.config.model_copy(update={"output_mode": mode}))
     with pytest.raises(ApiError) as error:
         export.run(context, lambda value, message: None)
-    assert error.value.status_code == 503
-    assert error.value.content["error"]["code"] == "MODEL_NOT_READY"
+    assert error.value.content["error"]["code"] == "INPUT_MISSING"
 
 
 @pytest.mark.parametrize("returncode,code", [(1, "INTERNAL_ERROR"), (0, "STAGE_OUTPUT_MISSING")])
@@ -152,6 +152,106 @@ def test_font_family_is_platform_specific_and_configurable(monkeypatch, system, 
     assert export._font("zh") == font
     monkeypatch.setenv("YOUDUB_SUBTITLE_FONT", "A Custom Font")
     assert export._font("zh") == "A Custom Font"
+
+
+def add_dubbing(context: StageContext, mode: str) -> StageContext:
+    audio = np.zeros((48000, 2))
+    for start, end, frequency in ((0, 320, 660), (720, 980, 880)):
+        tone = 0.2 * np.sin(2 * np.pi * frequency * np.arange((end - start) * 48) / 48000)
+        audio[start * 48:end * 48] = tone[:, None]
+    context.input_files["mixed_audio"] = context.work_dir / "mixed.wav"
+    sf.write(context.input_files["mixed_audio"], audio, 48000, subtype="PCM_16")
+    context.input_files["alignment"] = context.work_dir / "alignment.json"
+    context.input_files["alignment"].write_text(json.dumps({"segments": [
+        {"segment_id": "first", "source_start_ms": 0, "source_end_ms": 400,
+         "dubbed_start_ms": 0, "dubbed_end_ms": 320},
+        {"segment_id": "last", "source_start_ms": 650, "source_end_ms": 1000,
+         "dubbed_start_ms": 720, "dubbed_end_ms": 980},
+    ]}))
+    return replace(context, config=context.config.model_copy(update={"output_mode": mode}))
+
+
+@pytest.mark.parametrize("mode", ["dubbing", "both"])
+def test_dubbing_outputs_use_the_final_wav_and_separate_subtitle_timelines(monkeypatch, context, mode):
+    context = add_dubbing(context, mode)
+    commands = []
+
+    def render(command, **kwargs):
+        commands.append(command)
+        Path(command[-1]).write_bytes(b"rendered-video")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(media, "_run_media", render)
+    result = export.run(context, lambda value, message: None)
+    expected = {"video", "audio"} | ({"source_subtitles", "translated_subtitles"} if mode == "both" else set())
+    assert set(result.output_files) == expected
+    assert result.output_files["audio"].read_bytes() == context.input_files["mixed_audio"].read_bytes()
+    command = commands[0]
+    assert [command[index + 1] for index, value in enumerate(command) if value == "-map"] == ["0:v:0", "1:a:0"]
+    assert str(result.output_files["audio"].resolve()) in command
+    if mode == "both":
+        assert "00:00:00,650 --> 00:00:01,000" in result.output_files["source_subtitles"].read_text()
+        translated = result.output_files["translated_subtitles"].read_text()
+        assert "00:00:00,000 --> 00:00:00,320\n  你好，世界！  " in translated
+        assert "00:00:00,720 --> 00:00:00,980\n结束了。" in translated
+        assert "-vf" in command
+    else:
+        assert "-vf" not in command
+        assert not (result.output_files["video"].parent / "translated.srt").exists()
+
+
+@pytest.mark.parametrize("bad_input", ["timeline", "audio_length"])
+def test_dubbing_rejects_inconsistent_timeline_or_audio(context, bad_input):
+    context = add_dubbing(context, "both")
+    if bad_input == "timeline":
+        path = context.input_files["alignment"]
+        payload = json.loads(path.read_text())
+        payload["segments"][0]["source_end_ms"] = 401
+        path.write_text(json.dumps(payload))
+    else:
+        sf.write(context.input_files["mixed_audio"], np.zeros((47000, 2)), 48000)
+    with pytest.raises(ApiError) as error:
+        export.run(context, lambda value, message: None)
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+
+
+@pytest.mark.parametrize("mode", ["dubbing", "both"])
+def test_real_dubbing_export_uses_downloadable_final_wav_as_video_audio(context, mode):
+    if not shutil.which(media.ffmpeg_binary()) or not shutil.which(media.ffprobe_binary()):
+        pytest.skip("Local ffmpeg and ffprobe are required for the real export check")
+    context = add_dubbing(context, mode)
+    source = context.input_files["video"]
+    subprocess.run([
+        media.ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-f", "lavfi", "-i", "color=c=black:s=320x180:r=25",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000", "-t", "1",
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(source),
+    ], check=True, capture_output=True)
+    result = export.run(context, lambda value, message: None)
+    assert result.output_files["audio"].read_bytes() == context.input_files["mixed_audio"].read_bytes()
+    decoded = subprocess.run([
+        media.ffmpeg_binary(), "-v", "error", "-i", str(result.output_files["video"]), "-map", "0:a:0",
+        "-ar", "48000", "-ac", "1", "-f", "f32le", "-",
+    ], check=True, capture_output=True).stdout
+    decoded_samples = np.frombuffer(decoded, dtype="<f4")
+    samples = decoded_samples[3840:13440]
+    expected, rate = sf.read(result.output_files["audio"], always_2d=True)
+    assert len(decoded_samples) >= len(expected)
+    assert np.corrcoef(decoded_samples[:len(expected)], expected[:, 0])[0, 1] > 0.95
+    assert np.corrcoef(samples, expected[3840:13440, 0])[0, 1] > 0.95
+    spectrum = np.abs(np.fft.rfft(samples))
+    frequency = np.fft.rfftfreq(len(samples), 1 / rate)[np.argmax(spectrum)]
+    assert frequency == pytest.approx(660, abs=2)
+    assert media.probe_duration(result.output_files["video"]) == pytest.approx(1000, abs=40)
+    frame = subprocess.run([
+        media.ffmpeg_binary(), "-v", "error", "-ss", "0.92", "-i", str(result.output_files["video"]),
+        "-frames:v", "1", "-pix_fmt", "gray", "-f", "rawvideo", "-",
+    ], check=True, capture_output=True).stdout
+    assert len(frame) == 320 * 180
+    if mode == "both":
+        assert sum(frame) > 200
+    else:
+        assert sum(frame) == 0
 
 
 def test_real_export_preserves_video_tail_and_first_audio_and_burns_tail_subtitle(context):

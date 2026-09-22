@@ -1,17 +1,21 @@
-"""Render subtitles on the original video and publish the two source-timed SRTs."""
+"""Export the selected subtitles, dubbing or combined media on the source video."""
 
 from __future__ import annotations
 
 import json
 import os
 import platform
+import shutil
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+import soundfile as sf
+
 from ..adapters.ffmpeg import _srt_time, subtitle_style_for_orientation
 from ..config import ffmpeg_binary
 from . import media
+from .audio_segments import read_alignment
 from .errors import ApiError
 from .segments import Segment, Transcript, Translation, read_transcript, read_translation
 from .steps import Completed, StageContext
@@ -70,8 +74,8 @@ def _font(language: str) -> str:
 
 
 def run(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:
-    if context.config.output_mode != "subtitles":
-        raise ApiError(503, "MODEL_NOT_READY", "Dubbing export has not been connected yet.", stage="export")
+    include_subtitles = context.config.output_mode in {"subtitles", "both"}
+    include_dubbing = context.config.output_mode in {"dubbing", "both"}
     context.check_cancel()
     video = _input_file(context, "video")
     info = _read_json(context, "media_info")
@@ -87,29 +91,57 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     output.mkdir(parents=True, exist_ok=True)
     source_srt, translated_srt = output / "source.srt", output / "translated.srt"
     final_video = output / "video.mp4"
-    orientation = "portrait" if info["height"] > info["width"] else "landscape"
-    style = subtitle_style_for_orientation(orientation, _font(context.config.target_language),
-                                          context.config.target_language)
-    progress(0.0, "Writing source-timed subtitles")
-    _write_srt(source_srt, rows, translated=False)
-    _write_srt(translated_srt, rows, translated=True)
-    progress(None, "Rendering translated subtitles")
+    outputs = {"video": final_video}
+    translated_rows = rows
+    progress(0.0, "Preparing output media")
+    if include_dubbing:
+        alignment = read_alignment(_input_file(context, "alignment"), transcript, info["duration_ms"])
+        aligned = alignment.match(transcript, info["duration_ms"])
+        mixed_audio = _input_file(context, "mixed_audio")
+        try:
+            audio_info = sf.info(mixed_audio)
+        except (OSError, RuntimeError) as exc:
+            raise _invalid("The mixed WAV file could not be read.") from exc
+        if (audio_info.format not in {"WAV", "WAVEX"}
+                or audio_info.frames != round(info["duration_ms"] * audio_info.samplerate / 1000)):
+            raise _invalid("The final WAV must cover exactly the source video duration.")
+        final_audio = output / "audio.wav"
+        shutil.copyfile(mixed_audio, final_audio)
+        context.check_cancel()
+        outputs["audio"] = final_audio
+        translated_rows = [(segment.model_copy(update={
+            "start_ms": aligned[segment.id].dubbed_start_ms, "end_ms": aligned[segment.id].dubbed_end_ms,
+        }), text) for segment, text in rows]
+    if include_subtitles:
+        _write_srt(source_srt, rows, translated=False)
+        _write_srt(translated_srt, translated_rows, translated=True)
+        outputs.update(source_subtitles=source_srt, translated_subtitles=translated_srt)
+    progress(None, "Rendering output video")
     command = [
         ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-xerror",
-        "-i", str(video.resolve()), "-vf", f"subtitles=filename=translated.srt:force_style='{style}'",
-        "-map", "0:v:0", "-map", "0:a:0", "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-        "-c:a", "aac", "-movflags", "+faststart", str(final_video.resolve()),
+        "-i", str(video.resolve()),
     ]
+    if include_dubbing:
+        command.extend(["-i", str(outputs["audio"].resolve())])
+    if include_subtitles:
+        orientation = "portrait" if info["height"] > info["width"] else "landscape"
+        style = subtitle_style_for_orientation(orientation, _font(context.config.target_language),
+                                              context.config.target_language)
+        command.extend(["-vf", f"subtitles=filename=translated.srt:force_style='{style}'"])
+    command.extend([
+        "-map", "0:v:0", "-map", "1:a:0" if include_dubbing else "0:a:0", "-c:v", "libx264",
+        "-preset", "fast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-movflags", "+faststart",
+        str(final_video.resolve()),
+    ])
     try:
         result = media._run_media(command, check_cancel=context.check_cancel, cwd=output.resolve())
     except FileNotFoundError as exc:
         raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffmpeg is unavailable.", stage="export") from exc
     if result.returncode != 0:
-        raise ApiError(500, "INTERNAL_ERROR", f"FFmpeg subtitle export failed (exit {result.returncode}).",
+        raise ApiError(500, "INTERNAL_ERROR", f"FFmpeg video export failed (exit {result.returncode}).",
                        stage="export", action="retry")
     if not final_video.is_file() or final_video.stat().st_size == 0:
-        raise ApiError(500, "STAGE_OUTPUT_MISSING", "The subtitled video was not produced.",
+        raise ApiError(500, "STAGE_OUTPUT_MISSING", "The output video was not produced.",
                        stage="export", action="retry")
-    progress(1.0, "Subtitle video and both SRT files are ready")
-    return Completed(output_files={"video": final_video, "source_subtitles": source_srt,
-                                   "translated_subtitles": translated_srt})
+    progress(1.0, "Output media is ready")
+    return Completed(output_files=outputs)
