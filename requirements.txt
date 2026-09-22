@@ -15,6 +15,7 @@ openunmix
 openai-whisper
 spacy
 voxcpm==2.0.3
+transformers>=5.17,<6
 soundfile
 pydub
 librosa

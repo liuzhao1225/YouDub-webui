@@ -112,6 +112,25 @@ def test_clone_and_background_require_separation(config):
         TaskConfig.model_validate(config)
 
 
+def test_optional_subtitle_alignment_preserves_existing_configs(config):
+    assert TaskConfig.model_validate(config).subtitle_alignment is None
+    assert TaskConfig.model_validate(config | {"subtitle_alignment": None}).subtitle_alignment is None
+
+
+@pytest.mark.parametrize("mode", ["subtitles", "dubbing", "both"])
+def test_subtitle_alignment_requires_complete_dubbed_audio_and_subtitle_output(config, mode):
+    config.update(output_mode=mode, subtitle_alignment={
+        "adapter": "qwen_forced_aligner", "model": "Qwen3-ForcedAligner-0.6B-hf", "device": "cpu",
+    })
+    if mode != "subtitles":
+        config["tts"] = {"adapter": "test", "model": "voice", "device": "cpu", "voice": {"mode": "preset", "id": "voice"}}
+    if mode == "both":
+        assert TaskConfig.model_validate(config).subtitle_alignment.adapter == "qwen_forced_aligner"
+    else:
+        with pytest.raises(ValidationError, match="subtitle_alignment requires both"):
+            TaskConfig.model_validate(config)
+
+
 @pytest.mark.parametrize(
     "payload",
     [

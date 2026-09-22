@@ -180,6 +180,29 @@ def _demucs_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     return models, None if models else "未找到非空的本地 htdemucs 权重。"
 
 
+def _subtitle_alignment_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
+    dependencies = ("transformers", "torch", "numpy", "soundfile", "librosa", "packaging")
+    missing = [name for name in dependencies if importlib.util.find_spec(name) is None]
+    if missing:
+        return [], f"本地 Qwen 字幕对齐缺少运行依赖：{', '.join(missing)}。"
+    from packaging.version import InvalidVersion, Version
+    try:
+        version = Version(importlib.metadata.version("transformers"))
+        supported = Version("5.17") <= version < Version("6")
+    except (importlib.metadata.PackageNotFoundError, InvalidVersion):
+        supported = False
+    if not supported:
+        return [], "本地 Qwen 字幕对齐需要 transformers>=5.17,<6。"
+    from .forced_alignment import available_models
+
+    available_devices = [device["id"] for device in devices if device["available"]]
+    if not available_devices:
+        return [], "没有可执行 Qwen 字幕对齐的 CPU/CUDA 设备。"
+    models = [_model(name, available_devices.copy(), [], ["en", "zh"], max_audio_duration_ms=300_000)
+              for name in available_models()]
+    return models, None if models else "本地 Qwen3-ForcedAligner-0.6B-hf 权重或 tokenizer 资产不完整。"
+
+
 def build_runtime(
     instance_id: str | None = None,
     *,
@@ -199,6 +222,7 @@ def build_runtime(
         ("openai", "translation", "remote"),
         ("voxcpm", "tts", "local"),
         ("demucs", "separation", "local"),
+        ("qwen_forced_aligner", "subtitle_alignment", "local"),
     ):
         remote = execution == "remote"
         capabilities.append({
@@ -220,11 +244,13 @@ def build_runtime(
     translation_models, translation_reason = _translation_models(connections or [], translation_model)
     voxcpm_models, voxcpm_reason = _voxcpm_models(devices)
     demucs_models, demucs_reason = _demucs_models(devices)
+    alignment_models, alignment_reason = _subtitle_alignment_models(devices)
     for capability, models, reason in (
         (capabilities[0], whisper_models, whisper_reason),
         (capabilities[1], translation_models, translation_reason),
         (capabilities[2], voxcpm_models, voxcpm_reason),
         (capabilities[3], demucs_models, demucs_reason),
+        (capabilities[4], alignment_models, alignment_reason),
     ):
         capability.update(available=bool(models), unavailable_reason=reason, models=models)
 
@@ -240,7 +266,8 @@ def build_runtime(
         "api_version": "v1",
         "contract_version": CONTRACT_VERSION,
         "instance_id": instance_id or INSTANCE_ID,
-        "status": "ready" if all(item["available"] for item in capabilities) else "degraded",
+        "status": "ready" if all(item["available"] for item in capabilities
+                                  if item["capability"] != "subtitle_alignment") else "degraded",
         "platform": platforms[system],
         "arch": platform.machine(),
         "devices": devices,
@@ -268,8 +295,8 @@ def validate_config_capabilities(
         raise CapabilityError("INVALID_CONFIG", "Source and target languages must differ.", "target_language")
 
     available_devices = {device["id"] for device in runtime["devices"] if device["available"]}
-    for kind in ("asr", "translation", "tts", "separation"):
-        selection = config[kind]
+    for kind in ("asr", "translation", "tts", "separation", "subtitle_alignment"):
+        selection = config.get(kind)
         if selection is None:
             continue
         capability = next((item for item in runtime["capabilities"]
@@ -287,7 +314,7 @@ def validate_config_capabilities(
 
         if kind == "asr" or (kind == "translation" and source != "auto"):
             _require_language(source, model["source_languages"], "source_language")
-        if kind in {"translation", "tts"}:
+        if kind in {"translation", "tts", "subtitle_alignment"}:
             _require_language(target, model["target_languages"], "target_language")
         if kind == "tts":
             voice = selection["voice"]

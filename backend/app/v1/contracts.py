@@ -140,6 +140,7 @@ class TaskConfig(Contract):
     translation: ModelSelection
     tts: TtsSelection | None
     separation: ModelSelection | None
+    subtitle_alignment: ModelSelection | None = None
 
     @model_validator(mode="after")
     def validate_pipeline(self) -> Self:
@@ -147,6 +148,8 @@ class TaskConfig(Contract):
             raise ValueError("target_language cannot be auto")
         if self.source_language.casefold() == self.target_language.casefold():
             raise ValueError("source_language and target_language must differ")
+        if self.subtitle_alignment is not None and self.output_mode != "both":
+            raise ValueError("subtitle_alignment requires both mode")
         if self.output_mode == "subtitles":
             if self.tts is not None or self.separation is not None or self.keep_background:
                 raise ValueError("subtitles mode requires tts=null, separation=null and keep_background=false")
@@ -249,7 +252,7 @@ class RemoteOperations(Contract):
 
 class Capability(Contract):
     adapter: NonEmptyString
-    capability: Literal["separation", "asr", "translation", "tts"]
+    capability: Literal["separation", "asr", "translation", "tts", "subtitle_alignment"]
     execution: Literal["local", "remote"]
     available: bool
     unavailable_reason: str | None

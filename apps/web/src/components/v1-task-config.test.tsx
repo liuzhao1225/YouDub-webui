@@ -2,7 +2,7 @@ import { useState } from "react"
 import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { initialTaskConfig, TaskConfigForm } from "@/components/v1-task-config"
+import { configProblem, initialTaskConfig, TaskConfigForm } from "@/components/v1-task-config"
 import { LanguageProvider } from "@/lib/i18n"
 import type { Runtime, TaskConfig } from "@/lib/v1-api"
 import { testConfig, testRuntime, testSettings } from "@/lib/v1-test-fixtures"
@@ -11,6 +11,18 @@ function runtimeWithVoxCpm() {
   const runtime = testRuntime()
   const tts = runtime.capabilities.find((item) => item.capability === "tts")!
   runtime.capabilities.push({ ...tts, adapter: "voxcpm", models: [{ ...tts.models[0], id: "VoxCPM2" }] })
+  return runtime
+}
+
+const qwenSelection = { adapter: "qwen_forced_aligner", model: "Qwen3-ForcedAligner-0.6B-hf", device: "cpu" } as const
+
+function runtimeWithQwen() {
+  const runtime = testRuntime()
+  const base = runtime.capabilities.find((item) => item.capability === "separation")!
+  runtime.capabilities.push({ ...base, adapter: qwenSelection.adapter, capability: "subtitle_alignment", models: [{
+    ...base.models[0], id: qwenSelection.model, source_languages: [], target_languages: ["en", "zh"],
+    input_limits: { max_audio_duration_ms: 300000, max_text_chars: null, max_reference_duration_ms: null },
+  }] })
   return runtime
 }
 
@@ -27,6 +39,48 @@ function mount(runtime: Runtime, initial: TaskConfig = testConfig) {
 afterEach(() => { cleanup(); window.localStorage.clear() })
 
 describe("v1 任务配置", () => {
+  it("仅配音和字幕模式显示 Qwen 时间选择，退出该模式清除选择", async () => {
+    const runtime = runtimeWithQwen()
+    const onChange = mount(runtime)
+    const user = userEvent.setup()
+    expect(screen.queryByLabelText("字幕时间")).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText("输出内容"), "both")
+    expect(screen.getByLabelText("字幕时间")).toHaveValue("")
+    await user.selectOptions(screen.getByLabelText("字幕时间"), JSON.stringify(Object.values(qwenSelection)))
+    const config = onChange.mock.calls.at(-1)![0]
+    expect(config.subtitle_alignment).toEqual(qwenSelection)
+    expect(configProblem(config, runtime, testSettings(), (en, zh) => zh)).toBeNull()
+    await user.selectOptions(screen.getByLabelText("输出内容"), "subtitles")
+    expect(onChange.mock.calls.at(-1)![0]).toMatchObject({ tts: null, subtitle_alignment: null })
+    expect(screen.queryByLabelText("字幕时间")).not.toBeInTheDocument()
+  })
+
+  it("保存的字幕时间选择保持原值，目标语言不支持时显式提示", async () => {
+    const runtime = runtimeWithQwen()
+    const defaults: TaskConfig = { ...testConfig, output_mode: "both", subtitle_alignment: qwenSelection,
+      tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } } }
+    expect(initialTaskConfig(runtime, { ...testSettings(), defaults })).toEqual(defaults)
+    const onChange = mount(runtime, defaults)
+    expect(screen.getByLabelText("字幕时间")).toHaveValue(JSON.stringify(Object.values(qwenSelection)))
+    await userEvent.setup().selectOptions(screen.getByLabelText("目标语言"), "ja")
+    const config = onChange.mock.calls.at(-1)![0]
+    expect(config.subtitle_alignment).toEqual(qwenSelection)
+    expect(configProblem(config, runtime, testSettings(), (en, zh) => zh)).toContain("模型支持")
+  })
+
+  it("可选 Qwen 不可用时允许原配置，已选择 Qwen 时提示模型不可用", () => {
+    const runtime = runtimeWithQwen()
+    runtime.capabilities.at(-1)!.available = false
+    runtime.capabilities.at(-1)!.unavailable_reason = "未安装模型"
+    expect(configProblem(testConfig, runtime, testSettings(), (en, zh) => zh)).toBeNull()
+    const defaults: TaskConfig = { ...testConfig, output_mode: "both", subtitle_alignment: qwenSelection,
+      tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } } }
+    expect(configProblem(defaults, runtime, testSettings(), (en, zh) => zh)).toContain("可用模型")
+    mount(runtime, defaults)
+    expect(screen.getByRole("option", { name: "Qwen — 未安装模型" })).toBeDisabled()
+    expect(screen.getByLabelText("字幕时间")).toHaveValue(JSON.stringify(Object.values(qwenSelection)))
+  })
+
   it("专名提示默认留空，切换识别模型和输出后保留，允许清空", async () => {
     const runtime = testRuntime()
     runtime.capabilities[0].models.push({ ...runtime.capabilities[0].models[0], id: "second-asr" })

@@ -45,10 +45,11 @@ function firstTts(runtime: Runtime, target: string): TtsSelection {
 }
 
 function normalize(config: TaskConfig, runtime: Runtime): TaskConfig {
-  if (config.output_mode === "subtitles") return { ...config, keep_background: false, tts: null, separation: null }
+  if (config.output_mode === "subtitles") return { ...config, keep_background: false, tts: null, separation: null, subtitle_alignment: null }
   const tts = config.tts ?? firstTts(runtime, config.target_language)
   const needsSeparation = config.keep_background || tts.voice.mode === "source_clone"
-  return { ...config, tts, separation: needsSeparation ? config.separation ?? firstSelection(runtime, "separation") : null }
+  return { ...config, tts, separation: needsSeparation ? config.separation ?? firstSelection(runtime, "separation") : null,
+    subtitle_alignment: config.output_mode === "both" ? config.subtitle_alignment ?? null : null }
 }
 
 export function initialTaskConfig(runtime: Runtime, settings: Settings): TaskConfig {
@@ -62,12 +63,13 @@ export function initialTaskConfig(runtime: Runtime, settings: Settings): TaskCon
   const targets = translationModel?.target_languages.filter((item) => item !== source) ?? []
   return {
     source_language: source, target_language: targets.includes("zh") ? "zh" : targets[0] ?? "",
-    output_mode: "subtitles", keep_background: false, asr, translation, tts: null, separation: null,
+    output_mode: "subtitles", keep_background: false, asr, translation, tts: null, separation: null, subtitle_alignment: null,
   }
 }
 
 export function configProblem(config: TaskConfig, runtime: Runtime, settings: Settings, text: V1Text): string | null {
-  for (const kind of ["asr", "translation", "tts", "separation"] as const) {
+  if (config.subtitle_alignment && config.output_mode !== "both") return text("Subtitle alignment requires dubbing with subtitles.", "字幕对齐需要选择配音和字幕输出。", "字幕の位置合わせには吹き替えと字幕の出力が必要です。")
+  for (const kind of ["asr", "translation", "tts", "separation", "subtitle_alignment"] as const) {
     const selection = config[kind]
     if (!selection) continue
     const capability = runtime.capabilities.find((item) => item.adapter === selection.adapter && item.capability === kind)
@@ -81,11 +83,13 @@ export function configProblem(config: TaskConfig, runtime: Runtime, settings: Se
   const asr = selectedModel(runtime, "asr", config.asr)
   const translation = selectedModel(runtime, "translation", config.translation)
   const tts = selectedModel(runtime, "tts", config.tts)
+  const alignment = selectedModel(runtime, "subtitle_alignment", config.subtitle_alignment ?? null)
   if (!asr?.source_languages.includes(config.source_language)
     || (config.source_language !== "auto" && !translation?.source_languages.includes(config.source_language))
     || !translation?.target_languages.includes(config.target_language)
     || config.source_language === config.target_language
-    || (config.tts && !tts?.target_languages.includes(config.target_language))) {
+    || (config.tts && !tts?.target_languages.includes(config.target_language))
+    || (config.subtitle_alignment && !alignment?.target_languages.includes(config.target_language))) {
     return text("Choose different supported source and target languages.", "请选择模型支持且不同的原文与目标语言。", "モデルが対応する異なる入力言語と出力言語を選択してください。")
   }
   if (config.tts) {
@@ -142,6 +146,8 @@ export function TaskConfigForm({ value, runtime, onChange }: {
   const asr = selectedModel(runtime, "asr", value.asr)
   const translation = selectedModel(runtime, "translation", value.translation)
   const tts = selectedModel(runtime, "tts", value.tts)
+  const alignmentOptions = choices(runtime, "subtitle_alignment").filter((item) => item.model.target_languages.includes(value.target_language))
+  const alignmentKey = selectionKey(value.subtitle_alignment ?? null)
   const sources = asr?.source_languages.filter((item) => item === "auto" || translation?.source_languages.includes(item)) ?? []
   const targets = translation?.target_languages.filter((item) => item !== value.source_language && (!value.tts || tts?.target_languages.includes(item))) ?? []
   const change = (patch: Partial<TaskConfig>) => onChange(normalize({ ...value, ...patch }, runtime))
@@ -151,6 +157,25 @@ export function TaskConfigForm({ value, runtime, onChange }: {
         {Object.entries(OUTPUT_LABELS).map(([mode, label]) => <option key={mode} value={mode}>{text(...label)}</option>)}
       </select>
     </div>
+    {value.output_mode === "both" && <div className="space-y-1.5">
+      <Label htmlFor="subtitle-alignment">{text("Subtitle timing", "字幕时间", "字幕のタイミング")}</Label>
+      <select id="subtitle-alignment" className={selectClass} value={alignmentKey} onChange={(event) => {
+        const selection = alignmentOptions.find((item) => selectionKey(item.value) === event.target.value)
+        change({ subtitle_alignment: selection?.value ?? null })
+      }}>
+        <option value="">{text("Estimate by text length", "按字数估算", "文字数から推定")}</option>
+        {value.subtitle_alignment && !alignmentOptions.some((item) => selectionKey(item.value) === alignmentKey) && <option value={alignmentKey} disabled>
+          {value.subtitle_alignment.model} · {text("Unavailable", "不可用", "利用不可")}
+        </option>}
+        {alignmentOptions.map((item) => <option key={selectionKey(item.value)} value={selectionKey(item.value)}>
+          {item.value.model} · {item.value.device}
+        </option>)}
+        {runtime.capabilities.filter((item) => item.capability === "subtitle_alignment" && !item.available).map((item) => (
+          <option key={item.adapter} value={`unavailable-${item.adapter}`} disabled>Qwen — {item.unavailable_reason}</option>
+        ))}
+      </select>
+      <p className="text-xs text-muted-foreground">{text("Qwen aligns each subtitle to the generated speech while keeping full-utterance dubbing.", "Qwen 根据生成的配音对齐字幕，保持整句配音。", "Qwen は文全体の吹き替えを保ちながら、生成された音声に字幕を合わせます。")}</p>
+    </div>}
     <div className="grid gap-4 sm:grid-cols-2">
       <ModelField kind="asr" label={text("Speech recognition", "语音识别模型", "音声認識モデル")} value={value.asr} runtime={runtime} onChange={(asr) => change({ asr: { ...value.asr, ...asr } })} />
       <ModelField kind="translation" label={text("Translation", "翻译模型", "翻訳モデル")} value={value.translation} runtime={runtime} onChange={(translation) => change({ translation })} />

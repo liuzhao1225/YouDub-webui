@@ -2275,6 +2275,18 @@
                 "type": "null"
               }
             ]
+          },
+          "subtitle_alignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSelection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "可选译文字幕时间对齐，仅 both 模式可选择。缺省/null 按字数估算；qwen_forced_aligner 根据每条完整配音与译文生成时间。"
           }
         },
         "required": [
@@ -2373,6 +2385,28 @@
             "else": {
               "properties": {
                 "separation": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "output_mode": {
+                  "enum": [
+                    "subtitles",
+                    "dubbing"
+                  ]
+                }
+              },
+              "required": [
+                "output_mode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "subtitle_alignment": {
                   "type": "null"
                 }
               }
@@ -2751,7 +2785,8 @@
               "separation",
               "asr",
               "translation",
-              "tts"
+              "tts",
+              "subtitle_alignment"
             ]
           },
           "execution": {

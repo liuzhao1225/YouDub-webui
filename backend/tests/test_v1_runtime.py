@@ -52,7 +52,7 @@ def test_catalogue_does_not_advertise_legacy_models_or_load_them(monkeypatch):
     assert result["platform"] == "macos"
     assert result["arch"] == "arm64"
     assert [item["id"] for item in result["devices"]] == ["cpu"]
-    assert {item["adapter"] for item in result["capabilities"]} == {"whisper", "openai", "voxcpm", "demucs"}
+    assert {item["adapter"] for item in result["capabilities"]} == {"whisper", "openai", "voxcpm", "demucs", "qwen_forced_aligner"}
     assert all(not item["available"] and item["unavailable_reason"] and not item["models"]
                for item in result["capabilities"])
     assert result["instance_id"] == runtime.build_runtime()["instance_id"]
@@ -108,7 +108,7 @@ def test_real_catalogue_reads_local_metadata_and_remote_config_without_model_or_
     result = runtime.build_runtime(connections=installed_runtime)
     Runtime.model_validate(result)
     assert result["status"] == "degraded"  # TTS and separation have no assets in this fixture.
-    whisper, translation, tts, separation = result["capabilities"]
+    whisper, translation, tts, separation = result["capabilities"][:4]
     assert whisper["available"] and whisper["unavailable_reason"] is None
     assert [model["id"] for model in whisper["models"]] == ["tiny", "small.en"]
     assert whisper["models"][0]["source_languages"] == ["auto", "en", "zh", "ja"]
@@ -205,8 +205,8 @@ def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(a
     result = runtime.build_runtime(connections=all_model_assets)
     Runtime.model_validate(result)
     assert result["status"] == "ready"
-    assert all(item["available"] and item["unavailable_reason"] is None for item in result["capabilities"])
-    tts_capability, separation = result["capabilities"][2:]
+    assert all(item["available"] and item["unavailable_reason"] is None for item in result["capabilities"][:4])
+    tts_capability, separation = result["capabilities"][2:4]
     assert tts_capability["models"] == [{
         "id": "VoxCPM2", "devices": ["cpu", "cuda:0"], "source_languages": ["en", "zh", "ja"],
         "target_languages": ["en", "zh", "ja"], "voice_modes": ["source_clone"], "voices": [],
@@ -224,6 +224,8 @@ def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(a
 @pytest.mark.parametrize("version", ["1.5.0", "2.0.2", "2.0.3rc1", "not-a-version", None])
 def test_voxcpm_requires_distribution_version_with_explicit_device_support(all_model_assets, monkeypatch, version):
     def installed_version(name):
+        if name == "transformers":
+            return "5.16.0"
         assert name == "voxcpm"
         if version is None:
             raise runtime.importlib.metadata.PackageNotFoundError(name)
@@ -257,7 +259,7 @@ def test_local_capability_requires_its_runtime_dependencies(all_model_assets, mo
 def test_tts_and_separation_require_media_binaries(all_model_assets, monkeypatch, missing):
     monkeypatch.setattr(runtime.shutil, "which", lambda name: None if name == missing else f"/test/bin/{name}")
     result = runtime.build_runtime(connections=all_model_assets)
-    assert all(not item["available"] and "FFmpeg" in item["unavailable_reason"] for item in result["capabilities"][2:])
+    assert all(not item["available"] and "FFmpeg" in item["unavailable_reason"] for item in result["capabilities"][2:4])
 
 
 def test_demucs_uses_childs_vendored_source_path_without_importing_it(all_model_assets, monkeypatch):
@@ -390,3 +392,74 @@ def test_auto_requires_asr_support_and_defers_detected_language(config, catalogu
     with pytest.raises(runtime.CapabilityError) as error:
         runtime.validate_config_capabilities(resolved, catalogue)
     assert error.value.code == "UNSUPPORTED_LANGUAGE"
+
+
+def test_optional_qwen_missing_does_not_degrade_existing_runtime(all_model_assets):
+    result = runtime.build_runtime(connections=all_model_assets)
+    assert result["status"] == "ready"
+    qwen = result["capabilities"][-1]
+    assert qwen["capability"] == "subtitle_alignment" and not qwen["available"]
+
+
+def test_qwen_catalogue_uses_metadata_only_and_limits_each_dubbed_clip(all_model_assets, monkeypatch, tmp_path):
+    from backend.app.v1 import forced_alignment
+
+    monkeypatch.setattr(runtime.importlib.metadata, "version", lambda name: "5.17.0" if name == "transformers" else "2.0.3")
+    root = tmp_path / "qwen"
+    root.mkdir()
+    for name in ("config.json", "model.safetensors", "processor_config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja"):
+        (root / name).write_bytes(b"metadata fixture")
+    monkeypatch.setenv("YOUDUB_FORCED_ALIGNER_MODEL_DIR", str(root))
+    monkeypatch.setattr(forced_alignment, "align", lambda *args, **kwargs: pytest.fail("Runtime must not run alignment"))
+    result = runtime.build_runtime(connections=all_model_assets)
+    Runtime.model_validate(result)
+    qwen = result["capabilities"][-1]
+    assert qwen["available"] and qwen["execution"] == "local" and qwen["data_sent"] == []
+    assert qwen["models"] == [{
+        "id": "Qwen3-ForcedAligner-0.6B-hf", "devices": ["cpu", "cuda:0"], "source_languages": [],
+        "target_languages": ["en", "zh"], "voice_modes": [], "voices": [],
+        "input_limits": {"max_audio_duration_ms": 300000, "max_text_chars": None, "max_reference_duration_ms": None},
+    }]
+    (root / "model.safetensors").write_bytes(b"")
+    result = runtime.build_runtime(connections=all_model_assets)
+    assert not result["capabilities"][-1]["available"]
+    assert result["status"] == "ready"
+
+
+@pytest.mark.parametrize("version", ["5.16.0", "6.0.0", "5.17.0rc1", "bad", None])
+def test_qwen_requires_supported_transformers_without_importing_model(all_model_assets, monkeypatch, version):
+    def installed(name):
+        if name != "transformers":
+            return "2.0.3"
+        if version is None:
+            raise runtime.importlib.metadata.PackageNotFoundError(name)
+        return version
+    monkeypatch.setattr(runtime.importlib.metadata, "version", installed)
+    qwen = runtime.build_runtime(connections=all_model_assets)["capabilities"][-1]
+    assert not qwen["available"] and "transformers>=5.17,<6" in qwen["unavailable_reason"]
+
+
+def test_selected_qwen_validates_its_own_model_device_and_target_language(config, catalogue):
+    qwen = deepcopy(catalogue["capabilities"][3])
+    qwen.update(adapter="qwen_forced_aligner", capability="subtitle_alignment")
+    qwen["models"][0].update(id="Qwen3-ForcedAligner-0.6B-hf", source_languages=[], target_languages=["en", "zh"])
+    catalogue["capabilities"].append(qwen)
+    config.update(output_mode="both", tts={
+        "adapter": "voxcpm", "model": "test-voxcpm", "device": "cpu", "voice": {"mode": "source_clone"},
+    }, separation={"adapter": "demucs", "model": "test-demucs", "device": "cpu"}, subtitle_alignment={
+        "adapter": "qwen_forced_aligner", "model": "Qwen3-ForcedAligner-0.6B-hf", "device": "cpu",
+    })
+    runtime.validate_config_capabilities(config, catalogue)
+    for field, value in (("adapter", "unknown"), ("model", "unknown"), ("device", "remote")):
+        altered = deepcopy(config)
+        altered["subtitle_alignment"][field] = value
+        with pytest.raises(runtime.CapabilityError) as error:
+            runtime.validate_config_capabilities(altered, catalogue)
+        assert error.value.field == f"subtitle_alignment.{field}"
+    qwen["models"][0]["target_languages"] = ["en"]
+    with pytest.raises(runtime.CapabilityError) as error:
+        runtime.validate_config_capabilities(config, catalogue)
+    assert error.value.code == "UNSUPPORTED_LANGUAGE" and error.value.field == "target_language"
+    qwen.update(available=False, unavailable_reason="missing assets")
+    config["subtitle_alignment"] = None
+    runtime.validate_config_capabilities(config, catalogue)

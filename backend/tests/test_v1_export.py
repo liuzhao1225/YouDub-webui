@@ -259,6 +259,59 @@ def test_complete_utterance_produces_multiple_cues_inside_its_final_dubbed_span(
     assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
 
 
+def test_qwen_export_changes_only_translated_cue_times_and_preserves_final_audio(monkeypatch, context):
+    from backend.app.v1 import forced_alignment
+    from backend.app.v1.contracts import ModelSelection
+
+    context = add_dubbing(context, "both")
+    context = replace(context, config=context.config.model_copy(update={
+        "subtitle_alignment": ModelSelection(adapter="qwen_forced_aligner", model=forced_alignment.MODEL_NAME, device="cpu"),
+    }))
+    adjusted = context.work_dir / "adjusted"
+    adjusted.mkdir()
+    for index in (1, 2):
+        (adjusted / f"{index:04d}.wav").write_bytes(f"complete-adjusted-speech-{index}".encode())
+    original = {name: path.read_bytes() for name, path in context.input_files.items()}
+    commands = []
+
+    def infer_and_render(command, **kwargs):
+        commands.append(command)
+        if "--request-path" in command:
+            request = json.loads(Path(command[command.index("--request-path") + 1]).read_text())
+            assert [item["segment_id"] for item in request["clips"]] == ["first", "last"]
+            assert [item["text"].strip() for item in request["clips"]] == ["你好，世界！", "结束了。"]
+            assert [Path(item["audio_path"]) for item in request["clips"]] == [
+                (adjusted / "0001.wav").resolve(), (adjusted / "0002.wav").resolve(),
+            ]
+            Path(command[command.index("--output-path") + 1]).write_text(json.dumps({"clips": [
+                {"segment_id": "first", "words": [{"text": "你好世界", "start_time": 0.08, "end_time": 0.24}]},
+                {"segment_id": "last", "words": [{"text": "结束了", "start_time": 0.08, "end_time": 0.16}]},
+            ]}, ensure_ascii=False))
+        else:
+            Path(command[-1]).write_bytes(b"rendered-video")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(forced_alignment, "available_models", lambda: [forced_alignment.MODEL_NAME])
+    monkeypatch.setattr(media, "_run_media", infer_and_render)
+    result = export.run(context, lambda *args: None)
+
+    assert len(commands) == 2
+    assert result.output_files["translated_subtitles"].read_text() == (
+        "1\n00:00:00,080 --> 00:00:00,240\n你好，世界！\n\n"
+        "2\n00:00:00,800 --> 00:00:00,880\n结束了。\n"
+    )
+    assert result.output_files["source_subtitles"].read_text() == (
+        "1\n00:00:00,000 --> 00:00:00,200\nHello,\n\n"
+        "2\n00:00:00,200 --> 00:00:00,400\nworld!\n\n"
+        "3\n00:00:00,650 --> 00:00:01,000\nEnd of the clip.\n"
+    )
+    assert result.output_files["audio"].read_bytes() == original["mixed_audio"]
+    assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
+    render = commands[-1]
+    assert [render[index + 1] for index, value in enumerate(render) if value == "-map"] == ["0:v:0", "1:a:0"]
+    assert str(result.output_files["audio"].resolve()) in render
+
+
 @pytest.mark.parametrize("mode", ["dubbing", "both"])
 def test_real_dubbing_export_uses_downloadable_final_wav_as_video_audio(context, mode):
     if not shutil.which(media.ffmpeg_binary()) or not shutil.which(media.ffprobe_binary()):

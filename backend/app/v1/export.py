@@ -50,13 +50,16 @@ def _subtitle_rows(transcript: Transcript, translation: Translation, duration_ms
     return [(item, translations[item.id]) for item in transcript.segments]
 
 
-def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool) -> None:
+def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool,
+               aligned_cues: list[tuple[int, int, str]] | None = None) -> None:
     cues = []
-    for segment, translation in rows:
-        text = translation if translated else segment.text
-        for start, end, part in _display_cues(text, segment.start_ms, segment.end_ms):
-            display_text = " ".join(part.split())
-            cues.append(f"{len(cues) + 1}\n{_srt_time(start)} --> {_srt_time(end)}\n{display_text}\n")
+    display = aligned_cues if aligned_cues is not None else [
+        cue for segment, translation in rows
+        for cue in _display_cues(translation if translated else segment.text, segment.start_ms, segment.end_ms)
+    ]
+    for start, end, part in display:
+        display_text = " ".join(part.split())
+        cues.append(f"{len(cues) + 1}\n{_srt_time(start)} --> {_srt_time(end)}\n{display_text}\n")
     path.write_text("\n".join(cues), encoding="utf-8", newline="\n")
 
 
@@ -182,8 +185,12 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
             "start_ms": aligned[segment.id].dubbed_start_ms, "end_ms": aligned[segment.id].dubbed_end_ms,
         }), text) for segment, text in rows]
     if include_subtitles:
+        aligned_cues = None
+        if context.config.subtitle_alignment is not None:
+            from . import forced_alignment
+            aligned_cues = forced_alignment.align(context, translated_rows, _display_parts, progress)
         _write_srt(source_srt, rows, translated=False)
-        _write_srt(translated_srt, translated_rows, translated=True)
+        _write_srt(translated_srt, translated_rows, translated=True, aligned_cues=aligned_cues)
         outputs.update(source_subtitles=source_srt, translated_subtitles=translated_srt)
     progress(None, "Rendering output video")
     command = [

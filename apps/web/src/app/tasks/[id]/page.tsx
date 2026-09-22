@@ -115,6 +115,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-[140px_1fr]">
               <dt className="text-muted-foreground">{text("Languages", "语言", "言語")}</dt><dd>{task.config.source_language} → {task.config.target_language}</dd>
               <dt className="text-muted-foreground">{text("Output", "输出内容", "出力内容")}</dt><dd>{text(...OUTPUT_LABELS[task.config.output_mode])}</dd>
+              {task.config.output_mode === "both" && <><dt className="text-muted-foreground">{text("Subtitle timing", "字幕时间", "字幕のタイミング")}</dt><dd>{task.config.subtitle_alignment
+                ? `${task.config.subtitle_alignment.model} · ${task.config.subtitle_alignment.device}`
+                : text("Estimate by text length", "按字数估算", "文字数から推定")}</dd></>}
               <dt className="text-muted-foreground">{text("Background audio", "背景音", "背景音")}</dt><dd>{task.config.keep_background ? text("Keep", "保留", "保持") : text("Off", "不保留", "なし")}</dd>
               {(["asr", "translation", "tts", "separation"] as const).filter((kind) => task.config[kind]).map((kind) => <div key={kind} className="contents">
                 <dt className="text-muted-foreground">{text(...STAGE_LABELS[kind === "translation" ? "translate" : kind === "separation" ? "separate" : kind])}</dt>

@@ -49,6 +49,7 @@ export type TaskConfig = {
   translation: ModelSelection
   tts: TtsSelection | null
   separation: ModelSelection | null
+  subtitle_alignment?: ModelSelection | null
 }
 
 export type ResolvedConnection = { adapter: string; base_url: string }
@@ -100,7 +101,7 @@ export type RemoteOperations = {
 }
 export type Capability = {
   adapter: string
-  capability: "separation" | "asr" | "translation" | "tts"
+  capability: "separation" | "asr" | "translation" | "tts" | "subtitle_alignment"
   execution: "local" | "remote"
   available: boolean
   unavailable_reason: string | null
