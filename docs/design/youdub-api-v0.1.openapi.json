@@ -2251,7 +2251,7 @@
             "type": "boolean"
           },
           "asr": {
-            "$ref": "#/components/schemas/ModelSelection"
+            "$ref": "#/components/schemas/AsrSelection"
           },
           "translation": {
             "$ref": "#/components/schemas/ModelSelection"
@@ -3835,6 +3835,39 @@
           "config"
         ],
         "additionalProperties": false
+      },
+      "AsrSelection": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "device": {
+            "type": "string",
+            "pattern": "^(cpu|cuda:[0-9]+|remote)$"
+          },
+          "initial_prompt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "default": null,
+            "description": "可选的人名、品牌名等识别提示；仅影响模型识别，不直接替换转写文本。"
+          }
+        },
+        "required": [
+          "adapter",
+          "model",
+          "device"
+        ],
+        "additionalProperties": false,
+        "description": "ASR 模型及可选专名提示；提示随任务配置固定，不保证识别必然正确。"
       }
     },
     "responses": {

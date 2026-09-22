@@ -48,8 +48,95 @@ def _milliseconds(value: Any) -> int:
     raise _invalid("Whisper returned an invalid segment timestamp.")
 
 
+_MAX_SENTENCE_MS = 8000
+_SENTENCE_PUNCTUATION = frozenset(".。!！?？,，;；:：、…")
+_CLOSING_PUNCTUATION = "\"'”’)]}）】」』》"
+
+
+def _sentence_parts(raw: dict, *, start_ms: int, end_ms: int) -> list[dict]:
+    """Split on real word boundaries, retaining every source character.
+
+    Whisper attaches punctuation to words and may emit zero-duration words.
+    Keep those words with the preceding timed word (or the following one at
+    the start), so punctuation never becomes an empty-duration subtitle.
+    """
+    if "words" not in raw:
+        return [{"start_ms": start_ms, "end_ms": end_ms, "text": raw["text"]}]
+    words = raw["words"]
+    if not isinstance(words, list) or not words:
+        raise _invalid("Whisper returned an empty or invalid word timestamp list.")
+
+    timed_words = []
+    previous_end = raw["start"]
+    for word in words:
+        if not isinstance(word, dict) or not isinstance(word.get("word"), str) or not word["word"].strip():
+            raise _invalid("Whisper returned an empty or invalid word.")
+        word_start, word_end = _milliseconds(word.get("start")), _milliseconds(word.get("end"))
+        if (word["end"] < word["start"] or word["start"] < previous_end
+                or word["end"] > raw["end"]):
+            raise _invalid("Whisper returned inconsistent word timestamps.")
+        previous_end = word["end"]
+        timed_words.append({"start_ms": word_start, "end_ms": word_end, "text": word["word"]})
+
+    text = "".join(word["text"] for word in timed_words)
+    # Boundary whitespace can differ between token decoding and word alignment.
+    # Preserve it from the original segment; all actual words/punctuation must match.
+    if text.strip() != raw["text"].strip():
+        raise _invalid("Whisper word text does not match its speech segment.")
+    leading_space = raw["text"][:len(raw["text"]) - len(raw["text"].lstrip())]
+    trailing_space = raw["text"][len(raw["text"].rstrip()):]
+    timed_words[0]["text"] = leading_space + timed_words[0]["text"].lstrip()
+    timed_words[-1]["text"] = timed_words[-1]["text"].rstrip() + trailing_space
+
+    # Build indivisible units before choosing cuts. A zero-duration token after
+    # punctuation belongs to that same unit rather than opening the next subtitle.
+    units = []
+    leading = None
+    for word in timed_words:
+        if word["end_ms"] == word["start_ms"]:
+            if units:
+                units[-1]["text"] += word["text"]
+                units[-1]["end_ms"] = word["end_ms"]
+            elif leading is None:
+                leading = word.copy()
+            else:
+                leading["text"] += word["text"]
+            continue
+        unit = word.copy()
+        if leading is not None:
+            unit["text"] = leading["text"] + unit["text"]
+            unit["start_ms"] = leading["start_ms"]
+            leading = None
+        units.append(unit)
+    if not units:
+        raise _invalid("Whisper returned speech with no positive-duration words.")
+
+    parts = []
+    current = None
+    for unit in units:
+        if unit["end_ms"] - unit["start_ms"] > _MAX_SENTENCE_MS:
+            raise _invalid("A Whisper word exceeds the sentence duration limit and cannot be split safely.")
+        if current is not None and unit["end_ms"] - current["start_ms"] > _MAX_SENTENCE_MS:
+            parts.append(current)
+            current = None
+        if current is None:
+            current = unit.copy()
+        else:
+            current["text"] += unit["text"]
+            current["end_ms"] = unit["end_ms"]
+        tail = current["text"].rstrip().rstrip(_CLOSING_PUNCTUATION)
+        if tail and tail[-1] in _SENTENCE_PUNCTUATION and current["text"].strip():
+            parts.append(current)
+            current = None
+    if current is not None:
+        parts.append(current)
+    if any(not part["text"].strip() for part in parts):
+        raise _invalid("Whisper returned a word-timed sentence with no text.")
+    return parts
+
+
 def normalize_result(result: Any, *, duration_ms: int) -> dict:
-    """Assign stable IDs; keep text, order, speaker and source timing intact."""
+    """Assign stable sentence IDs using source words and their real timestamps."""
     if not isinstance(result, dict):
         raise _invalid("Whisper did not return a transcription object.")
     language = result.get("language")
@@ -59,20 +146,21 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
     if not isinstance(raw_segments, list) or not raw_segments:
         raise _invalid("Whisper did not return any speech segments.")
     segments = []
-    for index, raw in enumerate(raw_segments, start=1):
+    for raw in raw_segments:
         if not isinstance(raw, dict) or not isinstance(raw.get("text"), str) or not raw["text"].strip():
             raise _invalid("Whisper returned an empty or invalid speech segment.")
         start_ms, end_ms = _milliseconds(raw.get("start")), _milliseconds(raw.get("end"))
         if end_ms <= start_ms or end_ms > duration_ms:
             raise _invalid("Whisper returned a segment outside the source media timeline.")
-        segment = {"id": f"segment-{index:06d}", "start_ms": start_ms,
-                   "end_ms": end_ms, "text": raw["text"]}
         speaker = raw.get("speaker_id", raw.get("speaker"))
         if speaker is not None:
             if not isinstance(speaker, str) or not speaker.strip():
                 raise _invalid("Whisper returned an invalid speaker identifier.")
-            segment["speaker_id"] = speaker
-        segments.append(segment)
+        for part in _sentence_parts(raw, start_ms=start_ms, end_ms=end_ms):
+            segment = {"id": f"segment-{len(segments) + 1:06d}", **part}
+            if speaker is not None:
+                segment["speaker_id"] = speaker
+            segments.append(segment)
     return Transcript.model_validate({"detected_language": language, "segments": segments}).model_dump(
         mode="json", exclude_none=True,
     )
@@ -119,7 +207,8 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         [sys.executable, str(Path(__file__).with_name("asr_process.py")),
          "--model-path", str(checkpoint.resolve()), "--audio-path", str(audio.resolve()),
          "--output-path", str(raw_path.resolve()), "--device", selected.device,
-         "--language", context.config.source_language],
+         "--language", context.config.source_language,
+         *(["--initial-prompt", selected.initial_prompt] if selected.initial_prompt else [])],
         check_cancel=context.check_cancel,
     )
     if result.returncode != 0:

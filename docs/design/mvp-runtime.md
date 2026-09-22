@@ -27,6 +27,8 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 
 - 安装 `openai-whisper`、`torch` 和 `openai`。将 [Whisper 官方](https://github.com/openai/whisper)兼容的 `.pt` 权重放入数据目录的 `models/whisper/`，例如 `tiny.pt`；可通过 `YOUDUB_WHISPER_MODELS_DIR` 指定目录。Runtime 只读文件元数据，不下载或加载模型；权重实际加载失败时任务会明确报错。
 - 当前 Whisper 读取音频还要求 `ffmpeg` 位于 PATH；prepare/export 支持现有 `FFMPEG_PATH`、`FFPROBE_PATH` 配置。选择 `.en` 权重时仅支持英语输入。
+- `asr.initial_prompt` 可填写最多 500 字符的专名提示，随 Task 配置固定并传给 Whisper。未提供时保持模型默认行为；不会把本产品名称写成所有视频的默认提示。
+- 原始 ASR JSON 保持不变。处理用 transcript 根据逐词时间戳在标点及词边界分句，长句限制约 8 秒，译文、配音和字幕按这些句子对应。没有逐词时间戳时保留源分段；不完整或矛盾的词表明确失败。
 - 在设置中保存 OpenAI 兼容的 base URL 与 API key。翻译模型候选默认 `gpt-4.1-mini`，可用 `YOUDUB_TRANSLATION_MODELS` 配置逗号分隔列表；已保存的默认模型也会保留。目录可选表示前置条件满足，实际模型名称与权限由调用验证。
 - 英语、中文、日语是当前字幕链的语言范围。自动检测到其他语言或源语言与目标相同时，翻译前明确失败。
 - 翻译逐批请求，每批最多 20 段、源文本合计最多 6000 个字符；原始单段超过字符限制时明确失败。供应商需支持 Chat Completions JSON object 响应；不自动重试、拆句或重排源时间轴。

@@ -25,6 +25,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output-path", type=Path, required=True)
     parser.add_argument("--device", required=True)
     parser.add_argument("--language", required=True)
+    parser.add_argument("--initial-prompt")
     options = parser.parse_args(argv)
 
     # Passing an absolute file path is essential: Whisper downloads checkpoints
@@ -54,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
             fp16=options.device.startswith("cuda:"),
             word_timestamps=True,
             verbose=False,
+            **({"initial_prompt": options.initial_prompt} if options.initial_prompt else {}),
         )
         options.output_path.write_text(
             json.dumps(result, ensure_ascii=False, allow_nan=False, indent=2), encoding="utf-8",

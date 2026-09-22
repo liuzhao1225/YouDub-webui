@@ -57,8 +57,9 @@ prepare → separate → asr → translate → tts → mix → export
 
 ### 统一的数据约定
 
-- 时间统一为整数毫秒，区间为 [start_ms, end_ms)。源分段保留文本、顺序、时间戳和说话人；只归一化字段并补充稳定 ID。
-- 翻译通过 segment_id 对应原分段；TTS 返回实际音频时长；mix 单独生成配音时间轴。配音排程不覆盖原始 ASR 时间戳。
+- 时间统一为整数毫秒，区间为 [start_ms, end_ms)。原始 ASR 响应单独原样保存。2026-09-22 按用户反馈，处理用分段改为基于 ASR 逐词时间戳的句子/短句：按标点或真实词边界分段，保留字词顺序与说话人，不按字数比例编造时间；无逐词信息时保留源分段。
+- 翻译通过 segment_id 对应处理用句子；TTS 逐句返回实际音频时长；mix 单独生成配音时间轴。配音排程不覆盖原始 ASR 响应或源词时间戳。
+- `asr.initial_prompt` 是可选专名提示，最多 500 字符，随 Task 配置固定；适合填写人名、品牌名等。它用于引导识别，不直接替换识别结果。例如本次样例填写 `YouDub.` 后，Whisper tiny 直接识别出正确品牌名。
 - 桌面首版保持原视频画面时间轴，不加入广告裁剪或整体倍速。分段对齐的具体算法先复用并验证，再根据效果优化。
 
 独立 [YouDub Backend](https://github.com/liuzhao1225/youdub-backend) 的当前本地实现直接使用 ASR 原始 utterances；asr_fixed.json 是兼容文件名（pipeline_stages.py:433）。原 merge_audio / merge_video 包含服务端业务策略，桌面按本节输入输出选取可复用函数，不把整套服务端流水线直接接入。

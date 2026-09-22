@@ -111,6 +111,10 @@ class ModelSelection(Contract):
     device: Annotated[str, Field(pattern=r"^(cpu|cuda:[0-9]+|remote)$")]
 
 
+class AsrSelection(ModelSelection):
+    initial_prompt: Annotated[str, Field(max_length=500)] | None = None
+
+
 class PresetVoice(Contract):
     mode: Literal["preset"]
     id: NonEmptyString
@@ -132,7 +136,7 @@ class TaskConfig(Contract):
     target_language: Annotated[str, Field(pattern=r"^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$")]
     output_mode: OutputMode
     keep_background: bool
-    asr: ModelSelection
+    asr: AsrSelection
     translation: ModelSelection
     tts: TtsSelection | None
     separation: ModelSelection | None
