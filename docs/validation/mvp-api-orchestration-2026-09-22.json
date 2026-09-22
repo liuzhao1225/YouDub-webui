@@ -1,0 +1,240 @@
+{
+  "date": "2026-09-22",
+  "translation": "Explicit loopback HTTP fixture with manual translation; no real remote provider",
+  "real_stages": [
+    "prepare",
+    "separate",
+    "asr",
+    "tts",
+    "mix",
+    "export"
+  ],
+  "entrypoint": "Authenticated POST /api/v1/tasks and production shared worker",
+  "source_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+  "runtime_ready": true,
+  "provider_requests": [
+    {
+      "path": "/v1/chat/completions",
+      "model": "manual-translation-fixture",
+      "source_matches_fixture": true
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "manual-translation-fixture",
+      "source_matches_fixture": true
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "manual-translation-fixture",
+      "source_matches_fixture": true
+    }
+  ],
+  "code_commit": "2546d915b739541aa1bbc94a4b78b857ec2aeac1",
+  "platform": "macOS arm64",
+  "device": "cpu",
+  "models": {
+    "asr": "Whisper tiny",
+    "separation": "htdemucs",
+    "tts": "VoxCPM2 / voxcpm 2.0.3"
+  },
+  "tasks": [
+    {
+      "mode": "both",
+      "task_id": "61bbe8e5-7b2e-43f8-8dba-d5ac4e06b42f",
+      "status": "succeeded",
+      "attempt": 1,
+      "started_at": "2026-09-22T13:21:45.954Z",
+      "finished_at": "2026-09-22T13:22:43.360Z",
+      "completed_stages": [
+        "prepare",
+        "separate",
+        "asr",
+        "translate",
+        "tts",
+        "mix",
+        "export"
+      ],
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      },
+      "created_http_status": 201,
+      "head_http_status": 200,
+      "range_http_status": 206,
+      "input_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+      "files": {
+        "video": {
+          "bytes": 135211,
+          "sha256": "877fa81fabb036a50c7d6e05236a25ccdf6c3d8d6aa6249538cae9e8ae6cee0b",
+          "download_http_status": 200,
+          "duration_ms": 6880,
+          "timeline": "dubbed",
+          "full_decode_passed": true
+        },
+        "audio": {
+          "bytes": 1321004,
+          "sha256": "7734b22dfb410d74c1f75acbff5e1c57108fa4e9952ff59c92fb8d53bf970e5d",
+          "download_http_status": 200,
+          "duration_ms": 6880,
+          "timeline": "dubbed",
+          "full_decode_passed": true
+        },
+        "source_subtitles": {
+          "bytes": 148,
+          "sha256": "f32cc3a6a4f81bdea82eb933d9931aa87d75f4f5404acf4ac525235ea7d5c7ac",
+          "download_http_status": 200,
+          "duration_ms": null,
+          "timeline": "source"
+        },
+        "translated_subtitles": {
+          "bytes": 139,
+          "sha256": "d1d461f2dedeebadc821f04092c46363421d15505623aa28c217188234bde04f",
+          "download_http_status": 200,
+          "duration_ms": null,
+          "timeline": "dubbed"
+        }
+      },
+      "source_segments": [
+        {
+          "id": "segment-000001",
+          "start_ms": 0,
+          "end_ms": 6680,
+          "text": " Welcome to UDob, today we are testing video translation, the original voice and subtitle timing should stay clear."
+        }
+      ],
+      "alignment": [
+        {
+          "segment_id": "segment-000001",
+          "source_start_ms": 0,
+          "source_end_ms": 6680,
+          "dubbed_start_ms": 0,
+          "dubbed_end_ms": 6689
+        }
+      ]
+    },
+    {
+      "mode": "subtitles",
+      "task_id": "99b03f0f-9765-46fe-a9d7-2e45ab8724c0",
+      "status": "succeeded",
+      "attempt": 1,
+      "started_at": "2026-09-22T13:22:43.367Z",
+      "finished_at": "2026-09-22T13:22:46.581Z",
+      "completed_stages": [
+        "prepare",
+        "asr",
+        "translate",
+        "export"
+      ],
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      },
+      "created_http_status": 201,
+      "head_http_status": 200,
+      "range_http_status": 206,
+      "input_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+      "files": {
+        "video": {
+          "bytes": 86576,
+          "sha256": "b7e26c47f5344322a7b40e8ca64fce7ab70922cdc47070b117b6e852af5f0374",
+          "download_http_status": 200,
+          "duration_ms": 6919,
+          "timeline": "source",
+          "full_decode_passed": true
+        },
+        "source_subtitles": {
+          "bytes": 148,
+          "sha256": "6ca4a82182dc9d962a8cacdd439eaa4196f381cd72c71609b28d1986ca001741",
+          "download_http_status": 200,
+          "duration_ms": null,
+          "timeline": "source"
+        },
+        "translated_subtitles": {
+          "bytes": 139,
+          "sha256": "0666cdd4c89ca3ee5e08417e1b47b157bdadc6b86e5752c77d883feaff2fceea",
+          "download_http_status": 200,
+          "duration_ms": null,
+          "timeline": "source"
+        }
+      },
+      "source_segments": [
+        {
+          "id": "segment-000001",
+          "start_ms": 0,
+          "end_ms": 6700,
+          "text": " Welcome to UDob, today we are testing video translation, the original voice and subtitle timing should stay clear."
+        }
+      ]
+    },
+    {
+      "mode": "dubbing",
+      "task_id": "e93ac341-db42-4cc0-8a72-3fd5c7815a1f",
+      "status": "succeeded",
+      "attempt": 1,
+      "started_at": "2026-09-22T13:22:46.588Z",
+      "finished_at": "2026-09-22T13:23:47.656Z",
+      "completed_stages": [
+        "prepare",
+        "separate",
+        "asr",
+        "translate",
+        "tts",
+        "mix",
+        "export"
+      ],
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      },
+      "created_http_status": 201,
+      "head_http_status": 200,
+      "range_http_status": 206,
+      "input_sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+      "files": {
+        "video": {
+          "bytes": 125800,
+          "sha256": "80c50210b60c43822f4f53a560e5955548bda64ccbfadf1dc9c4f34937a9805b",
+          "download_http_status": 200,
+          "duration_ms": 6880,
+          "timeline": "dubbed",
+          "full_decode_passed": true
+        },
+        "audio": {
+          "bytes": 1321004,
+          "sha256": "2f9c41d0136275b61f0c8bf631083c5afaa8977b1efbf141c40d7019a25e38fa",
+          "download_http_status": 200,
+          "duration_ms": 6880,
+          "timeline": "dubbed",
+          "full_decode_passed": true
+        }
+      },
+      "source_segments": [
+        {
+          "id": "segment-000001",
+          "start_ms": 0,
+          "end_ms": 6700,
+          "text": " Welcome to UDob, today we are testing video translation, the original voice and subtitle timing should stay clear."
+        }
+      ],
+      "alignment": [
+        {
+          "segment_id": "segment-000001",
+          "source_start_ms": 0,
+          "source_end_ms": 6700,
+          "dubbed_start_ms": 0,
+          "dubbed_end_ms": 6706
+        }
+      ]
+    }
+  ],
+  "task_execution_intervals_do_not_overlap": true,
+  "all_outputs_downloaded_and_matched_disk": true,
+  "all_media_fully_decoded": true,
+  "temporary_test_credential_removed": true,
+  "pending": [
+    "Real remote translation",
+    "Complete task using a real remote translation provider",
+    "Human listening review",
+    "Windows machine validation"
+  ]
+}
