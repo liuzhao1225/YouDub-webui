@@ -77,8 +77,12 @@ def installed_runtime(monkeypatch, tmp_path):
     (models / "small.en.pt").write_bytes(b"metadata-only English checkpoint")
     (models / "large-v3.pt").touch()
     monkeypatch.setenv("YOUDUB_WHISPER_MODELS_DIR", str(models))
+    monkeypatch.setenv("YOUDUB_VOXCPM_MODEL_DIR", str(tmp_path / "VoxCPM2"))
+    monkeypatch.setenv("YOUDUB_DEMUCS_MODELS_DIR", str(tmp_path / "demucs"))
     monkeypatch.delenv("YOUDUB_TRANSLATION_MODELS", raising=False)
     monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(runtime.importlib.metadata, "version", lambda name: "2.0.3")
+    monkeypatch.setattr(runtime, "PathFinder", SimpleNamespace(find_spec=lambda name, path: object()))
     monkeypatch.setattr(runtime, "_detect_devices", lambda: [
         {"id": "cpu", "name": "CPU", "available": True, "unavailable_reason": None},
         {"id": "cuda:0", "name": "Test GPU", "available": True, "unavailable_reason": None},
@@ -103,7 +107,7 @@ def test_real_catalogue_reads_local_metadata_and_remote_config_without_model_or_
     monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=forbidden))
     result = runtime.build_runtime(connections=installed_runtime)
     Runtime.model_validate(result)
-    assert result["status"] == "degraded"  # TTS and separation remain unconnected.
+    assert result["status"] == "degraded"  # TTS and separation have no assets in this fixture.
     whisper, translation, tts, separation = result["capabilities"]
     assert whisper["available"] and whisper["unavailable_reason"] is None
     assert [model["id"] for model in whisper["models"]] == ["tiny", "small.en"]
@@ -171,6 +175,128 @@ def test_translation_is_unavailable_without_sdk_and_valid_public_connection(inst
     capability = runtime.build_runtime(connections=connections)["capabilities"][1]
     assert not capability["available"] and capability["unavailable_reason"] and capability["models"] == []
     assert "private-password" not in capability["unavailable_reason"]
+
+
+@pytest.fixture
+def all_model_assets(installed_runtime, tmp_path):
+    root = tmp_path / "VoxCPM2"
+    root.mkdir()
+    for name in ("config.json", "tokenizer_config.json", "tokenizer.json", "model.safetensors", "audiovae.safetensors"):
+        (root / name).write_bytes(b"metadata-only fixture asset")
+    root = tmp_path / "demucs"
+    root.mkdir()
+    (root / "955717e8-8726e21a.th").write_bytes(b"metadata-only fixture checkpoint")
+    return installed_runtime
+
+
+def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(all_model_assets, monkeypatch):
+    import socket
+
+    from backend.app.v1 import separate, tts
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Runtime must only read package and asset metadata")
+
+    monkeypatch.setattr(tts, "run", forbidden)
+    monkeypatch.setattr(separate, "run", forbidden)
+    monkeypatch.setattr(socket, "getaddrinfo", forbidden)
+    monkeypatch.setitem(sys.modules, "voxcpm", SimpleNamespace(VoxCPM=SimpleNamespace(from_pretrained=forbidden)))
+    monkeypatch.setitem(sys.modules, "demucs", SimpleNamespace(load_model=forbidden))
+    result = runtime.build_runtime(connections=all_model_assets)
+    Runtime.model_validate(result)
+    assert result["status"] == "ready"
+    assert all(item["available"] and item["unavailable_reason"] is None for item in result["capabilities"])
+    tts_capability, separation = result["capabilities"][2:]
+    assert tts_capability["models"] == [{
+        "id": "VoxCPM2", "devices": ["cpu", "cuda:0"], "source_languages": ["en", "zh", "ja"],
+        "target_languages": ["en", "zh", "ja"], "voice_modes": ["source_clone"], "voices": [],
+        "input_limits": {"max_audio_duration_ms": None, "max_text_chars": None, "max_reference_duration_ms": 10000},
+    }]
+    assert separation["models"] == [{
+        "id": "htdemucs", "devices": ["cpu", "cuda:0"], "source_languages": [], "target_languages": [],
+        "voice_modes": [], "voices": [],
+        "input_limits": {"max_audio_duration_ms": 600000, "max_text_chars": None, "max_reference_duration_ms": None},
+    }]
+    assert all(item["data_sent"] == [] and item["remote_operations"] is None and not item["requires_api_key"]
+               for item in (tts_capability, separation))
+
+
+@pytest.mark.parametrize("version", ["1.5.0", "2.0.2", "2.0.3rc1", "not-a-version", None])
+def test_voxcpm_requires_distribution_version_with_explicit_device_support(all_model_assets, monkeypatch, version):
+    def installed_version(name):
+        assert name == "voxcpm"
+        if version is None:
+            raise runtime.importlib.metadata.PackageNotFoundError(name)
+        return version
+
+    monkeypatch.setattr(runtime.importlib.metadata, "version", installed_version)
+    result = runtime.build_runtime(connections=all_model_assets)
+    capability = result["capabilities"][2]
+    assert not capability["available"] and capability["models"] == []
+    assert "voxcpm>=2.0.3" in capability["unavailable_reason"]
+    assert result["status"] == "degraded"
+    assert result["capabilities"][3]["available"]
+
+
+@pytest.mark.parametrize("missing,capability_index", [
+    ("voxcpm", 2), ("transformers", 2), ("librosa", 2), ("safetensors", 2), ("huggingface_hub", 2),
+    ("torch", 2), ("torchaudio", 2), ("soundfile", 2), ("numpy", 2),
+    ("torch", 3), ("torchaudio", 3), ("soundfile", 3), ("julius", 3), ("dora", 3),
+    ("omegaconf", 3), ("einops", 3), ("openunmix", 3),
+])
+def test_local_capability_requires_its_runtime_dependencies(all_model_assets, monkeypatch, missing, capability_index):
+    monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: None if name == missing else object())
+    result = runtime.build_runtime(connections=all_model_assets)
+    capability = result["capabilities"][capability_index]
+    assert not capability["available"] and capability["models"] == []
+    assert missing in capability["unavailable_reason"]
+    assert result["status"] == "degraded"
+
+
+@pytest.mark.parametrize("missing", ["ffmpeg", "ffprobe"])
+def test_tts_and_separation_require_media_binaries(all_model_assets, monkeypatch, missing):
+    monkeypatch.setattr(runtime.shutil, "which", lambda name: None if name == missing else f"/test/bin/{name}")
+    result = runtime.build_runtime(connections=all_model_assets)
+    assert all(not item["available"] and "FFmpeg" in item["unavailable_reason"] for item in result["capabilities"][2:])
+
+
+def test_demucs_uses_childs_vendored_source_path_without_importing_it(all_model_assets, monkeypatch):
+    calls = []
+
+    def locate(name, paths):
+        calls.append((name, paths))
+        return None
+
+    monkeypatch.setattr(runtime, "PathFinder", SimpleNamespace(find_spec=locate))
+    capability = runtime.build_runtime(connections=all_model_assets)["capabilities"][3]
+    assert not capability["available"] and "子模块" in capability["unavailable_reason"]
+    assert calls == [("demucs", [str(runtime.Path(runtime.__file__).resolve().parents[3] / "submodule" / "demucs")])]
+
+
+@pytest.mark.parametrize("relative_path,capability_index", [
+    ("VoxCPM2/tokenizer.json", 2), ("VoxCPM2/audiovae.safetensors", 2),
+    ("demucs/955717e8-8726e21a.th", 3),
+])
+def test_incomplete_local_assets_are_not_selectable(all_model_assets, tmp_path, relative_path, capability_index):
+    (tmp_path / relative_path).write_bytes(b"")
+    capability = runtime.build_runtime(connections=all_model_assets)["capabilities"][capability_index]
+    assert not capability["available"] and capability["unavailable_reason"] and capability["models"] == []
+
+
+def test_real_catalogue_accepts_source_clone_and_rejects_unregistered_presets(all_model_assets):
+    result = runtime.build_runtime(connections=all_model_assets)
+    config = {
+        "source_language": "auto", "target_language": "ja", "output_mode": "both", "keep_background": True,
+        "asr": {"adapter": "whisper", "model": "tiny", "device": "cpu"},
+        "translation": {"adapter": "openai", "model": "gpt-4.1-mini", "device": "remote"},
+        "tts": {"adapter": "voxcpm", "model": "VoxCPM2", "device": "cuda:0", "voice": {"mode": "source_clone"}},
+        "separation": {"adapter": "demucs", "model": "htdemucs", "device": "cpu"},
+    }
+    runtime.validate_config_capabilities(config, result, connections=all_model_assets)
+    config["tts"]["voice"] = {"mode": "preset", "id": "unregistered"}
+    with pytest.raises(runtime.CapabilityError) as error:
+        runtime.validate_config_capabilities(config, result, connections=all_model_assets)
+    assert error.value.code == "INVALID_CONFIG" and error.value.field == "tts.voice.mode"
 
 
 def test_runtime_limits_are_independent_and_invalid_configuration_is_visible(monkeypatch):

@@ -6,12 +6,15 @@ result mapping has been connected to the v1 worker.
 """
 from __future__ import annotations
 
+import importlib.metadata
 import importlib.util
 import os
 import platform
 import shutil
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
+from importlib.machinery import PathFinder
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -73,12 +76,13 @@ def _detect_devices() -> list[dict[str, Any]]:
 def _model(
     model_id: str, devices: list[str], source_languages: list[str], target_languages: list[str],
     *, max_audio_duration_ms: int | None = None, max_text_chars: int | None = None,
+    max_reference_duration_ms: int | None = None,
 ) -> dict[str, Any]:
     return {
         "id": model_id, "devices": devices, "source_languages": source_languages,
         "target_languages": target_languages, "voice_modes": [], "voices": [],
         "input_limits": {"max_audio_duration_ms": max_audio_duration_ms,
-                         "max_text_chars": max_text_chars, "max_reference_duration_ms": None},
+                         "max_text_chars": max_text_chars, "max_reference_duration_ms": max_reference_duration_ms},
     }
 
 
@@ -124,6 +128,58 @@ def _translation_models(
     return models, None if models else "未配置翻译模型；请设置 YOUDUB_TRANSLATION_MODELS。"
 
 
+def _voxcpm_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
+    dependencies = ("voxcpm", "torch", "torchaudio", "numpy", "soundfile", "transformers", "librosa",
+                    "einops", "huggingface_hub", "safetensors", "tqdm", "packaging")
+    missing = [name for name in dependencies if importlib.util.find_spec(name) is None]
+    if missing:
+        return [], f"本地 VoxCPM2 缺少运行依赖：{', '.join(missing)}。"
+    # Check installed distribution metadata, never import VoxCPM during a GET.
+    from packaging.version import InvalidVersion, Version
+    try:
+        supported = Version(importlib.metadata.version("voxcpm")) >= Version("2.0.3")
+    except (importlib.metadata.PackageNotFoundError, InvalidVersion):
+        supported = False
+    if not supported:
+        return [], "本地 VoxCPM2 需要 voxcpm>=2.0.3，以支持明确的 CPU/CUDA 设备选择。"
+    if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
+        return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
+    from .tts import MAX_REFERENCE_DURATION_MS, available_models
+
+    available_devices = [device["id"] for device in devices if device["available"]]
+    if not available_devices:
+        return [], "没有可执行 VoxCPM2 的 CPU/CUDA 设备。"
+    models = [_model(name, available_devices.copy(), list(LANGUAGES), list(LANGUAGES),
+                     max_reference_duration_ms=MAX_REFERENCE_DURATION_MS)
+              for name in available_models()]
+    for model in models:
+        model["voice_modes"] = ["source_clone"]
+    return models, None if models else "本地 VoxCPM2 权重或 tokenizer 资产不完整。"
+
+
+def _demucs_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
+    # The child selects this vendored module path, independently of site-packages.
+    source = Path(__file__).resolve().parents[3] / "submodule" / "demucs"
+    if PathFinder.find_spec("demucs", [str(source)]) is None:
+        return [], "缺少仓库中的 Demucs 子模块源码。"
+    dependencies = ("torch", "torchaudio", "numpy", "soundfile", "julius", "dora", "omegaconf",
+                    "einops", "openunmix", "tqdm")
+    missing = [name for name in dependencies if importlib.util.find_spec(name) is None]
+    if missing:
+        return [], f"本地 Demucs 缺少运行依赖：{', '.join(missing)}。"
+    if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
+        return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
+    from .separate import available_models
+
+    available_devices = [device["id"] for device in devices if device["available"]]
+    if not available_devices:
+        return [], "没有可执行 Demucs 的 CPU/CUDA 设备。"
+    models = [_model(name, available_devices.copy(), [], [],
+                     max_audio_duration_ms=RUNTIME_LIMITS["max_video_duration_ms"])
+              for name in available_models()]
+    return models, None if models else "未找到非空的本地 htdemucs 权重。"
+
+
 def build_runtime(
     instance_id: str | None = None,
     *,
@@ -162,9 +218,13 @@ def build_runtime(
 
     whisper_models, whisper_reason = _whisper_models(devices)
     translation_models, translation_reason = _translation_models(connections or [], translation_model)
+    voxcpm_models, voxcpm_reason = _voxcpm_models(devices)
+    demucs_models, demucs_reason = _demucs_models(devices)
     for capability, models, reason in (
         (capabilities[0], whisper_models, whisper_reason),
         (capabilities[1], translation_models, translation_reason),
+        (capabilities[2], voxcpm_models, voxcpm_reason),
+        (capabilities[3], demucs_models, demucs_reason),
     ):
         capability.update(available=bool(models), unavailable_reason=reason, models=models)
 
@@ -180,7 +240,7 @@ def build_runtime(
         "api_version": "v1",
         "contract_version": CONTRACT_VERSION,
         "instance_id": instance_id or INSTANCE_ID,
-        "status": "degraded",
+        "status": "ready" if all(item["available"] for item in capabilities) else "degraded",
         "platform": platforms[system],
         "arch": platform.machine(),
         "devices": devices,

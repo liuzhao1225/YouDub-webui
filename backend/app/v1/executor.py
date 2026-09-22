@@ -52,11 +52,20 @@ def execute_stage(context: StageContext, progress) -> StepResult:
     if context.stage == "asr":
         from .asr import run
         return run(context, progress)
+    if context.stage == "separate":
+        from .separate import run
+        return run(context, progress)
     if context.stage == "translate":
         from .translate import run
         return run(context, progress)
     if context.stage == "export":
         from .export import run
+        return run(context, progress)
+    if context.stage == "tts":
+        from .tts import run
+        return run(context, progress)
+    if context.stage == "mix":
+        from .mix import run
         return run(context, progress)
     raise ApiError(503, "MODEL_NOT_READY", f"The {context.stage} step has not been connected yet.", stage=context.stage)
 
