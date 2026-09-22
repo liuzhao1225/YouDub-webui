@@ -99,6 +99,18 @@ def _duration_ms(data: dict[str, Any], stream: dict[str, Any] | None = None) -> 
     return max(1, round(seconds * 1000))
 
 
+def _stream_start_ms(stream: dict[str, Any]) -> int:
+    if "start_time" not in stream:
+        return 0
+    try:
+        seconds = float(Fraction(str(stream["start_time"])))
+        if not math.isfinite(seconds):
+            raise ValueError("Non-finite start time")
+        return round(seconds * 1000)
+    except (ValueError, ZeroDivisionError, OverflowError) as exc:
+        raise _invalid("The first video or audio stream start time is invalid.") from exc
+
+
 def inspect_video(
     path: Path, limits: dict[str, Any], check_cancel: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
@@ -117,6 +129,9 @@ def inspect_video(
         raise _invalid("The input has no usable first video stream.")
     if audio is None:
         raise ApiError(422, "NO_AUDIO_TRACK", "The input video has no audio track.",
+                       field="file", stage="prepare", action="none")
+    if _stream_start_ms(video) != _stream_start_ms(audio):
+        raise ApiError(415, "UNSUPPORTED_MEDIA", "Different video and audio start times are not supported.",
                        field="file", stage="prepare", action="none")
     width, height = video.get("width"), video.get("height")
     frame_rate = _positive_number(video.get("avg_frame_rate")) or _positive_number(video.get("r_frame_rate"))

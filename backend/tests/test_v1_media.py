@@ -11,12 +11,14 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from fastapi import UploadFile
 
-from backend.app.v1 import media
+from backend.app.v1 import executor, imports, media, tasks
 from backend.app.v1.contracts import ErrorEnvelope, TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.runtime import RUNTIME_LIMITS
 from backend.app.v1.steps import StageCancelled, StageContext
+from backend.tests.test_v1_tasks import config, runtime, store  # shared isolated fixtures
 
 
 @pytest.fixture
@@ -67,6 +69,39 @@ def test_container_duration_and_nominal_frame_rate_when_stream_fields_are_unavai
     info = media.inspect_video(Path("source.mkv"), RUNTIME_LIMITS)
     assert info["duration_ms"] == 1050
     assert info["frame_rate"] == 25
+
+
+@pytest.mark.parametrize("video_start,audio_start", [
+    ("0", "0"), ("2.000", "2.000"), ("-1", "-1"),
+    ("0.0001", "0.0004"), ("1.2341", "1.2344"),
+])
+def test_matching_stream_starts_are_compared_at_millisecond_precision(monkeypatch, probe_data, video_start, audio_start):
+    probe_data["streams"][0]["start_time"] = video_start
+    probe_data["streams"][1]["start_time"] = audio_start
+    monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
+    assert media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)["duration_ms"] == 1001
+
+
+@pytest.mark.parametrize("video_start,audio_start", [("0", "1"), ("0", "0.001"), ("2", "1.999")])
+def test_different_stream_starts_are_unsupported(monkeypatch, probe_data, video_start, audio_start):
+    probe_data["streams"][0]["start_time"] = video_start
+    probe_data["streams"][1]["start_time"] = audio_start
+    monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
+    with pytest.raises(ApiError, match="Different video and audio start times") as error:
+        media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)
+    assert error.value.status_code == 415
+    assert ErrorEnvelope.model_validate(error.value.content).error.code == "UNSUPPORTED_MEDIA"
+
+
+@pytest.mark.parametrize("stream_index", [0, 1])
+@pytest.mark.parametrize("start", [None, "N/A", "NaN", "Infinity", "-Infinity", "invalid", "1e308"])
+def test_invalid_stream_start_is_invalid_media(monkeypatch, probe_data, stream_index, start):
+    probe_data["streams"][stream_index]["start_time"] = start
+    monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
+    with pytest.raises(ApiError, match="stream start time is invalid") as error:
+        media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)
+    assert error.value.status_code == 422
+    assert ErrorEnvelope.model_validate(error.value.content).error.code == "INVALID_MEDIA"
 
 
 @pytest.mark.parametrize("change,code,status", [
@@ -235,3 +270,54 @@ def test_real_video_probe_and_prepare_preserve_source_and_extract_asr_audio(tmp_
         assert any(audio.readframes(audio.getnframes()))
     assert 900 <= media.probe_duration(result.output_files["source_audio"]) <= 1100
     assert progress == [0.0, None, 1.0]
+
+
+@pytest.fixture
+def delayed_audio(tmp_path):
+    if not shutil.which(media.ffmpeg_binary()) or not shutil.which(media.ffprobe_binary()):
+        pytest.skip("Local ffmpeg and ffprobe are required for the real-media check")
+    source = tmp_path / "delayed-audio.mkv"
+    subprocess.run([
+        media.ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-f", "lavfi", "-i", "color=c=blue:s=320x180:r=25:d=3",
+        "-itsoffset", "1", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100:duration=2",
+        "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-c:a", "pcm_s16le", str(source),
+    ], check=True, capture_output=True, text=True)
+    streams = media._probe(source)["streams"]
+    assert [(stream["codec_type"], float(stream["start_time"])) for stream in streams] == [
+        ("video", 0), ("audio", 1),
+    ]
+    return source
+
+
+def test_real_delayed_audio_is_rejected_before_prepare_extracts_it(tmp_path, delayed_audio):
+    source = delayed_audio
+    source_hash = hashlib.sha256(source.read_bytes()).digest()
+    with pytest.raises(ApiError, match="Different video and audio start times") as error:
+        media.inspect_video(source, RUNTIME_LIMITS)
+    assert error.value.content["error"]["code"] == "UNSUPPORTED_MEDIA"
+
+    context = context_for(source, tmp_path / "prepare")
+    with pytest.raises(ApiError) as error:
+        media.prepare(context, lambda progress, message: None)
+    assert error.value.content["error"]["code"] == "UNSUPPORTED_MEDIA"
+    assert not context.work_dir.exists()
+    assert hashlib.sha256(source.read_bytes()).digest() == source_hash
+
+
+def test_created_delayed_audio_task_fails_during_prepare(store, config, runtime, delayed_audio):
+    task_id = "00000000-0000-0000-0000-000000000002"
+    with delayed_audio.open("rb") as handle:
+        created = imports.import_video(
+            store, task_id, UploadFile(filename=delayed_audio.name, file=handle),
+            config, {**runtime, "limits": RUNTIME_LIMITS},
+        )
+    assert created["status"] == "queued"
+    executor.run_task(store, task_id, media.prepare)
+    task = tasks.get_task(store, task_id)
+    assert task["status"] == "failed" and task["current_stage"] == "prepare"
+    assert task["error"]["code"] == "UNSUPPORTED_MEDIA"
+    assert task["error"]["field"] == "file"
+    assert "Different video and audio start times" in task["error"]["message"]
+    assert task["outputs"] == {}
