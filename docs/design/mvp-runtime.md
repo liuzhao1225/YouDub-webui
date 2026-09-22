@@ -12,10 +12,13 @@
 - v1 与原 WebUI 共用单线程 worker。一个 Task 持续占用执行位置，远端 waiting 保留查询 ID；重启时中断的本地步骤明确失败，已保存的远端等待继续查询。
 - `prepare` 已使用 FFprobe 检查媒体限制、FFmpeg 提取 16 kHz 单声道音频，原视频保留。ASR、翻译、配音、混音和导出仍待接入；测试适配器只存在于测试文件，Runtime 继续明确显示不可用。
 - cancel、retry、rerun、delete 已接入：取消确认本机进程退出；retry 保留原配置及连接快照，attempt 加一并从 prepare 开始；rerun 复制原视频并使用新配置；delete 拒绝活动任务、进行中的文件写入和下载。
+- 首页、设置及任务详情已切换到 v1：按 Runtime 选择配置，导入本地视频，查看阶段、错误、固定配置和产物。模型不可用时显示原因并禁用创建；任务动作按钮在下一界面增量接入。
 
 ## 本地运行
 
 沿用仓库 [README](../../README.md) 的环境配置和启动方式，更新依赖后运行 `npm run dev:api`。应用读取 `.env`；新增 `keyring>=25.6,<26` 依赖，用于[系统凭据存储](https://keyring.readthedocs.io/en/latest/)。
+
+Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg/FFprobe；当前 Runtime 不会把仅安装 Python 包视为完整模型能力。
 
 MVP 业务数据使用新目录中的 `desktop.sqlite`，保留旧 WebUI 数据库的原有语义。可以通过 `YOUDUB_DESKTOP_DATA_DIR` 指定独立目录；默认位置如下：
 
@@ -53,4 +56,8 @@ X-CSRF-Token: <session csrf token>
 
 动作接口验证包含重试幂等、复制输入、文件失败保留记录、下载期间拒绝删除，以及真实子进程取消后退出。远端 waiting 的取消只保证本机停止；已接受的远端请求遇到结果校验错误时仍保留 ID 和 unknown 风险，禁止直接 retry，rerun 需要 `acknowledge_external_risk=true`。
 
-当前尚未完成前端切换、真实模型三模式验收及 Windows 实机验收。Runtime 的输入限制分别在导入和 prepare 实施；实际模型链未接通前，公开接口会拒绝不可用的模型组合。
+浏览器使用独立测试数据库，样例名称明确标注 Mock；已核对登录、模型不可用提示、设置保存、列表/详情和视频首帧。经 Next 代理的实际下载、HEAD 和 Range 请求通过，下载文件与测试源 SHA-256 一致。内置浏览器在点击播放时页面崩溃，完整播放尚未验收。
+
+本轮后端全量回归通过 606 项，随后远端回执边界修正通过相关 37 项接口/动作检查。前端全量 26 项测试、TypeScript、ESLint 和 Next 生产构建通过；上传残留 ID 保留/清理和详情 404 清空有对应回归。
+
+当前尚未完成任务动作界面、真实模型三模式验收及 Windows 实机验收。Runtime 的输入限制分别在导入和 prepare 实施；实际模型链未接通前，公开接口会拒绝不可用的模型组合。

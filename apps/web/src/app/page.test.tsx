@@ -1,565 +1,150 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { afterEach, describe, expect, it, vi } from "vitest"
-
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import Home from "@/app/page"
 import { LanguageProvider } from "@/lib/i18n"
-import uploadContract from "@/lib/upload-contract.json"
+import { jsonResponse, readBlob, testConfig, testRuntime, testSettings, testTask } from "@/lib/v1-test-fixtures"
 
-const mocks = vi.hoisted(() => ({
-  fetch: vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(),
-  push: vi.fn(),
-}))
+const mocks = vi.hoisted(() => ({ fetch: vi.fn<typeof fetch>(), push: vi.fn() }))
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }))
+vi.mock("@/components/app-header", () => ({ AppHeader: () => null }))
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mocks.push }),
-}))
+function mount() { render(<LanguageProvider><Home /></LanguageProvider>) }
+function defaultResponse(input: RequestInfo | URL) {
+  const path = String(input)
+  if (path === "/api/v1/runtime") return jsonResponse(testRuntime())
+  if (path === "/api/v1/settings") return jsonResponse(testSettings())
+  if (path.startsWith("/api/v1/tasks?")) return jsonResponse({ items: [], limit: 20, offset: 0, has_more: false })
+  throw new Error(`Unexpected request: ${path}`)
+}
 
-vi.mock("@/components/app-header", () => ({
-  AppHeader: () => null,
-}))
-
-afterEach(() => {
-  cleanup()
-  window.localStorage.clear()
-  vi.unstubAllGlobals()
+beforeEach(() => {
+  mocks.fetch.mockReset(); mocks.push.mockReset()
+  mocks.fetch.mockImplementation(async (input) => defaultResponse(input))
+  vi.stubGlobal("fetch", mocks.fetch)
 })
+afterEach(() => { cleanup(); window.localStorage.clear(); vi.unstubAllGlobals() })
 
-describe("本地视频字幕选择", () => {
-  it("切换视频后清除旧字幕，提交时不携带上一视频的字幕", async () => {
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
-      const path = String(input)
-      if (path === "/api/tasks/upload") {
-        return new Response(JSON.stringify({ id: "task-b" }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      if (path.startsWith("/api/tasks")) {
-        return new Response(JSON.stringify({
-          tasks: [],
-          total: 0,
-          active_count: 0,
-          page: 1,
-          page_size: 20,
-        }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      throw new Error(`未预期的请求: ${path}`)
-    })
-    vi.stubGlobal("fetch", mocks.fetch)
-
+describe("v1 主工作台", () => {
+  it("真实能力不可用时显示原因并禁用创建", async () => {
+    const runtime = testRuntime()
+    runtime.capabilities[0].available = false
+    runtime.capabilities[0].unavailable_reason = "尚未安装识别模型"
+    mocks.fetch.mockImplementation(async (input) => String(input) === "/api/v1/runtime" ? jsonResponse(runtime) : defaultResponse(input))
+    mount()
     const user = userEvent.setup()
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
+    await user.upload(await screen.findByLabelText("本地视频"), new File(["video"], "test.mp4", { type: "video/mp4" }))
+    expect(screen.getByText(/尚未安装识别模型/, { selector: "span" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "创建任务" })).toBeDisabled()
+    expect(mocks.fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false)
+  })
 
-    const videoInput = screen.getByLabelText("本地视频文件") as HTMLInputElement
-    const subtitleInput = screen.getByLabelText("已翻译 SRT 字幕（可选）") as HTMLInputElement
-    expect(videoInput.accept).toBe(uploadContract.video_extensions.join(","))
-    expect(videoInput.accept).not.toContain("video/*")
-    expect(videoInput.accept).not.toContain(".3gp")
-    const videoA = new File(["video-a"], "video-a.mp4", { type: "video/mp4" })
-    const subtitleA = new File(["subtitle-a"], "subtitle-a.srt", { type: "application/x-subrip" })
-    const videoB = new File(["video-b"], "video-b.mp4", { type: "video/mp4" })
-
-    await user.upload(videoInput, videoA)
-    await user.upload(subtitleInput, subtitleA)
-
-    expect(screen.getByTestId("local-upload-selection")).toHaveTextContent("当前视频: video-a.mp4")
-    expect(screen.getByTestId("local-upload-selection")).toHaveTextContent("当前视频关联字幕: subtitle-a.srt")
-
-    await user.upload(videoInput, videoB)
-
-    expect(screen.getByTestId("local-upload-selection")).toHaveTextContent("当前视频: video-b.mp4")
-    expect(screen.getByTestId("local-upload-selection")).toHaveTextContent("当前视频关联字幕: 未选择")
-    expect(subtitleInput.files).toHaveLength(0)
-
-    await user.click(screen.getByLabelText("输出内容"))
-    await user.click(await screen.findByRole("option", { name: "配音（无硬字幕）" }))
+  it("按 Runtime 选择输出模式，字幕上传清除 TTS、分离和背景选项", async () => {
+    mocks.fetch.mockImplementation(async (input, init) => init?.method === "POST" ? jsonResponse(testTask(), 201) : defaultResponse(input))
+    mount()
+    const user = userEvent.setup()
+    const input = await screen.findByLabelText("本地视频")
+    expect(input).toHaveAttribute("accept", ".mp4,.mov")
+    await user.upload(input, new File(["video"], "test.mp4", { type: "video/mp4" }))
+    await user.selectOptions(screen.getByLabelText("输出内容"), "both")
+    await user.click(screen.getByLabelText("保留背景音"))
+    expect(screen.getByLabelText("音源分离模型")).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText("输出内容"), "subtitles")
+    expect(screen.queryByLabelText("配音模型")).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "创建任务" }))
-
-    await waitFor(() => {
-      expect(mocks.fetch).toHaveBeenCalledWith(
-        "/api/tasks/upload",
-        expect.objectContaining({ method: "POST" }),
-      )
-    })
-    const uploadCall = mocks.fetch.mock.calls.find(([input]) => String(input) === "/api/tasks/upload")
-    const form = uploadCall?.[1]?.body as FormData
-    expect((form.get("file") as File).name).toBe("video-b.mp4")
-    expect(form.has("subtitle_file")).toBe(false)
-    expect(form.get("output_mode")).toBe("dubbing")
-    expect(mocks.push).toHaveBeenCalledWith("/tasks/task-b")
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(`/tasks/${testTask().id}`))
+    const [, init] = mocks.fetch.mock.calls.find(([, init]) => init?.method === "POST")!
+    const body = init?.body as FormData
+    expect(body.get("id")).toMatch(/^[0-9a-f-]{36}$/)
+    expect((body.get("file") as File).name).toBe("test.mp4")
+    expect(JSON.parse(await readBlob(body.get("config") as Blob))).toEqual(testConfig)
   })
 
-  it("可选择日译中并以 ja-zh 方向提交本地视频", async () => {
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+  it("上传连接断开后查询和显式重新上传均保留同一个 ID", async () => {
+    let uploadCount = 0
+    const ids: string[] = []
+    mocks.fetch.mockImplementation(async (input, init) => {
       const path = String(input)
-      if (path === "/api/tasks/upload") {
-        return new Response(JSON.stringify({ id: "japanese-task" }), {
-          status: 201,
-          headers: { "Content-Type": "application/json" },
-        })
+      if (init?.method === "POST") {
+        ids.push(String((init.body as FormData).get("id")))
+        if (++uploadCount === 1) throw new TypeError("上传连接断开")
+        return jsonResponse(testTask({ id: ids[0] }), 201)
       }
-      if (path.startsWith("/api/tasks")) {
-        return new Response(JSON.stringify({
-          tasks: [],
-          total: 0,
-          active_count: 0,
-          page: 1,
-          page_size: 20,
-        }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      throw new Error(`未预期的请求: ${path}`)
+      if (path === `/api/v1/tasks/${ids[0]}`) return jsonResponse({ error: { code: "TASK_NOT_FOUND", message: "任务尚未入库", field: null, stage: null, action: "none" } }, 404)
+      return defaultResponse(input)
     })
-    vi.stubGlobal("fetch", mocks.fetch)
-
+    mount()
     const user = userEvent.setup()
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-
-    await user.upload(
-      screen.getByLabelText("本地视频文件"),
-      new File(["video"], "japanese.mp4", { type: "video/mp4" }),
-    )
-    await user.click(screen.getByLabelText("翻译方向"))
-    await user.click(await screen.findByRole("option", { name: "日文 -> 中文" }))
+    await user.upload(await screen.findByLabelText("本地视频"), new File(["video"], "test.mp4", { type: "video/mp4" }))
     await user.click(screen.getByRole("button", { name: "创建任务" }))
-
-    await waitFor(() => {
-      expect(mocks.fetch).toHaveBeenCalledWith(
-        "/api/tasks/upload",
-        expect.objectContaining({ method: "POST" }),
-      )
-    })
-    const uploadCall = mocks.fetch.mock.calls.find(([input]) => String(input) === "/api/tasks/upload")
-    const form = uploadCall?.[1]?.body as FormData
-    expect(form.get("direction")).toBe("ja-zh")
-    expect((form.get("file") as File).name).toBe("japanese.mp4")
-    expect(mocks.push).toHaveBeenCalledWith("/tasks/japanese-task")
+    expect(await screen.findByRole("alert")).toHaveTextContent("上传连接断开")
+    expect(screen.getByLabelText("本地视频")).toBeDisabled()
+    await user.click(screen.getByRole("button", { name: "查询原任务" }))
+    expect(await screen.findByRole("alert")).toHaveTextContent("任务尚未入库")
+    await user.click(screen.getByRole("button", { name: "使用同一 ID 重新上传" }))
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(`/tasks/${ids[0]}`))
+    expect(ids).toHaveLength(2)
+    expect(ids[1]).toBe(ids[0])
   })
-})
 
-describe("任务输出选择", () => {
-  it("URL 任务可选择保留原音的硬字幕输出", async () => {
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+  it("默认配置通过独立 Settings PATCH 保存，不创建任务", async () => {
+    mocks.fetch.mockImplementation(async (input, init) => init?.method === "PATCH" ? jsonResponse(testSettings()) : defaultResponse(input))
+    mount()
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole("button", { name: "保存为默认配置" }))
+    expect(await screen.findByRole("status")).toHaveTextContent("已有任务配置保持不变")
+    const [path, init] = mocks.fetch.mock.calls.find(([, init]) => init?.method === "PATCH")!
+    expect(path).toBe("/api/v1/settings")
+    expect(JSON.parse(String(init?.body))).toEqual({ defaults: testConfig })
+    expect(mocks.fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false)
+  })
+
+  it.each([
+    { code: "FILE_TOO_LARGE", status: 413, message: "文件超过服务端限制" },
+    { code: "IMPORT_RESIDUE", status: 409, message: "需要清理上传残留" },
+  ])("$code 保留失败 ID，允许修正文件并在显式清理后重新创建", async (failure) => {
+    const uploadedIds: string[] = []
+    mocks.fetch.mockImplementation(async (input, init) => {
+      if (init?.method === "POST") {
+        uploadedIds.push(String((init.body as FormData).get("id")))
+        if (uploadedIds.length === 1) return jsonResponse({ error: { code: failure.code, message: failure.message, field: "file", stage: null, action: "none" } }, failure.status)
+        return jsonResponse(testTask({ id: uploadedIds[1] }), 201)
+      }
+      if (init?.method === "DELETE") return new Response(null, { status: 204 })
+      return defaultResponse(input)
+    })
+    mount()
+    const user = userEvent.setup()
+    const fileInput = await screen.findByLabelText("本地视频")
+    await user.upload(fileInput, new File(["first"], "first.mp4", { type: "video/mp4" }))
+    await user.click(screen.getByRole("button", { name: "创建任务" }))
+    expect(await screen.findByRole("alert")).toHaveTextContent(failure.message)
+    expect(screen.getByText(uploadedIds[0])).toBeInTheDocument()
+    expect(fileInput).not.toBeDisabled()
+    await user.upload(fileInput, new File(["second"], "second.mp4", { type: "video/mp4" }))
+    expect(screen.getByRole("button", { name: "创建任务" })).toBeDisabled()
+    await user.click(screen.getByRole("button", { name: "清理本次失败上传" }))
+    expect(mocks.fetch.mock.calls.find(([, init]) => init?.method === "DELETE")![0]).toBe(`/api/v1/tasks/${uploadedIds[0]}`)
+    await user.click(screen.getByRole("button", { name: "创建任务" }))
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(`/tasks/${uploadedIds[1]}`))
+    expect(uploadedIds[1]).not.toBe(uploadedIds[0])
+  })
+
+  it("筛选切换后丢弃旧响应，使用 v1 active 和 offset 参数", async () => {
+    let resolveOld!: (response: Response) => void
+    const oldResponse = new Promise<Response>((resolve) => { resolveOld = resolve })
+    mocks.fetch.mockImplementation(async (input) => {
       const path = String(input)
-      if (path === "/api/tasks" && init?.method === "POST") {
-        return new Response(JSON.stringify({ id: "abcdefghijk-subtitles" }), {
-          status: 201,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      if (path.startsWith("/api/tasks")) {
-        return new Response(JSON.stringify({
-          tasks: [],
-          total: 0,
-          active_count: 0,
-          page: 1,
-          page_size: 20,
-        }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      throw new Error(`未预期的请求: ${path}`)
+      if (path === "/api/v1/tasks?limit=20&offset=0") return oldResponse
+      if (path === "/api/v1/tasks?limit=20&offset=0&active=true") return jsonResponse({ items: [testTask({ source_name: "新筛选.mp4" })], limit: 20, offset: 0, has_more: false })
+      return defaultResponse(input)
     })
-    vi.stubGlobal("fetch", mocks.fetch)
-
+    mount()
     const user = userEvent.setup()
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-
-    await user.type(
-      screen.getByLabelText("YouTube 链接（英文 -> 中文）"),
-      "https://www.youtube.com/watch?v=abcdefghijk",
-    )
-    await user.click(screen.getByLabelText("输出内容"))
-    await user.click(await screen.findByRole("option", { name: "硬字幕（保留原音）" }))
-    await user.click(screen.getByRole("button", { name: "创建任务" }))
-
-    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/tasks/abcdefghijk-subtitles"))
-    const createCall = mocks.fetch.mock.calls.find(
-      ([input, init]) => String(input) === "/api/tasks" && init?.method === "POST",
-    )
-    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
-      execution_mode: "auto",
-      output_mode: "subtitles",
-    })
-  })
-})
-
-describe("任务列表轮询", () => {
-  it("为同一视频的三种输出任务显示可区分的本地化标签", async () => {
-    const commonTask = {
-      url: "https://www.youtube.com/watch?v=samevideo01",
-      title: "同一个视频",
-      status: "succeeded",
-      current_stage: "done",
-      final_video_path: null,
-      error_message: null,
-      created_at: "2026-07-14T00:00:00Z",
-      started_at: "2026-07-14T00:00:01Z",
-      completed_at: "2026-07-14T00:01:00Z",
-      execution_mode: "auto",
-    }
-    mocks.fetch.mockResolvedValue(new Response(JSON.stringify({
-      tasks: [
-        { ...commonTask, id: "samevideo01-subtitles", output_mode: "subtitles" },
-        { ...commonTask, id: "samevideo01-dubbing", output_mode: "dubbing" },
-        { ...commonTask, id: "samevideo01", output_mode: "both" },
-      ],
-      total: 3,
-      active_count: 0,
-      page: 1,
-      page_size: 20,
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }))
-    vi.stubGlobal("fetch", mocks.fetch)
-
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-
-    expect(await screen.findByTestId("task-output-mode-samevideo01-subtitles"))
-      .toHaveTextContent("硬字幕（保留原音）")
-    expect(screen.getByTestId("task-output-mode-samevideo01-dubbing"))
-      .toHaveTextContent("配音（无硬字幕）")
-    expect(screen.getByTestId("task-output-mode-samevideo01"))
-      .toHaveTextContent("硬字幕和配音")
-  })
-
-  it("筛选变化后丢弃已取消请求的迟到响应", async () => {
-    let resolveOldRequest!: (response: Response) => void
-    const oldRequest = new Promise<Response>((resolve) => {
-      resolveOldRequest = resolve
-    })
-    let listRequestCount = 0
-
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
-      const path = String(input)
-      if (!path.startsWith("/api/tasks")) throw new Error(`未预期的请求: ${path}`)
-      listRequestCount += 1
-      if (listRequestCount === 1) return oldRequest
-      return new Response(JSON.stringify({
-        tasks: [{
-          id: "new-task",
-          url: "https://example.com/new",
-          title: "新列表任务",
-          status: "succeeded",
-          current_stage: "done",
-          final_video_path: null,
-          error_message: null,
-          created_at: "2026-07-14T00:00:00Z",
-          started_at: null,
-          completed_at: null,
-          execution_mode: "auto",
-        }],
-        total: 1,
-        active_count: 37,
-        page: 1,
-        page_size: 20,
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
-    })
-    vi.stubGlobal("fetch", mocks.fetch)
-
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1))
-    fireEvent.change(screen.getByPlaceholderText("搜索标题、链接或任务 ID"), {
-      target: { value: "new" },
-    })
-
-    expect(await screen.findByText("新列表任务")).toBeInTheDocument()
-    const oldSignal = mocks.fetch.mock.calls[0][1]?.signal
-    expect(oldSignal?.aborted).toBe(true)
-
-    await act(async () => {
-      resolveOldRequest(new Response(JSON.stringify({
-        tasks: [{
-          id: "old-task",
-          url: "https://example.com/old",
-          title: "迟到的旧任务",
-          status: "running",
-          current_stage: "download",
-          final_video_path: null,
-          error_message: null,
-          created_at: "2026-07-13T00:00:00Z",
-          started_at: null,
-          completed_at: null,
-          execution_mode: "auto",
-        }],
-        total: 1,
-        active_count: 2,
-        page: 1,
-        page_size: 20,
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }))
-      await Promise.resolve()
-    })
-
-    expect(screen.getByText("新列表任务")).toBeInTheDocument()
-    expect(screen.getByText("37 个任务正在排队或运行")).toBeInTheDocument()
-    expect(screen.queryByText("迟到的旧任务")).not.toBeInTheDocument()
-  })
-})
-
-describe("全局活跃任务数", () => {
-  it("切换到已完成筛选后仍显示超过单页容量的全局活跃数", async () => {
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = new URL(String(input), "http://localhost")
-      if (url.pathname !== "/api/tasks") throw new Error(`未预期的请求: ${url.pathname}`)
-      const succeededOnly = url.searchParams.get("status") === "succeeded"
-      return new Response(JSON.stringify({
-        tasks: succeededOnly ? [{
-          id: "completed-task",
-          url: "https://example.com/completed",
-          title: "已完成筛选结果",
-          status: "succeeded",
-          current_stage: "done",
-          final_video_path: null,
-          error_message: null,
-          created_at: "2026-07-14T00:00:00Z",
-          started_at: null,
-          completed_at: "2026-07-14T01:00:00Z",
-          execution_mode: "auto",
-        }] : [],
-        total: succeededOnly ? 1 : 0,
-        active_count: succeededOnly ? 37 : 0,
-        page: 1,
-        page_size: 20,
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
-    })
-    vi.stubGlobal("fetch", mocks.fetch)
-
-    const user = userEvent.setup()
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1))
-    await user.click(screen.getByLabelText("状态"))
-    await user.click(await screen.findByRole("option", { name: "已完成" }))
-
-    expect(await screen.findByText("已完成筛选结果")).toBeInTheDocument()
-    expect(screen.getByText("37 个任务正在排队或运行")).toBeInTheDocument()
-    expect(mocks.fetch.mock.calls.some(([input]) => (
-      new URL(String(input), "http://localhost").searchParams.get("status") === "succeeded"
-    ))).toBe(true)
-  })
-})
-
-describe("任务搜索校验错误", () => {
-  it("限制搜索长度，将错误数组显示为可读文本，并在恢复成功后清除错误", async () => {
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = new URL(String(input), "http://localhost")
-      if (url.pathname !== "/api/tasks") throw new Error(`未预期的请求: ${url.pathname}`)
-      const query = url.searchParams.get("q") || ""
-      if (query === "broken") {
-        return new Response(JSON.stringify({
-          detail: [{
-            type: "string_too_long",
-            loc: ["query", "q"],
-            msg: "搜索条件最多 200 个字符",
-            input: "不得显示的原始输入",
-          }],
-        }), {
-          status: 422,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      if (query === "malformed") {
-        return new Response(JSON.stringify({
-          detail: ["不得显示的数组裸字符串"],
-        }), {
-          status: 422,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      return new Response(JSON.stringify({
-        tasks: query === "fixed" ? [{
-          id: "recovered-task",
-          url: "https://example.com/recovered",
-          title: "恢复后的任务",
-          status: "succeeded",
-          current_stage: "done",
-          final_video_path: null,
-          error_message: null,
-          created_at: "2026-07-14T00:00:00Z",
-          started_at: null,
-          completed_at: "2026-07-14T01:00:00Z",
-          execution_mode: "auto",
-        }] : [],
-        total: query === "fixed" ? 1 : 0,
-        active_count: 0,
-        page: 1,
-        page_size: 20,
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
-    })
-    vi.stubGlobal("fetch", mocks.fetch)
-
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-
-    const search = screen.getByPlaceholderText("搜索标题、链接或任务 ID")
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1))
-
-    const oversizedQuery = "😀".repeat(201)
-    fireEvent.change(search, { target: { value: oversizedQuery } })
-    expect(search).toHaveValue("😀".repeat(200))
-    await waitFor(() => {
-      expect(mocks.fetch.mock.calls.some(([input]) => (
-        Array.from(new URL(String(input), "http://localhost").searchParams.get("q") || "").length === 200
-      ))).toBe(true)
-    })
-
-    fireEvent.change(search, { target: { value: "broken" } })
-
-    expect(await screen.findByText("搜索条件最多 200 个字符")).toBeInTheDocument()
-    expect(screen.queryByText("[object Object]")).not.toBeInTheDocument()
-    expect(document.body).not.toHaveTextContent("不得显示的原始输入")
-
-    fireEvent.change(search, { target: { value: "malformed" } })
-
-    expect(await screen.findByText("Request failed: 422")).toBeInTheDocument()
-    expect(document.body).not.toHaveTextContent("不得显示的数组裸字符串")
-
-    fireEvent.change(search, { target: { value: "fixed" } })
-
-    expect(await screen.findByText("恢复后的任务")).toBeInTheDocument()
-    await waitFor(() => {
-      expect(screen.queryByText("搜索条件最多 200 个字符")).not.toBeInTheDocument()
-    })
-  })
-
-  it("迟到的旧成功响应不能清除新查询错误", async () => {
-    let resolveOldRequest!: (response: Response) => void
-    const oldRequest = new Promise<Response>((resolve) => {
-      resolveOldRequest = resolve
-    })
-    let requestCount = 0
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = new URL(String(input), "http://localhost")
-      if (url.pathname !== "/api/tasks") throw new Error(`未预期的请求: ${url.pathname}`)
-      requestCount += 1
-      if (requestCount === 1) return oldRequest
-      return new Response(JSON.stringify({
-        detail: [{ msg: "当前查询仍然失败", input: "不得显示" }],
-      }), {
-        status: 422,
-        headers: { "Content-Type": "application/json" },
-      })
-    })
-    vi.stubGlobal("fetch", mocks.fetch)
-
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1))
-    fireEvent.change(screen.getByPlaceholderText("搜索标题、链接或任务 ID"), {
-      target: { value: "new-query" },
-    })
-    expect(await screen.findByText("当前查询仍然失败")).toBeInTheDocument()
-
-    await act(async () => {
-      resolveOldRequest(new Response(JSON.stringify({
-        tasks: [],
-        total: 0,
-        active_count: 0,
-        page: 1,
-        page_size: 20,
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }))
-      await Promise.resolve()
-    })
-
-    expect(screen.getByText("当前查询仍然失败")).toBeInTheDocument()
-  })
-
-  it("列表恢复成功不会清除创建任务错误", async () => {
-    mocks.fetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = new URL(String(input), "http://localhost")
-      const method = init?.method || "GET"
-      if (url.pathname === "/api/tasks" && method === "POST") {
-        return new Response(JSON.stringify({ detail: "创建任务失败" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      if (url.pathname === "/api/tasks" && method === "GET") {
-        return new Response(JSON.stringify({
-          tasks: [],
-          total: 0,
-          active_count: 0,
-          page: 1,
-          page_size: 20,
-        }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      }
-      throw new Error(`未预期的请求: ${method} ${url.pathname}`)
-    })
-    vi.stubGlobal("fetch", mocks.fetch)
-
-    const user = userEvent.setup()
-    render(
-      <LanguageProvider>
-        <Home />
-      </LanguageProvider>,
-    )
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(1))
-    await user.type(screen.getByLabelText(/YouTube 链接/), "https://www.youtube.com/watch?v=testvideo01")
-    await user.click(screen.getByRole("button", { name: "创建任务" }))
-    expect(await screen.findByText("创建任务失败")).toBeInTheDocument()
-
-    fireEvent.change(screen.getByPlaceholderText("搜索标题、链接或任务 ID"), {
-      target: { value: "refresh" },
-    })
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledTimes(3))
-
-    expect(screen.getByText("创建任务失败")).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText("任务状态"), "active")
+    expect(await screen.findByRole("link", { name: "新筛选.mp4" })).toBeInTheDocument()
+    await act(async () => resolveOld(jsonResponse({ items: [testTask({ source_name: "旧筛选.mp4" })], limit: 20, offset: 0, has_more: false })))
+    expect(screen.queryByRole("link", { name: "旧筛选.mp4" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "新筛选.mp4" })).toBeInTheDocument()
   })
 })

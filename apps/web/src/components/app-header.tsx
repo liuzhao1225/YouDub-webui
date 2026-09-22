@@ -5,11 +5,11 @@ import { useState } from "react"
 import { ArrowLeft, Loader2, LogOut } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { SettingsDialog } from "@/components/settings-dialog"
+import { V1SettingsDialog } from "@/components/v1-settings-dialog"
 import { useAuth } from "@/lib/auth"
 import { useI18n } from "@/lib/i18n"
 
-export function AppHeader({ backHref }: { backHref?: string }) {
+export function AppHeader({ backHref, onSettingsSaved }: { backHref?: string; onSettingsSaved?: () => void }) {
   const { t } = useI18n()
   const { logout } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
@@ -47,7 +47,7 @@ export function AppHeader({ backHref }: { backHref?: string }) {
         </Link>
       </div>
       <div className="flex items-center gap-2">
-        <SettingsDialog />
+        <V1SettingsDialog onSaved={onSettingsSaved} />
         <Button type="button" variant="outline" onClick={handleLogout} disabled={loggingOut}>
           {loggingOut ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
           {loggingOut ? t.auth.loggingOut : t.auth.logout}

@@ -2,635 +2,227 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChangeEvent, FormEvent, useCallback, useRef, useState } from "react"
-import { ChevronLeft, ChevronRight, Play, Search, Upload } from "lucide-react"
-
-import {
-  ExecutionMode,
-  LocalDirection,
-  OutputMode,
-  TaskListExecutionMode,
-  TaskListResponse,
-  TaskListSort,
-  TaskListStatus,
-  TaskSummary,
-  createTask,
-  isAbortError,
-  listTasks,
-  uploadLocalTask,
-} from "@/lib/api"
-import { useI18n } from "@/lib/i18n"
-import { statusBadgeClass } from "@/lib/status"
-import { SerialPollingContext, useSerialPolling } from "@/lib/use-serial-polling"
-import uploadContract from "@/lib/upload-contract.json"
+import { FormEvent, useCallback, useEffect, useState } from "react"
+import { ChevronLeft, ChevronRight, RefreshCw, Upload } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
-import { Badge } from "@/components/ui/badge"
+import { TaskConfigForm, configProblem, initialTaskConfig } from "@/components/v1-task-config"
+import { TaskStatusView } from "@/components/v1-task-status"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select"
+import { ApiError, isAbortError } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
+import { createTask, deleteTask, getRuntime, getSettings, getTask, listTasks, patchSettings, type Runtime, type Settings, type TaskConfig, type TaskList, type TaskStatus } from "@/lib/v1-api"
+import { STATUS_LABELS, formatBytes, selectClass, useV1Text } from "@/lib/v1-ui"
+import { useSerialPolling, type SerialPollingContext } from "@/lib/use-serial-polling"
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
-const TASK_SEARCH_MAX_LENGTH = 200
-const LOCAL_VIDEO_ACCEPT = uploadContract.video_extensions.join(",")
-
-function truncateSearchQuery(value: string) {
-  return Array.from(value).slice(0, TASK_SEARCH_MAX_LENGTH).join("")
-}
-
-function isActive(status: string) {
-  return status === "queued" || status === "running"
-}
-
-function isAwaitingAction(status: string) {
-  return status === "paused"
-}
-
-function formatTime(value: string | null) {
-  if (!value) return ""
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
-}
-
-function shortUrl(url: string) {
-  return url.replace(/^https?:\/\/(www\.)?/, "")
-}
-
-function selectedLabel<T extends string>(options: { value: T; label: string }[], value: T) {
-  return options.find((option) => option.value === value)?.label || value
-}
-
-function pageRangeText(language: string, start: number, end: number, total: number) {
-  if (language === "zh") return `显示 ${start}-${end} / 共 ${total} 个任务`
-  return `Showing ${start}-${end} of ${total} tasks`
-}
-
-function pageIndexText(language: string, page: number, totalPages: number) {
-  if (language === "zh") return `第 ${page} / ${totalPages} 页`
-  return `Page ${page} / ${totalPages}`
-}
+type Context = { runtime: Runtime; settings: Settings }
+type UploadRequest = { id: string; file: File; config: TaskConfig }
+const PAGE_SIZE = 20
 
 export default function Home() {
   const router = useRouter()
-  const { activeTasksText, language, stageLabel, statusLabel, t } = useI18n()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const subtitleInputRef = useRef<HTMLInputElement>(null)
-  const [youtubeUrl, setYoutubeUrl] = useState("")
-  const [bilibiliUrl, setBilibiliUrl] = useState("")
-  const [localFile, setLocalFile] = useState<File | null>(null)
-  const [localSubtitleFile, setLocalSubtitleFile] = useState<File | null>(null)
-  const [localDirection, setLocalDirection] = useState<LocalDirection>("en-zh")
-  const [executionMode, setExecutionMode] = useState<ExecutionMode>("auto")
-  const [outputMode, setOutputMode] = useState<OutputMode>("both")
-  const [tasks, setTasks] = useState<TaskSummary[]>([])
-  const [taskTotal, setTaskTotal] = useState(0)
-  const [activeTaskCount, setActiveTaskCount] = useState<number | null>(null)
-  const [taskPage, setTaskPage] = useState(1)
-  const [taskPageSize, setTaskPageSize] = useState(20)
-  const [taskQuery, setTaskQuery] = useState("")
-  const [taskStatus, setTaskStatus] = useState<TaskListStatus>("all")
-  const [taskExecutionMode, setTaskExecutionMode] = useState<TaskListExecutionMode>("all")
-  const [taskSort, setTaskSort] = useState<TaskListSort>("created_desc")
-  const [error, setError] = useState("")
-  const [taskListError, setTaskListError] = useState("")
+  const text = useV1Text()
+  const { setLanguage } = useI18n()
+  const [context, setContext] = useState<Context | null>(null)
+  const [config, setConfig] = useState<TaskConfig | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [revision, setRevision] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
+  const [uploadError, setUploadError] = useState("")
+  const [upload, setUpload] = useState<UploadRequest | null>(null)
+  const [failedUploadId, setFailedUploadId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [savingDefaults, setSavingDefaults] = useState(false)
+  const [savedMessage, setSavedMessage] = useState("")
+  const [tasks, setTasks] = useState<TaskList | null>(null)
+  const [listError, setListError] = useState("")
+  const [filter, setFilter] = useState<"all" | "active" | TaskStatus>("all")
+  const [offset, setOffset] = useState(0)
 
-  const localDirectionOptions: { value: LocalDirection; label: string }[] = [
-    { value: "en-zh", label: t.home.localEnZh },
-    { value: "ja-zh", label: t.home.localJaZh },
-    { value: "zh-en", label: t.home.localZhEn },
-  ]
-
-  const executionModeOptions: { value: ExecutionMode; label: string }[] = [
-    { value: "auto", label: t.home.executionAuto },
-    { value: "manual", label: t.home.executionManual },
-  ]
-
-  const outputModeOptions: { value: OutputMode; label: string }[] = [
-    { value: "subtitles", label: t.home.outputSubtitles },
-    { value: "dubbing", label: t.home.outputDubbing },
-    { value: "both", label: t.home.outputBoth },
-  ]
-
-  const statusOptions: { value: TaskListStatus; label: string }[] = [
-    { value: "all", label: t.home.allStatuses },
-    { value: "queued", label: statusLabel("queued") },
-    { value: "running", label: statusLabel("running") },
-    { value: "paused", label: statusLabel("paused") },
-    { value: "succeeded", label: statusLabel("succeeded") },
-    { value: "failed", label: statusLabel("failed") },
-  ]
-
-  const modeOptions: { value: TaskListExecutionMode; label: string }[] = [
-    { value: "all", label: t.home.allModes },
-    { value: "auto", label: t.home.modeAuto },
-    { value: "manual", label: t.home.modeManual },
-  ]
-
-  const sortOptions: { value: TaskListSort; label: string }[] = [
-    { value: "created_desc", label: t.home.sortCreatedDesc },
-    { value: "created_asc", label: t.home.sortCreatedAsc },
-    { value: "started_desc", label: t.home.sortStartedDesc },
-    { value: "started_asc", label: t.home.sortStartedAsc },
-    { value: "completed_desc", label: t.home.sortCompletedDesc },
-    { value: "completed_asc", label: t.home.sortCompletedAsc },
-    { value: "status_asc", label: t.home.sortStatusAsc },
-    { value: "status_desc", label: t.home.sortStatusDesc },
-    { value: "title_asc", label: t.home.sortTitleAsc },
-    { value: "title_desc", label: t.home.sortTitleDesc },
-  ]
-
-  const applyTaskList = useCallback((result: TaskListResponse) => {
-    const lastPage = Math.max(1, Math.ceil(result.total / result.page_size))
-    setTaskTotal(result.total)
-    setActiveTaskCount(
-      Number.isInteger(result.active_count) && result.active_count >= 0
-        ? result.active_count
-        : null,
-    )
-    if (result.total > 0 && result.tasks.length === 0 && result.page > lastPage) {
-      setTasks([])
-      setTaskPage(lastPage)
-      return
-    }
-    setTasks(result.tasks)
+  const refreshSettings = useCallback(() => {
+    setLoading(true)
+    setLoadError("")
+    setRevision((value) => value + 1)
   }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    Promise.all([getRuntime(controller.signal), getSettings(controller.signal)]).then(([runtime, settings]) => {
+      if (controller.signal.aborted) return
+      setContext({ runtime, settings })
+      setConfig((current) => current ?? initialTaskConfig(runtime, settings))
+      setLanguage(settings.ui_language)
+      setLoading(false)
+    }).catch((err) => {
+      if (!controller.signal.aborted && !isAbortError(err)) {
+        setLoadError(err instanceof Error ? err.message : String(err))
+        setLoading(false)
+      }
+    })
+    return () => controller.abort()
+  }, [revision, setLanguage])
 
   const pollTasks = useCallback(async ({ signal, isCurrent }: SerialPollingContext) => {
     try {
-      const result = await listTasks({
-        page: taskPage,
-        page_size: taskPageSize,
-        q: taskQuery,
-        status: taskStatus,
-        execution_mode: taskExecutionMode,
-        sort: taskSort,
-      }, signal)
-      if (isCurrent()) {
-        setTaskListError("")
-        applyTaskList(result)
-      }
+      const result = await listTasks({ limit: PAGE_SIZE, offset, ...(filter === "active" ? { active: true } : filter === "all" ? {} : { status: filter }) }, signal)
+      if (isCurrent()) { setTasks(result); setListError("") }
     } catch (err) {
-      if (isCurrent() && !isAbortError(err)) {
-        setTaskListError(err instanceof Error ? err.message : t.home.loadError)
+      if (isCurrent() && !isAbortError(err)) setListError(err instanceof Error ? err.message : String(err))
+    }
+  }, [filter, offset])
+  useSerialPolling(pollTasks, context?.runtime.limits.poll_interval_ms ?? 2000)
+
+  async function sendUpload(request: UploadRequest) {
+    setSubmitting(true)
+    setUpload(request)
+    setUploadError("")
+    try {
+      const task = await createTask(request.file, request.config, request.id)
+      router.push(`/tasks/${task.id}`)
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "TASK_EXISTS") {
+        router.push(`/tasks/${request.id}`)
+      } else {
+        setUploadError(err instanceof Error ? err.message : String(err))
+        if (err instanceof ApiError && ([400, 413, 415, 422].includes(err.status) || err.code === "IMPORT_RESIDUE")) {
+          setFailedUploadId(request.id)
+          setUpload(null)
+        }
       }
-    }
-  }, [
-    applyTaskList,
-    taskExecutionMode,
-    taskPage,
-    taskPageSize,
-    taskQuery,
-    taskSort,
-    taskStatus,
-    t.home.loadError,
-  ])
-
-  useSerialPolling(pollTasks)
-
-  function resetTaskPage() {
-    setTaskPage(1)
+    } finally { setSubmitting(false) }
   }
 
-  function selectLocalFile(event: ChangeEvent<HTMLInputElement>) {
-    setError("")
-    setLocalFile(event.target.files?.[0] || null)
-    setLocalSubtitleFile(null)
-    if (subtitleInputRef.current) {
-      subtitleInputRef.current.value = ""
-    }
-  }
-
-  function selectLocalSubtitleFile(event: ChangeEvent<HTMLInputElement>) {
-    setError("")
-    setLocalSubtitleFile(event.target.files?.[0] || null)
-  }
-
-  async function submitTask(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent) {
     event.preventDefault()
-    setError("")
-    const submittedUrl = youtubeUrl.trim() || bilibiliUrl.trim()
-    if (!submittedUrl && !localFile) return
+    if (!file || !config || problem || submitting || upload || failedUploadId || loading || loadError) return
+    void sendUpload({ file, config, id: crypto.randomUUID() })
+  }
+
+  async function checkUpload() {
+    if (!upload) return
+    setSubmitting(true)
+    setUploadError("")
+    try {
+      const task = await getTask(upload.id)
+      router.push(`/tasks/${task.id}`)
+    } catch (err) { setUploadError(err instanceof Error ? err.message : String(err)) }
+    finally { setSubmitting(false) }
+  }
+
+  async function clearFailedUpload() {
+    if (!failedUploadId || submitting) return
     setSubmitting(true)
     try {
-      const created = localFile
-        ? await uploadLocalTask(
-          localFile,
-          localDirection,
-          localSubtitleFile,
-          executionMode,
-          outputMode,
-        )
-        : await createTask(submittedUrl, executionMode, outputMode)
-      setYoutubeUrl("")
-      setBilibiliUrl("")
-      setLocalFile(null)
-      setLocalSubtitleFile(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-      if (subtitleInputRef.current) {
-        subtitleInputRef.current.value = ""
-      }
-      router.push(`/tasks/${created.id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.home.createError)
-    } finally {
-      setSubmitting(false)
-    }
+      await deleteTask(failedUploadId)
+      setFailedUploadId(null)
+      setUploadError("")
+    } catch (err) { setUploadError(err instanceof Error ? err.message : String(err)) }
+    finally { setSubmitting(false) }
   }
 
-  const hasUrl = Boolean(youtubeUrl.trim() || bilibiliUrl.trim())
-  const hasLocalFile = Boolean(localFile)
-  const canSubmit = Boolean((hasUrl || hasLocalFile) && !submitting)
-  const totalPages = Math.max(1, Math.ceil(taskTotal / taskPageSize))
-  const displayPage = Math.min(taskPage, totalPages)
-  const pageStart = taskTotal === 0 ? 0 : (displayPage - 1) * taskPageSize + 1
-  const pageEnd = Math.min(taskTotal, displayPage * taskPageSize)
-  const hasTaskFilters = Boolean(taskQuery.trim()) || taskStatus !== "all" || taskExecutionMode !== "all"
+  async function saveDefaults() {
+    if (!config || problem || savingDefaults) return
+    setSavingDefaults(true)
+    setSavedMessage("")
+    setUploadError("")
+    try {
+      const settings = await patchSettings({ defaults: config })
+      setContext((current) => current ? { ...current, settings } : current)
+      setSavedMessage(text("Saved for new tasks. Existing tasks keep their configuration.", "已保存为新任务默认值，已有任务配置保持不变。", "新しいタスクの初期設定を保存しました。既存のタスクには影響しません。"))
+    } catch (err) { setUploadError(err instanceof Error ? err.message : String(err)) }
+    finally { setSavingDefaults(false) }
+  }
 
-  return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fff5f5_0%,#f2fbff_48%,#fff4fa_100%)] text-foreground">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <AppHeader />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.home.createTitle}</CardTitle>
-          </CardHeader>
+  const problem = context && config ? configProblem(config, context.runtime, context.settings, text) : null
+  const busy = submitting || savingDefaults || loading
+  return <main className="min-h-screen bg-[#f5f7fb] text-foreground">
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
+      <AppHeader onSettingsSaved={refreshSettings} />
+      <div className="space-y-2"><h1 className="text-2xl font-semibold tracking-tight">{text("Translate your video", "视频语言工作台", "動画を翻訳する")}</h1>
+        <p className="text-sm text-muted-foreground">{text("Import a video, choose subtitles or dubbing, then preview and download the result.", "导入视频，选择字幕或配音，完成后预览和下载。", "動画を読み込み、字幕や吹き替えを選び、完成した結果をプレビューしてダウンロードできます。")}</p>
+      </div>
+      <section aria-label={text("Available models", "模型可用性", "モデルの利用状況")} className="rounded-lg border bg-white p-4">
+        <div className="flex items-center justify-between gap-3"><h2 className="font-medium">{text("Available models", "模型可用性", "モデルの利用状況")}</h2>
+          <Button variant="ghost" size="sm" onClick={refreshSettings} disabled={busy || !!upload}><RefreshCw className="size-4" />{text("Refresh", "刷新", "更新")}</Button>
+        </div>
+        {loadError && <p role="alert" className="mt-3 text-red-700">{loadError}</p>}
+        {loading && <p className="mt-3 text-sm text-muted-foreground">{text("Checking this device…", "正在读取运行环境…", "実行環境を確認中…")}</p>}
+        {context && <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+          {context.runtime.capabilities.map((item) => <li key={`${item.adapter}-${item.capability}`} className="flex items-start gap-2">
+            <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${item.available ? "bg-sky-500" : "bg-amber-500"}`} />
+            <span><span className="font-medium">{item.adapter}</span> · {item.available ? text("Available", "可用", "利用可能") : item.unavailable_reason || text("Unavailable", "不可用", "利用不可")}</span>
+          </li>)}
+        </ul>}
+      </section>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <Card><CardHeader><CardTitle><h2>{text("New task", "新建任务", "新規タスク")}</h2></CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={submitTask} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="youtube-url">{t.home.youtubeLabel}</Label>
-                <Input
-                  id="youtube-url"
-                  value={youtubeUrl}
-                  onChange={(event) => setYoutubeUrl(event.target.value)}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  disabled={Boolean(bilibiliUrl.trim()) || hasLocalFile}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bilibili-url">{t.home.bilibiliLabel}</Label>
-                <Input
-                  id="bilibili-url"
-                  value={bilibiliUrl}
-                  onChange={(event) => setBilibiliUrl(event.target.value)}
-                  placeholder="https://www.bilibili.com/video/BV..."
-                  disabled={Boolean(youtubeUrl.trim()) || hasLocalFile}
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
-                <div className="space-y-2">
-                  <Label htmlFor="local-video">{t.home.localVideoLabel}</Label>
-                  <Input
-                    ref={fileInputRef}
-                    id="local-video"
-                    type="file"
-                    accept={LOCAL_VIDEO_ACCEPT}
-                    onChange={selectLocalFile}
-                    disabled={hasUrl}
-                  />
+            {!context || !config ? <p className="text-muted-foreground">{text("Load the available models before creating a task.", "读取模型能力后即可配置任务。", "モデルの利用状況を読み込むとタスクを設定できます。")}</p> : <form onSubmit={submit} className="space-y-5">
+              <fieldset disabled={busy || !!upload || !!loadError} className="space-y-5 disabled:opacity-70">
+                <div className="space-y-2 rounded-lg border border-dashed border-sky-300 bg-sky-50/50 p-4">
+                  <Label htmlFor="local-video"><Upload className="size-4" />{text("Local video", "本地视频", "ローカル動画")}</Label>
+                  <input id="local-video" type="file" accept={context.runtime.limits.video_suffixes.join(",")} className="w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-white file:px-3 file:py-2" onChange={(event) => {
+                    const next = event.target.files?.[0] ?? null
+                    setUploadError(""); setFile(null)
+                    if (next && next.size > context.runtime.limits.max_file_bytes) setUploadError(text("Video exceeds the upload limit.", "视频超过上传大小限制。", "動画がアップロード上限を超えています。"))
+                    else if (next && !context.runtime.limits.video_suffixes.some((suffix) => next.name.toLowerCase().endsWith(suffix.toLowerCase()))) setUploadError(text("Unsupported video format.", "不支持该视频格式。", "対応していない動画形式です。"))
+                    else setFile(next)
+                  }} />
+                  <p className="text-xs text-muted-foreground">{context.runtime.limits.video_suffixes.join(" / ")} · {text("Up to", "最大", "上限")} {formatBytes(context.runtime.limits.max_file_bytes)} · {context.runtime.limits.max_video_duration_ms / 60000} {text("min", "分钟", "分")}</p>
+                  {file && <p className="break-all text-sm">{file.name} · {formatBytes(file.size)}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="local-direction">{t.home.localDirectionLabel}</Label>
-                  <Select
-                    value={localDirection}
-                    onValueChange={(value) => setLocalDirection(value as LocalDirection)}
-                    disabled={hasUrl}
-                  >
-                    <SelectTrigger id="local-direction" className="h-10">
-                      <span className="min-w-0 truncate text-left">
-                        {selectedLabel(localDirectionOptions, localDirection)}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {localDirectionOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <TaskConfigForm value={config} runtime={context.runtime} onChange={(next) => { setConfig(next); setSavedMessage(""); setUploadError("") }} />
+              </fieldset>
+              {problem && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{problem}</p>}
+              {uploadError && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{uploadError}</p>}
+              {savedMessage && <p role="status" className="text-sm text-sky-800">{savedMessage}</p>}
+              {failedUploadId && <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                <p>{text("The upload was rejected. You can adjust the file or configuration; clear this failed upload before submitting again.", "本次上传失败。可修改文件或配置，清理本次上传后再提交。", "アップロードに失敗しました。ファイルや設定を変更し、失敗したアップロードを削除してから再送信してください。")}</p>
+                <code className="block break-all text-xs">{failedUploadId}</code>
+                <Button type="button" variant="outline" disabled={submitting} onClick={clearFailedUpload}>{text("Clear failed upload", "清理本次失败上传", "失敗したアップロードを削除")}</Button>
+              </div>}
+              {upload && !submitting && <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                <p>{text("The upload result is unconfirmed. Check this task before starting another upload.", "上传结果尚未确认，请先查询原任务。", "アップロード結果を確認できていません。元のタスクを確認してください。")}</p>
+                <code className="block break-all text-xs">{upload.id}</code>
+                <div className="flex flex-wrap gap-2"><Button type="button" variant="outline" onClick={checkUpload}>{text("Check original task", "查询原任务", "元のタスクを確認")}</Button>
+                  <Button type="button" variant="outline" onClick={() => void sendUpload(upload)}>{text("Resend with the same ID", "使用同一 ID 重新上传", "同じ ID で再送信")}</Button>
                 </div>
+              </div>}
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" disabled={!file || !!problem || busy || !!upload || !!failedUploadId || !!loadError}>{submitting ? text("Working…", "处理中…", "処理中…") : text("Create task", "创建任务", "タスクを作成")}</Button>
+                <Button type="button" variant="outline" disabled={!!problem || busy || !!upload || !!loadError} onClick={saveDefaults}>{text("Save as defaults", "保存为默认配置", "初期設定として保存")}</Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="local-subtitle">{t.home.localSubtitleLabel}</Label>
-                <Input
-                  ref={subtitleInputRef}
-                  id="local-subtitle"
-                  type="file"
-                  accept=".srt"
-                  onChange={selectLocalSubtitleFile}
-                  disabled={hasUrl || !hasLocalFile}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t.home.localSubtitleHelp}
-                </p>
-                {localFile ? (
-                  <div
-                    data-testid="local-upload-selection"
-                    className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground"
-                    aria-live="polite"
-                  >
-                    <p>
-                      {t.home.currentLocalVideo}: <span className="font-medium text-foreground">{localFile.name}</span>
-                    </p>
-                    <p>
-                      {t.home.subtitleForCurrentVideo}:{" "}
-                      <span className="font-medium text-foreground">
-                        {localSubtitleFile?.name || t.home.noSubtitleSelected}
-                      </span>
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="output-mode">{t.home.outputModeLabel}</Label>
-                  <Select
-                    value={outputMode}
-                    onValueChange={(value) => setOutputMode(value as OutputMode)}
-                  >
-                    <SelectTrigger id="output-mode" className="h-10">
-                      <span className="min-w-0 truncate text-left">
-                        {selectedLabel(outputModeOptions, outputMode)}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {outputModeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="execution-mode">{t.home.executionModeLabel}</Label>
-                  <Select
-                    value={executionMode}
-                    onValueChange={(value) => setExecutionMode(value as ExecutionMode)}
-                  >
-                    <SelectTrigger id="execution-mode" className="h-10">
-                      <span className="min-w-0 truncate text-left">
-                        {selectedLabel(executionModeOptions, executionMode)}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {executionModeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                {activeTaskCount !== null && activeTaskCount > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    {activeTasksText(activeTaskCount)}
-                  </p>
-                ) : (
-                  <span />
-                )}
-                <Button type="submit" disabled={!canSubmit}>
-                  {hasLocalFile ? <Upload className="size-4" /> : <Play className="size-4" />}
-                  {submitting ? t.home.submitting : t.home.createTask}
-                </Button>
-              </div>
-            </form>
-
-            {error ? (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </div>
-            ) : null}
+            </form>}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.home.taskHistory} ({taskTotal})</CardTitle>
-          </CardHeader>
-          <CardContent className="px-0">
-            <div className="border-b border-border/60 px-4 pb-4">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_140px_140px_180px_120px]">
-                <div className="relative sm:col-span-2 lg:col-span-1">
-                  <Label htmlFor="task-search" className="sr-only">
-                    {t.home.taskSearchPlaceholder}
-                  </Label>
-                  <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                  <Input
-                    id="task-search"
-                    className="h-9 pl-8"
-                    value={taskQuery}
-                    onChange={(event) => {
-                      setTaskQuery(truncateSearchQuery(event.target.value))
-                      resetTaskPage()
-                    }}
-                    placeholder={t.home.taskSearchPlaceholder}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="task-status-filter" className="sr-only">
-                    {t.home.taskStatusFilter}
-                  </Label>
-                  <Select
-                    value={taskStatus}
-                    onValueChange={(value) => {
-                      setTaskStatus(value as TaskListStatus)
-                      resetTaskPage()
-                    }}
-                  >
-                    <SelectTrigger id="task-status-filter" className="h-9">
-                      <span className="min-w-0 truncate text-left">
-                        {selectedLabel(statusOptions, taskStatus)}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="task-mode-filter" className="sr-only">
-                    {t.home.taskModeFilter}
-                  </Label>
-                  <Select
-                    value={taskExecutionMode}
-                    onValueChange={(value) => {
-                      setTaskExecutionMode(value as TaskListExecutionMode)
-                      resetTaskPage()
-                    }}
-                  >
-                    <SelectTrigger id="task-mode-filter" className="h-9">
-                      <span className="min-w-0 truncate text-left">
-                        {selectedLabel(modeOptions, taskExecutionMode)}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="task-sort" className="sr-only">
-                    {t.home.taskSort}
-                  </Label>
-                  <Select
-                    value={taskSort}
-                    onValueChange={(value) => {
-                      setTaskSort(value as TaskListSort)
-                      resetTaskPage()
-                    }}
-                  >
-                    <SelectTrigger id="task-sort" className="h-9">
-                      <span className="min-w-0 truncate text-left">
-                        {selectedLabel(sortOptions, taskSort)}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="task-page-size" className="sr-only">
-                    {t.home.taskPageSize}
-                  </Label>
-                  <Select
-                    value={String(taskPageSize)}
-                    onValueChange={(value) => {
-                      setTaskPageSize(Number(value))
-                      resetTaskPage()
-                    }}
-                  >
-                    <SelectTrigger id="task-page-size" className="h-9">
-                      <span className="min-w-0 truncate text-left">
-                        {taskPageSize}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAGE_SIZE_OPTIONS.map((option) => (
-                        <SelectItem key={option} value={String(option)}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+        <Card><CardHeader><CardTitle><h2>{text("Tasks", "任务记录", "タスク履歴")}</h2></CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5"><Label htmlFor="task-filter">{text("Status", "任务状态", "状態")}</Label>
+              <select id="task-filter" className={selectClass} value={filter} onChange={(event) => { setFilter(event.target.value as typeof filter); setOffset(0); setTasks(null) }}>
+                <option value="all">{text("All tasks", "全部任务", "すべて")}</option>
+                <option value="active">{text("Active tasks", "进行中的任务", "進行中")}</option>
+                {Object.entries(STATUS_LABELS).map(([status, label]) => <option key={status} value={status}>{text(...label)}</option>)}
+              </select>
             </div>
-
-            {taskListError ? (
-              <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {taskListError}
-              </div>
-            ) : null}
-
-            {tasks.length === 0 ? (
-              <div className="px-6 py-12 text-center text-sm text-muted-foreground">
-                {hasTaskFilters ? t.home.noMatchingTasks : t.home.empty}
-              </div>
-            ) : (
-              <ScrollArea className="max-h-[56dvh] overflow-hidden">
-                <ul className="flex flex-col">
-                  {tasks.map((item) => (
-                    <li key={item.id} className="border-b border-border/60 last:border-b-0">
-                      <Link
-                        href={`/tasks/${item.id}`}
-                        className="flex w-full items-center gap-3 px-6 py-3 text-sm transition-colors hover:bg-muted/60"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-left font-medium text-zinc-900">
-                            {item.title || shortUrl(item.url)}
-                          </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                            <Badge className={statusBadgeClass(item.status)}>{statusLabel(item.status)}</Badge>
-                            <span data-testid={`task-output-mode-${item.id}`}>
-                              {selectedLabel(outputModeOptions, item.output_mode || "both")}
-                            </span>
-                            <span>{formatTime(item.created_at)}</span>
-                            {isActive(item.status) && item.current_stage ? (
-                              <span>· {stageLabel(item.current_stage)}</span>
-                            ) : null}
-                            {isAwaitingAction(item.status) ? (
-                              <span>· {t.status.paused}</span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            )}
-
-            {taskTotal > 0 ? (
-              <div className="flex flex-col gap-3 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                <span>{pageRangeText(language, pageStart, pageEnd, taskTotal)}</span>
-                <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <span>{pageIndexText(language, displayPage, totalPages)}</span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTaskPage((page) => Math.max(1, page - 1))}
-                      disabled={displayPage <= 1}
-                    >
-                      <ChevronLeft className="size-4" />
-                      {t.home.previousPage}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTaskPage((page) => Math.min(totalPages, page + 1))}
-                      disabled={displayPage >= totalPages}
-                    >
-                      {t.home.nextPage}
-                      <ChevronRight className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            {listError && <p role="alert" className="text-sm text-red-700">{listError}</p>}
+            {!tasks && !listError && <p className="text-sm text-muted-foreground">{text("Loading tasks…", "正在读取任务…", "タスクを読み込み中…")}</p>}
+            {tasks?.items.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">{text("No tasks in this view.", "暂无符合条件的任务。", "該当するタスクはありません。")}</p>}
+            <ul className="divide-y">{tasks?.items.map((task) => <li key={task.id} className="space-y-2 py-4 first:pt-0">
+              <Link href={`/tasks/${task.id}`} className="block truncate font-medium text-sky-800 underline-offset-4 hover:underline" title={task.source_name}>{task.source_name}</Link>
+              <TaskStatusView task={task} />
+              <p className="text-xs text-muted-foreground">{new Date(task.created_at).toLocaleString()} · {formatBytes(task.source_size_bytes)}</p>
+              {task.error && <p className="text-xs text-red-700">{task.error.message}</p>}
+            </li>)}</ul>
+            <div className="flex items-center justify-between border-t pt-3">
+              <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => { setOffset((value) => Math.max(0, value - PAGE_SIZE)); setTasks(null) }}><ChevronLeft className="size-4" />{text("Previous", "上一页", "前へ")}</Button>
+              <span className="text-xs text-muted-foreground">{offset / PAGE_SIZE + 1}</span>
+              <Button variant="outline" size="sm" disabled={!tasks?.has_more} onClick={() => { setOffset((value) => value + PAGE_SIZE); setTasks(null) }}>{text("Next", "下一页", "次へ")}<ChevronRight className="size-4" /></Button>
+            </div>
           </CardContent>
         </Card>
       </div>
-    </main>
-  )
+    </div>
+  </main>
 }

@@ -1,14 +1,15 @@
 "use client"
 
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
 
-export type UiLanguage = "en" | "zh"
+export type UiLanguage = "en" | "zh" | "ja"
 
 const STORAGE_KEY = "youdub-ui-language"
 
 export const LANGUAGE_OPTIONS: { value: UiLanguage; label: string }[] = [
   { value: "en", label: "English" },
   { value: "zh", label: "中文" },
+  { value: "ja", label: "日本語" },
 ]
 
 type Messages = {
@@ -28,7 +29,7 @@ type Messages = {
   stages: Record<string, string>
 }
 
-const messages: Record<UiLanguage, Messages> = {
+const messages: Record<"en" | "zh", Messages> = {
   en: {
     common: {
       back: "Back",
@@ -409,6 +410,20 @@ const messages: Record<UiLanguage, Messages> = {
   },
 }
 
+const japaneseMessages: Messages = {
+  ...messages.en,
+  common: {
+    back: "戻る", cancel: "キャンセル", close: "閉じる", loading: "読み込み中",
+    sentenceEnd: "。", waiting: "待機中",
+  },
+  auth: {
+    title: "YouDub にログイン", password: "パスワード", signIn: "ログイン", signingIn: "ログイン中",
+    invalidCredentials: "パスワードが正しくありません。", loginError: "ログインできませんでした。",
+    sessionLoading: "ログイン状態を確認中...", sessionError: "ログイン状態を確認できません。",
+    retry: "再試行", logout: "ログアウト", loggingOut: "ログアウト中",
+  },
+}
+
 type LanguageContextValue = {
   language: UiLanguage
   setLanguage: (language: UiLanguage) => void
@@ -422,15 +437,21 @@ type LanguageContextValue = {
 const LanguageContext = createContext<LanguageContextValue | null>(null)
 
 function isLanguage(value: string | null): value is UiLanguage {
-  return value === "en" || value === "zh"
+  return value === "en" || value === "zh" || value === "ja"
 }
 
 function setDocumentLanguage(language: UiLanguage) {
-  document.documentElement.lang = language === "zh" ? "zh-CN" : "en"
+  document.documentElement.lang = language === "zh" ? "zh-CN" : language
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<UiLanguage>("zh")
+
+  const setLanguage = useCallback((next: UiLanguage) => {
+    setLanguageState(next)
+    window.localStorage.setItem(STORAGE_KEY, next)
+    setDocumentLanguage(next)
+  }, [])
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
@@ -443,14 +464,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [language])
 
   const value = useMemo<LanguageContextValue>(() => {
-    const t = messages[language]
+    const t = language === "ja" ? japaneseMessages : messages[language]
     return {
       language,
-      setLanguage: (next) => {
-        setLanguageState(next)
-        window.localStorage.setItem(STORAGE_KEY, next)
-        setDocumentLanguage(next)
-      },
+      setLanguage,
       t,
       activeTasksText: (count) =>
         language === "zh"
@@ -468,7 +485,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         return fallback || name || t.common.waiting
       },
     }
-  }, [language])
+  }, [language, setLanguage])
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
 }
