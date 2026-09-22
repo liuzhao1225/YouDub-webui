@@ -14,7 +14,7 @@ lameenc>=1.2
 openunmix
 openai-whisper
 spacy
-voxcpm
+voxcpm==2.0.3
 soundfile
 pydub
 librosa
