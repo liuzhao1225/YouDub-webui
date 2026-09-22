@@ -1,9 +1,12 @@
 "use client"
 
-import { use, useCallback, useState } from "react"
+import { use, useCallback, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { CheckCircle2, Circle, CircleMinus, Download } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { TaskStatusView } from "@/components/v1-task-status"
+import { TaskActions } from "@/components/v1-task-actions"
+import { TaskLog } from "@/components/v1-task-log"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ApiError, isAbortError } from "@/lib/api"
 import { getTask, type OutputKind, type Task } from "@/lib/v1-api"
@@ -19,22 +22,27 @@ const FILE_LABELS: Record<OutputKind, [string, string, string]> = {
 
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const router = useRouter()
   const text = useV1Text()
   const [task, setTask] = useState<Task | null>(null)
   const [error, setError] = useState("")
   const [mediaError, setMediaError] = useState("")
+  const [showLog, setShowLog] = useState(false)
+  const mutationPending = useRef(false)
+  const navigatingAway = useRef(false)
   const pollTask = useCallback(async ({ signal, isCurrent }: SerialPollingContext) => {
+    if (mutationPending.current) return
     try {
       const next = await getTask(id, signal)
-      if (isCurrent()) { setTask(next); setError("") }
+      if (isCurrent() && !mutationPending.current) { setTask(next); setError("") }
     } catch (err) {
-      if (isCurrent() && !isAbortError(err)) {
+      if (isCurrent() && !mutationPending.current && !isAbortError(err)) {
         setError(err instanceof Error ? err.message : String(err))
         if (err instanceof ApiError && err.status === 404) setTask(null)
       }
     }
   }, [id])
-  useSerialPolling(pollTask)
+  const invalidatePolling = useSerialPolling(pollTask)
 
   const skipped = task ? STAGES.filter((stage) => (stage === "separate" && !task.config.separation)
     || (task.config.output_mode === "subtitles" && ["tts", "mix"].includes(stage))) : []
@@ -49,6 +57,20 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         <div className="space-y-3"><h1 className="break-words text-2xl font-semibold tracking-tight">{task.source_name}</h1>
           <TaskStatusView task={task} />
           <p className="text-sm text-muted-foreground">{task.message}</p>
+          <TaskActions task={task} onMutationStart={() => {
+            mutationPending.current = true
+            invalidatePolling()
+          }} onMutationEnd={() => {
+            invalidatePolling()
+            mutationPending.current = navigatingAway.current
+          }} onTaskChange={(next) => {
+            invalidatePolling()
+            setTask(next); setError(""); setMediaError("")
+          }} onDeleted={() => {
+            navigatingAway.current = true
+            setTask(null)
+            router.replace("/")
+          }} />
         </div>
         <ol aria-label={text("Processing steps", "处理流程", "処理手順")} className="grid grid-cols-2 gap-3 rounded-lg border bg-white p-4 sm:grid-cols-4 lg:grid-cols-7">
           {STAGES.map((stage, index) => {
@@ -105,6 +127,10 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
             </dl>
           </CardContent>
         </Card>
+        <details className="rounded-lg border bg-white p-4" onToggle={(event) => setShowLog(event.currentTarget.open)}>
+          <summary className="cursor-pointer text-sm font-medium">{text("Task log", "任务日志", "タスクログ")}</summary>
+          {showLog && <TaskLog key={`${task.id}-${task.attempt}`} id={task.id} />}
+        </details>
       </>}
     </div>
   </main>
