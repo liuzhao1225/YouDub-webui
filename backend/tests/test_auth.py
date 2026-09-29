@@ -154,6 +154,34 @@ def test_secure_and_strict_cookie_configuration(client, monkeypatch):
     assert "samesite=strict" in cookie_header
 
 
+def test_custom_session_cookie_name_keeps_instances_on_one_host_separate(client, monkeypatch):
+    monkeypatch.setenv("YOUDUB_AUTH_COOKIE_NAME", "youdub_redesign_session")
+
+    csrf_token, _ = login(client)
+    custom_token = client.cookies.get("youdub_redesign_session")
+
+    assert custom_token
+    assert client.cookies.get(auth.SESSION_COOKIE_NAME) is None
+    assert client.get("/api/auth/session").status_code == 200
+
+    other_instance = TestClient(main.app)
+    other_instance.cookies.set(auth.SESSION_COOKIE_NAME, custom_token, path="/api")
+    assert other_instance.get("/api/auth/session").status_code == 401
+
+    logout_response = client.post("/api/auth/logout", headers={auth.CSRF_HEADER_NAME: csrf_token})
+    assert logout_response.status_code == 204
+    assert 'youdub_redesign_session=""' in logout_response.headers["set-cookie"]
+
+
+def test_invalid_session_cookie_name_fails_closed(client, monkeypatch):
+    monkeypatch.setenv("YOUDUB_AUTH_COOKIE_NAME", "bad name;")
+
+    response = client.post("/api/auth/login", json={"password": TEST_AUTH_PASSWORD})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Authentication is not configured."}
+
+
 def test_session_endpoint_restores_csrf_and_allows_authenticated_reads(client):
     csrf_token, login_payload = login(client)
 

@@ -20,6 +20,7 @@ from . import database
 
 
 SESSION_COOKIE_NAME = "youdub_session"
+SESSION_COOKIE_NAME_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,64}")
 SESSION_COOKIE_PATH = "/api"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 DEFAULT_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
@@ -73,7 +74,23 @@ def _parse_bool(name: str, default: bool) -> bool:
     raise AuthConfigurationError(f"{name} must be true or false.")
 
 
+def session_cookie_name() -> str:
+    """Session cookie name, overridable so several instances can share one host.
+
+    Browsers do not scope cookies by port, so two instances reachable on the same
+    host would otherwise overwrite each other's login cookie.
+    """
+    name = os.getenv("YOUDUB_AUTH_COOKIE_NAME", "").strip()
+    return name if SESSION_COOKIE_NAME_PATTERN.fullmatch(name) else SESSION_COOKIE_NAME
+
+
 def load_auth_settings() -> AuthSettings:
+    cookie_name = os.getenv("YOUDUB_AUTH_COOKIE_NAME", "").strip()
+    if cookie_name and not SESSION_COOKIE_NAME_PATTERN.fullmatch(cookie_name):
+        raise AuthConfigurationError(
+            "YOUDUB_AUTH_COOKIE_NAME may only contain letters, digits, '_' and '-'."
+        )
+
     password_hash = os.getenv("YOUDUB_AUTH_PASSWORD_HASH", "").strip()
     if not password_hash:
         raise AuthConfigurationError("YOUDUB_AUTH_PASSWORD_HASH is required.")
@@ -226,7 +243,7 @@ def set_session_cookie(
     response: Response, token: str, settings: AuthSettings, expires_at: str
 ) -> None:
     response.set_cookie(
-        key=SESSION_COOKIE_NAME,
+        key=session_cookie_name(),
         value=token,
         max_age=settings.session_ttl_seconds,
         expires=datetime.fromisoformat(expires_at),
@@ -239,7 +256,7 @@ def set_session_cookie(
 
 def clear_session_cookie(response: Response, settings: AuthSettings) -> None:
     response.delete_cookie(
-        key=SESSION_COOKIE_NAME,
+        key=session_cookie_name(),
         path=SESSION_COOKIE_PATH,
         secure=settings.cookie_secure,
         httponly=True,
@@ -311,7 +328,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         except AuthConfigurationError:
             return _json_error(503, "Authentication is not configured.", request, code="RUNTIME_UNAVAILABLE")
 
-        token = request.cookies.get(SESSION_COOKIE_NAME, "")
+        token = request.cookies.get(session_cookie_name(), "")
         session = authenticate_session(token, settings)
         if session is None:
             response = _json_error(401, "Authentication required.", request)

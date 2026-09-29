@@ -263,7 +263,7 @@ def _clear_replaced_login_cookie(
         auth.clear_session_cookie(response, settings)
         return
     response.delete_cookie(
-        key=auth.SESSION_COOKIE_NAME,
+        key=auth.session_cookie_name(),
         path=auth.SESSION_COOKIE_PATH,
         httponly=True,
     )
@@ -271,7 +271,7 @@ def _clear_replaced_login_cookie(
 
 @app.post("/api/auth/login")
 def login(payload: LoginRequest, request: Request) -> JSONResponse:
-    old_token = request.cookies.get(auth.SESSION_COOKIE_NAME, "")
+    old_token = request.cookies.get(auth.session_cookie_name(), "")
     auth.revoke_session_token(old_token)
     client_host = request.client.host if request.client else "unknown"
 
