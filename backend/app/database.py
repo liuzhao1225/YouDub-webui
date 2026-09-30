@@ -12,6 +12,7 @@ from .config import (
     LEGACY_OPENAI_DEFAULT_BASE_URL,
     LEGACY_OPENAI_DEFAULT_MODEL,
     atlascloud_defaults,
+    cheaperinference_defaults,
     ensure_runtime_dirs,
     openai_defaults,
     ytdlp_defaults,
@@ -55,9 +56,12 @@ def _migrate_openai_defaults_to_atlascloud(conn: sqlite3.Connection) -> None:
     Only rows the user never customized are rewritten - an empty saved key plus
     a base URL and model still equal to the pre-Atlas defaults. Any user-supplied
     key, endpoint or model is left untouched.
+
+    Cheaper Inference (CHEAPER_INFERENCE_*) uses the same path when Atlas Cloud
+    is not configured.
     """
-    atlas = atlascloud_defaults()
-    if atlas is None:
+    preset = atlascloud_defaults() or cheaperinference_defaults()
+    if preset is None:
         return
     rows = conn.execute(
         "SELECT key, value FROM settings WHERE key IN "
@@ -73,7 +77,7 @@ def _migrate_openai_defaults_to_atlascloud(conn: sqlite3.Connection) -> None:
     for key in ("base_url", "api_key", "model"):
         conn.execute(
             "UPDATE settings SET value = ?, updated_at = ? WHERE key = ?",
-            (atlas[key], now_iso(), f"openai.{key}"),
+            (preset[key], now_iso(), f"openai.{key}"),
         )
 
 

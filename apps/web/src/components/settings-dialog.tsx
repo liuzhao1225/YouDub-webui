@@ -69,6 +69,11 @@ const ATLAS_CLOUD_PRESET = {
   model: "deepseek-ai/deepseek-v4-pro",
 }
 
+const CHEAPER_INFERENCE_PRESET = {
+  baseUrl: "https://api.cheaperinference.com/v1",
+  model: "gpt-5.4-mini",
+}
+
 function uniqueModels(models: string[]) {
   return Array.from(new Set(models.map((model) => model.trim()).filter(Boolean)))
 }
@@ -242,6 +247,16 @@ export function SettingsDialog() {
     setMessage(t.settings.atlasCloudPresetApplied)
   }
 
+  function applyCheaperInferencePreset() {
+    setSettings((current) => ({
+      ...current,
+      baseUrl: CHEAPER_INFERENCE_PRESET.baseUrl,
+      model: CHEAPER_INFERENCE_PRESET.model,
+    }))
+    setMessageKey(null)
+    setMessage(t.settings.cheaperInferencePresetApplied)
+  }
+
   const saveSectionLabels: Record<SaveSection, string> = {
     cookie: t.settings.cookie,
     openai: t.settings.openaiSaveSection,
@@ -327,15 +342,26 @@ export function SettingsDialog() {
               <div className="grid gap-2">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="baseUrl">{t.settings.baseUrl}</Label>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={applyAtlasCloudPreset}
-                  >
-                    <Cloud className="size-3.5" />
-                    {t.settings.atlasCloudPreset}
-                  </Button>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={applyAtlasCloudPreset}
+                    >
+                      <Cloud className="size-3.5" />
+                      {t.settings.atlasCloudPreset}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={applyCheaperInferencePreset}
+                    >
+                      <Cloud className="size-3.5" />
+                      {t.settings.cheaperInferencePreset}
+                    </Button>
+                  </div>
                 </div>
                 <Input
                   id="baseUrl"
