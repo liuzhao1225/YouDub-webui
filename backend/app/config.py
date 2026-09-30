@@ -155,10 +155,36 @@ def atlascloud_defaults() -> dict[str, str] | None:
     }
 
 
+def cheaperinference_defaults() -> dict[str, str] | None:
+    """Cheaper Inference defaults when the environment selects it, otherwise None.
+
+    Cheaper Inference is only selected when its key is present and no OpenAI or
+    Atlas Cloud key is set, so an explicit OpenAI or Atlas Cloud key always wins.
+    """
+    api_key = _first_env("CHEAPER_INFERENCE_API_KEY", "CHEAPERINFERENCE_API_KEY")
+    if not api_key or os.getenv("OPENAI_API_KEY", "").strip() or atlascloud_defaults() is not None:
+        return None
+    return {
+        "base_url": _first_env(
+            "CHEAPER_INFERENCE_BASE_URL",
+            "CHEAPERINFERENCE_BASE_URL",
+        )
+        or "https://api.cheaperinference.com/v1",
+        "api_key": api_key,
+        "model": _first_env("CHEAPER_INFERENCE_MODEL", "CHEAPERINFERENCE_MODEL")
+        or "gpt-5.4-mini",
+        "translate_concurrency": os.getenv("OPENAI_TRANSLATE_CONCURRENCY", "50"),
+    }
+
+
 def openai_defaults() -> dict[str, str]:
     atlas = atlascloud_defaults()
     if atlas is not None:
         return atlas
+
+    cheaperinference = cheaperinference_defaults()
+    if cheaperinference is not None:
+        return cheaperinference
 
     return {
         "base_url": os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE") or LEGACY_OPENAI_DEFAULT_BASE_URL,

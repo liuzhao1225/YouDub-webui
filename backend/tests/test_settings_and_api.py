@@ -150,6 +150,12 @@ ATLAS_UPGRADE_ENV_KEYS = (
     "ATLAS_CLOUD_BASE_URL",
     "ATLASCLOUD_MODEL",
     "ATLAS_CLOUD_MODEL",
+    "CHEAPER_INFERENCE_API_KEY",
+    "CHEAPERINFERENCE_API_KEY",
+    "CHEAPER_INFERENCE_BASE_URL",
+    "CHEAPERINFERENCE_BASE_URL",
+    "CHEAPER_INFERENCE_MODEL",
+    "CHEAPERINFERENCE_MODEL",
     "OPENAI_TRANSLATE_CONCURRENCY",
 )
 
@@ -255,6 +261,45 @@ def test_openai_defaults_prefer_openai_key_over_atlas_cloud_aliases(monkeypatch)
     assert defaults["api_key"] == "openai-test-key"
     assert defaults["base_url"] == "https://api.openai.com/v1"
     assert defaults["model"] == "gpt-4o-mini"
+
+
+def test_existing_database_upgrades_to_cheaper_inference_defaults(monkeypatch, tmp_path):
+    _init_pre_atlas_database(monkeypatch, tmp_path)
+
+    monkeypatch.setenv("CHEAPER_INFERENCE_API_KEY", "ci-upgrade-key")
+    database.init_db()
+
+    after = database.get_openai_settings()
+    assert after["base_url"] == "https://api.cheaperinference.com/v1"
+    assert after["api_key"] == "ci-upgrade-key"
+    assert after["model"] == "gpt-5.4-mini"
+
+
+def test_openai_defaults_use_cheaper_inference_aliases_when_other_keys_are_absent(monkeypatch):
+    for key in ATLAS_UPGRADE_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("CHEAPERINFERENCE_API_KEY", "ci-test-key")
+
+    assert config.openai_defaults() == {
+        "base_url": "https://api.cheaperinference.com/v1",
+        "api_key": "ci-test-key",
+        "model": "gpt-5.4-mini",
+        "translate_concurrency": "50",
+    }
+
+
+def test_openai_defaults_prefer_openai_and_atlas_keys_over_cheaper_inference(monkeypatch):
+    for key in ATLAS_UPGRADE_ENV_KEYS:
+        monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("CHEAPER_INFERENCE_API_KEY", "ci-test-key")
+    monkeypatch.setenv("ATLASCLOUD_API_KEY", "atlas-test-key")
+    assert config.openai_defaults()["api_key"] == "atlas-test-key"
+
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
+    assert config.openai_defaults()["api_key"] == "openai-test-key"
+    assert config.cheaperinference_defaults() is None
 
 
 def test_cookie_response_does_not_leak_content(monkeypatch, tmp_path):
