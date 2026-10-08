@@ -21,7 +21,7 @@ export type InputRef = { from: 'task'; name: string } | { from: 'step'; stepId: 
 export interface OutputPort { name: string; kind: 'artifact' | 'json'; schemaId: string; required: boolean; schema?: JsonObject }
 export interface ExactProviderBinding {
   pluginId: string; pluginVersion: string; integrity: string; providerId: string;
-  contractVersion: string; model?: string; modelRevision: string | null; device?: string; options: JsonObject
+  model?: string; modelRevision: string | null; device?: string; options: JsonObject
 }
 export interface StepSpec {
   id: string; label: string; bindingKey: string; operation: string;
@@ -83,7 +83,8 @@ export interface TaskRecord {
   startedAt: string | null; finishedAt: string | null; nextPollAt: string | null;
   legacy?: boolean; rawSnapshot?: JsonObject; [key: string]: any
 }
-export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot'> {
+export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot' | 'outputs'> {
+  outputs: Array<{ id: string; label: string; role: string; name: string; mimeType: string; size: number }>;
   allowedActions: string[]; mayStillRun: boolean; [key: string]: any
 }
 export interface CreateTask { id: string; workflowId: string; workflowVersion?: string; config: JsonObject; inputs: Record<string, ArtifactRef>; artifacts?: Record<string, Artifact>; sourceName?: string }

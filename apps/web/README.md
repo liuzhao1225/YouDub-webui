@@ -1,36 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# YouDub Client
 
-## Getting Started
+Next.js 提供根布局、静态资源和可选 catch-all 页面。业务界面由 Cordis Client 插件通过公共 slots 注册。
 
-First, run the development server:
+- `src/plugin/bootstrap.tsx`：创建浏览器 Context，按服务端 manifest 加载原生 ESM 插件。
+- `src/plugin/sdk.tsx`：公开的 Client slots、导航和 React hooks。
+- `src/plugin/builtin/`：登录、外壳、工作台、任务库、设置与本地化配置编辑器。
+- `scripts/build-plugins.mjs`：构建官方 Client 插件与 React/Cordis 共享实例桥接。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+在此目录运行 `npm test`、`npm run lint`、`npx tsc --noEmit`。`npm run dev` 和 `npm run build` 会先构建官方 Client 插件。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+安装扩展、启动完整服务和运行环境配置见[项目说明](../../README.md)。

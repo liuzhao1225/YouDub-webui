@@ -185,7 +185,7 @@ class SqliteStore:
             raise WorkerError("TASK_NOT_FOUND", "Task not found.")
         return task
 
-    def list(self, limit=20, offset=0, status=None, active=None, compatibleWorkflowId=None):
+    def list(self, limit=20, offset=0, status=None, active=None):
         if type(limit) is not int or not 1 <= limit <= 10000 or type(offset) is not int or offset < 0:
             raise WorkerError("INVALID_QUERY", "Invalid task pagination.")
         if status is not None and active is not None:
@@ -201,11 +201,6 @@ class SqliteStore:
                 raise WorkerError("INVALID_QUERY", "active must be boolean.")
             states = ACTIVE if active else TERMINAL
             where, values = " WHERE status IN (" + ",".join("?" for _ in states) + ")", list(states)
-        if compatibleWorkflowId is not None:
-            if not isinstance(compatibleWorkflowId, str) or not compatibleWorkflowId:
-                raise WorkerError("INVALID_QUERY", "compatibleWorkflowId must be a workflow ID.")
-            where += (" AND " if where else " WHERE ") + "(plugin_json IS NULL OR json_extract(plugin_json,'$.workflowId')=?)"
-            values.append(compatibleWorkflowId)
         with self.connect() as conn:
             rows = conn.execute("SELECT * FROM tasks" + where + " ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?", (*values, limit + 1, offset)).fetchall()
             return {"items": [self.decode(row) for row in rows[:limit]], "limit": limit, "offset": offset, "hasMore": len(rows) > limit}
@@ -277,7 +272,7 @@ class SqliteStore:
             return {row["key"]: json.loads(row["value_json"]) for row in conn.execute("SELECT key,value_json FROM settings")}
 
     def write_setting(self, key, value):
-        from backend.app.v1.storage import now_iso
+        from backend.app.paths import now_iso
         with self.connect() as conn:
             conn.execute("INSERT INTO settings VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at",
                          (key, serialized(value), now_iso()))

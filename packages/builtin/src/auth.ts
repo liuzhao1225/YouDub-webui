@@ -1,6 +1,7 @@
 import { Service, type Context } from 'cordis'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
-import { HttpError, readJson, type HttpRequest } from './http.js'
+import { readJson, type HttpRequest } from './http.js'
+import { AppError } from '@youdub/sdk'
 
 interface AuthSettings { cookieName: string; sessionTtlSeconds: number; cookieSecure: boolean; cookieSameSite: 'lax' | 'strict'; credentialVersion: string }
 interface Session { tokenHash: string; csrfToken: string; expiresAt: string }
@@ -33,23 +34,23 @@ export default class AuthService extends Service {
       }
       request.response.setHeader('Cache-Control', 'no-store')
       if (request.raw.method === 'OPTIONS') {
-        if (!this.originAllowed(request)) throw new HttpError(403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed.')
+        if (!this.originAllowed(request)) throw new AppError('ORIGIN_NOT_ALLOWED', 'Origin is not allowed.', 403)
         request.response.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,PATCH,DELETE,OPTIONS')
         request.response.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-CSRF-Token,Range')
         this.ctx.http.json(request, 204); return
       }
       if (request.url.pathname === '/api/auth/login' && request.raw.method === 'POST') {
-        if (!this.originAllowed(request)) throw new HttpError(403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed.')
+        if (!this.originAllowed(request)) throw new AppError('ORIGIN_NOT_ALLOWED', 'Origin is not allowed.', 403)
         return next()
       }
       if (request.url.pathname === '/api/health') return next()
       const session = await this.authenticate(request)
       if (session) request.state.session = session
       if (request.url.pathname === '/api/v2/client-manifest' || request.url.pathname.startsWith('/api/plugins/')) return next()
-      if (!session) { this.clearCookie(request); throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required.') }
+      if (!session) { this.clearCookie(request); throw new AppError('UNAUTHORIZED', 'Authentication required.', 401) }
       if (!['GET', 'HEAD'].includes(request.raw.method || '')) {
-        if (!equal(String(request.raw.headers['x-csrf-token'] || ''), session.csrfToken)) throw new HttpError(403, 'CSRF_INVALID', 'CSRF validation failed.')
-        if (!this.originAllowed(request)) throw new HttpError(403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed.')
+        if (!equal(String(request.raw.headers['x-csrf-token'] || ''), session.csrfToken)) throw new AppError('CSRF_INVALID', 'CSRF validation failed.', 403)
+        if (!this.originAllowed(request)) throw new AppError('ORIGIN_NOT_ALLOWED', 'Origin is not allowed.', 403)
       }
       await next()
     }))
@@ -99,12 +100,12 @@ export default class AuthService extends Service {
     const attempt = await this.ctx.store.call('auth.reserve_login_attempt', { client_hash: client, now: iso(), stale_before: iso(Date.now() - 60000), max_attempts: 5 })
     if (!attempt.allowed) {
       request.response.setHeader('Retry-After', Math.max(1, Math.ceil((Date.parse(attempt.window_started_at) + 60000 - Date.now()) / 1000)))
-      throw new HttpError(429, 'RATE_LIMITED', 'Too many login attempts.')
+      throw new AppError('RATE_LIMITED', 'Too many login attempts.', 429)
     }
     const password = body.password
-    if (typeof password !== 'string' || !password || password.length > 1024) throw new HttpError(401, 'UNAUTHORIZED', 'Invalid credentials.')
+    if (typeof password !== 'string' || !password || password.length > 1024) throw new AppError('UNAUTHORIZED', 'Invalid credentials.', 401)
     const verified = await this.ctx.store.call('auth.verify_password', { password })
-    if (!verified.valid) throw new HttpError(401, 'UNAUTHORIZED', 'Invalid credentials.')
+    if (!verified.valid) throw new AppError('UNAUTHORIZED', 'Invalid credentials.', 401)
     await this.ctx.store.call('auth.delete_login_attempt', { client_hash: client })
     const token = randomBytes(32).toString('base64url')
     const expiresAt = iso(Date.now() + this.settings.sessionTtlSeconds * 1000)

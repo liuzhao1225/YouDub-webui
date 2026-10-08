@@ -1,4 +1,4 @@
-"""Public v1 errors contain actionable fields, never request bodies or secrets."""
+"""Structured media operation errors consumed by the worker protocol."""
 
 from __future__ import annotations
 

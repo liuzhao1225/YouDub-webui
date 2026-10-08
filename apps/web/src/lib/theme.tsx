@@ -6,9 +6,6 @@ export type Theme = "dark" | "light"
 
 const STORAGE_KEY = "youdub-theme"
 
-// 在首帧绘制前应用主题，避免刷新时闪烁；默认深色。
-export const THEME_INIT_SCRIPT = `(function(){try{var d=localStorage.getItem("${STORAGE_KEY}")!=="light";var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light"}catch(_){}})()`
-
 type ThemeContextValue = {
   theme: Theme
   setTheme: (theme: Theme) => void

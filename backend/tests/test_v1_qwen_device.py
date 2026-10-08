@@ -44,5 +44,5 @@ def test_qwen_child_uses_selected_device_and_existing_cancellation_path(tmp_path
 
     monkeypatch.setattr(media, "_run_media", run)
     segment = Segment(id="segment-1", start_ms=1000, end_ms=1800, text="Hello")
-    assert forced_alignment.align(context, [(segment, "你好")], lambda text: [text], lambda *_: None) == [(1100, 1400, "你好")]
+    assert forced_alignment.align(context, [(segment, "你好")], lambda text: [text], lambda *_: None, audio_paths=sorted((context.work_dir / "adjusted").glob("*.wav"))) == [(1100, 1400, "你好")]
     assert len(calls) == 1

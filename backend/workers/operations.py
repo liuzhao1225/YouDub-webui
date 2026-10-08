@@ -129,7 +129,7 @@ class Operation:
         from backend.app.v1 import asr
         context = self.context("asr", {"source_audio": self.path(self.inputs["audio"]),
                                        "media_info": self.json_file("mediaInfo")})
-        result = asr.run(context, self.wire.progress, include_words=True)
+        result = asr.run(context, self.wire.progress)
         return {"transcript": json.loads(result.output_files["transcript"].read_text()),
                 "raw": self.artifact("raw", result.output_files["asr_raw"], "diagnostic/json/v1", "application/json")}
 

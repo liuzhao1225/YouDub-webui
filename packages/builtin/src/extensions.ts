@@ -4,8 +4,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { dirname, resolve, relative, join, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
-import { HttpError } from './http.js'
-import '@youdub/sdk'
+import { AppError } from '@youdub/sdk'
 
 interface ClientModule { id: string; version: string; access: 'public' | 'authenticated'; url: string; css?: string[]; config?: object }
 interface PythonEntry { entry: string; requirements?: string; provider: Record<string, any>; options?: object; runtimeAdapter?: string }
@@ -39,6 +38,7 @@ export default class ExtensionsService extends Service {
       const identity = { id: item.id, version: item.version, integrity: item.integrity }
       if (item.python) return {
         id: item.id, name: pathToFileURL(resolve(this.config.repoRoot, 'packages/builtin/src/python-provider.ts')).href,
+        inject: item.python.runtimeAdapter ? ['store'] : undefined,
         config: { ...item.config, descriptor: { ...item.python.provider, pluginId: item.id, pluginVersion: item.version, integrity: item.integrity }, command: join(item.directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python'), args: ['-B', resolve(item.directory, item.python.entry)], cwd: item.directory, options: item.python.options || {}, runtimeAdapter: item.python.runtimeAdapter, $plugin: identity },
       }
       return { id: item.id, name: pathToFileURL(resolve(item.directory, item.host!)).href, config: { ...item.config, $plugin: identity } }
@@ -48,17 +48,17 @@ export default class ExtensionsService extends Service {
   private save() { return writeFile(join(this.config.root, 'installed.json'), JSON.stringify(this.installed, null, 2) + '\n', { mode: 0o600 }) }
   private async verifyPackage(item: Installed) {
     const actual = `sha256:${await packageHash(item.directory)}`
-    if (actual !== item.integrity) throw new HttpError(409, 'PLUGIN_INTEGRITY_MISMATCH', `Installed plugin ${item.id}@${item.version} has changed. Expected ${item.integrity}; found ${actual}.`)
+    if (actual !== item.integrity) throw new AppError('PLUGIN_INTEGRITY_MISMATCH', `Installed plugin ${item.id}@${item.version} has changed. Expected ${item.integrity}; found ${actual}.`, 409)
     if (item.host) await confined(item.directory, item.host)
     if (item.python) { await confined(item.directory, item.python.entry); await lstat(join(item.directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python')) }
     if (item.client) { await confined(item.directory, item.client.entry); for (const css of item.client.css || []) await confined(item.directory, css) }
   }
-  private async idle() { if (!await this.ctx.tasks.idle()) throw new HttpError(409, 'TASK_BUSY', 'Finish or cancel active tasks before changing extensions.') }
+  private async idle() { if (!await this.ctx.tasks.idle()) throw new AppError('TASK_BUSY', 'Finish or cancel active tasks before changing extensions.', 409) }
   async setEnabled(id: string, enabled: boolean) {
     await this.idle()
-    if (typeof enabled !== 'boolean') throw new HttpError(422, 'INVALID_CONFIG', 'enabled must be boolean.')
+    if (typeof enabled !== 'boolean') throw new AppError('INVALID_CONFIG', 'enabled must be boolean.', 422)
     const item = this.installed.find(item => item.id === id)
-    if (!item) throw new HttpError(404, 'NOT_FOUND', 'Extension not found.')
+    if (!item) throw new AppError('NOT_FOUND', 'Extension not found.', 404)
     if (enabled) await this.verifyPackage(item)
     const next = this.installed.map(entry => entry === item ? { ...entry, enabled } : entry)
     await writeFile(join(this.config.root, 'installed.json'), JSON.stringify(next, null, 2) + '\n', { mode: 0o600 })
@@ -67,15 +67,15 @@ export default class ExtensionsService extends Service {
   async remove(id: string) {
     await this.idle()
     const item = this.installed.find(item => item.id === id)
-    if (!item) throw new HttpError(404, 'NOT_FOUND', 'Extension not found.')
-    if (this.bootEnabled.has(id)) throw new HttpError(409, 'RESTART_REQUIRED', 'Disable this extension and restart before removing it.')
+    if (!item) throw new AppError('NOT_FOUND', 'Extension not found.', 404)
+    if (this.bootEnabled.has(id)) throw new AppError('RESTART_REQUIRED', 'Disable this extension and restart before removing it.', 409)
     await rm(item.directory, { recursive: true })
     this.installed = this.installed.filter(entry => entry !== item); await this.save()
   }
   async install(request: InstallRequest) {
     await this.idle()
-    if (this.busy) throw new HttpError(409, 'INSTALL_BUSY', 'Another extension installation is running.')
-    if (typeof request.source !== 'string' || !request.source) throw new HttpError(422, 'INVALID_CONFIG', 'An extension source is required.')
+    if (this.busy) throw new AppError('INSTALL_BUSY', 'Another extension installation is running.', 409)
+    if (typeof request.source !== 'string' || !request.source) throw new AppError('INVALID_CONFIG', 'An extension source is required.', 422)
     this.busy = true
     const staging = join(this.config.root, `install-${randomUUID()}`)
     const log: string[] = []
@@ -94,13 +94,13 @@ export default class ExtensionsService extends Service {
       if (github) {
         await run('git', ['clone', '--no-checkout', `https://github.com/${github[1]}.git`, directory])
         const ref = request.ref || 'HEAD'
-        if (ref.startsWith('-')) throw new HttpError(422, 'INVALID_CONFIG', 'Invalid Git ref.')
+        if (ref.startsWith('-')) throw new AppError('INVALID_CONFIG', 'Invalid Git ref.', 422)
         if (request.ref) await run('git', ['fetch', 'origin', ref], directory)
         commit = (await run('git', ['rev-parse', '--verify', `${request.ref ? 'FETCH_HEAD' : 'HEAD'}^{commit}`], directory)).trim()
         await run('git', ['checkout', '--detach', commit!], directory)
       } else if (request.source.startsWith('npm:')) {
         const spec = request.source.slice(4)
-        if (!/^(?:@[\w.-]+\/)?[\w.-]+@\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(spec)) throw new HttpError(422, 'INVALID_CONFIG', 'Use an exact npm package version.')
+        if (!/^(?:@[\w.-]+\/)?[\w.-]+@\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(spec)) throw new AppError('INVALID_CONFIG', 'Use an exact npm package version.', 422)
         const packed = JSON.parse(await run('npm', ['pack', spec, '--json', '--registry=https://registry.npmmirror.com', '--pack-destination', staging]))
         await run('tar', ['-xzf', join(staging, packed[0].filename), '-C', staging])
       } else {
@@ -109,26 +109,26 @@ export default class ExtensionsService extends Service {
       }
       const manifest = JSON.parse(await readFile(join(directory, 'package.json'), 'utf8'))
       const meta = manifest.youdub
-      if (!meta || !cleanId(meta.id) || !compatible(meta.sdkVersion) || typeof manifest.version !== 'string' || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(manifest.version)) throw new HttpError(422, 'INCOMPATIBLE_PLUGIN', 'Invalid YouDub plugin identity, version, or SDK range.')
-      if (this.installed.some(item => item.id === meta.id)) throw new HttpError(409, 'PLUGIN_EXISTS', 'Disable, restart, and remove the installed version before replacing it.')
-      if (manifest.dependencies?.cordis || manifest.dependencies?.['@youdub/sdk']) throw new HttpError(422, 'INCOMPATIBLE_PLUGIN', 'Cordis and the SDK must be peer dependencies.')
-      if (meta.build && meta.build !== 'npm') throw new HttpError(422, 'INVALID_CONFIG', 'Supported build entry: npm.')
+      if (!meta || !cleanId(meta.id) || !compatible(meta.sdkVersion) || typeof manifest.version !== 'string' || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(manifest.version)) throw new AppError('INCOMPATIBLE_PLUGIN', 'Invalid YouDub plugin identity, version, or SDK range.', 422)
+      if (this.installed.some(item => item.id === meta.id)) throw new AppError('PLUGIN_EXISTS', 'Disable, restart, and remove the installed version before replacing it.', 409)
+      if (manifest.dependencies?.cordis || manifest.dependencies?.['@youdub/sdk']) throw new AppError('INCOMPATIBLE_PLUGIN', 'Cordis and the SDK must be peer dependencies.', 422)
+      if (meta.build && meta.build !== 'npm') throw new AppError('INVALID_CONFIG', 'Supported build entry: npm.', 422)
       if (meta.build || manifest.dependencies && Object.keys(manifest.dependencies).length) await run('npm', ['install', ...(meta.build ? [] : ['--omit=dev']), '--legacy-peer-deps', '--registry=https://registry.npmmirror.com'], directory)
       const require = createRequire(import.meta.url)
       const shared = new Map([['cordis', await realpath(dirname(require.resolve('cordis/package.json')))], ['@youdub/sdk', await realpath(resolve(this.config.repoRoot, 'packages/sdk'))]])
       for (const [name, target] of shared) {
         const destination = join(directory, 'node_modules', name)
         await mkdir(dirname(destination), { recursive: true })
-        try { await lstat(destination); throw new HttpError(422, 'INCOMPATIBLE_PLUGIN', `Plugin installed its own ${name}.`) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+        try { await lstat(destination); throw new AppError('INCOMPATIBLE_PLUGIN', `Plugin installed its own ${name}.`, 422) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
         await symlink(target, destination, 'dir')
       }
       await verifySharedModules(directory, shared)
       if (meta.build) await run('npm', ['run', 'build'], directory)
       await verifySharedModules(directory, shared)
       if (meta.python) {
-        if (meta.host) throw new HttpError(422, 'INVALID_CONFIG', 'Choose a Host entry or the standard Python bridge.')
+        if (meta.host) throw new AppError('INVALID_CONFIG', 'Choose a Host entry or the standard Python bridge.', 422)
         await confined(directory, meta.python.entry)
-        if (!meta.python.provider?.id || !Array.isArray(meta.python.provider.operations) || !meta.python.provider.operations.length) throw new HttpError(422, 'INVALID_CONFIG', 'Python plugins require a provider descriptor with operations.')
+        if (!meta.python.provider?.id || !Array.isArray(meta.python.provider.operations) || !meta.python.provider.operations.length) throw new AppError('INVALID_CONFIG', 'Python plugins require a provider descriptor with operations.', 422)
         await run('python3', ['-m', 'venv', '.venv'], directory)
         if (meta.python.requirements) {
           const requirements = await confined(directory, meta.python.requirements)
@@ -143,7 +143,7 @@ export default class ExtensionsService extends Service {
       }
       if (meta.host) await confined(directory, meta.host)
       if (meta.client) { await confined(directory, meta.client.entry); for (const css of meta.client.css || []) await confined(directory, css) }
-      if (!meta.host && !meta.client && !meta.python) throw new HttpError(422, 'INVALID_CONFIG', 'Plugin must provide a Host, Client, or Python entry.')
+      if (!meta.host && !meta.client && !meta.python) throw new AppError('INVALID_CONFIG', 'Plugin must provide a Host, Client, or Python entry.', 422)
       const integrity = await packageHash(directory)
       const item: Installed = { id: meta.id, version: manifest.version, integrity: `sha256:${integrity}`, source: request.source, commit, directory, host: meta.host, python: meta.python, client: meta.client, enabled: request.enabled ?? true, config: request.config || {} }
       const next = [...this.installed, item]
@@ -152,7 +152,7 @@ export default class ExtensionsService extends Service {
       return { id: item.id, version: item.version, commit, installed: true, enabled: item.enabled, active: false, restartRequired: true }
     } catch (error) {
       await writeFile(join(staging, 'failure.json'), JSON.stringify({ state: 'failed', source: request.source, error: error instanceof Error ? error.stack : String(error) }, null, 2), { mode: 0o600 }).catch(reportError => { this.ctx.logger.error(reportError) })
-      throw new HttpError(error instanceof HttpError ? error.status : 500, error instanceof HttpError ? error.code : 'PLUGIN_INSTALL_FAILED', `Extension installation failed. Partial files and diagnostics: ${staging}. ${error instanceof Error ? error.message : String(error)}`)
+      throw new AppError(error instanceof AppError ? error.code : 'PLUGIN_INSTALL_FAILED', `Extension installation failed. Partial files and diagnostics: ${staging}. ${error instanceof Error ? error.message : String(error)}`, error instanceof AppError ? error.status : 500)
     } finally { this.busy = false }
   }
   clientManifest(authenticated: boolean) {
@@ -163,14 +163,14 @@ export default class ExtensionsService extends Service {
     if (packageId === 'youdub-client' && version === '1.0.0' && this.config.builtinClientManifest) {
       const prefix = `/api/plugins/${packageId}/${version}/`
       const publicAssets = this.builtin.modules.filter(item => item.access === 'public').flatMap(item => [item.url, ...(item.css || [])]).concat((this.builtin.publicAssets || []).map(path => prefix + path))
-      if (!authenticated && !publicAssets.includes(prefix + asset)) throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required.')
+      if (!authenticated && !publicAssets.includes(prefix + asset)) throw new AppError('UNAUTHORIZED', 'Authentication required.', 401)
       return { path: await confined(dirname(this.config.builtinClientManifest), asset), mime: mime[extname(asset)] || 'application/octet-stream' }
     }
     const item = this.installed.find(item => item.id === packageId && item.version === version && this.bootEnabled.has(item.id))
-    if (!item?.client) throw new HttpError(404, 'NOT_FOUND', 'Client extension not found.')
+    if (!item?.client) throw new AppError('NOT_FOUND', 'Client extension not found.', 404)
     const allowed = [item.client.entry, ...(item.client.css || [])]
-    if (!allowed.includes(asset)) throw new HttpError(404, 'NOT_FOUND', 'Client asset is not declared.')
-    if (!authenticated && item.client.access !== 'public') throw new HttpError(401, 'UNAUTHORIZED', 'Authentication required.')
+    if (!allowed.includes(asset)) throw new AppError('NOT_FOUND', 'Client asset is not declared.', 404)
+    if (!authenticated && item.client.access !== 'public') throw new AppError('UNAUTHORIZED', 'Authentication required.', 401)
     return { path: await confined(item.directory, asset), mime: mime[extname(asset)] || 'application/octet-stream' }
   }
 }
@@ -181,9 +181,9 @@ async function verifySharedModules(directory: string, shared: Map<string, string
     try { actual = await realpath(path) }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
-      throw new HttpError(422, 'INCOMPATIBLE_PLUGIN', `Shared module ${name} is missing: ${path}`)
+      throw new AppError('INCOMPATIBLE_PLUGIN', `Shared module ${name} is missing: ${path}`, 422)
     }
-    if (actual !== shared.get(name)) throw new HttpError(422, 'INCOMPATIBLE_PLUGIN', `Plugin installed its own ${name}: ${path}`)
+    if (actual !== shared.get(name)) throw new AppError('INCOMPATIBLE_PLUGIN', `Plugin installed its own ${name}: ${path}`, 422)
   }
   for (const name of shared.keys()) await check(name, join(directory, 'node_modules', name))
   const visited = new Set<string>()
@@ -216,16 +216,16 @@ async function packageHash(root: string) {
       const path = join(directory, entry.name)
       if (entry.isDirectory()) await walk(path)
       else if (entry.isFile()) { hash.update(relative(root, path)).update('\0').update(await readFile(path)).update('\0') }
-      else throw new HttpError(422, 'INVALID_PLUGIN', `Unsupported symbolic link or special file: ${relative(root, path)}`)
+      else throw new AppError('INVALID_PLUGIN', `Unsupported symbolic link or special file: ${relative(root, path)}`, 422)
     }
   }
   await walk(root); return hash.digest('hex')
 }
 
 async function confined(root: string, path: string) {
-  if (typeof path !== 'string' || !path || path.startsWith('/')) throw new HttpError(422, 'INVALID_PATH', 'A relative plugin asset path is required.')
+  if (typeof path !== 'string' || !path || path.startsWith('/')) throw new AppError('INVALID_PATH', 'A relative plugin asset path is required.', 422)
   const base = await realpath(root), file = await realpath(resolve(base, path)), rel = relative(base, file)
-  if (rel.startsWith('..') || !rel) throw new HttpError(403, 'INVALID_PATH', 'Plugin asset escapes its directory.')
-  if (!(await lstat(file)).isFile()) throw new HttpError(404, 'NOT_FOUND', 'Plugin asset is not a file.')
+  if (rel.startsWith('..') || !rel) throw new AppError('INVALID_PATH', 'Plugin asset escapes its directory.', 403)
+  if (!(await lstat(file)).isFile()) throw new AppError('NOT_FOUND', 'Plugin asset is not a file.', 404)
   return file
 }

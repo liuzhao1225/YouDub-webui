@@ -1,9 +1,9 @@
 import { config as loadEnv } from 'dotenv'
 import { resolve, join } from 'node:path'
-import { homedir } from 'node:os'
 import { pathToFileURL } from 'node:url'
 import type { EntryOptions } from '@cordisjs/plugin-loader'
 import { startHost } from './bootstrap.js'
+import { runtimePaths } from './paths.js'
 import '../../../packages/builtin/src/extensions.js'
 
 if (process.platform !== 'win32') process.umask(0o077)
@@ -18,9 +18,7 @@ if (command === 'help') {
   console.log('YouDub plugins\n  list [--data-dir DIR]\n  install --source PATH|npm:NAME@VERSION|https://github.com/OWNER/REPO [--ref REF]\n  enable --id PLUGIN_ID\n  disable --id PLUGIN_ID\nChanges apply after the application restarts. Removal is available in Settings after disabling and restarting.')
 } else {
   if (!['list', 'install', 'enable', 'disable'].includes(command)) throw new Error(`Unknown plugin command: ${command}`)
-  const repoRoot = resolve('.'), python = resolve(process.env.YOUDUB_PYTHON || '.venv/bin/python')
-  const dataBase = process.platform === 'darwin' ? join(homedir(), 'Library/Application Support/YouDub') : process.platform === 'win32' ? join(process.env.LOCALAPPDATA || homedir(), 'YouDub') : join(process.env.XDG_DATA_HOME || join(homedir(), '.local/share'), 'youdub')
-  const root = resolve(options.get('data-dir') || process.env.YOUDUB_DESKTOP_DATA_DIR || dataBase)
+  const { root, repoRoot, python } = runtimePaths(options.get('data-dir'))
   const entry = (id: string, config?: object): EntryOptions => ({ id, name: '@youdub/builtin/' + id, config })
   const host = await startHost([
     entry('process'), entry('catalog'), entry('files', { root }), entry('store', { root, repoRoot, python }),

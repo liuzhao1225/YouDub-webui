@@ -36,3 +36,26 @@ def default_test_device(monkeypatch, tmp_path):
     monkeypatch.setenv("YOUDUB_AUTH_COOKIE_SECURE", "false")
     monkeypatch.setenv("YOUDUB_AUTH_COOKIE_SAMESITE", "lax")
     monkeypatch.delenv("YOUDUB_AUTH_COOKIE_NAME", raising=False)
+
+
+@pytest.fixture
+def config():
+    from backend.app.v1.contracts import TaskConfig
+    return TaskConfig.model_validate({
+        "source_language": "en", "target_language": "zh", "output_mode": "subtitles",
+        "keep_background": False,
+        "asr": {"adapter": "whisper", "model": "test-whisper", "device": "cpu"},
+        "translation": {"adapter": "openai", "model": "test-openai", "device": "remote"},
+        "tts": None, "separation": None,
+    })
+
+
+@pytest.fixture(scope="module")
+def video(tmp_path_factory):
+    import subprocess
+    from backend.app.config import ffmpeg_binary
+    path = tmp_path_factory.mktemp("model-test-media") / "sample.mp4"
+    subprocess.run([ffmpeg_binary(), "-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=320x240:r=10",
+                    "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=16000", "-t", "1",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(path)], check=True, timeout=30)
+    return path

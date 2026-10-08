@@ -1,9 +1,8 @@
-import { useV1Text } from '@/lib/v1-ui'
 import { Context } from 'cordis'
 import { useState } from 'react'
 import { ArrowLeft, Check, Download, FileText, ListVideo, Loader2, RotateCw, Square, Trash2 } from 'lucide-react'
 import { Link, text, useClient, useSlot, type Catalog, type JsonObject, type PanelProps, type RouteProps, type TaskAction, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
-import { useI18n } from '@/lib/i18n'
+import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes, formatDateTime } from '@/lib/format'
 import { TaskCover } from '@/components/task-cover'
 import { VideoPlayer } from '@/components/video-player'
@@ -13,15 +12,15 @@ import { ConfigEditor, defaultConfig, useEditorSupported } from './schema-form'
 import { useQuery } from './use-query'
 
 const labels: Record<string, [string, string, string]> = { queued: ['Queued', '排队中', '順番待ち'], running: ['Running', '处理中', '処理中'], waiting: ['Waiting', '等待中', '待機中'], cancelling: ['Cancelling', '正在取消', 'キャンセル中'], cancelled: ['Cancelled', '已取消', 'キャンセル済み'], succeeded: ['Completed', '已完成', '完了'], failed: ['Failed', '失败', '失敗'], pending: ['Pending', '未开始', '未開始'], completed: ['Completed', '已完成', '完了'] }
-function State({ status }: { status: string }) { const tx = useV1Text(); return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground'}`}>{labels[status] ? tx(...labels[status]) : status}</span> }
+function State({ status }: { status: string }) { const tx = useText(); return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground'}`}>{labels[status] ? tx(...labels[status]) : status}</span> }
 function Library() {
-  const tx = useV1Text()
+  const tx = useText()
   const [status, setStatus] = useState(''), [offset, setOffset] = useState(0)
   const { data, error, refresh } = useQuery<TaskPage>(`/api/v2/tasks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`, 3000)
   return <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8"><header className="mb-7 flex items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{tx("Library", "任务库", "ライブラリ")}</h1><p className="mt-2 text-sm text-muted-foreground">{tx("Track progress and generated files.", "查看处理进度和已生成的文件。", "進捗と生成ファイルを確認できます。")}</p></div><Link href="/" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">{tx("New task", "新建任务", "新しいタスク")}</Link></header><div className="mb-5 flex flex-wrap items-center gap-2"><select aria-label={tx("Task status", "任务状态", "タスクの状態")} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} className="h-9 rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">{tx("All statuses", "全部状态", "すべての状態")}</option>{['queued', 'running', 'waiting', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(...labels[item])}</option>)}</select><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx("Refresh", "刷新", "更新")}</Button></div>{error && <InlineAlert>{error}</InlineAlert>}{data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{tx("No tasks yet", "还没有任务", "タスクはまだありません")}</div>}<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data?.items.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-colors hover:border-input"><TaskCover id={task.id} size="lg" className="rounded-none" /><div className="space-y-3 p-4"><div className="flex items-start justify-between gap-2"><h2 className="min-w-0 truncate font-medium">{task.sourceName}</h2><State status={task.status} /></div><p className="text-xs text-muted-foreground">{task.workflowId}</p><p className="text-xs text-subtle-foreground">{formatDateTime(task.createdAt)}</p>{task.error && <p className="line-clamp-2 text-xs text-status-danger-fg">{task.error.message}</p>}</div></Link>)}</div><div className="mt-6 flex justify-end gap-2"><Button variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>{tx("Previous", "上一页", "前へ")}</Button><Button variant="outline" disabled={!data?.hasMore} onClick={() => setOffset(offset + 20)}>{tx("Next", "下一页", "次へ")}</Button></div></main>
 }
 function RerunEditor({ task, close }: { task: TaskView; close(): void }) {
-  const tx = useV1Text()
+  const tx = useText()
   const { language } = useI18n()
   const { data: catalog, error } = useQuery<Catalog>('/api/v2/catalog')
   const [selected, setSelected] = useState(task.workflowId)
@@ -35,7 +34,7 @@ function RerunEditor({ task, close }: { task: TaskView; close(): void }) {
   </section>
 }
 function RerunForm({ task, workflow, close }: { task: TaskView; workflow: WorkflowDescription; close(): void }) {
-  const tx = useV1Text()
+  const tx = useText()
   const { apiClient, navigation } = useClient()
   const [config, setConfig] = useState<JsonObject>(() => structuredClone(task.workflowId === workflow.id ? task.config : workflow.defaults ?? defaultConfig(workflow.configSchema) ?? {}) as JsonObject)
   const [failure, setFailure] = useState(''), [busy, setBusy] = useState(false), [acknowledged, setAcknowledged] = useState(false), [submitted, setSubmitted] = useState(false)
@@ -52,7 +51,7 @@ function RerunForm({ task, workflow, close }: { task: TaskView; workflow: Workfl
   </div>
 }
 function Actions({ task, refresh, prepareDelete }: PanelProps & { prepareDelete(value: boolean): void }) {
-  const tx = useV1Text()
+  const tx = useText()
   const { apiClient, navigation } = useClient()
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [confirmDelete, setConfirmDelete] = useState(false), [rerun, setRerun] = useState(false)
   async function act(action: TaskAction) {
@@ -67,7 +66,7 @@ function Actions({ task, refresh, prepareDelete }: PanelProps & { prepareDelete(
   return <div className="space-y-4"><div className="flex flex-wrap gap-2">{task.allowedActions.includes('cancel') && <Button variant="outline" disabled={busy} onClick={() => void act('cancel')}><Square />{tx("Cancel task", "取消任务", "タスクをキャンセル")}</Button>}{task.allowedActions.includes('retry') && <Button disabled={busy} onClick={() => void act('retry')}><RotateCw />{tx("Retry from start", "从头重试", "最初から再試行")}</Button>}{task.allowedActions.includes('rerun') && <Button variant="outline" disabled={busy} onClick={() => setRerun(!rerun)}>{tx("Generate again", "重新生成", "再生成")}</Button>}{task.allowedActions.includes('delete') && <Button variant={confirmDelete ? 'destructive' : 'ghost'} disabled={busy} onClick={() => { if (confirmDelete) void act('delete'); else { setConfirmDelete(true); prepareDelete(true) } }}><Trash2 />{confirmDelete ? tx('Delete task and files', '确认删除任务与文件', 'タスクとファイルを削除') : tx('Delete task', '删除任务', 'タスクを削除')}</Button>}{confirmDelete && <Button variant="ghost" onClick={() => { setConfirmDelete(false); prepareDelete(false) }}>{tx("Keep task", "保留", "タスクを保持")}</Button>}</div>{task.mayStillRun && <InlineAlert tone="warning">{tx("The remote request may still be running.", "远端请求可能仍在执行。", "リモート処理が続いている可能性があります。")}</InlineAlert>}{error && <InlineAlert>{error}</InlineAlert>}{rerun && <RerunEditor task={task} close={() => setRerun(false)} />}</div>
 }
 function TaskDetail({ params }: RouteProps) {
-  const tx = useV1Text()
+  const tx = useText()
   const { data: task, error, refresh } = useQuery<TaskView>(`/api/v2/tasks/${encodeURIComponent(params.id)}`, 1500)
   const panels = useSlot('task.detail.panels'), actions = useSlot('task.detail.actions')
   const { language } = useI18n()

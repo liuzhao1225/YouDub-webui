@@ -10,7 +10,6 @@ from uuid import uuid4
 
 import pytest
 
-from backend.app.v1.storage import Store
 from backend.workers.bridge import Bridge
 from backend.workers.protocol import WorkerError
 from backend.workers.store import SqliteStore
@@ -44,7 +43,7 @@ def old_database(root, status="succeeded"):
     return record
 
 
-def test_schema_migration_preserves_all_historical_values_and_rejects_old_writer(tmp_path):
+def test_schema_migration_preserves_all_historical_values(tmp_path):
     root = tmp_path / "data"
     raw = old_database(root)
     store = SqliteStore(root)
@@ -57,8 +56,6 @@ def test_schema_migration_preserves_all_historical_values_and_rejects_old_writer
     with store.connect() as conn:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
         assert conn.execute("SELECT current_stage FROM tasks WHERE id=?", (created["id"],)).fetchone()[0] is None
-    with pytest.raises(Exception, match="Unsupported desktop database version"):
-        Store(root)
 
 
 def test_active_legacy_task_stops_migration_without_changing_schema_or_record(tmp_path):
@@ -103,15 +100,6 @@ def test_cas_rejects_late_writes_and_mutated_execution_snapshot(tmp_path):
         store.cas(updated["id"], updated["revision"], {**updated, "plan": {"steps": []}})
     assert error.value.code == "IMMUTABLE_SNAPSHOT"
     assert store.get(updated["id"])["message"] == "first"
-
-
-def test_compatible_workflow_filter_applies_before_pagination(tmp_path):
-    store = SqliteStore(tmp_path)
-    store.create(task(workflowId="external", createdAt=LATER))
-    visible = store.create(task(workflowId="youdub.localize"))
-    page = store.list(limit=1, compatibleWorkflowId="youdub.localize")
-    assert [item["id"] for item in page["items"]] == [visible["id"]]
-    assert page["hasMore"] is False
 
 
 def test_legacy_input_is_registered_only_within_its_own_task_directory(tmp_path):
@@ -175,12 +163,80 @@ def test_auth_records_migrate_once_and_login_reservation_is_atomic(tmp_path):
     with sqlite3.connect(old) as conn:
         conn.execute("CREATE TABLE auth_sessions(token_hash TEXT PRIMARY KEY,credential_version TEXT,created_at TEXT,expires_at TEXT)")
         conn.execute("INSERT INTO auth_sessions VALUES('token','credential',?,?)", (NOW, LATER))
+        conn.execute("INSERT INTO auth_sessions VALUES('second','credential-2',?,?)", (NOW, LATER))
+    original_bytes = old.read_bytes()
     store = SqliteStore(tmp_path / "data", old)
     assert store.auth("get_session", {"token_hash": "token"})["credential_version"] == "credential"
+    assert store.auth("get_session", {"token_hash": "second"})["credential_version"] == "credential-2"
     store.auth("delete_session", {"token_hash": "token"})
     reopened = SqliteStore(store.root, old)
     assert reopened.auth("get_session", {"token_hash": "token"}) is None
+    assert reopened.auth("get_session", {"token_hash": "second"})["credential_version"] == "credential-2"
+    assert old.read_bytes() == original_bytes
     params = {"client_hash": "client", "now": NOW, "stale_before": "2026-10-08T07:59:00.000Z", "max_attempts": 2}
     assert store.auth("reserve_login_attempt", params)["allowed"] is True
     assert store.auth("reserve_login_attempt", params)["allowed"] is True
     assert store.auth("reserve_login_attempt", params) == {"allowed": False, "window_started_at": NOW}
+
+
+def test_local_runtime_probe_does_not_read_credentials(tmp_path, monkeypatch):
+    from backend.app.v1 import runtime
+    bridge = Bridge(tmp_path, credentials=Credentials())
+    monkeypatch.setattr(bridge, "settings", lambda: pytest.fail("local probe must not read keyring"))
+    monkeypatch.setattr(runtime, "probe_capability", lambda adapter: {"adapter": adapter})
+    assert bridge.call("runtime.probe", {"adapter": "whisper"}) == {"adapter": "whisper"}
+
+
+def test_settings_connection_omission_rotation_clear_and_address_binding(tmp_path):
+    credentials = Credentials()
+    bridge = Bridge(tmp_path, credentials=credentials)
+    def patch(**values):
+        return bridge.call("settings.patch", {"patch": {"connection": {"adapter": "openai", **values}}})
+    patch(base_url="https://first.example/v1", api_key="synthetic-secret")
+    original = bridge.call("settings.raw", {})["connections"][0]["credential_ref"]
+    assert patch(base_url="https://first.example/v1")["connections"][0]["has_api_key"]
+    assert bridge.call("settings.raw", {})["connections"][0]["credential_ref"] == original
+    patch(api_key="replacement-secret")
+    assert original not in credentials.values
+    assert len(credentials.values) == 1
+    assert not patch(base_url="https://second.example/v1")["connections"][0]["has_api_key"]
+    assert not credentials.values
+    patch(api_key="last-secret")
+    assert not patch(api_key=None)["connections"][0]["has_api_key"]
+    assert not credentials.values
+    with bridge.store.connect() as conn:
+        assert "secret" not in "\n".join(conn.iterdump())
+
+
+def test_settings_failures_are_visible_before_and_after_credential_write(tmp_path, monkeypatch):
+    from backend.app.v1.credentials import CredentialStoreError
+    credentials = Credentials()
+    bridge = Bridge(tmp_path, credentials=credentials)
+    patch = {"connection": {"adapter": "openai", "base_url": "https://example.test/v1", "api_key": "synthetic-key"}}
+    with monkeypatch.context() as scoped:
+        def fail_keyring(*args):
+            raise CredentialStoreError("keyring locked")
+        scoped.setattr(credentials, "set", fail_keyring)
+        with pytest.raises(CredentialStoreError, match="keyring locked"):
+            bridge.patch_settings(patch)
+    assert bridge.store.settings_values() == {}
+    def fail_store(*args):
+        raise sqlite3.OperationalError("synthetic write failure")
+    monkeypatch.setattr(bridge.store, "write_setting", fail_store)
+    with pytest.raises(WorkerError) as error:
+        bridge.patch_settings(patch)
+    assert error.value.code == "SETTINGS_PARTIALLY_APPLIED"
+    assert len(credentials.values) == 1
+    assert bridge.store.settings_values() == {}
+
+
+def test_current_store_rejects_redirected_database_without_touching_target(tmp_path):
+    from backend.app.runtime_security import RuntimeSecurityError
+    root = tmp_path / "store"
+    root.mkdir()
+    outside = tmp_path / "outside.sqlite"
+    outside.write_bytes(b"existing-data")
+    (root / "desktop.sqlite").symlink_to(outside)
+    with pytest.raises(RuntimeSecurityError):
+        SqliteStore(root)
+    assert outside.read_bytes() == b"existing-data"

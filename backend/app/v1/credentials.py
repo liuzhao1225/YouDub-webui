@@ -2,15 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Protocol
-
-
-class Credentials(Protocol):
-    def get(self, reference: str) -> str | None: ...
-    def set(self, reference: str, value: str) -> None: ...
-    def delete(self, reference: str) -> None: ...
-
-
 class CredentialStoreError(RuntimeError):
     pass
 

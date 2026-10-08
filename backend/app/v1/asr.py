@@ -13,7 +13,7 @@ from typing import Any
 from .errors import ApiError
 from .segments import Transcript
 from .steps import Completed, StageContext
-from .storage import data_directory
+from ..paths import data_directory
 
 
 MODEL_NAMES = (
@@ -48,11 +48,11 @@ def _milliseconds(value: Any) -> int:
     raise _invalid("Whisper returned an invalid segment timestamp.")
 
 
-def normalize_result(result: Any, *, duration_ms: int, include_words: bool = False) -> dict:
+def normalize_result(result: Any, *, duration_ms: int) -> dict:
     """Preserve complete utterances as translation and speech generation units.
 
     Subtitle display chunks are derived separately at export. Word-level ASR
-    metadata stays in the raw result and never changes these utterance bounds.
+    metadata is normalized on each segment without changing utterance bounds.
     """
     if not isinstance(result, dict):
         raise _invalid("Whisper did not return a transcription object.")
@@ -77,7 +77,7 @@ def normalize_result(result: Any, *, duration_ms: int, include_words: bool = Fal
                    "end_ms": end_ms, "text": raw["text"]}
         if speaker is not None:
             segment["speaker_id"] = speaker
-        if include_words and raw.get("words") is not None:
+        if raw.get("words") is not None:
             if not isinstance(raw["words"], list):
                 raise _invalid("Whisper returned invalid word timestamps.")
             segment["words"] = [{"text": word["word"], "start_ms": _milliseconds(word["start"]),
@@ -88,9 +88,7 @@ def normalize_result(result: Any, *, duration_ms: int, include_words: bool = Fal
     )
 
 
-def run(context: StageContext, progress: Callable[[float | None, str], None], *, include_words: bool = False) -> Completed:
-    # media imports the Runtime catalog; defer this import so Runtime can query
-    # checkpoint metadata without circular imports or loading model dependencies.
+def run(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:
     from .media import _run_media
 
     context.check_cancel()
@@ -150,7 +148,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
         raw_result = json.loads(raw_path.read_text(encoding="utf-8"))
     except ValueError as exc:
         raise _invalid("Whisper wrote invalid transcription JSON.") from exc
-    transcript = normalize_result(raw_result, duration_ms=duration_ms, include_words=include_words)
+    transcript = normalize_result(raw_result, duration_ms=duration_ms)
     context.check_cancel()
     transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
     progress(1.0, "Source transcription is ready")

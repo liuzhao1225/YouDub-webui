@@ -1,13 +1,13 @@
-import { useV1Text } from '@/lib/v1-ui'
+import { useText } from '@/lib/i18n'
 import { Context } from 'cordis'
 import type { Catalog, EditorProps, JsonObject } from '../sdk'
-import type { Runtime, TaskConfig, Capability } from '@/lib/v1-api'
-import { TaskConfigForm } from '@/components/v1-task-config'
+import type { Runtime, TaskConfig, Capability } from '@/plugin/builtin/localize-contracts'
+import { TaskConfigForm } from '@/components/localize-task-config'
 import { InlineAlert } from '@/components/inline-alert'
 import { useQuery } from './use-query'
 function LocalizeEditor({ value, readOnly, onChange }: EditorProps) {
-  const tx = useV1Text()
-  const { data: runtime, error } = useQuery<Runtime>('/api/v1/runtime')
+  const tx = useText()
+  const { data: runtime, error } = useQuery<Runtime>('/api/v2/runtime')
   const { data: catalog, error: catalogError } = useQuery<Catalog>('/api/v2/catalog')
   if (error || catalogError) return <InlineAlert>{error || catalogError}</InlineAlert>
   if (!runtime || !catalog) return <p role="status" className="text-sm text-muted-foreground">{tx("Loading models…", "正在加载模型目录…", "モデルを読み込み中…")}</p>

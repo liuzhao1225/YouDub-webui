@@ -1,5 +1,7 @@
 # YouDub Cordis 插件化迁移与验收记录
 
+> 本文记录首次迁移候选 `cf9f92f` 的验收。后续冗余清理、v1 HTTP 移除和当前测试数量见[清理审计](cordis-plugin-audit.md)；历史验证数据保留。
+
 2026-10-09 · 分支 `codex/plugin` · 基线 `e0dcb58` · 实施提交 `171cc37`。Cordis Host、Client、Python bridge 和外部插件已落地，真实三模式任务与实际数据目录切换已完成。最终代码候选 `cf9f92f90d67400c43c5886e68640d77f97e880b` 已完成生产构建与本地回读，重新生成和工作台模型表单正常显示。
 
 [架构说明](cordis-plugin-architecture.md)记录替换边界，[插件契约](cordis-plugin-contracts.md)记录执行接口，[运行指南](cordis-plugin-runtime.md)是当前启动与扩展安装入口。代码完成、模拟测试、生产构建、真实媒体成功和最终切换分别记录。

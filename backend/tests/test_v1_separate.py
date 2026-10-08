@@ -12,7 +12,6 @@ from backend.app.v1 import media, separate, separate_process
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.steps import StageCancelled, StageContext
-from backend.tests.test_v1_task_api import video
 
 
 @pytest.fixture

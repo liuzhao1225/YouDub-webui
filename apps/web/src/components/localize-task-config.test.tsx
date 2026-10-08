@@ -2,10 +2,29 @@ import { useState } from "react"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { configProblem, initialTaskConfig, TaskConfigForm } from "@/components/v1-task-config"
+import { TaskConfigForm } from "@/components/localize-task-config"
 import { LanguageProvider } from "@/lib/i18n"
-import type { Runtime, TaskConfig } from "@/lib/v1-api"
-import { testConfig, testRuntime, testSettings } from "@/lib/v1-test-fixtures"
+import type { Runtime, TaskConfig } from "@/plugin/builtin/localize-contracts"
+const testConfig: TaskConfig = {
+  source_language: "en", target_language: "zh", output_mode: "subtitles", keep_background: false,
+  asr: { adapter: "test_asr", model: "asr", device: "cpu" },
+  translation: { adapter: "test_translation", model: "translation", device: "remote" },
+  tts: null, separation: null,
+}
+
+function testRuntime(): Runtime {
+  return {
+    devices: [{ id: "cpu", available: true }],
+    capabilities: (["asr", "translation", "tts", "separation"] as const).map((kind) => ({
+      adapter: `test_${kind}`, capability: kind, execution: kind === "translation" ? "remote" : "local",
+      available: true, unavailable_reason: null,
+      models: [{ id: kind, devices: [kind === "translation" ? "remote" : "cpu"], source_languages: ["en", "zh", "ja", "auto"], target_languages: ["en", "zh", "ja"],
+        voice_modes: kind === "tts" ? ["preset", "source_clone"] : [], voices: kind === "tts" ? [{ id: "voice", name: "测试声音", languages: ["en", "zh", "ja"] }] : [],
+      }],
+    })),
+  }
+}
+
 
 function runtimeWithVoxCpm() {
   const runtime = testRuntime()
@@ -21,16 +40,15 @@ function runtimeWithQwen() {
   const base = runtime.capabilities.find((item) => item.capability === "separation")!
   runtime.capabilities.push({ ...base, adapter: qwenSelection.adapter, capability: "subtitle_alignment", models: [{
     ...base.models[0], id: qwenSelection.model, source_languages: [], target_languages: ["en", "zh"],
-    input_limits: { max_audio_duration_ms: 300000, max_text_chars: null, max_reference_duration_ms: null },
   }] })
   return runtime
 }
 
-function mount(runtime: Runtime, initial: TaskConfig = testConfig, variant?: "full" | "advanced") {
+function mount(runtime: Runtime, initial: TaskConfig = testConfig) {
   const onChange = vi.fn()
   function Form() {
     const [value, setValue] = useState(initial)
-    return <TaskConfigForm runtime={runtime} value={value} variant={variant} onChange={(next) => { setValue(next); onChange(next) }} />
+    return <TaskConfigForm runtime={runtime} value={value} onChange={(next) => { setValue(next); onChange(next) }} />
   }
   render(<LanguageProvider><Form /></LanguageProvider>)
   return onChange
@@ -43,7 +61,7 @@ async function choose(user: ReturnType<typeof userEvent.setup>, label: string, o
 
 afterEach(() => { cleanup(); window.localStorage.clear() })
 
-describe("v1 任务配置", () => {
+describe("本地化任务配置", () => {
   it("仅配音和字幕模式显示 Qwen 时间选择，退出该模式清除选择", async () => {
     const runtime = runtimeWithQwen()
     const onChange = mount(runtime)
@@ -54,7 +72,6 @@ describe("v1 任务配置", () => {
     await choose(user, "字幕时间", "Qwen3-ForcedAligner-0.6B-hf · CPU")
     const config = onChange.mock.calls.at(-1)![0]
     expect(config.subtitle_alignment).toEqual(qwenSelection)
-    expect(configProblem(config, runtime, testSettings(), (en, zh) => zh)).toBeNull()
     await choose(user, "输出内容", "字幕 · 保留原声")
     expect(onChange.mock.calls.at(-1)![0]).toMatchObject({ tts: null, subtitle_alignment: null })
     expect(screen.queryByLabelText("字幕时间")).not.toBeInTheDocument()
@@ -64,24 +81,20 @@ describe("v1 任务配置", () => {
     const runtime = runtimeWithQwen()
     const defaults: TaskConfig = { ...testConfig, output_mode: "both", subtitle_alignment: qwenSelection,
       tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } } }
-    expect(initialTaskConfig(runtime, { ...testSettings(), defaults })).toEqual(defaults)
     const onChange = mount(runtime, defaults)
     expect(screen.getByLabelText("字幕时间")).toHaveTextContent("Qwen3-ForcedAligner-0.6B-hf · CPU")
     await choose(userEvent.setup(), "目标语言", "日本語")
     const config = onChange.mock.calls.at(-1)![0]
     expect(config.subtitle_alignment).toEqual(qwenSelection)
     expect(screen.getByLabelText("字幕时间")).toHaveTextContent("Qwen3-ForcedAligner-0.6B-hf · 不可用")
-    expect(configProblem(config, runtime, testSettings(), (en, zh) => zh)).toContain("模型支持")
   })
 
   it("可选 Qwen 不可用时允许原配置，已选择 Qwen 时提示模型不可用", async () => {
     const runtime = runtimeWithQwen()
     runtime.capabilities.at(-1)!.available = false
     runtime.capabilities.at(-1)!.unavailable_reason = "未安装模型"
-    expect(configProblem(testConfig, runtime, testSettings(), (en, zh) => zh)).toBeNull()
     const defaults: TaskConfig = { ...testConfig, output_mode: "both", subtitle_alignment: qwenSelection,
       tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } } }
-    expect(configProblem(defaults, runtime, testSettings(), (en, zh) => zh)).toContain("可用模型")
     mount(runtime, defaults)
     expect(screen.getByLabelText("字幕时间")).toHaveTextContent("Qwen3-ForcedAligner-0.6B-hf · 不可用")
     await userEvent.setup().click(screen.getByLabelText("字幕时间"))
@@ -115,12 +128,9 @@ describe("v1 任务配置", () => {
     expect(screen.getByText("500/500")).toBeInTheDocument()
   })
 
-  it("无默认配置仍默认输出字幕，首次启用配音优先可用 VoxCPM2 源音色克隆", async () => {
+  it("首次启用配音优先可用 VoxCPM2 源音色克隆", async () => {
     const runtime = runtimeWithVoxCpm()
-    const initial = initialTaskConfig(runtime, { ...testSettings(), defaults: null })
-    expect(initial.output_mode).toBe("subtitles")
-    expect(initial.asr).not.toHaveProperty("initial_prompt")
-    const onChange = mount(runtime, initial)
+    const onChange = mount(runtime)
     await choose(userEvent.setup(), "输出内容", "配音与字幕")
     expect(onChange.mock.calls.at(-1)![0]).toMatchObject({
       tts: { adapter: "voxcpm", model: "VoxCPM2", device: "cpu", voice: { mode: "source_clone" } },
@@ -147,9 +157,7 @@ describe("v1 任务配置", () => {
       ...testConfig, output_mode: "dubbing", asr: { ...testConfig.asr, initial_prompt: "Saved name" },
       tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } },
     }
-    const initial = initialTaskConfig(runtime, { ...testSettings(), defaults })
-    expect(initial).toEqual(defaults)
-    const onChange = mount(runtime, initial)
+    const onChange = mount(runtime, defaults)
     const user = userEvent.setup()
     expect(screen.getByLabelText("专名提示（可选）")).toHaveValue("Saved name")
     expect(within(screen.getByRole("group", { name: "声音方式" })).getByRole("button", { name: "预设声音" })).toHaveAttribute("aria-pressed", "true")
@@ -160,10 +168,8 @@ describe("v1 任务配置", () => {
     expect(onChange.mock.calls.at(-1)![0].tts).toEqual({ adapter: "voxcpm", model: "VoxCPM2", device: "cpu", voice: { mode: "source_clone" } })
   })
 
-  it("工作台的 advanced 布局不重复输出内容和语言，保留背景音时补上分离模型", async () => {
-    const onChange = mount(testRuntime(), { ...testConfig, output_mode: "dubbing", tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } } }, "advanced")
-    expect(screen.queryByLabelText("输出内容")).not.toBeInTheDocument()
-    expect(screen.queryByLabelText("目标语言")).not.toBeInTheDocument()
+  it("保留背景音时补上分离模型", async () => {
+    const onChange = mount(testRuntime(), { ...testConfig, output_mode: "dubbing", tts: { adapter: "test_tts", model: "tts", device: "cpu", voice: { mode: "preset", id: "voice" } } })
     expect(screen.getByLabelText("语音识别模型")).toBeInTheDocument()
     expect(screen.queryByLabelText("音源分离模型")).not.toBeInTheDocument()
     await userEvent.setup().click(screen.getByRole("switch", { name: "保留背景音" }))

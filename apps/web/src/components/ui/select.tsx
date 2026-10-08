@@ -32,10 +32,6 @@ function SelectTrigger({
   )
 }
 
-function SelectValue({ ...props }: SelectPrimitive.Value.Props) {
-  return <SelectPrimitive.Value data-slot="select-value" {...props} />
-}
-
 function SelectContent({
   className,
   children,
@@ -86,5 +82,4 @@ export {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 }

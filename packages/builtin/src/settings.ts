@@ -41,7 +41,7 @@ export default class Settings extends Service implements SettingsService {
   }) }
   async runtime() {
     await this.ctx.catalog.refresh()
-    const runtime = await this.ctx.store.call('runtime.get')
+    const runtime = await this.ctx.store.call('runtime.info')
     const providers = this.ctx.catalog.describe().providers.filter(item => item.capability)
     runtime.capabilities = providers.map(provider => ({
       adapter: provider.adapter ?? provider.id, capability: provider.capability, execution: provider.execution,

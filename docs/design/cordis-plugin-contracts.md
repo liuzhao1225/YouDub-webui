@@ -1,6 +1,6 @@
 # YouDub 插件与 Workflow 契约
 
-2026-10-09 · SDK 协议 `1.0.0` / Worker 协议 `youdub-worker/v1`。实现已落地，本地验收进行中。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
+2026-10-09 · SDK 协议 `1.0.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
 
 ## 1. 谁拥有执行逻辑
 
@@ -169,7 +169,7 @@ API 插件提供 `/api/v2/catalog`、`workflows`、`tasks`、`settings`、`runti
 
 失败上传保留相同 ID 的残留与错误，使用 `DELETE /api/v2/imports/:id` 显式清理尚未形成任务的导入；已有任务通过任务删除动作处理。任务响应提供 workflowId/workflowVersion、steps、outputs 和 allowedActions。产物 URL 支持 GET/HEAD/Range。
 
-v1 由同一个普通 API 插件做兼容投射，仅包含默认 workflow 和可映射的旧 desktop 记录；不兼容 workflow 返回 CONTRACT_UNSUPPORTED。原 `data/youdub.sqlite` 的旧版 URL 下载任务不是自动转换的 v2 Task，具体迁移范围见迁移记录。
+HTTP 统一使用 v2，旧 v1 路由与字段别名已移除。旧 desktop 记录继续通过 v2 的 legacy 数据投射读取和重新生成；旧 URL 下载库仅保留首次迁移认证会话的只读用途。
 
 Client 清单为 `{version:1,sdkVersion:'1.0.0',platformVersion:'1',modules:[...]}`，模块含 id/version/access/url 及可选 css/config。未认证只返回 public 模块；登录后返回完整已激活组合。资产位于同源 `/api/plugins/<packageId>/<version>/<asset>`，数据 API 始终执行认证。
 
@@ -190,6 +190,6 @@ import map 固定共享 React、ReactDOM、JSX runtime、Cordis 和 `@youdub/sdk
 
 通过 `ctx.effect(() => ctx.slots.register(...))` 注册与释放。标准配置渲染器只实现支持的 JSON Schema 控件；未知结构明确报不支持，复杂配置用匹配编辑器。Client 服务通过 SDK 使用公开 API，不导入其他插件的私有实现。
 
-扩展设置使用 `PATCH /api/v2/settings` 的 `{ "plugin": { "id": "example.panel", "config": { "quality": "high" } } }`，在该 id 的命名空间内浅合并。v2 读取返回 `plugins[id]`，插件设置与原有 defaults/connections/ui_language 分组分别提交；v1 保持原响应字段。此处仅存公开配置，凭据通过 `secrets` 服务保存。
+扩展设置使用 `PATCH /api/v2/settings` 的 `{ "plugin": { "id": "example.panel", "config": { "quality": "high" } } }`，在该 id 的命名空间内浅合并。v2 读取返回 `plugins[id]`，插件设置与原有 defaults/connections/ui_language 分组分别提交。此处仅存公开配置，凭据通过 `secrets` 服务保存。
 
 public 子树提供会话、登录、导航与基础渲染；会话插件管理 authenticated 子树。退出或会话失效释放已认证页面与订阅。插件启停在 Host 重启及浏览器刷新后生效，无运行时代码热替换。

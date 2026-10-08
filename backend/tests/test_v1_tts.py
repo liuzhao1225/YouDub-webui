@@ -19,6 +19,11 @@ from backend.app.v1.segments import Transcript
 from backend.app.v1.steps import StageCancelled, StageContext
 
 
+def prepare_references(context):
+    transcript = Transcript.model_validate_json(context.input_files["transcript"].read_text())
+    return tts.prepare_reference_audio(context, transcript, lambda *_: None)
+
+
 @pytest.fixture
 def context(tmp_path, monkeypatch):
     models = tmp_path / "VoxCPM2"
@@ -93,7 +98,7 @@ def test_model_inventory_requires_local_nonempty_asset_groups_only(context, monk
 
 def test_tts_preserves_source_and_translation_and_uses_each_speakers_longest_reference(context, model_process):
     before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
-    result = tts.run(context, lambda *args: None)
+    result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert {name: context.input_files[name].read_bytes() for name in before} == before
     clips = model_process.clips
     assert [clip["segment_id"] for clip in clips] == ["one", "two", "three"]
@@ -120,7 +125,7 @@ def test_unknown_speaker_group_does_not_reuse_a_named_speakers_reference(context
     payload = json.loads(context.input_files["transcript"].read_text())
     payload["segments"][0].pop("speaker_id")
     context.input_files["transcript"].write_text(json.dumps(payload))
-    tts.run(context, lambda *args: None)
+    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert len({clip["reference_path"] for clip in model_process.clips}) == 3
 
 
@@ -129,7 +134,7 @@ def test_contiguous_sentences_share_a_complete_reference_window_and_matching_sou
     for segment in payload["segments"]:
         segment["speaker_id"] = "speaker-a"
     context.input_files["transcript"].write_text(json.dumps(payload))
-    tts.run(context, lambda *args: None)
+    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert len({clip["reference_path"] for clip in model_process.clips}) == 1
     assert all(clip["reference_text"] == "Original A1 Original B Original A2" for clip in model_process.clips)
     reference, rate = sf.read(model_process.clips[0]["reference_path"])
@@ -143,7 +148,7 @@ def test_reference_window_does_not_cut_a_sentence_at_ten_seconds(context, model_
         segment.update(speaker_id="speaker-a", start_ms=index * 4000, end_ms=(index + 1) * 4000)
     context.input_files["transcript"].write_text(json.dumps(payload))
     sf.write(context.input_files["vocals"], np.full(16000 * 12, 0.1), 16000, subtype="PCM_16")
-    tts.run(context, lambda *args: None)
+    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert sf.info(model_process.clips[0]["reference_path"]).duration == 8
     assert model_process.clips[0]["reference_text"] == "Original A1 Original B"
 
@@ -168,7 +173,7 @@ def test_reference_uses_a_complete_utterance_within_ten_seconds(
     payload["segments"][2].update(start_ms=2000, end_ms=2000 + duration_ms)
     context.input_files["transcript"].write_text(json.dumps(payload))
     sf.write(context.input_files["vocals"], np.full(16000 * 16, 0.1), 16000, subtype="PCM_16")
-    tts.run(context, lambda *args: None)
+    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert sf.info(model_process.clips[0]["reference_path"]).duration == expected_duration
     assert model_process.clips[0]["reference_text"] == expected_text
 
@@ -180,7 +185,7 @@ def test_missing_complete_reference_for_one_speaker_fails_before_extraction_or_i
     context.input_files["transcript"].write_text(json.dumps(payload))
     sf.write(context.input_files["vocals"], np.full(16000 * 13, 0.1), 16000, subtype="PCM_16")
     with pytest.raises(ApiError) as error:
-        tts.run(context, lambda *args: None)
+        tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert error.value.content["error"]["code"] == "INVALID_MEDIA"
     assert "complete" in error.value.content["error"]["message"]
     assert not model_process.commands
@@ -193,18 +198,14 @@ def long_utterance_context(context):
              for index, text in enumerate([" First,", " second,", " third,", " fourth,", " fifth,", " sixth."])]
     text = "".join(word["word"] for word in words)
     context.input_files["transcript"].write_text(json.dumps({"detected_language": "en", "segments": [
-        {"id": "whole", "start_ms": 2000, "end_ms": 14_000, "text": text, "speaker_id": "speaker-a"},
+        {"id": "whole", "start_ms": 2000, "end_ms": 14_000, "text": text, "speaker_id": "speaker-a",
+         "words": [{"text": w["word"], "start_ms": round(w["start"] * 1000), "end_ms": round(w["end"] * 1000)} for w in words]},
     ]}))
     context.input_files["translation"].write_text(json.dumps({
         "source_language": "en", "target_language": "zh", "segments": [
             {"segment_id": "whole", "text": "整句生成，连续表达，保留完整语气。"},
         ],
     }, ensure_ascii=False))
-    raw_path = context.work_dir.parent / "asr_raw.json"
-    raw_path.write_text(json.dumps({"language": "en", "segments": [
-        {"start": 2, "end": 14, "text": text, "speaker_id": "speaker-a", "words": words},
-    ]}))
-    context.input_files["asr_raw"] = raw_path
     samples = np.arange(16 * 16000) / 16000
     sf.write(context.input_files["vocals"], np.sin(2 * np.pi * 220 * samples) * 0.25,
              16000, subtype="PCM_16")
@@ -213,8 +214,8 @@ def long_utterance_context(context):
 
 def test_long_utterance_is_one_tts_call_with_an_exact_timed_word_reference(long_utterance_context, model_process):
     context = long_utterance_context
-    before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation", "asr_raw")}
-    result = tts.run(context, lambda *args: None)
+    before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
+    result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert {name: context.input_files[name].read_bytes() for name in before} == before
     assert len(model_process.commands) == len(model_process.clips) == 1
     clip = model_process.clips[0]
@@ -229,36 +230,32 @@ def test_long_utterance_is_one_tts_call_with_an_exact_timed_word_reference(long_
     assert [item.segment_id for item in read_speech_clips(result.output_files["speech_clips"], transcript).clips] == ["whole"]
 
 
-@pytest.mark.parametrize("invalid", ["missing-words", "word-text", "word-overlap", "raw-text", "raw-speaker"])
+@pytest.mark.parametrize("invalid", ["missing-words", "word-text", "word-overlap"])
 def test_long_reference_requires_matching_complete_word_metadata(long_utterance_context, model_process, invalid):
+    from pydantic import ValidationError
     context = long_utterance_context
-    raw = json.loads(context.input_files["asr_raw"].read_text())
+    raw = json.loads(context.input_files["transcript"].read_text())
     segment = raw["segments"][0]
     if invalid == "missing-words":
         segment.pop("words")
     elif invalid == "word-text":
-        segment["words"][0]["word"] = " Unrelated,"
-    elif invalid == "word-overlap":
-        segment["words"][1]["start"] = 3
-    elif invalid == "raw-text":
-        segment["text"] = "Unrelated transcript."
+        segment["words"][0]["text"] = " Unrelated,"
     else:
-        segment["speaker_id"] = "other-speaker"
-    context.input_files["asr_raw"].write_text(json.dumps(raw))
-    with pytest.raises(ApiError) as error:
-        tts.run(context, lambda *args: None)
-    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
+        segment["words"][1]["start_ms"] = 3000
+    context.input_files["transcript"].write_text(json.dumps(raw))
+    with pytest.raises(ApiError if invalid == "missing-words" else ValidationError):
+        prepare_references(context)
     assert not model_process.commands
     assert not (context.work_dir / "tts").exists()
 
 
 def test_word_reference_preserves_a_zero_duration_closing_token(long_utterance_context, model_process):
     context = long_utterance_context
-    raw = json.loads(context.input_files["asr_raw"].read_text())
-    raw["segments"][0]["words"][4]["word"] = " fifth"
-    raw["segments"][0]["words"].insert(5, {"start": 12, "end": 12, "word": ","})
-    context.input_files["asr_raw"].write_text(json.dumps(raw))
-    tts.run(context, lambda *args: None)
+    raw = json.loads(context.input_files["transcript"].read_text())
+    raw["segments"][0]["words"][4]["text"] = " fifth"
+    raw["segments"][0]["words"].insert(5, {"start_ms": 12000, "end_ms": 12000, "text": ","})
+    context.input_files["transcript"].write_text(json.dumps(raw))
+    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert model_process.clips[0]["reference_text"] == " First, second, third, fourth, fifth,"
     assert sf.info(model_process.clips[0]["reference_path"]).duration == 10
 
@@ -280,7 +277,7 @@ def test_invalid_inputs_are_rejected_before_any_inference(context, model_process
             payload["segments"].pop()
         context.input_files["translation"].write_text(json.dumps(payload))
     with pytest.raises(ApiError):
-        tts.run(context, lambda *args: None)
+        tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert not model_process.commands
     assert not (context.work_dir / "speech_clips.json").exists()
 
@@ -290,7 +287,7 @@ def test_missing_or_invalid_generated_wav_cannot_publish_clip_manifest(context, 
     model_process.output = False
     model_process.invalid = invalid
     with pytest.raises(ApiError) as error:
-        tts.run(context, lambda *args: None)
+        tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert error.value.content["error"]["code"] == ("INVALID_PROVIDER_RESULT" if invalid else "STAGE_OUTPUT_MISSING")
     assert not (context.work_dir / "speech_clips.json").exists()
 
@@ -316,7 +313,7 @@ def test_cancel_terminates_and_reaps_actual_tts_process(context, monkeypatch):
 
     monkeypatch.setattr(media.subprocess, "Popen", popen)
     with pytest.raises(StageCancelled):
-        tts.run(replace(context, check_cancel=cancel), lambda *args: None)
+        tts.run(replace(context, check_cancel=cancel), lambda *args: None, prepared_references=prepare_references(replace(context, check_cancel=cancel)))
     assert len(children) == 1 and children[0].poll() is not None
     assert not (context.work_dir / "speech_clips.json").exists()
 

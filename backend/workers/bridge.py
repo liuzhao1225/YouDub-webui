@@ -28,7 +28,6 @@ class Bridge:
 
     def patch_settings(self, patch):
         from backend.app.v1.contracts import SettingsPatch
-        from backend.app.v1.credentials import CredentialStoreError
         validated = SettingsPatch.model_validate(patch)
         if "defaults" in validated.model_fields_set:
             self.store.write_setting("defaults", validated.defaults.model_dump(mode="json"))
@@ -90,12 +89,17 @@ class Bridge:
                 raise WorkerError("INVALID_CONFIG", "A settings namespace is required.")
             self.store.write_setting(params["key"], params["value"])
             return None
-        if method == "runtime.get":
-            from backend.app.v1.runtime import build_runtime
-            settings = self.settings()
-            default_model = ((settings.get("defaults") or {}).get("translation") or {}).get("model")
-            return build_runtime(connections=params.get("connections", settings["connections"]),
-                                 translation_model=params.get("translationModel", default_model))
+        if method == "runtime.info":
+            from backend.app.v1.runtime import runtime_info
+            return runtime_info()
+        if method == "runtime.probe":
+            from backend.app.v1.runtime import probe_capability
+            adapter = params["adapter"]
+            if adapter == "openai":
+                settings = self.settings()
+                model = ((settings.get("defaults") or {}).get("translation") or {}).get("model")
+                return probe_capability(adapter, connections=settings["connections"], translation_model=model)
+            return probe_capability(adapter)
         if method in {"secrets.get", "secrets.set", "secrets.delete"}:
             if method == "secrets.get":
                 return self.credentials.get(params["reference"])
@@ -115,20 +119,6 @@ class Bridge:
             if operation == "verify_password":
                 return {"valid": auth.verify_password(params["password"], auth.load_auth_settings())}
             return self.store.auth(operation, params)
-        if method.startswith("legacy."):
-            if self.store.legacy_db is None or not self.store.legacy_db.is_file():
-                return {"items": [], "hasMore": False, "limit": params.get("limit", 20), "offset": params.get("offset", 0)} if method == "legacy.list" else None
-            with self.store.legacy_connection() as conn:
-                if method == "legacy.get":
-                    row = conn.execute("SELECT * FROM tasks WHERE id=?", (params["id"],)).fetchone()
-                    return {"legacy": True, "rawSnapshot": dict(row), "id": row["id"]} if row else None
-                if method == "legacy.list":
-                    limit, offset = params.get("limit", 20), params.get("offset", 0)
-                    if type(limit) is not int or not 1 <= limit <= 1000 or type(offset) is not int or offset < 0:
-                        raise WorkerError("INVALID_QUERY", "Invalid legacy pagination.")
-                    rows = conn.execute("SELECT * FROM tasks ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?", (limit + 1, offset)).fetchall()
-                    return {"items": [{"legacy": True, "rawSnapshot": dict(row), "id": row["id"]} for row in rows[:limit]],
-                            "hasMore": len(rows) > limit, "limit": limit, "offset": offset}
         raise WorkerError("UNKNOWN_METHOD", f"Unknown bridge method: {method}")
 
 

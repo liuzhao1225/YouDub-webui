@@ -1,4 +1,5 @@
 import { Service, type Context } from 'cordis'
+import { AppError } from '@youdub/sdk'
 import { createServer, type IncomingMessage, type ServerResponse, type Server } from 'node:http'
 import { stat } from 'node:fs/promises'
 import { createReadStream } from 'node:fs'
@@ -13,9 +14,6 @@ export interface HttpRequest {
 }
 export type Handler = (request: HttpRequest) => void | Promise<void>
 export type Middleware = (request: HttpRequest, next: () => Promise<void>) => void | Promise<void>
-export class HttpError extends Error {
-  constructor(public status: number, public code: string, message: string) { super(message) }
-}
 export interface HttpConfig { host: string; port: number }
 type Route = { method: string; pattern: RegExp; keys: string[]; handler: Handler }
 declare module 'cordis' { interface Context { http: HttpService } }
@@ -101,13 +99,13 @@ export default class HttpService extends Service {
     const match = this.routes.map(route => ({ route, match: route.pattern.exec(request.url.pathname) })).find(item => item.match && (item.route.method === raw.method || raw.method === 'HEAD' && item.route.method === 'GET'))
     if (match) {
       try { match.route.keys.forEach((key, index) => { request.params[key] = decodeURIComponent(match.match![index + 1]!) }) }
-      catch { throw new HttpError(400, 'INVALID_PATH', 'Invalid URL encoding.') }
+      catch { throw new AppError('INVALID_PATH', 'Invalid URL encoding.', 400) }
     }
     let index = 0
     const next = async () => {
       const middleware = this.middleware[index++]
       if (middleware) { await middleware(request, next); return }
-      if (!match) throw new HttpError(404, 'NOT_FOUND', 'Route not found.')
+      if (!match) throw new AppError('NOT_FOUND', 'Route not found.', 404)
       await match.route.handler(request)
     }
     await next()
@@ -120,20 +118,20 @@ export default class HttpService extends Service {
 
   async file(request: HttpRequest, path: string, options: { mime: string; name?: string; download?: boolean }) {
     const info = await stat(path)
-    if (!info.isFile()) throw new HttpError(404, 'OUTPUT_NOT_FOUND', 'File not found.')
+    if (!info.isFile()) throw new AppError('OUTPUT_NOT_FOUND', 'File not found.', 404)
     let start = 0, end = info.size - 1, status = 200
     const range = request.raw.headers.range
     if (range) {
       const match = /^bytes=(\d*)-(\d*)$/.exec(range)
       if (!match || (!match[1] && !match[2]) || info.size === 0) {
         request.response.setHeader('Content-Range', `bytes */${info.size}`)
-        throw new HttpError(416, 'RANGE_NOT_SATISFIABLE', 'Invalid byte range.')
+        throw new AppError('RANGE_NOT_SATISFIABLE', 'Invalid byte range.', 416)
       }
       if (!match[1]) start = Math.max(0, info.size - Number(match[2]))
       else { start = Number(match[1]); if (match[2]) end = Math.min(end, Number(match[2])) }
       if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= info.size) {
         request.response.setHeader('Content-Range', `bytes */${info.size}`)
-        throw new HttpError(416, 'RANGE_NOT_SATISFIABLE', 'Byte range exceeds file size.')
+        throw new AppError('RANGE_NOT_SATISFIABLE', 'Byte range exceeds file size.', 416)
       }
       status = 206
       request.response.setHeader('Content-Range', `bytes ${start}-${end}/${info.size}`)
@@ -154,9 +152,9 @@ export async function readJson(request: HttpRequest, limit = 1024 * 1024): Promi
   const buffers: Buffer[] = []; let bytes = 0
   for await (const chunk of request.raw) {
     bytes += chunk.length
-    if (bytes > limit) throw new HttpError(413, 'FILE_TOO_LARGE', 'Request body is too large.')
+    if (bytes > limit) throw new AppError('FILE_TOO_LARGE', 'Request body is too large.', 413)
     buffers.push(Buffer.from(chunk))
   }
   try { return buffers.length ? JSON.parse(Buffer.concat(buffers).toString('utf8')) : {} }
-  catch { throw new HttpError(400, 'INVALID_JSON', 'Invalid JSON request.') }
+  catch { throw new AppError('INVALID_JSON', 'Invalid JSON request.', 400) }
 }

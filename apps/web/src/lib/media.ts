@@ -1,6 +1,6 @@
 import { RefObject, useEffect } from "react"
 
-// 卸载时主动断开音视频请求：v1 后端在产物仍被读取时会拒绝删除任务（TASK_BUSY）。
+// 卸载时主动断开音视频请求：后端在产物仍被读取时会拒绝删除任务（TASK_BUSY）。
 export function useReleaseMediaOnUnmount(ref: RefObject<HTMLMediaElement | null>, src: string) {
   useEffect(() => {
     const media = ref.current

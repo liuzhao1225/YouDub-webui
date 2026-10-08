@@ -150,7 +150,7 @@ Host 协议的类型定义位于[SDK 源码](../../packages/sdk/src/index.ts)，
 
 ## 6. Python 和远端执行
 
-Node Host 中的 Cordis `tasks` 服务是唯一调度和状态推进者。Python 调用端不启动 FastAPI、旧 worker 或 `run_task`，不扫描队列，不写 Task 状态。现有算法函数可逐步提取复用；不能通过包装 `backend.app.main:app` 完成最终切换。[当前启动与分派](../../backend/app/main.py)、[当前执行器](../../backend/app/v1/executor.py)
+Node Host 中的 Cordis `tasks` 服务是唯一调度和状态推进者。Python 调用端不启动 FastAPI、旧 worker 或 `run_task`，不扫描队列，不写 Task 状态。算法函数由[operation 桥](../../backend/workers/operations.py)直接调用，旧 FastAPI、executor 和 worker 已移除；当前入口为 [Host main](../../apps/host/src/main.ts)。
 
 首版使用受管标准输入输出通信：每行一个 JSON 消息，音视频通过工作区文件引用交换。envelope 带 `version / invocationId / seq / type / payload`，execute payload 包含 taskId、attempt 和 stepId。stdout 只承载协议；原始库输出和诊断走 stderr。按一次步骤启动 Python，步骤内部可处理整批 utterance，无需每句话启动模型进程。
 
@@ -180,7 +180,7 @@ Client 默认提供 `apiClient`、`navigation`、`slots` 和会话服务。首�
 - 操作：首版后端返回 cancel/retry/rerun/delete 四类可用任务动作；通用生命周期统一。插件额外按钮调用自己的公开 API，不能绕过 tasks 修改任务状态。通用自定义任务动作协议后置。
 - 就绪：区分插件已安装、已启用、已激活、模型前置条件满足；Runtime 的“可用”不宣称真实供应商请求已成功。
 
-新 Client 使用[通用 HTTP 类型](../../apps/web/src/plugin/contracts.ts)呈现 workflow 描述、steps 和 outputs；默认视频配置编辑器作为官方插件贡献，复用[现有配置表单](../../apps/web/src/components/v1-task-config.tsx)。
+新 Client 使用[通用 HTTP 类型](../../apps/web/src/plugin/contracts.ts)呈现 workflow 描述、steps 和 outputs；默认视频配置编辑器作为官方插件贡献，复用[现有配置表单](../../apps/web/src/components/localize-task-config.tsx)。
 
 ### Client 模块交付
 

@@ -35,7 +35,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      - name: 安装共享插件依赖
+        working-directory: .
+        run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
 
       - name: 安装前端依赖
         run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
@@ -56,7 +62,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org
 
   backend:
-    name: 后端测试
+    name: Host 与 Python 测试
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -72,19 +78,36 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements-test.txt
 
+      - name: 配置 Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 安装 Host 依赖并创建 Python 环境
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          python -m venv .venv
+
+      - name: 安装媒体测试工具
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: 安装后端测试依赖
         id: pip_aliyun
         continue-on-error: true
-        run: python -m pip install -r backend/requirements-test.txt -i https://mirrors.aliyun.com/pypi/simple/
+        run: .venv/bin/python -m pip install -r backend/requirements-test.txt -i https://mirrors.aliyun.com/pypi/simple/
 
       - name: 阿里云失败后使用清华镜像重试
         if: steps.pip_aliyun.outcome == 'failure'
-        run: python -m pip install -r backend/requirements-test.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+        run: .venv/bin/python -m pip install -r backend/requirements-test.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 
       - name: 检查轻量依赖边界
         run: |
-          python -m pip check
-          python - <<'PY'
+          .venv/bin/python -m pip check
+          .venv/bin/python - <<'PY'
           from importlib.util import find_spec
 
           excluded = (
@@ -96,5 +119,10 @@ jobs:
               raise SystemExit(f"CI 测试环境意外安装了重型依赖: {', '.join(installed)}")
           PY
 
-      - name: 运行后端全量测试
-        run: python -m pytest backend/tests -q
+      - name: 运行 Host 检查
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: 运行 Python 全量测试
+        run: .venv/bin/python -m pytest backend/tests -q

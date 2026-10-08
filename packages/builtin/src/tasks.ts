@@ -58,14 +58,15 @@ export default class Tasks extends Service implements TasksService {
       ...publicTask, mayStillRun, allowedActions,
       outputs: (task.outputs ?? []).map(output => {
         const file = artifacts?.[output.artifact.id]
-        return { ...output, name: file?.name, mimeType: file?.mimeType, size: file?.size, metadata: file?.metadata, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` }
+        if (!file) throw new AppError('OUTPUT_MISSING', `Output artifact missing: ${output.artifact.id}`, 500)
+        return { id: output.id, label: output.label, role: output.role, name: file.name, mimeType: file.mimeType, size: file.size }
       }),
-    } as TaskView
+    }
   }
   async get(id: string) { return this.view(await this.record(id)) }
   async list(query: TaskQuery = {}) {
     const page = await this.ctx.store.call('store.list', { limit: query.limit ?? 30, offset: query.offset ?? 0, ...query })
-    return { ...page, items: page.items.map((task: TaskRecord) => this.view(task)), hasMore: page.hasMore ?? page.has_more ?? false }
+    return { ...page, items: page.items.map((task: TaskRecord) => this.view(task)) }
   }
   private async save(task: TaskRecord) {
     task.updatedAt = now()

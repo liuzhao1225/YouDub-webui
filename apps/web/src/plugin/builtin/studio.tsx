@@ -1,9 +1,8 @@
-import { useV1Text } from '@/lib/v1-ui'
 import { Context } from 'cordis'
 import { useState, type FormEvent } from 'react'
 import { ArrowRight, Loader2, Sparkles, Upload } from 'lucide-react'
 import { text, useClient, type Catalog, type JsonObject, type TaskView, type WorkflowDescription } from '../sdk'
-import { useI18n } from '@/lib/i18n'
+import { useI18n, useText } from '@/lib/i18n'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
@@ -13,7 +12,7 @@ import { useQuery } from './use-query'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
 
 function Composer({ workflow }: { workflow: WorkflowDescription }) {
-  const tx = useV1Text()
+  const tx = useText()
   const { apiClient, navigation } = useClient()
   const { language } = useI18n()
   const [config, setConfig] = useState<JsonObject>(() => structuredClone(workflow.defaults ?? defaultConfig(workflow.configSchema) ?? {}) as JsonObject)
@@ -46,7 +45,7 @@ function Composer({ workflow }: { workflow: WorkflowDescription }) {
   </form>
 }
 function Studio() {
-  const tx = useV1Text()
+  const tx = useText()
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { language, t } = useI18n()
   const [selected, setSelected] = useState('')

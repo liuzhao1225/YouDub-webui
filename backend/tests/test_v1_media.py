@@ -11,14 +11,25 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from fastapi import UploadFile
 
-from backend.app.v1 import executor, imports, media, tasks
-from backend.app.v1.contracts import ErrorEnvelope, TaskConfig
+from backend.app.v1 import media
+from backend.app.config import ffmpeg_binary, ffprobe_binary
+from backend.workers.operations import Operation
+from backend.workers.protocol import WorkerError
+from backend.tests.test_plugin_operations import Wire
+from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.runtime import RUNTIME_LIMITS
 from backend.app.v1.steps import StageCancelled, StageContext
-from backend.tests.test_v1_tasks import config, runtime, store  # shared isolated fixtures
+
+
+def prepare_operation(context, progress):
+    wire = Wire()
+    wire.check_cancel = context.check_cancel
+    wire.progress = progress
+    return Operation({"taskId": context.task_id, "attempt": context.attempt, "operation": "media.prepare/v1",
+                      "taskDir": str(context.work_dir.parent), "workDir": str(context.work_dir),
+                      "inputs": {"video": {"path": str(context.input_files["video"])}}}, wire).execute()
 
 
 @pytest.fixture
@@ -90,7 +101,7 @@ def test_different_stream_starts_are_unsupported(monkeypatch, probe_data, video_
     with pytest.raises(ApiError, match="Different video and audio start times") as error:
         media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)
     assert error.value.status_code == 415
-    assert ErrorEnvelope.model_validate(error.value.content).error.code == "UNSUPPORTED_MEDIA"
+    assert error.value.content["error"]["code"] == "UNSUPPORTED_MEDIA"
 
 
 @pytest.mark.parametrize("stream_index", [0, 1])
@@ -101,7 +112,7 @@ def test_invalid_stream_start_is_invalid_media(monkeypatch, probe_data, stream_i
     with pytest.raises(ApiError, match="stream start time is invalid") as error:
         media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)
     assert error.value.status_code == 422
-    assert ErrorEnvelope.model_validate(error.value.content).error.code == "INVALID_MEDIA"
+    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
 
 
 @pytest.mark.parametrize("change,code,status", [
@@ -121,7 +132,7 @@ def test_rejected_media_has_contract_error(monkeypatch, probe_data, change, code
     with pytest.raises(ApiError) as error:
         media.inspect_video(Path("source.mp4"), RUNTIME_LIMITS)
     assert error.value.status_code == status
-    assert ErrorEnvelope.model_validate(error.value.content).error.code == code
+    assert error.value.content["error"]["code"] == code
 
 
 @pytest.mark.parametrize("key,value", [
@@ -165,8 +176,10 @@ def test_missing_probe_is_runtime_error(monkeypatch, tmp_path):
 
 
 def test_prepare_decode_failure_propagates_and_does_not_publish_metadata(monkeypatch, tmp_path):
-    context = context_for(tmp_path / "source.mp4", tmp_path / "prepare")
-    monkeypatch.setattr(media, "inspect_video", lambda path, limits, **kwargs: {"duration_ms": 1000})
+    source = tmp_path / "source.mp4"
+    source.write_bytes(b"source-video")
+    context = context_for(source, tmp_path / "prepare")
+    monkeypatch.setattr(media, "inspect_video", lambda path, limits, *args, **kwargs: {"duration_ms": 1000})
     commands = []
 
     def run(command, **kwargs):
@@ -174,9 +187,9 @@ def test_prepare_decode_failure_propagates_and_does_not_publish_metadata(monkeyp
         return subprocess.CompletedProcess(command, 1, "", "decoder failure")
 
     monkeypatch.setattr(media, "_run_media", run)
-    with pytest.raises(ApiError) as error:
-        media.prepare(context, lambda progress, message: None)
-    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
+    with pytest.raises(WorkerError) as error:
+        prepare_operation(context, lambda progress, message: None)
+    assert error.value.code == "INVALID_MEDIA"
     assert commands[0][commands[0].index("-map") + 1] == "0:a:0"
     assert "-xerror" in commands[0]
     assert not (context.work_dir / "media.json").exists()
@@ -205,9 +218,9 @@ def test_prepare_cancellation_waits_for_media_process_exit(monkeypatch, tmp_path
 
     monkeypatch.setattr(media.subprocess, "Popen", slow_process)
     if cancel_during == "ffmpeg":
-        monkeypatch.setattr(media, "inspect_video", lambda path, limits, **kwargs: {"duration_ms": 1000})
+        monkeypatch.setattr(media, "inspect_video", lambda path, limits, *args, **kwargs: {"duration_ms": 1000})
     with pytest.raises(StageCancelled):
-        media.prepare(replace(context, check_cancel=check_cancel), lambda progress, message: None)
+        prepare_operation(replace(context, check_cancel=check_cancel), lambda progress, message: None)
     assert len(processes) == 1
     assert processes[0].returncode is not None
     assert processes[0].wait(timeout=0) != 0
@@ -245,11 +258,11 @@ def test_probe_keeps_thirty_second_deadline(monkeypatch, tmp_path):
 
 
 def test_real_video_probe_and_prepare_preserve_source_and_extract_asr_audio(tmp_path):
-    if not shutil.which(media.ffmpeg_binary()) or not shutil.which(media.ffprobe_binary()):
+    if not shutil.which(ffmpeg_binary()) or not shutil.which(ffprobe_binary()):
         pytest.skip("Local ffmpeg and ffprobe are required for the real-media check")
     source = tmp_path / "source.mp4"
     subprocess.run([
-        media.ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
         "-f", "lavfi", "-i", "color=c=blue:s=320x180:r=25",
         "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
         "-t", "1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "2", str(source),
@@ -257,28 +270,29 @@ def test_real_video_probe_and_prepare_preserve_source_and_extract_asr_audio(tmp_
     source_hash = hashlib.sha256(source.read_bytes()).digest()
     inspected = media.inspect_video(source, RUNTIME_LIMITS)
     progress = []
-    result = media.prepare(context_for(source, tmp_path / "prepare"), lambda value, message: progress.append(value))
+    result = prepare_operation(context_for(source, tmp_path / "prepare"), lambda value, message: progress.append(value))
 
-    assert result.state == "completed"
+    assert result["state"] == "completed"
     assert inspected == {"duration_ms": 1000, "width": 320, "height": 180,
                          "frame_rate": 25, "video_codec": "h264", "audio_codec": "aac"}
-    assert json.loads(result.output_files["media_info"].read_text()) == inspected
+    assert result["outputs"]["mediaInfo"] == inspected
     assert hashlib.sha256(source.read_bytes()).digest() == source_hash
-    with wave.open(str(result.output_files["source_audio"]), "rb") as audio:
-        assert (audio.getnchannels(), audio.getframerate(), audio.getsampwidth()) == (1, 16000, 2)
-        assert 15000 < audio.getnframes() < 18000
+    audio_path = tmp_path / "prepare" / result["artifacts"]["sourceAudio"]["path"]
+    with wave.open(str(audio_path), "rb") as audio:
+        assert (audio.getnchannels(), audio.getframerate(), audio.getsampwidth()) == (2, 44100, 2)
+        assert 43000 < audio.getnframes() < 46000
         assert any(audio.readframes(audio.getnframes()))
-    assert 900 <= media.probe_duration(result.output_files["source_audio"]) <= 1100
-    assert progress == [0.0, None, 1.0]
+    assert 900 <= media._duration_ms(media._probe(audio_path)) <= 1100
+    assert progress == [None]
 
 
 @pytest.fixture
 def delayed_audio(tmp_path):
-    if not shutil.which(media.ffmpeg_binary()) or not shutil.which(media.ffprobe_binary()):
+    if not shutil.which(ffmpeg_binary()) or not shutil.which(ffprobe_binary()):
         pytest.skip("Local ffmpeg and ffprobe are required for the real-media check")
     source = tmp_path / "delayed-audio.mkv"
     subprocess.run([
-        media.ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
         "-f", "lavfi", "-i", "color=c=blue:s=320x180:r=25:d=3",
         "-itsoffset", "1", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100:duration=2",
         "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-pix_fmt", "yuv420p",
@@ -300,24 +314,7 @@ def test_real_delayed_audio_is_rejected_before_prepare_extracts_it(tmp_path, del
 
     context = context_for(source, tmp_path / "prepare")
     with pytest.raises(ApiError) as error:
-        media.prepare(context, lambda progress, message: None)
+        prepare_operation(context, lambda progress, message: None)
     assert error.value.content["error"]["code"] == "UNSUPPORTED_MEDIA"
-    assert not context.work_dir.exists()
+    assert not list(context.work_dir.iterdir())
     assert hashlib.sha256(source.read_bytes()).digest() == source_hash
-
-
-def test_created_delayed_audio_task_fails_during_prepare(store, config, runtime, delayed_audio):
-    task_id = "00000000-0000-0000-0000-000000000002"
-    with delayed_audio.open("rb") as handle:
-        created = imports.import_video(
-            store, task_id, UploadFile(filename=delayed_audio.name, file=handle),
-            config, {**runtime, "limits": RUNTIME_LIMITS},
-        )
-    assert created["status"] == "queued"
-    executor.run_task(store, task_id, media.prepare)
-    task = tasks.get_task(store, task_id)
-    assert task["status"] == "failed" and task["current_stage"] == "prepare"
-    assert task["error"]["code"] == "UNSUPPORTED_MEDIA"
-    assert task["error"]["field"] == "file"
-    assert "Different video and audio start times" in task["error"]["message"]
-    assert task["outputs"] == {}

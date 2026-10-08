@@ -1,9 +1,8 @@
-import { useV1Text } from '@/lib/v1-ui'
 import { Context } from 'cordis'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Check, Loader2, Plug, RefreshCw, Settings2 } from 'lucide-react'
 import { text, useClient, useSlot, type Catalog, type JsonObject, type SettingsSectionProps } from '../sdk'
-import { useI18n } from '@/lib/i18n'
+import { useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { Button } from '@/components/ui/button'
@@ -16,7 +15,7 @@ type SettingsData = JsonObject & { connections?: Connection[]; ui_language?: str
 type Extension = { id: string; version: string; source: string; installed: boolean; enabled: boolean; active: boolean; restartRequired: boolean }
 function Section({ title, children }: { title: string; children: ReactNode }) { return <section className="rounded-2xl border border-border bg-card shadow-card"><h2 className="border-b border-border px-6 py-4 font-semibold">{title}</h2><div className="space-y-5 p-6">{children}</div></section> }
 function ConnectionForm({ adapter, connection, refresh }: { adapter: string; connection?: Connection; refresh(): void }) {
-  const tx = useV1Text()
+  const tx = useText()
   const { apiClient } = useClient()
   const [url, setUrl] = useState(connection?.base_url ?? ''), [key, setKey] = useState(''), [clear, setClear] = useState(false), [error, setError] = useState(''), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false)
   async function save(event: FormEvent) {
@@ -28,7 +27,7 @@ function ConnectionForm({ adapter, connection, refresh }: { adapter: string; con
   return <form className="space-y-4 rounded-xl border border-border p-4" onSubmit={(event) => void save(event)}><h3 className="font-mono text-sm font-medium">{adapter}</h3><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor={`connection-${adapter}`}>{tx("Service URL", "服务地址", "サービス URL")}</Label><Input id={`connection-${adapter}`} type="url" value={url} onChange={(event) => setUrl(event.target.value)} required /></div><div className="space-y-2"><Label htmlFor={`key-${adapter}`}>API Key{connection?.has_api_key ? tx(' · saved', ' · 已保存', ' · 保存済み') : ''}</Label><Input id={`key-${adapter}`} type="password" autoComplete="new-password" value={key} onChange={(event) => setKey(event.target.value)} placeholder={connection?.has_api_key ? tx('Leave empty to keep the saved key', '留空保留已有密钥', '空欄で保存済みキーを保持') : ''} /></div></div>{connection?.has_api_key && <label className="flex gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={clear} onChange={(event) => setClear(event.target.checked)} />{tx("Clear saved API key", "清除已保存密钥", "保存済みキーを削除")}</label>}{error && <InlineAlert>{error}</InlineAlert>}<Button type="submit" variant="outline" disabled={busy}>{busy ? <Loader2 className="animate-spin" /> : saved ? <Check /> : null}{saved ? tx('Saved', '已保存', '保存済み') : tx('Save connection', '保存连接', '接続を保存')}</Button></form>
 }
 function Extensions() {
-  const tx = useV1Text()
+  const tx = useText()
   const { apiClient } = useClient()
   const { data, error, refresh } = useQuery<{ items: Extension[] }>('/api/v2/extensions')
   const [source, setSource] = useState(''), [ref, setRef] = useState(''), [busy, setBusy] = useState(false), [failure, setFailure] = useState(''), [notice, setNotice] = useState('')
@@ -45,7 +44,7 @@ function ExtensionSection({ id, component: Component, settings, refresh }: { id:
   return <Component settings={settings.plugins?.[id] ?? {}} save={async (patch) => { await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ plugin: { id, config: patch } }) }); refresh() }} />
 }
 function Settings() {
-  const tx = useV1Text()
+  const tx = useText()
   const { data: catalog, error: catalogError, refresh: refreshCatalog } = useQuery<Catalog>('/api/v2/catalog')
   const { data: settings, error, refresh } = useQuery<SettingsData>('/api/v2/settings')
   const sections = useSlot('settings.sections')

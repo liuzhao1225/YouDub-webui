@@ -1,9 +1,7 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
-@custom-variant sidebar-collapsed (&:where([data-sidebar="collapsed"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -94,7 +92,7 @@
 
 /* 浅色主题 */
 :root {
-  /* Geist 只覆盖拉丁字符，中文回退到各平台的系统黑体。 */
+  /* 界面字体跟随各平台的系统字体。 */
   --app-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
     "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
   --app-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;

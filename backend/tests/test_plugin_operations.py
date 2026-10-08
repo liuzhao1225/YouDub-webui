@@ -40,7 +40,7 @@ def invoke(root, name, inputs, config=None, binding=None):
 def test_standard_word_timing_supports_reference_without_provider_raw_file():
     words = [{"word": f" word{i}", "start": i * 2, "end": i * 2 + 2} for i in range(7)]
     raw = {"language": "en", "segments": [{"start": 0, "end": 14, "text": "".join(w["word"] for w in words), "words": words}]}
-    normalized = asr.normalize_result(raw, duration_ms=14000, include_words=True)
+    normalized = asr.normalize_result(raw, duration_ms=14000)
     assert normalized["segments"][0]["words"][1] == {"text": " word1", "start_ms": 2000, "end_ms": 4000}
     reference = tts.speaker_references(Transcript.model_validate(normalized))[None]
     assert reference[-1].end_ms - reference[0].start_ms <= 10000

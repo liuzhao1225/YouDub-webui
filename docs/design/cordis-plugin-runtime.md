@@ -14,7 +14,18 @@ python3.12 -m venv .venv
 .venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
 ```
 
-已有 `.venv` 时使用已有环境，无需重新创建。仅当 Aliyun 缺少所需包时，使用单一 Tsinghua 源处理缺包：`https://pypi.tuna.tsinghua.edu.cn/simple/`。模型权重、GPU 与 FFmpeg 配置可参考[原 MVP 环境说明](mvp-runtime.md)，其中旧 FastAPI 启动命令不适用于本宿主。
+已有 `.venv` 时使用已有环境，无需重新创建。仅当 Aliyun 缺少所需包时，使用单一 Tsinghua 源处理缺包：`https://pypi.tuna.tsinghua.edu.cn/simple/`。模型目录见下表；`.env.example` 仅列当前实际读取的环境变量，设备和模型选择在 workflow 配置中保存。
+
+官方 provider 从应用数据目录的 `models/` 读取已下载模型，扫描不触发自动下载：
+
+| 能力 | 默认目录（相对数据目录） | 可覆盖变量 |
+| --- | --- | --- |
+| Whisper | `models/whisper`，例如 `tiny.pt` | `YOUDUB_WHISPER_MODELS_DIR` |
+| Demucs | `models/demucs`，`955717e8-8726e21a.th` | `YOUDUB_DEMUCS_MODELS_DIR` |
+| VoxCPM2 | `models/voxcpm/VoxCPM2` | `YOUDUB_VOXCPM_MODEL_DIR` |
+| Qwen 对齐 | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf` | `YOUDUB_FORCED_ALIGNER_MODEL_DIR` |
+
+VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。翻译模型列表由 `YOUDUB_TRANSLATION_MODELS` 配置，连接 URL 和密钥在设置页保存。
 
 首次创建配置，已有 `.env` 时保留原文件：
 
@@ -44,7 +55,7 @@ test .env -ef env.txt
 | `YOUDUB_AUTH_*` | 密码哈希、会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
 | `LOCAL_UPLOAD_MAX_BYTES` | 默认 4 GiB；具名输入还受 workflow 的 `maxBytes` 限制 |
 
-新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v2。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。`data/youdub.sqlite` 保持只读来源，具体历史边界见[迁移记录](cordis-plugin-migration.md#5-数据和凭据迁移)。
+新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v2。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。仓库 `data/youdub.sqlite` 只在首次迁移复制旧登录会话时只读打开；旧 URL 下载任务不进入新任务列表，也没有运行入口。数据库文件保留原位。
 
 ## 2. 构建与启动
 
@@ -77,7 +88,7 @@ npm --prefix apps/web start -- --hostname 127.0.0.1 --port 3000
 
 `build:web` 的 `prebuild` 同样执行插件构建。`build:plugins` 生成 `apps/web/plugin-dist/manifest.json` 和官方 ESM，Host 在启动时读取清单；首次启动 Host 前该文件必须存在。浏览器打开 `http://127.0.0.1:3000`。`/api/health` 只证明宿主就绪，模型是否具备条件查看 Runtime；真实推理仍需实际任务验收。
 
-`npm run dev:api` 与 `npm start` 均运行 Cordis Host。`npm run dev:legacy` 才运行旧 FastAPI，仅保留作旧实现诊断；不要与新宿主同时使用相同数据和端口，也不要把它与新插件 UI 配成生产组合。
+`npm run dev:api` 与 `npm start` 均运行 Cordis Host。旧 FastAPI、旧调度器和 `dev:legacy` 已移除；HTTP 统一使用 `/api/v2`。
 
 ## 3. 安装、启停和重启
 

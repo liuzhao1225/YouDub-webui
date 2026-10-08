@@ -10,6 +10,7 @@ import Store from '../src/store.js'
 import Catalog from '../src/catalog.js'
 import Secrets from '../src/secrets.js'
 import Settings from '../src/settings.js'
+import * as PythonProvider from '../src/python-provider.js'
 import * as Api from '../src/api.js'
 
 async function start(root: string) {
@@ -50,7 +51,7 @@ test('plugin public settings persist independently, merge within their namespace
   assert.deepEqual(await ctx.settings.read(), { defaults: null, connections: [], ui_language: 'zh', plugins: saved.plugins })
 })
 
-test('settings API exposes plugin configuration only in v2 and preserves v1 response fields', async t => {
+test('settings API persists public plugin configuration alongside built-in settings', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-settings-api-')), { ctx, app } = await start(root)
   const handlers = new Map<string, (request: any) => Promise<void>>()
   const support = await ctx.plugin(function support(context) {
@@ -60,20 +61,52 @@ test('settings API exposes plugin configuration only in v2 and preserves v1 resp
     })
     for (const name of ['auth', 'tasks', 'files', 'extensions']) context.reflect.provide(name, {})
   })
-  const api = await ctx.plugin(Api, {})
+  const api = await ctx.plugin(Api)
   t.after(async () => { await api.dispose(); await support.dispose(); await app.dispose(); await rm(root, { recursive: true }) })
-  const request = async (method: string, version: string, body?: any) => {
+  const request = async (method: string, body?: any) => {
     const input = { raw: Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))]), result: undefined as any }
-    await handlers.get(`${method} /api/${version}/settings`)!(input)
+    await handlers.get(`${method} /api/v2/settings`)!(input)
     return input.result
   }
   const patch = { plugin: { id: 'example.panel', config: { caption: 'Saved' } } }
-  const saved = await request('PATCH', 'v2', patch)
+  const saved = await request('PATCH', patch)
   assert.equal(saved.status, 200)
   assert.deepEqual(saved.body.plugins, { 'example.panel': { caption: 'Saved' } })
-  assert.deepEqual((await request('GET', 'v2')).body, saved.body)
-  assert.deepEqual((await request('GET', 'v1')).body, { defaults: null, connections: [], ui_language: 'en' })
-  assert.deepEqual((await request('PATCH', 'v1', { ui_language: 'zh' })).body, { defaults: null, connections: [], ui_language: 'zh' })
-  await assert.rejects(request('PATCH', 'v1', patch), (error: any) => error.status === 422 && error.code === 'CONTRACT_UNSUPPORTED')
-  assert.deepEqual((await request('GET', 'v2')).body.plugins, saved.body.plugins)
+  assert.deepEqual((await request('GET')).body, saved.body)
+  assert.equal((await request('PATCH', { ui_language: 'zh' })).body.ui_language, 'zh')
+  assert.deepEqual((await request('GET')).body.plugins, saved.body.plugins)
+})
+
+test('runtime probes each provider once and reads environment information without another model scan', async t => {
+  const ctx = new Context(), calls: Array<{ method: string; adapter?: string }> = []
+  const adapters = { whisper: 'asr', openai: 'translation', voxcpm: 'tts', demucs: 'separation', qwen_forced_aligner: 'subtitle_alignment' }
+  const environment = { platform: 'macos', arch: 'arm64', devices: [], limits: {}, instance_id: 'test-instance' }
+  const app = await ctx.plugin(async function application(context) {
+    await context.plugin({ apply(scope) {
+      scope.reflect.provide('store', { async call(method: string, params: any = {}) {
+        calls.push({ method, ...params })
+        if (method === 'runtime.info') return structuredClone(environment)
+        if (method === 'runtime.probe' && params.adapter in adapters) return {
+          adapter: params.adapter, capability: adapters[params.adapter as keyof typeof adapters], execution: params.adapter === 'openai' ? 'remote' : 'local',
+          available: true, unavailable_reason: null, models: [{ id: params.adapter + '-model' }], data_sent: [], remote_operations: null,
+        }
+        throw new Error(`Unexpected bridge method: ${method}`)
+      } })
+      scope.reflect.provide('process', {})
+      scope.reflect.provide('secrets', {})
+    } })
+    await context.plugin(Catalog)
+    for (const [adapter, capability] of Object.entries(adapters)) await context.plugin({ ...PythonProvider, inject: [...PythonProvider.inject, 'store'] }, {
+      descriptor: { id: adapter, label: adapter, pluginId: adapter, pluginVersion: '1.0.0', integrity: 'test', capability, operations: [{ id: 'test/v1', inputSchema: {}, outputs: [] }] },
+      runtimeAdapter: adapter, command: 'python3', args: ['unused.py'], cwd: process.cwd(),
+    })
+    await context.plugin(Settings)
+  })
+  t.after(() => app.dispose())
+  calls.length = 0
+  const runtime = await ctx.settings.runtime()
+  assert.deepEqual(calls, [...Object.keys(adapters).map(adapter => ({ method: 'runtime.probe', adapter })), { method: 'runtime.info' }])
+  assert.deepEqual(runtime.capabilities.map((item: any) => item.adapter), Object.keys(adapters))
+  assert.equal(runtime.status, 'ready')
+  assert.equal(runtime.instance_id, environment.instance_id)
 })

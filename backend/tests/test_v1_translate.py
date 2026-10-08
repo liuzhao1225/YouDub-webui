@@ -13,7 +13,6 @@ from backend.app.v1 import translate
 from backend.app.v1.errors import ApiError
 from backend.app.v1.segments import Transcript, read_translation
 from backend.app.v1.steps import StageCancelled, StageContext
-from backend.tests.test_v1_tasks import config
 
 
 @pytest.fixture

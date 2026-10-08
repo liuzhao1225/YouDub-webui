@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 import soundfile as sf
 
+from backend.app.config import ffmpeg_binary
 from backend.app.v1 import media, mix
 from backend.app.v1.audio_segments import Alignment, SpeechClip, SpeechClips
 from backend.app.v1.contracts import TaskConfig
@@ -63,7 +64,7 @@ def context(tmp_path):
 
 
 def require_ffmpeg():
-    if not shutil.which(media.ffmpeg_binary()):
+    if not shutil.which(ffmpeg_binary()):
         pytest.skip("Local ffmpeg is required for the real mixing check")
 
 

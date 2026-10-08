@@ -1,0 +1,235 @@
+{
+  "date": "2026-10-09",
+  "branch": "codex/plugin",
+  "baseline": "a2c4250",
+  "status": "local_validation_passed",
+  "environment": {
+    "os": "macOS",
+    "arch": "arm64"
+  },
+  "scope": {
+    "removed": [
+      "v1 HTTP API and legacy multipart/task projections",
+      "old FastAPI application, Python schedulers and unused adapters",
+      "unreachable Client pages, v1 API client and duplicate UI state",
+      "unused Python Web/download dependencies and frontend animation dependency"
+    ],
+    "consolidated": [
+      "SDK AppError",
+      "TaskView projection without repeated record reads; API adds download URLs",
+      "single-provider runtime.probe plus environment-only runtime.info",
+      "conditional Loader entry.inject for official Python runtime probes",
+      "Host and CLI runtime paths"
+    ],
+    "preserved": [
+      "active computation modules under backend/app/v1",
+      "historical SQLite task/session/settings migration and raw snapshots",
+      "explicit workflow inputs and outputs",
+      "task idle guard for extension changes",
+      "fixed plugin identity, CAS and external result uncertainty"
+    ],
+    "productSourceLinesRemovedNet": 11354,
+    "sourceCountRule": ".ts/.tsx/.py/.js/.css; excludes /tests/, /test/ and *.test.*; includes fixtures/scripts"
+  },
+  "checks": {
+    "host": {
+      "status": "passed",
+      "tests": 32,
+      "evidence": "youdub-cleanup-host-tests.log"
+    },
+    "finalTaskRuntime": {
+      "status": "passed",
+      "tests": 12,
+      "evidence": "youdub-cleanup-task-view-tests.log",
+      "note": "Final TaskView change rerun; this subset is not added to Host tests as unique cases."
+    },
+    "python": {
+      "status": "passed",
+      "tests": 377,
+      "durationSeconds": 9.63,
+      "evidence": "youdub-cleanup-pytest-3.log"
+    },
+    "web": {
+      "status": "passed",
+      "testFiles": 6,
+      "tests": 25,
+      "durationSeconds": 2.53,
+      "evidence": "current-session command output",
+      "scope": "Final TS/TSX sources"
+    },
+    "typescript": {
+      "host": "passed",
+      "web": "passed",
+      "evidence": "current-session command output"
+    },
+    "eslint": {
+      "status": "passed",
+      "errors": 0,
+      "warnings": 2,
+      "warningKind": "native img elements",
+      "evidence": "current-session command output"
+    },
+    "build": {
+      "status": "passed",
+      "buildId": "ft24yaYyzkut4udStgbF7",
+      "evidence": "youdub-cleanup-build.log",
+      "scope": "Final production build also covers subsequent removal of unused CSS import and dependency; next.config change was comment-only."
+    }
+  },
+  "source": {
+    "kind": "Existing synthetic English speech test media",
+    "sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+    "userMediaUsedForNewInference": false
+  },
+  "realMedia": [
+    {
+      "id": "f1373ebc-31e5-47a4-9e38-87019447aa17",
+      "mode": "subtitles",
+      "status": "succeeded",
+      "completedSteps": [
+        "prepare",
+        "recognize",
+        "translate",
+        "export"
+      ],
+      "outputIds": [
+        "video",
+        "source_subtitles",
+        "translated_subtitles"
+      ],
+      "allHead200": true,
+      "allRange206": true,
+      "videoDurationSeconds": 6.919002
+    },
+    {
+      "id": "baac72c1-b274-4264-aa18-8354830ce085",
+      "mode": "dubbing",
+      "status": "succeeded",
+      "completedSteps": [
+        "prepare",
+        "separate",
+        "recognize",
+        "translate",
+        "reference",
+        "synthesize",
+        "mix",
+        "export"
+      ],
+      "outputIds": [
+        "video",
+        "audio"
+      ],
+      "allHead200": true,
+      "allRange206": true,
+      "videoDurationSeconds": 6.88
+    },
+    {
+      "id": "bc9390e4-bca1-4f41-8806-4d569418d9f5",
+      "mode": "both",
+      "status": "succeeded",
+      "completedSteps": [
+        "prepare",
+        "separate",
+        "recognize",
+        "translate",
+        "reference",
+        "synthesize",
+        "mix",
+        "align",
+        "export"
+      ],
+      "outputIds": [
+        "video",
+        "audio",
+        "source_subtitles",
+        "translated_subtitles"
+      ],
+      "allHead200": true,
+      "allRange206": true,
+      "videoDurationSeconds": 6.88
+    }
+  ],
+  "artifacts": {
+    "verifiedCount": 9,
+    "hashesRecorded": true,
+    "videoCodecs": [
+      "h264",
+      "aac"
+    ],
+    "dubbedAudio": {
+      "codec": "pcm_s16le",
+      "sampleRate": 48000,
+      "channels": 2
+    },
+    "evidence": [
+      "youdub-cleanup-validation-results.json",
+      "youdub-cleanup-media-inspection.json"
+    ]
+  },
+  "externalWorkflow": {
+    "id": "c9109633-172a-4e64-b311-041992828699",
+    "workflowId": "example.uppercase",
+    "status": "succeeded",
+    "output": "HELLO CORDIS PLUGIN!\n",
+    "downloadStatus": 200,
+    "sourceKind": "local independent package",
+    "evidence": "youdub-cleanup-external-workflow.json"
+  },
+  "cancellation": {
+    "id": "875ce791-132f-4f1b-b571-afcf56f87201",
+    "status": "cancelled",
+    "cancelledStep": "separate",
+    "followingStepsPending": true,
+    "mayStillRun": false,
+    "evidence": "youdub-cleanup-cancellation.json"
+  },
+  "originalData": {
+    "taskCount": 1,
+    "originalTaskFieldsIdentical": true,
+    "settingsAndCredentialReferencesIdentical": true,
+    "historicalArtifactsSha256Identical": true,
+    "health": {
+      "status": "ready",
+      "api_version": "v2"
+    },
+    "evidence": "youdub-cleanup-original-data.json"
+  },
+  "browser": {
+    "status": "passed",
+    "evidence": "current-session live browser readback",
+    "originalSessionValid": true,
+    "workbenchModelsAndParametersVisible": true,
+    "historicalTaskCount": 1,
+    "historicalOutputsVisible": 4,
+    "historicalVideo": {
+      "readyState": 4,
+      "durationSeconds": 6.88,
+      "error": null
+    },
+    "settingsReadyProviders": 6,
+    "localServices": {
+      "nextPort": 3000,
+      "hostPort": 8000,
+      "hostUsesOriginalData": true
+    }
+  },
+  "limits": {
+    "githubActions": "not_run; CI configuration updated and locally checked",
+    "otherPlatforms": "Windows and Linux not verified in this run",
+    "remotePackageDownloads": "GitHub and npm remote package installation not verified in this run",
+    "remoteCancellation": "Real remote asynchronous cancellation not exercised; protocol/task tests cover unknown results",
+    "mediaCoverage": "Three short synthetic-media modes; no claim of exhaustive language, media or model quality coverage",
+    "mvp": "Single-host execution and restart-based extension changes; no cache, new service layer, marketplace, HMR or distributed runtime added"
+  },
+  "evidencePolicy": {
+    "oldEvidenceUnchanged": true,
+    "earlierFailedIterationLogsRetained": true,
+    "temporaryEvidence": "Listed basenames refer to local temporary evidence; logs and raw responses are not copied here.",
+    "excluded": [
+      "credentials",
+      "cookies",
+      "full internal filesystem paths",
+      "user raw data"
+    ]
+  }
+}

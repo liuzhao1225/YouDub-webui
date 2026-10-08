@@ -138,7 +138,7 @@ def test_align_passes_complete_adjusted_clips_and_retains_raw_word_evidence(monk
 
     monkeypatch.setattr(media, "_run_media", infer)
     progress = []
-    cues = forced_alignment.align(context, rows, export._display_parts, lambda value, message: progress.append(message))
+    cues = forced_alignment.align(context, rows, export._display_parts, lambda value, message: progress.append(message), audio_paths=sorted((context.work_dir / "adjusted").glob("*.wav")))
 
     assert len(calls) == 1
     assert cues == [(5160, 6040, "欢迎来到YouDub，"), (6600, min(7240, first_clip_end_ms), "字幕按声音显示。"), (9080, 10360, "完整的一句话。")]
@@ -165,6 +165,6 @@ def test_align_worker_failure_and_wrong_segment_result_are_visible(monkeypatch, 
     monkeypatch.setattr(media, "_run_media", infer)
     rows = [(Segment(id="first", start_ms=1000, end_ms=2000, text="Original"), "字幕")]
     with pytest.raises(ApiError) as error:
-        forced_alignment.align(alignment_context, rows, export._display_parts, lambda *args: None)
+        forced_alignment.align(alignment_context, rows, export._display_parts, lambda *args: None, audio_paths=sorted((alignment_context.work_dir / "adjusted").glob("*.wav")))
     assert error.value.content["error"]["code"] == code
     assert not (alignment_context.work_dir / "subtitle_alignment" / "cues.json").exists()

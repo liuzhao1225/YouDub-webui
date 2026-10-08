@@ -4,9 +4,12 @@ import { Context, Service } from 'cordis'
 import { mkdtemp, mkdir, readFile, writeFile, rm, cp, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import Extensions from '../src/extensions.js'
 import Catalog from '../src/catalog.js'
 import Processes from '../src/process.js'
+import * as PythonProvider from '../src/python-provider.js'
+import { startHost } from '../../../apps/host/src/bootstrap.js'
 
 test('independent local package installs, activates after restart, converts a real file, and unregisters', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-extension-'))
@@ -121,7 +124,6 @@ test('Python entry can import its own helper without changing installed integrit
   const processes = await ctx.plugin(Processes)
   const support = await ctx.plugin({ apply(context) {
     context.reflect.provide('tasks', { idle: async () => true })
-    context.reflect.provide('store', { call: async () => { throw new Error('Independent Python provider must not use the storage bridge.') } })
   } })
   const catalog = await ctx.plugin(Catalog)
   let extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd() })
@@ -130,6 +132,8 @@ test('Python entry can import its own helper without changing installed integrit
   await extensions.dispose()
   extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd() })
   const entry = ctx.extensions.hostEntries()[0]!, plugin = await ctx.plugin(await import(entry.name), entry.config)
+  assert.equal(entry.inject, undefined)
+  assert.equal(ctx.store, undefined)
   const input = join(root, 'input.txt'), workDir = join(root, 'work')
   await writeFile(input, 'hello from helper\n'); await mkdir(workDir)
   const result = await ctx.catalog.provider('example.python-uppercase').execute({ invocationId: 'python-helper', taskId: 'helper-task', attempt: 1, stepId: 'uppercase', operation: 'example.uppercase/v1', binding: { options: {} }, inputs: { document: { id: 'input', schemaId: 'file/v1' } }, workDir, taskDir: root, config: {} } as any, {
@@ -140,4 +144,24 @@ test('Python entry can import its own helper without changing installed integrit
   await plugin.dispose(); await extensions.dispose()
   extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd() })
   assert.equal(ctx.extensions.hostEntries()[0]?.id, 'example.python-text')
+})
+
+test('official Python probes require an explicit active store dependency', async t => {
+  const config = { descriptor: { id: 'example.probe', label: 'Probe', pluginId: 'example.probe', pluginVersion: '1.0.0', integrity: 'test', capability: 'asr', operations: [{ id: 'test/v1', inputSchema: {}, outputs: [] }] }, runtimeAdapter: 'whisper', command: 'python3', args: ['unused.py'], cwd: process.cwd() }
+  await assert.rejects(startHost([
+    { id: 'catalog', name: '@youdub/builtin/catalog' },
+    { id: 'process', name: '@youdub/builtin/process' },
+    { id: 'official-probe', name: '@youdub/builtin/python-provider', inject: ['store'], config },
+  ], pathToFileURL(process.cwd() + '/').href, { ready: false }), /Plugin startup failed:.*official-probe/)
+
+  const ctx = new Context()
+  const app = await ctx.plugin(async function application(context) {
+    await context.plugin(Catalog)
+    await context.plugin(Processes)
+  })
+  t.after(() => app.dispose())
+  const provider = ctx.plugin(PythonProvider, config)
+  t.after(() => provider.dispose())
+  await assert.rejects(async () => await provider, /cannot get property "store" without inject/)
+  assert.deepEqual(ctx.catalog.describe().providers, [])
 })

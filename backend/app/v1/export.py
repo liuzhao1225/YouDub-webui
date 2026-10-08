@@ -12,13 +12,47 @@ from typing import Any
 
 import soundfile as sf
 
-from ..adapters.ffmpeg import _srt_time, subtitle_style_for_orientation
 from ..config import ffmpeg_binary
 from . import media
 from .audio_segments import read_alignment
 from .errors import ApiError
 from .segments import Segment, Transcript, Translation, read_transcript, read_translation
 from .steps import Completed, StageContext
+
+
+SUBTITLE_FONT_SIZES = {
+    "zh": {"portrait": 12, "landscape": 24},
+    "en": {"portrait": 9, "landscape": 18},
+}
+
+
+def _subtitle_style(font: str, size: int, margin_v: int) -> str:
+    return (
+        f"FontName={font},"
+        f"FontSize={size},"
+        "PrimaryColour=&H00FFFFFF,"
+        "OutlineColour=&H00000000,"
+        "BorderStyle=1,"
+        "Outline=2,"
+        "Alignment=2,"
+        f"MarginV={margin_v}"
+    )
+
+
+def _srt_time(ms: int) -> str:
+    hours = ms // 3_600_000
+    ms -= hours * 3_600_000
+    minutes = ms // 60_000
+    ms -= minutes * 60_000
+    seconds = ms // 1000
+    millis = ms - seconds * 1000
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
+
+
+def subtitle_style_for_orientation(orientation: str, font: str, lang: str = "zh") -> str:
+    sizes = SUBTITLE_FONT_SIZES.get(lang, SUBTITLE_FONT_SIZES["zh"])
+    margin_v = 70 if orientation == "portrait" else 5
+    return _subtitle_style(font, size=sizes[orientation], margin_v=margin_v)
 
 
 def _invalid(message: str) -> ApiError:
@@ -146,7 +180,7 @@ def _font(language: str) -> str:
 
 
 def run(context: StageContext, progress: Callable[[float | None, str], None], *,
-        output_dir: Path | None = None, prepared_cues: list[tuple[int, int, str]] | None = None) -> Completed:
+        output_dir: Path, prepared_cues: list[tuple[int, int, str]] | None = None) -> Completed:
     include_subtitles = context.config.output_mode in {"subtitles", "both"}
     include_dubbing = context.config.output_mode in {"dubbing", "both"}
     context.check_cancel()
@@ -160,7 +194,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
         if type(info.get(key)) is not int or info[key] <= 0:
             raise _invalid(f"Source media {key} is invalid.")
     rows = _subtitle_rows(transcript, translation, info["duration_ms"])
-    output = output_dir if output_dir is not None else context.work_dir.parent / "output"
+    output = output_dir
     output.mkdir(parents=True, exist_ok=True)
     source_srt, translated_srt = output / "source.srt", output / "translated.srt"
     final_video = output / "video.mp4"
@@ -186,12 +220,8 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
             "start_ms": aligned[segment.id].dubbed_start_ms, "end_ms": aligned[segment.id].dubbed_end_ms,
         }), text) for segment, text in rows]
     if include_subtitles:
-        aligned_cues = prepared_cues
-        if context.config.subtitle_alignment is not None and prepared_cues is None:
-            from . import forced_alignment
-            aligned_cues = forced_alignment.align(context, translated_rows, _display_parts, progress)
         _write_srt(source_srt, rows, translated=False)
-        _write_srt(translated_srt, translated_rows, translated=True, aligned_cues=aligned_cues)
+        _write_srt(translated_srt, translated_rows, translated=True, aligned_cues=prepared_cues)
         outputs.update(source_subtitles=source_srt, translated_subtitles=translated_srt)
     progress(None, "Rendering output video")
     command = [

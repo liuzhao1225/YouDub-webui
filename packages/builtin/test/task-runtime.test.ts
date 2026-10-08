@@ -61,7 +61,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
     id: 'test.workflow', version: '1.0.0', ...identity,
     describe: () => ({ id: 'test.workflow', version: '1.0.0', label: 'Test workflow', inputs: [], defaults: { mode: 'text' }, configSchema: { type: 'object', required: ['mode'], properties: { mode: { enum: ['text', 'wait', 'bad', 'cancel', 'bad-json', 'deleted', 'forged', 'unknown'] } }, additionalProperties: false } }),
     validate: () => [],
-    plan: (_, config) => ({ workflow: { id: 'test.workflow', version: '1.0.0', ...identity }, config, bindings: { main: { providerId: provider.id, ...identity, contractVersion: 'test/v1', modelRevision: null, options: {} } }, steps: [{ id: 'process', label: 'Process', bindingKey: 'main', operation: 'test/v1', input: {}, outputs: contract === 'omitted' ? [] : [{ ...output, required: contract !== 'downgraded' }] }], outputs: contract === 'json' || contract === 'omitted' ? [] : [{ id: 'file', label: 'File', role: 'file', source: { stepId: 'process', output: 'file' }, required: true }] }),
+    plan: (_, config) => ({ workflow: { id: 'test.workflow', version: '1.0.0', ...identity }, config, bindings: { main: { providerId: provider.id, ...identity, modelRevision: null, options: {} } }, steps: [{ id: 'process', label: 'Process', bindingKey: 'main', operation: 'test/v1', input: {}, outputs: contract === 'omitted' ? [] : [{ ...output, required: contract !== 'downgraded' }] }], outputs: contract === 'json' || contract === 'omitted' ? [] : [{ id: 'file', label: 'File', role: 'file', source: { stepId: 'process', output: 'file' }, required: true }] }),
   }
   fibers.push(await ctx.plugin({ inject: ['catalog'], apply(context) { context.effect(() => context.catalog.registerProvider(provider)); context.effect(() => context.catalog.registerWorkflow(workflow)) } }))
   const create = async (mode: string) => {
@@ -88,7 +88,8 @@ test('real SQLite task engine keeps the execution slot during waiting and resume
   assert.equal((await ctx.tasks.get(second.id)).status, 'queued')
   await until(first.id, task => task.status === 'succeeded')
   assert.equal((await ctx.tasks.record(first.id)).steps[0]?.invocationId, waiting.steps[0]?.invocationId)
-  await until(second.id, task => task.status === 'succeeded')
+  const completed = await until(second.id, task => task.status === 'succeeded')
+  assert.deepEqual(completed.outputs, [{ id: 'file', label: 'File', role: 'file', name: 'result.txt', mimeType: 'text/plain', size: 16 }])
 })
 
 test('real task cancellation, explicit retry, and stale progress/CAS cannot overwrite the new attempt', async t => {

@@ -10,7 +10,7 @@ from pathlib import Path
 from ..config import ffmpeg_binary
 from .errors import ApiError
 from .steps import Completed, StageContext
-from .storage import data_directory
+from ..paths import data_directory
 
 MODEL_FILES = {"htdemucs": "955717e8-8726e21a.th"}
 

@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from backend.app.v1 import asr, asr_process, media
-from backend.app.v1.contracts import ErrorEnvelope, TaskConfig
+from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.steps import StageCancelled, StageContext
 
@@ -68,7 +68,8 @@ def test_normalization_preserves_source_utterances_order_and_auto_language(raw_r
     before = deepcopy(raw_result)
     normalized = asr.normalize_result(raw_result, duration_ms=3000)
     assert normalized == {"detected_language": "en", "segments": [
-        {"id": "segment-000001", "start_ms": 123, "end_ms": 1456, "text": " Hello. ", "speaker_id": "speaker-a"},
+        {"id": "segment-000001", "start_ms": 123, "end_ms": 1456, "text": " Hello. ", "speaker_id": "speaker-a",
+         "words": [{"text": " Hello.", "start_ms": 123, "end_ms": 1456}]},
         {"id": "segment-000002", "start_ms": 2000, "end_ms": 2990, "text": " World!"},
     ]}
     assert raw_result == before
@@ -94,7 +95,7 @@ def test_complete_utterance_keeps_all_clauses_in_one_speech_generation_unit():
     ])
     before = deepcopy(raw)
     segments = asr.normalize_result(raw, duration_ms=7000)["segments"]
-    assert segments == [
+    assert [{k: v for k, v in segment.items() if k != "words"} for segment in segments] == [
         {"id": "segment-000001", "start_ms": 0, "end_ms": 6700,
          "text": " Welcome to Atlas, today we are testing video translation,"
                  " the original voice and subtitle timing should stay clear.", "speaker_id": "narrator"},
@@ -106,7 +107,7 @@ def test_complete_utterance_keeps_all_clauses_in_one_speech_generation_unit():
 def test_punctuation_and_closing_quotes_do_not_split_the_source_utterance(punctuation):
     raw = word_result([(0, .5, "第一句" + punctuation + "”"), (.7, 1.3, "第二句。")])
     segments = asr.normalize_result(raw, duration_ms=2000)["segments"]
-    assert segments == [{"id": "segment-000001", "start_ms": 0, "end_ms": 1300,
+    assert [{k: v for k, v in segment.items() if k != "words"} for segment in segments] == [{"id": "segment-000001", "start_ms": 0, "end_ms": 1300,
                          "text": "第一句" + punctuation + "”第二句。", "speaker_id": "narrator"}]
 
 
@@ -116,7 +117,7 @@ def test_utterance_longer_than_eight_seconds_keeps_its_complete_text_and_interva
         (8.1, 8.5, " four"), (9, 10, " five"),
     ])
     segments = asr.normalize_result(raw, duration_ms=10000)["segments"]
-    assert segments == [{"id": "segment-000001", "start_ms": 250, "end_ms": 10000,
+    assert [{k: v for k, v in segment.items() if k != "words"} for segment in segments] == [{"id": "segment-000001", "start_ms": 250, "end_ms": 10000,
                          "text": " one two three four five", "speaker_id": "narrator"}]
 
 
@@ -124,7 +125,7 @@ def test_source_utterance_bounds_are_preserved_when_words_cover_a_shorter_interv
     raw = word_result([(.2, .5, " First,"), (.8, 1.2, " second.")])
     raw["segments"][0].update(start=0.1, end=1.5)
     segments = asr.normalize_result(raw, duration_ms=2000)["segments"]
-    assert segments == [{"id": "segment-000001", "start_ms": 100, "end_ms": 1500,
+    assert [{k: v for k, v in segment.items() if k != "words"} for segment in segments] == [{"id": "segment-000001", "start_ms": 100, "end_ms": 1500,
                          "text": " First, second.", "speaker_id": "narrator"}]
 
 
@@ -142,19 +143,14 @@ def test_no_word_timestamps_preserves_full_segment_even_when_long():
     ]
 
 
-@pytest.mark.parametrize("words", [
-    None,
-    [],
-    [{"start": 1, "end": 1, "word": " One. Two."}],
-    [{"start": .3, "end": .7, "word": " Different"}],
-    [{"start": -1, "end": 3, "word": " One. Two."}],
-])
-def test_optional_word_metadata_does_not_change_or_block_the_complete_utterance(words):
+@pytest.mark.parametrize("words", [[], [{"start": .3, "end": .7, "word": " Different"}],
+                                   [{"start": -1, "end": 3, "word": " One. Two."}]])
+def test_invalid_standard_word_metadata_is_rejected(words):
+    from pydantic import ValidationError
     raw = {"language": "en", "segments": [{"start": 0, "end": 2, "text": " One. Two.", "words": words}]}
     before = deepcopy(raw)
-    assert asr.normalize_result(raw, duration_ms=2000)["segments"] == [
-        {"id": "segment-000001", "start_ms": 0, "end_ms": 2000, "text": " One. Two."},
-    ]
+    with pytest.raises((ApiError, ValidationError)):
+        asr.normalize_result(raw, duration_ms=2000)
     assert raw == before
 
 
@@ -176,7 +172,7 @@ def test_invalid_results_are_explicit_errors_without_retiming(raw_result, change
     change(raw_result)
     with pytest.raises(ApiError) as error:
         asr.normalize_result(raw_result, duration_ms=3000)
-    assert ErrorEnvelope.model_validate(error.value.content).error.code == "INVALID_PROVIDER_RESULT"
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
 
 
 def test_run_passes_config_checkpoint_and_vocals_and_keeps_full_raw_result(context, raw_result, monkeypatch):

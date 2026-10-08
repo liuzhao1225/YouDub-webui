@@ -1,4 +1,4 @@
-"""Local media admission and the first v1 pipeline step."""
+"""Media inspection and cancellable subprocess execution for operations."""
 
 from __future__ import annotations
 
@@ -11,10 +11,8 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from ..config import ffmpeg_binary, ffprobe_binary
+from ..config import ffprobe_binary
 from .errors import ApiError
-from .runtime import RUNTIME_LIMITS
-from .steps import Completed, StageContext
 
 
 def _invalid(message: str) -> ApiError:
@@ -149,35 +147,3 @@ def inspect_video(
         raise ApiError(415, "UNSUPPORTED_MEDIA", "The first video or audio codec is unsupported.",
                        field="file", stage="prepare", action="none")
     return info
-
-
-def probe_duration(path: Path) -> int:
-    """Return the duration of a produced audio/video file in milliseconds."""
-    return _duration_ms(_probe(path))
-
-
-def prepare(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:
-    """Extract the first audio stream without modifying or transcoding video."""
-    source = context.input_files["video"]
-    progress(0.0, "Inspecting source video")
-    info = inspect_video(source, RUNTIME_LIMITS, check_cancel=context.check_cancel)
-    context.work_dir.mkdir(parents=True, exist_ok=True)
-    audio_path = context.work_dir / "source.wav"
-    info_path = context.work_dir / "media.json"
-    progress(None, "Extracting source audio")
-    try:
-        result = _run_media(
-            [ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-xerror",
-             "-i", str(source.resolve()), "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000",
-             "-c:a", "pcm_s16le", str(audio_path.resolve())],
-            check_cancel=context.check_cancel,
-        )
-    except FileNotFoundError as exc:
-        raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffmpeg is unavailable.", stage="prepare") from exc
-    if result.returncode != 0:
-        raise _invalid("ffmpeg could not decode the source audio.")
-    if not audio_path.is_file() or audio_path.stat().st_size <= 44:
-        raise ApiError(500, "STAGE_OUTPUT_MISSING", "Source audio was not produced.", stage="prepare")
-    info_path.write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
-    progress(1.0, "Source audio is ready")
-    return Completed(output_files={"source_audio": audio_path, "media_info": info_path})

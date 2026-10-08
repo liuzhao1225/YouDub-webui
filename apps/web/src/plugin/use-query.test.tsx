@@ -29,13 +29,13 @@ it('keeps a slower runtime request alive when the catalog resolves through Cordi
   await requireActive(consumer, 'viewer')
   expect(viewer.apiClient).not.toBe(viewer.apiClient)
   function EditorQueries() {
-    const runtime = useQuery<{ ready: boolean }>('/api/v1/runtime')
+    const runtime = useQuery<{ ready: boolean }>('/api/v2/runtime')
     const catalog = useQuery<{ ready: boolean }>('/api/v2/catalog')
     return <><p data-testid="runtime">{runtime.data?.ready ? 'ready' : runtime.error || 'loading'}</p><p data-testid="catalog">{catalog.data?.ready ? 'ready' : catalog.error || 'loading'}</p></>
   }
   render(<PluginContextProvider context={viewer}><EditorQueries /></PluginContextProvider>)
   await waitFor(() => expect(requests).toHaveLength(2))
-  const runtime = requests.find((request) => request.path === '/api/v1/runtime')!
+  const runtime = requests.find((request) => request.path === '/api/v2/runtime')!
   const catalog = requests.find((request) => request.path === '/api/v2/catalog')!
   catalog.resolve(Response.json({ ready: true }))
   await waitFor(() => expect(screen.getByTestId('catalog')).toHaveTextContent('ready'))

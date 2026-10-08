@@ -8,8 +8,27 @@ import { Segmented } from "@/components/ui/segmented"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
-import type { Capability, ModelCapability, ModelSelection, Runtime, Settings, TaskConfig, TtsSelection } from "@/lib/v1-api"
-import { OUTPUT_LABELS, deviceName, languageName, useV1Text, type V1Text } from "@/lib/v1-ui"
+import type { Capability, ModelCapability, ModelSelection, Runtime, TaskConfig, TtsSelection } from "@/plugin/builtin/localize-contracts"
+import { useText, type Text } from "@/lib/i18n"
+
+const OUTPUT_LABELS: Record<TaskConfig["output_mode"], [string, string, string]> = {
+  subtitles: ["Subtitles · original audio", "字幕 · 保留原声", "字幕 · 元の音声"],
+  dubbing: ["Dubbing", "配音", "吹き替え"],
+  both: ["Dubbing and subtitles", "配音与字幕", "吹き替えと字幕"],
+}
+
+const LANGUAGE_NAMES: Record<string, string> = { en: "English", zh: "中文", ja: "日本語" }
+
+function languageName(code: string, text: Text) {
+  if (code === "auto") return text("Auto detect", "自动识别", "自動検出")
+  return LANGUAGE_NAMES[code] ?? code
+}
+
+function deviceName(device: string, text: Text) {
+  if (device === "cpu") return "CPU"
+  if (device === "remote") return text("Remote", "远端", "リモート")
+  return device.replace(/^cuda:/, "CUDA ")
+}
 
 type Kind = Capability["capability"]
 type Choice = { value: ModelSelection; model: ModelCapability }
@@ -58,57 +77,8 @@ function normalize(config: TaskConfig, runtime: Runtime): TaskConfig {
     subtitle_alignment: config.output_mode === "both" ? config.subtitle_alignment ?? null : null }
 }
 
-export function initialTaskConfig(runtime: Runtime, settings: Settings): TaskConfig {
-  if (settings.defaults) return settings.defaults
-  const asr = firstSelection(runtime, "asr")
-  const translation = firstSelection(runtime, "translation")
-  const asrModel = selectedModel(runtime, "asr", asr)
-  const translationModel = selectedModel(runtime, "translation", translation)
-  const sources = asrModel?.source_languages.filter((item) => item === "auto" || translationModel?.source_languages.includes(item)) ?? []
-  const source = sources.includes("en") ? "en" : sources[0] ?? ""
-  const targets = translationModel?.target_languages.filter((item) => item !== source) ?? []
-  return {
-    source_language: source, target_language: targets.includes("zh") ? "zh" : targets[0] ?? "",
-    output_mode: "subtitles", keep_background: false, asr, translation, tts: null, separation: null, subtitle_alignment: null,
-  }
-}
-
-export function configProblem(config: TaskConfig, runtime: Runtime, settings: Settings, text: V1Text): string | null {
-  if (config.subtitle_alignment && config.output_mode !== "both") return text("Subtitle alignment requires dubbing with subtitles.", "字幕对齐需要选择配音和字幕输出。", "字幕の位置合わせには吹き替えと字幕の出力が必要です。")
-  for (const kind of ["asr", "translation", "tts", "separation", "subtitle_alignment"] as const) {
-    const selection = config[kind]
-    if (!selection) continue
-    const capability = runtime.capabilities.find((item) => item.adapter === selection.adapter && item.capability === kind)
-    const model = selectedModel(runtime, kind, selection)
-    if (!capability?.available || !model) return text("Select an available model for every required step.", "请为每个必需步骤选择可用模型。", "必要な各処理に利用可能なモデルを選択してください。")
-    if (capability.execution === "remote") {
-      const connection = settings.connections.find((item) => item.adapter === selection.adapter)
-      if (!connection || (capability.requires_api_key && !connection.has_api_key)) return `${selection.adapter}: ${text("Configure its connection in Settings.", "请在设置中配置连接。", "設定で接続を登録してください。")}`
-    }
-  }
-  const asr = selectedModel(runtime, "asr", config.asr)
-  const translation = selectedModel(runtime, "translation", config.translation)
-  const tts = selectedModel(runtime, "tts", config.tts)
-  const alignment = selectedModel(runtime, "subtitle_alignment", config.subtitle_alignment ?? null)
-  if (!asr?.source_languages.includes(config.source_language)
-    || (config.source_language !== "auto" && !translation?.source_languages.includes(config.source_language))
-    || !translation?.target_languages.includes(config.target_language)
-    || config.source_language === config.target_language
-    || (config.tts && !tts?.target_languages.includes(config.target_language))
-    || (config.subtitle_alignment && !alignment?.target_languages.includes(config.target_language))) {
-    return text("Choose different supported source and target languages.", "请选择模型支持且不同的原文与目标语言。", "モデルが対応する異なる入力言語と出力言語を選択してください。")
-  }
-  if (config.tts) {
-    const voice = config.tts.voice
-    if (!tts?.voice_modes.includes(voice.mode) || (voice.mode === "preset" && !tts.voices.some((item) => item.id === voice.id && item.languages.includes(config.target_language)))) {
-      return text("Select a supported voice.", "请选择可用声音。", "利用可能な声を選択してください。")
-    }
-  }
-  return null
-}
-
 // 原文 / 目标语言的可选项，随所选识别、翻译与配音模型变化。
-export function languageChoices(config: TaskConfig, runtime: Runtime) {
+function languageChoices(config: TaskConfig, runtime: Runtime) {
   const asr = selectedModel(runtime, "asr", config.asr)
   const translation = selectedModel(runtime, "translation", config.translation)
   const tts = selectedModel(runtime, "tts", config.tts)
@@ -118,7 +88,7 @@ export function languageChoices(config: TaskConfig, runtime: Runtime) {
   }
 }
 
-export function updateConfig(config: TaskConfig, patch: Partial<TaskConfig>, runtime: Runtime) {
+function updateConfig(config: TaskConfig, patch: Partial<TaskConfig>, runtime: Runtime) {
   return normalize({ ...config, ...patch }, runtime)
 }
 
@@ -130,13 +100,13 @@ const ADAPTER_NAMES: Record<string, [string, string, string]> = {
   qwen_forced_aligner: ["Qwen", "Qwen", "Qwen"],
 }
 
-function adapterName(adapter: string, text: V1Text) {
+function adapterName(adapter: string, text: Text) {
   const name = ADAPTER_NAMES[adapter]
   return name ? text(...name) : adapter
 }
 
 // 模型名为主，适配器与设备作为次要信息。
-function ModelLabel({ value, text }: { value: ModelSelection; text: V1Text }) {
+function ModelLabel({ value, text }: { value: ModelSelection; text: Text }) {
   return <span className="min-w-0 truncate">
     <span className="font-medium text-foreground">{value.model}</span>{" "}
     <span className="text-subtle-foreground">{value.device === "remote"
@@ -202,7 +172,7 @@ function FieldSelect({ id, value, display, placeholder, options, onChange }: {
 function ModelField({ kind, id, caption, srPrefix, value, runtime, onChange }: {
   kind: Kind; id: string; caption: string; srPrefix: string; value: ModelSelection | null; runtime: Runtime; onChange: (value: ModelSelection) => void
 }) {
-  const text = useV1Text()
+  const text = useText()
   const options = choices(runtime, kind)
   const selected = selectionKey(value)
   const known = options.some((item) => selectionKey(item.value) === selected)
@@ -229,7 +199,7 @@ function ModelField({ kind, id, caption, srPrefix, value, runtime, onChange }: {
 function LanguageField({ id, caption, value, options, onChange }: {
   id: string; caption: string; value: string; options: string[]; onChange: (value: string) => void
 }) {
-  const text = useV1Text()
+  const text = useText()
   return <Field id={id} caption={caption}>
     <FieldSelect id={id} value={value} display={value ? languageName(value, text) : null}
       placeholder={text("Select a language", "选择语言", "言語を選択")}
@@ -237,11 +207,10 @@ function LanguageField({ id, caption, value, options, onChange }: {
   </Field>
 }
 
-// full：重新生成等需要完整配置的场景；advanced：工作台里输出内容和语言已放在选项条上，这里只给其余项。
-export function TaskConfigForm({ value, runtime, onChange, variant = "full" }: {
-  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void; variant?: "full" | "advanced"
+export function TaskConfigForm({ value, runtime, onChange }: {
+  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void
 }) {
-  const text = useV1Text()
+  const text = useText()
   const tts = selectedModel(runtime, "tts", value.tts)
   const { sources, targets } = languageChoices(value, runtime)
   const alignmentOptions = choices(runtime, "subtitle_alignment").filter((item) => item.model.target_languages.includes(value.target_language))
@@ -255,7 +224,6 @@ export function TaskConfigForm({ value, runtime, onChange, variant = "full" }: {
   const dubbing = value.output_mode !== "subtitles"
 
   return <div className="@container divide-y divide-border">
-    {variant === "full" ? <>
       <ConfigRow icon={Clapperboard} tint="neutral" title={text("Output", "输出", "出力")}
         description={text("Subtitles, a dubbed cut, or both.", "生成字幕、配音成片，或两者都要。", "字幕、吹き替え、またはその両方。")}>
         <Field id="output-mode" caption={text("Content", "内容", "内容")} srPrefix={text("Output ", "输出", "出力")}>
@@ -269,7 +237,6 @@ export function TaskConfigForm({ value, runtime, onChange, variant = "full" }: {
         <LanguageField id="source-language" caption={text("Source language", "原文语言", "入力言語")} value={value.source_language} options={sources} onChange={(source_language) => change({ source_language })} />
         <LanguageField id="target-language" caption={text("Target language", "目标语言", "出力言語")} value={value.target_language} options={targets} onChange={(target_language) => change({ target_language })} />
       </ConfigRow>
-    </> : null}
 
     <ConfigRow icon={Mic} tint="blue" title={text("Speech recognition", "语音识别", "音声認識")}
       description={text("Turns speech into text. Name hints help with people and brands.", "把语音转成文字，专名提示能让人名、品牌名更准确。", "音声を文字に変換します。固有名詞のヒントで人名やブランド名の精度が上がります。")}>

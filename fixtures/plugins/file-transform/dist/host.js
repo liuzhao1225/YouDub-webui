@@ -31,7 +31,7 @@ export function apply(ctx, config = {}) {
     plan(input, options) {
       return {
         workflow: { id: this.id, version: this.version, ...identity }, config: options,
-        bindings: { transform: { ...identity, providerId, contractVersion: operation, modelRevision: null, options: {} } },
+        bindings: { transform: { ...identity, providerId, modelRevision: null, options: {} } },
         steps: [{ id: 'uppercase', label: '转换文本', bindingKey: 'transform', operation, input: { document: { from: 'task', name: 'document' } }, outputs }],
         outputs: [{ id: 'text', label: '大写文本', source: { stepId: 'uppercase', output: 'document' }, role: 'text', required: true }],
       }
