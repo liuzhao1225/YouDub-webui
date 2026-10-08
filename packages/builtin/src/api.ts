@@ -11,7 +11,10 @@ export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 
 export function apply(ctx: Context) {
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => ctx.http.register(method, path, handler))
   const view = (task: TaskView) => ({ ...task, outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
-  route('GET', '/api/health', request => ctx.http.json(request, ctx.http.ready ? 200 : 503, { status: ctx.http.ready ? 'ready' : 'starting', api_version: 'v2' }))
+  route('GET', '/api/health', request => {
+    ctx.tasks.assertReady()
+    ctx.http.json(request, 200, { status: 'ready', api_version: 'v2' })
+  })
   route('GET', '/api/v2/catalog', request => ctx.http.json(request, 200, ctx.catalog.describe()))
   route('GET', '/api/v2/workflows', request => ctx.http.json(request, 200, { items: ctx.catalog.describe().workflows }))
   const base = '/api/v2'
@@ -101,20 +104,28 @@ async function upload(ctx: Context, request: HttpRequest) {
   const artifacts: Record<string, Artifact> = {}, inputs: Record<string, { id: string; schemaId: string }> = {}
   let metadata: any, release: (() => void | Promise<void>) | undefined, reservation: Promise<void> | undefined, failure: unknown
   const jobs: Promise<void>[] = []
-  const parser = Busboy({ headers: request.raw.headers, limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } })
+  const slots = new Set<string>()
+  let parser: ReturnType<typeof Busboy>
+  try { parser = Busboy({ headers: request.raw.headers, limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } }) }
+  catch (error) { throw new AppError('INVALID_MULTIPART', (error as Error).message, 400) }
   parser.on('field', (name, value, info) => {
     if (info.valueTruncated) { failure = new AppError('FILE_TOO_LARGE', 'Metadata too large.', 413); return }
     if (name !== 'request' || metadata) { failure = new AppError('INVALID_INPUT', 'Expected one request metadata field.', 422); return }
     try { metadata = JSON.parse(value) } catch { failure = new AppError('INVALID_JSON', 'Invalid request metadata.', 400) }
   })
   parser.on('file', (name, stream, info) => {
+    stream.once('error', error => {
+      failure ??= 'code' in error ? error : new AppError('INVALID_MULTIPART', error.message, 400)
+      parser.destroy(error)
+    })
     const job = (async () => {
       const id = metadata?.id
       requireId(id)
+      const slot = name.startsWith('input.') ? name.slice(6) : ''
+      if (!slot || slots.has(slot)) throw new AppError('INVALID_INPUT', 'Expected unique input.<name> file fields.', 422)
+      slots.add(slot)
       reservation ??= ctx.files.reserve(id, true).then(dispose => { release = dispose })
       await reservation
-      const slot = name.startsWith('input.') ? name.slice(6) : ''
-      if (!slot || inputs[slot]) throw new AppError('INVALID_INPUT', 'Expected unique input.<name> file fields.', 422)
       const workflowId = metadata?.workflowId
       if (!workflowId) throw new AppError('INVALID_CONFIG', 'Send request metadata before input files.', 422)
       const descriptor = ctx.catalog.workflow(workflowId).describe().inputs.find(item => item.name === slot)
@@ -122,16 +133,23 @@ async function upload(ctx: Context, request: HttpRequest) {
       stream.once('limit', () => { failure = new AppError('FILE_TOO_LARGE', 'Input exceeds upload limit.', 413) })
       const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream, descriptor.maxBytes)
       artifacts[artifact.id] = artifact; inputs[slot] = { id: artifact.id, schemaId: artifact.schemaId }
-    })().catch(error => { failure ??= error; stream.resume() })
+    })().catch(error => { failure ??= error; parser.destroy(error); stream.resume() })
     jobs.push(job)
   })
   parser.on('filesLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many input files.', 413) })
   parser.on('fieldsLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many metadata fields.', 413) })
   try {
-    await new Promise<void>((resolve, reject) => { parser.once('close', resolve); parser.once('error', reject); request.raw.once('aborted', () => reject(new Error('Upload interrupted.'))); request.raw.pipe(parser) })
+    await new Promise<void>((resolve, reject) => {
+      parser.once('close', resolve)
+      parser.once('error', error => reject(failure ?? new AppError('INVALID_MULTIPART', error instanceof Error ? error.message : String(error), 400)))
+      request.raw.once('aborted', () => parser.destroy(new AppError('UPLOAD_INTERRUPTED', 'Upload interrupted.', 400)))
+      request.raw.pipe(parser)
+    })
     await Promise.all(jobs)
     if (failure) throw failure
     requireId(metadata?.id)
+    if (!reservation) release = await ctx.files.reserve(metadata.id, true)
     return { release, input: { ...metadata, inputs, artifacts, sourceName: Object.values(artifacts)[0]?.name || metadata.workflowId } as CreateTask }
   } catch (error) { await Promise.all(jobs); await release?.(); throw error }
+  finally { request.raw.unpipe(parser); request.raw.resume() }
 }

@@ -423,3 +423,19 @@ def test_real_export_preserves_video_tail_and_first_audio_and_burns_tail_subtitl
     # through the end of the clip, beyond merely writing a valid SRT file.
     assert sum(output_frame) > sum(source_frame) + 200
     assert "00:00:01,000\n结束了。" in result.output_files["translated_subtitles"].read_text()
+
+
+@pytest.mark.parametrize("cues", [
+    [(80, 240, "你好，世界！"), (800, 1100, "结束了。")],
+    [(240, 80, "你好，世界！"), (800, 880, "结束了。")],
+    [(80, 840, "你好，世界！"), (800, 880, "结束了。")],
+    [(80, 240, "你好，世界！")],
+    [(80, 240, "替换了内容。"), (800, 880, "结束了。")],
+])
+def test_external_aligned_cues_must_preserve_full_translation_and_video_timeline(monkeypatch, context, cues):
+    context = add_dubbing(context, "both")
+    monkeypatch.setattr(media, "_run_media", lambda *_args, **_kwargs: pytest.fail("invalid cues must not render"))
+    with pytest.raises(ApiError) as error:
+        export.run(context, lambda *_: None, output_dir=context.work_dir / "output", prepared_cues=cues)
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+    assert not (context.work_dir / "output" / "video.mp4").exists()

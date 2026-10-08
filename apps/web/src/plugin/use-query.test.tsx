@@ -45,3 +45,20 @@ it('keeps a slower runtime request alive when the catalog resolves through Cordi
   await waitFor(() => expect(screen.getByTestId('runtime')).toHaveTextContent('ready'))
   expect(requests).toHaveLength(2)
 })
+
+it('does not show a previous query result or error after the query path changes', async () => {
+  const request = vi.fn(async (path: string) => {
+    if (path === '/first') return { name: 'first task' }
+    throw new Error('Second filter failed')
+  })
+  const context = { apiClient: { request } } as unknown as Context
+  function Viewer({ path }: { path: string }) {
+    const { data, error } = useQuery<{ name: string }>(path)
+    return <p>{data?.name || error || 'loading'}</p>
+  }
+  const view = render(<PluginContextProvider context={context}><Viewer path="/first" /></PluginContextProvider>)
+  await screen.findByText('first task')
+  view.rerender(<PluginContextProvider context={context}><Viewer path="/second" /></PluginContextProvider>)
+  expect(screen.queryByText('first task')).not.toBeInTheDocument()
+  await screen.findByText('Second filter failed')
+})

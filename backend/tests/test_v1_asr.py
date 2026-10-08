@@ -146,11 +146,12 @@ def test_no_word_timestamps_preserves_full_segment_even_when_long():
 @pytest.mark.parametrize("words", [[], [{"start": .3, "end": .7, "word": " Different"}],
                                    [{"start": -1, "end": 3, "word": " One. Two."}]])
 def test_invalid_standard_word_metadata_is_rejected(words):
-    from pydantic import ValidationError
     raw = {"language": "en", "segments": [{"start": 0, "end": 2, "text": " One. Two.", "words": words}]}
     before = deepcopy(raw)
-    with pytest.raises((ApiError, ValidationError)):
+    with pytest.raises(ApiError) as error:
         asr.normalize_result(raw, duration_ms=2000)
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+    assert error.value.status_code == 502
     assert raw == before
 
 
@@ -311,3 +312,12 @@ def test_child_corrupt_checkpoint_is_not_deleted_retried_or_downloaded(context, 
     captured = capsys.readouterr()
     assert "invalid checkpoint" in captured.err
     assert json.loads(captured.err.strip().splitlines()[-1])["code"] == "MODEL_NOT_READY"
+
+
+@pytest.mark.parametrize("words", [[None], [{}], [{"word": " Hello."}], "invalid-words"])
+def test_malformed_word_objects_report_provider_error(raw_result, words):
+    raw_result["segments"][0]["words"] = words
+    with pytest.raises(ApiError) as error:
+        asr.normalize_result(raw_result, duration_ms=3000)
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+    assert error.value.status_code == 502

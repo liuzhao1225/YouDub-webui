@@ -91,6 +91,7 @@ export interface CreateTask { id: string; workflowId: string; workflowVersion?: 
 export interface TaskQuery { limit?: number; offset?: number; status?: string; active?: boolean }
 export interface TaskPage { items: TaskView[]; limit: number; offset: number; hasMore: boolean }
 export interface TasksService {
+  assertReady(): void;
   create(request: CreateTask): Promise<TaskView>; get(id: string): Promise<TaskView>; record(id: string): Promise<TaskRecord>;
   list(query?: TaskQuery): Promise<TaskPage>; cancel(id: string, expectedAttempt: number): Promise<TaskView>;
   retry(id: string, expectedAttempt: number): Promise<TaskView>;
@@ -98,6 +99,7 @@ export interface TasksService {
   delete(id: string, expectedAttempt: number): Promise<void>; idle(): Promise<boolean>
 }
 export interface CatalogService {
+  listProviders(): ProviderDescription[];
   registerProvider(provider: OperationProvider): Disposer; registerWorkflow(workflow: WorkflowDefinition): Disposer;
   provider(id: string): OperationProvider; workflow(id: string): WorkflowDefinition;
   describe(): { providers: ProviderDescription[]; workflows: WorkflowDescription[] };

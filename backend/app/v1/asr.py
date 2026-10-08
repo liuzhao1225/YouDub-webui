@@ -10,6 +10,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from .errors import ApiError
 from .segments import Transcript
 from .steps import Completed, StageContext
@@ -80,12 +82,18 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
         if raw.get("words") is not None:
             if not isinstance(raw["words"], list):
                 raise _invalid("Whisper returned invalid word timestamps.")
-            segment["words"] = [{"text": word["word"], "start_ms": _milliseconds(word["start"]),
-                                 "end_ms": _milliseconds(word["end"])} for word in raw["words"]]
+            try:
+                segment["words"] = [{"text": word["word"], "start_ms": _milliseconds(word["start"]),
+                                     "end_ms": _milliseconds(word["end"])} for word in raw["words"]]
+            except (KeyError, TypeError) as exc:
+                raise _invalid("Whisper returned invalid word timestamps.") from exc
         segments.append(segment)
-    return Transcript.model_validate({"detected_language": language, "segments": segments}).model_dump(
-        mode="json", exclude_none=True,
-    )
+    try:
+        return Transcript.model_validate({"detected_language": language, "segments": segments}).model_dump(
+            mode="json", exclude_none=True,
+        )
+    except ValidationError as exc:
+        raise _invalid("Whisper word timing or text does not match its source utterance.") from exc
 
 
 def run(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:

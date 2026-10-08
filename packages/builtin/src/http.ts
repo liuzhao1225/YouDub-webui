@@ -155,6 +155,10 @@ export async function readJson(request: HttpRequest, limit = 1024 * 1024): Promi
     if (bytes > limit) throw new AppError('FILE_TOO_LARGE', 'Request body is too large.', 413)
     buffers.push(Buffer.from(chunk))
   }
-  try { return buffers.length ? JSON.parse(Buffer.concat(buffers).toString('utf8')) : {} }
+  try {
+    const value = buffers.length ? JSON.parse(Buffer.concat(buffers).toString('utf8')) : {}
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object.')
+    return value
+  }
   catch { throw new AppError('INVALID_JSON', 'Invalid JSON request.', 400) }
 }

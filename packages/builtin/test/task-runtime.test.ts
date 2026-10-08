@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import type { InvocationContext, OperationProvider, WorkflowDefinition, TaskView, OutputPort } from '@youdub/sdk'
+import { AppError, type InvocationContext, type OperationProvider, type WorkflowDefinition, type TaskView, type OutputPort } from '@youdub/sdk'
 import Processes from '../src/process.js'
 import Store from '../src/store.js'
 import Files from '../src/files.js'
@@ -15,13 +15,21 @@ import Secrets from '../src/secrets.js'
 import Settings from '../src/settings.js'
 import Tasks from '../src/tasks.js'
 
-async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgraded' = 'artifact') {
+async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgraded' = 'artifact', expectedShutdownFailure?: RegExp) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-tasks-')), ctx = new Context()
   const fibers: Fiber[] = []
   fibers.push(await ctx.plugin(Processes), await ctx.plugin(Catalog), await ctx.plugin(Files, { root }))
   fibers.push(await ctx.plugin(Store, { root, repoRoot: process.cwd(), python: resolve('.venv/bin/python') }))
   fibers.push(await ctx.plugin(Secrets), await ctx.plugin(Settings), await ctx.plugin(Tasks, { pollMs: 10 }))
-  t.after(async () => { await ctx.parallel('app/stopping'); for (const fiber of [...fibers].reverse()) await fiber.dispose(); await rm(root, { recursive: true }) })
+  t.after(async () => {
+    try { await ctx.parallel('app/stopping') }
+    catch (error: any) {
+      if (!expectedShutdownFailure) throw error
+      const errors: Error[] = error instanceof AggregateError ? error.errors : [error]
+      assert.ok(errors.some(item => expectedShutdownFailure.test(item.message)), 'Shutdown must preserve the original queue failure')
+    }
+    finally { for (const fiber of [...fibers].reverse()) await fiber.dispose(); await rm(root, { recursive: true }) }
+  })
   const identity = { pluginId: 'test.runtime', pluginVersion: '1.0.0', integrity: 'test-fixed' }
   const output: OutputPort = contract === 'json'
     ? { name: 'document', kind: 'json', schemaId: 'document/v1', required: true, schema: { type: 'object', required: ['text'], properties: { text: { type: 'string' } }, additionalProperties: false } }
@@ -36,7 +44,12 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
     describe: () => ({ id: 'test.provider', label: 'Test provider', ...identity, operations: [{ id: 'test/v1', inputSchema: { type: 'object' }, outputs: [output] }] }),
     probe: async () => ({ available: true }),
     async execute(request, context) {
-      if (request.config.mode === 'wait') return { state: 'waiting', operation: { workDir: request.workDir }, nextPollAt: new Date(Date.now() + 300).toISOString() }
+      if (request.config.mode === 'wait' || request.config.mode === 'wait-offset') {
+        const nextPollAt = request.config.mode === 'wait-offset'
+          ? new Date(Date.now() + 300 + 8 * 60 * 60 * 1000).toISOString().replace('Z', '+08:00')
+          : new Date(Date.now() + 300).toISOString()
+        return { state: 'waiting', operation: { workDir: request.workDir }, nextPollAt }
+      }
       if (request.config.mode === 'bad') return { state: 'completed', outputs: {} }
       if (request.config.mode === 'unknown') {
         await context.externalPrepare({ externalRequestId: 'remote-1', requestKey: request.invocationId })
@@ -59,7 +72,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
   }
   const workflow: WorkflowDefinition = {
     id: 'test.workflow', version: '1.0.0', ...identity,
-    describe: () => ({ id: 'test.workflow', version: '1.0.0', label: 'Test workflow', inputs: [], defaults: { mode: 'text' }, configSchema: { type: 'object', required: ['mode'], properties: { mode: { enum: ['text', 'wait', 'bad', 'cancel', 'bad-json', 'deleted', 'forged', 'unknown'] } }, additionalProperties: false } }),
+    describe: () => ({ id: 'test.workflow', version: '1.0.0', label: 'Test workflow', inputs: [], defaults: { mode: 'text' }, configSchema: { type: 'object', required: ['mode'], properties: { mode: { enum: ['text', 'wait', 'wait-offset', 'bad', 'cancel', 'bad-json', 'deleted', 'forged', 'unknown'] } }, additionalProperties: false } }),
     validate: () => [],
     plan: (_, config) => ({ workflow: { id: 'test.workflow', version: '1.0.0', ...identity }, config, bindings: { main: { providerId: provider.id, ...identity, modelRevision: null, options: {} } }, steps: [{ id: 'process', label: 'Process', bindingKey: 'main', operation: 'test/v1', input: {}, outputs: contract === 'omitted' ? [] : [{ ...output, required: contract !== 'downgraded' }] }], outputs: contract === 'json' || contract === 'omitted' ? [] : [{ id: 'file', label: 'File', role: 'file', source: { stepId: 'process', output: 'file' }, required: true }] }),
   }
@@ -105,6 +118,32 @@ test('real task cancellation, explicit retry, and stale progress/CAS cannot over
   await assert.rejects(previous().progress(0.9, 'late progress'))
   await assert.rejects(ctx.store.call('store.cas', { id: task.id, expectedRevision: stale.revision, task: { ...stale, message: 'late overwrite' } }), (error: any) => error.code === 'REVISION_CONFLICT')
   assert.equal((await ctx.tasks.get(task.id)).status, 'succeeded')
+})
+
+test('remote polling timestamps with timezone offsets use the same UTC queue clock', async t => {
+  const { ctx, create, until } = await setup(t)
+  const task = await create('wait-offset')
+  const waiting = await until(task.id, state => state.status === 'waiting')
+  assert.match(waiting.nextPollAt!, /Z$/)
+  await until(task.id, state => state.status === 'succeeded')
+  ctx.tasks.assertReady()
+})
+
+test('queue failure becomes visible to readiness and prevents accepting new tasks', async t => {
+  const { ctx, create } = await setup(t, 'artifact', /Queue storage disconnected/)
+  const call = ctx.store.call.bind(ctx.store)
+  t.mock.method(ctx.store, 'call', (method: string, params: any) => {
+    if (method === 'store.claim') throw new AppError('STORE_UNAVAILABLE', 'Queue storage disconnected', 503)
+    return call(method, params)
+  })
+  const deadline = Date.now() + 2000
+  while (true) {
+    try { ctx.tasks.assertReady() }
+    catch (error: any) { assert.equal(error.code, 'TASK_RUNTIME_UNAVAILABLE'); break }
+    assert.ok(Date.now() < deadline, 'Task runtime continued to report readiness after its loop stopped')
+    await delay(10)
+  }
+  await assert.rejects(create('text'), (error: any) => error.code === 'TASK_RUNTIME_UNAVAILABLE')
 })
 
 test('a provider success envelope without its required artifact fails the real task', async t => {

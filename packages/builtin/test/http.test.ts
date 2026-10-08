@@ -5,8 +5,18 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import Http from '../src/http.js'
+import Http, { readJson } from '../src/http.js'
 import Auth from '../src/auth.js'
+
+test('JSON request bodies must be objects', async () => {
+  const { Readable } = await import('node:stream')
+  const request = (body: string) => ({ raw: Readable.from(body ? [Buffer.from(body)] : []) }) as any
+  for (const body of ['null', '[]', '"text"', 'true', '42']) {
+    await assert.rejects(readJson(request(body)), (error: any) => error.status === 400 && error.code === 'INVALID_JSON')
+  }
+  assert.deepEqual(await readJson(request('{"password":"example"}')), { password: 'example' })
+  assert.deepEqual(await readJson(request('')), {})
+})
 
 test('HTTP ranges, HEAD, invalid ranges, and Cordis route disposal', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'youdub-http-'))

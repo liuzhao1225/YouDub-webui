@@ -27,8 +27,13 @@ class Bridge:
                 "ui_language": values.get("ui_language", "en")}
 
     def patch_settings(self, patch):
+        from pydantic import ValidationError
         from backend.app.v1.contracts import SettingsPatch
-        validated = SettingsPatch.model_validate(patch)
+        try:
+            validated = SettingsPatch.model_validate(patch)
+        except ValidationError as exc:
+            raise WorkerError("INVALID_CONFIG", "Settings do not match the required format.",
+                              exc.errors(include_input=False, include_context=False, include_url=False)) from exc
         if "defaults" in validated.model_fields_set:
             self.store.write_setting("defaults", validated.defaults.model_dump(mode="json"))
         elif "ui_language" in validated.model_fields_set:

@@ -54,29 +54,36 @@ export default class ExtensionsService extends Service {
     if (item.client) { await confined(item.directory, item.client.entry); for (const css of item.client.css || []) await confined(item.directory, css) }
   }
   private async idle() { if (!await this.ctx.tasks.idle()) throw new AppError('TASK_BUSY', 'Finish or cancel active tasks before changing extensions.', 409) }
+  private async beginChange() {
+    if (this.busy) throw new AppError('EXTENSION_BUSY', 'Another extension change is running.', 409)
+    this.busy = true
+    try { await this.idle() } catch (error) { this.busy = false; throw error }
+  }
   async setEnabled(id: string, enabled: boolean) {
-    await this.idle()
     if (typeof enabled !== 'boolean') throw new AppError('INVALID_CONFIG', 'enabled must be boolean.', 422)
-    const item = this.installed.find(item => item.id === id)
-    if (!item) throw new AppError('NOT_FOUND', 'Extension not found.', 404)
-    if (enabled) await this.verifyPackage(item)
-    const next = this.installed.map(entry => entry === item ? { ...entry, enabled } : entry)
-    await writeFile(join(this.config.root, 'installed.json'), JSON.stringify(next, null, 2) + '\n', { mode: 0o600 })
-    this.installed = next; return this.list()
+    await this.beginChange()
+    try {
+      const item = this.installed.find(item => item.id === id)
+      if (!item) throw new AppError('NOT_FOUND', 'Extension not found.', 404)
+      if (enabled) await this.verifyPackage(item)
+      const next = this.installed.map(entry => entry === item ? { ...entry, enabled } : entry)
+      await writeFile(join(this.config.root, 'installed.json'), JSON.stringify(next, null, 2) + '\n', { mode: 0o600 })
+      this.installed = next; return this.list()
+    } finally { this.busy = false }
   }
   async remove(id: string) {
-    await this.idle()
-    const item = this.installed.find(item => item.id === id)
-    if (!item) throw new AppError('NOT_FOUND', 'Extension not found.', 404)
-    if (this.bootEnabled.has(id)) throw new AppError('RESTART_REQUIRED', 'Disable this extension and restart before removing it.', 409)
-    await rm(item.directory, { recursive: true })
-    this.installed = this.installed.filter(entry => entry !== item); await this.save()
+    await this.beginChange()
+    try {
+      const item = this.installed.find(item => item.id === id)
+      if (!item) throw new AppError('NOT_FOUND', 'Extension not found.', 404)
+      if (this.bootEnabled.has(id)) throw new AppError('RESTART_REQUIRED', 'Disable this extension and restart before removing it.', 409)
+      await rm(item.directory, { recursive: true })
+      this.installed = this.installed.filter(entry => entry !== item); await this.save()
+    } finally { this.busy = false }
   }
   async install(request: InstallRequest) {
-    await this.idle()
-    if (this.busy) throw new AppError('INSTALL_BUSY', 'Another extension installation is running.', 409)
     if (typeof request.source !== 'string' || !request.source) throw new AppError('INVALID_CONFIG', 'An extension source is required.', 422)
-    this.busy = true
+    await this.beginChange()
     const staging = join(this.config.root, `install-${randomUUID()}`)
     const log: string[] = []
     const run = async (command: string, args: string[], cwd = staging) => {

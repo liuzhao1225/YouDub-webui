@@ -171,3 +171,116 @@ def test_managed_sigterm_waits_for_stubborn_model_child_to_be_reaped(tmp_path):
         except ProcessLookupError:
             pass
         process.communicate()
+
+
+@pytest.mark.parametrize("terminal", ["succeeded", "failed"])
+def test_cancellation_waiting_for_terminal_receipt_ack_preserves_known_result(terminal):
+    script = f'''from backend.workers.protocol import OperationWire
+w = OperationWire()
+try:
+    w.receive()
+    w.external_state("pending")
+    w.external_state({terminal!r})
+except BaseException as exc:
+    w.fail(exc)
+    raise SystemExit(1)
+'''
+    process = subprocess.Popen([sys.executable, "-c", script], cwd=ROOT, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        request = str(uuid4())
+        send(process, request, 1, "execute", {})
+        pending = read(process)
+        external_id = pending["payload"]["externalRequestId"]
+        send(process, request, 2, "external.accepted", {"externalRequestId": external_id})
+        receipt = read(process)
+        assert receipt["type"] == "external.update" and receipt["payload"]["state"] == terminal
+        assert receipt["payload"]["mayStillRun"] is False
+        # The terminal event is known to the worker and received by Host. A
+        # cancellation while Host commits it must not emit a contradictory risk.
+        send(process, request, 3, "cancel", {})
+        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert process.poll() is None
+        send(process, request, 4, "external.recorded", {"externalRequestId": external_id})
+        error = read(process)
+        assert error["type"] == "error"
+        assert error["payload"]["code"] == "CANCELLED"
+        assert process.wait(timeout=5) == 1
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.communicate()
+
+
+@pytest.mark.parametrize("cancel_while_committing", [False, True])
+def test_error_receipt_is_acknowledged_before_original_error_and_exit(cancel_while_committing):
+    script = '''from backend.workers.protocol import OperationWire, WorkerError
+w = OperationWire()
+try:
+    w.receive()
+    w.external_state("pending")
+    raise WorkerError("REMOTE_TIMEOUT", "synthetic provider failure")
+except BaseException as exc:
+    w.fail(exc)
+    raise SystemExit(1)
+'''
+    process = subprocess.Popen([sys.executable, "-c", script], cwd=ROOT, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        request = str(uuid4())
+        send(process, request, 1, "execute", {})
+        pending = read(process)
+        external_id = pending["payload"]["externalRequestId"]
+        send(process, request, 2, "external.accepted", {"externalRequestId": external_id})
+        receipt = read(process)
+        assert receipt["type"] == "external.update" and receipt["payload"]["state"] == "unknown"
+        sequence = 3
+        if cancel_while_committing:
+            send(process, request, sequence, "cancel", {})
+            sequence += 1
+        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert process.poll() is None
+        send(process, request, sequence, "external.recorded", {"externalRequestId": external_id})
+        error = read(process)
+        assert error["type"] == "error"
+        assert error["payload"]["code"] == "REMOTE_TIMEOUT"
+        assert error["payload"]["message"] == "synthetic provider failure"
+        assert process.wait(timeout=5) == 1
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.communicate()
+
+
+def test_cancel_during_request_reservation_waits_for_ack_and_never_starts_supplier():
+    script = '''from backend.workers.protocol import OperationWire
+w = OperationWire()
+try:
+    w.receive()
+    w.external_state("pending")
+    w.send("supplier.called", {})
+except BaseException as exc:
+    w.fail(exc)
+    raise SystemExit(1)
+'''
+    process = subprocess.Popen([sys.executable, "-c", script], cwd=ROOT, stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        request = str(uuid4())
+        send(process, request, 1, "execute", {})
+        pending = read(process)
+        external_id = pending["payload"]["externalRequestId"]
+        send(process, request, 2, "cancel", {})
+        assert not select.select([process.stdout], [], [], 0.05)[0]
+        send(process, request, 3, "external.accepted", {"externalRequestId": external_id})
+        receipt = read(process)
+        assert receipt["type"] == "external.update"
+        send(process, request, 4, "external.recorded", {"externalRequestId": external_id})
+        error = read(process)
+        assert error["type"] == "error" and error["payload"]["code"] == "CANCELLED"
+        assert "receiptError" not in error["payload"]
+        assert process.wait(timeout=5) == 1
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.communicate()

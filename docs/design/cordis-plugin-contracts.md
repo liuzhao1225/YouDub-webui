@@ -93,7 +93,9 @@ type OperationResult =
 
 `Invocation` 提供 invocationId、taskId、attempt、stepId、operation、固定 binding、inputs、workDir、taskDir 和 config。`InvocationContext` 提供 AbortSignal、progress、externalPrepare/externalUpdate、register/resolve 和执行端需要的连接凭据。TypeScript 实现直接使用这些接口，Python 使用相同接口的 NDJSON 编码。
 
-provider 返回 waiting 必须实现 poll，nextPollAt 必须可解析。当前纯 Python manifest 桥只实现单次 execute；远端轮询提供者使用 Host 插件实现。取消通过 context.signal 停止正在执行或轮询的本机调用；waiting 取消会结束本机步骤。当前没有自动调用供应商撤销接口；未确认远端状态保留 unknown 和 `mayStillRun`，禁止普通 retry。
+provider 返回 waiting 必须实现 poll，nextPollAt 必须可解析；Host 将时间转换为 UTC 后入队，供应商可以返回带时区偏移的时间。当前纯 Python manifest 桥只实现单次 execute；远端轮询提供者使用 Host 插件实现。取消通过 context.signal 停止正在执行或轮询的本机调用；waiting 取消会结束本机步骤。当前没有自动调用供应商撤销接口；未确认远端状态保留 unknown 和 `mayStillRun`，禁止普通 retry。
+
+workflow 的 `describe()` 或默认值计算通过 `ctx.catalog.listProviders()` 读取提供方描述。`ctx.catalog.describe()` 会同时调用所有 workflow 的 `describe()`，不能在这些回调中再次调用。任务执行器失效时，`ctx.tasks.assertReady()` 抛出 503 错误，健康接口同步返回不可用。
 
 ```ts
 export const inject = ['catalog']

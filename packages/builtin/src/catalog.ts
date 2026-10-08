@@ -14,6 +14,7 @@ export default class Catalog extends Service implements CatalogService {
   registerWorkflow(workflow: WorkflowDefinition) { return this.register(this.workflows, workflow) }
   provider(id: string) { const value = this.providers.get(id); if (!value) throw new AppError('PROVIDER_UNAVAILABLE', `Provider ${id} is not registered.`, 422); return value }
   workflow(id: string) { const value = this.workflows.get(id); if (!value) throw new AppError('WORKFLOW_UNAVAILABLE', `Workflow ${id} is not registered.`, 422); return value }
-  describe() { return { providers: [...this.providers.values()].map(item => item.describe()), workflows: [...this.workflows.values()].map(item => item.describe()) } }
+  listProviders() { return [...this.providers.values()].map(item => item.describe()) }
+  describe() { return { providers: this.listProviders(), workflows: [...this.workflows.values()].map(item => item.describe()) } }
   async refresh() { await Promise.all([...this.providers.values()].map(provider => provider.probe())) }
 }

@@ -97,6 +97,20 @@ def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool,
     path.write_text("\n".join(cues), encoding="utf-8", newline="\n")
 
 
+def _validate_prepared_cues(cues: list[tuple[int, int, str]], rows: list[tuple[Segment, str]], duration_ms: int) -> None:
+    """A replacement aligner may change display timing, while keeping all text."""
+    previous_end = 0
+    for start, end, text in cues:
+        if (type(start) is not int or type(end) is not int or start < previous_end
+                or end <= start or end > duration_ms or not isinstance(text, str) or not text.strip()):
+            raise _invalid("Aligned subtitle cues must be ordered, nonempty and inside the source video.")
+        previous_end = end
+    expected = "".join("".join(text.split()) for _, text in rows)
+    actual = "".join("".join(text.split()) for _, _, text in cues)
+    if actual != expected:
+        raise _invalid("Aligned subtitle cues do not preserve the complete translation.")
+
+
 def _display_parts(text: str) -> list[str]:
     """Split subtitle display text without changing a translation/TTS unit."""
     pairs = {"《": "》", "（": "）", "【": "】", "「": "」", "『": "』", "(": ")", "[": "]"}
@@ -220,6 +234,8 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
             "start_ms": aligned[segment.id].dubbed_start_ms, "end_ms": aligned[segment.id].dubbed_end_ms,
         }), text) for segment, text in rows]
     if include_subtitles:
+        if prepared_cues is not None:
+            _validate_prepared_cues(prepared_cues, translated_rows, info["duration_ms"])
         _write_srt(source_srt, rows, translated=False)
         _write_srt(translated_srt, translated_rows, translated=True, aligned_cues=prepared_cues)
         outputs.update(source_subtitles=source_srt, translated_subtitles=translated_srt)

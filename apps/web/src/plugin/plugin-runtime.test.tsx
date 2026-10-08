@@ -83,3 +83,15 @@ describe('Cordis Client composition', () => {
     expect(schemaProblems({ type: 'object', properties: { rows: { type: 'array', items: { type: 'string' } } } })).toEqual(['rows'])
   })
 })
+
+it('prefers an installed static route over an earlier parameter route', async () => {
+  const { resolveRoute } = await import('./builtin/shell')
+  const component = () => null
+  const routes = [
+    { id: 'task-detail', path: '/tasks/:id', access: 'authenticated' as const, component },
+    { id: 'external-help', path: '/tasks/help', access: 'authenticated' as const, component },
+  ]
+  expect(resolveRoute(routes, '/tasks/help', true)?.route.id).toBe('external-help')
+  expect(resolveRoute(routes, '/tasks/task-1', true)?.params).toEqual({ id: 'task-1' })
+  expect(resolveRoute(routes, '/tasks/help', false)).toBeUndefined()
+})

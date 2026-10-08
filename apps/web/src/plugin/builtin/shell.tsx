@@ -1,7 +1,7 @@
 import { Context } from 'cordis'
 import { useState } from 'react'
 import { LogOut, PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react'
-import { Link, matchRoute, text, useClient, useObservable, usePathname, useSlot } from '../sdk'
+import { Link, matchRoute, type RouteEntry, text, useClient, useObservable, usePathname, useSlot } from '../sdk'
 import { restoreTheme, ThemeProvider } from '@/lib/theme'
 import { LanguageProvider, useI18n } from '@/lib/i18n'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -9,6 +9,14 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
 
+export function resolveRoute(routes: RouteEntry[], path: string, authenticated: boolean) {
+  // Static segments take precedence over parameters, independently of plugin
+  // installation order (for example /tasks/help before /tasks/:id).
+  const specificity = (pattern: string) => pattern.split('/').map((part) => part.startsWith(':') ? '0' : '1').join('')
+  return routes.map((route) => ({ route, params: matchRoute(path, route.path) }))
+    .filter((item) => item.params && (item.route.access === 'public' || authenticated))
+    .sort((a, b) => specificity(b.route.path).localeCompare(specificity(a.route.path)))[0]
+}
 function Shell() {
   const client = useClient()
   const session = useObservable(client.session)
@@ -20,7 +28,7 @@ function Shell() {
   const [error, setError] = useState('')
   if (session.status === 'error') return <main className="mx-auto max-w-xl p-8"><InlineAlert>{session.error}</InlineAlert></main>
   if (session.status === 'loading') return <div role="status" className="p-8 text-sm text-muted-foreground">{t.auth.sessionLoading}</div>
-  const match = routes.map((route) => ({ route, params: matchRoute(path, route.path) })).find((item) => item.params && (item.route.access === 'public' || session.status === 'authenticated'))
+  const match = resolveRoute(routes, path, session.status === 'authenticated')
   const Page = match?.route.component
   const content = Page ? <Page key={`${match.route.id}:${path}`} params={match.params!} /> : <div className="p-8"><h1 className="text-xl font-semibold">404</h1><p className="mt-2 text-muted-foreground">{language === 'zh' ? '当前插件组合未提供这个页面。' : 'This page is not provided by the active plugins.'}</p></div>
   if (session.status === 'anonymous') return content

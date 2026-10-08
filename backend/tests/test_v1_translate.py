@@ -309,6 +309,7 @@ def test_installed_sdk_pending_cancellation_stops_request_without_completed_rece
 @pytest.mark.parametrize("cause", [StageCancelled(), RuntimeError("receipt persistence failed")])
 def test_receipt_state_errors_are_not_misclassified_as_provider_parsing(context, real_provider, cause):
     real_provider.body = b"invalid JSON after complete receipt"
+    plugin_config = SimpleNamespace(**context.config.__dict__, record_raw=True, max_completion_tokens=65535)
     states = []
 
     def received(state):
@@ -317,8 +318,9 @@ def test_receipt_state_errors_are_not_misclassified_as_provider_parsing(context,
             raise cause
 
     with pytest.raises(type(cause)) as error:
-        translate.run(replace(context, set_external_state=received), lambda *args: None)
+        translate.run(replace(context, config=plugin_config, set_external_state=received), lambda *args: None)
     assert error.value is cause
     assert states == ["pending", "succeeded"]
     assert len(real_provider.calls) == 1
     assert all(client.is_closed for client in real_provider.clients)
+    assert (context.work_dir / "translation_raw" / "0001.response.json").read_bytes() == real_provider.body

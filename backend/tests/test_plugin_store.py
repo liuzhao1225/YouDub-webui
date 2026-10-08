@@ -240,3 +240,24 @@ def test_current_store_rejects_redirected_database_without_touching_target(tmp_p
     with pytest.raises(RuntimeSecurityError):
         SqliteStore(root)
     assert outside.read_bytes() == b"existing-data"
+
+
+@pytest.mark.parametrize("patch", [
+    {"connection": {"adapter": "openai", "api_key": ["SYNTHETIC-CREDENTIAL"]}},
+    {"connection": {"adapter": "openai", "base_url": "https://user:SYNTHETIC-CREDENTIAL@example.test/v1"}},
+])
+def test_invalid_settings_are_422_without_credentials_in_error_or_traceback(tmp_path, patch):
+    import traceback
+    from backend.workers.protocol import error_payload
+    bridge = Bridge(tmp_path, credentials=Credentials())
+    try:
+        bridge.patch_settings(patch)
+    except Exception as exc:
+        payload = error_payload(exc)
+        assert payload["code"] == "INVALID_CONFIG"
+        assert payload["status"] == 422
+        assert "SYNTHETIC-CREDENTIAL" not in json.dumps(payload)
+        assert "SYNTHETIC-CREDENTIAL" not in "".join(traceback.format_exception(exc))
+    else:
+        pytest.fail("Invalid settings were accepted")
+    assert bridge.store.settings_values() == {}

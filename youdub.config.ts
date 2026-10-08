@@ -20,7 +20,7 @@ export default async function composition(): Promise<EntryOptions[]> {
   const integrity = 'sha256:' + hash.digest('hex')
   const entry = (id: string, name: string, config?: any): EntryOptions => ({ id, name: '@youdub/builtin/' + name, config })
   const provider = (id: string, label: string, kinds: string[], capability?: string, execution: 'local' | 'remote' = 'local'): EntryOptions => ({ inject: capability ? ['store'] : [], ...entry('provider-' + id.replaceAll('.', '-'), 'python-provider', {
-    command: python, args: ['-m', 'backend.workers.operation'], cwd: repoRoot, runtimeAdapter: capability ? id : undefined,
+    command: python, args: ['-m', 'backend.workers.operation'], cwd: repoRoot, runtimeAdapter: capability ? id : undefined, probeMediaTools: id === 'youdub.media',
     descriptor: { id, label, pluginId: 'youdub.provider-' + id, pluginVersion: '1.0.0', integrity, operations: kinds.map(key => operations[key]), capability, adapter: capability ? id : undefined, execution },
   }) })
   return [

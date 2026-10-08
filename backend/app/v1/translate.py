@@ -92,11 +92,15 @@ async def _translate(context: StageContext, transcript: Transcript, progress: Ca
                 # The non-streaming SDK call has received the complete HTTP
                 # response. Record that receipt before SDK/JSON validation so
                 # malformed completed results do not become an unknown request.
-                context.set_external_state("succeeded")
-                if getattr(context.config, "record_raw", False):
-                    evidence = context.work_dir / "translation_raw"
-                    evidence.mkdir(exist_ok=True)
-                    (evidence / f"{index + 1:04d}.response.json").write_bytes(raw_response.http_response.content)
+                try:
+                    context.set_external_state("succeeded")
+                finally:
+                    # The complete response remains experiment evidence even
+                    # when cancellation or the receipt ACK stops this step.
+                    if getattr(context.config, "record_raw", False):
+                        evidence = context.work_dir / "translation_raw"
+                        evidence.mkdir(exist_ok=True)
+                        (evidence / f"{index + 1:04d}.response.json").write_bytes(raw_response.http_response.content)
             except APIStatusError as exc:
                 if getattr(context.config, "record_raw", False):
                     (evidence / f"{index + 1:04d}.response.json").write_bytes(exc.response.content)

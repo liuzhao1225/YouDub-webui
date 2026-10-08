@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { resolve } from 'node:path'
 import { Context } from 'cordis'
 import Processes from '../src/process.js'
 import type { Invocation, InvocationContext } from '@youdub/sdk'
@@ -52,4 +53,23 @@ test('worker cancellation waits for the running process to exit', async t => {
   controller.abort(new Error('cancelled by test'))
   await assert.rejects(execution)
   assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' })
+})
+
+test('Python error receipts wait for Host persistence and preserve the original provider error', async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  t.after(() => plugin.dispose())
+  const receipts: string[] = []
+  const script = `from backend.workers.protocol import OperationWire, WorkerError
+wire = OperationWire()
+wire.receive()
+wire.external_state('pending')
+try:
+    raise WorkerError('ORIGINAL_PROVIDER_FAILURE', 'provider disconnected during request')
+except Exception as error:
+    wire.fail(error)
+`
+  await assert.rejects(ctx.process.worker({ command: resolve('.venv/bin/python'), args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context({
+    externalUpdate: async receipt => { await new Promise(resolve => setTimeout(resolve, 75)); receipts.push(receipt.state) },
+  })), (error: any) => error.code === 'ORIGINAL_PROVIDER_FAILURE' && /provider disconnected/.test(error.message))
+  assert.deepEqual(receipts, ['unknown'])
 })

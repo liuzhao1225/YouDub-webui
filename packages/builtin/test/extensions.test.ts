@@ -165,3 +165,68 @@ test('official Python probes require an explicit active store dependency', async
   await assert.rejects(async () => await provider, /cannot get property "store" without inject/)
   assert.deepEqual(ctx.catalog.describe().providers, [])
 })
+
+test('installed extensions resolve services regardless of installation order and await cleanup', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-extension-dependencies-'))
+  t.after(() => rm(root, { recursive: true }))
+  const consumer = join(root, 'consumer.mjs'), provider = join(root, 'provider.mjs'), registry = join(root, 'extensions.mjs')
+  const cleaned = join(root, 'cleaned')
+  await writeFile(consumer, `import {writeFile} from 'node:fs/promises'; export const inject=['example']; export async function apply(ctx){await new Promise(resolve=>setTimeout(resolve,20)); ctx.reflect.provide('observed',ctx.example.value); ctx.effect(()=>async()=>{await new Promise(resolve=>setTimeout(resolve,20));await writeFile(${JSON.stringify(cleaned)},'done')});}`)
+  await writeFile(provider, "export async function apply(ctx){await new Promise(resolve=>setTimeout(resolve,20));ctx.reflect.provide('example',{value:'available'})}")
+  const entries = [{ id: 'consumer', name: pathToFileURL(consumer).href }, { id: 'provider', name: pathToFileURL(provider).href }]
+  await writeFile(registry, `export function apply(ctx){const active=[];ctx.reflect.provide('extensions',{hostEntries:()=>${JSON.stringify(entries)},markActive:id=>active.push(id),active})}`)
+  const host = await startHost([{ id: 'extensions', name: pathToFileURL(registry).href }, { id: 'extensions-loader', name: '@youdub/builtin/extensions-loader' }], pathToFileURL(process.cwd() + '/').href)
+  try {
+    assert.equal((host.ctx as any).observed, 'available')
+    assert.deepEqual((host.ctx.extensions as any).active, ['consumer', 'provider'])
+  } finally { await host.stop() }
+  assert.equal(await readFile(cleaned, 'utf8'), 'done')
+})
+
+test('overlapping extension edits fail explicitly instead of losing a saved change', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-extension-edits-')), ctx = new Context()
+  await writeFile(join(root, 'installed.json'), JSON.stringify(['first', 'second'].map(name => ({ id: `example.${name}`, version: '1.0.0', enabled: true }))))
+  const processes = await ctx.plugin(Processes)
+  const tasks = await ctx.plugin({ apply(context) { context.reflect.provide('tasks', { idle: async () => true }) } })
+  const extensions = await ctx.plugin(Extensions, { root, repoRoot: process.cwd(), managementOnly: true })
+  t.after(async () => { await extensions.dispose(); await tasks.dispose(); await processes.dispose(); await rm(root, { recursive: true }) })
+  const results = await Promise.allSettled([ctx.extensions.setEnabled('example.first', false), ctx.extensions.setEnabled('example.second', false)])
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
+  const failure = results.find(result => result.status === 'rejected') as PromiseRejectedResult
+  assert.equal(failure.reason.code, 'EXTENSION_BUSY')
+  assert.equal(failure.reason.status, 409)
+  const saved = JSON.parse(await readFile(join(root, 'installed.json'), 'utf8'))
+  assert.deepEqual(saved.map((item: any) => item.enabled), ctx.extensions.list().items.map(item => item.enabled))
+  const enabled = saved.find((item: any) => item.enabled)
+  await ctx.extensions.setEnabled(enabled.id, false)
+  assert.equal(ctx.extensions.list().items.every(item => !item.enabled), true)
+})
+
+test('official media readiness checks both configured executables and exposes failures', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-media-probe-')), ctx = new Context()
+  const previous = { ffmpeg: process.env.FFMPEG_PATH, ffprobe: process.env.FFPROBE_PATH }
+  t.after(async () => {
+    if (previous.ffmpeg === undefined) delete process.env.FFMPEG_PATH; else process.env.FFMPEG_PATH = previous.ffmpeg
+    if (previous.ffprobe === undefined) delete process.env.FFPROBE_PATH; else process.env.FFPROBE_PATH = previous.ffprobe
+    await rm(root, { recursive: true })
+  })
+  const processes = await ctx.plugin(Processes), catalog = await ctx.plugin(Catalog)
+  t.after(async () => { await catalog.dispose(); await processes.dispose() })
+  process.env.FFMPEG_PATH = join(root, 'missing-ffmpeg')
+  process.env.FFPROBE_PATH = join(root, 'ffprobe')
+  const plugin = await ctx.plugin(PythonProvider, {
+    descriptor: { id: 'youdub.media', label: 'Media', pluginId: 'youdub.media', pluginVersion: '1.0.0', integrity: 'test', operations: [{ id: 'test/v1', inputSchema: {}, outputs: [] }] },
+    command: 'python3', args: ['unused.py'], cwd: root, probeMediaTools: true,
+  })
+  t.after(() => plugin.dispose())
+  const provider = ctx.catalog.provider('youdub.media')
+  assert.equal(provider.describe().available, false)
+  assert.match(provider.describe().unavailableReason!, /missing-ffmpeg.*ENOENT/)
+  process.env.FFMPEG_PATH = join(root, 'ffmpeg')
+  for (const name of ['ffmpeg', 'ffprobe']) await writeFile(join(root, name), `#!${process.execPath}\nif(process.argv[2]!=='-version')process.exit(8);console.log('test version')\n`, { mode: 0o700 })
+  assert.deepEqual(await provider.probe(), { available: true, reason: null })
+  await writeFile(join(root, 'ffprobe'), `#!${process.execPath}\nconsole.error('broken ffprobe executable');process.exit(7)\n`, { mode: 0o700 })
+  const failed = await provider.probe()
+  assert.equal(failed.available, false)
+  assert.match(failed.reason, /broken ffprobe executable/)
+})

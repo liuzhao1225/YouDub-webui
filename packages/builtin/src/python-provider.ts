@@ -3,7 +3,7 @@ import { AppError, type ProviderDescription, type OperationProvider } from '@you
 
 export interface PythonProviderConfig {
   descriptor: ProviderDescription; command: string; args: string[]; cwd: string;
-  runtimeAdapter?: string; options?: Record<string, any>;
+  runtimeAdapter?: string; probeMediaTools?: boolean; options?: Record<string, any>;
   $plugin?: { id: string; version: string; integrity: string }
 }
 export const name = 'python-provider'
@@ -26,6 +26,17 @@ export async function apply(ctx: Context, config: PythonProviderConfig) {
           available: capability.available, unavailableReason: capability.unavailable_reason,
           dataSent: capability.data_sent, remoteOperations: capability.remote_operations,
         })
+      } else if (config.probeMediaTools) {
+        try {
+          for (const command of [process.env.FFMPEG_PATH?.trim() || 'ffmpeg', process.env.FFPROBE_PATH?.trim() || 'ffprobe']) {
+            await ctx.process.run({ command, args: ['-version'], cwd: config.cwd })
+          }
+          description.available = true
+          description.unavailableReason = null
+        } catch (error) {
+          description.available = false
+          description.unavailableReason = error instanceof Error ? error.message : String(error)
+        }
       } else description.available = true
       return { available: description.available, reason: description.unavailableReason ?? null }
     },

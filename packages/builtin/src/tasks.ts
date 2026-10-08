@@ -42,7 +42,7 @@ export default class Tasks extends Service implements TasksService {
     this.mutation = new Promise(resolve => { release = resolve }); await previous
     try { return await action() } finally { release() }
   }
-  private assertWritable() { if (this.fatal) throw new AppError('TASK_RUNTIME_UNAVAILABLE', this.fatal.message, 503); if (this.stopping.signal.aborted) throw new AppError('APP_STOPPING', 'Application is stopping.', 503) }
+  assertReady() { if (this.fatal) throw new AppError('TASK_RUNTIME_UNAVAILABLE', this.fatal.message, 503); if (this.stopping.signal.aborted) throw new AppError('APP_STOPPING', 'Application is stopping.', 503) }
   async record(id: string): Promise<TaskRecord> {
     requireId(id)
     const task = await this.ctx.store.call<TaskRecord | null>('store.get', { id })
@@ -114,7 +114,7 @@ export default class Tasks extends Service implements TasksService {
     }
   }
   async create(request: CreateTask) {
-    this.assertWritable(); requireId(request.id)
+    this.assertReady(); requireId(request.id)
     return this.ctx.settings.locked(async () => {
       const workflow = this.ctx.catalog.workflow(request.workflowId)
       if (request.workflowVersion && request.workflowVersion !== workflow.version) throw new AppError('WORKFLOW_VERSION_UNAVAILABLE', 'Selected workflow version is unavailable.', 409)
@@ -150,7 +150,7 @@ export default class Tasks extends Service implements TasksService {
   }
   private expected(task: TaskRecord, attempt: number) { if (task.attempt !== attempt) throw new AppError('ATTEMPT_CONFLICT', 'Task attempt changed. Refresh before acting.', 409) }
   async cancel(id: string, expectedAttempt: number) {
-    this.assertWritable()
+    this.assertReady()
     const task = await this.change(id, task => {
       this.expected(task, expectedAttempt)
       if (terminal.has(task.status)) throw new AppError('TASK_BUSY', 'Task has already stopped.', 409)
@@ -161,7 +161,7 @@ export default class Tasks extends Service implements TasksService {
     return this.view(task)
   }
   async retry(id: string, expectedAttempt: number) {
-    this.assertWritable()
+    this.assertReady()
     const release = await this.ctx.files.reserve(id)
     try {
       return this.view(await this.change(id, task => {
@@ -176,7 +176,7 @@ export default class Tasks extends Service implements TasksService {
     } finally { await release() }
   }
   async rerun(id: string, request: { id: string; config: JsonObject; workflowId?: string; acknowledgeExternalRisk?: boolean }) {
-    this.assertWritable()
+    this.assertReady()
     const source = await this.record(id)
     if (source.legacy && !request.workflowId) throw new AppError('WORKFLOW_REQUIRED', 'Select a current workflow to rerun a historical task.', 422)
     if (!terminal.has(source.status)) throw new AppError('TASK_BUSY', 'Stop the source task before rerunning.', 409)
@@ -190,7 +190,7 @@ export default class Tasks extends Service implements TasksService {
     } finally { try { await writeRelease?.() } finally { readRelease() } }
   }
   async delete(id: string, expectedAttempt: number) {
-    this.assertWritable()
+    this.assertReady()
     const release = await this.ctx.files.reserve(id)
     try {
       await this.locked(async () => {
@@ -302,7 +302,7 @@ export default class Tasks extends Service implements TasksService {
       controller.signal.throwIfAborted()
       if (result.state === 'waiting') {
         if (!provider.poll || !result.operation || !Number.isFinite(Date.parse(result.nextPollAt))) throw new AppError('INVALID_PROVIDER_RESULT', 'Invalid asynchronous operation.', 500)
-        await update((task, step) => { task.status = 'waiting'; task.nextPollAt = result.nextPollAt; step.status = 'waiting'; step.operation = result.operation })
+        await update((task, step) => { task.status = 'waiting'; task.nextPollAt = new Date(result.nextPollAt).toISOString(); step.status = 'waiting'; step.operation = result.operation })
         return
       }
       if (result.state !== 'completed' || !result.outputs) throw new AppError('INVALID_PROVIDER_RESULT', 'Invalid operation result.', 500)

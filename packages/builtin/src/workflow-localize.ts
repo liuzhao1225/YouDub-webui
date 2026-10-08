@@ -27,18 +27,20 @@ export async function apply(ctx: Context, plugin: { integrity: string; version?:
   let settings = await ctx.settings.read()
   ctx.on('settings/updated', updated => { settings = updated })
   const first = (capability: string) => {
-    const provider = ctx.catalog.describe().providers.find(item => item.capability === capability && item.available)
+    const provider = ctx.catalog.listProviders().find(item => item.capability === capability && item.available)
     const model = provider?.models?.[0]
     return provider && model ? { adapter: provider.adapter ?? provider.id, model: model.id, device: model.devices[0] } : null
   }
   const defaults = () => settings.defaults ?? { source_language: 'auto', target_language: 'zh', output_mode: 'subtitles', keep_background: false, asr: first('asr'), translation: first('translation'), tts: null, separation: null, subtitle_alignment: null }
-  const pick = (kind: string, config: JsonObject, catalog: CatalogService) => catalog.describe().providers.find(item => item.capability === kind && (item.adapter ?? item.id) === config[kind]?.adapter)
+  const pick = (kind: string, config: JsonObject, catalog: CatalogService) => catalog.listProviders().find(item => item.capability === kind && (item.adapter ?? item.id) === config[kind]?.adapter)
   const workflow: WorkflowDefinition = {
     id: 'youdub.localize', version, pluginId, pluginVersion: version, integrity: plugin.integrity,
     describe: () => ({ id: 'youdub.localize', version, label: '视频翻译与配音', inputs: [{ name: 'video', label: '视频', required: true, acceptedMimeTypes: ['video/*'], maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }], configSchema: localizeSchema, defaults: structuredClone(defaults()), ui: { editor: 'youdub.localize' } }),
     validate: async (_, config, catalog) => {
       const errors: Diagnostic[] = []
       const fail = (message: string, field?: string) => errors.push({ code: 'INVALID_CONFIG', message, field })
+      const media = catalog.listProviders().find(provider => provider.id === 'youdub.media')
+      if (!media?.available) fail(media?.unavailableReason || 'FFmpeg / Media is unavailable.', 'video')
       if (config.source_language.toLowerCase() === config.target_language.toLowerCase() || config.target_language === 'auto') fail('Source and target languages must differ.', 'target_language')
       if (config.output_mode === 'subtitles' && (config.tts || config.separation || config.keep_background)) fail('Subtitles mode requires no TTS, separation, or background mix.')
       if (config.output_mode !== 'subtitles' && (!config.tts || !config.tts.voice)) fail('Dubbing requires a TTS provider and voice.')

@@ -46,3 +46,28 @@ it('submits declared input slots and preserves an uncertain creation ID until ex
   await waitFor(() => expect(input).toBeEnabled())
   expect(request).toHaveBeenCalledWith(`/api/v2/imports/${firstRequest.id}`, { method: 'DELETE' })
 })
+
+it('locks workflow selection while a submitted import still needs reconciliation', async () => {
+  const multiple = { ...catalog, workflows: [...catalog.workflows, { ...catalog.workflows[0], id: 'another', label: 'Another workflow' }] }
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return multiple
+    if (init?.method === 'DELETE') return undefined
+    throw new Error('Connection interrupted')
+  })
+  let Page!: ComponentType<RouteProps>
+  const context = { apiClient: { request }, navigation: { push: vi.fn() },
+    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as Context
+  apply(context)
+  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+  const input = await screen.findByLabelText('Document *')
+  const user = userEvent.setup()
+  await user.upload(input, new File(['hello'], 'input.txt', { type: 'text/plain' }))
+  fireEvent.submit(input.closest('form')!)
+  await screen.findByText('Connection interrupted')
+  expect(screen.getByLabelText('处理流程')).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: '清理本次导入' }))
+  await waitFor(() => expect(screen.getByLabelText('处理流程')).toBeEnabled())
+  await user.selectOptions(screen.getByLabelText('处理流程'), 'another')
+  expect(screen.getByLabelText('Document *')).toHaveValue('')
+})

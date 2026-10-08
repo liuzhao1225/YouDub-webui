@@ -120,7 +120,10 @@ class OperationWire:
         while True:
             message = self.receive()
             if message["type"] == "cancel":
-                self.check_cancel()
+                # Finish the in-flight durability barrier before cancellation.
+                # The reader has flagged cancellation; callers check it before
+                # calling a supplier or continuing after a terminal receipt.
+                continue
             if message["type"] != kind or message.get("payload", {}).get("externalRequestId") != external_id:
                 raise WorkerError("PROTOCOL_ERROR", f"Expected {kind} for the current external request.")
             return
@@ -140,6 +143,9 @@ class OperationWire:
             if state not in {"succeeded", "failed", "unknown"} or self.external is None:
                 raise WorkerError("PROTOCOL_ERROR", "External receipt has no matching pending request.")
             event = {**self.external, "state": state, "mayStillRun": state == "unknown"}
+            # A complete provider response stays known if cancellation or an
+            # ACK failure interrupts persistence. Never replace it with unknown.
+            self.external = event
             self.send("external.update", event)
             self._ack("external.recorded", event["externalRequestId"])
             self.external = None
@@ -152,12 +158,22 @@ class OperationWire:
         return value
 
     def fail(self, exc: BaseException):
-        if self.external is not None:
-            # No further provider call follows an error. Host persists this
-            # event before processing the terminal error.
-            self.send("external.update", {**self.external, "state": "unknown", "mayStillRun": True})
+        receipt_error = None
+        if self.external is not None and self.external["state"] == "pending":
+            # Error receipts have the same durability barrier as successful
+            # ones. Exiting before the ACK can make Host lose the original
+            # failure when it writes to this worker's already-closed stdin.
+            try:
+                self.send("external.update", {**self.external, "state": "unknown", "mayStillRun": True})
+                self._ack("external.recorded", self.external["externalRequestId"])
+            except BaseException as acknowledgement_error:
+                receipt_error = acknowledgement_error
         diagnostic = "".join(traceback.format_exception(exc))
+        if receipt_error is not None:
+            diagnostic += "External receipt was not acknowledged:\n" + "".join(traceback.format_exception(receipt_error))
         sys.stderr.write(self.redact(diagnostic))
         payload = error_payload(exc)
+        if receipt_error is not None:
+            payload["receiptError"] = self.redact(str(receipt_error))
         payload["message"] = self.redact(payload["message"])
         self.send("error", payload)

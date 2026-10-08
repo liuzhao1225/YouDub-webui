@@ -16,7 +16,7 @@ from pydantic import (
 
 
 class Contract(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False, hide_input_in_errors=True)
 
 
 NonEmptyString = Annotated[str, Field(min_length=1)]
