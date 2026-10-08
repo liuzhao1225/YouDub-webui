@@ -186,8 +186,10 @@ import map 固定共享 React、ReactDOM、JSX runtime、Cordis 和 `@youdub/sdk
 - `shell.navigation`：id/label/routeId/order。
 - `config.editors`：id 对应 workflow/provider，接收 value/schema/diagnostics/readOnly/onChange。
 - `task.detail.panels` 和 `task.detail.actions`：接收 task/refresh。
-- `settings.sections`：提供扩展设置区域。
+- `settings.sections`：提供扩展设置区域；组件接收自己的 `settings` 和 `save(patch)`，后者按该区域 id 保存公开 JSON 配置。
 
 通过 `ctx.effect(() => ctx.slots.register(...))` 注册与释放。标准配置渲染器只实现支持的 JSON Schema 控件；未知结构明确报不支持，复杂配置用匹配编辑器。Client 服务通过 SDK 使用公开 API，不导入其他插件的私有实现。
+
+扩展设置使用 `PATCH /api/v2/settings` 的 `{ "plugin": { "id": "example.panel", "config": { "quality": "high" } } }`，在该 id 的命名空间内浅合并。v2 读取返回 `plugins[id]`，插件设置与原有 defaults/connections/ui_language 分组分别提交；v1 保持原响应字段。此处仅存公开配置，凭据通过 `secrets` 服务保存。
 
 public 子树提供会话、登录、导航与基础渲染；会话插件管理 authenticated 子树。退出或会话失效释放已认证页面与订阅。插件启停在 Host 重启及浏览器刷新后生效，无运行时代码热替换。

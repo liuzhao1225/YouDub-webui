@@ -1,6 +1,6 @@
 # YouDub Cordis 插件化迁移与验收记录
 
-2026-10-09 · 分支 `codex/plugin` · 基线 `e0dcb58`。本轮授权已从设计推进到全面实施；Host、Client、Python bridge 和外部插件示例已实现，当前进行本地集成验收与切换。本文保留待验收事项，最终记录由实施负责人补入。
+2026-10-09 · 分支 `codex/plugin` · 基线 `e0dcb58` · 实施提交 `171cc37`。Cordis Host、Client、Python bridge 和外部插件已落地，真实三模式任务与实际数据目录切换已完成。最终代码候选 `cf9f92f90d67400c43c5886e68640d77f97e880b` 已完成生产构建与本地回读，重新生成和工作台模型表单正常显示。
 
 [架构说明](cordis-plugin-architecture.md)记录替换边界，[插件契约](cordis-plugin-contracts.md)记录执行接口，[运行指南](cordis-plugin-runtime.md)是当前启动与扩展安装入口。代码完成、模拟测试、生产构建、真实媒体成功和最终切换分别记录。
 
@@ -14,31 +14,28 @@ MVP 不含运行时热升级、任意 DAG、并行步骤、人工审批、分布
 
 ## 2. 阶段与责任
 
-实施负责人持续负责必要验证、当前授权的本地运行切换与回读。当前没有据本轮工作声明远端发布、新平台验证或 npm 包发布完成。
+实施负责人负责当前授权的本地切换和最终回读。本轮没有远端发布、npm 包发布或其他平台实机验收。
 
-| 阶段 | 当前状态 | 已实现内容 | 待完成或待汇总的放行证据 |
-| --- | --- | --- | --- |
-| P0 框架可行性 | 实现与机制测试已落地，集成验收进行中 | 固定 Cordis/Loader/Include；依赖、清理错误可见；服务替换与 Python 协议 | 当前候选完整检查结果、生产 Next 外部页面及 Hooks 的浏览器记录 |
-| P1 公共契约与基础服务 | 已实现 | SDK、files/process/store/secrets/catalog/settings、组合配置、SQLite 完整事务桥 | 最新候选的跨进程失败、存储与文件测试汇总 |
-| P2 通用引擎与默认 workflow | 已实现，媒体验收进行中 | 固定计划、provider 绑定、JSON schema、产物验证、等待/取消/重试 | 三种真实输出、可选参考/对齐、末尾时间轴与播放结果 |
-| P3 API 与 Client 组合 | 已实现，浏览器验收进行中 | auth/HTTP/v2、v1 投射、官方 Client 插件、扩展安装管理 | 登录会话、配置、导入残留、第三方页面/面板、下载与卸载回读 |
-| P4 数据迁移与历史 | 已实现，数据验收进行中 | desktop schema v2、raw legacy snapshot、旧认证复制与 keyring 引用 | 数据副本及实际目录的数量/关键字段/文件和凭据核对 |
-| P5 本地切换 | 进行中 | 启动和退出路径具备 | 固定候选、停止旧调度、实际端口与实例、默认功能和插件回读 |
+| 阶段 | 已证实结果 | 当前边界 |
+| --- | --- | --- |
+| P0 框架可行性 | 空组合、服务替换、依赖与清理机制通过；独立 Python 包和外部 Client 页面运行 | 本机 macOS arm64；扩展在 Host 重启后激活 |
+| P1 公共契约与基础服务 | 8 个媒体 JSON schema、10 个 operation；真实 SQLite 事务、受管文件与进程检查通过 | JSON 结构校验与媒体计算中的语义校验共同负责输入输出一致性 |
+| P2 通用引擎与默认 workflow | 三模式真实任务成功，reference 与 align 独立执行；产物 HEAD/Range 通过 | 单活跃、有序步骤；供应商远端取消未实现 |
+| P3 API 与 Client 组合 | 原登录会话、设置模型、历史任务、视频播放及第三方页面回读通过 | 重新生成与工作台模型表单在最终构建正常显示；浏览器文件选择器自动化未完成 |
+| P4 数据迁移与历史 | 实际 schema 1→2；1 条旧任务原字段、设置/凭据引用和产物 SHA 完全一致；复制 2 个认证会话 | 旧 URL 下载库继续独立只读，不合并为新 workflow |
+| P5 本地切换 | 原数据目录由 Cordis Host 8000、生产 Next 3000 提供服务 | 最终生产 BUILD_ID `wlLtMbAUXZjOpBPTIwsnm`，原会话与历史回读通过 |
 
 ## 3. 已有机制证据与边界
 
-本轮已经运行过的相关验证包括：
+[Host 测试目录](../../packages/builtin/test)的 30 项测试通过，覆盖空组合、依赖/初始化/清理错误、可替换 `tasks`、协议失败、等待与单槽、CAS/迟到结果、输出 schema、文件登记与提交一致性、认证/CSRF、HEAD/Range、扩展安装与完整性，以及设置更新。首次沙箱运行的 3 个监听操作遭遇 `EPERM`，授权重跑后 30 项全部通过。
 
-- `bootstrap.test.ts`：空组合不创建产品服务/数据；选定插件缺依赖、初始化错误拒绝启动；卸载原始错误可见；只替换 `tasks` 服务即可供同一消费者使用。
-- `process-protocol.test.ts`：未知 RPC 类型、坏 JSON、异常退出不能转成成功，取消等待实际进程退出。
-- `task-runtime.test.ts`：真实 Python SQLite 桥驱动等待/单槽、取消与重试、迟到进度/旧 revision 拒绝和缺产物失败。
-- `http.test.ts`：Cookie/CSRF/注销语义及文件 HEAD/Range。
-- `extensions.test.ts`：独立本地包安装、重启激活、真实文本转换、注册释放、完整性变更拒绝激活。
-- CLI 在隔离临时数据目录完成本地 Host/Client 包和纯 Python `.venv` 安装；此项仅证明对应安装路径。
+Python 普通测试命令通过 902 项。此前 47 项失败来自收集阶段读取开发者 `.env`，其中 `DEMUCS_DEVICE` 覆盖设备测试、`VOXCPM_INFERENCE_TIMESTEPS` 覆盖模型默认参数。仅在测试 `conftest.py` 中禁用开发者 `.env` 加载后，未修改业务或断言，902 项全部通过；应用启动继续读取 `.env`。取消回归包含忽略 SIGTERM 的模型子进程，确认 worker 返回前实际回收子进程。
 
-测试文件位于 [Host 测试目录](../../packages/builtin/test)。后续修复需要相关测试重新通过，最终候选的命令与结果统一写入第 8 节；这里不使用旧测试结果替代最终检查。生产 Next 构建和静态检查记录由前端负责人汇总，浏览器结果单独填写。
+独立 Python 音频验收使用两个仅含 `package.json` 和 `worker.py` 的包。安装器各自创建 `.venv`，标准 `speech.synthesize/v1` 按 provider ID 替换，真实 Tasks/SQLite/Files 路径登记 250 ms WAV，并由 Host ffprobe 核验。两包没有仓库 Python import 或自行编写的 JS Host 入口。该样例生成明确的正弦测试音，用于验证契约与隔离，不衡量语音合成质量。
 
-本地基线为 macOS arm64 / Node.js 22。Windows 进程树、路径、keyring 以及其他系统尚未据此验收。GitHub ref 和 npm 精确版本安装代码已实现，远端真实下载/安装仍是单独待验收项。Python 独立环境安装不代表该 provider 已完成整个任务闭环。
+独立 `example.file-transform@1.0.0` 经真实 multipart API 导入文本并完成 `example.uppercase` 任务；Chrome 的 `/extensions/text` 页面 React 计数器从 0 增至 2。该包在 Next 构建后安装，浏览器验证时 Next BUILD_ID 保持不变。此项证明已实现的 Client 扩展装载方式；启停扩展仍需要重启 Host。
+
+Windows/Linux 实机、GitHub/npm 远端真实下载安装尚未验收。运行时热升级不在 MVP 范围内。浏览器文件选择器自动化挂起，未记为通过；实际 multipart 上传 API 与上传组件测试分别通过。
 
 ## 4. 代码落点
 
@@ -80,33 +77,56 @@ MVP 不含运行时热升级、任意 DAG、并行步骤、人工审批、分布
 
 任一步失败就停止对应后续路径，报告实际状态。端口已监听、插件 installed、模型 ready 或单个构建成功都不代表最终切换验收完成。当前环境只运行一份任务状态权威和一个调度实现。
 
-## 7. 最终验收矩阵
+## 7. 验收矩阵
 
-下表是最终记录要求；尚未填入实际候选与产物的条目保持待验收。
+所有已证实结果对应[机器可读验证记录](../validation/cordis-plugin-2026-10-09.json)。本地切换和最终界面回读已完成，未实际执行的验收单独列出。
 
-| 范围 | 必须证明 | 最终候选记录 |
+| 范围 | 已证实结果 | 状态 |
 | --- | --- | --- |
-| 最底层插件化 | 空组合无业务；替换 tasks 不改 API/workflow；官方功能来自插件 | 待汇总 |
-| 默认 workflow | 三模式与参考/对齐计划；通用引擎无默认步骤特判 | 待汇总 |
-| 输出契约 | JSON schema 执行、必需端口不可降级、登记/提交文件一致 | 待汇总 |
-| 外部 workflow | 安装独立包，真实转换文件，无核心源码改动 | 待汇总 |
-| Python 提供者 | 独立 `.venv`、真实输入输出、退出和取消可观察 | 待汇总 |
-| 任务一致性 | 单活跃、等待、条件提交、迟到结果、未知远端禁止 retry | 待汇总 |
-| 生命周期 | 缺依赖/初始化/清理错误可见；真实子进程结束 | 待汇总 |
-| 外部 UI | Next 构建后新增页面/导航/面板；Hooks 可点击且构建不变 | 待汇总 |
-| 认证与配置 | 登录/注销/CSRF、设置修改、工作流默认值更新 | 待汇总 |
-| 历史与凭据 | 迁移字段/文件/引用核对，明确旧库入口边界 | 待汇总 |
-| 真实媒体 | 正式 API 和 Worker 的三模式、播放/末尾音频/字幕时间轴 | 待验收 |
-| 产物访问 | 下载、HEAD、Range 与失败文件的真实状态 | 待汇总 |
-| 本地切换 | 实际实例对应候选、旧调度已停、页面/API 回读 | 待验收 |
-| 远端安装及其他平台 | GitHub/npm 实装、Windows 等实机行为 | 未验收 |
+| 最底层插件化 | 空组合无业务；替换 tasks 服务；默认功能按组合装配 | 通过机制测试 |
+| 默认 workflow | 字幕、配音、both 三模式真实模型任务；独立 reference/align | 通过 API 与产物验收 |
+| 输出契约 | 8 schemas / 10 operations；必需端口、JSON payload、登记文件一致性 | 通过 |
+| 外部 workflow | 独立本地包真实文本转换，任务成功、文件下载 200 | 通过 |
+| Python 提供者 | 两个独立 .venv、标准 stdio、可替换 provider、实际 WAV/ffprobe | 通过 |
+| 任务一致性 | 等待保留单槽、条件提交、迟到写入拒绝、未知远端禁止 retry | 通过机制测试 |
+| 生命周期 | 初始化/清理失败可见；取消等待实际子进程退出 | 通过；实际媒体任务取消亦验证 |
+| 外部 UI | 构建后安装页面/导航/面板，React Hooks 点击 0→2，BUILD_ID 不变 | Chrome 通过 |
+| 认证与配置 | 原登录会话保留，模型 ready；默认设置更新的 2 项回归纳入 Host 套件 | 测试通过；最终模型表单回读通过；未修改用户已保存默认值 |
+| 历史与凭据 | 原任务字段、4 个产物 SHA、设置和 credential refs 保持一致 | 实际目录通过 |
+| 真实媒体播放 | IAB 旧视频开始播放，duration 6.88、paused false、error null | 已观察播放启动；本轮未据此声明播放至结尾 |
+| 产物访问 | 三模式每个成品 HEAD 200、Range 206，保留流信息与 SHA | 通过 |
+| 本地切换 | 原调度已停，原目录 schema 2，Host 8000 / Next 3000 回读 | 最终候选已切换并回读；未向用户真实目录提交新任务 |
+| 浏览器上传 | 文件选择器工具挂起；multipart API 和组件测试通过 | 浏览器操作未完成 |
+| 远端安装及其他平台 | GitHub/npm 实装、Windows/Linux 实机 | 未验收 |
 
-## 8. 最终实测记录（实施负责人填写）
+## 8. 实测记录
 
-- 候选 commit / 日期 / 系统 / Node、Python 版本：待填。
-- 数据目录与迁移核对：待填。
-- 最终检查命令和结果：待填。
-- 真实三模式 task ID、实际模型及产物路径：待填。
-- 外部包版本/commit/integrity、页面与 Hooks 操作证据：待填。
-- 旧进程停止、新 Host/Next 端口和最终回读：待填。
-- 明确失败、未完成验收与后续所需条件：待填。
+环境为 macOS arm64、Node.js `22.23.2`、Python `3.12.12`。实施提交为 `171cc37`，最终代码候选为 `cf9f92f90d67400c43c5886e68640d77f97e880b`。`npm --prefix apps/web run build -- --webpack` 成功，最终生产 Next BUILD_ID 为 `wlLtMbAUXZjOpBPTIwsnm`；初次切换的 `C5b441TvG4AjY05HPXJkb` 已由该构建替换。
+
+| 检查 | 结果 | 范围 |
+| --- | --- | --- |
+| Host `npm test` | 30 passed | 包含插件设置持久化与 v1/v2 接口 2 项回归 |
+| Host `npm run typecheck` | 通过 | 当前 Host 候选 |
+| `.venv/bin/pytest -q backend/tests --tb=short` | 902 passed，2 warnings，19.79 s | 无外部环境覆盖的普通命令；警告为 audioop、Starlette/httpx 弃用 |
+| Web 测试 | 51 passed，11 files | 包含慢 runtime 请求在重渲染中的生命周期回归 |
+| Web 生产构建 | 通过 | `next build --webpack`，BUILD_ID 见上 |
+| Web lint | 0 errors，2 warnings | 既有 img 优化提示 |
+| 媒体 schema 校验 | 8 schemas，10 operation contracts | 含真实 Whisper/reference/TTS/mix/align/export 产物 |
+
+三模式均使用有历史 SHA 证据的 macOS Samantha 合成英语测试视频，源文件 76,971 字节、6.88 s；真实翻译为已保存 OpenAI 兼容连接的 `doubao-seed-evolving`。请求显式发送 `max_completion_tokens=65535`、`max_retries=0`，保留原始请求与响应。验证记录包含输出大小、SHA、流信息及远端完成回执。
+
+| 模式 | 任务 ID | 结果 |
+| --- | --- | --- |
+| subtitles | `20bd3ead-082d-484c-84de-c15844c45cb6` | 视频、原文字幕、译文字幕 |
+| dubbing | `aeae741a-2eaf-4b9d-a449-c9ebfebeafab` | 视频、配音音频 |
+| both | `531704e0-9ca4-4837-ab89-a630f54e3352` | 视频、配音音频、原文字幕、译文字幕；独立 align 完成 |
+| 外部 uppercase | `f1749eb4-d9fc-426e-8bbd-a67d32e181cc` | `HELLO CORDIS PLUGIN!`，下载 200 |
+| 实际媒体取消 | `6aa5321d-2fc5-41fb-9fe6-91bbdc2b0d8a` | separate 中取消，最终 cancelled，mayStillRun=false |
+
+正式本地目录为 `~/Library/Application Support/YouDub`。切换前后均为 1 条历史任务 `0446ee5f-8360-4346-9f13-a3c9337f8e68`；原字段、设置/credential refs、4 份产物 SHA 保持一致，原登录会话在 IAB 可继续使用。独立 QA 数据目录中的三模式和插件实验没有混入该正式历史。
+
+新 Python 进程的 5 次 16,395 字节 JSON 往返中位数为 20.43 ms，进程内 loads+dumps 中位数为 0.0614 ms。该测量使用现有 OS 缓存、没有加载模型。真实模型已有阶段记录只能提供启动、加载、推理与产物登记的合计，不能据此拆出纯模型加载或推理耗时。
+
+最终构建已修复重新生成页慢 runtime 请求反复取消的问题：Cordis `apiClient` 每次访问返回新 Proxy，查询 effect 现绑定稳定 Context。正常停止旧 Host/Next 并重启后，IAB 原登录会话保留，重新生成表单显示全部模型，工作台显示模型、语言、输出模式与本地文件输入，浏览器 console error 为 0。本次页面回读未向用户真实数据提交新任务，历史仍为 1 条 succeeded。最终只读检查中，Host `/api/health` 返回 200、`status=ready`、`api_version=v2`，Next `/` 返回 200；进程快照仅有 Node Host、其 Python store 子进程及 Next，未发现 uvicorn 或模型 worker。
+
+明确限制仍为 GitHub/npm 远端实装、Windows/Linux 实机和浏览器文件选择器自动化未验收；模型加载与推理耗时也未独立计时。运行时热替换不在 MVP 范围内，扩展启停需要重启 Host。

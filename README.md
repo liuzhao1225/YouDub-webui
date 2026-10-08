@@ -4,9 +4,9 @@
 
 # YouDub WebUI | [人才招聘](#人才招聘)
 
-> **当前开发分支 `codex/plugin`：Cordis 全插件实现已落地，本地验收进行中。** Host 基础服务、任务引擎、workflow、模型和 Client 页面均由普通插件装配。基线来自 `codex/mvp-mainline`，保留本地单视频导入及字幕、配音、字幕加配音三种输出的默认流程。
+> **当前开发分支 `codex/plugin`：Cordis 插件版已在 macOS arm64 完成本地切换。** Host 基础服务、任务引擎、workflow、模型和 Client 页面均由普通插件装配。本地单视频的字幕、配音、字幕加配音三种流程已通过真实模型和 API 验收，历史任务、产物、凭据引用与登录会话已保留。最终生产构建与模型表单已回读通过，详情见[迁移验收记录](docs/design/cordis-plugin-migration.md)。
 
-当前启动、配置和插件安装统一查看 **[Cordis 运行与扩展指南](docs/design/cordis-plugin-runtime.md)**。架构边界见[架构说明](docs/design/cordis-plugin-architecture.md)，开发接口见[插件契约](docs/design/cordis-plugin-contracts.md)，实际验证与未完成事项见[迁移验收记录](docs/design/cordis-plugin-migration.md)。目前以 macOS arm64 / Node.js 22 为本地验证环境；本文历史案例和旧平台说明不代表插件版已经完成对应验收。
+当前启动、配置和插件安装统一查看 **[Cordis 运行与扩展指南](docs/design/cordis-plugin-runtime.md)**。架构边界见[架构说明](docs/design/cordis-plugin-architecture.md)，开发接口见[插件契约](docs/design/cordis-plugin-contracts.md)，测试、媒体产物与迁移哈希见[实测记录](docs/validation/cordis-plugin-2026-10-09.json)。独立本地 workflow、Client 页面和纯 Python provider 已验证；安装后重启 Host 生效。GitHub/npm 远端实装、Windows/Linux 实机及运行时热替换尚未验收。
 
 `codex/mvp-mainline` 的旧运行方式保存在 [MVP 说明](docs/design/mvp-runtime.md)；原 [v1 OpenAPI](docs/design/youdub-api-v0.1.openapi.json) 描述旧契约，插件版主要使用 `/api/v2`。
 

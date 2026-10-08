@@ -1,6 +1,6 @@
 # Cordis 插件版运行与扩展指南
 
-2026-10-09 · `codex/plugin` 基于 `codex/mvp-mainline`。Host、Client 和 Python 执行桥已实现，本地集成验收进行中。本文描述当前命令与接口；最终媒体、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。当前验证环境为 macOS arm64 / Node.js 22，不据此宣称其他平台已完成验收。
+2026-10-09 · `codex/plugin` 基于 `codex/mvp-mainline`。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。本文描述当前命令与接口；测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。当前验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
 
 ## 1. 安装与配置
 
@@ -175,6 +175,8 @@ Client 采用原生 ESM；`react`、`react-dom`、`react-dom/client`、`react/js
 
 operation 的 `inputSchema` 校验输入。每个 JSON 输出端口必须提供 `schema`（JSON Schema），并在计划中保留 provider 声明的相同 schema；只写 `schemaId` 不足以通过计划校验。workflow 不得删除或降级 provider 的必需输出。文件由 `files` 校验与签发 ArtifactRef，引擎检查本次调用归属、schema 和提交时文件；计划的最终 outputs 单独决定下载项。具体媒体结构以[媒体契约](../../packages/builtin/src/media-contracts.ts)和 [Host SDK](../../packages/sdk/src/index.ts)为准。
 
+Client 插件可向 `settings.sections` 注册设置区域。组件收到本区域的公开 JSON 配置，通过 `save(patch)` 在区域 id 的命名空间内浅合并保存；对应 v2 接口返回 `plugins[id]`。密钥交给 `secrets`，不写入公开插件配置。接口格式见[Client 契约](cordis-plugin-contracts.md#10-client-装配与界面注册)。
+
 ## 7. 开发检查与当前边界
 
 ```bash
@@ -185,4 +187,4 @@ npm run lint:web
 npm run build:web
 ```
 
-测试、模型就绪、安装成功、浏览器显示、真实推理和最终切换是不同证据。验收记录目前保留未完成项，不把模拟 provider 的结果算作真实三模式结果。首版继续采用单机单活跃任务，无 DAG 编辑器、热替换、插件市场、权限沙箱或分布式 worker。
+本轮通过真实字幕、配音和字幕加配音任务、独立 Python 提供者、外部 workflow/Client 页面、原数据迁移与本地页面验收；逐项证据及未验证范围见迁移记录。首版采用单机单活跃任务，扩展启停在重启后生效；DAG 编辑器、热替换、插件市场、权限沙箱和分布式 worker 不在 MVP 范围内。

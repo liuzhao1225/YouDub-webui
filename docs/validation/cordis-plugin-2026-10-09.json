@@ -351,7 +351,8 @@
     "provider": "OpenAI-compatible saved connection",
     "model": "doubao-seed-evolving",
     "max_completion_tokens": 65535,
-    "rawRequestsAndResponsesPreserved": true
+    "rawRequestsAndResponsesPreserved": true,
+    "maxRetries": 0
   },
   "independentPython": {
     "sourceFiles": [
@@ -397,7 +398,9 @@
       "serializationMedianMs": 0.06137508898973465,
       "scope": "Fresh Python process per sample; existing OS cache; no model loaded. JSON timing excludes pipe and process startup."
     },
-    "scope": "Synthetic sine wave contract fixture; not speech synthesis quality."
+    "scope": "Synthetic sine wave contract fixture; not speech synthesis quality.",
+    "evidence": "/private/tmp/youdub-independent-python-_x_u5y55/report.json",
+    "hostPath": "Extensions.install -> independent .venv -> shared python-provider -> standard NDJSON -> actual tasks/SQLite/files -> ffprobe"
   },
   "cancellation": {
     "id": "6aa5321d-2fc5-41fb-9fe6-91bbdc2b0d8a",
@@ -528,20 +531,190 @@
     "mayStillRun": false
   },
   "settings": {
-    "defaultsRefreshWithoutRestart": true
+    "defaultsRefreshWithoutRestart": true,
+    "targetedTests": 2,
+    "hostSuiteIncludesTargetedTests": true,
+    "defaultsReadbackScope": "The two settings notification/API regressions passed within the 30-test Host suite; the final deployed model and rerun forms loaded. Live mutation of the user’s saved defaults was not exercised."
   },
   "checks": {
-    "hostTests": 28,
+    "hostTests": 30,
     "pythonTests": 902,
     "mediaSchemas": 8,
-    "operationContracts": 10
+    "operationContracts": 10,
+    "hostTestsStatus": "passed",
+    "hostTypecheck": "passed",
+    "pythonWarnings": 2,
+    "pythonSeconds": 19.79,
+    "pythonCommand": ".venv/bin/pytest -q backend/tests --tb=short",
+    "pythonIsolation": "backend/tests/conftest.py disables developer .env loading before test collection; application dotenv startup is unchanged.",
+    "webTests": 51,
+    "webTestFiles": 11,
+    "webTestsScope": "final-code-candidate",
+    "webLintErrors": 0,
+    "webLintWarnings": 2,
+    "webLintWarningsKind": "Existing Next.js img optimization warnings",
+    "hostTestExecutionNote": "The first sandbox run hit three listen EPERM failures; the authorized rerun passed all 30 tests.",
+    "hostEvidence": "/private/tmp/youdub-plugin-host-final-unrestricted.log",
+    "pythonEvidence": "/private/tmp/youdub-full-pytest-default-isolated.log",
+    "webProductionBuild": "passed",
+    "webProductionBuildCommand": "npm --prefix apps/web run build -- --webpack"
   },
   "cutover": {
-    "status": "pending"
+    "status": "completed",
+    "dataDirectory": "~/Library/Application Support/YouDub",
+    "schemaBefore": 1,
+    "schemaAfter": 2,
+    "originalTaskCount": 1,
+    "taskCountAfter": 1,
+    "originalFieldsIdentical": true,
+    "settingsAndCredentialReferencesIdentical": true,
+    "historicalArtifactsSha256Identical": true,
+    "sessionsCopied": 2,
+    "historicalArtifacts": [
+      {
+        "taskId": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+        "output": "source_subtitles",
+        "exists": true,
+        "sha256": "905ae8cbc849c5e3e551f62bd07633490da6077b2a631462d75318ff550865f0"
+      },
+      {
+        "taskId": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+        "output": "video",
+        "exists": true,
+        "sha256": "d1b6470c64b585bc4651d7048d74a2989cd8fd640eccf56ed27c3490abe43a13"
+      },
+      {
+        "taskId": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+        "output": "audio",
+        "exists": true,
+        "sha256": "0fed3c2662212b94047e9499d4cb84ec2449b6b29fce863c16712ce67a75891e"
+      },
+      {
+        "taskId": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+        "output": "translated_subtitles",
+        "exists": true,
+        "sha256": "844ddb2e2b4882f217be15e168173187950545452a82b58beae4ce93ffdbf335"
+      }
+    ],
+    "hostPort": 8000,
+    "nextPort": 3000,
+    "lastVerifiedNextBuildId": "wlLtMbAUXZjOpBPTIwsnm",
+    "scope": "Actual local data directory, after the old scheduler stopped; QA tasks used an isolated copy.",
+    "previousVerifiedNextBuildId": "C5b441TvG4AjY05HPXJkb",
+    "finalRestart": {
+      "previousHostAndNextStoppedNormally": true,
+      "hostReadyPort": 8000,
+      "nextReadyPort": 3000,
+      "historicalTasks": 1,
+      "historicalTaskStatus": "succeeded"
+    },
+    "finalReadback": {
+      "hostHealth": {
+        "path": "/api/health",
+        "httpStatus": 200,
+        "body": {
+          "status": "ready",
+          "api_version": "v2"
+        }
+      },
+      "nextRoot": {
+        "path": "/",
+        "httpStatus": 200
+      },
+      "processSnapshot": {
+        "nodeHostPid": 87386,
+        "pythonStoreChildPid": 87388,
+        "nextPid": 87422,
+        "uvicornPresent": false,
+        "modelWorkerPresent": false
+      }
+    }
   },
   "limits": [
     "Windows and Linux were not validated on physical hosts.",
-    "GitHub/npm network installation paths were implemented; local install and offline npm build were exercised.",
-    "Provider-specific remote cancellation is deferred; unknown remote results remain visible and block retry."
-  ]
+    "GitHub/npm network installation paths were implemented; independent local packages and offline npm build were exercised. Remote package installation was not performed in this acceptance.",
+    "Provider-specific remote cancellation is deferred; unknown remote results remain visible and block retry.",
+    "Extension installation or enablement takes effect after Host restart; runtime hot replacement was not accepted.",
+    "Browser file chooser automation did not complete; HTTP multipart upload and upload component tests were verified separately.",
+    "Existing successful model logs do not separate model loading from inference time; recorded step times include startup, loading, inference and artifact registration."
+  ],
+  "implementationCommit": "171cc37",
+  "finalCandidate": {
+    "commit": "cf9f92f90d67400c43c5886e68640d77f97e880b",
+    "nextBuildId": "wlLtMbAUXZjOpBPTIwsnm",
+    "status": "verified-local",
+    "buildCommand": "npm --prefix apps/web run build -- --webpack",
+    "buildStatus": "passed"
+  },
+  "browser": {
+    "historicalSession": {
+      "browser": "Codex in-app browser",
+      "existingLoginRetained": true,
+      "runtimeModelsReady": true,
+      "historicalTasks": 1,
+      "historicalOutputs": 4,
+      "historicalTaskId": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+      "playback": {
+        "currentTime": 0.161391,
+        "duration": 6.88,
+        "paused": false,
+        "error": null,
+        "evidenceScope": "Observed on the initial production cutover; the later final-build readback verified the unchanged history and model forms without submitting a task."
+      },
+      "scope": "Playback startup was observed; this record does not claim full-duration playback."
+    },
+    "externalClient": {
+      "browser": "Chrome",
+      "route": "/extensions/text",
+      "reactCounterBefore": 0,
+      "reactCounterAfter": 2,
+      "installedAfterNextBuild": true,
+      "nextBuildIdUnchanged": true
+    },
+    "fileChooser": {
+      "status": "not-completed",
+      "reason": "Browser file chooser automation stalled.",
+      "separatelyVerified": [
+        "Real authenticated multipart upload API",
+        "Upload component tests"
+      ]
+    },
+    "regenerateRuntimeModels": {
+      "status": "passed",
+      "rootCause": "Cordis service access returns a new apiClient proxy; using it as a useQuery effect dependency repeatedly cancelled a slower runtime request.",
+      "finalBuildReadback": true,
+      "fix": "Query effects depend on the stable Client Context, avoiding apiClient proxy identity churn.",
+      "allModelsVisible": true,
+      "spinnerCleared": true,
+      "consoleErrors": 0,
+      "taskSubmitted": false
+    },
+    "finalBuild": {
+      "buildId": "wlLtMbAUXZjOpBPTIwsnm",
+      "browser": "Codex in-app browser",
+      "existingLoginRetained": true,
+      "workbench": {
+        "modelsVisible": true,
+        "languagesVisible": true,
+        "outputModesVisible": true,
+        "localFileInputVisible": true
+      },
+      "consoleErrors": 0,
+      "newTaskSubmittedToActualUserData": false,
+      "screenshotLocalEvidence": "/private/tmp/youdub-cordis-final.jpg"
+    }
+  },
+  "externalWorkflow": {
+    "id": "f1749eb4-d9fc-426e-8bbd-a67d32e181cc",
+    "status": "succeeded",
+    "workflowId": "example.uppercase",
+    "output": "HELLO CORDIS PLUGIN!\n",
+    "outputStatus": 200,
+    "pluginId": "example.file-transform",
+    "pluginVersion": "1.0.0",
+    "integrity": "sha256:26b06d22664f3ab35f7012a0a0d3f2147a746252d307621d15e43f0d9b186b6e",
+    "source": "fixtures/plugins/file-transform",
+    "coreSourceChangesRequired": false,
+    "activation": "Host restart after local installation"
+  }
 }
