@@ -6,19 +6,24 @@ import { LanguageProvider } from "@/lib/i18n"
 import { jsonResponse, testRuntime, testSettings, testTask } from "@/lib/v1-test-fixtures"
 import type { Task } from "@/lib/v1-api"
 
-const mocks = vi.hoisted(() => ({ fetch: vi.fn<typeof fetch>(), push: vi.fn(), start: vi.fn(), end: vi.fn(), change: vi.fn(), deleted: vi.fn() }))
+const mocks = vi.hoisted(() => ({ fetch: vi.fn<typeof fetch>(), push: vi.fn(), start: vi.fn(), end: vi.fn(), change: vi.fn(), deleted: vi.fn(), dialog: vi.fn() }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }))
 beforeEach(() => { mocks.fetch.mockReset(); vi.stubGlobal("fetch", mocks.fetch) })
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.unstubAllGlobals() })
 
 function mount(task: Task) {
-  render(<LanguageProvider><TaskActions task={task} onMutationStart={mocks.start} onMutationEnd={mocks.end} onTaskChange={mocks.change} onDeleted={mocks.deleted} /></LanguageProvider>)
+  render(<LanguageProvider><TaskActions task={task} onMutationStart={mocks.start} onMutationEnd={mocks.end} onTaskChange={mocks.change} onDeleted={mocks.deleted} onDeleteDialogChange={mocks.dialog} /></LanguageProvider>)
 }
 
 function configResponse(input: RequestInfo | URL) {
   if (String(input) === "/api/v1/runtime") return jsonResponse(testRuntime())
   if (String(input) === "/api/v1/settings") return jsonResponse(testSettings())
   throw new Error(`Unexpected request: ${input}`)
+}
+
+async function chooseTarget(user: ReturnType<typeof userEvent.setup>, option: string) {
+  await user.click(screen.getByLabelText("目标语言"))
+  await user.click(await screen.findByRole("option", { name: option }))
 }
 
 describe("v1 任务操作", () => {
@@ -51,6 +56,7 @@ describe("v1 任务操作", () => {
     const user = userEvent.setup()
     await user.click(screen.getByRole("button", { name: "重新生成" }))
     expect(await screen.findByRole("button", { name: "创建新任务" })).toBeDisabled()
+    expect(screen.getByText("请为每个必需步骤选择可用模型。")).toBeInTheDocument()
     await user.keyboard("{Escape}")
     expect(screen.getByRole("button", { name: "从头重试" })).toBeEnabled()
     await user.click(screen.getByRole("button", { name: "从头重试" }))
@@ -68,7 +74,7 @@ describe("v1 任务操作", () => {
     await user.click(screen.getByRole("button", { name: "重新生成" }))
     const submit = await screen.findByRole("button", { name: "创建新任务" })
     expect(submit).toBeDisabled()
-    await user.selectOptions(screen.getByLabelText("目标语言"), "ja")
+    await chooseTarget(user, "日本語")
     await user.click(screen.getByRole("checkbox", { name: /我已知悉原远端请求/ }))
     expect(submit).toBeEnabled()
     await user.click(submit)
@@ -130,16 +136,16 @@ describe("v1 任务操作", () => {
     await user.click(await screen.findByRole("button", { name: "创建新任务" }))
     await screen.findByRole("alert")
     expect(screen.getByLabelText("目标语言")).toBeEnabled()
-    await user.selectOptions(screen.getByLabelText("目标语言"), "ja")
+    await chooseTarget(user, "日本語")
     await user.click(screen.getByRole("button", { name: "清理本次复制残留" }))
     await waitFor(() => expect(screen.getByRole("button", { name: "创建新任务" })).toBeEnabled())
     expect(mocks.fetch.mock.calls.find(([, init]) => init?.method === "DELETE")![0]).toBe(`/api/v1/tasks/${newId}`)
     expect(newId).not.toBe(source.id)
     expect(mocks.deleted).not.toHaveBeenCalled()
-    expect(screen.getByLabelText("目标语言")).toHaveValue("ja")
+    expect(screen.getByLabelText("目标语言")).toHaveTextContent("日本語")
   })
 
-  it("删除失败保留任务，确认删除成功后通知详情返回首页", async () => {
+  it("删除失败保留任务，确认删除成功后通知详情返回任务库", async () => {
     mocks.fetch.mockResolvedValueOnce(jsonResponse({ error: { code: "TASK_BUSY", message: "文件正在读取", field: "id", stage: null, action: "none" } }, 409))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
     mount(testTask({ status: "failed", allowed_actions: ["delete"] }))
@@ -150,5 +156,15 @@ describe("v1 任务操作", () => {
     expect(mocks.deleted).not.toHaveBeenCalled()
     await user.click(screen.getByRole("button", { name: "删除任务和文件" }))
     await waitFor(() => expect(mocks.deleted).toHaveBeenCalledTimes(1))
+  })
+
+  it("删除确认框打开和关闭时通知页面释放与恢复播放器", async () => {
+    mount(testTask({ status: "succeeded", current_stage: "done", allowed_actions: ["rerun", "delete"] }))
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("button", { name: "删除任务" }))
+    expect(mocks.dialog).toHaveBeenLastCalledWith(true)
+    await user.click(screen.getByRole("button", { name: "保留任务" }))
+    expect(mocks.dialog).toHaveBeenLastCalledWith(false)
+    expect(mocks.fetch).not.toHaveBeenCalled()
   })
 })

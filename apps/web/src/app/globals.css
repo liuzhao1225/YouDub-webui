@@ -2,12 +2,34 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant sidebar-collapsed (&:where([data-sidebar="collapsed"] *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
+  --font-heading: var(--app-font-sans);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-input-bg: var(--input-bg);
+  --color-brand-red: var(--brand-red);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-blue: var(--brand-blue);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-link: var(--link);
+  --color-status-success: var(--status-success);
+  --color-status-success-fg: var(--status-success-fg);
+  --color-status-running: var(--status-running);
+  --color-status-running-fg: var(--status-running-fg);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-fg: var(--status-danger-fg);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-fg: var(--status-warning-fg);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-neutral-fg: var(--status-neutral-fg);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -44,65 +66,284 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-card: var(--card-shadow);
+  --shadow-float: var(--float-shadow);
+  --shadow-glow: var(--primary-glow);
+  --animate-eq: eq 1.1s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.8s linear infinite;
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-drift: drift 14s ease-in-out infinite;
+
+  @keyframes eq {
+    0%, 100% { transform: scaleY(0.38); }
+    50% { transform: scaleY(1); }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(2%, -4%, 0) scale(1.06); }
+  }
 }
 
+/* 浅色主题 */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #ff0033;
+  /* Geist 只覆盖拉丁字符，中文回退到各平台的系统黑体。 */
+  --app-font-sans: var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
+  --app-font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Logo 原色 */
+  --brand-red: #ff0033;
+  --brand-pink: #fb7299;
+  --brand-blue: #00aeec;
+
+  --background: #f6f6f8;
+  --surface: #fbfbfc;
+  --card: #ffffff;
+  --elevated: #ffffff;
+  --input-bg: #ffffff;
+  --foreground: #0b0b0f;
+  --card-foreground: #0b0b0f;
+  --popover: #ffffff;
+  --popover-foreground: #0b0b0f;
+  /* 比 logo 红略深一档，白字对比度达到 WCAG AA。 */
+  --primary: #e6002e;
+  --primary-hover: #cc0029;
   --primary-foreground: #ffffff;
-  --secondary: #e5f8ff;
-  --secondary-foreground: #006f99;
-  --muted: #f5f7fb;
-  --muted-foreground: #5d6673;
-  --accent: #ffe8f0;
-  --accent-foreground: #a90038;
-  --destructive: #ff0033;
-  --border: #e5e9f2;
-  --input: #d9e1ee;
+  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 6px 18px -6px rgb(230 0 46 / 0.55);
+  --secondary: rgb(0 174 236 / 0.1);
+  --secondary-foreground: #00739f;
+  --muted: rgb(9 9 11 / 0.04);
+  --muted-foreground: #5f5f6b;
+  --subtle-foreground: #8b8b96;
+  --accent: rgb(9 9 11 / 0.05);
+  --accent-foreground: #0b0b0f;
+  --destructive: #c8002a;
+  --border: rgb(9 9 11 / 0.08);
+  --input: rgb(9 9 11 / 0.13);
   --ring: #00aeec;
+  --link: #00739f;
+  --status-success: #00aeec;
+  --status-success-fg: #00739f;
+  --status-running: #fb7299;
+  --status-running-fg: #c2185b;
+  --status-danger: #ff0033;
+  --status-danger-fg: #c8002a;
+  --status-warning: #f5a524;
+  --status-warning-fg: #9a5b00;
+  --status-neutral: #71717a;
+  --status-neutral-fg: #52525b;
+  --card-shadow: 0 1px 2px rgb(9 9 11 / 0.04), 0 2px 10px -4px rgb(9 9 11 / 0.08);
+  --float-shadow: 0 20px 48px -16px rgb(9 9 11 / 0.25), 0 4px 12px -6px rgb(9 9 11 / 0.1);
+  --glass: rgb(255 255 255 / 0.75);
+  --grid-dot: rgb(9 9 11 / 0.07);
+  --aurora-opacity: 0.55;
+  --scrollbar: rgb(9 9 11 / 0.18);
   --chart-1: #ff0033;
   --chart-2: #00aeec;
   --chart-3: #fb7299;
   --chart-4: #006f99;
   --chart-5: #a90038;
-  --radius: 0.5rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #ff0033;
+  --radius: 0.75rem;
+  --sidebar: #fbfbfc;
+  --sidebar-foreground: #0b0b0f;
+  --sidebar-primary: #e6002e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e5f8ff;
-  --sidebar-accent-foreground: #006f99;
-  --sidebar-border: #e5e9f2;
+  --sidebar-accent: rgb(9 9 11 / 0.05);
+  --sidebar-accent-foreground: #0b0b0f;
+  --sidebar-border: rgb(9 9 11 / 0.08);
   --sidebar-ring: #00aeec;
+}
+
+/* 深色主题（默认） */
+.dark {
+  --background: #0a0a0e;
+  --surface: #0e0e13;
+  --card: #121218;
+  --elevated: #18181f;
+  --input-bg: rgb(255 255 255 / 0.03);
+  --foreground: #ededf0;
+  --card-foreground: #ededf0;
+  --popover: #18181f;
+  --popover-foreground: #ededf0;
+  --primary: #e6002e;
+  --primary-hover: #ec0030;
+  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.45),
+    0 10px 30px -8px rgb(255 0 51 / 0.6);
+  --secondary: rgb(0 174 236 / 0.14);
+  --secondary-foreground: #5fd0f5;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #a0a0ab;
+  --subtle-foreground: #7a7a86;
+  --accent: rgb(255 255 255 / 0.065);
+  --accent-foreground: #ededf0;
+  --destructive: #ff6b81;
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.12);
+  --ring: #00aeec;
+  --link: #3cc4f5;
+  --status-success-fg: #5fd0f5;
+  --status-running-fg: #ff9ab8;
+  --status-danger-fg: #ff6b81;
+  --status-warning-fg: #f7c26b;
+  --status-neutral: #a1a1aa;
+  --status-neutral-fg: #b4b4bd;
+  --card-shadow: 0 1px 0 rgb(255 255 255 / 0.035) inset, 0 1px 2px rgb(0 0 0 / 0.5);
+  --float-shadow: 0 28px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --glass: rgb(16 16 22 / 0.72);
+  --grid-dot: rgb(255 255 255 / 0.055);
+  --aurora-opacity: 1;
+  --scrollbar: rgb(255 255 255 / 0.16);
+  --sidebar: #0e0e13;
+  --sidebar-foreground: #ededf0;
+  --sidebar-accent: rgb(255 255 255 / 0.065);
+  --sidebar-accent-foreground: #ededf0;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  color-scheme: dark;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
     overflow-y: scroll;
-    scrollbar-color: #cbd5e1 #f8fafc;
+    scrollbar-color: var(--scrollbar) transparent;
     scrollbar-gutter: stable;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
-  ::-webkit-scrollbar {
+  body {
+    @apply bg-background text-foreground;
+  }
+  ::selection {
+    background: rgb(0 174 236 / 0.28);
+  }
+  /* 播放器全屏时收起根滚动条，否则经典滚动条会在全屏画面右侧留下一条黑边。 */
+  html:has(:fullscreen) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
+  }
+}
+
+/* 品牌渐变：与 logo 中 "Dub" 字标一致，粉 → 蓝。 */
+@utility text-brand-gradient {
+  background-image: linear-gradient(90deg, var(--brand-pink), var(--brand-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-brand-gradient {
+  background-image: linear-gradient(90deg, var(--brand-pink), var(--brand-blue));
+}
+
+@utility bg-brand-spectrum {
+  background-image: linear-gradient(90deg, var(--brand-red), var(--brand-pink) 45%, var(--brand-blue));
+}
+
+@utility bg-dot-grid {
+  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@utility glass {
+  background-color: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.5);
+}
+
+@utility shimmer {
+  background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* 顶部极光：logo 的红、粉、蓝三色光晕。 */
+@utility aurora {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--aurora-opacity);
+  background:
+    radial-gradient(38% 55% at 18% 18%, rgb(251 114 153 / 0.2), transparent 70%),
+    radial-gradient(34% 50% at 82% 12%, rgb(0 174 236 / 0.2), transparent 70%),
+    radial-gradient(30% 36% at 50% -4%, rgb(255 0 51 / 0.16), transparent 70%);
+  filter: blur(8px);
+}
+
+/* 浅色登录页的整页光晕：logo 三色从左侧铺开，再淡淡地延伸到表单一侧。 */
+@utility login-mesh {
+  background:
+    radial-gradient(50% 55% at 4% 6%, rgb(255 0 51 / 0.13), transparent 62%),
+    radial-gradient(44% 50% at 34% 20%, rgb(251 114 153 / 0.24), transparent 66%),
+    radial-gradient(52% 58% at 12% 94%, rgb(0 174 236 / 0.2), transparent 64%),
+    radial-gradient(40% 46% at 60% 62%, rgb(124 140 255 / 0.11), transparent 70%),
+    radial-gradient(36% 44% at 98% 4%, rgb(0 174 236 / 0.09), transparent 70%);
+}
+
+/* 细颗粒噪点，压住大面积渐变产生的色带。 */
+@utility grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 自定义播放器的进度条与音量条：品牌渐变表示已播放，浅色表示已缓冲。
+   元素本身 16px 高便于点按和拖动，轨道只画中间的 4px。 */
+@property --player-track {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 4px;
+}
+
+@layer components {
+  .player-range {
+    appearance: none;
+    height: 16px;
+    cursor: pointer;
+    background:
+      linear-gradient(90deg, var(--brand-pink), var(--brand-blue)) 0 50% / var(--progress, 0%) var(--player-track) no-repeat,
+      linear-gradient(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.35)) 0 50% / var(--buffered, 0%) var(--player-track)
+        no-repeat,
+      linear-gradient(rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.2)) 0 50% / 100% var(--player-track) no-repeat;
+    transition: --player-track 0.15s ease;
+  }
+  .player-range:hover {
+    --player-track: 6px;
+  }
+  .player-range::-webkit-slider-thumb {
+    appearance: none;
     width: 12px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #f8fafc;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border: 3px solid #f8fafc;
+    height: 12px;
     border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  }
+  .player-range::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+  }
+  .player-range::-moz-range-track {
+    background: transparent;
   }
 }
