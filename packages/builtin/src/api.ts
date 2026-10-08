@@ -38,9 +38,14 @@ export function apply(ctx: Context, config: { defaultWorkflowId?: string } = {})
   for (const version of ['v1', 'v2']) {
     const base = `/api/${version}`
     const project = version === 'v1' ? legacy : view
+    const settingsView = (settings: any) => version === 'v2' ? settings : { defaults: settings.defaults, connections: settings.connections, ui_language: settings.ui_language }
     route('GET', `${base}/runtime`, async request => ctx.http.json(request, 200, await ctx.settings.runtime()))
-    route('GET', `${base}/settings`, async request => ctx.http.json(request, 200, await ctx.settings.read()))
-    route('PATCH', `${base}/settings`, async request => ctx.http.json(request, 200, await ctx.settings.patch(await readJson(request))))
+    route('GET', `${base}/settings`, async request => ctx.http.json(request, 200, settingsView(await ctx.settings.read())))
+    route('PATCH', `${base}/settings`, async request => {
+      const patch = await readJson(request)
+      if (version === 'v1' && patch && Object.hasOwn(patch, 'plugin')) throw new HttpError(422, 'CONTRACT_UNSUPPORTED', 'Plugin settings require API v2.')
+      ctx.http.json(request, 200, settingsView(await ctx.settings.patch(patch)))
+    })
     route('POST', `${base}/tasks`, async request => {
       const contentType = request.raw.headers['content-type'] || ''
       let release: (() => void | Promise<void>) | undefined
