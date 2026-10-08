@@ -13,12 +13,25 @@ from .errors import ApiError
 LANGUAGES = ("en", "zh", "ja")
 
 
+class TimedWord(Contract):
+    text: NonEmptyString
+    start_ms: Annotated[int, Field(ge=0)]
+    end_ms: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def validate_interval(self) -> Self:
+        if self.end_ms < self.start_ms or not self.text.strip():
+            raise ValueError("Word timing or text is invalid")
+        return self
+
+
 class Segment(Contract):
     id: NonEmptyString
     start_ms: Annotated[int, Field(ge=0)]
     end_ms: Annotated[int, Field(gt=0)]
     text: NonEmptyString
     speaker_id: NonEmptyString | None = None
+    words: list[TimedWord] | None = None
 
     @model_validator(mode="after")
     def validate_interval(self) -> Self:
@@ -26,6 +39,14 @@ class Segment(Contract):
             raise ValueError("Segment end must follow its start")
         if not self.text.strip():
             raise ValueError("Segment text must not be blank")
+        if self.words is not None:
+            previous_end = self.start_ms
+            for word in self.words:
+                if word.start_ms < previous_end or word.end_ms > self.end_ms:
+                    raise ValueError("Word timestamps must be monotonic inside their utterance")
+                previous_end = word.end_ms
+            if not self.words or "".join(word.text for word in self.words).strip() != self.text.strip():
+                raise ValueError("Word text must reproduce the complete utterance")
         return self
 
 

@@ -145,7 +145,8 @@ def _font(language: str) -> str:
     return font
 
 
-def run(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:
+def run(context: StageContext, progress: Callable[[float | None, str], None], *,
+        output_dir: Path | None = None, prepared_cues: list[tuple[int, int, str]] | None = None) -> Completed:
     include_subtitles = context.config.output_mode in {"subtitles", "both"}
     include_dubbing = context.config.output_mode in {"dubbing", "both"}
     context.check_cancel()
@@ -159,7 +160,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         if type(info.get(key)) is not int or info[key] <= 0:
             raise _invalid(f"Source media {key} is invalid.")
     rows = _subtitle_rows(transcript, translation, info["duration_ms"])
-    output = context.work_dir.parent / "output"
+    output = output_dir if output_dir is not None else context.work_dir.parent / "output"
     output.mkdir(parents=True, exist_ok=True)
     source_srt, translated_srt = output / "source.srt", output / "translated.srt"
     final_video = output / "video.mp4"
@@ -185,8 +186,8 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
             "start_ms": aligned[segment.id].dubbed_start_ms, "end_ms": aligned[segment.id].dubbed_end_ms,
         }), text) for segment, text in rows]
     if include_subtitles:
-        aligned_cues = None
-        if context.config.subtitle_alignment is not None:
+        aligned_cues = prepared_cues
+        if context.config.subtitle_alignment is not None and prepared_cues is None:
             from . import forced_alignment
             aligned_cues = forced_alignment.align(context, translated_rows, _display_parts, progress)
         _write_srt(source_srt, rows, translated=False)

@@ -1,0 +1,22 @@
+{
+  "name": "youdub-example-python-text",
+  "version": "1.0.0",
+  "type": "module",
+  "youdub": {
+    "id": "example.python-text",
+    "sdkVersion": "^1.0.0",
+    "python": {
+      "entry": "worker.py",
+      "provider": {
+        "id": "example.python-uppercase",
+        "label": "Python 文本转大写",
+        "execution": "local",
+        "operations": [{
+          "id": "example.uppercase/v1",
+          "inputSchema": { "type": "object", "required": ["document"], "properties": { "document": { "type": "object" } } },
+          "outputs": [{ "name": "document", "kind": "artifact", "schemaId": "file/v1", "required": true }]
+        }]
+      }
+    }
+  }
+}

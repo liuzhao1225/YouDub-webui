@@ -4,6 +4,9 @@
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
+    "plugins:build": "node scripts/build-plugins.mjs",
+    "predev": "npm run plugins:build",
+    "prebuild": "npm run plugins:build",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

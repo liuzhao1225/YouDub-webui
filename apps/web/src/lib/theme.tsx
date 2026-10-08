@@ -22,6 +22,10 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = theme
 }
 
+export function restoreTheme() {
+  applyTheme(window.localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark")
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark")
 

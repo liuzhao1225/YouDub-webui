@@ -95,9 +95,9 @@
 /* 浅色主题 */
 :root {
   /* Geist 只覆盖拉丁字符，中文回退到各平台的系统黑体。 */
-  --app-font-sans: var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+  --app-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
     "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
-  --app-font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --app-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   /* Logo 原色 */
   --brand-red: #ff0033;

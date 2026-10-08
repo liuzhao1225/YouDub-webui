@@ -4,9 +4,11 @@
 
 # YouDub WebUI | [人才招聘](#人才招聘)
 
-> **当前开发分支 `codex/mvp-mainline`**：v1 界面以本地单视频导入为入口，提供字幕、配音、字幕加配音三种输出，默认配音使用 VoxCPM2 原声克隆。启动方式、当前模型能力与验收边界见 [MVP 运行说明](docs/design/mvp-runtime.md)，接口见 [OpenAPI](docs/design/youdub-api-v0.1.openapi.json)，实施进度见 [开发计划](docs/design/mvp-development-plan.md)。下文保留原 WebUI 的功能与使用说明。
+> **当前开发分支 `codex/plugin`：Cordis 全插件实现已落地，本地验收进行中。** Host 基础服务、任务引擎、workflow、模型和 Client 页面均由普通插件装配。基线来自 `codex/mvp-mainline`，保留本地单视频导入及字幕、配音、字幕加配音三种输出的默认流程。
 
-`codex/plugin` 基于上述分支开展 Cordis 插件化设计：[架构与插件边界](docs/design/cordis-plugin-architecture.md)、[Workflow 与输入输出契约](docs/design/cordis-plugin-contracts.md)、[迁移与验收计划](docs/design/cordis-plugin-migration.md)。当前仅完成设计，运行代码尚未迁移。
+当前启动、配置和插件安装统一查看 **[Cordis 运行与扩展指南](docs/design/cordis-plugin-runtime.md)**。架构边界见[架构说明](docs/design/cordis-plugin-architecture.md)，开发接口见[插件契约](docs/design/cordis-plugin-contracts.md)，实际验证与未完成事项见[迁移验收记录](docs/design/cordis-plugin-migration.md)。目前以 macOS arm64 / Node.js 22 为本地验证环境；本文历史案例和旧平台说明不代表插件版已经完成对应验收。
+
+`codex/mvp-mainline` 的旧运行方式保存在 [MVP 说明](docs/design/mvp-runtime.md)；原 [v1 OpenAPI](docs/design/youdub-api-v0.1.openapi.json) 描述旧契约，插件版主要使用 `/api/v2`。
 
 国内 AtomGit 托管：[YouDub-webui](https://atomgit.com/liuzhao1225/YouDub-webui)。代码从 [GitHub 主仓库](https://github.com/liuzhao1225/YouDub-webui)单向同步；Release、Issue 和 PR 统一在 GitHub 维护。
 
@@ -72,7 +74,20 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 </tr>
 </table>
 
-## 快速开始
+## 插件版快速开始
+
+先按[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)准备 Node.js 22、Python `.venv`、FFmpeg、`.env` 和访问密码。在根目录及 `apps/web` 分别执行 `npm ci`，然后：
+
+```bash
+npm run build:plugins
+npm start
+```
+
+另一个终端执行 `npm run dev:web`，浏览器打开 `http://127.0.0.1:3000`。启动前确认 8000、3000 端口空闲。生产前端命令、数据迁移及独立 GitHub/npm/本地插件安装方式见运行指南。
+
+## Legacy：原 WebUI 安装与使用参考
+
+以下内容保留旧 FastAPI 版本的运行记录。插件版使用上面的 Cordis 入口；旧 `uvicorn` 命令不启动新插件宿主，旧平台验证也不自动适用于插件版。
 
 ### 1. 准备运行环境
 
@@ -419,6 +434,8 @@ YouTube / Bilibili URL
 
 ## 开发与测试
 
+插件版检查使用 `npm run typecheck`、`npm test`、`npm run test:backend`、`npm run lint:web` 和 `npm run build:web`，详细范围见[运行指南](docs/design/cordis-plugin-runtime.md#7-开发检查与当前边界)。以下保留 Python 与前端的独立检查命令。
+
 后端测试：
 
 Windows PowerShell：
@@ -443,9 +460,15 @@ npm --prefix apps/web run build
 项目的主要目录：
 
 ```text
-backend/app/       FastAPI API、任务队列、流水线和模型适配器
-backend/tests/     后端单元测试
-apps/web/          Next.js WebUI
+youdub.config.ts   默认 Cordis 插件组合
+apps/host/        Host 启动和插件管理 CLI
+packages/sdk/     Host 公共服务与 operation 契约
+packages/builtin/ 官方服务、通用任务引擎、workflow 和模型桥
+backend/workers/  Python 计算、SQLite 和窄系统调用
+backend/app/      复用的模型/媒体实现及 Legacy FastAPI
+backend/tests/    Python 测试
+apps/web/         Next 引导、Client SDK 与页面插件
+fixtures/plugins/ 独立 Host/Client/Python 插件示例
 scripts/           辅助脚本
 submodule/demucs/  Demucs 源码子模块
 ```

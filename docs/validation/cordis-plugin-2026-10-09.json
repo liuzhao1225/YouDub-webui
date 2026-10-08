@@ -1,0 +1,547 @@
+{
+  "date": "2026-10-09",
+  "branch": "codex/plugin",
+  "baseline": "e0dcb58",
+  "environment": {
+    "os": "macOS",
+    "arch": "arm64",
+    "node": "22.23.2",
+    "python": "3.12.12"
+  },
+  "source": {
+    "kind": "macOS Samantha synthetic English speech; no user media",
+    "bytes": 76971,
+    "sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+    "provenance": "docs/validation/mvp-real-provider-2026-09-22.json"
+  },
+  "media": [
+    {
+      "id": "20bd3ead-082d-484c-84de-c15844c45cb6",
+      "mode": "subtitles",
+      "status": "succeeded",
+      "outputs": [
+        {
+          "id": "video",
+          "mime": "video/mp4",
+          "size": 87863,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "source_subtitles",
+          "mime": "application/x-subrip",
+          "size": 213,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "translated_subtitles",
+          "mime": "application/x-subrip",
+          "size": 205,
+          "head": 200,
+          "range": 206
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "completed"
+        },
+        {
+          "id": "translate",
+          "status": "completed"
+        },
+        {
+          "id": "export",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "aeae741a-2eaf-4b9d-a449-c9ebfebeafab",
+      "mode": "dubbing",
+      "status": "succeeded",
+      "outputs": [
+        {
+          "id": "video",
+          "mime": "video/mp4",
+          "size": 122856,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "audio",
+          "mime": "audio/wav",
+          "size": 1321004,
+          "head": 200,
+          "range": 206
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "separate",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "completed"
+        },
+        {
+          "id": "translate",
+          "status": "completed"
+        },
+        {
+          "id": "reference",
+          "status": "completed"
+        },
+        {
+          "id": "synthesize",
+          "status": "completed"
+        },
+        {
+          "id": "mix",
+          "status": "completed"
+        },
+        {
+          "id": "export",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "531704e0-9ca4-4837-ab89-a630f54e3352",
+      "mode": "both",
+      "status": "succeeded",
+      "outputs": [
+        {
+          "id": "video",
+          "mime": "video/mp4",
+          "size": 136514,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "audio",
+          "mime": "audio/wav",
+          "size": 1321004,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "source_subtitles",
+          "mime": "application/x-subrip",
+          "size": 213,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "translated_subtitles",
+          "mime": "application/x-subrip",
+          "size": 208,
+          "head": 200,
+          "range": 206
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "separate",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "completed"
+        },
+        {
+          "id": "translate",
+          "status": "completed"
+        },
+        {
+          "id": "reference",
+          "status": "completed"
+        },
+        {
+          "id": "synthesize",
+          "status": "completed"
+        },
+        {
+          "id": "mix",
+          "status": "completed"
+        },
+        {
+          "id": "align",
+          "status": "completed"
+        },
+        {
+          "id": "export",
+          "status": "completed"
+        }
+      ]
+    }
+  ],
+  "mediaInspection": [
+    {
+      "id": "20bd3ead-082d-484c-84de-c15844c45cb6",
+      "mode": "subtitles",
+      "providerIntegrity": "sha256:3ea9ff8a1d00cb86d33d22effde56c8808fb23f1e1c53926c5c24739381099a2",
+      "artifacts": [
+        {
+          "id": "video",
+          "bytes": 87863,
+          "sha256": "4d3df631dd5114bcf835677faedbe997ee4ab146ffc325dd0a49e70df9c7a8cb",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "sample_rate": null,
+              "channels": null,
+              "duration": "6.880000"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "sample_rate": "22050",
+              "channels": 1,
+              "duration": "6.919002"
+            }
+          ],
+          "duration": "6.919002"
+        },
+        {
+          "id": "source_subtitles",
+          "bytes": 213,
+          "sha256": "1d63eaacb87dd0f0b87d00df36c0eec7396f94a8dd92b92caff4c721d7adc311"
+        },
+        {
+          "id": "translated_subtitles",
+          "bytes": 205,
+          "sha256": "e61ba6dbe9a2095e94d17e87417c330334136be368961926f1cd4312747e5e09"
+        }
+      ],
+      "remoteReceipts": [
+        {
+          "state": "succeeded",
+          "mayStillRun": false
+        }
+      ]
+    },
+    {
+      "id": "aeae741a-2eaf-4b9d-a449-c9ebfebeafab",
+      "mode": "dubbing",
+      "providerIntegrity": "sha256:3ea9ff8a1d00cb86d33d22effde56c8808fb23f1e1c53926c5c24739381099a2",
+      "artifacts": [
+        {
+          "id": "video",
+          "bytes": 122856,
+          "sha256": "e8c5a90777e5effb987bfd4e4f0cf7ff483e7bc599fecf46a7baa8332fed12d5",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "sample_rate": null,
+              "channels": null,
+              "duration": "6.880000"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "6.880000"
+            }
+          ],
+          "duration": "6.880000"
+        },
+        {
+          "id": "audio",
+          "bytes": 1321004,
+          "sha256": "06f497472982b269605eb455841c189dafa82ce3cbfc561ef5d84f59453e9d2f",
+          "streams": [
+            {
+              "codec_type": "audio",
+              "codec_name": "pcm_s16le",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "6.880000"
+            }
+          ],
+          "duration": "6.880000"
+        }
+      ],
+      "remoteReceipts": [
+        {
+          "state": "succeeded",
+          "mayStillRun": false
+        }
+      ]
+    },
+    {
+      "id": "531704e0-9ca4-4837-ab89-a630f54e3352",
+      "mode": "both",
+      "providerIntegrity": "sha256:3ea9ff8a1d00cb86d33d22effde56c8808fb23f1e1c53926c5c24739381099a2",
+      "artifacts": [
+        {
+          "id": "video",
+          "bytes": 136514,
+          "sha256": "19f8a2b8d3530bc03c926f3a5da6e078a3908f9380ca8284e4f0cf6cb4f94b63",
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "sample_rate": null,
+              "channels": null,
+              "duration": "6.880000"
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "6.880000"
+            }
+          ],
+          "duration": "6.880000"
+        },
+        {
+          "id": "audio",
+          "bytes": 1321004,
+          "sha256": "b3588e3b40f29782d6f4c5c0876171663537a61c6572ff15560bd479fba8f1a8",
+          "streams": [
+            {
+              "codec_type": "audio",
+              "codec_name": "pcm_s16le",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "6.880000"
+            }
+          ],
+          "duration": "6.880000"
+        },
+        {
+          "id": "source_subtitles",
+          "bytes": 213,
+          "sha256": "1d63eaacb87dd0f0b87d00df36c0eec7396f94a8dd92b92caff4c721d7adc311"
+        },
+        {
+          "id": "translated_subtitles",
+          "bytes": 208,
+          "sha256": "bd65a3a68499001cd73748827b0536ce62cb53f3e4942b4b38db247b5cabec59"
+        }
+      ],
+      "remoteReceipts": [
+        {
+          "state": "succeeded",
+          "mayStillRun": false
+        }
+      ]
+    }
+  ],
+  "translation": {
+    "provider": "OpenAI-compatible saved connection",
+    "model": "doubao-seed-evolving",
+    "max_completion_tokens": 65535,
+    "rawRequestsAndResponsesPreserved": true
+  },
+  "independentPython": {
+    "sourceFiles": [
+      "package.json",
+      "worker.py"
+    ],
+    "noRepositoryPythonImports": true,
+    "independentVenv": true,
+    "runs": [
+      {
+        "providerId": "test.tone-a",
+        "taskId": "b4964669-1570-4f0e-bcc1-6722c64dc726",
+        "status": "succeeded",
+        "taskElapsedMs": 137.98412499999995,
+        "decodedWav": {
+          "codec": "pcm_s16le",
+          "sampleRate": 16000,
+          "channels": 1,
+          "sampleCount": 4000,
+          "durationMs": 250
+        },
+        "sha256": "860c59a3bf0f9d8057d63c79b876952843d66aa827c317a30b806063f2b77a2e"
+      },
+      {
+        "providerId": "test.tone-b",
+        "taskId": "c449c29d-4da1-4c54-b83d-fa177dc732b8",
+        "status": "succeeded",
+        "taskElapsedMs": 111.14912499999991,
+        "decodedWav": {
+          "codec": "pcm_s16le",
+          "sampleRate": 16000,
+          "channels": 1,
+          "sampleCount": 4000,
+          "durationMs": 250
+        },
+        "sha256": "8b2ada4934d3d3fb0792ea5c3d57f9ae317a56ce31266be9885d38ed6e316509"
+      }
+    ],
+    "benchmark": {
+      "samples": 5,
+      "bytes": 16395,
+      "processRoundTripMedianMs": 20.430125000000317,
+      "serializationMedianMs": 0.06137508898973465,
+      "scope": "Fresh Python process per sample; existing OS cache; no model loaded. JSON timing excludes pipe and process startup."
+    },
+    "scope": "Synthetic sine wave contract fixture; not speech synthesis quality."
+  },
+  "cancellation": {
+    "id": "6aa5321d-2fc5-41fb-9fe6-91bbdc2b0d8a",
+    "status": "cancelled",
+    "steps": [
+      {
+        "id": "prepare",
+        "label": "准备媒体",
+        "status": "completed",
+        "invocationId": "1b2953aa-0aa7-4dda-8d8c-e897b5216529",
+        "progress": 1,
+        "message": "Extracting source audio",
+        "startedAt": "2026-10-08T16:18:33.568Z",
+        "finishedAt": "2026-10-08T16:18:34.042Z",
+        "outputs": {
+          "sourceAudio": {
+            "id": "0969a630-e0c9-4eca-a2e8-99ee8a19da6e",
+            "schemaId": "audio/wav/v1"
+          },
+          "mediaInfo": {
+            "duration_ms": 6880,
+            "width": 640,
+            "height": 360,
+            "frame_rate": 25,
+            "video_codec": "h264",
+            "audio_codec": "aac"
+          }
+        },
+        "error": null
+      },
+      {
+        "id": "separate",
+        "label": "分离人声",
+        "status": "cancelled",
+        "invocationId": "a92a74dc-9631-4a12-bc1f-b1ea3190071a",
+        "progress": null,
+        "message": null,
+        "startedAt": "2026-10-08T16:18:34.048Z",
+        "finishedAt": "2026-10-08T16:18:34.280Z",
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "recognize",
+        "label": "语音识别",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "translate",
+        "label": "翻译",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "reference",
+        "label": "准备参考音频",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "synthesize",
+        "label": "生成配音",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "mix",
+        "label": "混音",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "align",
+        "label": "字幕对齐",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "export",
+        "label": "导出",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      }
+    ],
+    "mayStillRun": false
+  },
+  "settings": {
+    "defaultsRefreshWithoutRestart": true
+  },
+  "checks": {
+    "hostTests": 28,
+    "pythonTests": 902,
+    "mediaSchemas": 8,
+    "operationContracts": 10
+  },
+  "cutover": {
+    "status": "pending"
+  },
+  "limits": [
+    "Windows and Linux were not validated on physical hosts.",
+    "GitHub/npm network installation paths were implemented; local install and offline npm build were exercised.",
+    "Provider-specific remote cancellation is deferred; unknown remote results remain visible and block retry."
+  ]
+}

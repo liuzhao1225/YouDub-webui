@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 import pytest
+
+# Tests supply their own environment and must not load a developer's .env
+# during application imports at collection time. Normal application startup
+# remains unchanged; dotenv-specific tests can restore this with monkeypatch.
+os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:

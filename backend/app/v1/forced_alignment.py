@@ -87,7 +87,7 @@ def word_cues(parts: list[str], words: object, start_ms: int, end_ms: int) -> li
 
 def align(
     context: StageContext, rows: list[tuple[Segment, str]], split_text: Callable[[str], list[str]],
-    progress: Callable[[float | None, str], None],
+    progress: Callable[[float | None, str], None], *, audio_paths: list[Path] | None = None,
 ) -> list[tuple[int, int, str]]:
     from .media import _run_media
 
@@ -102,7 +102,7 @@ def align(
         raise ApiError(503, "MODEL_NOT_READY", "Install the Qwen forced aligner in its local model directory.", stage="export")
     clips = []
     for index, (segment, text) in enumerate(rows, start=1):
-        path = context.work_dir / "adjusted" / f"{index:04d}.wav"
+        path = audio_paths[index - 1] if audio_paths is not None else context.work_dir / "adjusted" / f"{index:04d}.wav"
         if not path.is_file():
             raise ApiError(500, "INPUT_MISSING", "The complete adjusted speech clip is missing.", stage="export")
         if segment.end_ms - segment.start_ms > MAX_AUDIO_DURATION_MS:

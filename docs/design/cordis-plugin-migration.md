@@ -1,110 +1,112 @@
-# YouDub Cordis 插件化迁移与验收计划
+# YouDub Cordis 插件化迁移与验收记录
 
-2026-10-08 · 分支 `codex/plugin` · 基线 `e0dcb58`。[架构设计](cordis-plugin-architecture.md)定义目标，[契约设计](cordis-plugin-contracts.md)定义 workflow、operation 与进程边界。
+2026-10-09 · 分支 `codex/plugin` · 基线 `e0dcb58`。本轮授权已从设计推进到全面实施；Host、Client、Python bridge 和外部插件示例已实现，当前进行本地集成验收与切换。本文保留待验收事项，最终记录由实施负责人补入。
 
-本轮交付为设计和分支。下列实施阶段均未开始，文档检查不代表 Cordis 已运行、插件已安装、代码已重构或服务已切换。
+[架构说明](cordis-plugin-architecture.md)记录替换边界，[插件契约](cordis-plugin-contracts.md)记录执行接口，[运行指南](cordis-plugin-runtime.md)是当前启动与扩展安装入口。代码完成、模拟测试、生产构建、真实媒体成功和最终切换分别记录。
 
 ## 1. 实施范围
 
-首轮实现一个可运行的默认组合：本地文件导入、单活跃任务、现有字幕/配音/both 三模式、现有模型、三页界面、登录、取消/重试/重新生成/删除、预览和下载。所有这些业务由普通 Cordis 插件提供。默认 workflow 与通用 workflow 引擎分别注册；首版引擎和任务状态机同属一个插件。
+当前默认组合包含本地文件导入、单活跃任务、字幕/配音/both 三种计划、原有模型桥、工作台/任务库/设置/登录，以及取消、重试、重新生成、删除和产物下载。所有职责由普通 Cordis 插件装配。`tasks` 同时提供通用引擎、状态机和调度，`workflow-localize` 单独定义业务计划。
 
-外部扩展验收覆盖三个边界：替换一个模型提供者、增加一个业务 workflow、增加一个 Client 面板或页面。可将其作为同一独立测试仓库中的三个模块，避免为了演示建立多个仓库。测试夹具与真实模型结果分别标记。
+外部示例 `fixtures/plugins/file-transform` 注册独立文件转换 provider、`example.uppercase` workflow、任务面板和 `/extensions/text` 页面；页面用 React Hooks 计数器验证共享模块身份。`fixtures/plugins/python-text` 提供独立 Python 脚本和 manifest，不依赖 YouDub Python 包。
 
-延后：运行中热升级、任意 DAG、并行步骤、人工审批流程、分布式 worker、插件市场、权限沙箱、多套包管理系统、跨插件数据库和自动故障恢复。
+MVP 不含运行时热升级、任意 DAG、并行步骤、人工审批、分布式 worker、插件市场、权限沙箱或自动故障恢复。示例为真实文件转换，不将其算作真实媒体模型验收。
 
 ## 2. 阶段与责任
 
-实施负责人同时负责代码、必要验证、授权环境发布和验收；阶段记录必须写明实际版本和未完成事项。用户当前授权范围为分支与设计，后续实施按独立任务推进。
+实施负责人持续负责必要验证、当前授权的本地运行切换与回读。当前没有据本轮工作声明远端发布、新平台验证或 npm 包发布完成。
 
-| 阶段 | 状态 | 内容 | 放行证据 |
+| 阶段 | 当前状态 | 已实现内容 | 待完成或待汇总的放行证据 |
 | --- | --- | --- | --- |
-| P0 最小可行性验证 | 未开始 | 固定 Cordis/Loader/Include 依赖；纯服务提供/消费/替换；Python bridge；Next 外部 Client 加载 | 生命周期、进程取消、缺依赖失败、生产构建免重建扩展全部通过 |
-| P1 公共契约与基础提供者 | 未开始 | SDK、files/process/store/secrets、catalog、默认组合配置；完整事务式存储桥 | 官方和外部贡献同接口；持久化错误及原始原因准确；未启动旧任务循环 |
-| P2 通用引擎与默认 workflow | 未开始 | task-runtime、默认 workflow、固定执行快照、动态步骤；提取现有 Python 计算 | 三模式实际计划正确；取消/等待/重试/迟到结果正确；默认引擎可替换 |
-| P3 API 与前端插件组合 | 未开始 | auth、HTTP、v2 API、v1 映射、浏览器 Cordis、官方页面、安装管理 | 现有产品行为保留；第三方页面、步骤、产物无需改主程序代码 |
-| P4 数据迁移与真实闭环 | 未开始 | 两份数据库与凭据兼容、旧历史预览；真实媒体及外部扩展验收 | 历史数据完整；真实三模式链、实际取消、下载/播放正确；切换预演通过 |
-| P5 发布与运行验收 | 未开始 | 候选版本固定、停止旧 worker、迁移、启动新组合、浏览器和 API 回读 | 发布版本明确；单一调度权威；默认功能和插件切换在目标环境实际通过 |
+| P0 框架可行性 | 实现与机制测试已落地，集成验收进行中 | 固定 Cordis/Loader/Include；依赖、清理错误可见；服务替换与 Python 协议 | 当前候选完整检查结果、生产 Next 外部页面及 Hooks 的浏览器记录 |
+| P1 公共契约与基础服务 | 已实现 | SDK、files/process/store/secrets/catalog/settings、组合配置、SQLite 完整事务桥 | 最新候选的跨进程失败、存储与文件测试汇总 |
+| P2 通用引擎与默认 workflow | 已实现，媒体验收进行中 | 固定计划、provider 绑定、JSON schema、产物验证、等待/取消/重试 | 三种真实输出、可选参考/对齐、末尾时间轴与播放结果 |
+| P3 API 与 Client 组合 | 已实现，浏览器验收进行中 | auth/HTTP/v2、v1 投射、官方 Client 插件、扩展安装管理 | 登录会话、配置、导入残留、第三方页面/面板、下载与卸载回读 |
+| P4 数据迁移与历史 | 已实现，数据验收进行中 | desktop schema v2、raw legacy snapshot、旧认证复制与 keyring 引用 | 数据副本及实际目录的数量/关键字段/文件和凭据核对 |
+| P5 本地切换 | 进行中 | 启动和退出路径具备 | 固定候选、停止旧调度、实际端口与实例、默认功能和插件回读 |
 
-P0 出现核心失败时先修正设计与协议，再推进业务迁移。不得以模拟接口通过代替跨语言或浏览器运行证据。
+## 3. 已有机制证据与边界
 
-## 3. P0 必须回答的问题
+本轮已经运行过的相关验证包括：
 
-1. **Cordis 启动与关闭。** 缺依赖、模块导入失败、异步初始化失败、清理失败均保留原始诊断；只有必需插件真实 ACTIVE 才就绪。关闭等待所挂载应用 Fiber 及真实进程退出，不能把 Loader settled 或 dispose 返回等同成功。
-2. **Python 单次模型调用。** 一个独立目录插件使用自己的 `.venv`，接收标准输入文件，返回真实音频元信息；取消时本机进程及其子进程退出。坏 JSON、stderr、异常退出和缺输出均被准确报告。
-3. **存储完整事务。** 多次并发 claim 只有一次成功；比较更新拒绝旧 attempt；在提交前后断开桥接，分别验证未提交与结果未知的报告，禁止重复模型执行。
-4. **浏览器模块身份。** Next 生产构建完成后安装独立 Client ESM，刷新可见；React hook、共享 context、Cordis 生命周期和样式生效，主程序构建产物哈希不变。
-5. **调用开销。** 分别记录 Python 冷启动、模型加载、推理、序列化和文件传输时间。复用现有“每阶段进程、阶段内多句”的粒度，测量后再决定是否需要模型常驻。
-6. **框架耦合。** bootstrap 和 SDK 不导入 SQLite、默认 workflow、模型或产品页面。更换 workflow/provider 只改插件组合；更换整个 task-runtime 只要实现其公共契约。
+- `bootstrap.test.ts`：空组合不创建产品服务/数据；选定插件缺依赖、初始化错误拒绝启动；卸载原始错误可见；只替换 `tasks` 服务即可供同一消费者使用。
+- `process-protocol.test.ts`：未知 RPC 类型、坏 JSON、异常退出不能转成成功，取消等待实际进程退出。
+- `task-runtime.test.ts`：真实 Python SQLite 桥驱动等待/单槽、取消与重试、迟到进度/旧 revision 拒绝和缺产物失败。
+- `http.test.ts`：Cookie/CSRF/注销语义及文件 HEAD/Range。
+- `extensions.test.ts`：独立本地包安装、重启激活、真实文本转换、注册释放、完整性变更拒绝激活。
+- CLI 在隔离临时数据目录完成本地 Host/Client 包和纯 Python `.venv` 安装；此项仅证明对应安装路径。
 
-Node.js 22、macOS arm64 为当前本地验证基线。Windows 进程树终止、路径和凭据库另列实机检查；未验证的平台不得标记已支持该重构版本。外部 LLM 验证请求遵守输出上限至少 65,535 的规则。
+测试文件位于 [Host 测试目录](../../packages/builtin/test)。后续修复需要相关测试重新通过，最终候选的命令与结果统一写入第 8 节；这里不使用旧测试结果替代最终检查。生产 Next 构建和静态检查记录由前端负责人汇总，浏览器结果单独填写。
 
-## 4. 现有代码的迁移落点
+本地基线为 macOS arm64 / Node.js 22。Windows 进程树、路径、keyring 以及其他系统尚未据此验收。GitHub ref 和 npm 精确版本安装代码已实现，远端真实下载/安装仍是单独待验收项。Python 独立环境安装不代表该 provider 已完成整个任务闭环。
 
-| 当前代码 | 目标归属 | 关键约束 |
-| --- | --- | --- |
-| [main.py](../../backend/app/main.py)、[worker.py](../../backend/app/worker.py) | HTTP/API 插件和 task-runtime | 新宿主不启动原 FastAPI lifespan/worker |
-| [v1/executor.py](../../backend/app/v1/executor.py)、[tasks.py](../../backend/app/v1/tasks.py) | 通用任务引擎与默认 workflow | 七阶段分派移入 workflow，状态条件更新保持原子 |
-| [runtime.py](../../backend/app/v1/runtime.py) | catalog 与提供者 probe | 去除固定 adapter 列表和数组下标绑定 |
-| [contracts.py](../../backend/app/v1/contracts.py) | SDK 通用契约与默认 workflow schema | 默认视频字段从通用 Task 解耦 |
-| [storage.py](../../backend/app/v1/storage.py)、[schema.sql](../../backend/app/v1/schema.sql) | store-sqlite 插件 | 显式 schema 升级，旧记录逐项保留 |
-| [credentials.py](../../backend/app/v1/credentials.py)、[auth.py](../../backend/app/auth.py) | secrets、auth 插件 | 保留原凭据引用、哈希、Cookie 和 CSRF 语义 |
-| [asr.py](../../backend/app/v1/asr.py)、[tts.py](../../backend/app/v1/tts.py) 等 | 模型提供者与 Python worker | 统一 transcript，解除 Whisper raw 的跨提供者依赖 |
-| [media.py](../../backend/app/v1/media.py)、[mix.py](../../backend/app/v1/mix.py)、[export.py](../../backend/app/v1/export.py) | 媒体 operation 提供者 | 保留实际音视频及时间轴行为 |
-| [前端 API](../../apps/web/src/lib/v1-api.ts)、[配置表单](../../apps/web/src/components/v1-task-config.tsx) | Client API 插件、通用配置渲染与默认 workflow UI | 默认规则不进入浏览器引导层 |
-| [app-shell](../../apps/web/src/components/app-shell.tsx)、现有页面 | 官方 Client 插件 | 页面经公共注册入口加载，复用视觉组件和样式 |
+## 4. 代码落点
+
+| 职责 | 当前实现 |
+| --- | --- |
+| 无业务 Host 引导 | [bootstrap.ts](../../apps/host/src/bootstrap.ts)、[main.ts](../../apps/host/src/main.ts) |
+| 默认产品组合 | [youdub.config.ts](../../youdub.config.ts) |
+| 服务/operation/Task 契约 | [SDK](../../packages/sdk/src/index.ts) |
+| 任务引擎与状态机 | [tasks.ts](../../packages/builtin/src/tasks.ts) |
+| 默认本地化 workflow | [workflow-localize.ts](../../packages/builtin/src/workflow-localize.ts) |
+| 受管文件和进程 | [files.ts](../../packages/builtin/src/files.ts)、[process.ts](../../packages/builtin/src/process.ts) |
+| Python 存储与计算桥 | [bridge.py](../../backend/workers/bridge.py)、[store.py](../../backend/workers/store.py)、[operation.py](../../backend/workers/operation.py) |
+| HTTP、认证与 API | [http.ts](../../packages/builtin/src/http.ts)、[auth.ts](../../packages/builtin/src/auth.ts)、[api.ts](../../packages/builtin/src/api.ts) |
+| 扩展安装和装配 | [extensions.ts](../../packages/builtin/src/extensions.ts)、[extensions-loader.ts](../../packages/builtin/src/extensions-loader.ts)、[CLI](../../apps/host/src/plugins.ts) |
+| Client 引导与服务/页面 | [plugin 目录](../../apps/web/src/plugin) |
+
+旧 `backend/app` 中的模型、媒体和纯认证/凭据函数继续复用。新 Host 不启动旧 FastAPI lifespan 或旧任务循环。Python store bridge 只处理窄事务/系统调用，模型 worker 不持有数据库或调度权。
 
 ## 5. 数据和凭据迁移
 
-当前有用户数据目录内的 `desktop.sqlite` 和仓库 `data/youdub.sqlite`；后者仍保存认证与旧任务相关数据。v1 的 `current_stage` 和 settings key 有封闭 CHECK，现有 Store 只接受版本 1。动态 workflow 需要真正的 schema 升级。[v1 存储](../../backend/app/v1/storage.py)、[DDL](../../backend/app/v1/schema.sql)、[旧数据库](../../backend/app/database.py)
+当前 `backend/workers/store.py` 将数据目录内 `desktop.sqlite` 从 schema 0/1 迁移到 2：保留原 tasks 字段，增加 `plugin_json/plugin_revision`，移除旧任务阶段和 settings key 的封闭约束，建立认证会话/登录尝试表。未知 schema 拒绝启动。旧 schema 1 中存在 queued/running/waiting/cancelling 任务时返回 `MIGRATION_ACTIVE_TASKS`，不会自动重跑旧任务。
 
-迁移原则：
+旧 desktop 任务以 `legacy: true`、`workflowId: legacy-v1`、未解析版本和 `rawSnapshot` 呈现，不伪造历史插件身份。原输入和已有成品在任务目录内时可登记历史引用，v1 API 保留其原配置、状态与输出结构。legacy retry 被拒绝；重新生成需显式选择当前 workflow、复制输入并创建新 ID。
 
-- 保留任务 ID、attempt、状态、创建时间、输入/产物路径、原始错误、原始配置及原始模型响应。
-- v1 库仍维持 tasks/settings 两类业务数据；tasks 增加固定 workflow/plan/bindings、steps 状态和通用产物描述。设置按插件命名空间组织，取消封闭 key 约束。
-- 原配置与上下文保存为明确的 legacy snapshot，迁移映射不能伪造历史插件版本。历史成功任务可展示既有元信息和产物；精确旧实现无法解析时明确显示执行版本未解析。
-- 旧 legacy 数据库保留原位；首版历史只读适配插件提供查询与已有产物访问。旧任务转入新系统须显式导入为新 Task，原始记录保留；没有迁移路径的旧活动任务阻止正式切换。
-- 凭据继续使用 OS keyring 的 `YouDub` 命名空间，复用 reference。连接默认值变化不能删除仍由历史任务引用的密钥。密码哈希、Cookie 名、TTL、会话及 CSRF 行为按既有实现回归。
-- 插件版本、目录和 UI 元数据不写入密钥值；`.env` 与 `env.txt` 保持硬链接和 Git 忽略规则。
+仓库 `data/youdub.sqlite` 保留原位，存储桥以只读方式访问。首次 schema 迁移复制已有认证会话和登录尝试；其中旧 URL 下载式任务仍是独立历史来源，桥提供 `legacy.list/get` 读取。当前通用 v2 任务列表不自动合并该旧库，API 与界面没有把这些旧记录伪装成新 workflow；该部分历史的产品入口和文件访问要以最终实际验收说明为准。
 
-升级流程先在显式数据副本上预演，检查数量、字段、产物哈希与凭据引用。正式切换停止旧 worker 后执行 schema 事务，失败保留原始错误并停止启动。应用层不静默恢复旧配置、不跳过异常记录。迁移工具拒绝未知更高 schema 版本。
+密钥继续使用系统 keyring 的 `YouDub` 命名空间和原 credential reference。新任务保存连接和引用快照；设置更新与任务创建共用 Host 锁。设置和 keyring 跨介质失败明确报告部分完成状态，不自动回滚或隐藏错误。访问密码仍为 `.env` 的 Argon2id 哈希；Cookie、TTL、CSRF 按旧语义实现。
 
-running/cancelling 任务必须先完成或明确停止。queued/waiting 任务仅在旧参数、远端 ID、请求键和 provider 绑定能精确迁移时继续；无法映射时保留原记录并阻止切换，不能重新发出远端请求冒充恢复。
+先在显式数据副本上预演，核对任务数量、ID/状态/时间、原始 JSON、文件及凭据引用。正式切换必须停止原 worker，确认没有旧进程继续写同一目录。迁移失败停止启动并保留原始诊断，不静默删除或修复记录。
 
-## 6. 对外兼容与切换
+## 6. 本地切换流程
 
-迁移中可使用隔离测试目录与端口运行候选。新旧实例不能同时执行同一份数据中的任务；启动前检查端口和活动进程。测试用认证与模型请求不能被记为实际生产验收。
+1. 固定待运行代码、依赖锁、插件组合和源完整性，记录候选 commit。
+2. 检查 8000/3000 端口、旧进程、数据版本、活动任务、模型与凭据；隔离验证目录和实际目录分别记录。
+3. 停止旧调度与本机活动计算，保留未确认的远端请求状态。
+4. 执行已预演的数据迁移；构建官方 Client 资产，启动 Cordis Host 与 Next。
+5. 回读登录、health、Runtime、Settings、历史任务、产物和已激活插件。
+6. 完成真实三模式及外部插件的浏览器/API 验收，记录限制与剩余工作。
 
-v2 API 与新 UI 随同一候选发布。v1 兼容插件保留现有默认流程与历史读取，明确拒绝不能无损表达的新 workflow。兼容层作为普通插件有独立契约测试，后续按实际使用情况退出。
-
-正式切换由负责人依次完成：
-
-1. 固定已经通过检查的代码、依赖锁和插件组合；记录 commit 与包完整性。
-2. 只读检查端口、数据版本、活动任务、模型和凭据引用，确认迁移条件满足。
-3. 停止原 worker，确认本机活动计算已经退出；保留远端未知状态。
-4. 执行已预演的迁移；启动 Cordis Host 和 Client 默认组合。
-5. 回读实际版本、插件 ACTIVE 状态、登录、Runtime、Settings、历史任务和文件。
-6. 完成真实视频及外部插件验收，记录限制与未完成平台。
-
-切换任一步失败即停止后续步骤并报告实际状态。服务进程存在、端口可访问和包已安装分别只是对应步骤证据。
+任一步失败就停止对应后续路径，报告实际状态。端口已监听、插件 installed、模型 ready 或单个构建成功都不代表最终切换验收完成。当前环境只运行一份任务状态权威和一个调度实现。
 
 ## 7. 最终验收矩阵
 
-| 范围 | 必须证明 |
-| --- | --- |
-| 最底层插件化 | 空组合无产品后台；替换 task-runtime 不改 API/workflow；所有官方功能均可追溯到所挂载插件 |
-| 默认 workflow | 三模式、可选对齐和参考处理的计划准确；内核无七阶段或模型特判 |
-| 外部 workflow | 独立仓库注册新步骤和产物，主程序代码与构建不变即可执行 |
-| 模型替换 | 同契约第二提供者真实生成产物；不兼容语言/声线在提交前明确拒绝 |
-| Python | 不运行第二套插件树或任务队列；依赖隔离、取消、退出和错误都可观察 |
-| 任务一致性 | 单活跃、条件领取、迟到结果拒绝、unknown 禁止 retry、旧插件缺失明确失败 |
-| 生命周期 | 停用后注册消失，监听器与执行进程退出；dispose 失败可见 |
-| 外部 UI | 安装后刷新出现新面板/页面，React/Cordis 单实例，CSS 生效，主程序无需重建 |
-| 历史与凭据 | 旧 ID、状态、原始数据与产物不变；可播放下载；凭据引用正确且无明文泄露 |
-| 真实媒体 | 正式 API 和 worker 完成三模式；实际播放、末尾音频、字幕时间轴、文件下载及 HEAD/Range |
-| 发布 | 目标运行实例为验收 commit，只运行新调度；回读结果可追溯到该候选 |
+下表是最终记录要求；尚未填入实际候选与产物的条目保持待验收。
 
-测试只覆盖上述契约和迁移风险，优先复用现有媒体夹具与回归。模拟提供者验证框架机制；真实模型与供应商成功必须另有实际调用和产物证据。
+| 范围 | 必须证明 | 最终候选记录 |
+| --- | --- | --- |
+| 最底层插件化 | 空组合无业务；替换 tasks 不改 API/workflow；官方功能来自插件 | 待汇总 |
+| 默认 workflow | 三模式与参考/对齐计划；通用引擎无默认步骤特判 | 待汇总 |
+| 输出契约 | JSON schema 执行、必需端口不可降级、登记/提交文件一致 | 待汇总 |
+| 外部 workflow | 安装独立包，真实转换文件，无核心源码改动 | 待汇总 |
+| Python 提供者 | 独立 `.venv`、真实输入输出、退出和取消可观察 | 待汇总 |
+| 任务一致性 | 单活跃、等待、条件提交、迟到结果、未知远端禁止 retry | 待汇总 |
+| 生命周期 | 缺依赖/初始化/清理错误可见；真实子进程结束 | 待汇总 |
+| 外部 UI | Next 构建后新增页面/导航/面板；Hooks 可点击且构建不变 | 待汇总 |
+| 认证与配置 | 登录/注销/CSRF、设置修改、工作流默认值更新 | 待汇总 |
+| 历史与凭据 | 迁移字段/文件/引用核对，明确旧库入口边界 | 待汇总 |
+| 真实媒体 | 正式 API 和 Worker 的三模式、播放/末尾音频/字幕时间轴 | 待验收 |
+| 产物访问 | 下载、HEAD、Range 与失败文件的真实状态 | 待汇总 |
+| 本地切换 | 实际实例对应候选、旧调度已停、页面/API 回读 | 待验收 |
+| 远端安装及其他平台 | GitHub/npm 实装、Windows 等实机行为 | 未验收 |
 
-## 8. 本轮设计核验
+## 8. 最终实测记录（实施负责人填写）
 
-设计检查包含：服务所有权、workflow 三层边界、Python 计算与持久化调用区别、公开注册及释放、进程与远端状态握手、版本快照、动态 Client 模块、历史数据迁移、实施与发布验收。后续实施不得将这些设计条目直接标记为已验证。
+- 候选 commit / 日期 / 系统 / Node、Python 版本：待填。
+- 数据目录与迁移核对：待填。
+- 最终检查命令和结果：待填。
+- 真实三模式 task ID、实际模型及产物路径：待填。
+- 外部包版本/commit/integrity、页面与 Hooks 操作证据：待填。
+- 旧进程停止、新 Host/Next 端口和最终回读：待填。
+- 明确失败、未完成验收与后续所需条件：待填。

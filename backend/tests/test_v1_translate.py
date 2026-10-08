@@ -162,6 +162,14 @@ def test_timeout_is_not_retried(context, provider):
     assert states == ["pending"] and len(provider.calls) == 1
 
 
+def test_plugin_output_limit_is_validated_before_constructing_provider(context, provider):
+    plugin_config = SimpleNamespace(**context.config.__dict__, max_completion_tokens=65534)
+    with pytest.raises(ApiError) as error:
+        translate.run(replace(context, config=plugin_config), lambda *args: None)
+    assert error.value.content["error"]["code"] == "INVALID_CONFIG"
+    assert not provider.calls and not provider.options
+
+
 def test_oversized_later_segment_rejected_before_any_request(context, provider):
     value = json.loads(context.input_files["transcript"].read_bytes())
     value["segments"][-1]["text"] = "x" * 6001
@@ -180,7 +188,7 @@ def real_provider(monkeypatch):
     import openai
 
     original_client = openai.AsyncOpenAI
-    state = SimpleNamespace(calls=[], clients=[], timeouts=[], body=None, content_type="application/json",
+    state = SimpleNamespace(calls=[], clients=[], timeouts=[], body=None, status=200, content_type="application/json",
                             wait=False, stopped=False, read_timeout=False)
 
     def forbid_network(*args, **kwargs):
@@ -200,7 +208,7 @@ def real_provider(monkeypatch):
             finally:
                 state.stopped = True
         if state.body is not None:
-            return httpx.Response(200, content=state.body, headers={"content-type": state.content_type})
+            return httpx.Response(state.status, content=state.body, headers={"content-type": state.content_type})
         source = json.loads(body["messages"][1]["content"])["segments"]
         result = {"segments": [{"segment_id": item["segment_id"], "text": "译文"} for item in reversed(source)]}
         return httpx.Response(200, json={
@@ -230,6 +238,20 @@ def test_installed_sdk_parses_complete_responses_and_retains_all_batch_ids(conte
     assert [call["max_completion_tokens"] for call in real_provider.calls] == [65535, 65535]
     assert real_provider.timeouts == [{"connect": 10.0, "read": 300.0, "write": 300.0, "pool": 300.0}] * 2
     assert all(client.is_closed for client in real_provider.clients)
+
+
+@pytest.mark.parametrize("status,code", [(200, "INVALID_PROVIDER_RESULT"), (400, "PROVIDER_REJECTED")])
+def test_plugin_preserves_exact_request_settings_and_raw_response_on_failure(context, real_provider, status, code):
+    real_provider.status = status
+    real_provider.body = b'{ "raw": "original bytes", "error": "test" }\n'
+    plugin_config = SimpleNamespace(**context.config.__dict__, record_raw=True, max_completion_tokens=65535)
+    with pytest.raises(ApiError) as error:
+        translate.run(replace(context, config=plugin_config), lambda *args: None)
+    assert error.value.content["error"]["code"] == code
+    evidence = context.work_dir / "translation_raw"
+    assert (evidence / "0001.response.json").read_bytes() == real_provider.body
+    assert json.loads((evidence / "0001.request.json").read_text()) == real_provider.calls[0]
+    assert real_provider.calls[0]["max_completion_tokens"] == 65535
 
 
 def test_installed_sdk_read_timeout_keeps_unknown_remote_completion_without_retry(context, real_provider):

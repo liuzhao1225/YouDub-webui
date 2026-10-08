@@ -1,0 +1,14 @@
+{
+  "name": "youdub-example-file-transform",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Independent YouDub workflow and browser panel: uppercase a UTF-8 text file.",
+  "exports": { ".": "./dist/host.js" },
+  "peerDependencies": { "cordis": "4.0.0-rc.10", "@youdub/sdk": "^1.0.0", "react": "^19.0.0" },
+  "youdub": {
+    "id": "example.file-transform",
+    "sdkVersion": "^1.0.0",
+    "host": "dist/host.js",
+    "client": { "entry": "dist/client.js", "access": "authenticated" }
+  }
+}

@@ -11,6 +11,9 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+!fixtures/plugins/file-transform/dist/
+!fixtures/plugins/file-transform/dist/host.js
+!fixtures/plugins/file-transform/dist/client.js
 downloads/
 eggs/
 .eggs/
@@ -181,6 +184,7 @@ workfolder/
 env.txt
 
 # Next.js
+node_modules/
 apps/web/.next/
 apps/web/out/
 apps/web/node_modules/

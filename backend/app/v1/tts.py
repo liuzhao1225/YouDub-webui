@@ -117,6 +117,19 @@ def speaker_references(transcript: Transcript, asr_raw: Path | None = None) -> d
     missing = {segment.speaker_id for segment in transcript.segments} - set(result)
     if not missing:
         return result
+    if all(segment.words is not None for segment in transcript.segments if segment.speaker_id in missing):
+        for segment in transcript.segments:
+            if segment.speaker_id not in missing:
+                continue
+            standard = {"text": segment.text, "start": segment.start_ms / 1000,
+                        "end": segment.end_ms / 1000, "speaker_id": segment.speaker_id,
+                        "words": [{"word": word.text, "start": word.start_ms / 1000,
+                                   "end": word.end_ms / 1000} for word in segment.words]}
+            reference, duration = _word_reference(segment, standard)
+            if duration > best_duration.get(segment.speaker_id, 0):
+                result[segment.speaker_id] = [reference]
+                best_duration[segment.speaker_id] = duration
+        return result
     try:
         raw = json.loads(asr_raw.read_text(encoding="utf-8")) if asr_raw is not None else None
     except (OSError, ValueError) as exc:
@@ -150,33 +163,11 @@ def _audio_info(path: Path):
     return info
 
 
-def run(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:
+def prepare_reference_audio(context: StageContext, transcript: Transcript, progress: Callable) -> dict:
+    """Prepare cloning inputs independently of a speech model invocation."""
     from ..config import ffmpeg_binary
     from .media import _run_media
 
-    context.check_cancel()
-    selection = context.config.tts
-    if selection is None or selection.adapter != "voxcpm" or selection.model != "VoxCPM2" or selection.device == "remote":
-        raise ApiError(422, "INVALID_CONFIG", "TTS requires the local VoxCPM2 model and a CPU/CUDA device.",
-                       field="tts", stage="tts")
-    if selection.voice.mode != "source_clone":
-        raise ApiError(422, "INVALID_CONFIG", "VoxCPM2 preset voice assets are not configured; select source_clone.",
-                       field="tts.voice.mode", stage="tts")
-    if not available_models():
-        raise ApiError(503, "MODEL_NOT_READY", "The local VoxCPM2 model assets are missing or incomplete.",
-                       field="tts.model", stage="tts")
-    for name in ("transcript", "translation", "vocals"):
-        path = context.input_files.get(name)
-        if path is None or not path.is_file() or path.stat().st_size == 0:
-            raise ApiError(500, "INPUT_MISSING", f"The {name} input is missing or empty.", stage="tts")
-    transcript = read_transcript(context.input_files["transcript"], stage="tts")
-    translation = read_translation(context.input_files["translation"], transcript, stage="tts")
-    if transcript.detected_language not in LANGUAGES or context.config.target_language not in LANGUAGES:
-        raise ApiError(422, "UNSUPPORTED_LANGUAGE", "VoxCPM2 supports English, Chinese and Japanese in this pipeline.",
-                       stage="tts", action="adjust_settings")
-    if translation.target_language != context.config.target_language:
-        raise ApiError(502, "INVALID_PROVIDER_RESULT", "The translation target language differs from the Task.", stage="tts")
-    texts = translation.match(transcript)
     vocals = context.input_files["vocals"]
     source_info = _audio_info(vocals)
     source_duration_ms = round(source_info.frames * 1000 / source_info.samplerate)
@@ -186,7 +177,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     output_dir = context.work_dir / "tts"
     reference_dir = output_dir / "references"
     reference_dir.mkdir(parents=True, exist_ok=True)
-    reference_paths = {}
+    prepared = {}
     progress(0.0, "Preparing source speaker references")
     for index, (speaker_id, sentences) in enumerate(references.items(), start=1):
         context.check_cancel()
@@ -208,10 +199,46 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         info = _audio_info(path)
         if round(info.frames * 1000 / info.samplerate) != duration_ms:
             raise ApiError(422, "INVALID_MEDIA", "The source speaker reference does not cover the selected utterance.", stage="tts")
-        reference_paths[speaker_id] = path
+        prepared[speaker_id] = {"path": path, "text": " ".join(sentence.text for sentence in sentences)}
+    return prepared
+
+
+def run(context: StageContext, progress: Callable[[float | None, str], None], *,
+        prepared_references: dict | None = None) -> Completed:
+    from ..config import ffmpeg_binary
+    from .media import _run_media
+
+    context.check_cancel()
+    selection = context.config.tts
+    if selection is None or selection.adapter != "voxcpm" or selection.model != "VoxCPM2" or selection.device == "remote":
+        raise ApiError(422, "INVALID_CONFIG", "TTS requires the local VoxCPM2 model and a CPU/CUDA device.",
+                       field="tts", stage="tts")
+    if selection.voice.mode != "source_clone":
+        raise ApiError(422, "INVALID_CONFIG", "VoxCPM2 preset voice assets are not configured; select source_clone.",
+                       field="tts.voice.mode", stage="tts")
+    if not available_models():
+        raise ApiError(503, "MODEL_NOT_READY", "The local VoxCPM2 model assets are missing or incomplete.",
+                       field="tts.model", stage="tts")
+    for name in (("transcript", "translation", "vocals") if prepared_references is None else ("transcript", "translation")):
+        path = context.input_files.get(name)
+        if path is None or not path.is_file() or path.stat().st_size == 0:
+            raise ApiError(500, "INPUT_MISSING", f"The {name} input is missing or empty.", stage="tts")
+    transcript = read_transcript(context.input_files["transcript"], stage="tts")
+    translation = read_translation(context.input_files["translation"], transcript, stage="tts")
+    if transcript.detected_language not in LANGUAGES or context.config.target_language not in LANGUAGES:
+        raise ApiError(422, "UNSUPPORTED_LANGUAGE", "VoxCPM2 supports English, Chinese and Japanese in this pipeline.",
+                       stage="tts", action="adjust_settings")
+    if translation.target_language != context.config.target_language:
+        raise ApiError(502, "INVALID_PROVIDER_RESULT", "The translation target language differs from the Task.", stage="tts")
+    texts = translation.match(transcript)
+    prepared = prepared_references if prepared_references is not None else prepare_reference_audio(context, transcript, progress)
+    if {segment.speaker_id for segment in transcript.segments} - set(prepared):
+        raise _reference_error("A source speaker has no prepared reference audio.")
+    output_dir = context.work_dir / "tts"
+    output_dir.mkdir(parents=True, exist_ok=True)
     clips = [{"segment_id": segment.id, "text": texts[segment.id],
-              "reference_path": str(reference_paths[segment.speaker_id].resolve()),
-              "reference_text": " ".join(sentence.text for sentence in references[segment.speaker_id]),
+              "reference_path": str(Path(prepared[segment.speaker_id]["path"]).resolve()),
+              "reference_text": prepared[segment.speaker_id]["text"],
               "output_path": str((output_dir / f"{index:06d}.wav").resolve())}
              for index, segment in enumerate(transcript.segments, start=1)]
     request_path = output_dir / "request.json"

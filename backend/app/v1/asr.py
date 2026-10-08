@@ -48,7 +48,7 @@ def _milliseconds(value: Any) -> int:
     raise _invalid("Whisper returned an invalid segment timestamp.")
 
 
-def normalize_result(result: Any, *, duration_ms: int) -> dict:
+def normalize_result(result: Any, *, duration_ms: int, include_words: bool = False) -> dict:
     """Preserve complete utterances as translation and speech generation units.
 
     Subtitle display chunks are derived separately at export. Word-level ASR
@@ -77,13 +77,18 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
                    "end_ms": end_ms, "text": raw["text"]}
         if speaker is not None:
             segment["speaker_id"] = speaker
+        if include_words and raw.get("words") is not None:
+            if not isinstance(raw["words"], list):
+                raise _invalid("Whisper returned invalid word timestamps.")
+            segment["words"] = [{"text": word["word"], "start_ms": _milliseconds(word["start"]),
+                                 "end_ms": _milliseconds(word["end"])} for word in raw["words"]]
         segments.append(segment)
     return Transcript.model_validate({"detected_language": language, "segments": segments}).model_dump(
         mode="json", exclude_none=True,
     )
 
 
-def run(context: StageContext, progress: Callable[[float | None, str], None]) -> Completed:
+def run(context: StageContext, progress: Callable[[float | None, str], None], *, include_words: bool = False) -> Completed:
     # media imports the Runtime catalog; defer this import so Runtime can query
     # checkpoint metadata without circular imports or loading model dependencies.
     from .media import _run_media
@@ -145,7 +150,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         raw_result = json.loads(raw_path.read_text(encoding="utf-8"))
     except ValueError as exc:
         raise _invalid("Whisper wrote invalid transcription JSON.") from exc
-    transcript = normalize_result(raw_result, duration_ms=duration_ms)
+    transcript = normalize_result(raw_result, duration_ms=duration_ms, include_words=include_words)
     context.check_cancel()
     transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
     progress(1.0, "Source transcription is ready")
