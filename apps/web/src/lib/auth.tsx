@@ -10,6 +10,7 @@ import {
   useState,
 } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { CircleAlert } from "lucide-react"
 
 import {
   AUTH_UNAUTHORIZED_EVENT,
@@ -20,8 +21,8 @@ import {
   logout as logoutRequest,
 } from "@/lib/api"
 import { useI18n } from "@/lib/i18n"
+import { BrandMark } from "@/components/brand/brand-mark"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 
 type AuthStatus = "loading" | "authenticated" | "anonymous" | "error"
 
@@ -106,15 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (status === "error") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#fff5f5_0%,#f2fbff_48%,#fff4fa_100%)] px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="space-y-4 px-6 py-8 text-center">
-            <p className="text-sm text-red-700">{sessionError || t.auth.sessionError}</p>
-            <Button type="button" variant="outline" onClick={() => setReloadKey((key) => key + 1)}>
-              {t.auth.retry}
-            </Button>
-          </CardContent>
-        </Card>
+      <main className="flex min-h-screen items-center justify-center px-4">
+        <div className="flex w-full max-w-md flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-10 text-center shadow-float">
+          <span className="flex size-11 items-center justify-center rounded-full bg-status-danger/10 text-status-danger-fg">
+            <CircleAlert className="size-5" />
+          </span>
+          <p className="text-sm leading-relaxed text-status-danger-fg">{sessionError || t.auth.sessionError}</p>
+          <Button type="button" variant="outline" onClick={() => setReloadKey((key) => key + 1)}>
+            {t.auth.retry}
+          </Button>
+        </div>
       </main>
     )
   }
@@ -126,7 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (redirecting) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#fff5f5_0%,#f2fbff_48%,#fff4fa_100%)] px-4">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+        <BrandMark animated className="h-12" />
         <p className="text-sm text-muted-foreground">{t.auth.sessionLoading}</p>
       </main>
     )

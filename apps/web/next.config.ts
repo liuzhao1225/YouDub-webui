@@ -9,6 +9,12 @@ function apiProxyTarget() {
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.27.2.90", "100.94.222.54"],
+  // 默认的左下角会遮住侧边栏底部的语言与主题切换。
+  devIndicators: { position: "bottom-right" },
+  experimental: {
+    // 本地视频经 Next.js 代理上传到后端；默认只缓冲 10MB，需与后端 LOCAL_UPLOAD_MAX_BYTES（默认 4 GiB，v1 Runtime 的 max_file_bytes 也取这个值）一致。
+    proxyClientMaxBodySize: "4gb",
+  },
   async rewrites() {
     return [
       {

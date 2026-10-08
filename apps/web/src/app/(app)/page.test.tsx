@@ -1,21 +1,32 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import Home from "@/app/page"
+import Home from "@/app/(app)/page"
 import { LanguageProvider } from "@/lib/i18n"
 import { jsonResponse, readBlob, testConfig, testRuntime, testSettings, testTask } from "@/lib/v1-test-fixtures"
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn<typeof fetch>(), push: vi.fn() }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }))
-vi.mock("@/components/app-header", () => ({ AppHeader: () => null }))
 
 function mount() { render(<LanguageProvider><Home /></LanguageProvider>) }
 function defaultResponse(input: RequestInfo | URL) {
   const path = String(input)
   if (path === "/api/v1/runtime") return jsonResponse(testRuntime())
   if (path === "/api/v1/settings") return jsonResponse(testSettings())
-  if (path.startsWith("/api/v1/tasks?")) return jsonResponse({ items: [], limit: 20, offset: 0, has_more: false })
+  if (path.startsWith("/api/v1/tasks?")) return jsonResponse({ items: [], limit: 12, offset: 0, has_more: false })
   throw new Error(`Unexpected request: ${path}`)
+}
+
+async function choose(user: ReturnType<typeof userEvent.setup>, label: string, option: string) {
+  await user.click(screen.getByLabelText(label))
+  await user.click(await screen.findByRole("option", { name: option }))
+}
+
+async function selectVideo(user: ReturnType<typeof userEvent.setup>, name = "test.mp4") {
+  const input = await screen.findByLabelText("本地视频")
+  await waitFor(() => expect(input).toBeEnabled())
+  await user.upload(input, new File(["video"], name, { type: "video/mp4" }))
+  return input
 }
 
 beforeEach(() => {
@@ -25,7 +36,7 @@ beforeEach(() => {
 })
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.unstubAllGlobals() })
 
-describe("v1 主工作台", () => {
+describe("v1 工作台", () => {
   it("真实能力不可用时显示原因并禁用创建", async () => {
     const runtime = testRuntime()
     runtime.capabilities[0].available = false
@@ -33,8 +44,9 @@ describe("v1 主工作台", () => {
     mocks.fetch.mockImplementation(async (input) => String(input) === "/api/v1/runtime" ? jsonResponse(runtime) : defaultResponse(input))
     mount()
     const user = userEvent.setup()
-    await user.upload(await screen.findByLabelText("本地视频"), new File(["video"], "test.mp4", { type: "video/mp4" }))
+    await selectVideo(user)
     expect(screen.getByText(/尚未安装识别模型/, { selector: "span" })).toBeInTheDocument()
+    expect(screen.getByText("请为每个必需步骤选择可用模型。", { exact: false })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "创建任务" })).toBeDisabled()
     expect(mocks.fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false)
   })
@@ -43,14 +55,14 @@ describe("v1 主工作台", () => {
     mocks.fetch.mockImplementation(async (input, init) => init?.method === "POST" ? jsonResponse(testTask(), 201) : defaultResponse(input))
     mount()
     const user = userEvent.setup()
-    const input = await screen.findByLabelText("本地视频")
+    const input = await selectVideo(user)
     expect(input).toHaveAttribute("accept", ".mp4,.mov")
-    await user.upload(input, new File(["video"], "test.mp4", { type: "video/mp4" }))
+    await user.click(screen.getByRole("button", { name: "更多设置" }))
     await user.type(screen.getByLabelText("专名提示（可选）"), "YouDub")
-    await user.selectOptions(screen.getByLabelText("输出内容"), "both")
-    await user.click(screen.getByLabelText("保留背景音"))
+    await choose(user, "输出内容", "配音与字幕")
+    await user.click(screen.getByRole("switch", { name: "保留背景音" }))
     expect(screen.getByLabelText("音源分离模型")).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText("输出内容"), "subtitles")
+    await choose(user, "输出内容", "字幕 · 保留原声")
     expect(screen.queryByLabelText("配音模型")).not.toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "创建任务" }))
     await waitFor(() => expect(mocks.push).toHaveBeenCalledWith(`/tasks/${testTask().id}`))
@@ -58,7 +70,18 @@ describe("v1 主工作台", () => {
     const body = init?.body as FormData
     expect(body.get("id")).toMatch(/^[0-9a-f-]{36}$/)
     expect((body.get("file") as File).name).toBe("test.mp4")
-    expect(JSON.parse(await readBlob(body.get("config") as Blob))).toEqual({ ...testConfig, asr: { ...testConfig.asr, initial_prompt: "YouDub" } })
+    // 表单按输出模式规范化配置：字幕模式下 subtitle_alignment 明确为 null（按字数估算）。
+    expect(JSON.parse(await readBlob(body.get("config") as Blob))).toEqual({ ...testConfig, subtitle_alignment: null, asr: { ...testConfig.asr, initial_prompt: "YouDub" } })
+  })
+
+  it("超过上传上限或格式不支持时直接提示，不选中文件", async () => {
+    mount()
+    // 文件框的 accept 只是选择器提示，拖放等途径仍可能带来其他格式，这里绕过它验证校验逻辑。
+    const user = userEvent.setup({ applyAccept: false })
+    await selectVideo(user, "clip.avi")
+    expect(screen.getByRole("alert")).toHaveTextContent("不支持该视频格式。")
+    expect(screen.getByRole("button", { name: "创建任务" })).toBeDisabled()
+    expect(screen.queryByText("clip.avi")).not.toBeInTheDocument()
   })
 
   it("上传连接断开后查询和显式重新上传均保留同一个 ID", async () => {
@@ -76,7 +99,7 @@ describe("v1 主工作台", () => {
     })
     mount()
     const user = userEvent.setup()
-    await user.upload(await screen.findByLabelText("本地视频"), new File(["video"], "test.mp4", { type: "video/mp4" }))
+    await selectVideo(user)
     await user.click(screen.getByRole("button", { name: "创建任务" }))
     expect(await screen.findByRole("alert")).toHaveTextContent("上传连接断开")
     expect(screen.getByLabelText("本地视频")).toBeDisabled()
@@ -92,12 +115,13 @@ describe("v1 主工作台", () => {
     mocks.fetch.mockImplementation(async (input, init) => init?.method === "PATCH" ? jsonResponse(testSettings()) : defaultResponse(input))
     mount()
     const user = userEvent.setup()
-    await user.type(await screen.findByLabelText("专名提示（可选）"), "Example brand")
-    await user.click(await screen.findByRole("button", { name: "保存为默认配置" }))
+    await user.click(await screen.findByRole("button", { name: "更多设置" }))
+    await user.type(screen.getByLabelText("专名提示（可选）"), "Example brand")
+    await user.click(screen.getByRole("button", { name: "保存为默认配置" }))
     expect(await screen.findByRole("status")).toHaveTextContent("已有任务配置保持不变")
     const [path, init] = mocks.fetch.mock.calls.find(([, init]) => init?.method === "PATCH")!
     expect(path).toBe("/api/v1/settings")
-    expect(JSON.parse(String(init?.body))).toEqual({ defaults: { ...testConfig, asr: { ...testConfig.asr, initial_prompt: "Example brand" } } })
+    expect(JSON.parse(String(init?.body))).toEqual({ defaults: { ...testConfig, subtitle_alignment: null, asr: { ...testConfig.asr, initial_prompt: "Example brand" } } })
     expect(mocks.fetch.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false)
   })
 
@@ -117,8 +141,7 @@ describe("v1 主工作台", () => {
     })
     mount()
     const user = userEvent.setup()
-    const fileInput = await screen.findByLabelText("本地视频")
-    await user.upload(fileInput, new File(["first"], "first.mp4", { type: "video/mp4" }))
+    const fileInput = await selectVideo(user, "first.mp4")
     await user.click(screen.getByRole("button", { name: "创建任务" }))
     expect(await screen.findByRole("alert")).toHaveTextContent(failure.message)
     expect(screen.getByText(uploadedIds[0])).toBeInTheDocument()
@@ -132,21 +155,18 @@ describe("v1 主工作台", () => {
     expect(uploadedIds[1]).not.toBe(uploadedIds[0])
   })
 
-  it("筛选切换后丢弃旧响应，使用 v1 active 和 offset 参数", async () => {
-    let resolveOld!: (response: Response) => void
-    const oldResponse = new Promise<Response>((resolve) => { resolveOld = resolve })
-    mocks.fetch.mockImplementation(async (input) => {
-      const path = String(input)
-      if (path === "/api/v1/tasks?limit=20&offset=0") return oldResponse
-      if (path === "/api/v1/tasks?limit=20&offset=0&active=true") return jsonResponse({ items: [testTask({ source_name: "新筛选.mp4" })], limit: 20, offset: 0, has_more: false })
-      return defaultResponse(input)
-    })
+  it("进行中与最近完成的任务分开展示", async () => {
+    const running = testTask({ id: "4ddc069a-a889-4b78-9cc4-1f558875c370", source_name: "处理中.mp4", status: "running", current_stage: "asr", stage_progress: 0.4 })
+    const done = testTask({ source_name: "已完成.mp4", status: "succeeded", current_stage: "done", allowed_actions: ["rerun", "delete"] })
+    mocks.fetch.mockImplementation(async (input) => String(input).startsWith("/api/v1/tasks?")
+      ? jsonResponse({ items: [running, done], limit: 12, offset: 0, has_more: false }) : defaultResponse(input))
     mount()
-    const user = userEvent.setup()
-    await user.selectOptions(screen.getByLabelText("任务状态"), "active")
-    expect(await screen.findByRole("link", { name: "新筛选.mp4" })).toBeInTheDocument()
-    await act(async () => resolveOld(jsonResponse({ items: [testTask({ source_name: "旧筛选.mp4" })], limit: 20, offset: 0, has_more: false })))
-    expect(screen.queryByRole("link", { name: "旧筛选.mp4" })).not.toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "新筛选.mp4" })).toBeInTheDocument()
+    const active = await screen.findByRole("region", { name: /进行中/ })
+    expect(within(active).getByRole("link", { name: /处理中\.mp4/ })).toHaveAttribute("href", `/tasks/${running.id}`)
+    expect(within(active).getByText("语音识别 · 40%")).toBeInTheDocument()
+    const recent = screen.getByRole("region", { name: "最近任务" })
+    expect(within(recent).getByRole("link", { name: /已完成\.mp4/ })).toHaveAttribute("href", `/tasks/${done.id}`)
+    expect(within(recent).queryByText("处理中.mp4")).not.toBeInTheDocument()
+    expect(screen.getByText("1 个任务正在排队或处理")).toBeInTheDocument()
   })
 })

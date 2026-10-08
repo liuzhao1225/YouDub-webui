@@ -1,15 +1,14 @@
 import { Suspense } from "react"
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import TaskDetailPage from "@/app/tasks/[id]/page"
+import TaskDetailPage from "@/app/(app)/tasks/[id]/page"
 import { LanguageProvider } from "@/lib/i18n"
 import { jsonResponse, testTask } from "@/lib/v1-test-fixtures"
 import type { OutputFile, Task } from "@/lib/v1-api"
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn<typeof fetch>(), push: vi.fn(), replace: vi.fn() }))
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push, replace: mocks.replace }) }))
-vi.mock("@/components/app-header", () => ({ AppHeader: () => null }))
 beforeEach(() => { mocks.fetch.mockReset(); vi.stubGlobal("fetch", mocks.fetch) })
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.useRealTimers(); vi.unstubAllGlobals() })
 
@@ -18,28 +17,52 @@ async function mount() {
   await act(async () => { render(<LanguageProvider><Suspense fallback="Loading"><TaskDetailPage params={params} /></Suspense></LanguageProvider>) })
 }
 
+function succeededTask(): Task {
+  const base = `/api/v1/tasks/${testTask().id}/files/`
+  const file: OutputFile = { url: base + "video", file_name: "video.mp4", mime_type: "video/mp4", size_bytes: 4096, duration_ms: 12000, timeline: "source" }
+  return testTask({ status: "succeeded", current_stage: "done", allowed_actions: ["rerun", "delete"], finished_at: "2026-09-22T10:01:00.000Z", outputs: {
+    video: file,
+    source_subtitles: { ...file, url: base + "source_subtitles", file_name: "source.srt", mime_type: "application/x-subrip", duration_ms: null },
+    translated_subtitles: { ...file, url: base + "translated_subtitles", file_name: "translated.srt", mime_type: "application/x-subrip", duration_ms: null },
+  } })
+}
+
+function player() {
+  return screen.queryByRole("region", { name: "视频播放器" })
+}
+
 describe("v1 任务详情", () => {
   it("按真实 outputs 展示预览下载，字幕模式跳过分离、配音与混音", async () => {
-    const base = `/api/v1/tasks/${testTask().id}/files/`
-    const file: OutputFile = { url: base + "video", file_name: "video.mp4", mime_type: "video/mp4", size_bytes: 4096, duration_ms: 12000, timeline: "source" }
-    const task = testTask({ status: "succeeded", current_stage: "done", allowed_actions: ["rerun", "delete"], finished_at: "2026-09-22T10:01:00.000Z", outputs: {
-      video: file,
-      source_subtitles: { ...file, url: base + "source_subtitles", file_name: "source.srt", mime_type: "application/x-subrip", duration_ms: null },
-      translated_subtitles: { ...file, url: base + "translated_subtitles", file_name: "translated.srt", mime_type: "application/x-subrip", duration_ms: null },
-    } })
+    const task = succeededTask()
+    const base = `/api/v1/tasks/${task.id}/files/`
     mocks.fetch.mockImplementation(async () => jsonResponse(task))
     await mount()
     await screen.findByRole("heading", { name: "示例.mp4" })
-    expect(screen.getByLabelText("视频预览")).toHaveAttribute("src", base + "video")
-    expect(screen.getAllByRole("link", { name: "下载" }).map((link) => link.getAttribute("href"))).toEqual([
-      base + "video?download=true", base + "source_subtitles?download=true", base + "translated_subtitles?download=true",
+    expect(player()!.querySelector("video")).toHaveAttribute("src", base + "video")
+    // 成片在顶部预览、在状态卡下载；字幕列在“其他成品”里，可在新标签页查看或直接下载。
+    expect(screen.getByRole("link", { name: "下载成品视频" })).toHaveAttribute("href", base + "video?download=true")
+    const files = screen.getByRole("list", { name: "成品文件" })
+    expect(within(files).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      base + "source_subtitles", base + "source_subtitles?download=true",
+      base + "translated_subtitles", base + "translated_subtitles?download=true",
     ])
+    expect(within(files).getByRole("link", { name: "下载 译文字幕" })).toHaveAttribute("download", "translated.srt")
     expect(screen.getAllByText("已跳过")).toHaveLength(3)
+    expect(screen.getByText("已完成 4/4 个阶段")).toBeInTheDocument()
+    expect(screen.getByRole("progressbar", { name: "整体进度" })).toHaveAttribute("aria-valuenow", "100")
     expect(screen.getByRole("heading", { name: "本次任务配置" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /重试|取消/ })).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: "重新生成" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "删除任务" })).toBeInTheDocument()
     expect(mocks.fetch.mock.calls.every(([path]) => path === `/api/v1/tasks/${task.id}`)).toBe(true)
+  })
+
+  it("处理中的任务显示不可用的下载按钮和提示", async () => {
+    mocks.fetch.mockImplementation(async () => jsonResponse(testTask({ status: "running", current_stage: "asr", started_at: "2026-09-22T10:00:10.000Z" })))
+    await mount()
+    expect(screen.getByRole("button", { name: "下载成品视频" })).toBeDisabled()
+    expect(screen.getByText("导出完成后即可下载成品。")).toBeInTheDocument()
+    expect(screen.queryByRole("list", { name: "成品文件" })).not.toBeInTheDocument()
   })
 
   it("阶段进度把 0–1 转为百分比，显示远端等待与完整任务错误", async () => {
@@ -49,11 +72,14 @@ describe("v1 任务详情", () => {
       finished_at: "2026-09-22T10:01:00.000Z" })
     mocks.fetch.mockImplementation(async () => jsonResponse(task))
     await mount()
-    expect(await screen.findByRole("alert")).toHaveTextContent("凭据被拒绝")
-    expect(screen.getByRole("alert")).toHaveTextContent("PROVIDER_REJECTED · config.asr")
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "25")
+    const alert = await screen.findByRole("alert")
+    expect(alert).toHaveTextContent("凭据被拒绝")
+    expect(alert).toHaveTextContent("PROVIDER_REJECTED · config.asr")
+    expect(within(alert).getByRole("link", { name: "打开设置" })).toHaveAttribute("href", "/settings")
+    expect(screen.getByRole("progressbar", { name: "当前阶段进度" })).toHaveAttribute("aria-valuenow", "25")
     expect(screen.getByText("远端请求可能仍在执行，最终结果尚未确认。")).toBeInTheDocument()
-    expect(screen.queryByLabelText("视频预览")).not.toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "处理失败" })).toBeInTheDocument()
+    expect(player()).not.toBeInTheDocument()
   })
 
   it("查询暂时失败保留任务，后续查询恢复后清除读取错误", async () => {
@@ -69,27 +95,20 @@ describe("v1 任务详情", () => {
     expect(screen.getByRole("heading", { name: "示例.mp4" })).toBeInTheDocument()
     await act(async () => vi.advanceTimersByTimeAsync(2000))
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
-    expect(screen.getByText("处理中")).toBeInTheDocument()
+    expect(screen.getAllByText("处理中").length).toBeGreaterThan(0)
   })
 
   it("任务在其它窗口删除后清除旧产物与下载入口", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] })
-    const base = `/api/v1/tasks/${testTask().id}/files/`
-    const video: OutputFile = { url: base + "video", file_name: "video.mp4", mime_type: "video/mp4", size_bytes: 4096, duration_ms: 12000, timeline: "source" }
-    const task = testTask({ status: "succeeded", current_stage: "done", finished_at: "2026-09-22T10:01:00.000Z", outputs: {
-      video,
-      source_subtitles: { ...video, url: base + "source_subtitles", file_name: "source.srt", mime_type: "application/x-subrip", duration_ms: null },
-      translated_subtitles: { ...video, url: base + "translated_subtitles", file_name: "translated.srt", mime_type: "application/x-subrip", duration_ms: null },
-    } })
-    mocks.fetch.mockResolvedValueOnce(jsonResponse(task)).mockImplementation(async () => jsonResponse({ error: {
+    mocks.fetch.mockResolvedValueOnce(jsonResponse(succeededTask())).mockImplementation(async () => jsonResponse({ error: {
       code: "TASK_NOT_FOUND", message: "任务已不存在", field: null, stage: null, action: "none",
     } }, 404))
     await mount()
-    expect(screen.getByLabelText("视频预览")).toBeInTheDocument()
+    expect(player()).toBeInTheDocument()
     await act(async () => vi.advanceTimersByTimeAsync(2000))
     expect(screen.getByRole("alert")).toHaveTextContent("任务已不存在")
-    expect(screen.queryByLabelText("视频预览")).not.toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: "下载" })).not.toBeInTheDocument()
+    expect(player()).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /下载/ })).not.toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "示例.mp4" })).not.toBeInTheDocument()
   })
 
@@ -125,22 +144,27 @@ describe("v1 任务详情", () => {
     await mount()
     expect(mocks.fetch.mock.calls.some(([path]) => String(path).includes("/log"))).toBe(false)
     const user = userEvent.setup()
-    await user.click(screen.getByText("任务日志"))
+    await user.click(screen.getByRole("button", { name: "任务日志" }))
     const preview = await screen.findByLabelText("任务日志")
-    expect(preview).toHaveTextContent("<script>plain text</script>")
+    await waitFor(() => expect(preview).toHaveTextContent("<script>plain text</script>"))
     expect(preview.querySelector("script")).toBeNull()
     expect(mocks.fetch.mock.calls.some(([path]) => path === `/api/v1/tasks/${testTask().id}/log?lines=200`)).toBe(true)
     expect(screen.getByRole("link", { name: "下载完整日志" })).toHaveAttribute("href", `/api/v1/tasks/${testTask().id}/log?download=true`)
   })
 
-  it("删除成功清空详情并返回首页", async () => {
+  it("打开删除确认时先卸载播放器，删除成功后清空详情并返回任务库", async () => {
     mocks.fetch.mockImplementation(async (_input, init) => init?.method === "DELETE"
-      ? new Response(null, { status: 204 }) : jsonResponse(testTask({ status: "failed", allowed_actions: ["delete"] })))
+      ? new Response(null, { status: 204 }) : jsonResponse(succeededTask()))
     await mount()
     const user = userEvent.setup()
+    expect(player()).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "删除任务" }))
+    expect(player()).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "保留任务" }))
+    expect(player()).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "删除任务" }))
     await user.click(screen.getByRole("button", { name: "删除任务和文件" }))
-    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/"))
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/tasks"))
     expect(screen.queryByRole("heading", { name: "示例.mp4" })).not.toBeInTheDocument()
   })
 })

@@ -29,3 +29,4 @@ def default_test_device(monkeypatch, tmp_path):
     monkeypatch.setenv("YOUDUB_AUTH_SESSION_TTL_SECONDS", "3600")
     monkeypatch.setenv("YOUDUB_AUTH_COOKIE_SECURE", "false")
     monkeypatch.setenv("YOUDUB_AUTH_COOKIE_SAMESITE", "lax")
+    monkeypatch.delenv("YOUDUB_AUTH_COOKIE_NAME", raising=False)

@@ -2,7 +2,7 @@
 
 import { useCallback } from "react"
 import { useI18n } from "@/lib/i18n"
-import type { OutputMode, Stage, TaskStatus } from "@/lib/v1-api"
+import type { OutputMode, Stage, TaskStatus, WaitReason } from "@/lib/v1-api"
 
 export function useV1Text() {
   const { language } = useI18n()
@@ -37,11 +37,30 @@ export const OUTPUT_LABELS: Record<OutputMode, [string, string, string]> = {
   dubbing: ["Dubbing", "配音", "吹き替え"],
   both: ["Dubbing and subtitles", "配音与字幕", "吹き替えと字幕"],
 }
-
-export function formatBytes(bytes: number) {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+export const WAIT_LABELS: Record<WaitReason, [string, string, string]> = {
+  active_limit: ["Waiting for the previous task", "等待前一个任务完成", "前のタスクの完了待ち"],
+  cpu: ["Waiting for CPU", "等待 CPU", "CPU の空き待ち"],
+  gpu: ["Waiting for GPU", "等待 GPU", "GPU の空き待ち"],
+  remote_limit: ["Waiting for provider capacity", "等待远端处理名额", "外部サービスの空き待ち"],
+  remote_result: ["Waiting for provider result", "等待远端处理结果", "外部サービスの結果待ち"],
 }
 
-export const selectClass = "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+// 尚未进入终态的任务；列表里用来统计进行中的数量。
+export const ACTIVE_STATUSES: readonly TaskStatus[] = ["queued", "running", "waiting", "cancelling"]
+
+export function isActiveStatus(status: TaskStatus) {
+  return ACTIVE_STATUSES.includes(status)
+}
+
+const LANGUAGE_NAMES: Record<string, string> = { en: "English", zh: "中文", ja: "日本語" }
+
+export function languageName(code: string, text: V1Text) {
+  if (code === "auto") return text("Auto detect", "自动识别", "自動検出")
+  return LANGUAGE_NAMES[code] ?? code
+}
+
+export function deviceName(device: string, text: V1Text) {
+  if (device === "cpu") return "CPU"
+  if (device === "remote") return text("Remote", "远端", "リモート")
+  return device.replace(/^cuda:/, "CUDA ")
+}
