@@ -17,14 +17,16 @@ const BLUE_BARS = [
 
 export function BrandMark({
   animated = false,
+  wordmark = false,
   className,
 }: {
   animated?: boolean
+  wordmark?: boolean
   className?: string
 }) {
   const barClass = animated ? "animate-eq origin-center [transform-box:fill-box]" : undefined
   return (
-    <svg viewBox="0 0 717 356" aria-hidden="true" className={cn("h-10 w-auto", className)}>
+    <svg viewBox={wordmark ? "0 0 1660 355" : "0 0 717 356"} aria-hidden="true" className={cn("h-10 w-auto", className)}>
       {PINK_BARS.map((bar) => (
         <rect
           key={bar.x}
@@ -58,6 +60,12 @@ export function BrandMark({
           style={animated ? { animationDelay: `${bar.delay}s` } : undefined}
         />
       ))}
+      {wordmark && (
+        // Crop the original asset to its wordmark, preserving the lettering and gradient.
+        <svg x="717" width="943" height="355" viewBox="717 0 943 355" overflow="hidden">
+          <image href="/youdub-logo.svg" width="1660" height="355" />
+        </svg>
+      )}
     </svg>
   )
 }

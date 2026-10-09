@@ -15,6 +15,7 @@ export class NavigationService extends Service implements Navigation {
     if (!path.startsWith('/') || path.startsWith('//')) throw new Error('Navigation requires a same-origin path')
     window.history[replace ? 'replaceState' : 'pushState'](null, '', path)
     window.dispatchEvent(new PopStateEvent('popstate'))
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }
   href(routeId: string, params: Record<string, string> = {}) {
     const route = this.ctx.slots.list('shell.routes').find((entry) => entry.id === routeId)

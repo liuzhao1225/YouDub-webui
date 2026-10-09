@@ -8,6 +8,7 @@ import { LanguageMenuButton, LanguageSwitcher } from '@/components/language-swit
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -43,7 +44,7 @@ function Shell() {
   return <div className={cn('min-h-screen transition-[padding] duration-200 ease-out', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[248px]')}>
     <aside className={cn('fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-surface transition-[width] duration-200 ease-out lg:flex', collapsed ? 'w-[72px]' : 'w-[248px]')}>
       <div className={cn('flex h-16 shrink-0 items-center gap-2', collapsed ? 'justify-center px-0' : 'justify-between pr-3 pl-5')}>
-        <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><img src={collapsed ? '/youdub-icon.svg' : '/youdub-logo.svg'} alt="YouDub" className={cn('w-auto', collapsed ? 'h-[22px]' : 'h-7')} /></Link>
+        <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark={!collapsed} className={collapsed ? 'h-[22px]' : 'h-7'} /></Link>
         {!collapsed && <Tooltip content={t.nav.collapseSidebar}><Button variant="ghost" size="icon-sm" aria-label={t.nav.collapseSidebar} onClick={() => changeSidebar(true)}><PanelLeftClose /></Button></Tooltip>}
       </div>
       {collapsed && <div className="flex justify-center pb-3"><Tooltip content={t.nav.expandSidebar} side="right"><Button variant="ghost" size="icon-sm" aria-label={t.nav.expandSidebar} onClick={() => changeSidebar(false)}><PanelLeftOpen /></Button></Tooltip></div>}
@@ -59,7 +60,7 @@ function Shell() {
       <div className={cn('mt-auto flex flex-col gap-3 p-3', collapsed && 'items-center')}><div className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}>{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto" />}<ThemeToggle /><Button variant="ghost" size="icon-sm" aria-label={t.auth.logout} onClick={() => { void client.session.logout().catch((failure: Error) => setError(failure.message)) }}><LogOut /></Button></div></div>
     </aside>
     <header className="glass sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
-      <Link href="/" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><img src="/youdub-logo.svg" alt="YouDub" className="h-6 w-auto" /></Link>
+      <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark className="h-6" /></Link>
       <div className="flex items-center gap-1"><LanguageSwitcher /><ThemeToggle /><Button variant="ghost" size="icon-sm" aria-label={t.auth.logout} onClick={() => { void client.session.logout().catch((failure: Error) => setError(failure.message)) }}><LogOut /></Button></div>
     </header>
     <div className="relative pb-24 lg:pb-0">{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
