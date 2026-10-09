@@ -1,4 +1,4 @@
-"""Local Whisper ASR with preserved source utterances and timestamps."""
+"""Local Whisper ASR with sentence postprocessing and source word timestamps."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import math
 import os
 import sys
 from collections.abc import Callable
+from itertools import groupby
 from pathlib import Path
 from typing import Any
 
@@ -50,11 +51,63 @@ def _milliseconds(value: Any) -> int:
     raise _invalid("Whisper returned an invalid segment timestamp.")
 
 
-def normalize_result(result: Any, *, duration_ms: int) -> dict:
-    """Preserve complete utterances as translation and speech generation units.
+def _english_sentences(transcript: Transcript) -> list[dict]:
+    """Map pretrained Punkt boundaries onto whole Whisper words, without retiming."""
+    try:
+        from nltk.tokenize.punkt import PunktTokenizer
 
-    Subtitle display chunks are derived separately at export. Word-level ASR
-    metadata is normalized on each segment without changing utterance bounds.
+        tokenizer = PunktTokenizer("english")
+    except (ImportError, LookupError, OSError) as exc:
+        raise ApiError(503, "MODEL_NOT_READY", "English ASR postprocessing requires nltk and its punkt_tab data. "
+                       "Install them in the backend Python environment.", field="asr", stage="asr") from exc
+
+    sentences = []
+    # Respect speaker metadata when supplied; ordinary Whisper needs no speaker ID.
+    for speaker, group in groupby(transcript.segments, key=lambda segment: segment.speaker_id):
+        words = []
+        for segment in group:
+            if segment.words is None:
+                raise _invalid(f"English sentence postprocessing requires word timestamps: {segment.id}.")
+            segment_words = list(segment.words)
+            # ASR segments may omit separator whitespace. Normalize that boundary
+            # in a copy so concatenation cannot turn two words into one.
+            if words and not words[-1].text[-1].isspace() and not segment_words[0].text[0].isspace():
+                segment_words[0] = segment_words[0].model_copy(update={"text": " " + segment_words[0].text})
+            words.extend(segment_words)
+        text = "".join(word.text for word in words)
+        offsets, cursor = [], 0
+        for word in words:
+            offsets.append((cursor + len(word.text) - len(word.text.lstrip()),
+                            cursor + len(word.text.rstrip())))
+            cursor += len(word.text)
+
+        index = 0
+        for start, end in tokenizer.span_tokenize(text):
+            first = index
+            while index < len(words) and offsets[index][0] < end:
+                if offsets[index][0] < start or offsets[index][1] > end:
+                    raise _invalid("A sentence boundary falls inside one Whisper word; its timing cannot be split.")
+                index += 1
+            if first == index:
+                raise _invalid("A detected sentence has no corresponding Whisper words.")
+            selected = words[first:index]
+            sentences.append({
+                "id": f"segment-{len(sentences) + 1:06d}",
+                "start_ms": selected[0].start_ms, "end_ms": selected[-1].end_ms,
+                "text": "".join(word.text for word in selected),
+                "words": [word.model_dump() for word in selected],
+                **({"speaker_id": speaker} if speaker is not None else {}),
+            })
+        if index != len(words):
+            raise _invalid("Sentence postprocessing did not account for every Whisper word.")
+    return sentences
+
+
+def normalize_result(result: Any, *, duration_ms: int) -> dict:
+    """Validate raw ASR, then form English sentence units before translation.
+
+    Raw provider data stays unchanged. English bounds come from the first/last
+    word of each sentence; other languages retain the provider's segmentation.
     """
     if not isinstance(result, dict):
         raise _invalid("Whisper did not return a transcription object.")
@@ -89,9 +142,11 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
                 raise _invalid("Whisper returned invalid word timestamps.") from exc
         segments.append(segment)
     try:
-        return Transcript.model_validate({"detected_language": language, "segments": segments}).model_dump(
-            mode="json", exclude_none=True,
-        )
+        transcript = Transcript.model_validate({"detected_language": language, "segments": segments})
+        if language == "en":
+            transcript = Transcript.model_validate({"detected_language": language,
+                                                    "segments": _english_sentences(transcript)})
+        return transcript.model_dump(mode="json", exclude_none=True)
     except ValidationError as exc:
         raise _invalid("Whisper word timing or text does not match its source utterance.") from exc
 

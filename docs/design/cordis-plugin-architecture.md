@@ -140,6 +140,8 @@ Host 协议的类型定义位于[SDK 源码](../../packages/sdk/src/index.ts)，
 
 默认流程保留现有“整句 TTS、字幕独立分段”的规则。配音参考选择只能读取标准 transcript 词时间戳；缺少必要能力时在配置或执行时明确拒绝，供应商 raw 仅供诊断。Python operation 桥将标准 transcript 交给参考处理；具体实现见[计算桥](../../backend/workers/operations.py)、[参考选择](../../backend/app/v1/tts.py)和[分段契约](../../backend/app/v1/segments.py)。
 
+官方 Whisper provider 在 ASR 后处理内使用预训练英文 Punkt 形成句子：合并跨段的未完句，拆分段内多句，并由首末词时间戳确定音频区间。原始词内容和时间保持，跨段缺少分隔空白时仅在标准化副本补空格；raw 不改写。已有 speaker 变化保留为边界，不额外推断 speaker。中文、日文仍保留提供者分段。这个规则属于 ASR provider 的输出整理，当前不新增 workflow 步骤或独立服务。
+
 ### 配音替换示例
 
 默认组合登记 VoxCPM；IndexTTS、MiniMax 仅作为后续适配场景，不列为已实现。TTS operation 接收 transcript、translation 和可选 references，返回 speechAudio；具体字段与 JSON Schema 见[媒体契约](../../packages/builtin/src/media-contracts.ts)。本地提供者经 Python 执行桥运行，远端提供者也可由 TypeScript 实现同一 operation 并注册受管音频。

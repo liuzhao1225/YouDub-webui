@@ -9,6 +9,7 @@ julius>=0.2.3
 lameenc>=1.2
 openunmix
 openai-whisper
+nltk==3.10.3
 voxcpm==2.0.3
 transformers>=5.17,<6
 soundfile

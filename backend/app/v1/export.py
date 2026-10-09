@@ -24,6 +24,7 @@ SUBTITLE_FONT_SIZES = {
     "zh": {"portrait": 12, "landscape": 24},
     "en": {"portrait": 9, "landscape": 18},
 }
+SUBTITLE_BREAK_PUNCTUATION = "，,；;：:。?？!！、.—"
 
 
 def _subtitle_style(font: str, size: int, margin_v: int) -> str:
@@ -92,7 +93,11 @@ def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool,
         for cue in _display_cues(translation if translated else segment.text, segment.start_ms, segment.end_ms)
     ]
     for start, end, part in display:
-        display_text = " ".join(part.split())
+        # Keep complete cue text through alignment validation; hide only the
+        # trailing separators in the exported subtitles and burned-in display.
+        display_text = " ".join(part.split()).rstrip(SUBTITLE_BREAK_PUNCTUATION + "… ")
+        if not display_text:
+            raise _invalid("A subtitle fragment contains no text after removing trailing punctuation.")
         cues.append(f"{len(cues) + 1}\n{_srt_time(start)} --> {_srt_time(end)}\n{display_text}\n")
     path.write_text("\n".join(cues), encoding="utf-8", newline="\n")
 
@@ -114,7 +119,7 @@ def _validate_prepared_cues(cues: list[tuple[int, int, str]], rows: list[tuple[S
 def _display_parts(text: str) -> list[str]:
     """Split subtitle display text without changing a translation/TTS unit."""
     pairs = {"《": "》", "（": "）", "【": "】", "「": "」", "『": "』", "(": ")", "[": "]"}
-    punctuation = frozenset("，,；;：:。?？!！、.")
+    punctuation = frozenset(SUBTITLE_BREAK_PUNCTUATION)
     closing = frozenset("\"'”’」』》）】)]")
     stack, parts = [], []
     start = index = 0

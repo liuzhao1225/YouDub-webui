@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - codex/mvp-mainline
   push:
     branches:
       - main
+      - codex/mvp-mainline
   workflow_dispatch:
 
 permissions:
@@ -118,6 +120,9 @@ jobs:
           if installed:
               raise SystemExit(f"CI 测试环境意外安装了重型依赖: {', '.join(installed)}")
           PY
+
+      - name: 安装英文分句测试数据
+        run: .venv/bin/python -m nltk.downloader -e punkt_tab
 
       - name: 运行 Host 检查
         run: |

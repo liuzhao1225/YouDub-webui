@@ -1,0 +1,108 @@
+{
+  "task_id": "1f7f3c7a-283d-45a8-905f-095f3e3eaddd",
+  "source_task_id": "2f399136-1cf9-471b-a2c3-36a543b0d949",
+  "status": "succeeded",
+  "placement": "Whisper ASR postprocessing; no additional workflow step",
+  "nltk_version": "3.10.3",
+  "source_asr_segments": 30,
+  "sentence_count": 18,
+  "word_count": 215,
+  "source_raw_sha256": "db22d667330c717bee768befeae065ae2d88bbe5c05c5985bc443c5c448f4254",
+  "whisper_reexecuted": false,
+  "old_task_retained": true,
+  "pre_tts_checks": {
+    "recognize_translate_reference_completed": true,
+    "source_raw_bytes_unchanged": true,
+    "raw_30_segments": true,
+    "output_18_unique_stable_ids": true,
+    "all_215_word_text_and_timestamps_preserved": true,
+    "sentence_text_reproduced_from_words": true,
+    "sentence_bounds_follow_first_last_word": true,
+    "translation_one_to_one": true,
+    "translation_languages_en_to_zh": true,
+    "reference_ids_one_to_one": true,
+    "tts_request_ids_one_to_one": true,
+    "downstream_transcript_identical": true,
+    "tts_translation_identical": true,
+    "reference_paths_unique": true,
+    "reference_audio_hashes_unique": true,
+    "all_reference_durations_exact": true,
+    "all_reference_audio_is_exact_source_interval": true,
+    "all_references_use_own_english_sentence": true,
+    "all_tts_texts_match_chinese_translation": true,
+    "translation_raw_request_and_response_present": true,
+    "llm_output_limit_at_least_65535": true,
+    "llm_translated_new_sentence_units": true
+  },
+  "tts_clip_count": 18,
+  "all_steps_completed": true,
+  "video_probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 608,
+        "height": 1080,
+        "duration": "59.325933"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "duration": "59.326000"
+      }
+    ],
+    "format": {
+      "duration": "59.326000"
+    }
+  },
+  "audio_duration_seconds": 59.326,
+  "video_full_decode_passed": true,
+  "outputs": {
+    "video": {
+      "path": "tasks/1f7f3c7a-283d-45a8-905f-095f3e3eaddd/attempts/1/ffc8cd76-4e16-44c8-84fa-3815a91b7a0f/output/video.mp4",
+      "size": 6549998,
+      "sha256": "657b351f43c9d07ccf9dc3cb1a44ade53bc24bcea236c4c3b858cf18e956d169"
+    },
+    "audio": {
+      "path": "tasks/1f7f3c7a-283d-45a8-905f-095f3e3eaddd/attempts/1/ffc8cd76-4e16-44c8-84fa-3815a91b7a0f/output/audio.wav",
+      "size": 11390636,
+      "sha256": "7c49d5dd882a3a7ed3230e6006265b51beff47bbe82d9114d6183c187a6b18ce"
+    },
+    "source_subtitles": {
+      "path": "tasks/1f7f3c7a-283d-45a8-905f-095f3e3eaddd/attempts/1/ffc8cd76-4e16-44c8-84fa-3815a91b7a0f/output/source.srt",
+      "size": 2236,
+      "sha256": "9fbd710c592c7149c4209d665629778363fe9450481d7373a4be5bb58abdd58e"
+    },
+    "translated_subtitles": {
+      "path": "tasks/1f7f3c7a-283d-45a8-905f-095f3e3eaddd/attempts/1/ffc8cd76-4e16-44c8-84fa-3815a91b7a0f/output/translated.srt",
+      "size": 2340,
+      "sha256": "4794b8937ebf17c69f4b99aef011a9eb3ec10624351f08695230fec273a86333"
+    }
+  },
+  "tests": {
+    "affected_backend_tests_passed": 271,
+    "pip_check": "passed",
+    "git_diff_check": "passed"
+  },
+  "browser_playback": {
+    "task_url": "http://127.0.0.1:3000/tasks/1f7f3c7a-283d-45a8-905f-095f3e3eaddd",
+    "page_status": "已完成",
+    "completed_steps": "8 / 8",
+    "current_time_observations": [
+      4.98927,
+      9.154164
+    ],
+    "duration_seconds": 59.326,
+    "ready_state": 4,
+    "error": null,
+    "video_size": [
+      608,
+      1080
+    ],
+    "paused_after_seconds": 22.8
+  },
+  "listening_quality_assessed": false,
+  "artifact_path_base": "application data directory (YOUDUB_DESKTOP_DATA_DIR or platform default)"
+}

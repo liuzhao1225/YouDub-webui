@@ -58,13 +58,13 @@ def test_srt_splits_display_only_preserves_inputs_and_joins_translation_by_id(mo
     monkeypatch.setattr(media, "_run_media", render)
     result = export.run(context, lambda value, message: None, output_dir=context.work_dir / "output")
     assert result.output_files["source_subtitles"].read_text() == (
-        "1\n00:00:00,000 --> 00:00:00,200\nHello,\n\n"
-        "2\n00:00:00,200 --> 00:00:00,400\nworld!\n\n"
-        "3\n00:00:00,650 --> 00:00:01,000\nEnd of the clip.\n"
+        "1\n00:00:00,000 --> 00:00:00,200\nHello\n\n"
+        "2\n00:00:00,200 --> 00:00:00,400\nworld\n\n"
+        "3\n00:00:00,650 --> 00:00:01,000\nEnd of the clip\n"
     )
     assert result.output_files["translated_subtitles"].read_text() == (
-        "1\n00:00:00,000 --> 00:00:00,400\n你好，世界！\n\n"
-        "2\n00:00:00,650 --> 00:00:01,000\n结束了。\n"
+        "1\n00:00:00,000 --> 00:00:00,400\n你好，世界\n\n"
+        "2\n00:00:00,650 --> 00:00:01,000\n结束了\n"
     )
     assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
     command, options = commands[0]
@@ -194,8 +194,8 @@ def test_dubbing_outputs_use_the_final_wav_and_separate_subtitle_timelines(monke
     if mode == "both":
         assert "00:00:00,650 --> 00:00:01,000" in result.output_files["source_subtitles"].read_text()
         translated = result.output_files["translated_subtitles"].read_text()
-        assert "00:00:00,000 --> 00:00:00,320\n你好，世界！" in translated
-        assert "00:00:00,720 --> 00:00:00,980\n结束了。" in translated
+        assert "00:00:00,000 --> 00:00:00,320\n你好，世界" in translated
+        assert "00:00:00,720 --> 00:00:00,980\n结束了" in translated
         assert "-vf" in command
     else:
         assert "-vf" not in command
@@ -227,10 +227,32 @@ def test_dubbing_rejects_inconsistent_timeline_or_audio(context, bad_input):
     ("Use v1.2 with example.com. Then continue talking.",
      ["Use v1.2 with example.com.", " Then continue talking."]),
     ("好的，欢迎来到这里。结束。", ["好的，欢迎来到这里。结束。"]),
+    ("全球前三模型中有两个——Claude和Gemini——是在这里训练的。",
+     ["全球前三模型中有两个——", "Claude和Gemini——", "是在这里训练的。"]),
+    ("这里介绍《第一章——第二章》，然后继续说明流程。",
+     ["这里介绍《第一章——第二章》，", "然后继续说明流程。"]),
+    ("Use state-of-the-art tools with v1.2.", ["Use state-of-the-art tools with v1.2."]),
 ])
 def test_subtitle_display_parts_preserve_content_and_protected_punctuation(text, expected):
     assert export._display_parts(text) == expected
     assert "".join(expected) == text
+
+
+def test_subtitle_hides_trailing_separators_after_alignment_without_changing_cues(tmp_path):
+    cues = [(index * 100, (index + 1) * 100, text) for index, text in enumerate([
+        "第一段文字，", "第二段文字、", "第三段文字——", "第四段文字？！", "仍保留内部，标点。",
+        "Use v1.2.", "保留《第一章，第二章》。", "……",
+    ])]
+    original = list(cues)
+    path = tmp_path / "translated.srt"
+    # Punctuation-only cues cannot silently become empty SRT entries.
+    with pytest.raises(ApiError, match="contains no text"):
+        export._write_srt(path, [], translated=True, aligned_cues=cues)
+    export._write_srt(path, [], translated=True, aligned_cues=cues[:-1])
+    assert [block.splitlines()[2] for block in path.read_text().strip().split("\n\n")] == [
+        "第一段文字", "第二段文字", "第三段文字", "第四段文字", "仍保留内部，标点", "Use v1.2", "保留《第一章，第二章》",
+    ]
+    assert cues == original
 
 
 def test_complete_utterance_produces_multiple_cues_inside_its_final_dubbed_span(monkeypatch, context):
@@ -249,7 +271,7 @@ def test_complete_utterance_produces_multiple_cues_inside_its_final_dubbed_span(
     result = export.run(context, lambda *args: None, output_dir=context.work_dir / "output")
     blocks = result.output_files["translated_subtitles"].read_text().strip().split("\n\n")
     assert [block.splitlines()[2] for block in blocks] == [
-        "欢迎来到YouDub，", "今天测试视频翻译，", "保留完整连续配音。", "结束了。",
+        "欢迎来到YouDub", "今天测试视频翻译", "保留完整连续配音", "结束了",
     ]
     times = [block.splitlines()[1].split(" --> ") for block in blocks]
     assert times[0][0] == "00:00:00,000"
@@ -322,13 +344,13 @@ def test_qwen_export_changes_only_translated_cue_times_and_preserves_final_audio
     assert len(commands) == 2
     second_time = "00:00:00,580 --> 00:00:00,660" if earlier_dubbed_start else "00:00:00,800 --> 00:00:00,880"
     assert result.output_files["translated_subtitles"].read_text() == (
-        "1\n00:00:00,080 --> 00:00:00,240\n你好，世界！\n\n"
-        f"2\n{second_time}\n结束了。\n"
+        "1\n00:00:00,080 --> 00:00:00,240\n你好，世界\n\n"
+        f"2\n{second_time}\n结束了\n"
     )
     assert result.output_files["source_subtitles"].read_text() == (
-        "1\n00:00:00,000 --> 00:00:00,200\nHello,\n\n"
-        "2\n00:00:00,200 --> 00:00:00,400\nworld!\n\n"
-        "3\n00:00:00,650 --> 00:00:01,000\nEnd of the clip.\n"
+        "1\n00:00:00,000 --> 00:00:00,200\nHello\n\n"
+        "2\n00:00:00,200 --> 00:00:00,400\nworld\n\n"
+        "3\n00:00:00,650 --> 00:00:01,000\nEnd of the clip\n"
     )
     assert result.output_files["audio"].read_bytes() == original["mixed_audio"]
     assert {name: path.read_bytes() for name, path in context.input_files.items()} == original
@@ -422,7 +444,7 @@ def test_real_export_preserves_video_tail_and_first_audio_and_burns_tail_subtitl
     # A nonempty last frame with changed pixels proves the last cue was burned
     # through the end of the clip, beyond merely writing a valid SRT file.
     assert sum(output_frame) > sum(source_frame) + 200
-    assert "00:00:01,000\n结束了。" in result.output_files["translated_subtitles"].read_text()
+    assert "00:00:01,000\n结束了" in result.output_files["translated_subtitles"].read_text()
 
 
 @pytest.mark.parametrize("cues", [
