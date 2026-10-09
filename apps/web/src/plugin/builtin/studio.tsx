@@ -1,7 +1,7 @@
 import { Context } from 'cordis'
 import { useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ArrowRight, ChevronRight, FileText, Film, Loader2, Sparkles, Upload, X } from 'lucide-react'
-import { Link, text, useClient, type Catalog, type InputSlot, type JsonObject, type TaskPage, type TaskStatus, type TaskView, type WorkflowDescription } from '../sdk'
+import { Link, text, useClient, type Catalog, type InputSlot, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -11,14 +11,8 @@ import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useQuery } from './use-query'
+import { ACTIVE_STATUSES, TaskProgress, TaskState } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
-
-const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'cancelling'])
-const STATUS_LABELS: Record<TaskStatus, [string, string, string]> = {
-  queued: ['Queued', '排队中', '順番待ち'], running: ['Running', '处理中', '処理中'],
-  waiting: ['Waiting', '等待中', '待機中'], cancelling: ['Cancelling', '正在取消', 'キャンセル中'],
-  cancelled: ['Cancelled', '已取消', 'キャンセル済み'], succeeded: ['Completed', '已完成', '完了'], failed: ['Failed', '失败', '失敗'],
-}
 
 function UploadSlot({ slot, file, disabled, onChange }: { slot: InputSlot; file?: File; disabled: boolean; onChange(file?: File): void }) {
   const tx = useText()
@@ -97,10 +91,6 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
   </div>
 }
 
-function TaskState({ status }: { status: TaskStatus }) {
-  const tx = useText()
-  return <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium', status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'succeeded' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground')}>{tx(...STATUS_LABELS[status])}</span>
-}
 function TaskSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   const tx = useText()
   return <section aria-labelledby={id}><div className="mb-4 flex items-center justify-between gap-4"><h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2><Link href="/tasks" className="inline-flex items-center gap-1 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground">{tx('View all', '查看全部', 'すべて表示')}<ChevronRight className="size-4" /></Link></div>{children}</section>
@@ -139,14 +129,11 @@ function Studio() {
     </section>
     <div className="mx-auto max-w-6xl space-y-12 px-5 py-10 sm:px-8 lg:py-14">
       {taskError && <div className="space-y-2"><InlineAlert>{taskError}</InlineAlert><Button variant="outline" onClick={refreshTasks}>{tx('Reload tasks', '重新加载任务', 'タスクを再読み込み')}</Button></div>}
-      {active.length > 0 && <TaskSection id="studio-active" title={tx('In progress', '进行中', '処理中')}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => {
-        const step = task.steps.find((item) => item.status === 'running' || item.status === 'waiting')
-        return <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 pr-4 shadow-card transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-3"><p className="line-clamp-2 min-w-0 text-sm font-medium break-words sm:line-clamp-1">{task.sourceName}</p><TaskState status={task.status} /></div>{step?.progress !== null && step?.progress !== undefined && <progress aria-label={`${task.sourceName} ${tx('progress', '进度', '進捗')}`} value={step.progress} max={1} className="mt-2.5 h-1.5 w-full accent-primary" />}<p className="mt-1.5 truncate text-xs text-muted-foreground">{step ? text(step.label, language) : task.message || tx(...STATUS_LABELS[task.status])}</p></div></Link>
-      })}</div></TaskSection>}
+      {active.length > 0 && <TaskSection id="studio-active" title={tx('In progress', '进行中', '処理中')}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 pr-4 shadow-card transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={task.sourceName} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{task.sourceName}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
       <TaskSection id="studio-recent" title={tx('Recent tasks', '最近任务', '最近のタスク')}>
         {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="overflow-hidden rounded-2xl border border-border bg-card"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></div>)}</div>
           : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-5 text-sm font-medium">{tx('No finished tasks yet', '还没有完成的任务', '完了したタスクはまだありません')}</p></div>
-          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-[border-color,box-shadow,transform] outline-none hover:-translate-y-0.5 hover:border-input hover:shadow-float focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p className="line-clamp-2 text-sm leading-snug font-medium break-words">{task.sourceName}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
+          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-[border-color,box-shadow,transform] outline-none hover:-translate-y-0.5 hover:border-input hover:shadow-float focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={task.sourceName} className="line-clamp-2 text-sm leading-snug font-medium break-words">{task.sourceName}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
       </TaskSection>
     </div>
   </main>

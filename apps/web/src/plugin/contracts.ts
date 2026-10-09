@@ -32,6 +32,7 @@ export type TaskView = {
   id: string; attempt: number; status: TaskStatus; sourceName: string
   createdAt: string; updatedAt?: string; workflowId: string; workflowVersion: string
   config: JsonObject; steps: TaskStep[]; outputs: TaskOutput[]; allowedActions: TaskAction[]
+  cover?: { url?: string }
   message?: string | null; error?: { code?: string; message: string } | null
   mayStillRun?: boolean
 }

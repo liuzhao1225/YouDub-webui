@@ -10,11 +10,11 @@ import { apply } from './builtin/library'
 const workflow = { id: 'external.text', version: '2.0.0', label: 'Text workflow', inputs: [], configSchema: { type: 'object', properties: { mode: { type: 'string', enum: ['upper', 'lower'] } }, required: ['mode'] }, defaults: { mode: 'upper' } }
 const catalog: Catalog = { providers: [], workflows: [workflow, { ...workflow, id: 'another', label: 'Another workflow' }] }
 const task: TaskView = { id: 'original', attempt: 2, status: 'succeeded', sourceName: 'document.txt', createdAt: '2026-10-09T00:00:00Z', workflowId: workflow.id, workflowVersion: workflow.version, config: { mode: 'upper' }, steps: [], outputs: [], allowedActions: ['rerun', 'delete'] }
-function mount(request: ReturnType<typeof vi.fn>) {
+function mount(request: ReturnType<typeof vi.fn>, route = 'task-detail') {
   const push = vi.fn()
   let Page!: ComponentType<RouteProps>
   const context = { apiClient: { request }, navigation: { push },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes' && entry.id === 'task-detail') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
+    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes' && entry.id === route) Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
     effect: (effect: () => unknown) => effect(),
   } as unknown as Context
   apply(context)
@@ -22,6 +22,33 @@ function mount(request: ReturnType<typeof vi.fn>) {
   return push
 }
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.restoreAllMocks() })
+
+it('shows the running step and completed step count without inventing total progress', async () => {
+  const current: TaskView = { ...task, status: 'running', sourceName: 'very-long-video-title-without-any-spaces-to-keep-the-status-readable.mp4', cover: { url: '/cover/current.jpg' }, steps: [
+    ...Array.from({ length: 5 }, (_, index) => ({ id: `done-${index}`, label: 'Done', status: 'completed', progress: 1 })),
+    { id: 'synthesize', label: '生成配音', status: 'running', progress: null },
+    { id: 'align', label: '字幕对齐', status: 'pending', progress: null },
+    { id: 'export', label: '导出', status: 'pending', progress: null },
+  ] }
+  mount(vi.fn(async () => ({ items: [current], hasMore: false, limit: 20, offset: 0 })), 'library')
+  const heading = await screen.findByRole('heading', { name: current.sourceName })
+  expect(heading).toHaveAttribute('title', current.sourceName)
+  expect(screen.getByText('生成配音')).toBeInTheDocument()
+  expect(screen.getByText('已完成 5/8 步')).toBeInTheDocument()
+  expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+  expect(screen.queryByText(workflow.id)).not.toBeInTheDocument()
+  expect(document.querySelector('img')).toHaveAttribute('src', '/cover/current.jpg')
+})
+
+it('filters cancelling tasks and distinguishes an empty filter from an empty library', async () => {
+  const request = vi.fn(async () => ({ items: [], hasMore: false, limit: 20, offset: 0 }))
+  mount(request, 'library')
+  await screen.findByText('还没有任务')
+  await userEvent.setup().selectOptions(screen.getByLabelText('任务状态'), 'cancelling')
+  await screen.findByText('没有符合此状态的任务')
+  expect(screen.queryByText('还没有任务')).not.toBeInTheDocument()
+  expect(request).toHaveBeenCalledWith('/api/v2/tasks?limit=20&offset=0&status=cancelling', expect.objectContaining({ signal: expect.any(AbortSignal) }))
+})
 
 it('keeps rerun state until the user checks or clears the failed import, then allows changed configuration', async () => {
   const request = vi.fn(async (path: string, init?: RequestInit) => {

@@ -3,6 +3,7 @@ import Busboy from 'busboy'
 import type { Artifact, CreateTask, TaskView } from '@youdub/sdk'
 import { AppError, requireId } from '@youdub/sdk'
 import { readJson, type HttpRequest } from './http.js'
+import { taskCover } from './task-cover.js'
 import './auth.js'
 import './extensions.js'
 
@@ -10,7 +11,7 @@ export const name = 'youdub-api'
 export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 'extensions']
 export function apply(ctx: Context) {
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => ctx.http.register(method, path, handler))
-  const view = (task: TaskView) => ({ ...task, outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
+  const view = (task: TaskView) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
   route('GET', '/api/health', request => {
     ctx.tasks.assertReady()
     ctx.http.json(request, 200, { status: 'ready', api_version: 'v2' })
@@ -62,6 +63,15 @@ export function apply(ctx: Context) {
     const task = await ctx.tasks.get(request.params.id!)
     await ctx.tasks.delete(task.id, Number(request.url.searchParams.get('expectedAttempt') || task.attempt))
     ctx.http.json(request, 204)
+  })
+  route('GET', `${base}/tasks/:id/cover`, async request => {
+    const id = request.params.id!, unlock = ctx.files.readLock(id)
+    try {
+      const artifact = taskCover(await ctx.tasks.record(id))
+      if (!artifact) throw new AppError('COVER_NOT_FOUND', 'Task has no cover image or video.', 404)
+      const cover = await ctx.files.cover(id, artifact)
+      await ctx.http.file(request, cover.path, { mime: cover.mimeType })
+    } finally { await unlock() }
   })
   route('GET', `${base}/tasks/:id/files/:output`, async request => {
     const id = request.params.id!, unlock = ctx.files.readLock(id)

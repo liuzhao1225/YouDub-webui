@@ -84,6 +84,7 @@ export interface TaskRecord {
   legacy?: boolean; rawSnapshot?: JsonObject; [key: string]: any
 }
 export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot' | 'outputs'> {
+  cover?: { url?: string };
   outputs: Array<{ id: string; label: string; role: string; name: string; mimeType: string; size: number }>;
   allowedActions: string[]; mayStillRun: boolean; [key: string]: any
 }
@@ -118,6 +119,7 @@ export interface FilesService {
   upload(id: string, slot: string, filename: string, mime: string, input: Readable, maxBytes: number): Promise<Artifact>;
   register(id: string, invocationId: string, workDir: string, descriptor: ArtifactDescriptor): Promise<Artifact>;
   resolve(id: string, artifact: Artifact): Promise<string>; workDir(id: string, attempt: number, invocationId: string): Promise<string>;
+  cover(id: string, artifact: Artifact): Promise<{ path: string; mimeType: string }>;
   log(id: string, text: string): Promise<void>; readLog(id: string, lines?: number): Promise<string>;
   remove(id: string): Promise<void>; copyInputs(from: TaskRecord, newId: string): Promise<{ inputs: Record<string, ArtifactRef>; artifacts: Record<string, Artifact> }>
 }

@@ -1,9 +1,10 @@
-import { Film } from "lucide-react"
+import { useState } from "react"
+import { Film, Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useText } from "@/lib/i18n"
 
-// 生成封面：同一任务始终得到同一张，配色取自 logo 三色，叠加随机声波。
-// v1 没有封面接口；列表里也不读取成品视频，避免占用产物导致删除被拒。
+// 无可预览媒体时使用稳定的品牌背景；视频首帧由服务端生成缩略图。
 const PALETTES: [string, string][] = [
   ["#fb7299", "#00aeec"],
   ["#ff0033", "#fb7299"],
@@ -24,16 +25,25 @@ function hashString(value: string) {
 
 export function TaskCover({
   id,
+  src,
+  processing = false,
   size = "md",
   bars: showBars = true,
   className,
 }: {
   id: string
+  src?: string
+  processing?: boolean
   size?: "sm" | "md" | "lg"
   // 用作背景时关掉声波条，只保留配色光斑。
   bars?: boolean
   className?: string
 }) {
+  const tx = useText()
+  const [loadedSrc, setLoadedSrc] = useState<string>()
+  const [failedSrc, setFailedSrc] = useState<string>()
+  const failed = Boolean(src && failedSrc === src)
+  const loading = Boolean(src && loadedSrc !== src && !failed)
   const seed = hashString(id)
   const [first, second] = PALETTES[seed % PALETTES.length]
   const firstX = 12 + (seed >>> 5) % 34
@@ -47,7 +57,6 @@ export function TaskCover({
 
   return (
     <div
-      aria-hidden="true"
       data-testid="task-cover"
       className={cn(
         "relative isolate aspect-video shrink-0 overflow-hidden bg-[#0d0d12] ring-1 ring-white/10 ring-inset",
@@ -58,8 +67,19 @@ export function TaskCover({
         backgroundImage: `radial-gradient(95% 125% at ${firstX}% ${firstY}%, ${first}e0 0%, transparent 58%), radial-gradient(85% 115% at ${secondX}% ${secondY}%, ${second}d0 0%, transparent 56%)`,
       }}
     >
-      {showBars ? (
+      {src && !failed && (
+        <div aria-hidden="true" className="absolute inset-0 scale-110 bg-cover bg-center opacity-70 blur-xl" style={{ backgroundImage: `url(${JSON.stringify(src)})` }} />
+      )}
+      {src && !failed && (
+        // Authenticated local thumbnails already have a bounded size; load directly.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" loading="lazy" decoding="async" onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)}
+          className="absolute inset-0 size-full object-contain" />
+      )}
+      {processing && <div aria-hidden="true" className="absolute inset-0 bg-black/35" />}
+      {showBars && (processing || !src) ? (
         <div
+          aria-hidden="true"
           className={cn(
             "absolute inset-x-[16%] inset-y-[24%] flex items-center justify-center",
             size === "sm" ? "gap-[2px]" : "gap-[5%]",
@@ -68,14 +88,16 @@ export function TaskCover({
           {bars.map((height, index) => (
             <span
               key={index}
-              className="w-full max-w-1.5 rounded-full bg-white/45 mix-blend-overlay"
-              style={{ height: `${Math.round(height * 100)}%` }}
+              className={cn("w-full max-w-1.5 rounded-full", processing ? "animate-eq bg-white/85 shadow-sm" : "bg-white/45 mix-blend-overlay")}
+              style={{ height: `${Math.round(height * 100)}%`, ...(processing && { animationDelay: `${-index * 0.17}s` }) }}
             />
           ))}
         </div>
       ) : null}
+      {loading && <Loader2 aria-label={tx('Loading cover', '正在加载封面', 'カバーを読み込み中')} className="absolute top-2 right-2 size-4 animate-spin text-white" />}
+      {failed && <p role="status" className="absolute inset-x-2 bottom-2 rounded-md bg-black/70 px-2 py-1 text-center text-xs text-white">{tx('Cover failed to load', '封面加载失败', 'カバーを読み込めませんでした')}</p>}
       {size !== "sm" ? (
-        <span className="absolute top-2 left-2 flex items-center justify-center rounded-md bg-black/35 p-1 text-white backdrop-blur-sm">
+        <span aria-hidden="true" className="absolute top-2 left-2 flex items-center justify-center rounded-md bg-black/35 p-1 text-white backdrop-blur-sm">
           <Film className={glyphClass} />
         </span>
       ) : null}

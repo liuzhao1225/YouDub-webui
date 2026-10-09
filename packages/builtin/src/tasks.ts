@@ -7,6 +7,7 @@ import {
   AppError, requireId, type TasksService, type TaskRecord, type TaskView, type TaskQuery, type CreateTask,
   type JsonObject, type WorkflowPlan, type StepState, type Invocation, type InvocationContext, type ArtifactRef,
 } from '@youdub/sdk'
+import { taskCover } from './task-cover.js'
 
 const terminal = new Set(['succeeded', 'failed', 'cancelled'])
 const now = () => new Date().toISOString()
@@ -56,6 +57,7 @@ export default class Tasks extends Service implements TasksService {
     if (!task.legacy && ['failed', 'cancelled'].includes(task.status) && !mayStillRun) allowedActions.unshift('retry')
     return {
       ...publicTask, mayStillRun, allowedActions,
+      ...(taskCover(task) ? { cover: {} } : {}),
       outputs: (task.outputs ?? []).map(output => {
         const file = artifacts?.[output.artifact.id]
         if (!file) throw new AppError('OUTPUT_MISSING', `Output artifact missing: ${output.artifact.id}`, 500)

@@ -107,18 +107,24 @@ it('shows the selected file and clears it before allowing a fresh selection', as
 it('keeps active tasks separate from recent results and links to their detail pages', async () => {
   const task = (id: string, status: TaskView['status']): TaskView => ({
     id, status, attempt: 1, sourceName: `${id}.mp4`, createdAt: '2026-10-09T01:00:00Z',
-    workflowId: 'external.text', workflowVersion: '2.0.0', config: {}, steps: [], outputs: [], allowedActions: [],
+    workflowId: 'external.text', workflowVersion: '2.0.0', config: {}, steps: [], outputs: [], allowedActions: [], cover: { url: `/cover/${id}.jpg` },
   })
   const items = [task('running', 'running'), task('completed', 'succeeded'), task('failed', 'failed'), task('cancelling', 'cancelling')]
+  items[0].steps = [{ id: 'synthesize', label: '生成配音', status: 'running', progress: null }, { id: 'export', label: '导出', status: 'pending', progress: null }]
   const push = mount(vi.fn(async (path: string) => path === '/api/v2/catalog' ? catalog : { items, hasMore: false, limit: 12, offset: 0 }))
   const active = await screen.findByRole('region', { name: '进行中' })
   const recent = screen.getByRole('region', { name: '最近任务' })
   expect(active).toHaveTextContent('running.mp4')
   expect(active).toHaveTextContent('cancelling.mp4')
   expect(active).not.toHaveTextContent('completed.mp4')
+  expect(active).toHaveTextContent('生成配音')
+  expect(active).toHaveTextContent('已完成 0/2 步')
+  expect(active.querySelector('img')).toHaveAttribute('src', '/cover/running.jpg')
+  expect(active.querySelector('progress')).toBeNull()
   expect(recent).toHaveTextContent('completed.mp4')
   expect(recent).toHaveTextContent('failed.mp4')
   expect(recent).not.toHaveTextContent('running.mp4')
+  expect(recent.querySelector('img')).toHaveAttribute('src', '/cover/completed.jpg')
   await userEvent.setup().click(screen.getByRole('link', { name: /completed.mp4/ }))
   expect(push).toHaveBeenCalledWith('/tasks/completed')
 })

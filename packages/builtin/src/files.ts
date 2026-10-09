@@ -1,10 +1,10 @@
 import { Service, type Context } from 'cordis'
 import { createWriteStream } from 'node:fs'
-import { mkdir, stat, realpath, readFile, appendFile, rm, copyFile } from 'node:fs/promises'
+import { mkdir, stat, realpath, readFile, appendFile, rm, copyFile, rename } from 'node:fs/promises'
 import { pipeline } from 'node:stream/promises'
 import { Transform, type Readable } from 'node:stream'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { AppError, requireId, type Artifact, type ArtifactDescriptor, type FilesService, type TaskRecord } from '@youdub/sdk'
 
 export default class Files extends Service implements FilesService {
@@ -12,6 +12,7 @@ export default class Files extends Service implements FilesService {
   root: string
   private writes = new Set<string>()
   private readers = new Map<string, number>()
+  private covers = new Map<string, Promise<{ path: string; mimeType: string }>>()
   constructor(ctx: Context, config: { root: string }) { super(ctx, 'files'); this.root = path.resolve(config.root) }
   async [Service.init]() { await mkdir(this.root, { recursive: true, mode: 0o700 }) }
   taskRoot(id: string) { requireId(id); return path.join(this.root, 'tasks', id) }
@@ -80,6 +81,40 @@ export default class Files extends Service implements FilesService {
   }
   async log(id: string, text: string) {
     await appendFile(path.join(this.taskRoot(id), 'task.log'), `[${new Date().toISOString()}] ${text}\n`, { mode: 0o600 })
+  }
+  async cover(id: string, artifact: Artifact) {
+    const source = await this.resolve(id, artifact)
+    if (artifact.mimeType.startsWith('image/')) return { path: source, mimeType: artifact.mimeType }
+    const key = `${id}:${artifact.id}`
+    let pending = this.covers.get(key)
+    if (!pending) {
+      pending = this.videoCover(id, artifact, source)
+      this.covers.set(key, pending)
+    }
+    try { return await pending }
+    finally { if (this.covers.get(key) === pending) this.covers.delete(key) }
+  }
+  private async videoCover(id: string, artifact: Artifact, source: string) {
+    const root = await realpath(this.taskRoot(id)), directory = path.join(root, 'covers')
+    await mkdir(directory, { recursive: true, mode: 0o700 })
+    if (await realpath(directory) !== directory) throw new AppError('INVALID_COVER_PATH', 'Cover cache must be inside its task directory.', 500)
+    const destination = path.join(directory, createHash('sha256').update(artifact.id).digest('hex') + '.jpg')
+    try {
+      const cached = await realpath(destination), info = await stat(cached)
+      if (cached !== destination || !info.isFile() || !info.size) throw new AppError('INVALID_COVER_CACHE', `Invalid cover cache for task ${id}, artifact ${artifact.id}.`, 500)
+      return { path: cached, mimeType: 'image/jpeg' }
+    } catch (error: any) { if (error.code !== 'ENOENT') throw error }
+    const temporary = path.join(directory, `${randomUUID()}.jpg`)
+    try {
+      await this.ctx.process.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-i', source, '-map', '0:v:0', '-frames:v', '1', '-vf', "scale='min(960,iw)':-2", '-q:v', '3', '-threads', '1', '-n', temporary] })
+      const info = await stat(temporary)
+      if (!info.isFile() || !info.size) throw new AppError('COVER_GENERATION_FAILED', 'FFmpeg did not produce a cover image.', 500)
+      await rename(temporary, destination)
+      return { path: destination, mimeType: 'image/jpeg' }
+    } catch (error: any) {
+      error.message = `Cover for task ${id}, artifact ${artifact.id}: ${error.message}`
+      throw error
+    } finally { await rm(temporary, { force: true }) }
   }
   async readLog(id: string, lines = 200) {
     try { return (await readFile(path.join(this.taskRoot(id), 'task.log'), 'utf8')).split('\n').slice(-Math.min(Math.max(lines, 1), 10000)).join('\n') }

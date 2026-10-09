@@ -171,6 +171,8 @@ API 插件提供 `/api/v2/catalog`、`workflows`、`tasks`、`settings`、`runti
 
 失败上传保留相同 ID 的残留与错误，使用 `DELETE /api/v2/imports/:id` 显式清理尚未形成任务的导入；已有任务通过任务删除动作处理。任务响应提供 workflowId/workflowVersion、steps、outputs 和 allowedActions。产物 URL 支持 GET/HEAD/Range。
 
+任务有封面来源时附带 `cover.url`，指向认证后的 `GET /api/v2/tasks/:id/cover`。插件可将图片输出的 `role` 或 `id` 声明为 `cover`、`thumbnail` 或 `poster`，也可提供同名图片输入；没有封面时取源视频首帧，缺少源视频才使用视频输出。首帧缩略图由 `files` 服务生成并按 artifact ID 缓存，生成和读取期间持有任务读锁。图片或提帧失败会显式报错，无可预览媒体时省略 `cover`。卡片中的百分比只表示当前步骤已上报的进度；未知进度使用动效和已完成步骤数。
+
 HTTP 统一使用 v2，旧 v1 路由与字段别名已移除。旧 desktop 记录继续通过 v2 的 legacy 数据投射读取和重新生成；旧 URL 下载库仅保留首次迁移认证会话的只读用途。
 
 Client 清单为 `{version:1,sdkVersion:'1.0.0',platformVersion:'1',modules:[...]}`，模块含 id/version/access/url 及可选 css/config。未认证只返回 public 模块；登录后返回完整已激活组合。资产位于同源 `/api/plugins/<packageId>/<version>/<asset>`，数据 API 始终执行认证。
