@@ -1,6 +1,6 @@
 # Cordis 插件版运行与扩展指南
 
-2026-10-09 · `codex/plugin` 基于 `codex/mvp-mainline`。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。本文描述当前命令与接口；测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。当前验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
+本文适用于当前 `codex/mvp-mainline` 的 Cordis 插件实现。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。截至 2026-10-09，验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
 
 ## 1. 安装与配置
 
@@ -12,6 +12,7 @@ npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
+.venv/bin/python -m nltk.downloader -e punkt_tab
 ```
 
 已有 `.venv` 时使用已有环境，无需重新创建。仅当 Aliyun 缺少所需包时，使用单一 Tsinghua 源处理缺包：`https://pypi.tuna.tsinghua.edu.cn/simple/`。模型目录见下表；`.env.example` 仅列当前实际读取的环境变量，设备和模型选择在 workflow 配置中保存。
@@ -26,6 +27,12 @@ python3.12 -m venv .venv
 | Qwen 对齐 | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf` | `YOUDUB_FORCED_ALIGNER_MODEL_DIR` |
 
 VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。翻译模型列表由 `YOUDUB_TRANSLATION_MODELS` 配置，连接 URL 和密钥在设置页保存。
+
+Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。上面的安装命令将数据写入 NLTK 标准目录，通常为 `~/nltk_data`；自定义目录使用 NLTK 的 `NLTK_DATA` 环境变量。运行时只检查本地包和四个英文参数文件，不联网下载；缺失时设置页明确显示 Whisper 不可用，实际识别报告 `MODEL_NOT_READY`。
+
+英文识别在 ASR 后处理内用预训练 Punkt 合并跨段句子、拆分段内多句，再按首末词时间戳确定每句原声范围。原始 ASR JSON 保持不变，中文、日文保留原有分段。分句后的 ID 贯穿翻译、逐句参考音频和 TTS；缺少英文词时间戳或句界无法映射到词边界时明确失败。无新增 workflow 步骤。
+
+字幕导出按逗号、顿号、中文破折号等分隔显示片段，沿用短片段合并规则；SRT 和烧录字幕隐藏片段末尾的分隔标点，保留内部标点、括号与书名号。这个显示处理不改写原文、译文、TTS 输入或对齐原始结果。
 
 首次创建配置，已有 `.env` 时保留原文件：
 
