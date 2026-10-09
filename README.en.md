@@ -8,6 +8,25 @@ An open-source video localization workspace: import a video, transcribe and tran
 
 [中文](README.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · [Careers](#careers) · QQ group: **618246010**
 
+## Interface Preview
+
+The workspace: import a video and choose languages and output mode. Screenshots show the current Chinese interface.
+
+![YouDub workspace with video import, source and target languages, and output choices](docs/images/workbench.jpg)
+
+<details>
+<summary>View the task library and task details</summary>
+
+Task library: video covers, processing status and previous tasks.
+
+![YouDub task library showing video covers and completed tasks](docs/images/task-library.jpg)
+
+Task details: preview the video, inspect processing steps, and download dubbed audio and subtitles.
+
+![YouDub task details with Chinese subtitles, eight completed steps and generated files](docs/images/task-detail.jpg)
+
+</details>
+
 ## Features
 
 | Output mode | Result |

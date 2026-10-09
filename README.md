@@ -8,6 +8,25 @@
 
 [English](README.en.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [人才招聘](#人才招聘) · QQ 群：**618246010**
 
+## 界面预览
+
+工作台：导入视频，选择语言和输出内容。
+
+![YouDub 工作台：视频导入、原文与目标语言、配音与字幕选项](docs/images/workbench.jpg)
+
+<details>
+<summary>查看任务库与任务详情</summary>
+
+任务库：视频封面、处理状态和历史任务。
+
+![YouDub 任务库：视频封面与已完成任务](docs/images/task-library.jpg)
+
+任务详情：成片预览、处理步骤、配音音频和字幕下载。
+
+![YouDub 任务详情：带中文字幕的成片、八个已完成步骤与生成文件](docs/images/task-detail.jpg)
+
+</details>
+
 ## 能做什么
 
 | 输出模式 | 生成内容 |
