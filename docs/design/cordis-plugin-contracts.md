@@ -186,7 +186,7 @@ import map 固定共享 React、ReactDOM、JSX runtime、Cordis 和 `@youdub/sdk
 - `root`：唯一根渲染组件，缺失或重复报错。
 - `shell.routes`：id/path/component/access；支持精确路径与 `:param`。
 - `shell.navigation`：id/label/routeId/order。
-- `config.editors`：id 对应 workflow/provider，接收 value/schema/diagnostics/readOnly/onChange。
+- `config.editors`：id 对应 workflow/provider，接收 value/schema/diagnostics/readOnly/onChange；可选 `mode: 'options' | 'configuration'` 区分任务基础选项与完整配置。主页传入 `options`，未指定时保留完整编辑能力。
 - `task.detail.panels` 和 `task.detail.actions`：接收 task/refresh。
 - `settings.sections`：提供扩展设置区域；组件接收自己的 `settings` 和 `save(patch)`，后者按该区域 id 保存公开 JSON 配置。
 

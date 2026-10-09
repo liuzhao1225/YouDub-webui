@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { ArrowRightLeft, AudioWaveform, Captions, Clapperboard, Languages, Mic, Speech, type LucideIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -90,6 +90,54 @@ function languageChoices(config: TaskConfig, runtime: Runtime) {
 
 function updateConfig(config: TaskConfig, patch: Partial<TaskConfig>, runtime: Runtime) {
   return normalize({ ...config, ...patch }, runtime)
+}
+
+export function initialTaskConfig(runtime: Runtime, defaults?: Partial<TaskConfig> | null): TaskConfig {
+  return {
+    source_language: "auto", target_language: "zh", output_mode: "subtitles", keep_background: false,
+    tts: null, separation: null, subtitle_alignment: null,
+    ...defaults,
+    asr: defaults?.asr ?? firstSelection(runtime, "asr"),
+    translation: defaults?.translation ?? firstSelection(runtime, "translation"),
+  }
+}
+
+export function TaskOptions({ value, runtime, onChange }: {
+  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void
+}) {
+  const text = useText()
+  // Keep the configured models when a task temporarily switches to subtitles.
+  const [defaults] = useState(value)
+  const { sources, targets } = languageChoices(value, runtime)
+  function change(patch: Partial<TaskConfig>) {
+    const next = { ...value, ...patch }
+    if (patch.output_mode && patch.output_mode !== "subtitles") {
+      next.tts ??= defaults.tts
+      next.keep_background = defaults.keep_background
+      next.separation ??= defaults.separation
+      if (patch.output_mode === "both") next.subtitle_alignment ??= defaults.subtitle_alignment
+    }
+    onChange(normalize(next, runtime))
+  }
+  const fields = [
+    { id: "output-mode", label: text("Output", "输出", "出力"), aria: text("Output content", "输出内容", "出力内容"), value: value.output_mode,
+      display: text(...OUTPUT_LABELS[value.output_mode]), options: Object.entries(OUTPUT_LABELS).map(([mode, label]) => ({ value: mode, label: text(...label) })),
+      change: (mode: string) => change({ output_mode: mode as TaskConfig["output_mode"] }) },
+    { id: "source-language", label: text("From", "原文", "入力"), aria: text("Source language", "原文语言", "入力言語"), value: value.source_language,
+      display: languageName(value.source_language, text), options: sources.map((code) => ({ value: code, label: languageName(code, text) })),
+      change: (source_language: string) => change({ source_language }) },
+    { id: "target-language", label: text("To", "目标", "出力先"), aria: text("Target language", "目标语言", "出力言語"), value: value.target_language,
+      display: languageName(value.target_language, text), options: targets.map((code) => ({ value: code, label: languageName(code, text) })),
+      change: (target_language: string) => change({ target_language }) },
+  ]
+  return <div className="flex flex-wrap items-center gap-2">{fields.map((field) => (
+    <Select key={field.id} value={field.value} onValueChange={(next) => { if (typeof next === "string") field.change(next) }}>
+      <SelectTrigger id={field.id} aria-label={field.aria} className="inline-flex h-8 w-auto max-w-full gap-1.5 rounded-full border-border bg-muted px-3 text-[13px] shadow-none hover:bg-accent">
+        <span className="text-subtle-foreground">{field.label}</span><span className="min-w-0 truncate font-medium">{field.display}</span>
+      </SelectTrigger>
+      <SelectContent>{field.options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+    </Select>
+  ))}</div>
 }
 
 const ADAPTER_NAMES: Record<string, [string, string, string]> = {

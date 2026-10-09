@@ -8,7 +8,7 @@ export interface Observable<T> { subscribe(listener: () => void): () => void; ge
 export type RouteProps = { params: Record<string, string> }
 export type RouteEntry = { id: string; path: string; component: ComponentType<RouteProps>; access: 'public' | 'authenticated' }
 export type NavigationEntry = { id: string; label: LocalizedText; routeId: string; order?: number; icon?: ComponentType<{ className?: string }> }
-export type EditorProps = { value: JsonObject; schema: JsonSchema; diagnostics: Diagnostic[]; readOnly: boolean; onChange(value: JsonObject): void }
+export type EditorProps = { value: JsonObject; schema: JsonSchema; diagnostics: Diagnostic[]; readOnly: boolean; mode?: 'options' | 'configuration'; onChange(value: JsonObject): void }
 export type PanelProps = { task: TaskView; refresh(): void }
 export type SettingsSectionProps = { settings: JsonObject; save(patch: JsonObject): Promise<void> }
 export type SlotMap = {

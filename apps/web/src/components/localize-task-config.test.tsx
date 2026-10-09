@@ -2,7 +2,7 @@ import { useState } from "react"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { TaskConfigForm } from "@/components/localize-task-config"
+import { initialTaskConfig, TaskConfigForm, TaskOptions } from "@/components/localize-task-config"
 import { LanguageProvider } from "@/lib/i18n"
 import type { Runtime, TaskConfig } from "@/plugin/builtin/localize-contracts"
 const testConfig: TaskConfig = {
@@ -60,6 +60,39 @@ async function choose(user: ReturnType<typeof userEvent.setup>, label: string, o
 }
 
 afterEach(() => { cleanup(); window.localStorage.clear() })
+
+it("主页只显示三个基础选项，切换输出后保留设置中的模型和处理配置", async () => {
+  const runtime = runtimeWithQwen()
+  runtime.capabilities.find((item) => item.capability === "tts")!.models.push({
+    ...runtime.capabilities.find((item) => item.capability === "tts")!.models[0], id: "configured-tts",
+  })
+  const defaults: TaskConfig = { ...testConfig, output_mode: "both", keep_background: true,
+    asr: { ...testConfig.asr, initial_prompt: "Saved hint" },
+    tts: { adapter: "test_tts", model: "configured-tts", device: "cpu", voice: { mode: "preset", id: "voice" } },
+    separation: { adapter: "test_separation", model: "separation", device: "cpu" }, subtitle_alignment: qwenSelection }
+  const changed = vi.fn()
+  function Options() {
+    const [value, setValue] = useState(defaults)
+    return <TaskOptions value={value} runtime={runtime} onChange={(next) => { setValue(next); changed(next) }} />
+  }
+  render(<LanguageProvider><Options /></LanguageProvider>)
+  expect(screen.getAllByRole('combobox')).toHaveLength(3)
+  expect(screen.queryByLabelText('配音模型')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('专名提示（可选）')).not.toBeInTheDocument()
+  const user = userEvent.setup()
+  await choose(user, '输出内容', '字幕 · 保留原声')
+  expect(changed.mock.calls.at(-1)![0]).toMatchObject({ tts: null, separation: null, subtitle_alignment: null, keep_background: false })
+  await choose(user, '输出内容', '配音')
+  expect(changed.mock.calls.at(-1)![0]).toMatchObject({ tts: defaults.tts, separation: defaults.separation, subtitle_alignment: null, keep_background: true })
+  await choose(user, '输出内容', '配音与字幕')
+  expect(changed.mock.calls.at(-1)![0]).toEqual(defaults)
+})
+
+it("首次配置允许空模型目录，已有模型选择不会被替换", () => {
+  const runtime = testRuntime()
+  expect(initialTaskConfig(runtime, testConfig)).toEqual({ subtitle_alignment: null, ...testConfig })
+  expect(initialTaskConfig({ devices: [], capabilities: [] })).toMatchObject({ asr: { adapter: '', model: '', device: 'cpu' }, translation: { adapter: '', model: '', device: 'cpu' } })
+})
 
 describe("本地化任务配置", () => {
   it("仅配音和字幕模式显示 Qwen 时间选择，退出该模式清除选择", async () => {

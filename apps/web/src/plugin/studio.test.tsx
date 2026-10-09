@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type Catalog, type RouteProps, type SlotMap } from './sdk'
+import { PluginContextProvider, type Catalog, type RouteProps, type SlotMap, type TaskView } from './sdk'
 import { apply } from './builtin/studio'
 
 const catalog: Catalog = { providers: [], workflows: [{ id: 'external.text', version: '2.0.0', label: 'Text workflow', inputs: [{ name: 'document', label: 'Document', acceptedMimeTypes: ['text/plain'], required: true }], configSchema: { type: 'object', properties: { mode: { type: 'string', enum: ['upper', 'lower'] } }, required: ['mode'] }, defaults: { mode: 'upper' } }] }
@@ -13,6 +13,7 @@ afterEach(() => { cleanup(); window.localStorage.clear() })
 it('submits declared input slots and preserves an uncertain creation ID until explicitly cleared', async () => {
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (path === '/api/v2/catalog') return catalog
+    if (path.startsWith('/api/v2/tasks?')) return { items: [], hasMore: false, limit: 12, offset: 0 }
     if (init?.method === 'DELETE') return undefined
     throw new Error('Connection interrupted')
   })
@@ -28,6 +29,7 @@ it('submits declared input slots and preserves an uncertain creation ID until ex
   const user = userEvent.setup()
   await user.upload(input, new File(['hello'], 'input.txt', { type: 'text/plain' }))
   expect((input as HTMLInputElement).files).toHaveLength(1)
+  expect(screen.queryByLabelText('处理流程')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: '开始处理' })).toHaveAttribute('type', 'submit')
   // jsdom does not connect user-event's FileList to native file validity.
   fireEvent.submit(input.closest('form')!)
@@ -51,6 +53,7 @@ it('locks workflow selection while a submitted import still needs reconciliation
   const multiple = { ...catalog, workflows: [...catalog.workflows, { ...catalog.workflows[0], id: 'another', label: 'Another workflow' }] }
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (path === '/api/v2/catalog') return multiple
+    if (path.startsWith('/api/v2/tasks?')) return { items: [], hasMore: false, limit: 12, offset: 0 }
     if (init?.method === 'DELETE') return undefined
     throw new Error('Connection interrupted')
   })
@@ -70,4 +73,52 @@ it('locks workflow selection while a submitted import still needs reconciliation
   await waitFor(() => expect(screen.getByLabelText('处理流程')).toBeEnabled())
   await user.selectOptions(screen.getByLabelText('处理流程'), 'another')
   expect(screen.getByLabelText('Document *')).toHaveValue('')
+})
+
+function mount(request: ReturnType<typeof vi.fn>) {
+  let Page!: ComponentType<RouteProps>
+  const push = vi.fn()
+  const context = { apiClient: { request }, navigation: { push },
+    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as Context
+  apply(context)
+  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+  return push
+}
+
+it('shows the selected file and clears it before allowing a fresh selection', async () => {
+  mount(vi.fn(async (path: string) => path === '/api/v2/catalog' ? catalog : { items: [], hasMore: false, limit: 12, offset: 0 }))
+  const user = userEvent.setup()
+  const input = await screen.findByLabelText('Document *')
+  expect(screen.getByRole('button', { name: '开始处理' })).toBeDisabled()
+  await user.upload(input, new File(['hello'], 'first.txt', { type: 'text/plain' }))
+  expect(screen.getByText('first.txt')).toBeInTheDocument()
+  expect(screen.getByText(/5 B/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '开始处理' })).toBeEnabled()
+  await user.click(screen.getByRole('button', { name: '移除 first.txt' }))
+  expect(screen.queryByText('first.txt')).not.toBeInTheDocument()
+  expect(input).toHaveValue('')
+  expect(screen.getByRole('button', { name: '开始处理' })).toBeDisabled()
+  await user.upload(input, new File(['again'], 'second.txt', { type: 'text/plain' }))
+  expect(screen.getByText('second.txt')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '开始处理' })).toBeEnabled()
+})
+
+it('keeps active tasks separate from recent results and links to their detail pages', async () => {
+  const task = (id: string, status: TaskView['status']): TaskView => ({
+    id, status, attempt: 1, sourceName: `${id}.mp4`, createdAt: '2026-10-09T01:00:00Z',
+    workflowId: 'external.text', workflowVersion: '2.0.0', config: {}, steps: [], outputs: [], allowedActions: [],
+  })
+  const items = [task('running', 'running'), task('completed', 'succeeded'), task('failed', 'failed'), task('cancelling', 'cancelling')]
+  const push = mount(vi.fn(async (path: string) => path === '/api/v2/catalog' ? catalog : { items, hasMore: false, limit: 12, offset: 0 }))
+  const active = await screen.findByRole('region', { name: '进行中' })
+  const recent = screen.getByRole('region', { name: '最近任务' })
+  expect(active).toHaveTextContent('running.mp4')
+  expect(active).toHaveTextContent('cancelling.mp4')
+  expect(active).not.toHaveTextContent('completed.mp4')
+  expect(recent).toHaveTextContent('completed.mp4')
+  expect(recent).toHaveTextContent('failed.mp4')
+  expect(recent).not.toHaveTextContent('running.mp4')
+  await userEvent.setup().click(screen.getByRole('link', { name: /completed.mp4/ }))
+  expect(push).toHaveBeenCalledWith('/tasks/completed')
 })
