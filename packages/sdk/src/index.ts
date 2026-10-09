@@ -81,6 +81,7 @@ export interface TaskRecord {
   connections: JsonObject[]; credentialRefs: Record<string, string>; externalRequests: Record<string, ExternalRequest>;
   error: Diagnostic | null; message: string | null; createdAt: string; updatedAt: string; queuedAt: string;
   startedAt: string | null; finishedAt: string | null; nextPollAt: string | null;
+  reusedFrom?: { taskId: string; attempt: number; fromStep: string; workflow: WorkflowPlan['workflow']; bindings: WorkflowPlan['bindings'] };
   legacy?: boolean; rawSnapshot?: JsonObject; [key: string]: any
 }
 export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot' | 'outputs'> {
@@ -96,7 +97,7 @@ export interface TasksService {
   create(request: CreateTask): Promise<TaskView>; get(id: string): Promise<TaskView>; record(id: string): Promise<TaskRecord>;
   list(query?: TaskQuery): Promise<TaskPage>; cancel(id: string, expectedAttempt: number): Promise<TaskView>;
   retry(id: string, expectedAttempt: number): Promise<TaskView>;
-  rerun(id: string, request: { id: string; config: JsonObject; workflowId?: string; acknowledgeExternalRisk?: boolean }): Promise<TaskView>;
+  rerun(id: string, request: { id: string; config: JsonObject; workflowId?: string; fromStep?: string; acknowledgeExternalRisk?: boolean }): Promise<TaskView>;
   delete(id: string, expectedAttempt: number): Promise<void>; idle(): Promise<boolean>
 }
 export interface CatalogService {
@@ -122,6 +123,7 @@ export interface FilesService {
   cover(id: string, artifact: Artifact): Promise<{ path: string; mimeType: string }>;
   log(id: string, text: string): Promise<void>; readLog(id: string, lines?: number): Promise<string>;
   remove(id: string): Promise<void>; copyInputs(from: TaskRecord, newId: string): Promise<{ inputs: Record<string, ArtifactRef>; artifacts: Record<string, Artifact> }>
+  copyArtifacts(from: TaskRecord, newId: string, references: ArtifactRef[]): Promise<Record<string, Artifact>>;
 }
 export interface ProcessRequest { command: string; args: string[]; cwd?: string; env?: NodeJS.ProcessEnv; signal?: AbortSignal }
 export interface ProcessService {

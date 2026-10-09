@@ -14,7 +14,7 @@ import * as Api from '../src/api.js'
 // actual multipart/file streams without loading any models.
 async function setup(t: any) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-api-')), ctx = new Context()
-  const created: any[] = []
+  const created: any[] = [], reruns: any[] = []
   let unavailable = false
   const app = await ctx.plugin(async context => {
     context.reflect.provide('process', {})
@@ -25,6 +25,8 @@ async function setup(t: any) {
     context.reflect.provide('tasks', {
       assertReady() { if (unavailable) throw new AppError('TASK_RUNTIME_UNAVAILABLE', 'Queue stopped.', 503) },
       async create(input: any) { created.push(input); return { id: input.id, outputs: [] } },
+      async get(id: string) { return { id, attempt: 1, outputs: [] } },
+      async rerun(id: string, request: any) { reruns.push({ id, request }); return { id: request.id, outputs: [] } },
     })
     await context.plugin(Files, { root })
     await context.plugin(Http, { host: '127.0.0.1', port: 0 })
@@ -38,7 +40,7 @@ async function setup(t: any) {
     data.append('request', JSON.stringify({ id: randomUUID(), workflowId: 'test.upload', config: {} }))
     return data
   }
-  return { ctx, created, post, form, failRuntime: () => { unavailable = true } }
+  return { ctx, created, reruns, post, form, failRuntime: () => { unavailable = true } }
 }
 
 test('health reports a stopped task runtime as unavailable', async t => {
@@ -48,6 +50,16 @@ test('health reports a stopped task runtime as unavailable', async t => {
   const response = await fetch(ctx.http.address + '/api/health')
   assert.equal(response.status, 503)
   assert.equal((await response.json() as any).error.code, 'TASK_RUNTIME_UNAVAILABLE')
+})
+
+test('rerun API forwards an explicit step boundary', async t => {
+  const { ctx, reruns } = await setup(t)
+  const id = randomUUID(), next = randomUUID()
+  const response = await fetch(`${ctx.http.address}/api/v2/tasks/${id}/rerun`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: next, config: {}, fromStep: 'reference' }) })
+  assert.equal(response.status, 201)
+  assert.equal((await response.json() as any).id, next)
+  assert.equal(reruns[0].id, id)
+  assert.equal(reruns[0].request.fromStep, 'reference')
 })
 
 test('multipart accepts named inputs and rejects duplicate slots before creating a task', async t => {

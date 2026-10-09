@@ -111,6 +111,8 @@ export function apply(ctx: Context) {
 
 TTS 按一次调用处理多段完整 utterance，一次模型加载可生成多句。原文 transcript、译文 translation、可选 references 进入 `speech.synthesize/v1`，结果为 speechAudio；mix 独立处理时间轴与采样率。参考音频准备成为 `voice.reference/v1`，字幕对齐成为 `text.align/v1`。具体字段以媒体 schema 为准，不将旧设计示意类型当作实际 ABI。
 
+原声克隆逐 utterance 对应：`voice-references/v1` 每项为 `{ segmentId, audio, transcript }`，音频与原文来自该 segment 自身的时间范围，TTS 使用同一 ID 的译文合成。参考与原文 segment ID 必须一一对应；缺失、重复或多余的引用都会失败。`speaker_id` 不参与参考选择，同一说话人的不同句子也各自使用对应原声。
+
 模型功能有差异。默认 workflow 校验模型、设备、源/目标语言、preset/source_clone 模式和参考要求；统一输入输出不代表任意模型都具备相同能力。默认组合已登记的模型以实际 catalog/Runtime 为准，未接入模型不列为已支持。
 
 ## 6. 默认 workflow 与外部示例
@@ -170,6 +172,8 @@ store 是单独长驻进程，使用同版本 envelope 的 requestId 关联 requ
 API 插件提供 `/api/v2/catalog`、`workflows`、`tasks`、`settings`、`runtime`、`extensions` 和 `client-manifest`。创建有文件的任务使用 multipart，先传 `request` JSON（id/workflowId/workflowVersion/config），再传 `input.<name>` 文件。无文件 workflow 可用 JSON 创建。HTTP 不接受客户端伪造 artifacts 或任意输入路径。
 
 失败上传保留相同 ID 的残留与错误，使用 `DELETE /api/v2/imports/:id` 显式清理尚未形成任务的导入；已有任务通过任务删除动作处理。任务响应提供 workflowId/workflowVersion、steps、outputs 和 allowedActions。产物 URL 支持 GET/HEAD/Range。
+
+`POST /api/v2/tasks/:id/rerun` 可指定 `fromStep`，在配置不变且前序步骤契约一致时，将已完成步骤的 JSON 和实际文件复制到新任务，随后从指定步骤执行。新任务记录 `reusedFrom` 来源和原 binding，原任务保留；前序步骤未完成、产物缺失或契约变化均拒绝复用。逐句克隆修正从 `reference` 开始，复用 prepare、separate、recognize、translate，仅重新准备参考音频并执行配音、混音、导出。
 
 任务有封面来源时附带 `cover.url`，指向认证后的 `GET /api/v2/tasks/:id/cover`。插件可将图片输出的 `role` 或 `id` 声明为 `cover`、`thumbnail` 或 `poster`，也可提供同名图片输入；没有封面时取源视频首帧，缺少源视频才使用视频输出。首帧缩略图由 `files` 服务生成并按 artifact ID 缓存，生成和读取期间持有任务读锁。图片或提帧失败会显式报错，无可预览媒体时省略 `cover`。卡片中的百分比只表示当前步骤已上报的进度；未知进度使用动效和已完成步骤数。
 

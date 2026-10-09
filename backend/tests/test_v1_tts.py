@@ -34,7 +34,7 @@ def context(tmp_path, monkeypatch):
     monkeypatch.setenv("YOUDUB_VOXCPM_MODEL_DIR", str(models))
     samples = np.arange(4 * 16000) / 16000
     source = tmp_path / "vocals.wav"
-    sf.write(source, np.sin(2 * np.pi * 220 * samples) * 0.25, 16000, subtype="PCM_16")
+    sf.write(source, np.sin(2 * np.pi * 220 * samples) * (0.1 + samples * 0.03), 16000, subtype="PCM_16")
     transcript = {"detected_language": "en", "segments": [
         {"id": "one", "start_ms": 0, "end_ms": 1000, "text": "Original A1", "speaker_id": "speaker-a"},
         {"id": "two", "start_ms": 1000, "end_ms": 2000, "text": "Original B", "speaker_id": "speaker-b"},
@@ -96,21 +96,20 @@ def test_model_inventory_requires_local_nonempty_asset_groups_only(context, monk
     assert tts.model_directory().parts[-3:] == ("models", "voxcpm", "VoxCPM2")
 
 
-def test_tts_preserves_source_and_translation_and_uses_each_speakers_longest_reference(context, model_process):
+def test_tts_preserves_source_and_translation_and_clones_each_corresponding_utterance(context, model_process):
     before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
     result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert {name: context.input_files[name].read_bytes() for name in before} == before
     clips = model_process.clips
     assert [clip["segment_id"] for clip in clips] == ["one", "two", "three"]
     assert [clip["text"] for clip in clips] == [" 第一段。\n", "第二段。", " 第三段。 "]
-    assert [clip["reference_text"] for clip in clips] == ["Original A2", "Original B", "Original A2"]
-    assert clips[0]["reference_path"] == clips[2]["reference_path"] != clips[1]["reference_path"]
+    assert [clip["reference_text"] for clip in clips] == ["Original A1", "Original B", "Original A2"]
+    assert len({clip["reference_path"] for clip in clips}) == 3
     source, rate = sf.read(context.input_files["vocals"])
-    reference_a, reference_rate = sf.read(clips[0]["reference_path"])
-    reference_b, _ = sf.read(clips[1]["reference_path"])
-    assert reference_rate == rate == 16000
-    assert np.array_equal(reference_a, source[2 * rate:3500 * rate // 1000])
-    assert np.array_equal(reference_b, source[rate:2 * rate])
+    for clip, (start_ms, end_ms) in zip(clips, [(0, 1000), (1000, 2000), (2000, 3500)], strict=True):
+        reference, reference_rate = sf.read(clip["reference_path"])
+        assert reference_rate == rate == 16000
+        assert np.array_equal(reference, source[start_ms * rate // 1000:end_ms * rate // 1000])
     transcript = Transcript.model_validate_json(before["transcript"])
     payload = read_speech_clips(result.output_files["speech_clips"], transcript)
     assert [clip.path for clip in payload.clips] == ["tts/000001.wav", "tts/000002.wav", "tts/000003.wav"]
@@ -121,66 +120,41 @@ def test_tts_preserves_source_and_translation_and_uses_each_speakers_longest_ref
     assert command[command.index("--device") + 1] == "cpu"
 
 
-def test_unknown_speaker_group_does_not_reuse_a_named_speakers_reference(context, model_process):
-    payload = json.loads(context.input_files["transcript"].read_text())
-    payload["segments"][0].pop("speaker_id")
-    context.input_files["transcript"].write_text(json.dumps(payload))
-    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
-    assert len({clip["reference_path"] for clip in model_process.clips}) == 3
-
-
-def test_contiguous_sentences_share_a_complete_reference_window_and_matching_source_text(context, model_process):
+@pytest.mark.parametrize("speaker_id", [None, "speaker-a"])
+def test_unknown_or_identical_speakers_still_use_each_utterances_own_audio_and_text(context, model_process, speaker_id):
     payload = json.loads(context.input_files["transcript"].read_text())
     for segment in payload["segments"]:
-        segment["speaker_id"] = "speaker-a"
+        if speaker_id is None:
+            segment.pop("speaker_id")
+        else:
+            segment["speaker_id"] = speaker_id
     context.input_files["transcript"].write_text(json.dumps(payload))
-    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
-    assert len({clip["reference_path"] for clip in model_process.clips}) == 1
-    assert all(clip["reference_text"] == "Original A1 Original B Original A2" for clip in model_process.clips)
-    reference, rate = sf.read(model_process.clips[0]["reference_path"])
-    source, _ = sf.read(context.input_files["vocals"])
-    assert np.array_equal(reference, source[:3500 * rate // 1000])
+    prepared = prepare_references(context)
+    assert set(prepared) == {"one", "two", "three"}
+    tts.run(context, lambda *args: None, prepared_references=prepared)
+    assert len({clip["reference_path"] for clip in model_process.clips}) == 3
+    source, rate = sf.read(context.input_files["vocals"])
+    for clip, segment in zip(model_process.clips, payload["segments"], strict=True):
+        assert clip["reference_text"] == segment["text"]
+        reference, reference_rate = sf.read(clip["reference_path"])
+        assert reference_rate == rate
+        assert np.array_equal(reference, source[segment["start_ms"] * rate // 1000:segment["end_ms"] * rate // 1000])
 
 
-def test_reference_window_does_not_cut_a_sentence_at_ten_seconds(context, model_process):
-    payload = json.loads(context.input_files["transcript"].read_text())
-    for index, segment in enumerate(payload["segments"]):
-        segment.update(speaker_id="speaker-a", start_ms=index * 4000, end_ms=(index + 1) * 4000)
-    context.input_files["transcript"].write_text(json.dumps(payload))
-    sf.write(context.input_files["vocals"], np.full(16000 * 12, 0.1), 16000, subtype="PCM_16")
-    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
-    assert sf.info(model_process.clips[0]["reference_path"]).duration == 8
-    assert model_process.clips[0]["reference_text"] == "Original A1 Original B"
-
-
-def test_reference_window_prefers_speech_duration_over_silent_span():
-    transcript = Transcript.model_validate({"detected_language": "en", "segments": [
-        {"id": "one", "start_ms": 0, "end_ms": 1000, "text": "One.", "speaker_id": "a"},
-        {"id": "two", "start_ms": 9000, "end_ms": 10_000, "text": "Two.", "speaker_id": "a"},
-        {"id": "three", "start_ms": 10_000, "end_ms": 14_000, "text": "Three.", "speaker_id": "a"},
-    ]})
-    reference = tts.speaker_references(transcript)["a"]
-    assert [segment.id for segment in reference] == ["two", "three"]
-
-
-@pytest.mark.parametrize("duration_ms, expected_text, expected_duration", [
-    (10_000, "Original A2", 10), (10_001, "Original A1", 1), (13_000, "Original A1", 1),
-])
-def test_reference_uses_a_complete_utterance_within_ten_seconds(
-    context, model_process, duration_ms, expected_text, expected_duration,
-):
+@pytest.mark.parametrize("duration_ms", [1000, 10_000])
+def test_reference_uses_the_complete_corresponding_utterance_within_ten_seconds(context, model_process, duration_ms):
     payload = json.loads(context.input_files["transcript"].read_text())
     payload["segments"][2].update(start_ms=2000, end_ms=2000 + duration_ms)
     context.input_files["transcript"].write_text(json.dumps(payload))
     sf.write(context.input_files["vocals"], np.full(16000 * 16, 0.1), 16000, subtype="PCM_16")
     tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
-    assert sf.info(model_process.clips[0]["reference_path"]).duration == expected_duration
-    assert model_process.clips[0]["reference_text"] == expected_text
+    assert sf.info(model_process.clips[2]["reference_path"]).duration == duration_ms / 1000
+    assert model_process.clips[2]["reference_text"] == "Original A2"
 
 
-def test_missing_complete_reference_for_one_speaker_fails_before_extraction_or_inference(context, model_process):
+def test_long_utterance_without_word_timestamps_fails_without_reusing_another_utterance(context, model_process):
     payload = json.loads(context.input_files["transcript"].read_text())
-    payload["segments"][1].update(start_ms=1000, end_ms=11_001)
+    payload["segments"][1].update(start_ms=1000, end_ms=11_001, speaker_id="speaker-a")
     payload["segments"][2].update(start_ms=11_001, end_ms=12_501)
     context.input_files["transcript"].write_text(json.dumps(payload))
     sf.write(context.input_files["vocals"], np.full(16000 * 13, 0.1), 16000, subtype="PCM_16")
@@ -190,6 +164,23 @@ def test_missing_complete_reference_for_one_speaker_fails_before_extraction_or_i
     assert "complete" in error.value.content["error"]["message"]
     assert not model_process.commands
     assert not (context.work_dir / "tts").exists()
+
+
+@pytest.mark.parametrize("invalid", ["missing", "extra", "speaker-keys"])
+def test_prepared_references_must_match_all_utterance_ids_before_inference(context, model_process, invalid):
+    prepared = prepare_references(context)
+    if invalid == "missing":
+        prepared.pop("two")
+    elif invalid == "extra":
+        prepared["unrelated"] = prepared["one"]
+    else:
+        prepared = {"speaker-a": prepared["one"], "speaker-b": prepared["two"]}
+    with pytest.raises(ApiError) as error:
+        tts.run(context, lambda *args: None, prepared_references=prepared)
+    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
+    assert "utterance IDs exactly" in error.value.content["error"]["message"]
+    assert not model_process.commands
+    assert not (context.work_dir / "tts" / "request.json").exists()
 
 
 @pytest.fixture

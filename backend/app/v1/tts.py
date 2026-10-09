@@ -1,4 +1,4 @@
-"""Clone each source speaker from their own utterance and synthesize translated IDs."""
+"""Clone each translated utterance from its corresponding source utterance."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def _reference_error(message: str) -> ApiError:
     return ApiError(422, "INVALID_MEDIA", message, field="tts.voice.mode", stage="tts")
 
 
-def _word_reference(segment: Segment) -> tuple[Segment, int]:
+def _word_reference(segment: Segment) -> Segment:
     """Select a complete timed-word window from the validated shared transcript."""
     if not segment.words:
         raise _reference_error("A source utterance over 10 seconds needs complete ASR word timestamps for cloning.")
@@ -63,42 +63,7 @@ def _word_reference(segment: Segment) -> tuple[Segment, int]:
     if not best or best_duration <= 0:
         raise _reference_error("No complete ASR word reference window fits within 10 seconds.")
     return Segment(id=segment.id, start_ms=best[0][0], end_ms=best[-1][1],
-                   text="".join(word[2] for word in best), speaker_id=segment.speaker_id), best_duration
-
-
-def speaker_references(transcript: Transcript) -> dict[str | None, list[Segment]]:
-    """Prefer whole utterances; use timed words when a speaker only has long ones."""
-    result: dict[str | None, list[Segment]] = {}
-    best_duration: dict[str | None, int] = {}
-    window: deque[Segment] = deque()
-    speech_duration = 0
-    for segment in transcript.segments:
-        duration = segment.end_ms - segment.start_ms
-        if (duration > MAX_REFERENCE_DURATION_MS or
-                (window and (segment.speaker_id != window[-1].speaker_id or
-                             segment.start_ms < window[-1].end_ms))):
-            window.clear()
-            speech_duration = 0
-        if duration > MAX_REFERENCE_DURATION_MS:
-            continue
-        window.append(segment)
-        speech_duration += duration
-        while segment.end_ms - window[0].start_ms > MAX_REFERENCE_DURATION_MS:
-            removed = window.popleft()
-            speech_duration -= removed.end_ms - removed.start_ms
-        if speech_duration > best_duration.get(segment.speaker_id, 0):
-            result[segment.speaker_id] = list(window)
-            best_duration[segment.speaker_id] = speech_duration
-    missing = {segment.speaker_id for segment in transcript.segments} - set(result)
-    if not missing:
-        return result
-    for segment in transcript.segments:
-        if segment.speaker_id in missing:
-            reference, duration = _word_reference(segment)
-            if duration > best_duration.get(segment.speaker_id, 0):
-                result[segment.speaker_id] = [reference]
-                best_duration[segment.speaker_id] = duration
-    return result
+                   text="".join(word[2] for word in best))
 
 
 def _audio_info(path: Path):
@@ -128,16 +93,17 @@ def prepare_reference_audio(context: StageContext, transcript: Transcript, progr
     source_duration_ms = round(source_info.frames * 1000 / source_info.samplerate)
     if any(segment.end_ms > source_duration_ms for segment in transcript.segments):
         raise ApiError(422, "INVALID_MEDIA", "A source utterance lies outside the separated vocals.", stage="tts")
-    references = speaker_references(transcript)
+    references = [segment if segment.end_ms - segment.start_ms <= MAX_REFERENCE_DURATION_MS
+                  else _word_reference(segment) for segment in transcript.segments]
     output_dir = context.work_dir / "tts"
     reference_dir = output_dir / "references"
     reference_dir.mkdir(parents=True, exist_ok=True)
     prepared = {}
-    progress(0.0, "Preparing source speaker references")
-    for index, (speaker_id, sentences) in enumerate(references.items(), start=1):
+    progress(0.0, "Preparing source utterance references")
+    for index, reference in enumerate(references, start=1):
         context.check_cancel()
-        start_ms = sentences[0].start_ms
-        duration_ms = sentences[-1].end_ms - start_ms
+        start_ms = reference.start_ms
+        duration_ms = reference.end_ms - start_ms
         path = reference_dir / f"{index:06d}.wav"
         try:
             result = _run_media(
@@ -150,11 +116,11 @@ def prepare_reference_audio(context: StageContext, transcript: Transcript, progr
         except FileNotFoundError as exc:
             raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffmpeg is unavailable.", stage="tts") from exc
         if result.returncode != 0:
-            raise ApiError(422, "INVALID_MEDIA", "The source speaker reference could not be extracted.", stage="tts")
+            raise ApiError(422, "INVALID_MEDIA", "The source utterance reference could not be extracted.", stage="tts")
         info = _audio_info(path)
         if round(info.frames * 1000 / info.samplerate) != duration_ms:
-            raise ApiError(422, "INVALID_MEDIA", "The source speaker reference does not cover the selected utterance.", stage="tts")
-        prepared[speaker_id] = {"path": path, "text": " ".join(sentence.text for sentence in sentences)}
+            raise ApiError(422, "INVALID_MEDIA", "The source reference does not cover the selected utterance interval.", stage="tts")
+        prepared[reference.id] = {"path": path, "text": reference.text}
     return prepared
 
 
@@ -186,13 +152,13 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
         raise ApiError(502, "INVALID_PROVIDER_RESULT", "The translation target language differs from the Task.", stage="tts")
     texts = translation.match(transcript)
     prepared = prepared_references
-    if {segment.speaker_id for segment in transcript.segments} - set(prepared):
-        raise _reference_error("A source speaker has no prepared reference audio.")
+    if set(prepared) != {segment.id for segment in transcript.segments}:
+        raise _reference_error("Prepared source references must match transcript utterance IDs exactly.")
     output_dir = context.work_dir / "tts"
     output_dir.mkdir(parents=True, exist_ok=True)
     clips = [{"segment_id": segment.id, "text": texts[segment.id],
-              "reference_path": str(Path(prepared[segment.speaker_id]["path"]).resolve()),
-              "reference_text": prepared[segment.speaker_id]["text"],
+              "reference_path": str(Path(prepared[segment.id]["path"]).resolve()),
+              "reference_text": prepared[segment.id]["text"],
               "output_path": str((output_dir / f"{index:06d}.wav").resolve())}
              for index, segment in enumerate(transcript.segments, start=1)]
     request_path = output_dir / "request.json"

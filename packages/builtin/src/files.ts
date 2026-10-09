@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises'
 import { Transform, type Readable } from 'node:stream'
 import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
-import { AppError, requireId, type Artifact, type ArtifactDescriptor, type FilesService, type TaskRecord } from '@youdub/sdk'
+import { AppError, requireId, type Artifact, type ArtifactRef, type ArtifactDescriptor, type FilesService, type TaskRecord } from '@youdub/sdk'
 
 export default class Files extends Service implements FilesService {
   static inject = ['process']
@@ -132,5 +132,19 @@ export default class Files extends Service implements FilesService {
       artifacts[artifact.id] = artifact; inputs[key] = { id: artifact.id, schemaId: artifact.schemaId }
     }
     return { inputs, artifacts }
+  }
+  async copyArtifacts(from: TaskRecord, newId: string, references: ArtifactRef[]) {
+    const copied: Record<string, Artifact> = {}
+    const directory = path.join(this.taskRoot(newId), 'reused'); await mkdir(directory, { recursive: true, mode: 0o700 })
+    for (const reference of references) {
+      if (copied[reference.id]) continue
+      const previous = from.artifacts[reference.id]
+      if (!previous || previous.schemaId !== reference.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match its registration.', 409)
+      const source = await this.resolve(from.id, previous), id = randomUUID()
+      const target = path.join(directory, id + path.extname(previous.name))
+      await copyFile(source, target, 1)
+      copied[reference.id] = { ...previous, id, path: path.relative(this.taskRoot(newId), target) }
+    }
+    return copied
   }
 }

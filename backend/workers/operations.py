@@ -149,9 +149,9 @@ class Operation:
         context = self.context("reference", {"vocals": self.path(self.inputs["audio"])})
         prepared = prepare_reference_audio(context, transcript, self.wire.progress)
         result = []
-        for index, (speaker, value) in enumerate(prepared.items()):
+        for index, (segment_id, value) in enumerate(prepared.items()):
             ref, _ = self.audio(f"reference.{index}", value["path"])
-            result.append({"speakerId": speaker, "audio": ref, "transcript": value["text"]})
+            result.append({"segmentId": segment_id, "audio": ref, "transcript": value["text"]})
         return {"references": result}
 
     def tts(self):
@@ -162,10 +162,15 @@ class Operation:
             raise WorkerError("INVALID_INPUT", "VoxCPM requires explicit prepared references.")
         prepared = {}
         for ref in references:
-            speaker = ref.get("speakerId")
-            if speaker in prepared:
-                raise WorkerError("INVALID_INPUT", "Duplicate speaker reference.")
-            prepared[speaker] = {"path": self.path(ref["audio"]), "text": ref.get("transcript", "")}
+            segment_id = ref.get("segmentId") if isinstance(ref, dict) else None
+            if not isinstance(segment_id, str) or not segment_id.strip():
+                raise WorkerError("INVALID_INPUT", "Each voice reference requires a non-empty segmentId.")
+            if segment_id in prepared:
+                raise WorkerError("INVALID_INPUT", f"Duplicate reference for segment {segment_id}.")
+            text = ref.get("transcript")
+            if not isinstance(text, str) or not text.strip():
+                raise WorkerError("INVALID_INPUT", f"Reference transcript is missing for segment {segment_id}.")
+            prepared[segment_id] = {"path": self.path(ref.get("audio")), "text": text}
         result = tts.run(context, self.wire.progress, prepared_references=prepared)
         clips = json.loads(result.output_files["speech_clips"].read_text())["clips"]
         segments = []

@@ -56,7 +56,7 @@ export function apply(ctx: Context) {
     const body = await readJson(request)
     const id = request.params.id!
     const current = await ctx.tasks.get(id)
-    const task = action === 'rerun' ? await ctx.tasks.rerun(id, { id: body.id, config: body.config, workflowId: body.workflowId, acknowledgeExternalRisk: body.acknowledgeExternalRisk }) : await ctx.tasks[action](id, body.expectedAttempt ?? current.attempt)
+    const task = action === 'rerun' ? await ctx.tasks.rerun(id, { id: body.id, config: body.config, workflowId: body.workflowId, fromStep: body.fromStep, acknowledgeExternalRisk: body.acknowledgeExternalRisk }) : await ctx.tasks[action](id, body.expectedAttempt ?? current.attempt)
     ctx.http.json(request, action === 'rerun' ? 201 : task.status === 'cancelling' ? 202 : 200, view(task))
   })
   route('DELETE', `${base}/tasks/:id`, async request => {

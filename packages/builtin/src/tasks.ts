@@ -115,7 +115,8 @@ export default class Tasks extends Service implements TasksService {
       outputIds.add(output.id)
     }
   }
-  async create(request: CreateTask) {
+  async create(request: CreateTask) { return this.createWithReuse(request) }
+  private async createWithReuse(request: CreateTask, reuse?: { source: TaskRecord; fromStep: string }) {
     this.assertReady(); requireId(request.id)
     return this.ctx.settings.locked(async () => {
       const workflow = this.ctx.catalog.workflow(request.workflowId)
@@ -134,6 +135,7 @@ export default class Tasks extends Service implements TasksService {
       const diagnostics = await workflow.validate(request.inputs, request.config, this.ctx.catalog)
       if (diagnostics.length) throw new AppError(diagnostics[0].code, diagnostics[0].message, 422, diagnostics)
       const plan = await workflow.plan(request.inputs, request.config, this.ctx.catalog); this.checkPlan(plan)
+      const reusedSteps = reuse ? await this.reusePrefix(request.id, plan, reuse.source, reuse.fromStep, artifacts) : []
       const snapshot = await this.ctx.settings.snapshot()
       const remote = new Set(Object.values(plan.bindings).map(binding => this.ctx.catalog.provider(binding.providerId).describe()).filter(provider => provider.execution === 'remote').map(provider => provider.adapter ?? provider.id))
       const connections = snapshot.connections.filter(connection => remote.has(connection.adapter))
@@ -142,13 +144,53 @@ export default class Tasks extends Service implements TasksService {
       const task: TaskRecord = {
         id: request.id, revision: 0, attempt: 1, status: 'queued', sourceName: request.sourceName ?? Object.values(artifacts)[0]?.name ?? description.label,
         workflowId: workflow.id, workflowVersion: workflow.version, config: plan.config, plan, inputs: request.inputs, artifacts,
-        steps: plan.steps.map(step => ({ id: step.id, label: step.label, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null })),
+        steps: plan.steps.map((step, index) => reusedSteps[index] ?? ({ id: step.id, label: step.label, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null })),
         outputs: [], connections, credentialRefs, externalRequests: {}, error: null, message: null,
         createdAt: timestamp, updatedAt: timestamp, queuedAt: timestamp, startedAt: null, finishedAt: null, nextPollAt: null,
+        ...(reuse ? { reusedFrom: { taskId: reuse.source.id, attempt: reuse.source.attempt, fromStep: reuse.fromStep, workflow: structuredClone(reuse.source.plan.workflow), bindings: structuredClone(reuse.source.plan.bindings) } } : {}),
       }
       await this.ctx.settings.credentials(task)
       return this.view(await this.ctx.store.call('store.create', { task }))
     })
+  }
+  private async reusePrefix(id: string, plan: WorkflowPlan, source: TaskRecord, fromStep: string, artifacts: TaskRecord['artifacts']) {
+    const index = plan.steps.findIndex(step => step.id === fromStep)
+    if (index < 0) throw new AppError('REUSE_NOT_ALLOWED', `Workflow has no step ${fromStep}.`, 422)
+    const prefix = plan.steps.slice(0, index)
+    if (!isDeepStrictEqual(prefix, source.plan.steps.slice(0, index))) throw new AppError('REUSE_NOT_ALLOWED', 'Earlier workflow steps changed; their outputs cannot be reused.', 409)
+    const references = new Map<string, ArtifactRef>()
+    const collect = (value: any): void => {
+      if (ref(value)) {
+        const artifact = source.artifacts[value.id]
+        if (!artifact || artifact.schemaId !== value.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match its registration.', 409)
+        references.set(value.id, value)
+      } else if (Array.isArray(value)) value.forEach(collect)
+      else if (value && typeof value === 'object') Object.values(value).forEach(collect)
+    }
+    const steps = prefix.map(spec => {
+      const step = source.steps.find(item => item.id === spec.id)
+      if (!step || step.status !== 'completed') throw new AppError('REUSE_NOT_ALLOWED', `Earlier step ${spec.id} has not completed.`, 409)
+      for (const port of spec.outputs) {
+        const output = step.outputs[port.name]
+        if (output === undefined) {
+          if (port.required) throw new AppError('REUSE_OUTPUT_INVALID', `Missing ${spec.id}.${port.name}.`, 409)
+          continue
+        }
+        if (port.kind === 'artifact' && (!ref(output) || output.schemaId !== port.schemaId)) throw new AppError('REUSE_OUTPUT_INVALID', `Invalid ${spec.id}.${port.name}.`, 409)
+        if (port.kind === 'json') validate(port.schema!, output, `${spec.id}.${port.name}`, 'REUSE_OUTPUT_INVALID')
+      }
+      collect(step.outputs)
+      return structuredClone(step)
+    })
+    const copied = await this.ctx.files.copyArtifacts(source, id, [...references.values()])
+    for (const artifact of Object.values(copied)) artifacts[artifact.id] = artifact
+    const replace = (value: any): any => {
+      if (ref(value)) return { id: copied[value.id]!.id, schemaId: value.schemaId }
+      if (Array.isArray(value)) return value.map(replace)
+      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]))
+      return value
+    }
+    return steps.map(step => ({ ...step, outputs: replace(step.outputs) }))
   }
   private expected(task: TaskRecord, attempt: number) { if (task.attempt !== attempt) throw new AppError('ATTEMPT_CONFLICT', 'Task attempt changed. Refresh before acting.', 409) }
   async cancel(id: string, expectedAttempt: number) {
@@ -177,18 +219,19 @@ export default class Tasks extends Service implements TasksService {
       }))
     } finally { await release() }
   }
-  async rerun(id: string, request: { id: string; config: JsonObject; workflowId?: string; acknowledgeExternalRisk?: boolean }) {
+  async rerun(id: string, request: { id: string; config: JsonObject; workflowId?: string; fromStep?: string; acknowledgeExternalRisk?: boolean }) {
     this.assertReady()
     const source = await this.record(id)
     if (source.legacy && !request.workflowId) throw new AppError('WORKFLOW_REQUIRED', 'Select a current workflow to rerun a historical task.', 422)
     if (!terminal.has(source.status)) throw new AppError('TASK_BUSY', 'Stop the source task before rerunning.', 409)
     if (Object.values(source.externalRequests ?? {}).some(item => item.mayStillRun) && !request.acknowledgeExternalRisk) throw new AppError('EXTERNAL_RESULT_UNKNOWN', 'Acknowledge the previous remote request before rerunning.', 409)
+    if (request.fromStep !== undefined && (typeof request.fromStep !== 'string' || !request.fromStep || source.legacy || (request.workflowId ?? source.workflowId) !== source.workflowId || !isDeepStrictEqual(request.config, source.config))) throw new AppError('REUSE_NOT_ALLOWED', 'Partial rerun requires the same workflow and configuration of a current task.', 409)
     const readRelease = this.ctx.files.readLock(id)
     let writeRelease: (() => void | Promise<void>) | undefined
     try {
       writeRelease = await this.ctx.files.reserve(request.id, true)
       const inputs = await this.ctx.files.copyInputs(source, request.id)
-      return await this.create({ id: request.id, workflowId: request.workflowId ?? source.workflowId, config: request.config, sourceName: source.sourceName, ...inputs })
+      return await this.createWithReuse({ id: request.id, workflowId: request.workflowId ?? source.workflowId, config: request.config, sourceName: source.sourceName, ...inputs }, request.fromStep === undefined ? undefined : { source, fromStep: request.fromStep })
     } finally { try { await writeRelease?.() } finally { readRelease() } }
   }
   async delete(id: string, expectedAttempt: number) {

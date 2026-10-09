@@ -51,7 +51,7 @@ Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg
 ### 配音链模型配置与边界
 
 - 仓库固定 `voxcpm==2.0.3`。将 [VoxCPM2 官方模型](https://modelscope.cn/models/OpenBMB/VoxCPM2)放入数据目录的 `models/voxcpm/VoxCPM2/`，或设置 `YOUDUB_VOXCPM_MODEL_DIR`。目录需含 config、tokenizer、主模型和 AudioVAE 权重。推理只加载本地文件，明确使用所选 CPU/CUDA；关闭自动下载、降噪和质量重试。
-- 当前提供 `source_clone`，默认使用 VoxCPM2 官方[极致克隆](https://github.com/OpenBMB/VoxCPM/blob/main/README_zh.md#-极致克隆)：同时传入参考音频、同一提示音频及其源文本。参考窗口总跨度最多 10 秒，优先覆盖更多源语音；短 utterance 可按连续同 speaker 组成完整窗口。超过 10 秒的 utterance 仅在参考音频选择时，从同源原始词时间戳中选取不超过 10 秒的窗口，并使用对应源文本；该选择不拆分完整 TTS 译文，不跨已标记的 speaker。Whisper 本身不提供说话人区分；未标注 speaker 的分段按同一源音色配音。官方建议参考音频约 5–30 秒；短参考仍需实际听感评估。尚未提供预设声线。
+- 当前提供 `source_clone`，默认使用 VoxCPM2 官方[极致克隆](https://github.com/OpenBMB/VoxCPM/blob/main/README_zh.md#-极致克隆)：同时传入参考音频、同一提示音频及其源文本。每条译文严格使用同一 utterance 的原声音频和原文做克隆，按 segment ID 一一对应；speaker ID 不参与参考选择，相同 speaker 的不同句子也分别取自身参考。参考窗口总跨度最多 10 秒；超过 10 秒的 utterance 仅在该句内部按原始词时间戳选取不超过 10 秒的窗口，并使用对应原文，完整 TTS 译文保持不变。缺少所需词时间戳时明确报错，不借用其他句子的音频。官方建议参考音频约 5–30 秒；短参考仍需实际听感评估。尚未提供预设声线。
 - Demucs 使用仓库子模块和官方 `htdemucs` 权重 `955717e8-8726e21a.th`，置于数据目录的 `models/demucs/`，或设置 `YOUDUB_DEMUCS_MODELS_DIR`。它从原视频首音轨提取 44.1 kHz 双声道音频，保持完整音频长度；不使用已降采样的 ASR 输入做分离。
 - 混音输出 48 kHz、双声道 PCM16 WAV。配音沿用参考生产主干的有界时长倍率变速，先获得所有完整调整后音频的样本数和首选起点，再从视频末端反向排程：`start = min(preferred_start, next_start - clip_frames)`。尾部需要前移时使用前面的已有空隙，`dubbed_start_ms` 可早于对应源起点；原始 ASR 时间、配音顺序、完整音频样本、变速倍率和原画面总长保持不变。源分段重叠返回 `UNSUPPORTED_OVERLAPPING_SPEECH`；全部完整语音仍放不下、首段计算起点小于 0 时返回 `AUDIO_EXCEEDS_VIDEO`。保留背景时使用 `(dub + 0.3 × background) / 1.3` 的固定混音增益。
 - 末端反向排程为本次 YouDub WebUI 基于真实视频问题新增的逻辑；独立 youdub-backend 提供有界倍率与顺序排程的参考，其原实现允许动态延长输出，没有这项原视频尾部容纳保障。

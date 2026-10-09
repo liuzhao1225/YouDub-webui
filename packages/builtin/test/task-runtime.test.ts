@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context, type Fiber } from 'cordis'
-import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -15,7 +15,7 @@ import Secrets from '../src/secrets.js'
 import Settings from '../src/settings.js'
 import Tasks from '../src/tasks.js'
 
-async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgraded' = 'artifact', expectedShutdownFailure?: RegExp) {
+async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgraded' = 'artifact', expectedShutdownFailure?: RegExp, stepIds = ['process']) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-tasks-')), ctx = new Context()
   const fibers: Fiber[] = []
   fibers.push(await ctx.plugin(Processes), await ctx.plugin(Catalog), await ctx.plugin(Files, { root }))
@@ -34,16 +34,25 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
   const output: OutputPort = contract === 'json'
     ? { name: 'document', kind: 'json', schemaId: 'document/v1', required: true, schema: { type: 'object', required: ['text'], properties: { text: { type: 'string' } }, additionalProperties: false } }
     : { name: 'file', kind: 'artifact', schemaId: 'file/v1', required: true }
+  const nested: OutputPort = { name: 'nested', kind: 'json', schemaId: 'nested/v1', required: true, schema: { type: 'object', required: ['files'], additionalProperties: false, properties: { files: { type: 'array', items: { type: 'object', required: ['id', 'schemaId'], additionalProperties: false, properties: { id: { type: 'string' }, schemaId: { const: 'file/v1' } } } } } } }
+  const ports = stepIds.length > 1 ? [output, nested] : [output]
+  const executed: { taskId: string; stepId: string }[] = []
   let previous: InvocationContext | undefined
   const write = async (workDir: string, context: InvocationContext) => {
     await writeFile(join(workDir, 'result.txt'), 'real task output', { flag: 'wx' })
-    return { state: 'completed' as const, outputs: { file: await context.register({ path: 'result.txt', mimeType: 'text/plain', schemaId: 'file/v1' }) } }
+    const file = await context.register({ path: 'result.txt', mimeType: 'text/plain', schemaId: 'file/v1' })
+    return { state: 'completed' as const, outputs: { file, ...(stepIds.length > 1 ? { nested: { files: [file] } } : {}) } }
   }
   const provider: OperationProvider = {
     id: 'test.provider',
-    describe: () => ({ id: 'test.provider', label: 'Test provider', ...identity, operations: [{ id: 'test/v1', inputSchema: { type: 'object' }, outputs: [output] }] }),
+    describe: () => ({ id: 'test.provider', label: 'Test provider', ...identity, operations: [{ id: 'test/v1', inputSchema: { type: 'object' }, outputs: ports }] }),
     probe: async () => ({ available: true }),
     async execute(request, context) {
+      executed.push({ taskId: request.taskId, stepId: request.stepId })
+      if (request.inputs.previous) {
+        assert.deepEqual(request.inputs.previous, request.inputs.nested.files[0])
+        assert.equal(await readFile(await context.resolve(request.inputs.previous), 'utf8'), 'real task output')
+      }
       if (request.config.mode === 'wait' || request.config.mode === 'wait-offset') {
         const nextPollAt = request.config.mode === 'wait-offset'
           ? new Date(Date.now() + 300 + 8 * 60 * 60 * 1000).toISOString().replace('Z', '+08:00')
@@ -74,7 +83,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
     id: 'test.workflow', version: '1.0.0', ...identity,
     describe: () => ({ id: 'test.workflow', version: '1.0.0', label: 'Test workflow', inputs: [], defaults: { mode: 'text' }, configSchema: { type: 'object', required: ['mode'], properties: { mode: { enum: ['text', 'wait', 'wait-offset', 'bad', 'cancel', 'bad-json', 'deleted', 'forged', 'unknown'] } }, additionalProperties: false } }),
     validate: () => [],
-    plan: (_, config) => ({ workflow: { id: 'test.workflow', version: '1.0.0', ...identity }, config, bindings: { main: { providerId: provider.id, ...identity, modelRevision: null, options: {} } }, steps: [{ id: 'process', label: 'Process', bindingKey: 'main', operation: 'test/v1', input: {}, outputs: contract === 'omitted' ? [] : [{ ...output, required: contract !== 'downgraded' }] }], outputs: contract === 'json' || contract === 'omitted' ? [] : [{ id: 'file', label: 'File', role: 'file', source: { stepId: 'process', output: 'file' }, required: true }] }),
+    plan: (_, config) => ({ workflow: { id: 'test.workflow', version: '1.0.0', ...identity }, config, bindings: { main: { providerId: provider.id, ...identity, modelRevision: null, options: {} } }, steps: stepIds.map((id, index) => ({ id, label: id, bindingKey: 'main', operation: 'test/v1', input: index ? { previous: { from: 'step', stepId: stepIds[index - 1], output: 'file' }, nested: { from: 'step', stepId: stepIds[index - 1], output: 'nested' } } : {}, outputs: contract === 'omitted' ? [] : ports.map(port => ({ ...port, required: contract !== 'downgraded' })) })), outputs: contract === 'json' || contract === 'omitted' ? [] : [{ id: 'file', label: 'File', role: 'file', source: { stepId: stepIds.at(-1)!, output: 'file' }, required: true }] }),
   }
   fibers.push(await ctx.plugin({ inject: ['catalog'], apply(context) { context.effect(() => context.catalog.registerProvider(provider)); context.effect(() => context.catalog.registerWorkflow(workflow)) } }))
   const create = async (mode: string) => {
@@ -88,7 +97,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
     throw new Error(`Task did not reach expected state: ${JSON.stringify(await ctx.tasks.get(id))}`)
   }
   ctx.emit('app/ready')
-  return { ctx, create, until, previous: () => previous! }
+  return { ctx, create, until, previous: () => previous!, executed, workflow, identity }
 }
 
 test('real SQLite task engine keeps the execution slot during waiting and resumes the fixed invocation', async t => {
@@ -194,4 +203,59 @@ test('an unknown remote result remains visible and prevents retry or unacknowled
   const second = await ctx.tasks.rerun(task.id, { id: randomUUID(), config: { mode: 'text' }, acknowledgeExternalRisk: true })
   await until(second.id, state => state.status === 'succeeded')
   assert.equal((await ctx.tasks.get(task.id)).mayStillRun, true)
+})
+
+test('partial rerun creates an independent task and reuses completed artifacts before queueing', async t => {
+  const { ctx, create, until, executed, identity, workflow } = await setup(t, 'artifact', undefined, ['prepare', 'reference', 'synthesize', 'export'])
+  const first = await create('text')
+  await until(first.id, task => task.status === 'succeeded')
+  const original = await ctx.tasks.record(first.id)
+  identity.integrity = 'updated-runtime'; workflow.integrity = identity.integrity
+  const rerun: TaskView = await ctx.tasks.rerun(first.id, { id: randomUUID(), config: original.config, fromStep: 'reference' })
+  assert.deepEqual(rerun.steps.map((step: { status: string }) => step.status), ['completed', 'pending', 'pending', 'pending'])
+  assert.equal(rerun.reusedFrom?.taskId, first.id)
+  assert.equal(rerun.reusedFrom?.attempt, 1)
+  assert.equal(rerun.reusedFrom?.workflow.integrity, 'test-fixed')
+  assert.equal(rerun.plan.workflow.integrity, 'updated-runtime')
+  const cloned = await ctx.tasks.record(rerun.id)
+  const file = cloned.steps[0].outputs.file
+  assert.notEqual(file.id, original.steps[0].outputs.file.id)
+  assert.deepEqual(cloned.steps[0].outputs.nested.files[0], file)
+  assert.equal(Object.keys(cloned.artifacts).length, 1, 'copy only referenced prefix artifacts and deduplicate nested references')
+  assert.deepEqual(await ctx.tasks.record(first.id), original, 'the original successful record remains unchanged')
+  const completed = await until(rerun.id, task => task.status === 'succeeded')
+  assert.deepEqual(executed.filter(item => item.taskId === rerun.id).map(item => item.stepId), ['reference', 'synthesize', 'export'])
+  await ctx.tasks.delete(first.id, 1)
+  assert.equal(await readFile(await ctx.files.resolve(rerun.id, (await ctx.tasks.record(rerun.id)).artifacts[file.id]), 'utf8'), 'real task output')
+  assert.equal(completed.outputs.length, 1)
+})
+
+test('partial rerun rejects missing boundaries, changed configuration and changed prefix contracts', async t => {
+  const { ctx, create, until, workflow } = await setup(t, 'artifact', undefined, ['prepare', 'synthesize'])
+  const task = await create('text')
+  await until(task.id, state => state.status === 'succeeded')
+  await assert.rejects(ctx.tasks.rerun(task.id, { id: randomUUID(), config: { mode: 'bad' }, fromStep: 'synthesize' }), (error: any) => error.code === 'REUSE_NOT_ALLOWED')
+  await assert.rejects(ctx.tasks.rerun(task.id, { id: randomUUID(), config: { mode: 'text' }, fromStep: 'missing' }), (error: any) => error.code === 'REUSE_NOT_ALLOWED')
+  const plan = workflow.plan.bind(workflow)
+  t.mock.method(workflow, 'plan', async (...args: Parameters<typeof plan>) => {
+    const result = await plan(...args)
+    result.steps[0].input = { changed: true }
+    return result
+  })
+  await assert.rejects(ctx.tasks.rerun(task.id, { id: randomUUID(), config: { mode: 'text' }, fromStep: 'synthesize' }), (error: any) => error.code === 'REUSE_NOT_ALLOWED')
+  assert.equal((await ctx.tasks.get(task.id)).status, 'succeeded')
+})
+
+test('partial rerun rejects incomplete prefixes and corrupted reusable artifacts without creating a task', async t => {
+  const { ctx, create, until } = await setup(t, 'artifact', undefined, ['prepare', 'synthesize'])
+  const failed = await create('bad')
+  await until(failed.id, state => state.status === 'failed')
+  await assert.rejects(ctx.tasks.rerun(failed.id, { id: randomUUID(), config: { mode: 'bad' }, fromStep: 'synthesize' }), (error: any) => error.code === 'REUSE_NOT_ALLOWED')
+  const task = await create('text')
+  await until(task.id, state => state.status === 'succeeded')
+  const source = await ctx.tasks.record(task.id), reused = source.artifacts[source.steps[0].outputs.file.id]
+  await writeFile(await ctx.files.resolve(task.id, reused), 'modified content of another size')
+  const id = randomUUID()
+  await assert.rejects(ctx.tasks.rerun(task.id, { id, config: { mode: 'text' }, fromStep: 'synthesize' }), (error: any) => error.code === 'OUTPUT_NOT_FOUND')
+  await assert.rejects(ctx.tasks.record(id), (error: any) => error.code === 'TASK_NOT_FOUND')
 })

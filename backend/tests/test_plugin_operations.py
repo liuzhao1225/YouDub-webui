@@ -9,9 +9,12 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
+import numpy as np
 import pytest
+import soundfile as sf
 
 from backend.app.v1 import asr, tts
 from backend.app.v1.segments import Transcript
@@ -42,9 +45,81 @@ def test_standard_word_timing_supports_reference_without_provider_raw_file():
     raw = {"language": "en", "segments": [{"start": 0, "end": 14, "text": "".join(w["word"] for w in words), "words": words}]}
     normalized = asr.normalize_result(raw, duration_ms=14000)
     assert normalized["segments"][0]["words"][1] == {"text": " word1", "start_ms": 2000, "end_ms": 4000}
-    reference = tts.speaker_references(Transcript.model_validate(normalized))[None]
-    assert reference[-1].end_ms - reference[0].start_ms <= 10000
-    assert reference[0].text == " word0 word1 word2 word3 word4"
+    reference = tts._word_reference(Transcript.model_validate(normalized).segments[0])
+    assert reference.end_ms - reference.start_ms <= 10000
+    assert reference.text == " word0 word1 word2 word3 word4"
+
+
+def test_reference_worker_and_tts_bridge_preserve_each_utterance_id(tmp_path, monkeypatch):
+    source = tmp_path / "vocals.wav"
+    sf.write(source, np.full(32000, 0.1), 16000, subtype="PCM_16")
+    transcript = {"detected_language": "en", "segments": [
+        {"id": "one", "start_ms": 0, "end_ms": 1000, "text": "First sentence.", "speaker_id": "same"},
+        {"id": "two", "start_ms": 1000, "end_ms": 2000, "text": "Second sentence.", "speaker_id": "same"},
+    ]}
+    reference = invoke(tmp_path, "voice.reference/v1", {"transcript": transcript, "audio": {"path": str(source)}})
+    result = reference.execute()
+    references = result["outputs"]["references"]
+    assert [item["segmentId"] for item in references] == ["one", "two"]
+    assert [item["transcript"] for item in references] == ["First sentence.", "Second sentence."]
+    assert all("speakerId" not in item for item in references)
+    for item in references:
+        artifact = result["artifacts"][item["audio"]["$artifact"]]
+        item["audio"] = {"path": str(reference.work / artifact["path"])}
+    assert references[0]["audio"] != references[1]["audio"]
+
+    def synthesize(context, progress, *, prepared_references):
+        assert list(prepared_references) == ["two", "one"]
+        assert prepared_references["one"]["text"] == "First sentence."
+        assert prepared_references["two"]["text"] == "Second sentence."
+        clips = []
+        for segment in transcript["segments"]:
+            path = context.work_dir / f"{segment['id']}.wav"
+            shutil.copyfile(prepared_references[segment["id"]]["path"], path)
+            clips.append({"segment_id": segment["id"], "path": path.name})
+        output = context.work_dir / "speech_clips.json"
+        output.write_text(json.dumps({"clips": clips}))
+        return SimpleNamespace(output_files={"speech_clips": output})
+
+    monkeypatch.setattr(tts, "run", synthesize)
+    synthesized = invoke(tmp_path, "speech.synthesize/v1", {
+        "transcript": transcript, "translation": {}, "references": references[::-1],
+    }).execute()
+    assert [item["id"] for item in synthesized["outputs"]["speechAudio"]["segments"]] == ["one", "two"]
+
+
+@pytest.mark.parametrize("segment_id", [None, "", "  ", 42, [], {}])
+def test_tts_worker_rejects_missing_or_invalid_segment_reference_id(tmp_path, monkeypatch, segment_id):
+    monkeypatch.setattr(tts, "run", lambda *_args, **_kwargs: pytest.fail("Invalid reference reached TTS"))
+    reference = {"segmentId": segment_id} if segment_id is not None else {"speakerId": "old"}
+    operation = invoke(tmp_path, "speech.synthesize/v1", {
+        "transcript": {}, "translation": {}, "references": [reference],
+    })
+    with pytest.raises(WorkerError, match="non-empty segmentId") as error:
+        operation.execute()
+    assert error.value.code == "INVALID_INPUT"
+
+
+def test_tts_worker_rejects_duplicate_segment_reference(tmp_path, monkeypatch):
+    source = tmp_path / "reference.wav"
+    source.write_bytes(b"audio")
+    monkeypatch.setattr(tts, "run", lambda *_args, **_kwargs: pytest.fail("Duplicate reference reached TTS"))
+    reference = {"segmentId": "one", "transcript": "Hello", "audio": {"path": str(source)}}
+    operation = invoke(tmp_path, "speech.synthesize/v1", {
+        "transcript": {}, "translation": {}, "references": [reference, reference],
+    })
+    with pytest.raises(WorkerError, match="Duplicate reference for segment one"):
+        operation.execute()
+
+
+@pytest.mark.parametrize("text", [None, "", "  ", 42])
+def test_tts_worker_rejects_missing_reference_transcript(tmp_path, monkeypatch, text):
+    monkeypatch.setattr(tts, "run", lambda *_args, **_kwargs: pytest.fail("Invalid reference reached TTS"))
+    operation = invoke(tmp_path, "speech.synthesize/v1", {
+        "transcript": {}, "translation": {}, "references": [{"segmentId": "one", "transcript": text}],
+    })
+    with pytest.raises(WorkerError, match="transcript is missing for segment one"):
+        operation.execute()
 
 
 def test_file_input_and_output_cannot_escape_task_and_invocation(tmp_path):

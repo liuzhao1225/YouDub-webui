@@ -31,7 +31,7 @@ export const mediaInfoSchema = object({
   frame_rate: { type: 'number', exclusiveMinimum: 0 }, video_codec: text, audio_codec: text,
 })
 export const referencesSchema = array(object({
-  speakerId: nullable(text), audio: artifactRef('audio/wav/v1'), transcript: text,
+  segmentId: text, audio: artifactRef('audio/wav/v1'), transcript: text,
 }))
 export const speechAudioSchema = object({
   segments: array(object({
