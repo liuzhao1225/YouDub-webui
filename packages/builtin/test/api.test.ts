@@ -1,10 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { Context } from 'cordis'
+import { Context, Service } from 'cordis'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { setImmediate as nextTurn } from 'node:timers/promises'
 import { AppError } from '@youdub/sdk'
 import Http from '../src/http.js'
 import Files from '../src/files.js'
@@ -12,23 +13,27 @@ import * as Api from '../src/api.js'
 
 // Authentication has separate HTTP tests; these exercise the API boundary and
 // actual multipart/file streams without loading any models.
-async function setup(t: any) {
+async function setup(t: any, fileService = Files) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-api-')), ctx = new Context()
   const created: any[] = [], reruns: any[] = []
   let unavailable = false
   const app = await ctx.plugin(async context => {
-    context.reflect.provide('process', {})
-    context.reflect.provide('auth', {})
-    context.reflect.provide('settings', {})
-    context.reflect.provide('extensions', {})
-    context.reflect.provide('catalog', { workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
-    context.reflect.provide('tasks', {
-      assertReady() { if (unavailable) throw new AppError('TASK_RUNTIME_UNAVAILABLE', 'Queue stopped.', 503) },
-      async create(input: any) { created.push(input); return { id: input.id, outputs: [] } },
-      async get(id: string) { return { id, attempt: 1, outputs: [] } },
-      async rerun(id: string, request: any) { reruns.push({ id, request }); return { id: request.id, outputs: [] } },
+    // Dependencies must be ACTIVE before awaiting their consumers. Providing
+    // them on this still-loading parent leaves child plugins PENDING.
+    await context.plugin(services => {
+      services.reflect.provide('process', {})
+      services.reflect.provide('auth', {})
+      services.reflect.provide('settings', {})
+      services.reflect.provide('extensions', {})
+      services.reflect.provide('catalog', { workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
+      services.reflect.provide('tasks', {
+        assertReady() { if (unavailable) throw new AppError('TASK_RUNTIME_UNAVAILABLE', 'Queue stopped.', 503) },
+        async create(input: any) { created.push(input); return { id: input.id, outputs: [] } },
+        async get(id: string) { return { id, attempt: 1, outputs: [] } },
+        async rerun(id: string, request: any) { reruns.push({ id, request }); return { id: request.id, outputs: [] } },
+      })
     })
-    await context.plugin(Files, { root })
+    await context.plugin(fileService, { root })
     await context.plugin(Http, { host: '127.0.0.1', port: 0 })
     await context.plugin(Api)
   })
@@ -42,6 +47,23 @@ async function setup(t: any) {
   }
   return { ctx, created, reruns, post, form, failRuntime: () => { unavailable = true } }
 }
+
+test('API fixture waits for asynchronous dependency initialization before advertising readiness', async t => {
+  let release!: () => void, entered!: () => void, ready = false
+  const gate = new Promise<void>(resolve => { release = resolve })
+  const started = new Promise<void>(resolve => { entered = resolve })
+  class DelayedFiles extends Files {
+    async [Service.init]() { entered(); await gate; return super[Service.init]() }
+  }
+  const initializing = setup(t, DelayedFiles).then(value => { ready = true; return value })
+  await started
+  await nextTurn()
+  try { assert.equal(ready, false, 'API became ready while its files dependency was still initializing') }
+  finally { release() }
+  const { post, form } = await initializing
+  const response = await post(form())
+  assert.equal(response.status, 201, await response.text())
+})
 
 test('health reports a stopped task runtime as unavailable', async t => {
   const { ctx, failRuntime } = await setup(t)
@@ -80,7 +102,8 @@ test('multipart accepts named inputs and rejects duplicate slots before creating
 test('metadata-only multipart reserves a fresh task directory like JSON requests', async t => {
   const { ctx, created, post, form } = await setup(t)
   const data = form(), id = JSON.parse(data.get('request') as string).id
-  assert.equal((await post(data)).status, 201)
+  const response = await post(data)
+  assert.equal(response.status, 201, await response.text())
   await ctx.files.log(id, 'Task validation failed before the first invocation')
   assert.match(await ctx.files.readLog(id), /Task validation failed/)
   const repeated = await post(data)
