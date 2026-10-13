@@ -159,7 +159,7 @@ async function upload(ctx: Context, request: HttpRequest) {
     if (failure) throw failure
     requireId(metadata?.id)
     if (!reservation) release = await ctx.files.reserve(metadata.id, true)
-    return { release, input: { ...metadata, inputs, artifacts, sourceName: Object.values(artifacts)[0]?.name || metadata.workflowId } as CreateTask }
+    return { release, input: { ...metadata, inputs, artifacts, sourceName: Object.values(artifacts)[0]?.name || metadata.sourceName || metadata.workflowId } as CreateTask }
   } catch (error) { await Promise.all(jobs); await release?.(); throw error }
   finally { request.raw.unpipe(parser); request.raw.resume() }
 }

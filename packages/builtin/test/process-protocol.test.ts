@@ -73,3 +73,21 @@ except Exception as error:
   })), (error: any) => error.code === 'ORIGINAL_PROVIDER_FAILURE' && /provider disconnected/.test(error.message))
   assert.deepEqual(receipts, ['unknown'])
 })
+
+test('transient EPERM from a group existence probe does not replace the worker error', async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  t.after(() => plugin.dispose())
+  const kill = process.kill.bind(process)
+  let injected = false
+  const mocked = t.mock.method(process, 'kill', (pid: number, signal?: string | number) => {
+    if (pid < 0 && signal === 0 && !injected) {
+      injected = true
+      throw Object.assign(new Error('kill EPERM'), { code: 'EPERM' })
+    }
+    return kill(pid, signal as NodeJS.Signals)
+  })
+  try {
+    await assert.rejects(ctx.process.worker(worker(receive + `send('error',{code:'DOWNLOAD_FAILED',message:'Original download failure'}); setInterval(()=>{},1000); });`), invocation, context()), (error: any) => error.code === 'DOWNLOAD_FAILED' && error.message === 'Original download failure')
+    assert.equal(injected, true)
+  } finally { mocked.mock.restore() }
+})

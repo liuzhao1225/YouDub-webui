@@ -125,3 +125,14 @@ test('malformed or oversized uploads fail promptly without creating a task', asy
   assert.equal((await rejected.json() as any).error.code, 'FILE_TOO_LARGE')
   assert.equal(created.length, 0)
 })
+
+test('multipart accepts URL metadata without a file and preserves the source name', async t => {
+  const { created, post } = await setup(t)
+  const data = new FormData(), source = 'https://www.youtube.com/watch?v=jNQXAC9IVRw'
+  data.append('request', JSON.stringify({ id: randomUUID(), workflowId: 'test.download', sourceName: source, config: { source_url: source } }))
+  const response = await post(data)
+  assert.equal(response.status, 201, await response.text())
+  assert.equal(created[0].sourceName, source)
+  assert.deepEqual(created[0].inputs, {})
+  assert.equal(created[0].config.source_url, source)
+})

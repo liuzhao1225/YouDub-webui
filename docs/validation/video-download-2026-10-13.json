@@ -1,0 +1,308 @@
+{
+  "date": "2026-10-13",
+  "scope": "Real download and media preparation only; no ASR, translation or TTS calls.",
+  "preview": "http://127.0.0.1:18301/",
+  "network": {
+    "youtube": "HTTP(S) proxy 127.0.0.1:7897",
+    "bilibili": "Direct, NO_PROXY=*"
+  },
+  "downloads": [
+    {
+      "success": true,
+      "source": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+      "elapsed_seconds": 4.55,
+      "sha256": "530ce15e94ed23e94366da195cb401f566de123116666bf6cdff287de3dfa1bc",
+      "size_bytes": 533915,
+      "video": "/Users/liuzhao/code/YouDub-webui/output/validation/download-20261013/youtube/7699aeee-bbf4-4a0a-adef-128afbe986fc/work/source.mp4",
+      "state": "completed",
+      "artifacts": {
+        "video": {
+          "path": "source.mp4",
+          "mimeType": "video/mp4",
+          "schemaId": "video/mp4/v1",
+          "metadata": {
+            "sourceUrl": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+            "title": "Me at the zoo",
+            "durationMs": 18933
+          }
+        }
+      },
+      "outputs": {
+        "video": {
+          "$artifact": "video"
+        }
+      }
+    },
+    {
+      "success": true,
+      "source": "https://www.bilibili.com/video/BV1r44y1f7Tc/",
+      "elapsed_seconds": 5.26,
+      "sha256": "5ff45cca89de075d76ea9c5d69d7503c2cd1573dae82ecc2f0f3c2217a0f684b",
+      "size_bytes": 10986939,
+      "video": "/Users/liuzhao/code/YouDub-webui/output/validation/download-20261013/bilibili/4f184a69-f348-48a7-b781-0193621c32bb/work/source.mp4",
+      "state": "completed",
+      "artifacts": {
+        "video": {
+          "path": "source.mp4",
+          "mimeType": "video/mp4",
+          "schemaId": "video/mp4/v1",
+          "metadata": {
+            "sourceUrl": "https://www.bilibili.com/video/BV1r44y1f7Tc/",
+            "title": "高清4K无水印空镜头风景视频素材，横屏5-10秒，城市夕阳晚霞月夜系列",
+            "durationMs": 65099
+          }
+        }
+      },
+      "outputs": {
+        "video": {
+          "$artifact": "video"
+        }
+      }
+    },
+    {
+      "success": true,
+      "source": "https://b23.tv/BV1kh411S79S",
+      "elapsed_seconds": 25.21,
+      "sha256": "a1f9e59932ef81d84980c68c9f4840aa5630cd96f044f17c1cfda8932ab5eab9",
+      "size_bytes": 18096983,
+      "video": "/Users/liuzhao/code/YouDub-webui/output/validation/download-20261013/b23-headers/f267dbc3-88e2-4607-a346-1c96c51000a2/work/source.mp4",
+      "state": "completed",
+      "artifacts": {
+        "video": {
+          "path": "source.mp4",
+          "mimeType": "video/mp4",
+          "schemaId": "video/mp4/v1",
+          "metadata": {
+            "sourceUrl": "https://www.bilibili.com/video/BV1kh411S79S/",
+            "title": "影视后期教学，10秒学会AE中英文切换，方法适用AE CC -AE 2022",
+            "durationMs": 145366
+          }
+        }
+      },
+      "outputs": {
+        "video": {
+          "$artifact": "video"
+        }
+      }
+    }
+  ],
+  "managedTaskChecks": [
+    {
+      "id": "57f23ee9-f3a2-41a9-870b-bce36f329fe9",
+      "sourceName": "youtube",
+      "status": "succeeded",
+      "error": null,
+      "outputs": [
+        {
+          "id": "video",
+          "label": "视频",
+          "role": "video",
+          "name": "source.mp4",
+          "mimeType": "video/mp4",
+          "size": 533915
+        }
+      ],
+      "steps": [
+        {
+          "id": "download",
+          "label": "下载视频",
+          "status": "completed",
+          "invocationId": "1e5e1698-44fc-4124-a1b5-ec5e8cf8268b",
+          "progress": 1,
+          "message": "视频下载完成",
+          "startedAt": "2026-10-13T07:51:18.035Z",
+          "finishedAt": "2026-10-13T07:51:25.231Z",
+          "outputs": {
+            "video": {
+              "id": "85b17d21-e981-4901-89ed-0ebcea42b44a",
+              "schemaId": "video/mp4/v1"
+            }
+          },
+          "error": null
+        },
+        {
+          "id": "prepare",
+          "label": "准备媒体",
+          "status": "completed",
+          "invocationId": "d0046d31-8328-489a-9934-a7553c7b6195",
+          "progress": 1,
+          "message": "Extracting source audio",
+          "startedAt": "2026-10-13T07:51:25.235Z",
+          "finishedAt": "2026-10-13T07:51:25.682Z",
+          "outputs": {
+            "sourceAudio": {
+              "id": "282ddee4-d074-4867-81cb-62dc824edb93",
+              "schemaId": "audio/wav/v1"
+            },
+            "mediaInfo": {
+              "duration_ms": 18933,
+              "width": 320,
+              "height": 240,
+              "frame_rate": 15,
+              "video_codec": "av1",
+              "audio_codec": "aac"
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "ff84ed39-f745-4354-9407-b437c264c39b",
+      "sourceName": "bilibili",
+      "status": "succeeded",
+      "error": null,
+      "outputs": [
+        {
+          "id": "video",
+          "label": "视频",
+          "role": "video",
+          "name": "source.mp4",
+          "mimeType": "video/mp4",
+          "size": 10986939
+        }
+      ],
+      "steps": [
+        {
+          "id": "download",
+          "label": "下载视频",
+          "status": "completed",
+          "invocationId": "529464e0-0c8e-4830-b5e7-5c19c4f45466",
+          "progress": 1,
+          "message": "视频下载完成",
+          "startedAt": "2026-10-13T07:54:44.664Z",
+          "finishedAt": "2026-10-13T07:55:12.307Z",
+          "outputs": {
+            "video": {
+              "id": "2d721b0b-edb6-4879-9bbf-8b551b81e48a",
+              "schemaId": "video/mp4/v1"
+            }
+          },
+          "error": null
+        },
+        {
+          "id": "prepare",
+          "label": "准备媒体",
+          "status": "completed",
+          "invocationId": "d25b8c69-9439-4e14-8877-f3618b7ed8e3",
+          "progress": 1,
+          "message": "Extracting source audio",
+          "startedAt": "2026-10-13T07:55:12.313Z",
+          "finishedAt": "2026-10-13T07:55:12.871Z",
+          "outputs": {
+            "sourceAudio": {
+              "id": "bfd3cdef-9fc6-48b7-92ff-210c55c1f779",
+              "schemaId": "audio/wav/v1"
+            },
+            "mediaInfo": {
+              "duration_ms": 65099,
+              "width": 1920,
+              "height": 1080,
+              "frame_rate": 30.00031682362237,
+              "video_codec": "hevc",
+              "audio_codec": "aac"
+            }
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "f5f30e69-cf2a-4486-8dd4-cd4f706a4609",
+      "sourceName": "invalid",
+      "status": "failed",
+      "error": {
+        "code": "EPERM",
+        "message": "kill EPERM"
+      },
+      "outputs": [],
+      "steps": [
+        {
+          "id": "download",
+          "label": "下载视频",
+          "status": "failed",
+          "invocationId": "95c1e4d0-51f9-45f1-b1b5-53e572be9878",
+          "progress": null,
+          "message": null,
+          "startedAt": "2026-10-13T07:55:13.191Z",
+          "finishedAt": "2026-10-13T07:55:13.564Z",
+          "outputs": {},
+          "error": {
+            "code": "EPERM",
+            "message": "kill EPERM"
+          }
+        },
+        {
+          "id": "prepare",
+          "label": "准备媒体",
+          "status": "pending",
+          "invocationId": null,
+          "progress": null,
+          "message": null,
+          "startedAt": null,
+          "finishedAt": null,
+          "outputs": {},
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "c535f536-fae2-405e-9c25-4378477953b0",
+      "sourceName": "invalid",
+      "status": "failed",
+      "error": {
+        "code": "INVALID_VIDEO_URL",
+        "message": "请输入 YouTube 或 B 站的单个视频链接。"
+      },
+      "outputs": [],
+      "steps": [
+        {
+          "id": "download",
+          "label": "下载视频",
+          "status": "failed",
+          "invocationId": "e0174890-ba96-41eb-bd33-c8cad52f25e5",
+          "progress": null,
+          "message": null,
+          "startedAt": "2026-10-13T07:56:26.725Z",
+          "finishedAt": "2026-10-13T07:56:27.092Z",
+          "outputs": {},
+          "error": {
+            "code": "INVALID_VIDEO_URL",
+            "message": "请输入 YouTube 或 B 站的单个视频链接。"
+          }
+        },
+        {
+          "id": "prepare",
+          "label": "准备媒体",
+          "status": "pending",
+          "invocationId": null,
+          "progress": null,
+          "message": null,
+          "startedAt": null,
+          "finishedAt": null,
+          "outputs": {},
+          "error": null
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "hostTests": 61,
+    "frontendTests": 54,
+    "pythonTests": 32,
+    "typecheck": "passed",
+    "webBuild": "passed",
+    "webLint": "passed",
+    "ffmpegFullDecode": "passed for all three downloaded videos",
+    "browserErrors": []
+  },
+  "fixes": [
+    "Resolve FFmpeg absolute path for yt-dlp merge",
+    "Use standard HTTP headers for b23 redirects",
+    "Treat EPERM from process-group signal 0 as existing until reaped; retain original worker errors"
+  ],
+  "limitations": [
+    "Expired short links and platform/network errors remain visible failures.",
+    "Shorts URL normalization is covered by unit tests; no separate live Shorts video was downloaded."
+  ]
+}

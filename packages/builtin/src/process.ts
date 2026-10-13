@@ -55,7 +55,13 @@ export default class Processes extends Service implements ProcessService {
         if (process.platform === 'win32') return !managed.ended
         if (!child.pid) return false
         try { process.kill(-child.pid, 0); return true }
-        catch (error: any) { if (error.code === 'ESRCH') return false; throw error }
+        catch (error: any) {
+          if (error.code === 'ESRCH') return false
+          // macOS can report EPERM while a terminated group is being reaped.
+          // Signal 0 still proves existence; actual termination errors propagate.
+          if (error.code === 'EPERM') return true
+          throw error
+        }
       }
       if (managed.ended && !groupAlive()) return
       const kill = (signal: NodeJS.Signals) => {

@@ -26,6 +26,7 @@ export default async function composition(): Promise<EntryOptions[]> {
   return [
     entry('process', 'process'), entry('catalog', 'catalog'), entry('files', 'files', { root }),
     entry('store', 'store', { root, repoRoot, python }), entry('secrets', 'secrets'), entry('settings', 'settings'),
+    provider('youdub.download', 'yt-dlp', ['download']),
     provider('youdub.media', 'FFmpeg / Media', ['prepare', 'reference', 'mix', 'export', 'importSubtitles']),
     provider('whisper', 'Whisper', ['recognize'], 'asr'), provider('openai', 'OpenAI compatible', ['translate'], 'translation', 'remote'),
     provider('voxcpm', 'VoxCPM', ['synthesize'], 'tts'), provider('demucs', 'Demucs', ['separate'], 'separation'),

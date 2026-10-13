@@ -1,10 +1,11 @@
 import type { Context } from 'cordis'
 import { type WorkflowDefinition, type JsonObject, type Diagnostic, type CatalogService, type WorkflowPlan, type ExactProviderBinding } from '@youdub/sdk'
+import { videoSource } from '@youdub/sdk/video-source'
 import { operations } from './media-contracts.js'
 
 export const name = 'workflow-localize'
 export const inject = ['catalog', 'settings']
-const labels: Record<string, string> = { prepare: '准备媒体', separate: '分离人声', recognize: '语音识别', translate: '翻译', reference: '准备参考音频', synthesize: '生成配音', mix: '混音', align: '字幕对齐', export: '导出' }
+const labels: Record<string, string> = { download: '下载视频', prepare: '准备媒体', separate: '分离人声', recognize: '语音识别', translate: '翻译', reference: '准备参考音频', synthesize: '生成配音', mix: '混音', align: '字幕对齐', export: '导出' }
 const selection = (extra: JsonObject = {}) => ({ type: 'object', required: ['adapter', 'model', 'device'], additionalProperties: false,
   properties: { adapter: { type: 'string', minLength: 1 }, model: { type: 'string', minLength: 1 }, device: { type: 'string', minLength: 1 }, ...extra } })
 const nullable = (schema: JsonObject) => ({ anyOf: [schema, { type: 'null' }] })
@@ -12,6 +13,7 @@ export const localizeSchema: JsonObject = {
   type: 'object', additionalProperties: false,
   required: ['source_language', 'target_language', 'output_mode', 'keep_background', 'asr', 'translation', 'tts', 'separation'],
   properties: {
+    source_url: { type: 'string', minLength: 1, maxLength: 2048 },
     source_language: { type: 'string', minLength: 2 }, target_language: { type: 'string', minLength: 2 },
     output_mode: { enum: ['subtitles', 'dubbing', 'both'] }, keep_background: { type: 'boolean' },
     asr: selection({ initial_prompt: { type: ['string', 'null'], maxLength: 500 } }), translation: selection(),
@@ -35,10 +37,16 @@ export async function apply(ctx: Context, plugin: { integrity: string; version?:
   const pick = (kind: string, config: JsonObject, catalog: CatalogService) => catalog.listProviders().find(item => item.capability === kind && (item.adapter ?? item.id) === config[kind]?.adapter)
   const workflow: WorkflowDefinition = {
     id: 'youdub.localize', version, pluginId, pluginVersion: version, integrity: plugin.integrity,
-    describe: () => ({ id: 'youdub.localize', version, label: '视频翻译与配音', inputs: [{ name: 'video', label: '视频', required: true, acceptedMimeTypes: ['video/*'], maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }], configSchema: localizeSchema, defaults: structuredClone(defaults()), ui: { editor: 'youdub.localize' } }),
-    validate: async (_, config, catalog) => {
+    describe: () => ({ id: 'youdub.localize', version, label: '视频翻译与配音', inputs: [{ name: 'video', label: '视频', required: false, acceptedMimeTypes: ['video/*'], maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }], configSchema: localizeSchema, defaults: structuredClone(defaults()), ui: { editor: 'youdub.localize', sourceUrlInput: 'video' } }),
+    validate: async (inputs, config, catalog) => {
       const errors: Diagnostic[] = []
       const fail = (message: string, field?: string) => errors.push({ code: 'INVALID_CONFIG', message, field })
+      if (Boolean(inputs.video) === Boolean(config.source_url)) fail('请选择本地视频或粘贴一个视频链接。', 'video')
+      if (config.source_url) {
+        try { videoSource(config.source_url) } catch (error) { fail((error as Error).message, 'source_url') }
+        const downloader = catalog.listProviders().find(provider => provider.id === 'youdub.download')
+        if (!downloader?.available) fail(downloader?.unavailableReason || '视频下载服务不可用。', 'source_url')
+      }
       const media = catalog.listProviders().find(provider => provider.id === 'youdub.media')
       if (!media?.available) fail(media?.unavailableReason || 'FFmpeg / Media is unavailable.', 'video')
       if (config.source_language.toLowerCase() === config.target_language.toLowerCase() || config.target_language === 'auto') fail('Source and target languages must differ.', 'target_language')
@@ -72,11 +80,18 @@ export async function apply(ctx: Context, plugin: { integrity: string; version?:
         plan.bindings[key] = { pluginId: provider.pluginId, pluginVersion: provider.pluginVersion, integrity: provider.integrity, providerId, model: selection.model, modelRevision: null, device: selection.device, options: JSON.parse(JSON.stringify(options)) } satisfies ExactProviderBinding
       }
       binding('media', 'youdub.media')
+      if (config.source_url) {
+        binding('download', 'youdub.download')
+        plan.bindings.download.options = { maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }
+        plan.config.source_url = videoSource(config.source_url).url
+      }
       for (const kind of ['asr', 'translation', 'tts', 'separation', 'subtitle_alignment']) if (config[kind]) binding(kind, pick(kind, config, catalog)!.id, config[kind])
       const task = (name: string) => ({ from: 'task' as const, name })
       const step = (stepId: string, output: string) => ({ from: 'step' as const, stepId, output })
       const add = (id: string, bindingKey: string, input: JsonObject) => { const operation = operations[id]; plan.steps.push({ id, label: labels[id], bindingKey, operation: operation.id, input, outputs: structuredClone(operation.outputs) }) }
-      add('prepare', 'media', { video: task('video') })
+      if (config.source_url) add('download', 'download', { url: plan.config.source_url })
+      const video = config.source_url ? step('download', 'video') : task('video')
+      add('prepare', 'media', { video })
       if (config.separation) add('separate', 'separation', { sourceAudio: step('prepare', 'sourceAudio') })
       add('recognize', 'asr', { audio: config.separation ? step('separate', 'vocals') : step('prepare', 'sourceAudio'), mediaInfo: step('prepare', 'mediaInfo') })
       add('translate', 'translation', { transcript: step('recognize', 'transcript') })
@@ -88,7 +103,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; version?:
         if (config.subtitle_alignment) add('align', 'subtitle_alignment', { transcript: step('recognize', 'transcript'), translation: step('translate', 'translation'), dubbedTimeline: step('mix', 'dubbedTimeline'), adjustedSpeech: step('mix', 'adjustedSpeech') })
         else plan.omittedSteps!.push({ id: 'align', reason: 'Model subtitle alignment is disabled.' })
       }
-      add('export', 'media', { video: task('video'), mediaInfo: step('prepare', 'mediaInfo'), transcript: step('recognize', 'transcript'), translation: step('translate', 'translation'), ...(config.tts ? { finalAudio: step('mix', 'finalAudio'), dubbedTimeline: step('mix', 'dubbedTimeline') } : {}), ...(config.subtitle_alignment ? { wordAlignment: step('align', 'wordAlignment') } : {}) })
+      add('export', 'media', { video, mediaInfo: step('prepare', 'mediaInfo'), transcript: step('recognize', 'transcript'), translation: step('translate', 'translation'), ...(config.tts ? { finalAudio: step('mix', 'finalAudio'), dubbedTimeline: step('mix', 'dubbedTimeline') } : {}), ...(config.subtitle_alignment ? { wordAlignment: step('align', 'wordAlignment') } : {}) })
       const final = (id: string, output: string, label: string) => plan.outputs.push({ id, label, role: id, source: { stepId: 'export', output }, required: true })
       final('video', 'video', '视频')
       if (config.output_mode !== 'subtitles') final('audio', 'audio', '配音音频')

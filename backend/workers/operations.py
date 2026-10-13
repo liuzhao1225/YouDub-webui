@@ -91,7 +91,7 @@ class Operation:
 
     def execute(self):
         method = {
-            "media.prepare/v1": self.prepare, "audio.separate/v1": self.separate,
+            "media.download/v1": self.download, "media.prepare/v1": self.prepare, "audio.separate/v1": self.separate,
             "speech.transcribe/v1": self.asr, "text.translate/v1": self.translate,
             "voice.reference/v1": self.reference, "speech.synthesize/v1": self.tts,
             "audio.mix/v1": self.mix, "text.align/v1": self.align,
@@ -103,6 +103,12 @@ class Operation:
         outputs = method()
         self.wire.check_cancel()
         return {"state": "completed", "artifacts": self.artifacts, "outputs": outputs}
+
+    def download(self):
+        from .download import download_video
+        path, metadata = download_video(self.inputs["url"], self.work, self.wire,
+                                        int(self.option("maxBytes", default=4 * 1024 ** 3)))
+        return {"video": self.artifact("video", path, "video/mp4/v1", "video/mp4", metadata)}
 
     def prepare(self):
         from backend.app.config import ffmpeg_binary

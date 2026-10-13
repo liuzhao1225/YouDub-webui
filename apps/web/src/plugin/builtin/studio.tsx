@@ -1,7 +1,9 @@
 import { Context } from 'cordis'
-import { useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { ArrowRight, ChevronRight, FileText, Film, Loader2, Sparkles, Upload, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { ArrowRight, ChevronRight, FileText, Film, Link2, Loader2, Sparkles, Upload, X } from 'lucide-react'
 import { Link, text, useClient, type Catalog, type InputSlot, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
+import { videoSource } from '@youdub/sdk/video-source'
+import { Input } from '@/components/ui/input'
 import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -14,11 +16,12 @@ import { useQuery } from './use-query'
 import { ACTIVE_STATUSES, TaskProgress, TaskState } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
 
-function UploadSlot({ slot, file, disabled, onChange }: { slot: InputSlot; file?: File; disabled: boolean; onChange(file?: File): void }) {
+function UploadSlot({ slot, file, disabled, alternative = false, onChange }: { slot: InputSlot; file?: File; disabled: boolean; alternative?: boolean; onChange(file?: File): void }) {
   const tx = useText()
   const { language } = useI18n()
   const input = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
+  useEffect(() => { if (!file && input.current) input.current.value = '' }, [file])
   const video = slot.acceptedMimeTypes.some((mime) => mime.startsWith('video/'))
   const Icon = video ? Film : FileText
   return <div>
@@ -37,7 +40,7 @@ function UploadSlot({ slot, file, disabled, onChange }: { slot: InputSlot; file?
       </div> : <div className="flex flex-col items-center gap-2.5 text-center">
         <span className="flex size-11 items-center justify-center rounded-full bg-card shadow-card ring-1 ring-border"><Upload className="size-5 text-brand-blue" /></span>
         <p className="text-[15px] font-medium">{video ? tx('Drop a video here, or click to choose', '拖入视频，或点击选择文件', '動画をドロップ、またはクリックして選択') : tx('Drop a file here, or click to choose', '拖入文件，或点击选择', 'ファイルをドロップ、またはクリックして選択')}</p>
-        <p className="text-xs text-subtle-foreground">{text(slot.label, language)}{slot.required ? '' : ` · ${tx('Optional', '可选', '任意')}`}{slot.maxBytes ? ` · ${tx('Up to', '最大', '上限')} ${formatBytes(slot.maxBytes)}` : ''}</p>
+        <p className="text-xs text-subtle-foreground">{text(slot.label, language)}{slot.required || alternative ? '' : ` · ${tx('Optional', '可选', '任意')}`}{slot.maxBytes ? ` · ${tx('Up to', '最大', '上限')} ${formatBytes(slot.maxBytes)}` : ''}</p>
       </div>}
     </div>
   </div>
@@ -49,15 +52,23 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
   const { language } = useI18n()
   const [config, setConfig] = useState<JsonObject>(() => structuredClone(workflow.defaults ?? defaultConfig(workflow.configSchema) ?? {}) as JsonObject)
   const [files, setFiles] = useState<Record<string, File>>({}), [error, setError] = useState(''), [busy, setBusy] = useState(false), [pendingId, setPendingId] = useState('')
+  const [sourceUrl, setSourceUrl] = useState(''), [linkTouched, setLinkTouched] = useState(false)
+  const linkSlot = workflow.ui?.sourceUrlInput
+  let source: ReturnType<typeof videoSource> | undefined, linkError = ''
+  if (sourceUrl.trim()) {
+    try { source = videoSource(sourceUrl) }
+    catch (failure) { linkError = failure instanceof Error ? failure.message : String(failure) }
+  }
   const supported = useEditorSupported(workflow.id, workflow.configSchema)
-  const requiredFiles = workflow.inputs.filter((slot) => slot.required).every((slot) => Boolean(files[slot.name]))
+  const requiredFiles = workflow.inputs.filter((slot) => slot.required || slot.name === linkSlot).every((slot) => Boolean(files[slot.name]) || (slot.name === linkSlot && Boolean(source)))
+  const taskConfig = { ...config, ...(source ? { source_url: source.url } : {}) }
   async function submit(event: FormEvent) {
-    event.preventDefault(); if (busy || !supported || !requiredFiles) return
-    const missing = schemaProblems(workflow.configSchema).length ? [] : validateConfig(workflow.configSchema, config)
+    event.preventDefault(); if (busy || !supported || !requiredFiles || linkError) return
+    const missing = schemaProblems(workflow.configSchema).length ? [] : validateConfig(workflow.configSchema, taskConfig)
     if (missing.length) { setError(`${tx('Check options:', '请检查选项：', 'オプションを確認：')}${missing.join(', ')}`); return }
     const id = pendingId || crypto.randomUUID()
     const body = new FormData()
-    body.append('request', JSON.stringify({ id, workflowId: workflow.id, workflowVersion: workflow.version, config }))
+    body.append('request', JSON.stringify({ id, workflowId: workflow.id, workflowVersion: workflow.version, config: taskConfig, ...(source ? { sourceName: source.url } : {}) }))
     for (const [name, file] of Object.entries(files)) body.append(`input.${name}`, file)
     setBusy(true); setError(''); setPendingId(id); onLockChange(true)
     try { const task = await apiClient.request<TaskView>('/api/v2/tasks', { method: 'POST', body }); navigation.push(`/tasks/${task.id}`) }
@@ -68,16 +79,30 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
     <div aria-hidden="true" className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 bg-[radial-gradient(55%_60%_at_30%_45%,rgb(251_114_153/0.16),transparent_70%),radial-gradient(50%_60%_at_75%_55%,rgb(0_174_236/0.16),transparent_70%)] opacity-70 blur-2xl dark:opacity-100" />
     <form onSubmit={(event) => void submit(event)} className="relative rounded-[28px] p-px before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,rgb(255_0_51/0.6),rgb(251_114_153/0.35)_42%,rgb(0_174_236/0.6))] before:opacity-45 before:transition-opacity before:duration-300 focus-within:before:opacity-100">
       <div className="relative rounded-[27px] bg-card p-2 shadow-float">
-        <div className="grid gap-3">{workflow.inputs.map((slot) => <UploadSlot key={slot.name} slot={slot} file={files[slot.name]} disabled={busy || !!pendingId} onChange={(file) => {
+        {linkSlot && <div className="px-3 pt-3 pb-1">
+          <div className="relative flex items-center gap-2 rounded-xl border border-input bg-muted px-3 focus-within:border-ring">
+            <Link2 className="size-4 shrink-0 text-subtle-foreground" />
+            <Input aria-label={tx('Video link', '视频链接', '動画リンク')} inputMode="url" autoComplete="off" value={sourceUrl} disabled={busy || !!pendingId} placeholder={tx('Paste a YouTube or Bilibili link', '粘贴 YouTube 或 B 站视频链接', 'YouTube / Bilibili のリンクを貼り付け')} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
+              setSourceUrl(event.target.value); setLinkTouched(false); setError('')
+              if (event.target.value) setFiles((current) => { const next = { ...current }; delete next[linkSlot]; return next })
+            }} />
+            {source && <span className="shrink-0 text-xs text-muted-foreground">{source.platform === 'Bilibili' ? 'B 站' : 'YouTube'}</span>}
+            {sourceUrl && <Button type="button" variant="ghost" size="icon-sm" disabled={busy || !!pendingId} aria-label={tx('Clear link', '清空链接', 'リンクをクリア')} onClick={() => { setSourceUrl(''); setLinkTouched(false) }}><X /></Button>}
+          </div>
+          {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
+          <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx('or upload a video', '或上传本地视频', 'または動画をアップロード')}<span className="h-px flex-1 bg-border" /></div>
+        </div>}
+        <div className="grid gap-3">{workflow.inputs.map((slot) => <UploadSlot key={slot.name} slot={slot} alternative={slot.name === linkSlot} file={files[slot.name]} disabled={busy || !!pendingId} onChange={(file) => {
           if (file && slot.maxBytes && file.size > slot.maxBytes) {
             setError(`${text(slot.label, language)} ${tx('exceeds the file size limit', '超过文件大小限制', 'はファイルサイズの上限を超えています')}`)
             setFiles((current) => { const next = { ...current }; delete next[slot.name]; return next }); return
           }
+          if (file && slot.name === linkSlot) { setSourceUrl(''); setLinkTouched(false) }
           setError(''); setFiles((current) => { const next = { ...current }; if (file) next[slot.name] = file; else delete next[slot.name]; return next })
         }} />)}</div>
         <div className={cn('flex flex-wrap items-center gap-3 px-2 pt-2.5 pb-1', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
           <div className="min-w-0 flex-1"><ConfigEditor mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
-          <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx('Submit with the same ID', '使用同一 ID 提交', '同じ ID で送信') : tx('Start processing', '开始处理', '処理を開始')}</Button>
+          <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError)}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx('Submit with the same ID', '使用同一 ID 提交', '同じ ID で送信') : source ? tx('Download and process', '下载并处理', 'ダウンロードして処理') : tx('Start processing', '开始处理', '処理を開始')}</Button>
         </div>
       </div>
     </form>
@@ -113,7 +138,6 @@ function Studio() {
           <BrandMark animated className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
           <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur [@media(max-height:820px)]:hidden"><Sparkles className="size-3.5 text-brand-pink" />{tx('AI translation · Dubbing · Subtitles', 'AI 视频翻译 · 配音 · 字幕', 'AI 動画翻訳 · 吹き替え · 字幕')}</span>
           <h1 className="mt-5 text-[34px] leading-[1.12] font-semibold tracking-tight text-balance sm:text-5xl lg:text-[52px] lg:[@media(max-height:820px)]:text-[44px]">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
-          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-pretty text-muted-foreground sm:text-[17px] [@media(max-height:820px)]:mt-3">{t.studio.heroSubtitle}</p>
         </header>
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
           {error && <div className="mb-5 space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Reload', '重新加载', '再読み込み')}</Button></div>}

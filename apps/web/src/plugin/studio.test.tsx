@@ -128,3 +128,35 @@ it('keeps active tasks separate from recent results and links to their detail pa
   await userEvent.setup().click(screen.getByRole('link', { name: /completed.mp4/ }))
   expect(push).toHaveBeenCalledWith('/tasks/completed')
 })
+
+it('places the link first, switches between sources and submits a canonical URL without a file', async () => {
+  const linked: Catalog = { providers: [], workflows: [{ ...catalog.workflows[0], ui: { sourceUrlInput: 'video' }, inputs: [{ name: 'video', label: '视频', acceptedMimeTypes: ['video/*'], required: false }], configSchema: { type: 'object', properties: { source_url: { type: 'string' } } }, defaults: {} }] }
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return linked
+    if (init?.method === 'POST') return { id: 'download' }
+    return { items: [], hasMore: false, limit: 12, offset: 0 }
+  })
+  const push = mount(request)
+  const user = userEvent.setup()
+  const link = await screen.findByLabelText('视频链接')
+  const file = screen.getByLabelText('视频') as HTMLInputElement
+  expect(link.compareDocumentPosition(file) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(screen.getByRole('button', { name: '开始处理' })).toBeDisabled()
+  await user.upload(file, new File(['video'], 'clip.mp4', { type: 'video/mp4' }))
+  await user.type(link, 'https://youtu.be/jNQXAC9IVRw')
+  expect(file.files).toHaveLength(0)
+  expect(screen.queryByText('clip.mp4')).not.toBeInTheDocument()
+  await user.upload(file, new File(['video'], 'clip.mp4', { type: 'video/mp4' }))
+  expect(link).toHaveValue('')
+  await user.type(link, 'http://127.0.0.1/secret')
+  await user.tab()
+  expect(screen.getByRole('button', { name: '开始处理' })).toBeDisabled()
+  expect(screen.getByText('请输入 YouTube 或 B 站的单个视频链接。')).toBeInTheDocument()
+  await user.clear(link)
+  await user.type(link, 'https://youtu.be/jNQXAC9IVRw')
+  await user.click(screen.getByRole('button', { name: '下载并处理' }))
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/download'))
+  const body = request.mock.calls.find(([, init]) => init?.method === 'POST')![1]!.body as FormData
+  expect(JSON.parse(body.get('request') as string).config.source_url).toBe('https://www.youtube.com/watch?v=jNQXAC9IVRw')
+  expect(body.has('input.video')).toBe(false)
+})

@@ -169,7 +169,7 @@ npm run plugins -- install --source npm:PACKAGE_NAME@1.0.0
 - 当前语言目录包含英文、中文、日文，具体能力取决于提供者；可选 Qwen 对齐支持英文、中文。
 - MVP 使用单机单活跃任务；插件启停在重启后生效。DAG 编辑器、热替换、插件市场和分布式 worker 留待后续需求。
 - 本地 workflow、Client 与 Python 插件已有验证；GitHub/npm 远端插件实装尚未验收。
-- 当前 HTTP 接口为 `/api/v2`。旧 FastAPI / v1 HTTP 入口及默认 URL 下载流程已移除。
+- 当前 HTTP 接口为 `/api/v2`。旧 FastAPI / v1 HTTP 入口已移除。链接下载通过 `media.download/v1` 接入现有任务流程，支持 YouTube、Shorts、B 站及 b23.tv 单视频链接；使用 yt-dlp、Node.js 与 FFmpeg，沿用 10 分钟和文件大小限制。
 
 旧版本升级和数据迁移请先阅读[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。真实任务、迁移与未验证范围记录在[迁移验收](docs/design/cordis-plugin-migration.md)、[逐句分句验收](docs/validation/asr-punkt-sentences-2026-10-09.json)及[字幕显示验收](docs/validation/subtitle-display-2026-10-09.json)。
 

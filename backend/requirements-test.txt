@@ -10,3 +10,4 @@ numpy
 soundfile
 pytest
 httpx[socks]
+yt-dlp[default]==2026.8.19
