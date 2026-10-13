@@ -80,7 +80,7 @@ python3.12 -m venv .venv
 
 已有 checkout 时，执行 `git submodule update --init --recursive` 补齐 Demucs 子模块。已有 `.venv` 时复用环境；仅在 Aliyun 缺包时，改用单一 [Tsinghua 镜像](https://pypi.tuna.tsinghua.edu.cn/simple/)安装缺少的包。
 
-### 2. 配置访问密码
+### 2. 创建本地配置
 
 首次创建配置；已有 `.env` 时保留原文件：
 
@@ -88,10 +88,9 @@ python3.12 -m venv .venv
 cp .env.example .env
 ln .env env.txt
 test .env -ef env.txt
-.venv/bin/python -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
 ```
 
-将生成的 Argon2id 哈希填入 `.env` 的 `YOUDUB_AUTH_PASSWORD_HASH`，登录时输入刚才设置的密码。没有默认密码；缺少有效哈希时 Host 会拒绝启动。应用加载 `.env`，代理工具读取同 inode 的 `env.txt`；两者均忽略提交。
+打开工作台即可使用，无需设置或输入访问密码。应用加载 `.env`，代理工具读取同 inode 的 `env.txt`；两者均忽略提交。
 
 ### 3. 准备模型
 
@@ -124,7 +123,7 @@ npm start
 npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，登录后：
+打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，直接进入工作台：
 
 1. 在「设置」配置翻译连接，确认所需模型就绪，保存默认处理配置。
 2. 在「工作台」导入视频，选择语言和输出模式，创建任务。
@@ -201,9 +200,9 @@ submodule/demucs/   Demucs 源码子模块
 
 ## 效果示例
 
-以下是 YouDub 历史生成的英文转中文样例，展示字幕、配音与背景音保留效果。源视频链接用于说明样例出处，当前工作台通过本地文件导入。
+默认演示为 2026-10-09 生成的黄仁勋采访：逐句原声克隆、中文字幕与背景音保留，完整时长约 59 秒。源视频链接用于说明样例出处，当前工作台通过本地文件导入。
 
-### 1. Jensen Huang on Nvidia's Competition
+### 1. 黄仁勋采访 · 最新效果
 
 [原视频链接](https://www.youtube.com/shorts/TbotsRXyRME) · YouTube Shorts · 英文 -> 中文
 
@@ -217,13 +216,15 @@ https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87
 </td>
 <td>
 
-https://github.com/user-attachments/assets/bf01f912-eec8-4e0d-8698-0f69283a73e7
+[![播放黄仁勋采访最新中文配音效果](docs/images/jensen-latest.jpg)](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
+
+[观看 / 下载完整成片](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
 
 </td>
 </tr>
 </table>
 
-### 2. How much YT paid me for 129 million shorts views
+### 2. 历史样例：How much YT paid me for 129 million shorts views
 
 [原视频链接](https://www.youtube.com/watch?v=ii9Kh4XkA5g) · YouTube 横屏长视频 · 英文 -> 中文 · 下方为开头 40 秒切片，完整版可在 [`demo-assets`](https://github.com/liuzhao1225/YouDub-webui/releases/tag/demo-assets) Release 下载
 

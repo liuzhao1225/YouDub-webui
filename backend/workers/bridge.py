@@ -117,12 +117,10 @@ class Bridge:
             from backend.app import auth
             operation = method.removeprefix("auth.")
             if operation == "validate":
-                settings = auth.validate_auth_configuration()
+                settings = auth.load_auth_settings()
                 return {"cookieName": auth.session_cookie_name(), "sessionTtlSeconds": settings.session_ttl_seconds,
                         "cookieSecure": settings.cookie_secure, "cookieSameSite": settings.cookie_samesite,
-                        "credentialVersion": auth.credential_version(settings.password_hash)}
-            if operation == "verify_password":
-                return {"valid": auth.verify_password(params["password"], auth.load_auth_settings())}
+                        "credentialVersion": "passwordless-v1"}
             return self.store.auth(operation, params)
         raise WorkerError("UNKNOWN_METHOD", f"Unknown bridge method: {method}")
 

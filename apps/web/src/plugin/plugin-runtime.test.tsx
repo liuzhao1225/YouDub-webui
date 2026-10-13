@@ -7,12 +7,11 @@ import { disposeFiber, settleModules } from './loader'
 import * as sessionPlugin from './builtin/session'
 
 describe('Cordis Client composition', () => {
-  it('unloads authenticated modules on an expired logout and keeps the original diagnostic visible', async () => {
+  it('opens the workspace without login and reports session expiration', async () => {
     const ctx = new Context()
     const unmount = vi.fn(), clearSession = vi.fn(), replace = vi.fn()
-    const expired = Object.assign(new Error('Session expired'), { status: 401 })
     await requireActive(ctx.plugin((owner) => {
-      owner.reflect.provide('apiClient', { request: async (path: string) => { if (path.endsWith('logout')) throw expired; return { authenticated: true, csrf_token: 'test-token' } }, setCsrf() {}, clearSession })
+      owner.reflect.provide('apiClient', { request: async () => ({ authenticated: true, csrf_token: 'test-token' }), setCsrf() {}, clearSession })
       owner.reflect.provide('navigation', { replace })
       owner.reflect.provide('clientModules', { mountAuthenticated: async () => {}, unmountAuthenticated: unmount })
     }), 'session-dependencies')
@@ -21,11 +20,11 @@ describe('Cordis Client composition', () => {
     let session!: Session
     await requireActive(ctx.inject(['session'], (owner) => { session = owner.session }), 'session-consumer')
     await vi.waitFor(() => expect(session.getSnapshot().status).toBe('authenticated'))
-    await session.logout()
-    expect(session.getSnapshot()).toEqual({ status: 'anonymous', error: 'Session expired' })
+    await session.expire()
+    expect(session.getSnapshot()).toEqual({ status: 'error', error: 'Session expired. Reload the page to continue.' })
     expect(clearSession).toHaveBeenCalledOnce()
     expect(unmount).toHaveBeenCalledOnce()
-    expect(replace).toHaveBeenCalledWith('/login')
+    expect(replace).not.toHaveBeenCalled()
     await disposeFiber(ctx, fiber)
   })
   it('reports a disposer failure even when Cordis disposal resolves', async () => {

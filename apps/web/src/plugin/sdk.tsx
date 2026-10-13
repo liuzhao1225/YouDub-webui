@@ -32,7 +32,7 @@ export interface ApiClient {
   setCsrf(token: string): void; clearSession(): void; abortReads(): void
 }
 export type SessionSnapshot = { status: 'loading' | 'anonymous' | 'authenticated' | 'error'; error?: string }
-export interface Session extends Observable<SessionSnapshot> { login(password: string): Promise<void>; logout(): Promise<void>; expire(): Promise<void> }
+export interface Session extends Observable<SessionSnapshot> { expire(): Promise<void> }
 export interface ClientModules { mountAuthenticated(): Promise<void>; unmountAuthenticated(): Promise<void> }
 declare module 'cordis' {
   interface Context { slots: Slots; navigation: Navigation; apiClient: ApiClient; session: Session; clientModules: ClientModules }

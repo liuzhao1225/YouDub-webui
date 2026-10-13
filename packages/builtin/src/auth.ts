@@ -1,6 +1,6 @@
 import { Service, type Context } from 'cordis'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
-import { readJson, type HttpRequest } from './http.js'
+import { type HttpRequest } from './http.js'
 import { AppError } from '@youdub/sdk'
 
 interface AuthSettings { cookieName: string; sessionTtlSeconds: number; cookieSecure: boolean; cookieSameSite: 'lax' | 'strict'; credentialVersion: string }
@@ -39,12 +39,12 @@ export default class AuthService extends Service {
         request.response.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-CSRF-Token,Range')
         this.ctx.http.json(request, 204); return
       }
-      if (request.url.pathname === '/api/auth/login' && request.raw.method === 'POST') {
-        if (!this.originAllowed(request)) throw new AppError('ORIGIN_NOT_ALLOWED', 'Origin is not allowed.', 403)
-        return next()
-      }
       if (request.url.pathname === '/api/health') return next()
-      const session = await this.authenticate(request)
+      let session = await this.authenticate(request)
+      if (!session && request.url.pathname === '/api/auth/session' && request.raw.method === 'GET') {
+        if (!this.originAllowed(request)) throw new AppError('ORIGIN_NOT_ALLOWED', 'Origin is not allowed.', 403)
+        session = await this.createSession(request)
+      }
       if (session) request.state.session = session
       if (request.url.pathname === '/api/v2/client-manifest' || request.url.pathname.startsWith('/api/plugins/')) return next()
       if (!session) { this.clearCookie(request); throw new AppError('UNAUTHORIZED', 'Authentication required.', 401) }
@@ -54,7 +54,6 @@ export default class AuthService extends Service {
       }
       await next()
     }))
-    this.ctx.effect(() => this.ctx.http.register('POST', '/api/auth/login', request => this.login(request)))
     this.ctx.effect(() => this.ctx.http.register('GET', '/api/auth/session', request => {
       const session = request.state.session as Session
       this.ctx.http.json(request, 200, { authenticated: true, csrf_token: session.csrfToken, expires_at: session.expiresAt })
@@ -91,27 +90,12 @@ export default class AuthService extends Service {
     }
     return { tokenHash, csrfToken: digest('youdub-csrf', token), expiresAt: row.expires_at }
   }
-  private async login(request: HttpRequest) {
-    const body = await readJson(request, 8192)
-    const previous = this.token(request)
-    if (previous && previous.length <= 256) await this.ctx.store.call('auth.delete_session', { token_hash: digest('youdub-session', previous) })
-    this.clearCookie(request)
-    const client = digest('youdub-login-client', (request.raw.socket.remoteAddress || 'unknown').trim().toLowerCase())
-    const attempt = await this.ctx.store.call('auth.reserve_login_attempt', { client_hash: client, now: iso(), stale_before: iso(Date.now() - 60000), max_attempts: 5 })
-    if (!attempt.allowed) {
-      request.response.setHeader('Retry-After', Math.max(1, Math.ceil((Date.parse(attempt.window_started_at) + 60000 - Date.now()) / 1000)))
-      throw new AppError('RATE_LIMITED', 'Too many login attempts.', 429)
-    }
-    const password = body.password
-    if (typeof password !== 'string' || !password || password.length > 1024) throw new AppError('UNAUTHORIZED', 'Invalid credentials.', 401)
-    const verified = await this.ctx.store.call('auth.verify_password', { password })
-    if (!verified.valid) throw new AppError('UNAUTHORIZED', 'Invalid credentials.', 401)
-    await this.ctx.store.call('auth.delete_login_attempt', { client_hash: client })
+  private async createSession(request: HttpRequest): Promise<Session> {
     const token = randomBytes(32).toString('base64url')
     const expiresAt = iso(Date.now() + this.settings.sessionTtlSeconds * 1000)
     await this.ctx.store.call('auth.delete_expired_sessions', { expires_before: iso() })
     await this.ctx.store.call('auth.create_session', { token_hash: digest('youdub-session', token), credential_version: this.settings.credentialVersion, created_at: iso(), expires_at: expiresAt })
     request.response.setHeader('Set-Cookie', this.cookie(token, expiresAt))
-    this.ctx.http.json(request, 200, { authenticated: true, csrf_token: digest('youdub-csrf', token), expires_at: expiresAt })
+    return { tokenHash: digest('youdub-session', token), csrfToken: digest('youdub-csrf', token), expiresAt }
   }
 }

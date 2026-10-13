@@ -1,6 +1,6 @@
 import { Context } from 'cordis'
 import { useState } from 'react'
-import { LogOut, PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react'
 import { Link, matchRoute, type RouteEntry, text, useClient, useObservable, usePathname, useSlot } from '../sdk'
 import { restoreTheme, ThemeProvider } from '@/lib/theme'
 import { LanguageProvider, useI18n } from '@/lib/i18n'
@@ -57,11 +57,11 @@ function Shell() {
           return <Tooltip key={item.id} content={text(item.label, language)} side="right" className={collapsed ? undefined : 'hidden'}><Link href={href} aria-current={active ? 'page' : undefined} className={cn('relative flex h-9 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40', active ? 'bg-accent text-foreground before:absolute before:top-1/2 before:left-0 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-[linear-gradient(180deg,var(--brand-pink),var(--brand-blue))]' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground', collapsed && 'size-10 justify-center px-0')}>{Icon && <Icon className={cn('size-4 shrink-0', !active && 'text-subtle-foreground')} />}<span className={collapsed ? 'sr-only' : undefined}>{text(item.label, language)}</span></Link></Tooltip>
         })}
       </nav>
-      <div className={cn('mt-auto flex flex-col gap-3 p-3', collapsed && 'items-center')}><div className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}>{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto" />}<ThemeToggle /><Button variant="ghost" size="icon-sm" aria-label={t.auth.logout} onClick={() => { void client.session.logout().catch((failure: Error) => setError(failure.message)) }}><LogOut /></Button></div></div>
+      <div className={cn('mt-auto flex flex-col gap-3 p-3', collapsed && 'items-center')}><div className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}>{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto" />}<ThemeToggle /></div></div>
     </aside>
     <header className="glass sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
       <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark className="h-6" /></Link>
-      <div className="flex items-center gap-1"><LanguageSwitcher /><ThemeToggle /><Button variant="ghost" size="icon-sm" aria-label={t.auth.logout} onClick={() => { void client.session.logout().catch((failure: Error) => setError(failure.message)) }}><LogOut /></Button></div>
+      <div className="flex items-center gap-1"><LanguageSwitcher /><ThemeToggle /></div>
     </header>
     <div className="relative pb-24 lg:pb-0">{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
     <nav aria-label={t.nav.primary} className="glass fixed inset-x-0 bottom-0 z-40 grid border-t border-border pb-[env(safe-area-inset-bottom)] lg:hidden" style={{ gridTemplateColumns: `repeat(${navigation.length}, minmax(0, 1fr))` }}>

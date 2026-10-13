@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(resolve(root, 'package.json'))
 const output = resolve(root, 'plugin-dist')
-const entries = ['slots', 'api', 'navigation', 'session', 'shell', 'login', 'studio', 'library', 'settings', 'localize-editor']
-const publicModules = new Set(['slots', 'api', 'navigation', 'session', 'shell', 'login'])
+const entries = ['slots', 'api', 'navigation', 'session', 'shell', 'studio', 'library', 'settings', 'localize-editor']
+const publicModules = new Set(['slots', 'api', 'navigation', 'session', 'shell'])
 const shared = { react: 'react', 'react-dom': 'react-dom', 'react-dom/client': 'react-dom-client', 'react/jsx-runtime': 'jsx-runtime', 'react/jsx-dev-runtime': 'jsx-dev-runtime', cordis: 'cordis', '@youdub/sdk/client': 'sdk' }
 await rm(output, { recursive: true, force: true })
 await mkdir(output, { recursive: true })

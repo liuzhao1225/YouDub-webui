@@ -19,7 +19,6 @@ export class SessionService extends Service implements Session {
       await this.authenticated(session)
     }
     catch (error) {
-      if (error instanceof Error && 'status' in error && error.status === 401) { this.publish({ status: 'anonymous' }); this.ctx.navigation.replace('/login'); return }
       this.publish({ status: 'error', error: error instanceof Error ? error.message : String(error) }); throw error
     }
   }
@@ -29,27 +28,13 @@ export class SessionService extends Service implements Session {
     this.publish({ status: 'authenticated' })
     if (window.location.pathname === '/login') this.ctx.navigation.replace('/')
   }
-  async login(password: string) {
-    const session = await this.ctx.apiClient.request<AuthSession>('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) })
-    await this.authenticated(session)
-  }
-  async logout() {
-    try { await this.ctx.apiClient.request<void>('/api/auth/logout', { method: 'POST' }) }
-    catch (error) {
-      if (!(error instanceof Error) || !('status' in error) || error.status !== 401) throw error
-      await this.expire()
-      this.publish({ status: 'anonymous', error: error.message })
-      return
-    }
-    await this.expire()
-  }
   expire() {
     if (this.expiration) return this.expiration
     this.expiration = (async () => {
       this.publish({ status: 'loading' })
       this.ctx.apiClient.clearSession()
       await this.ctx.clientModules.unmountAuthenticated()
-      this.publish({ status: 'anonymous' }); this.ctx.navigation.replace('/login')
+      this.publish({ status: 'error', error: 'Session expired. Reload the page to continue.' })
     })().catch((error: unknown) => {
       this.publish({ status: 'error', error: error instanceof Error ? error.message : String(error) })
       throw error

@@ -4,7 +4,6 @@
 # are mocked or lazily imported by tests and intentionally do not belong here.
 pydantic
 python-dotenv
-pwdlib[argon2]>=0.3,<1
 openai
 nltk==3.10.3
 numpy

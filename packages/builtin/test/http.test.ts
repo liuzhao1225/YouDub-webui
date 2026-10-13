@@ -38,13 +38,11 @@ test('HTTP ranges, HEAD, invalid ranges, and Cordis route disposal', async t => 
   assert.equal((await fetch(url)).status, 404)
 })
 
-test('auth preserves cookie path, CSRF, login replacement and logout', async t => {
+test('passwordless sessions preserve cookie path, CSRF, origin checks and logout', async t => {
   const ctx = new Context(), sessions = new Map<string, any>()
   const service = await ctx.plugin(function store(context) {
     context.reflect.provide('store', { async call(method: string, params: any) {
       if (method === 'auth.validate') return { cookieName: 'test_session', sessionTtlSeconds: 300, cookieSecure: false, cookieSameSite: 'lax', credentialVersion: 'v1' }
-      if (method === 'auth.reserve_login_attempt') return { allowed: true, window_started_at: params.now }
-      if (method === 'auth.verify_password') return { valid: params.password === 'test-password' }
       if (method === 'auth.get_session') return sessions.get(params.token_hash)
       if (method === 'auth.create_session') { sessions.set(params.token_hash, params); return null }
       if (method === 'auth.delete_session') return sessions.delete(params.token_hash)
@@ -57,18 +55,24 @@ test('auth preserves cookie path, CSRF, login replacement and logout', async t =
   t.after(async () => { await auth.dispose(); await http.dispose(); await service.dispose() })
   const url = ctx.http.address!
   ctx.emit('app/ready')
-  const login = await fetch(url + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'test-password' }) })
+  const blocked = await fetch(url + '/api/auth/session', { headers: { Origin: 'https://untrusted.example' } })
+  assert.equal(blocked.status, 403); assert.equal(sessions.size, 0)
+  const login = await fetch(url + '/api/auth/session')
   assert.equal(login.status, 200)
   const cookie = login.headers.get('set-cookie')!
   assert.match(cookie, /Path=\/api/); assert.match(cookie, /HttpOnly/); assert.match(cookie, /SameSite=lax/)
   const token = cookie.split(';')[0]!, result = await login.json() as any
   assert.equal(sessions.size, 1)
   const session = await fetch(url + '/api/auth/session', { headers: { Cookie: token } })
+  assert.equal(sessions.size, 1)
+  assert.equal((await fetch(url + '/api/auth/logout', { method: 'POST', headers: { Cookie: token, 'X-CSRF-Token': result.csrf_token, Origin: 'https://untrusted.example' } })).status, 403)
   assert.equal(session.status, 200); assert.equal((await session.json() as any).csrf_token, result.csrf_token)
   assert.equal((await fetch(url + '/api/auth/logout', { method: 'POST', headers: { Cookie: token } })).status, 403)
   const logout = await fetch(url + '/api/auth/logout', { method: 'POST', headers: { Cookie: token, 'X-CSRF-Token': result.csrf_token } })
   assert.equal(logout.status, 204); assert.equal(sessions.size, 0)
-  assert.equal((await fetch(url + '/api/auth/session', { headers: { Cookie: token } })).status, 401)
+  const reopened = await fetch(url + '/api/auth/session', { headers: { Cookie: token } })
+  assert.equal(reopened.status, 200); assert.equal(sessions.size, 1)
+  assert.notEqual((await reopened.json() as any).csrf_token, result.csrf_token)
 })
 
 test('HTTP rejects traffic before readiness and drains in-flight handlers before plugin disposal', async t => {

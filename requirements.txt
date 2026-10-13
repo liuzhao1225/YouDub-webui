@@ -1,6 +1,5 @@
 python-dotenv
 pydantic
-pwdlib[argon2]>=0.3,<1
 keyring>=25.6,<26
 openai
 dora-search>=0.1.12

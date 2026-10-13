@@ -44,13 +44,7 @@ test .env -ef env.txt
 
 应用读取 `.env`；代理和排障工具读取同 inode 的 `env.txt`。两者及 `.venv/` 都忽略提交。复制工作树配置后，需要在新工作树重新建立硬链接。
 
-默认组合强制访问密码。用交互输入生成 Argon2id 哈希，将输出写入 `.env` 的 `YOUDUB_AUTH_PASSWORD_HASH`，不保存明文密码：
-
-```bash
-.venv/bin/python -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
-```
-
-未配置有效哈希时认证插件启动失败。会话使用 HttpOnly Cookie，写请求需要会话 CSRF token；浏览器插件处理登录和 token。翻译连接在设置页配置，密钥继续通过系统 keyring 的 `YouDub` 命名空间保存。默认翻译调用显式使用至少 65,535 的最大输出 token 数，供应商拒绝时报告错误。
+默认组合无需访问密码，打开工作台即可使用。浏览器自动建立 HttpOnly Cookie 会话，写请求仍校验 CSRF token 和请求来源；原有 `YOUDUB_AUTH_PASSWORD_HASH` 不再使用。翻译连接在设置页配置，密钥继续通过系统 keyring 的 `YouDub` 命名空间保存。默认翻译调用显式使用至少 65,535 的最大输出 token 数，供应商拒绝时报告错误。
 
 | 配置 | 默认值 / 用途 |
 | --- | --- |
@@ -59,7 +53,7 @@ test .env -ef env.txt
 | `YOUDUB_HOST` / `YOUDUB_PORT` | `127.0.0.1` / `8000` |
 | `YOUDUB_DESKTOP_DATA_DIR` | macOS 为 `~/Library/Application Support/YouDub`；可改为隔离验证目录 |
 | `NEXT_SERVER_API_BASE_URL` | Next 代理目标，默认 `http://127.0.0.1:8000`；在 Next 构建/启动命令环境设置 |
-| `YOUDUB_AUTH_*` | 密码哈希、会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
+| `YOUDUB_AUTH_*` | 会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
 | `LOCAL_UPLOAD_MAX_BYTES` | 默认 4 GiB；具名输入还受 workflow 的 `maxBytes` 限制 |
 
 新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v2。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。仓库 `data/youdub.sqlite` 只在首次迁移复制旧登录会话时只读打开；旧 URL 下载任务不进入新任务列表，也没有运行入口。数据库文件保留原位。
