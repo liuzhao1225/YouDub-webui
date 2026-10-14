@@ -26,6 +26,8 @@ export default class AuthService extends Service {
     this.settings = await this.ctx.store.call('auth.validate', {})
     this.ctx.effect(() => this.ctx.http.use(async (request, next) => {
       if (!request.url.pathname.startsWith('/api/')) return next()
+      // Setup has its own loopback/origin/token guard and also runs before Store.
+      if (request.url.pathname === '/api/setup') return next()
       const origin = request.raw.headers.origin
       if (origin && this.originAllowed(request)) {
         request.response.setHeader('Access-Control-Allow-Origin', origin)

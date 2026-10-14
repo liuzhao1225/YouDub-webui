@@ -1,2 +1,3 @@
 import { PluginBootstrap } from '@/plugin/bootstrap'
-export default function Page() { return <PluginBootstrap /> }
+import { SetupGate } from '@/components/setup-gate'
+export default function Page() { return <SetupGate><PluginBootstrap /></SetupGate> }

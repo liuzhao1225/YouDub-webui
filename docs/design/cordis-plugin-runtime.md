@@ -2,22 +2,23 @@
 
 本文适用于当前 `codex/mvp-mainline` 的 Cordis 插件实现。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。截至 2026-10-09，验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
 
+首次启动环境准备与模型下载见 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
+
 ## 1. 安装与配置
 
-从仓库根目录执行。需要 Node.js 22（最低 22.13.0）、Python 3.12、FFmpeg/ffprobe 和 Git；模型与音频系统依赖沿用现有 Python 项目。根目录和 `apps/web` 各有一份 npm 锁文件，都需要安装。
+从仓库根目录执行。需要 Node.js 22（最低 22.13.0）和 Git。根目录和 `apps/web` 各有一份 npm 锁文件，都需要安装。
 
 ```bash
 git submodule update --init --recursive
 npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
-.venv/bin/python -m nltk.downloader -e punkt_tab
 ```
 
-已有 `.venv` 时使用已有环境，无需重新创建。仅当 Aliyun 缺少所需包时，使用单一 Tsinghua 源处理缺包：`https://pypi.tuna.tsinghua.edu.cn/simple/`。模型目录见下表；`.env.example` 仅列当前实际读取的环境变量，设备和模型选择在 workflow 配置中保存。
+默认组合先启动 HTTP 与环境准备服务。它识别系统及架构，复用或安装 Python 3.12、创建 `.venv`、安装运行依赖和 FFmpeg/ffprobe，再并行下载四个模型。界面显示真实下载进度，支持暂停、续传和显式重试；准备完成后才加载工作台插件。后续启动复用已准备的资源。
 
-官方 provider 从应用数据目录的 `models/` 读取已下载模型，扫描不触发自动下载：
+依赖使用 Aliyun；仅缺包时记录原错误并切换单一 Tsinghua 源。下载错误会停止对应项目并显示原因。模型文件与版本见 `packages/builtin/src/setup-models.json`；新下载文件通过 SHA-256 校验后才就绪。设备和模型选择仍保存在 workflow 配置中。
+
+首次启动服务将模型准备到以下位置，官方 provider 扫描时只读取本地资产：
 
 | 能力 | 默认目录（相对数据目录） | 可覆盖变量 |
 | --- | --- | --- |
@@ -28,7 +29,7 @@ python3.12 -m venv .venv
 
 VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。翻译模型列表由 `YOUDUB_TRANSLATION_MODELS` 配置，连接 URL 和密钥在设置页保存。
 
-Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。上面的安装命令将数据写入 NLTK 标准目录，通常为 `~/nltk_data`；自定义目录使用 NLTK 的 `NLTK_DATA` 环境变量。运行时只检查本地包和四个英文参数文件，不联网下载；缺失时设置页明确显示 Whisper 不可用，实际识别报告 `MODEL_NOT_READY`。
+Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。首次启动会一并准备到应用数据目录的 `nltk_data/`，已有 NLTK 资源可复用；自定义目录使用 `NLTK_DATA`。推理时只检查本地包和四个英文参数文件；缺失时明确报告 `MODEL_NOT_READY`。
 
 英文识别在 ASR 后处理内用预训练 Punkt 合并跨段句子、拆分段内多句，再按首末词时间戳确定每句原声范围。原始 ASR JSON 保持不变，中文、日文保留原有分段。分句后的 ID 贯穿翻译、逐句参考音频和 TTS；缺少英文词时间戳或句界无法映射到词边界时明确失败。无新增 workflow 步骤。
 
@@ -49,7 +50,7 @@ test .env -ef env.txt
 | 配置 | 默认值 / 用途 |
 | --- | --- |
 | `YOUDUB_CONFIG` | 仓库根 `youdub.config.ts`；也接受 Loader entries JSON 文件 |
-| `YOUDUB_PYTHON` | 根目录 `.venv/bin/python`；官方模型和存储执行环境 |
+| `YOUDUB_PYTHON` | 根目录 `.venv/bin/python`，Windows 为 `.venv/Scripts/python.exe`；官方模型和存储执行环境 |
 | `YOUDUB_HOST` / `YOUDUB_PORT` | `127.0.0.1` / `8000` |
 | `YOUDUB_DESKTOP_DATA_DIR` | macOS 为 `~/Library/Application Support/YouDub`；可改为隔离验证目录 |
 | `NEXT_SERVER_API_BASE_URL` | Next 代理目标，默认 `http://127.0.0.1:8000`；在 Next 构建/启动命令环境设置 |

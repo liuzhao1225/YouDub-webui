@@ -30,19 +30,27 @@ export function PluginBootstrap() {
   React.useEffect(() => {
     let stopped = false
     const root = new Cordis.Context()
-    const app = root.plugin({ name: 'client-application', async apply(scope: Cordis.Context) {
+    let app: Cordis.Fiber | undefined
+    // StrictMode may clean up this effect before its first asynchronous turn.
+    // Do not activate a plugin tree that already lost its React owner.
+    queueMicrotask(() => {
+      if (stopped) return
+      app = root.plugin({ name: 'client-application', async apply(scope: Cordis.Context) {
       publishPlatform()
       let loader!: ModuleLoader
       await SDK.requireActive(scope.plugin({ name: 'client-module-loader', apply(owner: Cordis.Context) { loader = new ModuleLoader(owner) } }), 'client-module-loader')
       const manifest = await loader.manifest()
+      if (stopped) return
       await loader.mount(manifest.modules.filter((entry) => entry.access === 'public'), 'public-client')
+      if (stopped) return
       await SDK.requireActive(scope.inject(['slots', 'session', 'navigation', 'apiClient'], (view) => {
         if (view.slots.list('root').length !== 1) throw new Error('Client root plugin is missing')
         if (!stopped) setContext(view)
       }), 'client-renderer')
     } })
     void SDK.requireActive(app, 'client-application').catch((failure: Error) => { if (!stopped) setError(failure.message) })
-    return () => { stopped = true; void disposeFiber(root, app).catch((failure: Error) => console.error('Client cleanup failed', failure)) }
+    })
+    return () => { stopped = true; if (app) void disposeFiber(root, app).catch((failure: Error) => console.error('Client cleanup failed', failure)) }
   }, [])
   if (error) return <main className="mx-auto max-w-xl p-8" role="alert"><h1 className="text-lg font-semibold">应用启动失败</h1><pre className="mt-4 whitespace-pre-wrap text-sm">{error}</pre></main>
   return context ? <PluginRoot context={context} /> : <div className="p-8 text-sm text-muted-foreground" role="status">正在加载…</div>

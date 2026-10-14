@@ -23,8 +23,8 @@ export default async function composition(): Promise<EntryOptions[]> {
     command: python, args: ['-m', 'backend.workers.operation'], cwd: repoRoot, runtimeAdapter: capability ? id : undefined, probeMediaTools: id === 'youdub.media',
     descriptor: { id, label, pluginId: 'youdub.provider-' + id, pluginVersion: '1.0.0', integrity, operations: kinds.map(key => operations[key]), capability, adapter: capability ? id : undefined, execution },
   }) })
-  return [
-    entry('process', 'process'), entry('catalog', 'catalog'), entry('files', 'files', { root }),
+  const entries = [
+    entry('catalog', 'catalog'), entry('files', 'files', { root }),
     entry('store', 'store', { root, repoRoot, python }), entry('secrets', 'secrets'), entry('settings', 'settings'),
     provider('youdub.download', 'yt-dlp', ['download']),
     provider('youdub.media', 'FFmpeg / Media', ['prepare', 'reference', 'mix', 'export', 'importSubtitles']),
@@ -32,8 +32,12 @@ export default async function composition(): Promise<EntryOptions[]> {
     provider('voxcpm', 'VoxCPM', ['synthesize'], 'tts'), provider('demucs', 'Demucs', ['separate'], 'separation'),
     provider('qwen_forced_aligner', 'Qwen Forced Aligner', ['align'], 'subtitle_alignment'),
     entry('workflow-localize', 'workflow-localize', { integrity }), entry('tasks', 'tasks'),
-    entry('http', 'http', { host: process.env.YOUDUB_HOST || '127.0.0.1', port: Number(process.env.YOUDUB_PORT || 8000) }),
     entry('auth', 'auth'), entry('extensions', 'extensions', { root: join(root, 'extensions'), repoRoot, builtinClientManifest: join(repoRoot, 'apps/web/plugin-dist/manifest.json') }),
     entry('extensions-loader', 'extensions-loader'), entry('api', 'api'),
+  ]
+  return [
+    entry('process', 'process'),
+    entry('http', 'http', { host: process.env.YOUDUB_HOST || '127.0.0.1', port: Number(process.env.YOUDUB_PORT || 8000) }),
+    entry('setup', 'setup', { root, repoRoot, python, entries }),
   ]
 }

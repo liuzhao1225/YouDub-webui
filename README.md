@@ -66,19 +66,16 @@ workflow 声明处理步骤和输入输出，provider 实现约定的 operation�
 
 ### 1. 安装依赖
 
-准备 Node.js 22（至少 22.13.0）、Python 3.12、Git、FFmpeg 和 ffprobe。FFmpeg 需要支持 libass/subtitles，且 `ffmpeg` 必须在 PATH 中可用。
+准备 Node.js 22（至少 22.13.0）和 Git。首次启动会识别操作系统与架构，准备 Python 3.12、运行依赖、FFmpeg/ffprobe 和分句资源。已有可用环境会复用。
 
 ```bash
 git clone --branch codex/mvp-mainline --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
-.venv/bin/python -m nltk.downloader -e punkt_tab
 ```
 
-已有 checkout 时，执行 `git submodule update --init --recursive` 补齐 Demucs 子模块。已有 `.venv` 时复用环境；仅在 Aliyun 缺包时，改用单一 [Tsinghua 镜像](https://pypi.tuna.tsinghua.edu.cn/simple/)安装缺少的包。
+已有 checkout 时直接启动即可检查缺失项。Python 依赖优先使用阿里云；仅在缺包时明确记录失败并改用清华源。安装、网络或校验失败会停在准备页显示原因，可修复后手动重试。
 
 ### 2. 创建本地配置
 
@@ -94,7 +91,7 @@ test .env -ef env.txt
 
 ### 3. 准备模型
 
-模型权重需要单独准备，设置页只探测本地资产。默认数据目录：macOS 为 `~/Library/Application Support/YouDub`，Linux 为 `~/.local/share/youdub`，Windows 为 `%LOCALAPPDATA%/YouDub`；可用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。
+首次启动会并行下载 Whisper tiny、VoxCPM2、Demucs htdemucs 和 Qwen3 Aligner 0.6B；页面显示真实进度，支持单项或全部暂停、继续。完成 SHA-256 校验与运行环境检查后自动进入工作台。默认数据目录：macOS 为 `~/Library/Application Support/YouDub`，Linux 为 `~/.local/share/youdub`，Windows 为 `%LOCALAPPDATA%/YouDub`；可用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。
 
 | 能力 | 默认提供者 | 模型路径（相对数据目录） |
 | --- | --- | --- |
@@ -102,9 +99,9 @@ test .env -ef env.txt
 | 翻译 | OpenAI 兼容 API | 在设置页配置连接、密钥及模型 |
 | 配音生成 | VoxCPM2 | `models/voxcpm/VoxCPM2/` |
 | 人声分离 | Demucs htdemucs | `models/demucs/955717e8-8726e21a.th` |
-| 字幕对齐（可选） | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
+| 字幕对齐 | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
 
-VoxCPM2 和 Qwen 需要完整的模型与 tokenizer/processor 配置。自定义模型路径和运行条件见[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。先体验原声加字幕时只需 Whisper 与翻译连接；逐句原声克隆还需要 VoxCPM2 和 Demucs。
+VoxCPM2 和 Qwen 从 ModelScope 获取固定版本，包含 tokenizer/processor 配置。Whisper 和 Demucs 使用各自官方权重源。中断文件保留为 `.part`，继续下载需要下载源支持 Range。自定义模型路径和运行条件见[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。启动准备接口仅允许本机访问。
 
 翻译密钥保存在系统 keyring。自定义翻译模型候选名单通过 `.env` 中的 `YOUDUB_TRANSLATION_MODELS` 配置，在设置页选择。默认翻译请求的最大输出 token 数至少为 **65,535**，连接的服务和模型需要接受该参数；不兼容时会明确报错。
 
@@ -123,7 +120,7 @@ npm start
 npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，直接进入工作台：
+打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，首次使用显示环境与模型准备；资源已就绪时直接进入工作台：
 
 1. 在「设置」配置翻译连接，确认所需模型就绪，保存默认处理配置。
 2. 在「工作台」导入视频，选择语言和输出模式，创建任务。

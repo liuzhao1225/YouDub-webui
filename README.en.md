@@ -66,19 +66,16 @@ The commands below target macOS / Linux shells. Current real-model, API and brow
 
 ### 1. Install dependencies
 
-Install Node.js 22 (at least 22.13.0), Python 3.12, Git, FFmpeg and ffprobe. FFmpeg must support libass/subtitles, and the `ffmpeg` executable must be available on PATH.
+Install Node.js 22 (at least 22.13.0) and Git. First startup detects the OS and architecture, prepares Python 3.12, runtime dependencies, FFmpeg/ffprobe and sentence resources, and reuses compatible existing installations.
 
 ```bash
 git clone --branch codex/mvp-mainline --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
-python3.12 -m venv .venv
-.venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
-.venv/bin/python -m nltk.downloader -e punkt_tab
 ```
 
-For an existing checkout, run `git submodule update --init --recursive` to initialize the Demucs submodule. Reuse an existing `.venv`. If a required package is missing from Aliyun, install that package using only the [Tsinghua mirror](https://pypi.tuna.tsinghua.edu.cn/simple/).
+An existing checkout can start directly to check missing resources. Dependencies use Aliyun first; a missing package is reported before using the Tsinghua mirror. Installation, network and verification failures stay visible and require an explicit retry.
 
 ### 2. Create local configuration
 
@@ -94,7 +91,7 @@ Open the workspace directly; no access password is required. The application loa
 
 ### 3. Prepare models
 
-Download model assets separately. Settings only checks local files. The default data directory is `~/Library/Application Support/YouDub` on macOS, `~/.local/share/youdub` on Linux, and `%LOCALAPPDATA%/YouDub` on Windows. Override it with `YOUDUB_DESKTOP_DATA_DIR`.
+First startup downloads Whisper tiny, VoxCPM2, Demucs htdemucs and Qwen3 Aligner 0.6B in parallel, with real progress and individual or global pause/resume. The workspace opens after checksum and runtime checks. The default data directory is `~/Library/Application Support/YouDub` on macOS, `~/.local/share/youdub` on Linux, and `%LOCALAPPDATA%/YouDub` on Windows. Override it with `YOUDUB_DESKTOP_DATA_DIR`.
 
 | Capability | Default provider | Model path, relative to the data directory |
 | --- | --- | --- |
@@ -102,9 +99,9 @@ Download model assets separately. Settings only checks local files. The default 
 | Translation | OpenAI-compatible API | Configure the connection, key and model in Settings |
 | Speech generation | VoxCPM2 | `models/voxcpm/VoxCPM2/` |
 | Vocal separation | Demucs htdemucs | `models/demucs/955717e8-8726e21a.th` |
-| Subtitle alignment (optional) | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
+| Subtitle alignment | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
 
-VoxCPM2 and Qwen require complete model assets and tokenizer/processor configuration. See the [runtime guide](docs/design/cordis-plugin-runtime.md#1-安装与配置) for custom paths and requirements. To start with original audio plus subtitles, prepare Whisper and a translation connection. Sentence-level source voice cloning also requires VoxCPM2 and Demucs.
+VoxCPM2 and Qwen use pinned ModelScope revisions including tokenizer/processor files. Whisper and Demucs use their official weight sources. Partial downloads use `.part` files; resume requires HTTP Range support. See the [runtime guide](docs/design/cordis-plugin-runtime.md#1-安装与配置) for custom paths. First-run setup endpoints accept local requests only.
 
 Translation keys are stored in the system keyring. Configure custom translation model candidates through `YOUDUB_TRANSLATION_MODELS` in `.env`, then select a model in Settings. Default translation requests set a maximum output-token limit of at least **65,535**. The connected service and model must accept that parameter; incompatibility produces an explicit error.
 
@@ -123,7 +120,7 @@ Open another terminal in the same directory and start the frontend:
 npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to enter the workspace:
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to prepare the environment and models on first use; ready installations enter the workspace directly:
 
 1. In Settings, configure the translation connection, check required model readiness, and save processing defaults.
 2. In the workspace, import a video, select languages and an output mode, and create a task.
