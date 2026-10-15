@@ -40,6 +40,9 @@ try {
     document.querySelector('#release-notes').href = release.url
   }
   select.addEventListener('change', show)
+  for (const link of document.querySelectorAll('a[href="#download"]')) {
+    link.addEventListener('click', () => { select.value = '0'; show() })
+  }
   select.disabled = false
   show()
   status.hidden = true
