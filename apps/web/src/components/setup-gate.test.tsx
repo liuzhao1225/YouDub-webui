@@ -15,6 +15,7 @@ describe('first-run setup', () => {
     const view = render(<SetupGate><div>实际工作台</div></SetupGate>)
     await screen.findByText('Qwen3 Aligner')
     expect(screen.queryByText('实际工作台')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '查看内置示例' })).toHaveAttribute('href', '/examples/index.html')
     fireEvent.click(screen.getByRole('button', { name: '暂停 Qwen3 Aligner' }))
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/setup', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'X-YouDub-Setup': 'setup-token' }), body: JSON.stringify({ action: 'pause', id: 'qwen' }) })))
     await screen.findByText('已暂停')
