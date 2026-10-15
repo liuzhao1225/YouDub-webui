@@ -6,7 +6,7 @@
 
 An open-source video localization workspace: import a video, transcribe and translate its speech, clone each sentence from its source audio, and produce subtitles and dubbed video.
 
-[中文](README.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · [Careers](#careers) · QQ group: **618246010**
+[中文](README.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · QQ group: **618246010**
 
 [Download a release](https://github.com/liuzhao1225/YouDub-webui/releases) · [Installation and upgrade](docs/upgrade.md) · [Release workflow](docs/releasing.md)
 
@@ -71,7 +71,7 @@ The commands below target macOS / Linux shells. Current real-model, API and brow
 Install Node.js 22 (at least 22.13.0) and Git. First startup detects the OS and architecture, prepares Python 3.12, runtime dependencies, FFmpeg/ffprobe and sentence resources, and reuses compatible existing installations.
 
 ```bash
-git clone --branch codex/mvp-mainline --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
+git clone --branch main --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
@@ -199,7 +199,7 @@ Issues and pull requests are welcome for installation improvements, model adapte
 
 ## Demo
 
-The default demo is the Jensen Huang interview generated on 2026-10-09: sentence-level voice cloning, Chinese subtitles and preserved background audio, approximately 59 seconds long. Source links identify the original videos; the current workspace imports local files.
+The default demo is the Jensen Huang interview generated on 2026-10-09: sentence-level voice cloning, Chinese subtitles and preserved background audio, approximately 59 seconds long. Source links identify the original videos; the workspace accepts video links and local files.
 
 ### 1. Jensen Huang interview · Latest result
 
@@ -215,9 +215,7 @@ https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87
 </td>
 <td>
 
-[![Play the latest Jensen Huang Chinese dub](docs/images/jensen-latest.jpg)](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
-
-[Watch / download the full video](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
+https://github.com/user-attachments/assets/60d5dbb0-f346-4c14-adad-2d0c481ac4fb
 
 </td>
 </tr>
@@ -242,10 +240,6 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 </td>
 </tr>
 </table>
-
-## Careers
-
-银河智学, an AI education company, is hiring a full-stack engineer and a senior Go backend architect in Zhongguancun, Haidian, Beijing. See the [Chinese recruitment details](README.md#人才招聘) for roles, compensation and the poster. Company website: [xiaoluxue.com](https://xiaoluxue.com/). Apply at [liuzhao@xiaoluxue.com](mailto:liuzhao@xiaoluxue.com).
 
 ## Community
 
