@@ -20,9 +20,15 @@
 
 - `youdub-logo.svg`、`youdub-icon.svg`：复用 `apps/web/public/`。
 - `workbench.jpg`：复用 `docs/images/workbench.jpg`。
-- `jensen-en.mp4`：README 黄仁勋原片；[原始附件](https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87)。原片为 AV1 / Opus，官网转为 H.264 / AAC 以兼容浏览器，保持原有画面、时间线与声音。
+- `jensen-en.mp4`：README 黄仁勋原片；[原始附件](https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87)。原片为 AV1 / Opus，官网转为 H.264 / AAC 以兼容浏览器，保留原有画面和时间线。
 - `jensen-zh.mp4`：README 2026-10-09 中文成片；[原始附件](https://github.com/user-attachments/assets/60d5dbb0-f346-4c14-adad-2d0c481ac4fb)。
 - `creator-en.mp4` / `creator-zh.mp4`：README 历史样例的 40 秒切片；[原片附件](https://github.com/user-attachments/assets/bd02936f-cf3c-4e4b-85b5-0410d38f69f5)、[配音附件](https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6)。
 - 两张 `*-poster.jpg`：从对应已有原片的第 1 秒提取，没有重新生成素材。
 
 播放器使用项目站点相对路径，部署到 `/YouDub-webui/` 子目录时无需改配置。媒体随静态站点发布，避免依赖附件链接的重定向和临时签名。
+
+## 音频标准
+
+两组英文原片以左右声道等权平均转为单声道，中文成片保留原有声道。四个官网文件统一到 -16 LUFS（最终 AAC 文件实测误差不超过 0.1 LU），真峰值不高于 -1.5 dBTP。先处理浮点 PCM 的响度与峰值，再根据限制后的实测响度精确调整增益，编码为 48 kHz AAC 后再次测量。限幅器启用延迟补偿；音频处理时视频码流直接复制并验证哈希，README 的原始附件保留。
+
+测量、视频码流哈希与最终文件哈希见 [`docs/validation/github-pages-audio-2026-10-16.json`](../docs/validation/github-pages-audio-2026-10-16.json)。

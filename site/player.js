@@ -65,7 +65,7 @@ class PairedPlayer {
       tab.addEventListener('keydown', (event) => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
         event.preventDefault()
-        const next = event.key === 'Home' ? 'en' : event.key === 'End' ? 'zh' : this.language === 'zh' ? 'en' : 'zh'
+        const next = event.key === 'Home' ? 'en' : event.key === 'End' ? 'zh' : tab.dataset.language === 'zh' ? 'en' : 'zh'
         this.selectLanguage(next)
         this.tabs.find((item) => item.dataset.language === next).focus()
       })
