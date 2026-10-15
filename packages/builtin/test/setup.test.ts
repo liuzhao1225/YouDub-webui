@@ -1,7 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import Http from '../src/http.js'
@@ -16,6 +18,41 @@ function probeResult(action: string) {
   if (action === 'acceleration') return { backend: 'cpu', detail: 'CPU（运算检查通过）' }
   return { ready: true }
 }
+
+test('Windows first-run UV extraction preserves Unicode paths without an installed Python', { skip: process.platform !== 'win32' }, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-unicode-archive-'))
+  const source = join(root, '压缩来源'), fixture = join(root, '工具.zip')
+  const data = join(root, "用户 空格 # % ' [测试]")
+  await mkdir(source)
+  await writeFile(join(source, 'uv.exe'), 'archive fixture, never executed')
+  const shell = join(process.env.SystemRoot || 'C:/Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  const run = promisify(execFile)
+  await run(shell, ['-NoProfile', '-NonInteractive', '-Command',
+    "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:YOUDUB_TEST_SOURCE, $env:YOUDUB_TEST_ARCHIVE)"],
+  { windowsHide: true, env: { ...process.env, YOUDUB_TEST_SOURCE: source, YOUDUB_TEST_ARCHIVE: fixture } })
+  const previous = { PATH: process.env.PATH, YOUDUB_PYTHON: process.env.YOUDUB_PYTHON }
+  t.after(async () => {
+    for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value }
+    await rm(root, { recursive: true })
+  })
+  process.env.PATH = join(process.env.SystemRoot || 'C:/Windows', 'System32')
+  delete process.env.YOUDUB_PYTHON
+  const stop = new Error('Stop before downloading Python')
+  let extracted = false
+  const ctx = { process: { run: async ({ command, args, env }: { command: string; args: string[]; env?: Record<string, string> }) => {
+    if (command === shell) return run(command, args, { windowsHide: true, env: { ...process.env, ...env } })
+    assert.equal(command, join(data, 'runtime', 'uv', 'uv.exe'))
+    assert.equal(await readFile(command, 'utf8'), 'archive fixture, never executed')
+    extracted = true
+    throw stop
+  } } } as unknown as Context
+  const client = new DownloadClient()
+  t.mock.method(client, 'json', async () => ({ assets: [{ name: 'uv-x86_64-pc-windows-msvc.zip', digest: 'sha256:fixture', browser_download_url: 'https://example.test/uv.zip', size: 1 }] }))
+  t.mock.method(client, 'download', async (_asset: unknown, destination: string) => { await mkdir(join(data, 'runtime', 'uv'), { recursive: true }); await cp(fixture, destination) })
+  const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', 'Scripts', 'python.exe') }, client, new AbortController().signal)
+  await assert.rejects(setup.prepare(), error => error === stop)
+  assert.equal(extracted, true)
+})
 
 test('desktop Python is created in the writable data directory without modifying the application bundle', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-desktop-environment-'))

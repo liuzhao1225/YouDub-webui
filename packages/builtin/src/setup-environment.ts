@@ -68,7 +68,13 @@ export class EnvironmentSetup {
         const asset = await this.releaseAsset('astral-sh/uv', '0.13.0', name)
         const archive = join(folder, name)
         await this.client.download(asset, archive, this.signal, () => {})
-        await this.run('tar', ['-xf', archive, '-C', folder])
+        if (windows) {
+          // Windows tar can lose non-ASCII paths on an English system locale.
+          const shell = join(process.env.SystemRoot || 'C:/Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+          await this.run(shell, ['-NoProfile', '-NonInteractive', '-Command',
+            "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [IO.Compression.ZipFile]::OpenRead($env:YOUDUB_ARCHIVE); try { $entry = $zip.GetEntry('uv.exe'); if (!$entry) { throw 'UV archive is missing uv.exe' }; [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, [IO.Path]::Combine($env:YOUDUB_EXTRACT_DIR, 'uv.exe'), $true) } finally { $zip.Dispose() }"],
+          { YOUDUB_ARCHIVE: archive, YOUDUB_EXTRACT_DIR: folder })
+        } else await this.run('tar', ['-xf', archive, '-C', folder])
         const uv = windows ? join(folder, 'uv.exe') : join(folder, `uv-${target}`, 'uv')
         const env = { UV_PYTHON_INSTALL_DIR: join(this.config.root, 'runtime', 'python'), UV_PYTHON_BIN_DIR: join(this.config.root, 'runtime', 'bin'), UV_NO_MODIFY_PATH: '1', UV_INDEX_URL: 'https://mirrors.aliyun.com/pypi/simple/' }
         await this.run(uv, ['python', 'install', '3.12'], env)
