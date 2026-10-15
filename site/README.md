@@ -4,6 +4,8 @@
 
 纯 HTML、CSS 和浏览器 JavaScript，无需安装依赖。修改 `site/` 后合入 `main`，`.github/workflows/pages.yml` 自动发布该目录。GitHub Pages 的发布方式设为 GitHub Actions。所有下载按钮指向 GitHub `/releases/latest`，不固定版本号。
 
+官网保留应用的品牌主张，首屏标题及介绍逐字复用 `apps/web/src/lib/i18n.tsx` 的中文 studio 文案。首屏居中展示品牌，后续分别呈现真实试听、现有能力、工作台流程与下载，不以压缩到一屏为目标。Logo 的八根声波复用 `brand-mark.tsx` 的 1.1 秒动画和各自延迟，并响应 `prefers-reduced-motion`。
+
 本地预览（先确认端口空闲）：
 
 ```sh

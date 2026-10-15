@@ -16,53 +16,58 @@
     <a class="brand" href="./" aria-label="YouDub 首页"><img src="./assets/youdub-logo.svg" alt="YouDub" width="1660" height="355"></a>
     <nav aria-label="主导航">
       <a href="#demo">效果演示</a>
+      <a href="#workspace">工作台</a>
       <a href="https://github.com/liuzhao1225/YouDub-webui">GitHub <span aria-hidden="true">↗</span></a>
       <a class="button small primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest">下载最新版 <span aria-hidden="true">↓</span></a>
     </nav>
   </header>
 
   <main>
-    <section class="hero wrap" id="demo" aria-labelledby="hero-title">
+    <section class="hero wrap" aria-labelledby="hero-title">
       <div class="hero-copy">
         <div class="eyebrow"><span class="status-dot"></span> 开源视频本地化工作台</div>
-        <h1 id="hero-title">让视频说<br><span class="gradient-text">另一种语言</span></h1>
-        <p class="lead">识别、翻译、逐句克隆原声。<br>把视频变成带字幕的配音成片。</p>
+        <h1 id="hero-title">让视频说<span class="gradient-text">另一种语言</span></h1>
+        <p class="lead">导入本地视频，YouDub 自动完成人声分离、语音识别、翻译与配音，生成字幕或配音成片。</p>
         <div class="hero-actions">
           <a class="button primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>下载最新版</a>
-          <a class="text-link" href="https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md">安装指南 <span aria-hidden="true">↗</span></a>
+          <a class="button secondary" href="#demo">试听配音 <span aria-hidden="true">↓</span></a>
         </div>
-        <p class="platform">macOS 14+ · Apple 芯片</p>
+        <p class="platform">macOS 14+ · Apple 芯片 <a href="https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md">安装指南 ↗</a></p>
+      </div>
 
+    </section>
+
+    <section class="demo-shell wrap" id="demo" aria-labelledby="demo-title">
+      <div class="demo-overview">
+        <div class="demo-topline"><h2 id="demo-title">原声与配音，听听区别</h2><span class="switch-note">切换语言，接着播放</span></div>
         <div class="demo-picker" role="group" aria-label="选择演示视频">
           <button class="sample is-selected" type="button" aria-pressed="true" data-sample="jensen">
             <img src="./assets/jensen-poster.jpg" alt="" width="64" height="64">
-            <span><strong>黄仁勋采访</strong><small>YouTube Shorts · 59 秒</small></span>
-            <span class="sample-arrow" aria-hidden="true">↗</span>
+            <span><strong>黄仁勋采访</strong><small>59 秒</small></span>
           </button>
           <button class="sample" type="button" aria-pressed="false" data-sample="creator">
             <img src="./assets/creator-poster.jpg" alt="" width="64" height="64">
-            <span><strong>1.29 亿次播放，收入多少？</strong><small>YouTube 创作者 · 40 秒</small></span>
-            <span class="sample-arrow" aria-hidden="true">↗</span>
+            <span><strong>1.29 亿次播放，收入多少？</strong><small>40 秒</small></span>
           </button>
         </div>
+        <div class="benefits" aria-label="YouDub 的视频本地化能力">
+      <article><span class="feature-symbol pink" aria-hidden="true">Aa</span><h2>让内容跨越语言</h2><p>识别原文、翻译并生成目标语言字幕。</p></article>
+      <article><span class="feature-symbol blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10v4m4-8v12m4-15v18m4-15v12m4-8v4"/></svg></span><h2>逐句克隆原声</h2><p>每句译文，使用对应原声片段作为配音参考。</p></article>
+      <article><span class="feature-symbol red" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/></svg></span><h2>按需要生成成片</h2><p>原声加字幕、配音，或字幕与配音一起输出。</p></article>
+        </div>
       </div>
-
-      <div class="demo-shell">
-        <div class="demo-topline"><span class="eyebrow">听听原声与配音</span><span class="switch-note">切换语言，接着播放</span></div>
-        <div id="players"></div>
-        <div class="demo-caption"><span id="demo-caption">黄仁勋采访</span><a id="source-link" href="https://www.youtube.com/shorts/TbotsRXyRME" target="_blank" rel="noreferrer">原视频 <span aria-hidden="true">↗</span></a></div>
-      </div>
+      <div class="demo-media"><div id="players"></div><div class="demo-caption"><span>英文原声 / 中文配音</span><a id="source-link" href="https://www.youtube.com/shorts/TbotsRXyRME" target="_blank" rel="noreferrer">原视频 <span aria-hidden="true">↗</span></a></div></div>
     </section>
 
-    <section class="workspace wrap" aria-labelledby="workspace-title">
-      <div class="section-heading"><h2 id="workspace-title">你的配音工作台</h2><a class="text-link" href="https://github.com/liuzhao1225/YouDub-webui#快速开始">从源码运行 <span aria-hidden="true">↗</span></a></div>
+    <section class="workspace wrap" id="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><span class="eyebrow">YOUDUB WORKSPACE</span><h2 id="workspace-title">从导入视频，到配音成片</h2></div><a class="text-link" href="https://github.com/liuzhao1225/YouDub-webui#快速开始">从源码运行 <span aria-hidden="true">↗</span></a></div>
       <div class="workspace-frame"><div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>YouDub</span></div><img src="./assets/workbench.jpg" alt="YouDub 工作台：导入视频，选择原文和目标语言，生成配音与字幕" width="1265" height="712" loading="lazy"></div>
-      <div class="capabilities"><span><i class="pink"></i>逐句原声克隆</span><span><i class="blue"></i>中文字幕</span><span><i class="red"></i>背景音保留</span><span><i></i>本地任务管理</span></div>
+      <div class="workflow"><div><span>01</span><strong>导入视频</strong><p>选择原文、目标语言和输出内容</p></div><div><span>02</span><strong>生成配音与字幕</strong><p>在任务库查看处理进度</p></div><div><span>03</span><strong>预览与下载</strong><p>获取成片、配音音频和字幕</p></div></div>
     </section>
 
     <section class="download wrap" aria-labelledby="download-title">
-      <div><h2 id="download-title">开始制作你的配音视频</h2><p>macOS 14+ · Apple 芯片</p></div>
-      <a class="button primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest">下载最新版 <span aria-hidden="true">↓</span></a>
+      <div><h2 id="download-title">开始使用 YouDub</h2><p>macOS 14+ · Apple 芯片</p></div>
+      <div class="download-actions"><a class="button primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest">下载最新版 <span aria-hidden="true">↓</span></a><a class="text-link" href="https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md">安装指南 ↗</a></div>
     </section>
   </main>
 
