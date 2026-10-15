@@ -60,14 +60,12 @@ h1 .gradient-text { display: inline-block; margin-left: .2em; }
 .switch-note { font-size: 13px; color: var(--muted); }
 #players { display: flex; justify-content: center; }
 .player { width: 100%; max-width: 840px; overflow: hidden; background: var(--card); border: 1px solid rgb(255 255 255 / .11); border-radius: 20px; box-shadow: 0 24px 60px -22px rgb(0 0 0 / .65); }
-.player[data-format=portrait] { max-width: 320px; }
 .player-toolbar { display: flex; padding: .75rem; align-items: center; justify-content: center; border-bottom: 1px solid var(--border); }
 .language-tabs { display: flex; gap: 2px; background: rgb(255 255 255 / .035); border: 1px solid var(--border); border-radius: 9px; padding: 3px; width: 100%; }
 .language-tabs button { border: 0; background: transparent; color: var(--muted); border-radius: 6px; padding: .55rem .75rem; flex: 1; font-size: 13px; font-weight: 500; }
 .language-tabs button[aria-selected=true] { color: var(--foreground); background: rgb(255 255 255 / .09); box-shadow: 0 1px 2px rgb(0 0 0 / .3); }
 .language-tabs button span { margin-left: .45rem; font-size: 10px; color: var(--muted); }
-.video-stage { position: relative; width: 100%; aspect-ratio: 608 / 1080; background: #060609; overflow: hidden; }
-.player[data-format=landscape] .video-stage { height: auto; aspect-ratio: 16 / 9; }
+.video-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #060609; overflow: hidden; }
 .video-stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .video-stage video.active { opacity: 1; }
 .video-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -92,7 +90,6 @@ input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border: 0; back
 .volume { width: 45px; }
 .demo-caption { display: flex; justify-content: center; gap: 1.5rem; font-size: 12px; color: var(--muted); padding: 1rem .25rem 0; }
 .player:fullscreen { display: flex; flex-direction: column; max-width: none; border: none; border-radius: 0; background: #060609; }
-.player[data-format=portrait]:fullscreen { max-width: none; }
 .player:fullscreen .video-stage { height: auto; aspect-ratio: auto; flex: 1; }
 .player:fullscreen .player-toolbar { align-self: center; width: min(100%,440px); }
 .player:fullscreen .controls { width: min(100%,1000px); align-self: center; }
