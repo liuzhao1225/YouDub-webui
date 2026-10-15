@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0a0e">
+  <meta name="description" content="YouDub 开源视频本地化工作台。识别、翻译、逐句克隆原声，生成字幕和配音视频。试听中英文示例，下载最新 macOS 版本。">
+  <title>YouDub — 视频翻译与原声配音</title>
+  <link rel="icon" href="./assets/youdub-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./player.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#demo">跳到演示</a>
+  <header class="site-header wrap">
+    <a class="brand" href="./" aria-label="YouDub 首页"><img src="./assets/youdub-logo.svg" alt="YouDub" width="1660" height="355"></a>
+    <nav aria-label="主导航">
+      <a href="#demo">效果演示</a>
+      <a href="https://github.com/liuzhao1225/YouDub-webui">GitHub <span aria-hidden="true">↗</span></a>
+      <a class="button small primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest">下载最新版 <span aria-hidden="true">↓</span></a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero wrap" id="demo" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot"></span> 开源视频本地化工作台</div>
+        <h1 id="hero-title">让视频说<br><span class="gradient-text">另一种语言</span></h1>
+        <p class="lead">识别、翻译、逐句克隆原声。<br>把视频变成带字幕的配音成片。</p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>下载最新版</a>
+          <a class="text-link" href="https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md">安装指南 <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="platform">macOS 14+ · Apple 芯片</p>
+
+        <div class="demo-picker" role="group" aria-label="选择演示视频">
+          <button class="sample is-selected" type="button" aria-pressed="true" data-sample="jensen">
+            <img src="./assets/jensen-poster.jpg" alt="" width="64" height="64">
+            <span><strong>黄仁勋采访</strong><small>YouTube Shorts · 59 秒</small></span>
+            <span class="sample-arrow" aria-hidden="true">↗</span>
+          </button>
+          <button class="sample" type="button" aria-pressed="false" data-sample="creator">
+            <img src="./assets/creator-poster.jpg" alt="" width="64" height="64">
+            <span><strong>1.29 亿次播放，收入多少？</strong><small>YouTube 创作者 · 40 秒</small></span>
+            <span class="sample-arrow" aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="demo-shell">
+        <div class="demo-topline"><span class="eyebrow">听听原声与配音</span><span class="switch-note">切换语言，接着播放</span></div>
+        <div id="players"></div>
+        <div class="demo-caption"><span id="demo-caption">黄仁勋采访</span><a id="source-link" href="https://www.youtube.com/shorts/TbotsRXyRME" target="_blank" rel="noreferrer">原视频 <span aria-hidden="true">↗</span></a></div>
+      </div>
+    </section>
+
+    <section class="workspace wrap" aria-labelledby="workspace-title">
+      <div class="section-heading"><h2 id="workspace-title">你的配音工作台</h2><a class="text-link" href="https://github.com/liuzhao1225/YouDub-webui#快速开始">从源码运行 <span aria-hidden="true">↗</span></a></div>
+      <div class="workspace-frame"><div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>YouDub</span></div><img src="./assets/workbench.jpg" alt="YouDub 工作台：导入视频，选择原文和目标语言，生成配音与字幕" width="1265" height="712" loading="lazy"></div>
+      <div class="capabilities"><span><i class="pink"></i>逐句原声克隆</span><span><i class="blue"></i>中文字幕</span><span><i class="red"></i>背景音保留</span><span><i></i>本地任务管理</span></div>
+    </section>
+
+    <section class="download wrap" aria-labelledby="download-title">
+      <div><h2 id="download-title">开始制作你的配音视频</h2><p>macOS 14+ · Apple 芯片</p></div>
+      <a class="button primary" href="https://github.com/liuzhao1225/YouDub-webui/releases/latest">下载最新版 <span aria-hidden="true">↓</span></a>
+    </section>
+  </main>
+
+  <footer class="wrap"><a class="brand" href="./" aria-label="YouDub 首页"><img src="./assets/youdub-logo.svg" alt="YouDub" width="1660" height="355"></a><span>Apache-2.0</span><a href="https://github.com/liuzhao1225/YouDub-webui/issues">反馈问题</a><a href="https://github.com/liuzhao1225/YouDub-webui#社区交流">社区交流</a></footer>
+  <noscript><p class="noscript">视频语言切换需要 JavaScript。你仍可通过「下载最新版」获取 YouDub。</p></noscript>
+</body>
+</html>

@@ -50,6 +50,10 @@ jobs:
       - name: 运行前端测试
         run: npm test -- --reporter=verbose
 
+      - name: 检查官网播放器脚本
+        working-directory: .
+        run: node --check site/player.js
+
       - name: 运行 ESLint
         run: npm run lint
 

@@ -8,7 +8,7 @@ An open-source video localization workspace: import a video, transcribe and tran
 
 [中文](README.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · QQ group: **618246010**
 
-[Download a release](https://github.com/liuzhao1225/YouDub-webui/releases) · [Installation and upgrade](docs/upgrade.md) · [Release workflow](docs/releasing.md)
+[Website and demos](https://liuzhao1225.github.io/YouDub-webui/) · [Download latest](https://github.com/liuzhao1225/YouDub-webui/releases/latest) · [Installation and upgrade](docs/upgrade.md) · [Release workflow](docs/releasing.md)
 
 ## Interface Preview
 
