@@ -9,7 +9,7 @@ import { startHost } from '../host/src/bootstrap.ts'
 import composition from '../../youdub.config.ts'
 import { ModuleLoader } from '@cordisjs/plugin-loader'
 
-process.umask(0o077)
+if (process.platform !== 'win32') process.umask(0o077)
 const data = process.env.YOUDUB_DESKTOP_DATA_DIR
 if (!data) throw new Error('YOUDUB_DESKTOP_DATA_DIR is required by the desktop launcher.')
 await mkdir(data, { recursive: true })
@@ -49,6 +49,7 @@ try {
   await new Promise(resolve => reservation.close(resolve))
   const webURL = `http://127.0.0.1:${port}`
   web = spawn(process.execPath, [join(process.cwd(), 'web/apps/web/server.js')], {
+    windowsHide: true,
     env: { ...process.env, NODE_ENV: 'production', HOSTNAME: '127.0.0.1', PORT: String(port), NEXT_TELEMETRY_DISABLED: '1' },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

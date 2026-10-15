@@ -61,6 +61,24 @@ async function choose(user: ReturnType<typeof userEvent.setup>, label: string, o
 
 afterEach(() => { cleanup(); window.localStorage.clear() })
 
+it('chooses the available accelerated device before CPU and preserves saved selections', () => {
+  const runtime = testRuntime()
+  runtime.devices.unshift({ id: 'mps', backend: 'mps', available: true })
+  runtime.capabilities[0].models[0].devices = ['mps', 'cpu']
+  expect(initialTaskConfig(runtime).asr.device).toBe('mps')
+  expect(initialTaskConfig(runtime, testConfig).asr.device).toBe('cpu')
+  runtime.devices[0].available = false
+  expect(initialTaskConfig(runtime).asr.device).toBe('cpu')
+})
+
+it('labels an AMD device with its actual ROCm backend', () => {
+  const runtime = testRuntime()
+  runtime.devices.unshift({ id: 'cuda:0', backend: 'rocm', available: true })
+  runtime.capabilities[0].models[0].devices = ['cuda:0', 'cpu']
+  mount(runtime, { ...testConfig, asr: { ...testConfig.asr, device: 'cuda:0' } })
+  expect(screen.getByText(/AMD ROCm 0/)).toBeInTheDocument()
+})
+
 it("主页只显示三个基础选项，切换输出后保留设置中的模型和处理配置", async () => {
   const runtime = runtimeWithQwen()
   runtime.capabilities.find((item) => item.capability === "tts")!.models.push({

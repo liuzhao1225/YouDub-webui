@@ -236,7 +236,12 @@ def test_current_store_rejects_redirected_database_without_touching_target(tmp_p
     root.mkdir()
     outside = tmp_path / "outside.sqlite"
     outside.write_bytes(b"existing-data")
-    (root / "desktop.sqlite").symlink_to(outside)
+    try:
+        (root / "desktop.sqlite").symlink_to(outside)
+    except OSError as exc:
+        if getattr(exc, "winerror", None) == 1314:
+            pytest.skip("File symlinks require Windows Developer Mode or administrator privileges.")
+        raise
     with pytest.raises(RuntimeSecurityError):
         SqliteStore(root)
     assert outside.read_bytes() == b"existing-data"

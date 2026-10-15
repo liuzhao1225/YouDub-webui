@@ -1,4 +1,4 @@
-import { access, chmod, mkdir, readdir } from 'node:fs/promises'
+import { access, chmod, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { constants } from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
 import type { Context } from 'cordis'
@@ -26,10 +26,12 @@ export async function executable(name: string) {
 export class EnvironmentSetup {
   steps: EnvironmentStep[] = [
     { id: 'python', name: 'Python 3.12', status: 'pending' },
+    { id: 'acceleration', name: 'GPU 与推理后端', status: 'pending' },
     { id: 'dependencies', name: '运行依赖', status: 'pending' },
     { id: 'ffmpeg', name: 'FFmpeg', status: 'pending' },
     { id: 'resources', name: '分句资源', status: 'pending' },
   ]
+  private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; index: string; installed: boolean; packages: string[]; prerequisites: string[] }
   constructor(private ctx: Context, readonly config: EnvironmentConfig, private client: DownloadClient, private signal: AbortSignal) {}
   private run(command: string, args: string[], env?: Record<string, string>) {
     return this.ctx.process.run({ command, args, cwd: this.config.repoRoot, env, signal: this.signal })
@@ -67,7 +69,7 @@ export class EnvironmentSetup {
         const archive = join(folder, name)
         await this.client.download(asset, archive, this.signal, () => {})
         await this.run('tar', ['-xf', archive, '-C', folder])
-        const uv = join(folder, windows ? 'uv.exe' : `uv-${target}/uv`)
+        const uv = windows ? join(folder, 'uv.exe') : join(folder, `uv-${target}`, 'uv')
         const env = { UV_PYTHON_INSTALL_DIR: join(this.config.root, 'runtime', 'python'), UV_PYTHON_BIN_DIR: join(this.config.root, 'runtime', 'bin'), UV_NO_MODIFY_PATH: '1', UV_INDEX_URL: 'https://mirrors.aliyun.com/pypi/simple/' }
         await this.run(uv, ['python', 'install', '3.12'], env)
         await this.run(uv, ['venv', '--python', '3.12', '--seed', environment], env)
@@ -76,24 +78,39 @@ export class EnvironmentSetup {
     const result = await this.python(['-c', 'import sys; assert sys.version_info[:2] == (3, 12), "Python 3.12 is required"; print(sys.version.split()[0])'])
     return result.stdout.trim()
   }
+  private async acceleration() {
+    const plan = this.accelerationPlan = await this.probe('acceleration-plan')
+    this.steps.find(step => step.id === 'acceleration')!.detail = plan.detail
+    if (!plan.installed) {
+      if (plan.prerequisites.length) await this.python(['-m', 'pip', 'install', '--disable-pip-version-check', ...plan.prerequisites])
+      await this.python(['-m', 'pip', 'install', '--disable-pip-version-check', '--prefer-binary', '--index-url', plan.index,
+        ...(plan.packages.length ? plan.packages : [`torch==${plan.version}`, `torchaudio==${plan.version}`])])
+    }
+    const status = await this.probe('acceleration')
+    return status.backend === plan.backend ? status.detail : `${plan.detail}；${status.detail}`
+  }
   private async dependencies() {
     const { missing } = await this.probe('dependencies')
     if (missing.length) {
-      const args = ['-m', 'pip', 'install', '--disable-pip-version-check', '--prefer-binary', '--index-url', 'https://mirrors.aliyun.com/pypi/simple/', '-r', join(this.config.repoRoot, 'requirements.txt')]
+      const plan = this.accelerationPlan!
+      const constraints = join(this.config.root, 'runtime', 'torch-constraints.txt')
+      await mkdir(dirname(constraints), { recursive: true })
+      await writeFile(constraints, `torch==${plan.version}\ntorchaudio==${plan.version}\ntorchcodec==${plan.codec}\n`)
+      const args = ['-m', 'pip', 'install', '--disable-pip-version-check', '--prefer-binary', '--index-url', 'https://mirrors.aliyun.com/pypi/simple/', '-c', constraints, '-r', join(this.config.repoRoot, 'requirements.txt')]
       try { await this.python(args) }
       catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         if (!/No matching distribution found|Could not find a version that satisfies/.test(message)) throw error
         // Only a missing mirror package permits this explicit, recorded mirror change.
         this.ctx.logger.warn(message)
-        this.steps[1]!.detail = '阿里云缺少依赖，改用清华源安装'
+        this.steps.find(step => step.id === 'dependencies')!.detail = '阿里云缺少依赖，改用清华源安装'
         args[args.indexOf('https://mirrors.aliyun.com/pypi/simple/')] = 'https://pypi.tuna.tsinghua.edu.cn/simple/'
         await this.python(args)
       }
       const remaining = (await this.probe('dependencies')).missing
       if (remaining.length) throw new Error(`依赖安装后仍未满足：${remaining.join(', ')}`)
     }
-    if (!await fileSize(join(this.config.repoRoot, 'submodule/demucs/demucs/__init__.py'))) {
+    if (!await fileSize(join(this.config.repoRoot, 'submodule', 'demucs', 'demucs', '__init__.py'))) {
       await this.run('git', ['submodule', 'update', '--init', '--recursive', 'submodule/demucs'])
     }
   }
@@ -153,7 +170,7 @@ export class EnvironmentSetup {
   }
   async prepare() {
     platformTarget()
-    const actions = [() => this.pythonEnvironment(), () => this.dependencies(), () => this.media(), () => this.resources()]
+    const actions = [() => this.pythonEnvironment(), () => this.acceleration(), () => this.dependencies(), () => this.media(), () => this.resources()]
     for (const [index, action] of actions.entries()) {
       this.signal.throwIfAborted()
       const step = this.steps[index]!

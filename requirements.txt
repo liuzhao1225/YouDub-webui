@@ -3,7 +3,9 @@ pydantic
 keyring>=25.6,<26
 openai
 dora-search>=0.1.12
-diffq>=0.2.1
+# Only quantized legacy Demucs checkpoints need DiffQ; htdemucs is not quantized.
+# DiffQ has no Windows wheel and its extension requires a separate build toolchain.
+diffq>=0.2.1; sys_platform != "win32"
 julius>=0.2.3
 lameenc>=1.2
 openunmix

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-import select
+from queue import Empty, Queue
+from threading import Thread
 import signal
 import shutil
 import subprocess
@@ -149,8 +150,8 @@ def test_actual_video_prepare_external_subtitle_import_and_export(tmp_path):
     assert prepared["outputs"]["mediaInfo"]["duration_ms"] == 1000
     assert prepared["artifacts"]["sourceAudio"]["metadata"]["channels"] == 2
     source, translated = tmp_path / "source.srt", tmp_path / "translated.srt"
-    source.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello world.\n")
-    translated.write_text("1\n00:00:00,000 --> 00:00:01,000\n你好世界。\n")
+    source.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello world.\n", encoding="utf-8")
+    translated.write_text("1\n00:00:00,000 --> 00:00:01,000\n你好世界。\n", encoding="utf-8")
     imported = invoke(tmp_path, "subtitles.import/v1", {"sourceSubtitles": {"path": str(source)}, "translatedSubtitles": {"path": str(translated)}}).execute()
     export = invoke(tmp_path, "media.export/v1", {"video": {"path": str(video)}, "mediaInfo": prepared["outputs"]["mediaInfo"], **imported["outputs"]},
                     {"outputMode": "subtitles", "targetLanguage": "zh"})
@@ -169,9 +170,28 @@ def send(process, invocation_id, seq, kind, payload):
     process.stdin.flush()
 
 
+def messages(process):
+    # select() accepts sockets only on Windows. Keep one reader per pipe so
+    # buffered lines and no-reply assertions work on all three platforms.
+    if not hasattr(process, "messages"):
+        process.messages = Queue()
+        def collect():
+            for line in process.stdout:
+                process.messages.put(line)
+        Thread(target=collect, daemon=True).start()
+    return process.messages
+
+
 def read(process):
-    assert select.select([process.stdout], [], [], 5)[0], "Worker did not reply"
-    return json.loads(process.stdout.readline())
+    try:
+        return json.loads(messages(process).get(timeout=5))
+    except Empty:
+        pytest.fail("Worker did not reply")
+
+
+def assert_no_reply(process):
+    with pytest.raises(Empty):
+        messages(process).get(timeout=0.05)
 
 
 def test_external_request_waits_for_corresponding_durable_ack():
@@ -183,11 +203,11 @@ def test_external_request_waits_for_corresponding_durable_ack():
         pending = read(process)
         assert pending["type"] == "external.prepare"
         external_id = pending["payload"]["externalRequestId"]
-        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert_no_reply(process)
         send(process, request, 2, "external.accepted", {"externalRequestId": external_id})
         receipt = read(process)
         assert receipt["type"] == "external.update" and receipt["payload"]["state"] == "succeeded"
-        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert_no_reply(process)
         send(process, request, 3, "external.recorded", {"externalRequestId": external_id})
         assert read(process)["type"] == "result"
         assert process.wait(timeout=5) == 0
@@ -274,7 +294,7 @@ except BaseException as exc:
         # The terminal event is known to the worker and received by Host. A
         # cancellation while Host commits it must not emit a contradictory risk.
         send(process, request, 3, "cancel", {})
-        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert_no_reply(process)
         assert process.poll() is None
         send(process, request, 4, "external.recorded", {"externalRequestId": external_id})
         error = read(process)
@@ -313,7 +333,7 @@ except BaseException as exc:
         if cancel_while_committing:
             send(process, request, sequence, "cancel", {})
             sequence += 1
-        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert_no_reply(process)
         assert process.poll() is None
         send(process, request, sequence, "external.recorded", {"externalRequestId": external_id})
         error = read(process)
@@ -346,7 +366,7 @@ except BaseException as exc:
         pending = read(process)
         external_id = pending["payload"]["externalRequestId"]
         send(process, request, 2, "cancel", {})
-        assert not select.select([process.stdout], [], [], 0.05)[0]
+        assert_no_reply(process)
         send(process, request, 3, "external.accepted", {"externalRequestId": external_id})
         receipt = read(process)
         assert receipt["type"] == "external.update"

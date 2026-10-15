@@ -6,6 +6,7 @@ import os
 import queue
 import sys
 import threading
+import time
 import traceback
 import uuid
 
@@ -53,8 +54,19 @@ class OperationWire:
     def _read(self):
         pending = b""
         try:
+            descriptor = sys.stdin.fileno()
+            if os.name == "nt":
+                # A blocking CRT read holds stdin's lock. NumPy/OpenBLAS DLL
+                # initialization also needs that lock and otherwise deadlocks.
+                # Python 3.12 supports nonblocking Windows pipes; Unix retains
+                # its blocking reader and existing cancellation behavior.
+                os.set_blocking(descriptor, False)
             while True:
-                block = os.read(sys.stdin.fileno(), 65536)
+                try:
+                    block = os.read(descriptor, 65536)
+                except BlockingIOError:
+                    time.sleep(0.01)
+                    continue
                 if not block:
                     if pending.strip():
                         raise WorkerError("PROTOCOL_ERROR", "Host closed an incomplete NDJSON message.")

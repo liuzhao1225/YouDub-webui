@@ -24,9 +24,12 @@ function languageName(code: string, text: Text) {
   return LANGUAGE_NAMES[code] ?? code
 }
 
-function deviceName(device: string, text: Text) {
+function deviceName(device: string, text: Text, runtime: Runtime) {
   if (device === "cpu") return "CPU"
   if (device === "remote") return text("Remote", "远端", "リモート")
+  if (device === "mps") return "Apple MPS"
+  const entry = runtime.devices.find(item => item.id === device)
+  if (entry?.backend === "rocm") return `AMD ROCm ${device.split(":")[1]}`
   return device.replace(/^cuda:/, "CUDA ")
 }
 
@@ -154,12 +157,12 @@ function adapterName(adapter: string, text: Text) {
 }
 
 // 模型名为主，适配器与设备作为次要信息。
-function ModelLabel({ value, text }: { value: ModelSelection; text: Text }) {
+function ModelLabel({ value, text, runtime }: { value: ModelSelection; text: Text; runtime: Runtime }) {
   return <span className="min-w-0 truncate">
     <span className="font-medium text-foreground">{value.model}</span>{" "}
     <span className="text-subtle-foreground">{value.device === "remote"
       ? text("Remote API", "远端接口", "リモート API")
-      : `${adapterName(value.adapter, text)} · ${deviceName(value.device, text)}`}</span>
+      : `${adapterName(value.adapter, text)} · ${deviceName(value.device, text, runtime)}`}</span>
   </span>
 }
 
@@ -227,12 +230,12 @@ function ModelField({ kind, id, caption, srPrefix, value, runtime, onChange }: {
   return <Field id={id} caption={caption} srPrefix={srPrefix}>
     <FieldSelect id={id} value={selected}
       display={value?.model ? <>
-        <ModelLabel value={value} text={text} />
+        <ModelLabel value={value} text={text} runtime={runtime} />
         {known ? null : <span className="ml-1.5 shrink-0 text-status-warning-fg">· {text("Unavailable", "不可用", "利用不可")}</span>}
       </> : null}
       placeholder={text("Select a model", "选择模型", "モデルを選択")}
       options={[
-        ...options.map((item) => ({ value: selectionKey(item.value), label: <ModelLabel value={item.value} text={text} /> })),
+        ...options.map((item) => ({ value: selectionKey(item.value), label: <ModelLabel value={item.value} text={text} runtime={runtime} /> })),
         ...runtime.capabilities.filter((item) => item.capability === kind && !item.available).map((item) => ({
           value: `unavailable-${item.adapter}`, label: `${item.adapter} — ${item.unavailable_reason ?? text("Unavailable", "不可用", "利用不可")}`, disabled: true,
         })),
@@ -310,12 +313,12 @@ export function TaskConfigForm({ value, runtime, onChange }: {
       <Field id="subtitle-alignment" caption={text("Timing", "时间", "タイミング")} srPrefix={text("Subtitle ", "字幕", "字幕の")}>
         <FieldSelect id="subtitle-alignment" value={value.subtitle_alignment ? alignmentKey : ESTIMATE_TIMING}
           display={value.subtitle_alignment
-            ? `${value.subtitle_alignment.model} · ${alignmentKnown ? deviceName(value.subtitle_alignment.device, text) : text("Unavailable", "不可用", "利用不可")}`
+            ? `${value.subtitle_alignment.model} · ${alignmentKnown ? deviceName(value.subtitle_alignment.device, text, runtime) : text("Unavailable", "不可用", "利用不可")}`
             : text("Estimate by text length", "按字数估算", "文字数から推定")}
           placeholder=""
           options={[
             { value: ESTIMATE_TIMING, label: text("Estimate by text length", "按字数估算", "文字数から推定") },
-            ...alignmentOptions.map((item) => ({ value: selectionKey(item.value), label: `${item.value.model} · ${deviceName(item.value.device, text)}` })),
+            ...alignmentOptions.map((item) => ({ value: selectionKey(item.value), label: `${item.value.model} · ${deviceName(item.value.device, text, runtime)}` })),
             ...runtime.capabilities.filter((item) => item.capability === "subtitle_alignment" && !item.available).map((item) => ({
               value: `unavailable-${item.adapter}`, label: `Qwen — ${item.unavailable_reason ?? text("Unavailable", "不可用", "利用不可")}`, disabled: true,
             })),

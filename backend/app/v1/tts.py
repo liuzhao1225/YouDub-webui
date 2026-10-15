@@ -132,7 +132,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
     context.check_cancel()
     selection = context.config.tts
     if selection is None or selection.adapter != "voxcpm" or selection.model != "VoxCPM2" or selection.device == "remote":
-        raise ApiError(422, "INVALID_CONFIG", "TTS requires the local VoxCPM2 model and a CPU/CUDA device.",
+        raise ApiError(422, "INVALID_CONFIG", "TTS requires the local VoxCPM2 model and a CPU/CUDA/ROCm/MPS device.",
                        field="tts", stage="tts")
     if selection.voice.mode != "source_clone":
         raise ApiError(422, "INVALID_CONFIG", "VoxCPM2 preset voice assets are not configured; select source_clone.",

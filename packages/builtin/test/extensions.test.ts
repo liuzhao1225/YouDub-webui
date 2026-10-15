@@ -126,7 +126,7 @@ test('Python entry can import its own helper without changing installed integrit
     context.reflect.provide('tasks', { idle: async () => true })
   } })
   const catalog = await ctx.plugin(Catalog)
-  let extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd() })
+  let extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') })
   t.after(async () => { await extensions.dispose(); await catalog.dispose(); await support.dispose(); await processes.dispose(); await rm(root, { recursive: true }) })
   await ctx.extensions.install({ source })
   await extensions.dispose()
@@ -138,7 +138,7 @@ test('Python entry can import its own helper without changing installed integrit
   await writeFile(input, 'hello from helper\n'); await mkdir(workDir)
   const result = await ctx.catalog.provider('example.python-uppercase').execute({ invocationId: 'python-helper', taskId: 'helper-task', attempt: 1, stepId: 'uppercase', operation: 'example.uppercase/v1', binding: { options: {} }, inputs: { document: { id: 'input', schemaId: 'file/v1' } }, workDir, taskDir: root, config: {} } as any, {
     signal: new AbortController().signal, credentials: {}, resolve: async () => input,
-    register: async (descriptor: any) => { assert.equal(await readFile(join(workDir, descriptor.path), 'utf8'), 'HELLO FROM HELPER\n'); return { id: 'output', schemaId: descriptor.schemaId } },
+    register: async (descriptor: any) => { assert.equal((await readFile(join(workDir, descriptor.path), 'utf8')).replaceAll('\r\n', '\n'), 'HELLO FROM HELPER\n'); return { id: 'output', schemaId: descriptor.schemaId } },
   } as any)
   assert.equal(result.state, 'completed')
   await plugin.dispose(); await extensions.dispose()
@@ -223,9 +223,15 @@ test('official media readiness checks both configured executables and exposes fa
   assert.equal(provider.describe().available, false)
   assert.match(provider.describe().unavailableReason!, /missing-ffmpeg.*ENOENT/)
   process.env.FFMPEG_PATH = join(root, 'ffmpeg')
-  for (const name of ['ffmpeg', 'ffprobe']) await writeFile(join(root, name), `#!${process.execPath}\nif(process.argv[2]!=='-version')process.exit(8);console.log('test version')\n`, { mode: 0o700 })
+  let brokenProbe = false
+  t.mock.method(ctx.process, 'run', async (request: { command: string; args: string[] }) => {
+    assert.deepEqual(request.args, ['-version'])
+    assert.ok([process.env.FFMPEG_PATH, process.env.FFPROBE_PATH].includes(request.command))
+    if (brokenProbe && request.command === process.env.FFPROBE_PATH) throw new Error('broken ffprobe executable')
+    return { stdout: 'test version', stderr: '' }
+  })
   assert.deepEqual(await provider.probe(), { available: true, reason: null })
-  await writeFile(join(root, 'ffprobe'), `#!${process.execPath}\nconsole.error('broken ffprobe executable');process.exit(7)\n`, { mode: 0o700 })
+  brokenProbe = true
   const failed = await provider.probe()
   assert.equal(failed.available, false)
   assert.match(failed.reason, /broken ffprobe executable/)

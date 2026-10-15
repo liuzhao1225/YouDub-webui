@@ -36,7 +36,7 @@ export default class Processes extends Service implements ProcessService {
   }
   private launch(request: ProcessRequest): Managed {
     const child = spawn(request.command, request.args, {
-      cwd: request.cwd, env: { ...process.env, ...request.env, PYTHONUNBUFFERED: '1' },
+      cwd: request.cwd, env: { ...process.env, ...request.env, PYTHONUNBUFFERED: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
       stdio: ['pipe', 'pipe', 'pipe'], detached: process.platform !== 'win32', windowsHide: true,
     })
     const managed: Managed = { child, stderr: '', ended: false, done: null!, stop: null! }

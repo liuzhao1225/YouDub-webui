@@ -74,6 +74,9 @@ class Bridge:
         return self.settings()
 
     def call(self, method, params):
+        if method == 'settings.test_connection':
+            from backend.app.v1.connection_test import check_connection
+            return check_connection(params, self)
         if method.startswith("store."):
             operation = method.removeprefix("store.")
             functions = {"create": self.store.create, "get": self.store.get, "list": self.store.list,

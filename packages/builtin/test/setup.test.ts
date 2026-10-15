@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { delimiter, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import Http from '../src/http.js'
 import Setup from '../src/setup.js'
@@ -10,15 +10,24 @@ import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
 import { runtimePaths } from '../../../apps/host/src/paths.js'
 
+function probeResult(action: string) {
+  if (action === 'dependencies') return { missing: [] }
+  if (action === 'acceleration-plan') return { backend: 'cpu', installed: true, version: '2.8.0', codec: '0.7.0', packages: [], prerequisites: [], detail: 'CPU' }
+  if (action === 'acceleration') return { backend: 'cpu', detail: 'CPU（运算检查通过）' }
+  return { ready: true }
+}
+
 test('desktop Python is created in the writable data directory without modifying the application bundle', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-desktop-environment-'))
   const environment = join(root, 'runtime/venv')
   const bin = join(root, 'python-bin')
   const media = join(root, 'media-bin')
   await mkdir(bin); await mkdir(media)
-  const executable = join(bin, 'python3.12')
+  const windows = process.platform === 'win32'
+  const executable = join(bin, windows ? 'python.exe' : 'python3.12')
   await writeFile(executable, 'test executable', { mode: 0o700 })
   await writeFile(join(media, 'ffmpeg'), 'test executable', { mode: 0o700 })
+  if (windows) await writeFile(join(media, 'avcodec-test.dll'), 'test shared library')
   const previous = { ...process.env }
   t.after(async () => {
     for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
@@ -31,20 +40,20 @@ test('desktop Python is created in the writable data directory without modifying
   process.env.FFMPEG_PATH = join(media, 'ffmpeg')
   process.env.FFPROBE_PATH = join(media, 'ffmpeg')
   const { python } = runtimePaths(root)
-  assert.equal(python, join(environment, 'bin/python'))
+  assert.equal(python, join(environment, windows ? 'Scripts/python.exe' : 'bin/python'))
   const commands: string[][] = []
   const ctx = { process: { run: async ({ args }: { args: string[] }) => {
     commands.push(args)
     if (args[1] === 'venv') {
-      await mkdir(join(args[2]!, 'bin'), { recursive: true })
+      await mkdir(join(args[2]!, windows ? 'Scripts' : 'bin'), { recursive: true })
       await writeFile(python, 'test executable')
     }
-    return { stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(args[2] === 'dependencies' ? { missing: [] } : { ready: true }) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12\n' }
+    return { stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12\n' }
   } } } as unknown as Context
   const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, new DownloadClient(), new AbortController().signal)
   await setup.prepare()
   assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
-  assert.equal(process.env.PATH?.split(':')[0], media)
+  assert.equal(process.env.PATH?.split(delimiter)[0], media)
   assert.ok(setup.steps.every(step => step.status === 'ready'))
 })
 
@@ -86,6 +95,7 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   const root = await mkdtemp(join(tmpdir(), 'youdub-first-run-'))
   const python = join(root, 'python')
   await writeFile(python, 'test executable')
+  if (process.platform === 'win32') await writeFile(join(root, 'avcodec-test.dll'), 'test shared library')
   const previous = { FFMPEG_PATH: process.env.FFMPEG_PATH, FFPROBE_PATH: process.env.FFPROBE_PATH, YOUDUB_DESKTOP_DATA_DIR: process.env.YOUDUB_DESKTOP_DATA_DIR, NLTK_DATA: process.env.NLTK_DATA }
   process.env.FFMPEG_PATH = python; process.env.FFPROBE_PATH = python
   let release!: () => void
@@ -102,7 +112,7 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   })
   const ctx = new Context()
   const app = await ctx.plugin(async function setupTest(owner) {
-    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => ({ stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(args[2] === 'dependencies' ? { missing: [] } : { ready: true }) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }) })
+    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => ({ stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }) })
     owner.reflect.provide('loader', { create: async (entry: any) => { created.push(entry.id) }, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, entries: [{ id: 'runtime', name: 'runtime' }] })

@@ -10,6 +10,14 @@
 
 首次安装会下载 Python、FFmpeg 和模型；翻译服务需在设置中配置兼容接口、模型和密钥。安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-0.0.1-macOS-arm64.dmg.sha256` 核验。
 
+## Windows 桌面版
+
+Windows x64 便携包由新增的 Windows 发布流程生成，适用于 Windows 10 22H2 / Windows 11；历史 tag 不会自动补发。下载包含 `YouDub-<version>-windows-x64.zip` 的 Release，使用 PowerShell 的 `Get-FileHash <zip路径> -Algorithm SHA256` 与相邻 `.sha256` 文件核对后，将整个 ZIP 解压到本地目录，运行 `YouDub.exe`。需要 WebView2 Evergreen Runtime，缺少时启动器会提供微软下载入口。此便携包尚未进行 Authenticode 签名。
+
+升级前关闭 YouDub，将新包解压到新的应用目录。保留 `%LOCALAPPDATA%\YouDub` 中的模型、任务和配置，以及 Windows 凭据管理器中的翻译密钥；不要把新旧版本同时运行在同一个数据目录。日志位于 `%LOCALAPPDATA%\YouDub\logs\desktop.log`。使用 `YOUDUB_DESKTOP_DATA_DIR` 时，数据和日志位于指定目录。
+
+Windows 本机验收覆盖打包、原生窗口、首次翻译配置、路径兼容性、任务生命周期和服务退出，并使用实际 Windows 包在 GTX 1080 Ti 上完成真实视频的识别、翻译、配音、字幕对齐和导出。真实任务复用已准备的 Python 与模型缓存，不代表全新机器上的完整模型下载已验收，详见[验收记录](validation/windows-desktop-2026-10-16.md)。
+
 ## 从旧 main 源码版升级
 
 1. 等待旧任务完成并停止旧服务，保留旧提交号，以及 `.env`、数据库和任务文件所在目录的副本。新旧服务不可同时写入同一数据目录。
@@ -25,4 +33,4 @@
 
 ## 当前范围
 
-正式安装包覆盖 macOS Apple Silicon。Windows、Linux 和 Intel Mac 暂无本次验收的安装包。语言目录包含中文、英文和日文，具体可选项取决于模型能力；Qwen 字幕对齐仅支持中文和英文。源码安装与扩展插件配置见 [运行指南](design/cordis-plugin-runtime.md)。
+桌面打包覆盖 macOS Apple Silicon 和 Windows x64；Windows 的实际发行以包含 ZIP 的 Release 为准。Linux 和 Intel Mac 暂无本次验收的安装包。语言目录包含中文、英文和日文，具体可选项取决于模型能力；Qwen 字幕对齐仅支持中文和英文。源码安装与扩展插件配置见 [运行指南](design/cordis-plugin-runtime.md)。

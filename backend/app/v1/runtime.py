@@ -1,4 +1,4 @@
-"""Metadata-only probes for the official Python media providers."""
+"""Model metadata and cached, model-free accelerator probes for local providers."""
 from __future__ import annotations
 
 import importlib.metadata
@@ -14,6 +14,7 @@ from typing import Any
 from uuid import uuid4
 
 from ..config import ffmpeg_binary, ffprobe_binary
+from ..accelerators import detect_devices
 from .segments import LANGUAGES
 
 
@@ -33,22 +34,7 @@ RUNTIME_LIMITS: dict[str, Any] = {
 
 
 def _detect_devices() -> list[dict[str, Any]]:
-    devices = [{"id": "cpu", "name": "CPU", "available": True, "unavailable_reason": None}]
-    if importlib.util.find_spec("torch") is None:
-        return devices
-
-    # Querying CUDA does not construct or load any inference models. An invalid
-    # installed Torch runtime must propagate its error rather than look ready.
-    import torch
-
-    if torch.cuda.is_available():
-        devices.extend(
-            {"id": f"cuda:{index}", "name": torch.cuda.get_device_name(index),
-             "available": True, "unavailable_reason": None}
-            for index in range(torch.cuda.device_count())
-        )
-    # The official local model processes accept explicit CPU/CUDA devices.
-    return devices
+    return deepcopy(detect_devices())
 
 
 def _model(
@@ -87,9 +73,11 @@ def _whisper_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
         return [], "Whisper ASR 还需要 PATH 中可执行的 ffmpeg；仅配置 FFMPEG_PATH 不足以读取音频。"
     from .asr import available_models
 
-    available_devices = [device["id"] for device in devices if device["available"]]
+    # OpenAI Whisper stores sparse alignment heads; MPS cannot move these
+    # buffers. Keep its ASR on CPU while other providers can use Apple MPS.
+    available_devices = [device["id"] for device in devices if device["available"] and device["id"] != "mps"]
     if not available_devices:
-        return [], "没有可执行 Whisper 的 CPU/CUDA 设备。"
+        return [], "没有可执行 Whisper 的 CPU/CUDA/ROCm 设备。"
     models = [_model(
         name, available_devices.copy(), ["auto", "en"] if name.endswith(".en") else ["auto", *LANGUAGES], [],
         max_audio_duration_ms=RUNTIME_LIMITS["max_video_duration_ms"],
@@ -137,14 +125,14 @@ def _voxcpm_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     except (importlib.metadata.PackageNotFoundError, InvalidVersion):
         supported = False
     if not supported:
-        return [], "本地 VoxCPM2 需要 voxcpm>=2.0.3，以支持明确的 CPU/CUDA 设备选择。"
+        return [], "本地 VoxCPM2 需要 voxcpm>=2.0.3，以支持明确的 CPU/CUDA/ROCm/MPS 设备选择。"
     if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
         return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
     from .tts import MAX_REFERENCE_DURATION_MS, available_models
 
     available_devices = [device["id"] for device in devices if device["available"]]
     if not available_devices:
-        return [], "没有可执行 VoxCPM2 的 CPU/CUDA 设备。"
+        return [], "没有可执行 VoxCPM2 的 CPU/CUDA/ROCm/MPS 设备。"
     models = [_model(name, available_devices.copy(), list(LANGUAGES), list(LANGUAGES),
                      max_reference_duration_ms=MAX_REFERENCE_DURATION_MS)
               for name in available_models()]
@@ -169,7 +157,7 @@ def _demucs_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
 
     available_devices = [device["id"] for device in devices if device["available"]]
     if not available_devices:
-        return [], "没有可执行 Demucs 的 CPU/CUDA 设备。"
+        return [], "没有可执行 Demucs 的 CPU/CUDA/ROCm/MPS 设备。"
     models = [_model(name, available_devices.copy(), [], [],
                      max_audio_duration_ms=RUNTIME_LIMITS["max_video_duration_ms"])
               for name in available_models()]
@@ -193,7 +181,7 @@ def _subtitle_alignment_models(devices: list[dict[str, Any]]) -> tuple[list[dict
 
     available_devices = [device["id"] for device in devices if device["available"]]
     if not available_devices:
-        return [], "没有可执行 Qwen 字幕对齐的 CPU/CUDA 设备。"
+        return [], "没有可执行 Qwen 字幕对齐的 CPU/CUDA/ROCm/MPS 设备。"
     models = [_model(name, available_devices.copy(), [], ["en", "zh"], max_audio_duration_ms=300_000)
               for name in available_models()]
     return models, None if models else "本地 Qwen3-ForcedAligner-0.6B-hf 权重或 tokenizer 资产不完整。"

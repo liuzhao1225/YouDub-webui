@@ -1,7 +1,7 @@
 import { Service, type Context } from 'cordis'
 import { readFile, writeFile, mkdir, cp, realpath, lstat, symlink, rm, readdir } from 'node:fs/promises'
 import { createHash, randomUUID } from 'node:crypto'
-import { dirname, resolve, relative, join, extname } from 'node:path'
+import { dirname, resolve, relative, join, extname, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import { AppError } from '@youdub/sdk'
@@ -9,7 +9,7 @@ import { AppError } from '@youdub/sdk'
 interface ClientModule { id: string; version: string; access: 'public' | 'authenticated'; url: string; css?: string[]; config?: object }
 interface PythonEntry { entry: string; requirements?: string; provider: Record<string, any>; options?: object; runtimeAdapter?: string }
 interface Installed { id: string; version: string; integrity: string; source: string; commit?: string; directory: string; host?: string; python?: PythonEntry; client?: { entry: string; css?: string[]; access?: 'public' | 'authenticated' }; enabled: boolean; config: object }
-export interface ExtensionsConfig { root: string; repoRoot: string; builtinClientManifest?: string; managementOnly?: boolean }
+export interface ExtensionsConfig { root: string; repoRoot: string; python?: string; builtinClientManifest?: string; managementOnly?: boolean }
 export interface InstallRequest { source: string; ref?: string; enabled?: boolean; config?: object }
 declare module 'cordis' { interface Context { extensions: ExtensionsService } }
 const compatible = (value: unknown) => ['1.0.0', '^1.0.0', '~1.0.0', '1', '1.x'].includes(String(value))
@@ -89,7 +89,9 @@ export default class ExtensionsService extends Service {
     const run = async (command: string, args: string[], cwd = staging) => {
       log.push(`$ ${command} ${args.join(' ')}`)
       try {
-        const result = await this.ctx.process.run({ command, args, cwd })
+        const npm = command === 'npm' && process.platform === 'win32'
+          ? process.env.npm_execpath || join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js') : undefined
+        const result = await this.ctx.process.run({ command: npm ? process.execPath : command, args: npm ? [npm, ...args] : args, cwd })
         log.push(result.stdout, result.stderr); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); return result.stdout
       } catch (error) { log.push(String(error)); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); throw error }
     }
@@ -112,7 +114,7 @@ export default class ExtensionsService extends Service {
         await run('tar', ['-xzf', join(staging, packed[0].filename), '-C', staging])
       } else {
         const source = await realpath(resolve(request.source.replace(/^file:/, '')))
-        await cp(source, directory, { recursive: true, filter: path => !['node_modules', '.git', '.venv'].some(part => relative(source, path).split('/').includes(part)) })
+        await cp(source, directory, { recursive: true, filter: path => !['node_modules', '.git', '.venv'].some(part => relative(source, path).split(sep).includes(part)) })
       }
       const manifest = JSON.parse(await readFile(join(directory, 'package.json'), 'utf8'))
       const meta = manifest.youdub
@@ -122,12 +124,12 @@ export default class ExtensionsService extends Service {
       if (meta.build && meta.build !== 'npm') throw new AppError('INVALID_CONFIG', 'Supported build entry: npm.', 422)
       if (meta.build || manifest.dependencies && Object.keys(manifest.dependencies).length) await run('npm', ['install', ...(meta.build ? [] : ['--omit=dev']), '--legacy-peer-deps', '--registry=https://registry.npmmirror.com'], directory)
       const require = createRequire(import.meta.url)
-      const shared = new Map([['cordis', await realpath(dirname(require.resolve('cordis/package.json')))], ['@youdub/sdk', await realpath(resolve(this.config.repoRoot, 'packages/sdk'))]])
+      const shared = new Map([['cordis', await realpath(dirname(require.resolve('cordis/package.json')))], ['@youdub/sdk', await realpath(resolve(dirname(require.resolve('@youdub/sdk')), '..'))]])
       for (const [name, target] of shared) {
         const destination = join(directory, 'node_modules', name)
         await mkdir(dirname(destination), { recursive: true })
         try { await lstat(destination); throw new AppError('INCOMPATIBLE_PLUGIN', `Plugin installed its own ${name}.`, 422) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
-        await symlink(target, destination, 'dir')
+        await symlink(target, destination, process.platform === 'win32' ? 'junction' : 'dir')
       }
       await verifySharedModules(directory, shared)
       if (meta.build) await run('npm', ['run', 'build'], directory)
@@ -136,7 +138,7 @@ export default class ExtensionsService extends Service {
         if (meta.host) throw new AppError('INVALID_CONFIG', 'Choose a Host entry or the standard Python bridge.', 422)
         await confined(directory, meta.python.entry)
         if (!meta.python.provider?.id || !Array.isArray(meta.python.provider.operations) || !meta.python.provider.operations.length) throw new AppError('INVALID_CONFIG', 'Python plugins require a provider descriptor with operations.', 422)
-        await run('python3', ['-m', 'venv', '.venv'], directory)
+        await run(this.config.python || process.env.YOUDUB_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'), ['-m', 'venv', '.venv'], directory)
         if (meta.python.requirements) {
           const requirements = await confined(directory, meta.python.requirements)
           const python = join(directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python')

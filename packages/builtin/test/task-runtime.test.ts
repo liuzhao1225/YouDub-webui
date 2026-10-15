@@ -19,7 +19,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
   const root = await mkdtemp(join(tmpdir(), 'youdub-tasks-')), ctx = new Context()
   const fibers: Fiber[] = []
   fibers.push(await ctx.plugin(Processes), await ctx.plugin(Catalog), await ctx.plugin(Files, { root }))
-  fibers.push(await ctx.plugin(Store, { root, repoRoot: process.cwd(), python: resolve('.venv/bin/python') }))
+  fibers.push(await ctx.plugin(Store, { root, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') }))
   fibers.push(await ctx.plugin(Secrets), await ctx.plugin(Settings), await ctx.plugin(Tasks, { pollMs: 10 }))
   t.after(async () => {
     try { await ctx.parallel('app/stopping') }

@@ -64,7 +64,7 @@ To replace ASR, translation or TTS, supply a plugin that implements the relevant
 
 ## Quick Start
 
-The commands below target macOS / Linux shells. Current real-model, API and browser validation was performed on **macOS arm64 using CPU**. Windows/Linux machines and CUDA have not been validated in this round; the current configuration does not expose MPS.
+The commands below target macOS / Linux shells. Real-model workflows have been validated on **macOS arm64 / CPU** and **Windows x64 / NVIDIA CUDA**. See the [Windows acceptance record](docs/validation/windows-desktop-2026-10-16.md) for first-run configuration, complete video tasks and limitations, and the [desktop build instructions](apps/desktop/README.md#windows-x64). The app detects CUDA, MPS and AMD ROCm with CPU fallback; see [device support](docs/accelerators.md). Linux, AMD and MPS inference have not been validated on real hardware in this round.
 
 ### 1. Install dependencies
 

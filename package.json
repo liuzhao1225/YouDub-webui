@@ -8,6 +8,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "build:mac": "node scripts/build-mac.mjs",
+    "build:windows": "node scripts/build-windows.mjs",
+    "test:windows": "node scripts/smoke-windows.mjs",
     "test:release": "node --test scripts/release-version.test.mjs",
     "dev:api": "node --import tsx apps/host/src/main.ts",
     "start": "node --import tsx apps/host/src/main.ts",
@@ -16,7 +18,7 @@
     "test": "node --import tsx --test packages/*/test/*.test.ts",
     "dev:web": "npm --prefix apps/web run dev",
     "build:plugins": "npm --prefix apps/web run plugins:build",
-    "test:backend": ".venv/bin/python -m pytest backend/tests",
+    "test:backend": "node scripts/test-backend.mjs",
     "lint:web": "npm --prefix apps/web run lint",
     "build:web": "npm --prefix apps/web run build"
   },

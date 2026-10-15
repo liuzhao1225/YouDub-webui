@@ -1,0 +1,56 @@
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import { afterEach, expect, it, vi } from 'vitest'
+import { TranslationSetup } from './translation-setup'
+
+const response = (body: unknown, ok = true) => ({ ok, status: ok ? 200 : 422, json: async () => body })
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+
+it('asks for configuration when no connection exists and requires a key', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' })).mockResolvedValue(response({ connections: [] }))
+  vi.stubGlobal('fetch', fetch)
+  render(<TranslationSetup><div>工作台</div></TranslationSetup>)
+  expect(await screen.findByRole('heading', { name: '配置翻译服务' })).toBeInTheDocument()
+  expect(screen.getByLabelText('API 密钥')).toBeRequired()
+  expect(screen.queryByText('工作台')).not.toBeInTheDocument()
+})
+
+it('shows invalid-key errors and never saves or opens the workbench', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' })).mockResolvedValueOnce(response({ connections: [] }))
+    .mockResolvedValue(response({ error: { message: '连接测试失败（HTTP 401）' } }, false))
+  vi.stubGlobal('fetch', fetch)
+  render(<TranslationSetup><div>工作台</div></TranslationSetup>)
+  await screen.findByText('配置翻译服务')
+  fireEvent.change(screen.getByLabelText('模型名称'), { target: { value: 'model' } })
+  fireEvent.change(screen.getByLabelText('API 密钥'), { target: { value: 'bad-key' } })
+  fireEvent.click(screen.getByRole('button', { name: '测试连接并继续' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('HTTP 401')
+  expect(screen.queryByText('工作台')).not.toBeInTheDocument()
+  expect(fetch.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(0)
+})
+
+it('tests before saving connection and model, then clears the secret from the form', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' })).mockResolvedValueOnce(response({ connections: [] }))
+    .mockResolvedValueOnce(response({ ok: true }))
+    .mockResolvedValueOnce(response({ capabilities: [{ capability: 'asr', available: true, adapter: 'whisper', models: [{ id: 'tiny', devices: ['cuda:0', 'cpu'] }] }] }))
+    .mockResolvedValue(response({}))
+  vi.stubGlobal('fetch', fetch)
+  render(<TranslationSetup><div>工作台</div></TranslationSetup>)
+  await screen.findByText('配置翻译服务')
+  fireEvent.change(screen.getByLabelText('模型名称'), { target: { value: 'custom-model' } })
+  fireEvent.change(screen.getByLabelText('API 密钥'), { target: { value: 'test-key' } })
+  fireEvent.click(screen.getByRole('button', { name: '测试连接并继续' }))
+  await screen.findByText('工作台')
+  const patches = fetch.mock.calls.filter(([, init]) => init?.method === 'PATCH')
+  expect(JSON.parse(patches[0][1].body).connection.api_key).toBe('test-key')
+  expect(JSON.parse(patches[1][1].body).defaults.translation.model).toBe('custom-model')
+  expect(screen.queryByLabelText('API 密钥')).not.toBeInTheDocument()
+})
+
+it('allows deferral without saving any key', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' })).mockResolvedValueOnce(response({ connections: [] })).mockResolvedValue(response({}))
+  vi.stubGlobal('fetch', fetch)
+  render(<TranslationSetup><div>工作台</div></TranslationSetup>)
+  fireEvent.click(await screen.findByText('稍后配置'))
+  await screen.findByText('工作台')
+  await waitFor(() => expect(JSON.parse(fetch.mock.calls[2][1].body)).toEqual({ plugin: { id: 'youdub.onboarding', config: { translationDeferred: true } } }))
+})

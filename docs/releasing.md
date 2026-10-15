@@ -15,7 +15,9 @@ git tag -a v0.0.1 -m 'YouDub v0.0.1'
 git push origin v0.0.1
 ```
 
-工作流检查 tag 与应用版本相同、提交属于 `main`，重新执行质量检查，再构建 macOS arm64 应用、签名、启动服务访问页面及图标并复查签名、公证、验证 Gatekeeper，最后发布 DMG 和 SHA-256 文件。应用版本、构建元数据和安装包名称均由根目录版本生成。现有 Release 不会被静默覆盖。
+工作流检查 tag 与应用版本相同、提交属于 `main`，重新执行质量检查。质量检查复用 [windows.yml](../.github/workflows/windows.yml) 构建 Windows x64 ZIP、解压后启动原生程序并检查 WebView2 页面、单实例锁及退出清理，上传 `windows-release`；同时在 macOS runner 检查共享入口和路径兼容性。随后构建 macOS arm64 应用、签名、启动服务访问页面及图标并复查签名、公证、验证 Gatekeeper。所有门禁通过后，在同一 Release 发布 DMG、Windows ZIP 和各自的 SHA-256 文件。Windows 使用同一次运行中已经验收的 ZIP，不在发布阶段重新构建。应用版本、构建元数据和安装包名称均由根目录版本生成。现有 Release 不会被静默覆盖。
+
+Windows 便携包尚未进行 Authenticode 签名，不使用 Apple secrets。WebView2 Runtime 缺失时，Windows CI 从微软下载引导程序、核验 Microsoft Authenticode 签名后安装。PR、main 和手动触发的构建只保存 Actions artifacts，不创建 Release。Windows 本机命令、产物和验收边界见[桌面构建说明](../apps/desktop/README.md#windows-x64)。
 
 发布失败时查看对应 job 的原始错误。未修改源码的基础设施故障可重新运行失败 job；需要修改源码时应发布新版本和新 tag，不移动已发布 tag。
 

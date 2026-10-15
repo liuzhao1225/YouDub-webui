@@ -32,7 +32,7 @@ export default async function composition(): Promise<EntryOptions[]> {
     provider('voxcpm', 'VoxCPM', ['synthesize'], 'tts'), provider('demucs', 'Demucs', ['separate'], 'separation'),
     provider('qwen_forced_aligner', 'Qwen Forced Aligner', ['align'], 'subtitle_alignment'),
     entry('workflow-localize', 'workflow-localize', { integrity }), entry('tasks', 'tasks'),
-    entry('auth', 'auth'), entry('extensions', 'extensions', { root: join(root, 'extensions'), repoRoot, builtinClientManifest: join(repoRoot, 'apps/web/plugin-dist/manifest.json') }),
+    entry('auth', 'auth'), entry('extensions', 'extensions', { root: join(root, 'extensions'), repoRoot, python, builtinClientManifest: join(repoRoot, 'apps/web/plugin-dist/manifest.json') }),
     entry('extensions-loader', 'extensions-loader'), entry('api', 'api'),
   ]
   return [

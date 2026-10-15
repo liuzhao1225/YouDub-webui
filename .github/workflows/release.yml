@@ -1,4 +1,4 @@
-name: macOS 版本发布
+name: 桌面版本发布
 
 on:
   push:
@@ -115,7 +115,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: sign
+    needs: [quality, sign]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -123,6 +123,10 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: macos-release
+          path: release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: windows-release
           path: release
       - name: 校验并发布 GitHub Release
         env:
@@ -134,8 +138,10 @@ jobs:
           cat > notes.md <<'EOF'
           macOS Apple Silicon 安装包，最低 macOS 14。已通过 Developer ID 签名、Apple 公证和 Gatekeeper 检查。
 
-          首次启动会准备 Python、FFmpeg 和模型；翻译服务需要在设置页配置。
+          Windows x64 便携包，支持 Windows 10 22H2 / Windows 11。完整解压后运行 YouDub.exe，需要 WebView2 Evergreen Runtime；未进行 Authenticode 签名。已通过原生窗口、页面渲染和退出清理测试。
+
+          首次启动会准备 Python、FFmpeg 和模型，并引导配置和测试翻译服务；也可稍后在设置页填写。
 
           [安装与升级说明](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md) · [自动发布与签名保护](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/releasing.md)
           EOF
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*-windows-x64.zip ./YouDub-*-windows-x64.zip.sha256

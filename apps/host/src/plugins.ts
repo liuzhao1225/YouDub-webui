@@ -1,9 +1,8 @@
 import { config as loadEnv } from 'dotenv'
 import { resolve, join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import type { EntryOptions } from '@cordisjs/plugin-loader'
 import { startHost } from './bootstrap.js'
-import { runtimePaths } from './paths.js'
+import { directoryURL, runtimePaths } from './paths.js'
 import '../../../packages/builtin/src/extensions.js'
 
 if (process.platform !== 'win32') process.umask(0o077)
@@ -22,8 +21,8 @@ if (command === 'help') {
   const entry = (id: string, config?: object): EntryOptions => ({ id, name: '@youdub/builtin/' + id, config })
   const host = await startHost([
     entry('process'), entry('catalog'), entry('files', { root }), entry('store', { root, repoRoot, python }),
-    entry('secrets'), entry('settings'), entry('tasks'), entry('extensions', { root: join(root, 'extensions'), repoRoot, managementOnly: true }),
-  ], pathToFileURL(repoRoot + '/').href, { ready: false })
+    entry('secrets'), entry('settings'), entry('tasks'), entry('extensions', { root: join(root, 'extensions'), repoRoot, python, managementOnly: true }),
+  ], directoryURL(repoRoot), { ready: false })
   try {
     if (command === 'list') {
       console.log(JSON.stringify({ items: host.ctx.extensions.list().items.map(({ active, restartRequired, ...item }) => item) }, null, 2))
