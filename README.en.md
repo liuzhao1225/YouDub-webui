@@ -199,7 +199,7 @@ Issues and pull requests are welcome for installation improvements, model adapte
 
 ## Demo
 
-The default demo is the Jensen Huang interview generated on 2026-10-09: sentence-level voice cloning, Chinese subtitles and preserved background audio, approximately 59 seconds long. Source links identify the original videos; the current workspace imports local files.
+The default demo is the Jensen Huang interview generated on 2026-10-09: sentence-level voice cloning, Chinese subtitles and preserved background audio, approximately 59 seconds long. Source links identify the original videos; the workspace accepts video links and local files.
 
 ### 1. Jensen Huang interview · Latest result
 
@@ -215,9 +215,7 @@ https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87
 </td>
 <td>
 
-[![Play the latest Jensen Huang Chinese dub](docs/images/jensen-latest.jpg)](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
-
-[Watch / download the full video](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
+https://github.com/user-attachments/assets/60d5dbb0-f346-4c14-adad-2d0c481ac4fb
 
 </td>
 </tr>

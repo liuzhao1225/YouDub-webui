@@ -199,7 +199,7 @@ submodule/demucs/   Demucs 源码子模块
 
 ## 效果示例
 
-默认演示为 2026-10-09 生成的黄仁勋采访：逐句原声克隆、中文字幕与背景音保留，完整时长约 59 秒。源视频链接用于说明样例出处，当前工作台通过本地文件导入。
+默认演示为 2026-10-09 生成的黄仁勋采访：逐句原声克隆、中文字幕与背景音保留，完整时长约 59 秒。源视频链接用于说明样例出处，工作台支持视频链接和本地文件导入。
 
 ### 1. 黄仁勋采访 · 最新效果
 
@@ -215,9 +215,7 @@ https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87
 </td>
 <td>
 
-[![播放黄仁勋采访最新中文配音效果](docs/images/jensen-latest.jpg)](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
-
-[观看 / 下载完整成片](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
+https://github.com/user-attachments/assets/60d5dbb0-f346-4c14-adad-2d0c481ac4fb
 
 </td>
 </tr>
