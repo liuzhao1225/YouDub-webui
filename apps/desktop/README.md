@@ -21,7 +21,7 @@ npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
 npm run typecheck
 node --import tsx --test packages/builtin/test/setup.test.ts
-npm run build:mac
+npm run build:desktop
 ```
 
 产物为 `dist/YouDub.app`。Node.js 22.23.2 官方发行包会下载到 `.cache/mac`，按官方 SHA-256 清单校验。桌面前端使用独立的 `.next-desktop` 构建目录。`--reuse-web` 仅用于前端源码和构建配置均未变化时复用已验证的构建。
@@ -58,7 +58,7 @@ Windows 10 22H2 / Windows 11 使用原生 WinForms 窗口和 WebView2 Evergreen 
 git submodule update --init --recursive
 npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
-npm run build:windows
+npm run build:desktop
 npm run test:windows
 ```
 

@@ -7,8 +7,6 @@ on:
   workflow_run:
     workflows: [桌面版本发布]
     types: [completed]
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -20,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'release' || github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
