@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/web/public/youdub-logo.svg" alt="YouDub" width="520" />
+  <img src="site/assets/youdub-logo.svg" alt="YouDub" width="520" />
 </p>
 
 # YouDub WebUI
