@@ -66,8 +66,9 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
         <span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}模型准备</span>
       </h1>
       {!environmentReady && <section aria-label="环境准备" className="mb-5 divide-y divide-border rounded-2xl border border-border bg-card px-5 shadow-card">
-        {state.environment.map(step => <div key={step.id} className="flex items-center justify-between gap-3 py-4 text-sm"><span>{step.name}</span><span className="inline-flex items-center gap-2 text-xs text-muted-foreground">{step.status === 'ready' ? <Check className="size-4 text-brand-blue" /> : step.status === 'running' ? <><Loader2 className="size-3.5 animate-spin" />准备中</> : step.status === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : '等待中'}</span></div>)}
+        {state.environment.map(step => <div key={step.id} className="flex items-center justify-between gap-3 py-4 text-sm"><div><span>{step.name}</span>{step.detail && <p className="mt-1 break-words text-xs text-muted-foreground">{step.detail}</p>}</div><span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">{step.status === 'ready' ? <Check className="size-4 text-brand-blue" /> : step.status === 'running' ? <><Loader2 className="size-3.5 animate-spin" />准备中</> : step.status === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : '等待中'}</span></div>)}
       </section>}
+      {environmentReady && state.environment.find(step => step.id === 'acceleration')?.detail && <p className="mb-5 text-xs text-muted-foreground">{state.environment.find(step => step.id === 'acceleration')!.detail}</p>}
       <section aria-label="模型下载" className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="space-y-4 border-b border-border bg-muted p-5">
           <div className="flex items-center justify-between gap-3 text-xs tabular-nums">

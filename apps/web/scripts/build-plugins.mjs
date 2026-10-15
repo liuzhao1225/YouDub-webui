@@ -1,7 +1,7 @@
 import { build } from 'esbuild'
 import { createRequire } from 'node:module'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
-import { resolve, dirname, relative } from 'node:path'
+import { resolve, dirname, relative, sep, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -32,9 +32,10 @@ const result = await build({
 const modules = []
 const publicAssets = []
 for (const [path, meta] of Object.entries(result.metafile.outputs)) {
-  const asset = relative(output, resolve(path))
+  // Filesystem paths use native separators; browser URLs always use slashes.
+  const asset = relative(output, resolve(path)).split(sep).join('/')
   if (!meta.entryPoint) { publicAssets.push(asset); continue }
-  const name = meta.entryPoint.split('/').at(-1).replace(/\.tsx?$/, '')
+  const name = basename(meta.entryPoint).replace(/\.tsx?$/, '')
   if (path.endsWith('.js')) modules.push({ id: `youdub.${name}`, version: '1.0.0', access: publicModules.has(name) ? 'public' : 'authenticated', url: `/api/plugins/youdub-client/1.0.0/${asset}` })
 }
 await writeFile(resolve(output, 'manifest.json'), JSON.stringify({ version: 1, sdkVersion: '1.0.0', platformVersion: '1', modules, publicAssets }, null, 2) + '\n')

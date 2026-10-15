@@ -1,11 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
 import { Context } from 'cordis'
 import Processes from '../src/process.js'
 import type { Invocation, InvocationContext } from '@youdub/sdk'
 
 const invocation = { invocationId: 'protocol-test', taskId: 'task', attempt: 1, stepId: 'step', binding: { options: {} }, inputs: {} } as Invocation
+const python = process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
 function worker(script: string) { return { command: process.execPath, args: ['-e', script] } }
 function context(override: Partial<InvocationContext> = {}): InvocationContext {
   return { signal: new AbortController().signal, progress: async () => {}, externalPrepare: async () => {}, externalUpdate: async () => {}, register: async () => ({ id: 'artifact', schemaId: 'file/v1' }), resolve: async () => '', credentials: {}, ...override }
@@ -55,6 +56,23 @@ test('worker cancellation waits for the running process to exit', async t => {
   assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' })
 })
 
+test('Windows cancellation also stops a worker child process', { timeout: 15000, skip: process.platform !== 'win32' }, async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  const controller = new AbortController()
+  let entered!: () => void, descendant = 0
+  const started = new Promise<void>(resolve => { entered = resolve })
+  t.after(async () => {
+    if (descendant) { try { process.kill(descendant, 'SIGKILL') } catch (error: any) { if (error.code !== 'ESRCH') throw error } }
+    await plugin.dispose()
+  })
+  const script = receive + `const child=require('node:child_process').spawn(process.execPath,['-e',"console.log('ready');setInterval(()=>{},1000)"],{stdio:['ignore','pipe','ignore'],windowsHide:true}); child.stdout.once('data',()=>send('progress',{value:0,message:String(child.pid)})); setInterval(()=>{},1000); });`
+  const execution = ctx.process.worker(worker(script), invocation, context({ signal: controller.signal, progress: async (_, message) => { descendant = Number(message); entered() } }))
+  await started
+  controller.abort(new Error('cancelled by test'))
+  await assert.rejects(execution)
+  assert.throws(() => process.kill(descendant, 0), { code: 'ESRCH' })
+})
+
 test('Python error receipts wait for Host persistence and preserve the original provider error', async t => {
   const ctx = new Context(), plugin = await ctx.plugin(Processes)
   t.after(() => plugin.dispose())
@@ -68,13 +86,13 @@ try:
 except Exception as error:
     wire.fail(error)
 `
-  await assert.rejects(ctx.process.worker({ command: resolve('.venv/bin/python'), args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context({
+  await assert.rejects(ctx.process.worker({ command: python, args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context({
     externalUpdate: async receipt => { await new Promise(resolve => setTimeout(resolve, 75)); receipts.push(receipt.state) },
   })), (error: any) => error.code === 'ORIGINAL_PROVIDER_FAILURE' && /provider disconnected/.test(error.message))
   assert.deepEqual(receipts, ['unknown'])
 })
 
-test('transient EPERM from a group existence probe does not replace the worker error', async t => {
+test('transient EPERM from a group existence probe does not replace the worker error', { skip: process.platform === 'win32' }, async t => {
   const ctx = new Context(), plugin = await ctx.plugin(Processes)
   t.after(() => plugin.dispose())
   const kill = process.kill.bind(process)
@@ -90,4 +108,13 @@ test('transient EPERM from a group existence probe does not replace the worker e
     await assert.rejects(ctx.process.worker(worker(receive + `send('error',{code:'DOWNLOAD_FAILED',message:'Original download failure'}); setInterval(()=>{},1000); });`), invocation, context()), (error: any) => error.code === 'DOWNLOAD_FAILED' && error.message === 'Original download failure')
     assert.equal(injected, true)
   } finally { mocked.mock.restore() }
+})
+
+test('Python pipes round-trip Chinese paths even when the parent requests a legacy encoding', async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  t.after(() => plugin.dispose())
+  const input = JSON.stringify({ path: join('安装 空格', '真实语音 JFK.mp4'), text: '中文翻译' })
+  const result = await ctx.process.run({ command: python, args: ['-B', '-c', 'import json, sys; print(json.dumps(json.load(sys.stdin), ensure_ascii=False))'],
+    input, env: { PYTHONUTF8: '0', PYTHONIOENCODING: 'cp1252' } })
+  assert.deepEqual(JSON.parse(result.stdout), JSON.parse(input))
 })

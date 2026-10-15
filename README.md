@@ -64,7 +64,7 @@ workflow 声明处理步骤和输入输出，provider 实现约定的 operation�
 
 ## 快速开始
 
-以下命令面向 macOS / Linux shell；当前真实模型、API 和浏览器验收环境为 **macOS arm64、CPU**。Windows/Linux 实机与 CUDA 尚未在本轮验收，当前配置未提供 MPS。
+以下命令面向 macOS / Linux shell。真实模型流程已在 **macOS arm64 / CPU** 以及 **Windows x64 / NVIDIA CUDA** 验证；Windows 包的首次配置、完整视频任务和验收边界见[验收记录](docs/validation/windows-desktop-2026-10-16.md)，构建方法见[桌面说明](apps/desktop/README.md#windows-x64)。应用自动检测 CUDA、MPS、AMD ROCm 并保留 CPU 回退，支持范围见[设备说明](docs/accelerators.md)；Linux、AMD 和 MPS 推理尚未完成本轮真机验收。
 
 ### 1. 安装依赖
 

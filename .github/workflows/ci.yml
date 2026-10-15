@@ -18,6 +18,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  windows:
+    name: Windows 打包与运行
+    uses: ./.github/workflows/windows.yml
+
+  macos-runtime:
+    name: macOS 打包与运行
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: 安装 Host 依赖
+        run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+      - name: 检查共享入口类型
+        run: npm run typecheck
+      - name: 检查 macOS 路径、环境准备和退出
+        run: node --expose-internals --import tsx --test packages/builtin/test/bootstrap.test.ts packages/builtin/test/setup.test.ts packages/builtin/test/setup-download.test.ts
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: 检查 MPS 和跨平台设备选择
+        run: |
+          python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ pytest numpy
+          python -m pytest backend/tests/test_accelerators.py backend/tests/test_worker_native_import.py -q
+
+      - name: 安装前端构建依赖
+        run: npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+      - name: 构建并验收 macOS 应用
+        run: |
+          npm run build:desktop
+          codesign --force --deep --sign - dist/YouDub.app
+          node scripts/smoke-mac.mjs dist/YouDub.app
+      - name: 保存待正式签名的应用
+        run: tar -C dist -czf "$RUNNER_TEMP/YouDub-unsigned.tar.gz" YouDub.app
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-unsigned
+          path: ${{ runner.temp }}/YouDub-unsigned.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
   frontend:
     name: 前端质量与安全
     runs-on: ubuntu-24.04

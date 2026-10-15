@@ -148,9 +148,12 @@ test('cover source and cache cannot escape the task directory through paths or s
   const outside = join(root, 'outside.jpg'); await writeFile(outside, 'image')
   await assert.rejects(ctx.files.cover(task.id, { ...source, mimeType: 'image/jpeg', path: outside }), { code: 'OUTPUT_NOT_FOUND' })
   const directory = join(ctx.files.taskRoot(task.id), 'covers')
-  await symlink(root, directory)
+  await symlink(root, directory, process.platform === 'win32' ? 'junction' : 'dir')
   await assert.rejects(ctx.files.cover(task.id, source), { code: 'INVALID_COVER_PATH' })
   await rm(directory); await mkdir(directory)
-  await symlink(outside, join(directory, createHash('sha256').update(source.id).digest('hex') + '.jpg'))
-  await assert.rejects(ctx.files.cover(task.id, source), { code: 'INVALID_COVER_CACHE' })
+  await t.test('redirected cache file is rejected', async t => {
+    try { await symlink(outside, join(directory, createHash('sha256').update(source.id).digest('hex') + '.jpg')) }
+    catch (error: any) { if (process.platform === 'win32' && error.code === 'EPERM') { t.skip('File symlinks require Windows Developer Mode or administrator privileges.'); return }; throw error }
+    await assert.rejects(ctx.files.cover(task.id, source), { code: 'INVALID_COVER_CACHE' })
+  })
 })

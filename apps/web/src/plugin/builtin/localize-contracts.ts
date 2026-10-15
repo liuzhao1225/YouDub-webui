@@ -3,7 +3,7 @@
 export type ModelSelection = {
   adapter: string
   model: string
-  device: "cpu" | `cuda:${number}` | "remote"
+  device: "cpu" | `cuda:${number}` | "mps" | "remote"
 }
 
 export type TtsSelection = ModelSelection & {
@@ -41,6 +41,6 @@ export type Capability = {
 }
 
 export type Runtime = {
-  devices: { id: string; available: boolean }[]
+  devices: { id: string; name?: string; backend?: string; available: boolean }[]
   capabilities: Capability[]
 }

@@ -5,6 +5,26 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { startHost } from '../../../apps/host/src/bootstrap.js'
+import { directoryURL } from '../../../apps/host/src/paths.js'
+
+test('composition and plugins load from native paths containing spaces, Unicode and URL characters', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub 路径 #% '))
+  const previous = { TMPDIR: process.env.TMPDIR, TEMP: process.env.TEMP, TMP: process.env.TMP }
+  t.after(async () => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+    await rm(root, { recursive: true })
+  })
+  // Include's generated configuration must also be encoded as a file URL.
+  Object.assign(process.env, { TMPDIR: root, TEMP: root, TMP: root })
+  const entry = join(root, '插件 #%.mjs')
+  await writeFile(entry, "export function apply(ctx) {ctx.reflect.provide('pathProbe', 'loaded')}")
+  const host = await startHost([{ id: 'paths', name: pathToFileURL(entry).href }], directoryURL(root))
+  try { assert.equal((host.ctx as any).pathProbe, 'loaded') }
+  finally { await host.stop() }
+})
 
 test('temporary composition resolves package entries from the application dependencies', async () => {
   const host = await startHost([{ id: 'process', name: '@youdub/builtin/process' }], pathToFileURL(process.cwd() + '/').href)

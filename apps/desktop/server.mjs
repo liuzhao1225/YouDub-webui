@@ -2,14 +2,14 @@ import { config } from 'dotenv'
 import { createServer, request } from 'node:http'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { mkdir } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import { startHost } from '../host/src/bootstrap.ts'
 import composition from '../../youdub.config.ts'
 import { ModuleLoader } from '@cordisjs/plugin-loader'
 
-process.umask(0o077)
+if (process.platform !== 'win32') process.umask(0o077)
 const data = process.env.YOUDUB_DESKTOP_DATA_DIR
 if (!data) throw new Error('YOUDUB_DESKTOP_DATA_DIR is required by the desktop launcher.')
 await mkdir(data, { recursive: true })
@@ -18,6 +18,7 @@ process.env.YOUDUB_HOST = '127.0.0.1'
 process.env.YOUDUB_PORT = '0'
 process.env.YOUDUB_PYTHON_ENV_DIR = join(data, 'runtime', 'venv')
 process.env.PYTHONDONTWRITEBYTECODE = '1'
+process.env.npm_execpath = join(dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js')
 // Resolve through the bundled Node loader without writing .cordis into the signed app.
 if (!ModuleLoader.fromInternal()) throw new Error('The bundled Node module loader is unavailable.')
 
@@ -49,6 +50,7 @@ try {
   await new Promise(resolve => reservation.close(resolve))
   const webURL = `http://127.0.0.1:${port}`
   web = spawn(process.execPath, [join(process.cwd(), 'web/apps/web/server.js')], {
+    windowsHide: true,
     env: { ...process.env, NODE_ENV: 'production', HOSTNAME: '127.0.0.1', PORT: String(port), NEXT_TELEMETRY_DISABLED: '1' },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

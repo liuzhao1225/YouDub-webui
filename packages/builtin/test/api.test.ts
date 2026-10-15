@@ -24,6 +24,7 @@ async function setup(t: any, fileService = Files) {
       services.reflect.provide('process', {})
       services.reflect.provide('auth', {})
       services.reflect.provide('settings', {})
+      services.reflect.provide('store', {})
       services.reflect.provide('extensions', {})
       services.reflect.provide('catalog', { workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
       services.reflect.provide('tasks', {
@@ -110,6 +111,16 @@ test('metadata-only multipart reserves a fresh task directory like JSON requests
   assert.equal(repeated.status, 409)
   assert.equal((await repeated.json() as any).error.code, 'IMPORT_RESIDUE')
   assert.equal(created.length, 1)
+})
+
+test('multipart preserves Chinese filenames and spaces across the API boundary', async t => {
+  const { created, post, form } = await setup(t)
+  const data = form(), filename = '真实语音 JFK.txt'
+  data.append('input.document', new Blob(['中文内容']), filename)
+  const response = await post(data)
+  assert.equal(response.status, 201, await response.text())
+  assert.equal(created[0].sourceName, filename)
+  assert.equal((Object.values(created[0].artifacts)[0] as any).name, filename)
 })
 
 test('malformed or oversized uploads fail promptly without creating a task', async t => {

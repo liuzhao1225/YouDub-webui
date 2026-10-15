@@ -1,7 +1,8 @@
-# CUDA 12.8 PyTorch wheels for NVIDIA GPU inference.
+# Optional manual override for modern NVIDIA GPUs. Desktop setup auto-detects
+# CUDA/MPS/ROCm/CPU; Maxwell/Pascal cards need the cu126 build instead.
 #
 # Install this before requirements.txt. For CPU or macOS inference, skip this file.
 # Use https://pytorch.org/get-started/locally/ if your driver needs a different build.
 --index-url https://download.pytorch.org/whl/cu128
-torch
-torchaudio
+torch==2.8.0
+torchaudio==2.8.0

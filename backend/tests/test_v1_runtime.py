@@ -9,6 +9,14 @@ import pytest
 from backend.app.v1 import runtime
 
 
+@pytest.fixture(autouse=True)
+def clear_device_cache():
+    from backend.app.accelerators import detect_devices
+    detect_devices.cache_clear()
+    yield
+    detect_devices.cache_clear()
+
+
 def probe_all(*, connections=(), translation_model=None):
     return {**runtime.runtime_info(), "capabilities": [
         runtime.probe_capability(adapter, connections=connections, translation_model=translation_model)
@@ -36,12 +44,16 @@ def test_catalogue_does_not_advertise_legacy_models_or_load_them(monkeypatch):
 
 
 def test_cuda_catalogue_queries_devices_without_loading_models(monkeypatch):
+    from backend.app import accelerators
+    accelerators.detect_devices.cache_clear()
+    monkeypatch.setattr(accelerators, '_exercise', lambda torch, device: None)
     monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: object())
     monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=SimpleNamespace(
         is_available=lambda: True, device_count=lambda: 2,
         get_device_name=lambda index: f"Test GPU {index}",
     )))
-    assert [item["id"] for item in runtime._detect_devices()] == ["cpu", "cuda:0", "cuda:1"]
+    assert [item["id"] for item in runtime._detect_devices()] == ["cuda:0", "cuda:1", "cpu"]
+    accelerators.detect_devices.cache_clear()
 
 
 @pytest.fixture
@@ -222,6 +234,13 @@ def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(a
     }]
     assert all(item["data_sent"] == [] and item["remote_operations"] is None and not item["requires_api_key"]
                for item in (tts_capability, separation))
+
+
+def test_mps_is_available_for_tts_but_not_whisper_sparse_alignment(all_model_assets, monkeypatch):
+    devices = [{"id": "mps", "available": True}, {"id": "cpu", "available": True}]
+    monkeypatch.setattr(runtime, "_detect_devices", lambda: devices)
+    assert runtime.probe_capability('whisper')['models'][0]['devices'] == ['cpu']
+    assert runtime.probe_capability('voxcpm')['models'][0]['devices'] == ['mps', 'cpu']
 
 
 @pytest.mark.parametrize("version", ["1.5.0", "2.0.2", "2.0.3rc1", "not-a-version", None])

@@ -8,7 +8,7 @@ import './auth.js'
 import './extensions.js'
 
 export const name = 'youdub-api'
-export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 'extensions']
+export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 'store', 'extensions']
 export function apply(ctx: Context) {
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => ctx.http.register(method, path, handler))
   const view = (task: TaskView) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
@@ -21,6 +21,9 @@ export function apply(ctx: Context) {
   const base = '/api/v2'
   route('GET', `${base}/runtime`, async request => ctx.http.json(request, 200, await ctx.settings.runtime()))
   route('GET', `${base}/settings`, async request => ctx.http.json(request, 200, await ctx.settings.read()))
+  route('POST', `${base}/settings/test-connection`, async request => {
+    ctx.http.json(request, 200, await ctx.store.call('settings.test_connection', await readJson(request)))
+  })
   route('PATCH', `${base}/settings`, async request => {
     const patch = await readJson(request)
     ctx.http.json(request, 200, await ctx.settings.patch(patch))
@@ -116,7 +119,7 @@ async function upload(ctx: Context, request: HttpRequest) {
   const jobs: Promise<void>[] = []
   const slots = new Set<string>()
   let parser: ReturnType<typeof Busboy>
-  try { parser = Busboy({ headers: request.raw.headers, limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } }) }
+  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } }) }
   catch (error) { throw new AppError('INVALID_MULTIPART', (error as Error).message, 400) }
   parser.on('field', (name, value, info) => {
     if (info.valueTruncated) { failure = new AppError('FILE_TOO_LARGE', 'Metadata too large.', 413); return }

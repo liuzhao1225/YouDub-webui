@@ -9,6 +9,11 @@ const state: SetupState = { phase: 'models', platform: 'darwin', arch: 'arm64', 
 }
 const response = (value: unknown, status = 200) => ({ ok: status === 200, status, text: async () => JSON.stringify(value) })
 describe('first-run setup', () => {
+  it('keeps the selected accelerator and fallback reason visible after environment preparation', () => {
+    const view = render(<SetupScreen state={{ ...state, environment: [{ id: 'acceleration', name: 'GPU', status: 'ready', detail: 'AMD GPU 驱动不可用；使用 CPU' }] }} onAction={vi.fn()} />)
+    expect(screen.getByText('AMD GPU 驱动不可用；使用 CPU')).toBeInTheDocument()
+    view.unmount()
+  })
   it('keeps the workbench gated during downloads and sends the setup token with pause', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(response(state)).mockResolvedValue(response({ ...state, models: [{ ...state.models[0], status: 'paused' }] }))
     vi.stubGlobal('fetch', fetch)

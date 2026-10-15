@@ -3,7 +3,7 @@ import Loader, { type EntryOptions } from '@cordisjs/plugin-loader'
 import { writeFile, mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import '@youdub/sdk'
 
 export async function startHost(entries: EntryOptions[], baseUrl: string, options: { ready?: boolean } = {}) {
@@ -24,7 +24,7 @@ export async function startHost(entries: EntryOptions[], baseUrl: string, option
     application = await ctx.plugin(async function application(context: Context) {
       await context.plugin(Loader, { baseUrl })
       await context.inject(['loader'], async scope => {
-        await scope.loader.create({ name: import.meta.resolve('@cordisjs/plugin-include'), config: { path: configuration } })
+        await scope.loader.create({ name: import.meta.resolve('@cordisjs/plugin-include'), config: { path: pathToFileURL(configuration).href } })
         await scope.loader.await()
       })
     })

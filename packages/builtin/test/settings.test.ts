@@ -17,7 +17,7 @@ async function start(root: string) {
   const ctx = new Context()
   const app = await ctx.plugin(async function application(context) {
     await context.plugin(Processes)
-    await context.plugin(Store, { root, repoRoot: process.cwd(), python: resolve('.venv/bin/python') })
+    await context.plugin(Store, { root, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') })
     await context.plugin(Catalog)
     await context.plugin(Secrets)
     await context.plugin(Settings)

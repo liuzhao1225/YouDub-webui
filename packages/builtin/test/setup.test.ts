@@ -1,8 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { delimiter, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import Http from '../src/http.js'
 import Setup from '../src/setup.js'
@@ -10,15 +12,59 @@ import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
 import { runtimePaths } from '../../../apps/host/src/paths.js'
 
+function probeResult(action: string) {
+  if (action === 'dependencies') return { missing: [] }
+  if (action === 'acceleration-plan') return { backend: 'cpu', installed: true, version: '2.8.0', codec: '0.7.0', packages: [], prerequisites: [], detail: 'CPU' }
+  if (action === 'acceleration') return { backend: 'cpu', detail: 'CPU（运算检查通过）' }
+  return { ready: true }
+}
+
+test('Windows first-run UV extraction preserves Unicode paths without an installed Python', { skip: process.platform !== 'win32' }, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-unicode-archive-'))
+  const source = join(root, '压缩来源'), fixture = join(root, '工具.zip')
+  const data = join(root, "用户 空格 # % ' [测试]")
+  await mkdir(source)
+  await writeFile(join(source, 'uv.exe'), 'archive fixture, never executed')
+  const shell = join(process.env.SystemRoot || 'C:/Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  const run = promisify(execFile)
+  await run(shell, ['-NoProfile', '-NonInteractive', '-Command',
+    "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:YOUDUB_TEST_SOURCE, $env:YOUDUB_TEST_ARCHIVE)"],
+  { windowsHide: true, env: { ...process.env, YOUDUB_TEST_SOURCE: source, YOUDUB_TEST_ARCHIVE: fixture } })
+  const previous = { PATH: process.env.PATH, YOUDUB_PYTHON: process.env.YOUDUB_PYTHON }
+  t.after(async () => {
+    for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value }
+    await rm(root, { recursive: true })
+  })
+  process.env.PATH = join(process.env.SystemRoot || 'C:/Windows', 'System32')
+  delete process.env.YOUDUB_PYTHON
+  const stop = new Error('Stop before downloading Python')
+  let extracted = false
+  const ctx = { process: { run: async ({ command, args, env }: { command: string; args: string[]; env?: Record<string, string> }) => {
+    if (command === shell) return run(command, args, { windowsHide: true, env: { ...process.env, ...env } })
+    assert.equal(command, join(data, 'runtime', 'uv', 'uv.exe'))
+    assert.equal(await readFile(command, 'utf8'), 'archive fixture, never executed')
+    extracted = true
+    throw stop
+  } } } as unknown as Context
+  const client = new DownloadClient()
+  t.mock.method(client, 'json', async () => ({ assets: [{ name: 'uv-x86_64-pc-windows-msvc.zip', digest: 'sha256:fixture', browser_download_url: 'https://example.test/uv.zip', size: 1 }] }))
+  t.mock.method(client, 'download', async (_asset: unknown, destination: string) => { await mkdir(join(data, 'runtime', 'uv'), { recursive: true }); await cp(fixture, destination) })
+  const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', 'Scripts', 'python.exe') }, client, new AbortController().signal)
+  await assert.rejects(setup.prepare(), error => error === stop)
+  assert.equal(extracted, true)
+})
+
 test('desktop Python is created in the writable data directory without modifying the application bundle', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-desktop-environment-'))
   const environment = join(root, 'runtime/venv')
   const bin = join(root, 'python-bin')
   const media = join(root, 'media-bin')
   await mkdir(bin); await mkdir(media)
-  const executable = join(bin, 'python3.12')
+  const windows = process.platform === 'win32'
+  const executable = join(bin, windows ? 'python.exe' : 'python3.12')
   await writeFile(executable, 'test executable', { mode: 0o700 })
   await writeFile(join(media, 'ffmpeg'), 'test executable', { mode: 0o700 })
+  if (windows) await writeFile(join(media, 'avcodec-test.dll'), 'test shared library')
   const previous = { ...process.env }
   t.after(async () => {
     for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
@@ -31,20 +77,20 @@ test('desktop Python is created in the writable data directory without modifying
   process.env.FFMPEG_PATH = join(media, 'ffmpeg')
   process.env.FFPROBE_PATH = join(media, 'ffmpeg')
   const { python } = runtimePaths(root)
-  assert.equal(python, join(environment, 'bin/python'))
+  assert.equal(python, join(environment, windows ? 'Scripts/python.exe' : 'bin/python'))
   const commands: string[][] = []
   const ctx = { process: { run: async ({ args }: { args: string[] }) => {
     commands.push(args)
     if (args[1] === 'venv') {
-      await mkdir(join(args[2]!, 'bin'), { recursive: true })
+      await mkdir(join(args[2]!, windows ? 'Scripts' : 'bin'), { recursive: true })
       await writeFile(python, 'test executable')
     }
-    return { stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(args[2] === 'dependencies' ? { missing: [] } : { ready: true }) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12\n' }
+    return { stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12\n' }
   } } } as unknown as Context
   const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, new DownloadClient(), new AbortController().signal)
   await setup.prepare()
   assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
-  assert.equal(process.env.PATH?.split(':')[0], media)
+  assert.equal(process.env.PATH?.split(delimiter)[0], media)
   assert.ok(setup.steps.every(step => step.status === 'ready'))
 })
 
@@ -86,6 +132,7 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   const root = await mkdtemp(join(tmpdir(), 'youdub-first-run-'))
   const python = join(root, 'python')
   await writeFile(python, 'test executable')
+  if (process.platform === 'win32') await writeFile(join(root, 'avcodec-test.dll'), 'test shared library')
   const previous = { FFMPEG_PATH: process.env.FFMPEG_PATH, FFPROBE_PATH: process.env.FFPROBE_PATH, YOUDUB_DESKTOP_DATA_DIR: process.env.YOUDUB_DESKTOP_DATA_DIR, NLTK_DATA: process.env.NLTK_DATA }
   process.env.FFMPEG_PATH = python; process.env.FFPROBE_PATH = python
   let release!: () => void
@@ -102,7 +149,7 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   })
   const ctx = new Context()
   const app = await ctx.plugin(async function setupTest(owner) {
-    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => ({ stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(args[2] === 'dependencies' ? { missing: [] } : { ready: true }) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }) })
+    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => ({ stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }) })
     owner.reflect.provide('loader', { create: async (entry: any) => { created.push(entry.id) }, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, entries: [{ id: 'runtime', name: 'runtime' }] })

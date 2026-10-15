@@ -48,7 +48,7 @@ BaseUrl = Annotated[str, Field(pattern=r"^https?://"), AfterValidator(_valid_bas
 class ModelSelection(Contract):
     adapter: NonEmptyString
     model: NonEmptyString
-    device: Annotated[str, Field(pattern=r"^(cpu|cuda:[0-9]+|remote)$")]
+    device: Annotated[str, Field(pattern=r"^(cpu|cuda:[0-9]+|mps|remote)$")]
 
 
 class AsrSelection(ModelSelection):

@@ -22,7 +22,7 @@ def config():
         {"output_mode": "both"},
         {"keep_background": "false"},
         {"api_key": "must-not-be-a-task-field"},
-        {"translation": {"adapter": "demo", "model": "llm", "device": "mps"}},
+        {"translation": {"adapter": "demo", "model": "llm", "device": "unknown-device"}},
     ],
 )
 def test_reject_invalid_task_configuration(config, change):

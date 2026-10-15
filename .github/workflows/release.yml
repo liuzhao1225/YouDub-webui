@@ -1,4 +1,4 @@
-name: macOS 版本发布
+name: 桌面版本发布
 
 on:
   push:
@@ -33,36 +33,8 @@ jobs:
     needs: validate
     uses: ./.github/workflows/ci.yml
 
-  build:
-    needs: [validate, quality]
-    runs-on: macos-15
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          submodules: recursive
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-      - name: 安装构建依赖
-        run: |
-          test "$(uname -m)" = arm64
-          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
-          npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
-      - name: 构建桌面应用
-        run: npm run build:mac
-      - name: 保存未签名应用
-        run: tar -C dist -czf "$RUNNER_TEMP/YouDub-unsigned.tar.gz" YouDub.app
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: macos-unsigned
-          path: ${{ runner.temp }}/YouDub-unsigned.tar.gz
-          retention-days: 1
-          if-no-files-found: error
-
   sign:
-    needs: build
+    needs: quality
     runs-on: macos-15
     timeout-minutes: 60
     environment: macos-release
@@ -115,7 +87,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    needs: sign
+    needs: [quality, sign]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -123,6 +95,10 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: macos-release
+          path: release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: windows-release
           path: release
       - name: 校验并发布 GitHub Release
         env:
@@ -134,8 +110,10 @@ jobs:
           cat > notes.md <<'EOF'
           macOS Apple Silicon 安装包，最低 macOS 14。已通过 Developer ID 签名、Apple 公证和 Gatekeeper 检查。
 
-          首次启动会准备 Python、FFmpeg 和模型；翻译服务需要在设置页配置。
+          Windows x64 便携包，支持 Windows 10 22H2 / Windows 11。完整解压后运行 YouDub.exe，需要 WebView2 Evergreen Runtime；未进行 Authenticode 签名。已通过原生窗口、页面渲染和退出清理测试。
+
+          首次启动会准备 Python、FFmpeg 和模型，并引导配置和测试翻译服务；也可稍后在设置页填写。
 
           [安装与升级说明](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md) · [自动发布与签名保护](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/releasing.md)
           EOF
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*-windows-x64.zip ./YouDub-*-windows-x64.zip.sha256
