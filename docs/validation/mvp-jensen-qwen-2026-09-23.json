@@ -1,0 +1,278 @@
+{
+  "date": "2026-09-23",
+  "source": {
+    "title": "Jensen Huang on Nvidia's Competition",
+    "source_sha256": "71048d1c33918660b7663212f11a4f43a33d9d49d2f03574186f8e278fce729c",
+    "github_original": "https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87",
+    "duration_ms": 59326
+  },
+  "scope": "README黄仁勋真实视频；真实Whisper tiny、外部翻译、VoxCPM2极致克隆完成后，复用25条完整TTS执行修复后的真实mix/export阶段复验。",
+  "commits": {
+    "subtitle_alignment": "b2cf6f7702162a386e399419a323996d8c339009",
+    "translation_timeout": "05e238e",
+    "tail_scheduling_and_timestamp_grid": "22a3d8e"
+  },
+  "original_api_runs": [
+    {
+      "task_id": "60d9f3fe-357d-4b6f-9682-c87bae02256f",
+      "status": "failed",
+      "stage": "translate",
+      "code": "REMOTE_TIMEOUT",
+      "external_operation": "unknown",
+      "read_timeout_seconds": 60
+    },
+    {
+      "task_id": "549e6792-3dbf-4df6-92ed-a5452544e270",
+      "status": "failed",
+      "stage": "mix",
+      "code": "AUDIO_EXCEEDS_VIDEO",
+      "overflow_ms": 166,
+      "completed_whole_tts_clips": 25
+    }
+  ],
+  "revalidation": {
+    "kind": "real_stage_revalidation",
+    "original_task_id": "549e6792-3dbf-4df6-92ed-a5452544e270",
+    "original_api_status": "failed",
+    "reused_real_tts_clips": 25,
+    "new_tts_requests": 0,
+    "new_llm_requests": 0,
+    "passed": true,
+    "mix_passed": true,
+    "export_passed": true,
+    "historical_files_unchanged": true,
+    "adjusted_audio_identical_to_original_attempt": true
+  },
+  "checks": {
+    "asr_original_text_and_start_end_preserved": true,
+    "one_full_translation_and_tts_per_asr_utterance": true,
+    "full_time_adjusted_speech_used_for_qwen": true,
+    "subtitle_text_complete_and_in_order": true,
+    "subtitle_intervals_positive_nonoverlapping_and_inside_actual_dubbed_intervals": true,
+    "subtitle_boundaries_use_aligned_words_with_global_offset": true,
+    "source_subtitles_unchanged": true,
+    "exported_wav_identical_to_final_mix": true,
+    "whole_mp4_decoded": true,
+    "historical_files_unchanged": true
+  },
+  "counts": {
+    "asr_utterances": 25,
+    "tts_clips": 25,
+    "adjusted_clips": 25,
+    "qwen_words": 357,
+    "qwen_subtitle_cues": 35,
+    "estimated_subtitle_cues": 35,
+    "utterances_with_multiple_subtitle_cues": 8
+  },
+  "audio": {
+    "final_wav_sha256": "eabec02dc763304de8a4d8595085c597b78d10fe082efe2f9658dd76db68e880",
+    "mixed_wav_sha256": "eabec02dc763304de8a4d8595085c597b78d10fe082efe2f9658dd76db68e880",
+    "sample_rate_hz": 48000,
+    "channels": 2,
+    "wav_frames": 2847648,
+    "decoded_mp4_audio_frames": 2847744,
+    "duration_difference_ms": 2.0,
+    "zero_lag_channel_correlations": [
+      0.9989374032847171,
+      0.998969207128721
+    ],
+    "correlation_threshold": 0.95,
+    "mp4_audio_rmse": 0.0034703915007412434
+  },
+  "timing_comparison": {
+    "delta_definition": "Qwen boundary minus character-estimated boundary in milliseconds; compare identical text boundaries only.",
+    "accuracy_claim": "Boundary differences alone do not establish ground-truth alignment accuracy or listening acceptance.",
+    "endpoint_mapping": {
+      "timestamp_grid_ms": 80,
+      "word_count": 4,
+      "words": [
+        {
+          "segment_id": "segment-000004",
+          "word": "么",
+          "audio_duration_ms": 1532,
+          "raw_start_ms": 1520,
+          "raw_end_ms": 1600,
+          "end_overflow_ms": 68,
+          "mapped_start_ms": 1520,
+          "mapped_end_ms": 1532
+        },
+        {
+          "segment_id": "segment-000005",
+          "word": "同",
+          "audio_duration_ms": 1118,
+          "raw_start_ms": 960,
+          "raw_end_ms": 1120,
+          "end_overflow_ms": 2,
+          "mapped_start_ms": 960,
+          "mapped_end_ms": 1118
+        },
+        {
+          "segment_id": "segment-000019",
+          "word": "西",
+          "audio_duration_ms": 2069,
+          "raw_start_ms": 1920,
+          "raw_end_ms": 2080,
+          "end_overflow_ms": 11,
+          "mapped_start_ms": 1920,
+          "mapped_end_ms": 2069
+        },
+        {
+          "segment_id": "segment-000020",
+          "word": "易",
+          "audio_duration_ms": 2320,
+          "raw_start_ms": 2320,
+          "raw_end_ms": 2400,
+          "end_overflow_ms": 80,
+          "mapped_start_ms": 2320,
+          "mapped_end_ms": 2320
+        }
+      ],
+      "raw_words_preserved": true,
+      "policy": "A final model time class no more than 80ms beyond audio is mapped to the actual audio endpoint; larger excursions fail."
+    },
+    "start_deltas": {
+      "count": 35,
+      "min_ms": -357.0,
+      "max_ms": 433.0,
+      "mean_ms": 180.85714285714286,
+      "median_ms": 240.0,
+      "mean_absolute_ms": 217.77142857142857,
+      "p90_absolute_ms": 342.20000000000005,
+      "p95_absolute_ms": 371.2999999999999,
+      "max_absolute_ms": 433.0
+    },
+    "end_deltas": {
+      "count": 35,
+      "min_ms": -357.0,
+      "max_ms": 433.0,
+      "mean_ms": -31.8,
+      "median_ms": -64.0,
+      "mean_absolute_ms": 96.71428571428571,
+      "p90_absolute_ms": 201.4000000000001,
+      "p95_absolute_ms": 357.6,
+      "max_absolute_ms": 433.0
+    },
+    "all_boundary_deltas": {
+      "count": 70,
+      "min_ms": -357.0,
+      "max_ms": 433.0,
+      "mean_ms": 74.52857142857142,
+      "median_ms": 21.5,
+      "mean_absolute_ms": 157.24285714285713,
+      "p90_absolute_ms": 323.70000000000005,
+      "p95_absolute_ms": 359.0,
+      "max_absolute_ms": 433.0
+    }
+  },
+  "timestamp_grid": {
+    "milliseconds": 80,
+    "mapped_final_word_intervals": 4,
+    "overflow_ms": [
+      68,
+      2,
+      11,
+      80
+    ],
+    "rule": "仅跨越音频尾部一个模型时间格以内的边界映射到实际终点；超过一格明确失败；words.json原样保留。"
+  },
+  "tail_scheduling": {
+    "rule": "按原有有界倍率得到完整配音后，从视频末端反向规划位置，使用前方空隙。",
+    "last_three_advance_ms": [
+      126,
+      139,
+      166
+    ],
+    "last_dubbed_span_ms": [
+      58454,
+      59326
+    ],
+    "last_subtitle_span_ms": [
+      58614,
+      59254
+    ],
+    "audio_samples_or_speed_changed": false
+  },
+  "outputs": {
+    "video": {
+      "path": "data/validation/jensen-qwen-2026-09-23/final/output/video.mp4",
+      "bytes": 6499626,
+      "sha256": "b5dd798d25e003ddc21b5b0d4e386ce04237e8c1f7b835beecd56723fa49e69d"
+    },
+    "audio": {
+      "path": "data/validation/jensen-qwen-2026-09-23/final/output/audio.wav",
+      "bytes": 11390636,
+      "sha256": "eabec02dc763304de8a4d8595085c597b78d10fe082efe2f9658dd76db68e880"
+    },
+    "source_subtitles": {
+      "path": "data/validation/jensen-qwen-2026-09-23/final/output/source.srt",
+      "bytes": 2436,
+      "sha256": "730beb34f35198e07eb31c179967ffb4001c8d7d40cab6f3e2a54d318b616f4e"
+    },
+    "translated_subtitles": {
+      "path": "data/validation/jensen-qwen-2026-09-23/final/output/translated.srt",
+      "bytes": 2413,
+      "sha256": "846df123e4f636fed4ec2d74376d781e28a1e8fc9234051a0607203770ea32fa"
+    }
+  },
+  "validation": {
+    "related_backend_before_tail_fix": "236 passed; translation SDK tests 28 passed",
+    "tail_mix_export_alignment_after_fix": "66 passed",
+    "frontend_related_tests": "29 passed",
+    "typescript": "passed",
+    "eslint": "passed",
+    "production_build": "passed",
+    "pip_check": "passed",
+    "normal_ui": "Qwen capability Available and Qwen subtitle timing option selected in actual Chrome page",
+    "frame_inspection_seconds": [
+      12,
+      30,
+      58.8
+    ],
+    "comparison_browser_playback": {
+      "url": "http://127.0.0.1:8789/comparison/index.html",
+      "qwen": {
+        "ended": true,
+        "duration_seconds": 59.326,
+        "error": null
+      },
+      "character_estimate": {
+        "ended": true,
+        "duration_seconds": 59.326,
+        "muted": true,
+        "error": null
+      },
+      "same_full_wav_input": true,
+      "encoded_aac_identical": true,
+      "encoded_aac_sha256": "e12f42d0d26cc6e216429968f52092eae1c5b45be454ba65129b62bff5b5b3d2"
+    }
+  },
+  "limits": [
+    "原API失败记录保持，本次新成片未注册为新的成功API任务；mix/export直接使用正式阶段函数复验。",
+    "字幕对齐边界差值不等于人工准确率。",
+    "Whisper tiny仍有专业名词识别误差，例如DPU；对齐不修正文本。",
+    "原片有采访者和黄仁勋，当前无说话人区分，使用同一克隆参考。",
+    "原片有烧录英文字幕，部分区域与中文上下间距较近。",
+    "本机CPU验证；Windows和CUDA未实机验证。",
+    "用户已接受前一整句样例，并要求后续试听不阻塞开发；未宣称本成片已有人工听感验收。"
+  ],
+  "local_evidence": {
+    "analysis": "data/validation/jensen-qwen-2026-09-23/final/analysis.json",
+    "revalidation": "data/validation/jensen-qwen-2026-09-23/final/revalidation.json",
+    "comparison_page": "data/validation/jensen-qwen-2026-09-23/final/comparison/index.html",
+    "raw_qwen": "data/validation/jensen-qwen-2026-09-23/final/work/subtitle_alignment/words.json"
+  },
+  "model_provenance": {
+    "model": "Qwen3-ForcedAligner-0.6B-hf",
+    "source": "https://modelscope.cn/models/Qwen/Qwen3-ForcedAligner-0.6B-hf",
+    "weight_bytes": 1835545960,
+    "weight_sha256": "00568245ceca5af1991d28562a75fe1ddc9bfeb041c27fda66947ea05c47fb86",
+    "timestamp_segment_time_ms": 80
+  },
+  "design_sync": {
+    "url": "https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd",
+    "revision": 58,
+    "readback_verified": true,
+    "backend_reference": "1e738a89bfc27fa5602d0442b317ecedfacb20e5",
+    "backend_verification_scope": "本轮只读本地代码参考；3ef基线保留为历史记录。"
+  }
+}

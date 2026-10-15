@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler",
+    "strict": true, "noEmit": true, "esModuleInterop": true, "skipLibCheck": true,
+    "types": ["node"], "resolveJsonModule": true
+  },
+  "include": ["apps/host/**/*.ts", "packages/**/*.ts", "fixtures/plugins/**/*.ts", "youdub.config.ts"]
+}

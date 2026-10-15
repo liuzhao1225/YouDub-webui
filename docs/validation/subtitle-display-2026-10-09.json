@@ -1,0 +1,24 @@
+{
+  "task_id": "cee5a4b1-e592-4cbb-8d6e-8feba1a435f9",
+  "source_task_id": "1f7f3c7a-283d-45a8-905f-095f3e3eaddd",
+  "status": "succeeded",
+  "rerun_from": "export",
+  "upstream_invocations_unchanged": true,
+  "external_requests": 0,
+  "final_wav_sha256_unchanged": "7c49d5dd882a3a7ed3230e6006265b51beff47bbe82d9114d6183c187a6b18ce",
+  "translated_srt": "tasks/cee5a4b1-e592-4cbb-8d6e-8feba1a435f9/attempts/1/09713a3b-08ad-401a-a7e1-647d2fa1db48/output/translated.srt",
+  "video": "tasks/cee5a4b1-e592-4cbb-8d6e-8feba1a435f9/attempts/1/09713a3b-08ad-401a-a7e1-647d2fa1db48/output/video.mp4",
+  "video_duration_seconds": 59.326,
+  "full_decode_passed": true,
+  "trailing_separators_hidden": true,
+  "dash_clause_separate": true,
+  "tests_passed": 64,
+  "browser_verification": {
+    "task_status": "已完成",
+    "completed_steps": "8 / 8",
+    "seek_seconds": 4.3,
+    "visible_subtitle": "Claude和Gemini",
+    "dash_removed_at_display_boundary": true
+  },
+  "artifact_path_base": "application data directory (YOUDUB_DESKTOP_DATA_DIR or platform default)"
+}

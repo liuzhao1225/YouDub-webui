@@ -19,6 +19,8 @@
 
 # production
 /build
+/plugin-dist/
+/public/plugin-platform/
 
 # misc
 .DS_Store

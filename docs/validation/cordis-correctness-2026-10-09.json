@@ -1,0 +1,587 @@
+{
+  "date": "2026-10-09",
+  "baseline": "ec788b7",
+  "branch": "codex/plugin",
+  "status": "local_validation_passed",
+  "environment": {
+    "os": "macOS",
+    "arch": "arm64"
+  },
+  "checks": {
+    "host": {
+      "tests": 44,
+      "passed": true,
+      "evidence": "youdub-correctness-host-final.log"
+    },
+    "python": {
+      "tests": 393,
+      "passed": true,
+      "evidence": "youdub-correctness-python.log"
+    },
+    "web": {
+      "tests": 33,
+      "files": 9,
+      "passed": true,
+      "scope": "Final sources including runtime refresh",
+      "evidence": "youdub-correctness-web-final.log"
+    },
+    "typescript": {
+      "host": true,
+      "web": true
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 2,
+      "warningKind": "existing native img warnings"
+    },
+    "pipCheck": {
+      "passed": true,
+      "evidence": "youdub-correctness-pip-check.log"
+    },
+    "build": {
+      "passed": true,
+      "id": "-oba14zaPCSdX3oI9ggT3",
+      "scope": "Final production build",
+      "evidence": "youdub-correctness-build-final.log"
+    }
+  },
+  "source": {
+    "kind": "Existing synthetic English speech test media",
+    "sha256": "4354443de42f476bf3dee03fb133a99a4f6c298f11a999480cc39f852e8e9c6d",
+    "userMediaSentForInference": false
+  },
+  "coldStart": {
+    "status": "passed",
+    "freshEmptyDatabase": true,
+    "health": 200,
+    "catalog": 200,
+    "runtime": 200,
+    "settings": 200,
+    "taskCount": 0,
+    "defaultAsr": null,
+    "providers": [
+      {
+        "id": "youdub.media",
+        "available": true
+      },
+      {
+        "id": "whisper",
+        "available": false
+      },
+      {
+        "id": "openai",
+        "available": false
+      },
+      {
+        "id": "voxcpm",
+        "available": false
+      },
+      {
+        "id": "demucs",
+        "available": false
+      },
+      {
+        "id": "qwen_forced_aligner",
+        "available": false
+      }
+    ],
+    "invalidSettings": {
+      "status": 422,
+      "secretAbsent": true
+    }
+  },
+  "realMedia": [
+    {
+      "id": "5dea3c96-ac28-4f64-b24e-32d012fe7351",
+      "mode": "subtitles",
+      "status": "succeeded",
+      "outputs": [
+        {
+          "id": "video",
+          "mime": "video/mp4",
+          "size": 88228,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "source_subtitles",
+          "mime": "application/x-subrip",
+          "size": 213,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "translated_subtitles",
+          "mime": "application/x-subrip",
+          "size": 208,
+          "head": 200,
+          "range": 206
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "completed"
+        },
+        {
+          "id": "translate",
+          "status": "completed"
+        },
+        {
+          "id": "export",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "76a47df9-8939-4254-905f-0664ce54313b",
+      "mode": "dubbing",
+      "status": "succeeded",
+      "outputs": [
+        {
+          "id": "video",
+          "mime": "video/mp4",
+          "size": 124109,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "audio",
+          "mime": "audio/wav",
+          "size": 1321004,
+          "head": 200,
+          "range": 206
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "separate",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "completed"
+        },
+        {
+          "id": "translate",
+          "status": "completed"
+        },
+        {
+          "id": "reference",
+          "status": "completed"
+        },
+        {
+          "id": "synthesize",
+          "status": "completed"
+        },
+        {
+          "id": "mix",
+          "status": "completed"
+        },
+        {
+          "id": "export",
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": "9caada6c-7488-45d6-982e-397669ee49ae",
+      "mode": "both",
+      "status": "succeeded",
+      "outputs": [
+        {
+          "id": "video",
+          "mime": "video/mp4",
+          "size": 137923,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "audio",
+          "mime": "audio/wav",
+          "size": 1321004,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "source_subtitles",
+          "mime": "application/x-subrip",
+          "size": 213,
+          "head": 200,
+          "range": 206
+        },
+        {
+          "id": "translated_subtitles",
+          "mime": "application/x-subrip",
+          "size": 208,
+          "head": 200,
+          "range": 206
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "separate",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "completed"
+        },
+        {
+          "id": "translate",
+          "status": "completed"
+        },
+        {
+          "id": "reference",
+          "status": "completed"
+        },
+        {
+          "id": "synthesize",
+          "status": "completed"
+        },
+        {
+          "id": "mix",
+          "status": "completed"
+        },
+        {
+          "id": "align",
+          "status": "completed"
+        },
+        {
+          "id": "export",
+          "status": "completed"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "taskId": "5dea3c96-ac28-4f64-b24e-32d012fe7351",
+      "mode": "subtitles",
+      "output": "video",
+      "size": 88228,
+      "sha256": "afa095bd3190521d27ac4aaf595529176b173b4bca90b6b79c4259673e4b909f",
+      "durationSeconds": 6.919002,
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "22050",
+          "channels": 1
+        }
+      ]
+    },
+    {
+      "taskId": "5dea3c96-ac28-4f64-b24e-32d012fe7351",
+      "mode": "subtitles",
+      "output": "source_subtitles",
+      "size": 213,
+      "sha256": "1d63eaacb87dd0f0b87d00df36c0eec7396f94a8dd92b92caff4c721d7adc311"
+    },
+    {
+      "taskId": "5dea3c96-ac28-4f64-b24e-32d012fe7351",
+      "mode": "subtitles",
+      "output": "translated_subtitles",
+      "size": 208,
+      "sha256": "b1e327d805ea302f7ceee7929d163ebdc14422c4e48bc031e14789a223ef7dc8"
+    },
+    {
+      "taskId": "76a47df9-8939-4254-905f-0664ce54313b",
+      "mode": "dubbing",
+      "output": "video",
+      "size": 124109,
+      "sha256": "f2b8772979fc8ff64fbae1449714ebbfe61ef9fdc14a7d1df31643333eb4f25e",
+      "durationSeconds": 6.88,
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ]
+    },
+    {
+      "taskId": "76a47df9-8939-4254-905f-0664ce54313b",
+      "mode": "dubbing",
+      "output": "audio",
+      "size": 1321004,
+      "sha256": "de356945eb4ecb1da143fe1b3e9158d58d11959b90ffcfb1346032c3bf9565b4",
+      "durationSeconds": 6.88,
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ]
+    },
+    {
+      "taskId": "9caada6c-7488-45d6-982e-397669ee49ae",
+      "mode": "both",
+      "output": "video",
+      "size": 137923,
+      "sha256": "c9920a4ea6f54fba600d384bde271e0285539bd31ba961fdd0eb363cf0a618fa",
+      "durationSeconds": 6.88,
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ]
+    },
+    {
+      "taskId": "9caada6c-7488-45d6-982e-397669ee49ae",
+      "mode": "both",
+      "output": "audio",
+      "size": 1321004,
+      "sha256": "c5222a797f346c874e490ad934e9c606d7e6de813a266ee7f757aa0baec1dabe",
+      "durationSeconds": 6.88,
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ]
+    },
+    {
+      "taskId": "9caada6c-7488-45d6-982e-397669ee49ae",
+      "mode": "both",
+      "output": "source_subtitles",
+      "size": 213,
+      "sha256": "1d63eaacb87dd0f0b87d00df36c0eec7396f94a8dd92b92caff4c721d7adc311"
+    },
+    {
+      "taskId": "9caada6c-7488-45d6-982e-397669ee49ae",
+      "mode": "both",
+      "output": "translated_subtitles",
+      "size": 208,
+      "sha256": "bae3db5f7e6052c175a85881795fa5b04775bb34e0b48e2ce2544da0ed6bec9a"
+    }
+  ],
+  "externalWorkflow": {
+    "id": "3153aeda-6452-4f76-861e-05011dec6fd6",
+    "status": "succeeded",
+    "workflowId": "example.uppercase",
+    "output": "HELLO CORDIS PLUGIN!\n",
+    "outputStatus": 200
+  },
+  "cancellation": {
+    "id": "41348a32-e673-4baf-a19e-7acfad291d5c",
+    "status": "cancelled",
+    "steps": [
+      {
+        "id": "prepare",
+        "label": "准备媒体",
+        "status": "completed",
+        "invocationId": "424b9f2f-6d4e-4fb7-91ef-c259e5acccc7",
+        "progress": 1,
+        "message": "Extracting source audio",
+        "startedAt": "2026-10-08T17:44:23.299Z",
+        "finishedAt": "2026-10-08T17:44:23.705Z",
+        "outputs": {
+          "sourceAudio": {
+            "id": "d74e507a-3a0e-4754-bc01-325b01e49efc",
+            "schemaId": "audio/wav/v1"
+          },
+          "mediaInfo": {
+            "duration_ms": 6880,
+            "width": 640,
+            "height": 360,
+            "frame_rate": 25,
+            "video_codec": "h264",
+            "audio_codec": "aac"
+          }
+        },
+        "error": null
+      },
+      {
+        "id": "separate",
+        "label": "分离人声",
+        "status": "cancelled",
+        "invocationId": "7df8f71f-95e3-4fc5-b748-49eea4519528",
+        "progress": null,
+        "message": null,
+        "startedAt": "2026-10-08T17:44:23.709Z",
+        "finishedAt": "2026-10-08T17:44:23.730Z",
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "recognize",
+        "label": "语音识别",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "translate",
+        "label": "翻译",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "reference",
+        "label": "准备参考音频",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "synthesize",
+        "label": "生成配音",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "mix",
+        "label": "混音",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "align",
+        "label": "字幕对齐",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      },
+      {
+        "id": "export",
+        "label": "导出",
+        "status": "pending",
+        "invocationId": null,
+        "progress": null,
+        "message": null,
+        "startedAt": null,
+        "finishedAt": null,
+        "outputs": {},
+        "error": null
+      }
+    ],
+    "mayStillRun": false
+  },
+  "rerunAndDelete": {
+    "source": "3153aeda-6452-4f76-861e-05011dec6fd6",
+    "id": "cf3ed890-8286-4835-83b5-8dcc15675147",
+    "invalidConfigStatus": 422,
+    "uncreatedTaskStatus": 404,
+    "explicitImportCleanup": 204,
+    "rerunStatus": "succeeded",
+    "exactOutput": true,
+    "deleteStatus": 204,
+    "sourcePreserved": true
+  },
+  "settings": {
+    "defaultsUpdatedWithoutRestart": true,
+    "testValuesExplicitlyRestored": true
+  },
+  "originalData": {
+    "taskCount": 1,
+    "taskRowsIdentical": true,
+    "settingsAndCredentialReferencesIdentical": true,
+    "allTaskFilesSha256Identical": true,
+    "verifiedFiles": 22,
+    "health": {
+      "status": "ready",
+      "api_version": "v2"
+    }
+  },
+  "browser": {
+    "workbench": true,
+    "statusFilter": true,
+    "connectionForm": true,
+    "readyProviders": 6,
+    "historicalOutputs": 4,
+    "historicalMedia": [
+      {
+        "kind": "video",
+        "readyState": 4,
+        "durationSeconds": 6.88,
+        "error": null
+      },
+      {
+        "kind": "audio",
+        "readyState": 4,
+        "durationSeconds": 6.88,
+        "error": null
+      }
+    ],
+    "scope": "Final local production version; runtime refresh rechecked after final frontend build",
+    "runtimeRefreshPassed": true,
+    "originalSessionValid": true
+  },
+  "limits": {
+    "githubActions": "not run",
+    "otherPlatforms": "not tested",
+    "remotePackageDownload": "not tested in this run",
+    "remoteCancellation": "protocol simulation and real local cancellation only",
+    "browserUpload": "not performed; v2 multipart and component behavior tested"
+  },
+  "evidencePolicy": {
+    "previousEvidencePreserved": true,
+    "temporaryEvidence": "Named logs and full model responses retained locally; credentials and raw responses not copied into this summary"
+  }
+}

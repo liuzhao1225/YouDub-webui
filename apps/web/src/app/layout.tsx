@@ -1,22 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { AuthProvider } from "@/lib/auth";
-import { LanguageProvider } from "@/lib/i18n";
+import { IMPORT_MAP } from "@/plugin/platform";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "YouDub",
-  description: "Minimal YouDub conversion console",
+  description: "YouDub — open-source AI video translation and dubbing studio",
 };
 
 export default function RootLayout({
@@ -27,12 +15,14 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="dark h-full antialiased"
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
-        <LanguageProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </LanguageProvider>
+      <head>
+        <script type="importmap" dangerouslySetInnerHTML={{ __html: JSON.stringify(IMPORT_MAP) }} />
+      </head>
+      <body className="min-h-full">
+        {children}
       </body>
     </html>
   );

@@ -1,0 +1,132 @@
+[
+  {
+    "id": "whisper",
+    "name": "Whisper",
+    "variant": "tiny",
+    "purpose": "语音识别",
+    "env": "YOUDUB_WHISPER_MODELS_DIR",
+    "directory": "whisper",
+    "files": [
+      {
+        "path": "tiny.pt",
+        "size": 75572083,
+        "sha256": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9",
+        "url": "https://openaipublic.azureedge.net/main/whisper/models/65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9/tiny.pt"
+      }
+    ]
+  },
+  {
+    "id": "voxcpm",
+    "name": "VoxCPM2",
+    "variant": "",
+    "purpose": "声音克隆",
+    "env": "YOUDUB_VOXCPM_MODEL_DIR",
+    "directory": "voxcpm/VoxCPM2",
+    "files": [
+      {
+        "path": "audiovae.pth",
+        "size": 376951122,
+        "sha256": "94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=audiovae.pth"
+      },
+      {
+        "path": "config.json",
+        "size": 4336,
+        "sha256": "405f0dcd92f7feba6011ed4eac5c8d4f74cba9712f07fd5cfa3063bbdd95402c",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=config.json"
+      },
+      {
+        "path": "model.safetensors",
+        "size": 4580080592,
+        "sha256": "f7f964cfa9da23653baec6e6f7750719977ad944ed9f95fe52fe3a620506891d",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=model.safetensors"
+      },
+      {
+        "path": "special_tokens_map.json",
+        "size": 1632,
+        "sha256": "068594063e37662c02b21acf42ebb334ef6a74fb810e68a2368f88f08351de76",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=special_tokens_map.json"
+      },
+      {
+        "path": "tokenization_voxcpm2.py",
+        "size": 2895,
+        "sha256": "84489ea32b6ee0cae22ed5480cacb6df85c46624c3119be9a2021c3649a12729",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=tokenization_voxcpm2.py"
+      },
+      {
+        "path": "tokenizer.json",
+        "size": 3676772,
+        "sha256": "f8984687e4a92a3503d521396d454b7d68e9fdaab2a0288eb3536c7c1aa4bc20",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=tokenizer.json"
+      },
+      {
+        "path": "tokenizer_config.json",
+        "size": 5059,
+        "sha256": "e78a3ebb48a0b9437efd1823b6b726c823da89e49dd8bcc90c02419d9baa772b",
+        "url": "https://modelscope.cn/api/v1/models/OpenBMB/VoxCPM2/repo?Revision=519da200db2bc31a0395635fc7042653b9c4c862&FilePath=tokenizer_config.json"
+      }
+    ]
+  },
+  {
+    "id": "demucs",
+    "name": "Demucs",
+    "variant": "htdemucs",
+    "purpose": "人声分离",
+    "env": "YOUDUB_DEMUCS_MODELS_DIR",
+    "directory": "demucs",
+    "files": [
+      {
+        "path": "955717e8-8726e21a.th",
+        "size": 84141911,
+        "sha256": "8726e21a",
+        "url": "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/955717e8-8726e21a.th"
+      }
+    ]
+  },
+  {
+    "id": "qwen",
+    "name": "Qwen3 Aligner",
+    "variant": "0.6B",
+    "purpose": "字幕对齐",
+    "env": "YOUDUB_FORCED_ALIGNER_MODEL_DIR",
+    "directory": "qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf",
+    "files": [
+      {
+        "path": "chat_template.jinja",
+        "size": 551,
+        "sha256": "59b5ae119bda7c00089bba5f49af775791ea67c7aeb7d2b828cddda9463121bf",
+        "url": "https://modelscope.cn/api/v1/models/Qwen/Qwen3-ForcedAligner-0.6B-hf/repo?Revision=053506a54ad1c9deea6105050330d7c500b9f098&FilePath=chat_template.jinja"
+      },
+      {
+        "path": "config.json",
+        "size": 248029,
+        "sha256": "82ac390b36a8f80c5a0c4e202367debd149e5d8c30abe4cf5eed439101b1c5ce",
+        "url": "https://modelscope.cn/api/v1/models/Qwen/Qwen3-ForcedAligner-0.6B-hf/repo?Revision=053506a54ad1c9deea6105050330d7c500b9f098&FilePath=config.json"
+      },
+      {
+        "path": "model.safetensors",
+        "size": 1835545960,
+        "sha256": "00568245ceca5af1991d28562a75fe1ddc9bfeb041c27fda66947ea05c47fb86",
+        "url": "https://modelscope.cn/api/v1/models/Qwen/Qwen3-ForcedAligner-0.6B-hf/repo?Revision=053506a54ad1c9deea6105050330d7c500b9f098&FilePath=model.safetensors"
+      },
+      {
+        "path": "processor_config.json",
+        "size": 487,
+        "sha256": "bc0b230081b44e629dd5b9045b78495615c1831b4b9f4cffe97bd37e82a6156a",
+        "url": "https://modelscope.cn/api/v1/models/Qwen/Qwen3-ForcedAligner-0.6B-hf/repo?Revision=053506a54ad1c9deea6105050330d7c500b9f098&FilePath=processor_config.json"
+      },
+      {
+        "path": "tokenizer.json",
+        "size": 11429842,
+        "sha256": "cadfb9cbd9ff8f4e309075ec6a71b063295ff796afb4b5dbc0fd2873fbb301f2",
+        "url": "https://modelscope.cn/api/v1/models/Qwen/Qwen3-ForcedAligner-0.6B-hf/repo?Revision=053506a54ad1c9deea6105050330d7c500b9f098&FilePath=tokenizer.json"
+      },
+      {
+        "path": "tokenizer_config.json",
+        "size": 998,
+        "sha256": "945e980986de2ca7768f3326bfdbb4fbea3406f972b8ae0be233089f2b253c11",
+        "url": "https://modelscope.cn/api/v1/models/Qwen/Qwen3-ForcedAligner-0.6B-hf/repo?Revision=053506a54ad1c9deea6105050330d7c500b9f098&FilePath=tokenizer_config.json"
+      }
+    ]
+  }
+]

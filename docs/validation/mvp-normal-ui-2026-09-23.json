@@ -1,0 +1,211 @@
+{
+  "date": "2026-09-23",
+  "code_commit": "533a65a9704febe55e75aa9a8b306d3b5afd0a66",
+  "normal_dotenv_loading": true,
+  "no_fixture_or_config_monkeypatch": true,
+  "task_created_through_browser_ui": true,
+  "task_id": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+  "observed": [
+    {
+      "status": "succeeded",
+      "current_stage": "done",
+      "external_operation": {
+        "state": "succeeded",
+        "may_still_run": false
+      }
+    }
+  ],
+  "runtime_status": "ready",
+  "saved_default_config": {
+    "source_language": "en",
+    "target_language": "zh",
+    "output_mode": "both",
+    "keep_background": true,
+    "asr": {
+      "adapter": "whisper",
+      "model": "tiny",
+      "device": "cpu",
+      "initial_prompt": null
+    },
+    "translation": {
+      "adapter": "openai",
+      "model": "doubao-seed-evolving",
+      "device": "remote"
+    },
+    "tts": {
+      "adapter": "voxcpm",
+      "model": "VoxCPM2",
+      "device": "cpu",
+      "voice": {
+        "mode": "source_clone"
+      }
+    },
+    "separation": {
+      "adapter": "demucs",
+      "model": "htdemucs",
+      "device": "cpu"
+    }
+  },
+  "task": {
+    "id": "0446ee5f-8360-4346-9f13-a3c9337f8e68",
+    "attempt": 1,
+    "source_name": "speech.mp4",
+    "source_size_bytes": 76971,
+    "source_duration_ms": 6880,
+    "status": "succeeded",
+    "current_stage": "done",
+    "stage_progress": 1.0,
+    "wait_reason": null,
+    "message": "export completed.",
+    "error": null,
+    "external_operation": {
+      "state": "succeeded",
+      "may_still_run": false
+    },
+    "allowed_actions": [
+      "rerun",
+      "delete"
+    ],
+    "created_at": "2026-09-22T16:37:55.074Z",
+    "updated_at": "2026-09-22T16:39:09.534Z",
+    "started_at": "2026-09-22T16:37:55.082Z",
+    "finished_at": "2026-09-22T16:39:09.533Z",
+    "config": {
+      "source_language": "en",
+      "target_language": "zh",
+      "output_mode": "both",
+      "keep_background": true,
+      "asr": {
+        "adapter": "whisper",
+        "model": "tiny",
+        "device": "cpu",
+        "initial_prompt": "YouDub."
+      },
+      "translation": {
+        "adapter": "openai",
+        "model": "doubao-seed-evolving",
+        "device": "remote"
+      },
+      "tts": {
+        "adapter": "voxcpm",
+        "model": "VoxCPM2",
+        "device": "cpu",
+        "voice": {
+          "mode": "source_clone"
+        }
+      },
+      "separation": {
+        "adapter": "demucs",
+        "model": "htdemucs",
+        "device": "cpu"
+      }
+    },
+    "pipeline_version": "0.1.0",
+    "resolved_connections": [
+      {
+        "adapter": "openai",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3"
+      }
+    ],
+    "outputs": {
+      "video": {
+        "url": "/api/v1/tasks/0446ee5f-8360-4346-9f13-a3c9337f8e68/files/video",
+        "file_name": "video.mp4",
+        "mime_type": "video/mp4",
+        "size_bytes": 136792,
+        "duration_ms": 6880,
+        "timeline": "dubbed"
+      },
+      "audio": {
+        "url": "/api/v1/tasks/0446ee5f-8360-4346-9f13-a3c9337f8e68/files/audio",
+        "file_name": "audio.wav",
+        "mime_type": "audio/wav",
+        "size_bytes": 1321004,
+        "duration_ms": 6880,
+        "timeline": "dubbed"
+      },
+      "source_subtitles": {
+        "url": "/api/v1/tasks/0446ee5f-8360-4346-9f13-a3c9337f8e68/files/source_subtitles",
+        "file_name": "source.srt",
+        "mime_type": "application/x-subrip",
+        "size_bytes": 215,
+        "duration_ms": null,
+        "timeline": "source"
+      },
+      "translated_subtitles": {
+        "url": "/api/v1/tasks/0446ee5f-8360-4346-9f13-a3c9337f8e68/files/translated_subtitles",
+        "file_name": "translated.srt",
+        "mime_type": "application/x-subrip",
+        "size_bytes": 204,
+        "duration_ms": null,
+        "timeline": "dubbed"
+      }
+    }
+  },
+  "files": {
+    "video": {
+      "bytes": 136792,
+      "sha256": "d1b6470c64b585bc4651d7048d74a2989cd8fd640eccf56ed27c3490abe43a13"
+    },
+    "audio": {
+      "bytes": 1321004,
+      "sha256": "0fed3c2662212b94047e9499d4cb84ec2449b6b29fce863c16712ce67a75891e"
+    },
+    "source_subtitles": {
+      "bytes": 215,
+      "sha256": "905ae8cbc849c5e3e551f62bd07633490da6077b2a631462d75318ff550865f0"
+    },
+    "translated_subtitles": {
+      "bytes": 204,
+      "sha256": "844ddb2e2b4882f217be15e168173187950545452a82b58beae4ce93ffdbf335"
+    }
+  },
+  "range_http_status": 206,
+  "head_http_status": 200,
+  "readback_passed": true,
+  "browser_validation": {
+    "browser": "Chrome",
+    "login": "normal existing local credentials",
+    "import": "file chooser; real saved model defaults; per-task YouDub. hint",
+    "task_status": "Completed",
+    "playback": {
+      "current_time_seconds": 6.88,
+      "duration_seconds": 6.88,
+      "ended": true,
+      "error": null
+    },
+    "download": {
+      "link_clicked": true,
+      "saved_file_verified": false,
+      "reason": "No changed video MP4 found in the assumed Downloads directory; browser security policy blocked chrome://downloads/. No alternate access to browser internal data was used. API download bytes were independently verified."
+    }
+  },
+  "whole_utterance_validation": {
+    "raw_asr_count": 1,
+    "processing_count": 1,
+    "translation_count": 1,
+    "tts_call_count": 1,
+    "source_text_preserved": true,
+    "full_translation_in_tts": true,
+    "alignment": {
+      "segments": [
+        {
+          "segment_id": "segment-000001",
+          "source_start_ms": 0,
+          "source_end_ms": 6700,
+          "dubbed_start_ms": 0,
+          "dubbed_end_ms": 6680
+        }
+      ]
+    },
+    "translated_srt": "1\n00:00:00,000 --> 00:00:01,909\n欢迎来到 YouDub，\n\n2\n00:00:01,909 --> 00:00:04,008\n今天我们要测试视频翻译，\n\n3\n00:00:04,008 --> 00:00:06,680\n原语音和字幕时间轴应保持清晰。\n",
+    "full_media_decode": true
+  },
+  "human_listening_review": {
+    "status": "pending",
+    "sample_already_shared": "mvp-utterance-subtitles-2026-09-23.json",
+    "scope": "Browser playback proves completion and no decoding error; new whole-utterance voice naturalness awaits user feedback."
+  },
+  "service_scope": "Normal local backend and frontend; no deployment or merge.",
+  "acceptance_script_correction": "Readback script initially requested default_config; corrected to documented settings.defaults and read the same completed task without rerunning it."
+}

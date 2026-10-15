@@ -2,33 +2,206 @@
   <img src="apps/web/public/youdub-logo.svg" alt="YouDub" width="520" />
 </p>
 
-# YouDub WebUI | [人才招聘](#人才招聘)
+# YouDub WebUI
 
-国内 AtomGit 托管：[YouDub-webui](https://atomgit.com/liuzhao1225/YouDub-webui)。代码从 [GitHub 主仓库](https://github.com/liuzhao1225/YouDub-webui)单向同步；Release、Issue 和 PR 统一在 GitHub 维护。
+开源视频本地化工作台：导入视频，识别、翻译并逐句克隆原声，生成字幕和配音成片。
 
-<p align="center">
-  <strong>QQ 交流群：618246010</strong>
-</p>
+[English](README.en.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [人才招聘](#人才招聘) · QQ 群：**618246010**
 
-一个被真实创作者工作流验证过的开源视频本地化工具。
+[下载正式版本](https://github.com/liuzhao1225/YouDub-webui/releases) · [安装与升级](docs/upgrade.md) · [版本发布](docs/releasing.md)
 
-YouDub WebUI 可以把单个 YouTube、Bilibili 或本地视频转换成目标语言版本：导入视频、识别并翻译内容，再按任务选择输出保留原音的硬字幕视频、无硬字幕的配音视频，或同时包含硬字幕与配音的视频。配音模式还会分离人声与背景音、生成配音并完成混音，最终视频可在网页中播放和下载。
+## 界面预览
 
-核心成熟场景是 **YouTube 英文 -> 中文配音**；同时已经支持 **Bilibili 中文 -> 英文配音**，并接入本地视频 **日文 -> 中文配音**。日译中方向已通过自动化参数链路和回归测试，尚未使用真实日语媒体完成模型效果验收。
+工作台：导入视频，选择语言和输出内容。
 
-English README: [README.en.md](README.en.md) · 作者：[刘朝 Zhao Liu](https://liuzhao1225.github.io/)（GitHub [@liuzhao1225](https://github.com/liuzhao1225)，Bilibili [黑纹白斑马](https://space.bilibili.com/1263732318)）
+![YouDub 工作台：视频导入、原文与目标语言、配音与字幕选项](docs/images/workbench.jpg)
 
-## 真实生产案例
+<details>
+<summary>查看任务库与任务详情</summary>
 
-**作者的 B 站频道**：[黑纹白斑马](https://space.bilibili.com/1263732318)（粉丝 100 万+，视频 2 万+，累计播放 6.8 亿+）的全站作品均使用 YouDub WebUI 自动翻译配音，覆盖科技、游戏、科普、动物、历史等题材。
+任务库：视频封面、处理状态和历史任务。
 
-这不是一个只跑过 demo 的玩具项目。YouDub WebUI 的目标很明确：让个人创作者、开发者和小团队能够在本地掌控一条完整的视频本地化流水线，并且保留足够简单的架构，方便理解、调试和二次开发。
+![YouDub 任务库：视频封面与已完成任务](docs/images/task-library.jpg)
+
+任务详情：成片预览、处理步骤、配音音频和字幕下载。
+
+![YouDub 任务详情：带中文字幕的成片、八个已完成步骤与生成文件](docs/images/task-detail.jpg)
+
+</details>
+
+## 能做什么
+
+| 输出模式 | 生成内容 |
+| --- | --- |
+| 原声 + 字幕 | 保留原始音轨，生成并烧录目标语言字幕 |
+| 配音 | 生成目标语言配音，可保留分离后的背景音 |
+| 字幕 + 配音 | 输出带字幕的配音视频，可选语音强制对齐 |
+
+- **逐句原声克隆。** 每句译文使用对应原文句子的音频片段作为参考，保留句子与参考音频的一一对应关系。
+- **英文分句。** Whisper 识别后使用 NLTK Punkt 整理完整句子，并用词级时间戳确定原声范围；原始识别结果保留。
+- **字幕显示。** 按逗号、顿号、中文破折号等拆分显示，合并过短片段，隐藏字幕片段末尾的分隔标点。
+- **任务管理。** 查看封面、步骤进度、错误和产物，支持取消、重试、重新生成、播放及下载；API 还支持从指定步骤重新生成。
+
+工作台保留视频、语言和输出模式等基本选项；模型、设备、声音、字幕对齐、背景音默认值及服务连接统一在设置中管理。
+
+## Everything is a plugin
+
+YouDub 使用 **Cordis** 装配服务。任务引擎、默认 workflow、模型提供者、HTTP/API、认证和前端页面都以插件实现；默认组合见 [`youdub.config.ts`](youdub.config.ts)。
+
+```text
+Client 页面插件 → API / 认证插件 → 通用任务引擎插件
+                                      ↓
+                                workflow 插件
+                                      ↓
+                                provider 插件
+                                      ↓
+                         Python 计算进程 / 远端服务
+```
+
+workflow 声明处理步骤和输入输出，provider 实现约定的 operation，文件通过 ArtifactRef 传递。Python 继续承担媒体处理与模型推理，每次 operation 通过受管进程和 stdio 协议调用；纯 Python 插件也可以直接接入。
+
+替换 ASR、翻译或 TTS 时，提供符合契约的插件即可；新的处理流程可以注册自己的 workflow。架构和边界见[架构说明](docs/design/cordis-plugin-architecture.md)，数据结构见[插件契约](docs/design/cordis-plugin-contracts.md)。
+
+## 快速开始
+
+以下命令面向 macOS / Linux shell；当前真实模型、API 和浏览器验收环境为 **macOS arm64、CPU**。Windows/Linux 实机与 CUDA 尚未在本轮验收，当前配置未提供 MPS。
+
+### 1. 安装依赖
+
+准备 Node.js 22（至少 22.13.0）和 Git。首次启动会识别操作系统与架构，准备 Python 3.12、运行依赖、FFmpeg/ffprobe 和分句资源。已有可用环境会复用。
+
+```bash
+git clone --branch codex/mvp-mainline --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
+cd YouDub-webui
+npm ci --registry=https://registry.npmmirror.com
+npm --prefix apps/web ci --registry=https://registry.npmmirror.com
+```
+
+已有 checkout 时直接启动即可检查缺失项。Python 依赖优先使用阿里云；仅在缺包时明确记录失败并改用清华源。安装、网络或校验失败会停在准备页显示原因，可修复后手动重试。
+
+### 2. 创建本地配置
+
+首次创建配置；已有 `.env` 时保留原文件：
+
+```bash
+cp .env.example .env
+ln .env env.txt
+test .env -ef env.txt
+```
+
+打开工作台即可使用，无需设置或输入访问密码。应用加载 `.env`，代理工具读取同 inode 的 `env.txt`；两者均忽略提交。
+
+### 3. 准备模型
+
+首次启动会并行下载 Whisper tiny、VoxCPM2、Demucs htdemucs 和 Qwen3 Aligner 0.6B；页面显示真实进度，支持单项或全部暂停、继续。完成 SHA-256 校验与运行环境检查后自动进入工作台。默认数据目录：macOS 为 `~/Library/Application Support/YouDub`，Linux 为 `~/.local/share/youdub`，Windows 为 `%LOCALAPPDATA%/YouDub`；可用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。
+
+| 能力 | 默认提供者 | 模型路径（相对数据目录） |
+| --- | --- | --- |
+| 语音识别 | Whisper | `models/whisper/`，如 `tiny.pt`；另需上面安装的 `punkt_tab` |
+| 翻译 | OpenAI 兼容 API | 在设置页配置连接、密钥及模型 |
+| 配音生成 | VoxCPM2 | `models/voxcpm/VoxCPM2/` |
+| 人声分离 | Demucs htdemucs | `models/demucs/955717e8-8726e21a.th` |
+| 字幕对齐 | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
+
+VoxCPM2 和 Qwen 从 ModelScope 获取固定版本，包含 tokenizer/processor 配置。Whisper 和 Demucs 使用各自官方权重源。中断文件保留为 `.part`，继续下载需要下载源支持 Range。自定义模型路径和运行条件见[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。启动准备接口仅允许本机访问。
+
+翻译密钥保存在系统 keyring。自定义翻译模型候选名单通过 `.env` 中的 `YOUDUB_TRANSLATION_MODELS` 配置，在设置页选择。默认翻译请求的最大输出 token 数至少为 **65,535**，连接的服务和模型需要接受该参数；不兼容时会明确报错。
+
+### 4. 启动
+
+确认 8000、3000 端口没有其他进程占用，然后在仓库根目录执行：
+
+```bash
+npm run build:plugins
+npm start
+```
+
+另开一个终端，在同一目录启动前端：
+
+```bash
+npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
+```
+
+打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，首次使用显示环境与模型准备；资源已就绪时直接进入工作台：
+
+1. 在「设置」配置翻译连接，确认所需模型就绪，保存默认处理配置。
+2. 在「工作台」导入视频，选择语言和输出模式，创建任务。
+3. 在「任务库」查看进度，播放或下载结果。
+
+需要运行构建后的前端时，用以下命令替代开发前端；Host 仍单独运行：
+
+```bash
+npm run build:web
+npm --prefix apps/web start -- --hostname 127.0.0.1 --port 3000
+```
+
+## 安装与开发插件
+
+先完成或取消活动任务，停止 Host，再管理插件：
+
+```bash
+npm run plugins -- list
+npm run plugins -- install --source ./fixtures/plugins/file-transform
+npm run plugins -- disable --id example.file-transform
+npm run plugins -- enable --id example.file-transform
+```
+
+也支持从其他 GitHub 仓库或 npm 精确版本安装，下面的仓库、commit 和包名需替换为实际值：
+
+```bash
+npm run plugins -- install --source https://github.com/OWNER/REPO --ref FULL_COMMIT_SHA
+npm run plugins -- install --source npm:PACKAGE_NAME@1.0.0
+```
+
+安装默认启用，重启 Host 后生效；带有预编译 Client 入口的扩展刷新页面即可加载。插件安装脚本与 Host 代码使用本机权限，安装前应信任其来源；Python 独立环境用于隔离依赖。
+
+从两个最小示例开始：
+
+- [Host / workflow / Client 插件](fixtures/plugins/file-transform/README.md)：注册处理流程、页面和导航。
+- [纯 Python provider](fixtures/plugins/python-text/README.md)：通过 manifest 声明 operation，使用 stdio 输入输出协议。
+
+包结构、文件契约、凭据与取消处理见[插件开发契约](docs/design/cordis-plugin-contracts.md)；安装、启停与卸载见[运行指南](docs/design/cordis-plugin-runtime.md#3-安装启停和重启)。当前 SDK 随仓库提供，尚未作为公共 npm 包发布。
+
+## 当前范围
+
+- 默认流程接收本地 `mp4`、`mov`、`mkv`、`webm` 视频；默认限制 4 GiB、10 分钟、宽高各不超过 1920、60 fps。
+- 当前语言目录包含英文、中文、日文，具体能力取决于提供者；可选 Qwen 对齐支持英文、中文。
+- MVP 使用单机单活跃任务；插件启停在重启后生效。DAG 编辑器、热替换、插件市场和分布式 worker 留待后续需求。
+- 本地 workflow、Client 与 Python 插件已有验证；GitHub/npm 远端插件实装尚未验收。
+- 当前 HTTP 接口为 `/api/v2`。旧 FastAPI / v1 HTTP 入口已移除。链接下载通过 `media.download/v1` 接入现有任务流程，支持 YouTube、Shorts、B 站及 b23.tv 单视频链接；使用 yt-dlp、Node.js 与 FFmpeg，沿用 10 分钟和文件大小限制。
+
+旧版本升级和数据迁移请先阅读[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。真实任务、迁移与未验证范围记录在[迁移验收](docs/design/cordis-plugin-migration.md)、[逐句分句验收](docs/validation/asr-punkt-sentences-2026-10-09.json)及[字幕显示验收](docs/validation/subtitle-display-2026-10-09.json)。
+
+## 开发与测试
+
+```bash
+npm run typecheck
+npm test
+npm run test:backend
+npm --prefix apps/web test
+npm run lint:web
+npm run build:web
+```
+
+```text
+youdub.config.ts    默认 Cordis 插件组合
+apps/host/         Host 启动与插件管理 CLI
+packages/sdk/      公共服务、workflow 与 operation 契约
+packages/builtin/  基础服务、通用任务引擎、workflow 和模型桥
+backend/workers/   Python 计算与 SQLite 事务桥
+backend/app/       模型、媒体、凭据与历史数据格式
+apps/web/          Next 引导、Client SDK 和页面插件
+fixtures/plugins/  独立 Host/Client/Python 插件示例
+submodule/demucs/   Demucs 源码子模块
+```
+
+欢迎通过 Issue / PR 改进安装体验、适配模型、优化字幕与音画对齐，或提供独立来源/流程插件。`docs/` 保留历史设计文档，当前入口以本文和 Cordis 运行指南为准。
 
 ## 效果示例
 
-下面两组样例均由本项目真实生成，可以在 GitHub 页面直接播放。左侧是原视频，右侧是自动生成的配音版本；配音版包含目标语言语音和字幕，同时保留原视频的背景音乐与音效。
+默认演示为 2026-10-09 生成的黄仁勋采访：逐句原声克隆、中文字幕与背景音保留，完整时长约 59 秒。源视频链接用于说明样例出处，当前工作台通过本地文件导入。
 
-### 1. Jensen Huang on Nvidia's Competition
+### 1. 黄仁勋采访 · 最新效果
 
 [原视频链接](https://www.youtube.com/shorts/TbotsRXyRME) · YouTube Shorts · 英文 -> 中文
 
@@ -42,13 +215,15 @@ https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87
 </td>
 <td>
 
-https://github.com/user-attachments/assets/bf01f912-eec8-4e0d-8698-0f69283a73e7
+[![播放黄仁勋采访最新中文配音效果](docs/images/jensen-latest.jpg)](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
+
+[观看 / 下载完整成片](https://github.com/liuzhao1225/YouDub-webui/releases/download/demo-assets/jensen_huang_dubbed_2026-10-09.mp4)
 
 </td>
 </tr>
 </table>
 
-### 2. How much YT paid me for 129 million shorts views
+### 2. 历史样例：How much YT paid me for 129 million shorts views
 
 [原视频链接](https://www.youtube.com/watch?v=ii9Kh4XkA5g) · YouTube 横屏长视频 · 英文 -> 中文 · 下方为开头 40 秒切片，完整版可在 [`demo-assets`](https://github.com/liuzhao1225/YouDub-webui/releases/tag/demo-assets) Release 下载
 
@@ -67,398 +242,6 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 </td>
 </tr>
 </table>
-
-## 快速开始
-
-### 1. 准备运行环境
-
-已验证和推荐的运行方式：
-
-- **Windows 10/11 + PowerShell 5.1+**：推荐开发环境，也是本文档优先覆盖的平台。
-- **Linux / WSL2 / macOS**：后端和前端命令按 POSIX shell 给出；CUDA、FFmpeg、PyTorch/音频依赖需要按各平台实际环境安装。
-- **CUDA GPU**：推荐用于完整视频处理。`DEVICE=cpu` 可以运行部分流程，但完整转写、分离、TTS 会非常慢；`DEVICE=mps` 会让 Whisper 自动退回 CPU 以避开 MPS float64 限制。
-
-基础依赖：
-
-- Python 3.12。
-- Node.js 20+。
-- FFmpeg / ffprobe，并确保命令在 `PATH` 中可用。
-- 可访问 YouTube 的代理（处理 YouTube 视频时需要）
-- Netscape 格式的 YouTube Cookie（处理 YouTube 视频时推荐配置）
-- OpenAI 兼容 Chat Completions API 的 base URL、API key 和模型名
-
-首次运行会下载或加载较大的 ASR、TTS、音频处理模型，请预留磁盘空间和网络时间。
-
-平台注意事项：
-
-- Windows PowerShell 使用 `.venv\Scripts\...`，不要照抄 `.venv/bin/...`。
-- macOS/Linux 使用 `.venv/bin/...`。
-- 如果系统里同时存在多个 Python，请先确认 `py -0p`（Windows）或 `python3.12 --version`（macOS/Linux）的结果。
-- 代理、Cookie、模型缓存和工作目录都保存在本机；路径中含空格时，建议使用引号或写入 `.env`。
-
-常见系统依赖安装示例：
-
-```powershell
-# Windows PowerShell（任选你本机已有的包管理器）
-winget install Gyan.FFmpeg.Shared
-winget install OpenJS.NodeJS.LTS
-```
-
-Windows 必须安装 FFmpeg 的 shared/full-shared 版本。进入该版本的 `bin` 目录后执行以下检查；`av*.dll` 至少应列出 `avcodec-*.dll`、`avformat-*.dll` 和 `avutil-*.dll`。只有 `ffmpeg.exe`、`ffplay.exe`、`ffprobe.exe` 且没有 `av*.dll` 的目录属于静态构建，TorchCodec 无法使用它提供运行库。
-
-```powershell
-$ffmpegBin = "C:\path\to\ffmpeg\bin"
-Get-ChildItem "$ffmpegBin\av*.dll"
-& "$ffmpegBin\ffmpeg.exe" -version
-& "$ffmpegBin\ffprobe.exe" -version
-```
-
-记下通过检查的 `bin` 目录；在第 4 步创建 `.env` 后填入该实际路径。Python 3.8+ 的 DLL 加载规则需要应用显式注册搜索目录；单独修改 `PATH` 无法保证 TorchCodec 找到这些 DLL。YouDub 启动时会读取 `FFMPEG_PATH`，检查同目录的 `av*.dll`，并通过 `os.add_dll_directory()` 注册该目录。配置错误会在启动阶段直接给出原因。
-
-```bash
-# Ubuntu / Debian / WSL2
-sudo apt update
-sudo apt install -y ffmpeg nodejs npm
-```
-
-```bash
-# macOS（Homebrew）
-brew install ffmpeg node
-```
-
-如果你的系统包管理器无法提供 Python 3.12，建议从 Python 官网、pyenv、conda/mamba 或发行版推荐方式安装；关键是后续创建虚拟环境时确认使用的是 3.12。
-
-### 2. 克隆项目
-
-Windows PowerShell、macOS 和 Linux 通用：
-
-```powershell
-git clone https://github.com/liuzhao1225/YouDub-webui.git
-cd YouDub-webui
-git submodule update --init --recursive
-```
-
-Demucs 以源码子模块引入，请不要跳过 `git submodule update`。
-
-### 3. 安装依赖
-
-#### Windows PowerShell
-
-Python 依赖：
-
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -U pip
-.\.venv\Scripts\pip.exe install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
-```
-
-前端依赖：
-
-```powershell
-Push-Location apps/web
-npm ci --registry=https://registry.npmmirror.com
-Pop-Location
-```
-
-#### macOS / Linux / WSL2
-
-Python 依赖：
-
-```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install -U pip
-.venv/bin/pip install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
-```
-
-前端依赖：
-
-```bash
-(cd apps/web && npm ci --registry=https://registry.npmmirror.com)
-```
-
-如果 Aliyun 镜像中某个 Python 包暂时不可用，再单独对失败的包使用 Tsinghua 源重试；不要把多个镜像混在同一条 resolver 命令里。
-
-#### 可选：NVIDIA CUDA GPU
-
-如果要用 NVIDIA GPU 跑 Whisper、Demucs 或 VoxCPM，请在安装 `requirements.txt` 之前先安装 CUDA 版 PyTorch：
-
-Windows PowerShell：
-
-```powershell
-.\.venv\Scripts\pip.exe install -r requirements-pytorch-cu128.txt
-```
-
-Linux / WSL2：
-
-```bash
-.venv/bin/pip install -r requirements-pytorch-cu128.txt
-```
-
-`requirements-pytorch-cu128.txt` 默认使用 PyTorch 的 `cu128` wheel 源。不同 NVIDIA 驱动或 CUDA 环境可能需要不同的 PyTorch CUDA 版本，请按 [PyTorch 官方安装页](https://pytorch.org/get-started/locally/) 选择匹配命令。CPU 用户和 macOS 用户不需要执行这一步；如果没有安装 CUDA 版 PyTorch，请在 `.env` 中设置 `DEVICE=cpu`。
-
-Windows 上 VoxCPM 的 `torch.compile` 加速需要 Triton。如果启动时出现 `Warning: torch.compile disabled - triton is not installed`，VoxCPM 仍可正常工作，但 TTS 会使用较慢的未编译路径（[Issue #127 的 Windows 环境实测约慢 2 倍](https://github.com/liuzhao1225/YouDub-webui/issues/127)）。Windows CUDA 用户可选择安装社区维护的 [`triton-windows`](https://github.com/triton-lang/triton-windows)：
-
-```powershell
-.\.venv\Scripts\pip.exe install -U triton-windows
-```
-
-`triton-windows` 未纳入默认依赖。安装前请按其项目文档选择与当前 PyTorch 版本匹配的 Triton 版本。
-
-安装后可以验证 CUDA 是否真的可用：
-
-```bash
-.venv/bin/python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
-```
-
-### 4. 配置环境
-
-Windows PowerShell：
-
-```powershell
-Copy-Item env.txt.example .env
-```
-
-macOS / Linux / WSL2：
-
-```bash
-cp env.txt.example .env
-```
-
-应用运行时读取 `.env`。不要提交 API key、Cookie、下载视频或生成产物。
-
-Windows 用户把第 1 步确认过的 shared/full-shared FFmpeg 实际路径写入刚创建的 `.env`：
-
-```dotenv
-FFMPEG_PATH=C:/path/to/ffmpeg/bin/ffmpeg.exe
-FFPROBE_PATH=C:/path/to/ffmpeg/bin/ffprobe.exe
-```
-
-后端默认强制认证；`YOUDUB_AUTH_PASSWORD_HASH` 未配置时会拒绝启动。请在本机交互式输入访问密码并生成 Argon2id 哈希，命令不会把明文密码写入 shell 历史：
-
-Windows PowerShell：
-
-```powershell
-.\.venv\Scripts\python.exe -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
-```
-
-macOS / Linux / WSL2：
-
-```bash
-.venv/bin/python -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('YouDub password: ')))"
-```
-
-把输出的整行哈希填入 `.env` 的 `YOUDUB_AUTH_PASSWORD_HASH`。不要填写明文密码，也不要把真实哈希提交到 Git。
-
-常用环境变量：
-
-| 变量 | 说明 |
-| --- | --- |
-| `WORKFOLDER` | 每个任务的媒体、分段音频和中间产物目录。 |
-| `MODEL_CACHE_DIR` | ModelScope 模型缓存目录，默认用于 VoxCPM2。 |
-| `YOUDUB_AUTH_PASSWORD_HASH` | 必填的登录密码 Argon2id 哈希；不接受明文密码。 |
-| `YOUDUB_AUTH_SESSION_TTL_SECONDS` | 登录会话绝对有效期，默认 `604800` 秒（7 天）。 |
-| `YOUDUB_AUTH_COOKIE_SECURE` | HTTPS 部署必须设为 `true`；仅可信的本机 HTTP 开发可设为 `false`。 |
-| `YOUDUB_AUTH_COOKIE_SAMESITE` | 会话 Cookie 的 SameSite 策略，可选 `lax` 或 `strict`；同源代理部署建议 `strict`。 |
-| `DEVICE` | 模型运行设备，例如 `auto`、`cuda`、`cuda:0`、`mps`、`mps:0` 或 `cpu`；`auto` 按 CUDA、MPS、CPU 顺序选择。 |
-| `DEMUCS_DEVICE` / `WHISPER_DEVICE` | 可选组件级设备覆盖；留空时使用 `DEVICE`。Whisper 选择 MPS 时会退回 CPU，因为词级时间戳对齐依赖 MPS 不支持的 float64 DTW。 |
-| `DEMUCS_CHUNK_SECONDS` | 人声分离的分块长度，必须为正整数，默认 `600`（10 分钟）。内存峰值由单个“分块 + 10 秒上下文”的推理和两份 10 秒 overlap tail 决定；每块写出后，完整输入与输出张量会在下一块推理前释放，跨块只保留两份 tail，内存不会随视频总长或分块数累积。默认窗口约 2.8 GiB 仅作参考，实际峰值还取决于模型、`shifts`、设备和底层库。首音轨以 float32 解码：mono 复制为双声道，双声道及以上只取前两个声道。临时输入使用 FFmpeg WAV `-rf64 auto`，超过 RIFF 上限时自动切换 RF64；两份 float32 stem 和两份最终 PCM16 输出固定使用 RF64，消除普通 WAV 的 4 GiB 边界。临时字节数约为“时长秒 × 采样率 × 声道数 × (4 + 4 × 2)”；按 44.1 kHz 双声道估算为 3.55 GiB/小时，写入最终输出时还需 1.18 GiB/小时，建议至少预留 4.73 GiB/小时。临时文件在成功或失败后都会清理。 |
-| `RELEASE_GPU_MEMORY_AFTER_STAGE` | 默认 `true`。Demucs、Whisper、VoxCPM 阶段结束后释放模型引用和可用的 CUDA/MPS 缓存，并在任务结束时再次清理。单线程流水线在同一任务中不会再次使用这些模型；设为 `false` 可保留跨任务模型缓存、减少重新加载耗时，同时会增加显存持续占用和 OOM 风险。接受 `1/0`、`true/false`、`yes/no`、`on/off`。 |
-| `FFMPEG_PATH` / `FFPROBE_PATH` | 可选的媒体程序完整路径；Windows 上使用 TorchCodec 时，`FFMPEG_PATH` 必须指向 shared/full-shared 构建。 |
-| `OPENAI_BASE_URL` | OpenAI 兼容 API 地址，例如 `https://api.openai.com/v1`。 |
-| `OPENAI_API_KEY` | 翻译阶段使用的 API key。 |
-| `OPENAI_MODEL` | 翻译阶段使用的 Chat Completions 模型。 |
-| `OPENAI_TRANSLATE_CONCURRENCY` | 翻译阶段的并发请求数，默认 `50`。 |
-| `LOCAL_UPLOAD_MAX_BYTES` | 本地视频上传大小上限，默认 4 GiB。 |
-| `LOCAL_SUBTITLE_MAX_BYTES` | 可选本地 SRT 字幕上传大小上限，默认 20 MiB。 |
-| `YTDLP_PROXY_PORT` | yt-dlp 使用的本机代理端口，例如 `7890`。 |
-| `HTTP_PROXY` / `ALL_PROXY` | 未在 UI 中设置代理端口时，yt-dlp 可读取 `HTTP_PROXY`；HTTPX/OpenAI SDK 也会读取这些环境代理。 |
-| `NO_PROXY` | 逗号分隔的代理绕过列表；使用本地 OpenAI 兼容服务时建议包含 `localhost,127.0.0.1,::1`，避免本地请求绕行系统代理。 |
-| `VOXCPM_MODEL` / `VOXCPM_MODEL_DIR` | VoxCPM2 的 ModelScope 模型名或本地模型目录；VoxCPM 当前由上游包内部选择 CUDA/MPS/CPU，任务日志会显示为 `voxcpm=library-auto`。 |
-| `VOXCPM_LOAD_DENOISER` / `VOXCPM_CFG_VALUE` / `VOXCPM_INFERENCE_TIMESTEPS` / `VOXCPM_MIN_REFERENCE_MS` | VoxCPM2 推理参数。 |
-| `CORS_ALLOW_ORIGINS` / `CORS_ALLOW_ORIGIN_REGEX` | 显式允许的跨源前端来源；不能使用 `*`。同源 Next 代理不需要配置。 |
-
-Demucs 分离结果采用同目录 pending 发布：handler 每次实际执行时先删除旧 final 和遗留 pending，再完整生成 `.audio_vocals.pending.wav` 与 `.audio_bgm.pending.wav`；两份文件都关闭写完后，才分别原子替换 `audio_vocals.wav` 与 `audio_bgm.wav`。普通异常会删除 pending 和已经发布的单份 final。SIGKILL 或掉电可能留下 pending 或单份 final，failed/running stage 再次恢复时会先清理并完整重算。真正 succeeded 的 stage 由 PipelineRunner 根据 stage 元数据恢复，不会再次调用 handler。
-
-默认 CORS 只允许 `localhost`、`127.0.0.1` 和 `::1` 的 `:3000`。推荐始终使用 Next.js 同源 `/api` 代理；如果浏览器确实直连不同 origin 的后端，必须把完整、可信的 origin 追加到 `CORS_ALLOW_ORIGINS`，例如 `https://youdub.example.com`。CORS 不是认证或 CSRF 防护，后端仍会校验 HttpOnly 会话 Cookie 和每会话 CSRF token。
-
-### 5. 启动服务
-
-#### Windows PowerShell
-
-后端：
-
-```powershell
-.\.venv\Scripts\uvicorn.exe backend.app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-前端：
-
-```powershell
-npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
-```
-
-#### macOS / Linux / WSL2
-
-后端：
-
-```bash
-.venv/bin/uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-前端：
-
-```bash
-npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
-```
-
-前端默认通过同源 `/api/...` 请求访问后端，并由 Next.js 代理到 `http://127.0.0.1:8000`。如果后端不在本机 `8000` 端口，启动前端时设置 `NEXT_SERVER_API_BASE_URL`，例如：
-
-```bash
-NEXT_SERVER_API_BASE_URL=http://192.168.1.10:8000 npm --prefix apps/web run dev -- --hostname 0.0.0.0 --port 3000
-```
-
-打开：
-
-```text
-http://localhost:3000
-```
-
-如果从局域网、WSL2 或远程机器访问，浏览器里使用运行前端机器的实际 IP 或主机名，例如 `http://192.168.1.20:3000`。后端默认监听 `0.0.0.0:8000`，前端默认监听 `0.0.0.0:3000`。
-
-浏览器应始终访问前端地址，由 Next.js 转发 `/api`；不要把认证信息放进 `NEXT_PUBLIC_*`、URL query 或前端存储。通过局域网或公网访问时，请在前端前面配置 HTTPS 反向代理并设置 `YOUDUB_AUTH_COOKIE_SECURE=true`。明文 HTTP 只适用于可信的本机开发环境。
-
-### 运行时文件权限
-
-在 POSIX 系统上，后端会在读取 `.env`、连接 SQLite 或启动 worker 前永久设置进程 `umask 0077`。启动迁移只检查文件系统元数据，不读取或改写文件内容，并执行以下策略：
-
-- `data/`、Cookie、日志和 `WORKFOLDER` 下的目录收紧为 `0700`，普通文件收紧为 `0600`。
-- SQLite 主库和 `-journal`、`-wal`、`-shm` sidecar、`.env`、`env.txt`、Cookie、上传与新生成产物保持 owner-only。
-- 符号链接、特殊文件、异主文件和不安全的可写祖先会让启动失败；服务不会在权限迁移失败后继续启动 worker。
-- `MODEL_CACHE_DIR` 根目录必须由 root 或服务账号拥有且不可被其他用户写入；服务账号拥有的缓存根会收紧为 `0700`。缓存内部不做递归 chmod 或内容校验，因此部署前必须确认已有模型缓存可信。
-
-建议用专用 OS 用户运行服务，并确保仓库及自定义 `WORKFOLDER` 的父目录不允许其他组或用户重命名目录项。该边界防护其他 UID 或不可信组用户，不防同 UID 进程、调试器或 root；更强隔离请使用独立账号、容器或系统服务沙箱。
-
-首次启用或执行权限迁移时，应先停止仍会创建或删除运行时文件的旧实例；如果并行启动因 fail-closed 校验失败，请停止旧实例后重试启动。
-
-Windows 的 `chmod`/`umask` 不等价于 NTFS ACL。Windows 部署需由管理员把仓库、`.env`、`env.txt`、`data` 和 `WORKFOLDER` 的 DACL 限制到服务账号；应用会做兼容性检查，但不能替代正确的 NTFS ACL。真实 `.env`、`env.txt`、Cookie、SQLite、`data/` 和 `workfolder/` 已被 `.gitignore` 排除，不要强制加入 Git。
-
-## 页面里怎么用
-
-1. 使用生成哈希时设置的访问密码登录。
-2. 打开右上角 Settings。
-3. 粘贴 Netscape 格式 YouTube Cookie。
-4. 设置 yt-dlp 代理端口，例如 `7890` 或 `20171`。
-5. 填写 OpenAI base URL 和 API key。
-6. 点击 `Get models` 拉取模型列表，或手动输入模型名。
-7. 按 API 提供商额度调整 `Translate concurrency`。
-8. 回到首页，提交 YouTube URL、Bilibili URL，或上传本地视频。
-   - 在“输出内容”中选择“硬字幕（保留原音）”“配音（无硬字幕）”或“硬字幕和配音”。
-   - 本地视频可额外上传一份已翻译好的 `.srt` 字幕；上传后会跳过 Whisper 识别和 OpenAI 翻译，再按所选输出内容使用这份字幕。
-   - 本地视频支持“英文 -> 中文”“日文 -> 中文”和“中文 -> 英文”。翻译方向也决定可选字幕的目标语言，例如选择“日文 -> 中文”时，上传的 SRT 会被视为中文字幕。
-9. 进入任务详情页查看阶段进度、运行日志和最终视频。
-
-API key 和 Cookie 会在页面中脱敏显示，后端不会把 Cookie 明文返回给前端。
-
-### 导出 YouTube Cookie
-
-推荐使用 Chrome 扩展 [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)（开源，Cookie 不出本机）：
-
-1. 在 Chrome 安装扩展并保持启用。
-2. 登录 `https://www.youtube.com`。
-3. 在 youtube.com 页面点击扩展图标，选择 `Export` -> `Netscape`，得到 `cookies.txt`。
-4. 把文件内容整段粘贴到 Settings 的 YouTube cookie 输入框。
-
-请只处理你有权下载、转换和发布的视频内容。
-
-## 工作流程
-
-```text
-YouTube / Bilibili URL
-  -> yt-dlp 下载单个视频
-  -> Demucs 分离人声与背景音
-  -> Whisper 识别语音并输出词级时间戳
-  -> 句子与时间范围整理
-  -> OpenAI 兼容 API 预处理全文并逐句并发翻译
-  -> 按输出内容分支：
-     - subtitles：保留原音并压制硬字幕
-     - dubbing：生成并混合目标语言配音，不压制硬字幕
-     - both：生成并混合配音，同时压制硬字幕
-  -> FFmpeg 输出最终 mp4
-```
-
-本地视频上传使用同一条后半段流水线，支持英文或日文识别后翻译为中文，以及中文识别后翻译为英文。日译中方向会把 `ja` 传给 Whisper，并使用专用日译中提示词。若同时上传已翻译 `.srt` 字幕，系统会从 SRT 生成内部字幕时间轴，跳过 Whisper 与 OpenAI 翻译阶段，再按所选输出内容继续处理。v1 仅支持本地视频搭配 `.srt`，不支持 URL 任务附加字幕。
-
-## 功能亮点
-
-- **真实可用的端到端流程**：从 URL 到最终视频，不需要手动拆分音频、整理字幕或压制视频。
-- **双来源入口**：YouTube 英文 -> 中文是核心成熟场景；Bilibili 中文 -> 英文也已接入同一条任务流水线。
-- **三种输出模式**：可选择保留原音的硬字幕视频、无硬字幕的配音视频，或同时包含两者的视频。
-- **本地优先**：SQLite、Cookie、日志、中间产物和最终视频都保存在本机目录中。
-- **可观察任务进度**：任务历史、阶段状态、阶段耗时、运行日志和错误信息都可以在页面里查看。
-- **失败可恢复**：失败任务可以从失败阶段继续执行，已成功阶段会复用缓存产物。
-- **可重跑可清理**：支持按任务 rerun，也支持删除任务记录、日志和 `workfolder/` 下的会话目录。
-- **结果可检查**：任务成功后可在页面内播放最终视频，也可以下载 mp4 文件。
-- **设置在 UI 内完成**：YouTube Cookie、yt-dlp 代理端口、OpenAI base URL、API key、模型名和翻译并发数都可在 Settings 中维护。
-- **适合二次开发**：管线串行、模块边界清晰，方便替换 ASR、翻译、TTS 或字幕样式。
-
-## 技术栈
-
-- Frontend: Next.js App Router, shadcn/ui, Tailwind CSS, Lucide icons
-- Backend: FastAPI, SQLite, in-process background worker
-- Download: yt-dlp
-- Source separation: Demucs source submodule
-- ASR: openai-whisper（默认 `large-v3-turbo`）
-- Translation: OpenAI-compatible Chat Completions API
-- TTS: VoxCPM2
-- Media processing: FFmpeg, pydub, librosa, audiostretchy
-
-## 开发与测试
-
-后端测试：
-
-Windows PowerShell：
-
-```powershell
-.\.venv\Scripts\pytest.exe backend/tests
-```
-
-macOS / Linux / WSL2：
-
-```bash
-.venv/bin/pytest backend/tests
-```
-
-前端检查：
-
-```powershell
-npm --prefix apps/web run lint
-npm --prefix apps/web run build
-```
-
-项目的主要目录：
-
-```text
-backend/app/       FastAPI API、任务队列、流水线和模型适配器
-backend/tests/     后端单元测试
-apps/web/          Next.js WebUI
-scripts/           辅助脚本
-submodule/demucs/  Demucs 源码子模块
-```
-
-## 项目状态与贡献
-
-YouDub WebUI 仍然是 MVP，但已经可以支撑真实创作者的日常视频本地化生产。当前优先级是保持最短链路稳定、保持架构简单，并让更多人能跑起来、改得动。
-
-欢迎贡献：
-
-- 改进安装和模型下载体验。
-- 适配更多 ASR、TTS 或翻译后端。
-- 优化字幕样式、横竖屏布局和语音时长对齐。
-- 提升 YouTube / Bilibili 下载稳定性。
-- 增强任务管理、产物管理和失败恢复体验。
-- 补充不同平台的运行说明。
-
-如果这个项目对你有帮助，欢迎 Star、Fork、提交 Issue 或 PR，也欢迎分享给关注 AI 视频本地化、开源工具和跨语言内容传播的人。
 
 ## 人才招聘
 
@@ -491,12 +274,8 @@ QQ 交流群：`618246010`
 
 本项目使用 Apache License 2.0，详见 [LICENSE](LICENSE)。
 
-## Star History
+国内镜像：[AtomGit](https://atomgit.com/liuzhao1225/YouDub-webui)，由 [GitHub 主仓库](https://github.com/liuzhao1225/YouDub-webui)单向同步。Release、Issue 和 PR 在 GitHub 维护。
 
-<a href="https://www.star-history.com/?repos=liuzhao1225%2FYouDub-webui&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&theme=dark&legend=top-left&sealed_token=t9OTxsr7OPV9qT-QQDeYzphpOYSdcpyBno9hGLqvDQRBHhqogTh1auFAaWJaAaQQnFRCJ4eVCWm76U0W4uQAuak3r64RzoKrpjGYaNl2LetvfzQ4Y91giQ" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&legend=top-left&sealed_token=t9OTxsr7OPV9qT-QQDeYzphpOYSdcpyBno9hGLqvDQRBHhqogTh1auFAaWJaAaQQnFRCJ4eVCWm76U0W4uQAuak3r64RzoKrpjGYaNl2LetvfzQ4Y91giQ" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=liuzhao1225/YouDub-webui&type=date&legend=top-left&sealed_token=t9OTxsr7OPV9qT-QQDeYzphpOYSdcpyBno9hGLqvDQRBHhqogTh1auFAaWJaAaQQnFRCJ4eVCWm76U0W4uQAuak3r64RzoKrpjGYaNl2LetvfzQ4Y91giQ" />
- </picture>
-</a>
+作者：[刘朝 Zhao Liu](https://liuzhao1225.github.io/) · [GitHub](https://github.com/liuzhao1225) · [Bilibili 黑纹白斑马](https://space.bilibili.com/1263732318)
+
+[Star History](https://www.star-history.com/?repos=liuzhao1225%2FYouDub-webui&type=date&legend=top-left)
