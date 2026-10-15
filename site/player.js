@@ -1,6 +1,6 @@
 const demos = {
-  jensen: { title: '黄仁勋采访', source: 'https://www.youtube.com/shorts/TbotsRXyRME' },
-  creator: { title: '1.29 亿次播放，收入多少？', source: 'https://www.youtube.com/watch?v=ii9Kh4XkA5g' },
+  jensen: { title: '黄仁勋采访', format: 'portrait', source: 'https://www.youtube.com/shorts/TbotsRXyRME' },
+  creator: { title: '1.29 亿次播放，收入多少？', format: 'landscape', source: 'https://www.youtube.com/watch?v=ii9Kh4XkA5g' },
 }
 const icons = {
   play: '<path class="play-icon" d="m7 4 14 8-14 8z"/>',
@@ -25,6 +25,7 @@ class PairedPlayer {
     this.volume = 1
     this.root = document.createElement('section')
     this.root.className = 'player'
+    this.root.dataset.format = demo.format
     this.root.setAttribute('aria-label', `${demo.title}中英文对照播放器`)
     this.root.hidden = true
     this.root.innerHTML = `
@@ -262,7 +263,6 @@ function selectDemo(id) {
     button.classList.toggle('is-selected', active)
     button.setAttribute('aria-pressed', String(active))
   }
-  document.getElementById('demo-caption').textContent = demos[id].title
   document.getElementById('source-link').href = demos[id].source
   players[id].load()
 }

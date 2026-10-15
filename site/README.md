@@ -4,6 +4,8 @@
 
 纯 HTML、CSS 和浏览器 JavaScript，无需安装依赖。修改 `site/` 后合入 `main`，`.github/workflows/pages.yml` 自动发布该目录。GitHub Pages 的发布方式设为 GitHub Actions。所有下载按钮指向 GitHub `/releases/latest`，不固定版本号。
 
+页面以示例播放和下载为主。示例选择放在播放器上方；桌面下载入口位于介绍区，手机移到顶部，每种布局只显示一个下载按钮。工作台截图默认收起，按需展开。横屏示例使用 16:9，竖屏示例根据视口高度展示完整画面。
+
 本地预览（先确认端口空闲）：
 
 ```sh
