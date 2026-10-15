@@ -43,13 +43,24 @@ jobs:
           python -m nltk.downloader -e punkt_tab
       - name: 准备媒体回归工具
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if (!(Get-Command ffmpeg -ErrorAction SilentlyContinue) -or !(Get-Command ffprobe -ErrorAction SilentlyContinue)) {
-            choco install ffmpeg --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
-          ffmpeg -version
-          ffprobe -version
+          $ErrorActionPreference = 'Stop'
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest' -Headers @{ Authorization = "Bearer $env:GH_TOKEN" }
+          $asset = $release.assets | Where-Object name -eq 'ffmpeg-master-latest-win64-gpl-shared.zip'
+          if (!$asset -or $asset.digest -notmatch '^sha256:[a-f0-9]{64}$') { throw 'FFmpeg release has no SHA-256 digest.' }
+          $archive = Join-Path $env:RUNNER_TEMP 'ffmpeg.zip'
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash -ne $asset.digest.Substring(7)) { throw 'FFmpeg archive SHA-256 mismatch.' }
+          $destination = Join-Path $env:RUNNER_TEMP 'ffmpeg'
+          [IO.Compression.ZipFile]::ExtractToDirectory($archive, $destination)
+          $bin = Join-Path $destination 'ffmpeg-master-latest-win64-gpl-shared/bin'
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & "$bin/ffmpeg.exe" -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$bin/ffprobe.exe" -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: 检查 Host、中文上传、扩展和任务生命周期
         shell: pwsh
         run: |

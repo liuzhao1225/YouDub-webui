@@ -7,6 +7,7 @@
 - 两端使用 `npm run build:desktop`，共用运行环境组装、锁定 Node 版本、npm 分发和 SDK JavaScript 导出。macOS 保留 Swift/WKWebView 和签名公证，Windows 保留 WinForms/WebView2 和便携 ZIP。
 - 原 macOS 包普通 Node 导入 SDK 报 `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`，也未附带 npm。新包能在限制 PATH、无全局 npm 的条件下实际安装并构建使用 SDK 的扩展；包启动前后签名校验通过。
 - Windows CI 原先使用系统 tar 解压到中文路径失败。改用 .NET ZipFile 的 Unicode 路径接口，继续验收中文及空格目录中的真实 EXE。
+- 后续 CI 在 Chocolatey 获取 FFmpeg 时遇到 HTTP 504；改为使用与应用相同的 FFmpeg 发行源，下载后核对发行资产 SHA-256，再执行媒体回归。
 - 连接测试显式校验并传入 `max_completion_tokens=65535`，拒绝降低上限，服务不支持时保留失败。
 - 质量门禁实际构建两端包。tag 发布复用本次门禁的候选包；macOS 仅在受保护签名环境取得签名材料。已有 tag 和发布资产保持不变。
 - 官网根据 GitHub 已公开资产生成平台/版本列表，缺少安装包或校验文件的平台不显示下载入口。正式发布工作流成功后更新官网。
