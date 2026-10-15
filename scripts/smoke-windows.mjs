@@ -25,6 +25,7 @@ console.log('Extracting verified ZIP into a path containing Chinese characters a
 const extract = spawnSync(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
   "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:YOUDUB_ARCHIVE, $env:YOUDUB_EXTRACT_DIR)"],
 { stdio: 'inherit', windowsHide: true, env: { ...process.env, YOUDUB_ARCHIVE: zip, YOUDUB_EXTRACT_DIR: destination } })
+
 if (extract.error) throw extract.error
 assert.equal(extract.status, 0, 'ZIP extraction')
 const app = join(destination, 'YouDub-windows-x64')

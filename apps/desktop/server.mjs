@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import { createServer, request } from 'node:http'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { mkdir } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import { startHost } from '../host/src/bootstrap.ts'
@@ -18,6 +18,7 @@ process.env.YOUDUB_HOST = '127.0.0.1'
 process.env.YOUDUB_PORT = '0'
 process.env.YOUDUB_PYTHON_ENV_DIR = join(data, 'runtime', 'venv')
 process.env.PYTHONDONTWRITEBYTECODE = '1'
+process.env.npm_execpath = join(dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js')
 // Resolve through the bundled Node loader without writing .cordis into the signed app.
 if (!ModuleLoader.fromInternal()) throw new Error('The bundled Node module loader is unavailable.')
 

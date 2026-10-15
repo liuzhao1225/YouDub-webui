@@ -1,0 +1,30 @@
+[
+  {
+    "version": "v0.0.2",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.2",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.2-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.2/YouDub-0.0.2-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.2/YouDub-0.0.2-macOS-arm64.dmg.sha256"
+      }
+    ]
+  },
+  {
+    "version": "v0.0.1",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.1",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.1-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.1/YouDub-0.0.1-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.1/YouDub-0.0.1-macOS-arm64.dmg.sha256"
+      }
+    ]
+  }
+]

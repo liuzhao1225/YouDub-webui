@@ -2,8 +2,8 @@ import { cp, mkdir, readFile, readdir, rm, writeFile, access, rename, lstat } fr
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
-import { transform } from 'esbuild'
 import { resolve, join, basename, dirname, relative, isAbsolute } from 'node:path'
+import { run, runNpm, nodeVersion, assembleRuntime, bundleNode } from './desktop-runtime.mjs'
 import { appVersion, validateReleaseVersion } from './release-version.mjs'
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Build Windows x64 on Windows x64.')
@@ -12,23 +12,15 @@ process.chdir(root)
 if (process.env.GITHUB_REF_TYPE === 'tag') validateReleaseVersion(appVersion, process.env.GITHUB_REF_NAME)
 const system = join(process.env.SystemRoot || 'C:/Windows', 'System32')
 process.env.PATH = [dirname(process.execPath), system, process.env.PATH].filter(Boolean).join(';')
-const run = (command, args, options = {}) => {
-  const result = spawnSync(command, args, { stdio: 'inherit', windowsHide: true, ...options })
-  if (result.error) throw result.error
-  if (result.status !== 0) throw new Error(`${command} failed (${result.status}).`)
-}
-// Execute npm's JS entry directly: spawning npm.cmd requires a shell on Windows.
-const npm = process.env.npm_execpath || join(dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js')
-const runNpm = (args, options) => run(process.execPath, [npm, ...args], options)
 // Some Windows tar builds decode arguments with the system ANSI code page.
 // Pass Unicode paths through the environment to PowerShell's ZIP implementation.
 const extractZip = (archive, destination) => run(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
   "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:YOUDUB_ARCHIVE, $env:YOUDUB_EXTRACT_DIR)"],
 { env: { ...process.env, YOUDUB_ARCHIVE: archive, YOUDUB_EXTRACT_DIR: destination } })
+
 const cache = join(root, '.cache/windows')
 const app = join(root, 'dist/YouDub-windows-x64')
 const runtime = join(app, 'resources/runtime')
-const nodeVersion = '22.23.2'
 const nodeArchive = `node-v${nodeVersion}-win-x64.zip`
 const webviewVersion = '1.0.4191.47'
 const webviewArchive = `webview2.${webviewVersion}.zip`
@@ -66,24 +58,8 @@ if (!process.argv.includes('--reuse-web')) {
   runNpm(['--prefix', 'apps/web', 'run', 'build', '--', '--webpack'], { env: { ...process.env, YOUDUB_DESKTOP_BUILD: '1', NEXT_TELEMETRY_DISABLED: '1' } })
 }
 await removeGenerated(app)
-await mkdir(runtime, { recursive: true })
-const filter = file => !['.git', '__pycache__', '.venv', 'node_modules', '.pytest_cache', '.DS_Store', 'env.txt'].includes(basename(file)) && !basename(file).startsWith('.env')
-for (const file of ['package.json', 'package-lock.json', 'tsconfig.json', 'youdub.config.ts', 'requirements.txt', 'LICENSE', 'apps/host', 'packages/sdk', 'packages/builtin', 'backend/app', 'backend/workers', 'submodule/demucs', 'apps/desktop/server.mjs', 'apps/desktop/windows/bootstrap.mjs', 'apps/web/plugin-dist']) {
-  await cp(join(root, file), join(runtime, file), { recursive: true, filter })
-}
-await access(join(runtime, 'submodule/demucs/demucs/__init__.py'))
-runNpm(['ci', '--ignore-scripts', '--no-audit', '--no-fund', '--registry=https://registry.npmmirror.com'], { cwd: runtime })
-// Plain Node plugin build scripts cannot strip TypeScript below node_modules.
-// Ship JavaScript exports while retaining TypeScript for plugin type checking.
-const sdkDirectory = join(runtime, 'packages/sdk')
-const sdkPackage = JSON.parse(await readFile(join(sdkDirectory, 'package.json'), 'utf8'))
-for (const [name, source] of Object.entries(sdkPackage.exports)) {
-  const output = source.replace(/\.ts$/, '.js')
-  const result = await transform(await readFile(join(sdkDirectory, source), 'utf8'), { loader: 'ts', format: 'esm', target: 'node22' })
-  await writeFile(join(sdkDirectory, output), result.code)
-  sdkPackage.exports[name] = { types: source, default: output }
-}
-await writeFile(join(sdkDirectory, 'package.json'), JSON.stringify(sdkPackage) + '\n')
+await assembleRuntime(root, runtime)
+await cp(join(root, 'apps/desktop/windows/bootstrap.mjs'), join(runtime, 'apps/desktop/windows/bootstrap.mjs'))
 // ZIP extraction must work without Developer Mode, junctions, or this checkout.
 for (const workspace of ['apps/host', 'packages/sdk', 'packages/builtin']) {
   const { name } = JSON.parse(await readFile(join(runtime, workspace, 'package.json'), 'utf8'))
@@ -92,15 +68,7 @@ for (const workspace of ['apps/host', 'packages/sdk', 'packages/builtin']) {
   await removeGenerated(link)
   await cp(join(runtime, workspace), link, { recursive: true })
 }
-await cp(join(root, 'apps/web/.next-desktop/standalone'), join(runtime, 'web'), { recursive: true, dereference: true, filter: file => !basename(file).startsWith('.env') && basename(file) !== 'env.txt' })
-await cp(join(root, 'apps/web/.next-desktop/static'), join(runtime, 'web/apps/web/.next-desktop/static'), { recursive: true })
-await cp(join(root, 'apps/web/public'), join(runtime, 'web/apps/web/public'), { recursive: true })
-await access(join(runtime, 'web/apps/web/server.js'))
-await cp(join(cache, `node-v${nodeVersion}-win-x64/node.exe`), join(app, 'resources/node.exe'))
-await cp(join(cache, `node-v${nodeVersion}-win-x64/node_modules/npm`), join(app, 'resources/node_modules/npm'), { recursive: true })
-await cp(join(cache, `node-v${nodeVersion}-win-x64/LICENSE`), join(app, 'resources/NODE-LICENSE.txt'))
-run(join(app, 'resources/node.exe'), ['--input-type=module', '-e', 'import { SDK_VERSION, AppError } from "@youdub/sdk"; if (SDK_VERSION !== "1.0.0" || !(new AppError("TEST", "test") instanceof Error)) process.exit(1)'], { cwd: runtime })
-run(join(app, 'resources/node.exe'), ['-e', 'require.resolve("next")'], { cwd: join(runtime, 'web/apps/web') })
+await bundleNode(join(cache, `node-v${nodeVersion}-win-x64`), join(app, 'resources'))
 for (const library of ['Core', 'WinForms']) await cp(join(sdk, `lib/net462/Microsoft.Web.WebView2.${library}.dll`), join(app, `Microsoft.Web.WebView2.${library}.dll`))
 await cp(join(sdk, 'runtimes/win-x64/native/WebView2Loader.dll'), join(app, 'WebView2Loader.dll'))
 await cp(join(sdk, 'LICENSE.txt'), join(app, 'WEBVIEW2-LICENSE.txt'))

@@ -3,7 +3,10 @@ name: GitHub Pages 官网
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths: ['site/**', 'scripts/download-releases.mjs', '.github/workflows/pages.yml']
+  workflow_run:
+    workflows: [桌面版本发布]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -29,8 +32,17 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: 检查播放器脚本
-        run: node --check site/player.js
+          ref: main
+      - name: 生成已发布版本的下载列表
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate --slurp repos/${{ github.repository }}/releases > "$RUNNER_TEMP/releases.json"
+          node scripts/download-releases.mjs "$RUNNER_TEMP/releases.json"
+      - name: 检查官网脚本
+        run: |
+          node --check site/player.js
+          node --check site/downloads.js
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
