@@ -1,0 +1,309 @@
+{
+  "target": {
+    "integratedLUFS": -16,
+    "truePeakMaxDBTP": -1.5,
+    "initialLimiterDBTP": -3,
+    "secondaryLimiterDBTP": -4,
+    "preEncodePeakHeadroomDBTP": -2,
+    "loudnessRangeLU": 11
+  },
+  "method": "FFmpeg loudnorm to float PCM, remeasure integrated loudness, apply gain and 192 kHz peak limiting with latency compensation, remeasure after limiting and apply final constant gain to -16 LUFS, encode 48 kHz AAC and verify final files; English L/R averaged to mono; Chinese channel layout preserved; video packets copied",
+  "files": [
+    {
+      "name": "jensen-en.mp4",
+      "originalMono": true,
+      "inputSha256": "559318ea0e426b233211148582087d7ecfb3e70fc50d94731a6fd86eb7d77219",
+      "outputSha256": "5f997ca26fdf8caf02cb2c69dfd9aa3ca85d120ea7b4baab459d4cf47d5d72b7",
+      "before": {
+        "input_i": "-17.42",
+        "input_tp": "-0.85",
+        "input_lra": "1.80",
+        "input_thresh": "-27.50",
+        "output_i": "-16.59",
+        "output_tp": "-2.00",
+        "output_lra": "1.90",
+        "output_thresh": "-26.63",
+        "normalization_type": "dynamic",
+        "target_offset": "0.59"
+      },
+      "intermediate": {
+        "input_i": "-16.92",
+        "input_tp": "-2.99",
+        "input_lra": "2.20",
+        "input_thresh": "-26.98",
+        "output_i": "-15.76",
+        "output_tp": "-2.00",
+        "output_lra": "1.90",
+        "output_thresh": "-25.80",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.24"
+      },
+      "initialGainDB": 0.9200000000000017,
+      "peakLimitedAnalysis": {
+        "input_i": "-16.52",
+        "input_tp": "-4.00",
+        "input_lra": "2.10",
+        "input_thresh": "-26.58",
+        "output_i": "-15.62",
+        "output_tp": "-2.60",
+        "output_lra": "1.80",
+        "output_thresh": "-25.66",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.38"
+      },
+      "finalGainDB": 0.5199999999999996,
+      "after": {
+        "input_i": "-16.01",
+        "input_tp": "-3.24",
+        "input_lra": "2.20",
+        "input_thresh": "-26.07",
+        "output_i": "-15.62",
+        "output_tp": "-2.59",
+        "output_lra": "1.80",
+        "output_thresh": "-25.65",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.38"
+      },
+      "videoPacketHash": "SHA256=563c15946cf64efcc44b8b183c181278afc782e84156cf9a033d5ba9c386654e",
+      "videoUnchanged": true,
+      "streams": [
+        {
+          "codec_type": "video",
+          "start_time": "0.000000",
+          "duration": "59.325933",
+          "nb_frames": "1778"
+        },
+        {
+          "codec_type": "audio",
+          "channels": 1,
+          "channel_layout": "mono",
+          "start_time": "0.000000",
+          "duration": "59.356000",
+          "nb_frames": "2784"
+        }
+      ]
+    },
+    {
+      "name": "jensen-zh.mp4",
+      "originalMono": false,
+      "inputSha256": "42fd09a56fcef15bd9fbfb0ae5b09dbd82fd5545e172b70c3d922d660a035fb1",
+      "outputSha256": "8da6aaac6c93cabd5d137f313752ddf7c989ef68430bdb2c3dccc04c46788b2c",
+      "before": {
+        "input_i": "-19.75",
+        "input_tp": "-5.16",
+        "input_lra": "3.90",
+        "input_thresh": "-30.25",
+        "output_i": "-16.00",
+        "output_tp": "-2.00",
+        "output_lra": "3.90",
+        "output_thresh": "-26.49",
+        "normalization_type": "dynamic",
+        "target_offset": "0.00"
+      },
+      "intermediate": {
+        "input_i": "-16.06",
+        "input_tp": "-3.00",
+        "input_lra": "4.00",
+        "input_thresh": "-26.56",
+        "output_i": "-15.68",
+        "output_tp": "-2.00",
+        "output_lra": "3.60",
+        "output_thresh": "-26.16",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.32"
+      },
+      "initialGainDB": 0.05999999999999872,
+      "peakLimitedAnalysis": {
+        "input_i": "-16.09",
+        "input_tp": "-4.00",
+        "input_lra": "4.10",
+        "input_thresh": "-26.58",
+        "output_i": "-15.67",
+        "output_tp": "-2.90",
+        "output_lra": "3.60",
+        "output_thresh": "-26.15",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.33"
+      },
+      "finalGainDB": 0.08999999999999986,
+      "after": {
+        "input_i": "-16.01",
+        "input_tp": "-3.55",
+        "input_lra": "4.10",
+        "input_thresh": "-26.51",
+        "output_i": "-15.67",
+        "output_tp": "-2.79",
+        "output_lra": "3.60",
+        "output_thresh": "-26.15",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.33"
+      },
+      "videoPacketHash": "SHA256=8cf253d1ce24f2d8fbd23e6db74ac0de5eb0c8924d16630641ed959a3db6136f",
+      "videoUnchanged": true,
+      "streams": [
+        {
+          "codec_type": "video",
+          "start_time": "0.000000",
+          "duration": "59.325933",
+          "nb_frames": "1778"
+        },
+        {
+          "codec_type": "audio",
+          "channels": 2,
+          "channel_layout": "stereo",
+          "start_time": "0.000000",
+          "duration": "59.328000",
+          "nb_frames": "2782"
+        }
+      ]
+    },
+    {
+      "name": "creator-en.mp4",
+      "originalMono": true,
+      "inputSha256": "316deda090939d47e9e1303b19b250a5c9e402b0b85913ed14779e5d4354579d",
+      "outputSha256": "458021ea6b924595d94c7bb59e5d54ff356ae1cb531ebec7d054ef6ae3a3378e",
+      "before": {
+        "input_i": "-22.09",
+        "input_tp": "-1.50",
+        "input_lra": "3.50",
+        "input_thresh": "-32.37",
+        "output_i": "-17.57",
+        "output_tp": "-2.00",
+        "output_lra": "2.60",
+        "output_thresh": "-27.82",
+        "normalization_type": "dynamic",
+        "target_offset": "1.57"
+      },
+      "intermediate": {
+        "input_i": "-17.96",
+        "input_tp": "-2.92",
+        "input_lra": "2.70",
+        "input_thresh": "-28.17",
+        "output_i": "-16.45",
+        "output_tp": "-2.00",
+        "output_lra": "2.00",
+        "output_thresh": "-26.63",
+        "normalization_type": "dynamic",
+        "target_offset": "0.45"
+      },
+      "initialGainDB": 1.9600000000000009,
+      "peakLimitedAnalysis": {
+        "input_i": "-17.15",
+        "input_tp": "-4.00",
+        "input_lra": "2.60",
+        "input_thresh": "-27.32",
+        "output_i": "-15.95",
+        "output_tp": "-2.19",
+        "output_lra": "2.10",
+        "output_thresh": "-26.12",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.05"
+      },
+      "finalGainDB": 1.1499999999999986,
+      "after": {
+        "input_i": "-16.02",
+        "input_tp": "-2.77",
+        "input_lra": "2.50",
+        "input_thresh": "-26.19",
+        "output_i": "-15.95",
+        "output_tp": "-2.18",
+        "output_lra": "2.10",
+        "output_thresh": "-26.12",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.05"
+      },
+      "videoPacketHash": "SHA256=8b028979f9310d7915342558f79a6adfe6427d98eecf1ed23f15939aac7ea92c",
+      "videoUnchanged": true,
+      "streams": [
+        {
+          "codec_type": "video",
+          "start_time": "0.000000",
+          "duration": "40.400000",
+          "nb_frames": "1212"
+        },
+        {
+          "codec_type": "audio",
+          "channels": 1,
+          "channel_layout": "mono",
+          "start_time": "0.000000",
+          "duration": "40.412000",
+          "nb_frames": "1896"
+        }
+      ]
+    },
+    {
+      "name": "creator-zh.mp4",
+      "originalMono": false,
+      "inputSha256": "fa3ec92a09d4b7879a0c1366845da5b1803bcbb9f886a21dba7523de990d18a9",
+      "outputSha256": "ca7b7dd70baeb4c4444e6872c6f695f8c1ce5a2fd49d0443ed79d28dce6a935a",
+      "before": {
+        "input_i": "-21.71",
+        "input_tp": "-0.90",
+        "input_lra": "4.20",
+        "input_thresh": "-32.06",
+        "output_i": "-17.86",
+        "output_tp": "-2.00",
+        "output_lra": "2.60",
+        "output_thresh": "-28.14",
+        "normalization_type": "dynamic",
+        "target_offset": "1.86"
+      },
+      "intermediate": {
+        "input_i": "-18.36",
+        "input_tp": "-2.96",
+        "input_lra": "2.40",
+        "input_thresh": "-28.61",
+        "output_i": "-16.76",
+        "output_tp": "-2.00",
+        "output_lra": "2.20",
+        "output_thresh": "-27.01",
+        "normalization_type": "dynamic",
+        "target_offset": "0.76"
+      },
+      "initialGainDB": 2.3599999999999994,
+      "peakLimitedAnalysis": {
+        "input_i": "-17.29",
+        "input_tp": "-4.00",
+        "input_lra": "2.10",
+        "input_thresh": "-27.51",
+        "output_i": "-16.00",
+        "output_tp": "-2.00",
+        "output_lra": "2.00",
+        "output_thresh": "-26.23",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.00"
+      },
+      "finalGainDB": 1.2899999999999991,
+      "after": {
+        "input_i": "-16.00",
+        "input_tp": "-2.65",
+        "input_lra": "2.00",
+        "input_thresh": "-26.22",
+        "output_i": "-16.00",
+        "output_tp": "-2.00",
+        "output_lra": "2.00",
+        "output_thresh": "-26.24",
+        "normalization_type": "dynamic",
+        "target_offset": "0.00"
+      },
+      "videoPacketHash": "SHA256=d5d501eafe89c31c4064807c9df70761fd0dd225bdab0be1932a655f619d3e24",
+      "videoUnchanged": true,
+      "streams": [
+        {
+          "codec_type": "video",
+          "start_time": "0.000000",
+          "duration": "40.400000",
+          "nb_frames": "1212"
+        },
+        {
+          "codec_type": "audio",
+          "channels": 1,
+          "channel_layout": "mono",
+          "start_time": "0.000000",
+          "duration": "40.405000",
+          "nb_frames": "1895"
+        }
+      ]
+    }
+  ]
+}

@@ -8,7 +8,7 @@
 
 [English](README.en.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · QQ 群：**618246010**
 
-[下载正式版本](https://github.com/liuzhao1225/YouDub-webui/releases) · [安装与升级](docs/upgrade.md) · [版本发布](docs/releasing.md)
+[官网与试听](https://liuzhao1225.github.io/YouDub-webui/) · [下载最新版](https://github.com/liuzhao1225/YouDub-webui/releases/latest) · [安装与升级](docs/upgrade.md) · [版本发布](docs/releasing.md)
 
 ## 界面预览
 
