@@ -10,6 +10,7 @@ on:
       - main
       - codex/mvp-mainline
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -96,6 +97,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
+
+      - name: 检查发布版本约束
+        run: npm run test:release
 
       - name: 安装后端测试依赖
         id: pip_aliyun

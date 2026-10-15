@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   // 默认的左下角会遮住侧边栏底部的语言与主题切换。
   devIndicators: { position: "bottom-right" },
   experimental: {
+    // The signed desktop bundle is immutable; keep route responses in memory.
+    ...(process.env.YOUDUB_DESKTOP_BUILD === '1' ? { isrFlushToDisk: false } : {}),
     // 代理缓冲上限与后端默认的 4 GiB 视频上传限制一致。
     proxyClientMaxBodySize: "4gb",
   },

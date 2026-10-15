@@ -3,10 +3,12 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { resolve, join, basename } from 'node:path'
+import { appVersion, validateReleaseVersion } from './release-version.mjs'
 
 if (process.platform !== 'darwin' || process.arch !== 'arm64') throw new Error('This build targets macOS arm64 and must run on Apple Silicon.')
 const root = resolve(import.meta.dirname, '..')
 process.chdir(root)
+if (process.env.GITHUB_REF_TYPE === 'tag') validateReleaseVersion(appVersion, process.env.GITHUB_REF_NAME)
 const run = (command, args, options = {}) => {
   const result = spawnSync(command, args, { stdio: 'inherit', ...options })
   if (result.error) throw result.error
@@ -48,7 +50,11 @@ await cp(join(root, 'apps/web/public'), join(runtime, 'web/apps/web/public'), { 
 await access(join(runtime, 'web/apps/web/server.js'))
 await cp(join(cache, `node-v${version}-darwin-arm64/bin/node`), join(resources, 'node'))
 run(join(resources, 'node'), ['-e', 'require.resolve("next")'], { cwd: join(runtime, 'web/apps/web') })
-await cp(join(root, 'apps/desktop/Info.plist'), join(app, 'Contents/Info.plist'))
+const buildNumber = process.env.GITHUB_RUN_NUMBER || '1'
+if (!/^\d+$/.test(buildNumber)) throw new Error('Build number must contain only digits.')
+const plist = (await readFile(join(root, 'apps/desktop/Info.plist'), 'utf8'))
+  .replace('__APP_VERSION__', appVersion).replace('__BUILD_NUMBER__', buildNumber)
+await writeFile(join(app, 'Contents/Info.plist'), plist)
 run('xcrun', ['swiftc', '-O', '-target', 'arm64-apple-macos14.0', '-framework', 'AppKit', '-framework', 'WebKit', 'apps/desktop/main.swift', '-o', join(app, 'Contents/MacOS/YouDub')])
 const require = createRequire(join(root, 'apps/web/package.json'))
 const sharp = require('sharp')
@@ -60,7 +66,7 @@ for (const size of [16, 32, 128, 256, 512]) for (const scale of [1, 2]) {
 run('iconutil', ['-c', 'icns', iconset, '-o', join(resources, 'YouDub.icns')])
 const git = spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' })
 if (git.status !== 0) throw new Error('Cannot identify source revision.')
-await writeFile(join(resources, 'build.json'), JSON.stringify({ version: '0.1.0', baseCommit: git.stdout.trim(), node: version, nodeArchiveSha256: actual, platform: 'darwin-arm64', builtAt: new Date().toISOString() }, null, 2) + '\n')
+await writeFile(join(resources, 'build.json'), JSON.stringify({ version: appVersion, buildNumber, baseCommit: git.stdout.trim(), node: version, nodeArchiveSha256: actual, platform: 'darwin-arm64', builtAt: new Date().toISOString() }, null, 2) + '\n')
 async function check(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.name === '.env' || entry.name === 'env.txt' || /\.(p12|p8|key)$/.test(entry.name)) throw new Error(`Private file in bundle: ${join(directory, entry.name)}`)

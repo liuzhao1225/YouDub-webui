@@ -16,6 +16,14 @@ export interface ModelDownload {
   received: number; total: number; speed: number; error?: string
 }
 const message = (error: unknown) => error instanceof Error ? error.message : String(error)
+function cancelled(error: unknown, signal: AbortSignal): boolean {
+  if (!signal.aborted) return false
+  while (error instanceof Error) {
+    if (error === signal.reason) return true
+    error = error.cause
+  }
+  return false
+}
 const loopback = (host: string) => ['127.0.0.1', 'localhost', '[::1]', '::1', '::ffff:127.0.0.1'].includes(host)
 const localPath = (path: string) => resolve(path.startsWith('~/') ? join(homedir(), path.slice(2)) : path)
 declare module 'cordis' { interface Context { setup: SetupService } }
@@ -93,7 +101,10 @@ export default class SetupService extends Service {
     const model = modelManifest.find(model => model.id === id)!
     return process.env[model.env]?.trim() ? localPath(process.env[model.env]!.trim()) : join(this.config.root, 'models', model.directory)
   }
-  private fail(error: unknown) { this.phase = 'failed'; this.error = message(error); this.ctx.logger.error(error) }
+  private fail(error: unknown) {
+    if (cancelled(error, this.stopping.signal)) { this.ctx.logger.info('Environment preparation stopped with the application.'); return }
+    this.phase = 'failed'; this.error = message(error); this.ctx.logger.error(error)
+  }
   private prepare() {
     if (this.preparing) return
     this.phase = 'environment'; this.error = undefined
@@ -134,7 +145,7 @@ export default class SetupService extends Service {
       }
       model.status = 'ready'
     })().catch(error => {
-      if (controller.signal.aborted && !this.stopping.signal.aborted) model.status = 'paused'
+      if (cancelled(error, signal)) model.status = 'paused'
       else { model.status = 'failed'; model.error = message(error); this.ctx.logger.error(error) }
     }).finally(() => { model.speed = 0; this.jobs.delete(id); this.finishIfReady() })
     this.jobs.set(id, { controller, promise })

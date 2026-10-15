@@ -19,6 +19,22 @@ from backend.app.v1.segments import Transcript
 from backend.app.v1.steps import StageCancelled, StageContext
 
 
+@pytest.mark.parametrize("format,subtype", [("WAV", "PCM_16"), ("WAVEX", "FLOAT")])
+def test_audio_info_accepts_pcm_and_ffmpeg_extensible_wave(tmp_path, format, subtype):
+    path = tmp_path / "adjusted.wav"
+    sf.write(path, np.full((4800, 2), 0.1, dtype=np.float32), 48000, format=format, subtype=subtype)
+    info = tts._audio_info(path)
+    assert (info.format, info.frames, info.samplerate, info.channels) == (format, 4800, 48000, 2)
+
+
+def test_audio_info_rejects_non_wave_with_file_and_metadata_in_error(tmp_path):
+    path = tmp_path / "wrong.wav"
+    sf.write(path, np.full(4800, 0.1), 48000, format="FLAC")
+    with pytest.raises(ApiError, match="wrong.wav.*format=FLAC") as error:
+        tts._audio_info(path)
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+
+
 def prepare_references(context):
     transcript = Transcript.model_validate_json(context.input_files["transcript"].read_text())
     return tts.prepare_reference_audio(context, transcript, lambda *_: None)

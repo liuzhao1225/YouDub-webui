@@ -8,6 +8,8 @@
 
 [English](README.en.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [人才招聘](#人才招聘) · QQ 群：**618246010**
 
+[下载正式版本](https://github.com/liuzhao1225/YouDub-webui/releases) · [安装与升级](docs/upgrade.md) · [版本发布](docs/releasing.md)
+
 ## 界面预览
 
 工作台：导入视频，选择语言和输出内容。

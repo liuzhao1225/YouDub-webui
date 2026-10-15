@@ -34,6 +34,6 @@ YOUDUB_APPLE_CREDENTIALS_DIR=/absolute/private/signing-directory node scripts/si
 YOUDUB_APPLE_CREDENTIALS_DIR=/absolute/private/signing-directory node scripts/sign-mac.mjs /absolute/YouDub.app --package-signed
 ```
 
-脚本使用临时钥匙串保存签名私钥，并将缺失的 Apple 官方 Developer ID G2 中间证书补充到用户默认钥匙串。`--sign-only` 签名所有 Mach-O 文件和 `.app`；`--package-signed` 检查已有签名后生成带 Applications 快捷方式的 DMG，签名、公证、装订并验证。按 [Apple 的分发说明](https://developer.apple.com/documentation/xcode/packaging-mac-software-for-distribution)，只提交最外层 DMG 公证，其内应用也在公证范围内。任一步失败立即停止，并保留 Apple 回执。最终交付文件为 `dist/YouDub-0.1.0-macOS-arm64.dmg` 及相邻的 SHA-256 文件。
+脚本使用临时钥匙串保存签名私钥，并将缺失的 Apple 官方 Developer ID G2 中间证书补充到用户默认钥匙串。`--sign-only` 签名所有 Mach-O 文件和 `.app`；`--package-signed` 检查已有签名后生成带 Applications 快捷方式的 DMG，签名、公证、装订并验证。按 [Apple 的分发说明](https://developer.apple.com/documentation/xcode/packaging-mac-software-for-distribution)，只提交最外层 DMG 公证，其内应用也在公证范围内。任一步失败立即停止，并保留 Apple 回执。最终交付文件为 `dist/YouDub-<version>-macOS-arm64.dmg` 及相邻的 SHA-256 文件。
 
 桌面进程使用内置 Node 的模块加载器，避免 Cordis 在应用包内写入 `.cordis`。临时组合配置的 `node_modules` 链接指向应用内依赖，退出时随临时目录清理。

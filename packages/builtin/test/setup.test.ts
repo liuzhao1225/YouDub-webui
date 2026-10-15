@@ -52,6 +52,36 @@ async function waitFor(predicate: () => boolean) {
   const deadline = Date.now() + 5000
   while (!predicate()) { if (Date.now() > deadline) throw new Error('setup test timed out'); await new Promise(resolve => setTimeout(resolve, 10)) }
 }
+for (const unrelatedFailure of [false, true]) test(`closing first-run setup ${unrelatedFailure ? 'preserves unrelated errors' : 'cancels preparation without reporting a failure'}`, async t => {
+  const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
+  const originalError = new Error('dependency download failed')
+  let started = false
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(this: any) {
+    started = true
+    await new Promise<void>((_resolve, reject) => this.signal.addEventListener('abort', () => {
+      reject(unrelatedFailure ? originalError : new Error('download interrupted', { cause: this.signal.reason }))
+    }, { once: true }))
+  })
+  const ctx = new Context()
+  const errors: unknown[] = []
+  const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
+  const app = await ctx.plugin(async function shutdownTest(owner) {
+    owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
+    owner.reflect.provide('loader', {})
+    await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
+    await owner.plugin(Setup, { root: tmpdir(), repoRoot: resolve('.'), python: '/unused/python', entries: [] })
+  })
+  t.after(async () => {
+    await app.dispose(); await logging()
+    if (previous === undefined) delete process.env.YOUDUB_DESKTOP_DATA_DIR
+    else process.env.YOUDUB_DESKTOP_DATA_DIR = previous
+  })
+  ctx.emit('app/ready')
+  await waitFor(() => started)
+  await app.dispose()
+  assert.deepEqual(errors, unrelatedFailure ? [originalError] : [])
+})
+
 test('first-run API runs four models concurrently, pauses independently, guards mutations and starts runtime only after completion', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-first-run-'))
   const python = join(root, 'python')

@@ -75,10 +75,11 @@ def _audio_info(path: Path):
         raise ApiError(503, "MODEL_NOT_READY", "Install soundfile in the backend environment.", stage="tts") from exc
     try:
         info = sf.info(str(path))
-        if info.format != "WAV" or info.frames <= 0 or info.samplerate <= 0 or info.channels not in {1, 2}:
-            raise ValueError("Invalid WAV audio metadata")
+        if info.format not in {"WAV", "WAVEX"} or info.frames <= 0 or info.samplerate <= 0 or info.channels not in {1, 2}:
+            raise ValueError(f"Invalid WAV metadata: format={info.format}, frames={info.frames}, "
+                             f"sample_rate={info.samplerate}, channels={info.channels}")
     except (OSError, RuntimeError, ValueError) as exc:
-        raise ApiError(502, "INVALID_PROVIDER_RESULT", "A speech audio file is not valid WAV audio.",
+        raise ApiError(502, "INVALID_PROVIDER_RESULT", f"Speech audio {path.name} is not valid WAV audio: {exc}",
                        stage="tts", action="retry") from exc
     return info
 

@@ -3,8 +3,10 @@ import { readFile, readdir, open, mkdir, rm, symlink, stat } from 'node:fs/promi
 import { spawnSync } from 'node:child_process'
 import { randomBytes, createHash, X509Certificate } from 'node:crypto'
 import { resolve, join, basename } from 'node:path'
+import { appVersion, validateReleaseVersion } from './release-version.mjs'
 
 const root = resolve(import.meta.dirname, '..')
+if (process.env.GITHUB_REF_TYPE === 'tag') validateReleaseVersion(appVersion, process.env.GITHUB_REF_NAME)
 const credentials = process.env.YOUDUB_APPLE_CREDENTIALS_DIR
 if (!credentials) throw new Error('Set YOUDUB_APPLE_CREDENTIALS_DIR to the private signing directory.')
 const [envFile, agentFile] = await Promise.all([stat(join(credentials, '.env')), stat(join(credentials, 'env.txt'))])
@@ -20,6 +22,9 @@ const run = (command, args, quiet = false) => {
   return result.stdout
 }
 const app = resolve(process.argv[2] || join(root, 'dist/YouDub.app'))
+const build = JSON.parse(await readFile(join(app, 'Contents/Resources/build.json'), 'utf8'))
+if (build.version !== appVersion) throw new Error('Application bundle version differs from release version.')
+if (process.env.GITHUB_SHA && build.baseCommit !== process.env.GITHUB_SHA) throw new Error('Application bundle source differs from release commit.')
 const cache = join(root, '.cache/mac')
 await mkdir(cache, { recursive: true })
 const keychain = join(cache, `signing-${randomBytes(8).toString('hex')}.keychain-db`)
@@ -83,7 +88,7 @@ try {
     await mkdir(stage, { recursive: true })
     run('ditto', [app, join(stage, 'YouDub.app')])
     await symlink('/Applications', join(stage, 'Applications'))
-    const dmg = join(root, 'dist/YouDub-0.1.0-macOS-arm64.dmg')
+    const dmg = join(root, `dist/YouDub-${appVersion}-macOS-arm64.dmg`)
     run('hdiutil', ['create', '-volname', 'YouDub', '-srcfolder', stage, '-ov', '-format', 'UDZO', dmg])
     sign(dmg)
     console.log('Submitting installer to Apple notarization…')
