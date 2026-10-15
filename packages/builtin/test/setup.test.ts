@@ -1,12 +1,52 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
-import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import Http from '../src/http.js'
 import Setup from '../src/setup.js'
 import { DownloadClient } from '../src/setup-download.js'
+import { EnvironmentSetup } from '../src/setup-environment.js'
+import { runtimePaths } from '../../../apps/host/src/paths.js'
+
+test('desktop Python is created in the writable data directory without modifying the application bundle', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-desktop-environment-'))
+  const environment = join(root, 'runtime/venv')
+  const bin = join(root, 'python-bin')
+  const media = join(root, 'media-bin')
+  await mkdir(bin); await mkdir(media)
+  const executable = join(bin, 'python3.12')
+  await writeFile(executable, 'test executable', { mode: 0o700 })
+  await writeFile(join(media, 'ffmpeg'), 'test executable', { mode: 0o700 })
+  const previous = { ...process.env }
+  t.after(async () => {
+    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
+    Object.assign(process.env, previous)
+    await rm(root, { recursive: true })
+  })
+  process.env.PATH = bin
+  delete process.env.YOUDUB_PYTHON
+  process.env.YOUDUB_PYTHON_ENV_DIR = environment
+  process.env.FFMPEG_PATH = join(media, 'ffmpeg')
+  process.env.FFPROBE_PATH = join(media, 'ffmpeg')
+  const { python } = runtimePaths(root)
+  assert.equal(python, join(environment, 'bin/python'))
+  const commands: string[][] = []
+  const ctx = { process: { run: async ({ args }: { args: string[] }) => {
+    commands.push(args)
+    if (args[1] === 'venv') {
+      await mkdir(join(args[2]!, 'bin'), { recursive: true })
+      await writeFile(python, 'test executable')
+    }
+    return { stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(args[2] === 'dependencies' ? { missing: [] } : { ready: true }) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12\n' }
+  } } } as unknown as Context
+  const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, new DownloadClient(), new AbortController().signal)
+  await setup.prepare()
+  assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
+  assert.equal(process.env.PATH?.split(':')[0], media)
+  assert.ok(setup.steps.every(step => step.status === 'ready'))
+})
 
 async function waitFor(predicate: () => boolean) {
   const deadline = Date.now() + 5000

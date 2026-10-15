@@ -84,6 +84,35 @@ def test_repository_and_env_are_secured_before_dotenv_loader(monkeypatch, tmp_pa
 
 
 @POSIX_ONLY
+def test_desktop_config_uses_private_data_without_mutating_installed_code(monkeypatch, tmp_path):
+    applications = tmp_path / "Applications"
+    applications.mkdir()
+    applications.chmod(0o775)
+    repo = applications / "YouDub.app" / "Contents" / "Resources" / "runtime"
+    repo.mkdir(parents=True)
+    repo.chmod(0o555)
+    data = _make_safe_directory(tmp_path / "user-data")
+    env_file = data / ".env"
+    env_file.write_text("SYNTHETIC=value\n")
+    os.link(env_file, data / "env.txt")
+    env_file.chmod(0o664)
+    called = []
+    monkeypatch.setattr(config, "load_dotenv", lambda path: called.append(Path(path)))
+
+    config._load_runtime_environment(repo, data_root=data)
+
+    assert called == [env_file]
+    assert _mode(data) == 0o700
+    assert _mode(env_file) == 0o600
+    assert _mode(repo) == 0o555
+    assert _mode(applications) == 0o775
+
+    applications.chmod(0o777)
+    with pytest.raises(runtime_security.RuntimeSecurityError, match="writable"):
+        config._load_runtime_environment(repo, data_root=applications / "unsafe-data")
+
+
+@POSIX_ONLY
 def test_only_the_known_env_alias_pair_is_allowed(monkeypatch, tmp_path):
     repo = _make_safe_directory(tmp_path / "repo-alias")
     env_file = repo / ".env"

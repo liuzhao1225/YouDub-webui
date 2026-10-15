@@ -46,6 +46,7 @@ export class EnvironmentSetup {
     return { path: name, url: asset.browser_download_url as string, size: asset.size as number, sha256: asset.digest.slice(7) as string }
   }
   private async pythonEnvironment() {
+    const environment = dirname(dirname(this.config.python))
     if (!await fileSize(this.config.python)) {
       if (process.env.YOUDUB_PYTHON?.trim()) throw new Error(`YOUDUB_PYTHON 不存在：${this.config.python}`)
       const systemPython = await executable(process.platform === 'win32' ? 'python' : 'python3.12')
@@ -56,7 +57,7 @@ export class EnvironmentSetup {
         if (!compatible) this.ctx.logger.info(`检测到 Python ${version.stdout.trim()}，准备应用专用 Python 3.12。`)
       }
       if (systemPython && compatible) {
-        await this.run(systemPython, ['-m', 'venv', join(this.config.repoRoot, '.venv')])
+        await this.run(systemPython, ['-m', 'venv', environment])
       } else {
         const target = platformTarget()
         const folder = join(this.config.root, 'runtime', 'uv')
@@ -69,7 +70,7 @@ export class EnvironmentSetup {
         const uv = join(folder, windows ? 'uv.exe' : `uv-${target}/uv`)
         const env = { UV_PYTHON_INSTALL_DIR: join(this.config.root, 'runtime', 'python'), UV_PYTHON_BIN_DIR: join(this.config.root, 'runtime', 'bin'), UV_NO_MODIFY_PATH: '1', UV_INDEX_URL: 'https://mirrors.aliyun.com/pypi/simple/' }
         await this.run(uv, ['python', 'install', '3.12'], env)
-        await this.run(uv, ['venv', '--python', '3.12', '--seed', join(this.config.repoRoot, '.venv')], env)
+        await this.run(uv, ['venv', '--python', '3.12', '--seed', environment], env)
       }
     }
     const result = await this.python(['-c', 'import sys; assert sys.version_info[:2] == (3, 12), "Python 3.12 is required"; print(sys.version.split()[0])'])
@@ -131,6 +132,8 @@ export class EnvironmentSetup {
       paths[envKey] = managed
     }
     Object.assign(process.env, paths)
+    // Whisper invokes `ffmpeg` by name, including when Finder supplied a minimal PATH.
+    process.env.PATH = [...new Set([...Object.values(paths).map(path => dirname(path)), ...(process.env.PATH || '').split(delimiter)])].join(delimiter)
   }
   private async resources() {
     const data = join(this.config.root, 'nltk_data')

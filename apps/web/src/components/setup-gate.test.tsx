@@ -37,10 +37,22 @@ describe('first-run setup', () => {
     view.unmount(); vi.unstubAllGlobals()
   })
   it('shows original failures and includes Qwen without an optional checkbox', () => {
-    render(<SetupScreen state={{ ...state, models: [{ ...state.models[0], status: 'failed', error: 'connect ECONNREFUSED proxy:20171' }] }} onAction={vi.fn()} />)
+    const view = render(<SetupScreen state={{ ...state, models: [{ ...state.models[0], status: 'failed', error: 'connect ECONNREFUSED proxy:20171' }] }} onAction={vi.fn()} />)
     expect(screen.getByRole('alert')).toHaveTextContent('ECONNREFUSED')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '重试 Qwen3 Aligner' })).toBeEnabled()
     expect(screen.getByRole('progressbar', { name: 'Qwen3 Aligner 下载进度' })).toHaveAttribute('aria-valuenow', '50')
+    view.unmount()
+  })
+  it('copies the complete setup error, including multiline diagnostics', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const error = 'Python exited (1).\nTraceback:\nWhisper requires ffmpeg in PATH.'
+    const view = render(<SetupScreen state={{ ...state, phase: 'failed', error }} onAction={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: '复制错误' }))
+    await screen.findByRole('button', { name: '已复制' })
+    expect(writeText).toHaveBeenCalledWith(error)
+    expect(screen.getByRole('alert')).toHaveTextContent('Whisper requires ffmpeg in PATH.')
+    view.unmount(); vi.unstubAllGlobals()
   })
 })

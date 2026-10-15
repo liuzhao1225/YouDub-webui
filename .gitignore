@@ -186,6 +186,7 @@ env.txt
 # Next.js
 node_modules/
 apps/web/.next/
+apps/web/.next-desktop/
 apps/web/out/
 apps/web/node_modules/
 apps/web/.env*

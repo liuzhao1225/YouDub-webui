@@ -6,6 +6,7 @@
   "engines": { "node": ">=22.13.0" },
   "license": "Apache-2.0",
   "scripts": {
+    "build:mac": "node scripts/build-mac.mjs",
     "dev:api": "node --import tsx apps/host/src/main.ts",
     "start": "node --import tsx apps/host/src/main.ts",
     "plugins": "node --import tsx apps/host/src/plugins.ts",

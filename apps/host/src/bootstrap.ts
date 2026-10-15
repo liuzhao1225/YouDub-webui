@@ -1,8 +1,9 @@
 import { Context, Logger, type Fiber } from 'cordis'
 import Loader, { type EntryOptions } from '@cordisjs/plugin-loader'
-import { writeFile, mkdtemp, rm } from 'node:fs/promises'
+import { writeFile, mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import '@youdub/sdk'
 
 export async function startHost(entries: EntryOptions[], baseUrl: string, options: { ready?: boolean } = {}) {
@@ -18,10 +19,12 @@ export async function startHost(entries: EntryOptions[], baseUrl: string, option
   await writeFile(configuration, JSON.stringify(entries, null, 2), { mode: 0o600 })
   let application: Fiber | undefined
   try {
+    // Include resolves package names relative to its temporary configuration file.
+    await symlink(fileURLToPath(new URL('node_modules/', baseUrl)), join(directory, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
     application = await ctx.plugin(async function application(context: Context) {
       await context.plugin(Loader, { baseUrl })
       await context.inject(['loader'], async scope => {
-        await scope.loader.create({ name: '@cordisjs/plugin-include', config: { path: configuration } })
+        await scope.loader.create({ name: import.meta.resolve('@cordisjs/plugin-include'), config: { path: configuration } })
         await scope.loader.await()
       })
     })

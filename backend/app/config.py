@@ -44,14 +44,19 @@ def configure_windows_ffmpeg_dll_directory() -> None:
         ) from exc
 
 
-def _load_runtime_environment(repo_root: Path) -> None:
-    runtime_security.prepare_repository_root(repo_root)
-    runtime_security.secure_secret_aliases(repo_root / ".env", repo_root / "env.txt")
-    load_dotenv(repo_root / ".env")
+def _load_runtime_environment(repo_root: Path, *, data_root: Path | None = None) -> None:
+    if data_root is None:
+        environment_root = runtime_security.prepare_repository_root(repo_root)
+    else:
+        # Installed application code is immutable; secrets belong to user data.
+        environment_root = runtime_security.ensure_private_directory(data_root)
+    runtime_security.secure_secret_aliases(environment_root / ".env", environment_root / "env.txt")
+    load_dotenv(environment_root / ".env")
     configure_windows_ffmpeg_dll_directory()
 
 
-_load_runtime_environment(REPO_ROOT)
+_desktop_data = os.getenv("YOUDUB_DESKTOP_DATA_DIR", "").strip()
+_load_runtime_environment(REPO_ROOT, data_root=Path(_desktop_data).expanduser() if _desktop_data else None)
 
 
 def ffmpeg_binary() -> str:

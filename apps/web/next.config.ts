@@ -8,6 +8,7 @@ function apiProxyTarget() {
 }
 
 const nextConfig: NextConfig = {
+  ...(process.env.YOUDUB_DESKTOP_BUILD === '1' ? { output: 'standalone', distDir: '.next-desktop' } : {}),
   allowedDevOrigins: ["172.27.2.90", "100.94.222.54"],
   // 默认的左下角会遮住侧边栏底部的语言与主题切换。
   devIndicators: { position: "bottom-right" },

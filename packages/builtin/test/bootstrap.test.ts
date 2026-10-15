@@ -6,6 +6,14 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { startHost } from '../../../apps/host/src/bootstrap.js'
 
+test('temporary composition resolves package entries from the application dependencies', async () => {
+  const host = await startHost([{ id: 'process', name: '@youdub/builtin/process' }], pathToFileURL(process.cwd() + '/').href)
+  try {
+    const result = await host.ctx.process.run({ command: process.execPath, args: ['-e', 'process.stdout.write("ready")'] })
+    assert.equal(result.stdout, 'ready')
+  } finally { await host.stop() }
+})
+
 test('an empty Cordis composition creates no product services or application data', async () => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-empty-'))
   const host = await startHost([], pathToFileURL(root + '/').href)
