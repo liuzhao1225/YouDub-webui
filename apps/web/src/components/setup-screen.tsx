@@ -104,6 +104,8 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
         </div>
         {copyFailure && <p role="status" className="mt-2">{copyFailure}</p>}
       </div>}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML is available before the app runtime is ready. */}
+      <div className="mt-5"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">查看内置示例</a></div>
       <div className="mt-5 flex items-center justify-between gap-3">
         <span className="text-xs tabular-nums text-muted-foreground">{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</span>
         {state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />重新准备</Button> : state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? '暂停全部' : failed ? '重试下载' : '继续下载'}</Button> : state.phase === 'starting' && <Loader2 aria-label="启动中" className="size-5 animate-spin text-brand-pink" />}

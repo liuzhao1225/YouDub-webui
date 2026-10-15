@@ -1,0 +1,498 @@
+{
+  "date": "2026-10-16",
+  "source": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "title": "Me at the zoo",
+  "taskId": "76d61e66-0de9-4709-a112-2d83fb6de900",
+  "taskStatus": "succeeded",
+  "config": {
+    "source_language": "en",
+    "target_language": "zh",
+    "output_mode": "both",
+    "keep_background": true,
+    "asr": {
+      "adapter": "whisper",
+      "model": "small.en",
+      "device": "cpu",
+      "initial_prompt": "At the zoo. Elephants have really long trunks."
+    },
+    "translation": {
+      "adapter": "openai",
+      "model": "doubao-seed-evolving",
+      "device": "remote"
+    },
+    "tts": {
+      "adapter": "voxcpm",
+      "model": "VoxCPM2",
+      "device": "cpu",
+      "voice": {
+        "mode": "source_clone"
+      }
+    },
+    "separation": {
+      "adapter": "demucs",
+      "model": "htdemucs",
+      "device": "cpu"
+    },
+    "subtitle_alignment": null
+  },
+  "maxCompletionTokens": 65535,
+  "steps": [
+    {
+      "id": "prepare",
+      "status": "completed"
+    },
+    {
+      "id": "separate",
+      "status": "completed"
+    },
+    {
+      "id": "recognize",
+      "status": "completed"
+    },
+    {
+      "id": "translate",
+      "status": "completed"
+    },
+    {
+      "id": "reference",
+      "status": "completed"
+    },
+    {
+      "id": "synthesize",
+      "status": "completed"
+    },
+    {
+      "id": "mix",
+      "status": "completed"
+    },
+    {
+      "id": "export",
+      "status": "completed"
+    }
+  ],
+  "asr": {
+    "detected_language": "en",
+    "segments": [
+      {
+        "id": "segment-000001",
+        "start_ms": 1000,
+        "end_ms": 3260,
+        "text": " Alright, so here we are, one of the elephants.",
+        "words": [
+          {
+            "text": " Alright,",
+            "start_ms": 1000,
+            "end_ms": 1480
+          },
+          {
+            "text": " so",
+            "start_ms": 1640,
+            "end_ms": 1640
+          },
+          {
+            "text": " here",
+            "start_ms": 1640,
+            "end_ms": 1780
+          },
+          {
+            "text": " we",
+            "start_ms": 1780,
+            "end_ms": 1900
+          },
+          {
+            "text": " are,",
+            "start_ms": 1900,
+            "end_ms": 2120
+          },
+          {
+            "text": " one",
+            "start_ms": 2400,
+            "end_ms": 2480
+          },
+          {
+            "text": " of",
+            "start_ms": 2480,
+            "end_ms": 2600
+          },
+          {
+            "text": " the",
+            "start_ms": 2600,
+            "end_ms": 2760
+          },
+          {
+            "text": " elephants.",
+            "start_ms": 2760,
+            "end_ms": 3260
+          }
+        ]
+      },
+      {
+        "id": "segment-000002",
+        "start_ms": 5100,
+        "end_ms": 12420,
+        "text": " Cool thing about these guys is that they have really, really, really long trunks.",
+        "words": [
+          {
+            "text": " Cool",
+            "start_ms": 5100,
+            "end_ms": 5380
+          },
+          {
+            "text": " thing",
+            "start_ms": 5380,
+            "end_ms": 5640
+          },
+          {
+            "text": " about",
+            "start_ms": 5640,
+            "end_ms": 6060
+          },
+          {
+            "text": " these",
+            "start_ms": 6060,
+            "end_ms": 6260
+          },
+          {
+            "text": " guys",
+            "start_ms": 6260,
+            "end_ms": 6520
+          },
+          {
+            "text": " is",
+            "start_ms": 6520,
+            "end_ms": 7080
+          },
+          {
+            "text": " that",
+            "start_ms": 7080,
+            "end_ms": 7280
+          },
+          {
+            "text": " they",
+            "start_ms": 7280,
+            "end_ms": 7380
+          },
+          {
+            "text": " have",
+            "start_ms": 7380,
+            "end_ms": 7640
+          },
+          {
+            "text": " really,",
+            "start_ms": 7640,
+            "end_ms": 8300
+          },
+          {
+            "text": " really,",
+            "start_ms": 8460,
+            "end_ms": 9520
+          },
+          {
+            "text": " really",
+            "start_ms": 9520,
+            "end_ms": 9920
+          },
+          {
+            "text": " long",
+            "start_ms": 9920,
+            "end_ms": 10760
+          },
+          {
+            "text": " trunks.",
+            "start_ms": 10760,
+            "end_ms": 12420
+          }
+        ]
+      },
+      {
+        "id": "segment-000003",
+        "start_ms": 12960,
+        "end_ms": 13720,
+        "text": " And that's cool.",
+        "words": [
+          {
+            "text": " And",
+            "start_ms": 12960,
+            "end_ms": 13000
+          },
+          {
+            "text": " that's",
+            "start_ms": 13000,
+            "end_ms": 13540
+          },
+          {
+            "text": " cool.",
+            "start_ms": 13540,
+            "end_ms": 13720
+          }
+        ]
+      },
+      {
+        "id": "segment-000004",
+        "start_ms": 16640,
+        "end_ms": 18440,
+        "text": " And that's pretty much all there is to say.",
+        "words": [
+          {
+            "text": " And",
+            "start_ms": 16640,
+            "end_ms": 17120
+          },
+          {
+            "text": " that's",
+            "start_ms": 17120,
+            "end_ms": 17360
+          },
+          {
+            "text": " pretty",
+            "start_ms": 17360,
+            "end_ms": 17480
+          },
+          {
+            "text": " much",
+            "start_ms": 17480,
+            "end_ms": 17720
+          },
+          {
+            "text": " all",
+            "start_ms": 17720,
+            "end_ms": 17900
+          },
+          {
+            "text": " there",
+            "start_ms": 17900,
+            "end_ms": 18060
+          },
+          {
+            "text": " is",
+            "start_ms": 18060,
+            "end_ms": 18160
+          },
+          {
+            "text": " to",
+            "start_ms": 18160,
+            "end_ms": 18260
+          },
+          {
+            "text": " say.",
+            "start_ms": 18260,
+            "end_ms": 18440
+          }
+        ]
+      }
+    ]
+  },
+  "translation": {
+    "source_language": "en",
+    "target_language": "zh",
+    "segments": [
+      {
+        "segment_id": "segment-000001",
+        "text": "好了，我们现在到了，这是其中一头大象。"
+      },
+      {
+        "segment_id": "segment-000002",
+        "text": "这些家伙很酷的一点是，它们有非常非常非常长的鼻子。"
+      },
+      {
+        "segment_id": "segment-000003",
+        "text": "而且这很酷。"
+      },
+      {
+        "segment_id": "segment-000004",
+        "text": "基本上要说的就这些了。"
+      }
+    ]
+  },
+  "audio": {
+    "target": {
+      "integratedLUFS": -16,
+      "truePeakMaxDBTP": -1.5,
+      "initialLimiterDBTP": -3,
+      "secondaryLimiterDBTP": -4,
+      "preEncodePeakHeadroomDBTP": -2,
+      "loudnessRangeLU": 11
+    },
+    "method": "FFmpeg loudnorm to float PCM, remeasure integrated loudness, apply gain and 192 kHz peak limiting with latency compensation, remeasure after limiting and apply final constant gain to -16 LUFS, encode 48 kHz AAC and verify final files; English L/R averaged to mono; Chinese channel layout preserved; video packets copied",
+    "files": [
+      {
+        "name": "zoo-en.mp4",
+        "originalMono": true,
+        "inputSha256": "155ffc65ff28d308cdc6aedad7e1a3a26820eb59f1a5bc5e96699cf78e828600",
+        "outputSha256": "ad1b9836ea34d72812d5dc9d134d46807635d699ed51bada00916c8d1dd76e10",
+        "before": {
+          "input_i": "-26.64",
+          "input_tp": "-6.52",
+          "input_lra": "3.70",
+          "input_thresh": "-36.64",
+          "output_i": "-17.27",
+          "output_tp": "-2.00",
+          "output_lra": "1.90",
+          "output_thresh": "-27.29",
+          "normalization_type": "dynamic",
+          "target_offset": "1.27"
+        },
+        "intermediate": {
+          "input_i": "-17.51",
+          "input_tp": "-3.00",
+          "input_lra": "2.10",
+          "input_thresh": "-27.51",
+          "output_i": "-16.16",
+          "output_tp": "-2.00",
+          "output_lra": "1.60",
+          "output_thresh": "-26.16",
+          "normalization_type": "dynamic",
+          "target_offset": "0.16"
+        },
+        "initialGainDB": 1.5100000000000016,
+        "peakLimitedAnalysis": {
+          "input_i": "-16.75",
+          "input_tp": "-4.00",
+          "input_lra": "1.70",
+          "input_thresh": "-26.75",
+          "output_i": "-15.85",
+          "output_tp": "-2.75",
+          "output_lra": "1.40",
+          "output_thresh": "-25.85",
+          "normalization_type": "dynamic",
+          "target_offset": "-0.15"
+        },
+        "finalGainDB": 0.75,
+        "after": {
+          "input_i": "-16.00",
+          "input_tp": "-3.17",
+          "input_lra": "1.80",
+          "input_thresh": "-26.00",
+          "output_i": "-15.85",
+          "output_tp": "-2.75",
+          "output_lra": "1.40",
+          "output_thresh": "-25.85",
+          "normalization_type": "dynamic",
+          "target_offset": "-0.15"
+        },
+        "videoPacketHash": "SHA256=33fc4ff6b279e1611c645fd7dd6029e7500f2aa65d95d22fe1cd9a5f48110d2b",
+        "videoUnchanged": true
+      },
+      {
+        "name": "zoo-zh.mp4",
+        "originalMono": false,
+        "inputSha256": "de15385632389685c8159261fa7969dfc527b68782a1ecb1d8999ad9c26d421e",
+        "outputSha256": "838d4cf8fa8163ba3dbaf89619ee371d2ac3fca0548709ac6f465c047a35f88b",
+        "before": {
+          "input_i": "-30.10",
+          "input_tp": "-11.41",
+          "input_lra": "6.10",
+          "input_thresh": "-42.15",
+          "output_i": "-17.00",
+          "output_tp": "-2.00",
+          "output_lra": "7.00",
+          "output_thresh": "-28.76",
+          "normalization_type": "dynamic",
+          "target_offset": "1.00"
+        },
+        "intermediate": {
+          "input_i": "-17.61",
+          "input_tp": "-3.00",
+          "input_lra": "7.10",
+          "input_thresh": "-29.13",
+          "output_i": "-16.59",
+          "output_tp": "-2.00",
+          "output_lra": "6.50",
+          "output_thresh": "-27.88",
+          "normalization_type": "dynamic",
+          "target_offset": "0.59"
+        },
+        "initialGainDB": 1.6099999999999994,
+        "peakLimitedAnalysis": {
+          "input_i": "-17.19",
+          "input_tp": "-4.00",
+          "input_lra": "6.80",
+          "input_thresh": "-28.54",
+          "output_i": "-16.00",
+          "output_tp": "-2.00",
+          "output_lra": "6.40",
+          "output_thresh": "-27.29",
+          "normalization_type": "dynamic",
+          "target_offset": "0.00"
+        },
+        "finalGainDB": 1.1900000000000013,
+        "after": {
+          "input_i": "-16.02",
+          "input_tp": "-2.42",
+          "input_lra": "6.90",
+          "input_thresh": "-27.37",
+          "output_i": "-16.05",
+          "output_tp": "-2.00",
+          "output_lra": "6.40",
+          "output_thresh": "-27.33",
+          "normalization_type": "dynamic",
+          "target_offset": "0.05"
+        },
+        "videoPacketHash": "SHA256=b6a7a60d95f10ed8b1fee961a9f6346b137b67015010c0cb7c5c94eb2e09fc5e",
+        "videoUnchanged": true
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "site/assets/zoo-en.mp4",
+      "bytes": 1022876,
+      "sha256": "ad1b9836ea34d72812d5dc9d134d46807635d699ed51bada00916c8d1dd76e10"
+    },
+    {
+      "path": "site/assets/zoo-zh.mp4",
+      "bytes": 899681,
+      "sha256": "838d4cf8fa8163ba3dbaf89619ee371d2ac3fca0548709ac6f465c047a35f88b"
+    },
+    {
+      "path": "site/assets/zoo-poster.jpg",
+      "bytes": 20890,
+      "sha256": "05490f73a973a978649198e5c192a896c14a158b4bd4e13be4e3c54d744c63ea"
+    }
+  ],
+  "fullDecodePassed": true,
+  "priorAttempts": [
+    {
+      "taskId": "9529bf7c-d29a-436d-badd-5ff1703c6175",
+      "outcome": "cancelled after inaccurate ASR; preserved in local task history"
+    },
+    {
+      "taskId": "4b3d3d07-30dd-4c6c-b6e5-1f8225fb7048",
+      "outcome": "cancelled after inaccurate ASR; preserved in local task history"
+    },
+    {
+      "taskId": "d023267d-681f-4a1f-9a57-7f31d93bc0b4",
+      "outcome": "cancelled after inaccurate ASR; preserved in local task history"
+    }
+  ],
+  "bundledAssetCopiesMatch": [
+    "zoo-en.mp4",
+    "jensen-zh.mp4",
+    "creator-zh.mp4",
+    "creator-en.mp4",
+    "zoo-zh.mp4",
+    "jensen-en.mp4"
+  ],
+  "localVerification": {
+    "desktopViewport": [
+      1440,
+      900
+    ],
+    "mobileViewport": [
+      390,
+      844
+    ],
+    "pairedPlaybackBeforeLanguageSwitchSeconds": [
+      12.741128,
+      12.717167
+    ],
+    "pairedPlaybackAfterLanguageSwitchSeconds": [
+      13.035341,
+      13.022922
+    ],
+    "onlySelectedLanguageAudible": true,
+    "desktopCaptionExcludedFromAlignment": true,
+    "frontendTestsPassed": 10,
+    "productionBuildPassed": true
+  }
+}

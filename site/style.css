@@ -45,7 +45,7 @@ h1 .gradient-text { display: inline-block; margin-left: .2em; }
 .text-link { font-size: 13px; }
 .platform { color: var(--muted); font-size: 12px; margin: .9rem 0 0; }
 .platform a { margin-left: .75rem; }.platform a:hover { color: var(--foreground); }
-.demo-picker { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1.5rem; width: min(100%,540px); margin-inline: auto; }
+.demo-picker { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .75rem; margin-bottom: 1.5rem; width: min(100%,840px); margin-inline: auto; }
 .sample { display: flex; align-items: center; text-align: left; gap: .65rem; background: transparent; border: 1px solid transparent; border-radius: var(--radius); padding: .65rem; width: 100%; min-width: 0; }
 .sample:hover { background: rgb(255 255 255 / .025); }
 .sample.is-selected { border-color: var(--border); background: var(--card); box-shadow: 0 1px 0 rgb(255 255 255 / .03) inset; }
@@ -54,7 +54,7 @@ h1 .gradient-text { display: inline-block; margin-left: .2em; }
 .sample strong { font-weight: 500; font-size: 13px; }
 .sample small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
 .demo-shell { min-width: 0; display: grid; grid-template-columns: 1fr 1.1fr; align-items: center; gap: clamp(3rem,6vw,6rem); padding-block: var(--section-space); border-top: 1px solid var(--border); }
-.demo-media { min-width: 0; }
+.demo-media { min-width: 0; position: relative; }
 .demo-topline { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 1.5rem; gap: .75rem; }
 .demo-topline h2 { font-size: 26px; letter-spacing: -.02em; font-weight: 550; }
 .switch-note { font-size: 13px; color: var(--muted); }
@@ -120,6 +120,12 @@ footer { display: flex; align-items: center; gap: 1.5rem; border-top: 1px solid 
 footer .brand img { width: 100px; }footer .brand { margin-right: auto; }
 .skip-link { position: fixed; top: -100px; left: 1rem; z-index: 10; background: var(--card); padding: .7rem; }.skip-link:focus { top: 1rem; }
 .noscript { padding: 1rem; color: var(--pink); text-align: center; }
+.examples { padding-block: 2rem 4rem; max-width: 840px; }
+.examples .demo-topline { align-items: center; }
+.examples h1 { font-size: 28px; margin: 0; }
+@media(min-width: 801px) {
+  .demo-media > .demo-caption { position: absolute; top: 100%; inset-inline: 0; }
+}
 @media(max-width: 800px) {
   .wrap { width: min(600px, calc(100% - 2.5rem)); }
   .site-header { min-height: 80px; gap: 1rem; }.brand img { width: 118px; }
@@ -135,6 +141,7 @@ footer .brand img { width: 100px; }footer .brand { margin-right: auto; }
 @media(max-width: 450px) {
   .wrap { width: calc(100% - 2rem); }nav { gap: .8rem; font-size: 12px; }nav .button { font-size: 11px; padding-inline: .7rem; }.brand img { width: 102px; }
   .sample img { width: 24px; height: 32px; }.sample strong { font-size: 12px; }.sample { gap: .5rem; padding: .5rem; }
+  .sample { flex-direction: column; align-items: flex-start; }.sample img { width: 32px; height: 32px; }.demo-picker { gap: .5rem; }
   .controls { gap: .35rem; padding-inline: .5rem; }.volume { display: none; }
   .download { align-items: flex-start; flex-direction: column; gap: 1.25rem; }footer { gap: 1rem; }
   .section-heading { align-items: baseline; }.section-heading .text-link { font-size: 11px; }

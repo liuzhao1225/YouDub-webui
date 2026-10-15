@@ -148,6 +148,8 @@ function Studio() {
             <Composer key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />
           </>}
         </div>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML requires a full document navigation. */}
+        <div className="mt-5 flex justify-center"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx('View built-in examples', '查看内置示例', '内蔵サンプルを見る')}</a></div>
         {active.length > 0 && <div className="mt-6 flex justify-center"><Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg"><span aria-hidden="true" className="size-2 rounded-full bg-status-running" />{tx(`${active.length} tasks in progress`, `${active.length} 个任务正在排队或处理`, `${active.length} 件のタスクが待機中または処理中`)}<ArrowRight className="size-3.5" /></Link></div>}
       </div>
     </section>

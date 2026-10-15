@@ -5,8 +5,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "plugins:build": "node scripts/build-plugins.mjs",
-    "predev": "npm run plugins:build",
-    "prebuild": "npm run plugins:build",
+    "predev": "node ../../scripts/sync-examples.mjs && npm run plugins:build",
+    "prebuild": "node ../../scripts/sync-examples.mjs && npm run plugins:build",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

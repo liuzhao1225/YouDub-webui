@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { demos } from '../site/demos.js'
 
 const app = resolve(process.argv[2] || 'dist/YouDub.app')
 function verify() {
@@ -31,7 +32,8 @@ try {
     })
     exited.then(result => { clearTimeout(timer); reject(new Error(`Desktop exited during startup: ${JSON.stringify(result)}\n${diagnostics}`)) }, reject)
   })
-  for (const path of ['/', '/favicon.ico', '/icon.svg', '/tasks', '/settings', '/api/setup']) {
+  for (const path of ['/', '/favicon.ico', '/icon.svg', '/tasks', '/settings', '/api/setup', '/examples/index.html', '/examples/player.js', '/examples/demos.js',
+    ...Object.keys(demos).flatMap(id => [`/examples/assets/${id}-en.mp4`, `/examples/assets/${id}-zh.mp4`, `/examples/assets/${id}-poster.jpg`])]) {
     const response = await fetch(base + path, { signal: AbortSignal.timeout(10000) })
     if (!response.ok) throw new Error(`Desktop ${path}: HTTP ${response.status}`)
     await response.arrayBuffer()

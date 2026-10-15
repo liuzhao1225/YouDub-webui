@@ -7,8 +7,8 @@
   <meta name="description" content="YouDub 开源视频本地化工作台。识别、翻译、逐句克隆原声，生成字幕和配音视频。试听中英文示例，下载最新 macOS 版本。">
   <title>YouDub — 视频翻译与原声配音</title>
   <link rel="icon" href="./assets/youdub-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css">
-  <script src="./player.js" type="module"></script>
+  <link rel="stylesheet" href="./style.css?v=0.0.2">
+  <script src="./player.js?v=0.0.2" type="module"></script>
 </head>
 <body>
   <a class="skip-link" href="#demo">跳到演示</a>
@@ -40,16 +40,7 @@
     <section class="demo-shell wrap" id="demo" aria-labelledby="demo-title">
       <div class="demo-overview">
         <div class="demo-topline"><h2 id="demo-title">原声与配音，听听区别</h2><span class="switch-note">切换语言，接着播放</span></div>
-        <div class="demo-picker" role="group" aria-label="选择演示视频">
-          <button class="sample is-selected" type="button" aria-pressed="true" data-sample="jensen">
-            <img src="./assets/jensen-poster.jpg" alt="" width="64" height="64">
-            <span><strong>黄仁勋采访</strong><small>59 秒</small></span>
-          </button>
-          <button class="sample" type="button" aria-pressed="false" data-sample="creator">
-            <img src="./assets/creator-poster.jpg" alt="" width="64" height="64">
-            <span><strong>1.29 亿次播放，收入多少？</strong><small>40 秒</small></span>
-          </button>
-        </div>
+        <div class="demo-picker" role="group" aria-label="选择演示视频"></div>
         <div class="benefits" aria-label="YouDub 的视频本地化能力">
       <article><span class="feature-symbol pink" aria-hidden="true">Aa</span><h2>让内容跨越语言</h2><p>识别原文、翻译并生成目标语言字幕。</p></article>
       <article><span class="feature-symbol blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10v4m4-8v12m4-15v18m4-15v12m4-8v4"/></svg></span><h2>逐句克隆原声</h2><p>每句译文，使用对应原声片段作为配音参考。</p></article>

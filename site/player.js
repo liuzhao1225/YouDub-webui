@@ -1,7 +1,4 @@
-const demos = {
-  jensen: { title: '黄仁勋采访', format: 'portrait', source: 'https://www.youtube.com/shorts/TbotsRXyRME' },
-  creator: { title: '1.29 亿次播放，收入多少？', format: 'landscape', source: 'https://www.youtube.com/watch?v=ii9Kh4XkA5g' },
-}
+import { demos } from './demos.js?v=0.0.2'
 const icons = {
   play: '<path class="play-icon" d="m7 4 14 8-14 8z"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -25,7 +22,6 @@ class PairedPlayer {
     this.volume = 1
     this.root = document.createElement('section')
     this.root.className = 'player'
-    this.root.dataset.format = demo.format
     this.root.setAttribute('aria-label', `${demo.title}中英文对照播放器`)
     this.root.hidden = true
     this.root.innerHTML = `
@@ -252,6 +248,11 @@ async function seekVideo(video, target) {
   await seeked
 }
 
+document.querySelector('.demo-picker').innerHTML = Object.entries(demos).map(([id, demo]) => `
+  <button class="sample" type="button" aria-pressed="false" data-sample="${id}">
+    <img src="./assets/${id}-poster.jpg" alt="" width="64" height="64">
+    <span><strong>${demo.title}</strong><small>${demo.seconds} 秒</small></span>
+  </button>`).join('')
 const players = Object.fromEntries(Object.entries(demos).map(([id, demo]) => [id, new PairedPlayer(id, demo)]))
 function selectDemo(id) {
   for (const [key, player] of Object.entries(players)) {
@@ -267,4 +268,5 @@ function selectDemo(id) {
   players[id].load()
 }
 for (const button of document.querySelectorAll('[data-sample]')) button.addEventListener('click', () => selectDemo(button.dataset.sample))
-selectDemo('jensen')
+const requestedDemo = new URLSearchParams(location.search).get('demo')
+selectDemo(Object.hasOwn(demos, requestedDemo) ? requestedDemo : 'jensen')

@@ -26,6 +26,7 @@ it('submits declared input slots and preserves an uncertain creation ID until ex
   apply(context)
   render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
   const input = await screen.findByLabelText('Document *')
+  expect(screen.getByRole('link', { name: '查看内置示例' })).toHaveAttribute('href', '/examples/index.html')
   const user = userEvent.setup()
   await user.upload(input, new File(['hello'], 'input.txt', { type: 'text/plain' }))
   expect((input as HTMLInputElement).files).toHaveLength(1)
