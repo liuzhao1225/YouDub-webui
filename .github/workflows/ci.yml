@@ -4,11 +4,9 @@ on:
   pull_request:
     branches:
       - main
-      - codex/mvp-mainline
   push:
     branches:
       - main
-      - codex/mvp-mainline
   workflow_dispatch:
   workflow_call:
 

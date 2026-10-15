@@ -6,7 +6,7 @@
 
 开源视频本地化工作台：导入视频，识别、翻译并逐句克隆原声，生成字幕和配音成片。
 
-[English](README.en.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [人才招聘](#人才招聘) · QQ 群：**618246010**
+[English](README.en.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · QQ 群：**618246010**
 
 [下载正式版本](https://github.com/liuzhao1225/YouDub-webui/releases) · [安装与升级](docs/upgrade.md) · [版本发布](docs/releasing.md)
 
@@ -71,7 +71,7 @@ workflow 声明处理步骤和输入输出，provider 实现约定的 operation�
 准备 Node.js 22（至少 22.13.0）和 Git。首次启动会识别操作系统与架构，准备 Python 3.12、运行依赖、FFmpeg/ffprobe 和分句资源。已有可用环境会复用。
 
 ```bash
-git clone --branch codex/mvp-mainline --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
+git clone --branch main --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
@@ -242,25 +242,6 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 </td>
 </tr>
 </table>
-
-## 人才招聘
-
-银河智学是一家人工智能教育科技企业，致力于将大模型技术与探究式教学范式深度融合，构建面向 AGI 时代的创新学习体系。
-
-公司官网：[xiaoluxue.com](https://xiaoluxue.com/)
-
-我们正在北京海淀区中关村招聘以下岗位：
-
-- 全栈研发工程师
-- 高级 Go 后端架构师（内容平台 / 长任务编排 / AI Agent Runtime）
-
-薪资范围：**30–60K × 13 薪**。
-
-简历投递：[liuzhao@xiaoluxue.com](mailto:liuzhao@xiaoluxue.com)
-
-<p align="center">
-  <img src="apps/web/public/recruitment-poster-2026.jpg" alt="YouDub 人才招聘海报：全栈研发工程师与高级 Go 后端架构师" width="680" />
-</p>
 
 ## 社区交流
 

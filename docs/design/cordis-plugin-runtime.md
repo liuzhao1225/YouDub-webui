@@ -1,6 +1,6 @@
 # Cordis 插件版运行与扩展指南
 
-本文适用于当前 `codex/mvp-mainline` 的 Cordis 插件实现。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。截至 2026-10-09，验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
+本文适用于当前 `main` 的 Cordis 插件实现。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。截至 2026-10-09，验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
 
 首次启动环境准备与模型下载见 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
 
