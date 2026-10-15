@@ -66,7 +66,7 @@ def installation_plan(host: dict) -> dict:
     plan = {"backend": "cpu", "index": "https://download.pytorch.org/whl/cpu", "version": "2.8.0",
             "codec": "0.7.0", "prerequisites": [], "packages": [], "detail": "CPU：未发现受支持的 GPU 运行环境"}
     if system == "Darwin":
-        plan["index"] = "https://pypi.org/simple"
+        plan["index"] = "https://mirrors.aliyun.com/pypi/simple/"
         plan["backend"] = "mps" if host["arch"] in {"arm64", "aarch64"} else "cpu"
         plan["detail"] = "Apple MPS：安装后检查实际运算能力" if plan["backend"] == "mps" else "Intel Mac 需要自行提供支持 Torch >= 2.5 的 Python 环境"
         return plan
@@ -94,7 +94,7 @@ def installation_plan(host: dict) -> dict:
                      "AMD Radeon RX 7700", "AMD Radeon PRO W7900", "AMD Radeon PRO W7900 Dual Slot", "AMD Radeon AI PRO R9700"}
         if host.get("build", 0) >= 22000 and any(gpu["name"] in supported for gpu in amd):
             base = "https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/"
-            plan.update(backend="rocm", version="2.9.1", codec="0.8.1", index="https://pypi.org/simple",
+            plan.update(backend="rocm", version="2.9.1", codec="0.8.1", index="https://mirrors.aliyun.com/pypi/simple/",
                         detail="AMD ROCm 7.2.1（需要 AMD 26.2.2 驱动）；安装后验证 GPU 运算",
                         prerequisites=[base + f"{name}-7.2.1-py3-none-win_amd64.whl" for name in ("rocm_sdk_core", "rocm_sdk_devel", "rocm_sdk_libraries_custom")] + [base + "rocm-7.2.1.tar.gz"],
                         packages=[base + f"{name}-2.9.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl" for name in ("torch", "torchaudio")])

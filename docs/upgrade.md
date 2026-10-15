@@ -1,6 +1,6 @@
-# 安装与升级到 v0.0.1
+# 安装与升级
 
-`v0.0.1` 是新版主线的首个正式版本。此前本地试验安装包显示的 `0.1.0` 为开发版本号；本次正式发布统一使用 `0.0.1`。下载 [GitHub Releases](https://github.com/liuzhao1225/YouDub-webui/releases) 中对应 tag 的安装包及 SHA-256 文件。
+`v0.0.1` 是新版主线的首个正式版本，`v0.0.3` 开始统一发布 macOS 与 Windows 包。可在[官网下载页](https://liuzhao1225.github.io/YouDub-webui/#download)选择平台和版本，或下载 [GitHub Releases](https://github.com/liuzhao1225/YouDub-webui/releases) 中对应 tag 的安装包及 SHA-256 文件。
 
 ## macOS 桌面版
 
@@ -8,7 +8,7 @@
 
 应用与数据分开保存。替换 `/Applications/YouDub.app` 会保留 `~/Library/Application Support/YouDub` 中的模型、任务和配置，以及系统钥匙串中的翻译密钥。升级前退出应用并保留该数据目录的副本。不要在升级时删除数据目录。
 
-首次安装会下载 Python、FFmpeg 和模型；翻译服务需在设置中配置兼容接口、模型和密钥。安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-0.0.1-macOS-arm64.dmg.sha256` 核验。
+首次安装会准备 Python、FFmpeg、推理依赖和模型；已有安装可能需要更新配套推理依赖。翻译服务需配置兼容接口、模型和密钥，并支持至少 65535 token 的最大输出参数。安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-<版本号>-macOS-arm64.dmg.sha256` 核验。
 
 ## Windows 桌面版
 
@@ -21,7 +21,7 @@ Windows 本机验收覆盖打包、原生窗口、首次翻译配置、路径兼
 ## 从旧 main 源码版升级
 
 1. 等待旧任务完成并停止旧服务，保留旧提交号，以及 `.env`、数据库和任务文件所在目录的副本。新旧服务不可同时写入同一数据目录。
-2. 将源码更新到正式 tag（例如 `git checkout v0.0.1`），按 [运行指南](design/cordis-plugin-runtime.md#1-安装与配置) 安装依赖并启动。新版使用 Node.js 22 的 Cordis Host；旧 FastAPI 启动命令和 v1 HTTP 接口已移除，当前 API 为 `/api/v2`。
+2. 将源码更新到正式 tag（例如 `git checkout v0.0.3`），按 [运行指南](design/cordis-plugin-runtime.md#1-安装与配置) 安装依赖并启动。新版使用 Node.js 22 的 Cordis Host；旧 FastAPI 启动命令和 v1 HTTP 接口已移除，当前 API 为 `/api/v2`。
 3. 原 `.env` 继续保留；代理读取的 `env.txt` 必须与其为硬链接。工作台内重新确认可用模型、默认处理配置和翻译连接。旧版供应商与模型选项不会全部自动转换为新版插件配置。
 
 历史数据的两种情况：
@@ -34,3 +34,5 @@ Windows 本机验收覆盖打包、原生窗口、首次翻译配置、路径兼
 ## 当前范围
 
 桌面打包覆盖 macOS Apple Silicon 和 Windows x64；Windows 的实际发行以包含 ZIP 的 Release 为准。Linux 和 Intel Mac 暂无本次验收的安装包。语言目录包含中文、英文和日文，具体可选项取决于模型能力；Qwen 字幕对齐仅支持中文和英文。源码安装与扩展插件配置见 [运行指南](design/cordis-plugin-runtime.md)。
+
+安装包内「查看内置示例」包含黄仁勋采访、创作者收入和 Me at the zoo 三组英文原声/中文配音，可在模型准备前试听并保持播放位置切换语言；官网提供相同示例。

@@ -45,4 +45,12 @@ def test_saved_key_can_be_tested_without_returning_it(bridge, monkeypatch):
     assert check_connection({'base_url': 'https://example.test/v1', 'model': 'test'}, bridge) == {'ok': True}
     assert factory.call_args.kwargs['api_key'] == 'saved-secret'
     assert factory.call_args.kwargs['max_retries'] == 0
+    assert client.chat.completions.create.call_args.kwargs['max_completion_tokens'] >= 65_535
     bridge.credentials.set.assert_not_called()
+
+
+def test_invalid_output_limit_stops_before_call(bridge, monkeypatch):
+    monkeypatch.setattr('backend.app.v1.connection_test.MAX_COMPLETION_TOKENS', 128)
+    monkeypatch.setattr(openai, 'OpenAI', lambda **kwargs: pytest.fail('must not contact provider'))
+    with pytest.raises(WorkerError, match='65535'):
+        check_connection({'base_url': 'https://example.test/v1', 'model': 'test', 'api_key': 'secret'}, bridge)

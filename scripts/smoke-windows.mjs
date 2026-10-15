@@ -21,7 +21,9 @@ const data = join(work, '用户 数据')
 await mkdir(destination)
 const system = join(process.env.SystemRoot || 'C:/Windows', 'System32')
 console.log('Extracting verified ZIP into a path containing Chinese characters and spaces...')
-const extract = spawnSync(join(system, 'tar.exe'), ['-xf', zip, '-C', destination], { stdio: 'inherit', windowsHide: true })
+const extract = spawnSync(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
+  '$ErrorActionPreference = "Stop"; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:YOUDUB_ZIP, $env:YOUDUB_EXTRACT)'],
+{ stdio: 'inherit', windowsHide: true, env: { ...process.env, YOUDUB_ZIP: zip, YOUDUB_EXTRACT: destination } })
 if (extract.error) throw extract.error
 assert.equal(extract.status, 0, 'ZIP extraction')
 const app = join(destination, 'YouDub-windows-x64')

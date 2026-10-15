@@ -19,7 +19,7 @@ from backend.app import accelerators as a
 def test_installation_policy(system, arch, gpus, extra, backend, index):
     plan = a.installation_plan(dict(system=system, arch=arch, gpus=gpus, **extra))
     assert plan['backend'] == backend
-    assert plan['index'].endswith('/' + index)
+    assert plan['index'].rstrip('/').endswith('/' + index)
     if backend == 'rocm' and system == 'Windows':
         assert len(plan['prerequisites']) == 4 and len(plan['packages']) == 2
         assert all(url.startswith('https://repo.radeon.com/') for url in plan['packages'])

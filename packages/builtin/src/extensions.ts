@@ -89,8 +89,8 @@ export default class ExtensionsService extends Service {
     const run = async (command: string, args: string[], cwd = staging) => {
       log.push(`$ ${command} ${args.join(' ')}`)
       try {
-        const npm = command === 'npm' && process.platform === 'win32'
-          ? process.env.npm_execpath || join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js') : undefined
+        const npm = command === 'npm'
+          ? process.env.npm_execpath || (process.platform === 'win32' ? join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js') : undefined) : undefined
         const result = await this.ctx.process.run({ command: npm ? process.execPath : command, args: npm ? [npm, ...args] : args, cwd })
         log.push(result.stdout, result.stderr); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); return result.stdout
       } catch (error) { log.push(String(error)); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); throw error }

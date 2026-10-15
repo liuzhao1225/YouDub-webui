@@ -39,7 +39,7 @@ jobs:
           python-version: "3.12"
       - name: 安装轻量后端测试依赖
         run: |
-          python -m pip install -r backend/requirements-test.txt
+          python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements-test.txt
           python -m nltk.downloader -e punkt_tab
       - name: 准备媒体回归工具
         shell: pwsh
@@ -61,7 +61,7 @@ jobs:
           $env:YOUDUB_TEST_PYTHON = (Get-Command python).Source
           npm run test:backend -- -q
       - name: 构建 Windows 便携包
-        run: npm run build:windows
+        run: npm run build:desktop
       - name: 准备 WebView2 运行时
         run: ./scripts/prepare-windows-ci.ps1
       - name: 解压并验收原生窗口、页面和进程清理
