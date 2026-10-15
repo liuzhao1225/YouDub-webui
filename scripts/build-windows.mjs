@@ -20,6 +20,11 @@ const run = (command, args, options = {}) => {
 // Execute npm's JS entry directly: spawning npm.cmd requires a shell on Windows.
 const npm = process.env.npm_execpath || join(dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js')
 const runNpm = (args, options) => run(process.execPath, [npm, ...args], options)
+// Some Windows tar builds decode arguments with the system ANSI code page.
+// Pass Unicode paths through the environment to PowerShell's ZIP implementation.
+const extractZip = (archive, destination) => run(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
+  "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:YOUDUB_ARCHIVE, $env:YOUDUB_EXTRACT_DIR)"],
+{ env: { ...process.env, YOUDUB_ARCHIVE: archive, YOUDUB_EXTRACT_DIR: destination } })
 const cache = join(root, '.cache/windows')
 const app = join(root, 'dist/YouDub-windows-x64')
 const runtime = join(app, 'resources/runtime')
@@ -51,10 +56,12 @@ const nodeHash = await sha256(archive)
 if (!expected || expected !== nodeHash) throw new Error('Bundled Node archive SHA-256 mismatch.')
 const webview = await download(webviewArchive, `https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/${webviewVersion}/microsoft.web.webview2.${webviewVersion}.nupkg`)
 if (await sha256(webview) !== webviewHash) throw new Error('WebView2 SDK SHA-256 mismatch.')
-run(join(system, 'tar.exe'), ['-xf', archive, '-C', cache])
+await removeGenerated(join(cache, `node-v${nodeVersion}-win-x64`))
+extractZip(archive, cache)
 const sdk = join(cache, `webview2-${webviewVersion}`)
+await removeGenerated(sdk)
 await mkdir(sdk, { recursive: true })
-run(join(system, 'tar.exe'), ['-xf', webview, '-C', sdk])
+extractZip(webview, sdk)
 if (!process.argv.includes('--reuse-web')) {
   runNpm(['--prefix', 'apps/web', 'run', 'build', '--', '--webpack'], { env: { ...process.env, YOUDUB_DESKTOP_BUILD: '1', NEXT_TELEMETRY_DISABLED: '1' } })
 }

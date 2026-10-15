@@ -4,9 +4,9 @@
 
 ## 最终产物
 
-- `dist/YouDub-0.0.2-windows-x64.zip`，95,531,694 字节。
-- SHA-256：`54f6cb191493989fca5a4d29d1877d5d75e74dcdc587afccfd8b75c96d4f18de`，相邻 `.sha256` 文件可供校验。
-- 基线提交 `62cb6b3340089ff1f294b7aed4916f1e86d6d7c4` 加本次工作区改动；本地产物不是已发布的 GitHub Release。
+- `dist/YouDub-0.0.2-windows-x64.zip`，95,534,096 字节。
+- SHA-256：`f6f55e4e70391091a4a93d04a00663f1dc4908e066dd0e85fce8baedfcb4787e`，相邻 `.sha256` 文件可供校验。
+- 基线提交 `ac3bca60da2d1407504ac755f72d49e38ff5f4ef` 加 Unicode 解压修复；本地产物不是已发布的 GitHub Release。
 - `npm run build:windows` 构建 ZIP；`npm run test:windows` 解压并验收真正的 `YouDub.exe`。
 - 原生验收报告及 WebView2 截图保存在忽略目录 `dist/windows-smoke.json`、`dist/windows-smoke.png`。
 
@@ -53,9 +53,9 @@
 | 局部重跑 | 复用成功任务，从 export 开始重跑并下载有效视频 |
 | 扩展安装 | 中文/空格路径的本地扩展、隔离 Python 扩展、使用共享 SDK 的 npm 构建扩展均安装成功 |
 | 重启恢复 | 设置、翻译模型和凭据可用性保持；3 个扩展启动成功；真实文本扩展任务完成 |
-| 最终包升级 | 已配置数据目录正常启动；设置与凭据保持；禁用的测试扩展可在重启后卸载；原成功任务保留，从 export 重跑及下载通过，最终正常关闭 |
+| 0.0.2 候选包升级 | 已配置数据目录正常启动；设置与凭据保持；禁用的测试扩展可在重启后卸载；原成功任务保留，从 export 重跑及下载通过，最终正常关闭 |
 
-生命周期证据保存在 `.cache/windows-real-task/final-lifecycle/`，最终 0.0.2 升级及导出证据保存在 `.cache/windows-real-task/final-v002/`；这些测试使用实际包内服务，未启动源码开发服务。
+生命周期证据保存在 `.cache/windows-real-task/final-lifecycle/`；0.0.2 升级及导出证据保存在 `.cache/windows-real-task/final-v002/`，对应 Unicode 解压修复之前的候选包 `54f6cb191493989fca5a4d29d1877d5d75e74dcdc587afccfd8b75c96d4f18de`。修复后重新构建并通过最终 ZIP 原生冒烟检查；这些测试使用实际包内服务，未启动源码开发服务。
 
 ## 修复与回归
 
@@ -63,9 +63,11 @@
 
 扩展安装改用所选 Python 解释器；Windows 目录共享使用 junction，避免要求开发者模式；npm 由内置 Node 直接运行 JS 入口；分发包提供 JavaScript SDK 导出，使普通 Node 构建脚本可加载 SDK。嵌套 `node_modules` 不会被复制进本地扩展。
 
+首次远端验收进一步发现英文 Windows runner 的 `tar.exe` 会损坏中文参数路径。Windows 构建、ZIP 验收及首次 UV 工具准备改用 .NET ZIP API，通过环境变量传递原始路径；macOS/Linux 保留 tar。新增真实 ZIP 回归在未配置 Python 的环境中，验证中文、空格、引号、方括号及 URL 特殊字符路径。FFmpeg/分句资源原有 Python ZIP 解压不受影响。
+
 | 自动回归 | 本机结果 |
 | --- | --- |
-| Host 全量 | 74 通过，2 跳过，0 失败；跳过项为平台专用检查或缺少 Windows 文件符号链接权限 |
+| Host 全量 | 75 通过，2 跳过，0 失败；跳过项为平台专用检查或缺少 Windows 文件符号链接权限 |
 | Python 全量 | 445 通过，15 跳过，0 失败；轻量测试环境不安装完整推理依赖 |
 | 前端全量 | 14 个文件，66 项通过 |
 | TypeScript / ESLint / 前端生产构建 | 通过 |
