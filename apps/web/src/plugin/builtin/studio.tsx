@@ -62,8 +62,10 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
   const supported = useEditorSupported(workflow.id, workflow.configSchema)
   const requiredFiles = workflow.inputs.filter((slot) => slot.required || slot.name === linkSlot).every((slot) => Boolean(files[slot.name]) || (slot.name === linkSlot && Boolean(source)))
   const taskConfig = { ...config, ...(source ? { source_url: source.url } : {}) }
+  const translation = config.translation as JsonObject | null | undefined
+  const translationMissing = workflow.id === 'youdub.localize' && (!translation || typeof translation !== 'object' || Array.isArray(translation) || !translation.adapter || !translation.model || !translation.device)
   async function submit(event: FormEvent) {
-    event.preventDefault(); if (busy || !supported || !requiredFiles || linkError) return
+    event.preventDefault(); if (busy || !supported || !requiredFiles || linkError || translationMissing) return
     const missing = schemaProblems(workflow.configSchema).length ? [] : validateConfig(workflow.configSchema, taskConfig)
     if (missing.length) { setError(`${tx('Check options:', '请检查选项：', 'オプションを確認：')}${missing.join(', ')}`); return }
     const id = pendingId || crypto.randomUUID()
@@ -102,10 +104,11 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
         }} />)}</div>
         <div className={cn('flex flex-wrap items-center gap-3 px-2 pt-2.5 pb-1', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
           <div className="min-w-0 flex-1"><ConfigEditor mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
-          <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError)}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx('Submit with the same ID', '使用同一 ID 提交', '同じ ID で送信') : source ? tx('Download and process', '下载并处理', 'ダウンロードして処理') : tx('Start processing', '开始处理', '処理を開始')}</Button>
+          <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx('Submit with the same ID', '使用同一 ID 提交', '同じ ID で送信') : source ? tx('Download and process', '下载并处理', 'ダウンロードして処理') : tx('Start processing', '开始处理', '処理を開始')}</Button>
         </div>
       </div>
     </form>
+    {translationMissing && <div className="mt-4"><InlineAlert>{tx('Configure a translation connection and model before starting a task.', '开始任务前，请配置翻译连接和模型。', 'タスクを開始する前に翻訳の接続とモデルを設定してください。')} <Link href="/settings" className="underline underline-offset-4">{tx('Open settings', '打开设置', '設定を開く')}</Link></InlineAlert></div>}
     {(error || (pendingId && !busy)) && <div className="mt-4 space-y-3">
       {error && <InlineAlert>{error}</InlineAlert>}
       {pendingId && !busy && <div className="space-y-2 text-sm"><p className="break-all text-muted-foreground">{tx('Task ID:', '任务 ID：', 'タスク ID：')}{pendingId}</p><div className="flex flex-wrap gap-2">
