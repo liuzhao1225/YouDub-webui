@@ -107,6 +107,12 @@ jobs:
         working-directory: release
         run: |
           sha256sum --check ./*.sha256
+          version="${GITHUB_REF_NAME#v}"
+          for suffix in macOS-arm64.dmg windows-x64.zip windows-x64-Setup.exe; do
+            cp "YouDub-$version-$suffix" "YouDub-$suffix"
+            sha256sum "YouDub-$suffix" > "YouDub-$suffix.sha256"
+          done
+          sha256sum --check ./YouDub-macOS-arm64.dmg.sha256 ./YouDub-windows-x64.zip.sha256 ./YouDub-windows-x64-Setup.exe.sha256
           cat > notes.md <<'EOF'
           macOS Apple Silicon 安装包，最低 macOS 14。已通过 Developer ID 签名、Apple 公证和 Gatekeeper 检查。
 
@@ -116,4 +122,4 @@ jobs:
 
           [安装与升级说明](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md) · [自动发布与签名保护](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/releasing.md)
           EOF
-          gh release create "$GITHUB_REF_NAME" --verify-tag --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*-windows-x64.zip ./YouDub-*-windows-x64.zip.sha256 ./YouDub-*-windows-x64-Setup.exe ./YouDub-*-windows-x64-Setup.exe.sha256
+          gh release create "$GITHUB_REF_NAME" --verify-tag --latest --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256

@@ -3,7 +3,8 @@ import { pathToFileURL } from 'node:url'
 
 const repository = 'https://github.com/liuzhao1225/YouDub-webui'
 export function downloadReleases(releases) {
-  return releases.flat().filter(item => !item.draft && !item.prerelease && /^v\d+\.\d+\.\d+$/.test(item.tag_name)).map(item => {
+  const published = releases.flat().filter(item => !item.draft && !item.prerelease && /^v\d+\.\d+\.\d+$/.test(item.tag_name))
+  const downloads = published.map(item => {
     const version = item.tag_name.slice(1)
     const assets = item.assets.filter(asset => asset.state === 'uploaded' && asset.size > 0)
     const platforms = [
@@ -32,6 +33,28 @@ export function downloadReleases(releases) {
     })
     return { version: item.tag_name, url: `${repository}/releases/tag/${item.tag_name}`, platforms }
   }).filter(item => item.platforms.length).sort((a, b) => b.version.slice(1).localeCompare(a.version.slice(1), 'en', { numeric: true }))
+  const latest = downloads[0]
+  if (latest) {
+    const assets = published.find(item => item.tag_name === latest.version).assets
+    const alias = name => {
+      const files = [name, name + '.sha256'].map(file => assets.find(asset => asset.name === file && asset.state === 'uploaded' && asset.size > 0))
+      if (files.some(file => !file)) return undefined
+      for (const file of files) {
+        if (file.browser_download_url !== `${repository}/releases/download/${latest.version}/${file.name}`) throw new Error(`Unexpected latest asset URL: ${file.name}`)
+      }
+      const url = `${repository}/releases/latest/download/${name}`
+      return { url, checksum: url + '.sha256' }
+    }
+    for (const platform of latest.platforms) {
+      const file = platform.file.replace(`YouDub-${latest.version.slice(1)}-`, 'YouDub-')
+      const stable = alias(file)
+      if (stable) {
+        platform.latest = stable
+        if (platform.installer) stable.installer = alias('YouDub-windows-x64-Setup.exe')
+      }
+    }
+  }
+  return downloads
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

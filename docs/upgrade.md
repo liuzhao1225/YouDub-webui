@@ -1,6 +1,6 @@
 # 安装与升级
 
-`v0.0.1` 是新版主线的首个正式版本，`v0.0.3` 开始统一发布 macOS 与 Windows 包。可在[官网下载页](https://liuzhao1225.github.io/YouDub-webui/#download)选择平台和版本，或下载 [GitHub Releases](https://github.com/liuzhao1225/YouDub-webui/releases) 中对应 tag 的安装包及 SHA-256 文件。
+可在[官网下载页](https://liuzhao1225.github.io/YouDub-webui/#download)选择平台，或打开 [GitHub 最新版](https://github.com/liuzhao1225/YouDub-webui/releases/latest)。固定下载入口：[Windows EXE](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe)、[macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg)、[Windows ZIP](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip)。链接随每次正式发布更新，SHA-256 文件在相同链接后加 `.sha256`。需要回退时，在官网版本选择器中选择历史版本。
 
 `v0.0.4` 补齐跳过首次配置后的服务连接入口。可在「设置 → 服务连接」修改服务地址、模型名称和 API Key，并测试连接；同一地址下密钥留空会保留已有密钥。新任务使用保存后的模型，已有任务保留创建时的配置。
 

@@ -15,9 +15,9 @@ git tag -a v0.0.3 -m 'YouDub v0.0.3'
 git push origin v0.0.3
 ```
 
-工作流检查 tag 与应用版本相同、提交属于 `main`，重新执行质量检查。质量检查复用 [windows.yml](../.github/workflows/windows.yml) 构建 Windows x64 ZIP、解压后启动原生程序并检查 WebView2 页面、单实例锁及退出清理，上传 `windows-release`；同时在 macOS runner 通过同一 `npm run build:desktop` 入口构建 arm64 应用，检查共享入口、路径及完整包启动。两端共用运行环境组装、Node/npm 和 SDK 编译逻辑。发布阶段复用已验收的 macOS 包，进行 Developer ID 签名、启动服务访问页面及图标并复查签名、公证、验证 Gatekeeper。所有门禁通过后，在同一 Release 发布 DMG、Windows ZIP 和各自的 SHA-256 文件。两端均使用同一次运行中已经验收的应用，不在发布阶段重新构建。应用版本、构建元数据和安装包名称均由根目录版本生成。现有 Release 不会被静默覆盖。
+工作流检查 tag 与应用版本相同、提交属于 `main`，重新执行质量检查。质量检查复用 [windows.yml](../.github/workflows/windows.yml) 构建 Windows x64 EXE 和 ZIP，验收安装、重装、保留数据卸载，并启动原生程序并检查 WebView2 页面、单实例锁及退出清理，上传 `windows-release`；同时在 macOS runner 通过同一 `npm run build:desktop` 入口构建 arm64 应用，检查共享入口、路径及完整包启动。两端共用运行环境组装、Node/npm 和 SDK 编译逻辑。发布阶段复用已验收的 macOS 包，进行 Developer ID 签名、启动服务访问页面及图标并复查签名、公证、验证 Gatekeeper。所有门禁通过后，在同一 Release 发布 DMG、Windows EXE、ZIP 和各自的 SHA-256 文件。两端均使用同一次运行中已经验收的应用，不在发布阶段重新构建。应用版本、构建元数据和安装包名称均由根目录版本生成。现有 Release 不会被静默覆盖。
 
-Windows 便携包尚未进行 Authenticode 签名，不使用 Apple secrets。WebView2 Runtime 缺失时，Windows CI 从微软下载引导程序、核验 Microsoft Authenticode 签名后安装。PR、main 和手动触发的构建只保存 Actions artifacts，不创建 Release。Windows 本机命令、产物和验收边界见[桌面构建说明](../apps/desktop/README.md#windows-x64)。
+Windows 安装包和便携包尚未进行 Authenticode 签名，不使用 Apple secrets。WebView2 Runtime 缺失时，Windows CI 从微软下载引导程序、核验 Microsoft Authenticode 签名后安装。PR、main 和手动触发的构建只保存 Actions artifacts，不创建 Release。Windows 本机命令、产物和验收边界见[桌面构建说明](../apps/desktop/README.md#windows-x64)。
 
 发布失败时查看对应 job 的原始错误。未修改源码的基础设施故障可重新运行失败 job；需要修改源码时应发布新版本和新 tag，不移动已发布 tag。
 
@@ -39,3 +39,16 @@ Windows 便携包尚未进行 Authenticode 签名，不使用 Apple secrets。We
 密钥不会进入源码、DMG、日志或上传的 artifacts。仓库管理员仍能更改工作流和环境规则，因此应限制管理员和写入权限，保持 `main` 的 PR 与 CI 保护。新增协作者时重新审查发布权限。相关机制见 [GitHub 环境保护文档](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)。
 
 官网发布流程从 GitHub Releases 读取已经公开的正式版本，仅列出同时具有安装包和 SHA-256 文件的平台。发布工作流成功后自动刷新 Pages；历史版本按各自实际资产显示，未发布的平台不显示下载按钮。
+
+## 公告与固定下载链接
+
+公告、README 和官网默认下载入口统一使用 `latest`，不发送具体版本号的下载链接：
+
+- [最新版本说明](https://github.com/liuzhao1225/YouDub-webui/releases/latest)
+- [Windows EXE 安装包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe)
+- [macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg)
+- [Windows ZIP 便携包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip)
+
+发布工作流从验收过的版本化资源复制上述固定名称文件，重新生成文件名对应的 SHA-256，并以 `--latest` 发布。无需维护可移动的 Git tag；GitHub 的 [Latest 资源链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases) 自动指向最新 Release 中的同名文件。版本化资源继续保留，供历史回退和旧版客户端使用。
+
+每次发布后，必须回读 `/releases/latest`，下载固定入口并核对 SHA-256，确认官网默认安装包、校验文件与版本说明均为 latest 链接。只创建版本 tag、上传版本化资源或更新公告文字均不代表此项完成。

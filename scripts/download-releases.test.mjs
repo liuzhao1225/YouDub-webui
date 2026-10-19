@@ -20,3 +20,21 @@ test('adds a verified EXE installer while preserving ZIP URLs for older app upda
   const missingDigest = release('v0.0.5', [zip, zip + '.sha256', exe])
   assert.equal(downloadReleases([missingDigest])[0].platforms[0].installer, undefined)
 })
+
+test('latest links require uploaded fixed-name assets and leave historical downloads intact', () => {
+  const files = ['windows-x64.zip', 'windows-x64-Setup.exe', 'macOS-arm64.dmg']
+  const assets = version => files.flatMap(file => [`YouDub-${version}-${file}`, `YouDub-${file}`]).flatMap(file => [file, file + '.sha256'])
+  const current = release('v0.0.6', assets('0.0.6'))
+  const previous = release('v0.0.5', assets('0.0.5'))
+  const [latest, old] = downloadReleases([previous, current])
+  const windows = latest.platforms.find(item => item.id === 'windows-x64')
+  assert.equal(windows.latest.installer.url, 'https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe')
+  assert.equal(windows.latest.checksum, windows.latest.url + '.sha256')
+  assert.ok(windows.url.includes('/v0.0.6/YouDub-0.0.6-'))
+  assert.ok(latest.platforms[0].latest.url.endsWith('/YouDub-macOS-arm64.dmg'))
+  assert.ok(old.platforms.every(item => item.latest === undefined))
+  current.assets = current.assets.filter(item => item.name !== 'YouDub-windows-x64-Setup.exe.sha256')
+  assert.equal(downloadReleases([current])[0].platforms[1].latest.installer, undefined)
+  current.assets.find(item => item.name === 'YouDub-windows-x64.zip').browser_download_url = 'https://example.com/package.zip'
+  assert.throws(() => downloadReleases([current]), /Unexpected latest asset URL/)
+})

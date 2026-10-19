@@ -14,8 +14,12 @@ try {
   }
   function show() {
     const release = releases[Number(select.value)]
+    const latest = Number(select.value) === 0
+    const releaseUrl = latest ? 'https://github.com/liuzhao1225/YouDub-webui/releases/latest' : release.url
     list.replaceChildren()
     for (const platform of release.platforms) {
+      const files = latest ? platform.latest : platform
+      const selected = platform.installer ? files?.installer : files
       const card = document.createElement('article')
       const title = document.createElement('h3')
       title.textContent = platform.name
@@ -23,17 +27,17 @@ try {
       requirements.textContent = platform.requirements
       const download = document.createElement('a')
       download.className = 'button primary'
-      download.href = platform.installer?.url || platform.url
+      download.href = selected?.url || releaseUrl
       download.textContent = `下载 ${platform.name} ${platform.id === 'macos-arm64' ? 'DMG' : platform.installer ? '安装包 EXE' : 'ZIP'} ↓`
       const checksum = document.createElement('a')
       checksum.className = 'text-link'
-      checksum.href = platform.installer?.checksum || platform.checksum
+      checksum.href = selected?.checksum || releaseUrl
       checksum.textContent = 'SHA-256 校验文件'
       card.append(title, requirements, download, checksum)
       if (platform.installer) {
         const portable = document.createElement('a')
         portable.className = 'text-link'
-        portable.href = platform.url
+        portable.href = files?.url || releaseUrl
         portable.textContent = 'ZIP 便携版'
         card.append(portable)
       }
@@ -44,7 +48,7 @@ try {
       }
       list.append(card)
     }
-    document.querySelector('#release-notes').href = release.url
+    document.querySelector('#release-notes').href = releaseUrl
   }
   select.addEventListener('change', show)
   for (const link of document.querySelectorAll('a[href="#download"]')) {
