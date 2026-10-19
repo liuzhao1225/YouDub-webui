@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { mkdir, open, rename, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { EnvHttpProxyAgent, fetch } from 'undici'
+import { Agent, fetch } from 'undici'
 
 export interface DownloadFile { url: string; size: number; sha256: string; path: string }
 export async function fileSize(path: string): Promise<number> {
@@ -23,13 +23,9 @@ export function downloadError(error: unknown, url: string): Error {
 
 /** One owner, no automatic retries. A paused transfer keeps its .part file. */
 export class DownloadClient {
-  private agent = new EnvHttpProxyAgent({ connect: { timeout: 30_000 } })
+  // Setup resources use domestic endpoints directly, even with a stale proxy in the environment.
+  private agent = new Agent({ connect: { timeout: 30_000 } })
   close() { return this.agent.close() }
-  async json(url: string, signal: AbortSignal) {
-    const response = await fetch(url, { dispatcher: this.agent, signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) }).catch(error => { throw downloadError(error, url) })
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${url}`)
-    return response.json() as Promise<any>
-  }
   async download(file: DownloadFile, target: string, signal: AbortSignal, progress: (bytes: number) => void) {
     signal.throwIfAborted()
     await mkdir(dirname(target), { recursive: true })

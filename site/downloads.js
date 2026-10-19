@@ -23,16 +23,23 @@ try {
       requirements.textContent = platform.requirements
       const download = document.createElement('a')
       download.className = 'button primary'
-      download.href = platform.url
-      download.textContent = `下载 ${platform.name} ${platform.id === 'macos-arm64' ? 'DMG' : 'ZIP'} ↓`
+      download.href = platform.installer?.url || platform.url
+      download.textContent = `下载 ${platform.name} ${platform.id === 'macos-arm64' ? 'DMG' : platform.installer ? '安装包 EXE' : 'ZIP'} ↓`
       const checksum = document.createElement('a')
       checksum.className = 'text-link'
-      checksum.href = platform.checksum
+      checksum.href = platform.installer?.checksum || platform.checksum
       checksum.textContent = 'SHA-256 校验文件'
       card.append(title, requirements, download, checksum)
+      if (platform.installer) {
+        const portable = document.createElement('a')
+        portable.className = 'text-link'
+        portable.href = platform.url
+        portable.textContent = 'ZIP 便携版'
+        card.append(portable)
+      }
       if (platform.id === 'windows-x64') {
         const note = document.createElement('p')
-        note.textContent = '完整解压后运行 · 需 WebView2 · 暂未签名'
+        note.textContent = `${platform.installer ? '双击安装' : '完整解压后运行'} · 需 WebView2 · 暂未签名`
         card.append(note)
       }
       list.append(card)

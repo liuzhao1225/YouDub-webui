@@ -16,7 +16,19 @@ export function downloadReleases(releases) {
       for (const file of [asset, checksum]) {
         if (file.browser_download_url !== `${repository}/releases/download/${item.tag_name}/${file.name}`) throw new Error(`Unexpected asset URL: ${file.name}`)
       }
-      return [{ ...platform, url: asset.browser_download_url, checksum: checksum.browser_download_url }]
+      const result = { ...platform, url: asset.browser_download_url, checksum: checksum.browser_download_url }
+      // Keep the ZIP fields for v0.0.4 clients, which validate their exact filename.
+      if (platform.id === 'windows-x64') {
+        const name = `YouDub-${version}-windows-x64-Setup.exe`
+        const installer = assets.find(asset => asset.name === name)
+        const digest = assets.find(asset => asset.name === name + '.sha256')
+        if (installer && digest) {
+          const url = `${repository}/releases/download/${item.tag_name}/${name}`
+          if (installer.browser_download_url !== url || digest.browser_download_url !== url + '.sha256') throw new Error(`Unexpected installer URL: ${name}`)
+          result.installer = { url, checksum: digest.browser_download_url }
+        }
+      }
+      return [result]
     })
     return { version: item.tag_name, url: `${repository}/releases/tag/${item.tag_name}`, platforms }
   }).filter(item => item.platforms.length).sort((a, b) => b.version.slice(1).localeCompare(a.version.slice(1), 'en', { numeric: true }))

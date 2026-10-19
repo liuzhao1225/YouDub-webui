@@ -19,7 +19,10 @@ from backend.app import accelerators as a
 def test_installation_policy(system, arch, gpus, extra, backend, index):
     plan = a.installation_plan(dict(system=system, arch=arch, gpus=gpus, **extra))
     assert plan['backend'] == backend
-    assert plan['index'].rstrip('/').endswith('/' + index)
+    assert plan['index'] == 'https://mirrors.aliyun.com/pypi/simple/'
+    assert (plan['findLinks'].rstrip('/').endswith('/' + index) if index != 'simple' else not plan['findLinks'])
+    if plan['findLinks']:
+        assert plan['findLinks'] == f"https://mirrors.aliyun.com/pytorch-wheels/{plan['variant']}/"
     if backend == 'rocm' and system == 'Windows':
         assert len(plan['prerequisites']) == 4 and len(plan['packages']) == 2
         assert all(url.startswith('https://repo.radeon.com/') for url in plan['packages'])

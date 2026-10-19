@@ -11,7 +11,7 @@ function fixture(started = true): SetupState {
       { id: 'voxcpm', name: 'VoxCPM2', variant: '', purpose: '声音克隆', total: 4_960_722_408, speed: 24_600_000, initial: 0.42 },
       { id: 'demucs', name: 'Demucs', variant: 'htdemucs', purpose: '人声分离', total: 84_141_911, speed: 1_400_000, initial: 0.76 },
       { id: 'qwen', name: 'Qwen3 Aligner', variant: '0.6B', purpose: '字幕对齐', total: 1_847_225_867, speed: 9_800_000, initial: 0.28 },
-    ].map(({ initial, ...model }) => ({ ...model, status: !started ? 'paused' : initial === 1 ? 'ready' : 'downloading', received: started ? Math.floor(model.total * initial) : 0, speed: started && initial < 1 ? model.speed : 0 })),
+    ].map(({ initial, ...model }) => ({ ...model, source: 'ModelScope', status: !started ? 'paused' : initial === 1 ? 'ready' : 'downloading', received: started ? Math.floor(model.total * initial) : 0, speed: started && initial < 1 ? model.speed : 0 })),
   }
 }
 export default function ModelSetupPreview() {

@@ -13,7 +13,7 @@ export interface SetupConfig extends EnvironmentConfig { entries: EntryOptions[]
 type ModelStatus = 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
 export interface ModelDownload {
   id: string; name: string; variant: string; purpose: string; status: ModelStatus;
-  received: number; total: number; speed: number; error?: string
+  received: number; total: number; speed: number; source?: string; error?: string
 }
 const message = (error: unknown) => error instanceof Error ? error.message : String(error)
 function cancelled(error: unknown, signal: AbortSignal): boolean {
@@ -129,7 +129,8 @@ export default class SetupService extends Service {
     const definition = modelManifest.find(item => item.id === id)!
     const controller = new AbortController()
     const signal = AbortSignal.any([this.stopping.signal, controller.signal])
-    model.status = 'downloading'; model.error = undefined
+    model.status = 'downloading'; model.error = undefined; model.source = 'ModelScope'
+    this.ctx.logger.info(`${model.name} 下载源：ModelScope`)
     const promise = (async () => {
       let completed = 0, previousBytes = 0, previousTime = Date.now()
       for (const file of definition.files) {

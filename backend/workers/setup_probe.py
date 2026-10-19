@@ -18,9 +18,7 @@ def main():
     if action == "acceleration-plan":
         from backend.app.accelerators import hardware, installation_plan
         plan = installation_plan(hardware())
-        suffix = "+" + plan["index"].rsplit("/", 1)[-1] if plan["backend"] in {"cuda", "rocm"} else ""
-        if plan["packages"]:
-            suffix = "+rocm7.2.1"
+        suffix = "+" + plan["variant"] if plan["variant"] else ""
         expected = plan["version"] + suffix
         try:
             plan["installed"] = all(importlib.metadata.version(name) == expected or

@@ -3,9 +3,10 @@ import { constants } from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
 import type { Context } from 'cordis'
 import { DownloadClient, fileSize } from './setup-download.js'
+import runtimeManifest from './setup-runtime.json' with { type: 'json' }
 
 export type SetupStage = 'pending' | 'running' | 'ready' | 'failed'
-export interface EnvironmentStep { id: string; name: string; status: SetupStage; detail?: string }
+export interface EnvironmentStep { id: string; name: string; status: SetupStage; detail?: string; source?: string }
 export interface EnvironmentConfig { root: string; repoRoot: string; python: string }
 export function platformTarget(platform = process.platform, arch = process.arch) {
   const targets: Record<string, string> = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin', 'linux-arm64': 'aarch64-unknown-linux-gnu', 'linux-x64': 'x86_64-unknown-linux-gnu', 'win32-x64': 'x86_64-pc-windows-msvc' }
@@ -31,55 +32,42 @@ export class EnvironmentSetup {
     { id: 'ffmpeg', name: 'FFmpeg', status: 'pending' },
     { id: 'resources', name: '分句资源', status: 'pending' },
   ]
-  private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; index: string; installed: boolean; packages: string[]; prerequisites: string[] }
+  private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; index: string; variant: string; findLinks: string; installed: boolean; packages: string[]; prerequisites: string[] }
   constructor(private ctx: Context, readonly config: EnvironmentConfig, private client: DownloadClient, private signal: AbortSignal) {}
-  private run(command: string, args: string[], env?: Record<string, string>) {
-    return this.ctx.process.run({ command, args, cwd: this.config.repoRoot, env, signal: this.signal })
+  private run(command: string, args: string[], env?: Record<string, string>, cwd = this.config.repoRoot) {
+    return this.ctx.process.run({ command, args, cwd, env, signal: this.signal })
   }
   private python(args: string[]) { return this.run(this.config.python, args) }
   async probe(action: string) {
     const result = await this.python(['-m', 'backend.workers.setup_probe', action])
     return JSON.parse(result.stdout.trim())
   }
-  private async releaseAsset(repo: string, tag: string, name: string) {
-    const release = await this.client.json(`https://api.github.com/repos/${repo}/releases/tags/${tag}`, this.signal)
-    const asset = release.assets?.find((item: any) => item.name === name)
-    if (!asset?.digest?.startsWith('sha256:')) throw new Error(`下载清单缺少 SHA-256：${repo}/${tag}/${name}`)
-    return { path: name, url: asset.browser_download_url as string, size: asset.size as number, sha256: asset.digest.slice(7) as string }
+  private source(id: string, source: string) {
+    this.steps.find(step => step.id === id)!.source = source
+    this.ctx.logger.info(`${id} 下载源：${source}`)
+  }
+  private pip(args: string[]) {
+    // Ignore machine-specific index/proxy settings for first-run dependency downloads.
+    return this.run(this.config.python, ['-m', 'pip', 'install', '--disable-pip-version-check', '--retries', '0',
+      '--prefer-binary', '--index-url', 'https://mirrors.aliyun.com/pypi/simple/', ...args], {
+      PIP_CONFIG_FILE: process.platform === 'win32' ? 'NUL' : '/dev/null', PIP_EXTRA_INDEX_URL: '', PIP_FIND_LINKS: '',
+      HTTP_PROXY: '', HTTPS_PROXY: '', ALL_PROXY: '', http_proxy: '', https_proxy: '', all_proxy: '', NO_PROXY: '*', no_proxy: '*',
+    })
   }
   private async pythonEnvironment() {
     const environment = dirname(dirname(this.config.python))
     if (!await fileSize(this.config.python)) {
       if (process.env.YOUDUB_PYTHON?.trim()) throw new Error(`YOUDUB_PYTHON 不存在：${this.config.python}`)
-      const systemPython = await executable(process.platform === 'win32' ? 'python' : 'python3.12')
-      let compatible = false
-      if (systemPython) {
-        const version = await this.run(systemPython, ['-c', 'import sys; print(".".join(map(str, sys.version_info[:2])))'])
-        compatible = version.stdout.trim() === '3.12'
-        if (!compatible) this.ctx.logger.info(`检测到 Python ${version.stdout.trim()}，准备应用专用 Python 3.12。`)
-      }
-      if (systemPython && compatible) {
-        await this.run(systemPython, ['-m', 'venv', environment])
-      } else {
-        const target = platformTarget()
-        const folder = join(this.config.root, 'runtime', 'uv')
-        const windows = process.platform === 'win32'
-        const name = `uv-${target}.${windows ? 'zip' : 'tar.gz'}`
-        const asset = await this.releaseAsset('astral-sh/uv', '0.13.0', name)
-        const archive = join(folder, name)
-        await this.client.download(asset, archive, this.signal, () => {})
-        if (windows) {
-          // Windows tar can lose non-ASCII paths on an English system locale.
-          const shell = join(process.env.SystemRoot || 'C:/Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
-          await this.run(shell, ['-NoProfile', '-NonInteractive', '-Command',
-            "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [IO.Compression.ZipFile]::OpenRead($env:YOUDUB_ARCHIVE); try { $entry = $zip.GetEntry('uv.exe'); if (!$entry) { throw 'UV archive is missing uv.exe' }; [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, [IO.Path]::Combine($env:YOUDUB_EXTRACT_DIR, 'uv.exe'), $true) } finally { $zip.Dispose() }"],
-          { YOUDUB_ARCHIVE: archive, YOUDUB_EXTRACT_DIR: folder })
-        } else await this.run('tar', ['-xf', archive, '-C', folder])
-        const uv = windows ? join(folder, 'uv.exe') : join(folder, `uv-${target}`, 'uv')
-        const env = { UV_PYTHON_INSTALL_DIR: join(this.config.root, 'runtime', 'python'), UV_PYTHON_BIN_DIR: join(this.config.root, 'runtime', 'bin'), UV_NO_MODIFY_PATH: '1', UV_INDEX_URL: 'https://mirrors.aliyun.com/pypi/simple/' }
-        await this.run(uv, ['python', 'install', '3.12'], env)
-        await this.run(uv, ['venv', '--python', '3.12', '--seed', environment], env)
-      }
+      const windows = process.platform === 'win32'
+      const asset = runtimeManifest.python[`${process.platform}-${process.arch}` as keyof typeof runtimeManifest.python]
+      const folder = join(this.config.root, 'runtime', 'python')
+      this.source('python', '阿里 npmmirror')
+      await this.client.download(asset, join(folder, asset.path), this.signal, () => {})
+      // Pass only ASCII relative paths to Windows tar; cwd supports Unicode via CreateProcessW.
+      const tar = windows ? join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : '/usr/bin/tar'
+      await this.run(tar, ['-xf', asset.path], undefined, folder)
+      const python = join(folder, 'python', windows ? 'python.exe' : 'bin/python3')
+      await this.run(python, ['-m', 'venv', environment])
     }
     const result = await this.python(['-c', 'import sys; assert sys.version_info[:2] == (3, 12), "Python 3.12 is required"; print(sys.version.split()[0])'])
     return result.stdout.trim()
@@ -88,9 +76,10 @@ export class EnvironmentSetup {
     const plan = this.accelerationPlan = await this.probe('acceleration-plan')
     this.steps.find(step => step.id === 'acceleration')!.detail = plan.detail
     if (!plan.installed) {
-      if (plan.prerequisites.length) await this.python(['-m', 'pip', 'install', '--disable-pip-version-check', ...plan.prerequisites])
-      await this.python(['-m', 'pip', 'install', '--disable-pip-version-check', '--prefer-binary', '--index-url', plan.index,
-        ...(plan.packages.length ? plan.packages : [`torch==${plan.version}`, `torchaudio==${plan.version}`])])
+      this.source('acceleration', plan.packages.length ? 'AMD 官方（此版本暂无国内镜像）＋阿里 PyPI' : '阿里 PyPI / PyTorch')
+      if (plan.prerequisites.length) await this.pip(plan.prerequisites)
+      await this.pip([...(plan.findLinks ? ['--find-links', plan.findLinks] : []),
+        ...(plan.packages.length ? plan.packages : [`torch==${plan.version}${plan.variant ? '+' + plan.variant : ''}`, `torchaudio==${plan.version}${plan.variant ? '+' + plan.variant : ''}`])])
     }
     const status = await this.probe('acceleration')
     return status.backend === plan.backend ? status.detail : `${plan.detail}；${status.detail}`
@@ -102,17 +91,8 @@ export class EnvironmentSetup {
       const constraints = join(this.config.root, 'runtime', 'torch-constraints.txt')
       await mkdir(dirname(constraints), { recursive: true })
       await writeFile(constraints, `torch==${plan.version}\ntorchaudio==${plan.version}\ntorchcodec==${plan.codec}\n`)
-      const args = ['-m', 'pip', 'install', '--disable-pip-version-check', '--prefer-binary', '--index-url', 'https://mirrors.aliyun.com/pypi/simple/', '-c', constraints, '-r', join(this.config.repoRoot, 'requirements.txt')]
-      try { await this.python(args) }
-      catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        if (!/No matching distribution found|Could not find a version that satisfies/.test(message)) throw error
-        // Only a missing mirror package permits this explicit, recorded mirror change.
-        this.ctx.logger.warn(message)
-        this.steps.find(step => step.id === 'dependencies')!.detail = '阿里云缺少依赖，改用清华源安装'
-        args[args.indexOf('https://mirrors.aliyun.com/pypi/simple/')] = 'https://pypi.tuna.tsinghua.edu.cn/simple/'
-        await this.python(args)
-      }
+      this.source('dependencies', '阿里 PyPI')
+      await this.pip(['-c', constraints, '-r', join(this.config.repoRoot, 'requirements.txt')])
       const remaining = (await this.probe('dependencies')).missing
       if (remaining.length) throw new Error(`依赖安装后仍未满足：${remaining.join(', ')}`)
     }
@@ -123,7 +103,7 @@ export class EnvironmentSetup {
   private async media() {
     const directory = join(this.config.root, 'runtime', 'ffmpeg')
     const windows = process.platform === 'win32'
-    const binDirectory = windows ? join(directory, 'ffmpeg-master-latest-win64-gpl-shared', 'bin') : directory
+    const binDirectory = windows ? join(directory, 'ffmpeg-7.1.5-win32-x64-gpl-shared', 'bin') : directory
     const paths: Record<string, string> = {}
     for (const name of ['ffmpeg', 'ffprobe']) {
       const envKey = name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
@@ -140,13 +120,15 @@ export class EnvironmentSetup {
         this.ctx.logger.info(`${path} 缺少所需能力，安装应用专用 FFmpeg。`)
       }
       await mkdir(directory, { recursive: true })
+      this.source('ffmpeg', '阿里 npmmirror')
+      const assets = runtimeManifest.ffmpeg[`${process.platform}-${process.arch}` as keyof typeof runtimeManifest.ffmpeg]
       if (windows) {
-        const asset = await this.releaseAsset('BtbN/FFmpeg-Builds', 'latest', 'ffmpeg-master-latest-win64-gpl-shared.zip')
+        const asset = assets[0]!
         const archive = join(directory, asset.path)
         await this.client.download(asset, archive, this.signal, () => {})
-        await this.python(['-m', 'zipfile', '-e', archive, directory])
+        await this.python(['-c', 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2], filter="data")', archive, directory])
       } else {
-        const asset = await this.releaseAsset('eugeneware/ffmpeg-static', 'b6.1.1', `${name}-${process.platform}-${process.arch}`)
+        const asset = assets.find(asset => asset.path.startsWith(name + '-'))!
         await this.client.download(asset, managed, this.signal, () => {})
         await chmod(managed, 0o700)
       }
@@ -162,11 +144,8 @@ export class EnvironmentSetup {
     const data = join(this.config.root, 'nltk_data')
     process.env.NLTK_DATA = [data, process.env.NLTK_DATA].filter(Boolean).join(delimiter)
     if (!(await this.probe('punkt')).ready) {
-      const asset = {
-        path: 'punkt_tab.zip', size: 4319076,
-        sha256: 'e57f64187974277726a3417ca6f181ec5403676c717672eef6a748a7b20e0106',
-        url: 'https://raw.githubusercontent.com/nltk/nltk_data/4f15a3d89eefe9748ec1c05be495d91289197155/packages/tokenizers/punkt_tab.zip',
-      }
+      this.source('resources', 'ModelScope 阿里云 OSS')
+      const asset = runtimeManifest.punkt
       const folder = join(data, 'tokenizers')
       const archive = join(folder, asset.path)
       await this.client.download(asset, archive, this.signal, () => {})

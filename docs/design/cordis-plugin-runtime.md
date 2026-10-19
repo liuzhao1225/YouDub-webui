@@ -16,7 +16,7 @@ npm --prefix apps/web ci --registry=https://registry.npmmirror.com
 
 默认组合先启动 HTTP 与环境准备服务。它识别系统及架构，复用或安装 Python 3.12、创建 `.venv`、安装运行依赖和 FFmpeg/ffprobe，再并行下载四个模型。界面显示真实下载进度，支持暂停、续传和显式重试；准备完成后才加载工作台插件。后续启动复用已准备的资源。
 
-依赖使用 Aliyun；仅缺包时记录原错误并切换单一 Tsinghua 源。下载错误会停止对应项目并显示原因。模型文件与版本见 `packages/builtin/src/setup-models.json`；新下载文件通过 SHA-256 校验后才就绪。设备和模型选择仍保存在 workflow 配置中。
+Python、FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，CPU/CUDA/Linux ROCm 的 Torch 使用阿里 PyTorch 镜像；Windows ROCm 7.2.1 专用包暂无对应镜像，保留 AMD 官方源并在准备界面标明。Whisper、VoxCPM2、Demucs、Qwen 模型来自固定版本的 ModelScope 仓库，NLTK 分句资源来自 ModelScope 阿里云 OSS。新安装的 Python 解释器与 venv 均位于 YouDub 数据目录的 `runtime/` 下，不依赖系统 Python。应用自动检测平台和已有资源，缺少时从上述来源直接下载，不读取代理环境变量。安装包和软件更新继续使用 GitHub。下载错误会停止对应项目并显示原因。模型文件与版本见 `packages/builtin/src/setup-models.json`；新下载文件通过 SHA-256 校验后才就绪。设备和模型选择仍保存在 workflow 配置中。
 
 首次启动服务将模型准备到以下位置，官方 provider 扫描时只读取本地资产：
 

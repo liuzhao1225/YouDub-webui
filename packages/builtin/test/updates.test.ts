@@ -20,6 +20,15 @@ test('compares numeric versions, chooses the current platform and never offers a
   assert.equal(availableUpdate(feed, '0.11.0', 'macos-arm64'), null)
   assert.equal(availableUpdate(feed, '1.0.0', 'windows-x64'), null)
 })
+test('prefers a validated Windows EXE installer and still accepts historical ZIP releases', () => {
+  const item = release('0.0.5', ['windows-x64'])
+  const url = item.platforms[0].url.replace('.zip', '-Setup.exe')
+  const platform = { ...item.platforms[0], installer: { url, checksum: url + '.sha256' } }
+  assert.equal(availableUpdate([{ ...item, platforms: [platform] }], '0.0.4', 'windows-x64')?.download, url)
+  assert.equal(availableUpdate([item], '0.0.4', 'windows-x64')?.download, item.platforms[0].url)
+  platform.installer.url = 'https://untrusted.example/Setup.exe'
+  assert.throws(() => availableUpdate([{ ...item, platforms: [platform] }], '0.0.4', 'windows-x64'), /asset or checksum URL/)
+})
 test('rejects malformed release lists and non-repository downloads or missing checksums', () => {
   for (const value of [null, [], [release('1.0.0-beta')], [{ ...release('1.0.0'), url: 'https://other.example' }]]) {
     assert.throws(() => availableUpdate(value, '0.0.3', 'macos-arm64'))
