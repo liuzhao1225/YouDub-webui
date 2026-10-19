@@ -20,9 +20,12 @@ class Bridge:
 
     def settings(self):
         values = self.store.settings_values()
-        connections = [{"adapter": item["adapter"], "base_url": item["base_url"],
-                        "has_api_key": bool(item.get("credential_ref") and self.credentials.get(item["credential_ref"]))}
-                       for item in values.get("connections", [])]
+        connections = []
+        for item in values.get("connections", []):
+            key = self.credentials.get(item["credential_ref"]) if item.get("credential_ref") else None
+            hint = (key[:6] + "****" if len(key) > 10 else "****") if key else None
+            connections.append({"adapter": item["adapter"], "base_url": item["base_url"],
+                                "has_api_key": bool(key), "api_key_hint": hint})
         return {"defaults": values.get("defaults"), "connections": connections,
                 "ui_language": values.get("ui_language", "en")}
 

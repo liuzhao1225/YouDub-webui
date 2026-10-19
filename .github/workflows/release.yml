@@ -122,6 +122,8 @@ jobs:
 
           环境与模型准备页新增诊断日志和 Issue 反馈入口：点击反馈会复制完整日志，并打开预填版本、系统和阶段的 GitHub 表单，粘贴后即可提交。错误详情位于日志末尾，提交前可检查和编辑。
 
+          设置页与首次翻译配置页现在会显示已保存 API Key 的前 6 位及 `****`，短密钥全部隐藏。更换服务地址或清除密钥时，旧提示随之消失；留空保留、输入新值替换。
+
           [Windows EXE 安装包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe) · [macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg) · [Windows ZIP](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip)
 
           [安装与升级说明](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md) · [自动发布与签名保护](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/releasing.md)

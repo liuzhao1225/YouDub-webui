@@ -192,20 +192,34 @@ def test_settings_connection_omission_rotation_clear_and_address_binding(tmp_pat
     bridge = Bridge(tmp_path, credentials=credentials)
     def patch(**values):
         return bridge.call("settings.patch", {"patch": {"connection": {"adapter": "openai", **values}}})
-    patch(base_url="https://first.example/v1", api_key="synthetic-secret")
+    result = patch(base_url="https://first.example/v1", api_key="synthetic-secret")
+    assert result["connections"][0]["api_key_hint"] == "synthe****"
+    assert "synthetic-secret" not in json.dumps(result)
+    assert "credential_ref" not in json.dumps(result)
+    assert bridge.settings() == result
     original = bridge.call("settings.raw", {})["connections"][0]["credential_ref"]
     assert patch(base_url="https://first.example/v1")["connections"][0]["has_api_key"]
     assert bridge.call("settings.raw", {})["connections"][0]["credential_ref"] == original
-    patch(api_key="replacement-secret")
+    assert patch(api_key="replacement-secret")["connections"][0]["api_key_hint"] == "replac****"
     assert original not in credentials.values
     assert len(credentials.values) == 1
-    assert not patch(base_url="https://second.example/v1")["connections"][0]["has_api_key"]
+    changed = patch(base_url="https://second.example/v1")["connections"][0]
+    assert not changed["has_api_key"] and changed["api_key_hint"] is None
     assert not credentials.values
     patch(api_key="last-secret")
-    assert not patch(api_key=None)["connections"][0]["has_api_key"]
+    cleared = patch(api_key=None)["connections"][0]
+    assert not cleared["has_api_key"] and cleared["api_key_hint"] is None
     assert not credentials.values
     with bridge.store.connect() as conn:
         assert "secret" not in "\n".join(conn.iterdump())
+
+
+@pytest.mark.parametrize("key", ["x", "short-key", "1234567890"])
+def test_short_saved_keys_are_fully_masked(tmp_path, key):
+    bridge = Bridge(tmp_path, credentials=Credentials())
+    result = bridge.patch_settings({"connection": {"adapter": "openai", "base_url": "https://example.test/v1", "api_key": key}})
+    assert result["connections"][0]["has_api_key"]
+    assert result["connections"][0]["api_key_hint"] == "****"
 
 
 def test_settings_failures_are_visible_before_and_after_credential_write(tmp_path, monkeypatch):
