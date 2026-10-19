@@ -52,7 +52,7 @@ function codeBlock(text: string) {
 
 export function setupIssue(report: string, state?: SetupState | null) {
   const title = `[准备问题] ${state ? phases[state.phase] : '连接准备服务'}`
-  const intro = '### 问题描述\n\n请补充出错前的操作、是否每次出现。\n\n### 诊断日志\n\n'
+  const intro = '### 问题描述\n\n请补充出错前的操作、是否每次出现。\n\n### 环境信息\n\n'
   const url = (body: string) => `https://github.com/liuzhao1225/YouDub-webui/issues/new?${new URLSearchParams({ template: 'setup-problem.md', title, body })}`
-  return { url: url(intro + codeBlock(report.split('\n').slice(0, 3).join('\n')) + '\n\n**❗ 请务必在这里粘贴从准备页复制的完整诊断日志。**') }
+  return { url: url(intro + codeBlock(report.split('\n').slice(0, 3).join('\n')) + '\n\n### 诊断日志\n\n**❗ 请务必在这里粘贴从准备页复制的完整诊断日志。**') }
 }
