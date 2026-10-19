@@ -13,7 +13,7 @@ export interface SetupModel {
   received: number; total: number; speed: number; source?: string; error?: string
 }
 export interface SetupState {
-  phase: 'environment' | 'models' | 'starting' | 'ready' | 'failed'; platform: string; arch: string; version?: string; osVersion?: string;
+  phase: 'environment' | 'models' | 'starting' | 'ready' | 'failed'; platform: string; arch: string; version?: string; osVersion?: string; homeDir?: string;
   environment: { id: string; name: string; status: 'pending' | 'running' | 'ready' | 'failed'; detail?: string; source?: string }[];
   models: SetupModel[]; error?: string; canRetry: boolean; token: string
 }

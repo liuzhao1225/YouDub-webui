@@ -94,7 +94,7 @@ export default class SetupService extends Service {
     }
   }
   snapshot() {
-    return { phase: this.phase, version: this.config.version, platform: process.platform, arch: process.arch, osVersion: release(), environment: this.environment.steps,
+    return { phase: this.phase, version: this.config.version, platform: process.platform, arch: process.arch, osVersion: release(), homeDir: homedir(), environment: this.environment.steps,
       models: this.models, error: this.error, canRetry: !this.bootAttempted, token: this.token }
   }
   private root(id: string) {

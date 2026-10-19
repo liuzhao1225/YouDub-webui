@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import Http from '../src/http.js'
 import Setup from '../src/setup.js'
 import { DownloadClient } from '../src/setup-download.js'
@@ -179,6 +179,7 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   const state = await (await fetch(url)).json() as any
   assert.equal(state.version, '0.0.6')
   assert.equal(typeof state.osVersion, 'string')
+  assert.equal(state.homeDir, homedir())
   assert.equal(state.models.filter((model: any) => model.status === 'downloading').length, 4)
   assert.deepEqual(created, [])
   assert.equal((await fetch(url, { method: 'POST', body: '{}' })).status, 403)

@@ -4,8 +4,9 @@ const phases = { environment: '环境准备', models: '模型准备', starting: 
 const statuses = { pending: '等待中', running: '准备中', downloading: '下载中', paused: '已暂停', ready: '已就绪', failed: '失败' }
 
 // Only the explicit fields below enter a report; never serialize the setup token or configuration.
-export function redactDiagnostics(text: string, token?: string) {
+export function redactDiagnostics(text: string, token?: string, homeDir?: string) {
   if (token) text = text.replaceAll(token, '[REDACTED]')
+  if (homeDir) text = text.replaceAll(homeDir, '[HOME]').replaceAll(homeDir.replaceAll('\\', '/'), '[HOME]')
   return text
     .replace(/https?:\/\/[^\s<>"']+/gi, raw => raw
       .replace(/^(https?:\/\/)[^/]+@/i, '$1[REDACTED]@')
@@ -40,7 +41,7 @@ export function setupReport(state?: SetupState | null, requestError = '') {
   }
   for (const model of state?.models || []) if (model.error) errors.push(`${model.name} 错误:`, model.error)
   if (errors.length) lines.push('', '错误日志:', ...errors)
-  return redactDiagnostics(lines.join('\n'), state?.token)
+  return redactDiagnostics(lines.join('\n'), state?.token, state?.homeDir)
 }
 
 function codeBlock(text: string) {

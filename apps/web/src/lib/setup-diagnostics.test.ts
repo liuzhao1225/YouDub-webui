@@ -42,4 +42,12 @@ describe('setup diagnostic reports', () => {
     expect(issue.url).toBe(setupIssue(setupReport(state), state).url)
     expect(issue.url.length).toBeLessThan(6000)
   })
+  it('redacts the actual home directory for root and custom system layouts', () => {
+    for (const homeDir of ['/root', '/var/root', '/srv/users/custom', 'D:\\Profiles\\custom']) {
+      const report = setupReport({ ...state, homeDir, error: `stat '${homeDir}/private/python'\n${homeDir.replaceAll('\\', '/')}/download` })
+      expect(report).not.toContain(homeDir)
+      expect(report).not.toContain(homeDir.replaceAll('\\', '/'))
+      expect(report).toContain('[HOME]/private/python')
+    }
+  })
 })
