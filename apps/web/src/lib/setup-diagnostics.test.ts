@@ -19,7 +19,7 @@ describe('setup diagnostic reports', () => {
     expect(url.origin + url.pathname).toBe('https://github.com/liuzhao1225/YouDub-webui/issues/new')
     expect(url.searchParams.get('template')).toBe('setup-problem.md')
     expect(url.searchParams.get('body')).toContain('YouDub: 0.0.6')
-    expect(url.searchParams.get('body')).toContain('请在这里粘贴从准备页复制的完整诊断日志')
+    expect(url.searchParams.get('body')).toContain('**❗ 请务必在这里粘贴从准备页复制的完整诊断日志。**')
     expect(report.indexOf('模型准备:')).toBeLessThan(report.indexOf('错误日志:'))
     for (const error of [state.error!, state.environment[0].detail!, state.models[0].error!]) expect(report.indexOf(error)).toBeGreaterThan(report.indexOf('错误日志:'))
   })
