@@ -129,7 +129,7 @@ for (const unrelatedFailure of [false, true]) test(`closing first-run setup ${un
     owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
     owner.reflect.provide('loader', {})
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
-    await owner.plugin(Setup, { root: tmpdir(), repoRoot: resolve('.'), python: '/unused/python', entries: [] })
+    await owner.plugin(Setup, { root: tmpdir(), repoRoot: resolve('.'), python: '/unused/python', version: '0.0.6', entries: [] })
   })
   t.after(async () => {
     await app.dispose(); await logging()
@@ -166,7 +166,7 @@ test('first-run API runs four models concurrently, pauses independently, guards 
     owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => ({ stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }) })
     owner.reflect.provide('loader', { create: async (entry: any) => { created.push(entry.id) }, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
-    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, entries: [{ id: 'runtime', name: 'runtime' }] })
+    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, version: '0.0.6', entries: [{ id: 'runtime', name: 'runtime' }] })
   })
   t.after(async () => {
     release(); await app.dispose()
@@ -177,6 +177,8 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   await waitFor(() => started.length === 4)
   const url = ctx.http.address + '/api/setup'
   const state = await (await fetch(url)).json() as any
+  assert.equal(state.version, '0.0.6')
+  assert.equal(typeof state.osVersion, 'string')
   assert.equal(state.models.filter((model: any) => model.status === 'downloading').length, 4)
   assert.deepEqual(created, [])
   assert.equal((await fetch(url, { method: 'POST', body: '{}' })).status, 403)

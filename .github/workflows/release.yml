@@ -120,6 +120,10 @@ jobs:
 
           首次启动会在 YouDub 数据文件夹准备独立 Python、FFmpeg 和模型，主要资源使用阿里与 ModelScope 国内源，并引导配置和测试翻译服务；也可稍后在设置页填写。
 
+          环境与模型准备页新增诊断日志和 Issue 反馈入口：可一键复制版本、系统、准备状态与错误，或打开预填的 GitHub 反馈表单。长日志自动复制后按提示粘贴，提交前可检查和编辑。
+
+          [Windows EXE 安装包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe) · [macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg) · [Windows ZIP](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip)
+
           [安装与升级说明](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/upgrade.md) · [自动发布与签名保护](https://github.com/liuzhao1225/YouDub-webui/blob/main/docs/releasing.md)
           EOF
           gh release create "$GITHUB_REF_NAME" --verify-tag --latest --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256

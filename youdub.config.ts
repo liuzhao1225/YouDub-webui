@@ -39,6 +39,6 @@ export default async function composition(): Promise<EntryOptions[]> {
   return [
     entry('process', 'process'),
     entry('http', 'http', { host: process.env.YOUDUB_HOST || '127.0.0.1', port: Number(process.env.YOUDUB_PORT || 8000) }),
-    entry('setup', 'setup', { root, repoRoot, python, entries }),
+    entry('setup', 'setup', { root, repoRoot, python, version, entries }),
   ]
 }
