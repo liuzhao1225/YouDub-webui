@@ -161,3 +161,41 @@ it('places the link first, switches between sources and submits a canonical URL 
   expect(JSON.parse(body.get('request') as string).config.source_url).toBe('https://www.youtube.com/watch?v=jNQXAC9IVRw')
   expect(body.has('input.video')).toBe(false)
 })
+
+it.each([null, {}, { adapter: 'openai', model: '', device: 'remote' }])('guides deferred translation setup and blocks submission for %j', async (translation) => {
+  const localize: Catalog = { providers: [], workflows: [{
+    ...catalog.workflows[0], id: 'youdub.localize', ui: { sourceUrlInput: 'video' },
+    inputs: [{ name: 'video', label: '视频', acceptedMimeTypes: ['video/*'], required: false }],
+    configSchema: { type: 'object', properties: {} }, defaults: { translation },
+  }] }
+  const request = vi.fn(async (path: string) => path === '/api/v2/catalog' ? localize : { items: [], hasMore: false })
+  const push = mount(request)
+  const link = await screen.findByLabelText('视频链接')
+  await userEvent.setup().type(link, 'https://youtu.be/jNQXAC9IVRw')
+  expect(screen.getByText('开始任务前，请配置翻译连接和模型。')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '下载并处理' })).toBeDisabled()
+  // Guard native form submissions as well as clicks on the disabled button.
+  fireEvent.submit(link.closest('form')!)
+  expect(request.mock.calls.some(([path]) => path === '/api/v2/tasks')).toBe(false)
+  await userEvent.setup().click(screen.getByRole('link', { name: '打开设置' }))
+  expect(push).toHaveBeenCalledWith('/settings')
+})
+
+it.each(['deepseek-flash', 'deepseek-v4-pro', 'custom-model'])('submits a configured translation model unchanged: %s', async (model) => {
+  const translation = { adapter: 'openai', model, device: 'remote' }
+  const localize: Catalog = { providers: [], workflows: [{
+    ...catalog.workflows[0], id: 'youdub.localize', inputs: [],
+    configSchema: { type: 'object', properties: {} }, defaults: { translation },
+  }] }
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return localize
+    if (init?.method === 'POST') return { id: 'translated' }
+    return { items: [], hasMore: false }
+  })
+  const push = mount(request)
+  await userEvent.setup().click(await screen.findByRole('button', { name: '开始处理' }))
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/translated'))
+  const body = request.mock.calls.find(([, init]) => init?.method === 'POST')![1]!.body as FormData
+  expect(JSON.parse(body.get('request') as string).config.translation).toEqual(translation)
+  expect(screen.queryByRole('link', { name: '打开设置' })).not.toBeInTheDocument()
+})

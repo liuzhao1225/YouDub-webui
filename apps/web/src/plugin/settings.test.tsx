@@ -74,3 +74,25 @@ it('probes runtime before refreshing its catalog, serializes clicks and surfaces
   expect(screen.queryByText('Runtime probe failed')).not.toBeInTheDocument()
   expect(request.mock.calls.map(([path]) => path).slice(-2)).toEqual(['/api/v2/runtime', '/api/v2/catalog'])
 })
+
+// Remote providers have no models until their first connection is configured.
+it('shows an unconfigured remote connection without requiring model discovery', async () => {
+  const request = vi.fn(async (path: string) => {
+    if (path === '/api/v2/settings') return { connections: [] }
+    if (path === '/api/v2/catalog') return { workflows: [], providers: [
+      { id: 'remote-provider', adapter: 'custom-remote', execution: 'remote', label: 'Remote', operations: [], available: false, models: [] },
+      { id: 'local-provider', execution: 'local', label: 'Local', operations: [], available: false, models: [] },
+    ] }
+    return { items: [] }
+  })
+  let Page!: ComponentType<RouteProps>
+  const context = { apiClient: { request }, slots: {
+    register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [],
+  }, effect: (effect: () => unknown) => effect() } as unknown as Context
+  apply(context)
+  render(<PluginContextProvider context={context}><ThemeProvider><LanguageProvider><Page params={{}} /></LanguageProvider></ThemeProvider></PluginContextProvider>)
+  expect(await screen.findByLabelText('服务地址')).toHaveAttribute('id', 'connection-custom-remote')
+  expect(screen.getAllByLabelText('API Key')).toHaveLength(1)
+  expect(screen.getByRole('button', { name: '保存连接' })).toBeEnabled()
+  expect(request.mock.calls.every(([path]) => path !== '/api/v2/runtime')).toBe(true)
+})
