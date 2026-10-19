@@ -4,6 +4,7 @@ import type { Artifact, CreateTask, TaskView } from '@youdub/sdk'
 import { AppError, requireId } from '@youdub/sdk'
 import { readJson, type HttpRequest } from './http.js'
 import { taskCover } from './task-cover.js'
+import { checkForUpdates, currentVersion, updatePlatform } from './updates.js'
 import './auth.js'
 import './extensions.js'
 
@@ -19,6 +20,12 @@ export function apply(ctx: Context) {
   route('GET', '/api/v2/catalog', request => ctx.http.json(request, 200, ctx.catalog.describe()))
   route('GET', '/api/v2/workflows', request => ctx.http.json(request, 200, { items: ctx.catalog.describe().workflows }))
   const base = '/api/v2'
+  route('GET', `${base}/updates`, async request => {
+    const settings = await ctx.settings.read()
+    ctx.http.json(request, 200, { currentVersion, supported: updatePlatform !== null,
+      automatic: (settings.plugins as any)?.['youdub.updates']?.automatic !== false })
+  })
+  route('POST', `${base}/updates/check`, async request => ctx.http.json(request, 200, await checkForUpdates()))
   route('GET', `${base}/runtime`, async request => ctx.http.json(request, 200, await ctx.settings.runtime()))
   route('GET', `${base}/settings`, async request => ctx.http.json(request, 200, await ctx.settings.read()))
   route('POST', `${base}/settings/test-connection`, async request => {
