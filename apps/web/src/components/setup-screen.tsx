@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowDownToLine, AudioLines, Check, CircleAlert, Copy, Cpu, Loader2, Mic2, Moon, Pause, Play, RotateCcw, SlidersHorizontal, Sun, Waves } from 'lucide-react'
+import { ArrowDownToLine, AudioLines, Check, CircleAlert, Cpu, Loader2, Mic2, Moon, Pause, Play, RotateCcw, SlidersHorizontal, Sun, Waves } from 'lucide-react'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { SetupDiagnostics } from './setup-diagnostics'
 
 export interface SetupModel {
   id: string; name: string; variant: string; purpose: string;
@@ -12,7 +13,7 @@ export interface SetupModel {
   received: number; total: number; speed: number; source?: string; error?: string
 }
 export interface SetupState {
-  phase: 'environment' | 'models' | 'starting' | 'ready' | 'failed'; platform: string; arch: string;
+  phase: 'environment' | 'models' | 'starting' | 'ready' | 'failed'; platform: string; arch: string; version?: string; osVersion?: string; homeDir?: string;
   environment: { id: string; name: string; status: 'pending' | 'running' | 'ready' | 'failed'; detail?: string; source?: string }[];
   models: SetupModel[]; error?: string; canRetry: boolean; token: string
 }
@@ -32,8 +33,6 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
   state: SetupState; busy?: boolean; onAction: (action: SetupAction, id?: string) => void; onReset?: () => void
 }) {
   const [light, setLight] = useState(false)
-  const [copiedError, setCopiedError] = useState('')
-  const [copyFailure, setCopyFailure] = useState('')
   const total = state.models.reduce((sum, model) => sum + model.total, 0)
   const received = state.models.reduce((sum, model) => sum + model.received, 0)
   const speed = state.models.reduce((sum, model) => sum + model.speed, 0)
@@ -43,14 +42,6 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
   const environmentReady = state.environment.every(step => step.status === 'ready')
   const platform = ({ darwin: 'macOS', win32: 'Windows', linux: 'Linux' } as Record<string, string>)[state.platform] || state.platform
   const arch = state.platform === 'darwin' && state.arch === 'arm64' ? 'Apple Silicon' : state.arch
-  const errors = [state.error, ...state.models.map(model => model.error)].filter(Boolean)
-  const errorText = errors.join('\n\n')
-  const copied = copiedError === errorText
-  async function copyError() {
-    setCopyFailure('')
-    try { await navigator.clipboard.writeText(errorText); setCopiedError(errorText) }
-    catch (error) { setCopiedError(''); setCopyFailure(`复制失败：${error instanceof Error ? error.message : String(error)}`) }
-  }
   return <div className="min-h-screen">
     <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
       <span aria-label="YouDub"><BrandMark animated wordmark className="h-7" /></span>
@@ -98,13 +89,7 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
           })}
         </div>
       </section>
-      {errors.length > 0 && <div role="alert" className="mt-4 rounded-xl border border-status-danger/25 bg-status-danger/10 p-4 text-xs text-status-danger-fg">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words font-sans">{errorText}</pre>
-          <Button variant="ghost" size="icon-xs" aria-label={copied ? '已复制' : '复制错误'} title={copied ? '已复制' : '复制错误'} onClick={copyError}>{copied ? <Check /> : <Copy />}</Button>
-        </div>
-        {copyFailure && <p role="status" className="mt-2">{copyFailure}</p>}
-      </div>}
+      <SetupDiagnostics state={state} />
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML is available before the app runtime is ready. */}
       <div className="mt-5"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">查看内置示例</a></div>
       <div className="mt-5 flex items-center justify-between gap-3">

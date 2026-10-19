@@ -2,8 +2,9 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { SetupGate } from './setup-gate'
 import { SetupScreen, type SetupState } from './setup-screen'
+import { SetupDiagnostics } from './setup-diagnostics'
 
-const state: SetupState = { phase: 'models', platform: 'darwin', arch: 'arm64', token: 'setup-token', canRetry: true,
+const state: SetupState = { phase: 'models', version: '0.0.6', platform: 'darwin', arch: 'arm64', token: 'setup-token', canRetry: true,
   environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }],
   models: [{ id: 'qwen', name: 'Qwen3 Aligner', variant: '0.6B', purpose: '字幕对齐', status: 'downloading', received: 50, total: 100, speed: 10 }],
 }
@@ -55,10 +56,51 @@ describe('first-run setup', () => {
     vi.stubGlobal('navigator', { clipboard: { writeText } })
     const error = 'Python exited (1).\nTraceback:\nWhisper requires ffmpeg in PATH.'
     const view = render(<SetupScreen state={{ ...state, phase: 'failed', error }} onAction={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: '复制错误' }))
-    await screen.findByRole('button', { name: '已复制' })
-    expect(writeText).toHaveBeenCalledWith(error)
+    fireEvent.click(screen.getByRole('button', { name: '复制日志' }))
+    await screen.findByRole('button', { name: '已复制日志' })
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining(error))
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('YouDub: 0.0.6'))
+    expect(writeText.mock.calls[0][0]).not.toContain('setup-token')
     expect(screen.getByRole('alert')).toHaveTextContent('Whisper requires ffmpeg in PATH.')
+    view.unmount(); vi.unstubAllGlobals()
+  })
+  it('copies logs when opening feedback during successful preparation as well as errors', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const view = render(<SetupScreen state={state} onAction={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '复制日志' })).toBeEnabled()
+    const link = screen.getByRole('link', { name: '反馈 Issue' })
+    const body = new URL(link.getAttribute('href')!).searchParams.get('body')!
+    expect(body).toContain('阶段: 模型准备')
+    expect(body).not.toContain(state.token)
+    expect(link).toHaveAttribute('target', '_blank')
+    link.addEventListener('click', event => event.preventDefault())
+    fireEvent.click(link)
+    await screen.findByRole('button', { name: '已复制日志' })
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Qwen3 Aligner'))
+    view.unmount(); vi.unstubAllGlobals()
+  })
+  it('copies full logs when opening feedback and surfaces clipboard denial without losing the report', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('Permission denied'))
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const error = '下载错误\n'.repeat(3000) + '最后的原因'
+    const view = render(<SetupDiagnostics state={{ ...state, error }} />)
+    const feedback = screen.getByRole('link', { name: '反馈 Issue' })
+    feedback.addEventListener('click', event => event.preventDefault())
+    fireEvent.click(feedback)
+    expect(await screen.findByText(/复制失败：Permission denied/)).toBeVisible()
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('最后的原因'))
+    expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('最后的原因')
+    expect(screen.getByRole('button', { name: '复制日志' })).toBeEnabled()
+    view.unmount(); vi.unstubAllGlobals()
+  })
+  it('provides feedback even when the first setup request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Failed to fetch')))
+    const view = render(<SetupGate><div>实际工作台</div></SetupGate>)
+    await screen.findByRole('button', { name: '重新连接' })
+    const body = new URL(screen.getByRole('link', { name: '反馈 Issue' }).getAttribute('href')!).searchParams.get('body')!
+    expect(body).toContain('连接准备服务')
+    expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('连接错误:\nFailed to fetch')
     view.unmount(); vi.unstubAllGlobals()
   })
 })

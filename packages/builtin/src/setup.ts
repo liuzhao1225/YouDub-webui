@@ -1,7 +1,7 @@
 import { Service, type Context } from 'cordis'
 import type { EntryOptions } from '@cordisjs/plugin-loader'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { homedir } from 'node:os'
+import { homedir, release } from 'node:os'
 import { join, resolve } from 'node:path'
 import { AppError } from '@youdub/sdk'
 import { readJson, type HttpRequest } from './http.js'
@@ -9,7 +9,7 @@ import { DownloadClient, fileSize } from './setup-download.js'
 import { EnvironmentSetup, type EnvironmentConfig } from './setup-environment.js'
 import modelManifest from './setup-models.json' with { type: 'json' }
 
-export interface SetupConfig extends EnvironmentConfig { entries: EntryOptions[] }
+export interface SetupConfig extends EnvironmentConfig { entries: EntryOptions[]; version: string }
 type ModelStatus = 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
 export interface ModelDownload {
   id: string; name: string; variant: string; purpose: string; status: ModelStatus;
@@ -94,7 +94,7 @@ export default class SetupService extends Service {
     }
   }
   snapshot() {
-    return { phase: this.phase, platform: process.platform, arch: process.arch, environment: this.environment.steps,
+    return { phase: this.phase, version: this.config.version, platform: process.platform, arch: process.arch, osVersion: release(), homeDir: homedir(), environment: this.environment.steps,
       models: this.models, error: this.error, canRetry: !this.bootAttempted, token: this.token }
   }
   private root(id: string) {

@@ -10,6 +10,8 @@
 
 ## 国内首次启动下载
 
+准备过程遇到问题时，可展开「诊断日志」查看当前版本、系统、环境和模型状态，错误详情位于日志末尾。点击「反馈 Issue」会复制完整日志，并打开预填了版本、系统和阶段的 GitHub 表单，粘贴日志、补充问题描述后即可提交。也可点击「复制日志」单独复制；复制失败会显示原因，日志框支持全选复制。报告不包含配置文件或准备令牌，并隐藏常见凭据、下载地址查询参数及用户主目录；提交前仍可检查和编辑。
+
 从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。新安装使用 YouDub 自有 Python，不探测系统 Python 或 Microsoft Store 占位入口，避免出现 9009 安装错误。Windows 解释器与虚拟环境分别位于 `%LOCALAPPDATA%\YouDub\runtime\python` 和 `%LOCALAPPDATA%\YouDub\runtime\venv`；更改 `YOUDUB_DESKTOP_DATA_DIR` 时一起移动到指定数据目录。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
 
 Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像，仍使用 AMD 官方源；WebView2 仍由微软分发。应用安装包、软件更新和用户输入的视频地址沿用各自官方服务。源码安装缺少 Demucs 子模块时仍需获取 Git 仓库；桌面包已包含该子模块。

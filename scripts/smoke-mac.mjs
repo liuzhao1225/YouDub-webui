@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { demos } from '../site/demos.js'
+import { appVersion } from './release-version.mjs'
 
 const app = resolve(process.argv[2] || 'dist/YouDub.app')
 function verify() {
@@ -63,6 +64,8 @@ try {
     if (!response.ok) throw new Error(`Desktop ${path}: HTTP ${response.status}`)
     await response.arrayBuffer()
   }
+  const setup = await (await fetch(base + '/api/setup')).json()
+  if (setup.version !== appVersion || setup.platform !== 'darwin' || !setup.osVersion) throw new Error('Packaged setup diagnostics metadata is missing or incorrect.')
   verify()
   console.log('Desktop routes and icons respond; signed application remains unchanged.')
 } finally {
