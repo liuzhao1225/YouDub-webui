@@ -236,6 +236,16 @@ internal sealed class DesktopWindow : Form
                 await Task.Delay(100);
             }
             if (!rendered) throw new Exception("首次准备界面未在 WebView2 渲染：" + path);
+            string diagnostics = await browser.ExecuteScriptAsync(@"(() => {
+                const log = document.querySelector('textarea[aria-label=""诊断日志内容""]');
+                const feedback = Array.from(document.querySelectorAll('a')).find(a => a.textContent.includes('反馈 Issue'));
+                if (!log || !feedback || !log.value.includes('win32 x64') || !log.value.includes('YOUDUB_PYTHON')) return false;
+                const url = new URL(feedback.href);
+                return url.origin === 'https://github.com' && url.pathname === '/liuzhao1225/YouDub-webui/issues/new'
+                    && url.searchParams.get('body').includes(log.value)
+                    && Array.from(document.querySelectorAll('button')).some(button => button.textContent.includes('复制日志'));
+            })()");
+            if (diagnostics != "true") throw new Exception("准备日志或预填 Issue 入口未正确渲染：" + path);
         }
         await NavigateAsync(new Uri(origin, "/examples/index.html").ToString());
         bool exampleLoaded = false;
