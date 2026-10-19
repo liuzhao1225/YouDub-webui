@@ -19,37 +19,44 @@ function probeResult(action: string) {
   return { ready: true }
 }
 
-test('Windows first-run UV extraction preserves Unicode paths without an installed Python', { skip: process.platform !== 'win32' }, async t => {
+test('first-run Python extraction preserves Unicode paths without an installed Python', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-unicode-archive-'))
-  const source = join(root, '压缩来源'), fixture = join(root, '工具.zip')
+  const source = join(root, 'source'), fixture = join(root, 'python.tar.gz')
   const data = join(root, "用户 空格 # % ' [测试]")
-  await mkdir(source)
-  await writeFile(join(source, 'uv.exe'), 'archive fixture, never executed')
-  const shell = join(process.env.SystemRoot || 'C:/Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  const windows = process.platform === 'win32'
+  const relativePython = windows ? 'python/python.exe' : 'python/bin/python3'
+  await mkdir(join(source, 'python', 'bin'), { recursive: true })
+  await writeFile(join(source, relativePython), 'archive fixture, never executed')
+  const tar = windows ? join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : '/usr/bin/tar'
   const run = promisify(execFile)
-  await run(shell, ['-NoProfile', '-NonInteractive', '-Command',
-    "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::CreateFromDirectory($env:YOUDUB_TEST_SOURCE, $env:YOUDUB_TEST_ARCHIVE)"],
-  { windowsHide: true, env: { ...process.env, YOUDUB_TEST_SOURCE: source, YOUDUB_TEST_ARCHIVE: fixture } })
+  await run(tar, ['-czf', fixture, 'python'], { cwd: source, windowsHide: true })
   const previous = { PATH: process.env.PATH, YOUDUB_PYTHON: process.env.YOUDUB_PYTHON }
+  const client = new DownloadClient()
   t.after(async () => {
+    await client.close()
     for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value }
     await rm(root, { recursive: true })
   })
-  process.env.PATH = join(process.env.SystemRoot || 'C:/Windows', 'System32')
+  process.env.PATH = join(root, 'no-python')
   delete process.env.YOUDUB_PYTHON
-  const stop = new Error('Stop before downloading Python')
+  const stop = new Error('Stop before creating venv')
   let extracted = false
-  const ctx = { process: { run: async ({ command, args, env }: { command: string; args: string[]; env?: Record<string, string> }) => {
-    if (command === shell) return run(command, args, { windowsHide: true, env: { ...process.env, ...env } })
-    assert.equal(command, join(data, 'runtime', 'uv', 'uv.exe'))
+  const ctx = { logger: { info() {} }, process: { run: async ({ command, args, cwd }: { command: string; args: string[]; cwd: string }) => {
+    if (command === tar) {
+      assert.equal(cwd, join(data, 'runtime', 'python'))
+      assert.ok(args.every(arg => /^[\x00-\x7f]*$/.test(arg)))
+      return run(command, args, { cwd, windowsHide: true })
+    }
+    assert.equal(command, join(data, 'runtime', 'python', relativePython))
     assert.equal(await readFile(command, 'utf8'), 'archive fixture, never executed')
     extracted = true
     throw stop
   } } } as unknown as Context
-  const client = new DownloadClient()
-  t.mock.method(client, 'json', async () => ({ assets: [{ name: 'uv-x86_64-pc-windows-msvc.zip', digest: 'sha256:fixture', browser_download_url: 'https://example.test/uv.zip', size: 1 }] }))
-  t.mock.method(client, 'download', async (_asset: unknown, destination: string) => { await mkdir(join(data, 'runtime', 'uv'), { recursive: true }); await cp(fixture, destination) })
-  const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', 'Scripts', 'python.exe') }, client, new AbortController().signal)
+  t.mock.method(client, 'download', async (asset: { url: string }, destination: string) => {
+    assert.ok(asset.url.startsWith('https://registry.npmmirror.com/-/binary/python-build-standalone/'))
+    await mkdir(join(data, 'runtime', 'python'), { recursive: true }); await cp(fixture, destination)
+  })
+  const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', windows ? 'Scripts/python.exe' : 'bin/python') }, client, new AbortController().signal)
   await assert.rejects(setup.prepare(), error => error === stop)
   assert.equal(extracted, true)
 })

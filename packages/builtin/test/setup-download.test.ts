@@ -47,6 +47,15 @@ test('checksum failures remain errors, never publish the final model, and do not
   assert.equal(requests, 1)
 })
 
+test('setup downloads connect directly despite an unusable environment proxy', async t => {
+  const previous = { HTTP_PROXY: process.env.HTTP_PROXY, HTTPS_PROXY: process.env.HTTPS_PROXY, NO_PROXY: process.env.NO_PROXY }
+  Object.assign(process.env, { HTTP_PROXY: 'http://127.0.0.1:1', HTTPS_PROXY: 'http://127.0.0.1:1', NO_PROXY: '' })
+  t.after(() => { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value } })
+  const { client, file, target } = await fixture(t, (_request, response) => response.end(data))
+  await client.download(file, target, new AbortController().signal, () => {})
+  assert.deepEqual(await readFile(target), data)
+})
+
 test('a server ignoring Range fails without truncating the saved partial download', async t => {
   const { client, file, target } = await fixture(t, (_request, response) => response.end(data))
   await writeFile(target + '.part', data.subarray(0, 7))

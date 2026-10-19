@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils'
 export interface SetupModel {
   id: string; name: string; variant: string; purpose: string;
   status: 'pending' | 'downloading' | 'paused' | 'ready' | 'failed';
-  received: number; total: number; speed: number; error?: string
+  received: number; total: number; speed: number; source?: string; error?: string
 }
 export interface SetupState {
   phase: 'environment' | 'models' | 'starting' | 'ready' | 'failed'; platform: string; arch: string;
-  environment: { id: string; name: string; status: 'pending' | 'running' | 'ready' | 'failed'; detail?: string }[];
+  environment: { id: string; name: string; status: 'pending' | 'running' | 'ready' | 'failed'; detail?: string; source?: string }[];
   models: SetupModel[]; error?: string; canRetry: boolean; token: string
 }
 export type SetupAction = 'pause' | 'resume' | 'retry'
@@ -66,7 +66,7 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
         <span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}模型准备</span>
       </h1>
       {!environmentReady && <section aria-label="环境准备" className="mb-5 divide-y divide-border rounded-2xl border border-border bg-card px-5 shadow-card">
-        {state.environment.map(step => <div key={step.id} className="flex items-center justify-between gap-3 py-4 text-sm"><div><span>{step.name}</span>{step.detail && <p className="mt-1 break-words text-xs text-muted-foreground">{step.detail}</p>}</div><span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">{step.status === 'ready' ? <Check className="size-4 text-brand-blue" /> : step.status === 'running' ? <><Loader2 className="size-3.5 animate-spin" />准备中</> : step.status === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : '等待中'}</span></div>)}
+        {state.environment.map(step => <div key={step.id} className="flex items-center justify-between gap-3 py-4 text-sm"><div><span>{step.name}</span>{step.source && <span className="ml-2 text-xs text-subtle-foreground">{step.source}</span>}{step.detail && <p className="mt-1 break-words text-xs text-muted-foreground">{step.detail}</p>}</div><span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">{step.status === 'ready' ? <Check className="size-4 text-brand-blue" /> : step.status === 'running' ? <><Loader2 className="size-3.5 animate-spin" />准备中</> : step.status === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : '等待中'}</span></div>)}
       </section>}
       {environmentReady && state.environment.find(step => step.id === 'acceleration')?.detail && <p className="mb-5 text-xs text-muted-foreground">{state.environment.find(step => step.id === 'acceleration')!.detail}</p>}
       <section aria-label="模型下载" className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
@@ -92,7 +92,7 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
                   </span>
                   {done ? <span className="flex size-7 shrink-0 items-center justify-center"><Check className="size-4 text-brand-blue" /></span> : <Button variant="ghost" size="icon-xs" disabled={busy || state.phase !== 'models' || model.status === 'pending'} aria-label={`${model.status === 'downloading' ? '暂停' : model.status === 'failed' ? '重试' : '继续'} ${model.name}`} onClick={() => onAction(model.status === 'downloading' ? 'pause' : model.status === 'failed' ? 'retry' : 'resume', model.id)}>{model.status === 'downloading' ? <Pause /> : model.status === 'failed' ? <RotateCcw /> : <Play />}</Button>}
                 </div>
-                <div className="flex items-center gap-3"><div className="min-w-0 flex-1"><Progress value={model.total ? model.received / model.total : 0} label={`${model.name} 下载进度`} paused={model.status === 'paused'} /></div><span className="shrink-0 text-[11px] tabular-nums text-subtle-foreground">{sizeLabel(model.received)} / {sizeLabel(model.total)}</span></div>
+                <div className="flex items-center gap-3">{model.source && !done && <span className="text-[11px] text-subtle-foreground">{model.source}</span>}<div className="min-w-0 flex-1"><Progress value={model.total ? model.received / model.total : 0} label={`${model.name} 下载进度`} paused={model.status === 'paused'} /></div><span className="shrink-0 text-[11px] tabular-nums text-subtle-foreground">{sizeLabel(model.received)} / {sizeLabel(model.total)}</span></div>
               </div>
             </div>
           })}

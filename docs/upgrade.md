@@ -8,6 +8,12 @@
 
 翻译响应校验失败时，日志会显示批次、具体失败原因和 `translation_raw` 原始响应文件名。小米 MiMo 在 [#146](https://github.com/liuzhao1225/YouDub-webui/issues/146) 中的原始失败仍待服务地址与脱敏响应复现，此版本没有宣称已验证该问题修复。
 
+## 国内首次启动下载
+
+从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
+
+Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像，仍使用 AMD 官方源；WebView2 仍由微软分发。应用安装包、软件更新和用户输入的视频地址沿用各自官方服务。源码安装缺少 Demucs 子模块时仍需获取 Git 仓库；桌面包已包含该子模块。
+
 ## macOS 桌面版
 
 支持 Apple Silicon、macOS 14 及以上。退出正在运行的 YouDub，打开 DMG，将 YouDub 拖入 Applications；已有试验版本时替换应用。再次启动后，在工作台确认已有任务、模型与服务连接。

@@ -63,10 +63,11 @@ def hardware() -> dict:
 def installation_plan(host: dict) -> dict:
     """Pinned Torch/Audio/Codec ABI sets, never install or change OS drivers."""
     system = host["system"]
-    plan = {"backend": "cpu", "index": "https://download.pytorch.org/whl/cpu", "version": "2.8.0",
+    plan = {"backend": "cpu", "index": "https://mirrors.aliyun.com/pypi/simple/", "variant": "cpu",
+            "findLinks": "https://mirrors.aliyun.com/pytorch-wheels/cpu/", "version": "2.8.0",
             "codec": "0.7.0", "prerequisites": [], "packages": [], "detail": "CPU：未发现受支持的 GPU 运行环境"}
     if system == "Darwin":
-        plan["index"] = "https://mirrors.aliyun.com/pypi/simple/"
+        plan.update(variant="", findLinks="")
         plan["backend"] = "mps" if host["arch"] in {"arm64", "aarch64"} else "cpu"
         plan["detail"] = "Apple MPS：安装后检查实际运算能力" if plan["backend"] == "mps" else "Intel Mac 需要自行提供支持 Torch >= 2.5 的 Python 环境"
         return plan
@@ -81,20 +82,20 @@ def installation_plan(host: dict) -> dict:
         minimum = (570, 65) if system == "Windows" and modern else (570, 26) if modern else (527, 41) if system == "Windows" else (525, 60)
         if capability >= 5 and driver >= minimum:
             variant = "cu128" if modern else "cu126"
-            plan.update(backend="cuda", index=f"https://download.pytorch.org/whl/{variant}",
+            plan.update(backend="cuda", variant=variant, findLinks=f"https://mirrors.aliyun.com/pytorch-wheels/{variant}/",
                         detail=f"{gpu['name']} · CUDA {variant[2:4]}.{variant[4:]} · 驱动 {gpu['driver']}；安装后验证运算")
             return plan
     if nvidia:
         plan["detail"] = "已发现 NVIDIA GPU，但架构或驱动不满足兼容 CUDA 包要求；使用 CPU"
     amd = [gpu for gpu in host["gpus"] if gpu["vendor"] == "amd"]
     if amd and system == "Linux" and host.get("rocm", "").startswith("6.4"):
-        plan.update(backend="rocm", index="https://download.pytorch.org/whl/rocm6.4", detail="AMD ROCm 6.4：安装后验证 GPU 运算")
+        plan.update(backend="rocm", variant="rocm6.4", findLinks="https://mirrors.aliyun.com/pytorch-wheels/rocm6.4/", detail="AMD ROCm 6.4：安装后验证 GPU 运算")
     elif amd and system == "Windows":
         supported = {"AMD Radeon RX 9070 XT", "AMD Radeon RX 9070", "AMD Radeon RX 9060 XT", "AMD Radeon RX 7900 XTX",
                      "AMD Radeon RX 7700", "AMD Radeon PRO W7900", "AMD Radeon PRO W7900 Dual Slot", "AMD Radeon AI PRO R9700"}
         if host.get("build", 0) >= 22000 and any(gpu["name"] in supported for gpu in amd):
             base = "https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/"
-            plan.update(backend="rocm", version="2.9.1", codec="0.8.1", index="https://mirrors.aliyun.com/pypi/simple/",
+            plan.update(backend="rocm", version="2.9.1", codec="0.8.1", variant="rocm7.2.1", findLinks="",
                         detail="AMD ROCm 7.2.1（需要 AMD 26.2.2 驱动）；安装后验证 GPU 运算",
                         prerequisites=[base + f"{name}-7.2.1-py3-none-win_amd64.whl" for name in ("rocm_sdk_core", "rocm_sdk_devel", "rocm_sdk_libraries_custom")] + [base + "rocm-7.2.1.tar.gz"],
                         packages=[base + f"{name}-2.9.1%2Brocm7.2.1-cp312-cp312-win_amd64.whl" for name in ("torch", "torchaudio")])

@@ -34,6 +34,8 @@ jobs:
         run: npm run test:release
       - name: 检查 Windows 环境准备和下载
         run: node --expose-internals --import tsx --test packages/builtin/test/bootstrap.test.ts packages/builtin/test/setup.test.ts packages/builtin/test/setup-download.test.ts
+      - name: 实际下载国内 Python 与 FFmpeg 并验证中文路径
+        run: node --import tsx scripts/smoke-runtime-downloads.ts
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
