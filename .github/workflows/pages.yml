@@ -38,7 +38,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api --paginate --slurp repos/${{ github.repository }}/releases > "$RUNNER_TEMP/releases.json"
-          node scripts/download-releases.mjs "$RUNNER_TEMP/releases.json"
+          gh api repos/${{ github.repository }}/releases/latest > "$RUNNER_TEMP/latest.json"
+          node scripts/download-releases.mjs "$RUNNER_TEMP/releases.json" "$RUNNER_TEMP/latest.json"
       - name: 检查官网脚本
         run: |
           node --check site/player.js
