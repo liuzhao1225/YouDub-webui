@@ -27,11 +27,12 @@ export function availableUpdate(value: unknown, current: string, platform: Platf
     if (release.url !== `${repository}/releases/tag/v${version}`) throw new Error('Unexpected release URL.')
     const asset = release.platforms.find((item: { id: string }) => item?.id === platform)
     if (!asset) continue
-    const file = `YouDub-${version}-${platform === 'macos-arm64' ? 'macOS-arm64.dmg' : 'windows-x64.zip'}`
+    const selected = platform === 'windows-x64' && asset.installer ? asset.installer : asset
+    const file = `YouDub-${version}-${platform === 'macos-arm64' ? 'macOS-arm64.dmg' : asset.installer ? 'windows-x64-Setup.exe' : 'windows-x64.zip'}`
     const download = `${repository}/releases/download/v${version}/${file}`
-    if (asset.url !== download || asset.checksum !== download + '.sha256') throw new Error('Release asset or checksum URL is invalid.')
+    if (selected.url !== download || selected.checksum !== download + '.sha256') throw new Error('Release asset or checksum URL is invalid.')
     if (compare(version, current) > 0 && (!latest || compare(version, latest.version) > 0)) {
-      latest = { version, url: release.url, download, checksum: asset.checksum }
+      latest = { version, url: release.url, download, checksum: selected.checksum }
     }
   }
   return latest

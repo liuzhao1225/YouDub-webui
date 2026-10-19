@@ -10,7 +10,7 @@
 
 ## 国内首次启动下载
 
-从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。Windows 会跳过 Microsoft Store 的 Python 占位入口，避免出现 9009 安装错误。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
+从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。新安装使用 YouDub 自有 Python，不探测系统 Python 或 Microsoft Store 占位入口，避免出现 9009 安装错误。Windows 解释器与虚拟环境分别位于 `%LOCALAPPDATA%\YouDub\runtime\python` 和 `%LOCALAPPDATA%\YouDub\runtime\venv`；更改 `YOUDUB_DESKTOP_DATA_DIR` 时一起移动到指定数据目录。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
 
 Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像，仍使用 AMD 官方源；WebView2 仍由微软分发。应用安装包、软件更新和用户输入的视频地址沿用各自官方服务。源码安装缺少 Demucs 子模块时仍需获取 Git 仓库；桌面包已包含该子模块。
 
@@ -24,9 +24,11 @@ Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像
 
 ## Windows 桌面版
 
-Windows x64 便携包由新增的 Windows 发布流程生成，适用于 Windows 10 22H2 / Windows 11；历史 tag 不会自动补发。下载包含 `YouDub-<version>-windows-x64.zip` 的 Release，使用 PowerShell 的 `Get-FileHash <zip路径> -Algorithm SHA256` 与相邻 `.sha256` 文件核对后，将整个 ZIP 解压到本地目录，运行 `YouDub.exe`。需要 WebView2 Evergreen Runtime，缺少时启动器会提供微软下载入口。此便携包尚未进行 Authenticode 签名。
+从 `v0.0.5` 起提供 `YouDub-<version>-windows-x64-Setup.exe` 安装包，适用于 Windows 10 22H2 / Windows 11。双击后选择安装目录，可创建开始菜单和桌面快捷方式；默认安装到 `%LOCALAPPDATA%\Programs\YouDub`，不需要管理员权限。可在 Windows「已安装的应用」中卸载。安装程序和应用尚未进行 Authenticode 签名。
 
-升级前关闭 YouDub，将新包解压到新的应用目录。保留 `%LOCALAPPDATA%\YouDub` 中的模型、任务和配置，以及 Windows 凭据管理器中的翻译密钥；不要把新旧版本同时运行在同一个数据目录。日志位于 `%LOCALAPPDATA%\YouDub\logs\desktop.log`。使用 `YOUDUB_DESKTOP_DATA_DIR` 时，数据和日志位于指定目录。
+升级前退出 YouDub，运行新版本安装包。升级与卸载均保留 `%LOCALAPPDATA%\YouDub` 中的 Python 环境、模型、任务、配置，以及 Windows 凭据管理器中的翻译密钥。日志位于 `%LOCALAPPDATA%\YouDub\logs\desktop.log`。自定义 `YOUDUB_DESKTOP_DATA_DIR` 时，数据和环境位于该目录。
+
+Release 同时保留 ZIP 便携版；完整解压后运行 `YouDub.exe`，升级时解压到新的应用目录。不要把新旧版本同时运行在同一个数据目录。两种包均需要 WebView2 Evergreen Runtime，缺少时启动器会提供微软下载入口。下载后可使用 PowerShell `Get-FileHash <文件路径> -Algorithm SHA256` 与相邻 `.sha256` 文件核对。
 
 Windows 本机验收覆盖打包、原生窗口、首次翻译配置、路径兼容性、任务生命周期和服务退出，并使用实际 Windows 包在 GTX 1080 Ti 上完成真实视频的识别、翻译、配音、字幕对齐和导出。真实任务复用已准备的 Python 与模型缓存，不代表全新机器上的完整模型下载已验收，详见[验收记录](validation/windows-desktop-2026-10-16.md)。
 

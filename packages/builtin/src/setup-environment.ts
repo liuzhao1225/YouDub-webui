@@ -18,8 +18,6 @@ export async function executable(name: string) {
   const suffixes = process.platform === 'win32' ? ['', ...(process.env.PATHEXT || '.EXE;.CMD;.BAT').split(';')] : ['']
   for (const directory of (process.env.PATH || '').split(delimiter)) for (const suffix of suffixes) {
     const path = join(directory, name + suffix)
-    // WindowsApps exposes a Store launcher even when Python is not installed (exit 9009).
-    if (process.platform === 'win32' && name === 'python' && /[\\/]WindowsApps[\\/]/i.test(path)) continue
     try { await access(path, constants.X_OK); return path }
     catch (error: any) { if (!['ENOENT', 'EACCES'].includes(error.code)) throw error }
   }
@@ -60,27 +58,16 @@ export class EnvironmentSetup {
     const environment = dirname(dirname(this.config.python))
     if (!await fileSize(this.config.python)) {
       if (process.env.YOUDUB_PYTHON?.trim()) throw new Error(`YOUDUB_PYTHON 不存在：${this.config.python}`)
-      const systemPython = await executable(process.platform === 'win32' ? 'python' : 'python3.12')
-      let compatible = false
-      if (systemPython) {
-        const version = await this.run(systemPython, ['-c', 'import sys; print(".".join(map(str, sys.version_info[:2])))'])
-        compatible = version.stdout.trim() === '3.12'
-        if (!compatible) this.ctx.logger.info(`检测到 Python ${version.stdout.trim()}，准备应用专用 Python 3.12。`)
-      }
-      if (systemPython && compatible) {
-        await this.run(systemPython, ['-m', 'venv', environment])
-      } else {
-        const windows = process.platform === 'win32'
-        const asset = runtimeManifest.python[`${process.platform}-${process.arch}` as keyof typeof runtimeManifest.python]
-        const folder = join(this.config.root, 'runtime', 'python')
-        this.source('python', '阿里 npmmirror')
-        await this.client.download(asset, join(folder, asset.path), this.signal, () => {})
-        // Pass only ASCII relative paths to Windows tar; cwd supports Unicode via CreateProcessW.
-        const tar = windows ? join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : '/usr/bin/tar'
-        await this.run(tar, ['-xf', asset.path], undefined, folder)
-        const python = join(folder, 'python', windows ? 'python.exe' : 'bin/python3')
-        await this.run(python, ['-m', 'venv', environment])
-      }
+      const windows = process.platform === 'win32'
+      const asset = runtimeManifest.python[`${process.platform}-${process.arch}` as keyof typeof runtimeManifest.python]
+      const folder = join(this.config.root, 'runtime', 'python')
+      this.source('python', '阿里 npmmirror')
+      await this.client.download(asset, join(folder, asset.path), this.signal, () => {})
+      // Pass only ASCII relative paths to Windows tar; cwd supports Unicode via CreateProcessW.
+      const tar = windows ? join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : '/usr/bin/tar'
+      await this.run(tar, ['-xf', asset.path], undefined, folder)
+      const python = join(folder, 'python', windows ? 'python.exe' : 'bin/python3')
+      await this.run(python, ['-m', 'venv', environment])
     }
     const result = await this.python(['-c', 'import sys; assert sys.version_info[:2] == (3, 12), "Python 3.12 is required"; print(sys.version.split()[0])'])
     return result.stdout.trim()

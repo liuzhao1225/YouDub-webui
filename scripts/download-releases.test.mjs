@@ -9,3 +9,14 @@ test('only published assets with checksums become downloads; older versions keep
   assert.deepEqual(result.map(item => [item.version, item.platforms.map(p => p.id)]), [['v0.0.3', ['windows-x64']], ['v0.0.2', ['macos-arm64']]])
   assert.deepEqual(downloadReleases([release('v0.0.4', [])]), [])
 })
+
+test('adds a verified EXE installer while preserving ZIP URLs for older app updaters', () => {
+  const zip = 'YouDub-0.0.5-windows-x64.zip', exe = 'YouDub-0.0.5-windows-x64-Setup.exe'
+  const item = release('v0.0.5', [zip, zip + '.sha256', exe, exe + '.sha256'])
+  const platform = downloadReleases([item])[0].platforms[0]
+  assert.ok(platform.url.endsWith('/' + zip))
+  assert.ok(platform.installer.url.endsWith('/' + exe))
+  assert.equal(platform.installer.checksum, platform.installer.url + '.sha256')
+  const missingDigest = release('v0.0.5', [zip, zip + '.sha256', exe])
+  assert.equal(downloadReleases([missingDigest])[0].platforms[0].installer, undefined)
+})

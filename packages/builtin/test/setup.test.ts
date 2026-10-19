@@ -40,7 +40,7 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
   const aliases = join(root, 'Microsoft', 'WindowsApps')
   await mkdir(aliases, { recursive: true })
   await writeFile(join(aliases, 'python.EXE'), 'Microsoft Store placeholder, never execute', { mode: 0o700 })
-  process.env.PATH = aliases
+  process.env.PATH = [aliases, previous.PATH].filter(Boolean).join(delimiter)
   delete process.env.YOUDUB_PYTHON
   const stop = new Error('Stop before creating venv')
   let extracted = false
@@ -64,7 +64,7 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
   assert.equal(extracted, true)
 })
 
-test('desktop Python is created in the writable data directory without modifying the application bundle', async t => {
+test('desktop Python stays in its data directory even when a system Python is on PATH', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-desktop-environment-'))
   const environment = join(root, 'runtime/venv')
   const bin = join(root, 'python-bin')
@@ -89,15 +89,19 @@ test('desktop Python is created in the writable data directory without modifying
   const { python } = runtimePaths(root)
   assert.equal(python, join(environment, windows ? 'Scripts/python.exe' : 'bin/python'))
   const commands: string[][] = []
-  const ctx = { process: { run: async ({ args }: { args: string[] }) => {
+  const ctx = { logger: { info() {} }, process: { run: async ({ command, args }: { command: string; args: string[] }) => {
     commands.push(args)
     if (args[1] === 'venv') {
+      assert.equal(command, join(root, 'runtime', 'python', 'python', windows ? 'python.exe' : 'bin/python3'))
       await mkdir(join(args[2]!, windows ? 'Scripts' : 'bin'), { recursive: true })
       await writeFile(python, 'test executable')
     }
     return { stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12\n' }
   } } } as unknown as Context
-  const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, new DownloadClient(), new AbortController().signal)
+  const client = new DownloadClient()
+  t.after(() => client.close())
+  t.mock.method(client, 'download', async () => {})
+  const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
   await setup.prepare()
   assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
   assert.equal(process.env.PATH?.split(delimiter)[0], media)

@@ -118,3 +118,11 @@ run(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonI
   "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; if (Test-Path -LiteralPath $env:YOUDUB_ZIP) { Remove-Item -LiteralPath $env:YOUDUB_ZIP }; [IO.Compression.ZipFile]::CreateFromDirectory($env:YOUDUB_BUNDLE, $env:YOUDUB_ZIP, [IO.Compression.CompressionLevel]::Optimal, $true)"], { env: { ...process.env, YOUDUB_BUNDLE: app, YOUDUB_ZIP: zip } })
 await writeFile(zip + '.sha256', `${await sha256(zip)}  ${basename(zip)}\n`)
 console.log(`Built ${zip}`)
+
+// The installer and portable ZIP contain the same built application.
+const compiler = process.env.YOUDUB_ISCC || join(process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', 'Inno Setup 6/ISCC.exe')
+await access(compiler)
+run(compiler, [`/DAppVersion=${appVersion}`, `/DRepoRoot=${root}`, join(root, 'apps/desktop/windows/installer.iss')])
+const installer = join(root, `dist/YouDub-${appVersion}-windows-x64-Setup.exe`)
+await writeFile(installer + '.sha256', `${await sha256(installer)}  ${basename(installer)}\n`)
+console.log(`Built ${installer}`)

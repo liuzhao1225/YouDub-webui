@@ -9,10 +9,11 @@ import { demos } from '../site/demos.js'
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Run this smoke test on Windows x64 with WebView2 installed.')
 const root = resolve(import.meta.dirname, '..')
-const zip = resolve(process.argv[2] || join(root, `dist/YouDub-${appVersion}-windows-x64.zip`))
+const installerMode = process.argv.includes('--installer')
+const zip = resolve(installerMode ? join(root, `dist/YouDub-${appVersion}-windows-x64-Setup.exe`) : process.argv[2] || join(root, `dist/YouDub-${appVersion}-windows-x64.zip`))
 const hash = content => createHash('sha256').update(content).digest('hex')
 const digest = hash(await readFile(zip))
-assert.equal(digest, (await readFile(zip + '.sha256', 'utf8')).trim().split(/\s+/)[0], 'ZIP checksum')
+assert.equal(digest, (await readFile(zip + '.sha256', 'utf8')).trim().split(/\s+/)[0], 'Distribution checksum')
 const cache = join(root, '.cache/windows-smoke')
 await mkdir(cache, { recursive: true })
 const work = await mkdtemp(join(cache, 'run-'))
@@ -20,15 +21,23 @@ const destination = join(work, '安装 空格')
 const data = join(work, '用户 数据')
 await mkdir(destination)
 const system = join(process.env.SystemRoot || 'C:/Windows', 'System32')
-console.log('Extracting verified ZIP into a path containing Chinese characters and spaces...')
-// ZipFile uses Unicode paths even on runners whose ANSI code page is English.
-const extract = spawnSync(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
-  "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:YOUDUB_ARCHIVE, $env:YOUDUB_EXTRACT_DIR)"],
-{ stdio: 'inherit', windowsHide: true, env: { ...process.env, YOUDUB_ARCHIVE: zip, YOUDUB_EXTRACT_DIR: destination } })
-
-if (extract.error) throw extract.error
-assert.equal(extract.status, 0, 'ZIP extraction')
-const app = join(destination, 'YouDub-windows-x64')
+const app = installerMode ? destination : join(destination, 'YouDub-windows-x64')
+function install() {
+  const result = spawnSync(zip, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', `/DIR=${app}`, `/LOG=${join(work, 'install.log')}`], { windowsHide: true, encoding: 'utf8' })
+  if (result.error) throw result.error
+  assert.equal(result.status, 0, `Installer: ${result.stderr}`)
+}
+if (installerMode) {
+  console.log('Installing verified EXE into a path containing Chinese characters and spaces...')
+  install()
+} else {
+  console.log('Extracting verified ZIP into a path containing Chinese characters and spaces...')
+  const extract = spawnSync(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
+    "$ErrorActionPreference = 'Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; [IO.Compression.ZipFile]::ExtractToDirectory($env:YOUDUB_ARCHIVE, $env:YOUDUB_EXTRACT_DIR)"],
+  { stdio: 'inherit', windowsHide: true, env: { ...process.env, YOUDUB_ARCHIVE: zip, YOUDUB_EXTRACT_DIR: destination } })
+  if (extract.error) throw extract.error
+  assert.equal(extract.status, 0, 'ZIP extraction')
+}
 const build = JSON.parse(await readFile(join(app, 'resources/build.json'), 'utf8'))
 assert.equal(build.version, appVersion)
 assert.equal(build.platform, 'win32-x64')
@@ -154,8 +163,26 @@ try {
   await stopped([third.serverPid, third.browserPid], third.url)
   assert.deepEqual(await snapshot(app), before, 'Running the desktop must not modify its application bundle')
   records.push({ test: 'reopen-and-bundle-immutability', ok: true, files: Object.keys(before).length })
+  if (installerMode) {
+    const sentinel = join(data, '保留我的模型与配置.txt')
+    await writeFile(sentinel, 'keep user data')
+    install()
+    assert.equal(await readFile(sentinel, 'utf8'), 'keep user data', 'Reinstall preserves user data')
+    const uninstall = spawnSync(join(app, 'unins000.exe'), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', `/LOG=${join(work, 'uninstall.log')}`], { encoding: 'utf8', windowsHide: true })
+    if (uninstall.error) throw uninstall.error
+    assert.equal(uninstall.status, 0, uninstall.stderr)
+    const deadline = Date.now() + 30000
+    while (Date.now() < deadline) {
+      try { await readFile(join(app, 'YouDub.exe')) }
+      catch (error) { if (error.code === 'ENOENT') break; throw error }
+      await delay(100)
+    }
+    await assert.rejects(readFile(join(app, 'YouDub.exe')), { code: 'ENOENT' })
+    assert.equal(await readFile(sentinel, 'utf8'), 'keep user data', 'Uninstall preserves user data')
+    records.push({ test: 'installer-reinstall-uninstall-preserve-data', ok: true })
+  }
   await writeFile(join(root, 'dist/windows-smoke.json'), JSON.stringify({ ok: true, archive: basename(zip), sha256: digest, build, records, testedAt: new Date().toISOString(), limitations: ['Uses an explicit missing Python override to test first-run error rendering without model downloads.', 'Does not validate model installation, CUDA, video inference or Authenticode signing.'] }, null, 2) + '\n')
-  console.log('Windows ZIP, native WebView2 pages, single-instance lock, graceful/crash shutdown and immutable bundle: passed.')
+  console.log(`Windows ${installerMode ? 'EXE install/reinstall/uninstall' : 'ZIP'}, native WebView2 pages, process cleanup and immutable bundle: passed.`)
 } catch (error) {
   console.error(`Smoke diagnostics retained at ${work}`)
   try { console.error(await readFile(join(data, 'logs/desktop.log'), 'utf8')) } catch {}

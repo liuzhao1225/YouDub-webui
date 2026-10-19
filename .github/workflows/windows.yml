@@ -11,7 +11,7 @@ jobs:
   package:
     name: Windows x64 原生应用
     runs-on: windows-2022
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -73,18 +73,25 @@ jobs:
         run: |
           $env:YOUDUB_TEST_PYTHON = (Get-Command python).Source
           npm run test:backend -- -q
-      - name: 构建 Windows 便携包
+      - name: 构建 Windows 安装包与便携包
         run: npm run build:desktop
       - name: 准备 WebView2 运行时
         run: ./scripts/prepare-windows-ci.ps1
       - name: 解压并验收原生窗口、页面和进程清理
         run: npm run test:windows
+      - name: 验证 EXE 安装、重装、原生窗口和保留数据卸载
+        shell: pwsh
+        run: |
+          Copy-Item dist/windows-smoke.json dist/windows-portable-smoke.json
+          npm run test:windows -- --installer
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-release
           path: |
             dist/YouDub-*-windows-x64.zip
             dist/YouDub-*-windows-x64.zip.sha256
+            dist/YouDub-*-windows-x64-Setup.exe
+            dist/YouDub-*-windows-x64-Setup.exe.sha256
           retention-days: 7
           if-no-files-found: error
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -93,6 +100,8 @@ jobs:
           name: windows-smoke-evidence
           path: |
             dist/windows-smoke.json
+            dist/windows-portable-smoke.json
+            .cache/runtime-download-smoke/result.json
             dist/windows-smoke.png
             .cache/windows-smoke/**/desktop.log
             .cache/windows-smoke/**/normal.json
