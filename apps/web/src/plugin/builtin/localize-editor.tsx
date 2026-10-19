@@ -27,14 +27,15 @@ function DefaultsForm({ defaults, runtime }: { defaults?: Partial<TaskConfig>; r
     if (busy) return
     setBusy(true); setSaved(false); setError('')
     try {
-      await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: value }) })
+      const current = await apiClient.request<{ defaults?: TaskConfig | null }>('/api/v2/settings')
+      await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: { ...value, translation: current.defaults?.translation ?? value.translation } }) })
       setSaved(true)
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
   }
   return <form onSubmit={(event) => void save(event)} className="p-6">
     <p className="text-sm text-muted-foreground">{tx('Used for new tasks. Output and languages can be changed on the home page.', '用于新任务，输出和语言可在主页单独选择。', '新しいタスクに適用します。出力と言語はホームでも変更できます。')}</p>
-    <fieldset disabled={busy} className="min-w-0 disabled:opacity-60"><TaskConfigForm value={value} runtime={runtime} onChange={(next) => { setValue(next); setSaved(false) }} /></fieldset>
+    <fieldset disabled={busy} className="min-w-0 disabled:opacity-60"><TaskConfigForm value={value} runtime={runtime} showTranslation={false} onChange={(next) => { setValue(next); setSaved(false) }} /></fieldset>
     {error && <InlineAlert>{error}</InlineAlert>}
     <Button type="submit" className="mt-4" disabled={busy}>{busy ? <Loader2 className="animate-spin" /> : saved ? <Check /> : null}{saved ? tx('Saved', '已保存', '保存済み') : tx('Save defaults', '保存默认配置', '初期設定を保存')}</Button>
   </form>

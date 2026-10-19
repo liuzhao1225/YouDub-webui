@@ -23,7 +23,7 @@ async function setup(t: any, fileService = Files) {
     await context.plugin(services => {
       services.reflect.provide('process', {})
       services.reflect.provide('auth', {})
-      services.reflect.provide('settings', {})
+      services.reflect.provide('settings', { read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
       services.reflect.provide('store', {})
       services.reflect.provide('extensions', {})
       services.reflect.provide('catalog', { workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
@@ -36,7 +36,7 @@ async function setup(t: any, fileService = Files) {
     })
     await context.plugin(fileService, { root })
     await context.plugin(Http, { host: '127.0.0.1', port: 0 })
-    await context.plugin(Api)
+    await context.plugin(Api, { version: '1.2.3' })
   })
   t.after(async () => { await app.dispose(); await rm(root, { recursive: true }) })
   ctx.emit('app/ready')
@@ -73,6 +73,15 @@ test('health reports a stopped task runtime as unavailable', async t => {
   const response = await fetch(ctx.http.address + '/api/health')
   assert.equal(response.status, 503)
   assert.equal((await response.json() as any).error.code, 'TASK_RUNTIME_UNAVAILABLE')
+})
+
+test('update metadata uses the composition version and the persisted preference', async t => {
+  const { ctx } = await setup(t)
+  const response = await fetch(ctx.http.address + '/api/v2/updates')
+  assert.equal(response.status, 200)
+  const result = await response.json() as any
+  assert.equal(result.currentVersion, '1.2.3')
+  assert.equal(result.automatic, false)
 })
 
 test('rerun API forwards an explicit step boundary', async t => {

@@ -11,6 +11,7 @@ import { InlineAlert } from '@/components/inline-alert'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { UpdateNotice, UpdateProvider } from '@/components/app-updates'
 
 export function resolveRoute(routes: RouteEntry[], path: string, authenticated: boolean) {
   // Static segments take precedence over parameters, independently of plugin
@@ -41,7 +42,7 @@ function Shell() {
   const Page = match?.route.component
   const content = Page ? <Page key={`${match.route.id}:${path}`} params={match.params!} /> : <div className="p-8"><h1 className="text-xl font-semibold">404</h1><p className="mt-2 text-muted-foreground">{language === 'zh' ? '当前插件组合未提供这个页面。' : 'This page is not provided by the active plugins.'}</p></div>
   if (session.status === 'anonymous') return content
-  return <div className={cn('min-h-screen transition-[padding] duration-200 ease-out', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[248px]')}>
+  return <UpdateProvider><div className={cn('min-h-screen transition-[padding] duration-200 ease-out', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[248px]')}>
     <aside className={cn('fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-surface transition-[width] duration-200 ease-out lg:flex', collapsed ? 'w-[72px]' : 'w-[248px]')}>
       <div className={cn('flex h-16 shrink-0 items-center gap-2', collapsed ? 'justify-center px-0' : 'justify-between pr-3 pl-5')}>
         <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark={!collapsed} className={collapsed ? 'h-[22px]' : 'h-7'} /></Link>
@@ -63,7 +64,7 @@ function Shell() {
       <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark className="h-6" /></Link>
       <div className="flex items-center gap-1"><LanguageSwitcher /><ThemeToggle /></div>
     </header>
-    <div className="relative pb-24 lg:pb-0">{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
+    <div className="relative pb-24 lg:pb-0"><UpdateNotice hidden={path === '/settings'} />{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
     <nav aria-label={t.nav.primary} className="glass fixed inset-x-0 bottom-0 z-40 grid border-t border-border pb-[env(safe-area-inset-bottom)] lg:hidden" style={{ gridTemplateColumns: `repeat(${navigation.length}, minmax(0, 1fr))` }}>
       {navigation.map((item) => {
         const href = client.navigation.href(item.routeId)
@@ -75,7 +76,7 @@ function Shell() {
         </Link>
       })}
     </nav>
-  </div>
+  </div></UpdateProvider>
 }
 function Root() { return <ThemeProvider><LanguageProvider><Shell /></LanguageProvider></ThemeProvider> }
 export const name = 'client-shell'

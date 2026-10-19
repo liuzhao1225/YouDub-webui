@@ -37,6 +37,17 @@ assert.equal(bundledNpm.status, 0, bundledNpm.stderr)
 assert.match(bundledNpm.stdout.trim(), /^\d+\.\d+\.\d+$/, 'Bundled npm must run without a global Node installation')
 const sdkImport = spawnSync(join(app, 'resources/node.exe'), ['--input-type=module', '-e', 'import {SDK_VERSION, AppError} from "@youdub/sdk"; if(SDK_VERSION!=="1.0.0" || !(new AppError("TEST","test") instanceof Error))process.exit(1)'], { cwd: join(app, 'resources/runtime'), encoding: 'utf8', windowsHide: true })
 assert.equal(sdkImport.status, 0, sdkImport.stderr)
+// Setup error pages do not load the authenticated API. Exercise its physical
+// node_modules copy before starting the native first-run smoke test.
+const apiImport = spawnSync(join(app, 'resources/node.exe'), ['--import', 'tsx', '--input-type=module', '-e', `
+  import { apply } from '@youdub/builtin/api'
+  import composition from './youdub.config.ts'
+  const entries = await composition()
+  const api = entries.find(entry => entry.id === 'setup').config.entries.find(entry => entry.id === 'api')
+  if (typeof apply !== 'function' || api.config.version !== ${JSON.stringify(appVersion)}) throw new Error('Packaged API version mismatch')
+`], { cwd: join(app, 'resources/runtime'), encoding: 'utf8', windowsHide: true,
+  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data } })
+assert.equal(apiImport.status, 0, apiImport.stderr)
 if (process.env.GITHUB_SHA) assert.equal(build.baseCommit, process.env.GITHUB_SHA)
 async function snapshot(directory, prefix = '') {
   const files = {}
@@ -51,7 +62,7 @@ async function snapshot(directory, prefix = '') {
 console.log('Hashing the extracted application before startup...')
 const before = await snapshot(app)
 const active = new Set()
-const records = []
+const records = [{ test: 'packaged-api-import-and-version', ok: true, version: appVersion }]
 function launch(mode, name) {
   const report = join(work, name + '.json')
   // Deterministic, offline first-run failure: never download models in packaging CI.

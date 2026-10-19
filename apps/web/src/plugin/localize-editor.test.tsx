@@ -31,10 +31,12 @@ it('uses the refreshed runtime capabilities without replacing them with a stale 
 it('registers model configuration in settings and saves it as task defaults with explicit failure handling', async () => {
   const defaults = { output_mode: 'subtitles', source_language: 'en', target_language: 'zh', keep_background: false, asr: { adapter: 'asr', model: 'asr', device: 'cpu' }, translation: { adapter: 'translation', model: 'translation', device: 'remote' }, tts: null, separation: null }
   const capabilities = ['asr', 'translation'].map((kind) => ({ adapter: kind, capability: kind, available: true, execution: kind === 'translation' ? 'remote' : 'local', models: [{ id: kind, devices: [kind === 'translation' ? 'remote' : 'cpu'], source_languages: ['en'], target_languages: ['zh'], voice_modes: [], voices: [] }] }))
+  const savedTranslation = { adapter: 'openai', model: 'new-model', device: 'remote' }
   let finish!: (value: unknown) => void
   let fail!: (error: Error) => void
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (init?.method === 'PATCH') return new Promise((resolve, reject) => { finish = resolve; fail = reject })
+    if (path === '/api/v2/settings') return { defaults: { ...defaults, translation: savedTranslation } }
     if (path === '/api/v2/runtime') return { devices: [{ id: 'cpu', available: true }], capabilities }
     return { providers: [], workflows: [{ id: 'youdub.localize', defaults }] }
   })
@@ -44,6 +46,7 @@ it('registers model configuration in settings and saves it as task defaults with
   const genericSave = vi.fn()
   render(<PluginContextProvider context={context}><LanguageProvider><Section settings={{}} save={genericSave} /></LanguageProvider></PluginContextProvider>)
   const hint = await screen.findByLabelText('专名提示（可选）')
+  expect(screen.queryByLabelText('翻译模型')).not.toBeInTheDocument()
   expect(screen.getByLabelText('语音识别模型')).toHaveTextContent('asr')
   const user = userEvent.setup()
   await user.type(hint, 'YouDub')
@@ -58,7 +61,7 @@ it('registers model configuration in settings and saves it as task defaults with
   await screen.findByRole('button', { name: '已保存' })
   const patch = request.mock.calls.find(([, init]) => init?.method === 'PATCH')!
   expect(patch[0]).toBe('/api/v2/settings')
-  expect(JSON.parse(patch[1]!.body as string)).toMatchObject({ defaults: { ...defaults, asr: { ...defaults.asr, initial_prompt: 'YouDub' } } })
+  expect(JSON.parse(patch[1]!.body as string)).toMatchObject({ defaults: { ...defaults, translation: savedTranslation, asr: { ...defaults.asr, initial_prompt: 'YouDub' } } })
   expect(genericSave).not.toHaveBeenCalled()
   await user.type(hint, ' changed')
   await waitFor(() => expect(screen.getByRole('button', { name: '保存默认配置' })).toBeInTheDocument())

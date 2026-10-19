@@ -2,6 +2,12 @@
 
 `v0.0.1` 是新版主线的首个正式版本，`v0.0.3` 开始统一发布 macOS 与 Windows 包。可在[官网下载页](https://liuzhao1225.github.io/YouDub-webui/#download)选择平台和版本，或下载 [GitHub Releases](https://github.com/liuzhao1225/YouDub-webui/releases) 中对应 tag 的安装包及 SHA-256 文件。
 
+`v0.0.4` 补齐跳过首次配置后的服务连接入口。可在「设置 → 服务连接」修改服务地址、模型名称和 API Key，并测试连接；同一地址下密钥留空会保留已有密钥。新任务使用保存后的模型，已有任务保留创建时的配置。
+
+从 `v0.0.4` 起，应用进入工作台后自动检查正式版本，随后每小时检查一次；发现新版本时显示对应平台的下载入口。在「设置 → 软件更新」可手动检查或关闭自动检查，开关随应用数据保留。检查失败时显示错误并停止自动检查，手动检查成功后恢复。下载完成后按下方步骤替换应用。
+
+翻译响应校验失败时，日志会显示批次、具体失败原因和 `translation_raw` 原始响应文件名。小米 MiMo 在 [#146](https://github.com/liuzhao1225/YouDub-webui/issues/146) 中的原始失败仍待服务地址与脱敏响应复现，此版本没有宣称已验证该问题修复。
+
 ## macOS 桌面版
 
 支持 Apple Silicon、macOS 14 及以上。退出正在运行的 YouDub，打开 DMG，将 YouDub 拖入 Applications；已有试验版本时替换应用。再次启动后，在工作台确认已有任务、模型与服务连接。

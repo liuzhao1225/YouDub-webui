@@ -19,7 +19,7 @@ const result = await build({
   external: ['cordis', '@youdub/sdk/client'], define: { 'process.env.NODE_ENV': '"production"' },
   tsconfig: resolve(root, 'tsconfig.json'),
   plugins: [{ name: 'public-sdk-boundary', setup(builder) {
-    builder.onResolve({ filter: /(?:^|\/)sdk$/ }, (args) => args.path === '../sdk' || args.path === './sdk' ? { path: '@youdub/sdk/client', external: true } : undefined)
+    builder.onResolve({ filter: /(?:^|\/)sdk$/ }, (args) => ['../sdk', './sdk', '@/plugin/sdk'].includes(args.path) ? { path: '@youdub/sdk/client', external: true } : undefined)
     // CJS dependencies must receive the same React namespace through an ESM
     // shim; leaving require('react') external creates a browser runtime error.
     builder.onResolve({ filter: /^react(?:\/.*)?$|^react-dom(?:\/.*)?$/ }, (args) => {

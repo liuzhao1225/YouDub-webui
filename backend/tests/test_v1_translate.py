@@ -253,6 +253,46 @@ def test_plugin_preserves_exact_request_settings_and_raw_response_on_failure(con
     assert real_provider.calls[0]["max_completion_tokens"] == 65535
 
 
+@pytest.mark.parametrize("failure,detail", [
+    ("choices", "Expected exactly one response choice"),
+    ("length", "finish_reason='length'"),
+    ("content", "Missing text in message.content"),
+    ("json", "content: json_invalid"),
+    ("schema", "segments.0.text: missing"),
+    ("missing", "missing=1, unexpected=0, duplicates=0"),
+    ("unexpected", "missing=1, unexpected=1, duplicates=0"),
+    ("duplicate", "missing=0, unexpected=0, duplicates=1"),
+])
+def test_invalid_response_identifies_batch_cause_and_evidence_without_logging_text(context, real_provider, failure, detail):
+    segments = [{"segment_id": f"segment-{index:06d}", "text": "private provider text"}
+                for index in range(1, 21)]
+    if failure == "schema":
+        segments[0] = {"segment_id": "segment-000001", "unexpected": "private provider text"}
+    elif failure == "missing":
+        segments.pop()
+    elif failure == "unexpected":
+        segments[0]["segment_id"] = "foreign"
+    elif failure == "duplicate":
+        segments.append(segments[0])
+    content = None if failure == "content" else "private provider text" if failure == "json" else json.dumps({"segments": segments})
+    response = {"choices": [] if failure == "choices" else [{
+        "finish_reason": "length" if failure == "length" else "stop",
+        "message": {"role": "assistant", "content": content},
+    }]}
+    real_provider.body = json.dumps(response).encode()
+    plugin_config = SimpleNamespace(**context.config.__dict__, record_raw=True, max_completion_tokens=65535)
+    with pytest.raises(ApiError) as error:
+        translate.run(replace(context, config=plugin_config), lambda *args: None)
+    message = error.value.content["error"]["message"]
+    assert "Translation batch 1/2" in message
+    assert detail in message
+    assert "translation_raw/0001.response.json" in message
+    assert "private provider text" not in message
+    assert (context.work_dir / "translation_raw" / "0001.response.json").read_bytes() == real_provider.body
+    assert len(real_provider.calls) == 1
+    assert not (context.work_dir / "translation.json").exists()
+
+
 def test_installed_sdk_read_timeout_keeps_unknown_remote_completion_without_retry(context, real_provider):
     real_provider.read_timeout = True
     states = []

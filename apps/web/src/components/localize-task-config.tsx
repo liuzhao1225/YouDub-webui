@@ -258,8 +258,8 @@ function LanguageField({ id, caption, value, options, onChange }: {
   </Field>
 }
 
-export function TaskConfigForm({ value, runtime, onChange }: {
-  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void
+export function TaskConfigForm({ value, runtime, onChange, showTranslation = true }: {
+  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void; showTranslation?: boolean
 }) {
   const text = useText()
   const tts = selectedModel(runtime, "tts", value.tts)
@@ -303,10 +303,10 @@ export function TaskConfigForm({ value, runtime, onChange }: {
       </Field>
     </ConfigRow>
 
-    <ConfigRow icon={Languages} tint="violet" title={text("Translation", "翻译", "翻訳")}
+    {showTranslation && <ConfigRow icon={Languages} tint="violet" title={text("Translation", "翻译", "翻訳")}
       description={text("Translates the transcript sentence by sentence.", "逐句翻译识别出的原文。", "文字起こしを一文ずつ翻訳します。")}>
       <ModelField kind="translation" id="model-translation" caption={text("Model", "模型", "モデル")} srPrefix={text("Translation ", "翻译", "翻訳")} value={value.translation} runtime={runtime} onChange={(translation) => change({ translation })} />
-    </ConfigRow>
+    </ConfigRow>}
 
     {value.output_mode === "both" ? <ConfigRow icon={Captions} tint="teal" title={text("Subtitles", "字幕", "字幕")}
       description={text("Qwen can align subtitles to the generated speech, keeping full-sentence dubbing.", "Qwen 可以按生成的配音对齐字幕，仍保持整句配音。", "Qwen は文全体の吹き替えを保ちながら、生成された音声に字幕を合わせます。")}>
