@@ -10,7 +10,7 @@
 
 ## 国内首次启动下载
 
-从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
+从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。Windows 会跳过 Microsoft Store 的 Python 占位入口，避免出现 9009 安装错误。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
 
 Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像，仍使用 AMD 官方源；WebView2 仍由微软分发。应用安装包、软件更新和用户输入的视频地址沿用各自官方服务。源码安装缺少 Demucs 子模块时仍需获取 Git 仓库；桌面包已包含该子模块。
 

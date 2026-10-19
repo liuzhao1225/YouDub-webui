@@ -19,7 +19,7 @@ function probeResult(action: string) {
   return { ready: true }
 }
 
-test('first-run Python extraction preserves Unicode paths without an installed Python', async t => {
+test('first-run skips Windows Store Python aliases and extracts Python in Unicode paths', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-unicode-archive-'))
   const source = join(root, 'source'), fixture = join(root, 'python.tar.gz')
   const data = join(root, "用户 空格 # % ' [测试]")
@@ -37,7 +37,10 @@ test('first-run Python extraction preserves Unicode paths without an installed P
     for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value }
     await rm(root, { recursive: true })
   })
-  process.env.PATH = join(root, 'no-python')
+  const aliases = join(root, 'Microsoft', 'WindowsApps')
+  await mkdir(aliases, { recursive: true })
+  await writeFile(join(aliases, 'python.EXE'), 'Microsoft Store placeholder, never execute', { mode: 0o700 })
+  process.env.PATH = aliases
   delete process.env.YOUDUB_PYTHON
   const stop = new Error('Stop before creating venv')
   let extracted = false

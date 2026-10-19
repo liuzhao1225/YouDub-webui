@@ -18,6 +18,8 @@ export async function executable(name: string) {
   const suffixes = process.platform === 'win32' ? ['', ...(process.env.PATHEXT || '.EXE;.CMD;.BAT').split(';')] : ['']
   for (const directory of (process.env.PATH || '').split(delimiter)) for (const suffix of suffixes) {
     const path = join(directory, name + suffix)
+    // WindowsApps exposes a Store launcher even when Python is not installed (exit 9009).
+    if (process.platform === 'win32' && name === 'python' && /[\\/]WindowsApps[\\/]/i.test(path)) continue
     try { await access(path, constants.X_OK); return path }
     catch (error: any) { if (!['ENOENT', 'EACCES'].includes(error.code)) throw error }
   }
