@@ -116,25 +116,41 @@ async def _translate(context: StageContext, transcript: Transcript, progress: Ca
                     pending.cancel()
                     with suppress(asyncio.CancelledError):
                         await pending
+            failure_prefix = f"Translation batch {index + 1}/{len(groups)}: "
+            evidence_hint = (f" See translation_raw/{index + 1:04d}.response.json."
+                             if getattr(context.config, "record_raw", False) else "")
             try:
                 response = raw_response.parse()
             except (APIResponseValidationError, ValueError, TypeError) as exc:
-                raise ApiError(502, "INVALID_PROVIDER_RESULT", "The translation provider response could not be parsed.",
+                raise ApiError(502, "INVALID_PROVIDER_RESULT",
+                               failure_prefix + f"The provider response could not be parsed ({type(exc).__name__})." + evidence_hint,
                                stage="translate", action="retry") from exc
             try:
                 choices = getattr(response, "choices", None)
-                if not isinstance(choices, list) or len(choices) != 1 or getattr(choices[0], "finish_reason", None) != "stop":
-                    raise ValueError("Incomplete translation response")
+                if not isinstance(choices, list) or len(choices) != 1:
+                    raise ValueError("Expected exactly one response choice.")
+                finish_reason = getattr(choices[0], "finish_reason", None)
+                if finish_reason != "stop":
+                    raise ValueError(f"Incomplete response: finish_reason={finish_reason!r}; expected 'stop'.")
                 content = getattr(getattr(choices[0], "message", None), "content", None)
                 if not isinstance(content, str):
-                    raise ValueError("Missing translation content")
+                    raise ValueError("Missing text in message.content.")
                 result = BatchTranslation.model_validate_json(content)
                 expected = {segment.id for segment in batch}
                 ids = [segment.segment_id for segment in result.segments]
                 if len(ids) != len(expected) or set(ids) != expected:
-                    raise ValueError("Translation must contain each source segment exactly once")
-            except (ValueError, ValidationError) as exc:
-                raise ApiError(502, "INVALID_PROVIDER_RESULT", "Translation does not match the original segments.",
+                    raise ValueError(
+                        f"Segment IDs do not match: expected={len(expected)}, received={len(ids)}, "
+                        f"missing={len(expected - set(ids))}, unexpected={len(set(ids) - expected)}, "
+                        f"duplicates={len(ids) - len(set(ids))}.")
+            except ValidationError as exc:
+                # Keep subtitle text out of logs; raw responses remain unchanged on disk.
+                details = "; ".join(f"{'.'.join(map(str, item['loc'])) or 'content'}: {item['type']}"
+                                    for item in exc.errors(include_input=False, include_context=False, include_url=False))
+                raise ApiError(502, "INVALID_PROVIDER_RESULT", failure_prefix + "Invalid translation JSON: " + details + "." + evidence_hint,
+                               stage="translate", action="retry") from exc
+            except ValueError as exc:
+                raise ApiError(502, "INVALID_PROVIDER_RESULT", failure_prefix + str(exc) + evidence_hint,
                                stage="translate", action="retry") from exc
             translated.extend(result.segments)
     return Translation(source_language=transcript.detected_language, target_language=context.config.target_language,

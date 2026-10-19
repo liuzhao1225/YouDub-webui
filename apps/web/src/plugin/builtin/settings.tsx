@@ -10,21 +10,68 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { InlineAlert } from '@/components/inline-alert'
 import { useQuery } from './use-query'
+import type { TaskConfig } from './localize-contracts'
 type Connection = { adapter: string; base_url: string; has_api_key: boolean }
-type SettingsData = JsonObject & { connections?: Connection[]; ui_language?: string; plugins?: Record<string, JsonObject> }
+type SettingsData = JsonObject & { connections?: Connection[]; defaults?: TaskConfig | null; ui_language?: string; plugins?: Record<string, JsonObject> }
 type Extension = { id: string; version: string; source: string; installed: boolean; enabled: boolean; active: boolean; restartRequired: boolean }
 function Section({ title, children }: { title: string; children: ReactNode }) { return <section className="rounded-2xl border border-border bg-card shadow-card"><h2 className="border-b border-border px-6 py-4 font-semibold">{title}</h2><div className="space-y-5 p-6">{children}</div></section> }
-function ConnectionForm({ adapter, connection, refresh }: { adapter: string; connection?: Connection; refresh(): void }) {
+function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: string; connection?: Connection; defaults?: TaskConfig; refresh(): void }) {
   const tx = useText()
   const { apiClient } = useClient()
-  const [url, setUrl] = useState(connection?.base_url ?? ''), [key, setKey] = useState(''), [clear, setClear] = useState(false), [error, setError] = useState(''), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false)
-  async function save(event: FormEvent) {
-    event.preventDefault(); if (busy) return; setBusy(true); setError(''); setSaved(false)
-    try { await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ connection: { adapter, base_url: url, ...(clear ? { api_key: null } : key ? { api_key: key } : {}) } }) }); setKey(''); setClear(false); setSaved(true); refresh() }
-    catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
+  const translation = adapter === 'openai'
+  const [url, setUrl] = useState(connection?.base_url ?? ''), [key, setKey] = useState(''), [clear, setClear] = useState(false)
+  const [model, setModel] = useState(defaults?.translation?.model ?? '')
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [tested, setTested] = useState(false)
+  const savedKey = connection?.has_api_key && connection.base_url === url.trim()
+  function changed() { setSaved(false); setTested(false) }
+  async function test() {
+    if (busy) return
+    setBusy(true); setError(''); setTested(false)
+    try {
+      await apiClient.request('/api/v2/settings/test-connection', { method: 'POST', body: JSON.stringify({ base_url: url.trim(), model: model.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) }) })
+      setTested(true)
+    } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
   }
-  return <form className="space-y-4 rounded-xl border border-border p-4" onSubmit={(event) => void save(event)}><h3 className="font-mono text-sm font-medium">{adapter}</h3><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor={`connection-${adapter}`}>{tx("Service URL", "服务地址", "サービス URL")}</Label><Input id={`connection-${adapter}`} type="url" disabled={busy} value={url} onChange={(event) => { setUrl(event.target.value); setSaved(false) }} required /></div><div className="space-y-2"><Label htmlFor={`key-${adapter}`}>API Key{connection?.has_api_key ? tx(' · saved', ' · 已保存', ' · 保存済み') : ''}</Label><Input id={`key-${adapter}`} type="password" disabled={busy} autoComplete="new-password" value={key} onChange={(event) => { setKey(event.target.value); setSaved(false) }} placeholder={connection?.has_api_key ? tx('Leave empty to keep the saved key', '留空保留已有密钥', '空欄で保存済みキーを保持') : ''} /></div></div>{connection?.has_api_key && <label className="flex gap-2 text-xs text-muted-foreground"><input type="checkbox" disabled={busy} checked={clear} onChange={(event) => { setClear(event.target.checked); setSaved(false) }} />{tx("Clear saved API key", "清除已保存密钥", "保存済みキーを削除")}</label>}{error && <InlineAlert>{error}</InlineAlert>}<Button type="submit" variant="outline" disabled={busy}>{busy ? <Loader2 className="animate-spin" /> : saved ? <Check /> : null}{saved ? tx('Saved', '已保存', '保存済み') : tx('Save connection', '保存连接', '接続を保存')}</Button></form>
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    if (busy) return
+    if (translation && !clear && !model.trim()) { setError(tx('Enter a model name.', '请填写模型名称。', 'モデル名を入力してください。')); return }
+    if (translation && !clear && !key.trim() && !savedKey) { setError(tx('Enter an API key for this address.', '请填写当前服务地址对应的 API Key。', 'このサービス URL の API キーを入力してください。')); return }
+    setBusy(true); setError(''); setSaved(false)
+    let connectionSaved = false
+    try {
+      // Read the current defaults so another settings form's saved changes survive.
+      const current = translation && !clear ? await apiClient.request<SettingsData>('/api/v2/settings') : null
+      const nextDefaults = current?.defaults ?? defaults
+      if (translation && !clear && !nextDefaults) throw new Error(tx('Processing defaults are unavailable. Reload settings.', '无法读取默认处理配置，请重新打开设置。', '処理の初期設定を取得できません。設定を開き直してください。'))
+      await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ connection: { adapter, base_url: url.trim(), ...(clear ? { api_key: null } : key.trim() ? { api_key: key.trim() } : {}) } }) })
+      connectionSaved = true
+      setKey('')
+      if (translation && !clear) {
+        await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: { ...nextDefaults, translation: { adapter, model: model.trim(), device: 'remote' } } }) })
+        setModel(model.trim())
+      }
+      setClear(false); setSaved(true)
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : String(failure)
+      setError(connectionSaved ? tx('Connection saved; model settings failed: ', '连接已保存，模型设置失败：', '接続は保存済みですが、モデル設定に失敗しました：') + message : message)
+    } finally { setBusy(false); if (connectionSaved) refresh() }
+  }
+  return <form className="space-y-4 rounded-xl border border-border p-4" onSubmit={(event) => void save(event)}>
+    <h3 className="text-sm font-medium">{translation ? tx('OpenAI-compatible translation', 'OpenAI 兼容翻译', 'OpenAI 互換翻訳') : adapter}</h3>
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-2"><Label htmlFor={`connection-${adapter}`}>{tx('Service URL', '服务地址', 'サービス URL')}</Label><Input id={`connection-${adapter}`} type="url" disabled={busy} value={url} onChange={(event) => { setUrl(event.target.value); changed() }} required /></div>
+      {translation && <div className="space-y-2"><Label htmlFor={`model-${adapter}`}>{tx('Model name', '模型名称', 'モデル名')}</Label><Input id={`model-${adapter}`} disabled={busy} value={model} onChange={(event) => { setModel(event.target.value); changed() }} required={!clear} /></div>}
+      <div className="space-y-2"><Label htmlFor={`key-${adapter}`}>API Key{savedKey ? tx(' · saved', ' · 已保存', ' · 保存済み') : ''}</Label><Input id={`key-${adapter}`} type="password" disabled={busy} autoComplete="new-password" value={key} onChange={(event) => { setKey(event.target.value); changed() }} required={translation && !clear && !savedKey} placeholder={savedKey ? tx('Leave empty to keep the saved key', '留空保留已有密钥', '空欄で保存済みキーを保持') : ''} /></div>
+    </div>
+    {connection?.has_api_key && <label className="flex gap-2 text-xs text-muted-foreground"><input type="checkbox" disabled={busy} checked={clear} onChange={(event) => { setClear(event.target.checked); changed() }} />{tx('Clear saved API key', '清除已保存密钥', '保存済みキーを削除')}</label>}
+    {error && <InlineAlert>{error}</InlineAlert>}
+    <div className="flex flex-wrap gap-3">
+      <Button type="submit" variant="outline" disabled={busy}>{busy ? <Loader2 className="animate-spin" /> : saved ? <Check /> : null}{saved ? tx('Saved', '已保存', '保存済み') : tx('Save connection', '保存连接', '接続を保存')}</Button>
+      {translation && <Button type="button" variant="ghost" disabled={busy || clear || !url.trim() || !model.trim() || (!key.trim() && !savedKey)} onClick={() => void test()}>{tested ? <Check /> : null}{tested ? tx('Connection passed', '连接测试通过', '接続テスト成功') : tx('Test connection', '测试连接', '接続をテスト')}</Button>}
+    </div>
+  </form>
 }
 function Extensions() {
   const tx = useText()
@@ -56,10 +103,11 @@ function Settings() {
     catch (failure) { setRuntimeError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setRefreshing(false) }
   }
+  const defaults = settings?.defaults ?? catalog?.workflows.find(item => item.id === 'youdub.localize')?.defaults as TaskConfig | undefined
   const sections = useSlot('settings.sections')
   const { language } = useI18n()
   const adapters = new Set([...(settings?.connections?.map((item) => item.adapter) ?? []), ...(catalog?.providers.filter((item) => item.execution === 'remote' || item.models?.some((model) => typeof model === 'object' && model.devices?.includes('remote'))).map((item) => item.adapter ?? item.id) ?? [])])
-  return <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 sm:px-8"><h1 className="text-2xl font-semibold">{tx("Settings", "设置", "設定")}</h1>{error && <InlineAlert>{error}</InlineAlert>}<Section title={tx("Appearance", "界面", "表示")}><div className="flex items-center justify-between"><span className="text-sm">{tx("Language", "语言", "言語")}</span><LanguageSwitcher /></div><div className="flex items-center justify-between"><span className="text-sm">{tx("Theme", "主题", "テーマ")}</span><ThemeToggle /></div></Section>{settings && sections.map(({ id, component }) => <ExtensionSection key={id} id={id} component={component} settings={settings} refresh={refresh} />)}<Section title={tx("Runtime", "运行环境", "実行環境")}><div className="flex justify-end"><Button variant="ghost" size="sm" disabled={refreshing} onClick={() => void refreshRuntime()}><RefreshCw className={refreshing ? "animate-spin" : undefined} />{tx("Refresh", "刷新", "更新")}</Button></div>{runtimeError && <InlineAlert>{runtimeError}</InlineAlert>}{catalogError && <InlineAlert>{catalogError}</InlineAlert>}<div className="divide-y divide-border">{catalog?.providers.map((provider) => <div key={provider.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><h3 className="text-sm font-medium">{text(provider.label, language) || provider.id}</h3><p className="mt-1 text-xs text-muted-foreground">{provider.operations.map((operation) => operation.id).join(' · ')}</p><p className="mt-1 font-mono text-xs text-subtle-foreground">{provider.models?.map((model) => typeof model === 'string' ? model : model.id).join(' · ')}</p></div><p className={`text-xs ${provider.available === false ? 'text-status-warning-fg' : 'text-status-success-fg'}`}>{provider.available === false ? provider.unavailableReason ?? provider.reason ?? tx('Unavailable', '未就绪', '利用不可') : tx('Ready', '已就绪', '利用可能')}</p></div>)}</div></Section>{settings && adapters.size > 0 && <Section title={tx("Connections", "服务连接", "サービス接続")}>{[...adapters].map((adapter) => <ConnectionForm key={adapter} adapter={adapter} connection={settings?.connections?.find((item) => item.adapter === adapter)} refresh={() => { refresh(); refreshCatalog() }} />)}</Section>}<Extensions /></main>
+  return <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 sm:px-8"><h1 className="text-2xl font-semibold">{tx("Settings", "设置", "設定")}</h1>{error && <InlineAlert>{error}</InlineAlert>}<Section title={tx("Appearance", "界面", "表示")}><div className="flex items-center justify-between"><span className="text-sm">{tx("Language", "语言", "言語")}</span><LanguageSwitcher /></div><div className="flex items-center justify-between"><span className="text-sm">{tx("Theme", "主题", "テーマ")}</span><ThemeToggle /></div></Section>{settings && sections.map(({ id, component }) => <ExtensionSection key={id} id={id} component={component} settings={settings} refresh={refresh} />)}<Section title={tx("Runtime", "运行环境", "実行環境")}><div className="flex justify-end"><Button variant="ghost" size="sm" disabled={refreshing} onClick={() => void refreshRuntime()}><RefreshCw className={refreshing ? "animate-spin" : undefined} />{tx("Refresh", "刷新", "更新")}</Button></div>{runtimeError && <InlineAlert>{runtimeError}</InlineAlert>}{catalogError && <InlineAlert>{catalogError}</InlineAlert>}<div className="divide-y divide-border">{catalog?.providers.map((provider) => <div key={provider.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><h3 className="text-sm font-medium">{text(provider.label, language) || provider.id}</h3><p className="mt-1 text-xs text-muted-foreground">{provider.operations.map((operation) => operation.id).join(' · ')}</p><p className="mt-1 font-mono text-xs text-subtle-foreground">{provider.models?.map((model) => typeof model === 'string' ? model : model.id).join(' · ')}</p></div><p className={`text-xs ${provider.available === false ? 'text-status-warning-fg' : 'text-status-success-fg'}`}>{provider.available === false ? provider.unavailableReason ?? provider.reason ?? tx('Unavailable', '未就绪', '利用不可') : tx('Ready', '已就绪', '利用可能')}</p></div>)}</div></Section>{settings && catalog && adapters.size > 0 && <Section title={tx("Connections", "服务连接", "サービス接続")}>{[...adapters].map((adapter) => <ConnectionForm key={adapter} adapter={adapter} defaults={defaults} connection={settings?.connections?.find((item) => item.adapter === adapter)} refresh={() => { refresh(); refreshCatalog() }} />)}</Section>}<Extensions /></main>
 }
 export const name = 'client-settings'
 export const inject = ['slots', 'apiClient']
