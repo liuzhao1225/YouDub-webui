@@ -12,7 +12,7 @@ import { InlineAlert } from '@/components/inline-alert'
 import { useQuery } from './use-query'
 import type { TaskConfig } from './localize-contracts'
 import { UpdateSettings } from '@/components/app-updates'
-type Connection = { adapter: string; base_url: string; has_api_key: boolean }
+type Connection = { adapter: string; base_url: string; has_api_key: boolean; api_key_hint?: string | null }
 type SettingsData = JsonObject & { connections?: Connection[]; defaults?: TaskConfig | null; ui_language?: string; plugins?: Record<string, JsonObject> }
 type Extension = { id: string; version: string; source: string; installed: boolean; enabled: boolean; active: boolean; restartRequired: boolean }
 function Section({ title, children }: { title: string; children: ReactNode }) { return <section className="rounded-2xl border border-border bg-card shadow-card"><h2 className="border-b border-border px-6 py-4 font-semibold">{title}</h2><div className="space-y-5 p-6">{children}</div></section> }
@@ -23,7 +23,7 @@ function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: s
   const [url, setUrl] = useState(connection?.base_url ?? ''), [key, setKey] = useState(''), [clear, setClear] = useState(false)
   const [model, setModel] = useState(defaults?.translation?.model ?? '')
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [tested, setTested] = useState(false)
-  const savedKey = connection?.has_api_key && connection.base_url === url.trim()
+  const savedKey = !clear && connection?.has_api_key && connection.base_url === url.trim()
   function changed() { setSaved(false); setTested(false) }
   async function test() {
     if (busy) return
@@ -64,7 +64,7 @@ function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: s
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-2"><Label htmlFor={`connection-${adapter}`}>{tx('Service URL', '服务地址', 'サービス URL')}</Label><Input id={`connection-${adapter}`} type="url" disabled={busy} value={url} onChange={(event) => { setUrl(event.target.value); changed() }} required /></div>
       {translation && <div className="space-y-2"><Label htmlFor={`model-${adapter}`}>{tx('Model name', '模型名称', 'モデル名')}</Label><Input id={`model-${adapter}`} disabled={busy} value={model} onChange={(event) => { setModel(event.target.value); changed() }} required={!clear} /></div>}
-      <div className="space-y-2"><Label htmlFor={`key-${adapter}`}>API Key{savedKey ? tx(' · saved', ' · 已保存', ' · 保存済み') : ''}</Label><Input id={`key-${adapter}`} type="password" disabled={busy} autoComplete="new-password" value={key} onChange={(event) => { setKey(event.target.value); changed() }} required={translation && !clear && !savedKey} placeholder={savedKey ? tx('Leave empty to keep the saved key', '留空保留已有密钥', '空欄で保存済みキーを保持') : ''} /></div>
+      <div className="space-y-2"><Label htmlFor={`key-${adapter}`}>API Key{savedKey ? tx(' · saved', ' · 已保存', ' · 保存済み') : ''}</Label><Input id={`key-${adapter}`} type="password" disabled={busy} autoComplete="new-password" value={key} onChange={(event) => { setKey(event.target.value); changed() }} required={translation && !clear && !savedKey} placeholder={savedKey ? connection.api_key_hint || '****' : ''} /></div>
     </div>
     {connection?.has_api_key && <label className="flex gap-2 text-xs text-muted-foreground"><input type="checkbox" disabled={busy} checked={clear} onChange={(event) => { setClear(event.target.checked); changed() }} />{tx('Clear saved API key', '清除已保存密钥', '保存済みキーを削除')}</label>}
     {error && <InlineAlert>{error}</InlineAlert>}

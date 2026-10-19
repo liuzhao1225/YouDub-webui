@@ -114,7 +114,7 @@ function mountConnections(request: ReturnType<typeof vi.fn>) {
 
 it.each([true, false])('saves a custom translation model, preserving current defaults and the saved key (defaults exist: %s)', async (existing) => {
   let defaults = existing ? structuredClone(translationDefaults) : null
-  const connection = { adapter: 'openai', base_url: 'https://example.test/v1', has_api_key: true }
+  const connection = { adapter: 'openai', base_url: 'https://example.test/v1', has_api_key: true, api_key_hint: 'sk-abc****' }
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (init?.method === 'PATCH') {
       const patch = JSON.parse(init.body as string)
@@ -128,6 +128,8 @@ it.each([true, false])('saves a custom translation model, preserving current def
   mountConnections(request)
   const model = await screen.findByLabelText('模型名称')
   expect(model).toHaveValue('old-model')
+  expect(screen.getByLabelText('API Key · 已保存')).toHaveAttribute('placeholder', 'sk-abc****')
+  expect(screen.getByLabelText('API Key · 已保存')).toHaveValue('')
   if (defaults) defaults.asr.initial_prompt = 'Updated elsewhere'
   const user = userEvent.setup()
   await user.clear(model)
@@ -170,7 +172,7 @@ it('tests the entered model with the saved key, and requires a new key after cha
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (init?.method === 'PATCH') throw new Error('Testing must not save settings')
     if (path === '/api/v2/settings/test-connection') return { ok: true }
-    if (path === '/api/v2/settings') return { connections: [{ adapter: 'openai', base_url: 'https://example.test/v1', has_api_key: true }], defaults: translationDefaults }
+    if (path === '/api/v2/settings') return { connections: [{ adapter: 'openai', base_url: 'https://example.test/v1', has_api_key: true, api_key_hint: 'sk-abc****' }], defaults: translationDefaults }
     if (path === '/api/v2/catalog') return { providers: [], workflows: [] }
     return { items: [] }
   })
@@ -182,10 +184,15 @@ it('tests the entered model with the saved key, and requires a new key after cha
   await user.click(screen.getByRole('button', { name: '测试连接' }))
   await screen.findByRole('button', { name: '连接测试通过' })
   expect(request).toHaveBeenCalledWith('/api/v2/settings/test-connection', { method: 'POST', body: JSON.stringify({ base_url: 'https://example.test/v1', model: 'new-model' }) })
+  await user.click(screen.getByLabelText('清除已保存密钥'))
+  expect(screen.getByLabelText('API Key')).toHaveAttribute('placeholder', '')
+  await user.click(screen.getByLabelText('清除已保存密钥'))
+  expect(screen.getByLabelText('API Key · 已保存')).toHaveAttribute('placeholder', 'sk-abc****')
   const url = screen.getByLabelText('服务地址')
   await user.clear(url)
   await user.type(url, 'https://different.test/v1')
   expect(screen.getByRole('button', { name: '测试连接' })).toBeDisabled()
   expect(screen.getByLabelText('API Key')).toBeRequired()
+  expect(screen.getByLabelText('API Key')).toHaveAttribute('placeholder', '')
   expect(request.mock.calls.filter(call => (call[1] as RequestInit | undefined)?.method === 'PATCH')).toHaveLength(0)
 })
