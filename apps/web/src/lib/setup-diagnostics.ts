@@ -21,20 +21,25 @@ export function setupReport(state?: SetupState | null, requestError = '') {
     `系统: ${state ? `${state.platform} ${state.arch}${state.osVersion ? ` / ${state.osVersion}` : ''}` : '未知（尚未连接服务）'}`,
     `阶段: ${state ? phases[state.phase] : '连接准备服务'}`,
   ]
-  if (requestError) lines.push('', '连接错误:', requestError)
-  if (state?.error) lines.push('', '准备错误:', state.error)
   if (state) {
-    for (const model of state.models) if (model.error) lines.push('', `${model.name} 错误:`, model.error)
     lines.push('', '环境准备:')
     for (const step of state.environment) lines.push(
       `[${statuses[step.status]}] ${step.name}${step.source ? ` | ${step.source}` : ''}`,
-      ...(step.detail && step.detail !== state.error ? [step.detail] : []),
+      ...(step.detail && step.status !== 'failed' && step.detail !== state.error ? [step.detail] : []),
     )
     lines.push('', '模型准备:')
     for (const model of state.models) lines.push(
       `[${statuses[model.status]}] ${model.name} ${model.variant} | ${model.received}/${model.total} bytes${model.source ? ` | ${model.source}` : ''}`,
     )
   }
+  const errors: string[] = []
+  if (requestError) errors.push('连接错误:', requestError)
+  if (state?.error) errors.push('准备错误:', state.error)
+  for (const step of state?.environment || []) {
+    if (step.status === 'failed' && step.detail && step.detail !== state?.error) errors.push(`${step.name} 错误:`, step.detail)
+  }
+  for (const model of state?.models || []) if (model.error) errors.push(`${model.name} 错误:`, model.error)
+  if (errors.length) lines.push('', '错误日志:', ...errors)
   return redactDiagnostics(lines.join('\n'), state?.token)
 }
 
@@ -48,8 +53,5 @@ export function setupIssue(report: string, state?: SetupState | null) {
   const title = `[准备问题] ${state ? phases[state.phase] : '连接准备服务'}`
   const intro = '### 问题描述\n\n请补充出错前的操作、是否每次出现。\n\n### 诊断日志\n\n'
   const url = (body: string) => `https://github.com/liuzhao1225/YouDub-webui/issues/new?${new URLSearchParams({ template: 'setup-problem.md', title, body })}`
-  const complete = report.length <= 6000 ? url(intro + codeBlock(report)) : ''
-  // GitHub rejects oversized query strings. Keep the full report available for copying.
-  if (complete && complete.length <= 6000) return { url: complete, needsPaste: false }
-  return { url: url(intro + codeBlock(report.split('\n').slice(0, 3).join('\n')) + '\n\n日志较长，请在这里粘贴从准备页复制的完整诊断日志。'), needsPaste: true }
+  return { url: url(intro + codeBlock(report.split('\n').slice(0, 3).join('\n')) + '\n\n请在这里粘贴从准备页复制的完整诊断日志。') }
 }

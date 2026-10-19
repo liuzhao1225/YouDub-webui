@@ -242,7 +242,9 @@ internal sealed class DesktopWindow : Form
                 if (!log || !feedback || !log.value.includes('win32 x64') || !log.value.includes('YOUDUB_PYTHON')) return false;
                 const url = new URL(feedback.href);
                 return url.origin === 'https://github.com' && url.pathname === '/liuzhao1225/YouDub-webui/issues/new'
-                    && url.searchParams.get('body').includes(log.value)
+                    && url.searchParams.get('body').includes('win32 x64')
+                    && url.searchParams.get('body').includes('粘贴从准备页复制的完整诊断日志')
+                    && log.value.indexOf('错误日志:') > log.value.indexOf('模型准备:')
                     && Array.from(document.querySelectorAll('button')).some(button => button.textContent.includes('复制日志'));
             })()");
             if (diagnostics != "true") throw new Exception("准备日志或预填 Issue 入口未正确渲染：" + path);

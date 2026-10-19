@@ -64,18 +64,23 @@ describe('first-run setup', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Whisper requires ffmpeg in PATH.')
     view.unmount(); vi.unstubAllGlobals()
   })
-  it('offers logs and feedback during successful preparation as well as errors', () => {
+  it('copies logs when opening feedback during successful preparation as well as errors', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
     const view = render(<SetupScreen state={state} onAction={vi.fn()} />)
     expect(screen.getByRole('button', { name: '复制日志' })).toBeEnabled()
     const link = screen.getByRole('link', { name: '反馈 Issue' })
     const body = new URL(link.getAttribute('href')!).searchParams.get('body')!
-    expect(body).toContain('Qwen3 Aligner')
     expect(body).toContain('阶段: 模型准备')
     expect(body).not.toContain(state.token)
     expect(link).toHaveAttribute('target', '_blank')
-    view.unmount()
+    link.addEventListener('click', event => event.preventDefault())
+    fireEvent.click(link)
+    await screen.findByRole('button', { name: '已复制日志' })
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Qwen3 Aligner'))
+    view.unmount(); vi.unstubAllGlobals()
   })
-  it('copies long logs when opening feedback and surfaces clipboard denial without losing the report', async () => {
+  it('copies full logs when opening feedback and surfaces clipboard denial without losing the report', async () => {
     const writeText = vi.fn().mockRejectedValue(new Error('Permission denied'))
     vi.stubGlobal('navigator', { clipboard: { writeText } })
     const error = '下载错误\n'.repeat(3000) + '最后的原因'
@@ -95,7 +100,7 @@ describe('first-run setup', () => {
     await screen.findByRole('button', { name: '重新连接' })
     const body = new URL(screen.getByRole('link', { name: '反馈 Issue' }).getAttribute('href')!).searchParams.get('body')!
     expect(body).toContain('连接准备服务')
-    expect(body).toContain('Failed to fetch')
+    expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('连接错误:\nFailed to fetch')
     view.unmount(); vi.unstubAllGlobals()
   })
 })

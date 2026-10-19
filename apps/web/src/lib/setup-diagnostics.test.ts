@@ -15,11 +15,13 @@ describe('setup diagnostic reports', () => {
     for (const text of ['0.0.6', 'win32 x64 / 10.0.26100', '运行依赖', '阿里 PyPI', state.error!, 'No matching distribution', 'Qwen3 Aligner', '12/100 bytes', 'HTTP 503']) expect(report).toContain(text)
     expect(report).not.toContain(state.token)
     const issue = setupIssue(report, state)
-    expect(issue.needsPaste).toBe(false)
     const url = new URL(issue.url)
     expect(url.origin + url.pathname).toBe('https://github.com/liuzhao1225/YouDub-webui/issues/new')
     expect(url.searchParams.get('template')).toBe('setup-problem.md')
-    expect(url.searchParams.get('body')).toContain(report)
+    expect(url.searchParams.get('body')).toContain('YouDub: 0.0.6')
+    expect(url.searchParams.get('body')).toContain('请在这里粘贴从准备页复制的完整诊断日志')
+    expect(report.indexOf('模型准备:')).toBeLessThan(report.indexOf('错误日志:'))
+    for (const error of [state.error!, state.environment[0].detail!, state.models[0].error!]) expect(report.indexOf(error)).toBeGreaterThan(report.indexOf('错误日志:'))
   })
   it('redacts credentials, signed URL values and home directories while keeping useful errors', () => {
     const report = setupReport({ ...state, error: [
@@ -33,12 +35,11 @@ describe('setup diagnostic reports', () => {
     expect(report).toContain('example.com/python.tar.gz')
     expect(redactDiagnostics('bad URL: https://[invalid?token=hidden')).not.toContain('hidden')
   })
-  it('keeps long Unicode logs intact for copying and explicitly asks for them in a bounded issue URL', () => {
+  it('keeps long Unicode reports complete for copying and uses the same bounded feedback URL', () => {
     const report = setupReport({ ...state, error: '失败 🐍\n'.repeat(8000) + '最后的根因' })
     const issue = setupIssue(report, state)
     expect(report).toContain('最后的根因')
-    expect(issue.needsPaste).toBe(true)
-    expect(issue.url.length).toBeLessThanOrEqual(6000)
-    expect(new URL(issue.url).searchParams.get('body')).toContain('粘贴从准备页复制的完整诊断日志')
+    expect(issue.url).toBe(setupIssue(setupReport(state), state).url)
+    expect(issue.url.length).toBeLessThan(6000)
   })
 })

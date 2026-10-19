@@ -23,11 +23,11 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
       <span className="text-sm font-medium">诊断日志</span>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={copy}>{copied === report ? <Check /> : <Copy />}{copied === report ? '已复制日志' : '复制日志'}</Button>
-        <a href={issue.url} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'outline', size: 'sm' })} onClick={() => { if (issue.needsPaste) void copy() }}><ExternalLink />反馈 Issue</a>
+        <a href={issue.url} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'outline', size: 'sm' })} onClick={() => { void copy() }}><ExternalLink />反馈 Issue</a>
       </div>
     </div>
     {copyError && <p role="alert" className="mb-3 text-xs text-status-danger-fg">{copyError}</p>}
-    {issue.needsPaste && <p role="status" className="mb-3 text-xs text-muted-foreground">日志较长，点击反馈时会复制完整日志，请粘贴到 Issue 正文。</p>}
+    <p className="mb-3 text-xs text-muted-foreground">点击反馈会复制完整日志，请粘贴到 Issue 正文。</p>
     <details open={failed || Boolean(copyError)}>
       <summary className="cursor-pointer text-xs text-muted-foreground">查看日志</summary>
       <div role={failed ? 'alert' : undefined} className="mt-3">
