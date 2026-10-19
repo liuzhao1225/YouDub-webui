@@ -1,5 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { cp, mkdir, mkdtemp, rm, symlink } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { availableUpdate, checkForUpdates, releasesURL } from '../src/updates.js'
 
 function release(version: string, platforms = ['macos-arm64', 'windows-x64']) {
@@ -44,4 +48,16 @@ test('fetches the fixed public list without credentials and reports HTTP and par
   await assert.rejects(checkForUpdates('0.0.3', 'windows-x64', async () => Response.json([])), /empty or invalid/)
   await assert.rejects(checkForUpdates('0.0.3', null, request), /No desktop release/)
   assert.equal(calls, 1)
+})
+
+test('a physically copied Windows plugin imports without a node_modules/package.json', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-copied-plugin-'))
+  t.after(() => rm(root, { recursive: true }))
+  const scope = join(root, 'node_modules', '@youdub')
+  const source = join(scope, 'builtin', 'src')
+  await mkdir(source, { recursive: true })
+  await symlink(resolve('packages/sdk'), join(scope, 'sdk'), process.platform === 'win32' ? 'junction' : 'dir')
+  await cp(new URL('../src/updates.ts', import.meta.url), join(source, 'updates.ts'))
+  const copied = await import(pathToFileURL(join(source, 'updates.ts')).href)
+  assert.equal(copied.availableUpdate([release('0.0.4')], '0.0.3', 'windows-x64')?.version, '0.0.4')
 })

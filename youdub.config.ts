@@ -7,6 +7,7 @@ import { runtimePaths } from './apps/host/src/paths.js'
 
 export default async function composition(): Promise<EntryOptions[]> {
   const { root, repoRoot, python } = runtimePaths()
+  const { version } = JSON.parse(await readFile(join(repoRoot, 'package.json'), 'utf8'))
   const hash = createHash('sha256')
   const scan = async (directory: string) => {
     for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -33,7 +34,7 @@ export default async function composition(): Promise<EntryOptions[]> {
     provider('qwen_forced_aligner', 'Qwen Forced Aligner', ['align'], 'subtitle_alignment'),
     entry('workflow-localize', 'workflow-localize', { integrity }), entry('tasks', 'tasks'),
     entry('auth', 'auth'), entry('extensions', 'extensions', { root: join(root, 'extensions'), repoRoot, python, builtinClientManifest: join(repoRoot, 'apps/web/plugin-dist/manifest.json') }),
-    entry('extensions-loader', 'extensions-loader'), entry('api', 'api'),
+    entry('extensions-loader', 'extensions-loader'), entry('api', 'api', { version }),
   ]
   return [
     entry('process', 'process'),

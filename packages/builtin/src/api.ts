@@ -4,13 +4,15 @@ import type { Artifact, CreateTask, TaskView } from '@youdub/sdk'
 import { AppError, requireId } from '@youdub/sdk'
 import { readJson, type HttpRequest } from './http.js'
 import { taskCover } from './task-cover.js'
-import { checkForUpdates, currentVersion, updatePlatform } from './updates.js'
+import { checkForUpdates, updatePlatform } from './updates.js'
 import './auth.js'
 import './extensions.js'
 
 export const name = 'youdub-api'
 export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 'store', 'extensions']
-export function apply(ctx: Context) {
+export function apply(ctx: Context, config: { version: string }) {
+  if (!config?.version) throw new Error('The API requires the application version from its composition.')
+  const currentVersion = config.version
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => ctx.http.register(method, path, handler))
   const view = (task: TaskView) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
   route('GET', '/api/health', request => {
@@ -25,7 +27,7 @@ export function apply(ctx: Context) {
     ctx.http.json(request, 200, { currentVersion, supported: updatePlatform !== null,
       automatic: (settings.plugins as any)?.['youdub.updates']?.automatic !== false })
   })
-  route('POST', `${base}/updates/check`, async request => ctx.http.json(request, 200, await checkForUpdates()))
+  route('POST', `${base}/updates/check`, async request => ctx.http.json(request, 200, await checkForUpdates(currentVersion)))
   route('GET', `${base}/runtime`, async request => ctx.http.json(request, 200, await ctx.settings.runtime()))
   route('GET', `${base}/settings`, async request => ctx.http.json(request, 200, await ctx.settings.read()))
   route('POST', `${base}/settings/test-connection`, async request => {

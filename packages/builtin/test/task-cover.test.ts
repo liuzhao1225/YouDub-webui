@@ -33,7 +33,7 @@ async function setup(t: any) {
     await context.plugin(Tasks)
     await context.plugin(Http, { host: '127.0.0.1', port: 0 })
     await context.plugin(Auth)
-    await context.plugin(Api)
+    await context.plugin(Api, { version: '1.2.3' })
   })
   t.after(async () => { await app.dispose(); await rm(root, { recursive: true }) })
   // Cover requests are read-only; no workflow loop or real model is started.

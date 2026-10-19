@@ -1,7 +1,5 @@
-import { readFileSync } from 'node:fs'
 import { AppError } from '@youdub/sdk'
 
-export const currentVersion: string = JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')).version
 export const releasesURL = 'https://liuzhao1225.github.io/YouDub-webui/releases.json'
 const repository = 'https://github.com/liuzhao1225/YouDub-webui'
 export const updatePlatform = process.platform === 'darwin' && process.arch === 'arm64' ? 'macos-arm64'
@@ -38,7 +36,7 @@ export function availableUpdate(value: unknown, current: string, platform: Platf
   }
   return latest
 }
-export async function checkForUpdates(current = currentVersion, platform: Platform | null = updatePlatform, request = fetch) {
+export async function checkForUpdates(current: string, platform: Platform | null = updatePlatform, request = fetch) {
   if (!platform) throw new AppError('UPDATE_UNSUPPORTED', 'No desktop release is available for this platform.', 422)
   try {
     const response = await request(releasesURL, { signal: AbortSignal.timeout(15_000), redirect: 'error', headers: { Accept: 'application/json' } })

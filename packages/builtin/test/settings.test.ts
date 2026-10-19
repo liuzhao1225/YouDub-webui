@@ -61,7 +61,7 @@ test('settings API persists public plugin configuration alongside built-in setti
     })
     for (const name of ['auth', 'tasks', 'files', 'extensions']) context.reflect.provide(name, {})
   })
-  const api = await ctx.plugin(Api)
+  const api = await ctx.plugin(Api, { version: '1.2.3' })
   t.after(async () => { await api.dispose(); await support.dispose(); await app.dispose(); await rm(root, { recursive: true }) })
   const request = async (method: string, body?: any) => {
     const input = { raw: Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))]), result: undefined as any }
