@@ -44,7 +44,7 @@ assert.equal(build.platform, 'win32-x64')
 const bundledNpm = spawnSync(join(app, 'resources/node.exe'), [join(app, 'resources/node_modules/npm/bin/npm-cli.js'), '--version'], { encoding: 'utf8', windowsHide: true })
 assert.equal(bundledNpm.status, 0, bundledNpm.stderr)
 assert.match(bundledNpm.stdout.trim(), /^\d+\.\d+\.\d+$/, 'Bundled npm must run without a global Node installation')
-const sdkImport = spawnSync(join(app, 'resources/node.exe'), ['--input-type=module', '-e', 'import {SDK_VERSION, AppError} from "@youdub/sdk"; if(SDK_VERSION!=="1.0.0" || !(new AppError("TEST","test") instanceof Error))process.exit(1)'], { cwd: join(app, 'resources/runtime'), encoding: 'utf8', windowsHide: true })
+const sdkImport = spawnSync(join(app, 'resources/node.exe'), ['--input-type=module', '-e', 'import {SDK_VERSION, AppError} from "@youdub/sdk"; if(SDK_VERSION!=="1.1.0")throw new Error(`Unexpected bundled SDK version: ${SDK_VERSION}`); if(!(new AppError("TEST","test") instanceof Error))throw new Error("Bundled AppError must extend Error")'], { cwd: join(app, 'resources/runtime'), encoding: 'utf8', windowsHide: true })
 assert.equal(sdkImport.status, 0, sdkImport.stderr)
 // Setup error pages do not load the authenticated API. Exercise its physical
 // node_modules copy before starting the native first-run smoke test.
