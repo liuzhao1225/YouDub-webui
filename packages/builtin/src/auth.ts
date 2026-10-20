@@ -37,7 +37,7 @@ export default class AuthService extends Service {
       request.response.setHeader('Cache-Control', 'no-store')
       if (request.raw.method === 'OPTIONS') {
         if (!this.originAllowed(request)) throw new AppError('ORIGIN_NOT_ALLOWED', 'Origin is not allowed.', 403)
-        request.response.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,PATCH,DELETE,OPTIONS')
+        request.response.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS')
         request.response.setHeader('Access-Control-Allow-Headers', 'Content-Type,X-CSRF-Token,Range')
         this.ctx.http.json(request, 204); return
       }

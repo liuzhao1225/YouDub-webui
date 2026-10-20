@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
-import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm, open } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
@@ -104,7 +104,8 @@ test('desktop Python stays in its data directory even when a system Python is on
   const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
   await setup.prepare()
   assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
-  assert.equal(process.env.PATH?.split(delimiter)[0], media)
+  assert.equal(process.env.PATH, bin)
+  assert.ok(!commands.some(args => ['acceleration', 'punkt', 'acceleration-plan'].includes(args[2] || '')))
   assert.ok(setup.steps.every(step => step.status === 'ready'))
 })
 
@@ -112,6 +113,38 @@ async function waitFor(predicate: () => boolean) {
   const deadline = Date.now() + 5000
   while (!predicate()) { if (Date.now() > deadline) throw new Error('setup test timed out'); await new Promise(resolve => setTimeout(resolve, 10)) }
 }
+test('base restart restores existing managed FFmpeg and NLTK paths without installing inference dependencies', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-managed-resource-restart-'))
+  const windows = process.platform === 'win32'
+  const bin = join(root, 'runtime', 'ffmpeg', ...(windows ? ['ffmpeg-7.1.5-win32-x64-gpl-shared', 'bin'] : []))
+  await mkdir(bin, { recursive: true })
+  const python = join(root, 'python')
+  await writeFile(python, 'test executable')
+  for (const name of ['ffmpeg', 'ffprobe']) await writeFile(join(bin, name + (windows ? '.exe' : '')), 'managed executable')
+  const previous = { ...process.env }
+  t.after(async () => {
+    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
+    Object.assign(process.env, previous)
+    await rm(root, { recursive: true })
+  })
+  delete process.env.FFMPEG_PATH; delete process.env.FFPROBE_PATH; delete process.env.NLTK_DATA
+  const client = new DownloadClient()
+  t.after(() => client.close())
+  t.mock.method(client, 'download', async () => { throw new Error('Restart must not download resources') })
+  const ctx = { logger: { info() {} }, process: { run: async ({ command, args }: { command: string; args: string[] }) => {
+    assert.equal(command, python)
+    if (args[1] === 'backend.workers.setup_probe') {
+      assert.deepEqual(JSON.parse(args[3]!), ['base'])
+      return { stdout: JSON.stringify(probeResult(args[2]!)), stderr: '' }
+    }
+    return { stdout: '3.12.12', stderr: '' }
+  } } } as unknown as Context
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare()
+  assert.equal(process.env.FFMPEG_PATH, join(bin, 'ffmpeg' + (windows ? '.exe' : '')))
+  assert.equal(process.env.FFPROBE_PATH, join(bin, 'ffprobe' + (windows ? '.exe' : '')))
+  assert.equal(process.env.PATH?.split(delimiter)[0], bin)
+  assert.equal(process.env.NLTK_DATA, join(root, 'nltk_data'))
+})
 for (const unrelatedFailure of [false, true]) test(`closing first-run setup ${unrelatedFailure ? 'preserves unrelated errors' : 'cancels preparation without reporting a failure'}`, async t => {
   const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
   const originalError = new Error('dependency download failed')
@@ -142,7 +175,7 @@ for (const unrelatedFailure of [false, true]) test(`closing first-run setup ${un
   assert.deepEqual(errors, unrelatedFailure ? [originalError] : [])
 })
 
-test('first-run API runs four models concurrently, pauses independently, guards mutations and starts runtime only after completion', async t => {
+test('base setup opens the workbench before optional packages/models and prepares only the selected subtitle dependencies', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-first-run-'))
   const python = join(root, 'python')
   await writeFile(python, 'test executable')
@@ -151,7 +184,9 @@ test('first-run API runs four models concurrently, pauses independently, guards 
   process.env.FFMPEG_PATH = python; process.env.FFPROBE_PATH = python
   let release!: () => void
   const gate = new Promise<void>(resolve => { release = resolve })
-  const started: string[] = [], created: string[] = []
+  const started: string[] = [], created: string[] = [], probes: { action: string; groups: string[] }[] = []
+  let modelReady = false, installed = false
+  const refreshed: string[] = []
   t.mock.method(DownloadClient.prototype, 'download', async function(file: any, target: string, signal: AbortSignal, progress: (value: number) => void) {
     started.push(target); progress(1)
     await new Promise<void>((resolve, reject) => {
@@ -159,11 +194,33 @@ test('first-run API runs four models concurrently, pauses independently, guards 
       signal.addEventListener('abort', abort, { once: true })
       gate.then(() => { signal.removeEventListener('abort', abort); signal.aborted ? reject(signal.reason) : resolve() })
     })
+    await mkdir(join(target, '..'), { recursive: true })
+    const fileHandle = await open(target, 'w')
+    await fileHandle.truncate(file.size); await fileHandle.close()
+    modelReady = true
     progress(file.size)
   })
   const ctx = new Context()
   const app = await ctx.plugin(async function setupTest(owner) {
-    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => ({ stderr: '', stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }) })
+    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => {
+      if (args[1] === 'pip') {
+        assert.ok(args.includes(join(resolve('.'), 'backend', 'requirements', 'whisper.txt')))
+        assert.ok(!args.some(arg => /voxcpm|demucs|qwen/.test(arg)))
+        installed = true
+      }
+      if (args[1] === 'backend.workers.setup_probe') {
+        const action = args[2]!, groups: string[] = JSON.parse(args[3]!)
+        probes.push({ action, groups })
+        assert.ok(!groups.some(group => ['voxcpm', 'demucs', 'qwen_forced_aligner'].includes(group)), 'subtitle preparation must not inspect TTS, separation or alignment')
+        const missing = groups.includes('whisper') && !installed ? ['openai-whisper'] : []
+        const value = action === 'resources' ? { missing, media: true, punkt: true, demucsSource: true } :
+          action === 'dependencies' ? { missing } :
+          action === 'models' ? { whisper: { models: modelReady ? [{ id: 'tiny' }] : [], unavailable_reason: 'Whisper tiny 未安装' } } : probeResult(action)
+        return { stderr: '', stdout: JSON.stringify(value) }
+      }
+      return { stderr: '', stdout: args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }
+    } })
+    owner.reflect.provide('catalog', { provider: (id: string) => ({ probe: async () => { refreshed.push(id); return { available: true } } }) })
     owner.reflect.provide('loader', { create: async (entry: any) => { created.push(entry.id) }, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, version: '0.0.6', entries: [{ id: 'runtime', name: 'runtime' }] })
@@ -174,27 +231,82 @@ test('first-run API runs four models concurrently, pauses independently, guards 
     await rm(root, { recursive: true })
   })
   ctx.emit('app/ready')
-  await waitFor(() => started.length === 4)
+  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
   const url = ctx.http.address + '/api/setup'
   const state = await (await fetch(url)).json() as any
   assert.equal(state.version, '0.0.6')
   assert.equal(typeof state.osVersion, 'string')
   assert.equal(state.homeDir, homedir())
-  assert.equal(state.models.filter((model: any) => model.status === 'downloading').length, 4)
-  assert.deepEqual(created, [])
+  assert.deepEqual(state.models, [])
+  assert.deepEqual(created, ['runtime'])
+  assert.deepEqual(started, [])
+  assert.ok(probes.every(item => item.groups.length === 1 && item.groups[0] === 'base'))
   assert.equal((await fetch(url, { method: 'POST', body: '{}' })).status, 403)
   assert.equal((await fetch(url, { headers: { Origin: 'https://untrusted.example' } })).status, 403)
   const action = (action: string, id?: string) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-YouDub-Setup': state.token }, body: JSON.stringify({ action, id }) })
   assert.equal((await action('pause', 'unknown')).status, 422)
+  const selections = [{ providerId: 'youdub.media' }, { providerId: 'whisper', model: 'tiny' }, { providerId: 'openai' }]
+  const missing = await ctx.setup.checkResources(selections)
+  assert.equal(missing.status, 'missing')
+  assert.deepEqual(started, [], 'checking a graph must not start downloads')
+  assert.deepEqual(missing.models.map(model => model.id), ['whisper'])
+  assert.equal((await ctx.setup.prepareResources(selections)).status, 'preparing')
+  await waitFor(() => started.length === 1)
+  const other = await ctx.setup.checkResources([{ providerId: 'openai' }])
+  assert.equal(other.activePreparation?.status, 'preparing')
+  assert.ok(other.activePreparation?.selections.some(item => item.providerId === 'whisper'))
+  await assert.rejects(ctx.setup.prepareResources([{ providerId: 'openai' }]), { code: 'RESOURCE_PREPARATION_BUSY' })
+  assert.equal(started.length, 1, 'changing the selected graph must not start or replace an active preparation')
   const paused = await (await action('pause', 'whisper')).json() as any
-  assert.equal(paused.models.find((model: any) => model.id === 'whisper').status, 'paused')
-  assert.equal(paused.models.filter((model: any) => model.status === 'downloading').length, 3)
+  assert.equal(paused.resources.models.find((model: any) => model.id === 'whisper').status, 'paused')
   assert.equal((await action('resume', 'whisper')).status, 200)
-  await waitFor(() => started.length === 5)
+  await waitFor(() => started.length === 2)
   release()
-  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
+  await waitFor(() => ctx.setup.snapshot().resources?.status === 'ready')
   assert.deepEqual(created, ['runtime'])
-  assert.equal(ctx.setup.snapshot().models.length, 4)
-  assert.ok(ctx.setup.snapshot().models.every(model => model.status === 'ready'))
-  assert.equal((await action('resume')).status, 409)
+  assert.ok(refreshed.includes('whisper'))
+  assert.ok(refreshed.every(id => ['youdub.media', 'whisper', 'openai'].includes(id)))
+  assert.ok((await ctx.setup.checkResources(selections)).requirements.every(item => item.ready))
+  assert.equal(ctx.setup.snapshot().phase, 'ready')
+  const unsupported = [{ providerId: 'whisper', model: 'small' }]
+  await assert.rejects(ctx.setup.prepareResources(unsupported), { code: 'MANUAL_RESOURCE_REQUIRED' })
+  assert.equal(started.length, 2, 'a missing non-default model must not silently download tiny')
+})
+
+test('failed selected model download retains the error and leaves the workbench ready', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-resource-failure-'))
+  const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
+  const original = new Error('ModelScope connection interrupted after 123 bytes')
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(this: EnvironmentSetup) { this.steps = [] })
+  t.mock.method(EnvironmentSetup.prototype, 'probe', async (action: string) => {
+    if (action === 'resources') return { missing: [], media: true, punkt: true, demucsSource: true }
+    if (action === 'models') return { whisper: { models: [], unavailable_reason: 'Whisper tiny 未安装' } }
+    return { ready: true }
+  })
+  t.mock.method(DownloadClient.prototype, 'download', async () => { throw original })
+  const ctx = new Context()
+  const errors: unknown[] = []
+  const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
+  const app = await ctx.plugin(async function resourceFailure(owner) {
+    owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
+    owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
+    await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
+    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
+  })
+  t.after(async () => {
+    await app.dispose(); await logging(); await rm(root, { recursive: true })
+    if (previous === undefined) delete process.env.YOUDUB_DESKTOP_DATA_DIR
+    else process.env.YOUDUB_DESKTOP_DATA_DIR = previous
+  })
+  ctx.emit('app/ready')
+  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
+  const selections = [{ providerId: 'whisper', model: 'tiny' }]
+  await ctx.setup.prepareResources(selections)
+  await waitFor(() => ctx.setup.snapshot().resources?.status === 'failed')
+  const failed = await ctx.setup.checkResources(selections)
+  assert.equal(failed.status, 'failed')
+  assert.equal(failed.models[0]?.error, original.message)
+  assert.match(failed.error!, /ModelScope connection interrupted after 123 bytes/)
+  assert.ok(errors.includes(original))
+  assert.equal(ctx.setup.snapshot().phase, 'ready')
 })

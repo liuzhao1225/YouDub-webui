@@ -4,7 +4,7 @@
 
 原生 AppKit 窗口内嵌 WKWebView，启动应用时自动启动内置 Node、Cordis Host 和 Next.js。无需单独安装 Node、运行终端或打开浏览器。目标为 Apple Silicon，最低 macOS 14。
 
-Python、模型与业务数据写入 `~/Library/Application Support/YouDub`；Python 虚拟环境位于该目录的 `runtime/venv`。首次启动沿用现有环境和模型准备页面。应用包中不包含用户 `.env`、翻译密钥和苹果签名凭据。用户配置可放在数据目录下的 `.env`，已有 `YOUDUB_PYTHON` 等显式设置继续生效。
+Python、模型与业务数据写入 `~/Library/Application Support/YouDub`；Python 虚拟环境位于该目录的 `runtime/venv`。首次启动准备基础环境，进入工作台后按工作流准备所需依赖与模型。应用包中不包含用户 `.env`、翻译密钥和苹果签名凭据。用户配置可放在数据目录下的 `.env`，已有 `YOUDUB_PYTHON` 等显式设置继续生效。
 
 关闭最后一个窗口或按 ⌘Q 会停止本地服务。⌘R 刷新页面；“YouDub → 查看日志”打开 `~/Library/Logs/YouDub/desktop.log`。应用提供原生文件选择和下载保存窗口。
 
@@ -48,7 +48,7 @@ Windows 10 22H2 / Windows 11 使用原生 WinForms 窗口和 WebView2 Evergreen 
 
 数据、Python、模型和 WebView2 缓存位于 `%LOCALAPPDATA%\YouDub`，支持用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。日志位于该数据目录的 `logs\desktop.log`，可通过窗口菜单打开。F5 / Ctrl+R 刷新。关闭窗口会先停止 Host；Windows Job Object 保证启动器崩溃时 Node 及其后代进程也退出。同一个数据目录仅允许一个桌面实例运行。
 
-默认窗口在当前屏幕可用区域内居中，占约 90% 的宽高；小屏幕会限制到可用范围内。环境与模型准备完成后，没有翻译配置的用户会看到接口地址、模型名称和密钥表单。点击“测试连接并继续”会发送一条简短测试请求，通过后才保存；密钥进入系统凭据管理器，不进入应用包或设置响应。也可选择“稍后配置”，之后在设置中填写。该配置向导同样适用于 macOS。
+默认窗口在当前屏幕可用区域内居中，占约 90% 的宽高；小屏幕会限制到可用范围内。基础环境准备完成后，没有翻译配置的用户会看到接口地址、模型名称和密钥表单。点击“测试连接并继续”会发送一条简短测试请求，通过后才保存；密钥进入系统凭据管理器，不进入应用包或设置响应。也可选择“稍后配置”，之后在设置中填写。该配置向导同样适用于 macOS。
 
 ### 构建与本机测试
 

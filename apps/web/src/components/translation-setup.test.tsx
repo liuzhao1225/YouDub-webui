@@ -55,6 +55,27 @@ it('allows deferral without saving any key', async () => {
   await waitFor(() => expect(JSON.parse(fetch.mock.calls[2][1].body)).toEqual({ plugin: { id: 'youdub.onboarding', config: { translationDeferred: true } } }))
 })
 
+it('saves translation before ASR packages or models are installed', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
+    .mockResolvedValueOnce(response({ connections: [] }))
+    .mockResolvedValueOnce(response({ ok: true }))
+    .mockResolvedValueOnce(response({ capabilities: [{ capability: 'asr', adapter: 'whisper', available: false, models: [], unavailable_reason: 'No module named torch' }] }))
+    .mockResolvedValue(response({}))
+  vi.stubGlobal('fetch', fetch)
+  render(<TranslationSetup><div>工作台</div></TranslationSetup>)
+  await screen.findByText('配置翻译服务')
+  fireEvent.change(screen.getByLabelText('模型名称'), { target: { value: 'qwen-max' } })
+  fireEvent.change(screen.getByLabelText('API 密钥'), { target: { value: 'test-key' } })
+  fireEvent.click(screen.getByRole('button', { name: '测试连接并继续' }))
+  await screen.findByText('工作台')
+  const patches = fetch.mock.calls.filter(([, init]) => init?.method === 'PATCH')
+  expect(JSON.parse(patches[1][1].body).defaults).toMatchObject({
+    asr: { adapter: 'whisper', model: 'tiny', device: 'cpu' },
+    translation: { adapter: 'openai', model: 'qwen-max', device: 'remote' },
+  })
+  expect(fetch.mock.calls.some(([path]) => String(path).includes('resources/prepare'))).toBe(false)
+})
+
 it('shows the saved key hint without submitting it and hides it when the address changes', async () => {
   const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
     .mockResolvedValueOnce(response({ connections: [{ adapter: 'openai', base_url: 'https://example.test/v1', has_api_key: true, api_key_hint: 'sk-abc****' }] }))

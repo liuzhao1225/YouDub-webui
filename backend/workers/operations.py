@@ -20,7 +20,8 @@ class Operation:
         self.inputs = request.get("inputs", {})
         self.artifacts = {}
         self.binding = request.get("binding", {})
-        self.options = {**request.get("config", {}), **self.binding.get("options", {}), **request.get("options", {})}
+        self.options = (dict(self.binding.get("options", {})) if request.get("config", {}).get("graph")
+                        else {**request.get("config", {}), **self.binding.get("options", {}), **request.get("options", {})})
 
     def option(self, camel, snake=None, default=None):
         return self.options.get(camel, self.options.get(snake or camel, default))

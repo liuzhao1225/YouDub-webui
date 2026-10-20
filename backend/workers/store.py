@@ -8,8 +8,8 @@ from pathlib import Path
 
 from .protocol import WorkerError
 
-SCHEMA_VERSION = 2
-ACTIVE = ("queued", "running", "waiting", "cancelling")
+SCHEMA_VERSION = 3
+ACTIVE = ("queued", "running", "waiting", "paused", "cancelling")
 TERMINAL = ("cancelled", "succeeded", "failed")
 
 
@@ -43,13 +43,21 @@ class SqliteStore:
             version = conn.execute("PRAGMA user_version").fetchone()[0]
             if version == SCHEMA_VERSION:
                 return
-            if version not in {0, 1}:
+            if version not in {0, 1, 2}:
                 raise WorkerError("UNSUPPORTED_SCHEMA", f"Unsupported desktop database version: {version}")
             tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             if version == 0 and tables:
                 raise WorkerError("UNSUPPORTED_SCHEMA", "An unversioned database with existing tables cannot be migrated.")
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("BEGIN IMMEDIATE")
+            if version == 2:
+                active = [dict(row) for row in conn.execute(
+                    "SELECT id,status FROM tasks WHERE status IN ('queued','running','waiting','cancelling')")]
+                if active:
+                    raise WorkerError("MIGRATION_ACTIVE_TASKS", "Active tasks must finish or be explicitly stopped before migration.", active)
+                self._create_workflows(conn)
+                conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+                return
             if version == 1:
                 active = [dict(row) for row in conn.execute(
                     "SELECT id,status FROM tasks WHERE status IN ('queued','running','waiting','cancelling')")]
@@ -87,7 +95,14 @@ class SqliteStore:
                         if table in old_tables:
                             rows = list(old.execute(f"SELECT {fields} FROM {table}"))
                             conn.executemany(f"INSERT INTO {table} ({fields}) VALUES ({','.join('?' for _ in fields.split(','))})", rows)
+            self._create_workflows(conn)
             conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
+
+    def _create_workflows(self, conn):
+        conn.execute("""CREATE TABLE workflow_documents (
+            id TEXT PRIMARY KEY NOT NULL, revision INTEGER NOT NULL,
+            document_json TEXT NOT NULL CHECK(json_valid(document_json)),
+            created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""")
 
     @contextmanager
     def legacy_connection(self):
@@ -155,6 +170,9 @@ class SqliteStore:
             raise WorkerError("INVALID_TASK", "Task terminal status and finishedAt disagree.")
         if task["status"] == "failed" and not task.get("error"):
             raise WorkerError("INVALID_TASK", "A failed task must retain its error.")
+        if task["status"] == "paused":
+            if task.get("nextPollAt") is not None or sum(step.get("status") == "awaiting_review" for step in task.get("steps", [])) != 1:
+                raise WorkerError("INVALID_TASK", "A paused task must have one review gate and no polling timestamp.")
 
     def _write(self, conn, task, *, insert=False):
         self._validate(task)
@@ -218,7 +236,8 @@ class SqliteStore:
             if type(expectedRevision) is not int or row["plugin_revision"] != expectedRevision:
                 raise WorkerError("REVISION_CONFLICT", "Task revision changed.")
             previous = self.decode(row)
-            for name in ("plan", "config", "inputs", "workflowId", "workflowVersion", "credentialRefs", "connections"):
+            for name in ("plan", "config", "inputs", "workflowId", "workflowVersion", "credentialRefs", "connections",
+                         "graphSnapshot", "workflowSource", "nodeRuntimeInputs"):
                 if task.get(name) != previous.get(name):
                     raise WorkerError("IMMUTABLE_SNAPSHOT", f"Task {name} snapshot cannot change.")
             return self._write(conn, {**task, "revision": expectedRevision + 1})
@@ -265,6 +284,60 @@ class SqliteStore:
             if row["status"] not in TERMINAL:
                 raise WorkerError("TASK_BUSY", "Active tasks cannot be deleted.")
             conn.execute("DELETE FROM tasks WHERE id=?", (id,))
+        return None
+
+    def _workflow(self, row):
+        if row is None:
+            raise WorkerError("WORKFLOW_DOCUMENT_NOT_FOUND", "Workflow document not found.")
+        return {"id": row["id"], "revision": row["revision"], "document": json.loads(row["document_json"]),
+                "createdAt": row["created_at"], "updatedAt": row["updated_at"]}
+
+    def workflow_list(self, limit=100, offset=0):
+        if type(limit) is not int or not 1 <= limit <= 1000 or type(offset) is not int or offset < 0:
+            raise WorkerError("INVALID_QUERY", "Invalid workflow pagination.")
+        with self.connect() as conn:
+            rows = conn.execute("SELECT * FROM workflow_documents ORDER BY updated_at DESC,id LIMIT ? OFFSET ?",
+                                (limit + 1, offset)).fetchall()
+            return {"items": [self._workflow(row) for row in rows[:limit]], "limit": limit, "offset": offset,
+                    "hasMore": len(rows) > limit}
+
+    def workflow_get(self, id):
+        with self.connect() as conn:
+            return self._workflow(conn.execute("SELECT * FROM workflow_documents WHERE id=?", (id,)).fetchone())
+
+    def workflow_create(self, document):
+        from backend.app.paths import now_iso
+        if not isinstance(document, dict) or not isinstance(document.get("id"), str) or not document["id"]:
+            raise WorkerError("INVALID_CONFIG", "Workflow document must have an ID.")
+        timestamp = now_iso()
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            if conn.execute("SELECT 1 FROM workflow_documents WHERE id=?", (document["id"],)).fetchone():
+                raise WorkerError("WORKFLOW_DOCUMENT_EXISTS", "Workflow document already exists.")
+            conn.execute("INSERT INTO workflow_documents VALUES(?,1,?,?,?)",
+                         (document["id"], serialized(document), timestamp, timestamp))
+            return self._workflow(conn.execute("SELECT * FROM workflow_documents WHERE id=?", (document["id"],)).fetchone())
+
+    def workflow_update(self, id, document, expectedRevision):
+        from backend.app.paths import now_iso
+        if not isinstance(document, dict) or document.get("id") != id:
+            raise WorkerError("INVALID_CONFIG", "Workflow document ID cannot change.")
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            previous = self._workflow(conn.execute("SELECT * FROM workflow_documents WHERE id=?", (id,)).fetchone())
+            if type(expectedRevision) is not int or previous["revision"] != expectedRevision:
+                raise WorkerError("REVISION_CONFLICT", "Workflow document changed. Keep your draft and reload the saved version.")
+            conn.execute("UPDATE workflow_documents SET revision=revision+1,document_json=?,updated_at=? WHERE id=?",
+                         (serialized(document), now_iso(), id))
+            return self._workflow(conn.execute("SELECT * FROM workflow_documents WHERE id=?", (id,)).fetchone())
+
+    def workflow_delete(self, id, expectedRevision):
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            previous = self._workflow(conn.execute("SELECT * FROM workflow_documents WHERE id=?", (id,)).fetchone())
+            if type(expectedRevision) is not int or previous["revision"] != expectedRevision:
+                raise WorkerError("REVISION_CONFLICT", "Workflow document changed.")
+            conn.execute("DELETE FROM workflow_documents WHERE id=?", (id,))
         return None
 
     def settings_values(self):

@@ -57,3 +57,32 @@ it('leaves back and forward scrolling to the browser while notifying route subsc
   expect(changed).toHaveBeenCalledTimes(2)
   expect(scroll).not.toHaveBeenCalled()
 })
+
+it('keeps the current page until an asynchronous unsaved-change decision succeeds', async () => {
+  const { navigation } = await setup()
+  navigation.push('/workflows/example')
+  let decide!: (allowed: boolean) => void
+  const remove = navigation.block(() => new Promise<boolean>((resolve) => { decide = resolve }))
+  navigation.push('/tasks')
+  expect(navigation.getSnapshot()).toBe('/workflows/example')
+  decide(false)
+  await Promise.resolve()
+  expect(navigation.getSnapshot()).toBe('/workflows/example')
+  remove()
+  await vi.waitFor(() => { navigation.push('/tasks'); expect(navigation.getSnapshot()).toBe('/tasks') })
+})
+
+it('restores browser Back when editing continues and permits a later approved Back', async () => {
+  const { navigation } = await setup()
+  navigation.push('/workflows')
+  navigation.push('/workflows/example')
+  const block = vi.fn(async () => false)
+  const remove = navigation.block(block)
+  window.history.back()
+  await vi.waitFor(() => expect(block).toHaveBeenCalledWith('/workflows'))
+  expect(navigation.getSnapshot()).toBe('/workflows/example')
+  remove()
+  navigation.block(async () => true)
+  window.history.back()
+  await vi.waitFor(() => expect(navigation.getSnapshot()).toBe('/workflows'))
+})

@@ -1,9 +1,9 @@
 import { createContext, useContext, useSyncExternalStore, type AnchorHTMLAttributes, type ComponentType, type ReactNode } from 'react'
 import type { Context, Fiber } from 'cordis'
-import type { ClientManifest, Diagnostic, JsonObject, JsonSchema, LocalizedText, TaskView } from './contracts'
+import type { ClientManifest, Diagnostic, GraphNode, JsonObject, JsonSchema, LocalizedText, NodeTypeDefinition, TaskNodeDetail, TaskView } from './contracts'
 export type * from './contracts'
 
-export const SDK_VERSION = '1.0.0'
+export const SDK_VERSION = '1.1.0'
 export interface Observable<T> { subscribe(listener: () => void): () => void; getSnapshot(): T }
 export type RouteProps = { params: Record<string, string> }
 export type RouteEntry = { id: string; path: string; component: ComponentType<RouteProps>; access: 'public' | 'authenticated' }
@@ -11,6 +11,8 @@ export type NavigationEntry = { id: string; label: LocalizedText; routeId: strin
 export type EditorProps = { value: JsonObject; schema: JsonSchema; diagnostics: Diagnostic[]; readOnly: boolean; mode?: 'options' | 'configuration'; onChange(value: JsonObject): void }
 export type PanelProps = { task: TaskView; refresh(): void }
 export type SettingsSectionProps = { settings: JsonObject; save(patch: JsonObject): Promise<void> }
+export type NodeEditorProps = { node: GraphNode; definition: NodeTypeDefinition; readOnly: boolean; diagnostics: Diagnostic[]; onChange(node: GraphNode): void }
+export type NodeDetailProps = { detail: TaskNodeDetail; outputs: JsonObject; draft: JsonObject; readOnly: boolean; onDraftChange(patch: JsonObject): void }
 export type SlotMap = {
   root: { id: string; component: ComponentType }
   'shell.routes': RouteEntry
@@ -19,6 +21,8 @@ export type SlotMap = {
   'task.detail.panels': { id: string; order?: number; component: ComponentType<PanelProps> }
   'task.detail.actions': { id: string; order?: number; component: ComponentType<PanelProps> }
   'settings.sections': { id: string; order?: number; component: ComponentType<SettingsSectionProps> }
+  'workflow.node.editors': { id: string; component: ComponentType<NodeEditorProps> }
+  'workflow.node.details': { id: string; component: ComponentType<NodeDetailProps> }
 }
 export interface Slots extends Observable<number> {
   register<K extends keyof SlotMap>(slot: K, entry: SlotMap[K]): () => void
@@ -26,6 +30,7 @@ export interface Slots extends Observable<number> {
 }
 export interface Navigation extends Observable<string> {
   push(path: string): void; replace(path: string): void; href(routeId: string, params?: Record<string, string>): string
+  block?(handler: (path: string) => Promise<boolean>): () => void
 }
 export interface ApiClient {
   request<T>(path: string, init?: RequestInit): Promise<T>

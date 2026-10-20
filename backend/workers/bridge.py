@@ -83,7 +83,10 @@ class Bridge:
         if method.startswith("store."):
             operation = method.removeprefix("store.")
             functions = {"create": self.store.create, "get": self.store.get, "list": self.store.list,
-                         "cas": self.store.cas, "claim": self.store.claim, "delete": self.store.delete}
+                         "cas": self.store.cas, "claim": self.store.claim, "delete": self.store.delete,
+                         "workflow_list": self.store.workflow_list, "workflow_get": self.store.workflow_get,
+                         "workflow_create": self.store.workflow_create, "workflow_update": self.store.workflow_update,
+                         "workflow_delete": self.store.workflow_delete}
             if operation not in functions:
                 raise WorkerError("UNKNOWN_METHOD", f"Unknown storage operation: {operation}")
             return functions[operation](**params)
@@ -101,10 +104,14 @@ class Bridge:
             self.store.write_setting(params["key"], params["value"])
             return None
         if method == "runtime.info":
+            from backend.app.accelerators import detect_devices
             from backend.app.v1.runtime import runtime_info
+            detect_devices.cache_clear()
             return runtime_info()
         if method == "runtime.probe":
+            from backend.app.accelerators import detect_devices
             from backend.app.v1.runtime import probe_capability
+            detect_devices.cache_clear()
             adapter = params["adapter"]
             if adapter == "openai":
                 settings = self.settings()

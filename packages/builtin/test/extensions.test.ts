@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { SDK_VERSION } from '@youdub/sdk'
 import { Context, Service } from 'cordis'
 import { mkdtemp, mkdir, readFile, writeFile, rm, cp, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -95,7 +96,7 @@ export function apply(ctx, config) { ctx.effect(() => ctx.catalog.registerProvid
   extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd() })
   const entry = ctx.extensions.hostEntries()[0]!, module = await import(entry.name)
   assert.equal(module.sharedService, Service)
-  assert.equal(module.sdkVersion, '1.0.0')
+  assert.equal(module.sdkVersion, SDK_VERSION)
   const plugin = await ctx.plugin(module, entry.config)
   assert.equal(ctx.catalog.provider('example.build').id, 'example.build')
   await plugin.dispose()

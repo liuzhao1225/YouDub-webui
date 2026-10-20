@@ -1,8 +1,8 @@
 # YouDub 插件与 Workflow 契约
 
-2026-10-09 · SDK 协议 `1.0.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
+2026-10-20 · SDK 协议 `1.1.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
 
-可视化节点、多 workflow 编辑和人工订正的后续提案见 [节点工作流设计](workflow-node-design.md) 与 [接口及实施设计](workflow-node-implementation.md)。这些新增能力尚未实施，不改变下文当前接口的含义。
+可视化节点、多 workflow 编辑和人工订正已在当前分支实现；使用方式见[节点工作流](../workflows.md)，设计依据见[产品设计](workflow-node-design.md)和[接口设计](workflow-node-implementation.md)。旧 plan-only workflow 继续兼容。
 
 ## 1. 谁拥有执行逻辑
 
@@ -76,6 +76,14 @@ interface OutputPort {
 
 任务创建在 `settings.locked` 内校验配置并保存连接与凭据引用快照。设置修改使用相同锁，成功后通过 `settings/updated` 通知默认 workflow 更新默认配置；凭据值不进入公开任务响应。`describe/validate/plan` 不执行模型或供应商请求。
 
+### 图文档与人工确认
+
+`catalog.registerWorkflow` 同时接受 `GraphWorkflowDefinition`：`graph.compile({document, inputs, nodeRuntimeInputs}, catalog)` 返回 `{plan, graphSnapshot}`。普通节点图统一由 `youdub.graph` 编译；库中的用户 workflow 是保存的 `WorkflowDocument`。插件可在 `describe().graphTemplate` 提供只读模板，用户可另存副本。
+
+provider 的 `operations[].node` 声明节点名称、版本、显式输入端口、配置 schema、defaults 和可选 runtimeInputSchema。输出沿用 operation.outputs。节点实例各有独立 binding，`autoContinue:false` 在结果保存后持久暂停。订正增加 resultRevisions，并通过 expectedAttempt/expectedTaskRevision/expectedOutputRevision 和 actionId 实现并发检查及回执查询。`validateCorrection` 校验领域语义并返回完整输出。
+
+公共显示文本为字符串或 `{default, translations}`；JSON Schema 标准 `title` 保持字符串，多语言标题放在自定义 `x-title`，供 Client 表单读取。
+
 ## 4. Operation 提供者
 
 ```ts
@@ -119,7 +127,7 @@ TTS 按一次调用处理多段完整 utterance，一次模型加载可生成多
 
 ## 6. 默认 workflow 与外部示例
 
-默认 ID 为 `youdub.localize`、版本 `1.0.0`，实现位于 [workflow-localize.ts](../../packages/builtin/src/workflow-localize.ts)。配置继续使用既有 snake_case 字段；generic Task 使用 workflowId、steps、outputs。
+兼容流程 ID 为 `youdub.localize`、版本 `1.0.0`，实现位于 [workflow-localize.ts](../../packages/builtin/src/workflow-localize.ts)。配置继续使用既有 snake_case 字段；generic Task 使用 workflowId、steps、outputs。
 
 | 步骤 | operation | 条件 |
 | --- | --- | --- |
@@ -141,7 +149,7 @@ subtitles 发布视频和原文/译文字幕；dubbing 发布视频和配音音�
 
 `TasksService` 提供 create/get/record/list/cancel/retry/rerun/delete/idle。cancel、retry 和 delete 接受 expectedAttempt。rerun 请求包含新 id、config，以及可选 workflowId/acknowledgeExternalRisk；legacy 任务必须明确选择当前 workflow。
 
-Task 状态为 queued/running/waiting/cancelling/cancelled/succeeded/failed；Step 状态为 pending/running/waiting/completed/cancelled/failed。每次尝试增加 attempt，每步持有 invocationId。进度和结果写入检查当前 attempt、调用身份、状态与 revision，迟到消息不能覆盖新尝试。
+Task 状态为 queued/running/waiting/paused/cancelling/cancelled/succeeded/failed；Step 状态为 pending/running/waiting/awaiting_review/completed/cancelled/failed。人工 paused 会释放执行槽，awaiting_review 的结果需要批准后才能用于下游；远端 waiting 保持原有轮询语义。每次尝试增加 attempt，每步持有 invocationId。进度和结果写入检查当前 attempt、调用身份、状态与 revision，迟到消息不能覆盖新尝试。
 
 当前 `store.call` 使用 `store.create/get/list/cas/claim/delete` 完整事务操作。持久存储桥串行执行 SQLite 事务，只有 task-runtime 决定何时领取或推进任务。连接中断返回 `COMMIT_OUTCOME_UNKNOWN` 等错误并停止推进，不能盲目重试提交或重发模型请求。
 
@@ -181,7 +189,7 @@ API 插件提供 `/api/v2/catalog`、`workflows`、`tasks`、`settings`、`runti
 
 HTTP 统一使用 v2，旧 v1 路由与字段别名已移除。旧 desktop 记录继续通过 v2 的 legacy 数据投射读取和重新生成；旧 URL 下载库仅保留首次迁移认证会话的只读用途。
 
-Client 清单为 `{version:1,sdkVersion:'1.0.0',platformVersion:'1',modules:[...]}`，模块含 id/version/access/url 及可选 css/config。未认证只返回 public 模块；登录后返回完整已激活组合。资产位于同源 `/api/plugins/<packageId>/<version>/<asset>`，数据 API 始终执行认证。
+Client 清单为 `{version:1,sdkVersion:'1.1.0',platformVersion:'1',modules:[...]}`，模块含 id/version/access/url 及可选 css/config。未认证只返回 public 模块；登录后返回完整已激活组合。资产位于同源 `/api/plugins/<packageId>/<version>/<asset>`，数据 API 始终执行认证。
 
 ## 10. Client 装配与界面注册
 
@@ -194,6 +202,8 @@ import map 固定共享 React、ReactDOM、JSX runtime、Cordis 和 `@youdub/sdk
 - `root`：唯一根渲染组件，缺失或重复报错。
 - `shell.routes`：id/path/component/access；支持精确路径与 `:param`。
 - `shell.navigation`：id/label/routeId/order。
+- `workflow.node.editors`：通过 NodeEditorProps 显示节点参数；只更新图草稿。
+- `workflow.node.details`：通过 NodeDetailProps 查看输入与结果、调用 onDraftChange 生成订正草稿；保存与批准由宿主统一执行。
 - `config.editors`：id 对应 workflow/provider，接收 value/schema/diagnostics/readOnly/onChange；可选 `mode: 'options' | 'configuration'` 区分任务基础选项与完整配置。主页传入 `options`，未指定时保留完整编辑能力。
 - `task.detail.panels` 和 `task.detail.actions`：接收 task/refresh。
 - `settings.sections`：提供扩展设置区域；组件接收自己的 `settings` 和 `save(patch)`，后者按该区域 id 保存公开 JSON 配置。

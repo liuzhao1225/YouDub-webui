@@ -2,24 +2,25 @@ import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { text, type TaskStatus, type TaskView } from '../sdk'
 
-export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'cancelling'])
+export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'paused', 'cancelling'])
 export const STATUS_LABELS: Record<string, [string, string, string]> = {
   queued: ['Queued', '排队中', '順番待ち'], running: ['Running', '处理中', '処理中'],
   waiting: ['Waiting', '等待中', '待機中'], cancelling: ['Cancelling', '正在取消', 'キャンセル中'],
   cancelled: ['Cancelled', '已取消', 'キャンセル済み'], succeeded: ['Completed', '已完成', '完了'], failed: ['Failed', '失败', '失敗'],
   pending: ['Pending', '未开始', '未開始'], completed: ['Completed', '已完成', '完了'],
+  paused: ['Awaiting review', '待确认', '確認待ち'], awaiting_review: ['Awaiting review', '待确认', '確認待ち'],
 }
 
 export function TaskState({ status }: { status: string }) {
   const tx = useText()
-  return <span className={cn('shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium', status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground')}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</span>
+  return <span className={cn('shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium', status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'paused' || status === 'awaiting_review' ? 'bg-status-warning/10 text-status-warning-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground')}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</span>
 }
 
 export function TaskProgress({ task }: { task: TaskView }) {
   const tx = useText()
   const { language } = useI18n()
   if (!ACTIVE_STATUSES.has(task.status)) return null
-  const step = task.status === 'queued' ? undefined : task.steps.find((item) => item.status === 'running' || item.status === 'waiting')
+  const step = task.status === 'queued' ? undefined : task.steps.find((item) => item.status === 'running' || item.status === 'waiting' || item.status === 'awaiting_review')
   const completed = task.steps.filter((item) => item.status === 'completed').length
   const progress = task.status === 'running' && step?.status === 'running' ? step.progress : null
   const label = step ? text(step.label, language) : ''

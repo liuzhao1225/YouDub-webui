@@ -12,7 +12,7 @@ interface Installed { id: string; version: string; integrity: string; source: st
 export interface ExtensionsConfig { root: string; repoRoot: string; python?: string; builtinClientManifest?: string; managementOnly?: boolean }
 export interface InstallRequest { source: string; ref?: string; enabled?: boolean; config?: object }
 declare module 'cordis' { interface Context { extensions: ExtensionsService } }
-const compatible = (value: unknown) => ['1.0.0', '^1.0.0', '~1.0.0', '1', '1.x'].includes(String(value))
+const compatible = (value: unknown) => ['1.0.0', '^1.0.0', '~1.0.0', '1.1.0', '^1.1.0', '~1.1.0', '1', '1.x'].includes(String(value))
 const cleanId = (id: unknown): id is string => typeof id === 'string' && /^[a-z][a-z0-9.-]{1,100}$/.test(id)
 const mime: Record<string, string> = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 export default class ExtensionsService extends Service {
@@ -166,10 +166,10 @@ export default class ExtensionsService extends Service {
   }
   clientManifest(authenticated: boolean) {
     const external: ClientModule[] = this.installed.filter(item => this.bootEnabled.has(item.id) && item.client && (!(item.host || item.python) || this.active.has(item.id))).map(item => ({ id: item.id, version: item.version, access: item.client!.access || 'authenticated', url: `/api/plugins/${item.id}/${item.version}/${item.client!.entry}`, css: item.client!.css?.map(path => `/api/plugins/${item.id}/${item.version}/${path}`), config: item.config }))
-    return { version: 1, sdkVersion: '1.0.0', platformVersion: '1', modules: [...this.builtin.modules, ...external].filter(item => authenticated || item.access === 'public') }
+    return { version: 1, sdkVersion: '1.1.0', platformVersion: '1', modules: [...this.builtin.modules, ...external].filter(item => authenticated || item.access === 'public') }
   }
   async asset(packageId: string, version: string, asset: string, authenticated: boolean) {
-    if (packageId === 'youdub-client' && version === '1.0.0' && this.config.builtinClientManifest) {
+    if (packageId === 'youdub-client' && version === '1.1.0' && this.config.builtinClientManifest) {
       const prefix = `/api/plugins/${packageId}/${version}/`
       const publicAssets = this.builtin.modules.filter(item => item.access === 'public').flatMap(item => [item.url, ...(item.css || [])]).concat((this.builtin.publicAssets || []).map(path => prefix + path))
       if (!authenticated && !publicAssets.includes(prefix + asset)) throw new AppError('UNAUTHORIZED', 'Authentication required.', 401)

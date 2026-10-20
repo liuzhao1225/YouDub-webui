@@ -54,13 +54,17 @@ export function TranslationSetup({ children }: { children: ReactNode }) {
     try {
       await mutate('/api/v2/settings/test-connection', { base_url: url.trim(), model: model.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) }, 'POST')
       const runtime: Runtime = await api('/api/v2/runtime')
-      const provider = runtime.capabilities.find(item => item.capability === 'asr' && item.available)
+      const provider = runtime.capabilities.find(item => item.capability === 'asr' && item.models.length)
       const asr = provider?.models[0]
-      if (!provider || !asr) throw new Error('语音识别模型尚未就绪，请完成环境准备。')
+      // Configuration is saved before model installation. The official subtitle
+      // workflow starts with Whisper tiny; readiness is checked when it runs.
+      const asrSelection = settings?.defaults?.asr ?? (provider && asr
+        ? { adapter: provider.adapter, model: asr.id, device: asr.devices[0] }
+        : { adapter: 'whisper', model: 'tiny', device: 'cpu' })
       await mutate('/api/v2/settings', { connection: { adapter: 'openai', base_url: url.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) } })
       setKey('')
       await mutate('/api/v2/settings', { defaults: { source_language: 'auto', target_language: 'zh', output_mode: 'subtitles', keep_background: false,
-        asr: { adapter: provider.adapter, model: asr.id, device: asr.devices[0] }, tts: null, separation: null,
+        asr: asrSelection, tts: null, separation: null,
         ...settings?.defaults, translation: { adapter: 'openai', model: model.trim(), device: 'remote' } } })
       setReady(true)
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
@@ -77,7 +81,7 @@ export function TranslationSetup({ children }: { children: ReactNode }) {
   const savedKey = settings.connections.find(item => item.adapter === 'openai' && item.base_url === url.trim() && item.has_api_key)
   return <main className="mx-auto max-w-xl space-y-6 px-6 py-12">
     <BrandMark wordmark className="h-7" />
-    <div className="space-y-2"><p className="text-xs text-muted-foreground">环境和模型已就绪 · 最后一步</p><h1 className="text-xl font-semibold">配置翻译服务</h1><p className="text-sm text-muted-foreground">填写 OpenAI 兼容接口。翻译时会向该服务发送识别出的字幕文本；测试连接会发送一句简短测试文本。</p></div>
+    <div className="space-y-2"><h1 className="text-xl font-semibold">配置翻译服务</h1><p className="text-sm text-muted-foreground">填写 OpenAI 兼容接口。翻译时会向该服务发送识别出的字幕文本；测试连接会发送一句简短测试文本。</p></div>
     <form className="space-y-5 rounded-2xl border border-border bg-card p-6" onSubmit={save}>
       <div className="space-y-2"><Label htmlFor="setup-llm-url">接口地址</Label><Input id="setup-llm-url" type="url" value={url} disabled={busy} onChange={event => setUrl(event.target.value)} required /></div>
       <div className="space-y-2"><Label htmlFor="setup-llm-model">模型名称</Label><Input id="setup-llm-model" value={model} disabled={busy} onChange={event => setModel(event.target.value)} placeholder="例如 gpt-4.1-mini" required /></div>

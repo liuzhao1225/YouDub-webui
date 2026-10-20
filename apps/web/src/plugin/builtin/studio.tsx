@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { useQuery } from './use-query'
 import { ACTIVE_STATUSES, TaskProgress, TaskState } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
+import { GraphStudio } from './workflows'
 
 function UploadSlot({ slot, file, disabled, alternative = false, onChange }: { slot: InputSlot; file?: File; disabled: boolean; alternative?: boolean; onChange(file?: File): void }) {
   const tx = useText()
@@ -129,7 +130,7 @@ function Studio() {
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
   const { language, t } = useI18n()
   const [selected, setSelected] = useState(''), [locked, setLocked] = useState(false)
-  const workflow = catalog?.workflows.find((item) => item.id === selected) ?? catalog?.workflows[0]
+  const workflow = catalog?.workflows.find((item) => item.id === selected) ?? catalog?.workflows.find((item) => item.id === 'youdub.graph') ?? catalog?.workflows[0]
   const active = tasks?.items.filter((task) => ACTIVE_STATUSES.has(task.status)) ?? []
   const recent = tasks?.items.filter((task) => !ACTIVE_STATUSES.has(task.status)).slice(0, 6) ?? []
   return <main>
@@ -148,7 +149,7 @@ function Studio() {
           {catalog && !workflow && <InlineAlert>{tx('No workflows are available.', '当前没有可用流程。', '利用可能なワークフローがありません。')}</InlineAlert>}
           {workflow && <>
             {catalog!.workflows.length > 1 && <div className="mb-4 flex items-center gap-3"><Label htmlFor="workflow">{tx('Workflow', '处理流程', 'ワークフロー')}</Label><select id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-9 min-w-0 rounded-full border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</select></div>}
-            <Composer key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />
+            {workflow.id === 'youdub.graph' ? <GraphStudio /> : <Composer key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />}
           </>}
         </div>
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML requires a full document navigation. */}

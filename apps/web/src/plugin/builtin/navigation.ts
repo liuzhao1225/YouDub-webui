@@ -2,19 +2,44 @@ import { Context, Service } from 'cordis'
 import type { Navigation } from '../sdk'
 export class NavigationService extends Service implements Navigation {
   private listeners = new Set<() => void>()
+  private blockers = new Set<(path: string) => Promise<boolean>>()
+  private index = 0
+  private navigating = false
+  private restore: (() => void) | null = null
+  private passPop = false
   constructor(ctx: Context) {
     super(ctx, 'navigation')
-    const changed = () => { for (const listener of this.listeners) listener() }
+    window.history.replaceState({ ...window.history.state, youdubIndex: 0 }, '', window.location.href)
+    const changed = async (event: PopStateEvent) => {
+      if (this.restore) { const done = this.restore; this.restore = null; done(); return }
+      const nextIndex = Number(event.state?.youdubIndex ?? 0)
+      if (this.passPop) { this.passPop = false; this.index = nextIndex; this.changed(); return }
+      const path = this.getSnapshot()
+      if (this.blockers.size && nextIndex !== this.index) {
+        const delta = nextIndex - this.index
+        await new Promise<void>((resolve) => { this.restore = resolve; window.history.go(-delta) })
+        if (await this.canLeave(path)) { this.passPop = true; window.history.go(delta) }
+      } else { this.index = nextIndex; this.changed() }
+    }
     ctx.effect(() => { window.addEventListener('popstate', changed); return () => window.removeEventListener('popstate', changed) })
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
   getSnapshot = () => window.location.pathname + window.location.search
-  push(path: string) { this.navigate(path, false) }
-  replace(path: string) { this.navigate(path, true) }
-  private navigate(path: string, replace: boolean) {
+  block(handler: (path: string) => Promise<boolean>) { this.blockers.add(handler); return () => { this.blockers.delete(handler) } }
+  private changed() { for (const listener of this.listeners) listener() }
+  private async canLeave(path: string) { for (const handler of this.blockers) if (!await handler(path)) return false; return true }
+  push(path: string) { void this.navigate(path, false) }
+  replace(path: string) { void this.navigate(path, true) }
+  private async navigate(path: string, replace: boolean) {
     if (!path.startsWith('/') || path.startsWith('//')) throw new Error('Navigation requires a same-origin path')
-    window.history[replace ? 'replaceState' : 'pushState'](null, '', path)
-    window.dispatchEvent(new PopStateEvent('popstate'))
+    if (this.navigating || path === this.getSnapshot()) return
+    this.navigating = true
+    try {
+      if (this.blockers.size && !await this.canLeave(path)) return
+      if (!replace) this.index++
+      window.history[replace ? 'replaceState' : 'pushState']({ youdubIndex: this.index }, '', path)
+      this.changed()
+    } finally { this.navigating = false }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }
   href(routeId: string, params: Record<string, string> = {}) {

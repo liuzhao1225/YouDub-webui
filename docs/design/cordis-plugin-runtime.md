@@ -2,7 +2,7 @@
 
 本文适用于当前 `main` 的 Cordis 插件实现。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。截至 2026-10-09，验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
 
-首次启动环境准备与模型下载见 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
+节点工作流和按图准备资源见[使用指南](../workflows.md)及 [2026-10-20 验收记录](../validation/workflow-nodes-2026-10-20.md)。旧版首次启动流程保留在 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
 
 ## 1. 安装与配置
 
@@ -14,11 +14,11 @@ npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
 ```
 
-默认组合先启动 HTTP 与环境准备服务。它识别系统及架构，复用或安装 Python 3.12、创建 `.venv`、安装运行依赖和 FFmpeg/ffprobe，再并行下载四个模型。界面显示真实下载进度，支持暂停、续传和显式重试；准备完成后才加载工作台插件。后续启动复用已准备的资源。
+默认组合先启动 HTTP 与环境准备服务。它识别系统及架构，复用或安装 Python 3.12、创建虚拟环境、安装基础依赖，完成后加载工作台插件。工作流页面按图中节点检查并显式准备媒体依赖、FFmpeg/ffprobe、分句资源和模型，显示真实进度与失败原因。资源准备失败保留工作台和图编辑入口，后续准备复用已有资源。
 
 Python、FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，CPU/CUDA/Linux ROCm 的 Torch 使用阿里 PyTorch 镜像；Windows ROCm 7.2.1 专用包暂无对应镜像，保留 AMD 官方源并在准备界面标明。Whisper、VoxCPM2、Demucs、Qwen 模型来自固定版本的 ModelScope 仓库，NLTK 分句资源来自 ModelScope 阿里云 OSS。新安装的 Python 解释器与 venv 均位于 YouDub 数据目录的 `runtime/` 下，不依赖系统 Python。应用自动检测平台和已有资源，缺少时从上述来源直接下载，不读取代理环境变量。安装包和软件更新继续使用 GitHub。下载错误会停止对应项目并显示原因。模型文件与版本见 `packages/builtin/src/setup-models.json`；新下载文件通过 SHA-256 校验后才就绪。设备和模型选择仍保存在 workflow 配置中。
 
-首次启动服务将模型准备到以下位置，官方 provider 扫描时只读取本地资产：
+工作流资源准备将选中的模型下载到以下位置，官方 provider 扫描时只读取本地资产：
 
 | 能力 | 默认目录（相对数据目录） | 可覆盖变量 |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ Python、FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，CPU/CU
 
 VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。翻译模型列表由 `YOUDUB_TRANSLATION_MODELS` 配置，连接 URL 和密钥在设置页保存。
 
-Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。首次启动会一并准备到应用数据目录的 `nltk_data/`，已有 NLTK 资源可复用；自定义目录使用 `NLTK_DATA`。推理时只检查本地包和四个英文参数文件；缺失时明确报告 `MODEL_NOT_READY`。
+Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。准备含 Whisper 的工作流时会下载到应用数据目录的 `nltk_data/`，已有 NLTK 资源可复用；自定义目录使用 `NLTK_DATA`。推理时只检查本地包和四个英文参数文件；缺失时明确报告 `MODEL_NOT_READY`。
 
 英文识别在 ASR 后处理内用预训练 Punkt 合并跨段句子、拆分段内多句，再按首末词时间戳确定每句原声范围。原始 ASR JSON 保持不变，中文、日文保留原有分段。分句后的 ID 贯穿翻译、逐句参考音频和 TTS；缺少英文词时间戳或句界无法映射到词边界时明确失败。无新增 workflow 步骤。
 
@@ -57,7 +57,7 @@ test .env -ef env.txt
 | `YOUDUB_AUTH_*` | 会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
 | `LOCAL_UPLOAD_MAX_BYTES` | 默认 4 GiB；具名输入还受 workflow 的 `maxBytes` 限制 |
 
-新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v2。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。仓库 `data/youdub.sqlite` 只在首次迁移复制旧登录会话时只读打开；旧 URL 下载任务不进入新任务列表，也没有运行入口。数据库文件保留原位。
+新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v3，新增工作流文档、节点结果版本与人工确认记录，保留 v2 任务。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。仓库 `data/youdub.sqlite` 只在首次迁移复制旧登录会话时只读打开；旧 URL 下载任务不进入新任务列表，也没有运行入口。数据库文件保留原位。
 
 ## 2. 构建与启动
 

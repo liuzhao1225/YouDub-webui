@@ -1,8 +1,10 @@
 # YouDub 节点工作流设计
 
+实现入口见[节点工作流使用说明](../workflows.md)和[验收记录](../validation/workflow-nodes-2026-10-20.md)。本文保留最初设计基线，具体接口以 SDK 源码为准。
+
 2026-10-20 · 设计提案 · 基线 `cb99992` / YouDub 0.0.7 · 分支 `codex/workflow-node-design`
 
-本文定义后续实现目标。本分支只交付设计、接口草案和示例，不表示画布、人工确认或订正能力已经上线。工程契约与验收见 [实现设计](workflow-node-implementation.md)，数据示例见 [人工审核字幕工作流](workflow-samples/reviewed-subtitles.workflow.json)。
+本文保留最初的实现目标。原设计分支 `codex/workflow-node-design` 交付设计、接口草案和示例；实现分支 `codex/workflow-nodes` 的进展以文首链接的验收记录为准。工程契约见 [实现设计](workflow-node-implementation.md)，数据示例见 [人工审核字幕工作流](workflow-samples/reviewed-subtitles.workflow.json)。
 
 另一份独立示例为 [原声克隆配音工作流](workflow-samples/source-clone-dubbing.workflow.json)，包含 TTS、分离、参考音频和混音。两份示例分别表达无 TTS 与有 TTS 的图结构。
 

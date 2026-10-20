@@ -95,7 +95,7 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 
 [Windows EXE 安装包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe) · [macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg) · [版本说明与便携包](https://github.com/liuzhao1225/YouDub-webui/releases/latest)
 
-首次启动需要下载运行环境和模型；安装要求与升级方法见[安装指南](docs/upgrade.md)。
+首次启动准备基础运行环境；所需模型和推理依赖按工作流准备。安装要求与升级方法见[安装指南](docs/upgrade.md)。
 
 1. 在「设置」配置翻译连接，确认所需模型就绪，保存默认处理配置。
 2. 在「工作台」导入视频，选择语言和输出模式，创建任务。
@@ -111,13 +111,13 @@ QQ 交流群：`618246010`
 
 ## 快速开始
 
-[运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [版本发布](docs/releasing.md)
+[节点工作流](docs/workflows.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [版本发布](docs/releasing.md)
 
 以下为从源码运行的步骤，命令面向 macOS / Linux shell。真实模型流程已在 **macOS arm64 / CPU** 以及 **Windows x64 / NVIDIA CUDA** 验证；Windows 包的首次配置、完整视频任务和验收边界见[验收记录](docs/validation/windows-desktop-2026-10-16.md)，构建方法见[桌面说明](apps/desktop/README.md#windows-x64)。应用自动检测 CUDA、MPS、AMD ROCm 并保留 CPU 回退，支持范围见[设备说明](docs/accelerators.md)；Linux、AMD 和 MPS 推理尚未完成本轮真机验收。
 
 ### 1. 安装依赖
 
-准备 Node.js 22（至少 22.13.0）和 Git。首次启动会识别操作系统与架构，准备 Python 3.12、运行依赖、FFmpeg/ffprobe 和分句资源。会复用 YouDub 已准备的环境。
+准备 Node.js 22（至少 22.13.0）和 Git。首次启动会识别操作系统与架构，准备 Python 3.12 和基础运行依赖。FFmpeg/ffprobe、分句资源和模型依赖按所选工作流准备，已有资源会复用。
 
 ```bash
 git clone --branch main --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
@@ -126,7 +126,7 @@ npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
 ```
 
-已有 checkout 时直接启动即可检查缺失项。Python / FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，模型使用 ModelScope；来源与例外见[国内首次启动下载说明](docs/upgrade.md#国内首次启动下载)。安装、网络或校验失败会停在准备页显示原因，可修复后手动重试。
+已有 checkout 时直接启动即可检查缺失项。Python / FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，模型使用 ModelScope；来源与例外见[国内首次启动下载说明](docs/upgrade.md#国内首次启动下载)。基础环境失败会停在准备页，工作流资源失败显示在对应准备面板；两者均保留原因，可修复后手动重试。
 
 ### 2. 创建本地配置
 
@@ -142,7 +142,9 @@ test .env -ef env.txt
 
 ### 3. 准备模型
 
-首次启动会并行下载 Whisper tiny、VoxCPM2、Demucs htdemucs 和 Qwen3 Aligner 0.6B；页面显示真实进度，支持单项或全部暂停、继续。完成 SHA-256 校验与运行环境检查后自动进入工作台。默认数据目录：macOS 为 `~/Library/Application Support/YouDub`，Linux 为 `~/.local/share/youdub`，Windows 为 `%LOCALAPPDATA%/YouDub`；可用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。
+基础环境就绪后进入工作台。在「工作流」中选择模板、检查资源并准备缺失项，页面显示所选节点的依赖和下载进度。字幕工作流无需下载配音模型；导入已有字幕并导出视频的工作流可只安装媒体依赖。详细操作见[节点工作流](docs/workflows.md)。
+
+默认数据目录：macOS 为 `~/Library/Application Support/YouDub`，Linux 为 `~/.local/share/youdub`，Windows 为 `%LOCALAPPDATA%/YouDub`；可用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。
 
 | 能力 | 默认提供者 | 模型路径（相对数据目录） |
 | --- | --- | --- |
@@ -171,7 +173,7 @@ npm start
 npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，首次使用显示环境与模型准备；资源已就绪时直接进入工作台。
+打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，首次使用显示基础环境准备；环境已就绪时直接进入工作台，再按工作流准备所需资源。
 
 需要运行构建后的前端时，用以下命令替代开发前端；Host 仍单独运行：
 
@@ -230,7 +232,7 @@ npm run plugins -- install --source npm:PACKAGE_NAME@1.0.0
 - **英文分句。** Whisper 识别后使用 NLTK Punkt 整理完整句子，并用词级时间戳确定原声范围；原始识别结果保留。
 - 默认流程接收本地 `mp4`、`mov`、`mkv`、`webm` 视频；默认限制 4 GiB、10 分钟、宽高各不超过 1920、60 fps。
 - 当前语言目录包含英文、中文、日文，具体能力取决于提供者；可选 Qwen 对齐支持英文、中文。
-- MVP 使用单机单活跃任务；插件启停在重启后生效。DAG 编辑器、热替换、插件市场和分布式 worker 留待后续需求。
+- 节点工作流支持分叉、汇合与人工订正，按单槽串行执行；等待人工确认会释放执行槽。插件启停在重启后生效。热替换、插件市场、循环和分布式 worker 留待后续需求。
 - 本地 workflow、Client 与 Python 插件已有验证；GitHub/npm 远端插件实装尚未验收。
 - 当前 HTTP 接口为 `/api/v2`，支持从指定步骤重新生成任务。旧 FastAPI / v1 HTTP 入口已移除。链接下载通过 `media.download/v1` 接入现有任务流程，支持 YouTube、Shorts、B 站及 b23.tv 单视频链接；使用 yt-dlp、Node.js 与 FFmpeg，沿用 10 分钟和文件大小限制。
 

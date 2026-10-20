@@ -1,13 +1,15 @@
 import { Service, type Context } from 'cordis'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import Ajv from 'ajv/dist/2020.js'
 import { setTimeout as delay } from 'node:timers/promises'
 import {
   AppError, requireId, type TasksService, type TaskRecord, type TaskView, type TaskQuery, type CreateTask,
   type JsonObject, type WorkflowPlan, type StepState, type Invocation, type InvocationContext, type ArtifactRef,
+  type StepSpec, type WorkflowDocument, type ReviewCommand, type NodeActionReceipt, type RerunTask,
 } from '@youdub/sdk'
 import { taskCover } from './task-cover.js'
+import { parseWorkflowDocument } from './workflow-document.js'
 
 const terminal = new Set(['succeeded', 'failed', 'cancelled'])
 const now = () => new Date().toISOString()
@@ -20,6 +22,12 @@ function redact(message: string, credentials: InvocationContext['credentials'] =
   return message.replace(/(authorization|api[_-]?key|cookie)\s*[:=]\s*[^\r\n]+/gi, '$1: [redacted]')
 }
 function ref(value: any): value is ArtifactRef { return value && typeof value.id === 'string' && typeof value.schemaId === 'string' && Object.keys(value).length === 2 }
+function fingerprint(value: any): string {
+  const canonical = (item: any): any => Array.isArray(item) ? item.map(canonical) : item && typeof item === 'object'
+    ? Object.fromEntries(Object.keys(item).sort().filter(key => item[key] !== undefined).map(key => [key, canonical(item[key])])) : item
+  return createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex')
+}
+type Reuse = { source: TaskRecord; fromStep: string } | { source: TaskRecord; graph: RerunTask }
 
 export default class Tasks extends Service implements TasksService {
   static inject = ['catalog', 'store', 'files', 'settings']
@@ -51,10 +59,11 @@ export default class Tasks extends Service implements TasksService {
     return task
   }
   private view(task: TaskRecord): TaskView {
-    const { artifacts, credentialRefs, rawSnapshot, ...publicTask } = task
+    const { artifacts, credentialRefs, rawSnapshot, actionReceipts, ...publicTask } = task
     const mayStillRun = Object.values(task.externalRequests ?? {}).some(value => value.mayStillRun)
     const allowedActions = terminal.has(task.status) ? ['rerun', 'delete'] : ['cancel']
     if (!task.legacy && ['failed', 'cancelled'].includes(task.status) && !mayStillRun) allowedActions.unshift('retry')
+    if (task.status === 'paused') allowedActions.unshift('approve', 'correct')
     return {
       ...publicTask, mayStillRun, allowedActions,
       ...(taskCover(task) ? { cover: {} } : {}),
@@ -116,26 +125,39 @@ export default class Tasks extends Service implements TasksService {
     }
   }
   async create(request: CreateTask) { return this.createWithReuse(request) }
-  private async createWithReuse(request: CreateTask, reuse?: { source: TaskRecord; fromStep: string }) {
+  private async createWithReuse(request: CreateTask, reuse?: Reuse) {
     this.assertReady(); requireId(request.id)
     return this.ctx.settings.locked(async () => {
       const workflow = this.ctx.catalog.workflow(request.workflowId)
       if (request.workflowVersion && request.workflowVersion !== workflow.version) throw new AppError('WORKFLOW_VERSION_UNAVAILABLE', 'Selected workflow version is unavailable.', 409)
       const description = workflow.describe()
       validate(description.configSchema, request.config, 'Workflow configuration')
+      if (!('graph' in workflow) && (request.graphDocument !== undefined || request.nodeRuntimeInputs !== undefined)) throw new AppError('INVALID_CONFIG', 'This workflow does not accept a graph document.', 422)
+      if ('graph' in workflow && request.graphDocument === undefined) throw new AppError('GRAPH_REQUIRED', 'A graph document is required.', 422)
+      const document = request.graphDocument === undefined ? undefined : parseWorkflowDocument(request.graphDocument)
+      const runtimeInputs = request.nodeRuntimeInputs === undefined ? {} : request.nodeRuntimeInputs
+      const slots = document?.inputs.map(slot => ({ ...slot, name: slot.id })) ?? description.inputs
       const artifacts = request.artifacts ?? {}
-      for (const slot of description.inputs) {
+      for (const slot of slots) {
         const input = request.inputs[slot.name], artifact = input && artifacts[input.id]
         if (!input && !slot.required) continue
         if (!artifact || artifact.invocationId !== 'input') throw new AppError('INPUT_MISSING', `Input ${slot.name} is required.`, 422)
         if (artifact.size > slot.maxBytes) throw new AppError('FILE_TOO_LARGE', `Input ${slot.name} exceeds its limit.`, 413)
         await this.ctx.files.resolve(request.id, artifact)
       }
-      if (Object.keys(request.inputs).some(key => !description.inputs.some(slot => slot.name === key))) throw new AppError('INVALID_CONFIG', 'Unknown workflow input slot.', 422)
-      const diagnostics = await workflow.validate(request.inputs, request.config, this.ctx.catalog)
-      if (diagnostics.length) throw new AppError(diagnostics[0].code, diagnostics[0].message, 422, diagnostics)
-      const plan = await workflow.plan(request.inputs, request.config, this.ctx.catalog); this.checkPlan(plan)
-      const reusedSteps = reuse ? await this.reusePrefix(request.id, plan, reuse.source, reuse.fromStep, artifacts) : []
+      if (Object.keys(request.inputs).some(key => !slots.some(slot => slot.name === key))) throw new AppError('INVALID_CONFIG', 'Unknown workflow input slot.', 422)
+      let plan: WorkflowPlan, graphSnapshot: WorkflowDocument | undefined
+      if ('graph' in workflow) {
+        ({ plan, graphSnapshot } = await workflow.graph.compile({ document: document!, inputs: request.inputs, nodeRuntimeInputs: runtimeInputs }, this.ctx.catalog))
+      } else {
+        const diagnostics = await workflow.validate(request.inputs, request.config, this.ctx.catalog)
+        if (diagnostics.length) throw new AppError(diagnostics[0].code, diagnostics[0].message, 422, diagnostics)
+        plan = await workflow.plan(request.inputs, request.config, this.ctx.catalog)
+      }
+      this.checkPlan(plan)
+      const reusedSteps = reuse ? 'graph' in reuse
+        ? await this.reuseGraph(request.id, plan, graphSnapshot!, reuse.source, reuse.graph, artifacts)
+        : await this.reusePrefix(request.id, plan, reuse.source, reuse.fromStep, artifacts) : []
       const snapshot = await this.ctx.settings.snapshot()
       const remote = new Set(Object.values(plan.bindings).map(binding => this.ctx.catalog.provider(binding.providerId).describe()).filter(provider => provider.execution === 'remote').map(provider => provider.adapter ?? provider.id))
       const connections = snapshot.connections.filter(connection => remote.has(connection.adapter))
@@ -144,12 +166,14 @@ export default class Tasks extends Service implements TasksService {
       const task: TaskRecord = {
         id: request.id, revision: 0, attempt: 1, status: 'queued', sourceName: request.sourceName ?? Object.values(artifacts)[0]?.name ?? description.label,
         workflowId: workflow.id, workflowVersion: workflow.version, config: plan.config, plan, inputs: request.inputs, artifacts,
-        steps: plan.steps.map((step, index) => reusedSteps[index] ?? ({ id: step.id, label: step.label, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null })),
+        steps: plan.steps.map(step => reusedSteps.find(reused => reused.id === step.id) ?? ({ id: step.id, label: step.label, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null })),
         outputs: [], connections, credentialRefs, externalRequests: {}, error: null, message: null,
         createdAt: timestamp, updatedAt: timestamp, queuedAt: timestamp, startedAt: null, finishedAt: null, nextPollAt: null,
-        ...(reuse ? { reusedFrom: { taskId: reuse.source.id, attempt: reuse.source.attempt, fromStep: reuse.fromStep, workflow: structuredClone(reuse.source.plan.workflow), bindings: structuredClone(reuse.source.plan.bindings) } } : {}),
+        ...(graphSnapshot ? { graphSnapshot, nodeRuntimeInputs: structuredClone(runtimeInputs), workflowSource: { documentId: graphSnapshot.id, documentRevision: request.documentRevision ?? null, title: graphSnapshot.title } } : {}),
+        ...(reuse ? { reusedFrom: { taskId: reuse.source.id, attempt: reuse.source.attempt, fromStep: 'fromStep' in reuse ? reuse.fromStep : '', workflow: structuredClone(reuse.source.plan.workflow), bindings: structuredClone(reuse.source.plan.bindings) } } : {}),
       }
       await this.ctx.settings.credentials(task)
+      if (graphSnapshot) await this.advance(task)
       return this.view(await this.ctx.store.call('store.create', { task }))
     })
   }
@@ -192,13 +216,263 @@ export default class Tasks extends Service implements TasksService {
     }
     return steps.map(step => ({ ...step, outputs: replace(step.outputs) }))
   }
+  private inputs(task: TaskRecord, spec: StepSpec, allowMissing = false): JsonObject {
+    const inputs: JsonObject = {}
+    for (const [key, value] of Object.entries(spec.input)) {
+      const upstream = value?.from === 'step' ? task.steps.find(step => step.id === value.stepId) : undefined
+      if (upstream && task.graphSnapshot && (upstream.status !== 'completed' || upstream.approvedRevision !== upstream.outputRevision)) {
+        if (allowMissing) continue
+        throw new AppError('RESULT_NOT_APPROVED', `Input ${spec.id}.${key} is waiting for approval.`, 409)
+      }
+      const input = value?.from === 'task' ? task.inputs[value.name] : value?.from === 'step' ? upstream?.outputs[value.output] : value
+      if (input === undefined) {
+        if (allowMissing) continue
+        throw new AppError('INPUT_MISSING', `Input ${spec.id}.${key} is missing.`, 422)
+      }
+      inputs[key] = input
+    }
+    return inputs
+  }
+  private async verifyOutputs(task: TaskRecord, spec: StepSpec, outputs: JsonObject, code = 'INVALID_CORRECTION') {
+    if (!outputs || typeof outputs !== 'object' || Array.isArray(outputs)) throw new AppError(code, 'Node outputs must be an object.', 422)
+    if (Object.keys(outputs).some(name => !spec.outputs.some(port => port.name === name))) throw new AppError(code, 'Node returned an undeclared output port.', 422)
+    for (const port of spec.outputs) {
+      const output = outputs[port.name]
+      if (output === undefined) {
+        if (port.required) throw new AppError(code, `Missing ${spec.id}.${port.name}.`, 422)
+        continue
+      }
+      if (port.kind === 'artifact' && (!ref(output) || output.schemaId !== port.schemaId)) throw new AppError(code, `Invalid ${spec.id}.${port.name}.`, 422)
+      if (port.kind === 'json' && !validator.validate(port.schema!, output)) throw new AppError(code, `${spec.id}.${port.name}: ${validator.errorsText()}`, 422)
+    }
+    const verify = async (value: any): Promise<void> => {
+      if (ref(value)) {
+        const artifact = task.artifacts[value.id]
+        if (!artifact || artifact.schemaId !== value.schemaId) throw new AppError(code, 'Artifact does not belong to this task.', 422)
+        await this.ctx.files.resolve(task.id, artifact)
+      } else if (Array.isArray(value)) { for (const item of value) await verify(item) }
+      else if (value && typeof value === 'object') { for (const item of Object.values(value)) await verify(item) }
+    }
+    await verify(outputs)
+  }
+  private async correction(task: TaskRecord, spec: StepSpec, baselineOutputs: JsonObject, patch: JsonObject) {
+    const provider = this.ctx.catalog.provider(task.plan.bindings[spec.bindingKey].providerId)
+    const declaration = provider.describe().operations.find(operation => operation.id === spec.operation)?.node?.corrections
+    if (!declaration || !provider.validateCorrection) throw new AppError('CORRECTION_UNSUPPORTED', 'This node does not support corrections.', 422)
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch) || !Object.keys(patch).length) throw new AppError('INVALID_CORRECTION', 'A correction must include an editable output port.', 422)
+    for (const name of Object.keys(patch)) {
+      const port = spec.outputs.find(port => port.name === name)
+      if (!port || !declaration.outputPorts.includes(name) || !declaration.schemaIds.includes(port.schemaId)) throw new AppError('CORRECTION_READ_ONLY', `Output ${name} cannot be edited.`, 422)
+    }
+    await this.verifyOutputs(task, spec, { ...baselineOutputs, ...patch })
+    const outputs = await provider.validateCorrection({ operation: spec.operation, inputs: structuredClone(this.inputs(task, spec)), baselineOutputs: structuredClone(baselineOutputs), patch: structuredClone(patch) })
+    await this.verifyOutputs(task, spec, outputs)
+    for (const port of spec.outputs) if (!(port.name in patch) && !isDeepStrictEqual(outputs[port.name], baselineOutputs[port.name])) throw new AppError('CORRECTION_READ_ONLY', `Correction changed unedited output ${port.name}.`, 422)
+    return outputs
+  }
+  /** Advance over saved results before scheduling work, including a gate on the last node. */
+  private async advance(task: TaskRecord) {
+    task.nextPollAt = null
+    for (const spec of task.plan.steps) {
+      const step = task.steps.find(step => step.id === spec.id)!
+      if (step.status === 'completed' && (!task.graphSnapshot || step.approvedRevision === step.outputRevision)) continue
+      if (step.outputRevision && step.resultRevisions?.some(result => result.revision === step.outputRevision)) {
+        if (spec.autoContinue === false && step.approvedRevision !== step.outputRevision) {
+          step.status = 'awaiting_review'; task.status = 'paused'; task.finishedAt = null
+          task.message = spec.label
+          return
+        }
+        step.status = 'completed'; step.approvedRevision = step.outputRevision
+        continue
+      }
+      if (step.status !== 'pending') throw new AppError('INVALID_PLAN', `Node ${spec.id} cannot be scheduled from ${step.status}.`, 500)
+      task.status = 'queued'; task.finishedAt = null; task.message = null; task.queuedAt = now()
+      return
+    }
+    task.outputs = []
+    for (const output of task.plan.outputs) {
+      const artifact = task.steps.find(step => step.id === output.source.stepId)!.outputs[output.source.output]
+      if (!artifact) { if (output.required) throw new AppError('STAGE_OUTPUT_MISSING', `Missing final output ${output.id}.`, 500); continue }
+      if (!ref(artifact) || task.artifacts[artifact.id]?.schemaId !== artifact.schemaId) throw new AppError('INVALID_PROVIDER_RESULT', 'Final output is not a registered artifact.', 500)
+      await this.ctx.files.resolve(task.id, task.artifacts[artifact.id])
+      task.outputs.push({ id: output.id, label: output.label, role: output.role, artifact })
+    }
+    task.status = 'succeeded'; task.finishedAt = now(); task.message = 'Completed.'
+  }
+  async node(id: string, nodeId: string, revision?: number) {
+    const task = await this.record(id), step = task.steps.find(step => step.id === nodeId), spec = task.plan.steps.find(spec => spec.id === nodeId)
+    if (!step || !spec) throw new AppError('NODE_NOT_FOUND', 'Task node not found.', 404)
+    const result = revision === undefined ? undefined : step.resultRevisions?.find(result => result.revision === revision)
+    if (revision !== undefined && !result) throw new AppError('RESULT_NOT_FOUND', 'Node result revision not found.', 404)
+    return {
+      taskId: id, nodeId, taskRevision: task.revision, attempt: task.attempt, status: task.status,
+      step: result ? { ...step, outputs: result.outputs, outputRevision: result.revision } : step,
+      spec, inputs: this.inputs(task, spec, true), resultRevisions: step.resultRevisions ?? [],
+      outputRevision: result?.revision ?? step.outputRevision ?? 0, approvedRevision: step.approvedRevision ?? null,
+    }
+  }
+  async action(id: string, actionId: string): Promise<NodeActionReceipt | null> {
+    requireId(actionId)
+    return (await this.record(id)).actionReceipts?.[actionId]?.receipt ?? null
+  }
+  async approve(id: string, nodeId: string, request: ReviewCommand) { return this.review(id, nodeId, request, 'approve') }
+  async correct(id: string, nodeId: string, request: ReviewCommand & { patch: JsonObject; continue?: boolean }) { return this.review(id, nodeId, request, 'correct') }
+  private async review(id: string, nodeId: string, request: ReviewCommand & { patch?: JsonObject; continue?: boolean }, kind: 'approve' | 'correct'): Promise<NodeActionReceipt> {
+    this.assertReady(); requireId(request.actionId)
+    if (request.continue !== undefined && typeof request.continue !== 'boolean') throw new AppError('INVALID_CONFIG', 'continue must be a boolean.', 422)
+    const release = this.ctx.files.readLock(id)
+    try {
+      return await this.locked(async () => {
+        const task = await this.record(id), digest = fingerprint({ kind, nodeId, request })
+        const existing = task.actionReceipts?.[request.actionId]
+        if (existing) {
+          if (existing.digest !== digest) throw new AppError('ACTION_CONFLICT', 'This action ID was already used for different content.', 409)
+          return existing.receipt
+        }
+        this.expected(task, request.expectedAttempt)
+        if (task.revision !== request.expectedTaskRevision) throw new AppError('REVISION_CONFLICT', 'Task changed. Keep your draft and reload the current result.', 409)
+        const step = task.steps.find(step => step.id === nodeId), spec = task.plan.steps.find(spec => spec.id === nodeId)
+        if (!task.graphSnapshot || task.status !== 'paused' || step?.status !== 'awaiting_review' || !spec) throw new AppError('REVIEW_NOT_ALLOWED', 'This node is not awaiting review.', 409)
+        if (step.outputRevision !== request.expectedOutputRevision) throw new AppError('OUTPUT_REVISION_CONFLICT', 'Node result changed. Keep your draft and reload the current result.', 409)
+        this.checkPlan(task.plan)
+        if (kind === 'correct') {
+          const outputs = await this.correction(task, spec, step.outputs, request.patch!)
+          const revision = (step.resultRevisions?.at(-1)?.revision ?? 0) + 1
+          step.resultRevisions = [...step.resultRevisions ?? [], { revision, parentRevision: step.outputRevision!, source: 'correction', actionId: request.actionId, outputs, createdAt: now() }]
+          step.outputs = outputs; step.outputRevision = revision; step.approvedRevision = null
+          // A derived task can already hold reused downstream results when this gate pauses.
+          // Invalidate their current projections together with the correction, retaining history.
+          const invalidated = new Set([nodeId])
+          for (const dependent of task.plan.steps) {
+            if (!Object.values(dependent.input).some(input => input?.from === 'step' && invalidated.has(input.stepId))) continue
+            invalidated.add(dependent.id)
+            Object.assign(task.steps.find(step => step.id === dependent.id)!, {
+              status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null,
+              outputs: {}, error: null, operation: undefined, outputRevision: 0, approvedRevision: null, approvalActionId: null,
+            })
+          }
+          task.outputs = []
+        }
+        if (kind === 'approve' || request.continue) {
+          await this.verifyOutputs(task, spec, step.outputs)
+          step.status = 'completed'; step.approvedRevision = step.outputRevision; step.approvalActionId = request.actionId
+          await this.advance(task)
+        }
+        const receipt: NodeActionReceipt = { actionId: request.actionId, kind, nodeId, attempt: task.attempt, taskRevision: task.revision + 1, outputRevision: step.outputRevision!, status: task.status, createdAt: now() }
+        task.actionReceipts = { ...task.actionReceipts, [request.actionId]: { digest, receipt } }
+        await this.save(task)
+        return receipt
+      })
+    } finally { release() }
+  }
+  private async graphReuse(source: TaskRecord, plan: WorkflowPlan, graph: WorkflowDocument, request: RerunTask) {
+    if (!source.graphSnapshot) throw new AppError('GRAPH_REQUIRED', 'Only graph tasks support dependency reuse.', 422)
+    const dirty = new Set<string>(), reasons: Record<string, string> = {}, corrections: Record<string, JsonObject> = {}
+    const sourceRevisions: Record<string, number> = {}
+    const identity = (taskPlan: WorkflowPlan, spec: StepSpec) => ({
+      operation: spec.operation, input: spec.input,
+      outputs: spec.outputs.map(({ label, ...port }) => port),
+      binding: taskPlan.bindings[spec.bindingKey],
+    })
+    for (const spec of plan.steps) {
+      const originalSpec = source.plan.steps.find(step => step.id === spec.id)
+      const originalNode = source.graphSnapshot.nodes.find(node => node.id === spec.id), node = graph.nodes.find(node => node.id === spec.id)
+      const original = source.steps.find(step => step.id === spec.id)
+      const changed = !originalSpec || !originalNode || !node || originalNode.type !== node.type || originalNode.typeVersion !== node.typeVersion || !isDeepStrictEqual(identity(plan, spec), identity(source.plan, originalSpec))
+      if (changed) { dirty.add(spec.id); reasons[spec.id] = 'node_changed' }
+      else if (!original?.outputRevision || !original.resultRevisions?.some(result => result.revision === original.outputRevision)) { dirty.add(spec.id); reasons[spec.id] = 'result_missing' }
+      else if (original.approvedRevision !== original.outputRevision) { dirty.add(spec.id); reasons[spec.id] = 'result_not_approved' }
+      else sourceRevisions[spec.id] = original.outputRevision
+    }
+    for (const [nodeId, correction] of Object.entries(request.corrections ?? {})) {
+      const spec = plan.steps.find(step => step.id === nodeId), original = source.steps.find(step => step.id === nodeId)
+      const baseline = original?.resultRevisions?.find(result => result.revision === correction.revision)
+      if (!spec || !baseline || correction.revision !== original?.outputRevision) throw new AppError('OUTPUT_REVISION_CONFLICT', `Source result ${nodeId} changed or is missing.`, 409)
+      if (reasons[nodeId] === 'node_changed') throw new AppError('REUSE_NOT_ALLOWED', `Node ${nodeId} changed; its old result cannot be substituted.`, 409)
+      corrections[nodeId] = await this.correction(source, spec, baseline.outputs, correction.patch)
+      sourceRevisions[nodeId] = correction.revision
+      dirty.delete(nodeId); delete reasons[nodeId]
+    }
+    for (const spec of plan.steps) {
+      const affected = Object.values(spec.input).some(input => input?.from === 'step' && (dirty.has(input.stepId) || Object.hasOwn(corrections, input.stepId)))
+      if (affected) {
+        if (Object.hasOwn(corrections, spec.id)) throw new AppError('REUSE_NOT_ALLOWED', `Correction ${spec.id} depends on an upstream result that will change.`, 409)
+        dirty.add(spec.id); reasons[spec.id] = 'upstream_changed'; delete sourceRevisions[spec.id]
+      }
+    }
+    const reusedSteps = plan.steps.filter(spec => !dirty.has(spec.id) && !Object.hasOwn(corrections, spec.id)).map(spec => spec.id)
+    const correctedSteps = Object.keys(corrections), dirtySteps = plan.steps.filter(spec => dirty.has(spec.id)).map(spec => spec.id)
+    return { reusedSteps, correctedSteps, dirtySteps, reasons, sourceRevisions, corrections }
+  }
+  async rerunPreview(id: string, request: RerunTask) {
+    const source = await this.record(id)
+    if (!source.graphSnapshot) throw new AppError('GRAPH_REQUIRED', 'Dependency preview requires a graph task.', 422)
+    if (request.expectedAttempt !== undefined) this.expected(source, request.expectedAttempt)
+    if (request.expectedTaskRevision !== undefined && source.revision !== request.expectedTaskRevision) throw new AppError('REVISION_CONFLICT', 'Source task changed. Reload before previewing.', 409)
+    const workflow = this.ctx.catalog.workflow(source.workflowId)
+    if (!('graph' in workflow)) throw new AppError('GRAPH_REQUIRED', 'The original graph compiler is unavailable.', 409)
+    const { plan, graphSnapshot } = await workflow.graph.compile({ document: request.graphDocument === undefined ? source.graphSnapshot : request.graphDocument, inputs: source.inputs, nodeRuntimeInputs: request.nodeRuntimeInputs === undefined ? source.nodeRuntimeInputs ?? {} : request.nodeRuntimeInputs }, this.ctx.catalog)
+    this.checkPlan(plan)
+    const release = this.ctx.files.readLock(id)
+    try {
+      const { corrections, ...preview } = await this.graphReuse(source, plan, graphSnapshot, request)
+      for (const nodeId of [...preview.reusedSteps, ...preview.correctedSteps]) {
+        const step = source.steps.find(step => step.id === nodeId)!
+        await this.verifyOutputs(source, source.plan.steps.find(spec => spec.id === nodeId)!, Object.hasOwn(corrections, nodeId) ? corrections[nodeId] : step.outputs, 'REUSE_OUTPUT_INVALID')
+      }
+      return { ...preview, expectedAttempt: source.attempt, expectedTaskRevision: source.revision }
+    } finally { release() }
+  }
+  private async reuseGraph(id: string, plan: WorkflowPlan, graph: WorkflowDocument, source: TaskRecord, request: RerunTask, artifacts: TaskRecord['artifacts']): Promise<StepState[]> {
+    const reuse = await this.graphReuse(source, plan, graph, request)
+    if (!request.sourceRevisions || !isDeepStrictEqual(request.sourceRevisions, reuse.sourceRevisions)) throw new AppError('OUTPUT_REVISION_CONFLICT', 'Source result revisions differ from the reuse preview.', 409)
+    const references = new Map<string, ArtifactRef>()
+    const collect = (value: any): void => {
+      if (ref(value)) {
+        if (source.artifacts[value.id]?.schemaId !== value.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match the source registration.', 409)
+        references.set(value.id, value)
+      } else if (Array.isArray(value)) value.forEach(collect)
+      else if (value && typeof value === 'object') Object.values(value).forEach(collect)
+    }
+    const selected = new Set([...reuse.reusedSteps, ...reuse.correctedSteps])
+    const steps: StepState[] = []
+    for (const spec of plan.steps) {
+      if (!selected.has(spec.id)) continue
+      const step = structuredClone(source.steps.find(step => step.id === spec.id)!)
+      const corrected = Object.hasOwn(reuse.corrections, spec.id)
+      if (corrected) {
+        const revision = step.resultRevisions!.at(-1)!.revision + 1
+        step.resultRevisions!.push({ revision, parentRevision: step.outputRevision!, source: 'correction', actionId: id, outputs: reuse.corrections[spec.id], createdAt: now() })
+        step.outputRevision = revision; step.outputs = reuse.corrections[spec.id]
+      }
+      await this.verifyOutputs(source, spec, step.outputs, 'REUSE_OUTPUT_INVALID')
+      collect(step.outputs); collect(step.resultRevisions)
+      step.label = spec.label; step.status = 'completed'; step.error = null; step.operation = undefined
+      step.approvedRevision = corrected || spec.autoContinue !== false ? step.outputRevision : null
+      step.approvalActionId = corrected ? id : null
+      steps.push(step)
+    }
+    const copied = await this.ctx.files.copyArtifacts(source, id, [...references.values()])
+    for (const artifact of Object.values(copied)) artifacts[artifact.id] = artifact
+    const replace = (value: any): any => {
+      if (ref(value)) return { id: copied[value.id]!.id, schemaId: value.schemaId }
+      if (Array.isArray(value)) return value.map(replace)
+      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]))
+      return value
+    }
+    return steps.map(step => ({ ...step, outputs: replace(step.outputs), resultRevisions: replace(step.resultRevisions) }))
+  }
   private expected(task: TaskRecord, attempt: number) { if (task.attempt !== attempt) throw new AppError('ATTEMPT_CONFLICT', 'Task attempt changed. Refresh before acting.', 409) }
-  async cancel(id: string, expectedAttempt: number) {
+  async cancel(id: string, expectedAttempt: number, expectedTaskRevision?: number) {
     this.assertReady()
     const task = await this.change(id, task => {
       this.expected(task, expectedAttempt)
+      if (task.graphSnapshot && expectedTaskRevision !== task.revision) throw new AppError('REVISION_CONFLICT', 'Task changed. Reload before cancelling.', 409)
       if (terminal.has(task.status)) throw new AppError('TASK_BUSY', 'Task has already stopped.', 409)
-      if (task.status === 'queued' && this.active?.id !== id) { task.status = 'cancelled'; task.finishedAt = now() }
+      if (['queued', 'paused'].includes(task.status) && this.active?.id !== id) {
+        task.status = 'cancelled'; task.finishedAt = now(); task.nextPollAt = null
+        for (const step of task.steps) if (['pending', 'awaiting_review'].includes(step.status)) { step.status = 'cancelled'; step.finishedAt = task.finishedAt }
+      }
       else task.status = 'cancelling'
     })
     if (this.active?.id === id) this.active.controller.abort(new AppError('CANCELLED', 'Task cancellation requested.', 409))
@@ -215,13 +489,18 @@ export default class Tasks extends Service implements TasksService {
         this.checkPlan(task.plan)
         task.attempt++; task.status = 'queued'; task.queuedAt = now(); task.startedAt = task.finishedAt = task.nextPollAt = null
         task.error = null; task.message = null; task.outputs = []; task.externalRequests = {}
-        task.steps = task.steps.map(step => ({ ...step, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null, operation: undefined }))
+        task.steps = task.steps.map(step => ({ ...step, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null, operation: undefined, outputRevision: 0, approvedRevision: null, approvalActionId: null }))
       }))
     } finally { await release() }
   }
-  async rerun(id: string, request: { id: string; config: JsonObject; workflowId?: string; fromStep?: string; acknowledgeExternalRisk?: boolean }) {
+  async rerun(id: string, request: RerunTask) {
     this.assertReady()
     const source = await this.record(id)
+    if (source.graphSnapshot) {
+      this.expected(source, request.expectedAttempt!)
+      if (source.revision !== request.expectedTaskRevision) throw new AppError('REVISION_CONFLICT', 'Source task changed. Refresh the reuse preview.', 409)
+      if (request.workflowId && request.workflowId !== source.workflowId) throw new AppError('REUSE_NOT_ALLOWED', 'A derived graph task must use the same graph compiler.', 422)
+    }
     if (source.legacy && !request.workflowId) throw new AppError('WORKFLOW_REQUIRED', 'Select a current workflow to rerun a historical task.', 422)
     if (!terminal.has(source.status)) throw new AppError('TASK_BUSY', 'Stop the source task before rerunning.', 409)
     if (Object.values(source.externalRequests ?? {}).some(item => item.mayStillRun) && !request.acknowledgeExternalRisk) throw new AppError('EXTERNAL_RESULT_UNKNOWN', 'Acknowledge the previous remote request before rerunning.', 409)
@@ -231,6 +510,12 @@ export default class Tasks extends Service implements TasksService {
     try {
       writeRelease = await this.ctx.files.reserve(request.id, true)
       const inputs = await this.ctx.files.copyInputs(source, request.id)
+      if (source.graphSnapshot) {
+        if (request.fromStep !== undefined) throw new AppError('REUSE_NOT_ALLOWED', 'Graph reruns use dependency reuse instead of a linear step boundary.', 422)
+        const current = await this.record(id)
+        if (current.revision !== source.revision) throw new AppError('REVISION_CONFLICT', 'Source task changed while creating the copy.', 409)
+        return await this.createWithReuse({ id: request.id, workflowId: source.workflowId, config: request.config, sourceName: source.sourceName, graphDocument: request.graphDocument === undefined ? source.graphSnapshot : request.graphDocument, nodeRuntimeInputs: request.nodeRuntimeInputs === undefined ? source.nodeRuntimeInputs ?? {} : request.nodeRuntimeInputs, ...inputs }, { source, graph: request })
+      }
       return await this.createWithReuse({ id: request.id, workflowId: request.workflowId ?? source.workflowId, config: request.config, sourceName: source.sourceName, ...inputs }, request.fromStep === undefined ? undefined : { source, fromStep: request.fromStep })
     } finally { try { await writeRelease?.() } finally { readRelease() } }
   }
@@ -269,7 +554,7 @@ export default class Tasks extends Service implements TasksService {
         const cancelling = await this.ctx.store.call('store.list', { status: 'cancelling', limit: 1000, offset: 0 })
         for (const record of cancelling.items) await this.change(record.id, task => {
           task.status = 'cancelled'; task.finishedAt = now(); task.nextPollAt = null
-          for (const step of task.steps) if (['running', 'waiting'].includes(step.status)) { step.status = 'cancelled'; step.finishedAt = task.finishedAt }
+          for (const step of task.steps) if (['pending', 'running', 'waiting', 'awaiting_review'].includes(step.status)) { step.status = 'cancelled'; step.finishedAt = task.finishedAt }
           for (const request of Object.values(task.externalRequests)) if (request.mayStillRun) request.state = 'unknown'
         })
         try { await delay(this.config.pollMs ?? 300, undefined, { signal: this.stopping.signal }) }
@@ -284,6 +569,10 @@ export default class Tasks extends Service implements TasksService {
     try {
       this.checkPlan(initial.plan)
       currentStep = initial.steps.find(step => step.status !== 'completed')
+      if (initial.graphSnapshot && (!currentStep || currentStep.outputRevision)) {
+        await this.change(initial.id, task => this.advance(task))
+        return
+      }
       if (!currentStep) throw new AppError('INVALID_PLAN', 'Claimed task has no pending step.', 500)
       const spec = initial.plan.steps.find(step => step.id === currentStep!.id)!, binding = initial.plan.bindings[spec.bindingKey]
       const provider = this.ctx.catalog.provider(binding.providerId)
@@ -294,11 +583,7 @@ export default class Tasks extends Service implements TasksService {
         const step = task.steps.find(step => step.id === spec.id)!
         step.status = 'running'; step.invocationId = invocationId; step.startedAt ??= now(); task.startedAt ??= now()
       })
-      const inputs: JsonObject = {}
-      for (const [key, value] of Object.entries(spec.input)) {
-        inputs[key] = value?.from === 'task' ? started.inputs[value.name] : value?.from === 'step' ? started.steps.find(step => step.id === value.stepId)?.outputs[value.output] : value
-        if (inputs[key] === undefined) throw new AppError('INPUT_MISSING', `Input ${spec.id}.${key} is missing.`, 500)
-      }
+      const inputs = this.inputs(started, spec)
       validate(provider.describe().operations.find(operation => operation.id === spec.operation)!.inputSchema, inputs, spec.operation)
       const description = provider.describe(), adapter = description.adapter ?? description.id
       const availableCredentials = await this.ctx.settings.credentials(started)
@@ -351,6 +636,7 @@ export default class Tasks extends Service implements TasksService {
         return
       }
       if (result.state !== 'completed' || !result.outputs) throw new AppError('INVALID_PROVIDER_RESULT', 'Invalid operation result.', 500)
+      if (Object.keys(result.outputs).some(name => !spec.outputs.some(port => port.name === name))) throw new AppError('INVALID_PROVIDER_RESULT', 'Provider returned an undeclared output port.', 500)
       const verifyReferences = async (value: any): Promise<void> => {
         if (ref(value)) {
           const artifact = invocationArtifacts[value.id] ?? started.artifacts[value.id]
@@ -370,18 +656,12 @@ export default class Tasks extends Service implements TasksService {
       await update(async (task, step) => {
         Object.assign(task.artifacts, invocationArtifacts)
         step.status = 'completed'; step.outputs = result.outputs; step.progress = 1; step.finishedAt = now(); task.nextPollAt = null
-        if (task.steps.every(step => step.status === 'completed')) {
-          task.outputs = []
-          for (const output of task.plan.outputs) {
-            const artifact = task.steps.find(step => step.id === output.source.stepId)!.outputs[output.source.output]
-            if (!artifact) { if (output.required) throw new AppError('STAGE_OUTPUT_MISSING', `Missing final output ${output.id}.`, 500); continue }
-            if (!ref(artifact) || !task.artifacts[artifact.id]) throw new AppError('INVALID_PROVIDER_RESULT', 'Final output is not a registered artifact.', 500)
-            if (task.artifacts[artifact.id].schemaId !== artifact.schemaId) throw new AppError('INVALID_PROVIDER_RESULT', 'Final output schema differs from its registration.', 500)
-            await this.ctx.files.resolve(task.id, task.artifacts[artifact.id])
-            task.outputs.push({ id: output.id, label: output.label, role: output.role, artifact })
-          }
-          task.status = 'succeeded'; task.finishedAt = now(); task.message = 'Completed.'
-        } else task.status = 'queued'
+        if (task.graphSnapshot) {
+          const revision = (step.resultRevisions?.at(-1)?.revision ?? 0) + 1
+          step.resultRevisions = [...step.resultRevisions ?? [], { revision, parentRevision: null, source: 'computed', actionId: null, outputs: structuredClone(result.outputs), createdAt: now() }]
+          step.outputRevision = revision; step.approvedRevision = spec.autoContinue === false ? null : revision
+        }
+        await this.advance(task)
       })
     } catch (error: any) {
       if (['COMMIT_OUTCOME_UNKNOWN', 'STORE_UNAVAILABLE', 'PROTOCOL_ERROR'].includes(error.code) && error.status === 503) throw error
@@ -399,6 +679,7 @@ export default class Tasks extends Service implements TasksService {
         for (const request of Object.values(task.externalRequests)) if (request.mayStillRun) request.state = 'unknown'
         const step = task.steps.find(step => step.id === currentStep?.id)
         if (step) { step.status = cancelled ? 'cancelled' : 'failed'; step.error = task.error; step.finishedAt = now() }
+        if (cancelled) for (const pending of task.steps) if (['pending', 'awaiting_review'].includes(pending.status)) { pending.status = 'cancelled'; pending.finishedAt = task.finishedAt }
       })
       if (error.code === 'CANCEL_TIMEOUT') throw error
     } finally { this.active = undefined }

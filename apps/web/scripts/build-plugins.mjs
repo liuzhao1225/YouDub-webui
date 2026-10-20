@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(resolve(root, 'package.json'))
 const output = resolve(root, 'plugin-dist')
-const entries = ['slots', 'api', 'navigation', 'session', 'shell', 'studio', 'library', 'settings', 'localize-editor']
+const entries = ['slots', 'api', 'navigation', 'session', 'shell', 'studio', 'library', 'settings', 'localize-editor', 'workflows']
 const publicModules = new Set(['slots', 'api', 'navigation', 'session', 'shell'])
 const shared = { react: 'react', 'react-dom': 'react-dom', 'react-dom/client': 'react-dom-client', 'react/jsx-runtime': 'jsx-runtime', 'react/jsx-dev-runtime': 'jsx-dev-runtime', cordis: 'cordis', '@youdub/sdk/client': 'sdk' }
 await rm(output, { recursive: true, force: true })
@@ -36,9 +36,10 @@ for (const [path, meta] of Object.entries(result.metafile.outputs)) {
   const asset = relative(output, resolve(path)).split(sep).join('/')
   if (!meta.entryPoint) { publicAssets.push(asset); continue }
   const name = basename(meta.entryPoint).replace(/\.tsx?$/, '')
-  if (path.endsWith('.js')) modules.push({ id: `youdub.${name}`, version: '1.0.0', access: publicModules.has(name) ? 'public' : 'authenticated', url: `/api/plugins/youdub-client/1.0.0/${asset}` })
+  if (path.endsWith('.js')) modules.push({ id: `youdub.${name}`, version: '1.1.0', access: publicModules.has(name) ? 'public' : 'authenticated', url: `/api/plugins/youdub-client/1.1.0/${asset}`, ...(meta.cssBundle ? { css: [`/api/plugins/youdub-client/1.1.0/${relative(output, resolve(meta.cssBundle)).split(sep).join('/')}`] } : {}) })
+  else publicAssets.push(asset)
 }
-await writeFile(resolve(output, 'manifest.json'), JSON.stringify({ version: 1, sdkVersion: '1.0.0', platformVersion: '1', modules, publicAssets }, null, 2) + '\n')
+await writeFile(resolve(output, 'manifest.json'), JSON.stringify({ version: 1, sdkVersion: '1.1.0', platformVersion: '1', modules, publicAssets }, null, 2) + '\n')
 const platformDir = resolve(root, 'public/plugin-platform/1')
 await mkdir(platformDir, { recursive: true })
 const sdkExports = ['SDK_VERSION', 'PluginContextProvider', 'useClient', 'useObservable', 'useSlot', 'usePathname', 'Link', 'text', 'matchRoute', 'parseManifest', 'requireActive']

@@ -1,0 +1,4 @@
+voxcpm==2.0.3
+transformers>=5.17,<6
+librosa
+torchcodec

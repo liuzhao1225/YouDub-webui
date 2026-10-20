@@ -12,6 +12,8 @@
 
 ## 国内首次启动下载
 
+节点工作流版本先准备 Python 和基础依赖，完成后即可进入工作台。打开工作流检查资源，再准备图中节点需要的依赖与模型；字幕工作流无需安装配音模型。资源准备失败会保留错误和编辑入口，修复后可手动重试。操作见[节点工作流](workflows.md)。
+
 准备过程遇到问题时，可展开「诊断日志」查看当前版本、系统、环境和模型状态，错误详情位于日志末尾。点击「反馈 Issue」会复制完整日志，并打开预填了版本、系统和阶段的 GitHub 表单，粘贴日志、补充问题描述后即可提交。也可点击「复制日志」单独复制；复制失败会显示原因，日志框支持全选复制。报告不包含配置文件或准备令牌，并隐藏常见凭据、下载地址查询参数及用户主目录；提交前仍可检查和编辑。
 
 从 `v0.0.5` 起，应用自动检测系统、处理器、GPU 和已有资源，缺少时直接下载：Python / FFmpeg 使用阿里 npmmirror，Python 依赖与 CPU / CUDA / Linux ROCm 使用阿里镜像，模型使用 ModelScope，分句资源使用 ModelScope 的阿里云 OSS。新安装使用 YouDub 自有 Python，不探测系统 Python 或 Microsoft Store 占位入口，避免出现 9009 安装错误。Windows 解释器与虚拟环境分别位于 `%LOCALAPPDATA%\YouDub\runtime\python` 和 `%LOCALAPPDATA%\YouDub\runtime\venv`；更改 `YOUDUB_DESKTOP_DATA_DIR` 时一起移动到指定数据目录。准备页面显示下载来源。下载器不读取系统环境变量中的 HTTP 代理；失败会显示原因并保留断点，需手动重试。
@@ -24,7 +26,7 @@ Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像
 
 应用与数据分开保存。替换 `/Applications/YouDub.app` 会保留 `~/Library/Application Support/YouDub` 中的模型、任务和配置，以及系统钥匙串中的翻译密钥。升级前退出应用并保留该数据目录的副本。不要在升级时删除数据目录。
 
-首次安装会准备 Python、FFmpeg、推理依赖和模型；已有安装可能需要更新配套推理依赖。翻译服务需配置兼容接口、模型和密钥，并支持至少 65535 token 的最大输出参数。安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-<版本号>-macOS-arm64.dmg.sha256` 核验。
+首次安装会准备 Python 和基础依赖，FFmpeg、推理依赖与模型按工作流准备；已有安装可能需要更新配套依赖。翻译服务需配置兼容接口、模型和密钥，并支持至少 65535 token 的最大输出参数。正式安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-<版本号>-macOS-arm64.dmg.sha256` 核验。
 
 ## Windows 桌面版
 
@@ -44,7 +46,7 @@ Windows 本机验收覆盖打包、原生窗口、首次翻译配置、路径兼
 
 历史数据的两种情况：
 
-- MVP 试验版的 `desktop.sqlite` 会迁移到 schema 2。旧任务保留原始快照；存在进行中的旧任务时迁移会报 `MIGRATION_ACTIVE_TASKS`。先在旧版完成或停止任务，再升级。历史任务不能直接按旧流程重试，重新生成会创建新任务。
+- `desktop.sqlite` 会迁移到 schema 3，保留 schema 2 的线性任务。MVP schema 1 旧任务保留原始快照；存在进行中的 schema 1 任务时迁移会报 `MIGRATION_ACTIVE_TASKS`。先在旧版完成或停止任务，再升级。MVP 历史任务不能直接按旧流程重试，重新生成会创建新任务。
 - 旧 main 的 `data/youdub.sqlite` 保留原位，其 URL 下载任务不进入新版任务列表。已有成片仍在原任务目录，需要在旧版本中查看历史时，使用保留的旧源码和升级前的数据副本；新版不能直接继续这些旧任务。
 
 迁移后的数据库不要交给旧程序继续写入。需要返回旧版时，停止新版服务，并使用升级前对应版本的数据副本。详细数据契约见 [迁移说明](design/cordis-plugin-migration.md#5-数据和凭据迁移)。

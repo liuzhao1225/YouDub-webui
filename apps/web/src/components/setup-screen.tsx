@@ -54,13 +54,13 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
     <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 sm:py-12">
       <h1 className="mb-6 flex items-center gap-3 text-base font-medium">
         <span className={cn('inline-flex items-center gap-2', environmentReady && 'text-muted-foreground')}>{environmentReady ? <Check className="size-4 text-brand-blue" /> : state.phase === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : <Loader2 className="size-4 animate-spin text-brand-pink" />}环境准备</span>
-        <span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}模型准备</span>
+        {state.models.length > 0 && <><span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}模型准备</span></>}
       </h1>
-      {!environmentReady && <section aria-label="环境准备" className="mb-5 divide-y divide-border rounded-2xl border border-border bg-card px-5 shadow-card">
+      {(!environmentReady || !state.models.length) && <section aria-label="环境准备" className="mb-5 divide-y divide-border rounded-2xl border border-border bg-card px-5 shadow-card">
         {state.environment.map(step => <div key={step.id} className="flex items-center justify-between gap-3 py-4 text-sm"><div><span>{step.name}</span>{step.source && <span className="ml-2 text-xs text-subtle-foreground">{step.source}</span>}{step.detail && <p className="mt-1 break-words text-xs text-muted-foreground">{step.detail}</p>}</div><span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">{step.status === 'ready' ? <Check className="size-4 text-brand-blue" /> : step.status === 'running' ? <><Loader2 className="size-3.5 animate-spin" />准备中</> : step.status === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : '等待中'}</span></div>)}
       </section>}
       {environmentReady && state.environment.find(step => step.id === 'acceleration')?.detail && <p className="mb-5 text-xs text-muted-foreground">{state.environment.find(step => step.id === 'acceleration')!.detail}</p>}
-      <section aria-label="模型下载" className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+      {state.models.length > 0 && <section aria-label="模型下载" className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="space-y-4 border-b border-border bg-muted p-5">
           <div className="flex items-center justify-between gap-3 text-xs tabular-nums">
             <span className="font-medium">{state.phase === 'starting' ? '校验并启动工作台' : state.phase === 'ready' ? '全部就绪' : active ? `${active} 个模型并行下载` : failed ? '下载失败' : !environmentReady ? '等待环境就绪' : '下载已暂停'}</span>
@@ -88,12 +88,12 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
             </div>
           })}
         </div>
-      </section>
+      </section>}
       <SetupDiagnostics state={state} />
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML is available before the app runtime is ready. */}
       <div className="mt-5"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">查看内置示例</a></div>
       <div className="mt-5 flex items-center justify-between gap-3">
-        <span className="text-xs tabular-nums text-muted-foreground">{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">{state.models.length ? <>{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : state.phase === 'starting' ? '启动工作台' : ''}</span>
         {state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />重新准备</Button> : state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? '暂停全部' : failed ? '重试下载' : '继续下载'}</Button> : state.phase === 'starting' && <Loader2 aria-label="启动中" className="size-5 animate-spin text-brand-pink" />}
       </div>
     </main>

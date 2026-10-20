@@ -17,7 +17,7 @@ export function runNpm(args, options) {
 export async function assembleRuntime(root, runtime) {
   await mkdir(runtime, { recursive: true })
   const filter = file => !['.git', '__pycache__', '.venv', 'node_modules', '.pytest_cache', '.DS_Store', 'env.txt'].includes(basename(file)) && !basename(file).startsWith('.env')
-  for (const file of ['package.json', 'package-lock.json', 'tsconfig.json', 'youdub.config.ts', 'requirements.txt', 'LICENSE', 'apps/host', 'packages/sdk', 'packages/builtin', 'backend/app', 'backend/workers', 'submodule/demucs', 'apps/desktop/server.mjs', 'apps/web/plugin-dist']) {
+  for (const file of ['package.json', 'package-lock.json', 'tsconfig.json', 'youdub.config.ts', 'requirements.txt', 'LICENSE', 'apps/host', 'packages/sdk', 'packages/builtin', 'backend/app', 'backend/workers', 'backend/requirements', 'submodule/demucs', 'apps/desktop/server.mjs', 'apps/web/plugin-dist']) {
     await cp(join(root, file), join(runtime, file), { recursive: true, filter })
   }
   await access(join(runtime, 'submodule/demucs/demucs/__init__.py'))
@@ -45,6 +45,6 @@ export async function bundleNode(distribution, resources) {
   await cp(join(distribution, windows ? 'node_modules/npm' : 'lib/node_modules/npm'), join(resources, 'node_modules/npm'), { recursive: true })
   await cp(join(distribution, 'LICENSE'), join(resources, 'NODE-LICENSE.txt'))
   run(node, [join(resources, 'node_modules/npm/bin/npm-cli.js'), '--version'])
-  run(node, ['--input-type=module', '-e', 'import { SDK_VERSION, AppError } from "@youdub/sdk"; if (SDK_VERSION !== "1.0.0" || !(new AppError("TEST", "test") instanceof Error)) process.exit(1)'], { cwd: join(resources, 'runtime') })
+  run(node, ['--input-type=module', '-e', 'import { SDK_VERSION, AppError } from "@youdub/sdk"; if (SDK_VERSION !== "1.1.0" || !(new AppError("TEST", "test") instanceof Error)) process.exit(1)'], { cwd: join(resources, 'runtime') })
   run(node, ['-e', 'require.resolve("next")'], { cwd: join(resources, 'runtime/web/apps/web') })
 }

@@ -21,7 +21,7 @@ export default async function composition(): Promise<EntryOptions[]> {
   const integrity = 'sha256:' + hash.digest('hex')
   const entry = (id: string, name: string, config?: any): EntryOptions => ({ id, name: '@youdub/builtin/' + name, config })
   const provider = (id: string, label: string, kinds: string[], capability?: string, execution: 'local' | 'remote' = 'local'): EntryOptions => ({ inject: capability ? ['store'] : [], ...entry('provider-' + id.replaceAll('.', '-'), 'python-provider', {
-    command: python, args: ['-m', 'backend.workers.operation'], cwd: repoRoot, runtimeAdapter: capability ? id : undefined, probeMediaTools: id === 'youdub.media',
+    command: python, args: ['-m', 'backend.workers.operation'], cwd: repoRoot, runtimeAdapter: capability ? id : undefined, probeMediaTools: id === 'youdub.media', dependencyGroups: id === 'youdub.media' ? ['base', 'media'] : id === 'youdub.download' ? ['base', 'media', 'download'] : undefined,
     descriptor: { id, label, pluginId: 'youdub.provider-' + id, pluginVersion: '1.0.0', integrity, operations: kinds.map(key => operations[key]), capability, adapter: capability ? id : undefined, execution },
   }) })
   const entries = [
@@ -32,7 +32,7 @@ export default async function composition(): Promise<EntryOptions[]> {
     provider('whisper', 'Whisper', ['recognize'], 'asr'), provider('openai', 'OpenAI compatible', ['translate'], 'translation', 'remote'),
     provider('voxcpm', 'VoxCPM', ['synthesize'], 'tts'), provider('demucs', 'Demucs', ['separate'], 'separation'),
     provider('qwen_forced_aligner', 'Qwen Forced Aligner', ['align'], 'subtitle_alignment'),
-    entry('workflow-localize', 'workflow-localize', { integrity }), entry('tasks', 'tasks'),
+    entry('workflow-localize', 'workflow-localize', { integrity }), entry('workflow-graph', 'workflow-graph', { integrity }), entry('tasks', 'tasks'),
     entry('auth', 'auth'), entry('extensions', 'extensions', { root: join(root, 'extensions'), repoRoot, python, builtinClientManifest: join(repoRoot, 'apps/web/plugin-dist/manifest.json') }),
     entry('extensions-loader', 'extensions-loader'), entry('api', 'api', { version }),
   ]

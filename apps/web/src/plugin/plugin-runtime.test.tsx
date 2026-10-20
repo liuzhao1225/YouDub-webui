@@ -70,7 +70,7 @@ describe('Cordis Client composition', () => {
   })
 
   it('rejects incompatible manifests and remote executable modules', () => {
-    const manifest = { version: 1, sdkVersion: '1.0.0', platformVersion: '1', modules: [{ id: 'example', version: '1.0.0', access: 'authenticated', url: '/api/plugins/example/1.0.0/client.js' }] }
+    const manifest = { version: 1, sdkVersion: '1.1.0', platformVersion: '1', modules: [{ id: 'example', version: '1.0.0', access: 'authenticated', url: '/api/plugins/example/1.0.0/client.js' }] }
     expect(parseManifest(manifest)).toEqual(manifest)
     expect(() => parseManifest({ ...manifest, sdkVersion: '2.0.0' })).toThrow('version')
     expect(() => parseManifest({ ...manifest, modules: [{ ...manifest.modules[0], url: '//remote.example/plugin.js' }] })).toThrow('Invalid')

@@ -8,6 +8,9 @@ import runtimeManifest from './setup-runtime.json' with { type: 'json' }
 export type SetupStage = 'pending' | 'running' | 'ready' | 'failed'
 export interface EnvironmentStep { id: string; name: string; status: SetupStage; detail?: string; source?: string }
 export interface EnvironmentConfig { root: string; repoRoot: string; python: string }
+export const dependencyGroups = ['base', 'media', 'download', 'openai', 'whisper', 'voxcpm', 'demucs', 'qwen_forced_aligner'] as const
+export type DependencyGroup = typeof dependencyGroups[number]
+const acceleratedGroups: DependencyGroup[] = ['whisper', 'voxcpm', 'demucs', 'qwen_forced_aligner']
 export function platformTarget(platform = process.platform, arch = process.arch) {
   const targets: Record<string, string> = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin', 'linux-arm64': 'aarch64-unknown-linux-gnu', 'linux-x64': 'x86_64-unknown-linux-gnu', 'win32-x64': 'x86_64-pc-windows-msvc' }
   const target = targets[`${platform}-${arch}`]
@@ -27,10 +30,7 @@ export async function executable(name: string) {
 export class EnvironmentSetup {
   steps: EnvironmentStep[] = [
     { id: 'python', name: 'Python 3.12', status: 'pending' },
-    { id: 'acceleration', name: 'GPU 与推理后端', status: 'pending' },
-    { id: 'dependencies', name: '运行依赖', status: 'pending' },
-    { id: 'ffmpeg', name: 'FFmpeg', status: 'pending' },
-    { id: 'resources', name: '分句资源', status: 'pending' },
+    { id: 'dependencies', name: '基础运行依赖', status: 'pending' },
   ]
   private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; index: string; variant: string; findLinks: string; installed: boolean; packages: string[]; prerequisites: string[] }
   constructor(private ctx: Context, readonly config: EnvironmentConfig, private client: DownloadClient, private signal: AbortSignal) {}
@@ -38,8 +38,8 @@ export class EnvironmentSetup {
     return this.ctx.process.run({ command, args, cwd, env, signal: this.signal })
   }
   private python(args: string[]) { return this.run(this.config.python, args) }
-  async probe(action: string) {
-    const result = await this.python(['-m', 'backend.workers.setup_probe', action])
+  async probe(action: string, groups: string[] = ['base']) {
+    const result = await this.python(['-m', 'backend.workers.setup_probe', action, JSON.stringify(groups)])
     return JSON.parse(result.stdout.trim())
   }
   private source(id: string, source: string) {
@@ -84,19 +84,23 @@ export class EnvironmentSetup {
     const status = await this.probe('acceleration')
     return status.backend === plan.backend ? status.detail : `${plan.detail}；${status.detail}`
   }
-  private async dependencies() {
-    const { missing } = await this.probe('dependencies')
+  private async dependencies(groups: DependencyGroup[]) {
+    const { missing } = await this.probe('dependencies', groups)
     if (missing.length) {
-      const plan = this.accelerationPlan!
-      const constraints = join(this.config.root, 'runtime', 'torch-constraints.txt')
-      await mkdir(dirname(constraints), { recursive: true })
-      await writeFile(constraints, `torch==${plan.version}\ntorchaudio==${plan.version}\ntorchcodec==${plan.codec}\n`)
+      const options: string[] = []
+      if (this.accelerationPlan) {
+        const plan = this.accelerationPlan
+        const constraints = join(this.config.root, 'runtime', 'torch-constraints.txt')
+        await mkdir(dirname(constraints), { recursive: true })
+        await writeFile(constraints, `torch==${plan.version}\ntorchaudio==${plan.version}\ntorchcodec==${plan.codec}\n`)
+        options.push('-c', constraints)
+      }
       this.source('dependencies', '阿里 PyPI')
-      await this.pip(['-c', constraints, '-r', join(this.config.repoRoot, 'requirements.txt')])
-      const remaining = (await this.probe('dependencies')).missing
+      await this.pip([...options, ...groups.flatMap(group => ['-r', join(this.config.repoRoot, 'backend', 'requirements', `${group}.txt`)])])
+      const remaining = (await this.probe('dependencies', groups)).missing
       if (remaining.length) throw new Error(`依赖安装后仍未满足：${remaining.join(', ')}`)
     }
-    if (!await fileSize(join(this.config.repoRoot, 'submodule', 'demucs', 'demucs', '__init__.py'))) {
+    if (groups.includes('demucs') && !await fileSize(join(this.config.repoRoot, 'submodule', 'demucs', 'demucs', '__init__.py'))) {
       await this.run('git', ['submodule', 'update', '--init', '--recursive', 'submodule/demucs'])
     }
   }
@@ -142,7 +146,7 @@ export class EnvironmentSetup {
   }
   private async resources() {
     const data = join(this.config.root, 'nltk_data')
-    process.env.NLTK_DATA = [data, process.env.NLTK_DATA].filter(Boolean).join(delimiter)
+    process.env.NLTK_DATA = [...new Set([data, ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
     if (!(await this.probe('punkt')).ready) {
       this.source('resources', 'ModelScope 阿里云 OSS')
       const asset = runtimeManifest.punkt
@@ -153,14 +157,38 @@ export class EnvironmentSetup {
     }
     if (!(await this.probe('punkt')).ready) throw new Error('Whisper 英文分句资源安装后未通过检查。')
   }
-  async prepare() {
+  private async restoreManagedPaths() {
+    const windows = process.platform === 'win32'
+    const directory = join(this.config.root, 'runtime', 'ffmpeg', ...(windows ? ['ffmpeg-7.1.5-win32-x64-gpl-shared', 'bin'] : []))
+    const directories: string[] = []
+    for (const [name, key] of [['ffmpeg', 'FFMPEG_PATH'], ['ffprobe', 'FFPROBE_PATH']] as const) {
+      const path = join(directory, name + (windows ? '.exe' : ''))
+      if (!process.env[key]?.trim() && await fileSize(path)) {
+        process.env[key] = path
+        directories.push(directory)
+      }
+    }
+    if (directories.length) process.env.PATH = [...new Set([...directories, ...(process.env.PATH || '').split(delimiter)])].join(delimiter)
+    process.env.NLTK_DATA = [...new Set([join(this.config.root, 'nltk_data'), ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
+  }
+  async prepare(groups: DependencyGroup[] = ['base']) {
     platformTarget()
-    const actions = [() => this.pythonEnvironment(), () => this.acceleration(), () => this.dependencies(), () => this.media(), () => this.resources()]
+    if (groups.some(group => !dependencyGroups.includes(group))) throw new Error('Unknown dependency group.')
+    await this.restoreManagedPaths()
+    groups = [...new Set<DependencyGroup>(['base', ...groups])]
+    const actions: Array<{ id: string; name: string; run: () => Promise<string | void> }> = [
+      { id: 'python', name: 'Python 3.12', run: () => this.pythonEnvironment() },
+      ...(groups.some(group => acceleratedGroups.includes(group)) ? [{ id: 'acceleration', name: 'GPU 与推理后端', run: () => this.acceleration() }] : []),
+      { id: 'dependencies', name: groups.length === 1 ? '基础运行依赖' : '运行依赖', run: () => this.dependencies(groups) },
+      ...(groups.includes('media') ? [{ id: 'ffmpeg', name: 'FFmpeg', run: () => this.media() }] : []),
+      ...(groups.includes('whisper') ? [{ id: 'resources', name: '分句资源', run: () => this.resources() }] : []),
+    ]
+    this.steps = actions.map(({ id, name }) => ({ id, name, status: 'pending' }))
     for (const [index, action] of actions.entries()) {
       this.signal.throwIfAborted()
       const step = this.steps[index]!
       step.status = 'running'; delete step.detail
-      try { const detail = await action(); if (detail) step.detail = detail; step.status = 'ready' }
+      try { const detail = await action.run(); if (detail) step.detail = detail; step.status = 'ready' }
       catch (error) { step.status = 'failed'; step.detail = error instanceof Error ? error.message : String(error); throw error }
     }
   }
