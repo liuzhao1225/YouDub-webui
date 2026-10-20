@@ -2,6 +2,8 @@
 
 2026-10-09 · SDK 协议 `1.0.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
 
+可视化节点、多 workflow 编辑和人工订正的后续提案见 [节点工作流设计](workflow-node-design.md) 与 [接口及实施设计](workflow-node-implementation.md)。这些新增能力尚未实施，不改变下文当前接口的含义。
+
 ## 1. 谁拥有执行逻辑
 
 ```text
