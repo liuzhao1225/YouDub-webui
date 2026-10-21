@@ -266,12 +266,15 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 | --- | --- | --- |
 | `shell.navigation` | 可选 placement | 老插件默认 main |
 | `shell.routes` | 可选 layout，设置页面声明 standalone | 老插件默认 app；主题、语言、会话能力继续有效 |
-| `settings.sections` | 保留 id/order/component，增加可选 label | 插件配置统一放“扩展”下；缺 label 时保留原名称，保留 `SettingsSectionProps {settings, save}` 与原 id |
+| `settings.sections` | 保留 id/order/component，增加可选 label | 插件配置统一放“扩展”下；缺 label 时显示注册 id，内容中的原有标题保留；原 id 继续用于配置读写 |
+| `SettingsSectionProps` | 保留 settings/save，增加可选 `onDirtyChange(dirty)` | 内置表单接入离开保护；第三方插件可逐步适配，未上报的旧插件保持原有行为 |
 | 设置分区定义 | 五个内置分区共用一份定义生成菜单与内容 | 设置外壳不持有具体表单业务；首期不开放任意插件替换系统分区 |
 | 节点基础设置 | 沿用 `configSchema` + `ui.quickFields` | 新旧节点均可使用；不依赖插件品牌或节点 ID 硬编码 |
 | 资源准备 | 沿用 provider 选择与 Host 已知清单 | 没有自动准备契约时报告缺失与插件指导；不允许前端任意执行安装命令 |
 
-插件设置仍经现有 `plugins[id]` 命名空间写入。Schema 校验由设置提供方承担；API Key 必须走 secrets，不得放公共 plugin JSON。停用插件后导航项与表单卸载；未保存改动按同样规则处理。已存在图里的未知节点保留数据并报缺失插件，不自动删除。
+插件设置仍经现有 `plugins[id]` 命名空间写入。Schema 校验由设置提供方承担；API Key 必须走 secrets，不得放公共 plugin JSON。保留 enabled、active、restartRequired 的现有含义：停用请求保存后先显示“重启后生效”，实际插件卸载后才移除其注册入口与表单，本次不增加即时卸载能力。已存在图里的未知节点保留数据并报缺失插件，不自动删除。
+
+内置表单负责计算真实 dirty 状态；扩展表单通过可选 onDirtyChange 上报，由设置外壳接入现有导航阻断。保存成功或用户明确放弃后清除标记，保存失败保留。未经上报的旧插件内部状态不可由外层可靠判断，其原有保存行为继续可用；未保存保护的保证只覆盖内置与已适配表单，不通过 DOM 猜测或读取插件内部 React 状态实现。实际卸载、切换分类和返回都使用已报告的状态判断是否需要提示。
 
 本阶段不新增通用插件首次引导注册 API，也不实现任意第三方下载器。先交付可复用组件与控制器；独立插件出现明确需求时，再复用这些稳定边界扩展契约。
 
