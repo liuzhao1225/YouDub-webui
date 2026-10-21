@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
 import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, Save, Search } from 'lucide-react'
 import { Link, text, useClient, useSlot, type JsonObject, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
@@ -16,6 +16,25 @@ import { useUnsavedChanges } from './workflow-guard'
 type Transcript = { detected_language: string; segments: { id: string | number; start_ms: number; end_ms: number; text: string; words?: unknown; speaker_id?: string }[] }
 type Translation = { source_language: string; target_language: string; segments: { segment_id: string | number; text: string }[] }
 type RerunPreview = { reusedSteps: string[]; dirtySteps: string[]; expectedAttempt: number; expectedTaskRevision: number; sourceRevisions: Record<string, number> }
+function SegmentTextArea({ value, ...props }: ComponentProps<'textarea'>) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const element = ref.current!
+    const resize = () => {
+      element.style.height = 'auto'
+      element.style.height = `${element.scrollHeight + element.offsetHeight - element.clientHeight}px`
+    }
+    resize()
+    let width = element.getBoundingClientRect().width
+    const observer = new ResizeObserver(() => {
+      const nextWidth = element.getBoundingClientRect().width
+      if (nextWidth !== width) { width = nextWidth; resize() }
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [value])
+  return <textarea {...props} ref={ref} rows={1} value={value} className="min-h-9 w-full min-w-0 resize-y rounded-lg border border-input bg-input-bg px-2 py-1.5 text-sm leading-5 text-foreground focus-visible:outline-ring" />
+}
 
 export function TaskWorkflowPanel({ task }: PanelProps) {
   if (!task.graphSnapshot) return null
@@ -110,6 +129,10 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
     } finally { setBusy(false) }
   }
   const generic = <ResultViewer taskId={task.id} value={displayed} />
+  const hasEditor = !!Custom || (!definition?.ui?.detailId && (
+    (definition?.corrections?.outputPorts.includes('transcript') && !!displayed.transcript)
+    || (definition?.corrections?.outputPorts.includes('translation') && !!displayed.translation)
+  ))
   return <main className="mx-auto max-w-6xl space-y-5 px-5 py-8 sm:px-8">
     {guard.dialog}
     <Link href={`/tasks/${task.id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{tx('Back to workflow', '返回工作流', 'ワークフローへ戻る')}</Link>
@@ -130,7 +153,7 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
     {tab === 'result' && <section className="space-y-5">
       {!Object.keys(outputs).length && <p className="text-sm text-muted-foreground">{tx('No result yet.', '尚无结果。', '結果はまだありません。')}</p>}
       {Custom ? <NodePluginBoundary key={definition!.ui!.detailId} fallback={generic}><Custom detail={detail} outputs={outputs} draft={patch} readOnly={!editable} onDraftChange={changeDraft} /></NodePluginBoundary> : definition?.ui?.detailId ? <><InlineAlert>{tx('The node detail plugin is unavailable.', '节点详情插件不可用。', 'ノード詳細プラグインがありません。')}</InlineAlert>{generic}</> : definition?.corrections?.outputPorts.includes('transcript') && displayed.transcript ? <TranscriptEditor value={displayed.transcript as Transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, transcript: value })} /> : definition?.corrections?.outputPorts.includes('translation') && displayed.translation ? <TranslationEditor value={displayed.translation as Translation} transcript={transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, translation: value })} /> : generic}
-      {Object.entries(displayed).filter(([name]) => name !== 'transcript' && name !== 'translation').map(([name, value]) => <details key={name} className="rounded-xl border border-border bg-card p-4"><summary className="cursor-pointer text-sm font-medium">{name}</summary><div className="mt-3"><ResultViewer taskId={task.id} value={value} /></div></details>)}
+      {hasEditor && Object.entries(displayed).filter(([name]) => name !== 'transcript' && name !== 'translation').map(([name, value]) => <details key={name} className="rounded-lg border border-border bg-card p-2"><summary className="cursor-pointer text-sm font-medium">{name}</summary><div className="mt-2"><ResultViewer taskId={task.id} value={value} /></div></details>)}
     </section>}
     {tab === 'inputs' && <ResultViewer taskId={task.id} value={detail.inputs} />}
     {tab === 'config' && <pre className="overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-card p-5 text-xs">{JSON.stringify(node ?? detail.spec, null, 2)}</pre>}
@@ -154,10 +177,16 @@ function TranscriptEditor({ value, readOnly, onChange, onSeek }: { value: Transc
   function update(index: number, patch: Partial<Transcript['segments'][number]>) {
     onChange({ ...value, segments: value.segments.map((segment, i) => i === index ? { ...segment, ...patch, words: null } : segment) })
   }
-  return <section className="space-y-4"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx('Search transcript', '搜索原文', '原文を検索')} placeholder={tx('Search transcript', '搜索原文', '原文を検索')} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
-    {value.segments.map((segment, index) => !search || segment.text.toLowerCase().includes(search.toLowerCase()) ? <div key={segment.id} className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-[10rem_minmax(0,1fr)]">
-      <div className="space-y-2"><span className="text-xs text-muted-foreground">#{segment.id}</span>{onSeek && <Button size="xs" variant="ghost" onClick={() => onSeek(segment.start_ms / 1000)}>{tx('Locate', '定位', '移動')}</Button>}<div className="grid grid-cols-2 gap-2"><label className="grid gap-1 text-[11px]">{tx('Start (s)', '开始（秒）', '開始（秒）')}<Input aria-label={`${tx('Start', '开始', '開始')} ${segment.id}`} type="number" step="0.001" min="0" disabled={readOnly} value={segment.start_ms / 1000} onChange={(event) => update(index, { start_ms: Math.round(Number(event.target.value) * 1000) })} /></label><label className="grid gap-1 text-[11px]">{tx('End (s)', '结束（秒）', '終了（秒）')}<Input aria-label={`${tx('End', '结束', '終了')} ${segment.id}`} type="number" step="0.001" min="0" disabled={readOnly} value={segment.end_ms / 1000} onChange={(event) => update(index, { end_ms: Math.round(Number(event.target.value) * 1000) })} /></label></div></div>
-      <textarea aria-label={`${tx('Transcript', '原文', '原文')} ${segment.id}`} className="min-h-24 w-full rounded-lg border border-input bg-input-bg p-3 text-sm focus-visible:outline-ring" disabled={readOnly} value={segment.text} onChange={(event) => update(index, { text: event.target.value })} />
+  return <section className="space-y-2"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx('Search transcript', '搜索原文', '原文を検索')} placeholder={tx('Search transcript', '搜索原文', '原文を検索')} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
+    {value.segments.map((segment, index) => !search || segment.text.toLowerCase().includes(search.toLowerCase()) ? <div key={segment.id} className="grid items-start gap-2 rounded-lg border border-border bg-card p-2 sm:grid-cols-[20rem_minmax(0,1fr)]">
+      <div className="min-w-0 space-y-1">
+        <div className="flex min-h-7 items-center justify-between gap-1"><span className="truncate text-xs text-muted-foreground" title={String(segment.id)}>#{segment.id}</span>{onSeek && <Button size="xs" variant="ghost" onClick={() => onSeek(segment.start_ms / 1000)}>{tx('Locate', '定位', '移動')}</Button>}</div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex items-center gap-1 text-[11px] whitespace-nowrap text-muted-foreground">{tx('Start (s)', '开始（秒）', '開始（秒）')}<Input className="h-7 px-2 text-xs md:text-xs" aria-label={`${tx('Start', '开始', '開始')} ${segment.id}`} type="number" step="0.001" min="0" disabled={readOnly} value={segment.start_ms / 1000} onChange={(event) => update(index, { start_ms: Math.round(Number(event.target.value) * 1000) })} /></label>
+          <label className="flex items-center gap-1 text-[11px] whitespace-nowrap text-muted-foreground">{tx('End (s)', '结束（秒）', '終了（秒）')}<Input className="h-7 px-2 text-xs md:text-xs" aria-label={`${tx('End', '结束', '終了')} ${segment.id}`} type="number" step="0.001" min="0" disabled={readOnly} value={segment.end_ms / 1000} onChange={(event) => update(index, { end_ms: Math.round(Number(event.target.value) * 1000) })} /></label>
+        </div>
+      </div>
+      <SegmentTextArea aria-label={`${tx('Transcript', '原文', '原文')} ${segment.id}`} disabled={readOnly} value={segment.text} onChange={(event) => update(index, { text: event.target.value })} />
     </div> : null)}
   </section>
 }
@@ -167,7 +196,7 @@ export function TranscriptNodeDetails({ detail, outputs, draft, readOnly, onDraf
   const ref = useRef<HTMLAudioElement>(null)
   useReleaseMediaOnUnmount(ref, url)
   const value = (draft.transcript ?? outputs.transcript) as Transcript | undefined
-  return value ? <div className="space-y-5">{url && <audio ref={ref} controls preload="metadata" src={url} className="sticky top-4 z-10 w-full" />}<TranscriptEditor value={value} readOnly={readOnly} onSeek={url ? (seconds) => { if (ref.current) ref.current.currentTime = seconds } : undefined} onChange={(transcript) => onDraftChange({ ...draft, transcript })} /></div> : null
+  return value ? <div className="space-y-3">{url && <audio ref={ref} controls preload="metadata" src={url} className="sticky top-4 z-10 h-10 w-full" />}<TranscriptEditor value={value} readOnly={readOnly} onSeek={url ? (seconds) => { if (ref.current) ref.current.currentTime = seconds } : undefined} onChange={(transcript) => onDraftChange({ ...draft, transcript })} /></div> : null
 }
 export function TranslationNodeDetails({ detail, outputs, draft, readOnly, onDraftChange }: NodeDetailProps) {
   const value = (draft.translation ?? outputs.translation) as Translation | undefined
@@ -175,18 +204,21 @@ export function TranslationNodeDetails({ detail, outputs, draft, readOnly, onDra
 }
 function TranslationEditor({ value, transcript, readOnly, onChange }: { value: Translation; transcript?: Transcript; readOnly: boolean; onChange(value: Translation): void }) {
   const tx = useText(), [search, setSearch] = useState('')
-  return <section className="space-y-4"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx('Search translation', '搜索译文', '翻訳を検索')} placeholder={tx('Search translation', '搜索译文', '翻訳を検索')} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
+  return <section className="space-y-2"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx('Search translation', '搜索译文', '翻訳を検索')} placeholder={tx('Search translation', '搜索译文', '翻訳を検索')} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
     {value.segments.map((segment, index) => {
       const source = transcript?.segments.find((item) => item.id === segment.segment_id)?.text ?? ''
       if (search && !`${source} ${segment.text}`.toLowerCase().includes(search.toLowerCase())) return null
-      return <div key={segment.segment_id} className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-2"><div><span className="text-xs text-muted-foreground">#{segment.segment_id}</span><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{source}</p></div><label className="grid gap-2 text-xs text-muted-foreground">{tx('Translation', '译文', '翻訳')}<textarea aria-label={`${tx('Translation', '译文', '翻訳')} ${segment.segment_id}`} className="min-h-28 w-full rounded-lg border border-input bg-input-bg p-3 text-sm text-foreground focus-visible:outline-ring" disabled={readOnly} value={segment.text} onChange={(event) => onChange({ ...value, segments: value.segments.map((item, i) => i === index ? { ...item, text: event.target.value } : item) })} /></label></div>
+      return <div key={segment.segment_id} className="grid items-start gap-2 rounded-lg border border-border bg-card p-2 md:grid-cols-2">
+        <div className="min-w-0"><span className="block truncate text-xs leading-4 text-muted-foreground" title={String(segment.segment_id)}>#{segment.segment_id}</span><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5">{source}</p></div>
+        <label className="grid min-w-0 gap-1 text-xs leading-4 text-muted-foreground">{tx('Translation', '译文', '翻訳')}<SegmentTextArea aria-label={`${tx('Translation', '译文', '翻訳')} ${segment.segment_id}`} disabled={readOnly} value={segment.text} onChange={(event) => onChange({ ...value, segments: value.segments.map((item, i) => i === index ? { ...item, text: event.target.value } : item) })} /></label>
+      </div>
     })}
   </section>
 }
 function Media({ url, video }: { url: string; video: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null), videoRef = useRef<HTMLVideoElement>(null)
   useReleaseMediaOnUnmount(audioRef, url); useReleaseMediaOnUnmount(videoRef, url)
-  return video ? <video ref={videoRef} src={url} controls preload="metadata" className="max-h-96 w-full rounded-xl bg-black" /> : <audio ref={audioRef} src={url} controls preload="metadata" className="w-full" />
+  return video ? <video ref={videoRef} src={url} controls preload="metadata" className="max-h-96 w-full rounded-xl bg-black" /> : <audio ref={audioRef} src={url} controls preload="metadata" className="h-10 w-full min-w-0" />
 }
 function ResultViewer({ taskId, value }: { taskId: string; value: unknown }) {
   const tx = useText()
@@ -198,13 +230,15 @@ function ResultViewer({ taskId, value }: { taskId: string; value: unknown }) {
     else Object.values(object).forEach(visit)
   }
   visit(value)
-  return <div className="space-y-4">{[...artifacts.values()].map((artifact) => {
+  const data = <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-2 text-xs">{JSON.stringify(value, null, 2)}</pre>
+  return <div className="space-y-2">{[...artifacts.values()].map((artifact) => {
     const url = `/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(artifact.id)}`
-    return <div key={artifact.id} className="space-y-3 rounded-xl border border-border bg-card p-4">
-      {artifact.schemaId.startsWith('audio/') || artifact.schemaId.startsWith('video/') ? <Media url={url} video={artifact.schemaId.startsWith('video/')} /> : null}
-      <a href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-link"><Download className="size-4" />{tx('Open file', '打开文件', 'ファイルを開く')} · {artifact.schemaId}</a>
+    const audio = artifact.schemaId.startsWith('audio/'), video = artifact.schemaId.startsWith('video/')
+    return <div key={artifact.id} className={`rounded-lg border border-border bg-card p-2 ${audio ? 'flex flex-col gap-2 sm:flex-row sm:items-center' : 'space-y-2'}`}>
+      {(audio || video) && <div className="min-w-0 flex-1"><Media url={url} video={video} /></div>}
+      <a href={url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 text-xs text-link"><Download className="size-4" />{tx('Open file', '打开文件', 'ファイルを開く')} · {artifact.schemaId}</a>
     </div>
-  })}<pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-border bg-card p-4 text-xs">{JSON.stringify(value, null, 2)}</pre></div>
+  })}{artifacts.size ? <details className="rounded-lg border border-border bg-card p-2"><summary className="cursor-pointer text-xs text-muted-foreground">{tx('Result data', '结果数据', '結果データ')}</summary><div className="mt-2">{data}</div></details> : data}</div>
 }
 function NodeLog({ taskId }: { taskId: string }) {
   const tx = useText(), [error, setError] = useState('')
