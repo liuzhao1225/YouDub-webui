@@ -1,5 +1,7 @@
 # 前端实现：React/Vite、运行逻辑与页面绑定
 
+当前阶段为开发。按用户要求，本对话只做必要的定向测试和页面检查，不执行构建、打包或发布验收。文中涉及安装包和发布的检查留待明确进入发布阶段后执行。
+
 本次迁移在保留 YouDub 视觉设计、工作流交互和插件协议的基础上，参考 deepseek-harness 的前端分层。参考源码固定为 [`99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`](https://github.com/deepseek-ai/deepseek-harness/tree/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca)。实现按 YouDub 当前能力适配，具体边界如下。
 
 ## 参考与适配
