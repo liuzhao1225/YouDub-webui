@@ -6,6 +6,7 @@
 
 | 文档 | 解决的问题 |
 | --- | --- |
+| [YouDub Desktop 改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md) | 前期调研、Harness 自有分支、产品解耦、源码裁剪、私有运行资源及分阶段验收 |
 | [架构说明](ARCHITECTURE.md) | DSH 提供哪些基础能力，YouDub 保留哪些业务代码，桌面、Host 和 Renderer 如何连接 |
 | [本地开发](DEVELOPMENT.md) | 从源码准备框架与 runtime、启动桌面、修改后重建、隔离数据、排查启动错误 |
 | [前端开发](FRONTEND-DEVELOPMENT.md) | 业务组件、官方控件、Slots、Store、请求、主题和语言的接入方式 |
@@ -16,7 +17,7 @@
 
 ## 开发约束
 
-- 官方原件保存在 [`vendor/deepseek-harness/source`](../../../vendor/deepseek-harness/source)，保持字节不变。产品组合、路径、品牌、语言补充和业务适配写在 `apps/harness`。
+- 2026-10-22 起允许修改 Harness 活动源码，用于 YouDub 产品解耦与裁剪；原始归档、来源清单和 YouDub 初始快照继续保持不变。实施顺序和新校验边界见[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)。当前运行代码尚未执行该改造，既有架构与验收文档中的“上游原样”描述对应改造前状态。
 - 通用能力使用 DSH 的公开服务、组件和插槽；YouDub 业务组件和媒体算法直接复用现有源码。新增业务沿现有节点、端口和状态合同扩展。
 - 桌面开发入口为根目录 `npm start`。`apps/web` 的独立 React/Vite 入口和 `apps/desktop` 的旧桌面发行入口仍作为历史代码保留。
 - 当前阶段使用源码开发构建，安装包、更新源及在线插件市场的状态见[代码复核中的剩余验收项](CODE-AUDIT.md#尚未通过的完整产品验收)。
