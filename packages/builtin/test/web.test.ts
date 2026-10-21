@@ -28,11 +28,14 @@ test('built SPA supports direct node URLs, static media and API routing before P
   assert.equal(host.state, 2)
   ctx.emit('app/ready')
   const base = ctx.http.address!
-  for (const route of ['/', '/workflows/youdub.subtitles', '/tasks/task-id/nodes/review']) {
+  for (const route of ['/', '/tasks', '/settings', '/workflows/youdub.subtitles', '/tasks/task-id/nodes/review']) {
     const response = await fetch(base + route, { headers: { Accept: 'text/html' } })
     assert.equal(response.status, 200)
     assert.match(response.headers.get('content-type')!, /^text\/html/)
     assert.match(await response.text(), /id="root"/)
+  }
+  for (const route of ['/tasks', '/settings']) {
+    assert.equal((await fetch(base + route)).status, 404, 'SPA fallback requires a document navigation Accept header')
   }
   assert.deepEqual(await (await fetch(base + '/api/setup')).json(), { phase: 'error', error: 'Python missing' })
   for (const route of ['/api/missing', '/assets/missing.js', '/plugin-platform/missing.mjs', '/missing.png', '/.env', '/%2eenv']) {

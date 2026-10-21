@@ -218,10 +218,16 @@ internal sealed class DesktopWindow : Form
             client.Timeout = TimeSpan.FromSeconds(15);
             foreach (string path in routes)
             {
-                using (var response = await client.GetAsync(new Uri(origin, path)))
+                using (var request = new HttpRequestMessage(HttpMethod.Get, new Uri(origin, path)))
                 {
-                    response.EnsureSuccessStatusCode();
-                    await response.Content.ReadAsByteArrayAsync();
+                    if (path == "/" || path == "/tasks" || path == "/settings" || path == "/examples/index.html")
+                        request.Headers.Accept.ParseAdd("text/html");
+                    using (var response = await client.SendAsync(request))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                            throw new Exception("内置页面或资源请求失败：" + path + "（HTTP " + (int)response.StatusCode + "）。");
+                        await response.Content.ReadAsByteArrayAsync();
+                    }
                 }
             }
         }
