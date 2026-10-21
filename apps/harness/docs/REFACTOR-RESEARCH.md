@@ -110,3 +110,11 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - `desktop.mjs --prepare-only` 成功；停止旧主进程/Host 后重建并启动现有 profile。同 Host 浏览器入口 `127.0.0.1:63837` 已读回原首页、历史 zoo 任务、日语设置、产品版本 0.0.7、用户配置提供商和密钥掩码；没有新增默认账号或模型。页面当前 origin error 日志为空，首页截图 `/tmp/youdub-refactor-p3-home.png`。这次没有重新调用翻译或运行完整媒体链。
 - P2 checkpoint `569c3e3c` 的[源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39652654855) 已全部通过；本节 P3 修改仍需自己的 CI。原始来源清单未改，当前 fork 为 42 项记录差异。
 - 原生 Mac 仍锁屏。P3 整体仍待新工作区首启、页面配置写入/重启和实际下载节点验证；P2 仍待前端草稿退出保护，P4/P6/P7 保持未完成。两份飞书文档按用户要求在全部改造和验收结束后更新。
+
+## P2–P3 退出时序、真实媒体与 CI 修复（2026-10-22）
+
+- 发现产品退出先停止 Host、随后 Renderer 才能取消 `beforeunload`。产品入口现先等待原窗口关闭事件，保留 Electron 的原生未保存内容确认；取消时保持窗口与 Host，实际关闭后再走原 drain。四项测试覆盖取消后重试、干净窗口、实际关闭时序和错误传播，真实 Host 组合测试也通过。模型表单尚需 P4 接入原编辑状态，原生交互仍待解锁验收。
+- 在 `baa60ad8` 的真实 Electron Host 上，通过页面选择 zoo 本地视频并执行包含 Demucs、Whisper、翻译、VoxCPM2、Qwen Aligner 的九节点工作流，9/9 完成，产物视频在浏览器播放到末尾；翻译请求上限 65,535。文件哈希、时长、字幕及限制见[本次媒体证据](evidence/refactor-p3-media.json)。Whisper tiny 的原识别误差仍会进入译文，质量审核未据此通过。
+- 同版本 YouTube 下载节点实际失败，平台要求登录确认非机器人，未执行下游节点；失败任务保留。没有通过重试或改用本地视频将该下载任务记为成功。
+- `baa60ad8` 的[开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39654481138) 在旧业务进程协议测试失败：Darwin 进程组退出间隙返回 EPERM，清理异常覆盖 worker 原错误。该旧实现仍被开发回归使用，活动 Harness worker 已使用官方 Subprocess。根据 [Apple killpg 实现](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_sig.c)，修复仅在既有退出宽限期内确认整个进程组已消失才接受此退出状态；真实权限错误继续失败，worker 与清理同时失败时保留两个原因。针对性测试 12 passed，Windows 限定用例在 macOS skipped；后续 CI 结果独立记录。
+- 新隔离 profile 的首次启动已通过页面安装私有 Python 3.12.15；点击“准备全部模型”后继续安装推理依赖、FFmpeg、分句资源和四模型。当前尚未完成全部下载，首启门控保持阻止进入工作台。此项继续验收，不能据此关闭 P3。

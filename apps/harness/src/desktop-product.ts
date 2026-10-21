@@ -24,6 +24,7 @@ import { DesktopBrowserGuests } from '../../../vendor/deepseek-harness/source/ap
 import { installDesktopShortcuts } from '../../../vendor/deepseek-harness/source/apps/desktop/src/keyboard.ts'
 import { DesktopUpdateOverlays } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-overlay.ts'
 import { DesktopQuitConfirmation } from '../../../vendor/deepseek-harness/source/apps/desktop/src/quit-confirmation.ts'
+import { closeRendererBeforeQuit } from './desktop-unload.ts'
 import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts'
 import { WINDOWS_TITLEBAR_HEIGHT } from '../../../vendor/deepseek-harness/source/apps/desktop/src/windows-layout.ts'
 
@@ -205,6 +206,7 @@ async function main(): Promise<void> {
     })
   let hostEnvironment = process.env
   let quitting = false
+  let closingRenderer = false
   let sessionEnding = false
   let mainWindow: BrowserWindow | undefined
   let hostUrl: string | undefined
@@ -416,7 +418,24 @@ async function main(): Promise<void> {
     if (quitting) return
     event.preventDefault()
     if (skipQuitConfirmation || sessionEnding) { void finishQuit(); return }
-    void quitConfirmation.confirm().then(approved => { if (approved) return finishQuit() })
+    if (closingRenderer) return
+    void quitConfirmation.confirm().then(async approved => {
+      if (!approved || closingRenderer || quitting) return
+      const window = mainWindow
+      closingRenderer = true
+      try {
+        const discarded = !window || await closeRendererBeforeQuit(window, () => {
+          const { messages } = currentDesktopLocale()
+          return dialog.showMessageBoxSync(window, {
+            type: 'warning', title: messages.aboutProduct, message: messages.quitTitle,
+            detail: messages.quitUnsavedChanges,
+            buttons: [messages.quit, messages.cancel], defaultId: 1, cancelId: 1, noLink: true,
+          }) === 0
+        })
+        if (discarded) await finishQuit()
+        else focusPrimaryWindow()
+      } finally { closingRenderer = false }
+    })
       .catch(error => reportFatal(error, 'main'))
   })
   if (process.platform !== 'win32') powerMonitor.on('shutdown', () => { sessionEnding = true })
@@ -426,7 +445,7 @@ async function main(): Promise<void> {
     browserGuests.bind(window, (guest, name) => shortcuts.attachGuest(window, guest, name))
     shortcuts.attach(window)
     window.on('close', event => {
-      if (quitting || sessionEnding) return
+      if (quitting || sessionEnding || closingRenderer) return
       event.preventDefault()
       if (process.platform !== 'darwin') { app.quit(); return }
       if (window.isFullScreen()) {
@@ -458,7 +477,7 @@ async function main(): Promise<void> {
     window.show(); window.focus()
   }
   app.on('activate', () => focusPrimaryWindow())
-  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
+  app.on('window-all-closed', () => { if (process.platform !== 'darwin' && !closingRenderer && !quitting) app.quit() })
   // Product startup is independent of account/key state. YouDub SetupGate owns its first run.
   const window = createMainWindow()
   const navigation = window.loadURL(applicationUrl)

@@ -114,6 +114,24 @@
       "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
     },
     {
+      "path": "apps/desktop/src/locale.ts",
+      "before": {
+        "path": "apps/desktop/src/locale.ts",
+        "type": "file",
+        "executable": false,
+        "size": 21974,
+        "sha256": "8426a3943be0dfe81d0f0ecef1d9fe3cc03dc6cd79d3b8177a316f12ac09b242"
+      },
+      "after": {
+        "path": "apps/desktop/src/locale.ts",
+        "type": "file",
+        "executable": false,
+        "size": 22085,
+        "sha256": "a6ecc37fdbe13e24d1c065f87993858a4e4ebd8123f767e407227287bf3a5aa5"
+      },
+      "reason": "Add typed native confirmation copy for renderer drafts; YouDub waits for beforeunload to settle before stopping its Host."
+    },
+    {
       "path": "apps/desktop/src/main.ts",
       "before": {
         "path": "apps/desktop/src/main.ts",

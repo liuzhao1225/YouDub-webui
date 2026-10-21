@@ -50,7 +50,7 @@ for (const [name, entry] of Object.entries(expected)) {
       same(digest, active.sha256, `Framework source bytes ${upstreamPath}`)
       origin = { kind: baseline?.sha256 === digest ? 'upstream-source' : 'fork-source', path: upstreamPath }
     } else if (within(absolute, join(here, 'node_modules'))) origin = { kind: 'published-dependency', path: normalize(relative(here, absolute)) }
-    else if (['src/desktop-product.ts', 'prepare-profile.mjs', 'check-profile.mjs'].some(path => absolute === join(here, path))) origin = { kind: 'product-composition', path: normalize(relative(root, absolute)) }
+    else if (['src/desktop-product.ts', 'src/desktop-unload.ts', 'prepare-profile.mjs', 'check-profile.mjs'].some(path => absolute === join(here, path))) origin = { kind: 'product-composition', path: normalize(relative(root, absolute)) }
     else throw new Error(`Unexpected non-upstream source input in ${name}: ${path}`)
     inputFiles.push({ ...origin, sha256: digest })
   }

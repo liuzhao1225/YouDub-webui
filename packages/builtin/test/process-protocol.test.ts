@@ -119,6 +119,45 @@ test('Python pipes round-trip Chinese paths even when the parent requests a lega
   assert.deepEqual(JSON.parse(result.stdout), JSON.parse(input))
 })
 
+test('Darwin termination EPERM waits for an exiting group and preserves the worker failure', { skip: process.platform !== 'darwin' }, async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  t.after(() => plugin.dispose())
+  const kill = process.kill.bind(process)
+  let injected = false, pid = 0
+  const mocked = t.mock.method(process, 'kill', (target: number, signal?: string | number) => {
+    if (target < 0 && signal === 'SIGTERM') {
+      injected = true; pid = -target
+      throw Object.assign(new Error('kill EPERM during process exit'), { code: 'EPERM' })
+    }
+    return kill(target, signal as NodeJS.Signals)
+  })
+  try {
+    const script = receive + `send('error',{code:'ORIGINAL_FAILURE',message:'original worker error'}); process.stdin.destroy(); });`
+    await assert.rejects(ctx.youdubWorker.worker(worker(script), invocation, context()), { code: 'ORIGINAL_FAILURE' })
+    assert.equal(injected, true)
+    assert.throws(() => kill(-pid, 0), { code: 'ESRCH' })
+  } finally { mocked.mock.restore() }
+})
+
+test('termination permission errors remain failures while a process group is still present', { skip: process.platform !== 'darwin', timeout: 10000 }, async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  const kill = process.kill.bind(process), denied = Object.assign(new Error('kill EPERM: group remains alive'), { code: 'EPERM' })
+  let pid = 0, managed: { done: Promise<unknown>; stop(): Promise<void> } | undefined
+  const mocked = t.mock.method(process, 'kill', (target: number, signal?: string | number) => {
+    if (target < 0 && signal === 'SIGTERM') { pid = -target; throw denied }
+    return kill(target, signal as NodeJS.Signals)
+  })
+  try {
+    managed = (ctx.youdubWorker as any).launch(worker('setInterval(()=>{},1000)'))
+    await assert.rejects(managed!.stop(), error => error === denied)
+    assert.doesNotThrow(() => kill(-pid, 0))
+  } finally {
+    mocked.mock.restore()
+    if (pid) { kill(-pid, 'SIGKILL'); await managed!.done }
+    await plugin.dispose()
+  }
+})
+
 test('structured Python errors retain status, context and their original traceback', async t => {
   const ctx = new Context(), plugin = await ctx.plugin(Processes)
   t.after(() => plugin.dispose())
@@ -137,6 +176,26 @@ except Exception as error:
     assert.equal(error.details.field, 'translation.model')
     assert.equal(error.details.stage, 'translate')
     assert.match(error.stack, /Worker stderr:[\s\S]*Traceback[\s\S]*ApiError: model cannot accept/)
+    return true
+  })
+})
+
+test('a cleanup failure cannot replace the original worker error', async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  t.after(() => plugin.dispose())
+  const service = ctx.youdubWorker as any, launch = service.launch.bind(service)
+  const cleanup = new Error('process cleanup failed')
+  t.mock.method(service, 'launch', (request: any) => {
+    const managed = launch(request), stop = managed.stop
+    managed.stop = async () => { await stop(); throw cleanup }
+    return managed
+  })
+  const script = receive + `send('error',{code:'ORIGINAL_FAILURE',message:'original worker error'}); setInterval(()=>{},1000); });`
+  await assert.rejects(service.worker(worker(script), invocation, context()), (error: any) => {
+    assert.ok(error instanceof AggregateError)
+    assert.equal(error.errors[0].code, 'ORIGINAL_FAILURE')
+    assert.equal(error.errors[1], cleanup)
+    assert.equal(error.cause, error.errors[0])
     return true
   })
 })
