@@ -290,7 +290,10 @@ export default class Tasks extends Service implements TasksService {
       for (const spec of task.plan.steps) {
         const step = task.steps.find(step => step.id === spec.id)!
         if (step.status === 'completed' && step.approvedRevision === step.outputRevision) continue
-        if (!this.inputsApproved(task, spec)) continue
+        if (!this.inputsApproved(task, spec)) {
+          if (step.outputRevision && step.approvedRevision !== step.outputRevision) step.status = 'pending'
+          continue
+        }
         if (step.outputRevision && step.resultRevisions?.some(result => result.revision === step.outputRevision)) {
           if (spec.autoContinue === false && step.approvedRevision !== step.outputRevision) step.status = 'awaiting_review'
           else { step.status = 'completed'; step.approvedRevision = step.outputRevision }
