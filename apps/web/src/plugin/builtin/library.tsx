@@ -10,6 +10,7 @@ import { TaskCover } from '@/components/task-cover'
 import { VideoPlayer } from '@/components/video-player'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
+import { Page, PageHeader } from '@/components/page-layout'
 import { ConfigEditor, defaultConfig, useEditorSupported } from './schema-form'
 import { STATUS_LABELS, TaskProgress, TaskState, taskDisplayName } from './task-status'
 
@@ -17,9 +18,9 @@ function Library({ useQuery }: Bindings<'useQuery'>) {
   const tx = useText()
   const [status, setStatus] = useState(''), [offset, setOffset] = useState(0)
   const { data, error, refresh } = useQuery<TaskPage>(`/api/v2/tasks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`, 3000)
-  return <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-    <header className="mb-7 flex items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{tx('Library', '任务库', 'ライブラリ')}</h1></div><Link href="/" className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">{tx('New task', '新建任务', '新しいタスク')}</Link></header>
-    <div className="mb-5 flex flex-wrap items-center gap-2"><select aria-label={tx('Task status', '任务状态', 'タスクの状態')} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} className="h-9 rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">{tx('All statuses', '全部状态', 'すべての状態')}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(...STATUS_LABELS[item])}</option>)}</select><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx('Refresh', '刷新', '更新')}</Button></div>
+  return <Page>
+    <PageHeader title={tx('Library', '任务库', 'ライブラリ')} actions={<Button nativeButton={false} render={<Link href="/" />}>{tx('New task', '新建任务', '新しいタスク')}</Button>} />
+    <div className="flex flex-wrap items-center gap-2"><select aria-label={tx('Task status', '任务状态', 'タスクの状態')} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} className="h-9 rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">{tx('All statuses', '全部状态', 'すべての状態')}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(...STATUS_LABELS[item])}</option>)}</select><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx('Refresh', '刷新', '更新')}</Button></div>
     {error && <InlineAlert>{error}</InlineAlert>}
     {!data && !error && <p role="status" className="py-12 text-center text-sm text-muted-foreground">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}
     {data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{status ? tx('No tasks with this status', '没有符合此状态的任务', 'この状態のタスクはありません') : tx('No tasks yet', '还没有任务', 'タスクはまだありません')}</div>}
@@ -32,8 +33,8 @@ function Library({ useQuery }: Bindings<'useQuery'>) {
         <time dateTime={task.createdAt} className="mt-auto text-xs text-subtle-foreground">{formatDateTime(task.createdAt)}</time>
       </div>
     </Link>)}</div>
-    <div className="mt-6 flex justify-end gap-2"><Button variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>{tx('Previous', '上一页', '前へ')}</Button><Button variant="outline" disabled={!data?.hasMore} onClick={() => setOffset(offset + 20)}>{tx('Next', '下一页', '次へ')}</Button></div>
-  </main>
+    <div className="flex justify-end gap-2"><Button variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>{tx('Previous', '上一页', '前へ')}</Button><Button variant="outline" disabled={!data?.hasMore} onClick={() => setOffset(offset + 20)}>{tx('Next', '下一页', '次へ')}</Button></div>
+  </Page>
 }
 function RerunEditor({ task, close, locked, onLockChange, request, navigate, useQuery, useSlot }: { task: TaskView; close(): void; locked: boolean; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
   const tx = useText()
@@ -93,7 +94,7 @@ function TaskDetail({ params, request, navigate, useQuery, useSlot }: RouteProps
   const panels = useSlot('task.detail.panels'), actions = useSlot('task.detail.actions')
   const [mediaReleased, setMediaReleased] = useState(false), [showLog, setShowLog] = useState(false)
   const loadError = error && <div className="space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Reload task', '重新加载任务', 'タスクを再読み込み')}</Button></div>
-  if (!task) return <main className="p-8">{loadError || <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</main>
+  if (!task) return <Page>{loadError || <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</Page>
   const video = task.outputs.find((output) => output.mimeType?.startsWith('video/'))
   const completed = task.steps.filter((step) => step.status === 'completed').length
   const stepList = <ol className="space-y-4">{task.steps.map((step) => <li key={step.id} className="flex gap-3">
@@ -103,9 +104,9 @@ function TaskDetail({ params, request, navigate, useQuery, useSlot }: RouteProps
       {step.message && <p className="mt-1 break-words text-xs text-muted-foreground">{step.message}</p>}{step.error && <p className="mt-1 text-xs text-status-danger-fg">{step.error.message}</p>}
     </div>
   </li>)}</ol>
-  return <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:px-8">
+  return <Page>
     <Link href="/tasks" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{tx('Library', '任务库', 'ライブラリ')}</Link>
-    <header className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h1 className="break-words text-2xl font-semibold">{taskDisplayName(task)}</h1><p className="mt-2 text-xs text-muted-foreground">{taskDisplayName(task) !== (task.graphSnapshot?.title || task.workflowId) && <>{task.graphSnapshot?.title || task.workflowId} · </>}{formatDateTime(task.createdAt)}</p></div><TaskState status={task.status} /></header>
+    <PageHeader title={taskDisplayName(task)} actions={<TaskState status={task.status} />}><p className="mt-2 text-xs text-muted-foreground">{taskDisplayName(task) !== (task.graphSnapshot?.title || task.workflowId) && <>{task.graphSnapshot?.title || task.workflowId} · </>}{formatDateTime(task.createdAt)}</p></PageHeader>
     {loadError}{task.error && <InlineAlert>{task.error.message}</InlineAlert>}
     <Actions useQuery={useQuery} useSlot={useSlot} request={request} navigate={navigate} task={task} refresh={refresh} prepareDelete={setMediaReleased} />
     {actions.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
@@ -118,7 +119,7 @@ function TaskDetail({ params, request, navigate, useQuery, useSlot }: RouteProps
     {panels.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
     {task.graphSnapshot ? <details className="rounded-2xl border border-border bg-card p-5"><summary className="cursor-pointer text-sm font-medium">{tx('Step list', '步骤列表', 'ステップ一覧')} · {completed}/{task.steps.length}</summary><div className="mt-4">{stepList}</div></details> : <section className="rounded-2xl border border-border bg-card p-5"><h2 className="mb-4 font-semibold">{tx('Steps', '处理步骤', '処理ステップ')} · {completed}/{task.steps.length}</h2>{stepList}</section>}
     <details onToggle={(event) => setShowLog(event.currentTarget.open)} className="rounded-2xl border border-border bg-card p-5"><summary className="cursor-pointer text-sm font-medium">{tx('Task log', '任务日志', 'タスクログ')}</summary>{showLog && <TaskLog useQuery={useQuery} id={task.id} />}</details>
-  </main>
+  </Page>
 }
 function AudioOutput({ src }: { src: string }) {
   const ref = useRef<HTMLAudioElement>(null)

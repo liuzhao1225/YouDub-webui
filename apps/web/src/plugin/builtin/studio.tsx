@@ -10,6 +10,7 @@ import { formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { TaskCover } from '@/components/task-cover'
+import { PageContainer } from '@/components/page-layout'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -111,7 +112,7 @@ function Studio({ request, navigate, useQuery, useSlot, useWorkflowDocuments, us
     <section className="relative isolate flex min-h-[calc(100dvh-3.5rem)] flex-col justify-center overflow-hidden border-b border-border lg:min-h-dvh">
       <div aria-hidden="true" className="aurora -z-10" />
       <div aria-hidden="true" className="bg-dot-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
-      <div className="mx-auto w-full max-w-4xl px-5 pt-10 pb-12 sm:px-8 lg:pt-14 lg:pb-14 [@media(max-height:820px)]:pt-8 [@media(max-height:820px)]:pb-10">
+      <PageContainer className="pt-10 pb-12 lg:pt-14 lg:pb-14 [@media(max-height:820px)]:pt-8 [@media(max-height:820px)]:pb-10">
         <header className="flex animate-rise flex-col items-center text-center">
           <BrandMark animated className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
           <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur [@media(max-height:820px)]:hidden"><Sparkles className="size-3.5 text-brand-pink" />{tx('AI translation · Dubbing · Subtitles', 'AI 视频翻译 · 配音 · 字幕', 'AI 動画翻訳 · 吹き替え · 字幕')}</span>
@@ -131,9 +132,9 @@ function Studio({ request, navigate, useQuery, useSlot, useWorkflowDocuments, us
           {!!awaitingReview.length && <Link href={awaitingReview.length === 1 ? `/tasks/${awaitingReview[0].task.id}/nodes/${awaitingReview[0].step.id}` : '/tasks'} className="inline-flex items-center gap-2 rounded-full border border-status-warning/25 bg-status-warning/10 px-3.5 py-1.5 text-[13px] font-medium text-status-warning-fg">{tx(`${awaitingReview.length} nodes need your review`, `${awaitingReview.length} 个节点待确认`, `${awaitingReview.length} 件のノードが確認待ち`)}<ArrowRight className="size-3.5" /></Link>}
           {!!processing.length && <Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg">{tx(`${processing.length} tasks in progress`, `${processing.length} 个任务正在处理`, `${processing.length} 件のタスクが処理中`)}<ArrowRight className="size-3.5" /></Link>}
         </div>}
-      </div>
+      </PageContainer>
     </section>
-    <div className="mx-auto max-w-6xl space-y-12 px-5 py-10 sm:px-8 lg:py-14">
+    <PageContainer className="space-y-12 py-10 lg:py-14">
       {taskError && <div className="space-y-2"><InlineAlert>{taskError}</InlineAlert><Button variant="outline" onClick={refreshTasks}>{tx('Reload tasks', '重新加载任务', 'タスクを再読み込み')}</Button></div>}
       {active.length > 0 && <TaskSection id="studio-active" title={tx('In progress', '进行中', '処理中')}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 pr-4 shadow-card transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
       <TaskSection id="studio-recent" title={tx('Recent tasks', '最近任务', '最近のタスク')}>
@@ -141,7 +142,7 @@ function Studio({ request, navigate, useQuery, useSlot, useWorkflowDocuments, us
           : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-5 text-sm font-medium">{tx('No finished tasks yet', '还没有完成的任务', '完了したタスクはまだありません')}</p></div>
           : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-[border-color,box-shadow,transform] outline-none hover:-translate-y-0.5 hover:border-input hover:shadow-float focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
       </TaskSection>
-    </div>
+    </PageContainer>
   </main>
 }
 export const name = 'client-studio'

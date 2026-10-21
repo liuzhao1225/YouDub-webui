@@ -12,6 +12,7 @@ import { BrandMark } from '@/components/brand/brand-mark'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { UpdateNotice, UpdateProvider } from '@/components/app-updates'
+import { Page as PageLayout, PageHeader } from '@/components/page-layout'
 
 export function resolveRoute(routes: RouteEntry[], path: string, authenticated: boolean) {
   // Static segments take precedence over parameters, independently of plugin
@@ -35,11 +36,11 @@ function Shell({ request, href: routeHref, useSession, useSlot, usePathname, use
       setCollapsed(next)
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
   }
-  if (session.status === 'error') return <main className="mx-auto max-w-xl p-8"><InlineAlert>{session.error}</InlineAlert></main>
-  if (session.status === 'loading') return <div role="status" className="p-8 text-sm text-muted-foreground">{t.auth.sessionLoading}</div>
+  if (session.status === 'error') return <PageLayout className="max-w-xl"><InlineAlert>{session.error}</InlineAlert></PageLayout>
+  if (session.status === 'loading') return <PageLayout className="max-w-xl"><p role="status" className="text-sm text-muted-foreground">{t.auth.sessionLoading}</p></PageLayout>
   const match = resolveRoute(routes, path, session.status === 'authenticated')
   const Page = match?.route.component
-  const content = Page ? <Page key={`${match.route.id}:${path}`} params={match.params!} /> : <div className="p-8"><h1 className="text-xl font-semibold">404</h1><p className="mt-2 text-muted-foreground">{language === 'zh' ? '当前插件组合未提供这个页面。' : 'This page is not provided by the active plugins.'}</p></div>
+  const content = Page ? <Page key={`${match.route.id}:${path}`} params={match.params!} /> : <PageLayout><PageHeader title="404"><p className="mt-2 text-muted-foreground">{language === 'zh' ? '当前插件组合未提供这个页面。' : 'This page is not provided by the active plugins.'}</p></PageHeader></PageLayout>
   if (session.status === 'anonymous') return content
   return <UpdateProvider request={request}><div className={cn('min-h-screen transition-[padding] duration-200 ease-out', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[248px]')}>
     <aside className={cn('fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-surface transition-[width] duration-200 ease-out lg:flex', collapsed ? 'w-[72px]' : 'w-[248px]')}>

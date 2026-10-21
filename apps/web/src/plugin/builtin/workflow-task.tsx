@@ -5,6 +5,7 @@ import { Link, text, type GraphNode, type JsonObject, type JsonSchema, type Node
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
 import { Button } from '@/components/ui/button'
+import { Page, PageHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { WorkflowCanvas } from './workflow-canvas'
@@ -84,7 +85,7 @@ export function TaskNodePage({ params, request, navigate, blockNavigation, useQu
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   const failure = task.error || detail.error || types.error
   const refresh = () => { task.refresh(); detail.refresh(); types.refresh() }
-  if (!task.data || !detail.data || !types.data) return <main className="space-y-3 p-6">{failure ? <><InlineAlert>{failure}</InlineAlert><Button variant="outline" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button></> : <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</main>
+  if (!task.data || !detail.data || !types.data) return <Page>{failure ? <><InlineAlert>{failure}</InlineAlert><Button variant="outline" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button></> : <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</Page>
   return <NodeDetail useQuery={useQuery} request={request} navigate={navigate} blockNavigation={blockNavigation} useSlot={useSlot} task={task.data} detail={detail.data} types={types.data.items} error={failure} refresh={refresh} />
 }
 function NodeDetail({ task, detail, types, error, refresh, request, navigate, blockNavigation, useSlot, useQuery }: { task: TaskView; detail: TaskNodeDetail; types: NodeTypeDefinition[]; error: string; refresh(): void } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useSlot' | 'useQuery'>) {
@@ -169,10 +170,10 @@ function NodeDetail({ task, detail, types, error, refresh, request, navigate, bl
     (definition?.corrections?.outputPorts.includes('transcript') && !!displayed.transcript)
     || (definition?.corrections?.outputPorts.includes('translation') && !!displayed.translation)
   ))
-  return <main className="mx-auto max-w-6xl space-y-5 px-5 py-8 sm:px-8">
+  return <Page>
     {guard.dialog}
     <Link href={`/tasks/${task.id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{tx('Back to task', '返回任务', 'タスクへ戻る')}</Link>
-    <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold">{node?.label || text(definition?.label, language) || text(detail.step.label, language)}</h1><TaskState status={detail.step.status} /></header>
+    <PageHeader title={node?.label || text(definition?.label, language) || text(detail.step.label, language)} actions={<TaskState status={detail.step.status} />} />
     {(error || failure) && <div className="space-y-2"><InlineAlert>{error || failure}</InlineAlert>{error && <Button variant="outline" size="sm" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button>}</div>}
     {detail.step.error && <InlineAlert>{detail.step.error.message}</InlineAlert>}
     {['running', 'waiting'].includes(detail.step.status) && <div className="space-y-2 text-sm text-muted-foreground" role="status">{detail.step.message && <p>{detail.step.message}</p>}{detail.step.status === 'running' && detail.step.progress != null && <progress aria-label={tx('Node progress', '节点进度', 'ノードの進捗')} value={detail.step.progress} max={1} className="block h-1.5 w-full accent-primary" />}</div>}
@@ -208,7 +209,7 @@ function NodeDetail({ task, detail, types, error, refresh, request, navigate, bl
       {newTaskId && !busy && <Button variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${newTaskId}`).then((next) => { guard.bypass(); navigate(`/tasks/${next.id}`) }).catch((error: Error) => setFailure(error.message)).finally(() => setBusy(false)) }}>{tx('Check task status', '查询创建结果', 'タスクを確認')}</Button>}
       {newTaskId && !busy && <Button variant="outline" onClick={() => { setBusy(true); void request(`/api/v2/imports/${newTaskId}`, { method: 'DELETE' }).then(() => { setNewTaskId(''); setPreview(null); setFailure('') }).catch((error: Error) => setFailure(error.message)).finally(() => setBusy(false)) }}>{tx('Return to editing', '返回修改', '編集に戻る')}</Button>}
     </section>}
-  </main>
+  </Page>
 }
 function NodeConfiguration({ node, definition, raw }: { node?: GraphNode; definition?: NodeTypeDefinition; raw: unknown }) {
   const tx = useText(), { language } = useI18n()

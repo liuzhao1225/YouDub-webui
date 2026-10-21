@@ -6,6 +6,7 @@ import { BrandMark } from '@/components/brand/brand-mark'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { SetupDiagnostics } from './setup-diagnostics'
+import { PageContainer } from './page-layout'
 
 export interface SetupModel {
   id: string; name: string; variant: string; purpose: string;
@@ -43,15 +44,15 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
   const platform = ({ darwin: 'macOS', win32: 'Windows', linux: 'Linux' } as Record<string, string>)[state.platform] || state.platform
   const arch = state.platform === 'darwin' && state.arch === 'arm64' ? 'Apple Silicon' : state.arch
   return <div className="min-h-screen">
-    <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
+    <PageContainer as="header" className="flex items-center justify-between py-6">
       <span aria-label="YouDub"><BrandMark animated wordmark className="h-7" /></span>
       <div className="flex items-center gap-2">
         <span className="mr-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Cpu className="size-3.5" />{platform} · {arch}</span>
         {onReset && <Button variant="ghost" size="icon-sm" aria-label="重置下载预览" title="重置下载预览" onClick={onReset}><RotateCcw /></Button>}
         <Button variant="ghost" size="icon-sm" aria-label={light ? '切换深色主题' : '切换浅色主题'} onClick={() => { setLight(!light); document.documentElement.classList.toggle('dark', light) }}>{light ? <Moon /> : <Sun />}</Button>
       </div>
-    </header>
-    <main className="mx-auto max-w-3xl px-5 py-8 sm:px-8 sm:py-12">
+    </PageContainer>
+    <PageContainer as="main" className="max-w-3xl py-8 sm:py-12">
       <h1 className="mb-6 flex items-center gap-3 text-base font-medium">
         <span className={cn('inline-flex items-center gap-2', environmentReady && 'text-muted-foreground')}>{environmentReady ? <Check className="size-4 text-brand-blue" /> : state.phase === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : <Loader2 className="size-4 animate-spin text-brand-pink" />}环境准备</span>
         {state.models.length > 0 && <><span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}模型准备</span></>}
@@ -95,6 +96,6 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
         <span className="text-xs tabular-nums text-muted-foreground">{state.models.length ? <>{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : state.phase === 'starting' ? '启动工作台' : ''}</span>
         {state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />重新准备</Button> : state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? '暂停全部' : failed ? '重试下载' : '继续下载'}</Button> : state.phase === 'starting' && <Loader2 aria-label="启动中" className="size-5 animate-spin text-brand-pink" />}
       </div>
-    </main>
+    </PageContainer>
   </div>
 }

@@ -5,6 +5,7 @@ import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo
 import { Link, text, type Diagnostic, type JsonObject, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import { Page, PageHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { WorkflowCanvas } from './workflow-canvas'
@@ -33,8 +34,8 @@ function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'
     } catch (error) { setFailure(error instanceof Error ? error.message : String(error)) }
     finally { setBusy(false); if (input.current) input.current.value = '' }
   }
-  return <main className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:px-8">
-    <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold">{tx('Workflows', '工作流', 'ワークフロー')}</h1><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Upload />{tx('Import', '导入', 'インポート')}</Button><Button onClick={() => navigate('/workflows/new')}><Plus />{tx('New workflow', '新建工作流', '新規ワークフロー')}</Button><input ref={input} type="file" accept=".json,.workflow.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file) }} /></div></header>
+  return <Page>
+    <PageHeader title={tx('Workflows', '工作流', 'ワークフロー')} actions={<><Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Upload />{tx('Import', '导入', 'インポート')}</Button><Button onClick={() => navigate('/workflows/new')}><Plus />{tx('New workflow', '新建工作流', '新規ワークフロー')}</Button><input ref={input} type="file" accept=".json,.workflow.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file) }} /></>} />
     {(error || failure) && <InlineAlert>{error || failure}</InlineAlert>}
     {error && <Button variant="outline" onClick={refresh}>{tx('Retry', '重试', '再試行')}</Button>}
     {!data && !error && <Loader2 className="size-5 animate-spin" />}
@@ -51,14 +52,14 @@ function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'
         }}><Trash2 />{deleting === item.id ? tx('Confirm delete', '确认删除', '削除を確認') : tx('Delete', '删除', '削除')}</Button>}{deleting === item.id && <Button size="sm" variant="ghost" onClick={() => setDeleting('')}>{tx('Keep', '保留', '保持')}</Button>}</div>
       </article>)}</div></section>
     })}
-  </main>
+  </Page>
 }
 
 function WorkflowRoute({ params, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: RouteProps & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
-  return <>{types.error && <div className="space-y-3 p-4"><InlineAlert>{types.error}</InlineAlert>{!types.data && <Button variant="outline" onClick={types.refresh}>{tx('Retry', '重试', '再試行')}</Button>}</div>}{!types.data ? !types.error && <p className="p-6" role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p> : params.id === 'new' ? <NewEditor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} types={types.data.items} nodeId={params.nodeId} /> : <SavedEditor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} id={params.id} nodeId={params.nodeId} types={types.data.items} />}</>
+  return <>{types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><InlineAlert>{types.error}</InlineAlert>{!types.data && <Button variant="outline" onClick={types.refresh}>{tx('Retry', '重试', '再試行')}</Button>}</Page>}{!types.data ? !types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p></Page> : params.id === 'new' ? <NewEditor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} types={types.data.items} nodeId={params.nodeId} /> : <SavedEditor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} id={params.id} nodeId={params.nodeId} types={types.data.items} />}</>
 }
 function NewEditor({ types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
@@ -71,8 +72,8 @@ function NewEditor({ types, nodeId, request, navigate, replace, blockNavigation,
 function SavedEditor({ id, nodeId, types, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { id: string; nodeId?: string; types: NodeTypeDefinition[] } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const { data, error, refresh } = useQuery<WorkflowDocumentRecord>(`/api/v2/workflow-documents/${encodeURIComponent(id)}`)
-  if (error) return <div className="space-y-3 p-6"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Retry', '重试', '再試行')}</Button></div>
-  if (!data) return <p className="p-6" role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>
+  if (error) return <Page className={nodeId ? undefined : 'max-w-none'}><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Retry', '重试', '再試行')}</Button></Page>
+  if (!data) return <Page className={nodeId ? undefined : 'max-w-none'}><p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p></Page>
   return <Editor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} key={id} initial={data} nodeId={nodeId} types={types} />
 }
 
@@ -165,7 +166,8 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
   const onStarted = () => { allowLeave.current = true; guard.bypass() }
   const active = document.nodes.find((node) => node.id === (nodeId ?? selected))
   const visibleTypes = types.filter((type) => `${text(type.label, language)} ${type.type} ${type.category}`.toLowerCase().includes(search.toLowerCase()))
-  return <main className={nodeId ? 'mx-auto max-w-5xl space-y-5 px-5 py-8 sm:px-8' : 'flex h-[calc(100dvh-8.5rem)] min-h-[32rem] flex-col lg:h-dvh'}>
+  const Layout = nodeId ? Page : 'main'
+  return <Layout className={nodeId ? undefined : 'flex h-[calc(100dvh-8.5rem)] min-h-[32rem] flex-col lg:h-dvh'}>
     {guard.dialog}
     <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
       <Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx('Back', '返回', '戻る')} onClick={() => navigate(nodeId ? `/workflows/${initial.id}${sourceQuery}` : '/workflows')}><ArrowLeft className="size-4" /></Button>
@@ -197,7 +199,7 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
         </aside>}
       </div>
     </>}
-  </main>
+  </Layout>
 }
 
 export function GraphStudio({ onLockChange, additionalWorkflows = [], renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { onLockChange?(locked: boolean): void; additionalWorkflows?: WorkflowDescription[]; renderWorkflow?(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
@@ -237,6 +239,6 @@ export function apply(ctx: Context) {
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflow-editor', path: '/workflows/:id', component: bindComponent(ctx, ['request', 'navigate', 'replace', 'blockNavigation', 'useQuery', 'useSlot', 'useWorkflowResources'], WorkflowRoute), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflow-node', path: '/workflows/:id/nodes/:nodeId', component: bindComponent(ctx, ['request', 'navigate', 'replace', 'blockNavigation', 'useQuery', 'useSlot', 'useWorkflowResources'], WorkflowRoute), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'task-node', path: '/tasks/:id/nodes/:nodeId', component: bindComponent(ctx, ['request', 'navigate', 'blockNavigation', 'useQuery', 'useSlot'], TaskNodePage), access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'workflows', routeId: 'workflows', label: { default: 'Workflows', translations: { zh: '工作流', ja: 'ワークフロー' } }, order: 15, icon: GitBranch }))
+  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'workflows', routeId: 'workflows', label: { default: 'Workflows', translations: { zh: '工作流', ja: 'ワークフロー' } }, order: 25, icon: GitBranch }))
   ctx.effect(() => ctx.slots.register('task.detail.panels', { id: 'workflow-graph', order: -10, component: bindComponent(ctx, ['request', 'navigate', 'useQuery'], TaskWorkflowPanel) }))
 }

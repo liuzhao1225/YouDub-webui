@@ -4,6 +4,7 @@ export { UpdateProvider } from '@/plugin/sdk'
 import { useText } from '@/lib/i18n'
 import { Button } from './ui/button'
 import { InlineAlert } from './inline-alert'
+import { SectionCard } from './section-card'
 
 export function UpdateNotice({ hidden = false, useUpdates }: { hidden?: boolean } & Bindings<'useUpdates'>) {
   const updates = useUpdates(), tx = useText()
@@ -22,8 +23,7 @@ export function UpdateSettings({ useUpdates }: Bindings<'useUpdates'>) {
   const updates = useUpdates(), tx = useText()
   if (!updates) return null
   const available = updates.result?.available
-  return <section className="rounded-2xl border border-border bg-card shadow-card">
-    <h2 className="border-b border-border px-6 py-4 font-semibold">{tx('Software update', '软件更新', 'ソフトウェア更新')}</h2>
+  return <SectionCard title={tx('Software update', '软件更新', 'ソフトウェア更新')}>
     <div className="space-y-4 p-6">
       {updates.info && <p className="text-sm">YouDub {updates.info.currentVersion}</p>}
       {updates.info?.supported && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={updates.info.automatic} disabled={updates.busy} onChange={event => updates.setAutomatic(event.target.checked)} />{tx('Check automatically every hour', '每小时自动检查更新', '毎時間、自動的に更新を確認')}</label>}
@@ -35,5 +35,5 @@ export function UpdateSettings({ useUpdates }: Bindings<'useUpdates'>) {
       </div>}
       {available && <div className="flex gap-4 text-sm text-muted-foreground"><a className="underline underline-offset-4" href={available.url} target="_blank" rel="noreferrer">{tx('Release notes', '更新说明', 'リリースノート')}</a><a className="underline underline-offset-4" href={available.checksum} target="_blank" rel="noreferrer">SHA-256</a></div>}
     </div>
-  </section>
+  </SectionCard>
 }

@@ -8,6 +8,7 @@ import type { Runtime, TaskConfig } from '@/plugin/builtin/localize-contracts'
 import { initialTaskConfig, TaskConfigForm, TaskOptions } from '@/components/localize-task-config'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
+import { SectionCard } from '@/components/section-card'
 function LocalizeEditor({ value, readOnly, mode, onChange, useQuery }: EditorProps & Bindings<'useQuery'>) {
   const tx = useText()
   const { data: runtime, error } = useQuery<Runtime>('/api/v2/runtime')
@@ -46,12 +47,11 @@ function LocalizeSettings({ request, useQuery }: Bindings<'request' | 'useQuery'
   const { data: catalog, error: catalogError, refresh: refreshCatalog } = useQuery<Catalog>('/api/v2/catalog')
   const workflow = catalog?.workflows.find((item) => item.id === 'youdub.localize')
   const error = runtimeError || catalogError
-  return <section className="rounded-2xl border border-border bg-card shadow-card">
-    <h2 className="border-b border-border px-6 py-4 font-semibold">{tx('Processing defaults', '默认处理配置', '処理の初期設定')}</h2>
+  return <SectionCard title={tx('Processing defaults', '默认处理配置', '処理の初期設定')}>
     {error ? <div className="space-y-3 p-6"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={() => { refreshRuntime(); refreshCatalog() }}>{tx('Reload', '重新加载', '再読み込み')}</Button></div>
       : runtime && workflow ? <DefaultsForm request={request} defaults={workflow.defaults as Partial<TaskConfig>} runtime={runtime} />
         : <p role="status" className="p-6 text-sm text-muted-foreground">{tx('Loading configuration…', '正在加载配置…', '設定を読み込み中…')}</p>}
-  </section>
+  </SectionCard>
 }
 export const name = 'client-localize-editor'
 export const inject = ['slots', 'apiClient']

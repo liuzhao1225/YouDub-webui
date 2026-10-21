@@ -6,15 +6,16 @@ import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { TranslationSetupController } from '@/runtime/onboarding'
 import { useObservableSource } from '@/plugin/web-react'
+import { PageContainer } from './page-layout'
 
 export function TranslationSetup({ children }: { children: ReactNode }) {
   const [controller] = useState(() => new TranslationSetupController())
   const { settings, url, model, key, ready, busy, error } = useObservableSource(controller)
   useEffect(() => { controller.start(); return controller.stop }, [controller])
   if (ready) return children
-  if (!settings) return <main className="mx-auto max-w-xl space-y-4 p-8">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>重新连接</Button></> : <p role="status">检查翻译服务配置…</p>}</main>
+  if (!settings) return <PageContainer as="main" className="max-w-xl space-y-6 py-12">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>重新连接</Button></> : <p role="status">检查翻译服务配置…</p>}</PageContainer>
   const savedKey = settings.connections.find(item => item.adapter === 'openai' && item.base_url === url.trim() && item.has_api_key)
-  return <main className="mx-auto max-w-xl space-y-6 px-6 py-12">
+  return <PageContainer as="main" className="max-w-xl space-y-6 py-12">
     <BrandMark wordmark className="h-7" />
     <div className="space-y-2"><h1 className="text-xl font-semibold">配置翻译服务</h1><p className="text-sm text-muted-foreground">填写 OpenAI 兼容接口。翻译时会向该服务发送识别出的字幕文本；测试连接会发送一句简短测试文本。</p></div>
     <form className="space-y-5 rounded-2xl border border-border bg-card p-6" onSubmit={event => { event.preventDefault(); void controller.save() }}>
@@ -25,5 +26,5 @@ export function TranslationSetup({ children }: { children: ReactNode }) {
       <div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy}>{busy && <Loader2 className="animate-spin" />}测试连接并继续</Button><Button type="button" variant="ghost" disabled={busy} onClick={() => void controller.skip()}>稍后配置</Button></div>
       <p className="text-xs text-muted-foreground">稍后配置仍可进入工作台，开始翻译任务前需在设置中完成连接。</p>
     </form>
-  </main>
+  </PageContainer>
 }
