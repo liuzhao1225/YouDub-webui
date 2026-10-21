@@ -9,7 +9,6 @@
   "exports": {
     ".": "./dist/host.mjs",
     "./client": "./dist/client.js",
-    "./process": "./dist/process.mjs",
     "./package.json": "./package.json"
   },
   "dsh": {
@@ -20,13 +19,16 @@
       "platform": "web",
       "inject": [
         "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-client-connection"
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-theme"
       ]
     }
   },
   "scripts": {
     "build": "node build.mjs",
     "start": "node launch.mjs",
+    "desktop": "node desktop.mjs",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
@@ -35,10 +37,14 @@
     "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
     "@deepseek-ai/schemastery": "3.18.5",
     "clsx": "2.1.1",
-    "lucide-react": "1.8.0",
-    "tailwind-merge": "3.5.0"
+    "tailwind-merge": "3.5.0",
+    "@deepseek-ai/dsh-atomic-write": "0.2.1-rc.2"
   },
   "devDependencies": {
-    "esbuild": "0.25.10"
+    "@deepseek-ai/dsh-client-store": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2",
+    "esbuild": "0.25.10",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.1-rc.2"
   }
 }

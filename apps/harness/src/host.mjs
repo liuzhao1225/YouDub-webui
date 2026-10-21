@@ -5,10 +5,11 @@ import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import z from '@deepseek-ai/schemastery';
-import { SubtitleWorkflow } from './workflow.mjs';
+import { SubtitleWorkflow, WorkflowError } from './workflow.mjs';
+import { runProcess, runWorker } from './process.mjs';
 
 export const name = 'youdub-subtitles';
-export const inject = ['connection', 'process'];
+export const inject = ['connection', 'subprocess', 'jobs'];
 export const Config = z.object({
   python: z.string().required(),
   modelsDir: z.string().required(),
@@ -21,37 +22,61 @@ export async function apply(ctx, config) {
   await access(resolve(config.modelsDir, 'tiny.pt'));
   const request = { command: config.python, cwd: root,
     env: { PYTHONPATH: root, YOUDUB_DESKTOP_DATA_DIR: resolve(data, 'runtime'), YOUDUB_WHISPER_MODELS_DIR: resolve(config.modelsDir) } };
+  ctx.effect(() => ctx.jobs.attachController('youdub-subtitles'));
+  async function recognizeTask(task, signal, progress) {
+    const taskDir = workflow.dir(task.id);
+    const artifacts = new Map();
+    async function invoke(operation, inputs, step) {
+      const workDir = resolve(taskDir, step);
+      const context = { signal, progress, credentials: {},
+        externalPrepare: async () => { throw new Error('External providers are not part of this local subtitle profile'); },
+        externalUpdate: async () => { throw new Error('Unexpected external provider update'); },
+        register: async descriptor => {
+          const id = randomUUID(); const path = resolve(workDir, descriptor.path);
+          if (!path.startsWith(workDir + '/')) throw new Error('Worker artifact escaped its workspace');
+          await stat(path); artifacts.set(id, path);
+          return { id, schemaId: descriptor.schemaId };
+        },
+        resolve: async ref => { const path = artifacts.get(ref.id); if (!path) throw new Error('Unknown artifact'); return path; },
+      };
+      const result = await runWorker(ctx.subprocess, { ...request, args: ['-m', 'backend.workers.operation'], signal }, {
+        taskId: task.id, attempt: 1, invocationId: randomUUID(), operation, taskDir, workDir, inputs,
+        binding: { model: 'tiny', device: 'cpu', options: { sourceLanguage: task.language } }, config: { graph: true },
+      }, context);
+      if (result.state !== 'completed') throw new Error('Local worker did not complete');
+      return result.outputs;
+    }
+    const prepared = await invoke('media.prepare/v1', { video: { path: resolve(taskDir, 'source.video') } }, 'prepare');
+    const recognized = await invoke('speech.transcribe/v1', { audio: prepared.sourceAudio, mediaInfo: prepared.mediaInfo }, 'recognize');
+    return { transcript: recognized.transcript, mediaInfo: prepared.mediaInfo };
+  }
   const workflow = new SubtitleWorkflow(resolve(data, 'tasks'), {
     async recognize(task, signal, progress) {
-      const taskDir = workflow.dir(task.id);
-      const artifacts = new Map();
-      async function invoke(operation, inputs, step) {
-        const workDir = resolve(taskDir, step);
-        const context = { signal, progress, credentials: {},
-          externalPrepare: async () => { throw new Error('External providers are not part of this local subtitle profile'); },
-          externalUpdate: async () => { throw new Error('Unexpected external provider update'); },
-          register: async descriptor => {
-            const id = randomUUID(); const path = resolve(workDir, descriptor.path);
-            if (!path.startsWith(workDir + '/')) throw new Error('Worker artifact escaped its workspace');
-            await stat(path); artifacts.set(id, path);
-            return { id, schemaId: descriptor.schemaId };
-          },
-          resolve: async ref => { const path = artifacts.get(ref.id); if (!path) throw new Error('Unknown artifact'); return path; },
-        };
-        const result = await ctx.process.worker({ ...request, args: ['-m', 'backend.workers.operation'], signal }, {
-          taskId: task.id, attempt: 1, invocationId: randomUUID(), operation, taskDir, workDir, inputs,
-          binding: { model: 'tiny', device: 'cpu', options: { sourceLanguage: task.language } }, config: { graph: true },
-        }, context);
-        if (result.state !== 'completed') throw new Error('Local worker did not complete');
-        return result.outputs;
-      }
-      const prepared = await invoke('media.prepare/v1', { video: { path: resolve(taskDir, 'source.video') } }, 'prepare');
-      const recognized = await invoke('speech.transcribe/v1', { audio: prepared.sourceAudio, mediaInfo: prepared.mediaInfo }, 'recognize');
-      return { transcript: recognized.transcript, mediaInfo: prepared.mediaInfo };
+      let result;
+      const controller = new AbortController();
+      const combined = AbortSignal.any([signal, controller.signal]);
+      ctx.jobs.start({
+        kind: 'youdub-subtitles', label: `识别字幕：${task.sourceName}`,
+        run(job) {
+          result = recognizeTask(task, combined, async (value, message) => {
+            await progress(value, message);
+            job.updateProgress(message || (value === null ? '正在识别' : `${Math.round(value * 100)}%`));
+          });
+          return {
+            cancel(reason) { controller.abort(new Error(reason || 'Subtitle recognition cancelled')); },
+            done: result.then(
+              () => ({ status: 'completed' }),
+              error => ({ status: combined.aborted ? 'killed' : 'failed', detail: `${error.code ? `${error.code}: ` : ''}${error.message}` }),
+            ),
+          };
+        },
+      });
+      // The same original error also reaches the durable subtitle checkpoint.
+      return result;
     },
     async export(task) {
       const taskDir = workflow.dir(task.id);
-      await ctx.process.run({ ...request, args: [resolve(root, 'apps/harness/export_subtitles.py'),
+      await runProcess(ctx.subprocess, { ...request, args: [resolve(root, 'apps/harness/export_subtitles.py'),
         resolve(taskDir, 'transcript.confirmed.json'), resolve(taskDir, 'subtitles.srt'), String(task.mediaInfo.duration_ms)] });
     },
   });
@@ -74,8 +99,16 @@ export async function apply(ctx, config) {
   route('edit', ['POST'], 'buffered', async req => { const b = await req.json(); return Response.json(await workflow.edit(b.id, b.revision, b.segments)); });
   route('confirm', ['POST'], 'buffered', async req => { const b = await req.json(); return Response.json(await workflow.confirm(b.id, b.revision)); });
   route('export', ['POST'], 'buffered', async req => {
-    const b = await req.json(); return new Response(await workflow.export(b.id, b.revision), {
-      headers: { 'content-type': 'application/x-subrip; charset=utf-8', 'content-disposition': 'attachment; filename="subtitles.srt"', 'cache-control': 'no-store' },
+    const b = await req.json(); await workflow.export(b.id, b.revision);
+    return Response.json(await workflow.get(b.id));
+  });
+  route('download', ['GET'], 'buffered', async (_req, url) => {
+    const id = url.searchParams.get('id'), task = await workflow.get(id);
+    if (task.status !== 'exported' || task.confirmedRevision == null) throw new WorkflowError('请先确认并导出字幕', 409, 'EXPORT_REQUIRED');
+    const filename = `${task.sourceName.replace(/\.[^.]+$/, '')}.srt`;
+    const encoded = encodeURIComponent(filename).replace(/[!'()*]/g, value => `%${value.charCodeAt(0).toString(16).toUpperCase()}`);
+    return new Response(await readFile(resolve(workflow.dir(id), 'subtitles.srt')), {
+      headers: { 'content-type': 'application/x-subrip; charset=utf-8', 'content-disposition': `attachment; filename="subtitles.srt"; filename*=UTF-8''${encoded}`, 'cache-control': 'no-store' },
     });
   });
   route('video', ['GET', 'HEAD'], 'buffered', async (req, url) => {

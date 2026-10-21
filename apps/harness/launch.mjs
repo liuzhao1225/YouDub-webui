@@ -1,4 +1,4 @@
-import { mkdir, symlink, lstat, realpath } from 'node:fs/promises';
+import { mkdir, symlink, lstat, realpath, readFile, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -9,7 +9,20 @@ import { initProfile } from '@deepseek-ai/dsh-app-boot';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const home = resolve(process.env.DSH_HOME || resolve(here, '../../.cache/harness/dsh'));
 const profile = resolve(home, 'profiles/youdub');
-initProfile(profile, ['@youdub/harness-subtitles']);
+const bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@youdub/harness-subtitles'];
+initProfile(profile, bundles);
+const manifestPath = resolve(profile, 'package.json');
+const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+const configuredBundles = manifest.dsh?.profile?.bundles;
+if (JSON.stringify(configuredBundles) === JSON.stringify(['@youdub/harness-subtitles'])) {
+  // Migrate only the known standalone POC composition. Keep profile settings
+  // and all manifest fields; Harness applies its existing patch over the bundles.
+  manifest.dsh.profile.bundles = bundles;
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+  console.log(`Migrated YouDub profile to the official base + web bundles: ${manifestPath}`);
+} else if (JSON.stringify(configuredBundles) !== JSON.stringify(bundles)) {
+  throw new Error(`Unsupported YouDub profile bundle list in ${manifestPath}: ${JSON.stringify(configuredBundles)}. Expected ${JSON.stringify(bundles)}.`);
+}
 const link = resolve(profile, 'node_modules/@youdub/harness-subtitles');
 await mkdir(dirname(link), { recursive: true });
 try {
@@ -19,7 +32,7 @@ try {
   if (error.code !== 'ENOENT') throw error;
   await symlink(here, link, 'dir');
 }
-const child = spawn(process.execPath, [resolve(here, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '--profile', 'youdub', ...process.argv.slice(2)], {
+const child = spawn(process.execPath, [resolve(here, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '--profile', 'youdub', '--host', '127.0.0.1', '--port', '3086', '--no-open', ...process.argv.slice(2)], {
   cwd: here, stdio: 'inherit', env: { ...process.env, DSH_HOME: home },
 });
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));

@@ -6,10 +6,8 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const here = fileURLToPath(new URL('.', import.meta.url));
 const common = { bundle: true, absWorkingDir: here, logLevel: 'info' };
 await build({ ...common, entryPoints: ['src/host.mjs'], outfile: 'dist/host.mjs', platform: 'node', format: 'esm', packages: 'external' });
-await build({ ...common, entryPoints: [resolve(root, 'packages/builtin/src/process.ts')], outfile: 'dist/process.mjs', platform: 'node', format: 'esm',
-  external: ['@deepseek-ai/cordis'], alias: { cordis: '@deepseek-ai/cordis', '@youdub/sdk': resolve(root, 'packages/sdk/src/index.ts') } });
 await build({ ...common, entryPoints: ['src/client.jsx'], outfile: 'dist/client.js', platform: 'browser', format: 'cjs', jsx: 'automatic',
-  external: ['react', 'react/jsx-runtime'], loader: { '.css': 'text' }, nodePaths: [resolve(here, 'node_modules')],
+  external: ['react', 'react/jsx-runtime', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-store'], loader: { '.css': 'text' }, nodePaths: [resolve(here, 'node_modules')],
   alias: { '@': resolve(root, 'apps/web/src') },
   plugins: [{ name: 'original-youdub-theme', setup(builder) {
     builder.onResolve({ filter: /^youdub:theme$/ }, () => ({ path: 'theme', namespace: 'youdub-theme' }));
@@ -23,9 +21,24 @@ await build({ ...common, entryPoints: ['src/client.jsx'], outfile: 'dist/client.
         if (depth) throw new Error(`Unclosed original theme block: ${selector}`);
         return css.slice(open, end);
       }
-      const theme = '.yd' + block(':root') + '\n.yd.dark' + block('.dark') + '\n' +
-        ['eq', 'shimmer', 'rise', 'drift'].map(name => '@keyframes yd-' + name + block('@keyframes ' + name)).join('\n');
-      return { contents: 'export default ' + JSON.stringify(theme), loader: 'js' };
+      const variables = selector => Object.fromEntries([...block(selector).matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()]));
+      const light = variables(':root'), dark = { ...light, ...variables('.dark') };
+      const tokens = Object.fromEntries(Object.entries(light).map(([name, value]) => [name, { light: value, dark: dark[name] }]));
+      const aliases = {
+        'bg-base': 'background', 'bg-layer-1': 'card', 'bg-layer-2': 'elevated', 'bg-overlay': 'popover',
+        'label-primary': 'foreground', 'label-secondary': 'muted-foreground', 'label-tertiary': 'muted-foreground',
+        'label-caption': 'subtle-foreground', 'label-dimmed': 'subtle-foreground', 'label-primary-foreground': 'primary-foreground',
+        'border-l1': 'border', 'border-l2': 'border', 'border-l3': 'border', 'border-l4': 'input',
+        'brand-primary': 'primary', 'button-primary-fill': 'primary', 'button-primary-hover': 'primary-hover',
+        'button-tool-bar-fill': 'muted', 'button-tool-bar-hover': 'accent',
+        'interactive-bg-hover': 'accent', 'interactive-bg-active': 'muted',
+        'state-business-primary': 'brand-blue', 'state-success-primary': 'status-success-fg',
+        'state-error-primary': 'status-danger-fg', 'state-warn-primary': 'status-warning-fg',
+      };
+      for (const [alias, name] of Object.entries(aliases)) tokens['--dsw-alias-' + alias] = tokens['--' + name];
+      tokens['--dsw-specific-sidebar-fill'] = tokens['--surface'];
+      const theme = ['eq', 'shimmer', 'rise', 'drift'].map(name => '@keyframes yd-' + name + block('@keyframes ' + name)).join('\n');
+      return { contents: 'export const tokens = ' + JSON.stringify(tokens) + ';export default ' + JSON.stringify(theme), loader: 'js' };
     });
   } }],
   banner: { js: 'window.__ModuleLoader__.load({id:"@youdub/harness-subtitles",factory:(require)=>{const module={exports:{}};const exports=module.exports;' },

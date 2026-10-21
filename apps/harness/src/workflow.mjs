@@ -1,9 +1,10 @@
-import { mkdir, readFile, writeFile, readdir, rename } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write';
 
 export class WorkflowError extends Error {
   constructor(message, status = 409, code = 'INVALID_STATE') { super(message); this.status = status; this.code = code; }
@@ -46,9 +47,7 @@ export class SubtitleWorkflow {
     task.updatedAt = new Date().toISOString();
     task.revision += 1;
     const path = resolve(this.dir(task.id), 'task.json');
-    // Polling readers must always see a complete checkpoint.
-    await writeFile(path + '.tmp', JSON.stringify(task, null, 2) + '\n');
-    await rename(path + '.tmp', path);
+    await writeFileAtomic(path, JSON.stringify(task, null, 2) + '\n', { mode: 0o600, dirMode: 0o700 });
   }
   async locked(id, revision, fn) {
     if (this.locks.has(id)) throw new WorkflowError('任务正在保存，请稍后重试');

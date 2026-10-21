@@ -1,0 +1,14 @@
+{
+  "taskId": "129e3a76-81f4-4f94-9c60-06e08563c03e",
+  "status": "exported",
+  "revision": 10,
+  "confirmedRevision": 8,
+  "inputSha256": "ad1b9836ea34d72812d5dc9d134d46807635d699ed51bada00916c8d1dd76e10",
+  "downloadSha256": "02eb9f62b06c5b3bad558a10c526224c5b07264d5196d2da5e2fbef895202a32",
+  "hostDownloadMatch": true,
+  "originalASRPreserved": true,
+  "correction": "The cool thing about these guys is that they have really, really long trunks, and that's cool.",
+  "downloadFilename": "youdub-harness-desktop-zoo-en.srt",
+  "nativeSaveDialog": true,
+  "desktopVersion": "0.2.1-rc.2"
+}

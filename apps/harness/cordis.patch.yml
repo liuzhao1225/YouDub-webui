@@ -1,26 +1,108 @@
-# Standalone Harness composition; upstream packages stay unmodified.
+# Shared YouDub overlay on the official Harness base + web bundles.
+# Keep the official layout, theme, session and settings services.
+- id: ui-open-in-app
+  disabled: true
+- id: ui-settings-account
+  disabled: true
+- id: ui-theme
+  disabled: false
+- id: ui-shortcuts
+  disabled: true
+- id: ui-layout
+  disabled: false
+- id: ui-session
+  disabled: false
+- id: ui-sidebar
+  disabled: true
+- id: ui-sidebar-right
+  disabled: true
+- id: ui-sidebar-documentpreview
+  disabled: true
+- id: ui-sidebar-browser
+  disabled: true
+- id: ui-sidebar-terminal
+  disabled: true
+- id: ui-sidebar-files
+  disabled: true
+- id: ui-settings
+  disabled: false
+- id: ui-settings-general
+  disabled: true
+- id: ui-settings-models
+  disabled: true
+- id: ui-plugin-manager
+  disabled: true
+- id: ui-settings-plugin-inventory
+  disabled: true
+- id: ui-conversation
+  disabled: true
+- id: ui-approval
+  disabled: true
+- id: ui-chat
+  disabled: true
+- id: ui-brand-official
+  disabled: true
+- id: ui-attachment
+  disabled: true
+- id: ui-tool
+  disabled: true
+- id: ui-cordis
+  disabled: true
+- id: ui-deliverables
+  disabled: true
+- id: ui-workspace
+  disabled: true
+- id: ui-workflow-run
+  disabled: true
+- id: ui-input-trigger
+  disabled: true
+- id: ui-commands
+  disabled: true
+- id: ui-skill
+  disabled: true
+- id: ui-subagent
+  disabled: true
+- id: ui-reference
+  disabled: true
+- id: ui-secret-mask
+  disabled: true
+- id: ui-jobs
+  disabled: true
+- id: ui-schedule
+  disabled: true
+- id: ui-goal
+  disabled: true
+- id: ui-message-feedback
+  disabled: true
+- id: ui-model-selection
+  disabled: true
+- id: ui-deepseek-model-label-1017
+  disabled: true
+- id: ui-permission
+  disabled: true
+- id: ui-agent-preset
+  disabled: true
+- id: ui-settings-session-log
+  disabled: true
+- id: ui-settings-plugins
+  disabled: true
+- id: ui-settings-shell
+  disabled: true
+- id: ui-settings-agent-loop
+  disabled: true
+- id: ui-settings-subagent
+  disabled: true
+- id: ui-settings-web-search
+  disabled: true
+- id: ui-plan
+  disabled: true
+- id: ui-user-questions
+  disabled: true
+- id: ui-trajectory
+  disabled: true
+- id: directory-picker
+  disabled: true
 - insert:
-    - id: credentials
-      name: '@deepseek-ai/dsh-credentials-local'
-    - id: webserver
-      name: '@deepseek-ai/dsh-host-webserver'
-      config:
-        host: 127.0.0.1
-        port: 3086
-    - id: web-runtime
-      name: '@deepseek-ai/dsh-web-app'
-      config:
-        openBrowser: false
-        printUrl: true
-        surfaceContext: false
-    - id: modules
-      name: '@deepseek-ai/dsh-client-modules'
-    - id: connection
-      name: '@deepseek-ai/dsh-client-connection'
-    - id: renderer
-      name: '@deepseek-ai/dsh-client-ui-renderer'
-    - id: youdub-process
-      name: '@youdub/harness-subtitles/process'
     - id: youdub-subtitles
       name: '@youdub/harness-subtitles'
       config:
