@@ -138,21 +138,6 @@ function wireNamespaces(): SettingsNamespaceView[] {
       secrets: [],
       revision: 4,
     },
-    {
-      ns: 'llm-deepseek-account',
-      schema: JSON.parse(JSON.stringify(DeepSeekConfig.toJSON())) as JsonValue,
-      value: {
-        baseURL: 'https://base',
-        defaultContextWindow: 1_000_000,
-        maxTokens: 256_000,
-        models: DEFAULT_DEEPSEEK_MODELS,
-      },
-      base: { defaultContextWindow: 1_000_000, maxTokens: 256_000, models: DEFAULT_DEEPSEEK_MODELS },
-      user: {},
-      autoGenerate: true, applies: 'live',
-      secrets: [],
-      revision: 0,
-    },
   ]
 }
 
@@ -243,9 +228,7 @@ const contexts = new WeakMap<object, PageContext>()
 function ctxWith(face: object): PageContext {
   const existing = contexts.get(face)
   if (existing !== undefined) return existing
-  const ctx = Object.assign(new Context(), { remote: { ...face,
-    session: { initializeDefaultModel: async () => ({ ok: true, value: undefined }) },
-  } })
+  const ctx = Object.assign(new Context(), { remote: face })
   contexts.set(face, ctx)
   return ctx
 }
@@ -1402,14 +1385,13 @@ describe('ModelsSection', () => {
     expect(baseURL.value).toBe('')
   })
 
-  it('saves credentials without changing the default model', async () => {
+  it('saves credentials without a session service', async () => {
     const { ctx, set } = await mountDeepSeekCard()
-    const initialize = vi.spyOn(ctx.remote.session, 'initializeDefaultModel')
+    expect(ctx.remote).not.toHaveProperty('session')
     fireEvent.change(await screen.findByLabelText(en.keyInput), { target: { value: 'test-key' } })
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(screen.queryByText(en.apply)).toBeNull() })
     expect(set).toHaveBeenCalledOnce()
-    expect(initialize).not.toHaveBeenCalled()
   })
 
   it('reveals only the current key draft and masks it again on change', async () => {
@@ -2412,14 +2394,16 @@ it('keeps an inherited profile endpoint ahead of dynamic provider configuration'
   expect(input.getAttribute('aria-describedby')).toBeNull()
 })
 
-it('renders the localized account row as signed in without an edit action', async () => {
+it('preserves the provider display name and offers its existing editor', async () => {
   const scripted = scriptedFace({})
   const { controller } = await mountFace(scripted)
   const row = controller.store.getSnapshot().rows[0]!
   await act(async () => { controller.store.update((state) => {
-    state.rows = [{ ...row, accountAvailable: true, entry: { ...row.entry, provider: 'deepseek-account' } }]
+    state.rows = [{ ...row, credential: { configured: true, writable: true },
+      entry: { ...row.entry, displayName: 'Team model provider' } }]
   }) })
-  const item = screen.getByText(en.deepSeekAccount).closest('li')!
-  expect(within(item).getByText(en.accountSignedIn)).toBeTruthy()
-  expect(within(item).queryByText(en.edit)).toBeNull()
+  const item = screen.getByText('Team model provider').closest('li')!
+  expect(within(item).getByText(en.edit)).toBeTruthy()
+  fireEvent.click(within(item).getByText(en.edit))
+  expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
 })

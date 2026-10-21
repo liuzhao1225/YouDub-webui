@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-settings-models",
-  "description": "Models settings and shared product-onboarding dialogs over existing settings and credential joins",
+  "description": "Models settings over the Harness LLM, settings and credential services",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"

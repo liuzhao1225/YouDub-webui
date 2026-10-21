@@ -4,5 +4,210 @@
   "originalManifestSha256": "b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c",
   "productBaselineCommit": "4b9dc0a7168135f191dd4050a6d1d9a32d9e14b9",
   "productBaselineTag": "youdub-desktop-refactor-base-20261022",
-  "changes": []
+  "changes": [
+    {
+      "path": "packages/client/ui-settings-models/README.md",
+      "before": {
+        "path": "packages/client/ui-settings-models/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 23360,
+        "sha256": "5639434444d5ffafc447d204c222a6189479df21c19f6f33d89192843a148440"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 20655,
+        "sha256": "73f5c44af5a7e4ee47cfc8ba068aab5a4827626048ae214a229c607ab4c96fa2"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/README.zh.md",
+      "before": {
+        "path": "packages/client/ui-settings-models/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 21729,
+        "sha256": "5f6f7dcdefa8dba7d34a0659649be9d2c4dcf6ae26e9a852772ecae031e31d49"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 19246,
+        "sha256": "81d583801a47970f02b5b3b93bf5c8fb9cdc039489cf494f930eac7af7d6d247"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/package.json",
+      "before": {
+        "path": "packages/client/ui-settings-models/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2145,
+        "sha256": "31b97ef86f1763ad2f14a0acd6bcedf53df412d1f8067e98a95351739f70a57b"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2118,
+        "sha256": "2daaa2229fa844963d2a1ffc3edb23a23da6018916e9c6b05b4197b8687c3e78"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 35058,
+        "sha256": "33b691eac21b6f6a7226508015ae705174ca6404e6496ef8f2f4e2609ef8b708"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 33991,
+        "sha256": "bc40a8ac164c73800cccb90188bc4fc4ae453ae47c935dadace60b534638eb81"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/index.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7156,
+        "sha256": "12330d50c0e7d29dd04a86946975ffef8549c7bd9b3df76464f2ae8eb66ef2be"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4890,
+        "sha256": "7cede6ed4cd5f72154a69517f4dfb5ccc851546e678a4e76ed198fc789fab8ad"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/store.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/store.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18911,
+        "sha256": "9d642c5d74f6a5334af5c600460bd1e23523de8008679f6a239e2585528428ef"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/store.ts",
+        "type": "file",
+        "executable": false,
+        "size": 17842,
+        "sha256": "87f8a03a3a90ca5eb8bf76ae9e485cbbf6bb1fa32953808cacda158839443fb9"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/index.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 816,
+        "sha256": "a1ff0e591e45f234d59440f7e30f1aa96d7ed9155d53bfcd9746cf0009d28df5"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 176,
+        "sha256": "43dfea2481e5b8e1c6698327ceb5687e4a8050eb26ffe5000eb35b6cd40d1ab9"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/apply.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/apply.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 17427,
+        "sha256": "abb47a03193d04c2ac5b47ec3e146494c4a69d567639ba371fc62e47393be825"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/tests/apply.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12769,
+        "sha256": "c8da6776e8b9214ed054b5c884e366a395098220190c846f65cf638c19c63dea"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 119615,
+        "sha256": "1f79e2212744347c9b71f0ae7dfd823e95b8a061859215cd1962a1fdbf40ab30"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 119026,
+        "sha256": "ece22f061c961a7df15e225db22c66e0b979782d065db95d801f9e22923b3f4e"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 25583,
+        "sha256": "48f56eade5f448ba628ba97db69efa139b8fc9f726ac3862bc332f3d6eec2d09"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 23990,
+        "sha256": "96cb80ccdeea5c8b362f5918247436f141774e05d19d6f65e6f5d51f27a160ac"
+      },
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "vitest.config.ts",
+      "before": null,
+      "after": {
+        "path": "vitest.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 23005,
+        "sha256": "25e0a4d485e98a93428bb4b4271c310dc2755f54dd4723ad6ac6f49f7cf4438a"
+      },
+      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace."
+    },
+    {
+      "path": "vitest.shared.ts",
+      "before": null,
+      "after": {
+        "path": "vitest.shared.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1482,
+        "sha256": "3e8900b7471bffab582974b3a0a6413140d8143d41f62f19a348c41ad3a316a0"
+      },
+      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace."
+    }
+  ]
 }

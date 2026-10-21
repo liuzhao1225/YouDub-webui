@@ -9,7 +9,7 @@
 - Harness 原始公开源码：`687f282e8625c6b8d11ff58211a90524be2e4317`。选入 362 包、9,817 文件，原树 SHA-256 `3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85`。
 - `verify.mjs --scope sources` 通过：10 项归档摘要、两份 Harness Git bundle/树、原 Harness checkout、YouDub 初始快照与 bundle。原源码工作区无改动。
 - `vendor.mjs --verify-archive` 通过：校验原 tar.gz 后在独立临时目录解开，9,817 个选入文件的字节、执行位、链接均匹配原始清单。临时目录检查后释放，归档未改。
-- 固定清单 [source-manifest.json](../../../vendor/deepseek-harness/source-manifest.json) 文件哈希为 `b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c`；活动差异保存在 [fork.json](../../../vendor/deepseek-harness/fork.json)，当前尚无上游业务源码变化。
+- 固定清单 [source-manifest.json](../../../vendor/deepseek-harness/source-manifest.json) 文件哈希为 `b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c`；活动差异保存在 [fork.json](../../../vendor/deepseek-harness/fork.json)。首批业务差异限定于 `ui-settings-models`，另从同一归档原样补入两份 Vitest 配置。
 
 ## 前期调查进展
 
@@ -45,8 +45,21 @@ staging 同步删除退役的源码输入，复制时不跟随目的端已有链
 | 全新 `.cache/harness/refactor-build-check` 构建 | pnpm 冻结安装 10.9 秒；原框架 7 个构建 gate 共 73.97 秒，全部通过；325 客户端产物。属于框架构建计时，未计入首轮复制与校验，不代表桌面冷启动性能 |
 | 同 Host 页面观察 | `127.0.0.1:50031` 首屏、通用设置、模型页可用；只读观察，未改用户语言、凭据或任务 |
 | 产品与来源检查 | `npm run build:youdub`、`check:composition`、Desktop 来源收据记录通过。仍为 42 Host/269 Client 活动模块；来源规则调整没有裁剪产品功能 |
-| CI 文件与文档 | YAML 解析、融合分支触发、无旧发行命令、文档本地链接检查通过；尚未在 GitHub runner 执行 |
+| CI 文件与文档 | YAML 解析、融合分支触发、无旧发行命令、文档本地链接检查通过；首次远端执行的失败与修正见下文 |
 
-全新构建暴露依赖安装生成 `lefthook.yml` 示例文件的问题：Lefthook 的安装脚本需要 `CI=true` 才会跳过，单设 `LEFTHOOK=0` 不足。构建安装阶段已显式设 `CI=true`，清理本次生成的纯注释示例文件；重跑冻结安装通过，文件没有再次生成。未改变仓库 hooks 配置。
+全新构建暴露依赖安装生成 `lefthook.yml` 示例文件的问题：Lefthook 的安装脚本需要 `CI=true` 才会跳过，单设 `LEFTHOOK=0` 不足。构建安装阶段已显式设 `CI=true`，清理本次生成的纯注释示例文件；重跑冻结安装通过，文件没有再次生成。随后核对内容与精确创建/修改时间，仅清理本次安装生成的 `prepare-commit-msg` hook。其他 hooks 和仓库 hooks 配置未改。
+
+## 模型设置解耦与 CI 首轮结果
+
+- 原始模型模块基线：12 个文件、386 项测试通过。直接沿用原测试配置、组件和测试实现，没有另写模型设置页面。
+- 当前修改移除 `remote.session` 强制注入、账号目录读取、账号行特殊显示/排序，以及 DeepSeek onboarding 的 Host 初始化和 Client 注册。YouDub 自己的首启、已有 LLM/Settings/Credentials 接口和提供商编辑器保持原有职责。
+- 调整后的模块测试：12 个文件、382 项通过。退役专属引导与账号状态的断言同步移除；无 session 服务的加载、保存、注册与销毁已验证。其余编辑、凭据、冲突、错误和动态刷新测试继续执行。此结果尚不代替实际新 Host 的桌面验收。
+- 活动 fork 差异校验通过，原始清单未改；独立目录的 7 个框架构建 gate 全部通过。
+- [首次源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39644126912) 已完成来源、框架/产品构建、领域/前端/语言和 Harness 测试；Python 为 501 passed、24 failed。21 项失败涉及缺少 NLTK `punkt_tab`，3 项涉及字幕烧录的 FFmpeg 调用。完整链尚未通过。
+- CI 显式下载分句数据到工作区私有 `.cache/nltk_data`，并使用包含 `libass` 的 [Homebrew ffmpeg-full](https://formulae.brew.sh/formula/ffmpeg-full)，其目录显式加入该 job 的 PATH。原上游模型模块测试一并接入 CI。修正需由下一轮干净 runner 验证。
+- 失败涉及的四组本地媒体测试为 141 passed；本机已有资源，不以此替代干净 CI 或首次安装验收。
+- 当前 fork 默认目录重建 7 gate 全部通过；产品构建、61 项 Harness 集成测试、组合检查和中英日语言检查通过。
+- 同一 Desktop Host 的浏览器入口已重新打开模型设置，现有自定义提供商及原编辑器正常展示，无账号行和专属引导；未保存设置、未改凭据。返回首屏后原 Logo、大标题及历史任务仍可见。
+- 构建期间活动 Host 的 HMR 曾报 `renderSlot('root') before any 'root' registration` 和 `renderSlot('youdub.setup.models') from a disposed registration`；构建完成后重新加载可正常展示。此处只确认冷加载页面可用，HMR 生命周期缺陷仍列入 P4，不能视作已修复。后续框架候选先在独立目录构建再停止旧实例切换，避免运行中逐文件改写已挂载框架。
 
 框架构建收据见 [全新构建记录](evidence/refactor-framework-clean-build.json)。完整临时日志为 `/tmp/youdub-refactor-framework-build.log`。原生交互、完整流程、启动性能、最终体积与 Windows 均保持待验收。

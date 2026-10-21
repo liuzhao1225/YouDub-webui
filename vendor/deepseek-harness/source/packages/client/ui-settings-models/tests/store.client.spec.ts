@@ -37,13 +37,13 @@ it.each([false, true])('retains configuration diagnostics when the route is acti
   }])
 })
 
-it('places account and official before third-party providers', () => {
-  const providers = ['custom', 'deepseek-official', 'deepseek-account', 'openai']
+it('preserves directory order without a preferred provider', () => {
+  const providers = ['custom', 'deepseek-official', 'openai', 'anthropic']
   const directory = providers.map(provider => ({
     provider, displayName: provider, settingsNs: 'fixture', settingsPath: [],
   }))
   expect(joinProviderDirectory([], directory).map(row => row.provider))
-    .toEqual(['deepseek-account', 'deepseek-official', 'custom', 'openai'])
+    .toEqual(providers)
   expect(directory.map(row => row.provider)).toEqual(providers)
 })
 
@@ -84,15 +84,6 @@ const NAMESPACES = [
     revision: 0,
   },
   {
-    ns: 'llm-deepseek-account',
-    schema: {},
-    value: { baseURL: 'https://base' },
-    base: { baseURL: 'https://base' },
-    autoGenerate: true, applies: 'live' as const,
-    secrets: [],
-    revision: 0,
-  },
-  {
     ns: 'llm-pi-ai',
     schema: {},
     value: { providers: { openai: { apiKeyEnv: 'OPENAI_API_KEY' } } },
@@ -104,7 +95,6 @@ const NAMESPACES = [
 ]
 
 function api(overrides: {
-  accountAvailable?: boolean
   providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY }>>
   describeSettings?: () => Promise<RemoteAnswer<{ writable: boolean; hasDocument: boolean; namespaces: typeof NAMESPACES }>>
   describeCredentials?: (refs: readonly string[]) => Promise<RemoteAnswer<Record<string, unknown>>>
@@ -129,8 +119,6 @@ function api(overrides: {
       : remoteFail(response.result.error.message)
   }
   const face = {
-    session: { modelCatalog: async () => remoteOk({ groups: overrides.accountAvailable
-      ? [{ id: 'deepseek-account', models: [{ id: 'deepseek-flash' }] }] : [] }) },
     llm: {
       listProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.active)
@@ -539,35 +527,16 @@ describe('edge joins', () => {
 })
 
 
-it.each([false, true])('uses account availability without asking for an API key: %s', async (accountAvailable) => {
-  const { ctx, mirror, seenRefs } = api({ accountAvailable, providers: async () => ok({ providers: [{
-    provider: 'deepseek-account', displayName: 'DeepSeek Account', settingsNs: 'llm-deepseek-account', settingsPath: [], active: true,
-  }] }) })
+it('loads configured providers without a session or account service', async () => {
+  const { ctx, face, mirror, seenRefs } = api()
+  expect(face).not.toHaveProperty('session')
   const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
   await store.load()
-  const rows = store.store.getSnapshot().rows
-  expect(rows).toHaveLength(accountAvailable ? 1 : 0)
-  if (accountAvailable) {
-    expect(rows[0]).toMatchObject({ accountAvailable: true, apiKeyEnv: undefined, credential: undefined })
-    expect(providerUsable(rows[0]!)).toBe(true)
-  }
-  expect(store.store.getSnapshot().namespaces.get('llm-deepseek-account')?.ns).toBe('llm-deepseek-account')
-  expect(seenRefs).toEqual([])
-})
-
-it('removes the account row after sign-out and restores it after sign-in', async () => {
-  const overrides = { accountAvailable: true, providers: async () => ok({ providers: [{
-    provider: 'deepseek-account', displayName: 'DeepSeek Account', settingsNs: 'llm-deepseek-account', settingsPath: [], active: true,
-  }, ...DIRECTORY] }) }
-  const { ctx, mirror } = api(overrides)
-  const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
-  await store.load()
-  expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
-  overrides.accountAvailable = false
-  await store.load()
-  expect(store.store.getSnapshot().rows.map(row => row.entry.provider)).not.toContain('deepseek-account')
-  expect(store.store.getSnapshot().rows).toHaveLength(DIRECTORY.length)
-  overrides.accountAvailable = true
-  await store.load()
-  expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
+  const state = store.store.getSnapshot()
+  expect(state.status).toBe('ready')
+  expect(state.rows.map(row => row.entry.provider)).toEqual(DIRECTORY.map(row => row.provider))
+  const configured = state.rows.find(row => row.entry.provider === 'openai')!
+  expect(providerUsable(configured)).toBe(true)
+  expect(configured.credential).toEqual({ configured: true, writable: true })
+  expect(seenRefs.flat()).toContain('OPENAI_API_KEY')
 })

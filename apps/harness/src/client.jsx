@@ -27,7 +27,7 @@ import { SynthesizeNodeEditor } from '../../web/src/plugin/builtin/workflow-sett
 import themeCss, { tokens } from 'youdub:theme'
 import domainCss from 'youdub:styles'
 import css from './style.css'
-export const inject = ['slots','layout','theme','locale','remote','remote.pluginManager','remote.pluginInventory','remote.pluginRegistryProbe','configForms','settingsSchema','remote.credentials','remote.llm','remote.settings','remote.session']
+export const inject = ['slots','layout','theme','locale','remote','remote.pluginManager','remote.pluginInventory','remote.pluginRegistryProbe','configForms','settingsSchema','remote.credentials','remote.llm','remote.settings']
 const routes = [
   { path:'/', key:'studio', component:StudioPage },
   { path:'/tasks', key:'tasks', component:TasksPage },
@@ -128,7 +128,6 @@ export function apply(ctx) {
   ctx.slots.inject('shell.leading',() => ctx.slots.register({name:'shell.leading',inject:injected},Leading))
   ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id:'current-version',priority:-10,order:100,locale:'settings'},CurrentVersionRow))
   for(const id of ['developer-tools','font-size']) ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id,priority:-10},() => null))
-  for(const id of ['welcome-notice','deepseek-official']) ctx.slots.inject('settings.onboarding',() => ctx.slots.register({name:'settings.onboarding',id,priority:-10},() => null))
   ctx.slots.inject('settings.launcher',() => ctx.slots.register({name:'settings.launcher',inject:() => ({registerSettingsLauncher})},SettingsLauncher))
   const children = {'youdub.page':{kind:'keyed',scope:'root'},...Object.fromEntries(domainSlots.map(slot => [`youdub.${slot}`,{kind:'list',scope:'root'}]))}
   ctx.slots.inject('main',() => {

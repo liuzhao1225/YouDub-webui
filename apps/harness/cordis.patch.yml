@@ -182,8 +182,6 @@
   disabled: false
 - id: ui-settings-models
   disabled: false
-  config:
-    credentialOnboarding: false
 - id: ui-plugin-manager
   disabled: true
 - id: ui-settings-plugin-inventory

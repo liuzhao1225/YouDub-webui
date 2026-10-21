@@ -50,13 +50,19 @@ jobs:
           npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
           python -m venv .venv
           .venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements/base.txt -r backend/requirements-test.txt
-          brew install ffmpeg
+          .venv/bin/python -m nltk.downloader -e -d "$GITHUB_WORKSPACE/.cache/nltk_data" punkt_tab
+          echo "NLTK_DATA=$GITHUB_WORKSPACE/.cache/nltk_data" >> "$GITHUB_ENV"
+          brew install ffmpeg-full
+          echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
       - name: 从仓库源码构建框架与 YouDub
         run: |
           npm run build:framework
           node apps/harness/build-framework.mjs --verify-only
           npm run build:youdub
           npm --prefix apps/harness run check:composition
+      - name: 检查保留的上游模型设置
+        working-directory: .cache/harness/source-build
+        run: node node_modules/vitest/vitest.mjs run packages/client/ui-settings-models
       - name: 检查领域、界面和语言
         run: |
           npm run typecheck
