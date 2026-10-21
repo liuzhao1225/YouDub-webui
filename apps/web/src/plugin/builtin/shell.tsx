@@ -23,7 +23,7 @@ export function resolveRoute(routes: RouteEntry[], path: string, authenticated: 
     .filter((item) => item.params && (item.route.access === 'public' || authenticated))
     .sort((a, b) => specificity(b.route.path).localeCompare(specificity(a.route.path)))[0]
 }
-function Shell({ request, href: routeHref, useSession, useSlot, usePathname, useUpdates }: Bindings<'request' | 'href' | 'useSession' | 'useSlot' | 'usePathname' | 'useUpdates'>) {
+function Shell({ request, navigate, href: routeHref, useSession, useSlot, usePathname, useUpdates }: Bindings<'request' | 'navigate' | 'href' | 'useSession' | 'useSlot' | 'usePathname' | 'useUpdates'>) {
   const tx = useText()
   const session = useSession()
   const path = usePathname()
@@ -43,8 +43,19 @@ function Shell({ request, href: routeHref, useSession, useSlot, usePathname, use
   if (session.status === 'error') return <PageLayout className="max-w-xl"><InlineAlert>{session.error}</InlineAlert></PageLayout>
   if (session.status === 'loading') return <PageLayout className="max-w-xl"><p role="status" className="text-sm text-muted-foreground">{t.auth.sessionLoading}</p></PageLayout>
   const match = resolveRoute(routes, path, session.status === 'authenticated')
-  const Page = match?.route.component
-  const content = Page ? <Page key={`${match.route.id}:${path}`} params={match.params!} returnTo={window.history.state?.youdubReturnTo} /> : <PageLayout><PageHeader title="404"><p className="mt-2 text-muted-foreground">{language === 'zh' ? '当前插件组合未提供这个页面。' : 'This page is not provided by the active plugins.'}</p></PageHeader></PageLayout>
+  const dialog = match?.route.layout === 'dialog' ? match : undefined
+  const returnTo = window.history.state?.youdubReturnTo
+  const candidate = typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo.split('?')[0] : '/'
+  const background = dialog ? resolveRoute(routes, candidate, true) : undefined
+  const pagePath = dialog ? background?.route.layout === 'dialog' ? '/' : candidate : path
+  const pageMatch = dialog ? resolveRoute(routes, pagePath, true) : match
+  const Page = pageMatch?.route.component, DialogPage = dialog?.route.component
+  const content = Page ? <Page key={`${pageMatch.route.id}:${pagePath}`} params={pageMatch.params!} returnTo={returnTo} /> : <PageLayout><PageHeader title="404"><p className="mt-2 text-muted-foreground">{language === 'zh' ? '当前插件组合未提供这个页面。' : 'This page is not provided by the active plugins.'}</p></PageHeader></PageLayout>
+  const footerButtons = footerNavigation.map(item => {
+    const label = text(item.label, language), Icon = item.icon
+    const isDialog = routes.find(route => route.id === item.routeId)?.layout === 'dialog'
+    return <Tooltip key={item.id} content={label}><Button variant="ghost" size={Icon ? 'icon' : 'sm'} aria-label={label} aria-haspopup={isDialog ? 'dialog' : undefined} aria-expanded={isDialog ? !!dialog : undefined} onClick={() => navigate(routeHref(item.routeId))}>{Icon ? <Icon /> : label}</Button></Tooltip>
+  })
   if (session.status === 'anonymous') return content
   if (match?.route.layout === 'standalone') return <UpdateProvider request={request}>{content}</UpdateProvider>
   return <UpdateProvider request={request}><div className={cn('min-h-screen transition-[padding] duration-200 ease-out', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[248px]')}>
@@ -58,24 +69,23 @@ function Shell({ request, href: routeHref, useSession, useSlot, usePathname, use
       <nav aria-label={t.nav.primary} className={cn('mt-6 flex flex-col px-3', collapsed ? 'items-center gap-1' : 'gap-0.5')}>
         {primaryNavigation.map((item) => {
           const href = routeHref(item.routeId)
-          const active = href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`)
+          const active = href === '/' ? pagePath === '/' : pagePath === href || pagePath.startsWith(`${href}/`)
           return <SidebarLink key={item.id} href={href} label={text(item.label, language)} icon={item.icon} active={active} collapsed={collapsed} />
         })}
       </nav>
-      <div className={cn('mt-auto flex flex-col gap-3 p-3', collapsed && 'items-center')}>
-        <div className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}>{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto" />}<ThemeToggle /></div>
-        {footerNavigation.length > 0 && <nav aria-label={tx('Settings', '设置', '設定')} className={cn('flex flex-col gap-0.5', collapsed && 'items-center')}>{footerNavigation.map(item => <SidebarLink key={item.id} href={routeHref(item.routeId)} label={text(item.label, language)} icon={item.icon} collapsed={collapsed} />)}</nav>}
+      <div className={cn('mt-auto p-3', collapsed && 'flex justify-center')}>
+        <div aria-label={tx('App controls', '应用设置', 'アプリ設定')} className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}>{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto" />}<ThemeToggle />{footerButtons}</div>
       </div>
     </aside>
     <header className="glass sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
       <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark className="h-6" /></Link>
-      <div className="flex items-center gap-1"><LanguageSwitcher /><ThemeToggle /></div>
+      <div className="flex items-center gap-1"><LanguageMenuButton /><ThemeToggle />{footerButtons}</div>
     </header>
-    <div className="relative pb-24 lg:pb-0"><UpdateNotice useUpdates={useUpdates} hidden={path === '/settings'} />{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
-    <nav aria-label={t.nav.primary} className="glass fixed inset-x-0 bottom-0 z-40 grid border-t border-border pb-[env(safe-area-inset-bottom)] lg:hidden" style={{ gridTemplateColumns: `repeat(${navigation.length}, minmax(0, 1fr))` }}>
-      {[...primaryNavigation, ...footerNavigation].map((item) => {
+    <div className="relative pb-24 lg:pb-0"><UpdateNotice useUpdates={useUpdates} hidden={!!dialog} />{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
+    <nav aria-label={t.nav.primary} className="glass fixed inset-x-0 bottom-0 z-40 grid border-t border-border pb-[env(safe-area-inset-bottom)] lg:hidden" style={{ gridTemplateColumns: `repeat(${primaryNavigation.length}, minmax(0, 1fr))` }}>
+      {primaryNavigation.map((item) => {
         const href = routeHref(item.routeId)
-        const active = href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`)
+        const active = href === '/' ? pagePath === '/' : pagePath === href || pagePath.startsWith(`${href}/`)
         const Icon = item.icon
         return <Link key={item.id} href={href} aria-current={active ? 'page' : undefined} className={cn('relative flex flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] font-medium outline-none', active ? 'text-foreground' : 'text-subtle-foreground')}>
           {active && <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-brand-gradient" />}
@@ -83,12 +93,13 @@ function Shell({ request, href: routeHref, useSession, useSlot, usePathname, use
         </Link>
       })}
     </nav>
+    {DialogPage && <DialogPage key="route-dialog" params={dialog.params!} returnTo={returnTo} />}
   </div></UpdateProvider>
 }
-function Root(props: Bindings<'request' | 'href' | 'useSession' | 'useSlot' | 'usePathname' | 'useUpdates'>) { return <ThemeProvider><LanguageProvider><Shell {...props} /></LanguageProvider></ThemeProvider> }
+function Root(props: Bindings<'request' | 'navigate' | 'href' | 'useSession' | 'useSlot' | 'usePathname' | 'useUpdates'>) { return <ThemeProvider><LanguageProvider><Shell {...props} /></LanguageProvider></ThemeProvider> }
 export const name = 'client-shell'
 export const inject = ['slots', 'session', 'navigation', 'apiClient']
 export function apply(ctx: Context) {
   restoreTheme()
-  ctx.effect(() => ctx.slots.register('root', { id: 'youdub-shell', component: bindComponent(ctx, ['request', 'href', 'useSession', 'useSlot', 'usePathname', 'useUpdates'], Root) }))
+  ctx.effect(() => ctx.slots.register('root', { id: 'youdub-shell', component: bindComponent(ctx, ['request', 'navigate', 'href', 'useSession', 'useSlot', 'usePathname', 'useUpdates'], Root) }))
 }

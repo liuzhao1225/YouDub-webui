@@ -8,6 +8,7 @@ import Http from '../src/http.js'
 import Auth from '../src/auth.js'
 import Setup from '../src/setup.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
+import { builtinResources } from '../src/runtime-resources.js'
 import { DownloadClient } from '../src/setup-download.js'
 
 async function waitFor(predicate: () => boolean) {
@@ -39,9 +40,9 @@ test('authenticated resource APIs validate catalog selections and share pause/re
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: () => ({ probe: async () => ({}) }),
-      listProviders: () => [{ id: 'youdub.media', execution: 'local', available: true, models: [] },
-        { id: 'whisper', execution: 'local', label: 'Whisper', available: false, models: [] },
-        { id: 'openai', execution: 'remote', available: false, models: [] }],
+      listProviders: () => [{ id: 'youdub.media', resources: builtinResources('youdub.media'), execution: 'local', available: true, models: [] },
+        { id: 'whisper', resources: builtinResources('whisper'), execution: 'local', label: 'Whisper', available: false, models: [] },
+        { id: 'openai', resources: builtinResources('openai'), execution: 'remote', available: false, models: [] }],
     })
     owner.reflect.provide('store', { call: async (method: string, args: any) => {
       if (method === 'auth.validate') return { cookieName: 'resource_session', sessionTtlSeconds: 3600, cookieSecure: false, cookieSameSite: 'lax', credentialVersion: 'test' }
@@ -95,4 +96,51 @@ test('authenticated resource APIs validate catalog selections and share pause/re
   assert.equal(paused.models[0].status, 'paused', 'inventory reads preserve the explicit pause')
   assert.equal((await post('action', { action: 'resume', id: 'whisper' })).status, 200)
   await waitFor(() => downloads.length === 2)
+})
+
+test('declared resource groups work for external providers, share probes, and retain unavailable causes', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-declared-resources-'))
+  const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
+  const inspections: string[][] = [], refreshed: string[] = []
+  let available = true
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(this: EnvironmentSetup) {
+    this.steps = [{ id: 'python', name: 'Python 3.12', status: 'ready' }]
+  })
+  t.mock.method(EnvironmentSetup.prototype, 'probe', async (action: string, groups: string[]) => {
+    if (action === 'verify') return {}
+    assert.equal(action, 'resources')
+    inspections.push(groups)
+    return { missing: [], media: true, punkt: true, demucsSource: true }
+  })
+  const ctx = new Context()
+  const app = await ctx.plugin(async function resourceMetadataTest(owner) {
+    owner.reflect.provide('process', {})
+    owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
+    owner.reflect.provide('catalog', {
+      provider: (id: string) => ({ probe: async () => { refreshed.push(id) } }),
+      listProviders: () => ['external.first', 'external.second'].map(id => ({
+        id, resources: { dependencyGroups: [] }, execution: 'local', available,
+        unavailableReason: available ? null : 'provider probe failed: missing executable', models: [{ id: 'custom' }],
+      })),
+    })
+    await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
+    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
+  })
+  t.after(async () => {
+    await app.dispose(); await rm(root, { recursive: true })
+    if (previous === undefined) delete process.env.YOUDUB_DESKTOP_DATA_DIR
+    else process.env.YOUDUB_DESKTOP_DATA_DIR = previous
+  })
+  ctx.emit('app/ready')
+  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
+  const selections = [{ providerId: 'external.first', model: 'custom' }, { providerId: 'external.second', model: 'custom' }]
+  const ready = await ctx.setup.checkResources(selections)
+  assert.equal(ready.status, 'ready')
+  assert.ok(ready.requirements.every(item => item.automatic))
+  assert.deepEqual(inspections, [['base']], 'identical declared dependency groups share one inspection')
+  assert.deepEqual(refreshed, ['external.first', 'external.second'])
+  available = false
+  const failed = await ctx.setup.checkResources(selections)
+  assert.equal(failed.status, 'missing')
+  assert.ok(failed.requirements.every(item => !item.ready && item.reason?.includes('missing executable')))
 })

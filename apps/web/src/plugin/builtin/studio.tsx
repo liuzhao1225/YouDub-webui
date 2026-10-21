@@ -1,6 +1,6 @@
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
-import { useState, useSyncExternalStore, type FormEvent, type ReactNode, type SetStateAction } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { ArrowRight, ChevronRight, Link2, Loader2, Sparkles, X } from 'lucide-react'
 import { Link, text, type Catalog, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { videoSource } from '@youdub/sdk/video-source'
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ACTIVE_STATUSES, TaskProgress, TaskState, taskDisplayName } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
+import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../web-react'
 import { StudioDraftStore, type ComposerDraft } from '@/runtime/studio-draft'
 import { GraphStudio } from './workflows'
 import { UploadSlot } from './media-upload'
@@ -25,16 +26,24 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
   const tx = useText()
   const { language } = useI18n()
   const draftKey = `${workflow.id}:${workflow.version}`
-  const { composers } = useSyncExternalStore(draftStore.subscribe, draftStore.getSnapshot, draftStore.getSnapshot)
+  const { composers, submissions } = useObservableSource(draftStore)
+  const submissionKey = `composer:${draftKey}`
+  const submission = submissions[submissionKey]
+  const activeView = useActiveView()
   const [initialDraft] = useState<ComposerDraft>(() => ({ files: {}, sourceUrl: '', config: structuredClone(workflow.defaults ?? defaultConfig(workflow.configSchema) ?? {}) as JsonObject }))
   const { config, files, sourceUrl } = composers[draftKey] ?? initialDraft
   const updateDraft = (change: (current: ComposerDraft) => ComposerDraft) => draftStore.set('composers', current => ({ ...current, [draftKey]: change(current[draftKey] ?? initialDraft) }))
   const setConfig = (config: JsonObject) => updateDraft(current => ({ ...current, config }))
   const setFiles = (files: SetStateAction<Record<string, File>>) => updateDraft(current => ({ ...current, files: typeof files === 'function' ? files(current.files) : files }))
   const setSourceUrl = (sourceUrl: string) => updateDraft(current => ({ ...current, sourceUrl }))
-  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [pendingId, setPendingId] = useState('')
+  const [localError, setError] = useState('')
+  const error = submission?.error || localError, busy = submission?.busy ?? false, pendingId = submission?.id ?? ''
+  usePendingUnload(!!pendingId)
+  useEffect(() => { onLockChange(busy || !!pendingId) }, [busy, pendingId, onLockChange])
   const [linkTouched, setLinkTouched] = useState(false)
   function openTask(task: TaskView) {
+    if (!activeView.current) return
+    draftStore.clearSubmission(submissionKey)
     draftStore.set('composers', current => { const next = { ...current }; delete next[draftKey]; return next })
     navigate(`/tasks/${task.id}`)
   }
@@ -57,10 +66,9 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
     const body = new FormData()
     body.append('request', JSON.stringify({ id, workflowId: workflow.id, workflowVersion: workflow.version, config: taskConfig, ...(source ? { sourceName: source.url } : {}) }))
     for (const [name, file] of Object.entries(files)) body.append(`input.${name}`, file)
-    setBusy(true); setError(''); setPendingId(id); onLockChange(true)
-    try { const task = await request<TaskView>('/api/v2/tasks', { method: 'POST', body }); openTask(task) }
-    catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
-    finally { setBusy(false) }
+    setError('')
+    const task = await draftStore.submit(submissionKey, request, body)
+    if (task) openTask(task)
   }
   return <div className="relative">
     <div aria-hidden="true" className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 bg-[radial-gradient(55%_60%_at_30%_45%,rgb(251_114_153/0.16),transparent_70%),radial-gradient(50%_60%_at_75%_55%,rgb(0_174_236/0.16),transparent_70%)] opacity-70 blur-2xl dark:opacity-100" />
@@ -94,12 +102,12 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
         </div>
       </div>
     </form>
-    {translationMissing && <div className="mt-4"><InlineAlert>{tx('Configure a translation connection and model before starting a task.', '开始任务前，请配置翻译连接和模型。', 'タスクを開始する前に翻訳の接続とモデルを設定してください。')} <Link href="/settings/connections" className="underline underline-offset-4">{tx('Open settings', '打开设置', '設定を開く')}</Link></InlineAlert></div>}
+    {translationMissing && <div className="mt-4"><InlineAlert>{tx('Configure a translation connection and model before starting a task.', '开始任务前，请配置翻译连接和模型。', 'タスクを開始する前に翻訳の接続とモデルを設定してください。')} <Link href="/settings/models" className="underline underline-offset-4">{tx('Open settings', '打开设置', '設定を開く')}</Link></InlineAlert></div>}
     {(error || (pendingId && !busy)) && <div className="mt-4 space-y-3">
       {error && <InlineAlert>{error}</InlineAlert>}
       {pendingId && !busy && <div className="space-y-2 text-sm"><p className="break-all text-muted-foreground">{tx('Task ID:', '任务 ID：', 'タスク ID：')}{pendingId}</p><div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${pendingId}`).then(openTask).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Check task status', '查询创建结果', 'タスクの状態を確認')}</Button>
-        <Button type="button" variant="outline" onClick={() => { setBusy(true); void request<void>(`/api/v2/imports/${pendingId}`, { method: 'DELETE' }).then(() => { setPendingId(''); setError(''); onLockChange(false) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Clear this import', '清理本次导入', '今回のインポートを削除')}</Button>
+        <Button type="button" variant="outline" onClick={() => { void draftStore.check(submissionKey, request).then(task => { if (task) openTask(task) }) }}>{tx('Check task status', '查询创建结果', 'タスクの状態を確認')}</Button>
+        <Button type="button" variant="outline" onClick={() => { void draftStore.discard(submissionKey, request).then(cleared => { if (cleared && activeView.current) setError('') }) }}>{tx('Clear this import', '清理本次导入', '今回のインポートを削除')}</Button>
       </div></div>}
     </div>}
   </div>
@@ -114,7 +122,7 @@ function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowD
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
   const { language, t } = useI18n()
-  const { selected } = useSyncExternalStore(draftStore.subscribe, draftStore.getSnapshot, draftStore.getSnapshot)
+  const { selected } = useObservableSource(draftStore)
   const setSelected = (id: string) => draftStore.set('selected', `workflow:${id}`)
   const [locked, setLocked] = useState(false)
   const workflow = catalog?.workflows.find((item) => item.id === 'youdub.graph') ?? catalog?.workflows.find((item) => `workflow:${item.id}` === selected) ?? catalog?.workflows[0]
@@ -164,6 +172,7 @@ export const inject = ['slots', 'apiClient', 'navigation']
 export function apply(ctx: Context) {
   const draftStore = new StudioDraftStore()
   ctx.effect(() => () => draftStore.reset())
+  protectPendingSubmissions(ctx, draftStore)
   const BoundStudio = bindComponent(ctx, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'], Studio)
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'studio', path: '/', component: () => <BoundStudio draftStore={draftStore} />, access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'studio', routeId: 'studio', label: { default: 'Studio', translations: { zh: '工作台', ja: 'スタジオ' } }, order: 10, icon: Sparkles }))

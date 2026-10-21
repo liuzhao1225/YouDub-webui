@@ -30,6 +30,7 @@ test('localize requires available media tools before accepting any output mode',
   for (const output_mode of ['subtitles', 'dubbing', 'both']) {
     const config = { source_language: 'en', target_language: 'zh', output_mode, keep_background: false, asr: select('asr'), translation: select('translation'), tts: output_mode === 'subtitles' ? null : { ...select('tts'), voice: { mode: 'source_clone' } }, separation: output_mode === 'subtitles' ? null : select('separation') }
     const workflow = ctx.catalog.workflow('youdub.localize')
+    assert.ok('plan' in workflow)
     available = false
     assert.deepEqual(await workflow.validate({ video: { id: "input-video", schemaId: "video/mp4/v1" } }, config, ctx.catalog), [{ code: 'INVALID_CONFIG', message: 'ffmpeg unavailable', field: 'video' }])
     available = true

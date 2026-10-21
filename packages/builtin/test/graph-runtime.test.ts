@@ -100,7 +100,7 @@ async function setup(t: any) {
     taskFiber = await ctx.plugin(Tasks, { pollMs: 5 }); ctx.emit('app/ready')
   }
   ctx.emit('app/ready')
-  return { ctx, create, until, command, executions, provider, restart }
+  return { ctx, create, until, command, executions, provider, workflow, identity, restart }
 }
 
 test('a persisted review releases the slot, survives restart and resumes without executing the reviewed node again', async t => {
@@ -557,4 +557,38 @@ test('review in the claim-to-invocation gap retains the active execution slot', 
   } finally { release() }
   await until(created.id, 'succeeded')
   assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right', 'join'])
+})
+
+test('task lists expose status summaries while detail and node history retain complete results', async t => {
+  const { ctx, create, until } = await setup(t)
+  const task = await create(graph('left'))
+  const detail = await until(task.id, 'paused')
+  assert.ok(detail.steps.some((step: StepState) => step.resultRevisions?.length))
+  const summary = (await ctx.tasks.list()).items.find(item => item.id === task.id)!
+  assert.equal(summary.workflowSource?.title, detail.graphSnapshot.title)
+  assert.deepEqual(summary.steps.map(step => step.status), detail.steps.map((step: StepState) => step.status))
+  for (const field of ['plan', 'config', 'inputs', 'connections', 'graphSnapshot', 'externalRequests']) assert.ok(!(field in summary), field)
+  for (const step of summary.steps) {
+    assert.ok(!('outputs' in step))
+    assert.ok(!('resultRevisions' in step))
+  }
+  const node = await ctx.tasks.node(task.id, 'left')
+  assert.ok(node.resultRevisions.length)
+  assert.ok(node.step.outputs.document)
+})
+
+test('reviewed upgrades preserve pending node approval and compatible result reuse', async t => {
+  const { ctx, create, until, command, executions, workflow, identity, provider } = await setup(t)
+  const task = await create(graph('left')), paused = await until(task.id, 'paused')
+  identity.integrity = 'reviewed-graph'; workflow.integrity = identity.integrity
+  await assert.rejects(ctx.tasks.approve(task.id, 'left', command(paused, 'left')), { code: 'WORKFLOW_VERSION_UNAVAILABLE' })
+  workflow.compatibleIntegrities = ['graph-fixed']
+  const describe = provider.describe
+  provider.describe = () => ({ ...describe(), compatibleIntegrities: ['graph-fixed'] })
+  await ctx.tasks.approve(task.id, 'left', command(paused, 'left'))
+  const completed = await until(task.id, 'succeeded')
+  assert.equal(executions.filter(call => call.taskId === task.id && call.stepId === 'left').length, 1)
+  const preview = await ctx.tasks.rerunPreview(task.id, { id: randomUUID(), config: {}, graphDocument: completed.graphSnapshot, expectedAttempt: completed.attempt, expectedTaskRevision: completed.revision })
+  assert.deepEqual(preview.reusedSteps, ['source', 'left', 'right', 'join'])
+  assert.deepEqual(preview.dirtySteps, [])
 })

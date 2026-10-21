@@ -8,10 +8,14 @@ export function workflowTemplates(catalog: CatalogService, settings: JsonObject)
     const document = structuredClone(source) as WorkflowDocument
     document.id = id; document.title = title
     for (const node of document.nodes) {
+      if (node.type === 'youdub.translate' && node.provider.id === 'openai') {
+        const selected = catalog.listProviders().find(provider => provider.capability === 'translation' && !provider.legacy && provider.available && provider.id.startsWith('llm.'))
+        if (selected) node.provider = { id: selected.id, device: 'remote' }
+      }
       const provider = catalog.listProviders().find(provider => provider.id === node.provider.id)
       if (node.provider.model) continue
       const connection = (settings.connections ?? []).find((item: JsonObject) => item.adapter === (provider?.adapter ?? provider?.id))
-      const model = connection?.model ?? provider?.models?.[0]?.id
+      const model = connection?.model ?? provider?.models?.find(item => item.available !== false)?.id
       if (model) node.provider = { ...node.provider, model, device: node.provider.device ?? provider?.models?.find(item => item.id === model)?.devices?.[0] ?? (provider?.execution === 'remote' ? 'remote' : undefined) }
     }
     return document

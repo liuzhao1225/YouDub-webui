@@ -48,6 +48,33 @@ test('independent templates compile without mutating graph and only freeze selec
   assert.equal(plans[3].bindings.export.options.outputMode, 'both')
 })
 
+test('new templates use a configured model provider and reject a model with insufficient output capacity', async t => {
+  const { ctx, compile } = await setup(t)
+  const provider = {
+    id: 'llm.custom', label: 'Custom gateway', pluginId: 'youdub.models', pluginVersion: '1', integrity: 'sha256:models',
+    operations: [operations.translate], capability: 'translation', execution: 'remote' as const, available: true,
+    models: [
+      { id: 'small', devices: ['remote'], available: false, unavailableReason: 'Maximum output is below 65535.', source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'] },
+      { id: 'translation-large', devices: ['remote'], available: true, source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'] },
+    ],
+  }
+  const plugin = await ctx.plugin({ inject: ['catalog'], apply(scope) {
+    scope.effect(() => scope.catalog.registerProvider({ id: provider.id, describe: () => provider,
+      probe: async () => ({ available: true }), validateCorrection: validateMediaCorrection,
+      execute: async () => { throw new Error('Compilation must not execute providers') },
+    }))
+  } })
+  t.after(() => plugin.dispose())
+  const document = workflowTemplates(ctx.catalog, {})[0].document
+  const node = document.nodes.find(node => node.id === 'translate')!
+  assert.deepEqual(node.provider, { id: 'llm.custom', model: 'translation-large', device: 'remote' })
+  const result = await compile(document)
+  assert.equal(result.plan.bindings.translate.providerId, provider.id)
+  node.provider.model = 'small'
+  assert.ok(Graph.inspectGraph(document, ctx.catalog).diagnostics.some(item => item.nodeId === 'translate' && item.message.includes('65535')))
+  await assert.rejects(compile(document))
+})
+
 test('graph validation locates incompatible edges, cycles, missing ports and disconnected nodes', async t => {
   const { ctx, subtitles } = await setup(t)
   const invalid = structuredClone(subtitles)
@@ -115,4 +142,18 @@ test('correction semantics preserve segment identity and normalize changed word 
   assert.notEqual(output.transcript, original)
   request.patch.transcript.segments[0].id = 'other'
   assert.throws(() => validateMediaCorrection(request), /IDs/)
+})
+
+test('third-party nodes keep their own semantics for fields named sourceLanguage and targetLanguage', async t => {
+  const { ctx, compile } = await setup(t)
+  const id = 'thirdparty.text', output = { name: 'file', kind: 'artifact' as const, schemaId: 'file/v1', required: true }
+  const dispose = ctx.catalog.registerProvider({ id, describe: () => ({ id, label: 'Text', pluginId: id, pluginVersion: '1', integrity: 'test', available: true,
+    operations: [{ id: 'text.normalize/v1', inputSchema: { type: 'object', properties: {} }, outputs: [output], node: { type: id, version: '1', label: 'Normalize', category: 'Text', inputs: [], defaults: {}, configSchema: { type: 'object', properties: { sourceLanguage: { type: 'string' }, targetLanguage: { type: 'string' } } } } }],
+  }), probe: async () => ({}), execute: async () => { throw new Error('No execution expected') } })
+  t.after(dispose)
+  const graph: WorkflowDocument = { format: 'youdub.workflow', formatVersion: 1, id: 'custom', title: 'Normalize',
+    nodes: [{ id: 'normalize', type: id, typeVersion: '1', provider: { id }, config: { sourceLanguage: 'en', targetLanguage: 'en' }, autoContinue: true }], edges: [], inputs: [],
+    outputs: [{ id: 'text', label: 'Text', kind: 'artifact', schemaId: 'file/v1', required: true, source: { nodeId: 'normalize', portId: 'file' } }], presentation: { positions: {}, viewport: { x: 0, y: 0, zoom: 1 } } }
+  const result = await (ctx.catalog.workflow('youdub.graph') as GraphWorkflowDefinition).graph.compile({ document: graph, inputs: {}, nodeRuntimeInputs: {} }, ctx.catalog)
+  assert.equal(result.plan.bindings.normalize.options.targetLanguage, 'en')
 })

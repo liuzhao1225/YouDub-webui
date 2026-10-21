@@ -9,7 +9,7 @@ export type { Observable, Navigation, ApiClient, Session, SessionSnapshot, Reque
 export { bindComponent, UpdateProvider } from './web-react'
 export type { ClientBindings, Bindings, UseQuery } from './web-react'
 export type RouteProps = { params: Record<string, string>; returnTo?: string }
-export type RouteEntry = { id: string; path: string; component: ComponentType<RouteProps>; access: 'public' | 'authenticated'; layout?: 'app' | 'standalone' }
+export type RouteEntry = { id: string; path: string; component: ComponentType<RouteProps>; access: 'public' | 'authenticated'; layout?: 'app' | 'standalone' | 'dialog' }
 export type NavigationEntry = { id: string; label: LocalizedText; routeId: string; order?: number; placement?: 'main' | 'footer'; icon?: ComponentType<{ className?: string }> }
 export type EditorProps = { value: JsonObject; schema: JsonSchema; diagnostics: Diagnostic[]; readOnly: boolean; mode?: 'options' | 'configuration'; onChange(value: JsonObject): void }
 export type PanelProps = { task: TaskView; refresh(): void }

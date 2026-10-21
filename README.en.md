@@ -70,7 +70,7 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 - **Subtitle display.** Split display cues at commas, Chinese enumeration commas and dashes, merge very short cues, and hide trailing separator punctuation.
 - **Task management.** View covers, step progress, errors and artifacts; cancel, retry, rerun, play or download results.
 
-The workspace contains basic choices such as video, languages and output mode. Settings holds model, device, voice, subtitle alignment and background-audio defaults, along with service connections.
+The workspace lets you choose a video and workflow, then adjust the quick settings declared by its nodes. Languages, models, devices, voices and subtitle options belong to workflow nodes. Settings manages model providers, the local environment and model installation.
 
 ## Interface Preview
 
@@ -97,8 +97,8 @@ Task details: preview the video, inspect processing steps, and download dubbed a
 
 First startup prepares the base runtime. Models and inference dependencies are prepared for the selected workflow. See the [installation guide](docs/upgrade.md) for requirements and upgrade instructions.
 
-1. In Settings, configure the translation connection, check required model readiness, and save processing defaults.
-2. In the workspace, import a video, select languages and an output mode, and create a task.
+1. Add a provider, API key and translation model during first setup or in Settings → Models.
+2. Import a video in the workspace, choose a workflow and adjust its node options, then prepare the required resources and create a task.
 3. In the task library, follow progress and play or download the result.
 
 ## Community
@@ -149,7 +149,7 @@ The default data directory is `~/Library/Application Support/YouDub` on macOS, `
 | Capability | Default provider | Model path, relative to the data directory |
 | --- | --- | --- |
 | Speech recognition | Whisper | `models/whisper/`, for example `tiny.pt`; also requires the `punkt_tab` data installed above |
-| Translation | OpenAI-compatible API | Configure the connection, key and model in Settings |
+| Translation | Provider catalog and custom compatible endpoints | Configure the provider, key and model in Settings → Models; the model must meet the output-token requirement |
 | Speech generation | VoxCPM2 | `models/voxcpm/VoxCPM2/` |
 | Vocal separation | Demucs htdemucs | `models/demucs/955717e8-8726e21a.th` |
 | Subtitle alignment | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |

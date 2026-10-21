@@ -1,7 +1,8 @@
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
+import { protectPendingSubmissions, useObservableSource } from '../web-react'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, SlidersHorizontal, Trash2, Undo2, Upload, X } from 'lucide-react'
 import { Link, text, type Diagnostic, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { WorkflowCanvas } from './workflow-canvas'
 import { GraphPorts, NodeSettings, SynthesizeNodeEditor } from './workflow-settings'
-import { blankWorkflow, parseWorkflow, serializeWorkflowEdits, workflowDrafts } from './workflow-utils'
+import { blankWorkflow, parseWorkflow, serializeWorkflowEdits, workflowDrafts, workflowViews } from './workflow-utils'
 import { useUnsavedChanges } from './workflow-guard'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { WorkflowOptions, optionPillClassName } from './workflow-options'
@@ -38,7 +39,7 @@ function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'
   return <Page>
     <PageHeader title={tx('Workflows', '工作流', 'ワークフロー')} actions={<><Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Upload />{tx('Import', '导入', 'インポート')}</Button><Button onClick={() => navigate('/workflows/new')}><Plus />{tx('New workflow', '新建工作流', '新規ワークフロー')}</Button><input ref={input} type="file" accept=".json,.workflow.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file) }} /></>} />
     {(error || failure) && <InlineAlert>{error || failure}</InlineAlert>}
-    {data?.legacyDefaultsMigration?.status === 'blocked' && <InlineAlert><p>{tx('Previous processing preferences could not be migrated. The original configuration is retained.', '原处理偏好迁移失败，原配置已保留。', '以前の処理設定を移行できませんでした。元の設定は保持されています。')}</p><ul className="mt-2 list-inside list-disc">{data.legacyDefaultsMigration.diagnostics.map((item, index) => <li key={index}>{item.nodeId ? `${item.nodeId}: ` : ''}{item.message}</li>)}</ul></InlineAlert>}
+    {data?.legacyDefaultsMigration?.status === 'blocked' && <InlineAlert><p>{tx('Previous processing preferences could not be migrated. The original configuration is retained.', '原处理偏好迁移失败，原配置已保留。', '以前の処理設定を移行できませんでした。元の設定は保持されています。')}</p><ul className="mt-2 list-inside list-disc">{data.legacyDefaultsMigration.diagnostics.map((item, index) => <li key={index}>{item.nodeId ? `${item.nodeId}: ` : ''}{item.message}</li>)}</ul><Button className="mt-3" variant="outline" size="sm" disabled={busy} onClick={() => { setBusy(true); setFailure(''); void request('/api/v2/workflow-documents/migrate-defaults', { method: 'POST' }).then(refresh).catch((failure: Error) => setFailure(failure.message)).finally(() => setBusy(false)) }}>{tx('Retry migration', '重试迁移', '移行を再試行')}</Button></InlineAlert>}
     {error && <Button variant="outline" onClick={refresh}>{tx('Retry', '重试', '再試行')}</Button>}
     {!data && !error && <Loader2 className="size-5 animate-spin" />}
     {data && !data.items.length && <p className="text-sm text-muted-foreground">{tx('No workflows available', '暂无工作流', 'ワークフローがありません')}</p>}
@@ -81,10 +82,11 @@ function SavedEditor({ id, nodeId, types, request, navigate, replace, blockNavig
 
 function Editor({ initial, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { initial: WorkflowDocumentRecord; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
-  const initialDraft = workflowDrafts.get(initial.id)
+  const [initialDraft] = useState(() => workflowDrafts.get(initial.id))
+  const [initialView] = useState(() => { const view = workflowViews.get(initial.id); return view?.revision === initial.revision ? view : undefined })
   const [sourceTask] = useState(() => new URLSearchParams(window.location.search).get('sourceTask'))
   const sourceQuery = sourceTask ? `?sourceTask=${encodeURIComponent(sourceTask)}` : ''
-  const [document, setDocument] = useState<WorkflowDocument>(() => structuredClone(initialDraft?.document ?? initial.document))
+  const [document, setDocument] = useState<WorkflowDocument>(() => structuredClone(initialDraft?.document ?? (initialView ? { ...initial.document, presentation: { ...initial.document.presentation, viewport: initialView.viewport } } : initial.document)))
   const [saved, setSaved] = useState(initialDraft?.saved ?? serializeWorkflowEdits(initial.document))
   const [revision, setRevision] = useState(initialDraft?.revision ?? initial.revision)
   const [selected, setSelected] = useState<string | undefined>(nodeId), [panel, setPanel] = useState<'nodes' | 'ports' | 'run' | null>(() => new URLSearchParams(window.location.search).get('run') === '1' ? 'run' : initial.id === 'new' && !initialDraft?.document.nodes.length ? 'nodes' : null)
@@ -93,8 +95,8 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
   const [validated, setValidated] = useState(false)
   const [undo, setUndo] = useState<WorkflowDocument[]>(initialDraft?.undo ?? []), [redo, setRedo] = useState<WorkflowDocument[]>(initialDraft?.redo ?? [])
-  const [fitOnLoad] = useState(!initialDraft?.canvasViewed)
-  const canvasViewed = useRef(initialDraft?.canvasViewed ?? false)
+  const [fitOnLoad] = useState(!(initialDraft?.canvasViewed ?? initialView?.canvasViewed))
+  const canvasViewed = useRef(initialDraft?.canvasViewed ?? initialView?.canvasViewed ?? false)
   const addAtCenter = useRef<((type: NodeTypeDefinition) => void) | null>(null)
   const [runLocked, setRunLocked] = useState(false)
   const runLock = useRef(false), allowLeave = useRef(false)
@@ -116,7 +118,11 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
   const current = useRef(document)
   const history = useRef({ undo, redo })
   useEffect(() => { current.current = document; history.current = { undo, redo } }, [document, undo, redo])
-  useEffect(() => { if (initial.id !== 'new' || !revision) workflowDrafts.set(initial.id, { document, saved, revision, origin: initial.origin, undo, redo, canvasViewed: canvasViewed.current }) }, [document, saved, revision, initial.id, initial.origin, undo, redo])
+  useEffect(() => {
+    if (dirty) workflowDrafts.set(initial.id, { document, saved, revision, origin: initial.origin, undo, redo, canvasViewed: canvasViewed.current })
+    else workflowDrafts.delete(initial.id)
+    workflowViews.set(initial.id, { revision, viewport: document.presentation.viewport, canvasViewed: canvasViewed.current })
+  }, [document, saved, revision, initial.id, initial.origin, undo, redo, dirty])
   const change = useCallback((next: WorkflowDocument, checkpoint = true) => {
     if (runLock.current || JSON.stringify(next) === JSON.stringify(current.current)) return
     if (checkpoint) {
@@ -164,10 +170,10 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
     const url = URL.createObjectURL(blob), anchor = window.document.createElement('a')
     anchor.href = url; anchor.download = `${document.title.replace(/[\\/:*?"<>|]/g, '-') || 'workflow'}.workflow.json`; anchor.click(); URL.revokeObjectURL(url)
   }
-  const openNode = (id: string) => { if (runLock.current) return; workflowDrafts.set(initial.id, { document: current.current, saved, revision, origin: initial.origin, ...history.current, canvasViewed: canvasViewed.current }); navigate(`/workflows/${initial.id}/nodes/${id}${sourceQuery}`) }
+  const openNode = (id: string) => { if (runLock.current) return; if (serializeWorkflowEdits(current.current) !== saved) workflowDrafts.set(initial.id, { document: current.current, saved, revision, origin: initial.origin, ...history.current, canvasViewed: canvasViewed.current }); workflowViews.set(initial.id, { revision, viewport: current.current.presentation.viewport, canvasViewed: canvasViewed.current }); navigate(`/workflows/${initial.id}/nodes/${id}${sourceQuery}`) }
   const onStarted = () => { allowLeave.current = true; guard.bypass() }
   const active = document.nodes.find((node) => node.id === (nodeId ?? selected))
-  const visibleTypes = types.filter((type) => `${text(type.label, language)} ${type.type} ${type.category}`.toLowerCase().includes(search.toLowerCase()))
+  const visibleTypes = types.filter((type) => !type.provider.legacy && `${text(type.label, language)} ${type.type} ${type.category}`.toLowerCase().includes(search.toLowerCase()))
   const Layout = nodeId ? Page : 'main'
   return <Layout className={nodeId ? undefined : 'flex h-[calc(100dvh-8.5rem)] min-h-[32rem] flex-col lg:h-dvh'}>
     {guard.dialog}
@@ -180,6 +186,7 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
       {!nodeId && <Button size="sm" disabled={editingLocked || !document.nodes.length} onClick={() => { setSelected(undefined); setPanel('run') }}><Play />{tx('Run', '运行', '実行')}</Button>}
     </header>
     {error && <div className="px-4 py-2"><InlineAlert>{error}</InlineAlert></div>}
+    {dirty && initial.revision > revision && <div className="px-4 py-2"><InlineAlert>{tx('This draft is based on an older workflow revision. Save a copy to keep your changes.', '此草稿基于旧版本工作流，可另存副本保留修改。', 'この下書きは以前のバージョンに基づいています。変更を残すにはコピーを保存してください。')}</InlineAlert></div>}
     {!!diagnostics.length && <div className="max-h-48 space-y-2 overflow-auto border-b border-border px-4 py-2"><WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} disabled={editingLocked} onSelect={(item) => { if (item.nodeId) { setSelected(item.nodeId); setPanel(null) } }} /></div>}
     {validated && <p role="status" className="border-b border-border px-4 py-2 text-xs text-status-success-fg">{tx('Workflow valid', '校验通过', '検証に成功しました')}</p>}
     {nodeId ? active ? <section className="rounded-2xl border border-border bg-card"><NodeSettings useSlot={useSlot} document={document} node={active} types={types} readOnly={editingLocked} onChange={change} onDelete={() => { workflowDrafts.set(initial.id, { document: current.current, saved, revision, origin: initial.origin, ...history.current, canvasViewed: canvasViewed.current }); navigate(`/workflows/${initial.id}${sourceQuery}`) }} /></section> : <InlineAlert>{tx('Node not found.', '节点不存在。', 'ノードが見つかりません。')}</InlineAlert> : <>
@@ -190,7 +197,7 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
         <div className="ml-auto flex gap-1">{initial.origin === 'user' && revision > 0 && <Button size="icon-sm" variant="ghost" aria-label={tx('Save as', '另存为', '名前を付けて保存')} disabled={editingLocked} onClick={() => void save(true).catch(() => undefined)}><Copy /></Button>}<Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx('Export workflow', '导出工作流', 'ワークフローをエクスポート')} onClick={exportFile}><Download /></Button></div>
       </div>
       <div className="workflow-editor-layout flex-1">
-        <WorkflowCanvas document={document} types={types} selected={selected} disabled={editingLocked} fitOnLoad={fitOnLoad} addNodeRef={addAtCenter} onReady={() => { canvasViewed.current = true; const draft = workflowDrafts.get(initial.id); if (draft) draft.canvasViewed = true }} onSelect={(id) => { if (!runLock.current) { setSelected(id); setPanel(id?.startsWith('$') ? 'ports' : null) } }} onChange={change} onCheckpoint={() => { if (!runLock.current) { const nextUndo = [...history.current.undo.slice(-99), current.current]; history.current = { undo: nextUndo, redo: [] }; setUndo(nextUndo); setRedo([]) } }} onOpen={openNode} />
+        <WorkflowCanvas document={document} types={types} selected={selected} disabled={editingLocked} fitOnLoad={fitOnLoad} addNodeRef={addAtCenter} onReady={() => { canvasViewed.current = true; const draft = workflowDrafts.get(initial.id); if (draft) draft.canvasViewed = true; workflowViews.set(initial.id, { revision, viewport: current.current.presentation.viewport, canvasViewed: true }) }} onSelect={(id) => { if (!runLock.current) { setSelected(id); setPanel(id?.startsWith('$') ? 'ports' : null) } }} onChange={change} onCheckpoint={() => { if (!runLock.current) { const nextUndo = [...history.current.undo.slice(-99), current.current]; history.current = { undo: nextUndo, redo: [] }; setUndo(nextUndo); setRedo([]) } }} onOpen={openNode} />
         {(panel || active) && <aside className="workflow-inspector">
           {active && !panel ? <NodeSettings useSlot={useSlot} document={document} node={active} types={types} readOnly={editingLocked} onChange={change} onClose={() => setSelected(undefined)} onOpen={() => openNode(active.id)} /> : <>
             <div className="flex items-center justify-between border-b border-border p-4"><h2 className="font-semibold">{panel === 'nodes' ? tx('Nodes', '节点', 'ノード') : panel === 'run' ? tx('Run workflow', '运行工作流', 'ワークフローを実行') : tx('Inputs / outputs', '输入 / 输出', '入力 / 出力')}</h2><Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx('Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setPanel(null)}><X /></Button></div>
@@ -211,7 +218,7 @@ export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = []
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
   const [localStore] = useState(() => new StudioDraftStore())
   const store = draftStore ?? localStore
-  const { selected, selectedGraph, draft, overrides } = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
+  const { selected, selectedGraph, draft, overrides } = useObservableSource(store)
   const setSelected = (value: string) => store.set('selected', value)
   const setSelectedGraph = (value: string) => store.set('selectedGraph', value)
   const [locked, setLocked] = useState(false)
@@ -229,19 +236,23 @@ export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = []
   </Select>
   return <section className="space-y-4">
     {(documents.error || types.error) && <InlineAlert>{documents.error || types.error}</InlineAlert>}
-    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => { store.reset(); lockChanged(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
+    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent submissionStore={store} draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => { store.clearGraph(record.id); lockChanged(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
   </section>
 }
 export const name = 'client-workflows'
 export const inject = ['slots', 'apiClient', 'navigation']
 export function apply(ctx: Context) {
+  const submissionStore = new StudioDraftStore()
+  ctx.effect(() => () => submissionStore.reset())
+  protectPendingSubmissions(ctx, submissionStore)
+  const BoundTaskNode = bindComponent(ctx, ['request', 'navigate', 'blockNavigation', 'useQuery', 'useSlot'], TaskNodePage)
   ctx.effect(() => ctx.slots.register('workflow.node.editors', { id: 'youdub.synthesize', component: bindComponent(ctx, ['useSlot'], SynthesizeNodeEditor) }))
   ctx.effect(() => ctx.slots.register('workflow.node.details', { id: 'youdub.transcript', component: TranscriptNodeDetails }))
   ctx.effect(() => ctx.slots.register('workflow.node.details', { id: 'youdub.translation', component: TranslationNodeDetails }))
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflows', path: '/workflows', component: bindComponent(ctx, ['request', 'navigate', 'useWorkflowDocuments'], WorkflowLibrary), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflow-editor', path: '/workflows/:id', component: bindComponent(ctx, ['request', 'navigate', 'replace', 'blockNavigation', 'useQuery', 'useSlot', 'useWorkflowResources'], WorkflowRoute), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflow-node', path: '/workflows/:id/nodes/:nodeId', component: bindComponent(ctx, ['request', 'navigate', 'replace', 'blockNavigation', 'useQuery', 'useSlot', 'useWorkflowResources'], WorkflowRoute), access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'task-node', path: '/tasks/:id/nodes/:nodeId', component: bindComponent(ctx, ['request', 'navigate', 'blockNavigation', 'useQuery', 'useSlot'], TaskNodePage), access: 'authenticated' }))
+  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'task-node', path: '/tasks/:id/nodes/:nodeId', component: props => <BoundTaskNode {...props} submissionStore={submissionStore} />, access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'workflows', routeId: 'workflows', label: { default: 'Workflows', translations: { zh: '工作流', ja: 'ワークフロー' } }, order: 25, icon: GitBranch }))
   ctx.effect(() => ctx.slots.register('task.detail.panels', { id: 'workflow-graph', order: -10, component: bindComponent(ctx, ['request', 'navigate', 'useQuery'], TaskWorkflowPanel) }))
 }

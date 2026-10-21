@@ -34,6 +34,7 @@ test('latest links require uploaded fixed-name assets and leave historical downl
   assert.ok(latest.platforms[0].latest.url.endsWith('/YouDub-macOS-arm64.dmg'))
   assert.ok(old.platforms.every(item => item.latest === undefined))
   const maintenance = downloadReleases([current, previous], 'v0.0.5')
+  assert.deepEqual(maintenance.filter(item => item.isLatest).map(item => item.version), ['v0.0.5'])
   assert.deepEqual(maintenance.map(item => item.version), ['v0.0.5', 'v0.0.6'])
   assert.ok(maintenance[0].platforms.every(item => item.latest))
   assert.ok(maintenance[1].platforms.every(item => !item.latest))

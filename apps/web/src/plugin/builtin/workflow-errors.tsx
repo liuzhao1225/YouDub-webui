@@ -18,7 +18,7 @@ export function WorkflowDiagnostics({ diagnostics, document, types, onSelect, di
       : item.message === 'Select a model and device.' ? tx('Select a model and device for this node.', '请为此节点选择模型和运行设备。', 'このノードのモデルと実行デバイスを選択してください。')
       : item.message === 'Selected model or device is unavailable.' ? tx('The selected model or device is unavailable. Choose another option.', '所选模型或运行设备不可用，请重新选择。', '選択したモデルまたはデバイスは利用できません。選択し直してください。') : item.message
     return <InlineAlert key={index}><div className="space-y-1.5"><p>{label ? `${label}: ` : ''}{message}</p>
-      {connectionMissing && !disabled ? <Link href="/settings/connections" className="inline-block text-xs underline underline-offset-4">{tx('Configure connection', '配置服务连接', 'サービス接続を設定')}</Link> : node && onSelect ? <button type="button" disabled={disabled} className="block text-xs underline underline-offset-4 disabled:opacity-50" onClick={() => onSelect(item)}>{tx('Open node settings', '打开节点设置', 'ノード設定を開く')}</button> : null}
+      {connectionMissing && !disabled ? <Link href="/settings/models" className="inline-block text-xs underline underline-offset-4">{tx('Configure connection', '配置服务连接', 'サービス接続を設定')}</Link> : node && onSelect ? <button type="button" disabled={disabled} className="block text-xs underline underline-offset-4 disabled:opacity-50" onClick={() => onSelect(item)}>{tx('Open node settings', '打开节点设置', 'ノード設定を開く')}</button> : null}
       {message !== item.message && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">{tx('Diagnostics', '诊断详情', '診断の詳細')}</summary><p className="mt-1 break-words">{item.message}</p></details>}
     </div></InlineAlert>
   })

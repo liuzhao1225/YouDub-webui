@@ -118,3 +118,35 @@ test('Python pipes round-trip Chinese paths even when the parent requests a lega
     input, env: { PYTHONUTF8: '0', PYTHONIOENCODING: 'cp1252' } })
   assert.deepEqual(JSON.parse(result.stdout), JSON.parse(input))
 })
+
+test('structured Python errors retain status, context and their original traceback', async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes)
+  t.after(() => plugin.dispose())
+  const script = `from backend.workers.protocol import OperationWire
+from backend.app.v1.errors import ApiError
+wire = OperationWire()
+wire.receive()
+try:
+    raise ApiError(422, 'BAD_MODEL', 'model cannot accept the request', field='translation.model', stage='translate', action='adjust_settings')
+except Exception as error:
+    wire.fail(error)
+`
+  await assert.rejects(ctx.process.worker({ command: python, args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context()), (error: any) => {
+    assert.equal(error.code, 'BAD_MODEL')
+    assert.equal(error.status, 422)
+    assert.equal(error.details.field, 'translation.model')
+    assert.equal(error.details.stage, 'translate')
+    assert.match(error.stack, /Worker stderr:[\s\S]*Traceback[\s\S]*ApiError: model cannot accept/)
+    return true
+  })
+})
+
+test('worker stderr is logged completely before failure even beyond the error tail limit', async t => {
+  const ctx = new Context(), plugin = await ctx.plugin(Processes), logged: string[] = []
+  t.after(() => plugin.dispose())
+  const script = receive + `process.stderr.write('first diagnostic\\n'+'x'.repeat(1024*1024)+'\\nlast diagnostic',()=>{send('error',{code:'LARGE_DIAGNOSTIC',message:'failed'}); process.stdin.destroy();}); });`
+  await assert.rejects(ctx.process.worker(worker(script), invocation, context({ log: async line => { logged.push(line) } })), { code: 'LARGE_DIAGNOSTIC' })
+  assert.equal(logged[0], 'first diagnostic')
+  assert.equal(logged[1].length, 1024 * 1024)
+  assert.equal(logged[2], 'last diagnostic')
+})

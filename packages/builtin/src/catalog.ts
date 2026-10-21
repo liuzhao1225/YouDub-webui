@@ -1,8 +1,9 @@
 import { Service, type Context } from 'cordis'
-import { AppError, type CatalogService, type OperationProvider, type RegisteredWorkflow, type WorkflowDefinition } from '@youdub/sdk'
+import { AppError, type CatalogService, type OperationProvider, type RegisteredWorkflow, type OutputValidator, type JsonObject } from '@youdub/sdk'
 
 export default class Catalog extends Service implements CatalogService {
   private providers = new Map<string, OperationProvider>()
+  private outputValidators = new Map<string, { id: string; validate: OutputValidator }>()
   private workflows = new Map<string, RegisteredWorkflow>()
   constructor(ctx: Context) { super(ctx, 'catalog') }
   private register<T extends { id: string }>(map: Map<string, T>, contribution: T) {
@@ -25,9 +26,9 @@ export default class Catalog extends Service implements CatalogService {
   }
   registerWorkflow(workflow: RegisteredWorkflow) { return this.register(this.workflows, workflow) }
   provider(id: string) { const value = this.providers.get(id); if (!value) throw new AppError('PROVIDER_UNAVAILABLE', `Provider ${id} is not registered.`, 422); return value }
-  workflow(id: 'youdub.localize'): WorkflowDefinition
-  workflow(id: string): RegisteredWorkflow
   workflow(id: string) { const value = this.workflows.get(id); if (!value) throw new AppError('WORKFLOW_UNAVAILABLE', `Workflow ${id} is not registered.`, 422); return value }
+  registerOutputValidator(schemaId: string, validate: OutputValidator) { return this.register(this.outputValidators, { id: schemaId, validate }) }
+  validateOutput(schemaId: string, value: unknown, context: { inputs: JsonObject; outputs: JsonObject }) { this.outputValidators.get(schemaId)?.validate(value, context) }
   listProviders() { return [...this.providers.values()].map(item => item.describe()) }
   describe() { return { providers: this.listProviders(), workflows: [...this.workflows.values()].map(item => item.describe()) } }
   async refresh() { await Promise.all([...this.providers.values()].map(provider => provider.probe())) }

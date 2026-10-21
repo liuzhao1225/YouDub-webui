@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo } from 'react'
 import { Check, Download, Loader2, Pause, Play, RefreshCw, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
@@ -7,6 +7,7 @@ import { SetupDiagnostics } from '@/components/setup-diagnostics'
 import { EnvironmentSteps, ModelDownloadRow } from '@/components/setup-resources'
 import { useI18n, useText } from '@/lib/i18n'
 import { text } from '@/plugin/sdk'
+import { useObservableSource } from '@/plugin/web-react'
 import { ResourcesController } from '@/plugin/runtime/workflow-resources'
 import type { Request } from '@/plugin/runtime/types'
 import { resourceSetupState, type ResourceItem } from '@/runtime/setup-contracts'
@@ -14,7 +15,7 @@ import { resourceSetupState, type ResourceItem } from '@/runtime/setup-contracts
 export function SettingsResources({ request }: { request: Request }) {
   const tx = useText(), { language } = useI18n()
   const controller = useMemo(() => new ResourcesController(request), [request])
-  const { inventory, inspection, checking, error } = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot)
+  const { inventory, inspection, checking, error } = useObservableSource(controller)
   const preparing = inventory?.resources?.status === 'preparing'
   const state = inventory && resourceSetupState(inventory, inspection)
   const media = inventory?.items.find(item => item.providerId === 'youdub.media' && !item.model)

@@ -5,6 +5,7 @@ import { AppError, type ProviderDescription, type OperationProvider } from '@you
 export interface PythonProviderConfig {
   descriptor: ProviderDescription; command: string; args: string[]; cwd: string;
   runtimeAdapter?: string; probeMediaTools?: boolean; dependencyGroups?: string[]; options?: Record<string, any>;
+  corrections?: 'media' | 'schema';
   $plugin?: { id: string; version: string; integrity: string }
 }
 export const name = 'python-provider'
@@ -57,7 +58,8 @@ export async function apply(ctx: Context, config: PythonProviderConfig) {
       } else description.available = true
       return { available: description.available, reason: description.unavailableReason ?? null }
     },
-    validateCorrection: validateMediaCorrection,
+    ...(config.corrections ? { validateCorrection: config.corrections === 'media' ? validateMediaCorrection :
+      (({ baselineOutputs, patch }) => ({ ...structuredClone(baselineOutputs), ...structuredClone(patch) })) as NonNullable<OperationProvider['validateCorrection']> } : {}),
     execute: (request, context) => ctx.process.worker({ command: config.command, args: config.args, cwd: config.cwd }, { ...request, binding: { ...request.binding, options: request.config.graph ? request.binding.options : { ...config.options, ...request.binding.options } } }, context),
   }
   await provider.probe()

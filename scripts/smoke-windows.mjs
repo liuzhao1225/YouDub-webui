@@ -6,9 +6,11 @@ import { join, resolve, basename, relative, isAbsolute } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { appVersion } from './release-version.mjs'
 import { demos } from '../site/demos.js'
+import { smokePython } from './desktop-smoke.mjs'
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Run this smoke test on Windows x64 with WebView2 installed.')
 const root = resolve(import.meta.dirname, '..')
+const readyPython = smokePython()
 const installerMode = process.argv.includes('--installer')
 const zip = resolve(installerMode ? join(root, `dist/YouDub-${appVersion}-windows-x64-Setup.exe`) : process.argv[2] || join(root, `dist/YouDub-${appVersion}-windows-x64.zip`))
 const hash = content => createHash('sha256').update(content).digest('hex')
@@ -72,13 +74,13 @@ console.log('Hashing the extracted application before startup...')
 const before = await snapshot(app)
 const active = new Set()
 const records = [{ test: 'packaged-api-import-and-version', ok: true, version: appVersion }]
-function launch(mode, name) {
+function launch(mode, name, python = join(data, 'missing-python.exe')) {
   const report = join(work, name + '.json')
   // Deterministic, offline first-run failure: never download models in packaging CI.
   // This is a documented explicit Python override, not a mocked server or WebView.
   const child = spawn(join(app, 'YouDub.exe'), [mode, report], {
     cwd: work, windowsHide: true, stdio: 'ignore',
-    env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data, YOUDUB_PYTHON: join(data, 'missing-python.exe') },
+    env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data, YOUDUB_PYTHON: python },
   })
   active.add(child)
   const exited = new Promise((resolve, reject) => {
@@ -89,7 +91,7 @@ function launch(mode, name) {
   return { child, exited, report }
 }
 async function readReport(instance) {
-  const deadline = Date.now() + 150000
+  const deadline = Date.now() + 240000
   while (Date.now() < deadline) {
     try { return JSON.parse(await readFile(instance.report, 'utf8')) }
     catch (error) { if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error }
@@ -175,6 +177,14 @@ try {
   await stopped([third.serverPid, third.browserPid], third.url)
   assert.deepEqual(await snapshot(app), before, 'Running the desktop must not modify its application bundle')
   records.push({ test: 'reopen-and-bundle-immutability', ok: true, files: Object.keys(before).length })
+  console.log('Testing ready authenticated plugin pages with base Python dependencies...')
+  const ready = launch('--smoke-ready', 'ready', readyPython)
+  const rendered = await readReport(ready)
+  assert.equal(rendered.ok, true, rendered.error)
+  assert.equal((await exitWithin(ready)).code, 0)
+  await stopped([rendered.serverPid, rendered.browserPid], rendered.url)
+  assert.deepEqual(await snapshot(app), before, 'Ready plugin pages must not modify the application bundle')
+  records.push({ test: 'ready-authenticated-plugin-pages', ...rendered })
   if (installerMode) {
     const sentinel = join(data, '保留我的模型与配置.txt')
     await writeFile(sentinel, 'keep user data')
@@ -193,7 +203,7 @@ try {
     assert.equal(await readFile(sentinel, 'utf8'), 'keep user data', 'Uninstall preserves user data')
     records.push({ test: 'installer-reinstall-uninstall-preserve-data', ok: true })
   }
-  await writeFile(join(root, 'dist/windows-smoke.json'), JSON.stringify({ ok: true, archive: basename(zip), sha256: digest, build, records, testedAt: new Date().toISOString(), limitations: ['Uses an explicit missing Python override to test first-run error rendering without model downloads.', 'Does not validate model installation, CUDA, video inference or Authenticode signing.'] }, null, 2) + '\n')
+  await writeFile(join(root, 'dist/windows-smoke.json'), JSON.stringify({ ok: true, archive: basename(zip), sha256: digest, build, records, testedAt: new Date().toISOString(), limitations: ['First-run error uses missing Python; ready plugin pages use explicitly supplied Python 3.12 and base dependencies.', 'Does not validate model installation, CUDA, video inference or Authenticode signing.'] }, null, 2) + '\n')
   console.log(`Windows ${installerMode ? 'EXE install/reinstall/uninstall' : 'ZIP'}, native WebView2 pages, process cleanup and immutable bundle: passed.`)
 } catch (error) {
   console.error(`Smoke diagnostics retained at ${work}`)

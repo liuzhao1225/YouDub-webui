@@ -1,6 +1,8 @@
 import type { SetupAction, SetupState } from '@/runtime/setup-contracts'
 import { createStore, type StoreApi } from 'zustand/vanilla'
-import { ConnectionController, type ConnectionDraft, type ConnectionSettings } from './connection'
+import type { Request } from '@/plugin/runtime/types'
+import type { Catalog } from '@/plugin/contracts'
+import { responseBody } from './http'
 
 class SnapshotStore<T extends object> {
   private readonly store: StoreApi<T>
@@ -65,29 +67,26 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
   }
 }
 
-interface TranslationSnapshot { settings: ConnectionSettings | null; ready: boolean; busy: boolean; error: string }
+interface TranslationSnapshot { loaded: boolean; configured: boolean; ready: boolean; busy: boolean; error: string }
 
-/** Tests and saves first-run translation settings before opening the workbench. */
+/** First run shares the same provider editor and availability rules as Settings. */
 export class TranslationSetupController extends SnapshotStore<TranslationSnapshot> {
-  readonly connection: ConnectionController
   private csrf = ''
   private controller: AbortController | null = null
-  constructor() {
-    super({ settings: null, ready: false, busy: false, error: '' })
-    this.connection = new ConnectionController(async <T>(path: string, init?: RequestInit) => {
-      const controller = this.controller
-      if (!controller) throw new Error('Translation setup is closed.')
-      return this.api<T>(controller, path, init)
-    })
+  constructor() { super({ loaded: false, configured: false, ready: false, busy: false, error: '' }) }
+  readonly request: Request = <T>(path: string, init?: RequestInit) => {
+    if (!this.controller) return Promise.reject(new Error('Translation setup is closed.'))
+    return this.api<T>(this.controller, path, init)
   }
   start = () => {
     this.stop()
     this.controller = new AbortController()
-    this.update({ settings: null, ready: false, error: '', busy: false })
+    this.update({ loaded: false, configured: false, ready: false, error: '', busy: false })
     void this.load(this.controller)
   }
-  stop = () => { this.controller?.abort(); this.controller = null; this.connection.stop() }
-  change = (patch: Partial<ConnectionDraft>) => { this.connection.change(patch) }
+  stop = () => { this.controller?.abort(); this.controller = null }
+  setConfigured = (configured: boolean) => { if (this.controller) this.update({ configured }) }
+  continue = () => { if (this.controller && this.snapshot.configured) this.update({ ready: true }) }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async api<T>(controller: AbortController, path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers)
@@ -95,43 +94,27 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
     if (init?.method && !['GET', 'HEAD'].includes(init.method.toUpperCase())) headers.set('X-CSRF-Token', this.csrf)
     const signal = init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal
     const response = await fetch(path, { ...init, headers, signal, credentials: 'same-origin', cache: 'no-store' })
-    const body = await response.json()
-    if (!response.ok) throw Object.assign(new Error(body.error?.message || body.detail || `HTTP ${response.status}`), { code: body.error?.code })
-    return body
+    return responseBody<T>(response)
   }
   private async load(controller: AbortController) {
     try {
       const session = await this.api<{ csrf_token: string }>(controller, '/api/auth/session')
       if (!this.current(controller)) return
       this.csrf = session.csrf_token
-      if (!await this.connection.start() || !this.current(controller)) {
-        if (this.current(controller)) this.update({ error: this.connection.getSnapshot().error })
-        return
-      }
-      const settings = this.connection.getSnapshot().settings!
-      const connection = settings.connections.find(item => item.adapter === 'openai')
-      this.update({ settings, ready: Boolean(connection?.has_api_key && connection.model?.trim()) || settings.plugins?.['youdub.onboarding']?.translationDeferred === true })
+      const [settings, catalog] = await Promise.all([
+        this.api<{ plugins?: Record<string, { translationDeferred?: boolean }> }>(controller, '/api/v2/settings'),
+        this.api<Catalog>(controller, '/api/v2/catalog'),
+      ])
+      if (!this.current(controller)) return
+      const configured = catalog.providers.some(provider => !provider.legacy && provider.available && provider.capability === 'translation')
+      this.update({ loaded: true, configured, ready: configured || settings.plugins?.['youdub.onboarding']?.translationDeferred === true })
     } catch (failure) {
       if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })
-    }
-  }
-  save = async () => {
-    const controller = this.controller
-    if (this.snapshot.busy || !this.snapshot.settings || !controller) return
-    this.update({ busy: true, error: '' })
-    try {
-      if (!await this.connection.test() || !this.current(controller)) return
-      if (!await this.connection.save() || !this.current(controller)) return
-      if (this.current(controller)) this.update({ ready: true })
-    } catch (failure) {
-      if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })
-    } finally {
-      if (this.current(controller)) this.update({ busy: false })
     }
   }
   skip = async () => {
     const controller = this.controller
-    if (this.snapshot.busy || !this.snapshot.settings || !controller) return
+    if (this.snapshot.busy || !this.snapshot.loaded || !controller) return
     this.update({ busy: true, error: '' })
     try {
       await this.api(controller, '/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ plugin: { id: 'youdub.onboarding', config: { translationDeferred: true } } }) })

@@ -7,7 +7,7 @@ from typing import Annotated, Self
 
 from pydantic import Field, ValidationError, field_validator, model_validator
 
-from .contracts import Contract, NonEmptyString
+from .data_contracts import Contract, NonEmptyString
 from .errors import ApiError
 
 LANGUAGES = ("en", "zh", "ja")

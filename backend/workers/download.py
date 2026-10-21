@@ -56,7 +56,7 @@ def download_video(url: str, work: Path, wire, max_bytes: int) -> tuple[Path, di
     from yt_dlp.utils.networking import std_headers
     from backend.app.config import ffmpeg_binary
     from backend.app.v1.media import inspect_video
-    from backend.app.v1.runtime import RUNTIME_LIMITS
+    from backend.app.v1.runtime_limits import RUNTIME_LIMITS
 
     url = video_url(url)
     wire.check_cancel()

@@ -5,7 +5,7 @@ import { text, type GraphNode, type NodeTypeDefinition, type TaskStep, type Work
 import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { TaskState } from './task-status'
-import { fieldType } from './schema-form'
+import { fieldOptions, fieldType, fieldValue, nodeModel } from '@/runtime/schema-fields'
 import { canConnect, connect, INPUTS_ID, nodeDefinition, OUTPUTS_ID, removeNodes } from './workflow-utils'
 import '@xyflow/react/dist/style.css'
 import './workflow.css'
@@ -44,8 +44,11 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
         {data.definition.ui.quickFields.slice(0, 3).map((key) => {
           const schema = data.definition?.configSchema.properties?.[key]
           if (!schema || !['string', 'number', 'integer', 'boolean'].includes(fieldType(schema) ?? '')) return null
+          const type = fieldType(schema), { options, constrained } = fieldOptions(schema, nodeModel(node, data.definition))
+          const value = node.config[key]
+          if (constrained && value !== undefined && !options.some(option => option.value === value)) options.unshift({ value, label: `${String(value)} · ${tx('Unavailable', '不可用', '利用不可')}`, disabled: true })
           return <label className="flex items-center justify-between gap-2 text-xs" key={key}><span className="truncate">{text(schema['x-title'] ?? schema.title, language) || key}</span>
-            {data.readOnly ? <span className="max-w-28 truncate text-muted-foreground" title={String(node.config[key] ?? '')}>{schema.type === 'boolean' ? node.config[key] ? tx('On', '开启', 'オン') : tx('Off', '关闭', 'オフ') : String(node.config[key] ?? '—')}</span> : schema.type === 'boolean' ? <input type="checkbox" disabled={data.disabled} checked={Boolean(node.config[key])} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.checked } })} /> : schema.enum ? <select aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.disabled} className="w-28 rounded-md border border-input bg-input-bg px-1 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.value } })}><option value="">—</option>{schema.enum.map((value) => <option key={String(value)} value={String(value)}>{String(value)}</option>)}</select> : <input aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.disabled} type={schema.type === 'string' ? 'text' : 'number'} className="w-28 rounded-md border border-input bg-input-bg px-2 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: schema.type === 'string' ? event.target.value : Number(event.target.value) } })} />}
+            {data.readOnly ? <span className="max-w-28 truncate text-muted-foreground" title={String(node.config[key] ?? '')}>{type === 'boolean' ? node.config[key] ? tx('On', '开启', 'オン') : tx('Off', '关闭', 'オフ') : String(node.config[key] ?? '—')}</span> : type === 'boolean' && !constrained ? <input type="checkbox" disabled={data.disabled} checked={Boolean(node.config[key])} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.checked } })} /> : constrained ? <select aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.disabled} className="w-28 rounded-md border border-input bg-input-bg px-1 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: options.find(option => String(option.value) === event.target.value)?.value } })}><option value="">—</option>{options.map(option => <option key={String(option.value)} value={String(option.value)} disabled={option.disabled}>{text(option.label, language)}</option>)}</select> : <input aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.disabled} type={type === 'string' ? 'text' : 'number'} className="w-28 rounded-md border border-input bg-input-bg px-2 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: fieldValue(schema, event.target.value) } })} />}
           </label>
         })}
       </div>}
@@ -166,6 +169,6 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
   </div>
 }
 export function createNode(definition: NodeTypeDefinition): GraphNode {
-  const model = definition.provider.models?.[0]
+  const model = definition.provider.models?.find(item => typeof item === 'string' || item.available !== false)
   return { id: crypto.randomUUID(), type: definition.type, typeVersion: definition.version, provider: { id: definition.providerId, ...(model ? { model: typeof model === 'string' ? model : model.id, device: typeof model === 'string' ? 'cpu' : model.devices?.[0] ?? 'cpu' } : {}) }, config: structuredClone(definition.defaults), autoContinue: true }
 }

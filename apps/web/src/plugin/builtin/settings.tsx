@@ -1,7 +1,8 @@
-import { bindComponent, Link, text, type Bindings, type Catalog, type JsonObject, type RouteProps, type SettingsSectionProps } from '../sdk'
+import { bindComponent, text, type Bindings, type JsonObject, type RouteProps, type SettingsSectionProps } from '../sdk'
 import { Context } from 'cordis'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { ArrowLeft, HardDrive, Info, Loader2, Plug, Puzzle, Settings2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Dialog } from '@base-ui/react/dialog'
+import { Database, HardDrive, Info, Loader2, Plug, Puzzle, Settings2, Settings as SettingsIcon, X } from 'lucide-react'
 import { useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -10,38 +11,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { InlineAlert } from '@/components/inline-alert'
 import { UpdateSettings } from '@/components/app-updates'
-import { Page, PageHeader } from '@/components/page-layout'
 import { SectionCard } from '@/components/section-card'
-import { SidebarLink } from '@/components/sidebar-link'
-import { BrandMark } from '@/components/brand/brand-mark'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { ConnectionForm } from '@/components/connection-form'
+import { Tooltip } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { ModelsSettings } from '@/components/models-settings'
 import { SettingsResources } from '@/components/settings-resources'
 import { useUnsavedChanges } from './workflow-guard'
 
 type SettingsData = JsonObject & { connections?: { adapter: string }[]; plugins?: Record<string, JsonObject> }
 type Extension = { id: string; version: string; source: string; installed: boolean; enabled: boolean; active: boolean; restartRequired: boolean }
 type DirtyChange = (id: string, dirty: boolean) => void
-type SettingsBindings = Bindings<'request' | 'useQuery' | 'useSlot' | 'useUpdates' | 'navigate' | 'replace' | 'blockNavigation'>
+type SettingsBindings = Bindings<'request' | 'useQuery' | 'useSlot' | 'useUpdates' | 'replace' | 'dismissDialog' | 'blockNavigation'>
 function Section({ title, children }: { title: ReactNode; children: ReactNode }) { return <SectionCard title={title}><div className="space-y-5 p-6">{children}</div></SectionCard> }
-function ConnectionSection({ adapter, label, onDirtyChange, request }: { adapter: string; label: string; onDirtyChange: DirtyChange } & Bindings<'request'>) {
-  const dirtyChanged = useCallback((dirty: boolean) => onDirtyChange(adapter, dirty), [adapter, onDirtyChange])
-  return <Section title={label}><ConnectionForm request={request} adapter={adapter} onDirtyChange={dirtyChanged} /></Section>
-}
-function Connections({ request, useQuery, onDirtyChange }: Bindings<'request' | 'useQuery'> & { onDirtyChange: DirtyChange }) {
-  const tx = useText()
-  const { language } = useI18n()
-  const { data: catalog, error: catalogError } = useQuery<Catalog>('/api/v2/catalog')
-  const { data: settings, error } = useQuery<SettingsData>('/api/v2/settings')
-  const remote = catalog?.providers.filter(item => item.execution === 'remote' || item.models?.some(model => typeof model === 'object' && model.devices?.includes('remote'))) ?? []
-  const adapters = new Set([...remote.map(item => item.adapter ?? item.id), ...(settings?.connections?.map(item => item.adapter) ?? [])])
-  return <>
-    {error && <InlineAlert>{error}</InlineAlert>}{catalogError && <InlineAlert>{catalogError}</InlineAlert>}
-    {!settings && !error && <p role="status" className="text-sm text-muted-foreground">{tx('Loading connections…', '正在读取连接…', '接続を読み込み中…')}</p>}
-    {settings && catalog && [...adapters].map(adapter => <ConnectionSection key={adapter} adapter={adapter} request={request} onDirtyChange={onDirtyChange} label={adapter === 'openai' ? tx('OpenAI compatible', 'OpenAI 兼容', 'OpenAI 互換') : text(remote.find(item => (item.adapter ?? item.id) === adapter)?.label, language) || adapter} />)}
-    {settings && catalog && !adapters.size && <p className="text-sm text-muted-foreground">{tx('No service connections.', '暂无服务连接。', 'サービス接続はありません。')}</p>}
-  </>
-}
 function Extensions({ request, useQuery, onDirtyChange }: Bindings<'request' | 'useQuery'> & { onDirtyChange: DirtyChange }) {
   const tx = useText()
   const { data, error, refresh } = useQuery<{ items: Extension[] }>('/api/v2/extensions')
@@ -88,48 +69,61 @@ function ExtensionSettings({ request, useQuery, useSlot, onDirtyChange }: Bindin
   const { data, error, refresh } = useQuery<SettingsData>('/api/v2/settings')
   return <><Extensions request={request} useQuery={useQuery} onDirtyChange={onDirtyChange} />{error && <InlineAlert>{error}</InlineAlert>}{data && sections.map(({ id, label, component }) => <ExtensionSection key={id} request={request} id={id} label={text(label, language) || id} component={component} settings={data} refresh={refresh} onDirtyChange={onDirtyChange} />)}</>
 }
-function Settings({ params, returnTo, request, useQuery, useSlot, useUpdates, navigate, replace, blockNavigation }: SettingsBindings & RouteProps) {
+function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dismissDialog, blockNavigation }: SettingsBindings & RouteProps) {
   const tx = useText()
-  const section = params.section ?? 'general'
-  const [dirty, setDirty] = useState<Record<string, boolean>>({})
-  const onDirtyChange = useCallback<DirtyChange>((id, value) => setDirty(current => current[id] === value ? current : { ...current, [id]: value }), [])
-  const guard = useUnsavedChanges(blockNavigation, Object.values(dirty).some(Boolean))
-  useEffect(() => { if (!params.section) replace('/settings/general') }, [params.section, replace])
-  const back = returnTo?.startsWith('/') && !returnTo.startsWith('//') && !/^\/settings(?:[/?#]|$)/.test(returnTo) ? returnTo : '/'
+  const section = params.section === 'connections' ? 'models' : params.section ?? 'general'
+  const [dirty, setDirty] = useState<{ section: string; fields: Record<string, boolean> }>({ section, fields: {} })
+  if (dirty.section !== section) setDirty({ section, fields: {} })
+  const onDirtyChange = useCallback<DirtyChange>((id, value) => setDirty(current => current.fields[id] === value ? current : { section, fields: { ...current.fields, [id]: value } }), [section])
+  const onModelsDirtyChange = useCallback((value: boolean) => onDirtyChange('models', value), [onDirtyChange])
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const onModelsBusyChange = useCallback((value: boolean) => { savingRef.current = value; setSaving(value) }, [])
+  const blockDialog = useCallback<SettingsBindings['blockNavigation']>(handler => blockNavigation(path => savingRef.current ? Promise.resolve(false) : handler(path), 'dialog'), [blockNavigation])
+  const guard = useUnsavedChanges(blockDialog, dirty.section === section && Object.values(dirty.fields).some(Boolean))
+  const closeButton = useRef<HTMLButtonElement>(null)
+  const [opener] = useState(() => document.activeElement instanceof HTMLElement ? document.activeElement : null)
+  useEffect(() => { if (!params.section) replace('/settings/general'); else if (params.section === 'connections') replace('/settings/models') }, [params.section, replace])
   const categories = [
     { id: 'general', label: tx('General', '通用', '一般'), icon: Settings2 },
-    { id: 'connections', label: tx('Connections', '服务连接', 'サービス接続'), icon: Plug },
+    { id: 'models', label: tx('Models', '模型', 'モデル'), icon: Database },
     { id: 'resources', label: tx('Environment & models', '环境与模型', '環境とモデル'), icon: HardDrive },
     { id: 'extensions', label: tx('Extensions', '扩展', '拡張機能'), icon: Puzzle },
     { id: 'about', label: tx('About & updates', '关于与更新', 'アプリ情報と更新'), icon: Info },
   ]
   const active = categories.find(item => item.id === section)
   const title = tx('Settings', '设置', '設定')
-  const returnLabel = tx('Back', '返回', '戻る')
-  return <div className="flex h-dvh min-h-0 bg-background">
-    <aside className="hidden w-[248px] shrink-0 flex-col border-r border-border bg-surface lg:flex">
-      <div className="flex h-16 shrink-0 items-center px-5"><BrandMark wordmark className="h-7" /></div>
-      <div className="px-3"><Button nativeButton={false} render={<Link href={back} />} variant="ghost" className="w-full justify-start"><ArrowLeft />{returnLabel}</Button></div>
-      <h2 className="px-6 pt-6 pb-3 text-xs font-medium text-subtle-foreground">{title}</h2>
-      <nav aria-label={title} className="flex flex-col gap-0.5 px-3">{categories.map(item => <SidebarLink key={item.id} href={`/settings/${item.id}`} label={item.label} icon={item.icon} active={section === item.id} />)}</nav>
-    </aside>
-    <div className="flex min-w-0 flex-1 flex-col">
-      <header className="flex items-center gap-3 border-b border-border p-4 lg:hidden"><Button nativeButton={false} render={<Link href={back} />} variant="ghost" size="icon" aria-label={returnLabel}><ArrowLeft /></Button><Select value={section} onValueChange={value => { if (value) navigate(`/settings/${value}`) }}><SelectTrigger aria-label={title}>{active?.label ?? title}</SelectTrigger><SelectContent>{categories.map(item => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}</SelectContent></Select></header>
-      <main className="min-h-0 flex-1 overflow-y-auto"><Page as="div"><PageHeader title={active?.label ?? tx('Page not found', '页面不存在', 'ページが見つかりません')} />
+  return <Dialog.Root open onOpenChange={open => { if (!open && !saving && !guard.dialog) dismissDialog() }}>
+    <Dialog.Portal>
+      <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
+      <Dialog.Popup initialFocus={closeButton} finalFocus={() => opener?.isConnected ? opener : true} className="fixed top-1/2 left-1/2 z-50 flex h-[min(50rem,calc(100dvh-3rem))] w-[min(50rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-background text-foreground shadow-float outline-none max-sm:h-dvh max-sm:w-full max-sm:rounded-none" aria-describedby={undefined}>
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
+          <Dialog.Title className="text-base font-semibold">{title}</Dialog.Title>
+          <Dialog.Close disabled={saving} render={<Button ref={closeButton} variant="ghost" size="icon-sm" aria-label={tx('Close settings', '关闭设置', '設定を閉じる')} />}><X /></Dialog.Close>
+        </header>
+        <div className="flex min-h-0 flex-1">
+          <nav aria-label={tx('Settings categories', '设置分类', '設定カテゴリー')} className="flex w-14 shrink-0 flex-col gap-1 border-r border-border bg-surface p-2 sm:w-48 sm:p-3">
+            {categories.map(({ id, label, icon: Icon }) => <Tooltip key={id} content={label} side="right" className="sm:hidden"><Button disabled={saving} variant="ghost" aria-label={label} aria-current={section === id ? 'page' : undefined} onClick={() => replace(`/settings/${id}`)} className={cn('w-full justify-center px-0 sm:justify-start sm:gap-3 sm:px-3', section === id && 'bg-accent text-foreground')}><Icon className="shrink-0" /><span className="hidden sm:inline">{label}</span></Button></Tooltip>)}
+          </nav>
+          <section aria-label={active?.label ?? title} className="min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6" key={section}>
+            {section !== 'models' && <h1 className="text-lg font-semibold">{active?.label ?? tx('Page not found', '页面不存在', 'ページが見つかりません')}</h1>}
         {section === 'general' && <Section title={tx('Appearance', '外观', '表示')}><div className="flex items-center justify-between gap-4"><span className="text-sm">{tx('Language', '语言', '言語')}</span><LanguageSwitcher /></div><div className="flex items-center justify-between gap-4"><span className="text-sm">{tx('Theme', '主题', 'テーマ')}</span><ThemeToggle /></div></Section>}
-        {section === 'connections' && <Connections request={request} useQuery={useQuery} onDirtyChange={onDirtyChange} />}
+        {section === 'models' && <ModelsSettings request={request} onDirtyChange={onModelsDirtyChange} onBusyChange={onModelsBusyChange} />}
         {section === 'resources' && <SettingsResources request={request} />}
         {section === 'extensions' && <ExtensionSettings request={request} useQuery={useQuery} useSlot={useSlot} onDirtyChange={onDirtyChange} />}
         {section === 'about' && <UpdateSettings useUpdates={useUpdates} />}
-      </Page></main>
-    </div>{guard.dialog}
-  </div>
+          </section>
+        </div>
+        {guard.dialog}
+      </Dialog.Popup>
+    </Dialog.Portal>
+  </Dialog.Root>
 }
 export const name = 'client-settings'
 export const inject = ['slots', 'apiClient', 'navigation']
 export function apply(ctx: Context) {
-  const component = bindComponent(ctx, ['request', 'useQuery', 'useSlot', 'useUpdates', 'navigate', 'replace', 'blockNavigation'], Settings)
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'settings', path: '/settings', component, access: 'authenticated', layout: 'standalone' }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'settings-section', path: '/settings/:section', component, access: 'authenticated', layout: 'standalone' }))
-  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'settings', routeId: 'settings', label: { default: 'Settings', translations: { zh: '设置', ja: '設定' } }, order: 30, placement: 'footer', icon: Settings2 }))
+  const component = bindComponent(ctx, ['request', 'useQuery', 'useSlot', 'useUpdates', 'replace', 'dismissDialog', 'blockNavigation'], Settings)
+  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'settings', path: '/settings', component, access: 'authenticated', layout: 'dialog' }))
+  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'settings-section', path: '/settings/:section', component, access: 'authenticated', layout: 'dialog' }))
+  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'settings', routeId: 'settings', label: { default: 'Settings', translations: { zh: '设置', ja: '設定' } }, order: 30, placement: 'footer', icon: SettingsIcon }))
 }

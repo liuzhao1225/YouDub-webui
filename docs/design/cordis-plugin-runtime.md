@@ -27,7 +27,7 @@ Python、FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，CPU/CU
 | VoxCPM2 | `models/voxcpm/VoxCPM2` | `YOUDUB_VOXCPM_MODEL_DIR` |
 | Qwen 对齐 | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf` | `YOUDUB_FORCED_ALIGNER_MODEL_DIR` |
 
-VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。翻译模型列表由 `YOUDUB_TRANSLATION_MODELS` 配置，连接 URL 和密钥在设置页保存。
+VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。“模型”分区与首次配置共用 Harness 模型供应商编辑器，保存供应商地址、协议、模型候选和凭据引用，实际执行模型固定在工作流节点绑定中。旧 `openai` 连接及 `YOUDUB_TRANSLATION_MODELS` 保留给历史任务和首次旧配置导入；新供应商由 `llm.<route>` 注册，不持续读取旧 defaults。模型候选获取不代表真实翻译调用成功，执行时要求最大输出参数至少为 65,535。
 
 Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。准备含 Whisper 的工作流时会下载到应用数据目录的 `nltk_data/`，已有 NLTK 资源可复用；自定义目录使用 `NLTK_DATA`。推理时只检查本地包和四个英文参数文件；缺失时明确报告 `MODEL_NOT_READY`。
 
@@ -99,7 +99,7 @@ npm --prefix apps/web start
 
 `npm run dev:api` 与 `npm start` 均运行 Cordis Host。旧 FastAPI、旧调度器和 `dev:legacy` 已移除；HTTP 统一使用 `/api/v2`。
 
-主页保留视频上传、输出内容、原文语言、目标语言和任务概览。模型、设备、声音、字幕对齐及背景音默认值在「设置 → 默认处理配置」保存，服务地址和密钥在「服务连接」保存。新任务读取已保存的默认配置；主页切换输出模式后再切回会恢复原配置。旧任务重跑保留完整配置编辑，允许调整已失效的模型选择。
+主页保留视频链接、拖拽上传、工作流选择和节点声明的快捷设置。语言、模型、设备、声音、字幕和背景音参数归工作流节点；保存工作流可复用这些设置。全局设置分为通用、模型、环境与模型、扩展、关于与更新。齿轮入口位于桌面侧栏底部、移动端顶栏；点击后以分类弹窗覆盖当前页面，保留原位置与草稿。分类切换不新增浏览器历史，关闭、Escape 或遮罩回到来源页面；直接打开 `/settings[/section]` 时关闭回工作台。`/settings/models` 提供模型供应商管理，旧 `/settings/connections` replace 到该路径。窄屏使用全屏弹窗与左侧图标栏。旧处理 defaults 迁移成“原默认处理配置”工作流，官方模板不再持续读取它。旧任务重跑保留完整配置编辑，允许调整已失效的模型选择。
 
 ## 3. 安装、启停和重启
 
@@ -173,7 +173,11 @@ Client 采用原生 ESM；`react`、`react-dom`、`react-dom/client`、`react/js
 }
 ```
 
-上段是 `youdub` 内部字段；`requirements` 无依赖时省略。当前 entry 是包内 Python 脚本路径。安装器使用 PATH 中的 `python3` 创建独立 `.venv`，安装前应确认该解释器满足插件依赖；官方计算环境另由 `YOUDUB_PYTHON` 指定。启动时由普通 `python-provider` 插件转换成 provider 注册；同一包的 `host` 和 `python` 入口互斥。需要自定义 workflow 时使用 Host 入口，并自行调用公开 `process` 服务。
+上段是 `youdub` 内部字段；`requirements` 无依赖时省略。entry 是包内 Python 脚本路径。安装器优先使用 Host 配置的 Python 或 `YOUDUB_PYTHON` 创建插件自己的 `.venv`；独立 CLI 未指定时才使用 PATH 中的 `python3`（Windows 为 `python`）。安装前确认该解释器满足插件依赖。启动时由普通 `python-provider` 插件转换成 provider 注册；同一包的 `host` 和 `python` 入口互斥。需要自定义 workflow 时使用 Host 入口，并自行调用公开 `process` 服务。
+
+需要人工订正的纯 Python provider 可显式声明 `python.corrections: "schema"`，按输出 JSON Schema 校验订正；输出端口和文件归属仍由任务服务检查。复杂领域规则由 Host provider 的 `validateCorrection` 实现。内置媒体 provider 显式使用媒体校验，通用 Python adapter 不隐式套用媒体规则。
+
+provider 可通过 `resources: { dependencyGroups, model?: { id, downloadId } }` 选择宿主已知的依赖组和模型资源；未声明的插件继续按自身安装指导准备。依赖组、模块名、兼容范围和内置 provider 资源映射统一来自 `backend/requirements/resources.json`。各组的 `.txt` 是安装需求，兼容范围单独声明；资源契约不接受任意下载地址或安装命令。
 
 每次 operation 启动一个受管进程。stdin/stdout 使用逐行 JSON，stdout 仅输出协议，日志与 traceback 写 stderr。首条输入：
 

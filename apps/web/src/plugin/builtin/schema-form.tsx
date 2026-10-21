@@ -1,11 +1,12 @@
 import type { Bindings } from '../sdk'
 import { useId } from 'react'
 import { text, type EditorProps, type JsonObject, type JsonSchema } from '../sdk'
-import { useI18n } from '@/lib/i18n'
+import { fieldOptions, fieldType, fieldValue } from '@/runtime/schema-fields'
+export { fieldType } from '@/runtime/schema-fields'
+import { useI18n, useText } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function fieldType(schema: JsonSchema) { return Array.isArray(schema.type) ? schema.type.find((type) => type !== 'null') : schema.type }
 export function schemaProblems(schema: JsonSchema, path = ''): string[] {
   const object = schema as Record<string, unknown>
   if (['oneOf', 'anyOf', 'allOf', '$ref'].some((key) => key in object) || !['object', 'string', 'number', 'integer', 'boolean'].includes(fieldType(schema) ?? (schema.enum ? 'string' : 'object'))) return [path || 'config']
@@ -26,17 +27,19 @@ export function validateConfig(schema: JsonSchema, value: unknown, path = ''): s
   if (typeof value === 'number' && ((schema.minimum !== undefined && value < schema.minimum) || (schema.maximum !== undefined && value > schema.maximum))) return [path.replace(/\.$/, '')]
   return []
 }
-function Fields({ schema, value, onChange, readOnly, prefix = '' }: EditorProps & { prefix?: string }) {
-  const { language } = useI18n()
+function Fields({ schema, value, onChange, readOnly, prefix = '', model }: EditorProps & { prefix?: string; model?: Record<string, unknown> }) {
+  const { language } = useI18n(), tx = useText()
   const id = useId()
   return <div className="grid gap-5 sm:grid-cols-2">{Object.entries(schema.properties ?? {}).map(([key, field]) => {
     const label = text(field['x-title'] ?? field.title, language) || key
-    const fieldId = `${id}-${key}`
-    if (field.type === 'object' || field.properties) return <fieldset key={key} className="space-y-4 rounded-xl border border-border p-4 sm:col-span-2"><legend className="px-2 text-sm font-medium">{label}</legend><Fields value={(value[key] as JsonObject) ?? {}} schema={field} diagnostics={[]} readOnly={readOnly} prefix={`${prefix}${key}.`} onChange={(next) => onChange({ ...value, [key]: next })} /></fieldset>
-    return <div key={key} className="space-y-2"><Label htmlFor={fieldId}>{label}{schema.required?.includes(key) ? ' *' : ''}</Label>{field.enum ? <select id={fieldId} disabled={readOnly} value={value[key] === undefined ? '' : String(value[key])} onChange={(event) => onChange({ ...value, [key]: field.enum!.find((entry) => String(entry) === event.target.value) })} className="h-10 w-full rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">—</option>{field.enum.map((entry) => <option key={String(entry)} value={String(entry)}>{String(entry)}</option>)}</select> : field.type === 'boolean' ? <div><input id={fieldId} type="checkbox" disabled={readOnly} checked={Boolean(value[key])} onChange={(event) => onChange({ ...value, [key]: event.target.checked })} className="size-4 accent-primary" /></div> : <Input id={fieldId} disabled={readOnly} type={field.type === 'number' || field.type === 'integer' ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={field.type === 'integer' ? 1 : 'any'} required={schema.required?.includes(key)} minLength={field.minLength} maxLength={field.maxLength} value={value[key] === undefined || value[key] === null ? '' : String(value[key])} onChange={(event) => onChange({ ...value, [key]: field.type === 'number' || field.type === 'integer' ? (event.target.value === '' ? undefined : Number(event.target.value)) : event.target.value })} />}{field.description && <p className="text-xs leading-relaxed text-muted-foreground">{text(field.description, language)}</p>}</div>
+    const fieldId = `${id}-${key}`, type = fieldType(field)
+    const { options, constrained } = fieldOptions(field, model)
+    if (constrained && value[key] !== undefined && !options.some(option => option.value === value[key])) options.unshift({ value: value[key], label: `${String(value[key])} · ${tx('Unavailable', '不可用', '利用不可')}`, disabled: true })
+    if (type === 'object' || field.properties) return <fieldset key={key} className="space-y-4 rounded-xl border border-border p-4 sm:col-span-2"><legend className="px-2 text-sm font-medium">{label}</legend><Fields value={(value[key] as JsonObject) ?? {}} schema={field} diagnostics={[]} readOnly={readOnly} prefix={`${prefix}${key}.`} model={model} onChange={(next) => onChange({ ...value, [key]: next })} /></fieldset>
+    return <div key={key} className="space-y-2"><Label htmlFor={fieldId}>{label}{schema.required?.includes(key) ? ' *' : ''}</Label>{constrained ? <select id={fieldId} disabled={readOnly} value={value[key] === undefined ? '' : String(value[key])} onChange={(event) => onChange({ ...value, [key]: options.find(option => String(option.value) === event.target.value)?.value })} className="h-10 w-full rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">—</option>{options.map(option => <option key={String(option.value)} value={String(option.value)} disabled={option.disabled}>{text(option.label, language)}</option>)}</select> : type === 'boolean' ? <div><input id={fieldId} type="checkbox" disabled={readOnly} checked={Boolean(value[key])} onChange={(event) => onChange({ ...value, [key]: event.target.checked })} className="size-4 accent-primary" /></div> : <Input id={fieldId} disabled={readOnly} type={type === 'number' || type === 'integer' ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={type === 'integer' ? 1 : 'any'} required={schema.required?.includes(key)} minLength={field.minLength} maxLength={field.maxLength} value={value[key] === undefined || value[key] === null ? '' : String(value[key])} onChange={(event) => onChange({ ...value, [key]: fieldValue(field, event.target.value) })} />}{field.description && <p className="text-xs leading-relaxed text-muted-foreground">{text(field.description, language)}</p>}</div>
   })}</div>
 }
-export function ConfigEditor({ ownerId, useSlot, ...props }: EditorProps & { ownerId: string } & Bindings<'useSlot'>) {
+export function ConfigEditor({ ownerId, useSlot, ...props }: EditorProps & { ownerId: string; model?: Record<string, unknown> } & Bindings<'useSlot'>) {
   const editors = useSlot('config.editors')
   const Custom = editors.find((entry) => entry.id === ownerId)?.component
   if (Custom) return <Custom {...props} />

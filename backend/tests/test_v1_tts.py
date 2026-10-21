@@ -12,6 +12,7 @@ import pytest
 import soundfile as sf
 
 from backend.app.v1 import media, tts, tts_process
+from backend.app.v1.audio import audio_info
 from backend.app.v1.audio_segments import read_speech_clips
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
@@ -23,7 +24,7 @@ from backend.app.v1.steps import StageCancelled, StageContext
 def test_audio_info_accepts_pcm_and_ffmpeg_extensible_wave(tmp_path, format, subtype):
     path = tmp_path / "adjusted.wav"
     sf.write(path, np.full((4800, 2), 0.1, dtype=np.float32), 48000, format=format, subtype=subtype)
-    info = tts._audio_info(path)
+    info = audio_info(path, stage="tts")
     assert (info.format, info.frames, info.samplerate, info.channels) == (format, 4800, 48000, 2)
 
 
@@ -31,7 +32,7 @@ def test_audio_info_rejects_non_wave_with_file_and_metadata_in_error(tmp_path):
     path = tmp_path / "wrong.wav"
     sf.write(path, np.full(4800, 0.1), 48000, format="FLAC")
     with pytest.raises(ApiError, match="wrong.wav.*format=FLAC") as error:
-        tts._audio_info(path)
+        audio_info(path, stage="tts")
     assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
 
 

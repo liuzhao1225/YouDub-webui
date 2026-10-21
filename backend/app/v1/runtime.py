@@ -15,22 +15,13 @@ from uuid import uuid4
 
 from ..config import ffmpeg_binary, ffprobe_binary
 from ..accelerators import detect_devices
+from ..resources import missing_modules, version_supported, version_requirement
 from .segments import LANGUAGES
 
 
 INSTANCE_ID = str(uuid4())
 
-# Media admission limits shared by the official prepare operation and Host.
-RUNTIME_LIMITS: dict[str, Any] = {
-    "max_file_bytes": 4 * 1024 * 1024 * 1024,
-    "max_video_duration_ms": 600_000,
-    "max_video_width": 1920,
-    "max_video_height": 1920,
-    "max_frame_rate": 60,
-    "video_suffixes": [".mp4", ".mov", ".mkv", ".webm"],
-    "video_codecs": ["h264", "hevc", "vp8", "vp9", "av1"],
-    "audio_codecs": ["aac", "mp3", "pcm_s16le", "pcm_s24le", "pcm_f32le", "opus", "vorbis", "flac"],
-}
+from .runtime_limits import RUNTIME_LIMITS
 
 
 def _detect_devices() -> list[dict[str, Any]]:
@@ -117,19 +108,12 @@ def _translation_models(
 
 
 def _voxcpm_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
-    dependencies = ("voxcpm", "torch", "torchaudio", "numpy", "soundfile", "transformers", "librosa",
-                    "einops", "huggingface_hub", "safetensors", "tqdm", "packaging")
-    missing = [name for name in dependencies if importlib.util.find_spec(name) is None]
+    missing = missing_modules(["base", "media", "voxcpm"])
     if missing:
         return [], f"本地 VoxCPM2 缺少运行依赖：{', '.join(missing)}。"
     # Check installed distribution metadata, never import VoxCPM during a GET.
-    from packaging.version import InvalidVersion, Version
-    try:
-        supported = Version(importlib.metadata.version("voxcpm")) >= Version("2.0.3")
-    except (importlib.metadata.PackageNotFoundError, InvalidVersion):
-        supported = False
-    if not supported:
-        return [], "本地 VoxCPM2 需要 voxcpm>=2.0.3，以支持明确的 CPU/CUDA/ROCm/MPS 设备选择。"
+    if not version_supported("voxcpm"):
+        return [], f"本地 VoxCPM2 需要 voxcpm{version_requirement('voxcpm')}，以支持明确的 CPU/CUDA/ROCm/MPS 设备选择。"
     if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
         return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
     from .tts import MAX_REFERENCE_DURATION_MS, available_models
@@ -150,9 +134,7 @@ def _demucs_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     source = Path(__file__).resolve().parents[3] / "submodule" / "demucs"
     if PathFinder.find_spec("demucs", [str(source)]) is None:
         return [], "缺少仓库中的 Demucs 子模块源码。"
-    dependencies = ("torch", "torchaudio", "numpy", "soundfile", "julius", "dora", "omegaconf",
-                    "einops", "openunmix", "tqdm")
-    missing = [name for name in dependencies if importlib.util.find_spec(name) is None]
+    missing = missing_modules(["media", "demucs"])
     if missing:
         return [], f"本地 Demucs 缺少运行依赖：{', '.join(missing)}。"
     if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
@@ -169,18 +151,11 @@ def _demucs_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
 
 
 def _subtitle_alignment_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
-    dependencies = ("transformers", "torch", "numpy", "soundfile", "librosa", "packaging")
-    missing = [name for name in dependencies if importlib.util.find_spec(name) is None]
+    missing = missing_modules(["base", "media", "qwen_forced_aligner"])
     if missing:
         return [], f"本地 Qwen 字幕对齐缺少运行依赖：{', '.join(missing)}。"
-    from packaging.version import InvalidVersion, Version
-    try:
-        version = Version(importlib.metadata.version("transformers"))
-        supported = Version("5.17") <= version < Version("6")
-    except (importlib.metadata.PackageNotFoundError, InvalidVersion):
-        supported = False
-    if not supported:
-        return [], "本地 Qwen 字幕对齐需要 transformers>=5.17,<6。"
+    if not version_supported("transformers"):
+        return [], f"本地 Qwen 字幕对齐需要 transformers{version_requirement('transformers')}。"
     from .forced_alignment import available_models
 
     available_devices = [device["id"] for device in devices if device["available"]]

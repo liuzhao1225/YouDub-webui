@@ -6,15 +6,19 @@ try {
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
   const releases = await response.json()
   if (!releases.length) throw new Error('没有可下载的正式版本')
+  const marked = releases.filter(release => release.isLatest === true)
+  if (releases.some(release => release.isLatest !== undefined && typeof release.isLatest !== 'boolean') || marked.length > 1 || (!marked.length && releases.some(release => release.isLatest !== undefined))) throw new Error('最新版标记无效')
+  const latestRelease = marked[0] ?? releases[0]
   for (const [index, release] of releases.entries()) {
     const option = document.createElement('option')
     option.value = String(index)
-    option.textContent = `${release.version}${index === 0 ? ' · 最新版' : ''}`
+    option.textContent = `${release.version}${release === latestRelease ? ' · 最新版' : ''}`
+    option.selected = release === latestRelease
     select.append(option)
   }
   function show() {
     const release = releases[Number(select.value)]
-    const latest = Number(select.value) === 0
+    const latest = release === latestRelease
     const releaseUrl = latest ? 'https://github.com/liuzhao1225/YouDub-webui/releases/latest' : release.url
     list.replaceChildren()
     for (const platform of release.platforms) {
@@ -52,7 +56,7 @@ try {
   }
   select.addEventListener('change', show)
   for (const link of document.querySelectorAll('a[href="#download"]')) {
-    link.addEventListener('click', () => { select.value = '0'; show() })
+    link.addEventListener('click', () => { select.value = String(releases.indexOf(latestRelease)); show() })
   }
   select.disabled = false
   show()

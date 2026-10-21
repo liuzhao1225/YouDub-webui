@@ -5,6 +5,10 @@ import { inspectGraph } from './workflow-graph.js'
 export const legacyDefaultsWorkflowId = 'user.legacy-defaults-v1'
 const namespace = 'plugin:youdub.localize'
 export type DefaultsMigration = { version: 1; status: 'complete'; documentId: string; revision: number } | { version: 1; status: 'blocked'; diagnostics: Diagnostic[] }
+export async function readDefaultsMigration(store: StoreService): Promise<DefaultsMigration | null> {
+  const raw = await store.call('settings.raw')
+  return raw[namespace]?.defaultsMigration ?? null
+}
 const optionFields: Record<string, string[]> = {
   recognize: ['sourceLanguage', 'initialPrompt'], translate: ['sourceLanguage', 'targetLanguage', 'maxCompletionTokens'],
   synthesize: ['targetLanguage', 'voice'], mix: ['keepBackground'], align: ['targetLanguage'],
@@ -20,7 +24,9 @@ export async function legacyDefaultsDocument(defaults: JsonObject, catalog: Cata
       throw new AppError('DEFAULTS_MIGRATION_BLOCKED', `Provider ${selection.adapter} is unavailable.`, 422, [{ code: 'NODE_UNAVAILABLE', message: `Provider ${selection.adapter} is unavailable.`, field: `${capability}.adapter` }])
     }
   }
-  const workflow = catalog.workflow('youdub.localize'), plan = await workflow.plan({}, defaults, catalog)
+  const workflow = catalog.workflow('youdub.localize')
+  if (!('plan' in workflow)) throw new AppError('DEFAULTS_MIGRATION_BLOCKED', 'The legacy workflow planner is unavailable.', 422)
+  const plan = await workflow.plan({}, defaults, catalog)
   const document: WorkflowDocument = {
     format: 'youdub.workflow', formatVersion: 1, id: legacyDefaultsWorkflowId, title: '原默认处理配置', nodes: [], edges: [],
     inputs: workflow.describe().inputs.map(input => ({ id: input.name, label: input.label, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: [...input.acceptedMimeTypes], maxBytes: input.maxBytes })),

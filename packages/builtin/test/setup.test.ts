@@ -10,6 +10,7 @@ import Http from '../src/http.js'
 import Setup from '../src/setup.js'
 import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
+import { builtinResources } from '../src/runtime-resources.js'
 import { runtimePaths } from '../../../apps/host/src/paths.js'
 
 function probeResult(action: string) {
@@ -220,7 +221,7 @@ test('base setup opens the workbench before optional packages/models and prepare
       }
       return { stderr: '', stdout: args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }
     } })
-    owner.reflect.provide('catalog', { listProviders: () => [], provider: (id: string) => ({ probe: async () => { refreshed.push(id); return { available: true } } }) })
+    owner.reflect.provide('catalog', { listProviders: () => ['youdub.media', 'whisper', 'openai'].map(id => ({ id, resources: builtinResources(id), available: true, models: id === 'whisper' && modelReady ? [{ id: 'tiny' }] : [] })), provider: (id: string) => ({ probe: async () => { refreshed.push(id); return { available: true } } }) })
     owner.reflect.provide('loader', { create: async (entry: any) => { created.push(entry.id) }, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, version: '0.0.6', entries: [{ id: 'runtime', name: 'runtime' }] })
@@ -285,7 +286,7 @@ test('installed remote dependencies do not make an unconfigured service ready', 
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: () => ({ probe: async () => ({}) }),
-      listProviders: () => [{ id: 'openai', execution: 'remote', available: configured, unavailableReason: configured ? undefined : 'Provider connection is not configured.', models: configured ? [{ id: 'qwen-test' }] : [] }],
+      listProviders: () => [{ id: 'openai', resources: builtinResources('openai'), execution: 'remote', available: configured, unavailableReason: configured ? undefined : 'Provider connection is not configured.', models: configured ? [{ id: 'qwen-test' }] : [] }],
     })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
@@ -325,7 +326,7 @@ test('configuration checks and explicit retries persist recovery after dependenc
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: () => ({ probe: async () => ({}) }),
-      listProviders: () => [{ id: 'openai', execution: 'remote', available: installed && configured, unavailableReason: installed ? configured ? undefined : 'Provider connection is not configured.' : 'OpenAI SDK is missing.', models: installed && configured ? [{ id: 'qwen-test' }] : [] }],
+      listProviders: () => [{ id: 'openai', resources: builtinResources('openai'), execution: 'remote', available: installed && configured, unavailableReason: installed ? configured ? undefined : 'Provider connection is not configured.' : 'OpenAI SDK is missing.', models: installed && configured ? [{ id: 'qwen-test' }] : [] }],
     })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
@@ -380,6 +381,7 @@ test('failed selected model download retains the error and leaves the workbench 
   const errors: unknown[] = []
   const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
   const app = await ctx.plugin(async function resourceFailure(owner) {
+    owner.reflect.provide('catalog', { provider: () => ({ probe: async () => ({}) }), listProviders: () => [{ id: 'whisper', resources: builtinResources('whisper'), available: false, models: [] }] })
     owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })

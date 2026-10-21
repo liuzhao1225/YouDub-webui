@@ -2,6 +2,7 @@ import type { Context } from 'cordis'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { StudioDraftStore } from '@/runtime/studio-draft'
 import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, type NodeTypeDefinition, type TaskNodeDetail, type TaskStatus, type TaskView } from './sdk'
 import { TaskNodePage as TaskNodePageView, TaskWorkflowPanel as TaskWorkflowPanelView, TranscriptNodeDetails, TranslationNodeDetails } from './builtin/workflow-task'
@@ -34,8 +35,10 @@ function mount(data: Fixture, handler?: (path: string, init?: RequestInit) => Pr
     throw new Error(`Unexpected request: ${path}`)
   })
   const context = { apiClient: { request }, navigation: { push: vi.fn(), block: () => () => {} }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: (slot: string) => slot === 'workflow.node.details' ? [{ id: 'transcript', component: TranscriptNodeDetails }, { id: 'translation', component: TranslationNodeDetails }] : [] } } as unknown as Context
-  render(<PluginContextProvider context={context}><LanguageProvider>{graph ? <TaskWorkflowPanel task={data.task} refresh={() => {}} /> : <TaskNodePage params={{ id: data.task.id, nodeId: data.detail.nodeId }} />}</LanguageProvider></PluginContextProvider>)
-  return request
+  const store = new StudioDraftStore()
+  const show = () => render(<PluginContextProvider context={context}><LanguageProvider>{graph ? <TaskWorkflowPanel task={data.task} refresh={() => {}} /> : <TaskNodePage submissionStore={store} params={{ id: data.task.id, nodeId: data.detail.nodeId }} />}</LanguageProvider></PluginContextProvider>)
+  const view = show()
+  return Object.assign(request, { unmount: view.unmount, show, push: context.navigation.push })
 }
 function addHistory(data: Fixture, port: 'transcript' | 'translation' = 'transcript') {
   const outputs = structuredClone(data.detail.resultRevisions[0].outputs)
@@ -211,4 +214,21 @@ it('never pairs historical synthesized audio with current translation input', as
   expect(screen.queryByText('第一句配音。')).not.toBeInTheDocument()
   expect(screen.queryByText('第二句配音。')).not.toBeInTheDocument()
   expect(screen.getAllByRole('link', { name: /下载音频/ })).toHaveLength(2)
+})
+
+
+it('retains the derived task submission after leaving and ignores its late navigation callback', async () => {
+  const data = fixture('translation'); data.task.status = data.detail.status = 'succeeded'; data.detail.step.status = 'completed'
+  let finish!: (task: TaskView) => void
+  const request = mount(data, path => path.endsWith('/rerun-preview') ? Promise.resolve({ reusedSteps: ['node-primary'], dirtySteps: ['node-export'], expectedAttempt: 1, expectedTaskRevision: 5, sourceRevisions: {} }) : path.endsWith('/rerun') ? new Promise<TaskView>(resolve => { finish = resolve }) : undefined)
+  fireEvent.change(await screen.findByLabelText('译文 1'), { target: { value: '修订译文' } })
+  await userEvent.click(screen.getByRole('button', { name: '查看需重新处理的步骤' }))
+  await userEvent.click(await screen.findByRole('button', { name: '创建任务并重新生成' }))
+  await waitFor(() => expect(finish).toBeDefined())
+  request.unmount()
+  await act(async () => finish({ ...data.task, id: 'derived' }))
+  expect(request.push).not.toHaveBeenCalled()
+  request.show()
+  await userEvent.click(await screen.findByRole('button', { name: '查询创建结果' }))
+  expect(request.push).toHaveBeenCalledWith('/tasks/derived')
 })

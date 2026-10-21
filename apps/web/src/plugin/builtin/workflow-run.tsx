@@ -15,10 +15,11 @@ import { nodeDefinition } from './workflow-utils'
 import { WorkflowResources } from './workflow-resources'
 import { workflowDiagnostics, WorkflowDiagnostics } from './workflow-errors'
 
-import type { WorkflowRunDraft } from '@/runtime/studio-draft'
+import { useActiveView, useObservableSource, usePendingUnload } from '../web-react'
+import { StudioDraftStore, type WorkflowRunDraft } from '@/runtime/studio-draft'
 export type { WorkflowRunDraft } from '@/runtime/studio-draft'
 
-export function WorkflowRun({ document, types, revision = null, afterInputs, prominent = false, draft, onDraftChange, onStarted, onLockChange, request, navigate, useSlot, useWorkflowResources }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision?: number | null; afterInputs?: ReactNode; prominent?: boolean; draft?: WorkflowRunDraft; onDraftChange?: Dispatch<SetStateAction<WorkflowRunDraft>>; onStarted?(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot' | 'useWorkflowResources'>) {
+export function WorkflowRun({ document, types, revision = null, afterInputs, prominent = false, submissionStore, draft, onDraftChange, onStarted, onLockChange, request, navigate, useSlot, useWorkflowResources }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision?: number | null; afterInputs?: ReactNode; prominent?: boolean; submissionStore?: StudioDraftStore; draft?: WorkflowRunDraft; onDraftChange?: Dispatch<SetStateAction<WorkflowRunDraft>>; onStarted?(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const [localDraft, setLocalDraft] = useState<WorkflowRunDraft>({ selectedFiles: [], sourceUrl: '', runtimeByDocument: {} })
   const { selectedFiles, sourceUrl, runtimeByDocument } = draft ?? localDraft
@@ -36,30 +37,42 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   const runDocument = imported?.document ?? document
   const runtime = runtimeByDocument[document.id] ?? {}
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
-  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [pending, setPending] = useState('')
+  const [localError, setError] = useState(''), [validating, setValidating] = useState(false)
+  const [localStore] = useState(() => new StudioDraftStore())
+  const store = submissionStore ?? localStore
+  const submissionKey = `graph:${document.id}`
+  const { submissions } = useObservableSource(store)
+  const submission = submissions[submissionKey]
+  const busy = validating || !!submission?.busy, pending = submission?.id ?? '', error = submission?.error || localError
+  const activeView = useActiveView()
+  function openTask(task: TaskView) {
+    if (!activeView.current) return
+    store.clearSubmission(submissionKey); onStarted?.(); navigate(`/tasks/${task.id}`)
+  }
   const activeRuntime = Object.fromEntries(document.nodes.filter((node) => runtime[node.id]).map((node) => [node.id, runtime[node.id]]))
   const runRuntime = { ...activeRuntime, ...imported?.runtime }
   const resources = useWorkflowResources(runDocument)
   const complete = !linkError && document.inputs.every((input) => !input.required || files[input.id] || (input.id === linkInput?.id && source))
   const locked = busy || !!pending
+  usePendingUnload(locked)
   useEffect(() => { onLockChange?.(locked) }, [locked, onLockChange])
   async function run() {
     if (locked || !complete || !resources.ready) return
-    setBusy(true); setError(''); setDiagnostics([])
+    setValidating(true); setError(''); setDiagnostics([])
     try {
       const validation = await request<{ valid: boolean; diagnostics: Diagnostic[] }>('/api/v2/workflow-documents/validate', { method: 'POST', body: JSON.stringify({ document: runDocument, nodeRuntimeInputs: runRuntime }) })
+      if (!activeView.current) return
       setDiagnostics(validation.diagnostics)
       if (!validation.valid) return
       const id = crypto.randomUUID()
-      setPending(id)
       const body = new FormData()
       body.set('request', JSON.stringify({ id, workflowId: 'youdub.graph', workflowVersion: '1.0.0', graphDocument: runDocument, nodeRuntimeInputs: runRuntime, config: {}, documentRevision: imported ? null : revision, ...(source ? { sourceName: source.url } : {}) }))
       Object.entries(files).filter(([name]) => !imported || name !== linkInput?.id).forEach(([name, file]) => body.set(`input.${name}`, file))
-      const task = await request<TaskView>('/api/v2/tasks', { method: 'POST', body })
-      onStarted?.(); navigate(`/tasks/${task.id}`)
+      const task = await store.submit(submissionKey, request, body)
+      if (task) openTask(task)
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure)); setDiagnostics(workflowDiagnostics(failure))
-    } finally { setBusy(false) }
+    } finally { if (activeView.current) setValidating(false) }
   }
   function changeFile(input: GraphInput, file?: File) {
     const next = document.inputs.filter((item) => item.id !== input.id && files[item.id]).map((item) => ({ input: item, file: files[item.id] }))
@@ -97,12 +110,12 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     {document.nodes.map((node) => { const definition = nodeDefinition(node, types); return definition?.runtimeInputSchema ? <fieldset className="space-y-3" key={node.id}><legend className="mb-2 text-sm font-medium">{node.label || text(definition.label, language)}</legend><ConfigEditor useSlot={useSlot} ownerId={`runtime:${node.type}`} value={runtime[node.id] ?? {}} schema={definition.runtimeInputSchema} diagnostics={[]} readOnly={locked} onChange={(value) => { setDraft((current) => ({ ...current, runtimeByDocument: { ...current.runtimeByDocument, [document.id]: { ...current.runtimeByDocument[document.id], [node.id]: value } } })); setDiagnostics([]) }} /></fieldset> : null })}
     <WorkflowResources resources={resources} types={types} disabled={locked} hideReady={prominent} />
     {error && <InlineAlert>{error}</InlineAlert>}
-    <WorkflowDiagnostics diagnostics={diagnostics} document={runDocument} types={types} />
+    <WorkflowDiagnostics diagnostics={submission?.failure ? workflowDiagnostics(submission.failure) : diagnostics} document={runDocument} types={types} />
     {pending && !busy && <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{tx('Check whether the task was created before submitting again.', '请先查询任务是否已创建，再重新提交。', '再送信する前にタスクが作成されたか確認してください。')}</p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${pending}`).then((task) => { onStarted?.(); navigate(`/tasks/${task.id}`) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Check created task', '查询创建结果', '作成結果を確認')}</Button>
-        <Button variant="outline" onClick={() => { setBusy(true); void request(`/api/v2/imports/${pending}`, { method: 'DELETE' }).then(() => { setPending(''); setError(''); setDiagnostics([]) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Discard submission and edit', '放弃本次提交并修改', '今回の送信を破棄して編集')}</Button>
+        <Button variant="outline" onClick={() => { void store.check(submissionKey, request).then(task => { if (task) openTask(task) }) }}>{tx('Check created task', '查询创建结果', '作成結果を確認')}</Button>
+        <Button variant="outline" onClick={() => { void store.discard(submissionKey, request).then(cleared => { if (cleared && activeView.current) { setError(''); setDiagnostics([]) } }) }}>{tx('Discard submission and edit', '放弃本次提交并修改', '今回の送信を破棄して編集')}</Button>
       </div>
     </div>}
   </div>
@@ -110,5 +123,5 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   const showStatus = !quietResources || error || diagnostics.length > 0 || (pending && !busy) || document.nodes.some((node) => nodeDefinition(node, types)?.runtimeInputSchema)
   const submit = <Button size={prominent ? "xl" : "default"} className={prominent ? "w-full shrink-0 sm:ml-auto sm:w-auto" : undefined} disabled={locked || !complete || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{prominent ? source ? tx('Download and process', '下载并处理', 'ダウンロードして処理') : tx('Start processing', '开始处理', '処理を開始') : tx('Start workflow', '开始运行', 'ワークフローを実行')}</Button>
   if (prominent) return <div className="space-y-4"><LaunchCard>{material}<div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-2 pt-2.5 pb-1"><div className="min-w-0 flex-1">{afterInputs}</div>{submit}</div></LaunchCard>{showStatus ? status : null}</div>
-  return <section className="space-y-5">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/connections" className="text-xs text-muted-foreground hover:text-foreground">{tx('Connection settings', '连接设置', '接続設定')}</Link>}{submit}</div></section>
+  return <section className="space-y-5">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/models" className="text-xs text-muted-foreground hover:text-foreground">{tx('Connection settings', '连接设置', '接続設定')}</Link>}{submit}</div></section>
 }

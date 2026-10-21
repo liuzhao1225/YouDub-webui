@@ -7,6 +7,7 @@ export type WorkflowDocuments = { items: WorkflowDocumentRecord[]; legacyDefault
 export type QuerySnapshot<T> = { data: T | null; error: string }
 export type QueryResult<T> = QuerySnapshot<T> & { refresh(): void }
 export type QueryLoader<T> = (signal: AbortSignal) => Promise<T>
+export function taskNeedsPolling(task: { status: string }) { return !['succeeded', 'failed', 'cancelled'].includes(task.status) }
 
 /** One subscribed resource owns its request, polling timer, cancellation, and failure. */
 export class QueryResource<T> {
@@ -14,7 +15,7 @@ export class QueryResource<T> {
   private subscribers = 0
   private controller?: AbortController
   private timer?: ReturnType<typeof setTimeout>
-  constructor(private readonly load: QueryLoader<T>, private readonly pollMs?: number) {}
+  constructor(private readonly load: QueryLoader<T>, private readonly pollMs?: number, private readonly shouldPoll?: (value: T) => boolean) {}
   getSnapshot = () => this.state.getState()
   subscribe = (listener: () => void) => {
     const unsubscribe = this.state.subscribe(listener)
@@ -32,7 +33,7 @@ export class QueryResource<T> {
         const data = await this.load(controller.signal)
         if (controller.signal.aborted) return
         this.state.setState({ data, error: '' }, true)
-        if (this.pollMs) this.timer = setTimeout(() => void run(), this.pollMs)
+        if (this.pollMs && (!this.shouldPoll || this.shouldPoll(data))) this.timer = setTimeout(() => void run(), this.pollMs)
       } catch (failure) {
         if (!controller.signal.aborted) this.state.setState({ error: failure instanceof Error ? failure.message : String(failure) })
       }
@@ -44,7 +45,7 @@ export class QueryResource<T> {
 /** Transport-bound resource factory; no rendering state or component subscriptions. */
 export class QueryClient {
   constructor(private readonly request: Request) {}
-  query<T>(path: string, pollMs?: number) { return new QueryResource<T>((signal) => this.request<T>(path, { signal }), pollMs) }
+  query<T>(path: string, pollMs?: number, shouldPoll?: (value: T) => boolean) { return new QueryResource<T>((signal) => this.request<T>(path, { signal }), pollMs, shouldPoll) }
   workflowDocuments() {
     return new QueryResource<WorkflowDocuments>(async (signal) => {
       const records = new Map<string, WorkflowDocumentRecord>()

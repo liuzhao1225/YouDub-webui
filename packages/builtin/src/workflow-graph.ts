@@ -1,7 +1,7 @@
 import type { Context } from 'cordis'
 import Ajv from 'ajv/dist/2020.js'
 import { AppError, type ArtifactRef, type CatalogService, type Diagnostic, type GraphCompileRequest, type GraphWorkflowDefinition, type JsonObject, type NodeTypeDefinition, type WorkflowDocument, type WorkflowPlan } from '@youdub/sdk'
-import { videoSource } from '@youdub/sdk/video-source'
+import { normalizeMediaRuntime, validateMediaNodeConfig, validateMediaGraph } from './media-graph-validation.js'
 import { parseWorkflowDocument } from './workflow-document.js'
 
 export const name = 'workflow-graph'
@@ -43,21 +43,12 @@ export function inspectGraph(value: unknown, catalog: CatalogService, runtime: R
     if (ready && !type.provider.available) fail(type.provider.unavailableReason || `Provider ${node.provider.id} is not ready.`, { nodeId: node.id }, 'PROVIDER_UNAVAILABLE')
     if (type.runtimeInputSchema) {
       if (!ajv.validate(type.runtimeInputSchema, runtime[node.id] ?? {})) fail(ajv.errorsText(), { nodeId: node.id, field: 'runtimeInput' })
-      else if (type.type === 'youdub.download') {
-        try { runtime = { ...runtime, [node.id]: { ...runtime[node.id], url: videoSource(runtime[node.id].url).url } } }
-        catch (error) { fail((error as Error).message, { nodeId: node.id, field: 'url' }) }
-      }
+      else runtime = normalizeMediaRuntime(node, type, runtime, fail)
     } else if (Object.keys(runtime[node.id] ?? {}).length) fail('This node has no runtime inputs.', { nodeId: node.id })
     const model = type.provider.models?.find(model => model.id === node.provider.model)
     if (type.provider.capability && (!node.provider.model || !node.provider.device)) fail('Select a model and device.', { nodeId: node.id, field: 'provider' })
-    else if (ready && type.provider.models?.length && (!model || !model.devices?.includes(node.provider.device))) fail('Selected model or device is unavailable.', { nodeId: node.id, field: 'provider' })
-    if (model) {
-      if (config.sourceLanguage && config.sourceLanguage !== 'auto' && model.source_languages && !model.source_languages.includes(config.sourceLanguage)) fail('Source language is unsupported.', { nodeId: node.id, field: 'sourceLanguage' })
-      if (config.targetLanguage && model.target_languages && !model.target_languages.includes(config.targetLanguage)) fail('Target language is unsupported.', { nodeId: node.id, field: 'targetLanguage' })
-      if (config.voice && model.voice_modes && !model.voice_modes.includes(config.voice.mode)) fail('Voice mode is unsupported.', { nodeId: node.id, field: 'voice' })
-      if (config.voice?.mode === 'preset' && !model.voices?.some((voice: any) => voice.id === config.voice.id && voice.languages.includes(config.targetLanguage))) fail('Selected voice is unavailable.', { nodeId: node.id, field: 'voice' })
-    }
-    if (config.targetLanguage === 'auto' || (config.sourceLanguage && config.sourceLanguage === config.targetLanguage)) fail('Select different source and target languages.', { nodeId: node.id, field: 'targetLanguage' })
+    else if (ready && type.provider.models?.length && (!model || model.available === false || !model.devices?.includes(node.provider.device))) fail(model?.unavailableReason || 'Selected model or device is unavailable.', { nodeId: node.id, field: 'provider' })
+    validateMediaNodeConfig(node, type, config, model, fail)
   }
   const sourcePort = (nodeId: string, portId: string) => nodeId === '$inputs' ? document.inputs.find(input => input.id === portId) : types.get(nodeId)?.outputs.find(output => output.name === portId)
   const targets = new Set<string>()
@@ -71,60 +62,14 @@ export function inspectGraph(value: unknown, catalog: CatalogService, runtime: R
     targets.add(key)
   }
   const connected = (id: string, port: string) => targets.has(JSON.stringify([id, port]))
-  const upstreamConfig = (nodeId: string, portId: string) => options.get(document.edges.find(edge => edge.target.nodeId === nodeId && edge.target.portId === portId)?.source.nodeId ?? '')
   for (const node of document.nodes) {
-    const type = types.get(node.id), config = options.get(node.id)
-    if (!type || !config) continue
-    for (const port of type.inputs) if (port.required && !connected(node.id, port.id)) fail(`Connect ${typeof port.label === 'string' ? port.label : port.id}.`, { nodeId: node.id, portId: port.id })
-    if (type.type === 'youdub.synthesize' && config.voice?.mode === 'source_clone' && !connected(node.id, 'references')) fail('Source cloning requires voice references.', { nodeId: node.id, portId: 'references' })
-    if (type.type === 'youdub.mix' && config.keepBackground && !connected(node.id, 'background')) fail('Background mixing requires a background input.', { nodeId: node.id, portId: 'background' })
-    const translated = upstreamConfig(node.id, 'translation')
-    if (translated?.targetLanguage && config.targetLanguage && translated.targetLanguage !== config.targetLanguage) fail('Target language must match the connected translation.', { nodeId: node.id, field: 'targetLanguage' })
-    if (type.type === 'youdub.export') {
-      const audio = connected(node.id, 'finalAudio'), timeline = connected(node.id, 'dubbedTimeline')
-      if (audio !== timeline) fail('Connect final audio and its timeline together.', { nodeId: node.id, portId: 'dubbedTimeline' })
-      if (!audio && !config.renderSubtitles) fail('Export requires subtitles or final audio.', { nodeId: node.id, field: 'renderSubtitles' })
-      config.outputMode = audio ? config.renderSubtitles ? 'both' : 'dubbing' : 'subtitles'
-    }
+    const type = types.get(node.id)
+    for (const port of type?.inputs ?? []) if (port.required && !connected(node.id, port.id)) fail(`Connect ${typeof port.label === 'string' ? port.label : port.id}.`, { nodeId: node.id, portId: port.id })
   }
-  const inputSource = (id: string, port: string) => document.edges.find(edge => edge.target.nodeId === id && edge.target.portId === port)?.source
-  const sameSource = (actual: ReturnType<typeof inputSource>, expected: ReturnType<typeof inputSource>) => actual && expected && actual.nodeId === expected.nodeId && actual.portId === expected.portId
-  const expectSource = (nodeId: string, portId: string, expected: ReturnType<typeof inputSource>) => {
-    if (expected && !sameSource(inputSource(nodeId, portId), expected)) fail('Connect data from the same upstream result.', { nodeId, portId })
-  }
-  const translatedTranscript = (id: string) => {
-    const input = inputSource(id, 'translation'), type = input && types.get(input.nodeId)?.type
-    return type === 'youdub.translate' ? inputSource(input!.nodeId, 'transcript') : type === 'youdub.importSubtitles' ? { nodeId: input!.nodeId, portId: 'transcript' } : undefined
-  }
-  for (const node of document.nodes) {
-    const type = types.get(node.id)?.type
-    if (['youdub.synthesize', 'youdub.align', 'youdub.export'].includes(type ?? '')) expectSource(node.id, 'transcript', translatedTranscript(node.id))
-    if (type === 'youdub.synthesize') {
-      const input = inputSource(node.id, 'references')
-      if (input && types.get(input.nodeId)?.type === 'youdub.reference') expectSource(node.id, 'transcript', inputSource(input.nodeId, 'transcript'))
-    }
-    if (type === 'youdub.mix') {
-      const input = inputSource(node.id, 'speechAudio')
-      if (input && types.get(input.nodeId)?.type === 'youdub.synthesize') expectSource(node.id, 'transcript', inputSource(input.nodeId, 'transcript'))
-    }
-    if (type === 'youdub.export' || type === 'youdub.align') {
-      const input = inputSource(node.id, type === 'youdub.export' ? 'finalAudio' : 'dubbedTimeline')
-      if (input && types.get(input.nodeId)?.type === 'youdub.mix') {
-        expectSource(node.id, type === 'youdub.export' ? 'dubbedTimeline' : 'adjustedSpeech', { nodeId: input.nodeId, portId: type === 'youdub.export' ? 'dubbedTimeline' : 'adjustedSpeech' })
-        expectSource(node.id, 'transcript', inputSource(input.nodeId, 'transcript'))
-        if (type === 'youdub.export') expectSource(node.id, 'mediaInfo', inputSource(input.nodeId, 'mediaInfo'))
-      }
-      if (type === 'youdub.export') {
-        const media = inputSource(node.id, 'mediaInfo')
-        if (media && types.get(media.nodeId)?.type === 'youdub.prepare') expectSource(node.id, 'video', inputSource(media.nodeId, 'video'))
-      }
-    }
-  }
+  validateMediaGraph(document, types, options, connected, fail)
   for (const output of document.outputs) {
     const port = sourcePort(output.source.nodeId, output.source.portId)
     if (!port || output.source.nodeId === '$inputs' || port.kind !== 'artifact' || port.schemaId !== output.schemaId) fail('Final output must reference a matching artifact output.', { nodeId: output.source.nodeId, portId: output.source.portId })
-    const type = types.get(output.source.nodeId), config = options.get(output.source.nodeId)
-    if (type?.type === 'youdub.export' && ((['sourceSubtitles', 'translatedSubtitles'].includes(output.source.portId) && !config?.renderSubtitles) || (output.source.portId === 'audio' && !connected(output.source.nodeId, 'finalAudio')))) fail('The selected export output is not produced by this node configuration.', { nodeId: output.source.nodeId, portId: output.source.portId })
   }
   const reachable = new Set<string>(), visit = (id: string) => { if (reachable.has(id) || id === '$inputs') return; reachable.add(id); document.edges.filter(edge => edge.target.nodeId === id).forEach(edge => visit(edge.source.nodeId)) }
   document.outputs.forEach(output => visit(output.source.nodeId))
@@ -138,9 +83,9 @@ export function inspectGraph(value: unknown, catalog: CatalogService, runtime: R
   }
   return { document, diagnostics, order, types, options, runtime }
 }
-export async function apply(ctx: Context, plugin: { integrity: string }) {
+export async function apply(ctx: Context, plugin: { integrity: string; compatibleIntegrities?: string[] }) {
   const workflow: GraphWorkflowDefinition = {
-    id: 'youdub.graph', version: '1.0.0', pluginId: 'youdub.workflow-graph', pluginVersion: '1.0.0', integrity: plugin.integrity,
+    id: 'youdub.graph', version: '1.0.0', pluginId: 'youdub.workflow-graph', pluginVersion: '1.0.0', integrity: plugin.integrity, compatibleIntegrities: plugin.compatibleIntegrities,
     describe: () => ({ id: workflow.id, version: workflow.version, label: '节点工作流', inputs: [], configSchema: { type: 'object', additionalProperties: false }, defaults: {}, ui: { editor: 'youdub.graph' } }),
     graph: { compile: async (request: GraphCompileRequest, catalog) => {
       const result = inspectGraph(request.document, catalog, request.nodeRuntimeInputs)

@@ -95,3 +95,20 @@ it('keeps the initial long graph readable at its start while manual fit can show
   await userEvent.setup().click(screen.getByRole('button', { name: '适应画布' }))
   expect(flow.fitView).toHaveBeenLastCalledWith({ padding: 0.12, maxZoom: 1 })
 })
+
+
+it('uses typed numeric enums and model language options for canvas quick fields', async () => {
+  const document = graph(); document.nodes = [document.nodes[0]]
+  document.nodes[0].provider.model = 'small'
+  document.nodes[0].config = { count: 1, language: 'zh' }
+  const definition: NodeTypeDefinition = { ...type, provider: { ...type.provider, models: [{ id: 'small', languages: ['en'] }] }, configSchema: { properties: {
+    count: { type: ['integer', 'null'], title: '次数', enum: [1, 2] },
+    language: { type: 'string', title: '语言', 'x-optionsFrom': 'languages', 'x-options': [{ value: 'zh', label: '中文' }, { value: 'en', label: 'English' }] },
+  } }, ui: { quickFields: ['count', 'language'] } }
+  const changed = vi.fn(), user = userEvent.setup()
+  render(<LanguageProvider><WorkflowCanvas document={document} types={[definition]} onChange={changed} onOpen={() => {}} /></LanguageProvider>)
+  await user.selectOptions(screen.getByLabelText('次数'), '2')
+  expect(changed.mock.calls.at(-1)![0].nodes[0].config.count).toBe(2)
+  expect(screen.getByRole('option', { name: 'zh · 不可用' })).toBeDisabled()
+  expect(screen.getByRole('option', { name: 'English' })).toBeInTheDocument()
+})

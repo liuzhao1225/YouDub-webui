@@ -10,44 +10,7 @@ import shutil
 import subprocess
 import sys
 
-GROUPS = {
-    "base": {"dotenv": "python-dotenv", "pydantic": "pydantic", "keyring": "keyring", "packaging": "packaging"},
-    "media": {"soundfile": "soundfile", "numpy": "numpy"},
-    "openai": {"openai": "openai", "httpx": "httpx", "socksio": "socksio"},
-    "download": {"yt_dlp": "yt-dlp"},
-    "whisper": {"torch": "torch", "torchaudio": "torchaudio", "whisper": "openai-whisper", "nltk": "nltk"},
-    "voxcpm": {"torch": "torch", "torchaudio": "torchaudio", "torchcodec": "torchcodec", "voxcpm": "voxcpm",
-               "transformers": "transformers", "librosa": "librosa", "einops": "einops",
-               "huggingface_hub": "huggingface-hub", "safetensors": "safetensors", "tqdm": "tqdm"},
-    "demucs": {"torch": "torch", "torchaudio": "torchaudio", "julius": "julius", "dora": "dora-search",
-               "omegaconf": "omegaconf", "einops": "einops", "openunmix": "openunmix", "tqdm": "tqdm"},
-    "qwen_forced_aligner": {"torch": "torch", "torchcodec": "torchcodec", "transformers": "transformers", "librosa": "librosa"},
-}
-
-def distributions(groups):
-    if not isinstance(groups, list) or any(group not in GROUPS for group in groups):
-        raise ValueError("Unknown dependency group.")
-    return {module: dist for group in groups for module, dist in GROUPS[group].items()}
-
-
-def missing_dependencies(groups):
-    selected = distributions(groups)
-    missing = [dist for module, dist in selected.items() if importlib.util.find_spec(module) is None]
-    if importlib.util.find_spec("packaging") is not None:
-        from packaging.version import Version
-        checks = {"voxcpm": lambda v: v >= Version("2.0.3"),
-                  "transformers": lambda v: Version("5.17") <= v < Version("6"),
-                  "nltk": lambda v: v == Version("3.10.3"),
-                  "pydantic": lambda v: v >= Version("2"),
-                  "yt-dlp": lambda v: v >= Version("2026.8.19")}
-        if "torchcodec" in selected.values() and importlib.util.find_spec("torch") is not None:
-            codec = {"2.8": "0.7.0", "2.9": "0.8.1"}.get(".".join(importlib.metadata.version("torch").split(".")[:2]))
-            if codec:
-                checks["torchcodec"] = lambda v: v == Version(codec)
-        for dist, valid in checks.items():
-            if dist in selected.values() and dist not in missing and not valid(Version(importlib.metadata.version(dist))):
-                missing.append(dist)
-    return missing
+from backend.app.resources import GROUPS, distributions, missing_dependencies
 
 
 def verify(groups):

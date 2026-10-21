@@ -58,3 +58,6 @@ export function serializeWorkflowEdits(document: WorkflowDocument): string {
 // Browser memory retains a draft while opening its dedicated node page. It is
 // not persisted as a saved workflow and contains neither uploads nor secrets.
 export const workflowDrafts = new Map<string, { document: WorkflowDocument; saved: string; revision: number; origin: string; undo?: WorkflowDocument[]; redo?: WorkflowDocument[]; canvasViewed?: boolean }>()
+
+// Viewport memory never replaces a newly loaded workflow document.
+export const workflowViews = new Map<string, { revision: number; viewport: WorkflowDocument["presentation"]["viewport"]; canvasViewed: boolean }>()

@@ -19,6 +19,11 @@ function compare(a: string, b: string) {
 export function availableUpdate(value: unknown, current: string, platform: Platform): AvailableUpdate | null {
   versionParts(current)
   if (!Array.isArray(value) || !value.length) throw new Error('Release list is empty or invalid.')
+  const marked = value.filter(release => release?.isLatest === true)
+  if (value.some(release => release?.isLatest !== undefined && typeof release.isLatest !== 'boolean') || marked.length > 1 || (!marked.length && value.some(release => release?.isLatest !== undefined))) throw new Error('Release list must identify exactly one latest release.')
+  // Older feeds already put GitHub Latest first. Historical releases remain
+  // downloadable, but must never override the publisher's selected release.
+  const selectedRelease = marked[0] ?? value[0]
   let latest: AvailableUpdate | null = null
   for (const release of value) {
     if (typeof release?.version !== 'string' || !release.version.startsWith('v') || !Array.isArray(release.platforms)) throw new Error('Invalid release entry.')
@@ -31,7 +36,7 @@ export function availableUpdate(value: unknown, current: string, platform: Platf
     const file = `YouDub-${version}-${platform === 'macos-arm64' ? 'macOS-arm64.dmg' : asset.installer ? 'windows-x64-Setup.exe' : 'windows-x64.zip'}`
     const download = `${repository}/releases/download/v${version}/${file}`
     if (selected.url !== download || selected.checksum !== download + '.sha256') throw new Error('Release asset or checksum URL is invalid.')
-    if (compare(version, current) > 0 && (!latest || compare(version, latest.version) > 0)) {
+    if (release === selectedRelease && compare(version, current) > 0) {
       latest = { version, url: release.url, download, checksum: selected.checksum }
     }
   }

@@ -1,6 +1,6 @@
 import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { text, type TaskStatus, type TaskView } from '../sdk'
+import { text, type TaskStatus, type TaskSummary, type TaskView } from '../sdk'
 
 export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'paused', 'cancelling'])
 export const STATUS_LABELS: Record<string, [string, string, string]> = {
@@ -11,8 +11,8 @@ export const STATUS_LABELS: Record<string, [string, string, string]> = {
   paused: ['Waiting for node reviews', '等待节点确认', 'ノードの確認待ち'], awaiting_review: ['Awaiting review', '待确认', '確認待ち'],
 }
 
-export function taskDisplayName(task: TaskView) {
-  return task.sourceName && task.sourceName !== task.workflowId ? task.sourceName : task.graphSnapshot?.title || task.sourceName
+export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapshot'>) {
+  return task.sourceName && task.sourceName !== task.workflowId ? task.sourceName : task.workflowSource?.title || task.graphSnapshot?.title || task.sourceName
 }
 
 export function TaskState({ status }: { status: string }) {
@@ -20,7 +20,7 @@ export function TaskState({ status }: { status: string }) {
   return <span className={cn('shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium', status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'paused' || status === 'awaiting_review' ? 'bg-status-warning/10 text-status-warning-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground')}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</span>
 }
 
-export function TaskProgress({ task }: { task: TaskView }) {
+export function TaskProgress({ task }: { task: TaskSummary }) {
   const tx = useText()
   const { language } = useI18n()
   if (!ACTIVE_STATUSES.has(task.status)) return null

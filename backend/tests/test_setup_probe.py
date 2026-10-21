@@ -95,3 +95,21 @@ def test_media_resource_requires_subtitles_filter_and_preserves_process_failure(
     monkeypatch.setattr(setup_probe.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=3, stdout="", stderr="loader: missing shared library"))
     assert "exited (3)" in setup_probe.media_error()
     assert "loader: missing shared library" in setup_probe.media_error()
+
+
+def test_install_requirements_fit_the_shared_supported_version_ranges():
+    from pathlib import Path
+    from packaging.requirements import Requirement
+    from packaging.specifiers import SpecifierSet
+    from backend.app.resources import MANIFEST
+    root = Path(__file__).resolve().parents[1] / 'requirements'
+    for group in MANIFEST['groups']:
+        for line in (root / f'{group}.txt').read_text().splitlines():
+            if not line.strip() or line.startswith('#'):
+                continue
+            requirement = Requirement(line)
+            supported = MANIFEST['supportedVersions'].get(requirement.name)
+            if supported:
+                for constraint in requirement.specifier:
+                    if constraint.operator == '==':
+                        assert SpecifierSet(supported).contains(constraint.version), (group, line, supported)

@@ -7,7 +7,7 @@ import { createRequire } from 'node:module'
 import { AppError } from '@youdub/sdk'
 
 interface ClientModule { id: string; version: string; access: 'public' | 'authenticated'; url: string; css?: string[]; config?: object }
-interface PythonEntry { entry: string; requirements?: string; provider: Record<string, any>; options?: object; runtimeAdapter?: string }
+interface PythonEntry { entry: string; requirements?: string; provider: Record<string, any>; options?: object; runtimeAdapter?: string; corrections?: 'schema' }
 interface Installed { id: string; version: string; integrity: string; source: string; commit?: string; directory: string; host?: string; python?: PythonEntry; client?: { entry: string; css?: string[]; access?: 'public' | 'authenticated' }; enabled: boolean; config: object }
 export interface ExtensionsConfig { root: string; repoRoot: string; python?: string; builtinClientManifest?: string; managementOnly?: boolean }
 export interface InstallRequest { source: string; ref?: string; enabled?: boolean; config?: object }
@@ -39,7 +39,7 @@ export default class ExtensionsService extends Service {
       if (item.python) return {
         id: item.id, name: pathToFileURL(resolve(this.config.repoRoot, 'packages/builtin/src/python-provider.ts')).href,
         inject: item.python.runtimeAdapter ? ['store'] : undefined,
-        config: { ...item.config, descriptor: { ...item.python.provider, pluginId: item.id, pluginVersion: item.version, integrity: item.integrity }, command: join(item.directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python'), args: ['-B', resolve(item.directory, item.python.entry)], cwd: item.directory, options: item.python.options || {}, runtimeAdapter: item.python.runtimeAdapter, $plugin: identity },
+        config: { ...item.config, descriptor: { ...item.python.provider, pluginId: item.id, pluginVersion: item.version, integrity: item.integrity }, command: join(item.directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python'), args: ['-B', resolve(item.directory, item.python.entry)], cwd: item.directory, options: item.python.options || {}, runtimeAdapter: item.python.runtimeAdapter, corrections: item.python.corrections, $plugin: identity },
       }
       return { id: item.id, name: pathToFileURL(resolve(item.directory, item.host!)).href, config: { ...item.config, $plugin: identity } }
     })
@@ -135,6 +135,7 @@ export default class ExtensionsService extends Service {
       if (meta.build) await run('npm', ['run', 'build'], directory)
       await verifySharedModules(directory, shared)
       if (meta.python) {
+        if (meta.python.corrections !== undefined && meta.python.corrections !== 'schema') throw new AppError('INVALID_CONFIG', 'Python corrections must explicitly use schema validation.', 422)
         if (meta.host) throw new AppError('INVALID_CONFIG', 'Choose a Host entry or the standard Python bridge.', 422)
         await confined(directory, meta.python.entry)
         if (!meta.python.provider?.id || !Array.isArray(meta.python.provider.operations) || !meta.python.provider.operations.length) throw new AppError('INVALID_CONFIG', 'Python plugins require a provider descriptor with operations.', 422)

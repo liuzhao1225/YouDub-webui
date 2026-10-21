@@ -4,13 +4,12 @@ import { delimiter, dirname, join } from 'node:path'
 import type { Context } from 'cordis'
 import { DownloadClient, fileSize } from './setup-download.js'
 import runtimeManifest from './setup-runtime.json' with { type: 'json' }
+import { dependencyGroups, acceleratedGroups, type DependencyGroup } from './runtime-resources.js'
+export { dependencyGroups, type DependencyGroup } from './runtime-resources.js'
 
 export type SetupStage = 'pending' | 'running' | 'ready' | 'failed'
 export interface EnvironmentStep { id: string; name: string; status: SetupStage; detail?: string; source?: string }
 export interface EnvironmentConfig { root: string; repoRoot: string; python: string }
-export const dependencyGroups = ['base', 'media', 'download', 'openai', 'whisper', 'voxcpm', 'demucs', 'qwen_forced_aligner'] as const
-export type DependencyGroup = typeof dependencyGroups[number]
-const acceleratedGroups: DependencyGroup[] = ['whisper', 'voxcpm', 'demucs', 'qwen_forced_aligner']
 export function platformTarget(platform = process.platform, arch = process.arch) {
   const targets: Record<string, string> = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin', 'linux-arm64': 'aarch64-unknown-linux-gnu', 'linux-x64': 'x86_64-unknown-linux-gnu', 'win32-x64': 'x86_64-pc-windows-msvc' }
   const target = targets[`${platform}-${arch}`]

@@ -13,10 +13,13 @@
 | React 订阅边界 | [web-react 快照绑定](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/web-react/src/bind.ts) | `web-react.tsx` 使用 `useSyncExternalStore` 连接 observable；`bindComponent` 在注册时捕获所需能力并注入 props |
 | 动态插件与共享平台 | [共享平台入口](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/web/src/platform.ts)、[外壳边界](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/web/README.md) | 保留 YouDub 的 manifest + 原生 ESM 加载，import map 共享 React、Cordis 和 Client SDK，内置页面不静态打入入口 |
 | 静态页面托管 | [Web 应用构建声明](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/apps/web/package.json) | Vite 输出静态文件，由 Cordis Host 的 `web` 插件同源提供页面和 API；桌面端复用该入口 |
+| 模型供应商管理 | [模型设置源文件](https://github.com/liuzhao1225/deepseek-harness/tree/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-models/src/client)与 `llm-pi-ai` | 直接复用目录、编辑器、store、schema 与 provider 模块；YouDub 适配现有 HTTP/store/secrets/主题，并按用户截图组合第三方供应商与自定义 API 标签；首次配置与 `/settings/models` 共用同一组件 |
 
 保留现有 Tailwind CSS、Base UI、React Flow、图标、品牌色、排版、响应式布局与主题。工作流 URL、图文档、节点结果编辑和逐节点人工确认沿用现有契约。
 
 版本与插件协议按 YouDub 的兼容要求选择：上游参考版本使用 React 18/Vite 6，YouDub 使用 React 19/Vite 8。上游的 `window.__DSH_BOOT__`、自定义模块传输、完整 store 中间件和聊天产品组件未引入；YouDub 继续使用 `/api/v2/client-manifest`、现有 Cordis 插件与 ESM 资源协议。
+
+模型设置的复制范围及适配见[设置与准备流程说明](settings-and-setup-unification.md#122-harness-模型供应商管理接入)。完整原 MIT 声明保留在[第三方声明](../../THIRD_PARTY_NOTICES.md)，桌面 runtime 同步分发；复制这些模块不代表引入上游账号登录或自动重试系统。
 
 ## 代码职责
 

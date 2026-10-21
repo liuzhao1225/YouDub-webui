@@ -47,8 +47,9 @@ jobs:
           python-version: "3.12"
       - name: 检查 MPS 和跨平台设备选择
         run: |
-          python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ pytest numpy
+          python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ pytest numpy -r backend/requirements/base.txt
           python -m pytest backend/tests/test_accelerators.py backend/tests/test_worker_native_import.py -q
+          python -c 'import sys; print("YOUDUB_TEST_PYTHON=" + sys.executable)' >> "$GITHUB_ENV"
 
       - name: 安装前端构建依赖
         run: npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
@@ -65,6 +66,12 @@ jobs:
           path: ${{ runner.temp }}/YouDub-unsigned.tar.gz
           retention-days: 1
           if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: macos-smoke-evidence
+          path: dist/macos-smoke.json
+          if-no-files-found: warn
 
   frontend:
     name: 前端质量与安全

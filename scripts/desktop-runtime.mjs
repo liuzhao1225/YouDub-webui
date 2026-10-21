@@ -4,6 +4,7 @@ import { basename, dirname, join } from 'node:path'
 import { transform } from 'esbuild'
 
 export const nodeVersion = '22.23.2'
+export const nodeChecksumFilename = (version = nodeVersion) => `node-${version}-SHASUMS256.txt`
 export function run(command, args, options = {}) {
   const result = spawnSync(command, args, { stdio: 'inherit', windowsHide: true, ...options })
   if (result.error) throw result.error
@@ -17,7 +18,7 @@ export function runNpm(args, options) {
 export async function assembleRuntime(root, runtime) {
   await mkdir(runtime, { recursive: true })
   const filter = file => !['.git', '__pycache__', '.venv', 'node_modules', '.pytest_cache', '.DS_Store', 'env.txt'].includes(basename(file)) && !basename(file).startsWith('.env')
-  for (const file of ['package.json', 'package-lock.json', 'tsconfig.json', 'youdub.config.ts', 'requirements.txt', 'LICENSE', 'apps/host', 'packages/sdk', 'packages/builtin', 'backend/app', 'backend/workers', 'backend/requirements', 'submodule/demucs', 'apps/desktop/server.mjs', 'apps/web/plugin-dist', 'apps/web/dist']) {
+  for (const file of ['package.json', 'package-lock.json', 'tsconfig.json', 'youdub.config.ts', 'requirements.txt', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'apps/host', 'packages/sdk', 'packages/builtin', 'backend/app', 'backend/workers', 'backend/requirements', 'submodule/demucs', 'apps/desktop/server.mjs', 'apps/desktop/ready-smoke.js', 'apps/web/plugin-dist', 'apps/web/dist']) {
     await cp(join(root, file), join(runtime, file), { recursive: true, filter })
   }
   await access(join(runtime, 'submodule/demucs/demucs/__init__.py'))

@@ -1,16 +1,15 @@
-import type { Bindings, JsonObject, JsonSchema, LocalizedText, NodeTypeDefinition, WorkflowDocument } from '../sdk'
+import type { Bindings, JsonObject, NodeTypeDefinition, WorkflowDocument } from '../sdk'
 import { text } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Popover } from '@base-ui/react/popover'
 import { ChevronDown } from 'lucide-react'
-import { ConfigEditor, fieldType } from './schema-form'
+import { ConfigEditor } from './schema-form'
+import { fieldOptions, fieldType, fieldValue, nodeModel } from '@/runtime/schema-fields'
 import { nodeDefinition } from './workflow-utils'
 
 export const optionPillClassName = 'inline-flex h-8 w-auto max-w-full gap-1.5 rounded-full border-border bg-muted px-3 text-[13px] shadow-none hover:bg-accent'
-type QuickField = JsonSchema & { 'x-options'?: { value: unknown; label: LocalizedText }[]; 'x-optionsFrom'?: string; 'x-short-title'?: LocalizedText }
-type QuickOption = { value: unknown; label: LocalizedText; disabled?: boolean }
 
 export function WorkflowOptions({ document, types, disabled, onChange, useSlot }: {
   document: WorkflowDocument; types: NodeTypeDefinition[]; disabled: boolean
@@ -20,7 +19,7 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
   const fields = document.nodes.flatMap((node) => {
     const definition = nodeDefinition(node, types)
     return (definition?.ui?.quickFields ?? []).flatMap((key) => {
-      const field = definition?.configSchema.properties?.[key] as QuickField | undefined
+      const field = definition?.configSchema.properties?.[key]
       return field ? [{ node, definition, key, field }] : []
     })
   })
@@ -34,20 +33,15 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
     const title = sameLabels.length > 1 ? `${nodeTitle} · ${shortLabel}` : shortLabel
     const ariaLabel = fields.filter((item) => (text(item.field['x-title'] ?? item.field.title, language) || item.key) === label).length > 1 ? `${nodeTitle} · ${label}` : label
     const declared = field['x-options'] ?? []
-    const model = definition?.provider.models?.find((item) => typeof item !== 'string' && item.id === node.provider.model) as Record<string, unknown> | undefined
-    const modelOptions = field['x-optionsFrom'] && model?.[field['x-optionsFrom']]
-    const knownSupport = !!model && Array.isArray(modelOptions)
-    const options: QuickOption[] = knownSupport ? modelOptions.map((value) => ({ value, label: declared.find((item) => item.value === value)?.label ?? String(value) }))
-      : field.enum ? field.enum.map((value) => ({ value, label: declared.find((item) => item.value === value)?.label ?? String(value) }))
-      : declared.length ? [...declared] : field.type === 'boolean' ? [{ value: true, label: tx('On', '开启', 'オン') }, { value: false, label: tx('Off', '关闭', 'オフ') }] : []
-    const value = node.config[key], freeform = !options.length && !field.enum && !declared.length && field.type !== 'boolean'
+    const { options, constrained } = fieldOptions(field, nodeModel(node, definition))
+    const value = node.config[key], freeform = !constrained && fieldType(field) !== 'boolean'
     if (freeform) {
       const type = fieldType(field), numeric = type === 'number' || type === 'integer'
       const simple = numeric || type === 'string'
       return <Popover.Root key={`${document.id}:${node.id}:${key}`}>
         <Popover.Trigger disabled={disabled} aria-label={ariaLabel} className={`border items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/25 disabled:opacity-50 ${optionPillClassName}`}><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx('Configure', '设置', '設定')}</span><ChevronDown className="size-4 shrink-0 text-subtle-foreground" /></Popover.Trigger>
         <Popover.Portal><Popover.Positioner sideOffset={6} align="start" className="z-[60]"><Popover.Popup aria-label={ariaLabel} className="w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-elevated p-3 text-popover-foreground shadow-float outline-none">
-          {simple ? <Input aria-label={label} autoFocus disabled={disabled} type={numeric ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={type === 'integer' ? 1 : 'any'} minLength={field.minLength} maxLength={field.maxLength} value={value === undefined || value === null ? '' : String(value)} onChange={(event) => onChange(node.id, { ...node.config, [key]: numeric ? event.target.value === '' ? undefined : Number(event.target.value) : event.target.value })} /> : <ConfigEditor useSlot={useSlot} ownerId={`quick:${node.type}`} mode="options" schema={{ type: 'object', properties: { [key]: field } }} value={node.config} readOnly={disabled} diagnostics={[]} onChange={(config) => onChange(node.id, { ...node.config, [key]: config[key] })} />}
+          {simple ? <Input aria-label={label} autoFocus disabled={disabled} type={numeric ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={type === 'integer' ? 1 : 'any'} minLength={field.minLength} maxLength={field.maxLength} value={value === undefined || value === null ? '' : String(value)} onChange={(event) => onChange(node.id, { ...node.config, [key]: fieldValue(field, event.target.value) })} /> : <ConfigEditor useSlot={useSlot} ownerId={`quick:${node.type}`} mode="options" schema={{ type: 'object', properties: { [key]: field } }} value={node.config} readOnly={disabled} diagnostics={[]} onChange={(config) => onChange(node.id, { ...node.config, [key]: config[key] })} />}
         </Popover.Popup></Popover.Positioner></Popover.Portal>
       </Popover.Root>
     }

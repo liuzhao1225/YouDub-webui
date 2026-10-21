@@ -13,12 +13,20 @@ function release(version: string, platforms = ['macos-arm64', 'windows-x64']) {
     return { id, url, checksum: url + '.sha256' }
   }) }
 }
-test('compares numeric versions, chooses the current platform and never offers a downgrade', () => {
-  const feed = [release('0.9.0'), release('0.11.0', ['macos-arm64']), release('0.10.0')]
+test('follows GitHub Latest even when a higher historical release exists, without downgrades', () => {
+  const feed = [release('0.11.0'), { ...release('0.10.0'), isLatest: true }, release('0.9.0')]
   assert.equal(availableUpdate(feed, '0.9.0', 'windows-x64')?.version, '0.10.0')
-  assert.equal(availableUpdate(feed, '0.9.0', 'macos-arm64')?.version, '0.11.0')
+  assert.equal(availableUpdate(feed, '0.9.0', 'macos-arm64')?.version, '0.10.0')
+  assert.equal(availableUpdate(feed, '0.10.0', 'macos-arm64'), null)
   assert.equal(availableUpdate(feed, '0.11.0', 'macos-arm64'), null)
   assert.equal(availableUpdate(feed, '1.0.0', 'windows-x64'), null)
+})
+test('legacy feeds use their first release and never substitute another platform release', () => {
+  const feed = [release('0.10.0', ['macos-arm64']), release('0.11.0')]
+  assert.equal(availableUpdate(feed, '0.9.0', 'macos-arm64')?.version, '0.10.0')
+  assert.equal(availableUpdate(feed, '0.9.0', 'windows-x64'), null)
+  assert.throws(() => availableUpdate(feed.map(item => ({ ...item, isLatest: true })), '0.9.0', 'macos-arm64'), /exactly one latest/)
+  assert.throws(() => availableUpdate([{ ...feed[0], isLatest: false }], '0.9.0', 'macos-arm64'), /exactly one latest/)
 })
 test('prefers a validated Windows EXE installer and still accepts historical ZIP releases', () => {
   const item = release('0.0.5', ['windows-x64'])

@@ -40,6 +40,15 @@ const missing: ResourceState = { status: 'missing', requirements: [{ providerId:
 const base = '/api/v2/workflow-documents/resources/'
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.useRealTimers(); vi.unstubAllGlobals() })
 
+it('keeps workbench resource requirements collapsed and preserves visible failure causes', () => {
+  const state: ResourceState = { ...missing, status: 'failed', error: 'Download denied', environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }] }
+  render(<LanguageProvider><WorkflowResources resources={{ result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }} types={types} hideReady /></LanguageProvider>)
+  expect(screen.getByText('Download denied')).toBeVisible()
+  expect(screen.getByRole('button', { name: '重试准备' })).toBeVisible()
+  expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
+  expect(screen.getByText(/Python 3.12/).closest('details')).not.toHaveAttribute('open')
+})
+
 it('rejects an unsupported dropped file with a visible error', async () => {
   mount(<WorkflowRun document={graph()} types={types} />, vi.fn(async () => ready))
   await screen.findByText('资源已就绪')
@@ -80,7 +89,7 @@ it('keeps the original link-above-upload layout and submits URL input through a 
 })
 function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
   const push = vi.fn()
-  const context = { apiClient: { request }, navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] } } as unknown as Context
+  const context = { effect: (effect: () => unknown) => effect(), apiClient: { request }, navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] } } as unknown as Context
   const wrap = (child: ReactNode) => <PluginContextProvider context={context}><LanguageProvider>{child}</LanguageProvider></PluginContextProvider>
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
@@ -93,12 +102,12 @@ const Resources = bindTestComponent(ResourceView, ['useWorkflowResources'])
 it('shows connection configuration separately from language support and blocks starting', async () => {
   const request = vi.fn(async () => ({ status: 'missing', requirements: [{ providerId: 'test', ready: false, automatic: false, configurationRequired: true, reason: 'Provider connection is not configured.' }] }))
   const { push } = mount(<Resources />, request)
-  await screen.findByText('请配置所需服务')
+  await screen.findByText('语音识别未配置')
   expect(screen.getByText('请配置服务地址、API Key 和模型。')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
   expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getByRole('link', { name: '配置服务连接' }))
-  expect(push).toHaveBeenCalledWith('/settings/connections')
+  expect(push).toHaveBeenCalledWith('/settings/models')
 })
 it('checks automatically and leaves only the ready state when no download is needed', async () => {
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<ResourceState>>(async () => ready)
@@ -336,7 +345,7 @@ it('leads with node names and actions for configuration errors while keeping ori
   ]
   mount(<WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} onSelect={onSelect} />, vi.fn())
   expect(screen.getByText('识别字幕: 请在设置中填写服务地址和 API Key。')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/connections')
+  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/models')
   expect(screen.getByText('成片导出: 请为此节点选择模型和运行设备。')).toBeInTheDocument()
   expect(screen.getByText('Select a model and device.').closest('details')).not.toHaveAttribute('open')
   expect(screen.getByText('Provider connection is not configured.').closest('details')).not.toHaveAttribute('open')

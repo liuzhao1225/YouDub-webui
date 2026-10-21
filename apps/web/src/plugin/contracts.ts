@@ -6,6 +6,9 @@ export type JsonSchema = {
   minimum?: number; maximum?: number; minLength?: number; maxLength?: number
   additionalProperties?: boolean; items?: JsonSchema
   'x-title'?: LocalizedText
+  'x-options'?: { value: unknown; label: LocalizedText }[]
+  'x-optionsFrom'?: string
+  'x-short-title'?: LocalizedText
 }
 export type InputSlot = { name: string; label: LocalizedText; required: boolean; acceptedMimeTypes: string[]; maxBytes?: number }
 export type WorkflowDescription = {
@@ -16,8 +19,9 @@ export type WorkflowDescription = {
 export type ProviderDescription = {
   id: string; label?: LocalizedText; operations: { id: string }[]; capability?: string; adapter?: string; contractVersion?: string
   execution?: 'local' | 'remote'
+  legacy?: boolean
   ready?: boolean; available?: boolean; reason?: string; unavailableReason?: string
-  models?: Array<string | { id: string; devices?: string[]; languages?: string[]; voice_modes?: string[]; voices?: { id: string; label?: LocalizedText; languages?: string[] }[] }>
+  models?: Array<string | { id: string; name?: string; available?: boolean; unavailableReason?: string; maxTokens?: number; devices?: string[]; languages?: string[]; voice_modes?: string[]; voices?: { id: string; label?: LocalizedText; languages?: string[] }[] }>
   configSchema?: JsonSchema; parametersSchema?: JsonSchema
 }
 export type Catalog = { workflows: WorkflowDescription[]; providers: ProviderDescription[] }
@@ -43,7 +47,8 @@ export type TaskView = {
   workflowSource?: { documentId: string; documentRevision: number | null; title: string }
   nodeRuntimeInputs?: Record<string, JsonObject>
 }
-export type TaskPage = { items: TaskView[]; hasMore: boolean; limit: number; offset: number }
+export type TaskSummary = Omit<TaskView, 'config' | 'graphSnapshot' | 'nodeRuntimeInputs'>
+export type TaskPage = { items: TaskSummary[]; hasMore: boolean; limit: number; offset: number }
 export type ClientModule = {
   id: string; version: string; access: 'public' | 'authenticated'; url: string
   css?: string[]; config?: JsonObject

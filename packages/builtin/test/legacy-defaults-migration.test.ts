@@ -50,7 +50,9 @@ test('all legacy modes preserve every selection and optional branch without requ
   for (const config of [defaults(), defaults('dubbing'), defaults('dubbing', 'preset'), defaults('both', 'preset', true, true), defaults('both', 'source_clone', false)]) {
     const validated = await ctx.store.call('settings.validate_defaults', { defaults: config })
     const document = await legacyDefaultsDocument(validated, ctx.catalog)
-    const original = await ctx.catalog.workflow('youdub.localize').plan({}, validated, ctx.catalog)
+    const workflow = ctx.catalog.workflow('youdub.localize')
+    assert.ok('plan' in workflow)
+    const original = await workflow.plan({}, validated, ctx.catalog)
     assert.deepEqual(document.nodes.map(node => node.id), original.steps.map(step => step.id))
     assert.deepEqual(inspectGraph(document, ctx.catalog, {}, false).diagnostics, [])
     for (const node of document.nodes) {

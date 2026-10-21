@@ -10,6 +10,7 @@ import { EnvironmentSetup, type EnvironmentConfig, type DependencyGroup, type En
 import modelManifest from './setup-models.json' with { type: 'json' }
 import { parseWorkflowDocument } from './workflow-document.js'
 import { nodeTypes } from './workflow-graph.js'
+import { acceleratedGroups, providerResources } from './runtime-resources.js'
 
 export interface SetupConfig extends EnvironmentConfig { entries: EntryOptions[]; version: string }
 type ModelStatus = 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
@@ -30,13 +31,6 @@ export interface ResourcePreparationSnapshot {
   error?: string
   activePreparation?: { selections: ResourceSelection[]; status: ResourcePreparationSnapshot['status']; error?: string }
 }
-const providerGroups: Record<string, DependencyGroup[]> = {
-  'youdub.media': ['media'], 'youdub.download': ['download', 'media'], openai: ['openai'],
-  whisper: ['media', 'whisper'], voxcpm: ['media', 'voxcpm'],
-  demucs: ['media', 'demucs'], qwen_forced_aligner: ['media', 'qwen_forced_aligner'],
-}
-const modelProviders: Record<string, string> = { whisper: 'whisper', voxcpm: 'voxcpm', demucs: 'demucs', qwen_forced_aligner: 'qwen' }
-const automaticModels: Record<string, string> = { whisper: 'tiny', voxcpm: 'VoxCPM2', demucs: 'htdemucs', qwen_forced_aligner: 'Qwen3-ForcedAligner-0.6B-hf' }
 const message = (error: unknown) => error instanceof Error ? error.message : String(error)
 function cancelled(error: unknown, signal: AbortSignal): boolean {
   if (!signal.aborted) return false
@@ -154,7 +148,7 @@ export default class SetupService extends Service {
     for (const selection of selections) {
       const provider = providers.find(item => item.id === selection.providerId)
       if (!provider) throw new AppError('PROVIDER_UNAVAILABLE', `Provider ${selection.providerId} is not registered.`, 422)
-      if (selection.model && selection.model !== automaticModels[provider.id] && !provider.models?.some(model => model.id === selection.model)) {
+      if (selection.model && selection.model !== providerResources(provider)?.model?.id && !provider.models?.some(model => model.id === selection.model)) {
         throw new AppError('MODEL_UNAVAILABLE', `所选模型不可用：${selection.model}`, 422)
       }
     }
@@ -163,11 +157,12 @@ export default class SetupService extends Service {
   async resourceInventory() {
     const providers = (this.catalog?.listProviders() || []).filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
     const items = providers.flatMap(provider => {
-      const models = [...new Set([...(automaticModels[provider.id] ? [automaticModels[provider.id]!] : []), ...(provider.models || []).map(model => model.id)])]
+      const resources = providerResources(provider)
+      const models = [...new Set([...(resources?.model ? [resources.model.id] : []), ...(provider.models || []).map(model => model.id)])]
       return (models.length ? models : [undefined]).map(model => ({
         providerId: provider.id, ...(model ? { model } : {}), label: provider.label || provider.id,
-        automatic: Boolean(providerGroups[provider.id]) && (!model || model === automaticModels[provider.id]),
-        ...(model === automaticModels[provider.id] && modelProviders[provider.id] ? { downloadId: modelProviders[provider.id] } : {}),
+        automatic: Boolean(resources) && (!model || model === resources?.model?.id),
+        ...(resources?.model && model === resources.model.id ? { downloadId: resources.model.downloadId } : {}),
       }))
     })
     const models = this.models.filter(model => items.some(item => item.downloadId === model.id))
@@ -202,12 +197,23 @@ export default class SetupService extends Service {
       .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
   }
   private groups(selections: ResourceSelection[]) {
-    return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => providerGroups[item.providerId] || [])])]
+    const providers = this.catalog?.listProviders() ?? []
+    return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => {
+      const provider = providers.find(provider => provider.id === item.providerId)
+      return provider ? providerResources(provider)?.dependencyGroups ?? [] : []
+    })])]
   }
   private async inspectResources(selections: ResourceSelection[]): Promise<ResourcePreparationSnapshot> {
     const requirements: ResourceRequirement[] = []
     const requiredModels = new Set<string>()
-    const base = await this.resourceEnvironment.probe('resources', ['base'])
+    const inspections = new Map<string, Promise<any>>()
+    const inspect = (groups: DependencyGroup[]) => {
+      const selected = [...new Set<DependencyGroup>(['base', ...groups])].sort()
+      const key = selected.join(',')
+      if (!inspections.has(key)) inspections.set(key, this.resourceEnvironment.probe('resources', selected))
+      return inspections.get(key)!
+    }
+    const base = await inspect(['base'])
     const missingPackages = new Set<string>(base.missing)
     let mediaReady = true, mediaReason: string | undefined, punktReady = true
     // A user may have installed a package/model outside this process. Refresh
@@ -217,44 +223,46 @@ export default class SetupService extends Service {
     }
     for (const selection of selections) {
       const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
-      const groups = providerGroups[selection.providerId]
+      const resources = provider && providerResources(provider)
+      const groups = resources?.dependencyGroups
       if (!groups) {
         const ready = provider?.available === true && (!selection.model || provider.models?.some(model => model.id === selection.model) === true)
         requirements.push({ ...selection, ready, automatic: false, missingPackages: [],
           ...(!ready ? { reason: provider?.unavailableReason || '请根据该插件的要求准备运行依赖。' } : {}) })
         continue
       }
-      const result = await this.resourceEnvironment.probe('resources', ['base', ...groups])
+      const result = await inspect(groups)
       for (const name of result.missing) missingPackages.add(name)
       if (!result.media) { mediaReady = false; mediaReason = result.mediaReason }
       if (!result.punkt) punktReady = false
       let reason = result.missing.length ? `缺少运行依赖：${result.missing.join(', ')}` :
         !result.media ? result.mediaReason || '缺少 FFmpeg 或 FFprobe。' : !result.punkt ? '缺少 Whisper 分句资源。' :
           !result.demucsSource ? '缺少 Demucs 子模块源码。' : undefined
-      const modelId = modelProviders[selection.providerId]
-      let automatic = !modelId || !selection.model || selection.model === automaticModels[selection.providerId]
+      const modelId = resources?.model?.downloadId
+      let automatic = !modelId || !selection.model || selection.model === resources?.model?.id
       let configurationRequired = false
       if (!reason && provider?.execution === 'remote') {
+        const model = provider.models?.find(model => model.id === selection.model)
         if (!provider.available) reason = provider.unavailableReason || '远端服务尚未配置。'
         else if (!selection.model) reason = '请在工作流节点中选择翻译模型。'
-        else if (!provider.models?.some(model => model.id === selection.model)) reason = `所选模型不可用：${selection.model}`
+        else if (!model || model.available === false) reason = model?.unavailableReason || `所选模型不可用：${selection.model}`
         if (reason) { automatic = false; configurationRequired = true }
       }
       if (modelId && automatic) requiredModels.add(modelId)
       if (!reason && modelId) {
-        const modelProbe = (await this.resourceEnvironment.probe('models', [selection.providerId]))[selection.providerId]
-        const selectedModel = selection.model || automaticModels[selection.providerId]
-        if (!modelProbe.models.some((model: { id: string }) => model.id === selectedModel)) {
-          reason = modelProbe.unavailable_reason || `未安装模型：${selectedModel}`
+        const selectedModel = selection.model || resources?.model?.id
+        if (!provider?.models?.some(model => model.id === selectedModel)) {
+          reason = provider?.unavailableReason || `未安装模型：${selectedModel}`
         }
       }
+      if (!reason && provider?.available !== true) reason = provider?.unavailableReason || '运行服务尚未就绪。'
       requirements.push({ ...selection, ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
     }
     const models = this.models.filter(model => requiredModels.has(model.id))
     await this.refreshModelSizes(models)
     for (const model of models) {
       if (model.status !== 'ready') for (const requirement of requirements) {
-        if (requirement.automatic && modelProviders[requirement.providerId] === model.id) {
+        if (requirement.automatic && this.catalog?.listProviders().some(provider => provider.id === requirement.providerId && providerResources(provider)?.model?.downloadId === model.id)) {
           requirement.ready = false
           requirement.reason ??= `${model.name} 模型文件未安装或不完整。`
         }
@@ -262,7 +270,7 @@ export default class SetupService extends Service {
     }
     const groups = this.groups(selections)
     const environment: EnvironmentStep[] = this.environment.steps.filter(step => step.id === 'python').map(step => ({ ...step, detail: [step.detail, this.config.python].filter(Boolean).join(' · ') }))
-    if (groups.some(group => ['whisper', 'voxcpm', 'demucs', 'qwen_forced_aligner'].includes(group))) {
+    if (groups.some(group => acceleratedGroups.includes(group))) {
       const plan = await this.resourceEnvironment.probe('acceleration-plan')
       if (plan.installed) {
         const actual = await this.resourceEnvironment.probe('acceleration')

@@ -1,9 +1,22 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from 'vitest'
-import { QueryClient, QueryResource } from './query'
+import { QueryClient, QueryResource, taskNeedsPolling } from './query'
 import type { Request } from './types'
 
 afterEach(() => vi.useRealTimers())
+
+it('stops polling terminal tasks while still allowing an explicit refresh', async () => {
+  vi.useFakeTimers()
+  const load = vi.fn().mockResolvedValueOnce({ status: 'running' }).mockResolvedValue({ status: 'succeeded' })
+  const resource = new QueryResource(load, 100, taskNeedsPolling)
+  const stop = resource.subscribe(() => {})
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(load).toHaveBeenCalledTimes(2)
+  resource.refresh()
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(load).toHaveBeenCalledTimes(3)
+  stop()
+})
 
 it('keeps the last result and exposes a polling failure until the user refreshes', async () => {
   vi.useFakeTimers()

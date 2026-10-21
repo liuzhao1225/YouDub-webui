@@ -3,7 +3,7 @@ import { SetupController, TranslationSetupController } from './onboarding'
 
 const setup = { phase: 'models', platform: 'darwin', arch: 'arm64', token: 'setup-token', canRetry: true, environment: [], models: [] }
 const setupResponse = (body: unknown) => ({ ok: true, text: async () => JSON.stringify(body) })
-const response = (body: unknown) => ({ ok: true, json: async () => body })
+const response = (body: unknown) => Response.json(body)
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
 it('stops setup polling at readiness and aborts owned requests on disposal', async () => {
@@ -52,23 +52,21 @@ it('keeps setup failures visible until an explicit reconnect', async () => {
   controller.stop()
 })
 
-it('does not persist translation settings after its view closes during the connection test', async () => {
-  let finish!: (value: unknown) => void
-  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
-    .mockResolvedValueOnce(response({ connections: [] }))
-    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+it('aborts first-run provider requests when the setup view closes', async () => {
+  let finish!: (value: Response) => void
+  const fetch = vi.fn().mockImplementation((path: string) => {
+    if (path === '/api/auth/session') return Promise.resolve(response({ csrf_token: 'csrf' }))
+    if (path === '/api/v2/settings') return Promise.resolve(response({}))
+    return new Promise(resolve => { finish = resolve })
+  })
   vi.stubGlobal('fetch', fetch)
   const controller = new TranslationSetupController()
   controller.start()
-  await vi.waitFor(() => expect(controller.getSnapshot().settings).not.toBeNull())
-  controller.change({ key: 'key', model: 'model' })
-  const saving = controller.save()
-  await controller.save()
-  expect(fetch).toHaveBeenCalledTimes(3)
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3))
   controller.stop()
   expect(fetch.mock.calls[2][1].signal.aborted).toBe(true)
-  finish(response({ ok: true }))
-  await saving
-  expect(fetch).toHaveBeenCalledTimes(3)
+  finish(response({ providers: [{ capability: 'translation', available: true }] }))
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
   expect(controller.getSnapshot().ready).toBe(false)
+  await expect(controller.request('/api/v2/models/settings')).rejects.toThrow('closed')
 })

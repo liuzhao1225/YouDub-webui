@@ -2,27 +2,27 @@
 
 当前阶段为开发。按用户要求，本对话只做必要的定向测试和页面检查，不执行构建、打包或发布验收。文中涉及安装包和发布的检查留待明确进入发布阶段后执行。
 
-状态：已在 `codex/harness-frontend` 实施；开发态验证记录见文末。核对日期：2026-10-21。设计审查基线为 `b490320`，参考首次引导、工作流资源准备和 deepseek-harness 固定版本源码。未执行生产构建、打包或发布。
+状态：设置与资源共用、设置弹窗已在 `codex/harness-frontend` 实施；本轮模型供应商管理接入正在开发验证，见 12.2。核对日期：2026-10-21。首期设计审查基线为 `b490320`，参考首次引导、工作流资源准备和 deepseek-harness 固定版本源码。未执行生产构建、打包或发布。
 
 ## 1. 产品决定
 
 设置页移除“默认处理配置”。语言、配音、背景音、字幕输出和人工确认属于工作流及节点；工作台根据所选工作流显示节点声明的快捷设置。用户需要长期复用一套处理方式时，保存工作流。
 
-设置集中管理应用偏好、服务连接、环境与模型、扩展和更新。“OpenAI 兼容”只在服务连接中配置并显示连接状态；“环境与模型”只展示本机环境和模型。连接、资源的查询与操作各有一套实现，首次引导和日常设置复用它们。
+设置集中管理应用偏好、模型供应商、环境与模型、扩展和更新。“模型”管理供应商目录、自定义端点、模型候选和密钥；“环境与模型”展示本机环境和本地模型安装。首次配置与日常模型设置直接复用 `ModelsSettings`、编辑器及同一个 Host API。
 
-当前“运行环境”里的 OpenAI compatible 是 provider 状态摘要，“服务连接”里的 OpenAI 兼容翻译是同一 adapter 的地址和密钥表单。两处具有同一个服务身份；新界面合并其配置、状态、检测结果和操作。其他远端服务按同一规则处理，不再混进本机环境列表。界面不直接展示 `text.translate/v1` 等实现标识；必要的原始错误放在可展开诊断中。
+实施前“运行环境”里的 OpenAI compatible 是 provider 状态摘要，“服务连接”里的 OpenAI 兼容翻译是同一 adapter 的地址和密钥表单。首期合并这两处；本轮进一步改用 Harness 的模型供应商管理。旧 `openai` adapter 和旧连接仅服务历史任务兼容，新配置由 `llm.<route>` 供应商管理。远端服务不混进本机资源列表，界面不直接展示 `text.translate/v1` 等执行标识。
 
 节点参数、语言传递及“中文不可用”的判定规则另见[节点配置设计审查](node-configuration-review.md)。该文是节点契约的独立设计，设置重构不包含全部节点的重新设计；语言参数仅由真正负责该选择的入口/翻译节点保存，下游消费端口中的语言事实。
 
-工作台 Logo、文案、动画、色彩和交互组件沿用 [`13943b0` 的原版 Studio](https://github.com/liuzhao1225/YouDub-webui/blob/13943b01eadc65108b5c641ea9133f7aa83d7ba2/apps/web/src/plugin/builtin/studio.tsx)。页面宽度与基础间距遵循用户随后要求统一布局后形成的 `b490320`：复用 [PageContainer / Page / PageHeader](../../apps/web/src/components/page-layout.tsx) 和 [SectionCard](../../apps/web/src/components/section-card.tsx)。设置重组不恢复旧的页面宽度差异。参考 deepseek-harness 的功能分层与装配方式；首期沿用现有连接、插件配置、工作流文档和准备任务，不增加连接 profile、账号系统、配置数据库或通用向导引擎。
+工作台 Logo、文案、动画、色彩和交互组件沿用 [`13943b0` 的原版 Studio](https://github.com/liuzhao1225/YouDub-webui/blob/13943b01eadc65108b5c641ea9133f7aa83d7ba2/apps/web/src/plugin/builtin/studio.tsx)。页面宽度与基础间距遵循用户随后要求统一布局后形成的 `b490320`：复用 [PageContainer / Page / PageHeader](../../apps/web/src/components/page-layout.tsx) 和 [SectionCard](../../apps/web/src/components/section-card.tsx)。设置重组不恢复旧的页面宽度差异。按用户后续要求直接复用 Harness 模型供应商管理：供应商 profile 存在已有 settings store，凭据仍由现有 secrets 持有；不另建账号系统、配置数据库或通用向导引擎。
 
-工作台完整保留原全页布局：首屏居中 animated BrandMark → “AI 视频翻译 · 配音 · 字幕” badge → “让视频说”与渐变“另一种语言” hero 标题 → 视频链接输入 → “或上传本地视频”分隔 → 原 `min-h-[132px]` 拖拽区 → 底部胶囊快捷设置与同行开始按钮。背景、首屏高度、短屏适配、示例入口、任务区域和多语言文案都按原版保留。节点声明决定字段及其值，正常选项逐字段使用原 Select 胶囊：标签 + 当前值，点击直接展开选项列表。设置独立页是本次明确要求的界面调整，不能借此改动其他页面的视觉设计。
+工作台完整保留原全页布局：首屏居中 animated BrandMark → “AI 视频翻译 · 配音 · 字幕” badge → “让视频说”与渐变“另一种语言” hero 标题 → 视频链接输入 → “或上传本地视频”分隔 → 原 `min-h-[132px]` 拖拽区 → 底部胶囊快捷设置与同行开始按钮。背景、首屏高度、短屏适配、示例入口、任务区域和多语言文案都按原版保留。节点声明决定字段及其值，正常选项逐字段使用原 Select 胶囊：标签 + 当前值，点击直接展开选项列表。本轮设置交互按 DeepSeek Harness 调整为覆盖当前页面的弹窗，保留 YouDub 视觉及其他页面布局。
 
 ## 2. 实施前审查基线
 
-| 当前事实 | 影响 | 目标 |
+| 实施前事实 | 影响 | 实施目标 |
 | --- | --- | --- |
-| [设置页](../../apps/web/src/plugin/builtin/settings.tsx)把外观、插件设置、运行环境、连接、更新和扩展放在一张长页面 | 设置入口同级混杂；远端 provider 同时出现在运行环境和连接区域 | 独立设置外壳，按用户操作分区 |
+| [设置页](../../apps/web/src/plugin/builtin/settings.tsx)把外观、插件设置、运行环境、连接、更新和扩展放在一张长页面 | 设置入口同级混杂；远端 provider 同时出现在运行环境和连接区域 | 设置弹窗，按用户操作分区 |
 | [主外壳](../../apps/web/src/plugin/builtin/shell.tsx)从同一 `shell.navigation` 列表渲染主导航；设置按 order 30 排在普通入口中 | 设置没有独立的底部位置 | 主导航底部固定设置入口 |
 | [localize-editor](../../apps/web/src/plugin/builtin/localize-editor.tsx)向 `settings.sections` 注册“默认处理配置”，保存完整旧 `TaskConfig` | 用户在全局页面修改下一次任务的语言、模型、配音等；与工作流参数重复 | 新任务参数只落在图节点；旧编辑器保留在需要兼容的旧任务路径 |
 | [模板工厂](../../packages/builtin/src/workflow-templates.ts)每次读取官方模板时，将 `settings.defaults` 的语言和模型应用到图 | 仅删除设置 UI 后，隐藏旧默认值仍会改变模板 | 显式迁移，停止新图的持续全局覆盖 |
@@ -40,74 +40,76 @@
 
 | 参考源码 | 采用的结构 | YouDub 适配 |
 | --- | --- | --- |
-| [SidebarRoot](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-sidebar/src/client/SidebarRoot.tsx) | 设置由主侧栏底部入口承载 | 复用 YouDub 主导航样式，增加底部区域 |
-| [SettingsRoot](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-general/src/client/SettingsRoot.tsx) | 设置外壳只组织左侧分区、右侧内容和关闭/返回 | 上游使用居中弹层；YouDub 按本次要求使用独立设置界面，支持 URL 深链接 |
+| [SidebarRoot](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-sidebar/src/client/SidebarRoot.tsx) | 设置由主侧栏底部入口承载 | 桌面底部紧凑齿轮按钮；移动端顶栏齿轮按钮 |
+| [SettingsRoot](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-general/src/client/SettingsRoot.tsx) | 居中弹窗覆盖原页面，左侧分区、右侧内容，提供关闭操作 | YouDub 用现有 Base UI Dialog 实现，保留 URL 深链、未保存保护和背景页面状态 |
 | [settings slot 契约](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings/src/client/contract/slots.ts) | 分区由功能注册，外壳不持有具体表单业务 | 最小扩展现有 `settings.sections`，保留旧插件 |
-| [模型设置插件装配](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-models/src/client/index.ts) | 同一个模型设置控制器注入日常设置和首次引导 | 共用 YouDub 连接控制器、表单；共用资源服务、控制器、状态组件 |
+| [模型设置插件装配](https://github.com/liuzhao1225/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-models/src/client/index.ts) | 同一套模型设置进入日常设置和首次引导 | 直接复用 `ModelsSection`、供应商/模型编辑器、store 与 schema 解释；适配 YouDub HTTP、订阅、主题和离开保护 |
 | [ModelsSettingsStore](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-models/src/client/store.ts) | Host 是配置事实来源，客户端通过快照订阅与明确动作操作 | 沿用 YouDub React-free runtime、Zustand vanilla、`bindComponent`，写入失败原样可见 |
 
-本次不引入上游完整 settings namespace、provider profile 或 onboarding slot 体系。先用当前两个实际引导阶段完成复用；插件确有第三个独立引导步骤时再扩展协调器。现有技术分层见[前端迁移说明](harness-frontend-migration.md)。
+模型管理保留上游 `llm-pi-ai` namespace、profile、path-op 更新、revision 冲突与独立凭据写入契约，由 YouDub 既有 store、secrets、会话和 CSRF 实现。后端直接复用 `catalog`、`provider`、`discovery` 和配置解析，使用固定版本 `pi-ai@0.82.1`；没有引入 Harness agent loop、账号欢迎流程、自动重试或整个 onboarding runtime。来源和 MIT 声明见[第三方声明](../../THIRD_PARTY_NOTICES.md)、[前端适配清单](../../apps/web/src/components/models-settings/SOURCE.md)、[后端适配清单](../../packages/builtin/src/harness-llm/README.md)。现有技术分层见[前端迁移说明](harness-frontend-migration.md)。
 
 ## 4. 导航与界面结构
 
 ```text
-主应用                         设置界面
-├ 工作台                       ┌ 设置侧栏       ┬ 当前分区内容
-├ 任务库                       │ ← 返回         │ 分区标题
-├ 工作流                       │ 通用           │ 表单 / 状态 / 操作
-│                              │ 服务连接       │
-└ 设置（固定底部）             │ 环境与模型     │
-                               │ 扩展           │
-                               │ 关于与更新     │
-                               └────────────────┴─────────────
+主应用（保留在弹窗背景）        设置弹窗
+├ 工作台                       ┌ 设置                          × ┐
+├ 任务库                       ├ 分类           ┬ 当前分区内容   ┤
+├ 工作流                       │ 通用           │ 分区标题       │
+│                              │ 模型           │ 表单/状态/操作 │
+└ 底部齿轮按钮                 │ 环境与模型     │                │
+                               │ 扩展           │                │
+移动端：顶栏齿轮按钮           │ 关于与更新     │                │
+                               └────────────────┴────────────────┘
 ```
 
-设置界面使用自己的侧栏取代主应用侧栏，避免左右重复导航。保留 YouDub 品牌入口；“返回”回到进入设置前的内部页面，直接打开设置时回工作台。浏览器前进、后退和刷新均可恢复当前分区。已实施的路径如下：
+设置以 Base UI modal 覆盖当前页面，背景页面保持挂载，遮罩阻止与背景交互。弹窗左侧为分类，右侧为当前分区；关闭按钮、Escape 和遮罩均通过同一关闭动作回到原页面。直接打开设置深链时以工作台为背景，关闭回 `/`。已实施的路径如下：
 
 | 路径 | 名称 | 内容与主要操作 |
 | --- | --- | --- |
 | `/settings/general` | 通用 | 语言、主题；沿用现有保存位置与立即生效语义 |
-| `/settings/connections` | 服务连接 | 服务地址、API Key、模型名称；测试连接、保存连接 |
+| `/settings/models` | 模型 | 供应商目录、自定义供应商、API Key、服务地址、协议及模型候选；获取模型、编辑、保存、删除 |
 | `/settings/resources` | 环境与模型 | 应用专用 Python、依赖、推理设备、FFmpeg、已安装/可准备模型；重新检测、下载、暂停/继续、诊断日志 |
 | `/settings/extensions` | 扩展 | 安装、启用/停用、卸载；插件提供的配置分区 |
 | `/settings/about` | 关于与更新 | 当前版本、自动检查更新、检查更新、下载新版、发布记录 |
 
-`/settings` 解析到通用页；工作流的“连接设置”直接指向 connections，资源问题直接指向 resources 并选中相关资源。未知分区显示明确的页面不存在状态，不自动切到另一个分区。手机端将设置侧栏收为可访问的分区选择器，保留同一 URL 与内容顺序。
+`/settings` replace 到 `/settings/general`；工作流的模型配置入口指向 `/settings/models`，资源问题指向 resources。旧 `/settings/connections` replace 到 models，以保留旧入口；其他未知分区显示明确的页面不存在状态。窄屏弹窗占满屏幕，左侧保留紧凑图标栏，通过可访问名称和 Tooltip 标识分类，右侧内容独立滚动。
 
-主应用导航的最小变更是在现有 `NavigationEntry` 增加可选 `placement: 'main' | 'footer'`，缺省仍为 main。设置注册 footer；移动端仍有一个设置入口。设置页外壳和普通应用页外壳由明确路由布局选择；不让页面组件依靠 CSS 隐藏另一套导航。
+`NavigationEntry` 的可选 `placement: 'main' | 'footer'` 缺省仍为 main。设置注册 footer，以紧凑齿轮按钮显示在桌面侧栏底部的应用控制区；移动端显示在顶栏。移动端底部主导航只保留主入口，不重复加入设置。
 
-具体采用 `RouteEntry.layout?: 'app' | 'standalone'`，默认 app。设置插件注册 `/settings` 与 `/settings/:section` 为 standalone，并拥有自己的 `SettingsLayout`；主 Shell 继续提供主题、语言、会话与更新能力，只省去主导航框架，不导入连接或资源表单。设置菜单和分区渲染读取同一份内置分区定义。`/settings` replace 到 `/settings/general`，不额外占一条浏览器返回记录。
+`RouteEntry.layout?: 'app' | 'standalone' | 'dialog'` 默认 app。设置插件将 `/settings` 与 `/settings/:section` 注册为 `layout: 'dialog'`。Shell 同时保留来源页面与设置弹窗，继续提供主题、语言、会话与更新能力；连接和资源表单仍归设置插件。已有 standalone 布局继续兼容需要独立页面的插件。设置菜单和分区渲染使用同一份分类定义。
 
-主侧栏使用现有 flex 布局的底部区域承载设置，工作台、任务库、工作流保持本次确认的顺序；折叠时保留设置图标与可访问名称。已有语言/主题快捷操作若保留，使用与通用设置相同的存储和行为，设置入口位于底部区域的最后。
+主侧栏工作台、任务库、工作流的顺序保持不变。展开和折叠状态均使用带可访问名称的设置图标按钮；语言和主题快捷操作继续共用通用设置的存储与行为。
 
 ### 4.1 五个分区的具体内容
 
 | 分区 | 页面组织 | 不承担的配置 |
 | --- | --- | --- |
 | 通用 | 界面语言、主题两行设置；立即生效并显示保存错误 | 视频原文语言、翻译目标语言 |
-| 服务连接 | 每个远端 adapter 一张连接卡；卡内统一地址、模型名称、脱敏 Key、配置状态、测试结果、保存与测试操作。首期 OpenAI 兼容仅一张卡 | ASR/TTS 本地模型下载、节点实际使用的模型覆盖 |
+| 模型 | 沿用 Harness 的供应商列表、添加/编辑卡、模型列表和候选选择；管理地址、协议、脱敏 Key、模型 ID/名称及容量；目录获取失败原样显示 | ASR/TTS 本地模型下载、节点实际模型覆盖、把目录获取当作真实推理测试 |
 | 环境与模型 | “基础环境”展示 Python、依赖、FFmpeg、推理设备；“模型”展示本地模型及安装状态。只在对应项提供可执行操作，日志放底部 | 远端 API Key、未使用模型导致的整机不可用判断、无安装资源的示例 provider |
 | 扩展 | 已安装扩展列表、启用/停用与重启状态、安装入口；选择扩展后显示它注册的配置，保留原插件配置 ID | 内置连接和模型的第二套设置表单 |
 | 关于与更新 | 当前版本、自动检查开关、检查结果、更新操作和发布记录 | 模型文件下载；安装包入口继续使用 latest |
 
-右侧只有一个当前分区标题，卡片标题用于区分具体服务或资源组。分类栏复用主侧栏的尺寸和样式规则；右侧复用共用 Page 容器和留白，各分类切换不改变内容边界。长页面由右侧内容区滚动，左侧分类保持可见；窄屏用分区选择器替代固定侧栏，保持相同 URL。无需为了设置增加新的视觉主题、标签页层级或大段介绍文案。
+弹窗头部显示“设置”和关闭按钮，右侧只显示一个当前分区标题，卡片标题用于区分具体服务或资源组。分类和内容使用现有 YouDub 色彩、边框与控件；长内容在右侧区域滚动，左侧分类保持可见。桌面使用居中弹窗，窄屏使用全屏弹窗和左侧图标栏；各分区保持相同内容边界，不额外嵌套 Page 外壳。
 
 ### 4.2 入口上下文与保存行为
 
-“返回”使用进入设置时的应用内来源路由；直接打开设置则回工作台。只接受有效内部路由，避免返回外站或在设置页之间循环。工作台的缺连接提示直接打开 `/settings/connections` 并定位对应 adapter；缺依赖提示打开 `/settings/resources` 并定位相关资源，不让用户重新寻找。
+进入设置时保存来源路由和历史位置。分类切换使用 `replace`，同一次设置访问不为每个分类新增历史项。关闭调用 `dismissDialog()`：从应用内正常打开时返回原历史项；直接深链打开时回 `/`。浏览器后退也经过同一离开保护，前进可以重新打开相应分区。工作台的缺模型供应商提示直接打开 `/settings/models`，缺依赖提示打开 `/settings/resources`。
 
-保存规则按动作区分：通用偏好沿用即时保存；连接与插件表单有“保存修改”；下载和检测是明确动作。只有用户实质修改了未保存字段才拦截离开。切换分区、展开日志、刷新状态、测试连接、查看节点不产生编辑脏状态。
+保存规则按动作区分：通用偏好沿用即时保存；模型编辑器有明确应用动作，插件沿用各自保存动作；下载和检测单独触发。只有用户实质修改了未保存字段才拦截离开。浏览分类、展开日志、刷新状态、获取模型候选、查看节点不产生编辑脏状态，采纳候选会修改草稿。模型写入进行中阻止切换、关闭与继续引导，避免供应商和凭据的分步写入被隐藏。
 
-从工作台带着文件、链接和本次节点选项进入连接设置后返回，应恢复同一内存草稿。最小实现将已有启动草稿的生命周期上移至页面间可复用的控制器，不建草稿数据库；API Key 不进入此草稿。刷新页面后本地 File 无法恢复时明确要求重选，不展示已可上传的假状态。
+打开、切换分类和关闭设置时，背景页面保持原组件实例与滚动位置，工作台文件、链接、节点选项及工作流编辑草稿不因弹窗开合而重建。已有内存草稿控制器继续处理真正的页面往返，不增加草稿数据库；API Key 不进入工作台草稿。刷新页面后的本地 File 仍需重新选择，不展示已可上传的假状态。
 
-测试连接只测试当前草稿，不顺带保存；测试成功后仍保留未保存标识。首次引导的“测试连接并继续”依次调用同一 test/save 行为；失败停留当前步骤，原始原因可见。已修改表单切换分类、返回或关闭时使用现有离开保护；单纯查看、展开日志与查询状态不提示。完整保存后重新读取实际状态再退出编辑态。
+`navigation.block(handler, scope)` 区分 `page` 与 `dialog`，默认 page。打开或关闭设置不改变背景页面时，只处理设置自己的未保存状态；背景页面真正离开时才触发 page 保护。连接或插件表单在切换分类、关闭按钮、Escape、遮罩和浏览器后退时使用 dialog 保护。浏览设置不产生 dirty；保存失败保留 dirty 与原错误。
+
+“获取模型”读取候选，用户采纳后仍需应用草稿。首次引导显示同一个 `ModelsSettings`，保存并读回后才允许继续；也可在没有未保存修改时稍后配置。目录、凭据与配置检查都不能宣称真实翻译调用成功。已修改表单切换分类、返回或关闭时使用现有离开保护；单纯查看、展开日志与查询状态不提示。完整保存后重新读取实际状态再退出编辑态。
 
 ## 5. 配置归属与工作台快捷设置
 
 | 数据 | 唯一归属 | 可编辑位置 |
 | --- | --- | --- |
 | 应用语言、主题、更新偏好 | 已有应用偏好存储 | 通用 / 关于与更新 |
-| 地址、凭据引用、远端模型候选 | 已有 connection 记录及 secrets | 服务连接；首次连接引导复用 |
+| 供应商地址、协议、凭据引用、模型候选 | 已有 settings store 的 `llm-providers-v1` 与 secrets；API 暴露 `llm-pi-ai` namespace | 模型；首次配置复用同一组件 |
 | 本机依赖、模型文件、下载进度 | 文件系统、现有 SetupService | 环境与模型；准备引导；工作流启动资源区 |
 | 入口语言、翻译目标、声音、背景音、字幕输出、节点专有参数 | 对应责任节点的 `GraphNode.config`；下游语言由端口数据提供 | 节点编辑页；节点声明的工作台快捷设置 |
 | 实际执行的服务、模型、设备 | `GraphNode.provider` | 工作流节点设置 |
@@ -128,24 +130,21 @@
 
 [WorkflowOptions](../../apps/web/src/plugin/builtin/workflow-options.tsx)只承担从节点 schema 汇总字段和写回本次图的职责。展示使用原版逐字段 Select，不增加每节点一张大 Popover 表单或新的快捷设置框架；复杂参数继续放在已有节点设置页。此次设计不另设“工作台默认参数”。字幕、配音、字幕加配音继续是不同工作流；工作台 Logo、badge、渐变 hero 标题和全页布局保持上述原版基准。
 
-### 5.2 服务连接与模型绑定
+### 5.2 模型供应商与节点绑定
 
-同一 adapter 首期仍只有一条连接。现有用户配置的 Qwen、DeepSeek 等 OpenAI 兼容地址共用该入口；不新增以品牌命名却保存同一份 key 的重复表单。
+[Models 服务](../../packages/builtin/src/llm-models.ts)保存每个 route 的 profile、模型候选与凭据引用，按 `llm.<route>` 注册翻译 provider。内置目录来自固定版本 pi-ai；自定义供应商需要明确地址、协议和至少一个模型。可手工补充模型，已知目录模型保留原有元数据；不把所有供应商强制转换为 OpenAI Chat Completions。
 
-连接页保留“服务地址”“API Key”“模型名称”。其中模型名称表示这条连接登记的候选和连接测试对象；真正执行的模型由节点 `provider.model` 固定。新建节点可用此候选初始化一次；打开、保存连接或执行已有图不会覆盖节点模型。需要切换已有图模型时到相应节点修改。
+模型页直接复用 Harness 的供应商目录、编辑器、模型候选选择与 schema 表单规则。预置供应商使用其目录协议与认证方式；手工指定协议可选 OpenAI Chat Completions、OpenAI Responses 和 Anthropic Messages。需要独立 OAuth/账号流程的供应商不因此自动获得登录能力；配置和本机认证条件不满足时必须显示不可用。
 
-为解除 `defaults.translation.model` 的耦合，首期在现有 connection 记录增加一个可选 `model` 标量，保存和公开投影一并支持它。原有多模型环境配置继续作为 catalog 候选来源，不扩展为多账号或 profile 管理。需同步修改 [ConnectionPatch](../../backend/app/v1/contracts.py)、bridge、远端 probe、catalog、测试连接表单；不能只迁移 UI。字段是拟议变更，当前契约尚未包含它。
+`discoverModels` 对已知供应商返回安装包内目录；自定义兼容端点按当前草稿请求 `/models`。这个动作不保存候选，也不证明推理端点、密钥和模型已完成真实调用。修改草稿地址或协议后，未显式提供新密钥时，不得把原地址存储的密钥发给新端点。发现失败保留原因，并继续允许用户手工填写模型。
 
-状态必须区分：
+模型候选属于供应商配置；真正执行的模型由节点 `provider.model` 固定。官方模板可为尚未绑定的新节点选取当前可用候选；打开设置、保存供应商、修改候选或更换密钥不改写已有图与历史任务。翻译任务在创建时固定 profile 与凭据引用，执行不重新读取可变设置。
 
-- 未配置：缺地址、密钥或节点所需模型，指出具体缺项。
-- 已配置：本地配置完整；尚未证明远端可用。
-- 测试成功：对本次地址、模型、凭据选择完成了实际测试，展示检测时间；修改任一项立即使该结果过期。
-- 测试失败：保留 HTTP 状态、服务端原因和相关地址路径，提示可以采取的修改；不换地址、换模型或降低参数自动重试。
+原 `openai` connection 及 Python adapter 保留给历史任务。首次初始化模型设置时，可将旧地址、候选模型和已有凭据引用导入 `openai-compatible` route；`YOUDUB_TRANSLATION_MODELS` 只参与旧配置导入及历史路径，不持续覆盖新 profile。新设置不再写旧 connection 或 `defaults.translation`。已经运行的任务和原始响应文件保持原样。
 
-密钥继续由 secrets 持有，界面只返回现有前缀加 `****`。空输入保留原 key，明确勾选才清除；改地址时不能携带旧地址密钥偷偷测试。提交的 model 与连接元数据在同一次设置操作处理，消除“保存连接后再改整份 TaskConfig”的第二步。若凭据系统已变更而数据库失败，返回现有部分应用错误，重新读取状态并显示实际结果，不伪装成功或静默回滚。
+状态须分别表达配置存在、凭据已配置、模型能力满足和实际调用结果。目录条目、已存密钥、provider probe 均不等同于网络测试成功。新翻译执行通过 [llm-translation](../../packages/builtin/src/llm-translation.ts)，发送前同时检查模型声明能力与实际请求最大输出参数至少为 65,535；无法满足的模型或协议停止调用，保留具体原因。没有静默降低上限或自动换模型。
 
-连接测试继续验证最大输出 token 参数至少为 65,535；不支持该限制的服务返回明确的不兼容错误。引导和设置必须走同一条测试行为。配置检测不自动调用外部 LLM；只在用户点击测试时发送测试内容。
+密钥由现有 secrets 持有，接口只返回前缀加 `****`；短密钥全部隐藏。空输入保留原密钥，输入新值替换，环境变量提供的凭据保持只读。供应商配置和凭据按上游明确的两步操作保存；若 profile 已保存而凭据失败，显示失败并保留仅重试凭据的状态，不重新覆盖 profile，不显示整体成功。删除供应商保留历史任务所需的快照和旧 secret 引用。保存进行中阻止离开；完成后重新读取实际状态。
 
 ### 5.3 “默认处理配置”的迁移
 
@@ -173,9 +172,11 @@ flowchart TB
     AppAPI --> Setup
     Setup --> Env[EnvironmentSetup · 探测 / Python / 依赖 / FFmpeg]
     Setup --> Downloads[DownloadClient · 所需模型 / 进度 / 校验]
-    Welcome[首次连接引导] --> CC[连接控制器 · React-free]
-    Connections[设置 · 服务连接] --> CC
-    CC --> Settings[现有 SettingsService / bridge / secrets]
+    Welcome[首次模型配置] --> MC[ModelsSettings / ModelsSettingsStore]
+    Models[设置 · 模型] --> MC
+    MC --> ModelAPI[会话模型 API · CSRF]
+    ModelAPI --> ModelService[Models service / 已有 store / secrets]
+    ModelService --> Harness[Harness catalog / provider / discovery]
     RC --> Snapshot[共享状态与诊断投影]
     BC --> Snapshot
     Snapshot --> UI[资源列表 / 进度 / 诊断日志组件]
@@ -189,40 +190,40 @@ flowchart TB
 
 “环境与模型”页需要直接选择资源时，增加薄接口 `/api/v2/resources/check|prepare`，输入已存在的 `{providerId, model?}` selections；服务端按 catalog 校验并映射到官方资源清单。该接口不接受任意下载地址、路径或命令；不为了调用旧接口构造虚假工作流。共享状态只保留现在的当前准备任务，首期不建立历史任务队列或资源数据库。
 
-当前暂停/继续/重试通过 `POST /api/setup` 的 setup token 通道实现，已认证的工作流资源 API 只有 check/prepare。设置页资源操作需要将现有 action 分支提成 SetupService 方法，再提供 `/api/v2/resources/action` 薄路由，接受当前准备操作和其中的 model id；按 catalog、当前操作和动作状态校验。引导原接口委托同一方法，权限校验分别保留。以上应用内 action 路由属于待实现项，不能把已有 check/prepare 当成已具备完整下载控制。
+暂停/继续/重试已抽取为 SetupService 动作，启动前 `POST /api/setup` 与应用内 `/api/v2/resources/action` 委托同一实现。应用内动作接受当前准备操作和其中的 model id，按 catalog、当前操作和动作状态校验；两种入口分别保留 setup token 与登录/CSRF 权限边界。
 
-资源类型定义移到不依赖 React 的契约文件，由 service、controller、UI 同时消费。当前 `onboarding.ts` 从 `setup-screen.tsx` 导入类型的反向依赖应在此处消除。启动阶段 snapshot 与工作流 ResourcePreparationSnapshot 可以保留各自字段，通过一个纯投影函数生成公共展示/诊断模型；不强行把不同阶段塞成一个含大量可选字段的对象。
+资源类型已移到不依赖 React 的 `runtime/setup-contracts.ts`，`onboarding.ts` 不再从 `setup-screen.tsx` 反向导入类型。启动阶段 snapshot 与工作流 ResourcePreparationSnapshot 保留各自字段，通过纯投影函数生成公共展示/诊断模型。
 
 ### 6.2 Controller：请求、快照与生命周期
 
 保留启动前 SetupController 与应用内资源控制器两种访问适配。前者负责 Python/auth 尚未可用的启动阶段；后者由设置页和工作流启动区共同使用，以规范化 selections 为范围提供检测、准备、暂停、继续与显式重试。共用契约、资源展示与诊断投影，不额外建立一个通用轮询框架。两个入口读取同一个 Host 状态；一个准备操作只由 Host 执行一次，相同需求复用状态，不同需求冲突时展示现有操作及原因。
 
-连接控制器统一加载、字段草稿、测试、保存、密钥清除和错误。首次引导只决定是否展示、是否允许“稍后设置”、成功后去哪里；不复制 API 调用，也不决定 ASR、语言、输出方式。沿用 `youdub.onboarding.translationDeferred` 表达稍后设置；跳过不等于连接可用，依赖远端翻译的图仍提示缺项。
+模型设置复用 `ModelsSettingsStore`、供应商编辑器和模型 API，统一加载、草稿、候选获取、保存、凭据与错误。`TranslationSetupController` 仅获取会话、判断是否展示引导并协调继续/稍后配置；不再拥有第二套连接表单，不决定 ASR、语言、输出方式。沿用 `youdub.onboarding.translationDeferred` 表达稍后设置；跳过不等于模型可用，依赖远端翻译的图仍提示缺项。
 
 生命周期要求：
 
 - 只读请求由订阅范围持有，最后一个订阅释放后停止轮询和本地请求；旧响应不能覆盖新一轮检测。
 - 离开页面只取消客户端等待。已接受的 Host 下载不会被页面卸载假装取消；进入其他入口读取同一个进度。
 - 暂停是显式 Host 动作，保留可继续的下载分片；继续从服务实际状态出发。
-- 保存请求发出后，即使关闭页面也可能已在服务端生效。重新打开必须读取实际结果；客户端停止后不得接着执行第二次写入或把过期成功写回新草稿。
+- 模型保存进行中阻止设置切换/关闭与引导继续，直到明确成功或失败。已被 Host 接受的写入不能通过页面关闭假装取消；重新打开读取实际结果，迟到响应不得覆盖新草稿。部分保存失败保留明确的下一次重试边界。
 - 操作失败进入明确失败状态，保留原因。重新检测、重试和继续分别表达各自动作，后台没有静默重试循环。
 - 配置刷新与表单草稿分离。外部更新不能覆盖用户未保存输入；展示可见的配置变更状态，由用户重新加载或保存明确内容。
 
 ### 6.3 Component：共享内容，不共享页面职责
 
-沿用现有 Base UI、Tailwind 和 `bindComponent`；组件只接收快照与动作。最小可复用组件包括连接字段/操作区、环境步骤列表、模型进度列表、诊断日志区。首次准备页面负责阶段导航，设置页面负责分区，工作台负责当前图启动条件。
+设置外壳沿用现有 Base UI、Tailwind 和 `bindComponent`；模型设置复用 Harness 组件并适配 YouDub 主题 tokens、React 订阅和 HTTP 接口。环境步骤列表、模型进度列表、诊断日志区保持共用。首次准备页面负责阶段导航，设置页面负责分区，工作台负责当前图启动条件。
 
-无需先抽象通用表单引擎：已有 `ConfigEditor` 服务节点参数，连接表单有特定密钥语义，应使用明确组件。无异步副作用的格式化/诊断函数可独立复用。
+已有 `ConfigEditor` 服务节点参数；供应商表单使用原 Harness schema 解释与模型编辑器。二者按各自已存在的契约工作，不追加一个平行的通用表单引擎。
 
 ### 6.4 复用范围与保留差异
 
 | 层次 | 共用实现 | 首次准备特有职责 | 设置 / 工作流特有职责 |
 | --- | --- | --- | --- |
-| 服务连接 | ConnectionController、连接表单、test/save、密钥语义、状态投影 | 获取 session/CSRF、是否展示引导、稍后设置、继续到工作台 | 按 adapter 定位、编辑保存、返回原任务草稿 |
+| 模型供应商 | ModelsSettings、ModelsSettingsStore、编辑器、模型 API 与密钥语义 | 获取 session/CSRF、是否展示引导、稍后设置、继续到工作台 | 管理供应商和模型、编辑保存、返回原任务草稿 |
 | 基础环境 | SetupService、EnvironmentSetup、探测和安装实现 | auth/Python 之前可用；基础准备完成才加载应用 | 读取安装结果与诊断，用户明确操作后处理缺项 |
 | 模型与运行依赖 | checkResources/prepareResources/action、清单、下载器 | 首次安装只准备 base，不要求下载全部模型 | 按真实节点依赖或资源选择下载；任务就绪以当前图为准 |
 | 客户端状态 | 公共类型、规范化 selections、展示/诊断投影 | 独立 setup 访问适配 | 设置和工作流共用应用内资源控制器 |
-| 界面 | ConnectionForm、EnvironmentSteps、ModelDownloadList、SetupDiagnostics、Page/SectionCard | 引导步骤与继续按钮 | 分类导航、资源定位、启动前检查结果 |
+| 界面 | ModelsSettings、EnvironmentSteps、ModelDownloadList、SetupDiagnostics、Page/SectionCard | 引导步骤与继续按钮 | 分类导航、资源定位、启动前检查结果 |
 
 后端当前已共享 EnvironmentSetup 和 DownloadClient，本轮是在现有服务上提取必要动作及投影。页面卸载不停止 Host 已接受的安装。跨入口进度通过同一 Host 快照恢复，不通过复制另一页的 React 状态同步。
 
@@ -265,7 +266,8 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 | 位置 | 首期变更 | 兼容规则 |
 | --- | --- | --- |
 | `shell.navigation` | 可选 placement | 老插件默认 main |
-| `shell.routes` | 可选 layout，设置页面声明 standalone | 老插件默认 app；主题、语言、会话能力继续有效 |
+| `shell.routes` | 可选 layout，设置声明 dialog | 老插件默认 app；保留 standalone；主题、语言、会话能力继续有效 |
+| 导航保护与关闭 | `block(handler, scope)` 区分 page/dialog；`dismissDialog()` 关闭弹窗 | 未传 scope 继续保护页面；设置分类 replace，关闭恢复来源历史项 |
 | `settings.sections` | 保留 id/order/component，增加可选 label | 插件配置统一放“扩展”下；缺 label 时显示注册 id，内容中的原有标题保留；原 id 继续用于配置读写 |
 | `SettingsSectionProps` | 保留 settings/save，增加可选 `onDirtyChange(dirty)` | 内置表单接入离开保护；第三方插件可逐步适配，未上报的旧插件保持原有行为 |
 | 设置分区定义 | 五个内置分区共用一份定义生成菜单与内容 | 设置外壳不持有具体表单业务；首期不开放任意插件替换系统分区 |
@@ -280,14 +282,14 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 
 ## 10. 实施顺序与开发态验证
 
-以下为待实施计划。本轮交付为设计文档，应用代码保持不变。后续各阶段由同一实施负责人推进代码、必要定向测试、开发页面检查与文档同步。当前开发范围不包含构建、打包、CI 或发布；将来明确进入发布阶段后，再由同一负责人推进候选构建与安装后读回，不将开发验证等同发布完成。
+以下保留实施顺序和验收要求，开发实现与已执行检查见第 12 节。当前开发范围不包含构建、打包、CI 执行或发布；将来明确进入发布阶段后，由同一负责人推进候选构建与安装后读回。表内发布相关条件仍待执行，开发验证不能作为发布完成证据。
 
 | 阶段 | 最小交付 | 必须通过的验收 |
 | --- | --- | --- |
 | 1. 数据归属与迁移 | 连接 model 字段、probe/catalog 去除新路径对 defaults 的依赖、偏好导入现有 workflow、旧任务兼容 | 无持久化 defaults/引导初始化的 defaults/已有自定义模型/三种旧输出模式/已有用户图；幂等重启；失败不标成功；凭据引用与旧任务快照不被覆写 |
-| 2. 连接共用 | 一个连接控制器与表单，日常设置/首次引导共用；不再保存全局 TaskConfig | 新 key、空 key 保留、清除、改地址、测试失败、部分写入失败、关闭后迟到响应；引导跳过只改跳过标记 |
+| 2. 模型供应商共用 | 复用 Harness 模型目录、profile/schema、编辑器、store 与 API 契约；日常设置/首次引导共用；不再保存全局 TaskConfig | 新 key、空 key 保留、删除、改地址不泄露旧 key、目录/发现失败、部分写入失败、保存中离开保护；引导跳过只改跳过标记 |
 | 3. 资源共用 | 现有 SetupService 加薄适配，共享控制器/展示/诊断 | 干净目录基础启动；字幕图不下载 TTS；已安装不重复下载；切页进度继续；暂停/继续；并发需求冲突；失败日志完整可复制 |
-| 4. 设置外壳与插件 | 底部入口、独立左右布局、五个分区、深链接、旧插件归扩展、默认处理面板移除 | 主导航工作台→任务库→工作流；主题/语言、桌面/窄屏、键盘导航；只浏览无离开提示，未保存连接有提示；插件配置命名空间不变 |
+| 4. 设置外壳与插件 | 桌面底部/移动端顶栏齿轮、覆盖原页面的分类弹窗、五个分区、深链、旧插件归扩展 | 主导航工作台→任务库→工作流；桌面居中/窄屏全屏；分类不增加历史项；关闭/Escape/遮罩/后退恢复原页面与草稿；只浏览无提示，未保存连接有提示；插件配置命名空间不变 |
 | 5. 入口串联与开发交付 | 首次启动、设置、工作台共享行为；更新开发分支与说明 | 上传文件/粘贴链接→缺资源→进入对应设置→返回后保留输入→检测通过；切页下载不中断；已有任务重跑保持原配置；当前布局基线无回退 |
 
 必要测试聚焦数据迁移、状态变化与真实用户操作，不为静态文案复制实现写测试。UI 检查截图包括：首次环境准备、连接引导、五个设置分区、资源失败诊断、工作台进入设置再返回。工作台按本轮开始前的 `b490320` 截图核对共用宽度，保留原版视觉与 Select 交互；包含正常高度、短屏和窄屏。截图不能替代资源探测、保存读回或实际操作结果。
@@ -296,13 +298,13 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 
 | 代码区域 | 计划改动 |
 | --- | --- |
-| `apps/web/src/plugin/sdk.tsx`、`builtin/shell.tsx` | 可选 placement/layout；底部入口与独立页面选择；保持默认插件行为 |
-| `apps/web/src/plugin/builtin/settings.tsx` 与必要的 settings 子组件 | 拆出 SettingsLayout、五个分区；复用现有 Page、PageHeader、SectionCard；一次只渲染当前分区 |
+| Client slots、`builtin/shell.tsx`、`builtin/navigation.ts` | placement/layout、紧凑设置入口、背景页面与 dialog 并存；分类 replace、按 scope 保护与关闭历史恢复 |
+| `apps/web/src/plugin/builtin/settings.tsx` 与必要的 settings 子组件 | Base UI Dialog、五个分区与 SectionCard；一次只渲染当前分区；桌面分类列表和窄屏图标栏 |
 | `builtin/localize-editor.tsx`、`workflow-templates.ts` | 取消全局默认处理面板注册，停止图模板逐次应用全局 defaults；保留旧任务编辑组件 |
-| `runtime/onboarding.ts`、连接表单 | 抽取 ConnectionController 与字段组件；引导只协调继续/稍后设置 |
+| `runtime/onboarding.ts`、`translation-setup.tsx`、`components/models-settings` | 引导只协调继续/稍后配置；与日常设置使用同一个 ModelsSettings、编辑器和 store；移除前一版 ConnectionController/ConnectionForm |
 | `runtime/workflow-resources.ts`、`setup-screen.tsx`、`setup-diagnostics.ts` | 共用资源契约、模型行、环境步骤和诊断投影；应用内控制器支持 selections 与已知资源动作 |
 | `packages/builtin/src/setup.ts` | action 方法抽取、应用内资源薄接口；继续调用现有准备和下载服务 |
-| `backend/app/v1/contracts.py`、`backend/workers/bridge.py`、远端 runtime probe | connection.model 的校验、保存、公开投影及候选模型读取；保持密钥投影规则 |
+| `packages/builtin/src/llm-models.ts`、`llm-models-api.ts`、`llm-translation.ts`、`harness-llm/` | 已有 store/secrets 上实现上游模型配置契约，注册翻译 provider、冻结任务配置、校验实际 wire 输出上限；旧 Python openai 仅历史兼容 |
 | 现有 workflow 文档存储与迁移路径 | 幂等导入旧 defaults；保留旧值和历史任务；不新增配置数据库 |
 
 ### 10.2 发布阶段另行执行
@@ -317,19 +319,21 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 | 旧 TaskConfig 到图存在结构差异 | 全字段映射、图校验、未映射项显式错误；旧数据保留；不将旧 templateFactory 的有限映射当成完整迁移 |
 | 引导复用后启动死锁 | SetupService 与启动前接口继续独立于 Python store/auth；模拟 Python 未安装、安装失败仍能打开日志 |
 | 连接变更影响运行中的任务 | 保持现有连接快照与 credentialRefs 语义；验证轮换/清除行为，不借此次重构改变旧任务的凭据生命周期 |
-| 切换设置时丢工作台文件或节点草稿 | 生命周期上移、File 仅内存持有、精确 dirty 判断；实际上传前后分别验收 |
+| 打开设置时丢工作台文件或节点草稿 | 保持背景组件挂载和滚动位置；page/dialog 分别保护真实修改；实际上传前后分别验收 |
 | 页面取消被当成操作取消，或卸载后继续第二次写入 | Host 操作状态为准；写操作合并到明确边界；过期响应不写新页面，不静默串行追加写入 |
 | 重复资源安装或全能力 degraded 阻塞无关工作流 | 共用 Host 当前任务；资源按 selections 去重；就绪判断以当前图为单位 |
 | 旧插件失去设置入口 | 可选元数据兼容；缺元数据时归扩展；SDK 不引入第二份 React |
 | 日志 URL 超长、泄露密钥、遗漏资源错误 | 完整报告只复制；Issue 手动粘贴；纯诊断投影脱敏；长错误与资源失败样例验证 |
 | 设置重组使其他页面偏离当前设计 | 采用 b490320 的统一页面边界，保留原版 BrandMark、标题、链接/上传区与 Select；设置往返只改变路由，不改变本次处理草稿 |
 
-本轮实现按以上依赖顺序推进。首期范围限定为现有设置与准备流程统一；远端多账号、通用资源市场、批量环境修复、全部节点重设计、工作流跨节点参数联动和自动日志上传均不在此次范围内。
+本轮实现按以上依赖顺序推进。后续明确要求的模型供应商管理沿用 Harness profile 与编辑器；没有新增 OAuth 账号登录系统。通用资源市场、批量环境修复、全部节点重设计、工作流跨节点参数联动和自动日志上传仍不在此次范围内。
 
 
 ## 12. 开发实现记录（2026-10-21）
 
-- 独立 `/settings/:section` 界面：通用、服务连接、环境与模型、扩展、关于与更新；主导航底部入口保留 YouDub 的品牌、主题和页面宽度。
+以下首批记录对应设置与准备流程共用实现，保留为历史记录。弹窗交互调整见 12.1；服务连接和 ConnectionController/ConnectionForm 已由 12.2 的模型供应商实现取代，首批验证不替代本轮新实现的验收。
+
+- 已分为通用、服务连接、环境与模型、扩展、关于与更新五个分区，并提供 `/settings/:section` 深链。首批独立页面布局已由 12.1 的弹窗替换。
 - `ConnectionController` 和 `ConnectionForm` 同时用于首次连接引导与日常设置。模型、地址、密钥通过一次 connection PATCH 保存，不再写入处理 defaults；测试状态与保存状态独立。
 - 旧 defaults 经原处理流程规划器转成 `原默认处理配置` 工作流，文档与迁移标记单事务保存。失败保留原值并显示诊断，历史任务和现有用户工作流不改写。
 - 环境步骤、模型下载行、完整诊断报告由启动页和设置共享；应用内资源接口保留身份认证、CSRF 和 catalog 校验。基础依赖、实际 GPU 运算及本地模型分别检测；暂停/继续使用同一个下载任务。
@@ -337,3 +341,21 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 - 兼容原插件 settings/save 参数；可选 label 缺失时使用插件 id，onDirtyChange 用于需要离开提醒的插件。
 
 验证范围：连接与引导、五分区路由/底部入口/离开提示、工作台草稿往返、旧配置迁移、资源接口认证及控制器、诊断报告；执行定向测试、两端 TypeScript 和相关 ESLint 检查，并检查真实开发页面。未执行真实远端 LLM 调用、大模型下载、安装包构建或生产发布。
+
+### 12.1 设置弹窗与导航调整
+
+设置按 DeepSeek Harness 的交互改为紧凑齿轮入口和覆盖原页面的 Base UI modal。桌面入口位于侧栏底部，移动端入口位于顶栏；移动端底部主导航不包含设置。弹窗左侧选择分类，右侧显示内容；窄屏为全屏弹窗和左侧图标栏。
+
+`layout: 'dialog'` 保留背景页面；设置分类使用 replace。`dismissDialog()`、page/dialog 导航保护统一处理关闭、Escape、遮罩及浏览器后退，保留原页面位置和草稿。直接打开 `/settings[/section]` 仍可使用，关闭回工作台。
+
+[桌面 ready-smoke](../../apps/desktop/ready-smoke.js)已改为定位可见设置按钮、弹窗分类按钮和弹窗内标题/表单，并检查分类历史长度和关闭后的背景页面实例。脚本通过 `node --check`；本轮未运行原生打包或 ready-smoke，不据此宣称桌面弹窗已通过打包验收。开发浏览器与导航测试结果由本轮实施记录单独报告。
+
+### 12.2 Harness 模型供应商管理接入
+
+本轮代码以 [`99f6f02`](https://github.com/liuzhao1225/deepseek-harness/tree/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca) 的原模型设置和 `llm-pi-ai` 模块为来源，直接复用供应商目录、模型候选/自定义列表、编辑器、store、配置解析和 provider 构造。YouDub 适配 HTTP、现有 store/secrets、会话、主题、节点翻译和输出 token 规则。供应商目录限定当前提供 API Key 配置路径的条目，已保存的其他 profile 继续显示其真实就绪状态；目录可见性不承诺已支持完整 OAuth 登录。
+
+设置分类为“模型”，路径 `/settings/models`；旧 `/settings/connections` 只做 replace 兼容。首次配置使用同一 `ModelsSettings`，不再维护旧连接控制器和表单。旧 `openai` 的设置写入口停止供新配置使用，保存的连接、任务快照和原始响应继续保留给历史路径。用户截图要求的“第三方模型提供商 / 自定义模型 API”标签区分别组合原 `ProviderEditor` 与 `CustomProviderCard`；已有配置列表保留在上方，编辑已有条目时隐藏添加表单。该标签布局是 YouDub 的最小适配，本机参考提交不包含截图中的布局，不能宣称逐行来自该版本。
+
+模型设置错误、凭据失败、实际调用不兼容均需可见；获取候选不触发翻译、不会自动保存。新的翻译 provider 不依赖 Python OpenAI SDK 或本地推理模型。原准备服务仍只为选择的工作流准备本地资源。
+
+本轮审查核对了来源、许可证、目录/自定义协议和实际请求字段；独立发现的改地址密钥复用、保存中关闭与协议能力边界交由对应负责人修复并定向验证。开发测试和浏览器结果以本轮最终记录为准。本段不宣称真实外部推理、完整目录联调、原生 ready-smoke、构建、打包或发布已验收。桌面静态资源同时分发根目录 [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)，保留被打包前端的原 MIT 声明。

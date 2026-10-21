@@ -23,6 +23,7 @@ export type TaskConfig = {
 }
 
 export type ModelCapability = {
+  available?: boolean
   id: string
   devices: string[]
   source_languages: string[]

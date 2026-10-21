@@ -1,6 +1,6 @@
 import type { Context } from 'cordis'
 import type { ComponentType } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
@@ -294,7 +294,7 @@ it.each([null, {}, { adapter: 'openai', model: '', device: 'remote' }])('guides 
   fireEvent.submit(link.closest('form')!)
   expect(request.mock.calls.some(([path]) => path === '/api/v2/tasks')).toBe(false)
   await userEvent.setup().click(screen.getByRole('link', { name: '打开设置' }))
-  expect(push).toHaveBeenCalledWith('/settings/connections')
+  expect(push).toHaveBeenCalledWith('/settings/models')
 })
 
 it.each(['deepseek-flash', 'deepseek-v4-pro', 'custom-model'])('submits a configured translation model unchanged: %s', async (model) => {
@@ -314,4 +314,36 @@ it.each(['deepseek-flash', 'deepseek-v4-pro', 'custom-model'])('submits a config
   const body = request.mock.calls.find(([, init]) => init?.method === 'POST')![1]!.body as FormData
   expect(JSON.parse(body.get('request') as string).config.translation).toEqual(translation)
   expect(screen.queryByRole('link', { name: '打开设置' })).not.toBeInTheDocument()
+})
+
+
+it('retains a submission across a route unmount and does not navigate from its late response', async () => {
+  let finish!: (task: { id: string }) => void
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return catalog
+    if (path.startsWith('/api/v2/tasks?')) return { items: [] }
+    if (path === '/api/v2/tasks' && init?.method === 'POST') return new Promise<{ id: string }>(resolve => { finish = resolve })
+    throw new Error('Unexpected request ' + path)
+  })
+  let Page!: ComponentType<RouteProps>
+  const push = vi.fn()
+  const context = { apiClient: { request }, navigation: { push },
+    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as Context
+  apply(context)
+  const show = () => render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+  const first = show(), user = userEvent.setup()
+  const input = await screen.findByLabelText('Document *')
+  await user.upload(input, new File(['data'], 'pending.txt', { type: 'text/plain' }))
+  fireEvent.submit(input.closest('form')!)
+  await waitFor(() => expect(finish).toBeDefined())
+  first.unmount()
+  await act(async () => finish({ id: 'created-while-away' }))
+  expect(push).not.toHaveBeenCalled()
+  show()
+  expect(await screen.findByText('pending.txt')).toBeInTheDocument()
+  expect(screen.getByLabelText('Document *')).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: '查询创建结果' }))
+  expect(push).toHaveBeenCalledWith('/tasks/created-while-away')
+  expect(request.mock.calls.filter(([path, init]) => path === '/api/v2/tasks' && init?.method === 'POST')).toHaveLength(1)
 })

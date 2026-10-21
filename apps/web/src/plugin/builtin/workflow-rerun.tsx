@@ -2,6 +2,8 @@ import type { Bindings } from '../sdk'
 import { useEffect, useState } from 'react'
 import { ArrowRight, GitBranch, Loader2, Square } from 'lucide-react'
 import { Link, text, type Diagnostic, type JsonObject, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from '../sdk'
+import { taskNeedsPolling } from '../runtime/query'
+import { useActiveView } from '../web-react'
 import { useI18n, useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
@@ -13,7 +15,8 @@ import { workflowDiagnostics, WorkflowDiagnostics } from './workflow-errors'
 type Preview = { reusedSteps: string[]; dirtySteps: string[]; expectedAttempt: number; expectedTaskRevision: number; sourceRevisions: Record<string, number> }
 export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange, request, navigate, useQuery, useSlot, useWorkflowResources }: { taskId: string; document: WorkflowDocument; types: NodeTypeDefinition[]; onStarted(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
-  const task = useQuery<TaskView>(`/api/v2/tasks/${taskId}`, 2000)
+  const activeView = useActiveView()
+  const task = useQuery<TaskView>(`/api/v2/tasks/${taskId}`, 2000, taskNeedsPolling)
   const resources = useWorkflowResources(document)
   const [preview, setPreview] = useState<{ document: string; result: Preview } | null>(null)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [pending, setPending] = useState('')
@@ -47,7 +50,7 @@ export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange
     const id = crypto.randomUUID(); setPending(id)
     try {
       const next = await request<TaskView>(`/api/v2/tasks/${taskId}/rerun`, { method: 'POST', body: JSON.stringify({ ...current, id, config: {}, graphDocument: document, nodeRuntimeInputs: runtimeInputs }) })
-      onStarted(); navigate(`/tasks/${next.id}`)
+      if (activeView.current) { onStarted(); navigate(`/tasks/${next.id}`) }
     } catch (failure) { fail(failure) }
     finally { setBusy(false) }
   }

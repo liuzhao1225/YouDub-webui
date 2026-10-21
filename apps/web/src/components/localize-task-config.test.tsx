@@ -2,7 +2,7 @@ import { useState } from "react"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { initialTaskConfig, TaskConfigForm, TaskOptions } from "@/components/localize-task-config"
+import { TaskConfigForm, TaskOptions } from "@/components/localize-task-config"
 import { LanguageProvider } from "@/lib/i18n"
 import type { Runtime, TaskConfig } from "@/plugin/builtin/localize-contracts"
 const testConfig: TaskConfig = {
@@ -61,16 +61,6 @@ async function choose(user: ReturnType<typeof userEvent.setup>, label: string, o
 
 afterEach(() => { cleanup(); window.localStorage.clear() })
 
-it('chooses the available accelerated device before CPU and preserves saved selections', () => {
-  const runtime = testRuntime()
-  runtime.devices.unshift({ id: 'mps', backend: 'mps', available: true })
-  runtime.capabilities[0].models[0].devices = ['mps', 'cpu']
-  expect(initialTaskConfig(runtime).asr.device).toBe('mps')
-  expect(initialTaskConfig(runtime, testConfig).asr.device).toBe('cpu')
-  runtime.devices[0].available = false
-  expect(initialTaskConfig(runtime).asr.device).toBe('cpu')
-})
-
 it('labels an AMD device with its actual ROCm backend', () => {
   const runtime = testRuntime()
   runtime.devices.unshift({ id: 'cuda:0', backend: 'rocm', available: true })
@@ -104,12 +94,6 @@ it("主页只显示三个基础选项，切换输出后保留设置中的模型�
   expect(changed.mock.calls.at(-1)![0]).toMatchObject({ tts: defaults.tts, separation: defaults.separation, subtitle_alignment: null, keep_background: true })
   await choose(user, '输出内容', '配音与字幕')
   expect(changed.mock.calls.at(-1)![0]).toEqual(defaults)
-})
-
-it("首次配置允许空模型目录，已有模型选择不会被替换", () => {
-  const runtime = testRuntime()
-  expect(initialTaskConfig(runtime, testConfig)).toEqual({ subtitle_alignment: null, ...testConfig })
-  expect(initialTaskConfig({ devices: [], capabilities: [] })).toMatchObject({ asr: { adapter: '', model: '', device: 'cpu' }, translation: { adapter: '', model: '', device: 'cpu' } })
 })
 
 describe("本地化任务配置", () => {

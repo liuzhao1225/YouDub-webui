@@ -16,9 +16,11 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@deepseek-ai/schemastery": "3.18.1",
     "@xyflow/react": "^12.12.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "immer": "10.1.1",
     "lucide-react": "^1.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",

@@ -1,11 +1,13 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { demos } from '../site/demos.js'
 import { appVersion } from './release-version.mjs'
+import { smokePython } from './desktop-smoke.mjs'
 
 const app = resolve(process.argv[2] || 'dist/YouDub.app')
+const readyPython = smokePython()
 function verify() {
   const result = spawnSync('codesign', ['--verify', '--deep', '--strict', app], { encoding: 'utf8' })
   if (result.error) throw result.error
@@ -41,7 +43,7 @@ if (extension.error) throw extension.error
 if (extension.status !== 0) throw new Error(`Bundled extension build failed: ${extension.stdout}\n${extension.stderr}`)
 const server = spawn(join(resources, 'node'), ['--expose-internals', '--import', 'tsx', 'apps/desktop/server.mjs'], {
   cwd: join(resources, 'runtime'),
-  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data },
+  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data, YOUDUB_PYTHON: readyPython },
   stdio: ['pipe', 'pipe', 'pipe'],
 })
 let diagnostics = ''
@@ -86,3 +88,27 @@ try {
   await rm(data, { recursive: true })
 }
 verify()
+const nativeData = await mkdtemp(join(tmpdir(), 'youdub-native-smoke-'))
+const report = join(nativeData, 'ready.json')
+const native = spawn(join(app, 'Contents/MacOS/YouDub'), ['--smoke-ready', report], {
+  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: nativeData, YOUDUB_PYTHON: readyPython }, stdio: ['ignore', 'pipe', 'pipe'],
+})
+let nativeOutput = ''
+native.stdout.on('data', chunk => { nativeOutput += chunk })
+native.stderr.on('data', chunk => { nativeOutput += chunk })
+try {
+  const result = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { native.kill('SIGKILL'); reject(new Error(`Native WKWebView smoke timed out. ${nativeOutput}`)) }, 240000)
+    native.once('error', error => { clearTimeout(timer); reject(error) })
+    native.once('exit', (code, signal) => { clearTimeout(timer); resolve({ code, signal }) })
+  })
+  const evidence = JSON.parse(await readFile(report, 'utf8'))
+  if (result.code !== 0 || !evidence.ok) throw new Error(`Native WKWebView smoke failed: ${JSON.stringify(evidence)}\n${nativeOutput}`)
+  await writeFile(resolve('dist/macos-smoke.json'), JSON.stringify(evidence, null, 2) + '\n')
+  verify()
+  console.log('Native WKWebView authenticated plugin pages passed; signed application remains unchanged.')
+  await rm(nativeData, { recursive: true })
+} catch (error) {
+  console.error(`Native smoke diagnostics retained at ${nativeData}`)
+  throw error
+}
