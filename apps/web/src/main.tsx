@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
+import { LanguageProvider } from './lib/i18n'
 import { PluginBootstrap } from './plugin/bootstrap'
 import { SetupGate } from './components/setup-gate'
 import { TranslationSetup } from './components/translation-setup'
@@ -9,6 +10,6 @@ const ModelSetupPreview = import.meta.env.DEV ? lazy(() => import('./preview/mod
 const container = document.getElementById('root')
 if (!container) throw new Error('YouDub root element is missing')
 
-createRoot(container).render(ModelSetupPreview && window.location.pathname === '/preview/model-setup'
+createRoot(container).render(<LanguageProvider>{ModelSetupPreview && window.location.pathname === '/preview/model-setup'
   ? <Suspense><ModelSetupPreview /></Suspense>
-  : <SetupGate><TranslationSetup><PluginBootstrap /></TranslationSetup></SetupGate>)
+  : <SetupGate><TranslationSetup><PluginBootstrap /></TranslationSetup></SetupGate>}</LanguageProvider>)

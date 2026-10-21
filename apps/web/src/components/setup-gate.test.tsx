@@ -1,10 +1,14 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { cleanup, render as testingRender, screen, waitFor, fireEvent } from '@testing-library/react'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { LanguageProvider } from '@/lib/i18n'
 import { SetupGate } from './setup-gate'
 import { SetupScreen, sizeLabel, type SetupState } from './setup-screen'
 import { SetupDiagnostics } from './setup-diagnostics'
 import modelManifest from '../../../../packages/builtin/src/setup-models.json'
 import requirements from '../../../../backend/requirements/resources.json'
+
+const render = (element: Parameters<typeof testingRender>[0]) => testingRender(element, { wrapper: LanguageProvider })
+afterEach(() => { cleanup(); window.localStorage.clear() })
 
 const state: SetupState = { phase: 'models', version: '0.0.6', platform: 'darwin', arch: 'arm64', token: 'setup-token', canRetry: true,
   environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }],
@@ -19,6 +23,23 @@ const modelChoices: SetupState = {
   resourceSelection: { required: true, prepared: false, items: modelItems, selections: modelItems.map(({ providerId, model }) => ({ providerId, model })) },
 }
 describe('first-run setup', () => {
+  it.each([
+    ['en', 'Prepare all models', 'Speech recognition', 'Subtitle alignment', 'Diagnostic logs', 'Pause VoxCPM2', 'VoxCPM2 download progress'],
+    ['ja', 'すべてのモデルを準備', '音声認識', '字幕のタイミング調整', '診断ログ', '一時停止 VoxCPM2', 'VoxCPM2 のダウンロード進捗'],
+  ])('uses the saved %s language for setup, model progress and actions', async (language, prepare, recognition, alignment, logs, pause, progress) => {
+    window.localStorage.setItem('youdub-ui-language', language)
+    const onAction = vi.fn(), onPrepare = vi.fn()
+    const view = render(<SetupScreen state={modelChoices} onAction={onAction} onPrepare={onPrepare} />)
+    fireEvent.click(await screen.findByRole('button', { name: prepare }))
+    expect(onPrepare).toHaveBeenCalledWith(modelItems.map(({ providerId, model }) => ({ providerId, model })))
+    expect(screen.getByText(recognition)).toBeVisible()
+    expect(screen.getByText(alignment)).toBeVisible()
+    expect(screen.getByRole('region', { name: logs })).toBeVisible()
+    view.rerender(<SetupScreen state={{ ...modelChoices, resourceSelection: { ...modelChoices.resourceSelection!, required: false }, models: modelChoices.models.map(model => ({ ...model, status: 'downloading' })) }} onAction={onAction} />)
+    fireEvent.click(screen.getByRole('button', { name: pause }))
+    expect(onAction).toHaveBeenCalledWith('pause', 'voxcpm')
+    expect(screen.getByRole('progressbar', { name: progress })).toHaveAttribute('aria-valuenow', '0')
+  })
   it('lists every required source model and its actual size without an option to skip models', () => {
     const onAction = vi.fn(), onPrepare = vi.fn()
     const view = render(<SetupScreen state={modelChoices} onAction={onAction} onPrepare={onPrepare} />)
@@ -62,6 +83,13 @@ describe('first-run setup', () => {
     const view = render(<SetupScreen state={{ ...state, environment: [{ id: 'acceleration', name: 'GPU', status: 'ready', detail: 'AMD GPU 驱动不可用；使用 CPU' }] }} onAction={vi.fn()} />)
     expect(screen.getByText('AMD GPU 驱动不可用；使用 CPU')).toBeInTheDocument()
     view.unmount()
+  })
+  it('shows final verification after all downloads and never offers a redundant resume', () => {
+    const models = modelChoices.models.map(model => ({ ...model, status: 'ready' as const, received: model.total }))
+    render(<SetupScreen state={{ ...modelChoices, models, resourceSelection: { ...modelChoices.resourceSelection!, required: false }, resources: { status: 'preparing', selections: [], requirements: [], environment: state.environment, models } }} onAction={vi.fn()} />)
+    expect(screen.getByText('校验并启动工作台')).toBeVisible()
+    expect(screen.queryByText('下载已暂停')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '继续下载' })).not.toBeInTheDocument()
   })
   it('keeps the workbench gated during downloads and sends the setup token with pause', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(response(state)).mockResolvedValue(response({ ...state, models: [{ ...state.models[0], status: 'paused' }] }))

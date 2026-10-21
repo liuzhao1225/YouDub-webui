@@ -118,3 +118,12 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 同版本 YouTube 下载节点实际失败，平台要求登录确认非机器人，未执行下游节点；失败任务保留。没有通过重试或改用本地视频将该下载任务记为成功。
 - `baa60ad8` 的[开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39654481138) 在旧业务进程协议测试失败：Darwin 进程组退出间隙返回 EPERM，清理异常覆盖 worker 原错误。该旧实现仍被开发回归使用，活动 Harness worker 已使用官方 Subprocess。根据 [Apple killpg 实现](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_sig.c)，修复仅在既有退出宽限期内确认整个进程组已消失才接受此退出状态；真实权限错误继续失败，worker 与清理同时失败时保留两个原因。针对性测试 12 passed，Windows 限定用例在 macOS skipped；后续 CI 结果独立记录。
 - 新隔离 profile 的首次启动已通过页面安装私有 Python 3.12.15；点击“准备全部模型”后继续安装推理依赖、FFmpeg、分句资源和四模型。当前尚未完成全部下载，首启门控保持阻止进入工作台。此项继续验收，不能据此关闭 P3。
+
+## P3–P4 首启完成与语言读回（2026-10-22）
+
+- `a5bbed5d` 的[源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39657014252) 全部通过，包括上一轮失败的进程协议检查。
+- 隔离 home `.cache/harness/refactor-first-run-20261022` 通过界面实际下载 Whisper、Demucs、VoxCPM2、Qwen Aligner 共约 6.97 GB，并完成私有 Python、推理依赖、FFmpeg、分句资源及 Apple MPS 运算检查。2/4、3/4 时均保持首启门控；VoxCPM2 暂停和继续保留已有进度，其他下载可继续。
+- 首启发现四模型下载到 100% 后的最终依赖校验阶段仍显示“下载已暂停”。`SetupScreen` 现按原资源状态显示“正在验证环境”，不再给出无效的继续下载按钮；已有资源合同保持不变。
+- 新 profile 初始提供商为空。使用原 YouDub 的配置值，通过原 Harness 模型编辑器填写 URL、密钥和模型字段并保存；未通过写配置文件完成测试。停止 Host 后重新构建、启动同一 home，直接进入工作台，模型页仍显示唯一用户提供商和前六位密钥掩码。凭据文件为 0600，唯一 records 项属于浏览器连接授权，没有 DeepSeek 账号记录；未输出完整密钥。
+- 首启和资源组件新增中英日文案，复用现有语言入口和官方 locale 设置。实际从设置切换日本語、刷新页面后仍为日语；资源页显示四模型、Python、FFmpeg、分句数据和 yt-dlp 均已就绪。原始后端诊断详情保留原文，诊断报告模板和部分后端说明仍需后续语言复核。截图：`/tmp/youdub-refactor-first-run-ja-resources.png`。
+- 本批 39 项前端测试、web TypeScript、636 项业务语言键及 7 个框架语言空间检查通过；产品构建和来源组合检查通过。测试使用本机 Node 22，系统 Node 26 的 jsdom localStorage 行为不兼容已有测试环境。真实原生窗口、全新 checkout 和 Windows 验收仍未完成；两份飞书文档保持未改。
