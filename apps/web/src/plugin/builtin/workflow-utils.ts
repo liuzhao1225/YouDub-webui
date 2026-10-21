@@ -50,6 +50,11 @@ export function parseWorkflow(raw: string): WorkflowDocument {
   if (value?.format !== 'youdub.workflow' || value.formatVersion !== 1 || !Array.isArray(value.nodes) || !Array.isArray(value.edges) || !Array.isArray(value.inputs) || !Array.isArray(value.outputs) || !value.presentation?.positions || !value.presentation.viewport) throw new Error('Unsupported workflow file. Expected youdub.workflow version 1.')
   return value
 }
+export function serializeWorkflowEdits(document: WorkflowDocument): string {
+  // Panning, zooming and fitting the canvas only change how it is viewed.
+  // Keep node positions in the comparison so deliberate layout edits are saved.
+  return JSON.stringify({ ...document, presentation: { ...document.presentation, viewport: undefined } })
+}
 // Browser memory retains a draft while opening its dedicated node page. It is
 // not persisted as a saved workflow and contains neither uploads nor secrets.
 export const workflowDrafts = new Map<string, { document: WorkflowDocument; saved: string; revision: number; origin: string }>()

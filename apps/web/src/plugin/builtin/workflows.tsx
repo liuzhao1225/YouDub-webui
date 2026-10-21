@@ -9,7 +9,7 @@ import { InlineAlert } from '@/components/inline-alert'
 import { useQuery } from './use-query'
 import { WorkflowCanvas, createNode } from './workflow-canvas'
 import { GraphPorts, NodeSettings, SynthesizeNodeEditor } from './workflow-settings'
-import { blankWorkflow, parseWorkflow, workflowDrafts } from './workflow-utils'
+import { blankWorkflow, parseWorkflow, serializeWorkflowEdits, workflowDrafts } from './workflow-utils'
 import { useUnsavedChanges } from './workflow-guard'
 import { WorkflowRun } from './workflow-run'
 import { WorkflowRerun } from './workflow-rerun'
@@ -78,14 +78,14 @@ function Editor({ initial, types, nodeId }: { initial: WorkflowDocumentRecord; t
   const [sourceTask] = useState(() => new URLSearchParams(window.location.search).get('sourceTask'))
   const sourceQuery = sourceTask ? `?sourceTask=${encodeURIComponent(sourceTask)}` : ''
   const [document, setDocument] = useState<WorkflowDocument>(() => structuredClone(initialDraft?.document ?? initial.document))
-  const [saved, setSaved] = useState(initialDraft?.saved ?? JSON.stringify(initial.document))
+  const [saved, setSaved] = useState(initialDraft?.saved ?? serializeWorkflowEdits(initial.document))
   const [revision, setRevision] = useState(initialDraft?.revision ?? initial.revision)
   const [selected, setSelected] = useState<string | undefined>(nodeId), [panel, setPanel] = useState<'nodes' | 'ports' | 'run' | null>(null)
   const [freshInputs, setFreshInputs] = useState(false)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [search, setSearch] = useState('')
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
   const [undo, setUndo] = useState<WorkflowDocument[]>([]), [redo, setRedo] = useState<WorkflowDocument[]>([])
-  const dirty = JSON.stringify(document) !== saved
+  const dirty = serializeWorkflowEdits(document) !== saved
   const current = useRef(document)
   const history = useRef({ undo, redo })
   useEffect(() => { current.current = document; history.current = { undo, redo } }, [document, undo, redo])
@@ -104,7 +104,7 @@ function Editor({ initial, types, nodeId }: { initial: WorkflowDocumentRecord; t
       const next = create ? { ...current.current, id: crypto.randomUUID(), title: copy || initial.origin !== 'user' ? `${current.current.title} · ${tx('Copy', '副本', 'コピー')}` : current.current.title } : current.current
       const record = await apiClient.request<WorkflowDocumentRecord>(create ? '/api/v2/workflow-documents' : `/api/v2/workflow-documents/${initial.id}`, { method: create ? 'POST' : 'PUT', body: JSON.stringify(create ? { document: next } : { document: next, expectedRevision: revision }) })
       workflowDrafts.delete(initial.id)
-      setSaved(JSON.stringify(record.document)); setRevision(record.revision); setDocument(record.document); current.current = record.document
+      setSaved(serializeWorkflowEdits(record.document)); setRevision(record.revision); setDocument(record.document); current.current = record.document
       if (create) { guard.bypass(); navigation.replace(`/workflows/${record.id}${sourceQuery}`) }
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)); throw failure }
     finally { setBusy(false) }

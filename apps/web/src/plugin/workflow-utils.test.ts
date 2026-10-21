@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { NodeTypeDefinition, WorkflowDocument } from './contracts'
-import { canConnect, connect, endpointKey, parseWorkflow, removeNodes } from './builtin/workflow-utils'
+import { canConnect, connect, endpointKey, parseWorkflow, removeNodes, serializeWorkflowEdits } from './builtin/workflow-utils'
 
 const type: NodeTypeDefinition = {
   type: 'audio.process', version: '1', providerId: 'test', operation: 'audio.process',
@@ -43,5 +43,42 @@ describe('workflow connections', () => {
     expect(() => parseWorkflow('{"nodes":[],"links":[]}')).toThrow('Unsupported')
     expect(() => parseWorkflow(JSON.stringify({ ...graph(), formatVersion: 2 }))).toThrow('Unsupported')
     expect(parseWorkflow(JSON.stringify(graph()))).toEqual(graph())
+  })
+})
+
+describe('workflow unsaved changes', () => {
+  it('ignores canvas navigation and retains the viewport for saving and node-page drafts', () => {
+    const document = graph(), saved = serializeWorkflowEdits(document)
+    document.presentation.viewport = { x: 154.5, y: -89, zoom: 0.45 }
+    const draft = parseWorkflow(JSON.stringify(document))
+    expect(serializeWorkflowEdits(draft)).toBe(saved)
+    expect(draft.presentation.viewport).toEqual({ x: 154.5, y: -89, zoom: 0.45 })
+  })
+
+  const edits: [string, (document: WorkflowDocument) => void][] = [
+    ['name', (document) => { document.title = 'Renamed' }],
+    ['parameters', (document) => { document.nodes[0].config.language = 'ja' }],
+    ['provider', (document) => { document.nodes[0].provider.id = 'other' }],
+    ['review checkpoint', (document) => { document.nodes[0].autoContinue = false }],
+    ['nodes', (document) => { document.nodes.pop() }],
+    ['connections', (document) => { document.edges.pop() }],
+    ['inputs', (document) => { document.inputs[0].required = false }],
+    ['outputs', (document) => { document.outputs[0].source.nodeId = 'a' }],
+    ['node layout', (document) => { document.presentation.positions.a = { x: 100, y: 200 } }],
+  ]
+  it.each(edits)('detects %s edits even after viewing the canvas', (_, edit) => {
+    const document = graph(), saved = serializeWorkflowEdits(document)
+    document.presentation.viewport = { x: 120, y: 90, zoom: 0.5 }
+    edit(document)
+    expect(serializeWorkflowEdits(document)).not.toBe(saved)
+  })
+
+  it('clears unsaved state when an edit is reverted after zooming', () => {
+    const document = graph(), saved = serializeWorkflowEdits(document)
+    document.title = 'Edited'
+    document.presentation.viewport.zoom = 0.5
+    expect(serializeWorkflowEdits(document)).not.toBe(saved)
+    document.title = 'Test'
+    expect(serializeWorkflowEdits(document)).toBe(saved)
   })
 })
