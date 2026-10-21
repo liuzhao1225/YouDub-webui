@@ -1,0 +1,11 @@
+# Copy the fields you need into $DSH_HOME/profiles/youdub/cordis.patch.yml.
+# Harness replaces the whole config of a row, so retain all three required fields.
+- id: youdub-subtitles
+  config:
+    python: /absolute/path/to/YouDub-webui/.venv/bin/python
+    modelsDir: /absolute/path/to/whisper-models
+    dataDir: !!js dshHomePath('youdub')
+- id: webserver
+  config:
+    host: 127.0.0.1
+    port: 3086

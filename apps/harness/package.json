@@ -1,0 +1,44 @@
+{
+  "name": "@youdub/harness-subtitles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "YouDub subtitle workflow proof of concept on DeepSeek Harness",
+  "license": "Apache-2.0",
+  "main": "dist/host.mjs",
+  "exports": {
+    ".": "./dist/host.mjs",
+    "./client": "./dist/client.js",
+    "./process": "./dist/process.mjs",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-connection"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node launch.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "clsx": "2.1.1",
+    "lucide-react": "1.8.0",
+    "tailwind-merge": "3.5.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}

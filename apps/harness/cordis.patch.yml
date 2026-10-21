@@ -1,0 +1,29 @@
+# Standalone Harness composition; upstream packages stay unmodified.
+- insert:
+    - id: credentials
+      name: '@deepseek-ai/dsh-credentials-local'
+    - id: webserver
+      name: '@deepseek-ai/dsh-host-webserver'
+      config:
+        host: 127.0.0.1
+        port: 3086
+    - id: web-runtime
+      name: '@deepseek-ai/dsh-web-app'
+      config:
+        openBrowser: false
+        printUrl: true
+        surfaceContext: false
+    - id: modules
+      name: '@deepseek-ai/dsh-client-modules'
+    - id: connection
+      name: '@deepseek-ai/dsh-client-connection'
+    - id: renderer
+      name: '@deepseek-ai/dsh-client-ui-renderer'
+    - id: youdub-process
+      name: '@youdub/harness-subtitles/process'
+    - id: youdub-subtitles
+      name: '@youdub/harness-subtitles'
+      config:
+        python: !!js new URL('../../.venv/bin/python', `file://${process.cwd()}/`).pathname
+        modelsDir: !!js dshHomePath('youdub/models/whisper')
+        dataDir: !!js dshHomePath('youdub')
