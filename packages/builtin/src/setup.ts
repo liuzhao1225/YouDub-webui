@@ -217,11 +217,18 @@ export default class SetupService extends Service {
   }
   async checkResources(value: ResourceSelection[]) {
     const selections = this.selections(value)
-    if (this.resourceState && JSON.stringify(this.resourceState.selections) === JSON.stringify(selections) &&
-        (this.resourceJob || this.resourceState.status === 'failed')) {
-      return { ...this.resourceState, environment: this.resourceEnvironment.steps }
+    const previous = this.resourceState
+    const sameSelection = previous && JSON.stringify(previous.selections) === JSON.stringify(selections)
+    if (sameSelection && (this.resourceJob || (previous.status === 'failed' && !previous.requirements.some(item => item.configurationRequired)))) {
+      return { ...previous, environment: this.resourceEnvironment.steps }
     }
     const inspected = await this.inspectResources(selections)
+    if (sameSelection && this.resourceState === previous && !this.resourceJob) {
+      this.resourceState = previous.status === 'failed' && inspected.status !== 'ready'
+        ? { ...inspected, status: 'failed', error: previous.error, environment: this.resourceEnvironment.steps }
+        : inspected
+      return this.resourceState
+    }
     if (this.resourceState && JSON.stringify(this.resourceState.selections) !== JSON.stringify(selections)) {
       inspected.activePreparation = { selections: this.resourceState.selections, status: this.resourceState.status, ...(this.resourceState.error ? { error: this.resourceState.error } : {}) }
     }
@@ -243,7 +250,7 @@ export default class SetupService extends Service {
     const initial = await this.inspectResources(selections)
     const manual = initial.requirements.filter(item => !item.ready && !item.automatic)
     if (manual.length) throw new AppError('MANUAL_RESOURCE_REQUIRED', manual.map(item => `${item.providerId}: ${item.reason}`).join('\n'), 422)
-    if (initial.status === 'ready') return initial
+    if (initial.status === 'ready') { this.resourceState = initial; return initial }
     this.resourceState = { ...initial, status: 'preparing' }
     this.resourceJob = (async () => {
       await this.resourceEnvironment.prepare(this.groups(selections))
@@ -257,8 +264,8 @@ export default class SetupService extends Service {
       }
       await this.resourceEnvironment.probe('verify', this.groups(selections))
       const final = await this.inspectResources(selections)
-      if (final.status !== 'ready') throw new Error(final.requirements.filter(item => !item.ready).map(item => `${item.providerId}: ${item.reason}`).join('\n'))
       this.resourceState = { ...final, environment: this.resourceEnvironment.steps }
+      if (final.status !== 'ready') throw new Error(final.requirements.filter(item => !item.ready).map(item => `${item.providerId}: ${item.reason}`).join('\n'))
     })().catch(error => {
       if (cancelled(error, this.stopping.signal)) return
       this.resourceState!.status = 'failed'; this.resourceState!.error = message(error)

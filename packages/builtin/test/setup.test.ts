@@ -309,6 +309,62 @@ test('installed remote dependencies do not make an unconfigured service ready', 
   assert.equal((await ctx.setup.checkResources([{ providerId: 'openai', model: 'qwen-test' }])).status, 'ready')
 })
 
+test('configuration checks and explicit retries persist recovery after dependency preparation', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-resource-configuration-recovery-'))
+  const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
+  let installed = false, configured = false, installations = 0
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(this: EnvironmentSetup, groups: string[] = ['base']) {
+    this.steps = []
+    if (groups.includes('openai')) { installed = true; installations++ }
+  })
+  t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ missing: installed ? [] : ['openai'], media: true, punkt: true, demucsSource: true }))
+  const ctx = new Context(), errors: unknown[] = []
+  const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
+  const app = await ctx.plugin(async function configurationRecovery(owner) {
+    owner.reflect.provide('process', { run: async () => { throw new Error('Configuration checks must not execute a model') } })
+    owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
+    owner.reflect.provide('catalog', {
+      provider: () => ({ probe: async () => ({}) }),
+      listProviders: () => [{ id: 'openai', execution: 'remote', available: installed && configured, unavailableReason: installed ? configured ? undefined : 'Provider connection is not configured.' : 'OpenAI SDK is missing.', models: installed && configured ? [{ id: 'qwen-test' }] : [] }],
+    })
+    await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
+    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
+  })
+  t.after(async () => {
+    await app.dispose(); await logging(); await rm(root, { recursive: true })
+    if (previous === undefined) delete process.env.YOUDUB_DESKTOP_DATA_DIR
+    else process.env.YOUDUB_DESKTOP_DATA_DIR = previous
+  })
+  ctx.emit('app/ready')
+  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
+  const selections = [{ providerId: 'openai', model: 'qwen-test' }]
+  const original = 'openai: Provider connection is not configured.'
+  for (const action of ['check', 'prepare'] as const) {
+    installed = false; configured = false
+    const before = installations
+    assert.equal((await ctx.setup.checkResources(selections)).requirements[0]?.automatic, true)
+    await ctx.setup.prepareResources(selections)
+    await waitFor(() => ctx.setup.snapshot().resources?.status === 'failed')
+    const failed = ctx.setup.snapshot().resources!
+    assert.equal(failed.error, original)
+    assert.equal(failed.requirements[0]?.configurationRequired, true)
+    assert.equal(failed.requirements[0]?.automatic, false)
+    assert.deepEqual(failed.requirements[0]?.missingPackages, [])
+    assert.equal(failed.requirements[0]?.reason, 'Provider connection is not configured.')
+    assert.equal((await ctx.setup.checkResources(selections)).error, original)
+    assert.equal(ctx.setup.snapshot().resources?.status, 'failed')
+    assert.equal(installations, before + 1, 'checking the failed configuration must not reinstall dependencies')
+    configured = true
+    const recovered = action === 'check' ? await ctx.setup.checkResources(selections) : await ctx.setup.prepareResources(selections)
+    assert.equal(recovered.status, 'ready')
+    assert.equal(ctx.setup.snapshot().resources?.status, 'ready')
+    assert.equal(ctx.setup.snapshot().resources?.error, undefined)
+    assert.equal((await ctx.setup.checkResources(selections)).status, 'ready')
+    assert.equal(installations, before + 1, 'explicit recovery must not repeat successful installation')
+  }
+  assert.equal(errors.filter(error => error instanceof Error && error.message === original).length, 2)
+})
+
 test('failed selected model download retains the error and leaves the workbench ready', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-resource-failure-'))
   const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
