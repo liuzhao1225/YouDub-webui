@@ -1,4 +1,8 @@
-# YouDub Client
+# YouDub 业务组件与独立 Web 入口
+
+当前 Harness 分支直接复用本目录的业务组件。桌面由官方 Harness Renderer、Slots、Store 和共享 React 承载，控件与服务接线位于 `apps/harness/src/frontend`；本目录的 `main.tsx` 和 `plugin/bootstrap.tsx` 不进入桌面活动构建。修改当前产品请阅读[前端开发说明](../harness/docs/FRONTEND-DEVELOPMENT.md)与[本地运行](../harness/docs/DEVELOPMENT.md)。
+
+## 原独立 Web 入口
 
 React 19 与 Vite 提供客户端薄壳；生产环境由 Cordis Host 同源提供页面、静态资源和 API，页面深链接返回 SPA 入口。业务界面由 Cordis Client 插件通过公共 slots 注册。
 

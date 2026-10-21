@@ -1,5 +1,7 @@
 # YouDub 桌面应用
 
+> 本文保留原 AppKit/WKWebView 与 Windows 桌面壳的构建和发行说明。当前 `codex/harness-youdub-integration` 分支使用 Harness 的 Electron 架构，开发入口和命令见[本地开发](../harness/docs/DEVELOPMENT.md)，桌面装配见[架构说明](../harness/docs/ARCHITECTURE.md)。
+
 ## macOS
 
 原生 AppKit 窗口内嵌 WKWebView，启动应用时自动启动内置 Node 和 Cordis Host，加载 React 客户端。无需单独安装 Node、运行终端或打开浏览器。目标为 Apple Silicon，最低 macOS 14。

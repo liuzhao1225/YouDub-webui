@@ -1,0 +1,117 @@
+# 基于 DSH 的 YouDub Desktop 架构
+
+YouDub Desktop 使用 DeepSeek Harness 的 Electron 桌面能力、Host 插件运行时和前端插件框架。视频处理、图工作流、人工订正和文件产物属于 YouDub 业务层，通过一个 DSH bundle 接入。
+
+## 分层与源码位置
+
+```mermaid
+flowchart TB
+  Start[YouDub 启动器 desktop.mjs] --> Desktop[Electron 产品入口 desktop-product.ts]
+  Desktop --> Native[官方窗口 / preload / 协议转发]
+  Desktop --> Host[官方 Desktop Host / app-boot / Cordis Loader]
+  Native --> Renderer[官方 Renderer / ModuleLoader / Slots / Layout]
+  Renderer --> Client[YouDub Client 插件]
+  Client --> Views[原 YouDub 页面 / 画布 / 校对组件]
+  Host --> Services[官方 Connection / Settings / Credentials / LLM / Jobs / Subprocess]
+  Host --> Domain[YouDub Host 插件]
+  Client -->|业务请求| Services
+  Services --> Domain
+  Domain --> Workflow[原任务状态机 / 图调度 / SQLite / 文件合同]
+  Workflow --> Services
+  Services --> Workers[原 Python worker / 媒体算法]
+```
+
+| 层 | 源码入口 | 负责的行为 |
+| --- | --- | --- |
+| 上游原件 | [`vendor/deepseek-harness/source`](../../../vendor/deepseek-harness/source) | 官方 CLI、Host、Web、Desktop、服务和前端包的完整来源 |
+| 产品启动与装配 | [`desktop.mjs`](../desktop.mjs)、[`desktop-product.ts`](../src/desktop-product.ts) | YouDub 名称、独立路径、profile、窗口与官方桌面能力的组合 |
+| bundle 声明 | [`package.json`](../package.json)、[`cordis.patch.yml`](../cordis.patch.yml) | Host/Client 入口、模块依赖、官方条目的启停和 YouDub 插件配置 |
+| Host 业务接入 | [`host.mjs`](../src/host.mjs)、[`backend/`](../src/backend) | 依赖官方服务，装配 YouDub 领域服务与 API |
+| Renderer 业务接入 | [`client.jsx`](../src/client.jsx)、[`frontend/`](../src/frontend) | 页面、导航、官方控件适配、主题与语言绑定 |
+| YouDub 领域实现 | [`packages/builtin/src`](../../../packages/builtin/src)、[`packages/sdk/src`](../../../packages/sdk/src) | 工作流、任务、节点合同、资源、文件与持久化桥接 |
+| YouDub 页面实现 | [`apps/web/src`](../../web/src) | 原工作台、动态图标、任务库、工作流画布、节点校对页面 |
+| 媒体实现 | [`backend`](../../../backend) | 下载、Demucs、Whisper、分句、TTS、对齐、混音和导出 |
+
+### 版本与来源
+
+官方源码固定为 `dsh-v0.2.1-rc.2`，提交 `687f282e8625c6b8d11ff58211a90524be2e4317`，见[源码清单](../../../vendor/deepseek-harness/source-manifest.json)。YouDub 产品版本来自[根 package.json](../../../package.json)，当前为 `0.0.7`；业务 bundle 名为 `@youdub/harness-subtitles`，当前为 `0.1.0`。这个包名沿用最初接入名称，现已包含工作流、字幕、配音、资源与扩展功能。
+
+原 YouDub 冻结快照为 `f6f927903581b165f2bf6c840ea65b896d319524`。公开源码 tag、原安装应用与 npm 包分别留有[来源记录](../baselines/sources.json)，不能用一个来源的哈希代表其他来源。
+
+## 从源码到运行进程
+
+1. [`build-framework.mjs`](../build-framework.mjs) 校验 vendor，复制到 `.cache/harness/source-build`，执行官方 `scripts/build.ts --scope artifacts`，保留构建记录。
+2. [`build.mjs`](../build.mjs) 编译 YouDub Host/Client 插件；[`build-desktop.mjs`](../build-desktop.mjs) 编译产品桌面入口和所需官方模块，引用官方构建的 preload。
+3. [`prepare-source-development.mjs`](../prepare-source-development.mjs) 调用官方 `prepareDevelopmentProject`，为开发运行时链接源码构建的 CLI、Host、Web 和服务。YouDub 插件使用单独的依赖视图，确保解析到同一套官方包。
+4. `npm start` 进入 [`desktop.mjs`](../desktop.mjs)，准备 profile，启动本仓库安装的 Electron。Host 使用该 Electron 的 Node 模式。
+5. [`desktop-main.mjs`](../src/desktop-main.mjs) 设置应用名称，进入产品入口。产品入口组合官方 `DesktopProjectManager`、`DesktopHostProcess`、`DesktopBackendController`、preload 和认证协议转发。
+6. 官方 Renderer 加载 Client bundle；YouDub 先通过 `root` 插槽显示环境准备，再接入翻译模型配置，随后展示工作台。
+
+桌面窗口中页面与 Host 的连接通过官方协议转发处理；浏览器开发入口直接访问同一框架的 HTTP Host。桌面 Host 端口由桌面控制器管理，开发脚本输出实际地址。浏览器入口默认使用 `3086`。
+
+源码构建产生工作区产物。Electron、Python、pnpm 和部分上游原生引擎使用发行二进制；开发启动还需要本地官方 runtime payload。运行路径和准备方法见[本地开发](DEVELOPMENT.md)。
+
+## profile 与插件生命周期
+
+[`prepare-profile.mjs`](../prepare-profile.mjs) 通过官方 `initProfile` 按顺序组合：
+
+```text
+@deepseek-ai/dsh-base
+@deepseek-ai/dsh-web-app
+@youdub/harness-subtitles
+```
+
+YouDub 的 patch 停用 DeepSeek 账号、聊天、编码 Agent、终端工作区、计划任务等产品入口，保留所需框架服务。用户的本地配置继续使用官方 profile/home patch 规则，实际结果以官方配置解析器为准。
+
+部分服务的名称仍含 `session` 或 `agent`。官方模型设置依赖 `remote.session`，相关控制器继续依赖 session、agent registry、attachments 等注册服务。这些依赖需要结合[当前 patch](../cordis.patch.yml)和[profile 检查](../check-profile.mjs)理解。`agent-loop`、tools 和聊天界面在当前产品组合中停用。
+
+插件入口使用 `inject` 声明服务依赖，由 Loader 安排激活和销毁。监听、插槽、路由和进程资源通过官方 context 生命周期释放。必需条目出现 pending/failed 时需要修复依赖与配置，启动诊断保留具体原因。
+
+## 官方框架与业务层的边界
+
+| 能力 | DSH 负责 | YouDub 负责 |
+| --- | --- | --- |
+| 网络入口 | Connection 的监听、认证与请求准入 | 已准入请求中的业务路由、参数、文件 Range 与错误合同 |
+| 持久配置 | Settings/configForms、配置版本与更新 | YouDub 偏好结构、节点配置和资源选择 |
+| 密钥与模型 | Credentials、官方模型表单、LLM 适配器与调用 | 翻译提示、分批、输出上限检查、结果结构和请求证据 |
+| 运行中的操作 | Jobs 的状态/取消，Subprocess 的进程与管道 | 何时运行哪个节点、暂停确认、结果复用和图依赖 |
+| 数据 | 提供进程和生命周期基础 | SQLite 事务、任务修订、工作流文档、产物和历史结果 |
+| 前端基础 | Renderer、ModuleLoader、Slots、Layout、Store、theme、locale、primitives | 页面内容、业务控制器、画布、字幕与音频编辑 |
+| 扩展 | PluginManager 的检查、安装、启停、卸载与运行状态 | YouDub 节点/提供商/页面合同，以及扩展目录的产品展示 |
+
+具体调用见[后端说明](BACKEND-DEVELOPMENT.md)。前端保留原控制器的业务 API，通过构建边界接入官方 Store 和控件，见[前端说明](FRONTEND-DEVELOPMENT.md)。
+
+## 一次任务的路径
+
+```mermaid
+sequenceDiagram
+  participant UI as YouDub 页面
+  participant C as 官方 Connection
+  participant D as YouDub API / Tasks
+  participant J as 官方 Jobs / Subprocess / LLM
+  participant W as Python worker / 模型
+  UI->>C: 上传或业务请求
+  C->>D: 已认证请求
+  D->>D: 保存任务、图快照与执行绑定
+  D->>J: 执行依赖已满足的节点
+  J->>W: 媒体处理或远端模型调用
+  W-->>J: 进度、结果或错误
+  J-->>D: 操作结果
+  D->>D: 保存结果；按 autoContinue 决定是否等待确认
+  UI->>C: 保存订正并确认当前节点
+  C->>D: 校验修订与确认状态
+  D->>J: 继续符合条件的下游节点
+  UI->>C: 读取或下载产物
+  C->>D: 文件请求
+  D-->>UI: 文件内容 / Range 响应
+```
+
+默认模板为字幕翻译、视频配音、字幕＋配音。人工审核使用各节点的 `autoContinue`；关闭后完成节点会等待确认。图调度和业务状态落在原 YouDub 代码，官方 Jobs 的一次执行状态不等于整个业务任务完成。
+
+## 数据隔离与完整性
+
+桌面默认 home 为 `.cache/harness/desktop`，业务数据在其 `youdub/` 下，Python/venv、媒体工具、缓存和模型使用产品指定目录。Electron 用户数据位于相邻的 `desktop-user-data`。显式 `DSH_HOME` 可隔离首启实验；浏览器入口默认使用另一个 home。详见[路径表](DEVELOPMENT.md#数据与配置)。
+
+上游原件与 YouDub 适配代码分开保存。上游未导出的窗口与 Windows 菜单片段在产品入口中逐字复制，由[桌面来源检查](../baselines/desktop-build.mjs)校验。新增适配优先使用官方导出、组件属性、服务或插槽；需要引入上游源码片段时保留来源和逐字检查。
+
+[`check-composition.mjs`](../check-composition.mjs) 检查活动构建输入，阻止旧 HTTP/Auth、旧前端根、旧 Loader、旧模型设置和第二份框架实例进入融合 bundle。源码完整性、构建来源、进程健康与真实视频验收分别记录，最新范围见[代码复核](CODE-AUDIT.md)。

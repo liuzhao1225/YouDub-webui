@@ -1,5 +1,7 @@
 # YouDub 前端接入映射
 
+本文按现有功能定位源码。新增页面、官方控件接线、状态与请求、主题及语言维护见[前端开发说明](docs/FRONTEND-DEVELOPMENT.md)。
+
 业务页面直接引用 `apps/web/src` 的原组件。Harness vendor 源码保持原样；产品层通过官方服务、插槽、组件属性与主题 token 接入。
 
 | 用户功能 | 复用的 YouDub 源码 | Harness 接缝 |
@@ -12,7 +14,7 @@
 | 首次环境准备 | `components/setup-gate.tsx`、`setup-screen.tsx`、`runtime/onboarding.ts` | 注入固定 `/api/setup` 请求；官方 `root` priority shadow 承载原页面，ready 后释放并展示原 AppFrame；注入品牌资源、官方主题控件、原示例导航 |
 | 首次完整模型准备 | 原 `SetupScreen`、`ModelDownloadRow`、`SetupController` | 四项清单与大小来自原 manifest / resource inventory；四模型均必需，无可取消勾选；官方 Button 显式提交全部模型，复用原暂停、继续、重试与错误行 |
 | 示例与同步播放器 | 原 `templates/examples.html` 与 `site/player.js`、`style.css`、`demos.js` | iframe 加载固定官方连接文件端点；只接回应用内返回导航 |
-| 语言、主题、设置 | 原 `LanguageSwitcher`、`ThemeToggle` | 官方 `locale` / `theme` / `sidebar.settings` |
+| 语言、主题、设置 | 原 `ThemeToggle` 与官方 `LanguageRow` | 官方 `locale` / `theme` / `sidebar.settings`；语言在通用设置中选择 |
 | 模型服务与凭据 | 官方 `ui-settings-models` | 官方 settings / credentials / llm 服务，无旧模型设置运行时 |
 | 首次翻译服务配置 | 原 `TranslationSetupView`、`TranslationSetupController` | 环境与四模型依赖全部就绪→翻译配置→工作台顺序；配置区使用原官方 ModelsSection，配置完成或用户“稍后配置”后释放 root |
 | 插件安装、启停、卸载、日志 | vendor 原 `PluginManagerPage`、`PluginManagerController`、stores、Toast | 官方 PluginManager Remote；仅过滤展示的产品目录与覆盖产品文案 |

@@ -4,6 +4,8 @@
 
 # YouDub WebUI
 
+> This is the `codex/harness-youdub-integration` development branch. It uses the DeepSeek Harness backend and frontend framework with Electron, retaining YouDub's business UI and workflows. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese). Download links below refer to published releases; the main-branch source instructions describe the original runtime.
+
 An open-source video localization workspace: import a video, transcribe and translate its speech, clone each sentence from its source audio, and produce subtitles and dubbed video.
 
 [中文](README.md) · [Website and demos](https://liuzhao1225.github.io/YouDub-webui/) · [Download latest](https://github.com/liuzhao1225/YouDub-webui/releases/latest) · [Installation and upgrade](docs/upgrade.md) · [Community](#community)
@@ -109,7 +111,9 @@ QQ group: `618246010`
   <img src="apps/web/public/qq-group-618246010.jpg" alt="YouDub QQ group QR code" width="220" />
 </p>
 
-## Quick Start
+## Running the main branch from source
+
+This section preserves the published version's original workflow. For this Harness branch, follow the [development guide](apps/harness/docs/DEVELOPMENT.md), including its first-run resources, data paths, and Electron entry point.
 
 [Node workflows](docs/workflows.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · [Release workflow](docs/releasing.md)
 

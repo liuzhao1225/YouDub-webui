@@ -4,6 +4,12 @@
 
 当前处于源码开发阶段，开发运行允许链接工作区；本轮不生成应用包或安装包。历史字幕 POC 说明原样保存在 [POC-README.md](docs/POC-README.md)，其中旧启动命令、截图和测试计数不代表本分支。
 
+## 开发文档
+
+[文档索引](docs/README.md) · [架构说明](docs/ARCHITECTURE.md) · [前端开发](docs/FRONTEND-DEVELOPMENT.md) · [后端与工作流开发](docs/BACKEND-DEVELOPMENT.md) · [本地开发](docs/DEVELOPMENT.md) · [多语言维护](docs/LOCALIZATION.md)
+
+架构说明记录官方框架与业务代码的职责；开发指南按源码入口解释接入方式。当前实现与验收范围分别见[功能覆盖账本](docs/FUSION-COVERAGE.md)和[代码复核](docs/CODE-AUDIT.md)。
+
 ## 源码与职责
 
 | 部分 | 当前承载 |

@@ -1,5 +1,7 @@
 # 前端实现：React/Vite、运行逻辑与页面绑定
 
+> 历史阶段说明：本文记录原 YouDub 独立 Web 前端参考 Harness 进行分层适配的过程。当前融合分支已使用官方 Harness Renderer、ModuleLoader、Slots 和共享运行时，开发请阅读[当前架构](../../apps/harness/docs/ARCHITECTURE.md)与[前端开发说明](../../apps/harness/docs/FRONTEND-DEVELOPMENT.md)。
+
 当前阶段为开发。按用户要求，本对话只做必要的定向测试和页面检查，不执行构建、打包或发布验收。文中涉及安装包和发布的检查留待明确进入发布阶段后执行。
 
 本次迁移在保留 YouDub 视觉设计、工作流交互和插件协议的基础上，参考 deepseek-harness 的前端分层。参考源码固定为 [`99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`](https://github.com/deepseek-ai/deepseek-harness/tree/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca)。实现按 YouDub 当前能力适配，具体边界如下。
@@ -42,7 +44,7 @@ runtime 对外提供 `subscribe`、`getSnapshot` 和明确的动作方法。请�
 
 ## 开发与生产启动
 
-安装和本地配置见 [README](../../README.md#快速开始)。启动前确认所用端口空闲。开发时在仓库根目录执行：
+安装和本地配置见 [main 版本运行说明](../../README.md#main-版本源码运行)。启动前确认所用端口空闲。该历史入口在仓库根目录执行：
 
 ```bash
 npm run build:plugins

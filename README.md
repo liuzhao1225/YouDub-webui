@@ -4,6 +4,8 @@
 
 # YouDub WebUI
 
+> 当前为 `codex/harness-youdub-integration` 开发分支：使用 DeepSeek Harness 的前后端框架与 Electron，保留 YouDub 业务界面和工作流。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。下方下载链接指向已发布版本；“main 版本源码运行”保留原版操作说明。
+
 开源视频本地化工作台：导入视频，识别、翻译并逐句克隆原声，生成字幕和配音成片。
 
 [English](README.en.md) · [官网与试听](https://liuzhao1225.github.io/YouDub-webui/) · [下载最新版](https://github.com/liuzhao1225/YouDub-webui/releases/latest) · [安装与升级](docs/upgrade.md) · [社区交流](#社区交流)
@@ -109,7 +111,9 @@ QQ 交流群：`618246010`
   <img src="apps/web/public/qq-group-618246010.jpg" alt="YouDub QQ 交流群二维码" width="220" />
 </p>
 
-## 快速开始
+## main 版本源码运行
+
+本节记录已发布版本的原运行方式。当前 Harness 分支使用[独立开发流程](apps/harness/docs/DEVELOPMENT.md)，其首启资源、数据路径和桌面入口按该文档执行。
 
 [节点工作流](docs/workflows.md) · [运行与扩展指南](docs/design/cordis-plugin-runtime.md) · [插件开发契约](docs/design/cordis-plugin-contracts.md) · [版本发布](docs/releasing.md)
 
