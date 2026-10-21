@@ -171,8 +171,8 @@ class SqliteStore:
         if task["status"] == "failed" and not task.get("error"):
             raise WorkerError("INVALID_TASK", "A failed task must retain its error.")
         if task["status"] == "paused":
-            if task.get("nextPollAt") is not None or sum(step.get("status") == "awaiting_review" for step in task.get("steps", [])) != 1:
-                raise WorkerError("INVALID_TASK", "A paused task must have one review gate and no polling timestamp.")
+            if task.get("nextPollAt") is not None or not any(step.get("status") == "awaiting_review" for step in task.get("steps", [])):
+                raise WorkerError("INVALID_TASK", "A paused task must have at least one node awaiting review and no polling timestamp.")
 
     def _write(self, conn, task, *, insert=False):
         self._validate(task)

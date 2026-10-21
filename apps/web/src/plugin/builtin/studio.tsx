@@ -13,7 +13,7 @@ import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useQuery } from './use-query'
-import { ACTIVE_STATUSES, TaskProgress, TaskState } from './task-status'
+import { ACTIVE_STATUSES, TaskProgress, TaskState, taskDisplayName } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
 import { GraphStudio } from './workflows'
 
@@ -128,42 +128,45 @@ function Studio() {
   const tx = useText()
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
-  const { language, t } = useI18n()
+  const { language } = useI18n()
   const [selected, setSelected] = useState(''), [locked, setLocked] = useState(false)
   const workflow = catalog?.workflows.find((item) => item.id === selected) ?? catalog?.workflows.find((item) => item.id === 'youdub.graph') ?? catalog?.workflows[0]
   const active = tasks?.items.filter((task) => ACTIVE_STATUSES.has(task.status)) ?? []
+  const awaitingReview = active.flatMap((task) => task.steps.filter((step) => step.status === 'awaiting_review').map((step) => ({ task, step })))
+  const processing = active.filter((task) => task.status !== 'paused')
   const recent = tasks?.items.filter((task) => !ACTIVE_STATUSES.has(task.status)).slice(0, 6) ?? []
   return <main>
-    <section className="relative isolate flex min-h-[calc(100dvh-3.5rem)] flex-col justify-center overflow-hidden border-b border-border lg:min-h-dvh">
+    <section className="relative isolate overflow-hidden border-b border-border">
       <div aria-hidden="true" className="aurora -z-10" />
       <div aria-hidden="true" className="bg-dot-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
-      <div className="mx-auto w-full max-w-4xl px-5 pt-10 pb-12 sm:px-8 lg:pt-14 lg:pb-14 [@media(max-height:820px)]:pt-8 [@media(max-height:820px)]:pb-10">
-        <header className="flex animate-rise flex-col items-center text-center">
-          <BrandMark animated className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
-          <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur [@media(max-height:820px)]:hidden"><Sparkles className="size-3.5 text-brand-pink" />{tx('AI translation · Dubbing · Subtitles', 'AI 视频翻译 · 配音 · 字幕', 'AI 動画翻訳 · 吹き替え · 字幕')}</span>
-          <h1 className="mt-5 text-[34px] leading-[1.12] font-semibold tracking-tight text-balance sm:text-5xl lg:text-[52px] lg:[@media(max-height:820px)]:text-[44px]">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
+      <div className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">{tx('New task', '新建任务', '新しいタスク')}</h1>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML requires a full document navigation. */}
+          <a href="/examples/index.html" className="text-sm text-muted-foreground hover:text-foreground">{tx('View built-in examples', '查看内置示例', '内蔵サンプルを見る')}</a>
         </header>
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
           {error && <div className="mb-5 space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Reload', '重新加载', '再読み込み')}</Button></div>}
           {!catalog && !error && <p role="status" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx('Loading…', '正在加载…', '読み込み中…')}</p>}
           {catalog && !workflow && <InlineAlert>{tx('No workflows are available.', '当前没有可用流程。', '利用可能なワークフローがありません。')}</InlineAlert>}
           {workflow && <>
-            {catalog!.workflows.length > 1 && <div className="mb-4 flex items-center gap-3"><Label htmlFor="workflow">{tx('Workflow', '处理流程', 'ワークフロー')}</Label><select id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-9 min-w-0 rounded-full border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</select></div>}
-            {workflow.id === 'youdub.graph' ? <GraphStudio /> : <Composer key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />}
+            {catalog!.workflows.length > 1 && workflow.id !== 'youdub.graph' && <div className="mb-4 flex items-center gap-3"><Label htmlFor="workflow">{tx('Workflow', '处理流程', 'ワークフロー')}</Label><select id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-9 min-w-0 rounded-full border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{item.id === 'youdub.graph' ? tx('Workflow templates', '工作流模板', 'ワークフローテンプレート') : text(item.label, language)}</option>)}</select></div>}
+            {workflow.id === 'youdub.graph' ? <><GraphStudio onLockChange={setLocked} />{catalog!.workflows.length > 1 && <details className="mt-4 text-sm text-muted-foreground"><summary className="cursor-pointer">{tx('Other task types', '其他处理方式', 'その他の処理')}</summary><div className="mt-3 flex flex-wrap gap-2">{catalog!.workflows.filter((item) => item.id !== 'youdub.graph').map((item) => <Button key={item.id} size="sm" variant="outline" disabled={locked} onClick={() => setSelected(item.id)}>{text(item.label, language)}</Button>)}</div></details>}</> : <Composer key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />}
           </>}
         </div>
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML requires a full document navigation. */}
-        <div className="mt-5 flex justify-center"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx('View built-in examples', '查看内置示例', '内蔵サンプルを見る')}</a></div>
-        {active.length > 0 && <div className="mt-6 flex justify-center"><Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg"><span aria-hidden="true" className="size-2 rounded-full bg-status-running" />{tx(`${active.length} tasks in progress`, `${active.length} 个任务正在排队或处理`, `${active.length} 件のタスクが待機中または処理中`)}<ArrowRight className="size-3.5" /></Link></div>}
+        {!!active.length && <div className="mt-5 flex flex-wrap gap-3">
+          {!!awaitingReview.length && <Link href={awaitingReview.length === 1 ? `/tasks/${awaitingReview[0].task.id}/nodes/${awaitingReview[0].step.id}` : '/tasks'} className="inline-flex items-center gap-2 rounded-full border border-status-warning/25 bg-status-warning/10 px-3.5 py-1.5 text-[13px] font-medium text-status-warning-fg">{tx(`${awaitingReview.length} nodes need your review`, `${awaitingReview.length} 个节点待确认`, `${awaitingReview.length} 件のノードが確認待ち`)}<ArrowRight className="size-3.5" /></Link>}
+          {!!processing.length && <Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg">{tx(`${processing.length} tasks in progress`, `${processing.length} 个任务正在处理`, `${processing.length} 件のタスクが処理中`)}<ArrowRight className="size-3.5" /></Link>}
+        </div>}
       </div>
     </section>
     <div className="mx-auto max-w-6xl space-y-12 px-5 py-10 sm:px-8 lg:py-14">
       {taskError && <div className="space-y-2"><InlineAlert>{taskError}</InlineAlert><Button variant="outline" onClick={refreshTasks}>{tx('Reload tasks', '重新加载任务', 'タスクを再読み込み')}</Button></div>}
-      {active.length > 0 && <TaskSection id="studio-active" title={tx('In progress', '进行中', '処理中')}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 pr-4 shadow-card transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={task.sourceName} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{task.sourceName}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
+      {active.length > 0 && <TaskSection id="studio-active" title={tx('In progress', '进行中', '処理中')}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 pr-4 shadow-card transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
       <TaskSection id="studio-recent" title={tx('Recent tasks', '最近任务', '最近のタスク')}>
         {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="overflow-hidden rounded-2xl border border-border bg-card"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></div>)}</div>
           : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-5 text-sm font-medium">{tx('No finished tasks yet', '还没有完成的任务', '完了したタスクはまだありません')}</p></div>
-          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-[border-color,box-shadow,transform] outline-none hover:-translate-y-0.5 hover:border-input hover:shadow-float focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={task.sourceName} className="line-clamp-2 text-sm leading-snug font-medium break-words">{task.sourceName}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
+          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-[border-color,box-shadow,transform] outline-none hover:-translate-y-0.5 hover:border-input hover:shadow-float focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
       </TaskSection>
     </div>
   </main>

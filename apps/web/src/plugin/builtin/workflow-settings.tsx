@@ -37,8 +37,8 @@ export function SynthesizeNodeEditor({ node, definition, readOnly, onChange }: N
     {voice?.mode === 'preset' && <label className="grid gap-2 text-sm">{tx('Voice', '声线', '音声')}<select disabled={readOnly} className="h-10 min-w-0 rounded-lg border border-input bg-input-bg px-3" value={voice.id ?? ''} onChange={(event) => onChange({ ...node, config: { ...node.config, voice: { mode: 'preset', id: event.target.value } } })}><option value="">{tx('Choose voice', '选择声线', '音声を選択')}</option>{voices.map((voice) => <option key={voice.id} value={voice.id}>{text(voice.label, language) || voice.id}</option>)}</select></label>}
   </div>
 }
-export function NodeSettings({ document, node, types, onChange, onClose, onOpen, readOnly = false }: {
-  document: WorkflowDocument; node: GraphNode; types: NodeTypeDefinition[]; onChange(document: WorkflowDocument): void; onClose?(): void; onOpen?(): void; readOnly?: boolean
+export function NodeSettings({ document, node, types, onChange, onClose, onOpen, onDelete, readOnly = false }: {
+  document: WorkflowDocument; node: GraphNode; types: NodeTypeDefinition[]; onChange(document: WorkflowDocument): void; onClose?(): void; onOpen?(): void; onDelete?(): void; readOnly?: boolean
 }) {
   const tx = useText(), { language } = useI18n()
   const definition = nodeDefinition(node, types)
@@ -50,7 +50,7 @@ export function NodeSettings({ document, node, types, onChange, onClose, onOpen,
   const model = models.find((item) => (typeof item === 'string' ? item : item.id) === node.provider.model)
   const generic = <ConfigEditor ownerId={`node:${node.type}`} value={node.config} schema={definition?.configSchema ?? { type: 'object' }} readOnly={readOnly} diagnostics={[]} onChange={(config) => replace({ ...node, config })} />
   return <div className="space-y-5 p-5">
-    <div className="flex items-center gap-2"><h2 className="min-w-0 flex-1 truncate font-semibold">{node.label || text(definition?.label, language) || node.type}</h2>{onClose && <Button variant="ghost" size="icon-sm" aria-label={tx('Close settings', '关闭设置', '設定を閉じる')} onClick={onClose}><X /></Button>}</div>
+    <div className="flex items-center gap-2"><h2 className="min-w-0 flex-1 truncate font-semibold">{node.label || text(definition?.label, language) || node.type}</h2>{onClose && <Button disabled={readOnly} variant="ghost" size="icon-sm" aria-label={tx('Close settings', '关闭设置', '設定を閉じる')} onClick={onClose}><X /></Button>}</div>
     {!definition && <InlineAlert>{tx('The required node plugin or version is unavailable.', '所需节点插件或版本不可用。', '必要なノードプラグインまたはバージョンがありません。')}</InlineAlert>}
     <label className="grid gap-2 text-sm">{tx('Name', '名称', '名前')}<Input disabled={readOnly} value={node.label ?? ''} placeholder={text(definition?.label, language) || node.type} onChange={(event) => replace({ ...node, label: event.target.value })} /></label>
     <label className="grid gap-2 text-sm">{tx('Provider', '服务', 'プロバイダー')}<select className="h-10 min-w-0 rounded-lg border border-input bg-input-bg px-3" disabled={readOnly} value={node.provider.id} onChange={(event) => replace({ ...node, provider: { id: event.target.value } })}>{!compatibleProviders.length && <option>{node.provider.id}</option>}{compatibleProviders.map((type) => <option key={type.providerId} value={type.providerId}>{text(type.provider.label, language) || type.providerId}</option>)}</select></label>
@@ -71,8 +71,8 @@ export function NodeSettings({ document, node, types, onChange, onClose, onOpen,
       })}
     </section>}
     <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-      {onOpen && <Button size="sm" variant="outline" onClick={onOpen}><ExternalLink />{tx('Open node', '打开节点', 'ノードを開く')}</Button>}
-      {!readOnly && <><Button size="sm" variant="outline" onClick={() => { const id = crypto.randomUUID(); onChange({ ...document, nodes: [...document.nodes, { ...structuredClone(node), id }], presentation: { ...document.presentation, positions: { ...document.presentation.positions, [id]: { x: (document.presentation.positions[node.id]?.x ?? 0) + 40, y: (document.presentation.positions[node.id]?.y ?? 0) + 80 } } } }) }}><Copy />{tx('Duplicate', '复制', '複製')}</Button><Button size="sm" variant="ghost" onClick={() => { onChange({ ...document, nodes: document.nodes.filter((item) => item.id !== node.id), edges: document.edges.filter((edge) => edge.source.nodeId !== node.id && edge.target.nodeId !== node.id), outputs: document.outputs.filter((output) => output.source.nodeId !== node.id) }); onClose?.() }}><Trash2 />{tx('Delete', '删除', '削除')}</Button></>}
+      {onOpen && <Button size="sm" variant="outline" disabled={readOnly} onClick={onOpen}><ExternalLink />{tx('Full settings', '完整设置', '詳細設定')}</Button>}
+      {!readOnly && <><Button size="sm" variant="outline" onClick={() => { const id = crypto.randomUUID(); onChange({ ...document, nodes: [...document.nodes, { ...structuredClone(node), id }], presentation: { ...document.presentation, positions: { ...document.presentation.positions, [id]: { x: (document.presentation.positions[node.id]?.x ?? 0) + 40, y: (document.presentation.positions[node.id]?.y ?? 0) + 80 } } } }) }}><Copy />{tx('Duplicate', '复制', '複製')}</Button><Button size="sm" variant="ghost" onClick={() => { onChange({ ...document, nodes: document.nodes.filter((item) => item.id !== node.id), edges: document.edges.filter((edge) => edge.source.nodeId !== node.id && edge.target.nodeId !== node.id), outputs: document.outputs.filter((output) => output.source.nodeId !== node.id) }); onClose?.(); onDelete?.() }}><Trash2 />{tx('Delete', '删除', '削除')}</Button></>}
     </div>
   </div>
 }

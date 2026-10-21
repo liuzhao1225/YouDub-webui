@@ -87,6 +87,18 @@ function mount(request: ReturnType<typeof vi.fn>) {
   return push
 }
 
+it('counts review nodes even while their independent branch is running', async () => {
+  const active: TaskView = { id: 'review', status: 'running', attempt: 1, sourceName: 'review.mp4', createdAt: '2026-10-09T01:00:00Z', workflowId: 'youdub.graph', workflowVersion: '1', config: {}, outputs: [], allowedActions: [], steps: [
+    { id: 'translate', label: '翻译', status: 'awaiting_review', progress: 1 },
+    { id: 'audio', label: '生成配音', status: 'running', progress: 0.5 },
+  ] }
+  mount(vi.fn(async (path: string) => path === '/api/v2/catalog' ? catalog : { items: [active], hasMore: false }))
+  const review = await screen.findByRole('link', { name: '1 个节点待确认' })
+  expect(review).toHaveAttribute('href', '/tasks/review/nodes/translate')
+  expect(screen.getByRole('link', { name: '1 个任务正在处理' })).toBeInTheDocument()
+  expect(screen.getByRole('progressbar', { name: '生成配音 进度' })).toHaveValue(0.5)
+})
+
 it('shows the selected file and clears it before allowing a fresh selection', async () => {
   mount(vi.fn(async (path: string) => path === '/api/v2/catalog' ? catalog : { items: [], hasMore: false, limit: 12, offset: 0 }))
   const user = userEvent.setup()

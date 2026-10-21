@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
-import { AppError, type GraphWorkflowDefinition, type OperationProvider, type WorkflowDocument, type TaskView, type ReviewCommand, type StepState } from '@youdub/sdk'
+import { AppError, type GraphWorkflowDefinition, type OperationProvider, type WorkflowDocument, type TaskView, type ReviewCommand, type StepState, type Invocation, type InvocationContext } from '@youdub/sdk'
 import Processes from '../src/process.js'
 import Store from '../src/store.js'
 import Files from '../src/files.js'
@@ -89,7 +89,7 @@ async function setup(t: any) {
     try { return await ctx.tasks.create({ id, workflowId: workflow.id, config: {}, graphDocument: document, inputs: {} }) }
     finally { await release() }
   }
-  const until = async (id: string, status: string) => {
+  const until = async (id: string, status: string): Promise<TaskView> => {
     const deadline = Date.now() + 5000
     while (Date.now() < deadline) { const task = await ctx.tasks.get(id); if (task.status === status) return task; await delay(10) }
     throw new Error(`Expected ${status}: ${JSON.stringify(await ctx.tasks.get(id))}`)
@@ -107,6 +107,8 @@ test('a persisted review releases the slot, survives restart and resumes without
   const { ctx, create, until, command, executions, restart } = await setup(t)
   const first = await create(graph('left')), paused = await until(first.id, 'paused')
   assert.equal(paused.steps[1].status, 'awaiting_review')
+  assert.equal(paused.steps[2].status, 'completed')
+  assert.equal(paused.steps[3].status, 'pending')
   assert.equal(paused.nextPollAt, null)
   assert.equal(await ctx.tasks.idle(), false)
   const second = await create()
@@ -128,6 +130,72 @@ test('the final node remains paused until approval and finalizes directly in the
   assert.deepEqual(await ctx.tasks.approve(task.id, 'join', request), receipt)
   assert.deepEqual(await ctx.tasks.action(task.id, request.actionId), receipt)
   assert.equal(executions.length, 4)
+})
+
+test('independent gates survive restart and each approval advances only its ready descendants', async t => {
+  const { ctx, create, until, command, executions, restart } = await setup(t)
+  const document = graph('left')
+  document.nodes.find(node => node.id === 'right')!.autoContinue = false
+  document.nodes.splice(3, 0, { ...structuredClone(document.nodes[1]), id: 'left-next' })
+  document.edges.find(edge => edge.id === 'left-join')!.source.nodeId = 'left-next'
+  document.edges.push({ id: 'left-next', source: { nodeId: 'left', portId: 'document' }, target: { nodeId: 'left-next', portId: 'document' } })
+  const created = await create(document), paused = await until(created.id, 'paused')
+  assert.deepEqual(paused.steps.map((step: StepState) => step.status), ['completed', 'awaiting_review', 'awaiting_review', 'pending', 'pending'])
+  await restart()
+  assert.deepEqual(await ctx.tasks.get(created.id), paused)
+  // A decision on the other branch must not invalidate an unchanged node result.
+  const rightApproval = command(paused, 'right')
+  await ctx.tasks.approve(created.id, 'left', command(paused, 'left'))
+  const secondGate = await until(created.id, 'paused')
+  assert.deepEqual(secondGate.steps.map((step: StepState) => step.status), ['completed', 'completed', 'awaiting_review', 'awaiting_review', 'pending'])
+  await ctx.tasks.approve(created.id, 'left-next', command(secondGate, 'left-next'))
+  assert.equal((await ctx.tasks.get(created.id)).steps.at(-1)!.status, 'pending')
+  await ctx.tasks.approve(created.id, 'right', rightApproval)
+  await until(created.id, 'succeeded')
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right', 'left-next', 'join'])
+})
+
+test('independent review commands based on the same task snapshot both commit', async t => {
+  const { ctx, create, until, command } = await setup(t)
+  const document = graph('left')
+  document.nodes.find(node => node.id === 'right')!.autoContinue = false
+  const created = await create(document), paused = await until(created.id, 'paused')
+  const results = await Promise.all([
+    ctx.tasks.approve(created.id, 'left', command(paused, 'left')),
+    ctx.tasks.approve(created.id, 'right', command(paused, 'right')),
+  ])
+  assert.equal(results.length, 2)
+  const complete = await until(created.id, 'succeeded')
+  assert.equal(complete.steps[1].approvedRevision, 1)
+  assert.equal(complete.steps[2].approvedRevision, 1)
+})
+
+test('review during another running branch preserves its invocation and ignores unrelated progress revisions', async t => {
+  const { ctx, create, until, command, provider, executions } = await setup(t)
+  let release!: () => void, entered!: () => void, progress!: () => Promise<void>
+  const held = new Promise<void>(resolve => { release = resolve })
+  const started = new Promise<void>(resolve => { entered = resolve })
+  t.after(() => release())
+  const execute = provider.execute.bind(provider)
+  t.mock.method(provider, 'execute', async (request: Invocation, context: InvocationContext) => {
+    if (request.stepId === 'right') {
+      progress = () => context.progress(0.5, 'Independent branch is running')
+      entered(); await held
+    }
+    return execute(request, context)
+  })
+  const created = await create(graph('left'))
+  await started
+  const running = await ctx.tasks.get(created.id), request = command(running, 'left')
+  assert.equal(running.status, 'running')
+  assert.equal(running.steps[1].status, 'awaiting_review')
+  await progress()
+  const receipt = await ctx.tasks.correct(created.id, 'left', { ...request, patch: { document: { text: 'reviewed while running' } }, continue: true })
+  assert.equal(receipt.status, 'running')
+  assert.equal((await ctx.tasks.get(created.id)).steps[2].status, 'running')
+  release()
+  await until(created.id, 'succeeded')
+  assert.equal(executions.find(item => item.stepId === 'join')!.inputs.left.text, 'reviewed while running')
 })
 
 test('corrections preserve original output and raw files; save-and-continue atomically pins the corrected downstream input', async t => {
@@ -164,7 +232,7 @@ test('invalid patches, foreign artifacts and stale actions cannot mutate a pause
   await ctx.tasks.correct(task.id, 'left', { ...request, patch: { document: { text: 'saved' } } })
   const saved = await ctx.tasks.get(task.id)
   assert.equal(saved.status, 'paused')
-  await assert.rejects(ctx.tasks.approve(task.id, 'left', command(paused, 'left')), (error: any) => error.code === 'REVISION_CONFLICT')
+  await assert.rejects(ctx.tasks.approve(task.id, 'left', command(paused, 'left')), (error: any) => error.code === 'OUTPUT_REVISION_CONFLICT')
   assert.equal(saved.steps[1].outputRevision, 2)
 })
 
@@ -174,7 +242,7 @@ test('cancelling a review keeps computed history and rejects later approval', as
   await assert.rejects(ctx.tasks.cancel(task.id, 1, paused.revision - 1), (error: any) => error.code === 'REVISION_CONFLICT')
   const cancelled = await ctx.tasks.cancel(task.id, 1, paused.revision)
   assert.equal(cancelled.status, 'cancelled')
-  assert.deepEqual(cancelled.steps.map((step: StepState) => step.status), ['completed', 'cancelled', 'cancelled', 'cancelled'])
+  assert.deepEqual(cancelled.steps.map((step: StepState) => step.status), ['completed', 'cancelled', 'completed', 'cancelled'])
   assert.deepEqual(cancelled.steps[1].resultRevisions, paused.steps[1].resultRevisions)
   await assert.rejects(ctx.tasks.approve(task.id, 'left', command(cancelled, 'left')), (error: any) => error.code === 'REVIEW_NOT_ALLOWED')
 })
@@ -306,7 +374,7 @@ test('competing approve and correction commands commit once and preserve the win
   ])
   assert.equal(results.filter(result => result.status === 'fulfilled').length, 1)
   const failed = results.find(result => result.status === 'rejected') as PromiseRejectedResult
-  assert.equal(failed.reason.code, 'REVISION_CONFLICT')
+  assert.equal(failed.reason.code, 'OUTPUT_REVISION_CONFLICT')
   const current = await ctx.tasks.get(task.id)
   assert.equal(current.status, 'paused')
   assert.equal(current.steps[1].outputs.document.text, 'winning correction')
@@ -332,7 +400,7 @@ test('an unknown correction commit is visible and can be resolved by its durable
   assert.equal(receipt?.status, 'paused')
   assert.deepEqual(await ctx.tasks.correct(task.id, 'left', request), receipt)
   assert.equal((await ctx.tasks.record(task.id)).steps[1].resultRevisions!.length, 2)
-  assert.equal(executions.length, 2)
+  assert.equal(executions.length, 3)
 })
 
 test('reuse rejects changed source revisions and missing artifacts before creating a task', async t => {
@@ -358,4 +426,103 @@ test('valid node IDs that match object property names do not invent corrections 
   const derived = await ctx.tasks.rerun(task.id, { ...request, ...preview })
   assert.equal(derived.status, 'succeeded')
   assert.equal(executions.filter(item => item.taskId === derived.id).length, 0)
+})
+
+test('reused intermediate results cannot bypass a new upstream review', async t => {
+  const { ctx, create, until, command, executions } = await setup(t)
+  const first = await create(); await until(first.id, 'succeeded')
+  const document = graph('source')
+  document.nodes.find(node => node.id === 'join')!.config.text = 'changed join'
+  const request = { id: randomUUID(), config: {}, graphDocument: document }
+  const preview = await ctx.tasks.rerunPreview(first.id, request)
+  assert.deepEqual(preview.reusedSteps, ['source', 'left', 'right'])
+  assert.deepEqual(preview.dirtySteps, ['join'])
+  const next = await ctx.tasks.rerun(first.id, { ...request, ...preview })
+  const paused = await until(next.id, 'paused')
+  assert.equal(paused.steps[0].status, 'awaiting_review')
+  assert.equal(paused.steps[3].status, 'pending')
+  assert.deepEqual(executions.filter(item => item.taskId === next.id).map(item => item.stepId), [])
+  await ctx.tasks.approve(next.id, 'source', command(paused, 'source'))
+  await until(next.id, 'succeeded')
+  assert.deepEqual(executions.filter(item => item.taskId === next.id).map(item => item.stepId), ['join'])
+})
+
+test('review while another branch waits preserves its polling state across restart', async t => {
+  const { ctx, create, until, command, provider, executions, restart } = await setup(t)
+  const execute = provider.execute.bind(provider)
+  let remoteRequest: Invocation, submissions = 0, polls = 0
+  t.mock.method(provider, 'execute', async (request: Invocation, context: InvocationContext) => {
+    if (request.stepId === 'right') {
+      submissions++; remoteRequest = request
+      return { state: 'waiting', operation: { marker: request.invocationId }, nextPollAt: new Date(Date.now() + 500).toISOString() }
+    }
+    return execute(request, context)
+  })
+  provider.poll = async (operation, context) => {
+    polls++; assert.equal(operation.marker, remoteRequest.invocationId)
+    return execute(remoteRequest, context)
+  }
+  const created = await create(graph('left')), waiting = await until(created.id, 'waiting')
+  assert.equal(waiting.steps[1].status, 'awaiting_review')
+  const receipt = await ctx.tasks.correct(created.id, 'left', { ...command(waiting, 'left'), patch: { document: { text: 'reviewed while waiting' } }, continue: true })
+  assert.equal(receipt.status, 'waiting')
+  const reviewed = await ctx.tasks.get(created.id)
+  assert.equal(reviewed.nextPollAt, waiting.nextPollAt)
+  assert.equal(reviewed.steps[2].invocationId, waiting.steps[2].invocationId)
+  await restart()
+  const completed = await until(created.id, 'succeeded')
+  assert.equal(completed.steps[2].invocationId, waiting.steps[2].invocationId)
+  assert.equal(submissions, 1); assert.equal(polls, 1)
+  assert.equal(executions.find(item => item.stepId === 'join')!.inputs.left.text, 'reviewed while waiting')
+})
+
+test('cancelling waiting with a review preserves history and rejects a later confirmation', async t => {
+  const { ctx, create, until, command, provider, restart } = await setup(t)
+  const execute = provider.execute.bind(provider)
+  t.mock.method(provider, 'execute', async (request: Invocation, context: InvocationContext) => {
+    if (request.stepId === 'right') {
+      await context.externalPrepare({ externalRequestId: 'remote-waiting', requestKey: request.invocationId })
+      return { state: 'waiting', operation: { marker: request.invocationId }, nextPollAt: new Date(Date.now() + 60_000).toISOString() }
+    }
+    return execute(request, context)
+  })
+  provider.poll = async () => { throw new Error('Cancelled request must not be polled') }
+  const created = await create(graph('left')), waiting = await until(created.id, 'waiting')
+  await ctx.tasks.cancel(created.id, waiting.attempt, waiting.revision)
+  await until(created.id, 'cancelled')
+  await assert.rejects(ctx.tasks.approve(created.id, 'left', command(waiting, 'left')), { code: 'REVIEW_NOT_ALLOWED' })
+  await restart()
+  const cancelled = await ctx.tasks.record(created.id)
+  assert.deepEqual(cancelled.steps.map(step => step.status), ['completed', 'cancelled', 'cancelled', 'cancelled'])
+  assert.deepEqual(cancelled.steps[1].resultRevisions, waiting.steps[1].resultRevisions)
+  assert.equal(cancelled.nextPollAt, null)
+  assert.equal(cancelled.externalRequests['remote-waiting'].state, 'unknown')
+  assert.equal(cancelled.externalRequests['remote-waiting'].mayStillRun, true)
+  const file = cancelled.steps[1].resultRevisions![0].outputs.file
+  assert.equal(await readFile(await ctx.files.resolve(created.id, cancelled.artifacts[file.id]), 'utf8'), '/source/left')
+})
+
+test('review in the claim-to-invocation gap retains the active execution slot', async t => {
+  const { ctx, create, until, command, executions } = await setup(t)
+  const workDir = ctx.files.workDir.bind(ctx.files)
+  let calls = 0, entered!: () => void, release!: () => void
+  const started = new Promise<void>(resolve => { entered = resolve })
+  const held = new Promise<void>(resolve => { release = resolve })
+  t.mock.method(ctx.files, 'workDir', async (...args: Parameters<typeof workDir>) => {
+    if (++calls === 3) { entered(); await held }
+    return workDir(...args)
+  })
+  const created = await create(graph('left'))
+  await started
+  try {
+    const claimed = await ctx.tasks.get(created.id)
+    assert.equal(claimed.status, 'running')
+    assert.equal(claimed.steps[1].status, 'awaiting_review')
+    assert.equal(claimed.steps[2].status, 'pending')
+    assert.equal(claimed.steps[2].invocationId, null)
+    const receipt = await ctx.tasks.approve(created.id, 'left', command(claimed, 'left'))
+    assert.equal(receipt.status, 'running')
+  } finally { release() }
+  await until(created.id, 'succeeded')
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right', 'join'])
 })

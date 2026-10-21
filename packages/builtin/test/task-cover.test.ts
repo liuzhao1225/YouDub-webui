@@ -75,7 +75,11 @@ test('legacy video inputs remain preferred over outputs without advertising audi
   source.id = `legacy:${task.id}:input`; task.artifacts[source.id] = source
   task.inputs.video = source
   assert.equal(taskCover(task), source)
-  assert.deepEqual((await (await get('')).json() as any).cover, { url: `/api/v2/tasks/${task.id}/cover` })
+  const response = await get(''), body = await response.json() as any
+  assert.equal(response.status, 200, JSON.stringify(body))
+  assert.deepEqual(body.cover, { url: `/api/v2/tasks/${task.id}/cover` })
+  assert.equal(body.allowedActions.includes('approve'), false)
+  assert.equal(body.allowedActions.includes('correct'), false)
   source.name = 'speech.mp3'
   assert.equal(taskCover(task), undefined)
   assert.equal('cover' in await (await get('')).json(), false)

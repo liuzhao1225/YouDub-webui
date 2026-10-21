@@ -19,7 +19,7 @@
   box-shadow: var(--shadow-card);
 }
 .workflow-node-selected { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent); }
-.workflow-node-review { border-color: var(--status-warning); }
+.workflow-node-review { border-color: var(--status-warning); box-shadow: 0 0 0 2px color-mix(in srgb, var(--status-warning) 35%, transparent), var(--shadow-card); }
 .workflow-node-missing { border-color: var(--status-danger); }
 .workflow-node .react-flow__handle { width: 10px; height: 10px; border: 2px solid var(--card); background: var(--subtle-foreground); }
 .workflow-node .react-flow__handle.connectingto { background: var(--ring); }

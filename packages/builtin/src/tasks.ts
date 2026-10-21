@@ -63,7 +63,7 @@ export default class Tasks extends Service implements TasksService {
     const mayStillRun = Object.values(task.externalRequests ?? {}).some(value => value.mayStillRun)
     const allowedActions = terminal.has(task.status) ? ['rerun', 'delete'] : ['cancel']
     if (!task.legacy && ['failed', 'cancelled'].includes(task.status) && !mayStillRun) allowedActions.unshift('retry')
-    if (task.status === 'paused') allowedActions.unshift('approve', 'correct')
+    if (task.graphSnapshot && !terminal.has(task.status) && task.status !== 'cancelling' && task.steps.some(step => step.status === 'awaiting_review')) allowedActions.unshift('approve', 'correct')
     return {
       ...publicTask, mayStillRun, allowedActions,
       ...(taskCover(task) ? { cover: {} } : {}),
@@ -270,24 +270,58 @@ export default class Tasks extends Service implements TasksService {
     for (const port of spec.outputs) if (!(port.name in patch) && !isDeepStrictEqual(outputs[port.name], baselineOutputs[port.name])) throw new AppError('CORRECTION_READ_ONLY', `Correction changed unedited output ${port.name}.`, 422)
     return outputs
   }
-  /** Advance over saved results before scheduling work, including a gate on the last node. */
-  private async advance(task: TaskRecord) {
-    task.nextPollAt = null
-    for (const spec of task.plan.steps) {
-      const step = task.steps.find(step => step.id === spec.id)!
-      if (step.status === 'completed' && (!task.graphSnapshot || step.approvedRevision === step.outputRevision)) continue
-      if (step.outputRevision && step.resultRevisions?.some(result => result.revision === step.outputRevision)) {
-        if (spec.autoContinue === false && step.approvedRevision !== step.outputRevision) {
-          step.status = 'awaiting_review'; task.status = 'paused'; task.finishedAt = null
-          task.message = spec.label
-          return
+  private inputsApproved(task: TaskRecord, spec: StepSpec, checked = new Map<string, boolean>()): boolean {
+    const cached = checked.get(spec.id)
+    if (cached !== undefined) return cached
+    const approved = Object.values(spec.input).every(input => {
+      if (input?.from !== 'step') return true
+      const upstream = task.steps.find(step => step.id === input.stepId)
+      const upstreamSpec = task.plan.steps.find(step => step.id === input.stepId)
+      // Reused results still depend on approval of every upstream review gate.
+      return upstream?.status === 'completed' && upstream.approvedRevision === upstream.outputRevision
+        && !!upstreamSpec && this.inputsApproved(task, upstreamSpec, checked)
+    })
+    checked.set(spec.id, approved)
+    return approved
+  }
+  /** A review blocks only its dependent nodes; other ready branches can advance. */
+  private async advance(task: TaskRecord, preserveExecution = false) {
+    if (task.graphSnapshot) {
+      for (const spec of task.plan.steps) {
+        const step = task.steps.find(step => step.id === spec.id)!
+        if (step.status === 'completed' && step.approvedRevision === step.outputRevision) continue
+        if (!this.inputsApproved(task, spec)) continue
+        if (step.outputRevision && step.resultRevisions?.some(result => result.revision === step.outputRevision)) {
+          if (spec.autoContinue === false && step.approvedRevision !== step.outputRevision) step.status = 'awaiting_review'
+          else { step.status = 'completed'; step.approvedRevision = step.outputRevision }
         }
-        step.status = 'completed'; step.approvedRevision = step.outputRevision
-        continue
       }
-      if (step.status !== 'pending') throw new AppError('INVALID_PLAN', `Node ${spec.id} cannot be scheduled from ${step.status}.`, 500)
-      task.status = 'queued'; task.finishedAt = null; task.message = null; task.queuedAt = now()
-      return
+      // A review may arrive while an unrelated invocation owns the execution slot,
+      // including the gap between claiming the task and marking its node running.
+      if (preserveExecution && task.status === 'running') return
+      if (task.steps.some(step => step.status === 'waiting')) { task.status = 'waiting'; return }
+      const ready = task.plan.steps.some(spec => {
+        const step = task.steps.find(step => step.id === spec.id)!
+        return step.status === 'pending' && !step.outputRevision && this.inputsApproved(task, spec)
+      })
+      task.nextPollAt = null
+      if (ready) {
+        task.status = 'queued'; task.finishedAt = null; task.message = null; task.queuedAt = now()
+        return
+      }
+      if (task.steps.some(step => step.status === 'awaiting_review')) {
+        task.status = 'paused'; task.finishedAt = null; task.message = null
+        return
+      }
+      if (task.steps.some(step => step.status !== 'completed' || step.approvedRevision !== step.outputRevision)) throw new AppError('INVALID_PLAN', 'No runnable node or review can unblock this workflow.', 500)
+    } else {
+      task.nextPollAt = null
+      const pending = task.steps.find(step => step.status !== 'completed')
+      if (pending) {
+        if (pending.status !== 'pending') throw new AppError('INVALID_PLAN', `Node ${pending.id} cannot be scheduled from ${pending.status}.`, 500)
+        task.status = 'queued'; task.finishedAt = null; task.message = null; task.queuedAt = now()
+        return
+      }
     }
     task.outputs = []
     for (const output of task.plan.outputs) {
@@ -330,9 +364,8 @@ export default class Tasks extends Service implements TasksService {
           return existing.receipt
         }
         this.expected(task, request.expectedAttempt)
-        if (task.revision !== request.expectedTaskRevision) throw new AppError('REVISION_CONFLICT', 'Task changed. Keep your draft and reload the current result.', 409)
         const step = task.steps.find(step => step.id === nodeId), spec = task.plan.steps.find(spec => spec.id === nodeId)
-        if (!task.graphSnapshot || task.status !== 'paused' || step?.status !== 'awaiting_review' || !spec) throw new AppError('REVIEW_NOT_ALLOWED', 'This node is not awaiting review.', 409)
+        if (!task.graphSnapshot || !['queued', 'running', 'waiting', 'paused'].includes(task.status) || step?.status !== 'awaiting_review' || !spec) throw new AppError('REVIEW_NOT_ALLOWED', 'This node is not awaiting review.', 409)
         if (step.outputRevision !== request.expectedOutputRevision) throw new AppError('OUTPUT_REVISION_CONFLICT', 'Node result changed. Keep your draft and reload the current result.', 409)
         this.checkPlan(task.plan)
         if (kind === 'correct') {
@@ -356,8 +389,8 @@ export default class Tasks extends Service implements TasksService {
         if (kind === 'approve' || request.continue) {
           await this.verifyOutputs(task, spec, step.outputs)
           step.status = 'completed'; step.approvedRevision = step.outputRevision; step.approvalActionId = request.actionId
-          await this.advance(task)
         }
+        await this.advance(task, true)
         const receipt: NodeActionReceipt = { actionId: request.actionId, kind, nodeId, attempt: task.attempt, taskRevision: task.revision + 1, outputRevision: step.outputRevision!, status: task.status, createdAt: now() }
         task.actionReceipts = { ...task.actionReceipts, [request.actionId]: { digest, receipt } }
         await this.save(task)
@@ -568,7 +601,9 @@ export default class Tasks extends Service implements TasksService {
     const invocationArtifacts: TaskRecord['artifacts'] = {}
     try {
       this.checkPlan(initial.plan)
-      currentStep = initial.steps.find(step => step.status !== 'completed')
+      currentStep = initial.graphSnapshot
+        ? initial.steps.find(step => step.status === 'waiting') ?? initial.steps.find(step => step.status === 'pending' && !step.outputRevision && this.inputsApproved(initial, initial.plan.steps.find(spec => spec.id === step.id)!))
+        : initial.steps.find(step => step.status !== 'completed')
       if (initial.graphSnapshot && (!currentStep || currentStep.outputRevision)) {
         await this.change(initial.id, task => this.advance(task))
         return

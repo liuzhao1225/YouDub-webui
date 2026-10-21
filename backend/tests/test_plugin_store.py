@@ -141,6 +141,20 @@ def test_paused_task_is_active_but_releases_execution_slot_and_survives_restart(
         assert error.value.code == "IMMUTABLE_SNAPSHOT"
 
 
+def test_multiple_review_nodes_persist_without_claiming_the_execution_slot(tmp_path):
+    store = SqliteStore(tmp_path)
+    paused = store.create(task(status="paused", graphSnapshot={"id": "branches"}, steps=[
+        {"id": "left", "status": "awaiting_review"},
+        {"id": "right", "status": "awaiting_review"},
+        {"id": "join", "status": "pending"},
+    ]))
+    assert store.claim(NOW) is None
+    assert SqliteStore(tmp_path).get(paused["id"]) == paused
+    with pytest.raises(WorkerError) as error:
+        store.create(task(status="paused", steps=[]))
+    assert error.value.code == "INVALID_TASK"
+
+
 def test_workflow_crud_roundtrip_and_concurrent_saves_keep_winning_document(tmp_path):
     bridge = Bridge(tmp_path, credentials=Credentials())
     document = {"id": "user-subtitles", "title": "字幕", "nodes": [{"id": "recognize"}], "edges": []}

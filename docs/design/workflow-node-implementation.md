@@ -244,20 +244,20 @@ type RegisteredWorkflow = WorkflowDefinition | GraphWorkflowDefinition
 | 当前 | 触发 | 新状态与动作 |
 | --- | --- | --- |
 | step running | 输出保存成功，autoContinue=true | step completed；下一步 queued 或最终 succeeded |
-| step running | 输出保存成功，autoContinue=false | step awaiting_review；task paused；释放执行槽 |
-| task paused | 保存订正成功 | 更新候选结果版本，状态不变 |
-| task paused | 批准当前结果版本 | step completed；下一步 queued，最后一步则直接 finalize |
+| step running | 输出保存成功，autoContinue=false | step awaiting_review；扫描其他依赖就绪节点，无可运行节点才 task paused |
+| step awaiting_review | 保存订正成功 | 更新该节点候选版本，保留其他分支状态 |
+| step awaiting_review | 批准当前结果版本 | step completed；仅依赖就绪节点 queued，所有节点完成后 finalize |
 | task paused | 取消 | task cancelled；当前 awaiting_review 和后续 pending 步骤 cancelled；已批准 completed 保持 |
 | task paused | 重启 | 保持 paused 和相同候选版本 |
 | step running | provider / 输出校验失败 | task failed，保留原始原因 |
 
 `paused` 无 `nextPollAt`、无 `finishedAt`；不会被 `store.claim` 领取。`active=true` 的未结束任务列表包含 paused，调度 runnable 集合单独判断。保留暂停任务对依赖插件的版本保护，扩展卸载/升级不能使其无法恢复。
 
-计算输出落库与设为 paused 在同一次任务 CAS 中完成，随后退出 execute 并释放进程与执行槽。等待用户期间不保留 Promise、Python worker 或 GPU 模型占用。
+计算输出落库与节点设为 awaiting_review 在同一次任务 CAS 中完成；其他依赖就绪节点继续调度。没有可运行节点时设为 paused 并释放执行槽。等待人工确认本身不保留 Promise、Python worker 或 GPU 模型占用。确认请求用 attempt 与该节点 outputRevision 判断冲突，无关分支的进度和审核不使请求失效；任务存储仍通过 CAS 原子提交。
 
 最终成功的条件增加“所有人工确认已通过”。最后一步批准后在同一受控命令内汇总最终输出，不将没有待执行步骤的任务重新入队。
 
-派生任务可能已有可复用计算结果，但仍需新的人工确认。创建、批准和恢复调度前统一推进检查：从拓扑顺序扫描，遇到已有结果且未批准的 gate，直接设为 awaiting_review / paused；不得将它排队后再次调用 provider。遇到需要计算的节点才 queued，全部批准后 finalize。例如所有结果都可复用，仅将翻译 autoContinue 从 true 改为 false，任务应在翻译暂停且没有新的模型调用。
+派生任务可能已有可复用计算结果，但仍需新的人工确认。创建、批准和恢复调度前统一推进检查：按拓扑顺序扫描依赖已满足的节点；已有结果且未批准的 gate 设为 awaiting_review，同时继续扫描其他分支，不再次调用 provider。需要计算且输入均已批准的节点进入队列；没有可运行节点且存在 gate 时 paused，全部完成并批准后 finalize。例如所有结果都可复用，仅将翻译 autoContinue 从 true 改为 false，任务应在翻译暂停且没有新的模型调用。
 
 ### 6.2 候选结果版本
 

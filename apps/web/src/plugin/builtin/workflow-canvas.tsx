@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Background, Controls, Handle, Position, ReactFlow, type Connection, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react'
 import { ExternalLink, FileInput, FileOutput, Workflow, X } from 'lucide-react'
 import { text, type GraphNode, type NodeTypeDefinition, type TaskStep, type WorkflowDocument } from '../sdk'
@@ -14,10 +14,11 @@ type CardData = {
   label: string; node?: GraphNode; definition?: NodeTypeDefinition; status?: TaskStep
   inputs: { id: string; label: string; required: boolean; connected: boolean }[]
   outputs: { id: string; label: string }[]
-  readOnly: boolean; missing: boolean; virtual?: 'input' | 'output'
+  readOnly: boolean; disabled: boolean; missing: boolean; virtual?: 'input' | 'output'
   change?(node: GraphNode): void; open?(): void
 }
 type FlowNode = Node<CardData, 'workflow'>
+const NODE_COLUMN_SPACING = 320
 
 function NodeCard({ data, selected }: NodeProps<FlowNode>) {
   const tx = useText(), { language } = useI18n()
@@ -31,11 +32,11 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
     {data.missing && <p className="px-4 pt-3 text-xs text-status-danger-fg">{tx('Missing node plugin', '缺少节点插件', 'ノードプラグインがありません')}</p>}
     <div className="grid grid-cols-2 gap-x-3 py-3 text-[11px]">
       <div className="space-y-2">{data.inputs.map((port) => <div className="relative min-h-5 pr-1 pl-4" key={port.id}>
-        <Handle type="target" position={Position.Left} id={port.id} isConnectable={!data.readOnly} aria-label={`${data.label} ${port.label}`} />
+        <Handle type="target" position={Position.Left} id={port.id} isConnectable={!data.readOnly && !data.disabled} aria-label={`${data.label} ${port.label}`} />
         <span className={cn(port.required && !port.connected && !data.readOnly && 'text-status-warning-fg')}>{port.label}{port.required ? ' *' : ''}</span>
       </div>)}</div>
       <div className="space-y-2">{data.outputs.map((port) => <div className="relative min-h-5 pr-4 pl-1 text-right" key={port.id}>
-        <span>{port.label}</span><Handle type="source" position={Position.Right} id={port.id} isConnectable={!data.readOnly} aria-label={`${data.label} ${port.label}`} />
+        <span>{port.label}</span><Handle type="source" position={Position.Right} id={port.id} isConnectable={!data.readOnly && !data.disabled} aria-label={`${data.label} ${port.label}`} />
       </div>)}</div>
     </div>
     {node && <>
@@ -44,13 +45,13 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
           const schema = data.definition?.configSchema.properties?.[key]
           if (!schema || !['string', 'number', 'integer', 'boolean'].includes(fieldType(schema) ?? '')) return null
           return <label className="flex items-center justify-between gap-2 text-xs" key={key}><span className="truncate">{text(schema['x-title'] ?? schema.title, language) || key}</span>
-            {schema.type === 'boolean' ? <input type="checkbox" disabled={data.readOnly} checked={Boolean(node.config[key])} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.checked } })} /> : schema.enum ? <select aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.readOnly} className="w-28 rounded-md border border-input bg-input-bg px-1 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.value } })}><option value="">—</option>{schema.enum.map((value) => <option key={String(value)} value={String(value)}>{String(value)}</option>)}</select> : <input aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.readOnly} type={schema.type === 'string' ? 'text' : 'number'} className="w-28 rounded-md border border-input bg-input-bg px-2 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: schema.type === 'string' ? event.target.value : Number(event.target.value) } })} />}
+            {data.readOnly ? <span className="max-w-28 truncate text-muted-foreground" title={String(node.config[key] ?? '')}>{schema.type === 'boolean' ? node.config[key] ? tx('On', '开启', 'オン') : tx('Off', '关闭', 'オフ') : String(node.config[key] ?? '—')}</span> : schema.type === 'boolean' ? <input type="checkbox" disabled={data.disabled} checked={Boolean(node.config[key])} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.checked } })} /> : schema.enum ? <select aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.disabled} className="w-28 rounded-md border border-input bg-input-bg px-1 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: event.target.value } })}><option value="">—</option>{schema.enum.map((value) => <option key={String(value)} value={String(value)}>{String(value)}</option>)}</select> : <input aria-label={text(schema['x-title'] ?? schema.title, language) || key} disabled={data.disabled} type={schema.type === 'string' ? 'text' : 'number'} className="w-28 rounded-md border border-input bg-input-bg px-2 py-1" value={String(node.config[key] ?? '')} onChange={(event) => data.change?.({ ...node, config: { ...node.config, [key]: schema.type === 'string' ? event.target.value : Number(event.target.value) } })} />}
           </label>
         })}
       </div>}
       <div className="nodrag flex items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs">
-        <label className="flex items-center gap-2"><input type="checkbox" className="accent-primary" disabled={data.readOnly} checked={node.autoContinue} onChange={(event) => data.change?.({ ...node, autoContinue: event.target.checked })} />{tx('Auto continue', '自动下一步', '自動で次へ')}</label>
-        <button type="button" className="flex items-center gap-1 rounded px-1 py-1 text-link hover:bg-accent" onClick={data.open}>{tx('Open', '打开节点', '開く')}<ExternalLink className="size-3" /></button>
+        {data.readOnly ? <span className="text-muted-foreground">{node.autoContinue ? tx('Auto continue', '自动下一步', '自動で次へ') : tx('Manual review', '人工确认', '手動で確認')}</span> : <label className="flex items-center gap-2"><input type="checkbox" className="accent-primary" disabled={data.disabled} checked={node.autoContinue} onChange={(event) => data.change?.({ ...node, autoContinue: event.target.checked })} />{tx('Auto continue', '自动下一步', '自動で次へ')}</label>}
+        <button type="button" disabled={data.disabled} className={cn('flex items-center gap-1 rounded px-2 py-1 disabled:opacity-50', data.status?.status === 'awaiting_review' ? 'bg-primary text-primary-foreground' : 'text-link hover:bg-accent')} onClick={data.open}>{data.readOnly ? data.status?.status === 'awaiting_review' ? tx('Review result', '确认结果', '結果を確認') : data.status?.status === 'completed' ? tx('View results', '查看结果', '結果を見る') : tx('View node', '查看节点', 'ノードを見る') : tx('Full settings', '完整设置', '詳細設定')}<ExternalLink className="size-3" /></button>
       </div>
     </>}
     {data.status?.message && <p className="truncate px-4 pb-3 text-xs text-muted-foreground">{data.status.message}</p>}
@@ -60,12 +61,14 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
 }
 const nodeTypes = { workflow: NodeCard }
 
-export function WorkflowCanvas({ document, types, readOnly = false, steps = [], selected, onSelect, onChange, onCheckpoint, onOpen }: {
+export function WorkflowCanvas({ document, types, readOnly = false, disabled = false, fitOnLoad = false, steps = [], selected, addNodeRef, onReady, onSelect, onChange, onCheckpoint, onOpen }: {
   document: WorkflowDocument; types: NodeTypeDefinition[]; readOnly?: boolean; steps?: TaskStep[]
+  disabled?: boolean; fitOnLoad?: boolean; addNodeRef?: RefObject<((type: NodeTypeDefinition) => void) | null>; onReady?(): void
   selected?: string; onSelect?(id?: string): void; onChange?(document: WorkflowDocument, checkpoint?: boolean): void; onCheckpoint?(): void; onOpen(id: string): void
 }) {
   const tx = useText(), { language } = useI18n()
   const [flow, setFlow] = useState<ReactFlowInstance<FlowNode> | null>(null)
+  const container = useRef<HTMLDivElement>(null)
   const [selectedEdge, setSelectedEdge] = useState<string>()
   const [viewPositions, setViewPositions] = useState<Record<string, { x: number; y: number }>>({})
   // Controlled nodes must retain React Flow's measurements. Rebuilding their
@@ -76,10 +79,10 @@ export function WorkflowCanvas({ document, types, readOnly = false, steps = [], 
       const definition = nodeDefinition(node, types)
       return {
         id: node.id, type: 'workflow' as const, dragHandle: '.workflow-node-drag', selected: node.id === selected,
-        position: viewPositions[node.id] ?? document.presentation.positions[node.id] ?? { x: (index + 1) * 320, y: 60 },
+        position: viewPositions[node.id] ?? document.presentation.positions[node.id] ?? { x: (index + 1) * NODE_COLUMN_SPACING, y: 60 },
         data: {
           label: node.label || text(definition?.label, language) || node.type, node, definition,
-          status: steps.find((step) => step.id === node.id), readOnly, missing: !definition,
+          status: steps.find((step) => step.id === node.id), readOnly, disabled, missing: !definition,
           inputs: definition?.inputs.map((port) => ({ id: port.id, label: text(port.label, language), required: port.required, connected: document.edges.some((edge) => edge.target.nodeId === node.id && edge.target.portId === port.id) })) ?? document.edges.filter((edge) => edge.target.nodeId === node.id).map((edge) => ({ id: edge.target.portId, label: edge.target.portId, required: false, connected: true })),
           outputs: definition?.outputs.map((port) => ({ id: port.name, label: text(port.label, language) || port.name })) ?? document.edges.filter((edge) => edge.source.nodeId === node.id).map((edge) => ({ id: edge.source.portId, label: edge.source.portId })),
           change: (next: GraphNode) => onChange?.({ ...document, nodes: document.nodes.map((item) => item.id === next.id ? next : item) }),
@@ -87,22 +90,39 @@ export function WorkflowCanvas({ document, types, readOnly = false, steps = [], 
         },
       }
     })
-    const virtual: FlowNode[] = [
-      { id: INPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[INPUTS_ID] ?? document.presentation.positions[INPUTS_ID] ?? { x: 0, y: 60 }, data: { label: tx('Inputs', '输入', '入力'), inputs: [], outputs: document.inputs.map((input) => ({ id: input.id, label: input.label })), readOnly, missing: false, virtual: 'input' } },
-      { id: OUTPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[OUTPUTS_ID] ?? document.presentation.positions[OUTPUTS_ID] ?? { x: (document.nodes.length + 1) * 320, y: 60 }, data: { label: tx('Outputs', '输出', '出力'), outputs: [], inputs: document.outputs.map((output) => ({ id: output.id, label: output.label, required: output.required, connected: true })), readOnly, missing: false, virtual: 'output' } },
-    ]
+    const xs = execution.map((node) => node.position.x), ys = execution.map((node) => node.position.y)
+    const centerY = ys.length ? (Math.min(...ys) + Math.max(...ys)) / 2 : 60
+    // Boundary cards follow the actual layout, including graphs with parallel branches.
+    const inputPosition = { x: xs.length ? Math.min(...xs) - NODE_COLUMN_SPACING : 0, y: centerY }
+    const outputPosition = { x: xs.length ? Math.max(...xs) + NODE_COLUMN_SPACING : NODE_COLUMN_SPACING, y: centerY }
+    const virtual: FlowNode[] = []
+    if (document.inputs.length) virtual.push({ id: INPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[INPUTS_ID] ?? document.presentation.positions[INPUTS_ID] ?? inputPosition, data: { label: tx('Inputs', '输入', '入力'), inputs: [], outputs: document.inputs.map((input) => ({ id: input.id, label: input.label })), readOnly, disabled, missing: false, virtual: 'input' } })
+    if (document.outputs.length) virtual.push({ id: OUTPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[OUTPUTS_ID] ?? document.presentation.positions[OUTPUTS_ID] ?? outputPosition, data: { label: tx('Outputs', '输出', '出力'), outputs: [], inputs: document.outputs.map((output) => ({ id: output.id, label: output.label, required: output.required, connected: true })), readOnly, disabled, missing: false, virtual: 'output' } })
     return [...virtual, ...execution].map((node) => ({ ...node, measured: measurements[node.id] }))
-  }, [document, types, language, readOnly, steps, selected, viewPositions, measurements, onChange, onOpen, tx])
+  }, [document, types, language, readOnly, disabled, steps, selected, viewPositions, measurements, onChange, onOpen, tx])
+  useEffect(() => {
+    if (!addNodeRef) return
+    addNodeRef.current = !flow || readOnly || disabled ? null : (definition) => {
+      const bounds = container.current!.getBoundingClientRect()
+      const center = flow.screenToFlowPosition({ x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 })
+      const size = nodes.find((node) => node.measured)?.measured
+      const node = createNode(definition)
+      const position = { x: center.x - (size?.width ?? 0) / 2, y: center.y - (size?.height ?? 0) / 2 }
+      onChange?.({ ...document, nodes: [...document.nodes, node], presentation: { ...document.presentation, positions: { ...document.presentation.positions, [node.id]: position } } })
+      onSelect?.(node.id)
+    }
+    return () => { addNodeRef.current = null }
+  }, [addNodeRef, flow, readOnly, disabled, document, nodes, onChange, onSelect])
   const edges = [
     ...document.edges.map((edge) => ({ id: edge.id, source: edge.source.nodeId, sourceHandle: edge.source.portId, target: edge.target.nodeId, targetHandle: edge.target.portId, selected: selectedEdge === edge.id })),
     ...document.outputs.map((port) => ({ id: `output:${port.id}`, source: port.source.nodeId, sourceHandle: port.source.portId, target: OUTPUTS_ID, targetHandle: port.id, selected: selectedEdge === `output:${port.id}` })),
   ]
   function valid(connection: Connection | { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null }) {
-    return !readOnly && !!connection.sourceHandle && !!connection.targetHandle && canConnect(document, types, { nodeId: connection.source, portId: connection.sourceHandle }, { nodeId: connection.target, portId: connection.targetHandle })
+    return !readOnly && !disabled && !!connection.sourceHandle && !!connection.targetHandle && canConnect(document, types, { nodeId: connection.source, portId: connection.sourceHandle }, { nodeId: connection.target, portId: connection.targetHandle })
   }
-  return <div className="workflow-canvas relative h-full min-h-80" onDrop={(event) => {
+  return <div ref={container} className="workflow-canvas relative h-full min-h-80" onDrop={(event) => {
     event.preventDefault()
-    if (readOnly || !flow) return
+    if (readOnly || disabled || !flow) return
     const typeId = event.dataTransfer.getData('application/youdub-node')
     const definition = types.find((type) => `${type.providerId}:${type.type}` === typeId)
     if (!definition) return
@@ -110,31 +130,39 @@ export function WorkflowCanvas({ document, types, readOnly = false, steps = [], 
     const node = createNode(definition)
     onChange?.({ ...document, nodes: [...document.nodes, node], presentation: { ...document.presentation, positions: { ...document.presentation.positions, [node.id]: position } } })
     onSelect?.(node.id)
-  }} onDragOver={(event) => { if (!readOnly) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }}>
-    <ReactFlow<FlowNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={setFlow} fitView={readOnly} minZoom={0.15} maxZoom={2} defaultViewport={document.presentation.viewport} onlyRenderVisibleElements={false}
-      nodesConnectable={!readOnly} edgesReconnectable={false} deleteKeyCode={readOnly ? null : ['Backspace', 'Delete']} panOnScroll panOnDrag zoomOnDoubleClick={false}
+  }} onDragOver={(event) => { if (!readOnly && !disabled) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' } }}>
+    <ReactFlow<FlowNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onInit={async (instance) => {
+      setFlow(instance); onReady?.()
+      if (!readOnly && !fitOnLoad) return
+      await instance.fitView({ padding: 0.12, minZoom: 0.75, maxZoom: 1 })
+      const width = container.current?.clientWidth
+      if (!width) return
+      const bounds = instance.getNodesBounds(nodes), viewport = instance.getViewport(), padding = width * 0.12
+      if (bounds.width * viewport.zoom > width - 2 * padding) await instance.setViewport({ ...viewport, x: padding - bounds.x * viewport.zoom })
+    }} minZoom={0.15} maxZoom={2} defaultViewport={document.presentation.viewport} onlyRenderVisibleElements={false}
+      nodesDraggable={!disabled} nodesConnectable={!readOnly && !disabled} edgesReconnectable={false} deleteKeyCode={readOnly || disabled ? null : ['Backspace', 'Delete']} panOnScroll panOnDrag zoomOnDoubleClick={false}
       onNodeClick={(_, node) => { onSelect?.(node.id); setSelectedEdge(undefined) }} onPaneClick={() => { onSelect?.(); setSelectedEdge(undefined) }} onNodeDoubleClick={(_, node) => { if (!node.id.startsWith('$')) onOpen(node.id) }}
       onEdgeClick={(_, edge) => { setSelectedEdge(edge.id); onSelect?.() }} isValidConnection={valid}
       onConnect={(connection) => { if (valid(connection)) onChange?.(connect(document, { nodeId: connection.source, portId: connection.sourceHandle! }, { nodeId: connection.target, portId: connection.targetHandle! })) }}
-      onNodeDragStart={() => { if (!readOnly) onCheckpoint?.() }}
+      onNodeDragStart={() => { if (!readOnly && !disabled) onCheckpoint?.() }}
       onNodesChange={(changes) => {
         const dimensions = changes.flatMap((change) => change.type === 'dimensions' && change.dimensions ? [[change.id, change.dimensions] as const] : [])
         if (dimensions.length) setMeasurements((current) => ({ ...current, ...Object.fromEntries(dimensions) }))
         const positions = changes.flatMap((change) => change.type === 'position' && change.position ? [[change.id, change.position] as const] : [])
         if (positions.length) {
           if (readOnly) setViewPositions((current) => ({ ...current, ...Object.fromEntries(positions) }))
-          else onChange?.({ ...document, presentation: { ...document.presentation, positions: { ...document.presentation.positions, ...Object.fromEntries(positions) } } }, false)
+          else if (!disabled) onChange?.({ ...document, presentation: { ...document.presentation, positions: { ...document.presentation.positions, ...Object.fromEntries(positions) } } }, false)
         }
         const removed = changes.flatMap((change) => change.type === 'remove' && !change.id.startsWith('$') ? [change.id] : [])
-        if (removed.length && !readOnly) onChange?.(removeNodes(document, removed))
+        if (removed.length && !readOnly && !disabled) onChange?.(removeNodes(document, removed))
       }}
-      onEdgesDelete={(removed) => { if (!readOnly) onChange?.({ ...document, edges: document.edges.filter((edge) => !removed.some((item) => item.id === edge.id)), outputs: document.outputs.filter((port) => !removed.some((item) => item.id === `output:${port.id}`)) }) }}
-      onMoveEnd={(_, viewport) => { if (!readOnly && flow) onChange?.({ ...document, presentation: { ...document.presentation, viewport } }, false) }}
+      onEdgesDelete={(removed) => { if (!readOnly && !disabled) onChange?.({ ...document, edges: document.edges.filter((edge) => !removed.some((item) => item.id === edge.id)), outputs: document.outputs.filter((port) => !removed.some((item) => item.id === `output:${port.id}`)) }) }}
+      onMoveEnd={(_, viewport) => { if (!readOnly && !disabled) onChange?.({ ...document, presentation: { ...document.presentation, viewport } }, false) }}
       onKeyDown={(event) => { const target = event.target as HTMLElement; const id = target.closest('.react-flow__node')?.getAttribute('data-id'); if (event.key === 'Enter' && id && !id.startsWith('$') && !target.closest('input,button,textarea,select')) onOpen(id) }}
       ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': tx('Zoom in', '放大', '拡大'), 'controls.zoomOut.ariaLabel': tx('Zoom out', '缩小', '縮小'), 'controls.fitView.ariaLabel': tx('Fit view', '适应画布', '全体を表示') }}>
-      <Background gap={24} size={1} /><Controls showInteractive={false} />
+      <Background gap={24} size={1} /><Controls showInteractive={false} fitViewOptions={{ padding: 0.12, maxZoom: 1 }} />
     </ReactFlow>
-    {selectedEdge && !readOnly && <div className="absolute top-3 left-1/2 z-10 flex max-w-[90%] -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-2 shadow-card"><span className="truncate text-xs">{edges.find((edge) => edge.id === selectedEdge)?.sourceHandle} → {edges.find((edge) => edge.id === selectedEdge)?.targetHandle}</span><button type="button" aria-label={tx('Delete connection', '删除连线', '接続を削除')} onClick={() => { onChange?.({ ...document, edges: document.edges.filter((edge) => edge.id !== selectedEdge), outputs: document.outputs.filter((port) => `output:${port.id}` !== selectedEdge) }); setSelectedEdge(undefined) }}><X className="size-4" /></button></div>}
+    {selectedEdge && !readOnly && !disabled && <div className="absolute top-3 left-1/2 z-10 flex max-w-[90%] -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-2 shadow-card"><span className="truncate text-xs">{edges.find((edge) => edge.id === selectedEdge)?.sourceHandle} → {edges.find((edge) => edge.id === selectedEdge)?.targetHandle}</span><button type="button" aria-label={tx('Delete connection', '删除连线', '接続を削除')} onClick={() => { onChange?.({ ...document, edges: document.edges.filter((edge) => edge.id !== selectedEdge), outputs: document.outputs.filter((port) => `output:${port.id}` !== selectedEdge) }); setSelectedEdge(undefined) }}><X className="size-4" /></button></div>}
   </div>
 }
 export function createNode(definition: NodeTypeDefinition): GraphNode {

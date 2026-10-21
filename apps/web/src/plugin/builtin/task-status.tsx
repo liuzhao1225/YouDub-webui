@@ -8,7 +8,11 @@ export const STATUS_LABELS: Record<string, [string, string, string]> = {
   waiting: ['Waiting', '等待中', '待機中'], cancelling: ['Cancelling', '正在取消', 'キャンセル中'],
   cancelled: ['Cancelled', '已取消', 'キャンセル済み'], succeeded: ['Completed', '已完成', '完了'], failed: ['Failed', '失败', '失敗'],
   pending: ['Pending', '未开始', '未開始'], completed: ['Completed', '已完成', '完了'],
-  paused: ['Awaiting review', '待确认', '確認待ち'], awaiting_review: ['Awaiting review', '待确认', '確認待ち'],
+  paused: ['Waiting for node reviews', '等待节点确认', 'ノードの確認待ち'], awaiting_review: ['Awaiting review', '待确认', '確認待ち'],
+}
+
+export function taskDisplayName(task: TaskView) {
+  return task.sourceName && task.sourceName !== task.workflowId ? task.sourceName : task.graphSnapshot?.title || task.sourceName
 }
 
 export function TaskState({ status }: { status: string }) {
@@ -20,7 +24,8 @@ export function TaskProgress({ task }: { task: TaskView }) {
   const tx = useText()
   const { language } = useI18n()
   if (!ACTIVE_STATUSES.has(task.status)) return null
-  const step = task.status === 'queued' ? undefined : task.steps.find((item) => item.status === 'running' || item.status === 'waiting' || item.status === 'awaiting_review')
+  const step = task.status === 'queued' ? undefined : task.steps.find((item) => item.status === 'running' || item.status === 'waiting') ?? task.steps.find((item) => item.status === 'awaiting_review')
+  const reviews = task.steps.filter((item) => item.status === 'awaiting_review').length
   const completed = task.steps.filter((item) => item.status === 'completed').length
   const progress = task.status === 'running' && step?.status === 'running' ? step.progress : null
   const label = step ? text(step.label, language) : ''
@@ -30,6 +35,7 @@ export function TaskProgress({ task }: { task: TaskView }) {
       {step && <span className="min-w-0 break-words">{label}{progress != null ? ` · ${Math.round(progress * 100)}%` : ''}</span>}
       {task.steps.length > 0 && <span className="whitespace-nowrap">{tx(`${completed}/${task.steps.length} steps completed`, `已完成 ${completed}/${task.steps.length} 步`, `${completed}/${task.steps.length} ステップ完了`)}</span>}
     </div>
+    {reviews > 0 && <p className="text-status-warning-fg">{tx(`${reviews} nodes awaiting review`, `${reviews} 个节点待确认`, `${reviews} 件のノードが確認待ち`)}</p>}
     {progress != null && <progress aria-label={`${label} ${tx('progress', '进度', '進捗')}`} value={progress} max={1} className="block h-1.5 w-full accent-primary" />}
   </div>
 }

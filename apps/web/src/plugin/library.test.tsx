@@ -94,3 +94,17 @@ it('releases audio reads before allowing task deletion', async () => {
   expect(pause).toHaveBeenCalledOnce()
   expect(load).toHaveBeenCalledOnce()
 })
+
+it('shows graph results before a collapsed step list and uses the workflow title', async () => {
+  const graph = { format: 'youdub.workflow', formatVersion: 1, id: 'graph', title: '字幕校对', nodes: [], edges: [], inputs: [], outputs: [], presentation: { positions: {}, viewport: { x: 0, y: 0, zoom: 1 } } }
+  mount(vi.fn(async () => ({ ...task, sourceName: 'youdub.graph', workflowId: 'youdub.graph', graphSnapshot: graph, outputs: [{ id: 'subtitle', label: '中文字幕', mimeType: 'application/x-subrip', url: '/subtitle.srt' }], steps: [{ id: 'translate', label: '翻译', status: 'completed', progress: 1 }] })))
+  await screen.findByRole('heading', { name: '字幕校对', level: 1 })
+  expect(screen.queryByText(/youdub.graph/)).not.toBeInTheDocument()
+  const results = screen.getByRole('heading', { name: '生成文件' })
+  const steps = screen.getByText(/步骤列表/).closest('details')!
+  expect(steps.open).toBe(false)
+  expect(results.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  await userEvent.setup().click(screen.getByText(/步骤列表/))
+  expect(steps.open).toBe(true)
+  expect(screen.getByRole('link', { name: '翻译' })).toHaveAttribute('href', '/tasks/original/nodes/translate')
+})
