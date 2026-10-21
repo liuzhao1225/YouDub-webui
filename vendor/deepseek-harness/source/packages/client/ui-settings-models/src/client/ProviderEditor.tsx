@@ -22,6 +22,8 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
+import { useDraftLeaveCheck } from './draft-leave.tsx'
+import type { RegisterDraft } from './draft-leave.tsx'
 import type { ReactNode } from 'react'
 import type { CredentialInfo, LlmNativeAuth, SettingsNamespaceView, SettingsPathOpView } from '@deepseek-ai/dsh-api-remotes/client'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
@@ -108,6 +110,8 @@ export interface ProviderEditorProps {
    * still.
    */
   onBusyChange?: (busy: boolean) => void
+  registerDraft?: RegisterDraft
+  leave?: (action: () => void) => void
 }
 
 /** A user-section subtree as a plain draft object (absent → empty). */
@@ -192,6 +196,9 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     () => schema.getPath(namespace.user, settingsPath),
   )
   const [expectedRevision, setExpectedRevision] = useState(() => namespace.revision)
+  useDraftLeaveCheck(props.registerDraft,
+    keyDraft.length > 0 || (props.credentialOnly !== true && pathOps(settingsPath, committedOriginal, draft).length > 0),
+    busy || listBusy)
   const root = useMemo(() => schema.rehydrate(namespace.schema), [namespace.schema, schema])
   const node = useMemo(() => schema.nodeAtPath(root, settingsPath), [root, schema, settingsPath])
   const fallback = schema.getPath(namespace.value, settingsPath)
@@ -575,7 +582,11 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
         submitLabelKey={props.submitLabelKey ?? 'apply'}
         submitBusyLabelKey={props.submitBusyLabelKey ?? 'applying'}
         {...props.cancelLabelKey === undefined ? {} : { cancelLabelKey: props.cancelLabelKey }}
-        onCancel={() => { props.onClose(false) }}
+        onCancel={() => {
+          const close = (): void => { props.onClose(false) }
+          if (props.leave) props.leave(close)
+          else close()
+        }}
         onSubmit={() => { props.onSubmitCredential?.(); void apply() }}
       />
     </div>

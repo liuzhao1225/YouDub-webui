@@ -26,6 +26,8 @@
  */
 
 import { useEffect, useState } from 'react'
+import { useDraftLeaveCheck } from './draft-leave.tsx'
+import type { RegisterDraft } from './draft-leave.tsx'
 import type { ReactNode } from 'react'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { apiKeyFailure } from './apiKey.ts'
@@ -90,6 +92,8 @@ export interface CustomProviderCardProps {
    * interrogation is in flight, so the owner can hold its surface still.
    */
   onBusyChange?: (busy: boolean) => void
+  registerDraft?: RegisterDraft
+  leave?: (action: () => void) => void
 }
 
 /**
@@ -117,6 +121,9 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
    * the credential alone.
    */
   const [committed, setCommitted] = useState(false)
+  useDraftLeaveCheck(props.registerDraft,
+    keyDraft.length > 0 || (!committed && (route.length > 0 || displayName.length > 0 || baseURL.length > 0
+      || models.length > 0 || protocol !== (protocols[0] ?? ''))), busy || listBusy)
   const disabled = props.readOnly || busy
   /** Everything but the key stops being editable once the provider exists. */
   const profileDisabled = disabled || committed
@@ -317,7 +324,11 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
         submitDisabled={disabled || !ready}
         submitLabelKey="create"
         submitBusyLabelKey="creating"
-        onCancel={() => { props.onClose(committed) }}
+        onCancel={() => {
+          const close = (): void => { props.onClose(committed) }
+          if (props.leave) props.leave(close)
+          else close()
+        }}
         onSubmit={() => { void create() }}
       />
     </div>

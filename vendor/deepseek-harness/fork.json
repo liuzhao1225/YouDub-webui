@@ -414,10 +414,10 @@
         "path": "packages/client/ui-settings-general/README.md",
         "type": "file",
         "executable": false,
-        "size": 13668,
-        "sha256": "fdc9409df84952150e1dcce732a8809e96a3591054c7d23336cb8c22e9ac183d"
+        "size": 13963,
+        "sha256": "b160915e93506bf995fbccbf21f763278f8198c5af182b2b93bd8cfc14ed37b0"
       },
-      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+      "reason": "Document section-owned leave checks in the existing settings shell."
     },
     {
       "path": "packages/client/ui-settings-general/README.zh.md",
@@ -450,10 +450,10 @@
         "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
         "type": "file",
         "executable": false,
-        "size": 11370,
-        "sha256": "260565ce51604551ba8243b4dba5a4389e7a02ebd41e9e1fddf481cee7ff96f4"
+        "size": 12173,
+        "sha256": "a2c58f0d485a3463d083cb5bbcf21d48361bb14ab878543d7ee2d7a5365cb361"
       },
-      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+      "reason": "Retain the Harness settings shell and honor section-owned draft checks on close and navigation."
     },
     {
       "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
@@ -468,10 +468,10 @@
         "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 23031,
-        "sha256": "7e2e70997cdf967b84ce770f883cf7068348bf4ab29663d69fad0bd799a3dff1"
+        "size": 24162,
+        "sha256": "97658904f0ab1da1a4b2178beef5d08942bfc3adf8efaaf082d22941250e286c"
       },
-      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+      "reason": "Verify settings navigation, close and Escape honor the registered draft guard and disposal."
     },
     {
       "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
@@ -504,10 +504,10 @@
         "path": "packages/client/ui-settings-models/README.md",
         "type": "file",
         "executable": false,
-        "size": 20655,
-        "sha256": "73f5c44af5a7e4ee47cfc8ba068aab5a4827626048ae214a229c607ab4c96fa2"
+        "size": 21158,
+        "sha256": "11576b5f0c405a283136a8cbb66b733e7bb5b948c131825a471d57de813ff0c4"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle."
     },
     {
       "path": "packages/client/ui-settings-models/README.zh.md",
@@ -546,6 +546,24 @@
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
     },
     {
+      "path": "packages/client/ui-settings-models/src/client/CustomProviderCard.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/CustomProviderCard.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 14588,
+        "sha256": "32f22ebda663139a77372b6cbd698abd9d5b998235e9317f58a6dacd8cfca2a3"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/CustomProviderCard.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 15121,
+        "sha256": "8c9a9f27e548ce104c8d08f42f87a189330eea2741ac0a647b3f58da14e4c021"
+      },
+      "reason": "Preserve unsaved custom provider and credential input when leaving."
+    },
+    {
       "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
       "before": {
         "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
@@ -558,10 +576,40 @@
         "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
         "type": "file",
         "executable": false,
-        "size": 33991,
-        "sha256": "bc40a8ac164c73800cccb90188bc4fc4ae453ae47c935dadace60b534638eb81"
+        "size": 34772,
+        "sha256": "9a97b076a76dd7f867879d20c1cb1b2b7c04d6526957169deb166f18d8d3ac3b"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+      "reason": "Keep the original provider section and protect unsaved cards when navigating or closing."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 29441,
+        "sha256": "e6cbcbc471bc4740e97fb2c96f31c46f2ec122d80fbbd12009377c3e83491b04"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 29925,
+        "sha256": "bc83d450d58aaf7e92befd10d17d8b805971784ddbe03bb7ae4eb08211a801b8"
+      },
+      "reason": "Expose the original provider draft and partial-save state to leave checks."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/draft-leave.tsx",
+      "before": null,
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/draft-leave.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 3098,
+        "sha256": "343b0982edfa701afb25b2eecc8682356b96dfe460090760e8a51bb2c2de85a3"
+      },
+      "reason": "Guard existing model drafts through the original Modal and beforeunload lifecycle without duplicating form state."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/index.ts",
@@ -580,6 +628,24 @@
         "sha256": "7cede6ed4cd5f72154a69517f4dfb5ccc851546e678a4e76ed198fc789fab8ad"
       },
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/locales.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/locales.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16156,
+        "sha256": "b601b6c1b358dcc79a4576f3b674d5d0de92ebea1eab5772c1216beaec64ca5b"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/locales.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16523,
+        "sha256": "9c08662be5623656b2fddbc43228f4f8be978eae8e0e80c3f8caf25b2de58d3b"
+      },
+      "reason": "Localize the model draft discard confirmation."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/store.ts",
@@ -648,10 +714,28 @@
         "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 119026,
-        "sha256": "ece22f061c961a7df15e225db22c66e0b979782d065db95d801f9e22923b3f4e"
+        "size": 119234,
+        "sha256": "9096da3636b504796c4586cd5422a4562629906504d428d91e1cbcb9a58cd7de"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/provider-form.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/provider-form.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 80239,
+        "sha256": "98326c27d1867565585f7e1c4eb54a7f4fe22b1171d12654625014ac6be82ac8"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/tests/provider-form.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 84345,
+        "sha256": "dd0ed106322a8ded50140c9d181feb7972c8dc7c99222c69806161fcc10ef9f1"
+      },
+      "reason": "Exercise keep/discard, unload protection, provider switching and credential-write failures."
     },
     {
       "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
@@ -670,6 +754,24 @@
         "sha256": "96cb80ccdeea5c8b362f5918247436f141774e05d19d6f65e6f5d51f27a160ac"
       },
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings/src/client/contract/slots.ts",
+      "before": {
+        "path": "packages/client/ui-settings/src/client/contract/slots.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8053,
+        "sha256": "2318031c951e80df0185be3fff1a55faf8d4932c2b36c16940d3ee33dce68060"
+      },
+      "after": {
+        "path": "packages/client/ui-settings/src/client/contract/slots.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8135,
+        "sha256": "9c9d238a628b8692081a165ae7b088128ba7373e7cd6b6c9df7899b072f1a181"
+      },
+      "reason": "Expose a section-owned leave check for unsaved YouDub model configuration."
     },
     {
       "path": "packages/test-support/client-runtime/README.md",

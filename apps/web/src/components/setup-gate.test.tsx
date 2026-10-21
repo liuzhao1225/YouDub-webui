@@ -91,6 +91,13 @@ describe('first-run setup', () => {
     expect(screen.queryByText('下载已暂停')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '继续下载' })).not.toBeInTheDocument()
   })
+  it('does not show unverified model placeholders as missing downloads during startup', () => {
+    render(<SetupScreen state={{ ...modelChoices, phase: 'starting', resourceSelection: undefined }} onAction={vi.fn()} />)
+    expect(screen.getByRole('status')).toHaveTextContent('校验并启动工作台')
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.queryByText('待下载')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '准备全部模型' })).not.toBeInTheDocument()
+  })
   it('keeps the workbench gated during downloads and sends the setup token with pause', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(response(state)).mockResolvedValue(response({ ...state, models: [{ ...state.models[0], status: 'paused' }] }))
     vi.stubGlobal('fetch', fetch)

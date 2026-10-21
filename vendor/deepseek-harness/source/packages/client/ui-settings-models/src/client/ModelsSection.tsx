@@ -24,11 +24,12 @@
 import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button, IconPlusOutlineRegular, Modal, SegmentedControl } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { LlmNativeAuth, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls this package's SlotMap merge (the two Models child slots).
 import type {} from './slot-contract.ts'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
+import { useModelLeaveGuard } from './draft-leave.tsx'
 import { deriveKeyRef, protocolChoices, providerUsable, reasoningLevelChoices } from './store.ts'
 import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import type { ModelsOperations } from './operations.ts'
@@ -73,6 +74,7 @@ type ModelsRenderSlot = PropsRenderSlots<ModelsChildSlots>['renderSlot']
  * direct render that forgets it fails to compile instead of mounting nothing.
  */
 export type ModelsSectionProps = Partial<InjectFace<ModelsSectionInjected>> & PropsRenderSlots<ModelsChildSlots>
+  & Pick<PropsRuntime<'settings.section'>, 'registerLeaveGuard'>
 
 type ModelsSectionFace = InjectFace<ModelsSectionInjected>
 
@@ -115,7 +117,7 @@ interface CatalogDraft {
 /** Values that vary around the shared provider-editor rendering. */
 interface ProviderEditorRenderProps extends Pick<
   ProviderEditorProps,
-  'namespace' | 'schema' | 'operations' | 't' | 'readOnly' | 'onClose'
+  'namespace' | 'schema' | 'operations' | 't' | 'readOnly' | 'onClose' | 'registerDraft' | 'leave'
 > {
   target: EditorTarget
   row: ProviderRow
@@ -241,10 +243,13 @@ export function ModelsSection(props: ModelsSectionProps): ReactNode {
     controller === undefined || useSnapshot === undefined || operations === undefined
     || schema === undefined || t === undefined
   ) return null
-  return <Loaded injected={{ controller, useSnapshot, operations, schema, t }} renderSlot={renderSlot} />
+  return <Loaded injected={{ controller, useSnapshot, operations, schema, t }} renderSlot={renderSlot} registerLeaveGuard={props.registerLeaveGuard} />
 }
 
-function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderSlot: ModelsRenderSlot }): ReactNode {
+function Loaded({ injected, renderSlot, registerLeaveGuard }: {
+  injected: ModelsSectionFace; renderSlot: ModelsRenderSlot
+  registerLeaveGuard: ModelsSectionProps['registerLeaveGuard']
+}): ReactNode {
   const { controller, operations, schema, t } = injected
   const state = injected.useSnapshot(value => value)
   /** A new or failed surface waits for a current snapshot; background refreshes preserve its drafts. */
@@ -263,6 +268,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
   const addId = useId()
   const [deleteTarget, setDeleteTarget] = useState<EditorTarget | undefined>(undefined)
   const [deleting, setDeleting] = useState(false)
+  const { registerDraft, leave, dialog: leaveDialog } = useModelLeaveGuard(registerLeaveGuard, deleting, t)
   const [deleteFailure, setDeleteFailure] = useState<string | undefined>(undefined)
   const [savedTarget, setSavedTarget] = useState<ProviderIdentity | undefined>(undefined)
   const [dismissedSetup, setDismissedSetup] = useState<ReadonlySet<string>>(() => new Set())
@@ -444,6 +450,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   t,
                   readOnly: !state.writable,
                   onClose: (changed) => { closeSetup(changed, target) },
+                  registerDraft, leave,
                 })}
                 {renderSlot(
                   'settings.models.provider-card',
@@ -497,12 +504,12 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                     disabled={!open && state.status !== 'ready'}
                     onClick={() => {
                       if (!open && controller.store.getSnapshot().status !== 'ready') return
-                      setSavedTarget(undefined)
-                      // One card at a time: the add card closes with whatever
-                      // it held, since closing either card would otherwise
-                      // discard the other's draft.
-                      setAddOpen(false)
-                      setEditing(open ? undefined : target)
+                      leave(() => {
+                        setSavedTarget(undefined)
+                        // Replacing a card discards only after the leave check.
+                        setAddOpen(false)
+                        setEditing(open ? undefined : target)
+                      })
                     }}
                   >
                     {t('edit')}
@@ -516,9 +523,11 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                         disabled={!state.writable || state.status !== 'ready'}
                         onClick={() => {
                           if (controller.store.getSnapshot().status !== 'ready') return
-                          setSavedTarget(undefined)
-                          setDeleteFailure(undefined)
-                          setDeleteTarget(target)
+                          leave(() => {
+                            setSavedTarget(undefined)
+                            setDeleteFailure(undefined)
+                            setDeleteTarget(target)
+                          })
                         }}
                       >
                         {t('remove')}
@@ -543,6 +552,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   t,
                   readOnly: !state.writable,
                   onClose: (changed) => { closeEditor(changed, target) },
+                  registerDraft, leave,
                 })
                 : null}
             </li>
@@ -611,7 +621,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                           const picked = addable.find(candidate => candidate.row.entry.provider === event.target.value)
                           /* v8 ignore next -- the select only lists addable rows */
                           if (picked === undefined) return
-                          setEditing(targetOf(picked.row))
+                          leave(() => { setEditing(targetOf(picked.row)) })
                         }}
                       >
                         {addable.map(({ row }) => (
@@ -636,6 +646,8 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                       readOnly={!state.writable}
                       onClose={(changed) => { closeEditor(changed, draft.target) }}
                       onBusyChange={setCatalogBusy}
+                      registerDraft={registerDraft}
+                      leave={leave}
                     />
                     {addRow === undefined
                       ? null
@@ -668,6 +680,8 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                         if (changed) void controller.load()
                       }}
                       onBusyChange={setCustomBusy}
+                      registerDraft={registerDraft}
+                      leave={leave}
                     />
                   </div>
                 )
@@ -685,13 +699,15 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   disabled={!state.writable || state.status !== 'ready' || (!catalogEnabled && !customEnabled)}
                   onClick={() => {
                     if (controller.store.getSnapshot().status !== 'ready') return
-                    const first = addable[0]
-                    const initial: AddMode = catalogEnabled ? 'catalog' : 'custom'
-                    setSavedTarget(undefined)
-                    setEditing(first === undefined ? undefined : targetOf(first.row))
-                    setAddMode(initial)
-                    setVisited(new Set([initial]))
-                    setAddOpen(true)
+                    leave(() => {
+                      const first = addable[0]
+                      const initial: AddMode = catalogEnabled ? 'catalog' : 'custom'
+                      setSavedTarget(undefined)
+                      setEditing(first === undefined ? undefined : targetOf(first.row))
+                      setAddMode(initial)
+                      setVisited(new Set([initial]))
+                      setAddOpen(true)
+                    })
                   }}
                 >
                   <IconPlusOutlineRegular size={14} />
@@ -702,6 +718,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
             : null}
       </div>
       {renderSlot('settings.models.footer', {})}
+      {leaveDialog}
       <Modal
         open={deleteTarget !== undefined}
         onClose={closeDelete}

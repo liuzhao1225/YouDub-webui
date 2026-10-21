@@ -31,6 +31,7 @@
     "build": "node build.mjs",
     "start": "node launch.mjs",
     "desktop": "node desktop.mjs",
+    "pretest": "node node_modules/electron/install.js",
     "test": "node --test test/*.test.mjs",
     "check:composition": "node check-composition.mjs",
     "check:upstream": "node baselines/verify.mjs",

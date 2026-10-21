@@ -119,13 +119,14 @@ export interface SettingsHeaderOwnerProps {
 /**
  * Owner share of a settings section entry. The shell owns modal visibility
  * and navigation; a section's data arrives through its own inject faces and
- * stores. `close` is the one shell affordance a section receives, for flows
- * that leave settings altogether (starting a session from a section) — the
- * onboarding coordinator's `openSection`/`complete` precedent, inverted.
+ * stores. `close` leaves settings; a registered section-owned check protects
+ * unsaved inputs when the user closes the panel or changes sections.
  */
 export interface SettingsSectionOwnerProps {
   /** Close the settings panel (the shell owns the open state). */
   close: () => void
+  /** Register a section-owned check before the shell closes or changes section. */
+  registerLeaveGuard?: (guard: () => boolean | Promise<boolean>) => () => void
 }
 
 /** Owner share of the currently active settings-backed onboarding step. */

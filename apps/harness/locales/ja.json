@@ -249,7 +249,11 @@
     "onboardingDescription": "DeepSeek の公式モデルを設定します。",
     "onboardingLater": "後で設定",
     "onboardingSave": "保存して続ける",
-    "onboardingSaving": "保存中…"
+    "onboardingSaving": "保存中…",
+    "discardTitle": "モデルの変更を破棄しますか？",
+    "discardDescription": "未保存の設定と API キーは破棄されます。",
+    "keepEditing": "編集を続ける",
+    "discardChanges": "変更を破棄"
   },
   "pluginManager": {
     "panel": "プラグイン",

@@ -141,6 +141,28 @@ function openPanel() {
   return trigger
 }
 
+it('honors the active section guard for navigation, close, and Escape, then releases it on disposal', async () => {
+  const { renderSlot } = mount()
+  openPanel()
+  const section = renderSlot.mock.calls.findLast(call => call[0] === 'settings.section')
+  const owner = section?.[1] as import('@deepseek-ai/dsh-client-ui-settings/client').SettingsSectionOwnerProps
+  let allowed = false
+  const guard = vi.fn(() => allowed)
+  const dispose = owner.registerLeaveGuard!(guard)
+  fireEvent.click(screen.getByRole('button', { name: 'Models', exact: true }))
+  expect(screen.getByTestId('section-general')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }))
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(screen.getByRole('dialog')).toBeTruthy()
+  expect(guard).toHaveBeenCalledTimes(3)
+  allowed = true
+  fireEvent.click(screen.getByRole('button', { name: 'Models', exact: true }))
+  expect(screen.getByTestId('section-models')).toBeTruthy()
+  dispose()
+  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+})
+
 describe('SettingsRoot trigger', () => {
   it('shows installation instead of expected backend reconnection and restores connection feedback after failure', () => {
     const presentation = { phase: 'installing' as const, version: '1.0.1' }

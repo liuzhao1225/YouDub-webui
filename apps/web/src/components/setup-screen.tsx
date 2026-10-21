@@ -49,6 +49,7 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onReset,
       </div>
     </PageContainer>
     <PageContainer as="main" className="max-w-3xl py-8 sm:py-12">
+      {state.phase === 'starting' ? <p role="status" className="text-sm text-muted-foreground">{text('setup.verifying')}</p> : <>
       <h1 className="mb-6 flex items-center gap-3 text-base font-medium">
         <span className={cn('inline-flex items-center gap-2', environmentReady && 'text-muted-foreground')}>{environmentReady ? <Check className="size-4 text-brand-blue" /> : state.phase === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : <Loader2 className="size-4 animate-spin text-brand-pink" />}{text('setup.environment')}</span>
         {state.models.length > 0 && <><span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}{text('setup.models')}</span></>}
@@ -72,10 +73,11 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onReset,
 
         </div>
       </section>}
+      </>}
       <SetupDiagnostics state={state} />
       <div className="mt-5"><a href={examplesHref} onClick={onOpenExamples ? (event) => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onOpenExamples() } } : undefined} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{text('setup.examples')}</a></div>
       <div className="mt-5 flex items-center justify-between gap-3">
-        <span className="text-xs tabular-nums text-muted-foreground">{awaitingPreparation ? null : state.models.length ? <>{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : state.phase === 'starting' ? text('setup.opening') : ''}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">{awaitingPreparation || state.phase === 'starting' ? null : state.models.length ? <>{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : ''}</span>
         {verifying ? <Loader2 aria-label={text('setup.verifying')} className="size-5 animate-spin text-brand-pink" /> : awaitingPreparation ? <Button size="lg" disabled={busy || state.phase !== 'models' || !requiredResources.length || !onPrepare} onClick={() => onPrepare?.(requiredResources)}><ArrowDownToLine />{text('setup.prepareAll')}</Button> : state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />{text('setup.prepareAgain')}</Button> : state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? text('setup.pauseAll') : failed ? text('setup.retryDownloads') : text('setup.resumeDownloads')}</Button> : state.phase === 'starting' && <Loader2 aria-label={text('setup.starting')} className="size-5 animate-spin text-brand-pink" />}
       </div>
     </PageContainer>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /** Model-list editing, endpoint interrogation, and hand-declared provider creation. */
-import { within, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, within, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Schema from '@deepseek-ai/schemastery'
 import { Context } from '@deepseek-ai/cordis'
@@ -211,6 +211,7 @@ async function mountSection(options: Parameters<typeof scriptedFace>[0] = {}) {
   const controller = new ModelsSettingsStore(
     ctxWith(scripted.face), settingsSchema, new SettingsDescribeMirror(ctxWith(scripted.face)))
   await controller.load()
+  let guard: (() => boolean | Promise<boolean>) | undefined
   const injected: ModelsSectionProps = {
     controller,
     useSnapshot: bindSnapshotSelector(controller.store),
@@ -218,9 +219,13 @@ async function mountSection(options: Parameters<typeof scriptedFace>[0] = {}) {
     schema: settingsSchema,
     t,
     renderSlot: () => null,
+    registerLeaveGuard: next => {
+      guard = next
+      return () => { if (guard === next) guard = undefined }
+    },
   }
   render(<ModelsSection {...injected} />)
-  return { ...scripted, controller }
+  return { ...scripted, controller, requestLeave: () => guard?.() ?? true }
 }
 
 /** Open the editor of one configured row and expand its customized fold. */
@@ -257,6 +262,75 @@ function within_(scope: HTMLElement, label: string): HTMLElement {
   if (found === undefined) throw new Error(`no "${label}" button`)
   return found
 }
+
+describe('unsaved model changes', () => {
+  it('blocks leaving during a credential write and releases the guard after successful save', async () => {
+    let finish: (() => void) | undefined
+    const page = await mountSection({ set: vi.fn(async () => {
+      await new Promise<void>(resolve => { finish = resolve })
+      return remoteOk(undefined)
+    }) })
+    openEditor('openai')
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'test-pending-key' } })
+    fireEvent.click(screen.getByRole('button', { name: en.apply }))
+    await waitFor(() => { expect(finish).toBeTypeOf('function') })
+    expect(page.requestLeave()).toBe(false)
+    expect(screen.queryByRole('dialog', { name: en.discardTitle })).toBeNull()
+    await act(async () => { finish!() })
+    await waitFor(() => { expect(screen.queryByLabelText(en.keyInput)).toBeNull() })
+    expect(page.requestLeave()).toBe(true)
+    const unload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(unload)
+    expect(unload.defaultPrevented).toBe(false)
+  })
+
+  it('keeps the original form after rejecting a section leave and releases it after discard', async () => {
+    const page = await mountSection()
+    openEditor('openai')
+    expect(page.requestLeave()).toBe(true)
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'test-unsaved-key' } })
+    const unload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(unload)
+    expect(unload.defaultPrevented).toBe(true)
+    let leaving: boolean | Promise<boolean> = true
+    act(() => { leaving = page.requestLeave() })
+    fireEvent.click(screen.getByRole('button', { name: en.keepEditing, exact: true }))
+    expect(await leaving).toBe(false)
+    expect((screen.getByLabelText(en.keyInput) as HTMLInputElement).value).toBe('test-unsaved-key')
+    act(() => { leaving = page.requestLeave() })
+    fireEvent.click(screen.getByRole('button', { name: en.discardChanges }))
+    expect(await leaving).toBe(true)
+    expect(page.set).not.toHaveBeenCalled()
+  })
+
+  it('protects a custom draft while switching to an existing provider', async () => {
+    await mountSection()
+    openCustomMode()
+    fireEvent.change(screen.getByLabelText(en.customRoute), { target: { value: 'private-draft' } })
+    fireEvent.click(screen.getByRole('button', { name: providerCopy(en.editProvider, { provider: 'openai', displayName: 'openai' }) }))
+    expect(screen.getByRole('dialog', { name: en.discardTitle })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: en.keepEditing, exact: true }))
+    expect((screen.getByLabelText(en.customRoute) as HTMLInputElement).value).toBe('private-draft')
+    fireEvent.click(screen.getByRole('button', { name: en.cancel, exact: true }))
+    fireEvent.click(screen.getByRole('button', { name: en.discardChanges }))
+    await waitFor(() => { expect(screen.queryByLabelText(en.customRoute)).toBeNull() })
+    const unload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(unload)
+    expect(unload.defaultPrevented).toBe(false)
+  })
+
+  it('keeps an unsuccessful API key write guarded without losing its original error', async () => {
+    const page = await mountSection({ set: vi.fn(() => Promise.resolve(remoteFail('credential disk failed'))) })
+    openEditor('openai')
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'test-rejected-key' } })
+    fireEvent.click(screen.getByRole('button', { name: en.apply }))
+    await screen.findByText('credential disk failed')
+    act(() => { void page.requestLeave() })
+    expect(screen.getByRole('dialog', { name: en.discardTitle })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: en.keepEditing, exact: true }))
+    expect((screen.getByLabelText(en.keyInput) as HTMLInputElement).value).toBe('test-rejected-key')
+  })
+})
 
 describe('protocolChoices', () => {
   it('reads the protocols out of the namespace schema and nothing else', async () => {

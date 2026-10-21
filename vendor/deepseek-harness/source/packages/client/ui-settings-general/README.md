@@ -31,6 +31,8 @@ Users reach the shell through the sidebar's bottom Settings control; feature plu
 
 Settings uses the [frame’s shared overlay inset](../ui-layout/README.md#window-chrome-seat) and keeps at least 24px of viewport margin. Its mask leaves the Windows caption unpainted; the full-viewport layer still blocks background clicks.
 
+A section can register a `registerLeaveGuard` callback through its owner props. The shell checks it before navigation, header or mask close, and Escape; a false result keeps the current panel mounted. Sections own their drafts and confirmation UI. Unmounting the section disposes its callback.
+
 When the page reconnects to a Host running another release, a **Service version changed** dialog draws two lines: **Service** from the Host's previous release (gray) to its current release, joined by a thin solid green arrow because the Host already switched, and **Page** from the release this page booted from to the Host's release (gray), joined by an equally thin dashed gray arrow because only a reload completes it. A line shows versions when its two versions differ and commits otherwise. The page applies no plugin update from that release. **Reload to load the new version** loads it; **Not now**, the close control, a mask click, and Escape keep the page at its own release and stop asking about that Host release. When the Host returns to the page's release, the dialog closes and live updates resume.
 
 When the section navigation exceeds the panel's available height, the list scrolls independently of the settings content and keeps the Settings title fixed.

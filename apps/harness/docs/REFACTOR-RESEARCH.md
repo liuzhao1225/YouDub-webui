@@ -127,3 +127,14 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 新 profile 初始提供商为空。使用原 YouDub 的配置值，通过原 Harness 模型编辑器填写 URL、密钥和模型字段并保存；未通过写配置文件完成测试。停止 Host 后重新构建、启动同一 home，直接进入工作台，模型页仍显示唯一用户提供商和前六位密钥掩码。凭据文件为 0600，唯一 records 项属于浏览器连接授权，没有 DeepSeek 账号记录；未输出完整密钥。
 - 首启和资源组件新增中英日文案，复用现有语言入口和官方 locale 设置。实际从设置切换日本語、刷新页面后仍为日语；资源页显示四模型、Python、FFmpeg、分句数据和 yt-dlp 均已就绪。原始后端诊断详情保留原文，诊断报告模板和部分后端说明仍需后续语言复核。截图：`/tmp/youdub-refactor-first-run-ja-resources.png`。
 - 本批 39 项前端测试、web TypeScript、636 项业务语言键及 7 个框架语言空间检查通过；产品构建和来源组合检查通过。测试使用本机 Node 22，系统 Node 26 的 jsdom localStorage 行为不兼容已有测试环境。真实原生窗口、全新 checkout 和 Windows 验收仍未完成；两份飞书文档保持未改。
+
+## P4 模型草稿保护（2026-10-22）
+
+- 原 `settings.section` owner 新增可选的 leave guard 注册回调。SettingsPanel 的关闭、遮罩、Escape 和导航沿用原外壳并检查当前 section；ModelsSection 使用原 Modal 询问是否放弃，卡片提供原 draft、keyDraft、部分保存基线和 busy 状态的读取回调。没有创建第二份表单或全局状态。
+- 保存、模型发现和删除操作进行中禁止离开；失败后保留原错误与未保存输入。原生退出/浏览器刷新通过 `beforeunload` 读取同一组状态，注册随组件销毁清理。旧测试中的直接丢弃行为已更新为显式确认，其余原断言保留。
+- 新构建在独立 profile 的真实页面中验证：日语自定义提供商输入 `youdub-draft-check`，切换一般设置出现确认；继续编辑后原输入仍在；关闭设置再次出现确认，放弃后返回工作台。测试草稿没有保存为提供商，现有配置不变。截图 `/tmp/youdub-refactor-model-draft-ja.png`。
+- 原模型设置与通用设置 19 个文件、471 项测试通过；框架 7 个构建 gate、产品构建、来源组合和语言检查通过。活动 fork 为 49 项登记差异，原始归档和清单未改。完整日志 `/tmp/youdub-refactor-draft-final-tests.log`、`/tmp/youdub-refactor-draft-final-build.log`。
+- 重启时后台尚未完成模型文件核对，初始占位状态会显示 0/4 和待下载。首启页现对 `starting` 显示校验状态，文件核对完成后才显示模型进度；相关首启 16 项测试及 web 类型检查通过。
+- 旧 3087 开发实例与本次实例共享构建目录；确认旧目录没有任务后停止旧进程，冷切换到新候选，避免构建中逐文件 HMR。这是本次验收操作，前述 HMR 生命周期问题尚未关闭。Mac 当前仍锁屏，原生退出、保存框及其他 P0/P4/P7 检查继续保持待验收。
+- `0cc8a83f` 的[远端 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39659820813) 在 Harness 集成检查中失败：两个测试首次 `require('electron')` 均触发官方包的按需下载，worker 执行时读取到解压中的 Framework（dyld 报 `segment '__TEXT' load command content extends beyond end of file`）。当前 Electron npm 包在 `index.js` 检测路径不存在后同步启动 `install.js`，两个测试进程之间没有共享准备边界。Harness 测试的 npm `pretest` 现先执行该包自带 `install.js`，完成后再启动并行测试；安装失败直接终止，不重试、不跳过测试。后续候选 CI 单独验收。
+- 上述准备顺序调整后，本机 `npm --prefix apps/harness test` 为 66 passed，包括真实 Host、私有 worker、profile/插件生命周期、模型门控及退出协议。干净 runner 的首次安装仍需以新候选 CI 为准。

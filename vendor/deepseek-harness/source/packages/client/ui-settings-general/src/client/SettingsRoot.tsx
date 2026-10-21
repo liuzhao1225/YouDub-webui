@@ -20,6 +20,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
+import type { SettingsSectionOwnerProps } from '@deepseek-ai/dsh-client-ui-settings/client'
 import css from './SettingsRoot.module.css'
 import { DesktopUpdateIndicator } from './DesktopUpdateIndicator.tsx'
 
@@ -57,8 +58,20 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
   const active = rows.find(r => r.id === activeId)?.id ?? rows[0]?.id
   const titleId = useId()
 
+  const leaveGuard = useRef<(() => boolean | Promise<boolean>) | undefined>(undefined)
+  const registerLeaveGuard: NonNullable<SettingsSectionOwnerProps['registerLeaveGuard']> = useCallback(guard => {
+    leaveGuard.current = guard
+    return () => { if (leaveGuard.current === guard) leaveGuard.current = undefined }
+  }, [])
+  const requestLeave = (action: () => void): void => {
+    const allowed = leaveGuard.current?.() ?? true
+    if (typeof allowed === 'boolean') { if (allowed) action() }
+    else void allowed.then(value => { if (value) action() })
+  }
+  const requestClose = (): void => { requestLeave(onClose) }
+
   const panel = useRef<HTMLDivElement>(null)
-  useModalLayer(panel, true, onClose)
+  useModalLayer(panel, true, requestClose)
 
   // Portalled beside #root like the Modal primitive: a covering surface mounted
   // inside the root would precede the columns' chrome in document order, so a
@@ -66,7 +79,7 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
   // Beside the root, base.css's `body > :not(#root)` rule subtracts it instead.
   return createPortal((
     <div className={css.overlay} role="presentation">
-      <div className={css.mask} aria-hidden="true" onClick={onClose} />
+      <div className={css.mask} aria-hidden="true" onClick={requestClose} />
       <div ref={panel} tabIndex={-1} data-shortcut-modal="settings" className={css.panel} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <nav className={css.nav}>
           <div className={css.navTitle} id={titleId} tabIndex={-1}
@@ -79,7 +92,7 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
                 className={clsx(css.navCell, row.id === active && css.active)}
                 aria-current={row.id === active ? 'true' : undefined}
                 data-modal-autofocus={row.id === active ? '' : undefined}
-                onClick={() => { onSelect(row.id) }}
+                onClick={() => { if (row.id !== active) requestLeave(() => { onSelect(row.id) }) }}
               >
                 {navIcon(row.id)}
                 <span className={css.navLabel}>{row.label}</span>
@@ -90,13 +103,13 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
         <div className={css.content}>
           <div className={css.header}>
             <div className={css.actions}>{renderSlot('settings.action', {})}</div>
-            <button type="button" className={css.close} onClick={onClose}>
+            <button type="button" className={css.close} onClick={requestClose}>
               <IconCloseOutlineRegular size={14} />
               <span className={css.hiddenLabel}>{renderSlot('settings.close', {})}</span>
             </button>
           </div>
           <div className={css.options}>
-            {active !== undefined && renderSlot('settings.section', { close: onClose }, { only: active })}
+            {active !== undefined && renderSlot('settings.section', { close: requestClose, registerLeaveGuard }, { only: active })}
           </div>
         </div>
       </div>
