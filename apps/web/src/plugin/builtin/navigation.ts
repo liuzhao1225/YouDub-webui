@@ -1,5 +1,5 @@
 import { Context, Service } from 'cordis'
-import type { Navigation } from '../sdk'
+import { matchRoute, type Navigation } from '../sdk'
 export class NavigationService extends Service implements Navigation {
   private listeners = new Set<() => void>()
   private blockers = new Set<(path: string) => Promise<boolean>>()
@@ -36,8 +36,10 @@ export class NavigationService extends Service implements Navigation {
     this.navigating = true
     try {
       if (this.blockers.size && !await this.canLeave(path)) return
+      const standalone = (value: string) => this.ctx.slots.list('shell.routes').some(route => route.layout === 'standalone' && matchRoute(value.split('?')[0], route.path))
+      const returnTo = standalone(path) ? (standalone(this.getSnapshot()) ? window.history.state?.youdubReturnTo ?? '/' : this.getSnapshot()) : undefined
       if (!replace) this.index++
-      window.history[replace ? 'replaceState' : 'pushState']({ youdubIndex: this.index }, '', path)
+      window.history[replace ? 'replaceState' : 'pushState']({ youdubIndex: this.index, ...(returnTo ? { youdubReturnTo: returnTo } : {}) }, '', path)
       this.changed()
     } finally { this.navigating = false }
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })

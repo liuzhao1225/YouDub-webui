@@ -1,6 +1,8 @@
 import { createStore } from 'zustand/vanilla'
 import type { Request } from './types'
-import type { WorkflowDocumentRecord } from '../contracts'
+import type { Diagnostic, WorkflowDocumentRecord } from '../contracts'
+
+export type WorkflowDocuments = { items: WorkflowDocumentRecord[]; legacyDefaultsMigration?: { status: 'blocked'; diagnostics: Diagnostic[] } | { status: 'complete'; documentId: string; revision: number } | null }
 
 export type QuerySnapshot<T> = { data: T | null; error: string }
 export type QueryResult<T> = QuerySnapshot<T> & { refresh(): void }
@@ -44,16 +46,18 @@ export class QueryClient {
   constructor(private readonly request: Request) {}
   query<T>(path: string, pollMs?: number) { return new QueryResource<T>((signal) => this.request<T>(path, { signal }), pollMs) }
   workflowDocuments() {
-    return new QueryResource<{ items: WorkflowDocumentRecord[] }>(async (signal) => {
+    return new QueryResource<WorkflowDocuments>(async (signal) => {
       const records = new Map<string, WorkflowDocumentRecord>()
+      let legacyDefaultsMigration: WorkflowDocuments['legacyDefaultsMigration']
       let offset = 0, more = true
       while (more) {
-        const page = await this.request<{ items: WorkflowDocumentRecord[]; hasMore?: boolean; limit?: number }>(`/api/v2/workflow-documents?limit=100&offset=${offset}`, { signal })
+        const page = await this.request<WorkflowDocuments & { hasMore?: boolean; limit?: number }>(`/api/v2/workflow-documents?limit=100&offset=${offset}`, { signal })
+        if (offset === 0) legacyDefaultsMigration = page.legacyDefaultsMigration
         page.items.forEach((record) => records.set(record.id, record))
         more = page.hasMore === true
         offset += page.limit ?? 100
       }
-      return { items: [...records.values()] }
+      return { items: [...records.values()], ...(legacyDefaultsMigration ? { legacyDefaultsMigration } : {}) }
     })
   }
 }

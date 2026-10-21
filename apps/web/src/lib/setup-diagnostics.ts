@@ -1,4 +1,4 @@
-import type { SetupState } from '@/components/setup-screen'
+import type { SetupState } from '@/runtime/setup-contracts'
 
 const phases = { environment: '环境准备', models: '模型准备', starting: '启动工作台', ready: '已就绪', failed: '准备失败' }
 const statuses = { pending: '等待中', running: '准备中', downloading: '下载中', paused: '已暂停', ready: '已就绪', failed: '失败' }
@@ -17,6 +17,13 @@ export function redactDiagnostics(text: string, token?: string, homeDir?: string
 }
 
 export function setupReport(state?: SetupState | null, requestError = '') {
+  if (state?.resources) {
+    const resource = state.resources
+    state = { ...state, resources: undefined,
+      phase: resource.status === 'failed' ? 'failed' : resource.status === 'preparing' || resource.status === 'missing' ? 'models' : state.phase,
+      environment: resource.environment.length ? resource.environment : state.environment,
+      models: resource.models, error: [state.error, resource.error].filter(Boolean).join('\n') || undefined }
+  }
   const lines = [
     `YouDub: ${state?.version || '未知（尚未取得版本）'}`,
     `系统: ${state ? `${state.platform} ${state.arch}${state.osVersion ? ` / ${state.osVersion}` : ''}` : '未知（尚未连接服务）'}`,

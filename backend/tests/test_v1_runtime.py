@@ -134,6 +134,13 @@ def test_translation_models_use_configured_candidates_and_preserve_saved_default
     assert "YOUDUB_TRANSLATION_MODELS" in capability["unavailable_reason"]
 
 
+def test_connection_model_takes_priority_over_legacy_default_and_keeps_environment_candidates(installed_runtime, monkeypatch):
+    monkeypatch.setenv("YOUDUB_TRANSLATION_MODELS", "custom-one, qwen3-max, custom-two")
+    installed_runtime[0]["model"] = "qwen3-max"
+    capability = runtime.probe_capability("openai", connections=installed_runtime, translation_model="old-model")
+    assert [item["id"] for item in capability["models"]] == ["qwen3-max", "custom-one", "custom-two"]
+
+
 @pytest.mark.parametrize("missing", ["whisper", "torch", "nltk", "ffmpeg", "ffprobe", "checkpoint"])
 def test_whisper_is_unavailable_when_a_real_local_prerequisite_is_missing(installed_runtime, monkeypatch, tmp_path, missing):
     if missing in {"whisper", "torch", "nltk"}:

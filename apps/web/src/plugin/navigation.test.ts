@@ -1,5 +1,6 @@
 import { Context, type Fiber } from 'cordis'
 import { afterEach, expect, it, vi } from 'vitest'
+import { SlotsService } from './builtin/slots'
 import { NavigationService } from './builtin/navigation'
 import { requireActive } from './sdk'
 
@@ -15,7 +16,12 @@ afterEach(async () => {
 async function setup() {
   const ctx = new Context()
   let navigation!: NavigationService
-  fiber = ctx.plugin((owner) => { navigation = new NavigationService(owner) })
+  fiber = ctx.plugin((owner) => {
+    new SlotsService(owner)
+    owner.slots.register('shell.routes', { id: 'settings', path: '/settings', access: 'authenticated', layout: 'standalone', component: () => null })
+    owner.slots.register('shell.routes', { id: 'settings-section', path: '/settings/:section', access: 'authenticated', layout: 'standalone', component: () => null })
+    navigation = new NavigationService(owner)
+  })
   await requireActive(fiber, 'navigation')
   const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   return { navigation, scroll }
@@ -85,4 +91,17 @@ it('restores browser Back when editing continues and permits a later approved Ba
   navigation.block(async () => true)
   window.history.back()
   await vi.waitFor(() => expect(navigation.getSnapshot()).toBe('/workflows'))
+})
+
+it('preserves the entry route across settings sections without a second shell', async () => {
+  const { navigation } = await setup()
+  navigation.push('/tasks/review?tab=translation')
+  navigation.push('/settings')
+  expect(window.history.state.youdubReturnTo).toBe('/tasks/review?tab=translation')
+  navigation.replace('/settings/general')
+  navigation.push('/settings/connections')
+  expect(window.history.state.youdubReturnTo).toBe('/tasks/review?tab=translation')
+  navigation.push(window.history.state.youdubReturnTo)
+  expect(navigation.getSnapshot()).toBe('/tasks/review?tab=translation')
+  expect(window.history.state.youdubReturnTo).toBeUndefined()
 })

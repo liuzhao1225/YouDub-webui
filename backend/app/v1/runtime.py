@@ -104,7 +104,11 @@ def _translation_models(
     # provider. No client is constructed and no remote request is made here.
     configured = os.getenv("YOUDUB_TRANSLATION_MODELS", "gpt-4.1-mini")
     candidates = [name.strip() for name in configured.split(",") if name.strip()]
-    if translation_model and translation_model.strip():
+    model = connection.get("model")
+    if model and model.strip():
+        candidates.insert(0, model.strip())
+    elif translation_model and translation_model.strip():
+        # Compatibility for direct callers predating connection.model.
         candidates.append(translation_model.strip())
     from .translate import MAX_TEXT_CHARS
     models = [_model(name, ["remote"], list(LANGUAGES), list(LANGUAGES), max_text_chars=MAX_TEXT_CHARS)

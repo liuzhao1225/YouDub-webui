@@ -5,14 +5,14 @@ import { Check, Copy, ExternalLink } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { setupIssue, setupReport } from '@/lib/setup-diagnostics'
 import { cn } from '@/lib/utils'
-import type { SetupState } from './setup-screen'
+import type { SetupState } from '@/runtime/setup-contracts'
 
 export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupState | null; requestError?: string }) {
   const [copied, setCopied] = useState('')
   const [copyError, setCopyError] = useState('')
   const report = setupReport(state, requestError)
   const issue = setupIssue(report, state)
-  const failed = Boolean(requestError || state?.error || state?.environment.some(step => step.status === 'failed') || state?.models.some(model => model.status === 'failed'))
+  const failed = Boolean(requestError || state?.error || state?.resources?.status === 'failed' || state?.environment.some(step => step.status === 'failed') || state?.models.some(model => model.status === 'failed'))
   async function copy() {
     setCopyError('')
     try { await navigator.clipboard.writeText(report); setCopied(report) }

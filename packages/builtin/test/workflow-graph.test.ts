@@ -17,7 +17,7 @@ async function setup(t: any) {
     await context.plugin({ inject: ['catalog'], apply(scope) {
       for (const [id, kinds, capability] of [['youdub.media', ['prepare', 'reference', 'mix', 'export', 'importSubtitles']], ['youdub.download', ['download']], ['whisper', ['recognize'], 'asr'], ['openai', ['translate'], 'translation'], ['voxcpm', ['synthesize'], 'tts'], ['demucs', ['separate'], 'separation']] as const) {
         scope.effect(() => scope.catalog.registerProvider({
-          id, describe: () => ({ id, label: id, pluginId: id, pluginVersion: '1', integrity: 'sha256:test', operations: kinds.map(key => operations[key]), available: true, capability, execution: id === 'openai' ? 'remote' : 'local', models: capability ? [{ id: 'test', devices: ['cpu'], source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'], voice_modes: ['source_clone', 'preset'], voices: [{ id: 'v1', languages: ['zh', 'ja'] }] }] : undefined }),
+          id, describe: () => ({ id, label: id, pluginId: id, pluginVersion: '1', integrity: 'sha256:test', operations: kinds.map(key => operations[key]), available: true, capability, execution: id === 'openai' ? 'remote' : 'local', models: capability ? [{ id: ({ whisper: 'tiny', demucs: 'htdemucs', voxcpm: 'VoxCPM2' } as Record<string, string>)[id] ?? 'test', devices: ['cpu'], source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'], voice_modes: ['source_clone', 'preset'], voices: [{ id: 'v1', languages: ['zh', 'ja'] }] }] : undefined }),
           validateCorrection: validateMediaCorrection, probe: async () => ({}), execute: async () => { throw new Error('Compilation must not execute providers') },
         }))
       }

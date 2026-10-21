@@ -10,7 +10,7 @@ export function UpdateNotice({ hidden = false, useUpdates }: { hidden?: boolean 
   const updates = useUpdates(), tx = useText()
   if (hidden || !updates) return null
   const available = updates.result?.available
-  if (updates.error) return <div className="border-b border-border px-5 py-3 text-sm text-status-warning-fg"><Link href="/settings">{tx('Update check failed. Open settings to retry.', '检查更新失败，前往设置重试。', '更新の確認に失敗しました。設定から再試行してください。')}</Link></div>
+  if (updates.error) return <div className="border-b border-border px-5 py-3 text-sm text-status-warning-fg"><Link href="/settings/about">{tx('Update check failed. Open settings to retry.', '检查更新失败，前往设置重试。', '更新の確認に失敗しました。設定から再試行してください。')}</Link></div>
   if (!available) return null
   return <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border bg-accent/50 px-5 py-3 text-sm">
     <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-brand-blue" />{tx('New version', '发现新版本', '新しいバージョン')} {available.version}</span>

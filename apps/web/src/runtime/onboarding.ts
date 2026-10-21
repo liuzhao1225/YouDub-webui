@@ -1,6 +1,6 @@
-import type { SetupAction, SetupState } from '@/components/setup-screen'
-import type { Runtime, TaskConfig } from '@/plugin/builtin/localize-contracts'
+import type { SetupAction, SetupState } from '@/runtime/setup-contracts'
 import { createStore, type StoreApi } from 'zustand/vanilla'
+import { ConnectionController, type ConnectionDraft, type ConnectionSettings } from './connection'
 
 class SnapshotStore<T extends object> {
   private readonly store: StoreApi<T>
@@ -65,69 +65,63 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
   }
 }
 
-type Settings = { connections: { adapter: string; base_url: string; has_api_key: boolean; api_key_hint?: string | null }[]; defaults?: TaskConfig | null; plugins?: Record<string, { translationDeferred?: boolean }> }
-type TranslationDraft = { url: string; model: string; key: string }
-interface TranslationSnapshot extends TranslationDraft { settings: Settings | null; ready: boolean; busy: boolean; error: string }
+interface TranslationSnapshot { settings: ConnectionSettings | null; ready: boolean; busy: boolean; error: string }
 
 /** Tests and saves first-run translation settings before opening the workbench. */
 export class TranslationSetupController extends SnapshotStore<TranslationSnapshot> {
+  readonly connection: ConnectionController
   private csrf = ''
   private controller: AbortController | null = null
-  constructor() { super({ settings: null, url: 'https://api.openai.com/v1', model: '', key: '', ready: false, busy: false, error: '' }) }
+  constructor() {
+    super({ settings: null, ready: false, busy: false, error: '' })
+    this.connection = new ConnectionController(async <T>(path: string, init?: RequestInit) => {
+      const controller = this.controller
+      if (!controller) throw new Error('Translation setup is closed.')
+      return this.api<T>(controller, path, init)
+    })
+  }
   start = () => {
     this.stop()
     this.controller = new AbortController()
-    this.update({ error: '', busy: false })
+    this.update({ settings: null, ready: false, error: '', busy: false })
     void this.load(this.controller)
   }
-  stop = () => { this.controller?.abort(); this.controller = null }
-  change = (patch: Partial<TranslationDraft>) => { this.update(patch) }
+  stop = () => { this.controller?.abort(); this.controller = null; this.connection.stop() }
+  change = (patch: Partial<ConnectionDraft>) => { this.connection.change(patch) }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async api<T>(controller: AbortController, path: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(path, { ...init, signal: controller.signal, credentials: 'same-origin', cache: 'no-store' })
+    const headers = new Headers(init?.headers)
+    if (init?.body) headers.set('Content-Type', 'application/json')
+    if (init?.method && !['GET', 'HEAD'].includes(init.method.toUpperCase())) headers.set('X-CSRF-Token', this.csrf)
+    const signal = init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal
+    const response = await fetch(path, { ...init, headers, signal, credentials: 'same-origin', cache: 'no-store' })
     const body = await response.json()
-    if (!response.ok) throw new Error(body.error?.message || body.detail || `请求失败（HTTP ${response.status}）`)
+    if (!response.ok) throw Object.assign(new Error(body.error?.message || body.detail || `HTTP ${response.status}`), { code: body.error?.code })
     return body
-  }
-  private mutate(controller: AbortController, path: string, body: unknown, method = 'PATCH') {
-    return this.api(controller, path, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': this.csrf }, body: JSON.stringify(body) })
   }
   private async load(controller: AbortController) {
     try {
       const session = await this.api<{ csrf_token: string }>(controller, '/api/auth/session')
       if (!this.current(controller)) return
-      const settings = await this.api<Settings>(controller, '/api/v2/settings')
-      if (!this.current(controller)) return
       this.csrf = session.csrf_token
+      if (!await this.connection.start() || !this.current(controller)) {
+        if (this.current(controller)) this.update({ error: this.connection.getSnapshot().error })
+        return
+      }
+      const settings = this.connection.getSnapshot().settings!
       const connection = settings.connections.find(item => item.adapter === 'openai')
-      const model = settings.defaults?.translation?.model
-      this.update({ settings, ...(connection ? { url: connection.base_url } : {}), ...(model ? { model } : {}),
-        ready: Boolean(connection?.has_api_key && model) || settings.plugins?.['youdub.onboarding']?.translationDeferred === true })
+      this.update({ settings, ready: Boolean(connection?.has_api_key && connection.model?.trim()) || settings.plugins?.['youdub.onboarding']?.translationDeferred === true })
     } catch (failure) {
       if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })
     }
   }
   save = async () => {
-    const { settings, url, model, key, busy } = this.snapshot
     const controller = this.controller
-    if (busy || !settings || !controller) return
+    if (this.snapshot.busy || !this.snapshot.settings || !controller) return
     this.update({ busy: true, error: '' })
     try {
-      await this.mutate(controller, '/api/v2/settings/test-connection', { base_url: url.trim(), model: model.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) }, 'POST')
-      if (!this.current(controller)) return
-      const runtime = await this.api<Runtime>(controller, '/api/v2/runtime')
-      if (!this.current(controller)) return
-      const provider = runtime.capabilities.find(item => item.capability === 'asr' && item.models.length)
-      const asr = provider?.models[0]
-      // Whisper tiny is the subtitle workflow's default before ASR installation.
-      const asrSelection = settings.defaults?.asr ?? (provider && asr
-        ? { adapter: provider.adapter, model: asr.id, device: asr.devices[0] }
-        : { adapter: 'whisper', model: 'tiny', device: 'cpu' })
-      await this.mutate(controller, '/api/v2/settings', { connection: { adapter: 'openai', base_url: url.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) } })
-      if (!this.current(controller)) return
-      this.update({ key: '' })
-      await this.mutate(controller, '/api/v2/settings', { defaults: { source_language: 'auto', target_language: 'zh', output_mode: 'subtitles', keep_background: false,
-        asr: asrSelection, tts: null, separation: null, ...settings.defaults, translation: { adapter: 'openai', model: model.trim(), device: 'remote' } } })
+      if (!await this.connection.test() || !this.current(controller)) return
+      if (!await this.connection.save() || !this.current(controller)) return
       if (this.current(controller)) this.update({ ready: true })
     } catch (failure) {
       if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })
@@ -140,7 +134,7 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
     if (this.snapshot.busy || !this.snapshot.settings || !controller) return
     this.update({ busy: true, error: '' })
     try {
-      await this.mutate(controller, '/api/v2/settings', { plugin: { id: 'youdub.onboarding', config: { translationDeferred: true } } })
+      await this.api(controller, '/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ plugin: { id: 'youdub.onboarding', config: { translationDeferred: true } } }) })
       if (this.current(controller)) this.update({ ready: true })
     } catch (failure) {
       if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })

@@ -1,9 +1,9 @@
 /** Framework-only binding between client services and props-based React features. */
 import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode, type ComponentType } from 'react'
 import type { Context } from 'cordis'
-import type { SlotMap, WorkflowDocument, WorkflowDocumentRecord } from './sdk'
+import type { SlotMap, WorkflowDocument } from './sdk'
 import type { Observable, Request, SessionSnapshot } from './runtime/types'
-import { QueryClient, type QueryResult } from './runtime/query'
+import { QueryClient, type QueryResult, type WorkflowDocuments } from './runtime/query'
 import { WorkflowResourcesController, type WorkflowResourcesResult } from './runtime/workflow-resources'
 import { UpdatesController, type Updates } from './runtime/updates'
 
@@ -34,7 +34,7 @@ export interface ClientBindings {
   href(routeId: string, params?: Record<string, string>): string
   blockNavigation(handler: (path: string) => Promise<boolean>): () => void
   useQuery: UseQuery
-  useWorkflowDocuments(): QueryResult<{ items: WorkflowDocumentRecord[] }>
+  useWorkflowDocuments(): QueryResult<WorkflowDocuments>
   useSlot<K extends keyof SlotMap>(slot: K): SlotMap[K][]
   usePathname(): string
   useSession(): SessionSnapshot

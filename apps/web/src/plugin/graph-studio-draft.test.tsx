@@ -51,8 +51,9 @@ function mount() {
     effect: (effect: () => unknown) => effect(),
   } as unknown as Context
   apply(context)
-  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
-  return { request, user: userEvent.setup() }
+  const page = <PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>
+  const view = render(page)
+  return { request, user: userEvent.setup(), revisit: () => { view.rerender(<div>设置</div>); view.rerender(page) } }
 }
 
 async function selectWorkflow(user: ReturnType<typeof userEvent.setup>, title: string) {
@@ -126,4 +127,22 @@ it('stops inactive graph resource checks, preserves its URL and keeps an externa
   const body = submissions[1][1]!.body as FormData
   expect(body.has('input.video')).toBe(false)
   expect(JSON.parse(String(body.get('request')))).toMatchObject({ workflowId: 'youdub.graph', graphDocument: { id: 'second' }, nodeRuntimeInputs: { 'source-download': { url: 'https://www.youtube.com/watch?v=abcdefghijk' } } })
+})
+
+it('retains the workflow, File and node options after visiting settings', async () => {
+  const { request, user, revisit } = mount()
+  await screen.findByLabelText('视频 *')
+  await selectWorkflow(user, '第二个工作流')
+  const file = new File(['video'], 'settings-return.mp4', { type: 'video/mp4' })
+  await user.upload(screen.getByLabelText('视频 *'), file)
+  await user.type(screen.getByLabelText('运行备注'), '设置返回保留')
+  revisit()
+  expect(await screen.findByText('settings-return.mp4')).toBeVisible()
+  expect(screen.getByRole('combobox', { name: '工作流' })).toHaveTextContent('第二个工作流')
+  expect(screen.getByLabelText('运行备注')).toHaveValue('设置返回保留')
+  await waitFor(() => expect(screen.getByRole('button', { name: '开始处理' })).toBeEnabled())
+  await user.click(screen.getByRole('button', { name: '开始处理' }))
+  await screen.findByText('Connection interrupted')
+  const body = request.mock.calls.find(([path]) => path === '/api/v2/tasks')![1]!.body as FormData
+  expect(body.get('input.video')).toBe(file)
 })

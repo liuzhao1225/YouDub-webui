@@ -109,12 +109,13 @@ class ConnectionPatch(Contract):
     adapter: NonEmptyString
     # An absent base_url is allowed; an explicitly null base_url is rejected.
     base_url: BaseUrl = Field(default=None)
+    model: Annotated[str, Field(min_length=1, pattern=r"\S")] = Field(default=None)
     api_key: Annotated[SecretStr, Field(min_length=1)] | None = None
 
     @model_validator(mode="after")
     def require_change(self) -> Self:
-        if not self.model_fields_set.intersection({"base_url", "api_key"}):
-            raise ValueError("a connection update requires base_url or api_key")
+        if not self.model_fields_set.intersection({"base_url", "api_key", "model"}):
+            raise ValueError("a connection update requires base_url, api_key or model")
         return self
 
 

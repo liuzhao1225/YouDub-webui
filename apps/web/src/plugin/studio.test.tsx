@@ -132,6 +132,54 @@ it('locks workflow selection while a submitted import still needs reconciliation
   expect(screen.getByLabelText('Document *')).toHaveValue('')
 })
 
+it('retains each external composer draft after visiting settings and clears only the submitted draft', async () => {
+  const media = { ...catalog.workflows[0], id: 'external.media', label: 'Media workflow', ui: { sourceUrlInput: 'video' }, inputs: [
+    ...catalog.workflows[0].inputs,
+    { name: 'video', label: '视频', acceptedMimeTypes: ['video/*'], required: false },
+  ] }
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return { ...catalog, workflows: [...catalog.workflows, media] }
+    if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
+    return { items: [], hasMore: false }
+  })
+  let Page!: ComponentType<RouteProps>
+  const push = vi.fn()
+  const context = { apiClient: { request }, navigation: { push },
+    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as Context
+  apply(context)
+  const showStudio = () => render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+  let view = showStudio()
+  const user = userEvent.setup()
+  await user.upload(await screen.findByLabelText('Document *'), new File(['text draft'], 'text.txt', { type: 'text/plain' }))
+  await user.selectOptions(screen.getByLabelText('工作流'), media.id)
+  const file = new File(['media notes'], 'notes.txt', { type: 'text/plain' })
+  await user.upload(screen.getByLabelText('Document *'), file)
+  await user.type(screen.getByLabelText('视频链接'), 'https://youtu.be/jNQXAC9IVRw')
+  await user.selectOptions(screen.getByLabelText('mode *'), 'lower')
+
+  view.unmount() // The settings route unmounts the studio, while its plugin remains active.
+  view = showStudio()
+  await screen.findByText('notes.txt')
+  expect(screen.getByLabelText('工作流')).toHaveValue(media.id)
+  expect(screen.getByLabelText('视频链接')).toHaveValue('https://youtu.be/jNQXAC9IVRw')
+  expect(screen.getByLabelText('mode *')).toHaveValue('lower')
+  fireEvent.submit(screen.getByLabelText('视频链接').closest('form')!)
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/created'))
+  const body = request.mock.calls.find(([path, init]) => path === '/api/v2/tasks' && init?.method === 'POST')![1]!.body as FormData
+  expect(body.get('input.document')).toBe(file)
+  expect(JSON.parse(String(body.get('request')))).toMatchObject({ workflowId: media.id, config: { mode: 'lower', source_url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' } })
+
+  view.unmount()
+  showStudio()
+  await screen.findByLabelText('视频链接')
+  expect(screen.queryByText('notes.txt')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('视频链接')).toHaveValue('')
+  expect(screen.getByLabelText('mode *')).toHaveValue('upper')
+  await user.selectOptions(screen.getByLabelText('工作流'), catalog.workflows[0].id)
+  expect(screen.getByText('text.txt')).toBeInTheDocument()
+})
+
 function mount(request: ReturnType<typeof vi.fn>) {
   let Page!: ComponentType<RouteProps>
   const push = vi.fn()
@@ -246,7 +294,7 @@ it.each([null, {}, { adapter: 'openai', model: '', device: 'remote' }])('guides 
   fireEvent.submit(link.closest('form')!)
   expect(request.mock.calls.some(([path]) => path === '/api/v2/tasks')).toBe(false)
   await userEvent.setup().click(screen.getByRole('link', { name: '打开设置' }))
-  expect(push).toHaveBeenCalledWith('/settings')
+  expect(push).toHaveBeenCalledWith('/settings/connections')
 })
 
 it.each(['deepseek-flash', 'deepseek-v4-pro', 'custom-model'])('submits a configured translation model unchanged: %s', async (model) => {

@@ -1,30 +1,32 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
 import { BrandMark } from './brand/brand-mark'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
 import { TranslationSetupController } from '@/runtime/onboarding'
 import { useObservableSource } from '@/plugin/web-react'
+import { LanguageProvider, useText } from '@/lib/i18n'
 import { PageContainer } from './page-layout'
+import { ConnectionForm } from './connection-form'
 
 export function TranslationSetup({ children }: { children: ReactNode }) {
   const [controller] = useState(() => new TranslationSetupController())
-  const { settings, url, model, key, ready, busy, error } = useObservableSource(controller)
+  const { ready } = useObservableSource(controller)
   useEffect(() => { controller.start(); return controller.stop }, [controller])
   if (ready) return children
-  if (!settings) return <PageContainer as="main" className="max-w-xl space-y-6 py-12">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>重新连接</Button></> : <p role="status">检查翻译服务配置…</p>}</PageContainer>
-  const savedKey = settings.connections.find(item => item.adapter === 'openai' && item.base_url === url.trim() && item.has_api_key)
+  return <LanguageProvider><TranslationSetupView controller={controller} /></LanguageProvider>
+}
+
+function TranslationSetupView({ controller }: { controller: TranslationSetupController }) {
+  const tx = useText()
+  const { settings, busy, error } = useObservableSource(controller)
+  if (!settings) return <PageContainer as="main" className="max-w-xl space-y-6 py-12">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>{tx('Reconnect', '重新连接', '再接続')}</Button></> : <p role="status">{tx('Checking translation settings…', '检查翻译服务配置…', '翻訳サービスの設定を確認中…')}</p>}</PageContainer>
   return <PageContainer as="main" className="max-w-xl space-y-6 py-12">
     <BrandMark wordmark className="h-7" />
-    <div className="space-y-2"><h1 className="text-xl font-semibold">配置翻译服务</h1><p className="text-sm text-muted-foreground">填写 OpenAI 兼容接口。翻译时会向该服务发送识别出的字幕文本；测试连接会发送一句简短测试文本。</p></div>
-    <form className="space-y-5 rounded-2xl border border-border bg-card p-6" onSubmit={event => { event.preventDefault(); void controller.save() }}>
-      <div className="space-y-2"><Label htmlFor="setup-llm-url">接口地址</Label><Input id="setup-llm-url" type="url" value={url} disabled={busy} onChange={event => controller.change({ url: event.target.value })} required /></div>
-      <div className="space-y-2"><Label htmlFor="setup-llm-model">模型名称</Label><Input id="setup-llm-model" value={model} disabled={busy} onChange={event => controller.change({ model: event.target.value })} placeholder="例如 gpt-4.1-mini" required /></div>
-      <div className="space-y-2"><Label htmlFor="setup-llm-key">API 密钥{savedKey ? ' · 已保存' : ''}</Label><Input id="setup-llm-key" type="password" autoComplete="new-password" value={key} disabled={busy} onChange={event => controller.change({ key: event.target.value })} required={!savedKey} placeholder={savedKey ? savedKey.api_key_hint || '****' : ''} /><p className="text-xs text-muted-foreground">密钥保存到系统凭据管理器，可在设置中修改。</p></div>
-      {error && <p role="alert" className="text-sm text-status-danger-fg">{error}</p>}
-      <div className="flex flex-wrap gap-3"><Button type="submit" disabled={busy}>{busy && <Loader2 className="animate-spin" />}测试连接并继续</Button><Button type="button" variant="ghost" disabled={busy} onClick={() => void controller.skip()}>稍后配置</Button></div>
-      <p className="text-xs text-muted-foreground">稍后配置仍可进入工作台，开始翻译任务前需在设置中完成连接。</p>
-    </form>
+    <div className="space-y-2"><h1 className="text-xl font-semibold">{tx('Configure translation', '配置翻译服务', '翻訳サービスを設定')}</h1><p className="text-sm text-muted-foreground">{tx('Translation sends subtitle text to this OpenAI-compatible service. A connection test sends a short test message.', '翻译会向此 OpenAI 兼容服务发送字幕文本；测试连接会发送一句简短测试文本。', '翻訳時に字幕テキストをこの OpenAI 互換サービスへ送信します。接続テストでは短いテスト文を送信します。')}</p></div>
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
+      <ConnectionForm controller={controller.connection} disabled={busy} error={error} onSubmit={controller.save}
+        submitLabel={tx('Test connection and continue', '测试连接并继续', '接続をテストして続行')}
+        secondaryAction={{ label: tx('Configure later', '稍后配置', '後で設定'), onClick: controller.skip }} />
+      <p className="text-xs text-muted-foreground">{tx('You can continue now and configure the connection in Settings before translating.', '可以稍后在设置中配置连接，完成后再开始翻译任务。', '今は続行できます。翻訳を始める前に設定で接続を設定してください。')}</p>
+    </div>
   </PageContainer>
 }

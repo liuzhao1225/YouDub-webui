@@ -29,10 +29,10 @@ it('shows invalid-key errors and never saves or opens the workbench', async () =
 })
 
 it('tests before saving connection and model, then clears the secret from the form', async () => {
+  const saved = { connections: [{ adapter: 'openai', base_url: 'https://api.openai.com/v1', model: 'custom-model', has_api_key: true }] }
   const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' })).mockResolvedValueOnce(response({ connections: [] }))
     .mockResolvedValueOnce(response({ ok: true }))
-    .mockResolvedValueOnce(response({ capabilities: [{ capability: 'asr', available: true, adapter: 'whisper', models: [{ id: 'tiny', devices: ['cuda:0', 'cpu'] }] }] }))
-    .mockResolvedValue(response({}))
+    .mockResolvedValue(response(saved))
   vi.stubGlobal('fetch', fetch)
   render(<TranslationSetup><div>工作台</div></TranslationSetup>)
   await screen.findByText('配置翻译服务')
@@ -41,8 +41,10 @@ it('tests before saving connection and model, then clears the secret from the fo
   fireEvent.click(screen.getByRole('button', { name: '测试连接并继续' }))
   await screen.findByText('工作台')
   const patches = fetch.mock.calls.filter(([, init]) => init?.method === 'PATCH')
-  expect(JSON.parse(patches[0][1].body).connection.api_key).toBe('test-key')
-  expect(JSON.parse(patches[1][1].body).defaults.translation.model).toBe('custom-model')
+  expect(patches).toHaveLength(1)
+  expect(JSON.parse(patches[0][1].body)).toEqual({ connection: { adapter: 'openai', base_url: 'https://api.openai.com/v1', model: 'custom-model', api_key: 'test-key' } })
+  expect(patches[0][1].headers.get('X-CSRF-Token')).toBe('csrf')
+  expect(fetch.mock.calls.map(([path]) => path)).toEqual(['/api/auth/session', '/api/v2/settings', '/api/v2/settings/test-connection', '/api/v2/settings', '/api/v2/settings'])
   expect(screen.queryByLabelText('API 密钥')).not.toBeInTheDocument()
 })
 
@@ -56,11 +58,11 @@ it('allows deferral without saving any key', async () => {
 })
 
 it('saves translation before ASR packages or models are installed', async () => {
+  const saved = { connections: [{ adapter: 'openai', base_url: 'https://api.openai.com/v1', model: 'qwen-max', has_api_key: true }] }
   const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' }))
     .mockResolvedValueOnce(response({ connections: [] }))
     .mockResolvedValueOnce(response({ ok: true }))
-    .mockResolvedValueOnce(response({ capabilities: [{ capability: 'asr', adapter: 'whisper', available: false, models: [], unavailable_reason: 'No module named torch' }] }))
-    .mockResolvedValue(response({}))
+    .mockResolvedValue(response(saved))
   vi.stubGlobal('fetch', fetch)
   render(<TranslationSetup><div>工作台</div></TranslationSetup>)
   await screen.findByText('配置翻译服务')
@@ -69,10 +71,9 @@ it('saves translation before ASR packages or models are installed', async () => 
   fireEvent.click(screen.getByRole('button', { name: '测试连接并继续' }))
   await screen.findByText('工作台')
   const patches = fetch.mock.calls.filter(([, init]) => init?.method === 'PATCH')
-  expect(JSON.parse(patches[1][1].body).defaults).toMatchObject({
-    asr: { adapter: 'whisper', model: 'tiny', device: 'cpu' },
-    translation: { adapter: 'openai', model: 'qwen-max', device: 'remote' },
-  })
+  expect(patches).toHaveLength(1)
+  expect(JSON.parse(patches[0][1].body).connection.model).toBe('qwen-max')
+  expect(fetch.mock.calls.some(([path]) => String(path).includes('/runtime'))).toBe(false)
   expect(fetch.mock.calls.some(([path]) => String(path).includes('resources/prepare'))).toBe(false)
 })
 
@@ -90,7 +91,17 @@ it('shows the saved key hint without submitting it and hides it when the address
   fireEvent.click(screen.getByRole('button', { name: '测试连接并继续' }))
   await screen.findByRole('alert')
   expect(JSON.parse(fetch.mock.calls[2][1].body)).toEqual({ base_url: 'https://example.test/v1', model: 'model' })
-  fireEvent.change(screen.getByLabelText('接口地址'), { target: { value: 'https://different.test/v1' } })
+  fireEvent.change(screen.getByLabelText('服务地址'), { target: { value: 'https://different.test/v1' } })
   expect(key).toHaveAttribute('placeholder', '')
   expect(key).toBeRequired()
+})
+
+it('opens the workbench from a configured connection without testing or consulting processing defaults', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(response({ csrf_token: 'csrf' })).mockResolvedValueOnce(response({ connections: [
+    { adapter: 'openai', base_url: 'https://example.test/v1', model: 'qwen-max', has_api_key: true },
+  ] }))
+  vi.stubGlobal('fetch', fetch)
+  render(<TranslationSetup><div>工作台</div></TranslationSetup>)
+  await screen.findByText('工作台')
+  expect(fetch).toHaveBeenCalledTimes(2)
 })

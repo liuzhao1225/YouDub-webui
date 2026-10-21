@@ -43,7 +43,7 @@ export function WorkflowResources({ resources, types, disabled = false, hideRead
     {state?.activePreparation?.status === 'failed' && state.activePreparation.error && <InlineAlert>{state.activePreparation.error}</InlineAlert>}
     {resources.error && <InlineAlert>{resources.error}</InlineAlert>}
     {resources.error ? <Button variant="outline" disabled={disabled || resources.checking} onClick={resources.check}><RotateCcw />{tx('Check again', '重新检查', '再確認')}</Button> : state && state.status !== 'ready' && !preparing && !otherPreparing && (manual ? <>
-      {configurationMissing ? <Link href="/settings" className="inline-flex text-sm text-link hover:underline">{tx('Configure service connection', '配置服务连接', 'サービス接続を設定')}</Link> : <p className="text-xs text-muted-foreground">{tx('Complete the plugin setup above, then check again.', '请按上方插件要求完成配置后重新检查。', '上記のプラグイン設定を完了してから再確認してください。')}</p>}
+      {configurationMissing ? <Link href="/settings/connections" className="inline-flex text-sm text-link hover:underline">{tx('Configure service connection', '配置服务连接', 'サービス接続を設定')}</Link> : <p className="text-xs text-muted-foreground">{tx('Complete the plugin setup above, then check again.', '请按上方插件要求完成配置后重新检查。', '上記のプラグイン設定を完了してから再確認してください。')}</p>}
       <Button variant="outline" disabled={disabled || resources.checking} onClick={resources.check}><RotateCcw />{tx('Check again', '重新检查', '再確認')}</Button>
     </> : <Button variant="outline" disabled={disabled || resources.checking} onClick={resources.prepare}><Download />{state.status === 'failed' ? tx('Retry preparation', '重试准备', '準備を再試行') : tx('Download required resources', '下载所需资源', '必要なリソースをダウンロード')}</Button>)}
   </section>

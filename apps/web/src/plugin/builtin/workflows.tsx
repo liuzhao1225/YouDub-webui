@@ -1,8 +1,9 @@
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { StudioDraftStore } from '@/runtime/studio-draft'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, SlidersHorizontal, Trash2, Undo2, Upload, X } from 'lucide-react'
-import { Link, text, type Diagnostic, type JsonObject, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
+import { Link, text, type Diagnostic, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Page, PageHeader } from '@/components/page-layout'
@@ -14,7 +15,7 @@ import { blankWorkflow, parseWorkflow, serializeWorkflowEdits, workflowDrafts } 
 import { useUnsavedChanges } from './workflow-guard'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { WorkflowOptions, optionPillClassName } from './workflow-options'
-import { WorkflowRun, type WorkflowRunDraft } from './workflow-run'
+import { WorkflowRun } from './workflow-run'
 import { WorkflowRerun } from './workflow-rerun'
 import { WorkflowDiagnostics } from './workflow-errors'
 import { TaskNodePage, TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from './workflow-task'
@@ -37,6 +38,7 @@ function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'
   return <Page>
     <PageHeader title={tx('Workflows', '工作流', 'ワークフロー')} actions={<><Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Upload />{tx('Import', '导入', 'インポート')}</Button><Button onClick={() => navigate('/workflows/new')}><Plus />{tx('New workflow', '新建工作流', '新規ワークフロー')}</Button><input ref={input} type="file" accept=".json,.workflow.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file) }} /></>} />
     {(error || failure) && <InlineAlert>{error || failure}</InlineAlert>}
+    {data?.legacyDefaultsMigration?.status === 'blocked' && <InlineAlert><p>{tx('Previous processing preferences could not be migrated. The original configuration is retained.', '原处理偏好迁移失败，原配置已保留。', '以前の処理設定を移行できませんでした。元の設定は保持されています。')}</p><ul className="mt-2 list-inside list-disc">{data.legacyDefaultsMigration.diagnostics.map((item, index) => <li key={index}>{item.nodeId ? `${item.nodeId}: ` : ''}{item.message}</li>)}</ul></InlineAlert>}
     {error && <Button variant="outline" onClick={refresh}>{tx('Retry', '重试', '再試行')}</Button>}
     {!data && !error && <Loader2 className="size-5 animate-spin" />}
     {data && !data.items.length && <p className="text-sm text-muted-foreground">{tx('No workflows available', '暂无工作流', 'ワークフローがありません')}</p>}
@@ -202,15 +204,16 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
   </Layout>
 }
 
-export function GraphStudio({ onLockChange, additionalWorkflows = [], renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { onLockChange?(locked: boolean): void; additionalWorkflows?: WorkflowDescription[]; renderWorkflow?(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
+export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = [], renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore?: StudioDraftStore; onLockChange?(locked: boolean): void; additionalWorkflows?: WorkflowDescription[]; renderWorkflow?(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const documents = useWorkflowDocuments()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
-  const [selected, setSelected] = useState('')
-  const [selectedGraph, setSelectedGraph] = useState('')
-  const [draft, setDraft] = useState<WorkflowRunDraft>({ selectedFiles: [], sourceUrl: '', runtimeByDocument: {} })
-  const [overrides, setOverrides] = useState<Record<string, Record<string, JsonObject>>>({})
+  const [localStore] = useState(() => new StudioDraftStore())
+  const store = draftStore ?? localStore
+  const { selected, selectedGraph, draft, overrides } = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot)
+  const setSelected = (value: string) => store.set('selected', value)
+  const setSelectedGraph = (value: string) => store.set('selectedGraph', value)
   const [locked, setLocked] = useState(false)
   const lockChanged = useCallback((value: boolean) => { setLocked(value); onLockChange?.(value) }, [onLockChange])
   const record = documents.data?.items.find((item) => item.id === selectedGraph) ?? documents.data?.items[0]
@@ -226,7 +229,7 @@ export function GraphStudio({ onLockChange, additionalWorkflows = [], renderWork
   </Select>
   return <section className="space-y-4">
     {(documents.error || types.error) && <InlineAlert>{documents.error || types.error}</InlineAlert>}
-    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent draft={draft} onDraftChange={setDraft} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => lockChanged(false)} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => setOverrides((current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
+    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => { store.reset(); lockChanged(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
   </section>
 }
 export const name = 'client-workflows'

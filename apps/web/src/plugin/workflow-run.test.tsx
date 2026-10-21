@@ -98,7 +98,7 @@ it('shows connection configuration separately from language support and blocks s
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
   expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getByRole('link', { name: '配置服务连接' }))
-  expect(push).toHaveBeenCalledWith('/settings')
+  expect(push).toHaveBeenCalledWith('/settings/connections')
 })
 it('checks automatically and leaves only the ready state when no download is needed', async () => {
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<ResourceState>>(async () => ready)
@@ -336,7 +336,7 @@ it('leads with node names and actions for configuration errors while keeping ori
   ]
   mount(<WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} onSelect={onSelect} />, vi.fn())
   expect(screen.getByText('识别字幕: 请在设置中填写服务地址和 API Key。')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings')
+  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/connections')
   expect(screen.getByText('成片导出: 请为此节点选择模型和运行设备。')).toBeInTheDocument()
   expect(screen.getByText('Select a model and device.').closest('details')).not.toHaveAttribute('open')
   expect(screen.getByText('Provider connection is not configured.').closest('details')).not.toHaveAttribute('open')

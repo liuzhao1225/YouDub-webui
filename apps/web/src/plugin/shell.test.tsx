@@ -21,7 +21,7 @@ function setup(path = '/') {
     { id: 'library', path: '/tasks', component: () => <h1>任务</h1>, access: 'authenticated' },
     { id: 'detail', path: '/tasks/:id', component: () => <h1>任务详情</h1>, access: 'authenticated' },
     { id: 'workflows', path: '/workflows', component: () => <h1>工作流页</h1>, access: 'authenticated' },
-    { id: 'settings', path: '/settings', component: () => <h1>设置页</h1>, access: 'authenticated' },
+    { id: 'settings', path: '/settings', layout: 'standalone', component: () => <h1>设置页</h1>, access: 'authenticated' },
     { id: 'extra', path: '/extra', component: () => <h1>扩展页</h1>, access: 'authenticated' },
   ]
   const entries: SlotMap['shell.navigation'][] = [
@@ -58,18 +58,14 @@ it('keeps plugin navigation and task-detail selection consistent in both layouts
   setup('/tasks/task-1').mount()
   const menus = screen.getAllByRole('navigation', { name: '主导航' })
   expect(menus).toHaveLength(2)
-  for (const menu of menus) {
-    expect(within(menu).getAllByRole('link').map((link) => link.textContent)).toEqual(['工作台', '任务库', '工作流', '设置', '扩展'])
-    expect(within(menu).getByRole('link', { name: '任务库' })).toHaveAttribute('aria-current', 'page')
-  }
+  expect(within(menus[0]).getAllByRole('link').map(link => link.textContent)).toEqual(['工作台', '任务库', '工作流', '扩展'])
+  expect(within(menus[1]).getAllByRole('link').map(link => link.textContent)).toEqual(['工作台', '任务库', '工作流', '扩展', '设置'])
+  expect(within(screen.getByRole('navigation', { name: '设置' })).getByRole('link', { name: '设置' })).toBeInTheDocument()
+  for (const menu of menus) expect(within(menu).getByRole('link', { name: '任务库' })).toHaveAttribute('aria-current', 'page')
   await userEvent.setup().click(within(menus[1]).getByRole('link', { name: '设置' }))
   expect(screen.getByRole('heading', { name: '设置页' })).toBeInTheDocument()
-  for (const menu of menus) expect(within(menu).getByRole('link', { name: '设置' })).toHaveAttribute('aria-current', 'page')
-  await userEvent.setup().click(within(menus[1]).getByRole('link', { name: '工作流' }))
-  expect(screen.getByRole('heading', { name: '工作流页' })).toBeInTheDocument()
-  for (const menu of menus) expect(within(menu).getByRole('link', { name: '工作流' })).toHaveAttribute('aria-current', 'page')
-  await userEvent.setup().click(within(menus[1]).getByRole('link', { name: '扩展' }))
-  expect(screen.getByRole('heading', { name: '扩展页' })).toBeInTheDocument()
+  expect(screen.queryByRole('navigation', { name: '主导航' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('complementary')).not.toBeInTheDocument()
 })
 
 it('restores collapsed navigation immediately and keeps accessible labels and a compact language control', async () => {

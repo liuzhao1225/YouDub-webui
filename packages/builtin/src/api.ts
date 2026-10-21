@@ -8,6 +8,7 @@ import { checkForUpdates, updatePlatform } from './updates.js'
 import { nodeTypes, inspectGraph } from './workflow-graph.js'
 import { parseWorkflowDocument } from './workflow-document.js'
 import { workflowTemplates } from './workflow-templates.js'
+import { migrateLegacyDefaults } from './legacy-defaults-migration.js'
 import './auth.js'
 import './extensions.js'
 
@@ -26,12 +27,14 @@ export function apply(ctx: Context, config: { version: string }) {
   route('GET', '/api/v2/workflows', request => ctx.http.json(request, 200, { items: ctx.catalog.describe().workflows }))
   const base = '/api/v2'
   const templates = async () => workflowTemplates(ctx.catalog, await ctx.settings.read())
+  const migrateDefaults = () => ctx.settings.locked(() => migrateLegacyDefaults(ctx.store, ctx.catalog))
   route('GET', `${base}/node-types`, request => ctx.http.json(request, 200, { items: nodeTypes(ctx.catalog) }))
   route('GET', `${base}/workflow-documents`, async request => {
     const limit = Number(request.url.searchParams.get('limit') ?? 100), offset = Number(request.url.searchParams.get('offset') ?? 0)
     if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isInteger(offset) || offset < 0) throw new AppError('INVALID_CONFIG', 'Invalid workflow pagination.', 422)
+    const legacyDefaultsMigration = await migrateDefaults()
     const page = await ctx.store.call('store.workflow_list', { limit, offset })
-    ctx.http.json(request, 200, { ...page, items: [...(offset === 0 ? await templates() : []), ...page.items.map((item: any) => ({ ...item, origin: 'user' }))] })
+    ctx.http.json(request, 200, { ...page, legacyDefaultsMigration, items: [...(offset === 0 ? await templates() : []), ...page.items.map((item: any) => ({ ...item, origin: 'user' }))] })
   })
   route('POST', `${base}/workflow-documents`, async request => {
     const document = parseWorkflowDocument((await readJson(request)).document)
@@ -45,6 +48,7 @@ export function apply(ctx: Context, config: { version: string }) {
     ctx.http.json(request, 200, { valid: !result.diagnostics.length, diagnostics: result.diagnostics, requiredProviders: result.document.nodes.map(node => ({ providerId: node.provider.id, model: node.provider.model })) })
   })
   route('GET', `${base}/workflow-documents/:id`, async request => {
+    await migrateDefaults()
     const builtin = (await templates()).find(item => item.id === request.params.id)
     if (builtin) { ctx.http.json(request, 200, builtin); return }
     const saved = await ctx.store.call('store.workflow_get', { id: request.params.id })
