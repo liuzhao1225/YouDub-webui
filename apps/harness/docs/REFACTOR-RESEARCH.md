@@ -138,3 +138,21 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 旧 3087 开发实例与本次实例共享构建目录；确认旧目录没有任务后停止旧进程，冷切换到新候选，避免构建中逐文件 HMR。这是本次验收操作，前述 HMR 生命周期问题尚未关闭。Mac 当前仍锁屏，原生退出、保存框及其他 P0/P4/P7 检查继续保持待验收。
 - `0cc8a83f` 的[远端 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39659820813) 在 Harness 集成检查中失败：两个测试首次 `require('electron')` 均触发官方包的按需下载，worker 执行时读取到解压中的 Framework（dyld 报 `segment '__TEXT' load command content extends beyond end of file`）。当前 Electron npm 包在 `index.js` 检测路径不存在后同步启动 `install.js`，两个测试进程之间没有共享准备边界。Harness 测试的 npm `pretest` 现先执行该包自带 `install.js`，完成后再启动并行测试；安装失败直接终止，不重试、不跳过测试。后续候选 CI 单独验收。
 - 上述准备顺序调整后，本机 `npm --prefix apps/harness test` 为 66 passed，包括真实 Host、私有 worker、profile/插件生命周期、模型门控及退出协议。干净 runner 的首次安装仍需以新候选 CI 为准。
+
+## P0/P6 依赖裁剪前复核（7630c4a3）
+
+- 以当前正向组合、CLI、Desktop、Desktop Host、Web 及共享 Web runtime 为入口，按 workspace manifest 的 dependencies、optionalDependencies、peerDependencies 递归得到 310/362 个包。该数字表示声明的安装依赖闭包，不表示 310 个插件已启动。其余 52 个包还需核对编译、生成及测试消费者，不能直接据此删除。机器分析暂存 `/tmp/youdub-refactor-declared-closure.json`。
+- CLI manifest 仍有 86 个直接依赖，包括旧 Agent/Office/实验产品包；Desktop Host manifest 也保留 Office、账号、workspace 声明。已完成的启动装配解耦没有自动清理这些安装依赖。裁剪时必须一起核对 CLI 的 profile/插件命令入口、Desktop 的 runtime manifest 和包管理 anchor。
+- `api/remotes/src/client/index.ts` 仍实际挂载 26 组生成的 Remote contribution；当前 YouDub 客户端和设置只声明 credentials、settings、llm、pluginManager、pluginInventory、pluginRegistryProbe。未使用的账户、Goal、Agent/Session、终端和 Office 的 Remote 接线仍需裁剪。设置与凭据同属 settings-controller contribution，不能按 namespace 数直接删除生成包。
+- 同包保留 39 项 devDependencies，包含类型重导出与生成合同；Host 的 forwarded-event allowlist 仍包含旧产品事件。裁剪需要同时核对客户端实际调用、事件消费者、Typert 生成输入及类型导出；现有全量编译会继续依赖尚未退役的客户端源文件。此部分保持待做，不把正向组合或来源校验误报成完整裁剪。
+
+
+## P6 首批 Remote 与旧入口裁剪（2026-10-22）
+
+- 按实际调用将 `api/remotes` 的 Client 运行组合从 26 组 contribution 收窄到 5 组：Settings Controller、LLM、Host Plugin Inventory、Plugin Manager 和 Plugin Registry Probe。共提供当前需要的 6 个 namespace。原 Gateway/Connection、生成 schema、注册顺序及卸载逻辑继续复用。
+- 账号、Agent/Session、Goal、Office、终端、聊天反馈与在线市场 Remote 不再由应用默认注册。旧 Client 源码仍参与全量编译，其 type-only 导出及 Host 事件名单暂留，完整源码和安装依赖裁剪继续待做。
+- 原 built Remote 验收文件未被常规测试收集，且引用旧 `client.js` 产物、缺少现有 WebSocket 升级路由。现进入常规测试，使用当前 browser 产物及真实 HTTP/WebSocket；Goal 仅由测试显式安装，验证额外能力可通过原机制注册和撤回。验证应用六个 namespace 存在、无关 namespace 不存在、卸载后全部撤回。
+- 删除无调用者的旧 `prepare-youdub-app.mjs`。该入口依赖 primary-runtime 并会组装、签名开发 App，已不属于当前源码开发路径；其历史源码保留在 Git 基线，未操作任何已有 App 或用户数据。
+- 同构建模式下，`api/remotes/lib/client.js` 从 1,083,920 字节减少到 152,973 字节。这只表示该未压缩 JS 产物缩小，未推导全应用体积、启动或推理性能收益。
+- 上一候选 `7630c4a3` 的[源码开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39661750639) 已全部通过，包括干净 runner 的 Electron 准备与并行测试。当前裁剪候选另行检查；两份飞书文档仍留到全部改造和验收后更新。
+- 本批框架 7 个构建 gate、Remote 7 项测试、Harness 66 项集成测试及来源/组合检查通过。实际页面验证设置和模型读取；通过官方 PluginManager 安装本仓库 file-transform 样例、启用、点击其注入页面的计数按钮、停用并卸载。启用时导航出现，停用后撤回，卸载后仅保留 YouDub 内置插件。样例没有写入任何用户任务；截图 `/tmp/youdub-refactor-plugin-mounted.png`。同时通过通用设置将测试 profile 改回中文，验证 settings 写入与语言事件。

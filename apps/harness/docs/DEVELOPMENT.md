@@ -46,7 +46,7 @@ npm run build:youdub
 node apps/harness/desktop.mjs --prepare-only
 ```
 
-`npm start` 也会完成同一准备步骤。当前启动无需复制 `primary-runtime` 或 `office-skills`，默认运行不调用已安装 Harness 应用或共享 `~/.dsh`。旧开发 App 组装脚本已脱离根开发命令，待 P6 清理，本轮不执行。
+`npm start` 也会完成同一准备步骤。当前启动无需复制 `primary-runtime` 或 `office-skills`，默认运行不调用已安装 Harness 应用或共享 `~/.dsh`。旧开发 App 组装脚本已移除；其历史源码可从改造基线恢复。当前仅使用源码开发入口，不组装或签名 App。
 
 ## 日常修改与启动
 

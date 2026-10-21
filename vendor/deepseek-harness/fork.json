@@ -222,6 +222,84 @@
       "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
     },
     {
+      "path": "packages/api/remotes/README.md",
+      "before": {
+        "path": "packages/api/remotes/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 10298,
+        "sha256": "1e6f19d62d29b09971deec72cc1c81c073b7e8b42f7f791d145684ec230e6f99"
+      },
+      "after": {
+        "path": "packages/api/remotes/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 9720,
+        "sha256": "0cf60ed0e6f0af8e255c4ff8e1eb587d557bd6d0b330edf6946ec9bc401915f7"
+      },
+      "reason": "Select only YouDub settings, credentials, LLM and extension-management Remote contributions; retain Harness transport, schemas and lifecycle. Legacy type-only build dependencies remain explicit pending source pruning."
+    },
+    {
+      "path": "packages/api/remotes/README.zh.md",
+      "before": {
+        "path": "packages/api/remotes/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 9347,
+        "sha256": "329c3d59c9e026859daa3eac9a22df75482a926d348cd001405a948a9d00a23d"
+      },
+      "after": {
+        "path": "packages/api/remotes/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 8806,
+        "sha256": "202f0af8e0beff4226e6b5f2c1c71972756ef6e45aa81edb92ffbf6a34b82d19"
+      },
+      "reason": "Select only YouDub settings, credentials, LLM and extension-management Remote contributions; retain Harness transport, schemas and lifecycle. Legacy type-only build dependencies remain explicit pending source pruning."
+    },
+    {
+      "path": "packages/api/remotes/src/client/index.ts",
+      "before": {
+        "path": "packages/api/remotes/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10742,
+        "sha256": "6db0a100c21fa9d48bdff2edc68ebda94b8ec172830eb75fc00a81f4ba8c08d0"
+      },
+      "after": {
+        "path": "packages/api/remotes/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8796,
+        "sha256": "e389a929a93e35841f53882d7ca1744ad57d652aa523acf9aab0b2dbfedfa341"
+      },
+      "reason": "Select only YouDub settings, credentials, LLM and extension-management Remote contributions; retain Harness transport, schemas and lifecycle. Legacy type-only build dependencies remain explicit pending source pruning."
+    },
+    {
+      "path": "packages/api/remotes/tests/built-lib.e2e.ts",
+      "before": {
+        "path": "packages/api/remotes/tests/built-lib.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11623,
+        "sha256": "ce5e77feba2962de8877046ba393c230b74184bcac8a08f95ab9345fd50fe12d"
+      },
+      "after": null,
+      "reason": "Run the original built HTTP carrier check in the normal test lane with current browser artifact paths and authenticated WebSocket routing; assert YouDub namespace selection/disposal and mount Goal explicitly as a test extension."
+    },
+    {
+      "path": "packages/api/remotes/tests/built-lib.spec.ts",
+      "before": null,
+      "after": {
+        "path": "packages/api/remotes/tests/built-lib.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14136,
+        "sha256": "d5016f38ec46ce6174f241d2783fbe98490f1fb99102cf4a56ecb21767373a14"
+      },
+      "reason": "Run the original built HTTP carrier check in the normal test lane with current browser artifact paths and authenticated WebSocket routing; assert YouDub namespace selection/disposal and mount Goal explicitly as a test extension."
+    },
+    {
       "path": "packages/client/ui-layout/README.md",
       "before": {
         "path": "packages/client/ui-layout/README.md",

@@ -7,7 +7,7 @@ kind: "package-reference"
 
 English | [中文](README.zh.md)
 
-Desktop analytics follows the [product collection policy](../../client/product-analytics/README.md), including its live application setting. Web usage is excluded.
+YouDub selects the settings, credentials, LLM, and plugin-management capabilities from the original Harness Remote implementation.
 
 ## Summary
 
@@ -27,9 +27,9 @@ Two-sided BFF for Host Remote capabilities selected by this application. The Hos
 <a id="use-this-package"></a>
 ## Use this package
 
-[`@deepseek-ai/dsh-api-session-controller`](../session-controller/README.md) owns Agent and Session identity policy, including the Typert lookup resolvers used by other namespaces. This package selects and mounts that generated Session contribution without a direct runtime dependency on `@deepseek-ai/dsh-session`; activation policy stays with Session Controller.
+The Client assembly mounts five generated contributions: Settings Controller (the `settings` and `credentials` namespaces), LLM, Host Plugin Inventory, Plugin Manager, and Plugin Registry Probe. These serve YouDub settings and extensions. Account, Agent/Session, Office, terminal, chat, and online-market contributions are absent from this application assembly.
 
-The Client assembly mounts Office conversion, Commands, credentials, settings, Goal, Schedule, dynamic Cordis, file and Session references, read-only Host plugin inventory, plugin-installation registry response comparison, message feedback, permission presets, Session Controller, subagents, and Workspace Controller contributions. The `permissionPresets` namespace returns the complete process-level catalog used by current-session controls. Cordis effect ownership withdraws every contribution when this assembly unloads, while `@deepseek-ai/dsh-api-gateway/client` owns descriptor validation, traced namespace Services, direct and scoped methods, invocation, streams, and cancellation. The Client entry consumes the shared `TypertClientRemote` interface through Cordis and does not import the concrete Gateway. It re-exports the Gateway Client face's declaration merges type-only, so a consumer reaching the forwarded-event vocabulary through this facade gains no runtime edge to the Gateway implementation.
+Cordis effect ownership withdraws every mounted contribution when this assembly unloads. `@deepseek-ai/dsh-api-gateway/client` continues to own descriptor validation, namespace Services, invocation, streams, and cancellation. The Client entry consumes `TypertClientRemote` through Cordis and re-exports the Gateway's declaration merges type-only.
 
 This facade is also the front door for the wire type vocabulary a Client package names. It re-exports, type-only, the Remote failure vocabulary (`RemoteResult`, `RemoteFailure`, `RemoteErrorCode`, `RemoteErrorDetailsMap`), the Host facts (`RemoteHostFacts`), and each selected domain's client-safe payload types, so a Client feature package imports one specifier instead of reaching into `dsh-typert-protocol`, the Gateway, or an owner's Host entry. Two kinds of package deliberately skip this door: the API-layer packages this assembly itself selects — importing it back would close a dependency cycle — and their tests, which take the failure vocabulary from `dsh-typert-protocol` directly. A UI package's tests instead take the `RemoteError` constructor from [`dsh-client-test-runtime`](../../test-support/client-runtime/README.md).
 
@@ -74,6 +74,7 @@ No direct effect; mounted Host capabilities own any model-visible behavior they 
 
 <a id="known-limitations-and-deferred-work"></a>
 
+- Legacy type-only exports and the wider forwarded-event list remain while the old Client packages still belong to the source build. They do not mount those Remote capabilities; their source/build removal is tracked in YouDub P6.
 - The capability set is fixed by explicit build-time value imports; the Client does not discover the Host's active Services or Remote definitions at runtime.
 - Additional capabilities require an explicit `/remote` value import and mount in this assembly.
 - Only scoped waterfalls that are still pending are replayed after reconnection; ordinary one-way notifications remain isolated best-effort deliveries and are not replayed. State that requires reliable recovery needs an owner-provided query, cursor, or opening baseline.
@@ -88,5 +89,3 @@ No direct effect; mounted Host capabilities own any model-visible behavior they 
 None.
 
 </details>
-
-The Client assembly includes the account namespace for login commands and reconnectable account snapshots.
