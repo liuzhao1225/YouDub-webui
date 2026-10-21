@@ -6,7 +6,7 @@ import { useText } from './i18n'
 export function ExamplesPage({params}:{params:{__search?:string}}) {
   const frame=useRef<HTMLIFrameElement>(null),detach=useRef<(() => void)|undefined>(undefined),{navigate}=useFeatures(),tx=useText()
   useEffect(() => () => detach.current?.(),[])
-  return <iframe ref={frame} className="yd-original-examples" title={tx('Built-in examples','内置示例','内蔵サンプル')} src={`/api/youdub/examples/index.html${params.__search??''}`} allowFullScreen onLoad={() => {
+  return <iframe ref={frame} className="yd-original-examples" title={tx("examples.page.built.in.examples")} src={`/api/youdub/examples/index.html${params.__search??''}`} allowFullScreen onLoad={() => {
     detach.current?.()
     const document=frame.current?.contentDocument
     if(!document)return

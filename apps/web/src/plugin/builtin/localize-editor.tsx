@@ -9,7 +9,7 @@ export function LocalizeEditor({ value, readOnly, mode, onChange, useQuery }: Ed
   const tx = useText()
   const { data: runtime, error } = useQuery<Runtime>('/api/v2/runtime')
   if (error) return <InlineAlert>{error}</InlineAlert>
-  if (!runtime) return <p role="status" className="text-sm text-muted-foreground">{tx("Loading models…", "正在加载模型目录…", "モデルを読み込み中…")}</p>
+  if (!runtime) return <p role="status" className="text-sm text-muted-foreground">{tx("localize.editor.loading.models")}</p>
   const Form = mode === 'options' ? TaskOptions : TaskConfigForm
   return <fieldset disabled={readOnly} className="min-w-0 disabled:opacity-60"><Form value={value as unknown as TaskConfig} runtime={runtime} onChange={(next) => onChange(next as unknown as JsonObject)} /></fieldset>
 }

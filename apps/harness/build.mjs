@@ -1,8 +1,10 @@
+import { checkLocales } from './check-locales.mjs';
 import { build } from 'esbuild';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+await checkLocales();
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const here = fileURLToPath(new URL('.', import.meta.url));
 const web = resolve(root, 'apps/web');

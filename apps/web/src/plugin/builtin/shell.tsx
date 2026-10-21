@@ -4,7 +4,6 @@ import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react'
 import { Link, matchRoute, type RouteEntry, text, bindComponent, type Bindings } from '../sdk'
 import { restoreTheme, ThemeProvider } from '@/lib/theme'
 import { LanguageProvider, useI18n, useText } from '@/lib/i18n'
-import { LanguageMenuButton, LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
@@ -68,12 +67,12 @@ function Shell({ request, navigate, href: routeHref, useSession, useSlot, usePat
         })}
       </nav>
       <div className={cn('mt-auto p-3', collapsed && 'flex justify-center')}>
-        <div aria-label={tx('App controls', '应用设置', 'アプリ設定')} className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}>{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto" />}<ThemeToggle />{footerButtons}</div>
+        <div aria-label={tx("shell.app.controls")} className={cn('flex items-center gap-1 border-t border-border pt-3', collapsed && 'w-full flex-col')}><ThemeToggle />{footerButtons}</div>
       </div>
     </aside>
     <header className="glass sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-border px-4 lg:hidden">
       <Link href="/" aria-label="YouDub" className="rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/40"><BrandMark animated wordmark className="h-6" /></Link>
-      <div className="flex items-center gap-1"><LanguageMenuButton /><ThemeToggle />{footerButtons}</div>
+      <div className="flex items-center gap-1"><ThemeToggle />{footerButtons}</div>
     </header>
     <div className="relative pb-24 lg:pb-0"><UpdateNotice useUpdates={useUpdates} hidden={!!dialog} />{error && <div className="p-4"><InlineAlert>{error}</InlineAlert></div>}{content}</div>
     <nav aria-label={t.nav.primary} className="glass fixed inset-x-0 bottom-0 z-40 grid border-t border-border pb-[env(safe-area-inset-bottom)] lg:hidden" style={{ gridTemplateColumns: `repeat(${primaryNavigation.length}, minmax(0, 1fr))` }}>

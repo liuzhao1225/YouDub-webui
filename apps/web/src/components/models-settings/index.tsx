@@ -5,7 +5,7 @@ import type { Request } from '@/plugin/runtime/types'
 import { modelsApi } from './api'
 import { ModelsSection } from './ModelsSection'
 import { ModelsSettingsStore, providerUsable, type ModelsSettingsState } from './store'
-import { en, zh, ja, type ModelsKey } from './locales'
+import { type ModelsKey } from './locales'
 
 export interface ModelsSettingsProps {
   request: Request
@@ -19,7 +19,7 @@ export function ModelsSettings({ request, onDirtyChange, onBusyChange, onReadyCh
   const api = useMemo(() => modelsApi(request), [request])
   const controller = useMemo(() => new ModelsSettingsStore(api), [api])
   const state = useObservableSource(controller.store)
-  const t = useCallback((key: ModelsKey) => text(en[key], zh[key], ja[key]), [text])
+  const t = useCallback((key: ModelsKey) => text(`legacyModels.${key}`), [text])
   const useSnapshot = useMemo(() => function useSnapshot<V>(selector: (value: ModelsSettingsState) => V) {
     return selector(useObservableSource(controller.store))
   }, [controller])

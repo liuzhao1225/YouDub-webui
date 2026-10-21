@@ -80,12 +80,12 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     const next = document.inputs.filter((item) => item.id !== input.id && files[item.id]).map((item) => ({ input: item, file: files[item.id] }))
     if (file && !acceptsInputMime(input, file)) {
       setFiles(next)
-      setError(tx(`${file.name} is not a supported file type.`, `${file.name} 的文件类型不支持。`, `${file.name} のファイル形式には対応していません。`))
+      setError(tx("workflow.run.value.is.not.a.supported.file.type", { value1: file.name }))
       return
     }
     if (file && file.size > input.maxBytes) {
       setFiles(next)
-      setError(tx(`${file.name} exceeds the ${formatBytes(input.maxBytes)} limit.`, `${file.name} 超过大小上限 ${formatBytes(input.maxBytes)}。`, `${file.name} はサイズ上限 ${formatBytes(input.maxBytes)} を超えています。`))
+      setError(tx("workflow.run.value.exceeds.the.value.limit", { value1: file.name, value2: formatBytes(input.maxBytes) }))
       return
     }
     if (file) next.push({ input, file })
@@ -96,18 +96,18 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     {linkInput && <div className="px-3 pt-3 pb-1">
       <div className="relative flex items-center gap-2 rounded-xl border border-input bg-muted px-3 focus-within:border-ring">
         <Link2 className="size-4 shrink-0 text-subtle-foreground" />
-        <Input aria-label={tx('Video link', '视频链接', '動画リンク')} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx('Paste a YouTube or Bilibili link', '粘贴 YouTube 或 B 站视频链接', 'YouTube / Bilibili のリンクを貼り付け')} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
+        <Input aria-label={tx("workflow.run.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx("workflow.run.paste.a.youtube.or.bilibili.link")} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
           setSourceUrl(event.target.value); setLinkTouched(false); setError('')
           if (event.target.value) changeFile(linkInput, undefined)
         }} />
         {source && <span className="shrink-0 text-xs text-muted-foreground">{source.platform === 'Bilibili' ? 'B 站' : 'YouTube'}</span>}
-        {sourceUrl && <Button variant="ghost" size="icon-sm" disabled={locked} aria-label={tx('Clear link', '清空链接', 'リンクをクリア')} onClick={() => { setSourceUrl(''); setLinkTouched(false) }}><X /></Button>}
+        {sourceUrl && <Button variant="ghost" size="icon-sm" disabled={locked} aria-label={tx("workflow.run.clear.link")} onClick={() => { setSourceUrl(''); setLinkTouched(false) }}><X /></Button>}
       </div>
       {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
       {proxyField && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { proxyPort: proxyField } }} value={{ proxyPort }} diagnostics={[]} readOnly={locked} onChange={(config) => setDraft((current) => ({ ...current, proxyPort: config.proxyPort as number | undefined }))} /></div>}
-      <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx('or upload a video', '或上传本地视频', 'または動画をアップロード')}<span className="h-px flex-1 bg-border" /></div>
+      <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx("workflow.run.or.upload.a.video")}<span className="h-px flex-1 bg-border" /></div>
     </div>}
-    <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>
+    <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id, label: ['youdub.subtitles', 'youdub.dubbing', 'youdub.subtitles-dubbing'].includes(document.id) && input.id === 'video' && input.label === '视频' ? tx("workflow.run.video") : input.label }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>
     </div>
   const status = <div className="space-y-3">
     {document.nodes.map((node) => { const definition = nodeDefinition(node, types); return definition?.runtimeInputSchema ? <fieldset className="space-y-3" key={node.id}><legend className="mb-2 text-sm font-medium">{node.label || text(definition.label, language)}</legend><ConfigEditor useSlot={useSlot} ownerId={`runtime:${node.type}`} value={runtime[node.id] ?? {}} schema={definition.runtimeInputSchema} diagnostics={[]} readOnly={locked} onChange={(value) => { setDraft((current) => ({ ...current, runtimeByDocument: { ...current.runtimeByDocument, [document.id]: { ...current.runtimeByDocument[document.id], [node.id]: value } } })); setDiagnostics([]) }} /></fieldset> : null })}
@@ -115,16 +115,16 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     {error && <InlineAlert>{error}</InlineAlert>}
     <WorkflowDiagnostics diagnostics={submission?.failure ? workflowDiagnostics(submission.failure) : diagnostics} document={runDocument} types={types} />
     {pending && !busy && <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">{tx('Check whether the task was created before submitting again.', '请先查询任务是否已创建，再重新提交。', '再送信する前にタスクが作成されたか確認してください。')}</p>
+      <p className="text-sm text-muted-foreground">{tx("workflow.run.check.whether.the.task.was.created.before.submitting.again")}</p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => { void store.check(submissionKey, request).then(task => { if (task) openTask(task) }) }}>{tx('Check created task', '查询创建结果', '作成結果を確認')}</Button>
-        <Button variant="outline" onClick={() => { void store.discard(submissionKey, request).then(cleared => { if (cleared && activeView.current) { setError(''); setDiagnostics([]) } }) }}>{tx('Discard submission and edit', '放弃本次提交并修改', '今回の送信を破棄して編集')}</Button>
+        <Button variant="outline" onClick={() => { void store.check(submissionKey, request).then(task => { if (task) openTask(task) }) }}>{tx("workflow.run.check.created.task")}</Button>
+        <Button variant="outline" onClick={() => { void store.discard(submissionKey, request).then(cleared => { if (cleared && activeView.current) { setError(''); setDiagnostics([]) } }) }}>{tx("workflow.run.discard.submission.and.edit")}</Button>
       </div>
     </div>}
   </div>
   const quietResources = resources.ready && resources.result?.status === 'ready' && !resources.checking && !resources.error && !resources.result.error && !resources.result.activePreparation
   const showStatus = !quietResources || error || diagnostics.length > 0 || (pending && !busy) || document.nodes.some((node) => nodeDefinition(node, types)?.runtimeInputSchema)
-  const submit = <Button size={prominent ? "xl" : "default"} className={prominent ? "w-full shrink-0 sm:ml-auto sm:w-auto" : undefined} disabled={locked || !complete || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{prominent ? source ? tx('Download and process', '下载并处理', 'ダウンロードして処理') : tx('Start processing', '开始处理', '処理を開始') : tx('Start workflow', '开始运行', 'ワークフローを実行')}</Button>
+  const submit = <Button size={prominent ? "xl" : "default"} className={prominent ? "w-full shrink-0 sm:ml-auto sm:w-auto" : undefined} disabled={locked || !complete || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{prominent ? source ? tx("workflow.run.download.and.process") : tx("workflow.run.start.processing") : tx("workflow.run.start.workflow")}</Button>
   if (prominent) return <div className="space-y-4"><LaunchCard>{material}<div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-2 pt-2.5 pb-1"><div className="min-w-0 flex-1">{afterInputs}</div>{submit}</div></LaunchCard>{showStatus ? status : null}</div>
-  return <section className="space-y-5">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/models" className="text-xs text-muted-foreground hover:text-foreground">{tx('Connection settings', '连接设置', '接続設定')}</Link>}{submit}</div></section>
+  return <section className="space-y-5">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/models" className="text-xs text-muted-foreground hover:text-foreground">{tx("workflow.run.connection.settings")}</Link>}{submit}</div></section>
 }

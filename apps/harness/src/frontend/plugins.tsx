@@ -30,8 +30,8 @@ export function applyPlugins(ctx:any) {
   const namespace='pluginManager'
   const brand=(dictionary:Record<string,string>) => Object.fromEntries(Object.entries(dictionary).map(([key,value]) => [key,value.replaceAll('DeepSeek Harness','YouDub').replaceAll('DSH','YouDub')]))
   const dictionaries={
-    zh:{...brand(zh),'youdub.bundleMissing':'未读取到 YouDub 内置插件信息。','youdub.applicationVersion':'应用版本','youdub.packageVersion':'插件包版本','youdub.bundled':'随 YouDub 提供',title:'YouDub 插件',intro:'',infoDescription:'安装和管理 YouDub 插件。',installSpecPlaceholder:'插件包名、Git 仓库地址或本地目录',installGuideIdHint:'填写插件作者提供的 npm 包名。',installGuideIdExample:'@作者/插件名',installUpgradeNotice:'更新插件前，请先卸载再安装新版。'},
-    en:{...brand(en),'youdub.bundleMissing':'The Host did not report the built-in YouDub bundle.','youdub.applicationVersion':'Application version','youdub.packageVersion':'Bundle version','youdub.bundled':'Included with YouDub',title:'YouDub plugins',intro:'',infoDescription:'Install and manage YouDub plugins.',installSpecPlaceholder:'Package name, Git repository, or local directory',installGuideIdHint:'Use the npm package name supplied by the plugin author.',installGuideIdExample:'@author/plugin',installUpgradeNotice:'To update a plugin, uninstall it and install the newer version.'},
+    zh:{...brand(zh),'youdub.builtinTitle':'YouDub 内置功能','youdub.bundleMissing':'未读取到 YouDub 内置插件信息。','youdub.applicationVersion':'应用版本','youdub.packageVersion':'插件包版本','youdub.bundled':'随 YouDub 提供',title:'YouDub 插件',intro:'',infoDescription:'安装和管理 YouDub 插件。',installSpecPlaceholder:'插件包名、Git 仓库地址或本地目录',installGuideIdHint:'填写插件作者提供的 npm 包名。',installGuideIdExample:'@作者/插件名',installUpgradeNotice:'更新插件前，请先卸载再安装新版。'},
+    en:{...brand(en),'youdub.builtinTitle':'YouDub built-in features','youdub.bundleMissing':'The Host did not report the built-in YouDub bundle.','youdub.applicationVersion':'Application version','youdub.packageVersion':'Bundle version','youdub.bundled':'Included with YouDub',title:'YouDub plugins',intro:'',infoDescription:'Install and manage YouDub plugins.',installSpecPlaceholder:'Package name, Git repository, or local directory',installGuideIdHint:'Use the npm package name supplied by the plugin author.',installGuideIdExample:'@author/plugin',installUpgradeNotice:'To update a plugin, uninstall it and install the newer version.'},
   }
   ctx.effect(() => ctx.locale.register(namespace,dictionaries))
   const controller=new PluginManagerController(ctx)
@@ -43,7 +43,7 @@ export function applyPlugins(ctx:any) {
     const off=[ctx.remote.$on('plugin-manager/changed',refresh),ctx.remote.$on('plugin-manager/install-log',(chunk:any) => controller.appendLog(chunk)),ctx.remote.$on('plugin-manager/install-state',(progress:any) => controller.installProgress(progress)),ctx.on('connection/reset',refresh)]
     return () => off.forEach(dispose => dispose())
   })
-  ctx.slots.inject('plugins.item',() => ctx.slots.register({name:'plugins.item',id:'youdub.builtin',label:() => ctx.locale.getLocale().active.startsWith('zh')?'YouDub 内置功能':'YouDub built-in features',locale:namespace,inject:() => ({hooks:{pluginManager:face.hooks.pluginManager},resolveText:face.resolveText})},BuiltinYouDub))
+  ctx.slots.inject('plugins.item',() => ctx.slots.register({name:'plugins.item',id:'youdub.builtin',label:() => ctx.locale.bind(namespace)('youdub.builtinTitle'),locale:namespace,inject:() => ({hooks:{pluginManager:face.hooks.pluginManager},resolveText:face.resolveText})},BuiltinYouDub))
   ctx.slots.inject('shell.overlay',() => ctx.slots.register({name:'shell.overlay',id:'youdub.plugins.refresh',locale:namespace,inject:() => ({hooks:{pluginManager:productFace.hooks.pluginManager},dismissNotice:face.dismissNotice})},PluginRefreshToast))
   ctx.slots.inject('main',function*(){
     const handle=createNavigationStore(),instance=handle.create(),store={...handle,create:() => instance}

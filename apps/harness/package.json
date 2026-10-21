@@ -37,7 +37,8 @@
     "build:desktop": "node build-desktop.mjs",
     "build:framework": "node build-framework.mjs",
     "build:product": "node build.mjs && node build-desktop.mjs",
-    "dev": "node desktop.mjs"
+    "dev": "node desktop.mjs",
+    "check:locales": "node check-locales.mjs"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "4.0.5",

@@ -9,7 +9,6 @@ export function applyCredentialPreview(ctx: any) {
   ctx.effect(() => ctx.locale.register(namespace, {
     zh: { saved: '已保存的 API Key', error: '读取密钥摘要失败：' },
     en: { saved: 'Saved API Key', error: 'Could not read the key preview: ' },
-    ja: { saved: '保存済み API Key', error: 'キーの概要を取得できません：' },
   }))
   const read = async (provider: string, signal: AbortSignal): Promise<Preview> => responseBody(await fetch(`/api/youdub/credential-preview?provider=${encodeURIComponent(provider)}`, { signal, credentials: 'include', cache: 'no-store' }))
   const subscribe = (listener: () => void) => {

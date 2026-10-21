@@ -1,15 +1,22 @@
+import type { MessageKey } from '@/locales'
 import { Tag } from '@/components/ui/tag'
 import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { text, type TaskStatus, type TaskSummary, type TaskView } from '../sdk'
 
 export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'paused', 'cancelling'])
-export const STATUS_LABELS: Record<string, [string, string, string]> = {
-  queued: ['Queued', '排队中', '順番待ち'], running: ['Running', '处理中', '処理中'],
-  waiting: ['Waiting', '等待中', '待機中'], cancelling: ['Cancelling', '正在取消', 'キャンセル中'],
-  cancelled: ['Cancelled', '已取消', 'キャンセル済み'], succeeded: ['Completed', '已完成', '完了'], failed: ['Failed', '失败', '失敗'],
-  pending: ['Pending', '未开始', '未開始'], completed: ['Completed', '已完成', '完了'],
-  paused: ['Waiting for node reviews', '等待节点确认', 'ノードの確認待ち'], awaiting_review: ['Awaiting review', '待确认', '確認待ち'],
+export const STATUS_LABELS: Record<string, MessageKey> = {
+  "queued": "status_labels.queued",
+  "running": "status_labels.running",
+  "waiting": "status_labels.waiting",
+  "cancelling": "status_labels.cancelling",
+  "cancelled": "status_labels.cancelled",
+  "succeeded": "status_labels.succeeded",
+  "failed": "status_labels.failed",
+  "pending": "status_labels.pending",
+  "completed": "status_labels.completed",
+  "paused": "status_labels.paused",
+  "awaiting_review": "status_labels.awaiting_review"
 }
 
 export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapshot'>) {
@@ -18,7 +25,7 @@ export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapsho
 
 export function TaskState({ status }: { status: string }) {
   const tx = useText()
-  return <Tag tone={status === 'failed' ? 'danger' : status === 'paused' || status === 'awaiting_review' ? 'warning' : status === 'succeeded' || status === 'completed' ? 'success' : 'neutral'}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</Tag>
+  return <Tag tone={status === 'failed' ? 'danger' : status === 'paused' || status === 'awaiting_review' ? 'warning' : status === 'succeeded' || status === 'completed' ? 'success' : 'neutral'}>{STATUS_LABELS[status] ? tx(STATUS_LABELS[status]) : status}</Tag>
 }
 
 export function TaskProgress({ task }: { task: TaskSummary }) {
@@ -34,9 +41,9 @@ export function TaskProgress({ task }: { task: TaskSummary }) {
   return <div className="space-y-2 text-xs text-muted-foreground">
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
       {step && <span className="min-w-0 break-words">{label}{progress != null ? ` · ${Math.round(progress * 100)}%` : ''}</span>}
-      {task.steps.length > 0 && <span className="whitespace-nowrap">{tx(`${completed}/${task.steps.length} steps completed`, `已完成 ${completed}/${task.steps.length} 步`, `${completed}/${task.steps.length} ステップ完了`)}</span>}
+      {task.steps.length > 0 && <span className="whitespace-nowrap">{tx("task.status.value.value.steps.completed", { value1: completed, value2: task.steps.length })}</span>}
     </div>
-    {reviews > 0 && <p className="text-status-warning-fg">{tx(`${reviews} nodes awaiting review`, `${reviews} 个节点待确认`, `${reviews} 件のノードが確認待ち`)}</p>}
-    {progress != null && <progress aria-label={`${label} ${tx('progress', '进度', '進捗')}`} value={progress} max={1} className="block h-1.5 w-full accent-primary" />}
+    {reviews > 0 && <p className="text-status-warning-fg">{tx("task.status.value.nodes.awaiting.review", { value1: reviews })}</p>}
+    {progress != null && <progress aria-label={`${label} ${tx("task.status.progress")}`} value={progress} max={1} className="block h-1.5 w-full accent-primary" />}
   </div>
 }

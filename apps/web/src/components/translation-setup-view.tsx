@@ -25,14 +25,14 @@ export function TranslationSetupView({ controller, renderModels, wordmarkSrc }: 
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   usePendingUnload(dirty || saving)
-  if (!loaded) return <PageContainer as="main" className="max-w-3xl space-y-6 py-12">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>{tx('Reconnect', '重新连接', '再接続')}</Button></> : <p role="status">{tx('Checking translation settings…', '检查翻译服务配置…', '翻訳サービスの設定を確認中…')}</p>}</PageContainer>
+  if (!loaded) return <PageContainer as="main" className="max-w-3xl space-y-6 py-12">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>{tx("translation.setup.view.reconnect")}</Button></> : <p role="status">{tx("translation.setup.view.checking.translation.settings")}</p>}</PageContainer>
   return <PageContainer as="main" className="max-w-3xl space-y-6 py-12">
     <BrandMark wordmark wordmarkSrc={wordmarkSrc} className="h-7" />
     {renderModels({ request: controller.request, onReadyChange: controller.setConfigured, onDirtyChange: setDirty, onBusyChange: setSaving })}
     {error && <InlineAlert>{error}</InlineAlert>}
     <div className="flex justify-end gap-3">
-      <Button variant="ghost" disabled={busy || dirty || saving} onClick={controller.skip}>{tx('Configure later', '稍后配置', '後で設定')}</Button>
-      <Button disabled={busy || dirty || saving || !configured} onClick={controller.continue}>{tx('Continue', '继续', '続行')}</Button>
+      <Button variant="ghost" disabled={busy || dirty || saving} onClick={controller.skip}>{tx("translation.setup.view.configure.later")}</Button>
+      <Button disabled={busy || dirty || saving || !configured} onClick={controller.continue}>{tx("translation.setup.view.continue")}</Button>
     </div>
   </PageContainer>
 }

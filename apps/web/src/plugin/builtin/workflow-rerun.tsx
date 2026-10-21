@@ -30,8 +30,8 @@ export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange
   useEffect(() => { onLockChange?.(locked) }, [locked, onLockChange])
   const nodeNames = (ids: string[]) => ids.map((id) => {
     const node = document.nodes.find((node) => node.id === id)
-    return node?.label || (node && text(nodeDefinition(node, types)?.label, language)) || text(task.data?.steps.find((step) => step.id === id)?.label, language) || tx('Node', '节点', 'ノード')
-  }).join(tx(', ', '、', '、')) || tx('None', '无', 'なし')
+    return node?.label || (node && text(nodeDefinition(node, types)?.label, language)) || text(task.data?.steps.find((step) => step.id === id)?.label, language) || tx("workflow.rerun.node")
+  }).join(tx("workflow.rerun.")) || tx("workflow.rerun.none")
   function fail(failure: unknown) {
     setError(failure instanceof Error ? failure.message : String(failure)); setDiagnostics(workflowDiagnostics(failure))
   }
@@ -55,22 +55,22 @@ export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange
     finally { setBusy(false) }
   }
   return <section className="space-y-4">
-    {!task.data && !task.error && <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx('Loading original task…', '正在加载原任务…', '元のタスクを読み込み中…')}</p>}
-    {task.error && <div className="space-y-2"><InlineAlert>{task.error}</InlineAlert><Button variant="outline" disabled={locked} onClick={task.refresh}>{tx('Reload original task', '重新加载原任务', '元のタスクを再読み込み')}</Button></div>}
+    {!task.data && !task.error && <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx("workflow.rerun.loading.original.task")}</p>}
+    {task.error && <div className="space-y-2"><InlineAlert>{task.error}</InlineAlert><Button variant="outline" disabled={locked} onClick={task.refresh}>{tx("workflow.rerun.reload.original.task")}</Button></div>}
     {document.nodes.map((node) => { const definition = nodeDefinition(node, types); return definition?.runtimeInputSchema ? <fieldset key={node.id} className="space-y-3"><legend className="mb-2 text-sm font-medium">{node.label || text(definition.label, language)}</legend><ConfigEditor useSlot={useSlot} ownerId={`runtime:${node.type}`} schema={definition.runtimeInputSchema} value={runtimeInputs[node.id]} diagnostics={[]} readOnly={locked || !task.data} onChange={(value) => { setRuntime((current) => ({ ...current, [node.id]: value })); setPreview(null); setDiagnostics([]) }} /></fieldset> : null })}
     <WorkflowResources resources={resources} types={types} disabled={locked} />
-    {task.data?.status === 'paused' && <><InlineAlert tone="warning">{tx('The original task is awaiting review. Stop it before rerunning.', '原任务正在等待确认。重新运行前需要停止原任务。', '元のタスクは確認待ちです。再実行する前に停止してください。')}</InlineAlert><Button variant="outline" disabled={locked} onClick={() => {
+    {task.data?.status === 'paused' && <><InlineAlert tone="warning">{tx("workflow.rerun.the.original.task.is.awaiting.review.stop.it.before.rerunning")}</InlineAlert><Button variant="outline" disabled={locked} onClick={() => {
       setBusy(true); setError(''); void request(`/api/v2/tasks/${taskId}/cancel`, { method: 'POST', body: JSON.stringify({ expectedAttempt: task.data!.attempt, expectedTaskRevision: task.data!.revision }) }).then(task.refresh).catch(fail).finally(() => setBusy(false))
-    }}><Square />{tx('Stop original task', '停止原任务', '元のタスクを停止')}</Button></>}
-    {task.data && !terminal && task.data.status !== 'paused' && <InlineAlert tone="warning">{tx('Wait for the original task to finish, or stop it from its task page.', '请等待原任务结束，或返回原任务停止处理。', '元のタスクの完了を待つか、タスクページで停止してください。')}</InlineAlert>}
-    {!locked && <Link href={`/tasks/${taskId}`} className="inline-block text-sm text-link">{tx('Back to original task', '返回原任务', '元のタスクへ戻る')}</Link>}
+    }}><Square />{tx("workflow.rerun.stop.original.task")}</Button></>}
+    {task.data && !terminal && task.data.status !== 'paused' && <InlineAlert tone="warning">{tx("workflow.rerun.wait.for.the.original.task.to.finish.or.stop.it.from.its.task.pag")}</InlineAlert>}
+    {!locked && <Link href={`/tasks/${taskId}`} className="inline-block text-sm text-link">{tx("workflow.rerun.back.to.original.task")}</Link>}
     {error && <InlineAlert>{error}</InlineAlert>}
     <WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} />
-    {!current && <div><Button variant="outline" disabled={!terminal || locked || !resources.ready} onClick={() => void check()}>{busy ? <Loader2 className="animate-spin" /> : <GitBranch />}{tx('Review rerun scope', '检查重跑范围', '再実行する範囲を確認')}</Button></div>}
-    {current && <><div className="space-y-2 text-sm"><p>{tx('Keep results', '保留结果', '結果を保持')}: {nodeNames(current.reusedSteps)}</p><p>{tx('Process again', '重新处理', '再処理')}: {nodeNames(current.dirtySteps)}</p></div><p className="text-xs text-muted-foreground">{tx('Creates a new task using the original media.', '沿用原素材创建新任务。', '元の素材を使用して新しいタスクを作成します。')}</p><Button disabled={!terminal || locked || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{tx('Run again', '重新运行', '再実行')}</Button></>}
-    {pending && !busy && <div className="space-y-3"><p className="text-sm text-muted-foreground">{tx('Check whether the task was created before submitting again.', '请先查询任务是否已创建，再重新提交。', '再送信する前にタスクが作成されたか確認してください。')}</p><div className="flex flex-wrap gap-2">
-      <Button variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${pending}`).then((next) => { onStarted(); navigate(`/tasks/${next.id}`) }).catch(fail).finally(() => setBusy(false)) }}>{tx('Check created task', '查询创建结果', '作成結果を確認')}</Button>
-      <Button variant="outline" onClick={() => { setBusy(true); void request(`/api/v2/imports/${pending}`, { method: 'DELETE' }).then(() => { setPending(''); setPreview(null); setError(''); setDiagnostics([]) }).catch(fail).finally(() => setBusy(false)) }}>{tx('Discard submission and edit', '放弃本次提交并修改', '今回の送信を破棄して編集')}</Button>
+    {!current && <div><Button variant="outline" disabled={!terminal || locked || !resources.ready} onClick={() => void check()}>{busy ? <Loader2 className="animate-spin" /> : <GitBranch />}{tx("workflow.rerun.review.rerun.scope")}</Button></div>}
+    {current && <><div className="space-y-2 text-sm"><p>{tx("workflow.rerun.keep.results")}: {nodeNames(current.reusedSteps)}</p><p>{tx("workflow.rerun.process.again")}: {nodeNames(current.dirtySteps)}</p></div><p className="text-xs text-muted-foreground">{tx("workflow.rerun.creates.a.new.task.using.the.original.media")}</p><Button disabled={!terminal || locked || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{tx("workflow.rerun.run.again")}</Button></>}
+    {pending && !busy && <div className="space-y-3"><p className="text-sm text-muted-foreground">{tx("workflow.rerun.check.whether.the.task.was.created.before.submitting.again")}</p><div className="flex flex-wrap gap-2">
+      <Button variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${pending}`).then((next) => { onStarted(); navigate(`/tasks/${next.id}`) }).catch(fail).finally(() => setBusy(false)) }}>{tx("workflow.rerun.check.created.task")}</Button>
+      <Button variant="outline" onClick={() => { setBusy(true); void request(`/api/v2/imports/${pending}`, { method: 'DELETE' }).then(() => { setPending(''); setPreview(null); setError(''); setDiagnostics([]) }).catch(fail).finally(() => setBusy(false)) }}>{tx("workflow.rerun.discard.submission.and.edit")}</Button>
     </div></div>}
   </section>
 }

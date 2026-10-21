@@ -101,6 +101,17 @@ function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
 }
+it('localizes the builtin video input without changing workflow data or custom labels', async () => {
+  window.localStorage.setItem('youdub-ui-language', 'ja')
+  const document = graph()
+  document.id = 'youdub.subtitles'
+  document.inputs[0].id = 'video'
+  const { rerender } = mount(<WorkflowRun document={document} types={types} />, vi.fn(async () => ready))
+  await screen.findByLabelText('動画 *')
+  expect(document.inputs[0].label).toBe('视频')
+  rerender(<WorkflowRun document={{ ...document, inputs: [{ ...document.inputs[0], label: '自定义片源' }] }} types={types} />)
+  expect(screen.getByLabelText('自定义片源 *')).toBeInTheDocument()
+})
 function ResourceView({ document = graph(), useWorkflowResources }: { document?: WorkflowDocument } & Bindings<'useWorkflowResources'>) {
   const resources = useWorkflowResources(document)
   return <><WorkflowResources resources={resources} types={types} /><button disabled={!resources.ready}>继续</button></>

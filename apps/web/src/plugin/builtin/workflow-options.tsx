@@ -39,13 +39,13 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
       const type = fieldType(field), numeric = type === 'number' || type === 'integer'
       const simple = numeric || type === 'string'
       return <Popover.Root key={`${document.id}:${node.id}:${key}`}>
-        <Popover.Trigger disabled={disabled} aria-label={ariaLabel} className={`border items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/25 disabled:opacity-50 ${optionPillClassName}`}><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx('Configure', '设置', '設定')}</span><ChevronDown className="size-4 shrink-0 text-subtle-foreground" /></Popover.Trigger>
+        <Popover.Trigger disabled={disabled} aria-label={ariaLabel} className={`border items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/25 disabled:opacity-50 ${optionPillClassName}`}><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx("workflow.options.configure")}</span><ChevronDown className="size-4 shrink-0 text-subtle-foreground" /></Popover.Trigger>
         <Popover.Portal><Popover.Positioner sideOffset={6} align="start" className="z-[60]"><Popover.Popup aria-label={ariaLabel} className="w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-elevated p-3 text-popover-foreground shadow-float outline-none">
           {simple ? <Input aria-label={label} autoFocus disabled={disabled} type={numeric ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={type === 'integer' ? 1 : 'any'} minLength={field.minLength} maxLength={field.maxLength} value={value === undefined || value === null ? '' : String(value)} onChange={(event) => onChange(node.id, { ...node.config, [key]: fieldValue(field, event.target.value) })} /> : <ConfigEditor useSlot={useSlot} ownerId={`quick:${node.type}`} mode="options" schema={{ type: 'object', properties: { [key]: field } }} value={node.config} readOnly={disabled} diagnostics={[]} onChange={(config) => onChange(node.id, { ...node.config, [key]: config[key] })} />}
         </Popover.Popup></Popover.Positioner></Popover.Portal>
       </Popover.Root>
     }
-    if (value !== undefined && !options.some((option) => option.value === value)) options.unshift({ value, label: `${text(declared.find((item) => item.value === value)?.label ?? String(value), language)} · ${tx('Unavailable', '不可用', '利用不可')}`, disabled: true })
+    if (value !== undefined && !options.some((option) => option.value === value)) options.unshift({ value, label: `${text(declared.find((item) => item.value === value)?.label ?? String(value), language)} · ${tx("workflow.options.unavailable")}`, disabled: true })
     if (!options.length) return null
     const display = options.find((option) => option.value === value)
     return <Select key={`${document.id}:${node.id}:${key}`} value={value === undefined ? '' : JSON.stringify(value)} onValueChange={(next) => {

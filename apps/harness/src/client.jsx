@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { defineStore } from '@deepseek-ai/dsh-client-store'
 import { Button, Tooltip, IconPanelLeftOutlineRegular as PanelLeft, IconPlusOutlineRegular as Plus, IconSparkleRegular as Sparkles, IconClockOutlineRegular as History, IconBranchOutlineRegular as Branch, IconFolderOpenOutlineRegular as Folder, IconCordisPluginOutlineRegular as Plugin, IconSettingsOutlineRegular as Settings } from '@deepseek-ai/dsh-client-ui-primitives'
-import { LanguageMenuButton, LanguageSwitcher } from '@/components/language-switcher'
 import { SetupGate } from '@/components/setup-gate'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ThemeProvider } from './frontend/theme'
@@ -20,6 +19,7 @@ import { ResourcesPage } from './frontend/resource-pages'
 import { ExamplesPage } from './frontend/examples-page'
 import { createFeatures, domainSlots, FeatureProvider, useFeatures } from './frontend/runtime'
 import { LanguageProvider, useText, useI18n } from './frontend/i18n'
+import { applyLocales } from './frontend/locales'
 import { NavigationContext } from './frontend/sdk'
 import { LocalizeEditor } from '../../web/src/plugin/builtin/localize-editor'
 import { TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from '../../web/src/plugin/builtin/workflow-task'
@@ -43,23 +43,24 @@ function IconButton({ label, children, ...props }) { return <Tooltip label={labe
 function SettingsLauncher({ openSettings, registerSettingsLauncher }) {
   const tx=useText()
   useEffect(() => registerSettingsLauncher(openSettings),[openSettings,registerSettingsLauncher])
-  return <IconButton label={tx('Settings','设置','設定')} onClick={openSettings}><Settings /></IconButton>
+  return <IconButton label={tx("client.settings")} onClick={openSettings}><Settings /></IconButton>
 }
 function SidebarView({ collapsed, useStore, navigate, toggleSidebar, renderSlot }) {
   const tx=useText(),{t}=useI18n()
   const path = useStore(state => state.path)
-  const items = [{path:'/', label:tx('Workbench','工作台','ワークベンチ'), icon:Sparkles}, {path:'/tasks',label:tx('Library','任务库','ライブラリ'),icon:History}, {path:'/workflows',label:tx('Workflows','工作流','ワークフロー'),icon:Branch}, {path:'/resources',label:tx('Resources','资源','リソース'),icon:Folder}, {path:'/extensions',label:tx('Extensions','扩展','拡張'),icon:Plugin}]
+  const items = [{path:'/', label:tx("client.workbench"), icon:Sparkles}, {path:'/tasks',label:tx("client.library"),icon:History}, {path:'/workflows',label:tx("client.workflows"),icon:Branch}, {path:'/resources',label:tx("client.resources"),icon:Folder}, {path:'/extensions',label:tx("client.extensions"),icon:Plugin}]
   return <aside className="yd yd-sidebar" data-collapsed={collapsed || undefined}>
     <div className="yd-sidebar-chrome" data-window-drag aria-hidden="true" />
-    <div className="yd-brand-row"><Button className="yd-brand" aria-label="YouDub 首页" onClick={() => navigate('/')}><BrandMark wordmarkSrc={logo} animated wordmark={!collapsed} className={collapsed ? 'h-[22px]' : 'h-7'} /></Button>{!collapsed && <IconButton label={t.nav.collapseSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton>}</div>
+    <div className="yd-brand-row"><Button className="yd-brand" aria-label={tx('client.home')} onClick={() => navigate('/')}><BrandMark wordmarkSrc={logo} animated wordmark={!collapsed} className={collapsed ? 'h-[22px]' : 'h-7'} /></Button>{!collapsed && <IconButton label={t.nav.collapseSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton>}</div>
     {collapsed && <div className="yd-sidebar-expand"><IconButton label={t.nav.expandSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton></div>}
     <YouDubButton size="lg" className={collapsed ? 'size-10 px-0' : 'w-full'} aria-label={t.nav.newTask} onClick={() => navigate('/')}><Plus />{!collapsed && t.nav.newTask}</YouDubButton>
     <nav aria-label={t.nav.primary}>{items.map(({path:target,label,icon:Icon}) => <Button key={target} aria-label={label} aria-current={(target === '/' ? path === '/' : path.startsWith(target)) ? 'page' : undefined} icon={<Icon />} onClick={() => navigate(target)}>{!collapsed && label}</Button>)}{renderSlot('youdub.navigation',{path,navigate,collapsed})}</nav>
-    <div className="yd-sidebar-bottom">{collapsed ? <LanguageMenuButton /> : <LanguageSwitcher className="mr-auto w-max shrink-0" />}<ThemeToggle /><div className="yd-settings-control">{renderSlot('sidebar.settings',{wide:false})}</div></div>
+    <div className="yd-sidebar-bottom"><ThemeToggle /><div className="yd-settings-control">{renderSlot('sidebar.settings',{wide:false})}</div></div>
   </aside>
 }
 function Sidebar(props) { return <LanguageProvider source={props.localeSource}><ThemeProvider source={props.themeSource}><SidebarView {...props} /></ThemeProvider></LanguageProvider> }
-function Leading({ toggleSidebar }) { return <div className="yd"><IconButton label="展开侧边栏" onClick={toggleSidebar}><PanelLeft /></IconButton></div> }
+function Leading({ toggleSidebar, localeSource }) { return <LanguageProvider source={localeSource}><LeadingView toggleSidebar={toggleSidebar} /></LanguageProvider> }
+function LeadingView({ toggleSidebar }) { const {t}=useI18n(); return <div className="yd"><IconButton label={t.nav.expandSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton></div> }
 function Startup({ features, localeSource, themeSource, onReady, renderSlot, translationModels }) {
   const [examples,setExamples]=useState(false)
   const bindings=useMemo(() => ({...features,navigate:() => setExamples(false)}),[features])
@@ -80,16 +81,18 @@ function Main({ useStore, renderSlot, features, localeSource, pageRegistry }) {
     <div className="yd yd-panel"><div className="yd-main-chrome" data-window-drag aria-hidden="true" />
       <main className="yd-main yd-feature-root" ref={scroll} data-youdub-page={route?.key}>
         {error && <div role="alert" className="yd-domain-alert">{error}</div>}
-        <React.Fragment key={path}>{route ? renderSlot('youdub.page',{params,...features},{entryKey:route.key}) : <div className="yd-feature-page"><h1>页面不存在</h1><Button onClick={() => features.navigate('/')}>返回工作台</Button></div>}</React.Fragment>
+        <React.Fragment key={path}>{route ? renderSlot('youdub.page',{params,...features},{entryKey:route.key}) : <div className="yd-feature-page"><MissingPage navigate={features.navigate} /></div>}</React.Fragment>
       </main>
     </div>
   </FeatureProvider></NavigationContext.Provider></LanguageProvider>
 }
+function MissingPage({navigate}) { const tx=useText();return <><h1>{tx('client.pageNotFound')}</h1><Button onClick={() => navigate('/')}>{tx('client.backToWorkbench')}</Button></> }
 function BoundLocalize(props) { return <LocalizeEditor {...props} {...useFeatures()} /> }
 function BoundSynthesize(props) { return <SynthesizeNodeEditor {...props} {...useFeatures()} /> }
 function BoundWorkflowPanel(props) { return <TaskWorkflowPanel {...props} {...useFeatures()} /> }
 export function apply(ctx) {
   applyPlugins(ctx)
+  applyLocales(ctx)
   applyCredentialPreview(ctx)
   const translationModels=applyTranslationSetup(ctx)
   const blockers = new Set()
@@ -103,14 +106,13 @@ export function apply(ctx) {
       if (path.startsWith('/settings')) {
         if (path.startsWith('/settings/resources')) path = '/resources'
         else if (path.startsWith('/settings/extensions')) path = '/extensions'
-        else { if (!settingsLauncher) throw new Error('Harness 设置尚未就绪'); settingsLauncher(); return }
+        else { if (!settingsLauncher) throw new Error(ctx.locale.bind('youdub')('client.settingsNotReady')); settingsLauncher(); return }
       }
       instance.actions.select(path); ctx.layout.selectPanel(path === '/extensions' ? 'plugins' : 'youdub'); ctx.layout.beginNavigation()
     })().catch(error => instance.actions.fail(error.message))
   }
   const features = createFeatures(ctx,navigate,blockNavigation)
-  const localeSource = { getSnapshot:() => ctx.locale.getLocale(), subscribe:listener => ctx.locale.subscribe(listener), setLanguage:value => ctx.locale.setLocale(value) }
-  if (!ctx.locale.getLocale().locales.some(value => value.id === 'ja')) ctx.effect(() => ctx.locale.addLanguage({id:'ja',label:'日本語',fallback:'en'}))
+  const localeSource = { getSnapshot:() => ctx.locale.getLocale(), subscribe:listener => ctx.locale.subscribe(listener), setLanguage:value => ctx.locale.setLocale(value), text:ctx.locale.bind('youdub') }
   const themeSource = {getSnapshot:() => ctx.theme.getTheme(), subscribe:listener => ctx.on('theme/change',listener), setTheme:value => ctx.theme.setTheme(value)}
   const registerSettingsLauncher = launcher => { settingsLauncher=launcher; return () => { if(settingsLauncher===launcher) settingsLauncher=undefined } }
   const pageRegistry = { subscribe:listener => ctx.slots.subscribe('youdub.page',listener), getSnapshot:() => ctx.slots.getVersion('youdub.page'), entries:() => ctx.slots.entriesOfSlot('youdub.page') }

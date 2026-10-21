@@ -26,12 +26,12 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
       <input ref={input} id={inputId} type="file" disabled={disabled} required={slot.required && !file} accept={slot.acceptedMimeTypes.join(',')} className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed" onChange={(event) => { setDragActive(false); const file = event.target.files?.[0]; if (file && slot.maxBytes && file.size > slot.maxBytes) event.target.value = ''; onChange(file) }} />
       {file ? <div className="flex w-full items-center gap-4">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgb(251_114_153/0.25),rgb(0_174_236/0.25))] text-foreground ring-1 ring-border ring-inset"><Icon className="size-5" /></span>
-        <div className="min-w-0 flex-1"><p className="truncate text-[15px] font-medium">{file.name}</p><p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)} · {tx('Click or drop to replace', '点击或拖入以替换', 'クリックまたはドロップで差し替え')}</p></div>
-        <Button type="button" variant="ghost" size="icon-sm" className="relative z-20" disabled={disabled} aria-label={`${tx('Remove', '移除', '削除')} ${file.name}`} onClick={() => { if (input.current) input.current.value = ''; onChange(undefined) }}><X /></Button>
+        <div className="min-w-0 flex-1"><p className="truncate text-[15px] font-medium">{file.name}</p><p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)} · {tx("media.upload.click.or.drop.to.replace")}</p></div>
+        <Button type="button" variant="ghost" size="icon-sm" className="relative z-20" disabled={disabled} aria-label={`${tx("media.upload.remove")} ${file.name}`} onClick={() => { if (input.current) input.current.value = ''; onChange(undefined) }}><X /></Button>
       </div> : <div className="flex flex-col items-center gap-2.5 text-center">
         <span className="flex size-11 items-center justify-center rounded-full bg-card shadow-card ring-1 ring-border"><Upload className="size-5 text-brand-blue" /></span>
-        <p className="text-[15px] font-medium">{video ? tx('Drop a video here, or click to choose', '拖入视频，或点击选择文件', '動画をドロップ、またはクリックして選択') : tx('Drop a file here, or click to choose', '拖入文件，或点击选择', 'ファイルをドロップ、またはクリックして選択')}</p>
-        <p className="text-xs text-subtle-foreground">{text(slot.label, language)}{slot.required || alternative ? '' : ` · ${tx('Optional', '可选', '任意')}`}{slot.maxBytes ? ` · ${tx('Up to', '最大', '上限')} ${formatBytes(slot.maxBytes)}` : ''}</p>
+        <p className="text-[15px] font-medium">{video ? tx("media.upload.drop.a.video.here.or.click.to.choose") : tx("media.upload.drop.a.file.here.or.click.to.choose")}</p>
+        <p className="text-xs text-subtle-foreground">{text(slot.label, language)}{slot.required || alternative ? '' : ` · ${tx("media.upload.optional")}`}{slot.maxBytes ? ` · ${tx("media.upload.up.to")} ${formatBytes(slot.maxBytes)}` : ''}</p>
       </div>}
     </div>
   </div>

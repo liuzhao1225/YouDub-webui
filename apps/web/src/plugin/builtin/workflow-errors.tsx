@@ -13,14 +13,14 @@ export function WorkflowDiagnostics({ diagnostics, document, types, onSelect, di
   const { language } = useI18n(), tx = useText()
   return diagnostics.map((item, index) => {
     const node = document.nodes.find((node) => node.id === item.nodeId)
-    const label = node && (node.label || text(nodeDefinition(node, types)?.label, language) || tx('Node', '节点', 'ノード'))
+    const label = node && (node.label || text(nodeDefinition(node, types)?.label, language) || tx("workflow.errors.node"))
     const connectionMissing = item.message === 'Provider connection is not configured.'
-    const message = connectionMissing ? tx('Configure the service address and API key in Settings.', '请在设置中填写服务地址和 API Key。', '設定でサービスのアドレスと API キーを入力してください。')
-      : item.message === 'Select a model and device.' ? tx('Select a model and device for this node.', '请为此节点选择模型和运行设备。', 'このノードのモデルと実行デバイスを選択してください。')
-      : item.message === 'Selected model or device is unavailable.' ? tx('The selected model or device is unavailable. Choose another option.', '所选模型或运行设备不可用，请重新选择。', '選択したモデルまたはデバイスは利用できません。選択し直してください。') : item.message
+    const message = connectionMissing ? tx("workflow.errors.configure.the.service.address.and.api.key.in.settings")
+      : item.message === 'Select a model and device.' ? tx("workflow.errors.select.a.model.and.device.for.this.node")
+      : item.message === 'Selected model or device is unavailable.' ? tx("workflow.errors.the.selected.model.or.device.is.unavailable.choose.another.option") : item.message
     return <InlineAlert key={index}><div className="space-y-1.5"><p>{label ? `${label}: ` : ''}{message}</p>
-      {connectionMissing && !disabled ? <Link href="/settings/models" className="inline-block text-xs underline underline-offset-4">{tx('Configure connection', '配置服务连接', 'サービス接続を設定')}</Link> : node && onSelect ? <Button variant="ghost" type="button" disabled={disabled} className="block h-auto p-0 text-xs underline underline-offset-4 disabled:opacity-50" onClick={() => onSelect(item)}>{tx('Open node settings', '打开节点设置', 'ノード設定を開く')}</Button> : null}
-      {message !== item.message && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">{tx('Diagnostics', '诊断详情', '診断の詳細')}</summary><p className="mt-1 break-words">{item.message}</p></details>}
+      {connectionMissing && !disabled ? <Link href="/settings/models" className="inline-block text-xs underline underline-offset-4">{tx("workflow.errors.configure.connection")}</Link> : node && onSelect ? <Button variant="ghost" type="button" disabled={disabled} className="block h-auto p-0 text-xs underline underline-offset-4 disabled:opacity-50" onClick={() => onSelect(item)}>{tx("workflow.errors.open.node.settings")}</Button> : null}
+      {message !== item.message && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">{tx("workflow.errors.diagnostics")}</summary><p className="mt-1 break-words">{item.message}</p></details>}
     </div></InlineAlert>
   })
 }
