@@ -1,7 +1,8 @@
+import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Check, Loader2, Plug, RefreshCw, Settings2 } from 'lucide-react'
-import { text, useClient, useSlot, type Catalog, type JsonObject, type SettingsSectionProps } from '../sdk'
+import { text, type Catalog, type JsonObject, type SettingsSectionProps } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -9,16 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { InlineAlert } from '@/components/inline-alert'
-import { useQuery } from './use-query'
 import type { TaskConfig } from './localize-contracts'
 import { UpdateSettings } from '@/components/app-updates'
 type Connection = { adapter: string; base_url: string; has_api_key: boolean; api_key_hint?: string | null }
 type SettingsData = JsonObject & { connections?: Connection[]; defaults?: TaskConfig | null; ui_language?: string; plugins?: Record<string, JsonObject> }
 type Extension = { id: string; version: string; source: string; installed: boolean; enabled: boolean; active: boolean; restartRequired: boolean }
 function Section({ title, children }: { title: string; children: ReactNode }) { return <section className="rounded-2xl border border-border bg-card shadow-card"><h2 className="border-b border-border px-6 py-4 font-semibold">{title}</h2><div className="space-y-5 p-6">{children}</div></section> }
-function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: string; connection?: Connection; defaults?: TaskConfig; refresh(): void }) {
+function ConnectionForm({ adapter, connection, defaults, refresh, request }: { adapter: string; connection?: Connection; defaults?: TaskConfig; refresh(): void } & Bindings<'request'>) {
   const tx = useText()
-  const { apiClient } = useClient()
   const translation = adapter === 'openai'
   const [url, setUrl] = useState(connection?.base_url ?? ''), [key, setKey] = useState(''), [clear, setClear] = useState(false)
   const [model, setModel] = useState(defaults?.translation?.model ?? '')
@@ -29,7 +28,7 @@ function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: s
     if (busy) return
     setBusy(true); setError(''); setTested(false)
     try {
-      await apiClient.request('/api/v2/settings/test-connection', { method: 'POST', body: JSON.stringify({ base_url: url.trim(), model: model.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) }) })
+      await request('/api/v2/settings/test-connection', { method: 'POST', body: JSON.stringify({ base_url: url.trim(), model: model.trim(), ...(key.trim() ? { api_key: key.trim() } : {}) }) })
       setTested(true)
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
@@ -43,14 +42,14 @@ function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: s
     let connectionSaved = false
     try {
       // Read the current defaults so another settings form's saved changes survive.
-      const current = translation && !clear ? await apiClient.request<SettingsData>('/api/v2/settings') : null
+      const current = translation && !clear ? await request<SettingsData>('/api/v2/settings') : null
       const nextDefaults = current?.defaults ?? defaults
       if (translation && !clear && !nextDefaults) throw new Error(tx('Processing defaults are unavailable. Reload settings.', '无法读取默认处理配置，请重新打开设置。', '処理の初期設定を取得できません。設定を開き直してください。'))
-      await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ connection: { adapter, base_url: url.trim(), ...(clear ? { api_key: null } : key.trim() ? { api_key: key.trim() } : {}) } }) })
+      await request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ connection: { adapter, base_url: url.trim(), ...(clear ? { api_key: null } : key.trim() ? { api_key: key.trim() } : {}) } }) })
       connectionSaved = true
       setKey('')
       if (translation && !clear) {
-        await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: { ...nextDefaults, translation: { adapter, model: model.trim(), device: 'remote' } } }) })
+        await request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: { ...nextDefaults, translation: { adapter, model: model.trim(), device: 'remote' } } }) })
         setModel(model.trim())
       }
       setClear(false); setSaved(true)
@@ -74,33 +73,30 @@ function ConnectionForm({ adapter, connection, defaults, refresh }: { adapter: s
     </div>
   </form>
 }
-function Extensions() {
+function Extensions({ request, useQuery }: Bindings<'request' | 'useQuery'>) {
   const tx = useText()
-  const { apiClient } = useClient()
   const { data, error, refresh } = useQuery<{ items: Extension[] }>('/api/v2/extensions')
   const [source, setSource] = useState(''), [ref, setRef] = useState(''), [busy, setBusy] = useState(false), [failure, setFailure] = useState(''), [notice, setNotice] = useState('')
   async function mutate(path: string, method: string, body?: JsonObject) {
     setBusy(true); setFailure(''); setNotice('')
-    try { await apiClient.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }); setNotice(tx('Saved. Restart the service to apply.', '已保存，重启服务后生效。', '保存しました。サービスの再起動後に反映されます。')); refresh() }
+    try { await request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) }); setNotice(tx('Saved. Restart the service to apply.', '已保存，重启服务后生效。', '保存しました。サービスの再起動後に反映されます。')); refresh() }
     catch (err) { setFailure(err instanceof Error ? err.message : String(err)) }
     finally { setBusy(false) }
   }
   return <Section title={tx("Extensions", "扩展", "拡張機能")}><form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void mutate('/api/v2/extensions/install', 'POST', { source, ...(ref ? { ref } : {}) }) }}><div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]"><div className="space-y-2"><Label htmlFor="extension-source">{tx("GitHub repository or local plugin path", "GitHub 仓库或本地插件路径", "GitHub リポジトリまたはローカルパス")}</Label><Input id="extension-source" value={source} onChange={(event) => setSource(event.target.value)} placeholder="https://github.com/owner/youdub-plugin" required /></div><div className="space-y-2"><Label htmlFor="extension-ref">{tx("Version / commit", "版本 / commit", "バージョン / commit")}</Label><Input id="extension-ref" value={ref} onChange={(event) => setRef(event.target.value)} /></div></div><p className="text-xs text-muted-foreground">{tx("Installation runs repository code and dependency scripts with this machine’s permissions.", "安装会运行仓库代码和依赖安装脚本，并使用本机权限。", "インストールはこの端末の権限でリポジトリのコードと依存スクリプトを実行します。")}</p><Button type="submit" disabled={busy || !source}>{busy ? <Loader2 className="animate-spin" /> : <Plug />}{tx("Install extension", "安装扩展", "拡張機能をインストール")}</Button></form>{error && <InlineAlert>{error}</InlineAlert>}{failure && <InlineAlert>{failure}</InlineAlert>}{notice && <p role="status" className="text-sm text-status-success-fg">{notice}</p>}<div className="divide-y divide-border">{data?.items.map((item) => <div key={item.id} className="space-y-3 py-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-medium">{item.id} <span className="text-xs text-muted-foreground">{item.version}</span></p><p className="mt-1 break-all text-xs text-muted-foreground">{item.source}</p><p className="mt-2 text-xs">{item.active ? tx('Running', '运行中', '実行中') : item.enabled ? tx('Pending start', '待启动', '起動待ち') : tx('Disabled', '已停用', '無効')}{item.restartRequired ? tx(' · restart required', ' · 重启后生效', ' · 再起動が必要') : ''}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" disabled={busy} onClick={() => void mutate(`/api/v2/extensions/${encodeURIComponent(item.id)}`, 'PATCH', { enabled: !item.enabled })}>{item.enabled ? tx('Disable', '停用', '無効化') : tx('Enable', '启用', '有効化')}</Button>{!item.enabled && !item.active && <Button variant="ghost" size="sm" disabled={busy} onClick={() => void mutate(`/api/v2/extensions/${encodeURIComponent(item.id)}`, 'DELETE')}>{tx("Uninstall", "卸载", "アンインストール")}</Button>}</div></div></div>)}</div></Section>
 }
-function ExtensionSection({ id, component: Component, settings, refresh }: { id: string; component: React.ComponentType<SettingsSectionProps>; settings: SettingsData; refresh(): void }) {
-  const { apiClient } = useClient()
-  return <Component settings={settings.plugins?.[id] ?? {}} save={async (patch) => { await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ plugin: { id, config: patch } }) }); refresh() }} />
+function ExtensionSection({ id, component: Component, settings, refresh, request }: { id: string; component: React.ComponentType<SettingsSectionProps>; settings: SettingsData; refresh(): void } & Bindings<'request'>) {
+  return <Component settings={settings.plugins?.[id] ?? {}} save={async (patch) => { await request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ plugin: { id, config: patch } }) }); refresh() }} />
 }
-function Settings() {
+function Settings({ request, useQuery, useSlot, useUpdates }: Bindings<'request' | 'useQuery' | 'useSlot' | 'useUpdates'>) {
   const tx = useText()
-  const { apiClient } = useClient()
   const [refreshing, setRefreshing] = useState(false), [runtimeError, setRuntimeError] = useState('')
   const { data: catalog, error: catalogError, refresh: refreshCatalog } = useQuery<Catalog>('/api/v2/catalog')
   const { data: settings, error, refresh } = useQuery<SettingsData>('/api/v2/settings')
   async function refreshRuntime() {
     if (refreshing) return
     setRefreshing(true); setRuntimeError('')
-    try { await apiClient.request('/api/v2/runtime'); refreshCatalog() }
+    try { await request('/api/v2/runtime'); refreshCatalog() }
     catch (failure) { setRuntimeError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setRefreshing(false) }
   }
@@ -108,11 +104,11 @@ function Settings() {
   const sections = useSlot('settings.sections')
   const { language } = useI18n()
   const adapters = new Set([...(settings?.connections?.map((item) => item.adapter) ?? []), ...(catalog?.providers.filter((item) => item.execution === 'remote' || item.models?.some((model) => typeof model === 'object' && model.devices?.includes('remote'))).map((item) => item.adapter ?? item.id) ?? [])])
-  return <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 sm:px-8"><h1 className="text-2xl font-semibold">{tx("Settings", "设置", "設定")}</h1>{error && <InlineAlert>{error}</InlineAlert>}<Section title={tx("Appearance", "界面", "表示")}><div className="flex items-center justify-between"><span className="text-sm">{tx("Language", "语言", "言語")}</span><LanguageSwitcher /></div><div className="flex items-center justify-between"><span className="text-sm">{tx("Theme", "主题", "テーマ")}</span><ThemeToggle /></div></Section>{settings && sections.map(({ id, component }) => <ExtensionSection key={id} id={id} component={component} settings={settings} refresh={refresh} />)}<Section title={tx("Runtime", "运行环境", "実行環境")}><div className="flex justify-end"><Button variant="ghost" size="sm" disabled={refreshing} onClick={() => void refreshRuntime()}><RefreshCw className={refreshing ? "animate-spin" : undefined} />{tx("Refresh", "刷新", "更新")}</Button></div>{runtimeError && <InlineAlert>{runtimeError}</InlineAlert>}{catalogError && <InlineAlert>{catalogError}</InlineAlert>}<div className="divide-y divide-border">{catalog?.providers.map((provider) => <div key={provider.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><h3 className="text-sm font-medium">{text(provider.label, language) || provider.id}</h3><p className="mt-1 text-xs text-muted-foreground">{provider.operations.map((operation) => operation.id).join(' · ')}</p><p className="mt-1 font-mono text-xs text-subtle-foreground">{provider.models?.map((model) => typeof model === 'string' ? model : model.id).join(' · ')}</p></div><p className={`text-xs ${provider.available === false ? 'text-status-warning-fg' : 'text-status-success-fg'}`}>{provider.available === false ? provider.unavailableReason ?? provider.reason ?? tx('Unavailable', '未就绪', '利用不可') : tx('Ready', '已就绪', '利用可能')}</p></div>)}</div></Section>{settings && catalog && adapters.size > 0 && <Section title={tx("Connections", "服务连接", "サービス接続")}>{[...adapters].map((adapter) => <ConnectionForm key={adapter} adapter={adapter} defaults={defaults} connection={settings?.connections?.find((item) => item.adapter === adapter)} refresh={() => { refresh(); refreshCatalog() }} />)}</Section>}<UpdateSettings /><Extensions /></main>
+  return <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 sm:px-8"><h1 className="text-2xl font-semibold">{tx("Settings", "设置", "設定")}</h1>{error && <InlineAlert>{error}</InlineAlert>}<Section title={tx("Appearance", "界面", "表示")}><div className="flex items-center justify-between"><span className="text-sm">{tx("Language", "语言", "言語")}</span><LanguageSwitcher /></div><div className="flex items-center justify-between"><span className="text-sm">{tx("Theme", "主题", "テーマ")}</span><ThemeToggle /></div></Section>{settings && sections.map(({ id, component }) => <ExtensionSection request={request} key={id} id={id} component={component} settings={settings} refresh={refresh} />)}<Section title={tx("Runtime", "运行环境", "実行環境")}><div className="flex justify-end"><Button variant="ghost" size="sm" disabled={refreshing} onClick={() => void refreshRuntime()}><RefreshCw className={refreshing ? "animate-spin" : undefined} />{tx("Refresh", "刷新", "更新")}</Button></div>{runtimeError && <InlineAlert>{runtimeError}</InlineAlert>}{catalogError && <InlineAlert>{catalogError}</InlineAlert>}<div className="divide-y divide-border">{catalog?.providers.map((provider) => <div key={provider.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><h3 className="text-sm font-medium">{text(provider.label, language) || provider.id}</h3><p className="mt-1 text-xs text-muted-foreground">{provider.operations.map((operation) => operation.id).join(' · ')}</p><p className="mt-1 font-mono text-xs text-subtle-foreground">{provider.models?.map((model) => typeof model === 'string' ? model : model.id).join(' · ')}</p></div><p className={`text-xs ${provider.available === false ? 'text-status-warning-fg' : 'text-status-success-fg'}`}>{provider.available === false ? provider.unavailableReason ?? provider.reason ?? tx('Unavailable', '未就绪', '利用不可') : tx('Ready', '已就绪', '利用可能')}</p></div>)}</div></Section>{settings && catalog && adapters.size > 0 && <Section title={tx("Connections", "服务连接", "サービス接続")}>{[...adapters].map((adapter) => <ConnectionForm request={request} key={adapter} adapter={adapter} defaults={defaults} connection={settings?.connections?.find((item) => item.adapter === adapter)} refresh={() => { refresh(); refreshCatalog() }} />)}</Section>}<UpdateSettings useUpdates={useUpdates} /><Extensions request={request} useQuery={useQuery} /></main>
 }
 export const name = 'client-settings'
 export const inject = ['slots', 'apiClient']
 export function apply(ctx: Context) {
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'settings', path: '/settings', component: Settings, access: 'authenticated' }))
+  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'settings', path: '/settings', component: bindComponent(ctx, ['request', 'useQuery', 'useSlot', 'useUpdates'], Settings), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'settings', routeId: 'settings', label: { default: 'Settings', translations: { zh: '设置', ja: '設定' } }, order: 30, icon: Settings2 }))
 }

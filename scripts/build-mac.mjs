@@ -26,7 +26,7 @@ const actual = createHash('sha256').update(await readFile(join(cache, archive)))
 if (!expected || expected !== actual) throw new Error('Bundled Node archive SHA-256 mismatch.')
 run('tar', ['-xzf', join(cache, archive), '-C', cache])
 if (!process.argv.includes('--reuse-web')) {
-  runNpm(['--prefix', 'apps/web', 'run', 'build', '--', '--webpack'], { env: { ...process.env, YOUDUB_DESKTOP_BUILD: '1' } })
+  runNpm(['--prefix', 'apps/web', 'run', 'build'])
 }
 const app = join(root, 'dist/YouDub.app')
 await rm(app, { recursive: true, force: true })

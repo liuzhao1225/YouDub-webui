@@ -58,16 +58,25 @@ try {
     })
     exited.then(result => { clearTimeout(timer); reject(new Error(`Desktop exited during startup: ${JSON.stringify(result)}\n${diagnostics}`)) }, reject)
   })
-  for (const path of ['/', '/favicon.ico', '/icon.svg', '/tasks', '/settings', '/api/setup', '/examples/index.html', '/examples/player.js', '/examples/demos.js',
+  for (const path of ['/', '/favicon.ico', '/icon.svg', '/tasks', '/settings', '/workflows/youdub.subtitles', '/api/setup', '/examples/index.html', '/examples/player.js', '/examples/demos.js',
     ...Object.keys(demos).flatMap(id => [`/examples/assets/${id}-en.mp4`, `/examples/assets/${id}-zh.mp4`, `/examples/assets/${id}-poster.jpg`])]) {
-    const response = await fetch(base + path, { signal: AbortSignal.timeout(10000) })
+    const response = await fetch(base + path, { headers: { Accept: 'text/html' }, signal: AbortSignal.timeout(10000) })
     if (!response.ok) throw new Error(`Desktop ${path}: HTTP ${response.status}`)
     await response.arrayBuffer()
+  }
+  const html = await (await fetch(base + '/workflows/youdub.subtitles', { headers: { Accept: 'text/html' } })).text()
+  if (!/<div\s+id="root"/.test(html)) throw new Error('Packaged workflow URL did not serve the client shell.')
+  const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^"?#]+)"/g)].map(match => match[1])
+  if (!assets.some(asset => asset.endsWith('.js'))) throw new Error('Packaged client shell has no JavaScript entry.')
+  for (const asset of new Set(assets)) {
+    const response = await fetch(base + asset, { signal: AbortSignal.timeout(10000) })
+    if (!response.ok || !/(?:javascript|css)/.test(response.headers.get('content-type') || '')) throw new Error(`Packaged client asset failed: ${asset} (${response.status}).`)
+    if (!(await response.arrayBuffer()).byteLength) throw new Error(`Packaged client asset is empty: ${asset}`)
   }
   const setup = await (await fetch(base + '/api/setup')).json()
   if (setup.version !== appVersion || setup.platform !== 'darwin' || !setup.osVersion) throw new Error('Packaged setup diagnostics metadata is missing or incorrect.')
   verify()
-  console.log('Desktop routes and icons respond; signed application remains unchanged.')
+  console.log('Desktop client routes, JavaScript, styles and icons respond; signed application remains unchanged.')
 } finally {
   server.stdin.end()
   const timer = setTimeout(() => { console.error('Desktop shutdown timed out; terminating smoke process.'); server.kill('SIGKILL') }, 30000)

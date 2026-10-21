@@ -1,5 +1,6 @@
+import type { Bindings } from '../sdk'
 import { useId } from 'react'
-import { text, useSlot, type EditorProps, type JsonObject, type JsonSchema } from '../sdk'
+import { text, type EditorProps, type JsonObject, type JsonSchema } from '../sdk'
 import { useI18n } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -35,7 +36,7 @@ function Fields({ schema, value, onChange, readOnly, prefix = '' }: EditorProps 
     return <div key={key} className="space-y-2"><Label htmlFor={fieldId}>{label}{schema.required?.includes(key) ? ' *' : ''}</Label>{field.enum ? <select id={fieldId} disabled={readOnly} value={value[key] === undefined ? '' : String(value[key])} onChange={(event) => onChange({ ...value, [key]: field.enum!.find((entry) => String(entry) === event.target.value) })} className="h-10 w-full rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">—</option>{field.enum.map((entry) => <option key={String(entry)} value={String(entry)}>{String(entry)}</option>)}</select> : field.type === 'boolean' ? <div><input id={fieldId} type="checkbox" disabled={readOnly} checked={Boolean(value[key])} onChange={(event) => onChange({ ...value, [key]: event.target.checked })} className="size-4 accent-primary" /></div> : <Input id={fieldId} disabled={readOnly} type={field.type === 'number' || field.type === 'integer' ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={field.type === 'integer' ? 1 : 'any'} required={schema.required?.includes(key)} minLength={field.minLength} maxLength={field.maxLength} value={value[key] === undefined || value[key] === null ? '' : String(value[key])} onChange={(event) => onChange({ ...value, [key]: field.type === 'number' || field.type === 'integer' ? (event.target.value === '' ? undefined : Number(event.target.value)) : event.target.value })} />}{field.description && <p className="text-xs leading-relaxed text-muted-foreground">{text(field.description, language)}</p>}</div>
   })}</div>
 }
-export function ConfigEditor({ ownerId, ...props }: EditorProps & { ownerId: string }) {
+export function ConfigEditor({ ownerId, useSlot, ...props }: EditorProps & { ownerId: string } & Bindings<'useSlot'>) {
   const editors = useSlot('config.editors')
   const Custom = editors.find((entry) => entry.id === ownerId)?.component
   if (Custom) return <Custom {...props} />
@@ -43,6 +44,6 @@ export function ConfigEditor({ ownerId, ...props }: EditorProps & { ownerId: str
   if (unsupported.length) return <p role="alert" className="text-sm text-status-danger-fg">配置需要插件编辑器：{unsupported.join(', ')}</p>
   return <Fields {...props} />
 }
-export function useEditorSupported(ownerId: string, schema: JsonSchema) {
+export function useEditorSupported(useSlot: Bindings<'useSlot'>['useSlot'], ownerId: string, schema: JsonSchema) {
   return useSlot('config.editors').some((entry) => entry.id === ownerId) || schemaProblems(schema).length === 0
 }

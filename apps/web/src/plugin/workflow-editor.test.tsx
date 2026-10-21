@@ -6,7 +6,9 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, useClient, type NodeTypeDefinition, type RouteEntry, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord } from './sdk'
-import { apply, GraphStudio } from './builtin/workflows'
+import { apply, GraphStudio as GraphStudioView } from './builtin/workflows'
+import { bindTestComponent } from './test-bindings'
+const GraphStudio = bindTestComponent(GraphStudioView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
 import { workflowDrafts } from './builtin/workflow-utils'
 
 vi.mock('./builtin/workflow-canvas', () => ({

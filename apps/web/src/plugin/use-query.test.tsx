@@ -1,9 +1,8 @@
 import { Context, type Fiber } from 'cordis'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { PluginContextProvider, requireActive } from './sdk'
+import { PluginContextProvider, requireActive, bindComponent, type Bindings } from './sdk'
 import * as apiPlugin from './builtin/api'
-import { useQuery } from './builtin/use-query'
 
 const fibers: Fiber[] = []
 afterEach(async () => {
@@ -28,12 +27,13 @@ it('keeps a slower runtime request alive when the catalog resolves through Cordi
   fibers.push(consumer)
   await requireActive(consumer, 'viewer')
   expect(viewer.apiClient).not.toBe(viewer.apiClient)
-  function EditorQueries() {
+  function EditorQueries({ useQuery }: Bindings<'useQuery'>) {
     const runtime = useQuery<{ ready: boolean }>('/api/v2/runtime')
     const catalog = useQuery<{ ready: boolean }>('/api/v2/catalog')
     return <><p data-testid="runtime">{runtime.data?.ready ? 'ready' : runtime.error || 'loading'}</p><p data-testid="catalog">{catalog.data?.ready ? 'ready' : catalog.error || 'loading'}</p></>
   }
-  render(<PluginContextProvider context={viewer}><EditorQueries /></PluginContextProvider>)
+  const BoundEditor = bindComponent(viewer, ['useQuery'], EditorQueries)
+  render(<PluginContextProvider context={viewer}><BoundEditor /></PluginContextProvider>)
   await waitFor(() => expect(requests).toHaveLength(2))
   const runtime = requests.find((request) => request.path === '/api/v2/runtime')!
   const catalog = requests.find((request) => request.path === '/api/v2/catalog')!
@@ -52,13 +52,14 @@ it('does not show a previous query result or error after the query path changes'
     throw new Error('Second filter failed')
   })
   const context = { apiClient: { request } } as unknown as Context
-  function Viewer({ path }: { path: string }) {
+  function Viewer({ path, useQuery }: { path: string } & Bindings<'useQuery'>) {
     const { data, error } = useQuery<{ name: string }>(path)
     return <p>{data?.name || error || 'loading'}</p>
   }
-  const view = render(<PluginContextProvider context={context}><Viewer path="/first" /></PluginContextProvider>)
+  const BoundViewer = bindComponent(context, ['useQuery'], Viewer)
+  const view = render(<PluginContextProvider context={context}><BoundViewer path="/first" /></PluginContextProvider>)
   await screen.findByText('first task')
-  view.rerender(<PluginContextProvider context={context}><Viewer path="/second" /></PluginContextProvider>)
+  view.rerender(<PluginContextProvider context={context}><BoundViewer path="/second" /></PluginContextProvider>)
   expect(screen.queryByText('first task')).not.toBeInTheDocument()
   await screen.findByText('Second filter failed')
 })

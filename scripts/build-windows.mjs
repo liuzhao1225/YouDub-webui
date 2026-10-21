@@ -55,7 +55,7 @@ await removeGenerated(sdk)
 await mkdir(sdk, { recursive: true })
 extractZip(webview, sdk)
 if (!process.argv.includes('--reuse-web')) {
-  runNpm(['--prefix', 'apps/web', 'run', 'build', '--', '--webpack'], { env: { ...process.env, YOUDUB_DESKTOP_BUILD: '1', NEXT_TELEMETRY_DISABLED: '1' } })
+  runNpm(['--prefix', 'apps/web', 'run', 'build'])
 }
 await removeGenerated(app)
 await assembleRuntime(root, runtime)

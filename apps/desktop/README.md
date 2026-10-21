@@ -2,7 +2,7 @@
 
 ## macOS
 
-原生 AppKit 窗口内嵌 WKWebView，启动应用时自动启动内置 Node、Cordis Host 和 Next.js。无需单独安装 Node、运行终端或打开浏览器。目标为 Apple Silicon，最低 macOS 14。
+原生 AppKit 窗口内嵌 WKWebView，启动应用时自动启动内置 Node 和 Cordis Host，加载 React 客户端。无需单独安装 Node、运行终端或打开浏览器。目标为 Apple Silicon，最低 macOS 14。
 
 Python、模型与业务数据写入 `~/Library/Application Support/YouDub`；Python 虚拟环境位于该目录的 `runtime/venv`。首次启动准备基础环境，进入工作台后按工作流准备所需依赖与模型。应用包中不包含用户 `.env`、翻译密钥和苹果签名凭据。用户配置可放在数据目录下的 `.env`，已有 `YOUDUB_PYTHON` 等显式设置继续生效。
 
@@ -24,7 +24,7 @@ node --import tsx --test packages/builtin/test/setup.test.ts
 npm run build:desktop
 ```
 
-产物为 `dist/YouDub.app`。Node.js 22.23.2 官方发行包会下载到 `.cache/mac`，按官方 SHA-256 清单校验。桌面前端使用独立的 `.next-desktop` 构建目录。`--reuse-web` 仅用于前端源码和构建配置均未变化时复用已验证的构建。
+产物为 `dist/YouDub.app`。Node.js 22.23.2 官方发行包会下载到 `.cache/mac`，按官方 SHA-256 清单校验。前端由 Vite 构建到 `apps/web/dist`，桌面启动同一个 Cordis Host 提供页面、静态资源和 API。`--reuse-web` 仅用于前端源码和构建配置均未变化时复用已验证的构建。
 
 macOS 图标源文件为 `apps/desktop/icon.svg`，采用浅粉至淡蓝的圆角渐变底板。标志宽度占画布 78%，外接框中心下移画布高度的 3.125%；构建时生成所有 ICNS 尺寸。
 
@@ -44,7 +44,7 @@ YOUDUB_APPLE_CREDENTIALS_DIR=/absolute/private/signing-directory node scripts/si
 
 ## Windows x64
 
-Windows 10 22H2 / Windows 11 使用原生 WinForms 窗口和 WebView2 Evergreen Runtime。启动 `YouDub.exe` 后自动运行内置 Node、Cordis Host 和 Next.js，不需要预装 Node。运行时缺少 WebView2 时会提供[微软安装入口](https://developer.microsoft.com/microsoft-edge/webview2/)；其分发方式遵循[官方说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)。启动器使用系统的 .NET Framework 4.8。
+Windows 10 22H2 / Windows 11 使用原生 WinForms 窗口和 WebView2 Evergreen Runtime。启动 `YouDub.exe` 后自动运行内置 Node 和 Cordis Host，加载 React 客户端，不需要预装 Node。运行时缺少 WebView2 时会提供[微软安装入口](https://developer.microsoft.com/microsoft-edge/webview2/)；其分发方式遵循[官方说明](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)。启动器使用系统的 .NET Framework 4.8。
 
 数据、Python、模型和 WebView2 缓存位于 `%LOCALAPPDATA%\YouDub`，支持用 `YOUDUB_DESKTOP_DATA_DIR` 覆盖。日志位于该数据目录的 `logs\desktop.log`，可通过窗口菜单打开。F5 / Ctrl+R 刷新。关闭窗口会先停止 Host；Windows Job Object 保证启动器崩溃时 Node 及其后代进程也退出。同一个数据目录仅允许一个桌面实例运行。
 

@@ -1,7 +1,8 @@
+import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ArrowRight, ChevronRight, FileText, Film, Link2, Loader2, Sparkles, Upload, X } from 'lucide-react'
-import { Link, text, useClient, type Catalog, type InputSlot, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
+import { Link, text, type Catalog, type InputSlot, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { videoSource } from '@youdub/sdk/video-source'
 import { Input } from '@/components/ui/input'
 import { useI18n, useText } from '@/lib/i18n'
@@ -12,7 +13,6 @@ import { TaskCover } from '@/components/task-cover'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { useQuery } from './use-query'
 import { ACTIVE_STATUSES, TaskProgress, TaskState, taskDisplayName } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
 import { GraphStudio } from './workflows'
@@ -47,9 +47,8 @@ function UploadSlot({ slot, file, disabled, alternative = false, onChange }: { s
   </div>
 }
 
-function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; onLockChange(locked: boolean): void }) {
+function Composer({ workflow, onLockChange, request, navigate, useSlot }: { workflow: WorkflowDescription; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot'>) {
   const tx = useText()
-  const { apiClient, navigation } = useClient()
   const { language } = useI18n()
   const [config, setConfig] = useState<JsonObject>(() => structuredClone(workflow.defaults ?? defaultConfig(workflow.configSchema) ?? {}) as JsonObject)
   const [files, setFiles] = useState<Record<string, File>>({}), [error, setError] = useState(''), [busy, setBusy] = useState(false), [pendingId, setPendingId] = useState('')
@@ -60,7 +59,7 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
     try { source = videoSource(sourceUrl) }
     catch (failure) { linkError = failure instanceof Error ? failure.message : String(failure) }
   }
-  const supported = useEditorSupported(workflow.id, workflow.configSchema)
+  const supported = useEditorSupported(useSlot, workflow.id, workflow.configSchema)
   const requiredFiles = workflow.inputs.filter((slot) => slot.required || slot.name === linkSlot).every((slot) => Boolean(files[slot.name]) || (slot.name === linkSlot && Boolean(source)))
   const taskConfig = { ...config, ...(source ? { source_url: source.url } : {}) }
   const translation = config.translation as JsonObject | null | undefined
@@ -74,7 +73,7 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
     body.append('request', JSON.stringify({ id, workflowId: workflow.id, workflowVersion: workflow.version, config: taskConfig, ...(source ? { sourceName: source.url } : {}) }))
     for (const [name, file] of Object.entries(files)) body.append(`input.${name}`, file)
     setBusy(true); setError(''); setPendingId(id); onLockChange(true)
-    try { const task = await apiClient.request<TaskView>('/api/v2/tasks', { method: 'POST', body }); navigation.push(`/tasks/${task.id}`) }
+    try { const task = await request<TaskView>('/api/v2/tasks', { method: 'POST', body }); navigate(`/tasks/${task.id}`) }
     catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
   }
@@ -104,7 +103,7 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
           setError(''); setFiles((current) => { const next = { ...current }; if (file) next[slot.name] = file; else delete next[slot.name]; return next })
         }} />)}</div>
         <div className={cn('flex flex-wrap items-center gap-3 px-2 pt-2.5 pb-1', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
-          <div className="min-w-0 flex-1"><ConfigEditor mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
+          <div className="min-w-0 flex-1"><ConfigEditor useSlot={useSlot} mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
           <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx('Submit with the same ID', '使用同一 ID 提交', '同じ ID で送信') : source ? tx('Download and process', '下载并处理', 'ダウンロードして処理') : tx('Start processing', '开始处理', '処理を開始')}</Button>
         </div>
       </div>
@@ -113,8 +112,8 @@ function Composer({ workflow, onLockChange }: { workflow: WorkflowDescription; o
     {(error || (pendingId && !busy)) && <div className="mt-4 space-y-3">
       {error && <InlineAlert>{error}</InlineAlert>}
       {pendingId && !busy && <div className="space-y-2 text-sm"><p className="break-all text-muted-foreground">{tx('Task ID:', '任务 ID：', 'タスク ID：')}{pendingId}</p><div className="flex flex-wrap gap-2">
-        <Button type="button" variant="outline" onClick={() => { setBusy(true); void apiClient.request<TaskView>(`/api/v2/tasks/${pendingId}`).then((task) => navigation.push(`/tasks/${task.id}`)).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Check task status', '查询创建结果', 'タスクの状態を確認')}</Button>
-        <Button type="button" variant="outline" onClick={() => { setBusy(true); void apiClient.request<void>(`/api/v2/imports/${pendingId}`, { method: 'DELETE' }).then(() => { setPendingId(''); setError(''); onLockChange(false) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Clear this import', '清理本次导入', '今回のインポートを削除')}</Button>
+        <Button type="button" variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${pendingId}`).then((task) => navigate(`/tasks/${task.id}`)).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Check task status', '查询创建结果', 'タスクの状態を確認')}</Button>
+        <Button type="button" variant="outline" onClick={() => { setBusy(true); void request<void>(`/api/v2/imports/${pendingId}`, { method: 'DELETE' }).then(() => { setPendingId(''); setError(''); onLockChange(false) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Clear this import', '清理本次导入', '今回のインポートを削除')}</Button>
       </div></div>}
     </div>}
   </div>
@@ -124,7 +123,7 @@ function TaskSection({ id, title, children }: { id: string; title: string; child
   const tx = useText()
   return <section aria-labelledby={id}><div className="mb-4 flex items-center justify-between gap-4"><h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2><Link href="/tasks" className="inline-flex items-center gap-1 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground">{tx('View all', '查看全部', 'すべて表示')}<ChevronRight className="size-4" /></Link></div>{children}</section>
 }
-function Studio() {
+function Studio({ request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
   const tx = useText()
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
@@ -142,7 +141,6 @@ function Studio() {
       <div className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold">{tx('New task', '新建任务', '新しいタスク')}</h1>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML requires a full document navigation. */}
           <a href="/examples/index.html" className="text-sm text-muted-foreground hover:text-foreground">{tx('View built-in examples', '查看内置示例', '内蔵サンプルを見る')}</a>
         </header>
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
@@ -151,7 +149,7 @@ function Studio() {
           {catalog && !workflow && <InlineAlert>{tx('No workflows are available.', '当前没有可用流程。', '利用可能なワークフローがありません。')}</InlineAlert>}
           {workflow && <>
             {catalog!.workflows.length > 1 && workflow.id !== 'youdub.graph' && <div className="mb-4 flex items-center gap-3"><Label htmlFor="workflow">{tx('Workflow', '处理流程', 'ワークフロー')}</Label><select id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-9 min-w-0 rounded-full border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{item.id === 'youdub.graph' ? tx('Workflow templates', '工作流模板', 'ワークフローテンプレート') : text(item.label, language)}</option>)}</select></div>}
-            {workflow.id === 'youdub.graph' ? <><GraphStudio onLockChange={setLocked} />{catalog!.workflows.length > 1 && <details className="mt-4 text-sm text-muted-foreground"><summary className="cursor-pointer">{tx('Other task types', '其他处理方式', 'その他の処理')}</summary><div className="mt-3 flex flex-wrap gap-2">{catalog!.workflows.filter((item) => item.id !== 'youdub.graph').map((item) => <Button key={item.id} size="sm" variant="outline" disabled={locked} onClick={() => setSelected(item.id)}>{text(item.label, language)}</Button>)}</div></details>}</> : <Composer key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />}
+            {workflow.id === 'youdub.graph' ? <><GraphStudio useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} useWorkflowDocuments={useWorkflowDocuments} onLockChange={setLocked} />{catalog!.workflows.length > 1 && <details className="mt-4 text-sm text-muted-foreground"><summary className="cursor-pointer">{tx('Other task types', '其他处理方式', 'その他の処理')}</summary><div className="mt-3 flex flex-wrap gap-2">{catalog!.workflows.filter((item) => item.id !== 'youdub.graph').map((item) => <Button key={item.id} size="sm" variant="outline" disabled={locked} onClick={() => setSelected(item.id)}>{text(item.label, language)}</Button>)}</div></details>}</> : <Composer request={request} navigate={navigate} useSlot={useSlot} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} />}
           </>}
         </div>
         {!!active.length && <div className="mt-5 flex flex-wrap gap-3">
@@ -174,6 +172,6 @@ function Studio() {
 export const name = 'client-studio'
 export const inject = ['slots', 'apiClient', 'navigation']
 export function apply(ctx: Context) {
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'studio', path: '/', component: Studio, access: 'authenticated' }))
+  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'studio', path: '/', component: bindComponent(ctx, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'], Studio), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'studio', routeId: 'studio', label: { default: 'Studio', translations: { zh: '工作台', ja: 'スタジオ' } }, order: 10, icon: Sparkles }))
 }

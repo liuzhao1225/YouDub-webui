@@ -5,9 +5,13 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, requireActive, type NodeTypeDefinition, type WorkflowDocument } from './sdk'
-import { WorkflowRun } from './builtin/workflow-run'
-import { WorkflowRerun } from './builtin/workflow-rerun'
-import { useWorkflowResources, WorkflowResources, type ResourceState } from './builtin/workflow-resources'
+import { WorkflowRun as WorkflowRunView } from './builtin/workflow-run'
+import { WorkflowRerun as WorkflowRerunView } from './builtin/workflow-rerun'
+import { WorkflowResources, type ResourceState } from './builtin/workflow-resources'
+import { bindTestComponent } from './test-bindings'
+import type { Bindings } from './sdk'
+const WorkflowRun = bindTestComponent(WorkflowRunView, ['request', 'navigate', 'useSlot', 'useWorkflowResources'])
+const WorkflowRerun = bindTestComponent(WorkflowRerunView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowResources'])
 import { HttpError } from './builtin/api'
 import { WorkflowDiagnostics } from './builtin/workflow-errors'
 import * as apiPlugin from './builtin/api'
@@ -42,10 +46,11 @@ function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
 }
-function Resources({ document = graph() }: { document?: WorkflowDocument }) {
+function ResourceView({ document = graph(), useWorkflowResources }: { document?: WorkflowDocument } & Bindings<'useWorkflowResources'>) {
   const resources = useWorkflowResources(document)
   return <><WorkflowResources resources={resources} types={types} /><button disabled={!resources.ready}>继续</button></>
 }
+const Resources = bindTestComponent(ResourceView, ['useWorkflowResources'])
 it('checks automatically and leaves only the ready state when no download is needed', async () => {
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<ResourceState>>(async () => ready)
   mount(<Resources />, request)

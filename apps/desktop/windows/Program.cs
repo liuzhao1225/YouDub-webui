@@ -150,7 +150,6 @@ internal sealed class DesktopWindow : Form
             };
             start.EnvironmentVariables["YOUDUB_DESKTOP_DATA_DIR"] = data;
             start.EnvironmentVariables["NODE_ENV"] = "production";
-            start.EnvironmentVariables["NEXT_TELEMETRY_DISABLED"] = "1";
             start.EnvironmentVariables.Remove("NODE_OPTIONS");
             // Some GUI launch environments omit System32 (tar, where, etc.).
             start.EnvironmentVariables["PATH"] = resources + ";" + Environment.SystemDirectory + ";" + start.EnvironmentVariables["PATH"];

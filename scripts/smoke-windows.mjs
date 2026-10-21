@@ -111,16 +111,15 @@ async function stopped(pids, url) {
   const deadline = Date.now() + 10000
   while (pids.some(alive) && Date.now() < deadline) await delay(100)
   assert.deepEqual(pids.filter(alive), [], 'Desktop child processes must exit')
-  await assert.rejects(fetch(url, { signal: AbortSignal.timeout(2000) }), 'Gateway must stop listening')
+  await assert.rejects(fetch(url, { signal: AbortSignal.timeout(2000) }), 'Desktop HTTP server must stop listening')
 }
-function nodeChildren(pid) {
+function childProcesses(pid) {
   const result = spawnSync(join(system, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
     '$ErrorActionPreference = "Stop"; Get-CimInstance Win32_Process -Filter ("ParentProcessId = " + $env:YOUDUB_PARENT_PID) | Select-Object -ExpandProperty ProcessId'],
   { env: { ...process.env, YOUDUB_PARENT_PID: String(pid) }, encoding: 'utf8', windowsHide: true })
   if (result.error) throw result.error
   assert.equal(result.status, 0, result.stderr)
   const pids = result.stdout.trim().split(/\s+/).filter(Boolean).map(Number)
-  assert.ok(pids.length > 0, 'Expected the Next child process')
   return pids
 }
 try {
@@ -137,13 +136,26 @@ try {
   const held = launch('--smoke-hold', 'held')
   const second = await readReport(held)
   assert.equal(second.ok, true, second.error)
-  const descendants = nodeChildren(second.serverPid)
+  const descendants = childProcesses(second.serverPid)
   const duplicate = launch('--smoke-test', 'duplicate')
   const rejected = await readReport(duplicate)
   assert.equal(rejected.ok, false, 'Second instance must reject the locked data directory')
   assert.match(rejected.error, /已有 YouDub 桌面实例/)
   assert.equal((await exitWithin(duplicate)).code, 1)
   assert.ok((await fetch(second.url)).ok, 'Existing instance remains available')
+  const workflow = await fetch(new URL('/workflows/youdub.subtitles', second.url), { headers: { Accept: 'text/html' } })
+  assert.equal(workflow.status, 200, 'Direct workflow navigation')
+  const html = await workflow.text()
+  assert.match(html, /<div\s+id="root"/, 'Workflow URL serves the client shell')
+  const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^"?#]+)"/g)].map(match => match[1])
+  assert.ok(assets.some(asset => asset.endsWith('.js')), 'Client shell includes its JavaScript entry')
+  for (const asset of new Set(assets)) {
+    const response = await fetch(new URL(asset, second.url), { signal: AbortSignal.timeout(10000) })
+    assert.equal(response.status, 200, `Bundled client asset ${asset}`)
+    assert.match(response.headers.get('content-type') || '', /(?:javascript|css)/, `Client asset MIME type ${asset}`)
+    assert.ok((await response.arrayBuffer()).byteLength > 0, `Client asset content ${asset}`)
+  }
+  records.push({ test: 'client-shell-deep-link-and-assets', ok: true, assets })
   for (const id of Object.keys(demos)) for (const suffix of ['en.mp4', 'zh.mp4', 'poster.jpg']) {
     const response = await fetch(new URL(`/examples/assets/${id}-${suffix}`, second.url), { signal: AbortSignal.timeout(10000) })
     assert.equal(response.status, 200, `Bundled example ${id}-${suffix}`)

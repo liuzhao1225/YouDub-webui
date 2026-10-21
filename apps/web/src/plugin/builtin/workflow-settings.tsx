@@ -1,6 +1,7 @@
+import type { Bindings } from '../sdk'
 import { Component, type ReactNode } from 'react'
 import { Copy, ExternalLink, Plus, Trash2, X } from 'lucide-react'
-import { Link, text, useSlot, type GraphNode, type NodeEditorProps, type NodeTypeDefinition, type WorkflowDocument } from '../sdk'
+import { Link, text, type GraphNode, type NodeEditorProps, type NodeTypeDefinition, type WorkflowDocument } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,7 +22,7 @@ function FallbackButton({ onClick }: { onClick(): void }) {
   const tx = useText()
   return <Button variant="outline" onClick={onClick}>{tx('Open read-only view', '打开通用只读视图', '読み取り専用表示を開く')}</Button>
 }
-export function SynthesizeNodeEditor({ node, definition, readOnly, onChange }: NodeEditorProps) {
+export function SynthesizeNodeEditor({ node, definition, readOnly, onChange, useSlot }: NodeEditorProps & Bindings<'useSlot'>) {
   const tx = useText(), { language } = useI18n()
   const model = definition.provider.models?.find((model) => typeof model !== 'string' && model.id === node.provider.model)
   const modes = model && typeof model !== 'string' ? model.voice_modes ?? [] : []
@@ -29,7 +30,7 @@ export function SynthesizeNodeEditor({ node, definition, readOnly, onChange }: N
   const voice = node.config.voice as { mode?: string; id?: string } | undefined
   const properties = Object.fromEntries(Object.entries(definition.configSchema.properties ?? {}).filter(([name]) => name !== 'voice'))
   return <div className="space-y-5">
-    <ConfigEditor ownerId="youdub.synthesize.options" value={node.config} schema={{ ...definition.configSchema, properties, required: definition.configSchema.required?.filter((name) => name !== 'voice') }} diagnostics={[]} readOnly={readOnly} onChange={(config) => onChange({ ...node, config })} />
+    <ConfigEditor useSlot={useSlot} ownerId="youdub.synthesize.options" value={node.config} schema={{ ...definition.configSchema, properties, required: definition.configSchema.required?.filter((name) => name !== 'voice') }} diagnostics={[]} readOnly={readOnly} onChange={(config) => onChange({ ...node, config })} />
     <label className="grid gap-2 text-sm">{tx('Voice mode', '声音模式', '音声モード')}<select className="h-10 min-w-0 rounded-lg border border-input bg-input-bg px-3" disabled={readOnly || !modes.length} value={voice?.mode ?? ''} onChange={(event) => onChange({ ...node, config: { ...node.config, voice: { mode: event.target.value } } })}>
       {!modes.includes(voice?.mode ?? '') && <option value={voice?.mode ?? ''}>{voice?.mode === 'source_clone' ? tx('Source voice clone', '原声克隆', '元の声を複製') : tx('Choose a model first', '先选择模型', '先にモデルを選択')}</option>}
       {modes.map((mode) => <option key={mode} value={mode}>{mode === 'source_clone' ? tx('Source voice clone', '原声克隆', '元の声を複製') : mode === 'preset' ? tx('Preset voice', '预设声线', 'プリセット音声') : mode}</option>)}
@@ -37,9 +38,9 @@ export function SynthesizeNodeEditor({ node, definition, readOnly, onChange }: N
     {voice?.mode === 'preset' && <label className="grid gap-2 text-sm">{tx('Voice', '声线', '音声')}<select disabled={readOnly} className="h-10 min-w-0 rounded-lg border border-input bg-input-bg px-3" value={voice.id ?? ''} onChange={(event) => onChange({ ...node, config: { ...node.config, voice: { mode: 'preset', id: event.target.value } } })}><option value="">{tx('Choose voice', '选择声线', '音声を選択')}</option>{voices.map((voice) => <option key={voice.id} value={voice.id}>{text(voice.label, language) || voice.id}</option>)}</select></label>}
   </div>
 }
-export function NodeSettings({ document, node, types, onChange, onClose, onOpen, onDelete, readOnly = false }: {
+export function NodeSettings({ document, node, types, onChange, onClose, onOpen, onDelete, readOnly = false, useSlot }: {
   document: WorkflowDocument; node: GraphNode; types: NodeTypeDefinition[]; onChange(document: WorkflowDocument): void; onClose?(): void; onOpen?(): void; onDelete?(): void; readOnly?: boolean
-}) {
+} & Bindings<'useSlot'>) {
   const tx = useText(), { language } = useI18n()
   const definition = nodeDefinition(node, types)
   const editors = useSlot('workflow.node.editors')
@@ -48,7 +49,7 @@ export function NodeSettings({ document, node, types, onChange, onClose, onOpen,
   const compatibleProviders = types.filter((type) => type.type === node.type && type.version === node.typeVersion)
   const models = definition?.provider.models ?? []
   const model = models.find((item) => (typeof item === 'string' ? item : item.id) === node.provider.model)
-  const generic = <ConfigEditor ownerId={`node:${node.type}`} value={node.config} schema={definition?.configSchema ?? { type: 'object' }} readOnly={readOnly} diagnostics={[]} onChange={(config) => replace({ ...node, config })} />
+  const generic = <ConfigEditor useSlot={useSlot} ownerId={`node:${node.type}`} value={node.config} schema={definition?.configSchema ?? { type: 'object' }} readOnly={readOnly} diagnostics={[]} onChange={(config) => replace({ ...node, config })} />
   return <div className="space-y-5 p-5">
     <div className="flex items-center gap-2"><h2 className="min-w-0 flex-1 truncate font-semibold">{node.label || text(definition?.label, language) || node.type}</h2>{onClose && <Button disabled={readOnly} variant="ghost" size="icon-sm" aria-label={tx('Close settings', '关闭设置', '設定を閉じる')} onClick={onClose}><X /></Button>}</div>
     {!definition && <InlineAlert>{tx('The required node plugin or version is unavailable.', '所需节点插件或版本不可用。', '必要なノードプラグインまたはバージョンがありません。')}</InlineAlert>}

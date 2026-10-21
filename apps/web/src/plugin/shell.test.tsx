@@ -28,6 +28,7 @@ function setup(path = '/') {
   ]
   let Root!: ComponentType
   const context = {
+    apiClient: { request: vi.fn(async () => ({ currentVersion: 'test', supported: false, automatic: false })) },
     session: { subscribe: () => () => {}, getSnapshot: () => snapshot, logout: vi.fn() },
     navigation: {
       subscribe: (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener) },

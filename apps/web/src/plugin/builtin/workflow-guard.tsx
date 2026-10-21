@@ -1,26 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
-import { useClient } from '../sdk'
+import type { ClientBindings } from '../sdk'
 import { useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
 
-export function useUnsavedChanges(dirty: boolean, save?: () => Promise<void>, allow?: (path: string) => boolean, onDiscard?: () => void) {
+export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigation'], dirty: boolean, save?: () => Promise<void>, allow?: (path: string) => boolean, onDiscard?: () => void) {
   const tx = useText()
-  const client = useClient()
   const latest = useRef({ dirty, save, allow, onDiscard })
   useEffect(() => { latest.current = { dirty, save, allow, onDiscard } }, [dirty, save, allow, onDiscard])
   const bypass = useRef(false)
   const [pending, setPending] = useState<{ resolve(value: boolean): void } | null>(null)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false)
   useEffect(() => {
-    const remove = client.navigation.block?.(async (path) => {
+    const remove = blockNavigation(async (path) => {
       if (bypass.current || !latest.current.dirty || latest.current.allow?.(path)) return true
       return new Promise<boolean>((resolve) => setPending({ resolve }))
     })
     const unload = (event: BeforeUnloadEvent) => { if (latest.current.dirty && !bypass.current) { event.preventDefault(); event.returnValue = '' } }
     window.addEventListener('beforeunload', unload)
     return () => { remove?.(); window.removeEventListener('beforeunload', unload) }
-  }, [client])
+  }, [blockNavigation])
   function finish(value: boolean) { pending?.resolve(value); setPending(null); setError('') }
   return {
     bypass: () => { bypass.current = true },

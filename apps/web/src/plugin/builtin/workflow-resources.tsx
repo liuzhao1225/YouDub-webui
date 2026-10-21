@@ -1,54 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
 import { Check, Download, Loader2, RotateCcw } from 'lucide-react'
-import { text, useClient, type NodeTypeDefinition, type WorkflowDocument } from '../sdk'
+import { text, type NodeTypeDefinition } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
 
-export type ResourceState = {
-  status: string; error?: string | { message?: string }
-  requirements?: { providerId: string; model?: string; ready: boolean; automatic: boolean; reason?: string }[]
-  environment?: { id: string; name: string; status: string; detail?: string }[]
-  models?: { id: string; name: string; status: string; error?: string; received?: number; total?: number; speed?: number }[]
-  activePreparation?: { status: string; error?: string }
-}
+import type { WorkflowResourcesResult } from '../runtime/workflow-resources'
+export type { ResourceState } from '../runtime/workflow-resources'
 
-export function useWorkflowResources(document: WorkflowDocument) {
-  const client = useClient()
-  const selectionKey = JSON.stringify(document.nodes.map((node) => [node.type, node.typeVersion, node.provider]))
-  const latestDocument = useRef(document)
-  const [request, setRequest] = useState({ key: selectionKey, action: 'check', revision: 0 })
-  const [snapshot, setSnapshot] = useState<{ key: string; result?: ResourceState; error?: string; checking: boolean }>({ key: selectionKey, checking: true })
-  useEffect(() => { latestDocument.current = document }, [document])
-  useEffect(() => {
-    const controller = new AbortController()
-    let timer: ReturnType<typeof setTimeout> | undefined
-    async function load(action: string) {
-      setSnapshot((current) => ({ key: selectionKey, result: current.key === selectionKey ? current.result : undefined, checking: true }))
-      try {
-        const result = await client.apiClient.request<ResourceState>(`/api/v2/workflow-documents/resources/${action}`, { method: 'POST', body: JSON.stringify({ document: latestDocument.current }), signal: controller.signal })
-        if (controller.signal.aborted) return
-        setSnapshot({ key: selectionKey, result, checking: false })
-        if (result.status === 'ready') window.dispatchEvent(new Event('youdub:resources-ready'))
-        if (result.status === 'preparing' || result.activePreparation?.status === 'preparing') timer = setTimeout(() => void load('check'), 1200)
-      } catch (failure) {
-        if (!controller.signal.aborted) setSnapshot((current) => ({ ...current, checking: false, error: failure instanceof Error ? failure.message : String(failure) }))
-      }
-    }
-    void load(request.key === selectionKey ? request.action : 'check')
-    return () => { controller.abort(); if (timer) clearTimeout(timer) }
-  }, [client, selectionKey, request])
-  const current: typeof snapshot = snapshot.key === selectionKey ? snapshot : { key: selectionKey, checking: true }
-  return {
-    ...current,
-    ready: !current.error && !current.checking && current.result?.status === 'ready',
-    prepare: () => setRequest((current) => ({ key: selectionKey, action: 'prepare', revision: current.revision + 1 })),
-    check: () => setRequest((current) => ({ key: selectionKey, action: 'check', revision: current.revision + 1 })),
-  }
-}
-
-export function WorkflowResources({ resources, types, disabled = false }: { resources: ReturnType<typeof useWorkflowResources>; types: NodeTypeDefinition[]; disabled?: boolean }) {
+export function WorkflowResources({ resources, types, disabled = false }: { resources: WorkflowResourcesResult; types: NodeTypeDefinition[]; disabled?: boolean }) {
   const tx = useText(), { language } = useI18n()
   const state = resources.result
   const preparing = state?.status === 'preparing'

@@ -88,7 +88,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         environment["YOUDUB_DESKTOP_DATA_DIR"] = data.path
         environment["PATH"] = resources.path + ":/usr/bin:/bin:/usr/sbin:/sbin"
         environment["NODE_ENV"] = "production"
-        environment["NEXT_TELEMETRY_DISABLED"] = "1"
         environment.removeValue(forKey: "NODE_OPTIONS")
         process.environment = environment
         process.standardInput = input

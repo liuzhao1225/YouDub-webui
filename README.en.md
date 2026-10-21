@@ -95,7 +95,7 @@ Task details: preview the video, inspect processing steps, and download dubbed a
 
 [Windows EXE installer](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe) · [macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg) · [Release notes and portable package](https://github.com/liuzhao1225/YouDub-webui/releases/latest)
 
-First startup downloads the runtime and models. See the [installation guide](docs/upgrade.md) for requirements and upgrade instructions.
+First startup prepares the base runtime. Models and inference dependencies are prepared for the selected workflow. See the [installation guide](docs/upgrade.md) for requirements and upgrade instructions.
 
 1. In Settings, configure the translation connection, check required model readiness, and save processing defaults.
 2. In the workspace, import a video, select languages and an output mode, and create a task.
@@ -111,13 +111,13 @@ QQ group: `618246010`
 
 ## Quick Start
 
-[Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · [Release workflow](docs/releasing.md)
+[Node workflows](docs/workflows.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · [Release workflow](docs/releasing.md)
 
 The source installation steps below target macOS / Linux shells. Real-model workflows have been validated on **macOS arm64 / CPU** and **Windows x64 / NVIDIA CUDA**. See the [Windows acceptance record](docs/validation/windows-desktop-2026-10-16.md) for first-run configuration, complete video tasks and limitations, and the [desktop build instructions](apps/desktop/README.md#windows-x64). The app detects CUDA, MPS and AMD ROCm with CPU fallback; see [device support](docs/accelerators.md). Linux, AMD and MPS inference have not been validated on real hardware in this round.
 
 ### 1. Install dependencies
 
-Install Node.js 22 (at least 22.13.0) and Git. First startup detects the OS and architecture, prepares Python 3.12, runtime dependencies, FFmpeg/ffprobe and sentence resources, and reuses the environment already prepared by YouDub.
+Install Node.js 22 (at least 22.13.0) and Git. First startup detects the OS and architecture and prepares Python 3.12 and base dependencies. FFmpeg/ffprobe, sentence resources and model dependencies are prepared for the selected workflow; existing resources are reused.
 
 ```bash
 git clone --branch main --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
@@ -142,7 +142,9 @@ Open the workspace directly; no access password is required. The application loa
 
 ### 3. Prepare models
 
-First startup downloads Whisper tiny, VoxCPM2, Demucs htdemucs and Qwen3 Aligner 0.6B in parallel, with real progress and individual or global pause/resume. The workspace opens after checksum and runtime checks. The default data directory is `~/Library/Application Support/YouDub` on macOS, `~/.local/share/youdub` on Linux, and `%LOCALAPPDATA%/YouDub` on Windows. Override it with `YOUDUB_DESKTOP_DATA_DIR`.
+Once the base environment is ready, open Workflows, choose a template, and prepare its missing resources. The page shows dependencies and download progress for the selected nodes. Subtitle workflows do not require a speech-generation model; workflows that import subtitles and export video can use media dependencies alone. See [node workflows](docs/workflows.md).
+
+The default data directory is `~/Library/Application Support/YouDub` on macOS, `~/.local/share/youdub` on Linux, and `%LOCALAPPDATA%/YouDub` on Windows. Override it with `YOUDUB_DESKTOP_DATA_DIR`.
 
 | Capability | Default provider | Model path, relative to the data directory |
 | --- | --- | --- |
@@ -168,17 +170,19 @@ npm start
 Open another terminal in the same directory and start the frontend:
 
 ```bash
-npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
+npm --prefix apps/web run dev -- --host 127.0.0.1 --port 3000
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to prepare the environment and models on first use; ready installations enter the workspace directly.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to prepare the base environment on first use. Ready installations enter the workspace directly and prepare resources for the selected workflow.
 
-To run a built frontend, replace the development frontend command with the following. Keep the Host running separately:
+To run the production build, stop the development services above, then run:
 
 ```bash
 npm run build:web
-npm --prefix apps/web start -- --hostname 127.0.0.1 --port 3000
+npm --prefix apps/web start
 ```
+
+One Cordis Host serves both pages and APIs at `http://127.0.0.1:3000`. Set `YOUDUB_HOST` and `YOUDUB_PORT` to change the listening address. In development, the Vite proxy connects to `http://127.0.0.1:8000`; override it with `YOUDUB_API_URL`.
 
 ## Everything is a plugin
 
@@ -197,6 +201,8 @@ Client page plugins → API / authentication plugins → Task engine plugin
 A workflow declares its steps, inputs and outputs. Providers implement operations, and files pass through ArtifactRef references. Python handles media processing and model inference through managed processes and a stdio protocol for each operation. Packages written entirely in Python can also provide operations.
 
 To replace ASR, translation or TTS, supply a plugin that implements the relevant contracts. New processing flows can register their own workflows. See the [architecture](docs/design/cordis-plugin-architecture.md) and [plugin contracts](docs/design/cordis-plugin-contracts.md).
+
+The frontend uses React 19, Vite 8 and Cordis page plugins, retaining YouDub's Tailwind, Base UI and React Flow visual components. Client logic is separated into a React-free runtime, React bindings and page components. See the [frontend implementation notes](docs/design/harness-frontend-migration.md) for the reference sources and adaptation scope.
 
 ## Installing and Developing Plugins
 
@@ -230,7 +236,7 @@ See the [plugin contracts](docs/design/cordis-plugin-contracts.md) for package s
 - **English sentence boundaries.** After Whisper recognition, NLTK Punkt forms complete sentences and word timestamps locate their source audio. Raw recognition results are retained.
 - The default workflow accepts local `mp4`, `mov`, `mkv` and `webm` videos. Default limits are 4 GiB, 10 minutes, 1920 pixels for each dimension, and 60 fps.
 - The language catalog contains English, Chinese and Japanese; support depends on the provider. Optional Qwen alignment supports English and Chinese.
-- The MVP runs on one machine with one active task at a time. Plugin changes apply after restart. A DAG editor, hot replacement, plugin marketplace and distributed workers are outside the current scope.
+- Node workflows support branches, joins and manual corrections, with one execution slot. Waiting for manual confirmation releases that slot. Plugin changes apply after restart. Hot replacement, a plugin marketplace, cycles and distributed workers remain outside the current scope.
 - Local workflow, Client and Python plugins have been validated. Installation from remote GitHub/npm sources has not yet been validated.
 - Current product APIs use `/api/v2` and support rerunning from a selected step. The old FastAPI/v1 HTTP entry points have been removed. Video URL downloads use `media.download/v1` and support single-video YouTube, Shorts, Bilibili and b23.tv links through yt-dlp, Node.js and FFmpeg, with the same duration and file-size limits.
 
@@ -254,7 +260,7 @@ packages/sdk/      Public service, workflow and operation contracts
 packages/builtin/  Services, generic task engine, workflows and model bridge
 backend/workers/   Python computation and SQLite transaction bridge
 backend/app/       Models, media, credentials and historical data formats
-apps/web/          Next bootstrap, Client SDK and page plugins
+apps/web/          Vite entry, client runtime, React bindings and page plugins
 fixtures/plugins/  Standalone Host/Client/Python examples
 submodule/demucs/   Demucs source submodule
 ```

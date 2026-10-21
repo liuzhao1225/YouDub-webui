@@ -1,17 +1,18 @@
+import type { Bindings } from '../sdk'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
-import { Link, text, useClient, type Diagnostic, type JsonObject, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from '../sdk'
+import { Link, text, type Diagnostic, type JsonObject, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
 import { ConfigEditor } from './schema-form'
 import { nodeDefinition } from './workflow-utils'
-import { useWorkflowResources, WorkflowResources } from './workflow-resources'
+import { WorkflowResources } from './workflow-resources'
 import { workflowDiagnostics, WorkflowDiagnostics } from './workflow-errors'
 
-export function WorkflowRun({ document, types, revision = null, onStarted, onLockChange }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision?: number | null; onStarted?(): void; onLockChange?(locked: boolean): void }) {
-  const tx = useText(), { language } = useI18n(), { apiClient, navigation } = useClient()
+export function WorkflowRun({ document, types, revision = null, onStarted, onLockChange, request, navigate, useSlot, useWorkflowResources }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision?: number | null; onStarted?(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot' | 'useWorkflowResources'>) {
+  const tx = useText(), { language } = useI18n()
   const [files, setFiles] = useState<Record<string, File>>({})
   const [runtime, setRuntime] = useState<Record<string, JsonObject>>({})
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
@@ -24,7 +25,7 @@ export function WorkflowRun({ document, types, revision = null, onStarted, onLoc
     if (locked || !complete || !resources.ready) return
     setBusy(true); setError(''); setDiagnostics([])
     try {
-      const validation = await apiClient.request<{ valid: boolean; diagnostics: Diagnostic[] }>('/api/v2/workflow-documents/validate', { method: 'POST', body: JSON.stringify({ document, nodeRuntimeInputs: runtime }) })
+      const validation = await request<{ valid: boolean; diagnostics: Diagnostic[] }>('/api/v2/workflow-documents/validate', { method: 'POST', body: JSON.stringify({ document, nodeRuntimeInputs: runtime }) })
       setDiagnostics(validation.diagnostics)
       if (!validation.valid) return
       const id = crypto.randomUUID()
@@ -32,8 +33,8 @@ export function WorkflowRun({ document, types, revision = null, onStarted, onLoc
       const body = new FormData()
       body.set('request', JSON.stringify({ id, workflowId: 'youdub.graph', workflowVersion: '1.0.0', graphDocument: document, nodeRuntimeInputs: runtime, config: {}, documentRevision: revision }))
       Object.entries(files).forEach(([name, file]) => body.set(`input.${name}`, file))
-      const task = await apiClient.request<TaskView>('/api/v2/tasks', { method: 'POST', body })
-      onStarted?.(); navigation.push(`/tasks/${task.id}`)
+      const task = await request<TaskView>('/api/v2/tasks', { method: 'POST', body })
+      onStarted?.(); navigate(`/tasks/${task.id}`)
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure)); setDiagnostics(workflowDiagnostics(failure))
     } finally { setBusy(false) }
@@ -51,15 +52,15 @@ export function WorkflowRun({ document, types, revision = null, onStarted, onLoc
         setFiles((current) => { const next = { ...current }; if (file) next[input.id] = file; else delete next[input.id]; return next })
       }} />
     </label>)}
-    {document.nodes.map((node) => { const definition = nodeDefinition(node, types); return definition?.runtimeInputSchema ? <fieldset className="space-y-3" key={node.id}><legend className="mb-2 text-sm font-medium">{node.label || text(definition.label, language)}</legend><ConfigEditor ownerId={`runtime:${node.type}`} value={runtime[node.id] ?? {}} schema={definition.runtimeInputSchema} diagnostics={[]} readOnly={locked} onChange={(value) => { setRuntime((current) => ({ ...current, [node.id]: value })); setDiagnostics([]) }} /></fieldset> : null })}
+    {document.nodes.map((node) => { const definition = nodeDefinition(node, types); return definition?.runtimeInputSchema ? <fieldset className="space-y-3" key={node.id}><legend className="mb-2 text-sm font-medium">{node.label || text(definition.label, language)}</legend><ConfigEditor useSlot={useSlot} ownerId={`runtime:${node.type}`} value={runtime[node.id] ?? {}} schema={definition.runtimeInputSchema} diagnostics={[]} readOnly={locked} onChange={(value) => { setRuntime((current) => ({ ...current, [node.id]: value })); setDiagnostics([]) }} /></fieldset> : null })}
     <WorkflowResources resources={resources} types={types} disabled={locked} />
     {error && <InlineAlert>{error}</InlineAlert>}
     <WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} />
     {pending && !busy && <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{tx('Check whether the task was created before submitting again.', '请先查询任务是否已创建，再重新提交。', '再送信する前にタスクが作成されたか確認してください。')}</p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" onClick={() => { setBusy(true); void apiClient.request<TaskView>(`/api/v2/tasks/${pending}`).then((task) => { onStarted?.(); navigation.push(`/tasks/${task.id}`) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Check created task', '查询创建结果', '作成結果を確認')}</Button>
-        <Button variant="outline" onClick={() => { setBusy(true); void apiClient.request(`/api/v2/imports/${pending}`, { method: 'DELETE' }).then(() => { setPending(''); setError(''); setDiagnostics([]) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Discard submission and edit', '放弃本次提交并修改', '今回の送信を破棄して編集')}</Button>
+        <Button variant="outline" onClick={() => { setBusy(true); void request<TaskView>(`/api/v2/tasks/${pending}`).then((task) => { onStarted?.(); navigate(`/tasks/${task.id}`) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Check created task', '查询创建结果', '作成結果を確認')}</Button>
+        <Button variant="outline" onClick={() => { setBusy(true); void request(`/api/v2/imports/${pending}`, { method: 'DELETE' }).then(() => { setPending(''); setError(''); setDiagnostics([]) }).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Discard submission and edit', '放弃本次提交并修改', '今回の送信を破棄して編集')}</Button>
       </div>
     </div>}
     <div className="flex flex-wrap items-center justify-between gap-3">

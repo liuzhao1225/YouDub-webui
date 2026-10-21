@@ -1,14 +1,14 @@
+import { bindComponent, type Bindings } from '../sdk'
 import { useText } from '@/lib/i18n'
 import { useState, type FormEvent } from 'react'
 import { Context } from 'cordis'
 import { Check, Loader2 } from 'lucide-react'
-import { useClient, type Catalog, type EditorProps, type JsonObject } from '../sdk'
+import { type Catalog, type EditorProps, type JsonObject } from '../sdk'
 import type { Runtime, TaskConfig } from '@/plugin/builtin/localize-contracts'
 import { initialTaskConfig, TaskConfigForm, TaskOptions } from '@/components/localize-task-config'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
-import { useQuery } from './use-query'
-function LocalizeEditor({ value, readOnly, mode, onChange }: EditorProps) {
+function LocalizeEditor({ value, readOnly, mode, onChange, useQuery }: EditorProps & Bindings<'useQuery'>) {
   const tx = useText()
   const { data: runtime, error } = useQuery<Runtime>('/api/v2/runtime')
   if (error) return <InlineAlert>{error}</InlineAlert>
@@ -17,9 +17,8 @@ function LocalizeEditor({ value, readOnly, mode, onChange }: EditorProps) {
   return <fieldset disabled={readOnly} className="min-w-0 disabled:opacity-60"><Form value={value as unknown as TaskConfig} runtime={runtime} onChange={(next) => onChange(next as unknown as JsonObject)} /></fieldset>
 }
 
-function DefaultsForm({ defaults, runtime }: { defaults?: Partial<TaskConfig>; runtime: Runtime }) {
+function DefaultsForm({ defaults, runtime, request }: { defaults?: Partial<TaskConfig>; runtime: Runtime } & Bindings<'request'>) {
   const tx = useText()
-  const { apiClient } = useClient()
   const [value, setValue] = useState(() => initialTaskConfig(runtime, defaults))
   const [busy, setBusy] = useState(false), [saved, setSaved] = useState(false), [error, setError] = useState('')
   async function save(event: FormEvent) {
@@ -27,8 +26,8 @@ function DefaultsForm({ defaults, runtime }: { defaults?: Partial<TaskConfig>; r
     if (busy) return
     setBusy(true); setSaved(false); setError('')
     try {
-      const current = await apiClient.request<{ defaults?: TaskConfig | null }>('/api/v2/settings')
-      await apiClient.request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: { ...value, translation: current.defaults?.translation ?? value.translation } }) })
+      const current = await request<{ defaults?: TaskConfig | null }>('/api/v2/settings')
+      await request('/api/v2/settings', { method: 'PATCH', body: JSON.stringify({ defaults: { ...value, translation: current.defaults?.translation ?? value.translation } }) })
       setSaved(true)
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
@@ -41,7 +40,7 @@ function DefaultsForm({ defaults, runtime }: { defaults?: Partial<TaskConfig>; r
   </form>
 }
 
-function LocalizeSettings() {
+function LocalizeSettings({ request, useQuery }: Bindings<'request' | 'useQuery'>) {
   const tx = useText()
   const { data: runtime, error: runtimeError, refresh: refreshRuntime } = useQuery<Runtime>('/api/v2/runtime')
   const { data: catalog, error: catalogError, refresh: refreshCatalog } = useQuery<Catalog>('/api/v2/catalog')
@@ -50,13 +49,13 @@ function LocalizeSettings() {
   return <section className="rounded-2xl border border-border bg-card shadow-card">
     <h2 className="border-b border-border px-6 py-4 font-semibold">{tx('Processing defaults', '默认处理配置', '処理の初期設定')}</h2>
     {error ? <div className="space-y-3 p-6"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={() => { refreshRuntime(); refreshCatalog() }}>{tx('Reload', '重新加载', '再読み込み')}</Button></div>
-      : runtime && workflow ? <DefaultsForm defaults={workflow.defaults as Partial<TaskConfig>} runtime={runtime} />
+      : runtime && workflow ? <DefaultsForm request={request} defaults={workflow.defaults as Partial<TaskConfig>} runtime={runtime} />
         : <p role="status" className="p-6 text-sm text-muted-foreground">{tx('Loading configuration…', '正在加载配置…', '設定を読み込み中…')}</p>}
   </section>
 }
 export const name = 'client-localize-editor'
 export const inject = ['slots', 'apiClient']
 export function apply(ctx: Context) {
-  ctx.effect(() => ctx.slots.register('config.editors', { id: 'youdub.localize', component: LocalizeEditor }))
-  ctx.effect(() => ctx.slots.register('settings.sections', { id: 'youdub.localize', component: LocalizeSettings }))
+  ctx.effect(() => ctx.slots.register('config.editors', { id: 'youdub.localize', component: bindComponent(ctx, ['useQuery'], LocalizeEditor) }))
+  ctx.effect(() => ctx.slots.register('settings.sections', { id: 'youdub.localize', component: bindComponent(ctx, ['request', 'useQuery'], LocalizeSettings) }))
 }

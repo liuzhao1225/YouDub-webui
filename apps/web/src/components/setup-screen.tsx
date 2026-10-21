@@ -90,7 +90,6 @@ export function SetupScreen({ state, busy = false, onAction, onReset }: {
         </div>
       </section>}
       <SetupDiagnostics state={state} />
-      {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Bundled static HTML is available before the app runtime is ready. */}
       <div className="mt-5"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">查看内置示例</a></div>
       <div className="mt-5 flex items-center justify-between gap-3">
         <span className="text-xs tabular-nums text-muted-foreground">{state.models.length ? <>{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : state.phase === 'starting' ? '启动工作台' : ''}</span>

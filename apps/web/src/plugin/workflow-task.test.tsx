@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, type NodeTypeDefinition, type TaskNodeDetail, type TaskStatus, type TaskView } from './sdk'
-import { TaskNodePage, TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from './builtin/workflow-task'
+import { TaskNodePage as TaskNodePageView, TaskWorkflowPanel as TaskWorkflowPanelView, TranscriptNodeDetails, TranslationNodeDetails } from './builtin/workflow-task'
+
+import { bindTestComponent } from './test-bindings'
+const TaskNodePage = bindTestComponent(TaskNodePageView, ['request', 'navigate', 'blockNavigation', 'useQuery', 'useSlot'])
+const TaskWorkflowPanel = bindTestComponent(TaskWorkflowPanelView, ['request', 'navigate', 'useQuery'])
 
 vi.mock('./builtin/workflow-canvas', () => ({ WorkflowCanvas: () => <div>Workflow canvas</div> }))
 beforeEach(() => vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} }))

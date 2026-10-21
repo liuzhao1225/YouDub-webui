@@ -72,7 +72,6 @@ export function TaskCover({
       )}
       {src && !failed && (
         // Authenticated local thumbnails already have a bounded size; load directly.
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" loading="lazy" decoding="async" onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)}
           className="absolute inset-0 size-full object-contain" />
       )}
