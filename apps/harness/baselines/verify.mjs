@@ -82,7 +82,7 @@ async function verifyNpm() {
   result.checks.push({scope:'npm',npmRoot,packages:npm.packages.length,registryArtifactsVerified:true})
 }
 function verifyVendor() {
-  const checked = JSON.parse(execFileSync(process.execPath, [join(here, 'vendor.mjs'), '--verify'], {encoding:'utf8',maxBuffer:32*1024*1024}))
+  const checked = JSON.parse(execFileSync(process.execPath, [join(here, 'framework-source.mjs')], {encoding:'utf8',maxBuffer:32*1024*1024}))
   result.checks.push({scope:'vendor',...checked})
 }
 function verifyDesktopBuild() {

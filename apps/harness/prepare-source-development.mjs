@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { access, cp, lstat, mkdir, readFile, realpath, symlink, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFrameworkSource } from './baselines/framework-source.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const root = resolve(here, '../..');
@@ -11,6 +12,9 @@ const require = createRequire(import.meta.url);
 
 export async function prepareSourceDevelopment({ projectDirectory = join(here, 'dist/desktop/runtime-project') } = {}) {
   const source = join(root, '.cache/harness/source-build');
+  const framework = await readFrameworkSource(root);
+  const receipt = JSON.parse(await readFile(join(source, 'youdub-source-build.json'), 'utf8'));
+  if (receipt.sourceTreeSha256 !== framework.sha256) throw new Error('Framework source has changed since its build; run npm run build:framework.');
   const modules = join(source, 'node_modules/.pnpm/node_modules');
   const primaryRuntime = join(root, '.cache/harness/runtime/primary-runtime');
   const electron = require('electron');
@@ -42,7 +46,7 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
     await unlink(dependencyLink);
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await symlink(join(project, 'node_modules'), dependencyLink, 'dir');
-  const sourcePackages = JSON.parse(await readFile(join(root, 'vendor/deepseek-harness/source-manifest.json'), 'utf8')).packages;
+  const sourcePackages = framework.packages;
   const resolved = [];
   for (const pkg of sourcePackages) {
     if (!pkg.name.startsWith('@deepseek-ai/')) continue;

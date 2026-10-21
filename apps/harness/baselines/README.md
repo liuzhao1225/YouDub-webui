@@ -24,17 +24,18 @@ YouDub 生成产物 `output/` 留在源工作区；环境、模型、凭据等 G
 ```sh
 node apps/harness/baselines/verify.mjs --report /tmp/youdub-harness-integrity.json
 node apps/harness/baselines/inventory.mjs
-node apps/harness/baselines/vendor.mjs --verify
+node apps/harness/baselines/vendor.mjs --verify-archive
+node apps/harness/baselines/framework-source.mjs
 node apps/harness/baselines/desktop-build.mjs --verify
 ```
 
-完整性检查默认验证融合工作区 `apps/harness/node_modules`、原安装的 `/Applications/DeepSeek Harness.app`、原 Harness 源码仓库、原样复制的 `vendor/deepseek-harness/source`、独立 Electron 构建来源记录，以及外部基线归档。缺失文件、修改后的文件、锁版本变化、增加的未审查官方包都会返回非零退出码。`--scope sources|desktop|npm|vendor|build` 可单独复查一类；输出会明确记录检查范围。路径可以使用 `--baseline-root`、`--npm-root`、`--app`、`--original-source` 指定，调整路径不会调整预期哈希。
+完整检查验证保存的 npm 原包、原 Desktop、原 Harness 仓库、YouDub 快照、外部归档及当前 fork 的构建来源。它依赖本机保存的历史资料，不作为新开发者启动条件。`--scope sources|desktop|npm|vendor|build` 可单独复查一类；其中 `vendor` 使用活动 fork 规则。路径可用 `--baseline-root`、`--npm-root`、`--app`、`--original-source` 指定，调整路径不改变预期哈希。
 
-原样源码副本与原始归档独立保存。源码副本包含当前依赖闭包、Desktop/Web/Host 入口及其构建支持文件；逐文件清单和来源说明位于 `vendor/deepseek-harness/`。YouDub 的外围构建和插件代码不属于上游副本，不能写入其 `source/` 子树。
+`vendor/deepseek-harness/source` 自 2026-10-22 起作为活动 fork；原始归档与 `source-manifest.json` 继续保持不变。`fork.json` 固定原始清单哈希，记录每项变化的原件、当前文件摘要和原因。活动检查拒绝未登记或与登记内容不同的变化。`vendor.mjs --verify-archive` 在临时目录恢复原始归档核验；`--verify` 保留严格原样对照语义。
 
-每次完成产品构建后运行 `desktop-build.mjs --record`，生成 `dist/desktop/source-provenance.json`。记录核对产品与官方源码输入、原样复制的 native 片段和资源、官方完整构建的两个 preload、CLI/Host/Web 来源，以及全部 362 个官方包的真实开发路径。后续 `--verify` 检查输入与产物是否变化；不能用重新记录掩盖手工改写。
+每次完成产品构建后运行 `desktop-build.mjs --record`，生成 `dist/desktop/source-provenance.json`。记录区分原样上游输入、已登记 fork 输入、YouDub 产品输入和发布依赖；核对 native 复制块、资源、实际使用的 `preload-app`、CLI/Host/Web 来源和活动包路径。后续 `--verify` 检查输入与产物是否变化；重新记录前仍须通过 fork 校验。
 
-框架构建在 `.cache/harness/source-build` 的原样副本中运行官方 `scripts/build.ts --scope artifacts`。官方构建收据验证 325 个客户端产物；vendor 与 staging 中的 9,817 个原始文件逐项与固定归档校验。当前官方服务和客户端插件均来自这次完整源码构建，npm 原件保留作独立来源基线。
+框架构建在 `.cache/harness/source-build` 中复用 `scripts/build.ts --scope artifacts`。`youdub-source-inputs.json` 记录实际输入，`youdub-source-build.json` 记录 fork 树哈希、产品提交及 dirty 状态、改动清单和客户端构建收据。`--verify-only` 只检查，不重写收据。可用 `--stage <全新目录>` 验证独立构建；源码删除后会同步删除旧 staging 输入，最终裁剪仍须全新目录构建。原件 npm 包继续独立保存。
 
 当前产品入口是 `src/desktop-main.mjs` → `src/desktop-product.ts`。它组合官方 Host、ProjectManager、BackendController、协议转发、目录选择、快捷键、主题、退出确认和错误报告。上游未导出的原生窗口和 Windows 菜单片段逐字复制到产品组合文件，并由来源检查核对。YouDub 通过产品 locale 注入名称，通过插件挂载原首启和业务界面。
 

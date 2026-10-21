@@ -1,12 +1,12 @@
-# Harness 原样源码
+# YouDub 使用的 Harness 源码
 
-`source/` 是 `deepseek-ai/deepseek-harness` 公开 tag `dsh-v0.2.1-rc.2`（commit `687f282e8625c6b8d11ff58211a90524be2e4317`）的原样文件副本。文件内容、可执行位和符号链接目标均保留；`source-manifest.json` 记录逐项 SHA-256。许可证保存在 `source/LICENSE`，第三方声明保存在 `source/THIRD_PARTY_NOTICES.md`，各包的许可证和声明也随包原样保留。
+`source/` 是 YouDub 维护的活动 fork，来源为 `deepseek-ai/deepseek-harness` 公开 tag `dsh-v0.2.1-rc.2`（commit `687f282e8625c6b8d11ff58211a90524be2e4317`）。`source-manifest.json` 固定记录最初复制的文件；`fork.json` 单独记录活动源码相对原件的精确差异与原因。许可证保存在 `source/LICENSE`，第三方声明保存在 `source/THIRD_PARTY_NOTICES.md`。
 
 ## 包含范围
 
-复制当前 Harness 安装依赖对应的源码包及其 dependencies / optionalDependencies / peerDependencies / devDependencies 闭包，加入 Desktop、Desktop Host、Web 入口和 Desktop 直接使用的官方开发依赖。共 331 个源码包、8,951 个文件，约 70 MiB。保持上游目录结构，包含每个所选包的源码、资源、原始构建配置和测试。另保留根构建配置、锁文件、scripts、native/system、python 和 patches，以供外围构建读取。
+原始选入范围共 362 个源码包、9,817 个文件，包含完整 apps、packages、vendor 以及根构建支持、scripts、native/system、python 和 patches。保持上游目录结构与成熟实现。当前范围由活动源码和差异账本共同决定，裁剪须同步处理依赖、生成工具与测试。
 
-这是一份明确选取的源码子树。官方根 workspace 还列有未使用的开发工具、网站、基准测试等包；在此目录执行完整上游 `pnpm install` / `build` 不是 YouDub 的构建方式。完整公开 tag 另有 Git bundle 与 tar.gz 基线，路径和哈希见 `apps/harness/baselines/sources.json`。
+完整公开 tag 另有 Git bundle 与 tar.gz 基线，路径和哈希见 `apps/harness/baselines/sources.json`。从仓库根运行 `npm run build:framework`；安装与编译在 `.cache/harness/source-build` 中进行，不向活动源码写入依赖和产物。
 
 | 用途 | 原始入口 |
 | --- | --- |
@@ -19,18 +19,21 @@
 | UI primitives / layout / theme / slots / store | `source/packages/client/ui-primitives/`、`ui-layout/`、`ui-theme/`、`ui-slots/`、`store/` |
 | Cordis 与官方服务 | `source/vendor/`、`source/packages/`；具体包路径见清单 |
 
-## 不可变边界
+## 原件与活动 fork
 
-所有 YouDub 品牌、插件装配、构建入口和运行路径配置均置于 `source/` 以外。构建产物、`node_modules` 和缓存也不能写入 `source/`。需要官方服务时复用对应原始入口，不复制改写服务实现。上游升级须另取版本、重新生成清单并独立审查。
+2026-10-22 起允许按 [改造计划](../../apps/harness/docs/YOUDUB-DESKTOP-REFACTOR-PLAN.md) 修改活动源码。优先复用现有服务和组件，修改对应明确产品需求。原始归档和 `source-manifest.json` 保持不变；不能通过重写原件哈希接受修改。
 
 ```sh
-node apps/harness/baselines/vendor.mjs --verify
+node apps/harness/baselines/framework-source.mjs
 node apps/harness/baselines/verify.mjs --scope vendor
+node apps/harness/baselines/vendor.mjs --verify-archive
 ```
 
-检查发现新增、删除、字节变化、执行位变化或链接变化立即失败，不会自动修复。初次重新复制时可运行 `vendor.mjs --copy`；它校验保存的官方源码归档哈希，且拒绝覆盖任何现有 `source/`。
+活动源码检查要求每个新增、删除、字节、执行位或链接变化与 `fork.json` 完全一致，并附上原因。归档检查校验保存的 tar.gz，再恢复到临时目录逐项验证原始选入文件。两者分别报告。`vendor.mjs --verify` 仍可检查活动目录是否与原件完全相同，发生合法 fork 改动后此项预期失败；产品构建使用活动 fork 检查。
 
-YouDub 的全局 `.gitignore` 会忽略部分上游已跟踪的 fixture 和资源路径。提交这份原样源码时必须完整加入 `source-manifest.json` 中的文件，可使用 `git add -f vendor/deepseek-harness/source`；不能通过删除这些文件使普通 `git add` 通过。
+改造前产品标签为 `youdub-desktop-refactor-base-20261022`，提交 `4b9dc0a7168135f191dd4050a6d1d9a32d9e14b9`。恢复到单独目录，不覆盖活动 fork。初次复制/补齐命令在存在 `fork.json` 时拒绝执行。
+
+YouDub 的全局 `.gitignore` 会忽略部分上游 fixture 和资源路径。新增此类文件时精确使用 `git add -f <文件>`，检查提交输入与 fork 账本一致。
 
 ## 来源差异
 

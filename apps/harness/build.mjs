@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { readFrameworkSource } from './baselines/framework-source.mjs';
 await checkLocales();
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -14,7 +15,9 @@ const product = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8')
 // Reuse the unchanged upstream preset from the complete source build.
 const framework = resolve(root, '.cache/harness/source-build');
 const presetPath = resolve(framework, 'packages/client/tsdown.client.ts');
-const officialManifest = JSON.parse(await readFile(resolve(root, 'vendor/deepseek-harness/source-manifest.json'), 'utf8'));
+const officialManifest = await readFrameworkSource(root);
+const frameworkReceipt = JSON.parse(await readFile(resolve(framework, 'youdub-source-build.json'), 'utf8'));
+if (frameworkReceipt.sourceTreeSha256 !== officialManifest.sha256) throw new Error('Rebuild the framework before building the current YouDub source.');
 const officialPackages = new Map(officialManifest.packages.map(pkg => [pkg.name, pkg.path]));
 const officialExternals = ['@deepseek-ai/cordis', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-store'];
 const sourceBuiltImports = { name: 'source-built-official-imports', setup(builder) {

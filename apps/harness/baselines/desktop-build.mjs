@@ -1,16 +1,19 @@
-import { readFile, writeFile, stat, realpath, readlink } from 'node:fs/promises'
+import { readFile, writeFile, stat, realpath } from 'node:fs/promises'
 import { isBuiltin, createRequire } from 'node:module'
 import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { sha256 } from './tree.mjs'
+import { assertStagedSource, readFrameworkSource } from './framework-source.mjs'
 
 const here = fileURLToPath(new URL('..', import.meta.url))
 const root = resolve(here, '../..')
 const output = join(here, 'dist/desktop')
 const source = join(root, 'vendor/deepseek-harness/source')
 const compiled = join(root, '.cache/harness/source-build')
-const manifest = JSON.parse(await readFile(join(root, 'vendor/deepseek-harness/source-manifest.json'), 'utf8'))
+const framework = await readFrameworkSource(root)
+const manifest = framework.original
 const original = new Map(manifest.entries.map(entry => [entry.path, entry]))
+const current = new Map(framework.entries.map(entry => [entry.path, entry]))
 const records = JSON.parse(await readFile(join(output, 'build-inputs.json'), 'utf8'))
 const receiptPath = join(output, 'source-provenance.json')
 if (process.argv.slice(2).some(value => !['--record', '--verify'].includes(value)) || process.argv.length > 3) throw new Error('Usage: node apps/harness/baselines/desktop-build.mjs [--record|--verify]')
@@ -22,9 +25,11 @@ const expected = {
 const normalize = path => path.split(sep).join('/')
 const within = (path, directory) => path === directory || path.startsWith(directory + sep)
 const same = (left, right, description) => { if (left !== right) throw new Error(`${description}: expected ${right}, received ${left}`) }
-const report = { formatVersion: 2, upstreamCommit: manifest.commit, upstreamSourceTreeSha256: manifest.sha256, records: {}, copiedAssets: [], productEntry: {}, limitations: [
+const report = { formatVersion: 3, upstreamCommit: manifest.commit, upstreamSourceTreeSha256: manifest.sha256,
+  forkSourceTreeSha256: framework.sha256, forkChanges: framework.fork.changes,
+  records: {}, copiedAssets: [], productEntry: {}, limitations: [
   'Only files with nonzero bytesInOutput are described as included source inputs. Unused modules are listed separately by count.',
-  'This receipt verifies official source inputs, copied full-build artifacts, and development dependency resolution. Functional coverage is recorded separately.',
+  'This receipt verifies reviewed fork inputs, copied build artifacts, and development dependency resolution. Functional coverage is recorded separately.',
   'The executable uses the npm Electron distribution. Development runs use workspace links and do not create a distributable application.',
 ] }
 for (const [name, entry] of Object.entries(expected)) {
@@ -40,10 +45,10 @@ for (const [name, entry] of Object.entries(expected)) {
     const digest = await sha256(absolute)
     let origin
     if (within(absolute, source)) {
-      const upstreamPath = normalize(relative(source, absolute)), baseline = original.get(upstreamPath)
-      if (!baseline || baseline.type !== 'file') throw new Error(`Build input missing from upstream manifest: ${upstreamPath}`)
-      same(digest, baseline.sha256, `Official source bytes ${upstreamPath}`)
-      origin = { kind: 'upstream-source', path: upstreamPath }
+      const upstreamPath = normalize(relative(source, absolute)), baseline = original.get(upstreamPath), active = current.get(upstreamPath)
+      if (!active || active.type !== 'file') throw new Error(`Build input missing from reviewed fork: ${upstreamPath}`)
+      same(digest, active.sha256, `Framework source bytes ${upstreamPath}`)
+      origin = { kind: baseline?.sha256 === digest ? 'upstream-source' : 'fork-source', path: upstreamPath }
     } else if (within(absolute, join(here, 'node_modules'))) origin = { kind: 'published-dependency', path: normalize(relative(here, absolute)) }
     else if (['src/desktop-product.ts', 'prepare-profile.mjs', 'check-profile.mjs'].some(path => absolute === join(here, path))) origin = { kind: 'product-composition', path: normalize(relative(root, absolute)) }
     else throw new Error(`Unexpected non-upstream source input in ${name}: ${path}`)
@@ -57,12 +62,13 @@ for (const [name, entry] of Object.entries(expected)) {
     if (!within(resolved, compiled)) throw new Error(`External package escaped the source workspace: ${specifier} -> ${resolved}`)
     if (specifier.startsWith('@deepseek-ai/')) {
       const name = specifier.split('/').slice(0, 2).join('/')
-      const pkg = manifest.packages.find(entry => entry.name === name)
+      const pkg = framework.packages.find(entry => entry.name === name)
       if (!pkg || !within(resolved, join(compiled, pkg.path))) throw new Error(`Official external package is not source-built: ${specifier} -> ${resolved}`)
     }
     externalDependencies.push({ specifier, path: normalize(relative(compiled, resolved)), sha256: await sha256(resolved) })
   }
   report.records[name] = { sourceEntry: name === 'product' ? normalize(relative(root, entry)) : entry, productInputCount: inputFiles.filter(item => item.kind === 'product-composition').length, sourceInputCount: inputFiles.filter(item => item.kind === 'upstream-source').length,
+    forkInputCount: inputFiles.filter(item => item.kind === 'fork-source').length,
     publishedInputCount: inputFiles.filter(item => item.kind === 'published-dependency').length,
     unusedInputCount: Object.keys(record.inputs).length - active.size, inputs: inputFiles, externalDependencies,
     outputs: await Promise.all(outputs.map(async ([path, value]) => {
@@ -73,7 +79,7 @@ for (const [name, entry] of Object.entries(expected)) {
     })) }
 }
 for (const [prefix, target] of [['apps/desktop/renderer/', 'renderer/'], ['apps/desktop/resources/', 'resources/'], ['apps/desktop/scripts/node-bin/', 'scripts/node-bin/']]) {
-  for (const entry of manifest.entries.filter(value => value.path.startsWith(prefix) && value.type === 'file')) {
+  for (const entry of framework.entries.filter(value => value.path.startsWith(prefix) && value.type === 'file')) {
     const path = target + entry.path.slice(prefix.length)
     same(await sha256(join(output, path)), entry.sha256, `Copied official asset ${path}`)
     report.copiedAssets.push({ path, upstreamPath: entry.path, sha256: entry.sha256 })
@@ -95,13 +101,9 @@ report.copiedNativeBlocks = copiedBlocks.map(([name, start, end]) => {
 same(await sha256(join(here, 'src/desktop-main.mjs')), await sha256(join(output, 'main.mjs')), 'YouDub product entry')
 report.productEntry = { source: 'apps/harness/src/desktop-main.mjs', output: 'main.mjs', sha256: await sha256(join(output, 'main.mjs')) }
 report.buildMetadataSha256 = await sha256(join(output, 'build-inputs.json'))
-// Check every staged upstream input against the preserved source baseline. Builds
-// may add outputs beside these files; they may never alter the copied source.
-for (const entry of manifest.entries) {
-  const path = join(compiled, entry.path)
-  if (entry.type === 'file') same(await sha256(path), entry.sha256, `Staged official source ${entry.path}`)
-  else if (entry.type === 'symlink') same(await readlink(path), await readlink(join(source, entry.path)), `Staged official link ${entry.path}`)
-}
+await assertStagedSource(compiled, framework)
+const frameworkReceipt = JSON.parse(await readFile(join(compiled, 'youdub-source-build.json'), 'utf8'))
+same(frameworkReceipt.sourceTreeSha256, framework.sha256, 'Framework build source hash')
 const inputs = JSON.parse(await readFile(join(output, 'source-build-inputs.json'), 'utf8'))
 same(inputs.source, compiled, 'Official build workspace')
 same(inputs.officialBuild, 'scripts/build.ts --scope artifacts', 'Official build command')
@@ -126,7 +128,7 @@ same(clientBuild.environment.DSH_CLIENT_VERSION, JSON.parse(await readFile(join(
 const runtime = join(output, 'runtime-project')
 const sourceRuntime = JSON.parse(await readFile(join(runtime, 'youdub-source-runtime.json'), 'utf8'))
 for (const pkg of sourceRuntime.sourcePackages) {
-  const baseline = manifest.packages.find(entry => entry.name === pkg.name)
+  const baseline = framework.packages.find(entry => entry.name === pkg.name)
   if (!baseline) throw new Error(`Unrecognized source-runtime package ${pkg.name}`)
   same(pkg.source, baseline.path, `Source-runtime package origin ${pkg.name}`)
   same(await realpath(join(runtime, 'node_modules', pkg.name)), await realpath(join(compiled, pkg.source)), `Runtime source link ${pkg.name}`)
@@ -134,12 +136,12 @@ for (const pkg of sourceRuntime.sourcePackages) {
 for (const [name, path] of [['@deepseek-ai/dsh', 'apps/cli'], ['@deepseek-ai/dsh-desktop-host', 'apps/desktop-host'], ['@deepseek-ai/dsh-web-frontend', 'apps/web']]) {
   same(await realpath(join(runtime, 'node_modules', name)), await realpath(join(compiled, path)), `Required runtime source ${name}`)
 }
-report.frameworkBuild = { sourceFiles: manifest.entries.length, officialBuild: inputs.officialBuild,
+report.frameworkBuild = { sourceFiles: framework.entries.length, product: frameworkReceipt.product, officialBuild: inputs.officialBuild,
   clientBuild, artifacts: officialArtifacts, runtimePackages: sourceRuntime.sourcePackages }
 const text = JSON.stringify(report, null, 2) + '\n'
 if (process.argv.includes('--record')) await writeFile(receiptPath, text)
 else same(await readFile(receiptPath, 'utf8'), text, 'Build provenance receipt; rebuild and record after authorized source/build changes')
 console.log(JSON.stringify({ passed: true, recorded: process.argv.includes('--record'), receipt: receiptPath, upstreamCommit: manifest.commit,
-  builds: Object.fromEntries(Object.entries(report.records).map(([name, value]) => [name, { sourceInputs: value.sourceInputCount, productInputs: value.productInputCount, publishedInputs: value.publishedInputCount, externalPackages: value.externalDependencies.length }])),
+  builds: Object.fromEntries(Object.entries(report.records).map(([name, value]) => [name, { sourceInputs: value.sourceInputCount, forkInputs: value.forkInputCount, productInputs: value.productInputCount, publishedInputs: value.publishedInputCount, externalPackages: value.externalDependencies.length }])),
   frameworkBuild: { sourceFiles: report.frameworkBuild.sourceFiles, clientFiles: clientBuild.artifacts.fileCount, runtimePackages: sourceRuntime.sourcePackages.length, copiedPreloads: expectedPreloads.length },
   copiedAssets: report.copiedAssets.length, limitations: report.limitations }, null, 2))

@@ -34,6 +34,8 @@
     "test": "node --test test/*.test.mjs",
     "check:composition": "node check-composition.mjs",
     "check:upstream": "node baselines/verify.mjs",
+    "check:framework": "node baselines/framework-source.mjs",
+    "check:original": "node baselines/vendor.mjs --verify-archive",
     "build:desktop": "node build-desktop.mjs",
     "build:framework": "node build-framework.mjs",
     "build:product": "node build.mjs && node build-desktop.mjs",

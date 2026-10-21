@@ -1,0 +1,79 @@
+name: YouDub Desktop 源码开发检查
+
+on:
+  push:
+    branches: [codex/harness-youdub-integration]
+  pull_request:
+    branches: [codex/harness-youdub-integration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-development-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-development:
+    name: macOS 源码、框架与业务回归
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      LEFTHOOK: "0"
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/harness/package-lock.json
+            apps/web/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: 校验固定来源与活动 fork
+        run: |
+          node apps/harness/baselines/framework-source.mjs
+          node apps/harness/baselines/inventory.mjs
+          node --test apps/harness/test/framework-source.test.mjs
+      - name: 安装源码开发依赖
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/harness ci --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          python -m venv .venv
+          .venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements/base.txt -r backend/requirements-test.txt
+          brew install ffmpeg
+      - name: 从仓库源码构建框架与 YouDub
+        run: |
+          npm run build:framework
+          node apps/harness/build-framework.mjs --verify-only
+          npm run build:youdub
+          npm --prefix apps/harness run check:composition
+      - name: 检查领域、界面和语言
+        run: |
+          npm run typecheck
+          npm test
+          npm --prefix apps/web test
+          apps/web/node_modules/.bin/tsc --noEmit -p apps/web/tsconfig.json
+          npm --prefix apps/harness run check:locales
+      - name: 检查 Harness 集成和媒体合同
+        run: |
+          npm --prefix apps/harness test
+          .venv/bin/python -m pytest backend/tests
+      - name: 保存源码构建证据
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: youdub-source-build-evidence
+          path: |
+            .cache/harness/source-build/youdub-source-build.json
+            apps/harness/dist/build-inputs.json
+            apps/harness/dist/desktop/build-inputs.json
+          if-no-files-found: error

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sha256, tree } from './tree.mjs'
+import { assertStagedSource } from './framework-source.mjs'
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url))
 const here = fileURLToPath(new URL('.', import.meta.url))
@@ -14,8 +15,28 @@ const sources = JSON.parse(await readFile(join(here, 'sources.json'), 'utf8'))
 const npm = JSON.parse(await readFile(join(here, 'npm-packages.json'), 'utf8'))
 const source = sources.sources.find(value => value.version === '0.2.1-rc.2')
 const args = process.argv.slice(2)
-if (args.some(value => !['--copy', '--complete', '--verify'].includes(value)) || args.length > 1) throw new Error('Usage: node apps/harness/baselines/vendor.mjs [--copy|--complete|--verify]')
+if (args.some(value => !['--copy', '--complete', '--verify', '--verify-archive'].includes(value)) || args.length > 1) throw new Error('Usage: node apps/harness/baselines/vendor.mjs [--copy|--complete|--verify|--verify-archive]')
 const same = (actual, expected, message) => { if (actual !== expected) throw new Error(`${message}: expected ${expected}, received ${actual}`) }
+
+if (args.includes('--verify-archive')) {
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+  same(manifest.commit, source.commit, 'Preserved revision')
+  const archive = join(sources.baselineRoot, source.archive)
+  same(await sha256(archive), sources.artifacts.find(value => value.path === source.archive).sha256, 'Original source archive SHA-256')
+  const temporary = await mkdtemp(join(tmpdir(), 'youdub-harness-original-'))
+  try {
+    execFileSync('tar', ['-xzf', archive, '-C', temporary], { stdio: 'pipe' })
+    await assertStagedSource(temporary, manifest)
+    console.log(JSON.stringify({ passed: true, scope: 'original-archive', commit: source.commit,
+      archive, selectedFiles: manifest.files, sha256: manifest.sha256 }, null, 2))
+  } finally { await rm(temporary, { recursive: true, force: true }) }
+  process.exit(0)
+}
+
+if (args.includes('--copy') || args.includes('--complete')) {
+  try { await lstat(join(destination, 'fork.json')); throw new Error('The active fork has been established; restore original source into a separate directory instead') }
+  catch (error) { if (error.code !== 'ENOENT') throw error }
+}
 
 if (args.includes('--copy')) {
   const archive = join(sources.baselineRoot, source.archive)

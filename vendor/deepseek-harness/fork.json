@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "originalManifestSha256": "b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c",
+  "productBaselineCommit": "4b9dc0a7168135f191dd4050a6d1d9a32d9e14b9",
+  "productBaselineTag": "youdub-desktop-refactor-base-20261022",
+  "changes": []
+}
