@@ -78,3 +78,32 @@ it('only offers languages supported by the selected model and disables an unknow
   expect(screen.queryByRole('option', { name: '中文' })).not.toBeInTheDocument()
   expect(screen.queryByRole('option', { name: '日本語' })).not.toBeInTheDocument()
 })
+
+it.each([
+  ['unconfigured provider', { available: false, unavailableReason: 'Provider connection is not configured.', models: [] }],
+  ['model name without capabilities', { models: ['openai-compatible'] }],
+  ['model without language capabilities', { models: [{ id: 'openai-compatible' }] }],
+])('keeps declared language choices for a %s', async (_name, state) => {
+  const descriptor = nodeDescriptors.translate
+  const provider = { id: 'test', operations: [], capability: 'translation', ...state } as NodeTypeDefinition['provider']
+  const changed = mount({ ...type, provider, configSchema: descriptor.configSchema, ui: descriptor.ui }, [{ targetLanguage: 'zh' }])
+  const trigger = screen.getByLabelText('目标语言')
+  expect(trigger).toHaveTextContent('目标中文')
+  expect(trigger).not.toHaveTextContent('不可用')
+  const user = userEvent.setup()
+  await user.click(trigger)
+  expect(await screen.findByRole('option', { name: '中文' })).not.toHaveAttribute('aria-disabled', 'true')
+  await user.click(screen.getByRole('option', { name: '日本語' }))
+  expect(changed).toHaveBeenLastCalledWith('node-0', { targetLanguage: 'ja' })
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+})
+
+it('honors an explicitly empty model language list', async () => {
+  const descriptor = nodeDescriptors.translate
+  const provider = { id: 'test', operations: [], capability: 'translation', models: [{ id: 'no-languages', target_languages: [] }] } as unknown as NodeTypeDefinition['provider']
+  mount({ ...type, provider, configSchema: descriptor.configSchema, ui: descriptor.ui }, [{ targetLanguage: 'zh' }])
+  const user = userEvent.setup()
+  await user.click(screen.getByLabelText('目标语言'))
+  expect(await screen.findByRole('option', { name: '中文 · 不可用' })).toHaveAttribute('aria-disabled', 'true')
+  expect(screen.queryByRole('option', { name: '日本語' })).not.toBeInTheDocument()
+})

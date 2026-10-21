@@ -4,7 +4,7 @@ import type { WorkflowDocument } from '../contracts'
 
 export type ResourceState = {
   status: string; error?: string | { message?: string }
-  requirements?: { providerId: string; model?: string; ready: boolean; automatic: boolean; reason?: string }[]
+  requirements?: { providerId: string; model?: string; ready: boolean; automatic: boolean; reason?: string; configurationRequired?: boolean }[]
   environment?: { id: string; name: string; status: string; detail?: string }[]
   models?: { id: string; name: string; status: string; error?: string; received?: number; total?: number; speed?: number }[]
   activePreparation?: { status: string; error?: string }

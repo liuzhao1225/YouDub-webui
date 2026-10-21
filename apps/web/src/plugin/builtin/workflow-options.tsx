@@ -36,8 +36,8 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
     const declared = field['x-options'] ?? []
     const model = definition?.provider.models?.find((item) => typeof item !== 'string' && item.id === node.provider.model) as Record<string, unknown> | undefined
     const modelOptions = field['x-optionsFrom'] && model?.[field['x-optionsFrom']]
-    const options: QuickOption[] = Array.isArray(modelOptions) ? modelOptions.map((value) => ({ value, label: declared.find((item) => item.value === value)?.label ?? String(value) }))
-      : field['x-optionsFrom'] && definition?.provider.capability ? []
+    const knownSupport = !!model && Array.isArray(modelOptions)
+    const options: QuickOption[] = knownSupport ? modelOptions.map((value) => ({ value, label: declared.find((item) => item.value === value)?.label ?? String(value) }))
       : field.enum ? field.enum.map((value) => ({ value, label: declared.find((item) => item.value === value)?.label ?? String(value) }))
       : declared.length ? [...declared] : field.type === 'boolean' ? [{ value: true, label: tx('On', '开启', 'オン') }, { value: false, label: tx('Off', '关闭', 'オフ') }] : []
     const value = node.config[key], freeform = !options.length && !field.enum && !declared.length && field.type !== 'boolean'

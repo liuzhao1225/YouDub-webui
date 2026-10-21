@@ -19,7 +19,7 @@ export interface ModelDownload {
 }
 export interface ResourceSelection { providerId: string; model?: string }
 export interface ResourceRequirement extends ResourceSelection {
-  ready: boolean; automatic: boolean; missingPackages: string[]; reason?: string
+  ready: boolean; automatic: boolean; missingPackages: string[]; reason?: string; configurationRequired?: boolean
 }
 export interface ResourcePreparationSnapshot {
   status: 'missing' | 'preparing' | 'ready' | 'failed'
@@ -168,9 +168,9 @@ export default class SetupService extends Service {
       await this.catalog.provider(providerId).probe()
     }
     for (const selection of selections) {
+      const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
       const groups = providerGroups[selection.providerId]
       if (!groups) {
-        const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
         const ready = provider?.available === true && (!selection.model || provider.models?.some(model => model.id === selection.model) === true)
         requirements.push({ ...selection, ready, automatic: false, missingPackages: [],
           ...(!ready ? { reason: provider?.unavailableReason || '请根据该插件的要求准备运行依赖。' } : {}) })
@@ -181,7 +181,14 @@ export default class SetupService extends Service {
         !result.media ? result.mediaReason || '缺少 FFmpeg 或 FFprobe。' : !result.punkt ? '缺少 Whisper 分句资源。' :
           !result.demucsSource ? '缺少 Demucs 子模块源码。' : undefined
       const modelId = modelProviders[selection.providerId]
-      const automatic = !modelId || !selection.model || selection.model === automaticModels[selection.providerId]
+      let automatic = !modelId || !selection.model || selection.model === automaticModels[selection.providerId]
+      let configurationRequired = false
+      if (!reason && provider?.execution === 'remote') {
+        if (!provider.available) reason = provider.unavailableReason || '远端服务尚未配置。'
+        else if (!selection.model) reason = '请在工作流节点中选择翻译模型。'
+        else if (!provider.models?.some(model => model.id === selection.model)) reason = `所选模型不可用：${selection.model}`
+        if (reason) { automatic = false; configurationRequired = true }
+      }
       if (modelId && automatic) requiredModels.add(modelId)
       if (!reason && modelId) {
         const modelProbe = (await this.resourceEnvironment.probe('models', [selection.providerId]))[selection.providerId]
@@ -190,7 +197,7 @@ export default class SetupService extends Service {
           reason = modelProbe.unavailable_reason || `未安装模型：${selectedModel}`
         }
       }
-      requirements.push({ ...selection, ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}) })
+      requirements.push({ ...selection, ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
     }
     const models = this.models.filter(model => requiredModels.has(model.id))
     for (const model of models) {

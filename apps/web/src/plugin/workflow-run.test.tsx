@@ -90,6 +90,16 @@ function ResourceView({ document = graph(), useWorkflowResources }: { document?:
   return <><WorkflowResources resources={resources} types={types} /><button disabled={!resources.ready}>继续</button></>
 }
 const Resources = bindTestComponent(ResourceView, ['useWorkflowResources'])
+it('shows connection configuration separately from language support and blocks starting', async () => {
+  const request = vi.fn(async () => ({ status: 'missing', requirements: [{ providerId: 'test', ready: false, automatic: false, configurationRequired: true, reason: 'Provider connection is not configured.' }] }))
+  const { push } = mount(<Resources />, request)
+  await screen.findByText('请配置所需服务')
+  expect(screen.getByText('请配置服务地址、API Key 和模型。')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
+  expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
+  await userEvent.setup().click(screen.getByRole('link', { name: '配置服务连接' }))
+  expect(push).toHaveBeenCalledWith('/settings')
+})
 it('checks automatically and leaves only the ready state when no download is needed', async () => {
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<ResourceState>>(async () => ready)
   mount(<Resources />, request)
