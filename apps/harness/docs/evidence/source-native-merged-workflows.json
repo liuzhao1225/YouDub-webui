@@ -1,0 +1,22 @@
+{
+  "defaultTemplates": [
+    "youdub.subtitles",
+    "youdub.dubbing",
+    "youdub.subtitles-dubbing"
+  ],
+  "duplicateReviewTemplateRemoved": true,
+  "nativeListVerified": true,
+  "nativeRecognizeAndTranslateAutoContinueToggledFalse": true,
+  "nativePauseHelpVisible": true,
+  "temporaryChangesUndone": true,
+  "extraWorkflowCreated": false,
+  "existingUserWorkflowVisible": "c401b095-af96-47f8-b052-21fff14c1187",
+  "tests": {
+    "passed": 15,
+    "log": "/tmp/youdub-merged-workflow-tests.log"
+  },
+  "screenshots": [
+    "source-native-merged-workflows.png",
+    "source-native-workflow-review-toggle.png"
+  ]
+}

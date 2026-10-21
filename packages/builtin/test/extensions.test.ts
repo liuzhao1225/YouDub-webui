@@ -14,7 +14,7 @@ import { startHost } from '../../../apps/host/src/bootstrap.js'
 
 test('Python correction validation is opt-in and supports non-media output schemas', async t => {
   const ctx = new Context()
-  const support = await ctx.plugin({ apply(scope) { scope.reflect.provide('process', {}) } })
+  const support = await ctx.plugin({ apply(scope) { scope.reflect.provide('youdubWorker', {}) } })
   const catalog = await ctx.plugin(Catalog)
   const config: PythonProvider.PythonProviderConfig = {
     descriptor: { id: 'example.dictionary', label: 'Dictionary', pluginId: 'example.dictionary', pluginVersion: '1.0.0', integrity: 'test', operations: [{ id: 'lookup/v1', inputSchema: {}, outputs: [{ name: 'entry', schemaId: 'dictionary/v1', kind: 'json', required: true }] }] },
@@ -245,7 +245,7 @@ test('official media readiness checks both configured executables and exposes fa
   assert.match(provider.describe().unavailableReason!, /missing-ffmpeg.*ENOENT/)
   process.env.FFMPEG_PATH = join(root, 'ffmpeg')
   let brokenProbe = false
-  t.mock.method(ctx.process, 'run', async (request: { command: string; args: string[] }) => {
+  t.mock.method(ctx.youdubWorker, 'run', async (request: { command: string; args: string[] }) => {
     assert.deepEqual(request.args, ['-version'])
     assert.ok([process.env.FFMPEG_PATH, process.env.FFPROBE_PATH].includes(request.command))
     if (brokenProbe && request.command === process.env.FFPROBE_PATH) throw new Error('broken ffprobe executable')

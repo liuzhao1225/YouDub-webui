@@ -1,0 +1,58 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-deliverables/README.md
+/:
+  en: 91a4da87e2e078ed
+  zh: 8d489c6cdf208c4d
+/deepseek-ai-dsh-client-ui-deliverables:
+  en: baa21bacf9d87975
+  zh: caf2b019a43f4009
+/deepseek-ai-dsh-client-ui-deliverables/summary:
+  en: a17b97d16803f911
+  zh: ad80cf4bcb5a8018
+/deepseek-ai-dsh-client-ui-deliverables/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-client-ui-deliverables/use-this-package:
+  en: 4a2fcdcf13276fef
+  zh: 8bde03bbbf15840c
+/deepseek-ai-dsh-client-ui-deliverables/use-this-package/explicit-deliveries:
+  en: 0ee4bbe45bb5e473
+  zh: 9c99d829b25f59ba
+/deepseek-ai-dsh-client-ui-deliverables/use-this-package/the-changed-files-card:
+  en: 4b279e2bddddc083
+  zh: a3135393299c935b
+/deepseek-ai-dsh-client-ui-deliverables/use-this-package/the-review-tab:
+  en: 231547659321f3a8
+  zh: bc5935cdd46ada56
+/deepseek-ai-dsh-client-ui-deliverables/use-this-package/inline-code-links:
+  en: ef13aac8ac36a5c3
+  zh: 1e2ae4b3eaf98818
+/deepseek-ai-dsh-client-ui-deliverables/understand-the-implementation:
+  en: 13e06395a2c447bf
+  zh: c2c29bbfbfabe756
+/deepseek-ai-dsh-client-ui-deliverables/further-exploration:
+  en: 476b59e8671db982
+  zh: b3d0495a03e8940a
+/deepseek-ai-dsh-client-ui-deliverables/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-client-ui-deliverables/model-experience/clickable-file-reference-guidance:
+  en: eb244aa21a4e5210
+  zh: e3450addfa19cea5
+/deepseek-ai-dsh-client-ui-deliverables/model-experience/clickable-file-reference-guidance/what-the-model-sees:
+  en: 78339e353ae47a53
+  zh: 582efa623a5dfd72
+/deepseek-ai-dsh-client-ui-deliverables/model-experience/clickable-file-reference-guidance/token-effect:
+  en: 66bd094b37a29c22
+  zh: e657d66ac6f95a22
+/deepseek-ai-dsh-client-ui-deliverables/model-experience/clickable-file-reference-guidance/kv-cache-effect:
+  en: 52626a05acc8b320
+  zh: 6a8e62b0d47d5297
+/deepseek-ai-dsh-client-ui-deliverables/known-limitations-and-deferred-work:
+  en: dcebaf6fd7885452
+  zh: 017ef058d4dcdc25
+/deepseek-ai-dsh-client-ui-deliverables/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

@@ -8,7 +8,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { AppError, requireId, type Artifact, type ArtifactRef, type ArtifactDescriptor, type FilesService, type TaskRecord } from '@youdub/sdk'
 
 export default class Files extends Service implements FilesService {
-  static inject = ['process']
+  static inject = ['youdubWorker']
   root: string
   private writes = new Set<string>()
   private readers = new Map<string, number>()
@@ -65,7 +65,7 @@ export default class Files extends Service implements FilesService {
     const metadata = { ...descriptor.metadata }
     if (descriptor.mimeType === 'application/json') JSON.parse(await readFile(file, 'utf8'))
     if (/^(audio|video)\//.test(descriptor.mimeType)) {
-      const result = await this.ctx.process.run({ command: process.env.FFPROBE_PATH || 'ffprobe', args: ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file] })
+      const result = await this.ctx.youdubWorker.run({ command: process.env.FFPROBE_PATH || 'ffprobe', args: ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file] })
       const probe = JSON.parse(result.stdout)
       if (!probe.streams?.some((stream: any) => stream.codec_type === descriptor.mimeType.split('/')[0])) throw new AppError('INVALID_PROVIDER_RESULT', 'Artifact has no declared media stream.', 500)
       metadata.durationMs = Math.round(Number(probe.format.duration) * 1000)
@@ -106,7 +106,7 @@ export default class Files extends Service implements FilesService {
     } catch (error: any) { if (error.code !== 'ENOENT') throw error }
     const temporary = path.join(directory, `${randomUUID()}.jpg`)
     try {
-      await this.ctx.process.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-i', source, '-map', '0:v:0', '-frames:v', '1', '-vf', "scale='min(960,iw)':-2", '-q:v', '3', '-threads', '1', '-n', temporary] })
+      await this.ctx.youdubWorker.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-i', source, '-map', '0:v:0', '-frames:v', '1', '-vf', "scale='min(960,iw)':-2", '-q:v', '3', '-threads', '1', '-n', temporary] })
       const info = await stat(temporary)
       if (!info.isFile() || !info.size) throw new AppError('COVER_GENERATION_FAILED', 'FFmpeg did not produce a cover image.', 500)
       await rename(temporary, destination)

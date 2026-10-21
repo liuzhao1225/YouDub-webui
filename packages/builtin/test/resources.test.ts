@@ -36,7 +36,7 @@ test('authenticated resource APIs validate catalog selections and share pause/re
   })
   const ctx = new Context()
   const app = await ctx.plugin(async function resourceApiTest(owner) {
-    owner.reflect.provide('process', { run: async () => { throw new Error('No external processes in this test') } })
+    owner.reflect.provide('youdubWorker', { run: async () => { throw new Error('No external processes in this test') } })
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: () => ({ probe: async () => ({}) }),
@@ -114,7 +114,7 @@ test('declared resource groups work for external providers, share probes, and re
   })
   const ctx = new Context()
   const app = await ctx.plugin(async function resourceMetadataTest(owner) {
-    owner.reflect.provide('process', {})
+    owner.reflect.provide('youdubWorker', {})
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: (id: string) => ({ probe: async () => { refreshed.push(id) } }),

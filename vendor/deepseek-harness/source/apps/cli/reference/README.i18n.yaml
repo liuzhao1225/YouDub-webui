@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write apps/cli/reference/README.md
+/dsh-cli-behavior-reference:
+  en: 5a4f43756dae900e
+  zh: d58c479481cfa5fe
+/dsh-cli-behavior-reference/profile-boot:
+  en: b474a6fc3c98837d
+  zh: da9219f91177b6c8
+/dsh-cli-behavior-reference/profile-boot/app-arguments:
+  en: 60b4e6837299427e
+  zh: 88eac566a2e63881
+/dsh-cli-behavior-reference/profile-boot/config-schema-dump:
+  en: a356f8a68f3b3685
+  zh: c718713b5d709295
+/dsh-cli-behavior-reference/startup-diagnostics:
+  en: d6368bf97a02bd57
+  zh: 2ab7888a108961ce
+/dsh-cli-behavior-reference/plugin-management:
+  en: 8d2cfff9bab7327f
+  zh: 21515ab6e6798504
+/dsh-cli-behavior-reference/web-profile:
+  en: d768b6213e75a890
+  zh: 731791b496ce14ef
+/dsh-cli-behavior-reference/shared-deployment-behavior:
+  en: 6a7abc9339e8f37f
+  zh: 133adb834c8e195d
+/dsh-cli-behavior-reference/source-execution:
+  en: 05c2b23790f7b296
+  zh: 51f809020fb230a1

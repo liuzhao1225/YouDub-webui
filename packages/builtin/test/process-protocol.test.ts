@@ -15,7 +15,7 @@ const receive = `process.stdin.once('data', raw => { const request = JSON.parse(
 
 test('unknown RPC message rejects its request instead of abandoning it', async t => {
   const ctx = new Context(), processPlugin = await ctx.plugin(Processes)
-  const rpc = await ctx.process.rpc(worker(`process.stdin.once('data', raw => {const m=JSON.parse(raw); process.stdout.write(JSON.stringify({version:m.version,requestId:m.requestId,seq:1,type:'unknown',payload:{}})+'\\n');});`))
+  const rpc = await ctx.youdubWorker.rpc(worker(`process.stdin.once('data', raw => {const m=JSON.parse(raw); process.stdout.write(JSON.stringify({version:m.version,requestId:m.requestId,seq:1,type:'unknown',payload:{}})+'\\n');});`))
   t.after(async () => { await rpc.close(); await processPlugin.dispose() })
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
@@ -28,7 +28,7 @@ test('malformed worker output stops all subsequent buffered side effects', async
   t.after(() => plugin.dispose())
   let prepares = 0, progress = 0
   const script = receive + `process.stdout.write('not-json\\n'); send('external.prepare',{externalRequestId:'x',requestKey:'key'}); send('progress',{value:0.5,message:'should not run'},2); });`
-  await assert.rejects(ctx.process.worker(worker(script), invocation, context({ externalPrepare: async () => { prepares++ }, progress: async () => { progress++ } })))
+  await assert.rejects(ctx.youdubWorker.worker(worker(script), invocation, context({ externalPrepare: async () => { prepares++ }, progress: async () => { progress++ } })))
   assert.equal(prepares, 0, 'No new external intent may be recorded after protocol failure.')
   assert.equal(progress, 0, 'No progress may be persisted after protocol failure.')
 })
@@ -38,7 +38,7 @@ test('worker result followed by abnormal exit never registers successful artifac
   t.after(() => plugin.dispose())
   let registrations = 0
   const script = receive + `send('result',{state:'completed',outputs:{file:{$artifact:'f'}},artifacts:{f:{path:'x.txt',mimeType:'text/plain',schemaId:'file/v1'}}}); process.exitCode=9; process.stdin.destroy(); });`
-  await assert.rejects(ctx.process.worker(worker(script), invocation, context({ register: async () => { registrations++; return { id: 'x', schemaId: 'file/v1' } } })), /Worker exited \(9\)/)
+  await assert.rejects(ctx.youdubWorker.worker(worker(script), invocation, context({ register: async () => { registrations++; return { id: 'x', schemaId: 'file/v1' } } })), /Worker exited \(9\)/)
   assert.equal(registrations, 0)
 })
 
@@ -49,7 +49,7 @@ test('worker cancellation waits for the running process to exit', async t => {
   let entered!: () => void, pid = 0
   const started = new Promise<void>(resolve => { entered = resolve })
   const script = receive + `send('progress',{value:0,message:String(process.pid)}); setInterval(()=>{},1000); });`
-  const execution = ctx.process.worker(worker(script), invocation, context({ signal: controller.signal, progress: async (_, message) => { pid = Number(message); entered() } }))
+  const execution = ctx.youdubWorker.worker(worker(script), invocation, context({ signal: controller.signal, progress: async (_, message) => { pid = Number(message); entered() } }))
   await started
   controller.abort(new Error('cancelled by test'))
   await assert.rejects(execution)
@@ -66,7 +66,7 @@ test('Windows cancellation also stops a worker child process', { timeout: 15000,
     await plugin.dispose()
   })
   const script = receive + `const child=require('node:child_process').spawn(process.execPath,['-e',"console.log('ready');setInterval(()=>{},1000)"],{stdio:['ignore','pipe','ignore'],windowsHide:true}); child.stdout.once('data',()=>send('progress',{value:0,message:String(child.pid)})); setInterval(()=>{},1000); });`
-  const execution = ctx.process.worker(worker(script), invocation, context({ signal: controller.signal, progress: async (_, message) => { descendant = Number(message); entered() } }))
+  const execution = ctx.youdubWorker.worker(worker(script), invocation, context({ signal: controller.signal, progress: async (_, message) => { descendant = Number(message); entered() } }))
   await started
   controller.abort(new Error('cancelled by test'))
   await assert.rejects(execution)
@@ -86,7 +86,7 @@ try:
 except Exception as error:
     wire.fail(error)
 `
-  await assert.rejects(ctx.process.worker({ command: python, args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context({
+  await assert.rejects(ctx.youdubWorker.worker({ command: python, args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context({
     externalUpdate: async receipt => { await new Promise(resolve => setTimeout(resolve, 75)); receipts.push(receipt.state) },
   })), (error: any) => error.code === 'ORIGINAL_PROVIDER_FAILURE' && /provider disconnected/.test(error.message))
   assert.deepEqual(receipts, ['unknown'])
@@ -105,7 +105,7 @@ test('transient EPERM from a group existence probe does not replace the worker e
     return kill(pid, signal as NodeJS.Signals)
   })
   try {
-    await assert.rejects(ctx.process.worker(worker(receive + `send('error',{code:'DOWNLOAD_FAILED',message:'Original download failure'}); setInterval(()=>{},1000); });`), invocation, context()), (error: any) => error.code === 'DOWNLOAD_FAILED' && error.message === 'Original download failure')
+    await assert.rejects(ctx.youdubWorker.worker(worker(receive + `send('error',{code:'DOWNLOAD_FAILED',message:'Original download failure'}); setInterval(()=>{},1000); });`), invocation, context()), (error: any) => error.code === 'DOWNLOAD_FAILED' && error.message === 'Original download failure')
     assert.equal(injected, true)
   } finally { mocked.mock.restore() }
 })
@@ -114,7 +114,7 @@ test('Python pipes round-trip Chinese paths even when the parent requests a lega
   const ctx = new Context(), plugin = await ctx.plugin(Processes)
   t.after(() => plugin.dispose())
   const input = JSON.stringify({ path: join('安装 空格', '真实语音 JFK.mp4'), text: '中文翻译' })
-  const result = await ctx.process.run({ command: python, args: ['-B', '-c', 'import json, sys; print(json.dumps(json.load(sys.stdin), ensure_ascii=False))'],
+  const result = await ctx.youdubWorker.run({ command: python, args: ['-B', '-c', 'import json, sys; print(json.dumps(json.load(sys.stdin), ensure_ascii=False))'],
     input, env: { PYTHONUTF8: '0', PYTHONIOENCODING: 'cp1252' } })
   assert.deepEqual(JSON.parse(result.stdout), JSON.parse(input))
 })
@@ -131,7 +131,7 @@ try:
 except Exception as error:
     wire.fail(error)
 `
-  await assert.rejects(ctx.process.worker({ command: python, args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context()), (error: any) => {
+  await assert.rejects(ctx.youdubWorker.worker({ command: python, args: ['-B', '-c', script], cwd: process.cwd() }, invocation, context()), (error: any) => {
     assert.equal(error.code, 'BAD_MODEL')
     assert.equal(error.status, 422)
     assert.equal(error.details.field, 'translation.model')
@@ -145,7 +145,7 @@ test('worker stderr is logged completely before failure even beyond the error ta
   const ctx = new Context(), plugin = await ctx.plugin(Processes), logged: string[] = []
   t.after(() => plugin.dispose())
   const script = receive + `process.stderr.write('first diagnostic\\n'+'x'.repeat(1024*1024)+'\\nlast diagnostic',()=>{send('error',{code:'LARGE_DIAGNOSTIC',message:'failed'}); process.stdin.destroy();}); });`
-  await assert.rejects(ctx.process.worker(worker(script), invocation, context({ log: async line => { logged.push(line) } })), { code: 'LARGE_DIAGNOSTIC' })
+  await assert.rejects(ctx.youdubWorker.worker(worker(script), invocation, context({ log: async line => { logged.push(line) } })), { code: 'LARGE_DIAGNOSTIC' })
   assert.equal(logged[0], 'first diagnostic')
   assert.equal(logged[1].length, 1024 * 1024)
   assert.equal(logged[2], 'last diagnostic')

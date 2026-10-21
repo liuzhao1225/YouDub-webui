@@ -1,0 +1,10 @@
+{
+  "provider": "youdub-ark",
+  "display": "first six characters followed by ***",
+  "surface": "official provider-card extension; official editor remains write-only",
+  "nativeRestartVerified": true,
+  "settingsReopenVerified": true,
+  "fullSecretAbsentFromAX": true,
+  "vendorModified": false,
+  "screenshot": "source-native-key-preview.png"
+}

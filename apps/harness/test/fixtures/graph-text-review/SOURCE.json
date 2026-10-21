@@ -1,0 +1,5 @@
+{
+  "sourceSnapshot": "f6f927903581b165f2bf6c840ea65b896d319524",
+  "source": "fixtures/plugins/graph-text-review",
+  "migration": "Official dsh bundle, shared YouDub domain and official frontend slots; no legacy Host or Client loader."
+}

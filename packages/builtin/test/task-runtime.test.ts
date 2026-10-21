@@ -65,7 +65,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
         throw new Error('Remote response disconnected after acceptance')
       }
       if (request.config.mode === 'semantic-error') return { state: 'completed', outputs: { document: { text: 'structurally valid' } } }
-      if (request.config.mode === 'worker-error') return ctx.process.worker({ command: process.execPath, args: ['-e', `process.stdin.once('data',raw=>{const m=JSON.parse(raw);process.stderr.write('original_provider.py:42\\n');process.stdout.write(JSON.stringify({version:m.version,invocationId:m.invocationId,seq:1,type:'error',payload:{code:'MODEL_INCOMPATIBLE',message:'Token limit unsupported',status:422,field:'translation.model',stage:'translate',action:'adjust_settings',details:{requested:65535}}})+'\\n');process.stdin.destroy();});`] }, request, context)
+      if (request.config.mode === 'worker-error') return ctx.youdubWorker.worker({ command: process.execPath, args: ['-e', `process.stdin.once('data',raw=>{const m=JSON.parse(raw);process.stderr.write('original_provider.py:42\\n');process.stdout.write(JSON.stringify({version:m.version,invocationId:m.invocationId,seq:1,type:'error',payload:{code:'MODEL_INCOMPATIBLE',message:'Token limit unsupported',status:422,field:'translation.model',stage:'translate',action:'adjust_settings',details:{requested:65535}}})+'\\n');process.stdin.destroy();});`] }, request, context)
       if (request.config.mode === 'bad-json') return { state: 'completed', outputs: { document: { text: 42 } } }
       if (request.config.mode === 'deleted' || request.config.mode === 'forged') {
         await writeFile(join(request.workDir, 'result.txt'), 'registered before return')
@@ -75,7 +75,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
       }
       if (request.config.mode === 'cancel' && request.attempt === 1) {
         previous = context
-        return ctx.process.worker({ command: process.execPath, args: ['-e', `process.stdin.once('data',raw=>{const m=JSON.parse(raw);process.stdout.write(JSON.stringify({version:m.version,invocationId:m.invocationId,seq:1,type:'progress',payload:{value:0.1,message:'child running'}})+'\\n');setInterval(()=>{},1000);});`] }, request, context)
+        return ctx.youdubWorker.worker({ command: process.execPath, args: ['-e', `process.stdin.once('data',raw=>{const m=JSON.parse(raw);process.stdout.write(JSON.stringify({version:m.version,invocationId:m.invocationId,seq:1,type:'progress',payload:{value:0.1,message:'child running'}})+'\\n');setInterval(()=>{},1000);});`] }, request, context)
       }
       return write(request.workDir, context)
     },

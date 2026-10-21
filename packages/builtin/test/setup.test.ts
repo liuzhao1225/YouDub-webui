@@ -45,7 +45,7 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
   delete process.env.YOUDUB_PYTHON
   const stop = new Error('Stop before creating venv')
   let extracted = false
-  const ctx = { logger: { info() {} }, process: { run: async ({ command, args, cwd }: { command: string; args: string[]; cwd: string }) => {
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ command, args, cwd }: { command: string; args: string[]; cwd: string }) => {
     if (command === tar) {
       assert.equal(cwd, join(data, 'runtime', 'python'))
       assert.ok(args.every(arg => /^[\x00-\x7f]*$/.test(arg)))
@@ -90,7 +90,7 @@ test('desktop Python stays in its data directory even when a system Python is on
   const { python } = runtimePaths(root)
   assert.equal(python, join(environment, windows ? 'Scripts/python.exe' : 'bin/python'))
   const commands: string[][] = []
-  const ctx = { logger: { info() {} }, process: { run: async ({ command, args }: { command: string; args: string[] }) => {
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ command, args }: { command: string; args: string[] }) => {
     commands.push(args)
     if (args[1] === 'venv') {
       assert.equal(command, join(root, 'runtime', 'python', 'python', windows ? 'python.exe' : 'bin/python3'))
@@ -114,6 +114,37 @@ async function waitFor(predicate: () => boolean) {
   const deadline = Date.now() + 5000
   while (!predicate()) { if (Date.now() > deadline) throw new Error('setup test timed out'); await new Promise(resolve => setTimeout(resolve, 10)) }
 }
+test('private environment installs media tools inside YouDub instead of using machine paths', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-private-environment-'))
+  const python = join(root, 'python')
+  await writeFile(python, 'test Python')
+  const previous = { ...process.env }
+  const client = new DownloadClient(), commands: string[] = [], downloads: string[] = []
+  t.after(async () => {
+    await client.close()
+    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
+    Object.assign(process.env, previous)
+    await rm(root, { recursive: true })
+  })
+  process.env.FFMPEG_PATH = '/machine/ffmpeg'
+  process.env.FFPROBE_PATH = '/machine/ffprobe'
+  process.env.NLTK_DATA = '/machine/nltk_data'
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ command, args }: { command: string; args: string[] }) => {
+    commands.push(command)
+    assert.ok(!command.startsWith('/machine/'))
+    return { stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' subtitles ' : '3.12.12', stderr: '' }
+  } } } as unknown as Context
+  t.mock.method(client, 'download', async (_asset: unknown, target: string) => {
+    assert.ok(target.startsWith(join(root, 'runtime', 'ffmpeg')))
+    downloads.push(target); await mkdir(join(target, '..'), { recursive: true }); await writeFile(target, 'test media executable')
+  })
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python, privateEnvironment: true }, client, new AbortController().signal).prepare(['media'])
+  assert.ok(downloads.length > 0)
+  assert.ok(commands.some(command => command.startsWith(join(root, 'runtime', 'ffmpeg'))))
+  assert.ok(process.env.FFMPEG_PATH!.startsWith(join(root, 'runtime', 'ffmpeg')))
+  assert.ok(process.env.FFPROBE_PATH!.startsWith(join(root, 'runtime', 'ffmpeg')))
+  assert.equal(process.env.NLTK_DATA, join(root, 'nltk_data'))
+})
 test('base restart restores existing managed FFmpeg and NLTK paths without installing inference dependencies', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-managed-resource-restart-'))
   const windows = process.platform === 'win32'
@@ -132,7 +163,7 @@ test('base restart restores existing managed FFmpeg and NLTK paths without insta
   const client = new DownloadClient()
   t.after(() => client.close())
   t.mock.method(client, 'download', async () => { throw new Error('Restart must not download resources') })
-  const ctx = { logger: { info() {} }, process: { run: async ({ command, args }: { command: string; args: string[] }) => {
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ command, args }: { command: string; args: string[] }) => {
     assert.equal(command, python)
     if (args[1] === 'backend.workers.setup_probe') {
       assert.deepEqual(JSON.parse(args[3]!), ['base'])
@@ -145,6 +176,43 @@ test('base restart restores existing managed FFmpeg and NLTK paths without insta
   assert.equal(process.env.FFPROBE_PATH, join(bin, 'ffprobe' + (windows ? '.exe' : '')))
   assert.equal(process.env.PATH?.split(delimiter)[0], bin)
   assert.equal(process.env.NLTK_DATA, join(root, 'nltk_data'))
+})
+test('private dependency installation clears machine pip destinations and installs only base before model selection', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-private-pip-'))
+  const python = join(root, 'python'), requests: any[] = []
+  await writeFile(python, 'test Python')
+  const previous = { ...process.env }, client = new DownloadClient()
+  t.after(async () => {
+    await client.close()
+    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
+    Object.assign(process.env, previous)
+    await rm(root, { recursive: true })
+  })
+  Object.assign(process.env, { PIP_TARGET: '/machine/packages', PIP_PREFIX: '/machine/prefix', PIP_ROOT: '/machine/root', PIP_USER: '1' })
+  let installed = false
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async (request: any) => {
+    requests.push(request)
+    const { args } = request
+    if (args[1] === 'pip') {
+      assert.equal(request.command, python)
+      assert.equal(request.env.PIP_TARGET, ''); assert.equal(request.env.PIP_PREFIX, '')
+      assert.equal(request.env.PIP_ROOT, ''); assert.equal(request.env.PIP_USER, '0')
+      assert.equal(args.filter((arg: string) => arg.endsWith('.txt')).length, 1)
+      assert.ok(args.includes(join(resolve('.'), 'backend/requirements/base.txt')))
+      installed = true
+      return { stdout: '', stderr: '' }
+    }
+    if (args[1] === 'backend.workers.setup_probe') {
+      assert.equal(args[2], 'dependencies')
+      assert.deepEqual(JSON.parse(args[3]), ['base'])
+      return { stdout: JSON.stringify({ missing: installed ? [] : ['pydantic'] }), stderr: '' }
+    }
+    return { stdout: '3.12.15', stderr: '' }
+  } } } as unknown as Context
+  t.mock.method(client, 'download', async () => { throw new Error('Base test must not download Python, media or models') })
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python, privateEnvironment: true }, client, new AbortController().signal).prepare(['base'])
+  assert.equal(installed, true)
+  assert.ok(!requests.some(request => ['acceleration-plan', 'acceleration', 'models'].includes(request.args[2])))
 })
 for (const unrelatedFailure of [false, true]) test(`closing first-run setup ${unrelatedFailure ? 'preserves unrelated errors' : 'cancels preparation without reporting a failure'}`, async t => {
   const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
@@ -160,7 +228,7 @@ for (const unrelatedFailure of [false, true]) test(`closing first-run setup ${un
   const errors: unknown[] = []
   const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
   const app = await ctx.plugin(async function shutdownTest(owner) {
-    owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
+    owner.reflect.provide('youdubWorker', { run: async () => { throw new Error('unexpected process') } })
     owner.reflect.provide('loader', {})
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root: tmpdir(), repoRoot: resolve('.'), python: '/unused/python', version: '0.0.6', entries: [] })
@@ -203,7 +271,7 @@ test('base setup opens the workbench before optional packages/models and prepare
   })
   const ctx = new Context()
   const app = await ctx.plugin(async function setupTest(owner) {
-    owner.reflect.provide('process', { run: async ({ args }: { args: string[] }) => {
+    owner.reflect.provide('youdubWorker', { run: async ({ args }: { args: string[] }) => {
       if (args[1] === 'pip') {
         assert.ok(args.includes(join(resolve('.'), 'backend', 'requirements', 'whisper.txt')))
         assert.ok(!args.some(arg => /voxcpm|demucs|qwen/.test(arg)))
@@ -282,7 +350,7 @@ test('installed remote dependencies do not make an unconfigured service ready', 
   t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ missing: [], media: true, punkt: true, demucsSource: true }))
   const ctx = new Context()
   const app = await ctx.plugin(async function remoteConfiguration(owner) {
-    owner.reflect.provide('process', { run: async () => { throw new Error('Checking configuration must not execute a model') } })
+    owner.reflect.provide('youdubWorker', { run: async () => { throw new Error('Checking configuration must not execute a model') } })
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: () => ({ probe: async () => ({}) }),
@@ -322,7 +390,7 @@ test('configuration checks and explicit retries persist recovery after dependenc
   const ctx = new Context(), errors: unknown[] = []
   const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
   const app = await ctx.plugin(async function configurationRecovery(owner) {
-    owner.reflect.provide('process', { run: async () => { throw new Error('Configuration checks must not execute a model') } })
+    owner.reflect.provide('youdubWorker', { run: async () => { throw new Error('Configuration checks must not execute a model') } })
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     owner.reflect.provide('catalog', {
       provider: () => ({ probe: async () => ({}) }),
@@ -382,7 +450,7 @@ test('failed selected model download retains the error and leaves the workbench 
   const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
   const app = await ctx.plugin(async function resourceFailure(owner) {
     owner.reflect.provide('catalog', { provider: () => ({ probe: async () => ({}) }), listProviders: () => [{ id: 'whisper', resources: builtinResources('whisper'), available: false, models: [] }] })
-    owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
+    owner.reflect.provide('youdubWorker', { run: async () => { throw new Error('unexpected process') } })
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })

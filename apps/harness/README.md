@@ -1,131 +1,148 @@
-# YouDub on DeepSeek Harness：桌面字幕验证
+# YouDub × Harness 融合开发版
 
-使用未修改的官方 **DeepSeek Harness Desktop 0.2.1-rc.2** 和同版本 Harness 发布包。YouDub 插件保留原版动态 Logo、大标题、配色及首屏动效，接入导入视频、Whisper 识别、人工校对确认和 SRT 导出。当前分支为 `codex/harness-subtitle-poc`，上游核心代码修改为 **0**。
+当前分支 `codex/harness-youdub-integration` 使用 Harness 的后端框架、前端插件架构和 Electron 桌面能力，加载原 YouDub 的业务页面与工作流。桌面直接由本仓库的 Electron 运行融合后的源码开发入口，产品版本读取仓库根 `package.json`（当前 `0.0.7`）；Harness runtime 固定为 `0.2.1-rc.2`。
 
-桌面启动、原生文件选择、真实识别、修改保存、人工确认及原生下载已实测，下载文件与 Host 产物哈希一致。固定侧栏、深浅首页及 Logo 声波变化已验证。当前官方组合的浏览器首页、既有任务和再次下载回归也已通过；具体证据见 [验收记录](docs/validation.md)。
+当前处于源码开发阶段，开发运行允许链接工作区；本轮不生成应用包或安装包。历史字幕 POC 说明原样保存在 [POC-README.md](docs/POC-README.md)，其中旧启动命令、截图和测试计数不代表本分支。
 
-![桌面深色首屏](docs/evidence/desktop-home-dark.png)
+## 源码与职责
 
-[桌面浅色首屏](docs/evidence/desktop-home-light.png)
-
-## 官方能力与业务边界
-
-| 边界 | 当前实现 |
+| 部分 | 当前承载 |
 | --- | --- |
-| 桌面壳、Host、原生传输 | 官方安装的 Desktop，复用其 Electron、保留的 `desktop` profile 和前端资源 |
-| 启动、插件装配、配置 | 官方 dsh CLI、profile、bundle、Cordis Loader；浏览器与桌面均使用 `dsh-base` + `dsh-web-app` + YouDub bundle |
-| 页面框架与布局 | 官方 `AppFrame`；YouDub 注册 `sidebar`、`main`、`shell.leading` 插槽，侧栏宽度、收放、拖拽及主区域由官方布局承载 |
-| 通用控件 | 官方 `Button`、`Menu`、`Tag`、`StateDot`、`Tooltip`、图标、文件类型图标和文件大小格式化 |
-| 主题与滚动条 | 官方 theme 服务、`overrideTokens` 和持久化主题偏好；官方全局滚动条样式 |
-| 前端状态 | 官方 `defineStore`，侧栏和业务页共享 root store |
-| 请求鉴权 | 官方 `dsh-client-connection` 的 owner Fetch 路由 |
-| 子进程与后台任务 | 官方 `subprocess`、`jobs` 服务；YouDub 仅适配现有 Python worker 消息协议 |
-| 状态文件写入 | 官方 `writeFileAtomic`；字幕任务状态机及 `task.json` 数据合同仍由 YouDub 插件管理 |
-| 原版视觉 | 直接引用现有 `BrandMark` 与 SVG；构建时从原 `apps/web/src/app/globals.css` 提取主题变量和动画，不修改原文件 |
-| 业务组件与算法 | 视频预览、字幕多行编辑、识别进度保留业务实现；现有公共组件没有与这些交互直接匹配的接口。识别复用现有 FFmpeg、Whisper worker，导出复用 `Transcript` 合同与 `_write_srt` |
+| 官方源码 | [vendor/deepseek-harness/source](../../vendor/deepseek-harness/source)，公开 tag `dsh-v0.2.1-rc.2`，commit `687f282e8625c6b8d11ff58211a90524be2e4317`；原样保存源码文件、各包及完整构建支持文件；数量和哈希以 source-manifest.json 为准 |
+| 桌面产品入口 | [desktop-main.mjs](src/desktop-main.mjs) → [desktop-product.ts](src/desktop-product.ts)；组合官方 HostProcess、ProjectManager、BackendController、协议转发、preload、目录选择、快捷键、主题/全屏、退出确认和错误报告 |
+| Host 与插件生命周期 | 原样官方 Desktop Host 源码、app-boot、Cordis、Loader；profile 为 `dsh-base` + `dsh-web-app` + `@youdub/harness-subtitles` |
+| 前端框架 | 官方 Renderer、ModuleLoader、Slots、Layout、Store、locale 和 theme；官方 primitives、模型设置和插件页面承载通用交互 |
+| 原 YouDub 页面与元素 | 直接导入 `apps/web/src` 的业务组件，保留原动态 Logo、大标题、首屏动效、工作流画布、任务和校对页面；通用控件通过构建边界接官方实现 |
+| 原 YouDub 业务 | 直接导入 `packages/builtin` 的任务、图工作流、文件、资源与媒体合同；Python worker 和算法入口仍在 `backend` |
+| 后端适配 | [src/backend](src/backend)：官方 Connection 负责 HTTP/鉴权，Subprocess 负责进程，Jobs 负责执行状态，Settings/Credentials 负责配置与密钥，LLM 负责模型调用，PluginManager 负责扩展管理 |
 
-官方 `ui-layout`、`ui-theme`、`ui-session`、`ui-settings` 及其依赖继续提供服务。共享 [cordis.patch.yml](cordis.patch.yml) 关闭被 YouDub 页面替代的业务 UI，保留底层服务；[desktop.patch.yml](desktop.patch.yml) 仅设置机器相关路径。桌面架构可对照 [Harness 官方说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md#desktop-application)。
+上游原件始终保存在 `vendor/deepseek-harness/source`，YouDub 的装配、品牌与路径配置写在该目录以外。上游未导出的原生窗口与 Windows 菜单片段逐字复制到产品入口，并纳入来源校验。产品入口直接进入 YouDub 的 `SetupGate`，不要求 DeepSeek 登录或占位 API Key。
 
-## 环境
+功能/API 拆解见 [FUSION-COVERAGE.md](docs/FUSION-COVERAGE.md)，前端组件对应见 [FRONTEND-MAPPING.md](FRONTEND-MAPPING.md)。清单描述迁移范围；实际通过范围与未完成项以 [validation.md](docs/validation.md) 的本分支证据为准。
 
-需要 Node.js 22.19+、已安装的官方 Harness Desktop 0.2.1-rc.2、YouDub Python 环境、FFmpeg/FFprobe、Whisper `tiny.pt` 和 NLTK `punkt_tab`。本次复用本机已有资源，没有另建资源管理器。
+## 源码构建与开发运行
 
-如需创建 Python 环境，在仓库根目录执行：
+以下命令在仓库根目录执行。源码构建需要 Node.js 22.19+、npm 和 macOS 构建工具；开发启动使用本仓库 Electron，Host 使用它的 Node 模式，媒体任务使用 YouDub 自有 Python。
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install --index-url https://mirrors.aliyun.com/pypi/simple/ \
-  -r backend/requirements/base.txt \
-  -r backend/requirements/media.txt \
-  -r backend/requirements/whisper.txt
-```
-
-`modelsDir` 指向包含 `tiny.pt` 的目录，FFmpeg/FFprobe 位于启动环境的 PATH。NLTK 使用默认资源路径，也可通过 Harness 环境加载设置 `NLTK_DATA`。
-
-从仓库根目录安装并构建插件：
-
-```sh
-cd apps/harness
 npm ci --registry=https://registry.npmmirror.com
-npm run build
+npm --prefix apps/web ci --registry=https://registry.npmmirror.com
+npm --prefix apps/harness ci --registry=https://registry.npmmirror.com
+npm run build:framework
+npm run build:youdub
 ```
 
-## 启动桌面版
-
-默认使用 `/Applications/DeepSeek Harness.app`。首次先让官方应用初始化独立 profile，然后完全退出该实例：
+官方运行资源需复制到本工作区 `.cache/harness/runtime`，包含 `primary-runtime` 和 `office-skills`。本机已保存的来源是独立基线归档中的 runtime；初始化命令只复制资源，不启动归档里的官方应用。仅在工作区尚无该资源时执行：
 
 ```sh
-npm run desktop -- --initialize
+node apps/harness/desktop.mjs --prepare-only \
+  --runtime-source '/Users/liuzhao/code/youdub-harness-baselines/20261021/DeepSeek Harness.app/Contents/Resources/runtime'
 ```
 
-配置 Python 和模型路径，随后启动：
+其他机器须提供适配其 OS/架构的原版 runtime 目录。没有 payload 时启动会明确失败。
+
+`build:framework` 将保存的原版源码复制到 `.cache/harness/source-build`，执行上游 `scripts/build.ts --scope artifacts`；不生成 tarball、App 或安装包。第一次构建框架后，日常 YouDub 代码修改只需：
 
 ```sh
-npm run desktop -- --setup \
-  --python /absolute/path/to/YouDub-webui/.venv/bin/python \
-  --models-dir /absolute/path/to/whisper-models
-npm run desktop
-```
-
-`--setup` 调用应用自带的官方 CLI 链接 YouDub bundle，并追加机器配置，保留已有 profile 配置。已完成 setup 后，直接编辑该 profile 的 `cordis.patch.yml`；重复 setup 会明确报错。
-
-默认桌面数据位于仓库的 `.cache/harness/desktop`，Electron 用户数据位于 `.cache/harness/desktop-user-data`。启动器分别使用官方 `DSH_HOME` 和 `--user-data-dir` 隔离现有 Harness 实例；内部监听端口由官方 Desktop 动态分配。可用 `DSH_HOME` 指定另一位置，对应 Electron 用户数据目录为该路径加 `-user-data`。
-
-本次并行演示使用官方应用的 APFS 副本 `.cache/harness/YouDub Harness.app`，便于区分两个窗口；应用内容和签名资源保持原样，原应用与副本的 `app.asar` 已核对 SHA-256 一致。已有该副本时，可以这样指定：
-
-```sh
-npm run desktop -- --app '../../.cache/harness/YouDub Harness.app'
-```
-
-这只是本机验证载体，尚未制作 YouDub 品牌安装包。
-
-## 启动浏览器版
-
-```sh
-npm start -- --dump-config
-```
-
-首次会初始化 `.cache/harness/dsh/profiles/youdub`。按 [profile.example.yml](profile.example.yml) 在该 profile 的 `cordis.patch.yml` 配置 Python、模型和数据路径。旧版仅含 YouDub 单 bundle 的已知 profile 会迁移为官方三 bundle 组合，其他不匹配清单会报错，已有配置保留。
-
-```sh
-# 确认端口未被占用，再启动。
-lsof -nP -iTCP:3086 -sTCP:LISTEN
+npm --prefix apps/harness run build:product
 npm start
 ```
 
-默认绑定 `127.0.0.1:3086`，也可传入官方 `--port` 参数。打开终端打印的带 token 地址；Harness 换取认证 cookie 后移除地址栏 token。重启 Host 后使用新打印的地址。浏览器与桌面默认数据目录互相独立。
+`build:product` 编译 YouDub 插件和产品入口，preload 直接使用官方完整源码构建结果。启动调用上游 `prepareDevelopmentProject`，链接源构建的 CLI、Host、Web 与官方服务；YouDub 插件拥有独立的开发依赖视图，避免从旧 npm 产物加载另一份框架实例。
 
-## 配置与持久化
-
-配置沿用 Harness：bundle 默认值 → profile `cordis.patch.yml` → Harness home `cordis.patch.yml` → CLI `--patch`。覆盖会替换该行的完整 `config`，请保留 `python`、`modelsDir`、`dataDir` 三项。它们由官方 Schemastery schema 校验，配置导出可直接检查：
+## 启动与首次环境准备
 
 ```sh
-npm start -- --dump-config
-npm start -- --dump-config-schema
-npm start -- --patch /absolute/path/to/override.yml
+npm start
 ```
 
-环境变量沿用 Harness 继承环境、调用目录 `.env`、Harness home `.env` 的规则。启动器工作目录为 `apps/harness`；没有新增 `YOUDUB_HARNESS_*` 配置入口。凭证由官方 credentials 服务管理，本次只使用本地识别，没有外部 LLM 请求。
+仓库根 `npm start` 或 `npm run dev` 直接运行本仓库 Electron 与 `apps/harness/dist/desktop`，不经过 `dsh desktop` 或已安装的 Harness 应用。启动会初始化并检查 YouDub profile。所有必需 bundle 必须成功加载，解析失败会保留官方诊断并停止启动。
 
-操作顺序为：导入并识别 → 修改并保存 → 确认字幕 → 导出 SRT。未保存修改会阻止确认、导出和页面切换；修改已确认字幕并保存会撤销确认。待人工确认时识别子进程已经退出，释放执行位。
+首启源码按以下阶段组织，完整流程的实际验收状态见 [validation.md](docs/validation.md)：
 
-数据保存在 `$DSH_HOME/youdub/tasks/<taskId>/`：
+1. 准备 YouDub 专用 Python、venv 与基础依赖。
+2. 显示 Whisper tiny、VoxCPM2、Demucs htdemucs、Qwen3 Aligner 0.6B 四个必需模型。点击“准备全部模型”，安装完整依赖并校验全部模型。
+3. 进入 LLM 配置，使用 Harness 官方模型配置组件和服务。
 
-- `source.video`：原视频。
-- `recognize/asr_raw.json`、`asr.original.json`：原始识别结果。
-- `task.json`：当前字幕、版本和人工确认状态。
-- `transcript.confirmed.json`、`subtitles.srt`：确认后导出的产物。
+四模型与全部运行依赖就绪后才能完成首次初始化。基础环境就绪不代表模型已下载；模型下载完成也不代表模型质量已验收。安装失败显示原始原因。
 
-校对检查点持久化保存。执行中断会在重启时显示 `HOST_INTERRUPTED`；不会自动重跑或自动确认。错误保留原因，当前通过重新导入建立新任务。版本校验拒绝旧页面写入，前端刷新遇到版本冲突会保留未保存草稿并提示。
+默认路径如下：
 
-## 验证与范围
+| 内容 | 默认目录 |
+| --- | --- |
+| Electron 开发入口 | `apps/harness/dist/desktop/main.mjs` |
+| 官方源码构建工作区 | `.cache/harness/source-build` |
+| 桌面开发运行时 | `apps/harness/dist/desktop/runtime-project` |
+| 官方 primary runtime 与 office payload | `.cache/harness/runtime/` |
+| YouDub 的 Harness home | `.cache/harness/desktop` |
+| Electron 用户数据 | `.cache/harness/desktop-user-data` |
+| profile | `$DSH_HOME/profiles/desktop` |
+| YouDub 业务数据 | `$DSH_HOME/youdub` |
+| Python 下载与环境 | `$DSH_HOME/youdub/runtime/python`、`$DSH_HOME/youdub/runtime/venv` |
+| 媒体工具与分句资源 | `$DSH_HOME/youdub/runtime/ffmpeg`、`$DSH_HOME/youdub/nltk_data` |
+| 模型 | `$DSH_HOME/youdub/models`；Whisper 默认在 `models/whisper` |
+
+Host 使用本应用 Electron 的 Node 模式；包管理使用私有 `primary-runtime/dependencies/pnpm`。下载节点的 yt-dlp JavaScript 运行时通过官方 `resolvePrimaryRuntime` 获取 `primary-runtime/dependencies/node/bin/node`；产品将该路径传给 worker，缺失时保留错误并停止，Harness 模式不回退到机器 PATH 中的 Node。YouDub 的媒体环境安装与任务数据使用独立目录，不写入已安装 Harness 应用或其默认数据目录。系统环境回退与最终媒体路径的隔离验收须按当前分支的环境检查证据确认。
+
+开发运行所需文件如下；这些工作区文件当前仍需保留。
+
+| 依赖 | 来源与用途 |
+| --- | --- |
+| Node.js 22.19+、npm 与构建工具 | 执行开发启动脚本和源码构建；浏览器开发 Host 也使用启动脚本的 Node |
+| `vendor/deepseek-harness/source` 与 `.cache/harness/source-build` | 保存的官方源码，以及按官方构建流程生成的 CLI、Host、Web、插件和 pnpm 工作区依赖 |
+| `apps/harness/dist`、原 YouDub `backend`、`packages`、`site` 等文件 | YouDub 产品编译产物、媒体工作进程、源码校验输入和示例资源；通过 `YOUDUB_MEDIA_ROOT` 指向本仓库 |
+| `apps/harness/node_modules/electron` | npm 官方 Electron 发行二进制，直接承载桌面与 Host |
+| `.cache/harness/runtime/primary-runtime` 和同级 `office-skills` | 已保存官方 runtime 的独立本地副本，包含私有 pnpm、Node、文档依赖及 Office 技能资源；原官方 Host 启动需要这些资源 |
+| pnpm 工作区中的 `@deepseek-ai/libreoffice-kit` 与平台引擎 | 官方 Host 引用的已发布第三方运行资源；当前 macOS ARM64 使用 `libreoffice-kit-darwin-arm64`，未将其宣称为 Harness 源码构建产物 |
+| `submodule/demucs` | YouDub 固定的 Demucs 算法源码，版本由 Git submodule 记录；选择该模型时还需完成此源码与依赖准备 |
+| 各自 `$DSH_HOME/youdub` | 首启下载的媒体 Python、venv、FFmpeg、分句资源、所选模型和业务数据 |
+
+运行入口不调用 `/Applications/DeepSeek Harness.app`，也不以 `~/.dsh` 作为默认 home。基线归档只用于一次性获取 runtime 副本及完整性核对；开发启动使用已经复制到本工作区的文件。
+
+可用独立 home 重做首启验证，保留原数据：
 
 ```sh
-npm test
+DSH_HOME="$PWD/.cache/harness/desktop-fresh" \
+  node apps/harness/desktop.mjs
 ```
 
-当前测试汇总为 11 项通过：6 项工作流测试，加上官方子进程集成测试父项及其 4 个子项。真实桌面和历史浏览器证据见 [验收记录](docs/validation.md)。
+显式 `DSH_HOME` 会传入开发进程，Electron 用户目录为该路径加 `-user-data`。该测试仍共用只读的工作区 runtime，Python/任务/profile 位于新的 home。
 
-本次范围为本地视频、Whisper tiny/CPU、原语言字幕、固定识别时间轴、文本修改、人工确认及 SRT 导出，单个识别执行位、文件上限 512 MB。翻译、配音、完整工作流编辑器、字幕拆分合并和时间轴编辑尚未迁移。
+## 配置方式
 
-所有新增实现和证据集中于 `apps/harness`。原 YouDub 入口、worker、上游 npm 包和官方 Desktop 均未修改；构建产物、依赖、模型、凭证和运行数据不入 Git。当前未进行安装包、签名发布、跨平台或生产验收。
+配置使用官方 Harness bundle/profile 机制：[cordis.patch.yml](cordis.patch.yml) 定义产品组合与默认路径；`$DSH_HOME/profiles/desktop/cordis.patch.yml` 保存本地 profile 覆盖，Harness home 的 patch 继续按官方优先级生效。环境变量采用官方 inherited → 调用目录 `.env` → Harness home `.env` 的加载规则；密钥交给官方 Credentials 服务。配置、凭据、依赖、模型与任务数据不提交到 Git。
+
+YouDub 默认的 `python`、`modelsDir`、`dataDir` 由 `dshHomePath()` 解析为上述应用目录。通常通过首启和资源页面管理环境；`desktop.mjs --python … --models-dir …` 保留为显式开发覆盖，覆盖外部路径时不属于默认自有环境验收。
+
+浏览器开发入口使用同一产品插件，默认 home 是 `.cache/harness/dsh`、profile 名为 `youdub`。确认端口未被占用后运行：
+
+```sh
+lsof -nP -iTCP:3086 -sTCP:LISTEN
+npm --prefix apps/harness start
+```
+
+使用终端打印的认证地址。配置诊断可运行 `npm --prefix apps/harness start -- --dump-config`；它不会启动监听。浏览器入口用于开发，桌面入口为根目录的 `npm start`。
+
+## 来源与验证
+
+原 YouDub 分支快照、公开 Harness tag、官方安装 app 和 npm 原包均另存基线，位置、哈希、恢复方式见 [baselines/README.md](baselines/README.md)。原安装 app 的构建 commit 与公开 tag 不同，现有来源记录不声称可以逐字节重建该二进制。
+
+```sh
+npm --prefix apps/harness test
+npm --prefix apps/harness run check:composition
+node apps/harness/baselines/verify.mjs --report /tmp/youdub-harness-integrity.json
+```
+
+完整检查核对原始源码、官方 app/npm、vendor 原件及当前构建来源；`--scope sources|desktop|npm|vendor|build` 可单独检查。未修改的上游文件不因当前构建方式而获豁免；任何字节、权限、链接或来源差异都会报错。构建后 `--record` 生成产物来源记录，后续使用 `desktop-build.mjs --verify` 复核。
+
+当前 CLI、Desktop Host、preload、主 Web 应用和动态加载的官方服务/客户端插件均来自完整保存源码的官方构建。开发运行时逐个核对 `@deepseek-ai` 包的真实路径，来源记录保存在各运行时的 `youdub-source-runtime.json`。Electron、Python、pnpm 及上游依赖的第三方原生引擎仍使用对应发行二进制。
+
+产品页面使用原 YouDub 品牌资源。本轮直接运行 Electron 开发入口，未生成带品牌图标的应用包。开发壳尚未配置 YouDub 更新源，更新入口会明确说明，不能据此声称已完成发布升级流程。测试结果、首次安装、实际视频任务、人工确认/导出和跨平台验收分别记录，编译或进程启动成功不替代功能验收。
+
+## 默认工作流与链接下载
+
+默认模板保留“字幕翻译”“视频配音”“字幕＋配音”。人工审核由每个节点的“自动下一步”开关控制；关闭后，该节点完成时暂停，确认结果后继续。已有用户工作流和任务快照保留原配置。
+
+YouTube / B 站链接沿用原 `youdub.download` 节点。节点设置、快捷字段及运行面板可以填写“本机 HTTP 代理端口（0 为直连）”：`0` 显式直连，`1–65535` 使用 `http://127.0.0.1:<端口>`，B 站短链接解析使用同一代理。运行面板中的链接作为每次执行输入，端口进入节点配置及执行绑定。
+
+线上 zoo 视频已通过原生页面输入 URL 和 7897 端口完成 10 节点真实处理，见 [验证记录](docs/evidence/source-native-youtube-download-node.json)。B 站路径保留原实现并通过代理合同测试，本轮未作公网实测。

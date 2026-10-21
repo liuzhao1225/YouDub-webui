@@ -20,6 +20,7 @@ test('YouDub uses real Harness subprocesses for batch, worker framing, failure a
   try {
     await t.test('batch stdout and nonzero stderr retain real exit facts', async () => {
       assert.equal((await runProcess(ctx.subprocess, request("process.stdout.write('exported')"))).stdout, 'exported');
+      assert.equal((await runProcess(ctx.subprocess, { command: process.execPath, args: ['-e', 'process.stdout.write(process.cwd())'] })).stdout, process.cwd());
       await assert.rejects(runProcess(ctx.subprocess, request("process.stderr.write('writer unavailable');process.exit(7)")), error => error.code === 'PROCESS_EXITED' && /7.*\nwriter unavailable/s.test(error.message));
     });
     await t.test('worker progress and registered artifacts preserve the YouDub protocol', async () => {
@@ -32,6 +33,12 @@ test('YouDub uses real Harness subprocesses for batch, worker framing, failure a
       const signal = new AbortController().signal;
       await assert.rejects(runWorker(ctx.subprocess, request(workerScript("send('error',{code:'INVALID_MEDIA',message:'invalid video'});setInterval(()=>{},1000);")), invocation, context(signal)), { code: 'INVALID_MEDIA', message: 'invalid video' });
       await assert.rejects(runWorker(ctx.subprocess, request(workerScript("process.stdout.write('invalid json\\n');setInterval(()=>{},1000);")), invocation, context(signal)), SyntaxError);
+    });
+    await t.test('full stderr and original status survive a business failure', async () => {
+      const logged = [], signal = new AbortController().signal;
+      await assert.rejects(runWorker(ctx.subprocess, request(workerScript("process.stderr.write('first diagnostic\\n'+'x'.repeat(1024*1024)+'\\nlast diagnostic',()=>{send('error',{code:'BAD_MODEL',message:'Model incompatible',status:422,field:'translation.model'});process.stdin.destroy();});")), invocation,
+        { ...context(signal), log: async line => { logged.push(line); } }), error => error.code === 'BAD_MODEL' && error.status === 422 && error.details.field === 'translation.model');
+      assert.equal(logged[0], 'first diagnostic'); assert.equal(logged[1].length, 1024 * 1024); assert.equal(logged[2], 'last diagnostic');
     });
     await t.test('abort returns its original cause after Harness stops the worker', async () => {
       const controller = new AbortController(), cause = new Error('recognition cancelled');

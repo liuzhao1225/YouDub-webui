@@ -94,7 +94,7 @@ test('runtime probes each provider once and reads environment information withou
         }
         throw new Error(`Unexpected bridge method: ${method}`)
       } })
-      scope.reflect.provide('process', {})
+      scope.reflect.provide('youdubWorker', {})
       scope.reflect.provide('secrets', {})
     } })
     await context.plugin(Catalog)

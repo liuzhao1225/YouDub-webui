@@ -1,3 +1,4 @@
+import { NativeSelect } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { useEffect, useState, type FormEvent, type ReactNode, type SetStateAction } from 'react'
@@ -16,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ACTIVE_STATUSES, TaskProgress, TaskState, taskDisplayName } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
-import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../web-react'
+import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
 import { StudioDraftStore, type ComposerDraft } from '@/runtime/studio-draft'
 import { GraphStudio } from './workflows'
 import { UploadSlot } from './media-upload'
@@ -85,6 +86,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
             {sourceUrl && <Button type="button" variant="ghost" size="icon-sm" disabled={busy || !!pendingId} aria-label={tx('Clear link', '清空链接', 'リンクをクリア')} onClick={() => { setSourceUrl(''); setLinkTouched(false) }}><X /></Button>}
           </div>
           {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
+          {source && workflow.configSchema.properties?.source_proxy_port && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { source_proxy_port: workflow.configSchema.properties.source_proxy_port } }} value={{ source_proxy_port: config.source_proxy_port ?? 0 }} diagnostics={[]} readOnly={busy || !!pendingId} onChange={(value) => setConfig({ ...config, source_proxy_port: value.source_proxy_port })} /></div>}
           <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx('or upload a video', '或上传本地视频', 'または動画をアップロード')}<span className="h-px flex-1 bg-border" /></div>
         </div>}
         <div className="grid gap-3">{workflow.inputs.map((slot) => <UploadSlot key={slot.name} slot={slot} alternative={slot.name === linkSlot} file={files[slot.name]} disabled={busy || !!pendingId} onChange={(file) => {
@@ -117,7 +119,7 @@ function TaskSection({ id, title, children }: { id: string; title: string; child
   const tx = useText()
   return <section aria-labelledby={id}><div className="mb-4 flex items-center justify-between gap-4"><h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2><Link href="/tasks" className="inline-flex items-center gap-1 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground">{tx('View all', '查看全部', 'すべて表示')}<ChevronRight className="size-4" /></Link></div>{children}</section>
 }
-function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore: StudioDraftStore } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
+export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources, examplesLink }: { draftStore: StudioDraftStore; examplesLink?: ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
   const tx = useText()
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
@@ -131,7 +133,7 @@ function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowD
   const processing = active.filter((task) => task.status !== 'paused')
   const recent = tasks?.items.filter((task) => !ACTIVE_STATUSES.has(task.status)).slice(0, 6) ?? []
   return <main>
-    <section className="relative isolate flex min-h-[calc(100dvh-3.5rem)] flex-col justify-center overflow-hidden border-b border-border lg:min-h-dvh">
+    <section className="relative isolate flex min-h-[calc(100dvh-var(--dsh-frame-top-clearance,3.5rem))] flex-col justify-center overflow-hidden border-b border-border lg:min-h-[calc(100dvh-var(--dsh-frame-top-clearance,0px))]">
       <div aria-hidden="true" className="aurora -z-10" />
       <div aria-hidden="true" className="bg-dot-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
       <PageContainer className="pt-10 pb-12 lg:pt-14 lg:pb-14 [@media(max-height:820px)]:pt-8 [@media(max-height:820px)]:pb-10">
@@ -147,9 +149,9 @@ function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowD
           {workflow && (workflow.id === 'youdub.graph' ? <GraphStudio draftStore={draftStore} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} useWorkflowDocuments={useWorkflowDocuments} onLockChange={setLocked}
             additionalWorkflows={catalog!.workflows.filter((item) => item.id !== 'youdub.graph' && item.id !== 'youdub.localize')}
             renderWorkflow={(item, selector, lockChanged) => <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${item.id}:${item.version}`} workflow={item} afterInputs={selector} onLockChange={lockChanged} />}
-          /> : <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} afterInputs={catalog!.workflows.length > 1 ? <div className="flex items-center gap-3"><Label htmlFor="workflow">{tx('Workflow', '工作流', 'ワークフロー')}</Label><select id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</select></div> : undefined} />)}
+          /> : <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} afterInputs={catalog!.workflows.length > 1 ? <div className="flex items-center gap-3"><Label htmlFor="workflow">{tx('Workflow', '工作流', 'ワークフロー')}</Label><NativeSelect id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></div> : undefined} />)}
         </div>
-        <div className="mt-5 flex justify-center"><a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx('View built-in examples', '查看内置示例', '内蔵サンプルを見る')}</a></div>
+        <div className="mt-5 flex justify-center">{examplesLink ?? <a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx('View built-in examples', '查看内置示例', '内蔵サンプルを見る')}</a>}</div>
         {!!active.length && <div className="mt-6 flex flex-wrap justify-center gap-3">
           {!!awaitingReview.length && <Link href={awaitingReview.length === 1 ? `/tasks/${awaitingReview[0].task.id}/nodes/${awaitingReview[0].step.id}` : '/tasks'} className="inline-flex items-center gap-2 rounded-full border border-status-warning/25 bg-status-warning/10 px-3.5 py-1.5 text-[13px] font-medium text-status-warning-fg">{tx(`${awaitingReview.length} nodes need your review`, `${awaitingReview.length} 个节点待确认`, `${awaitingReview.length} 件のノードが確認待ち`)}<ArrowRight className="size-3.5" /></Link>}
           {!!processing.length && <Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg">{tx(`${processing.length} tasks in progress`, `${processing.length} 个任务正在处理`, `${processing.length} 件のタスクが処理中`)}<ArrowRight className="size-3.5" /></Link>}

@@ -1,0 +1,402 @@
+{
+  "scope": "single real setup model pause/resume through official Connection API",
+  "startedAt": "2026-10-21T13:39:10.741Z",
+  "modelId": "voxcpm",
+  "actions": [
+    {
+      "action": "pause",
+      "id": "voxcpm",
+      "time": "2026-10-21T13:39:10.754Z"
+    },
+    {
+      "action": "resume",
+      "id": "voxcpm",
+      "time": "2026-10-21T13:39:12.777Z"
+    }
+  ],
+  "snapshots": [
+    {
+      "label": "before",
+      "time": "2026-10-21T13:39:10.754Z",
+      "phase": "models",
+      "selections": [
+        {
+          "providerId": "demucs",
+          "model": "htdemucs"
+        },
+        {
+          "providerId": "qwen_forced_aligner",
+          "model": "Qwen3-ForcedAligner-0.6B-hf"
+        },
+        {
+          "providerId": "voxcpm",
+          "model": "VoxCPM2"
+        },
+        {
+          "providerId": "whisper",
+          "model": "tiny"
+        },
+        {
+          "providerId": "youdub.download"
+        },
+        {
+          "providerId": "youdub.media"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "downloading",
+          "received": 111990999,
+          "total": 4960722408,
+          "speed": 6981220,
+          "source": "ModelScope"
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "downloading",
+          "received": 99002157,
+          "total": 1847225867,
+          "speed": 5996576,
+          "source": "ModelScope"
+        }
+      ]
+    },
+    {
+      "label": "pause-response",
+      "time": "2026-10-21T13:39:10.768Z",
+      "phase": "models",
+      "selections": [
+        {
+          "providerId": "demucs",
+          "model": "htdemucs"
+        },
+        {
+          "providerId": "qwen_forced_aligner",
+          "model": "Qwen3-ForcedAligner-0.6B-hf"
+        },
+        {
+          "providerId": "voxcpm",
+          "model": "VoxCPM2"
+        },
+        {
+          "providerId": "whisper",
+          "model": "tiny"
+        },
+        {
+          "providerId": "youdub.download"
+        },
+        {
+          "providerId": "youdub.media"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "paused",
+          "received": 112072973,
+          "total": 4960722408,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "downloading",
+          "received": 99125035,
+          "total": 1847225867,
+          "speed": 5996576,
+          "source": "ModelScope"
+        }
+      ]
+    },
+    {
+      "label": "paused-readback",
+      "time": "2026-10-21T13:39:12.776Z",
+      "phase": "models",
+      "selections": [
+        {
+          "providerId": "demucs",
+          "model": "htdemucs"
+        },
+        {
+          "providerId": "qwen_forced_aligner",
+          "model": "Qwen3-ForcedAligner-0.6B-hf"
+        },
+        {
+          "providerId": "voxcpm",
+          "model": "VoxCPM2"
+        },
+        {
+          "providerId": "whisper",
+          "model": "tiny"
+        },
+        {
+          "providerId": "youdub.download"
+        },
+        {
+          "providerId": "youdub.media"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "paused",
+          "received": 112072973,
+          "total": 4960722408,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "downloading",
+          "received": 115509035,
+          "total": 1847225867,
+          "speed": 9150952.38095238,
+          "source": "ModelScope"
+        }
+      ]
+    },
+    {
+      "label": "resume-response",
+      "time": "2026-10-21T13:39:12.784Z",
+      "phase": "models",
+      "selections": [
+        {
+          "providerId": "demucs",
+          "model": "htdemucs"
+        },
+        {
+          "providerId": "qwen_forced_aligner",
+          "model": "Qwen3-ForcedAligner-0.6B-hf"
+        },
+        {
+          "providerId": "voxcpm",
+          "model": "VoxCPM2"
+        },
+        {
+          "providerId": "whisper",
+          "model": "tiny"
+        },
+        {
+          "providerId": "youdub.download"
+        },
+        {
+          "providerId": "youdub.media"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "downloading",
+          "received": 112072973,
+          "total": 4960722408,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "downloading",
+          "received": 115509035,
+          "total": 1847225867,
+          "speed": 9150952.38095238,
+          "source": "ModelScope"
+        }
+      ]
+    },
+    {
+      "label": "resume-readback",
+      "time": "2026-10-21T13:39:17.789Z",
+      "phase": "models",
+      "selections": [
+        {
+          "providerId": "demucs",
+          "model": "htdemucs"
+        },
+        {
+          "providerId": "qwen_forced_aligner",
+          "model": "Qwen3-ForcedAligner-0.6B-hf"
+        },
+        {
+          "providerId": "voxcpm",
+          "model": "VoxCPM2"
+        },
+        {
+          "providerId": "whisper",
+          "model": "tiny"
+        },
+        {
+          "providerId": "youdub.download"
+        },
+        {
+          "providerId": "youdub.media"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "downloading",
+          "received": 137632013,
+          "total": 4960722408,
+          "speed": 5888000,
+          "source": "ModelScope"
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0,
+          "source": "ModelScope"
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "downloading",
+          "received": 142051115,
+          "total": 1847225867,
+          "speed": 5911090.196078431,
+          "source": "ModelScope"
+        }
+      ]
+    }
+  ],
+  "partialFiles": [
+    {
+      "path": ".cache/harness/dsh/youdub/models/voxcpm/VoxCPM2/audiovae.pth.part",
+      "size": 112072973
+    }
+  ],
+  "status": "passed",
+  "finishedAt": "2026-10-21T13:39:17.789Z"
+}

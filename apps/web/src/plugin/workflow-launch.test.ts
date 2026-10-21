@@ -16,6 +16,7 @@ it('imports links into the real reviewed-subtitles template without changing the
   expect(document).toEqual(original)
   expect(result.document.inputs).toEqual([])
   const added = result.document.nodes.find((node) => node.type === 'youdub.download')!
+  expect(added.config.proxyPort).toBe(0)
   expect(result.runtime[added.id]).toEqual({ url: 'https://www.youtube.com/watch?v=12345678901' })
   expect(JSON.stringify(result.document)).not.toContain('youtube.com')
   expect(result.document.nodes.slice(1)).toEqual(document.nodes)
@@ -23,6 +24,16 @@ it('imports links into the real reviewed-subtitles template without changing the
   const edges = result.document.edges.filter((edge) => edge.source.nodeId === added.id)
   expect(edges).toHaveLength(document.edges.filter((edge) => edge.source.nodeId === '$inputs').length)
   for (const edge of edges) expect(canConnect(result.document, types, edge.source, edge.target)).toBe(true)
+})
+
+it('keeps the selected proxy port on the download node and keeps the URL in per-run inputs', () => {
+  const result = withVideoLink(document, types, 'video', 'https://www.youtube.com/watch?v=jNQXAC9IVRw', 7897)
+  const added = result.document.nodes[0]
+  expect(added.config.proxyPort).toBe(7897)
+  expect(result.runtime[added.id]).toEqual({ url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' })
+  const prepare = result.document.edges.find((edge) => edge.target.nodeId === 'prepare')!
+  expect(prepare.source).toEqual({ nodeId: added.id, portId: 'video' })
+  expect(canConnect(result.document, types, prepare.source, prepare.target)).toBe(true)
 })
 
 it('does not offer links when a consumer cannot accept downloaded video', () => {

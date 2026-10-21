@@ -48,7 +48,7 @@ async function setup(t: any) {
   }
   async function video() {
     const file = join(ctx.files.taskRoot(task.id), 'source.mp4')
-    await ctx.process.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:r=1:d=1', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:r=1:d=1', '-filter_complex', '[0:v][1:v]concat=n=2:v=1:a=0', '-c:v', 'mpeg4', '-threads', '1', '-n', file] })
+    await ctx.youdubWorker.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:r=1:d=1', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:r=1:d=1', '-filter_complex', '[0:v][1:v]concat=n=2:v=1:a=0', '-c:v', 'mpeg4', '-threads', '1', '-n', file] })
     return artifact('video.mp4', 'video/mp4', await readFile(file))
   }
   function nodeOutput(id: string, name: string, file: Artifact, status: StepState['status'] = 'completed') {
@@ -146,7 +146,7 @@ test('an unavailable node cover reports its error without using an available vid
   task.inputs.video = await artifact('source.mp4', 'video/mp4')
   nodeOutput('preview', 'cover', image)
   await rm(join(ctx.files.taskRoot(task.id), image.path))
-  const generation = t.mock.method(ctx.process, 'run', () => { throw new Error('The declared cover must remain selected') })
+  const generation = t.mock.method(ctx.youdubWorker, 'run', () => { throw new Error('The declared cover must remain selected') })
   const response = await get()
   assert.equal(response.status, 500)
   assert.equal(generation.mock.calls.length, 0)
@@ -156,7 +156,7 @@ test('registered cover images are served byte-for-byte and require authenticatio
   const { ctx, task, artifact, get } = await setup(t)
   const image = await artifact('cover.png', 'image/png', Buffer.from([137, 80, 78, 71]))
   task.inputs.cover = image
-  t.mock.method(ctx.process, 'run', () => { throw new Error('An image must not invoke FFmpeg') })
+  t.mock.method(ctx.youdubWorker, 'run', () => { throw new Error('An image must not invoke FFmpeg') })
   assert.equal((await get('/cover', false)).status, 401)
   const response = await get()
   assert.equal(response.status, 200); assert.equal(response.headers.get('content-type'), 'image/png')
@@ -165,8 +165,8 @@ test('registered cover images are served byte-for-byte and require authenticatio
 
 test('source first frame is decoded once for concurrent requests and reused from disk', async t => {
   const { ctx, task, video } = await setup(t)
-  const source = await video(), run = ctx.process.run.bind(ctx.process)
-  const calls = t.mock.method(ctx.process, 'run', run)
+  const source = await video(), run = ctx.youdubWorker.run.bind(ctx.youdubWorker)
+  const calls = t.mock.method(ctx.youdubWorker, 'run', run)
   const covers = await Promise.all(Array.from({ length: 4 }, () => ctx.files.cover(task.id, source)))
   assert.equal(calls.mock.calls.length, 1)
   assert.ok(covers.every(value => value.path === covers[0]!.path && value.mimeType === 'image/jpeg'))
@@ -184,12 +184,12 @@ test('cover requests hold a read lock during generation and HTTP file transfer',
   let generationEntered!: () => void, releaseGeneration!: () => void, transferEntered!: () => void, releaseTransfer!: () => void
   const generation = new Promise<void>(resolve => { generationEntered = resolve }), generationGate = new Promise<void>(resolve => { releaseGeneration = resolve })
   const transfer = new Promise<void>(resolve => { transferEntered = resolve }), transferGate = new Promise<void>(resolve => { releaseTransfer = resolve })
-  const run = ctx.process.run.bind(ctx.process), file = ctx.http.file.bind(ctx.http)
+  const run = ctx.youdubWorker.run.bind(ctx.youdubWorker), file = ctx.http.file.bind(ctx.http)
   const readLock = ctx.files.readLock.bind(ctx.files)
   let unlocked!: () => void
   const lockReleased = new Promise<void>(resolve => { unlocked = resolve })
   t.mock.method(ctx.files, 'readLock', (id: string) => { const release = readLock(id); return async () => { await release(); unlocked() } })
-  t.mock.method(ctx.process, 'run', async (request: Parameters<typeof run>[0]) => { generationEntered(); await generationGate; return run(request) })
+  t.mock.method(ctx.youdubWorker, 'run', async (request: Parameters<typeof run>[0]) => { generationEntered(); await generationGate; return run(request) })
   t.mock.method(ctx.http, 'file', async (...args: Parameters<typeof file>) => { transferEntered(); await transferGate; return file(...args) })
   const response = get()
   await generation

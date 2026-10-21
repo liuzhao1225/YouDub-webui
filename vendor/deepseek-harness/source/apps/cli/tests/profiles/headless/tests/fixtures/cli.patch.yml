@@ -1,0 +1,37 @@
+# Keyless model and isolated-path patch over the shipped headless profile.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: agent-loop
+  config:
+    agents:
+      - id: main
+        provider: cli-mock
+        model: cli-mock
+        cwd: !!js process.cwd()
+
+- id: shell-env
+  config:
+    dshHome: './.dsh-home'
+
+- id: agent-instructions
+  disabled: true
+
+- id: skill-filesystem
+  config:
+    dshHome: './.dsh-home'
+    agentsHome: './.agents-home'
+
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+
+- insert:
+    - id: cli-mock-llm
+      name: '../../../../../../../packages/test-support/loader-smoke/tests/fixtures/cli-mock-llm.ts'

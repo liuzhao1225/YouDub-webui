@@ -1,0 +1,3 @@
+- insert:
+    - id: youdub-example-file-transform
+      name: '@youdub/harness-example-file-transform'

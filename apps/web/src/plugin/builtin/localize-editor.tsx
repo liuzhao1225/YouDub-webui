@@ -5,7 +5,7 @@ import { type EditorProps, type JsonObject } from '../sdk'
 import type { Runtime, TaskConfig } from '@/plugin/builtin/localize-contracts'
 import { TaskConfigForm, TaskOptions } from '@/components/localize-task-config'
 import { InlineAlert } from '@/components/inline-alert'
-function LocalizeEditor({ value, readOnly, mode, onChange, useQuery }: EditorProps & Bindings<'useQuery'>) {
+export function LocalizeEditor({ value, readOnly, mode, onChange, useQuery }: EditorProps & Bindings<'useQuery'>) {
   const tx = useText()
   const { data: runtime, error } = useQuery<Runtime>('/api/v2/runtime')
   if (error) return <InlineAlert>{error}</InlineAlert>

@@ -1,6 +1,7 @@
+import { NativeSelect } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
-import { protectPendingSubmissions, useObservableSource } from '../web-react'
+import { protectPendingSubmissions, useObservableSource } from '../view-hooks'
 import { StudioDraftStore } from '@/runtime/studio-draft'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, SlidersHorizontal, Trash2, Undo2, Upload, X } from 'lucide-react'
@@ -21,7 +22,7 @@ import { WorkflowRerun } from './workflow-rerun'
 import { WorkflowDiagnostics } from './workflow-errors'
 import { TaskNodePage, TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from './workflow-task'
 
-function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'request' | 'navigate' | 'useWorkflowDocuments'>) {
+export function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'request' | 'navigate' | 'useWorkflowDocuments'>) {
   const tx = useText()
   const { data, error, refresh } = useWorkflowDocuments()
   const [failure, setFailure] = useState(''), [busy, setBusy] = useState(false), [deleting, setDeleting] = useState('')
@@ -58,38 +59,38 @@ function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'
   </Page>
 }
 
-function WorkflowRoute({ params, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: RouteProps & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+export function WorkflowRoute({ params, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: RouteProps & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
-  return <>{types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><InlineAlert>{types.error}</InlineAlert>{!types.data && <Button variant="outline" onClick={types.refresh}>{tx('Retry', '重试', '再試行')}</Button>}</Page>}{!types.data ? !types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p></Page> : params.id === 'new' ? <NewEditor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} types={types.data.items} nodeId={params.nodeId} /> : <SavedEditor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} id={params.id} nodeId={params.nodeId} types={types.data.items} />}</>
+  return <>{types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><InlineAlert>{types.error}</InlineAlert>{!types.data && <Button variant="outline" onClick={types.refresh}>{tx('Retry', '重试', '再試行')}</Button>}</Page>}{!types.data ? !types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p></Page> : params.id === 'new' ? <NewEditor query={params.__search} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} types={types.data.items} nodeId={params.nodeId} /> : <SavedEditor query={params.__search} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} id={params.id} nodeId={params.nodeId} types={types.data.items} />}</>
 }
-function NewEditor({ types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+function NewEditor({ query, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const [record] = useState(() => {
     const document = blankWorkflow(); document.title = tx('Untitled workflow', '未命名工作流', '名称未設定')
     return { id: 'new', revision: 0, document, origin: 'user' as const }
   })
-  return <Editor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} initial={record} types={types} nodeId={nodeId} />
+  return <Editor query={query} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} initial={record} types={types} nodeId={nodeId} />
 }
-function SavedEditor({ id, nodeId, types, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { id: string; nodeId?: string; types: NodeTypeDefinition[] } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+function SavedEditor({ query, id, nodeId, types, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; id: string; nodeId?: string; types: NodeTypeDefinition[] } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const { data, error, refresh } = useQuery<WorkflowDocumentRecord>(`/api/v2/workflow-documents/${encodeURIComponent(id)}`)
   if (error) return <Page className={nodeId ? undefined : 'max-w-none'}><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Retry', '重试', '再試行')}</Button></Page>
   if (!data) return <Page className={nodeId ? undefined : 'max-w-none'}><p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p></Page>
-  return <Editor useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} key={id} initial={data} nodeId={nodeId} types={types} />
+  return <Editor query={query} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} key={id} initial={data} nodeId={nodeId} types={types} />
 }
 
-function Editor({ initial, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { initial: WorkflowDocumentRecord; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+function Editor({ query, initial, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; initial: WorkflowDocumentRecord; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const [initialDraft] = useState(() => workflowDrafts.get(initial.id))
   const [initialView] = useState(() => { const view = workflowViews.get(initial.id); return view?.revision === initial.revision ? view : undefined })
-  const [sourceTask] = useState(() => new URLSearchParams(window.location.search).get('sourceTask'))
+  const [sourceTask] = useState(() => new URLSearchParams(query ?? window.location.search).get('sourceTask'))
   const sourceQuery = sourceTask ? `?sourceTask=${encodeURIComponent(sourceTask)}` : ''
   const [document, setDocument] = useState<WorkflowDocument>(() => structuredClone(initialDraft?.document ?? (initialView ? { ...initial.document, presentation: { ...initial.document.presentation, viewport: initialView.viewport } } : initial.document)))
   const [saved, setSaved] = useState(initialDraft?.saved ?? serializeWorkflowEdits(initial.document))
   const [revision, setRevision] = useState(initialDraft?.revision ?? initial.revision)
-  const [selected, setSelected] = useState<string | undefined>(nodeId), [panel, setPanel] = useState<'nodes' | 'ports' | 'run' | null>(() => new URLSearchParams(window.location.search).get('run') === '1' ? 'run' : initial.id === 'new' && !initialDraft?.document.nodes.length ? 'nodes' : null)
+  const [selected, setSelected] = useState<string | undefined>(nodeId), [panel, setPanel] = useState<'nodes' | 'ports' | 'run' | null>(() => new URLSearchParams(query ?? window.location.search).get('run') === '1' ? 'run' : initial.id === 'new' && !initialDraft?.document.nodes.length ? 'nodes' : null)
   const [freshInputs, setFreshInputs] = useState(false)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [search, setSearch] = useState('')
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
@@ -201,9 +202,9 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
         {(panel || active) && <aside className="workflow-inspector">
           {active && !panel ? <NodeSettings useSlot={useSlot} document={document} node={active} types={types} readOnly={editingLocked} onChange={change} onClose={() => setSelected(undefined)} onOpen={() => openNode(active.id)} /> : <>
             <div className="flex items-center justify-between border-b border-border p-4"><h2 className="font-semibold">{panel === 'nodes' ? tx('Nodes', '节点', 'ノード') : panel === 'run' ? tx('Run workflow', '运行工作流', 'ワークフローを実行') : tx('Inputs / outputs', '输入 / 输出', '入力 / 出力')}</h2><Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx('Close panel', '关闭面板', 'パネルを閉じる')} onClick={() => setPanel(null)}><X /></Button></div>
-            {panel === 'nodes' && <div className="space-y-4 p-4"><div className="relative"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input aria-label={tx('Search nodes', '搜索节点', 'ノードを検索')} value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" /></div>{!visibleTypes.length && <p className="text-sm text-muted-foreground">{tx('No nodes found', '未找到节点', 'ノードが見つかりません')}</p>}{visibleTypes.map((type) => <button type="button" draggable key={`${type.providerId}:${type.type}`} onDragStart={(event) => event.dataTransfer.setData('application/youdub-node', `${type.providerId}:${type.type}`)} className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left hover:bg-accent" disabled={editingLocked} onClick={() => { if (addAtCenter.current) addAtCenter.current(type); else setError(tx('The canvas is still loading.', '画布正在加载。', 'キャンバスを読み込み中です。')) }}><Plus className="size-4 shrink-0 text-brand-blue" /><span className="min-w-0"><span className="block text-sm font-medium">{text(type.label, language)}</span><span className="block truncate text-xs text-muted-foreground">{text(type.provider.label, language) || type.providerId}</span></span></button>)}</div>}
+            {panel === 'nodes' && <div className="space-y-4 p-4"><div className="relative"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input aria-label={tx('Search nodes', '搜索节点', 'ノードを検索')} value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" /></div>{!visibleTypes.length && <p className="text-sm text-muted-foreground">{tx('No nodes found', '未找到节点', 'ノードが見つかりません')}</p>}{visibleTypes.map((type) => <Button variant="ghost" type="button" draggable key={`${type.providerId}:${type.type}`} onDragStart={(event) => event.dataTransfer.setData('application/youdub-node', `${type.providerId}:${type.type}`)} className="flex h-auto w-full items-center justify-start gap-3 rounded-xl border border-border p-3 text-left whitespace-normal hover:bg-accent" disabled={editingLocked} onClick={() => { if (addAtCenter.current) addAtCenter.current(type); else setError(tx('The canvas is still loading.', '画布正在加载。', 'キャンバスを読み込み中です。')) }}><Plus className="size-4 shrink-0 text-brand-blue" /><span className="min-w-0"><span className="block text-sm font-medium">{text(type.label, language)}</span><span className="block truncate text-xs text-muted-foreground">{text(type.provider.label, language) || type.providerId}</span></span></Button>)}</div>}
             {panel === 'ports' && <fieldset disabled={editingLocked}><GraphPorts document={document} types={types} onChange={change} /></fieldset>}
-            {panel === 'run' && <div className="space-y-5 p-5">{sourceTask && <label className="grid gap-2 text-sm">{tx('Media source', '素材来源', '素材の選択')}<select disabled={editingLocked} className="h-10 rounded-lg border border-input bg-input-bg px-3" value={freshInputs ? 'new' : 'existing'} onChange={(event) => setFreshInputs(event.target.value === 'new')}><option value="existing">{tx('Reuse original media', '沿用原素材', '元の素材を再利用')}</option><option value="new">{tx('Choose new media', '选择新素材', '新しい素材を選択')}</option></select></label>}{sourceTask && !freshInputs ? <WorkflowRerun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} taskId={sourceTask} document={document} types={types} onStarted={onStarted} onLockChange={onRunLockChange} /> : <WorkflowRun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types} revision={dirty ? null : revision} onStarted={onStarted} onLockChange={onRunLockChange} />}</div>}
+            {panel === 'run' && <div className="space-y-5 p-5">{sourceTask && <label className="grid gap-2 text-sm">{tx('Media source', '素材来源', '素材の選択')}<NativeSelect disabled={editingLocked} className="h-10 rounded-lg border border-input bg-input-bg px-3" value={freshInputs ? 'new' : 'existing'} onChange={(event) => setFreshInputs(event.target.value === 'new')}><option value="existing">{tx('Reuse original media', '沿用原素材', '元の素材を再利用')}</option><option value="new">{tx('Choose new media', '选择新素材', '新しい素材を選択')}</option></NativeSelect></label>}{sourceTask && !freshInputs ? <WorkflowRerun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} taskId={sourceTask} document={document} types={types} onStarted={onStarted} onLockChange={onRunLockChange} /> : <WorkflowRun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types} revision={dirty ? null : revision} onStarted={onStarted} onLockChange={onRunLockChange} />}</div>}
           </>}
         </aside>}
       </div>

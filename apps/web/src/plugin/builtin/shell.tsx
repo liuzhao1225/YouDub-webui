@@ -15,14 +15,8 @@ import { UpdateNotice, UpdateProvider } from '@/components/app-updates'
 import { Page as PageLayout, PageHeader } from '@/components/page-layout'
 import { SidebarLink } from '@/components/sidebar-link'
 
-export function resolveRoute(routes: RouteEntry[], path: string, authenticated: boolean) {
-  // Static segments take precedence over parameters, independently of plugin
-  // installation order (for example /tasks/help before /tasks/:id).
-  const specificity = (pattern: string) => pattern.split('/').map((part) => part.startsWith(':') ? '0' : '1').join('')
-  return routes.map((route) => ({ route, params: matchRoute(path, route.path) }))
-    .filter((item) => item.params && (item.route.access === 'public' || authenticated))
-    .sort((a, b) => specificity(b.route.path).localeCompare(specificity(a.route.path)))[0]
-}
+export {resolveRoute} from '../domain-helpers'
+import {resolveRoute} from '../domain-helpers'
 function Shell({ request, navigate, href: routeHref, useSession, useSlot, usePathname, useUpdates }: Bindings<'request' | 'navigate' | 'href' | 'useSession' | 'useSlot' | 'usePathname' | 'useUpdates'>) {
   const tx = useText()
   const session = useSession()

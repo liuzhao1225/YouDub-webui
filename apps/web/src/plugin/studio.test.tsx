@@ -7,6 +7,7 @@ import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, type Catalog, type NodeTypeDefinition, type RouteProps, type SlotMap, type TaskView, type WorkflowDocument } from './sdk'
 import { apply } from './builtin/studio'
 import reviewedSubtitles from '../../../../packages/builtin/src/workflow-templates/reviewed-subtitles.json'
+import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 
 const catalog: Catalog = { providers: [], workflows: [{ id: 'external.text', version: '2.0.0', label: 'Text workflow', inputs: [{ name: 'document', label: 'Document', acceptedMimeTypes: ['text/plain'], required: true }], configSchema: { type: 'object', properties: { mode: { type: 'string', enum: ['upper', 'lower'] } }, required: ['mode'] }, defaults: { mode: 'upper' } }] }
 afterEach(() => { cleanup(); window.localStorage.clear() })
@@ -247,7 +248,7 @@ it('keeps active tasks separate from recent results and links to their detail pa
 })
 
 it('places the link first, switches between sources and submits a canonical URL without a file', async () => {
-  const linked: Catalog = { providers: [], workflows: [{ ...catalog.workflows[0], ui: { sourceUrlInput: 'video' }, inputs: [{ name: 'video', label: '视频', acceptedMimeTypes: ['video/*'], required: false }], configSchema: { type: 'object', properties: { source_url: { type: 'string' } } }, defaults: {} }] }
+  const linked: Catalog = { providers: [], workflows: [{ ...catalog.workflows[0], ui: { sourceUrlInput: 'video' }, inputs: [{ name: 'video', label: '视频', acceptedMimeTypes: ['video/*'], required: false }], configSchema: { type: 'object', properties: { source_url: { type: 'string' }, source_proxy_port: nodeDescriptors.download.configSchema.properties!.proxyPort } }, defaults: {} }] }
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (path === '/api/v2/catalog') return linked
     if (init?.method === 'POST') return { id: 'download' }
@@ -271,10 +272,13 @@ it('places the link first, switches between sources and submits a canonical URL 
   expect(screen.getByText('请输入 YouTube 或 B 站的单个视频链接。')).toBeInTheDocument()
   await user.clear(link)
   await user.type(link, 'https://youtu.be/jNQXAC9IVRw')
+  const proxy = screen.getAllByRole('spinbutton', { name: '本机 HTTP 代理端口（0 为直连）' })[0]
+  fireEvent.change(proxy, { target: { value: '7897' } })
   await user.click(screen.getByRole('button', { name: '下载并处理' }))
   await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/download'))
   const body = request.mock.calls.find(([, init]) => init?.method === 'POST')![1]!.body as FormData
   expect(JSON.parse(body.get('request') as string).config.source_url).toBe('https://www.youtube.com/watch?v=jNQXAC9IVRw')
+  expect(JSON.parse(body.get('request') as string).config.source_proxy_port).toBe(7897)
   expect(body.has('input.video')).toBe(false)
 })
 

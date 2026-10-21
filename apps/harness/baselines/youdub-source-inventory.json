@@ -1,0 +1,1124 @@
+{
+  "sourceSnapshot": "f6f927903581b165f2bf6c840ea65b896d319524",
+  "sourceTree": "67041e0b5bfbfba74f81cb7f89f20d291796bead",
+  "apiRoutes": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "source": "packages/builtin/src/api.ts",
+      "line": 22
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/catalog",
+      "source": "packages/builtin/src/api.ts",
+      "line": 26
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/workflows",
+      "source": "packages/builtin/src/api.ts",
+      "line": 27
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/workflow-documents/migrate-defaults",
+      "source": "packages/builtin/src/api.ts",
+      "line": 46
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/node-types",
+      "source": "packages/builtin/src/api.ts",
+      "line": 50
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/workflow-documents",
+      "source": "packages/builtin/src/api.ts",
+      "line": 51
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/workflow-documents",
+      "source": "packages/builtin/src/api.ts",
+      "line": 58
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/workflow-documents/validate",
+      "source": "packages/builtin/src/api.ts",
+      "line": 64
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/workflow-documents/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 69
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/workflow-documents/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 76
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/workflow-documents/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 82
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/updates",
+      "source": "packages/builtin/src/api.ts",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/updates/check",
+      "source": "packages/builtin/src/api.ts",
+      "line": 92
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/runtime",
+      "source": "packages/builtin/src/api.ts",
+      "line": 93
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/settings",
+      "source": "packages/builtin/src/api.ts",
+      "line": 94
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/settings/test-connection",
+      "source": "packages/builtin/src/api.ts",
+      "line": 95
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v2/settings",
+      "source": "packages/builtin/src/api.ts",
+      "line": 98
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks",
+      "source": "packages/builtin/src/api.ts",
+      "line": 102
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks",
+      "source": "packages/builtin/src/api.ts",
+      "line": 120
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 128
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks/:id/cancel",
+      "source": "packages/builtin/src/api.ts",
+      "line": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks/:id/retry",
+      "source": "packages/builtin/src/api.ts",
+      "line": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks/:id/rerun",
+      "source": "packages/builtin/src/api.ts",
+      "line": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/nodes/:nodeId",
+      "source": "packages/builtin/src/api.ts",
+      "line": 136
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/nodes/:nodeId/results/:revision",
+      "source": "packages/builtin/src/api.ts",
+      "line": 137
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks/:id/nodes/:nodeId/corrections",
+      "source": "packages/builtin/src/api.ts",
+      "line": 142
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks/:id/nodes/:nodeId/approve",
+      "source": "packages/builtin/src/api.ts",
+      "line": 143
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/actions/:actionId",
+      "source": "packages/builtin/src/api.ts",
+      "line": 144
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/tasks/:id/rerun-preview",
+      "source": "packages/builtin/src/api.ts",
+      "line": 149
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/artifacts/:artifactId",
+      "source": "packages/builtin/src/api.ts",
+      "line": 150
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/tasks/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 158
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/cover",
+      "source": "packages/builtin/src/api.ts",
+      "line": 163
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/files/:output",
+      "source": "packages/builtin/src/api.ts",
+      "line": 172
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/tasks/:id/log",
+      "source": "packages/builtin/src/api.ts",
+      "line": 182
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/extensions",
+      "source": "packages/builtin/src/api.ts",
+      "line": 189
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/imports/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 190
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/extensions/install",
+      "source": "packages/builtin/src/api.ts",
+      "line": 199
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v2/extensions/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 200
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/extensions/:id",
+      "source": "packages/builtin/src/api.ts",
+      "line": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/client-manifest",
+      "source": "packages/builtin/src/api.ts",
+      "line": 202
+    },
+    {
+      "method": "GET",
+      "path": "/api/plugins/:packageId/:version/:asset*",
+      "source": "packages/builtin/src/api.ts",
+      "line": 203
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/session",
+      "source": "packages/builtin/src/auth.ts",
+      "line": 59
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "source": "packages/builtin/src/auth.ts",
+      "line": 63
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/models/providers",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 8
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/models/settings",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 9
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v2/models/settings",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 10
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/models/credentials/describe",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 11
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v2/models/credentials/:ref",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 12
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v2/models/credentials/:ref",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 13
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/models/discover",
+      "source": "packages/builtin/src/llm-models-api.ts",
+      "line": 14
+    },
+    {
+      "method": "GET",
+      "path": "/api/v2/resources",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 74
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/resources/check",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 78
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/resources/prepare",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 78
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/workflow-documents/resources/check",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 83
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/workflow-documents/resources/prepare",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 83
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/resources/action",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 95
+    },
+    {
+      "method": "GET",
+      "path": "/api/setup",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 117
+    },
+    {
+      "method": "POST",
+      "path": "/api/setup",
+      "source": "packages/builtin/src/setup.ts",
+      "line": 118
+    }
+  ],
+  "operations": [
+    {
+      "key": "download",
+      "id": "media.download/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 20,
+      "outputs": [
+        {
+          "kind": "artifact",
+          "name": "video",
+          "schemaId": "video/mp4/v1"
+        }
+      ]
+    },
+    {
+      "key": "prepare",
+      "id": "media.prepare/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 21,
+      "outputs": [
+        {
+          "kind": "artifact",
+          "name": "sourceAudio",
+          "schemaId": "audio/wav/v1"
+        },
+        {
+          "kind": "json",
+          "name": "mediaInfo",
+          "schemaId": "media-info/v1"
+        }
+      ]
+    },
+    {
+      "key": "separate",
+      "id": "audio.separate/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 22,
+      "outputs": [
+        {
+          "kind": "artifact",
+          "name": "vocals",
+          "schemaId": "audio/wav/v1"
+        },
+        {
+          "kind": "artifact",
+          "name": "background",
+          "schemaId": "audio/wav/v1"
+        }
+      ]
+    },
+    {
+      "key": "recognize",
+      "id": "speech.transcribe/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 23,
+      "outputs": [
+        {
+          "kind": "json",
+          "name": "transcript",
+          "schemaId": "transcript/v1"
+        },
+        {
+          "kind": "artifact",
+          "name": "raw",
+          "schemaId": "diagnostic/json/v1"
+        }
+      ]
+    },
+    {
+      "key": "translate",
+      "id": "text.translate/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 24,
+      "outputs": [
+        {
+          "kind": "json",
+          "name": "translation",
+          "schemaId": "translation/v1"
+        }
+      ]
+    },
+    {
+      "key": "reference",
+      "id": "voice.reference/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 25,
+      "outputs": [
+        {
+          "kind": "json",
+          "name": "references",
+          "schemaId": "voice-references/v1"
+        }
+      ]
+    },
+    {
+      "key": "synthesize",
+      "id": "speech.synthesize/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 26,
+      "outputs": [
+        {
+          "kind": "json",
+          "name": "speechAudio",
+          "schemaId": "speech-audio/v1"
+        }
+      ]
+    },
+    {
+      "key": "mix",
+      "id": "audio.mix/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 27,
+      "outputs": [
+        {
+          "kind": "artifact",
+          "name": "finalAudio",
+          "schemaId": "audio/wav/v1"
+        },
+        {
+          "kind": "json",
+          "name": "dubbedTimeline",
+          "schemaId": "dubbed-timeline/v1"
+        },
+        {
+          "kind": "json",
+          "name": "adjustedSpeech",
+          "schemaId": "speech-audio/v1"
+        }
+      ]
+    },
+    {
+      "key": "align",
+      "id": "text.align/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 28,
+      "outputs": [
+        {
+          "kind": "json",
+          "name": "wordAlignment",
+          "schemaId": "word-alignment/v1"
+        }
+      ]
+    },
+    {
+      "key": "export",
+      "id": "media.export/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 29,
+      "outputs": [
+        {
+          "kind": "artifact",
+          "name": "video",
+          "schemaId": "video/mp4/v1"
+        },
+        {
+          "kind": "artifact",
+          "name": "audio",
+          "schemaId": "audio/wav/v1"
+        },
+        {
+          "kind": "artifact",
+          "name": "sourceSubtitles",
+          "schemaId": "application/x-subrip/v1"
+        },
+        {
+          "kind": "artifact",
+          "name": "translatedSubtitles",
+          "schemaId": "application/x-subrip/v1"
+        }
+      ]
+    },
+    {
+      "key": "importSubtitles",
+      "id": "subtitles.import/v1",
+      "source": "packages/builtin/src/media-contracts.ts",
+      "line": 30,
+      "outputs": [
+        {
+          "kind": "json",
+          "name": "transcript",
+          "schemaId": "transcript/v1"
+        },
+        {
+          "kind": "json",
+          "name": "translation",
+          "schemaId": "translation/v1"
+        }
+      ]
+    }
+  ],
+  "workerOperations": [
+    {
+      "id": "media.download/v1",
+      "handler": "download"
+    },
+    {
+      "id": "media.prepare/v1",
+      "handler": "prepare"
+    },
+    {
+      "id": "audio.separate/v1",
+      "handler": "separate"
+    },
+    {
+      "id": "speech.transcribe/v1",
+      "handler": "asr"
+    },
+    {
+      "id": "text.translate/v1",
+      "handler": "translate"
+    },
+    {
+      "id": "voice.reference/v1",
+      "handler": "reference"
+    },
+    {
+      "id": "speech.synthesize/v1",
+      "handler": "tts"
+    },
+    {
+      "id": "audio.mix/v1",
+      "handler": "mix"
+    },
+    {
+      "id": "text.align/v1",
+      "handler": "align"
+    },
+    {
+      "id": "media.export/v1",
+      "handler": "export"
+    },
+    {
+      "id": "subtitles.import/v1",
+      "handler": "import_subtitles"
+    }
+  ],
+  "pages": [
+    {
+      "id": "library",
+      "path": "/tasks",
+      "source": "apps/web/src/plugin/builtin/library.tsx",
+      "line": 149
+    },
+    {
+      "id": "task-detail",
+      "path": "/tasks/:id",
+      "source": "apps/web/src/plugin/builtin/library.tsx",
+      "line": 150
+    },
+    {
+      "id": "settings",
+      "path": "/settings",
+      "source": "apps/web/src/plugin/builtin/settings.tsx",
+      "line": 126
+    },
+    {
+      "id": "settings-section",
+      "path": "/settings/:section",
+      "source": "apps/web/src/plugin/builtin/settings.tsx",
+      "line": 127
+    },
+    {
+      "id": "studio",
+      "path": "/",
+      "source": "apps/web/src/plugin/builtin/studio.tsx",
+      "line": 177
+    },
+    {
+      "id": "workflows",
+      "path": "/workflows",
+      "source": "apps/web/src/plugin/builtin/workflows.tsx",
+      "line": 252
+    },
+    {
+      "id": "workflow-editor",
+      "path": "/workflows/:id",
+      "source": "apps/web/src/plugin/builtin/workflows.tsx",
+      "line": 253
+    },
+    {
+      "id": "workflow-node",
+      "path": "/workflows/:id/nodes/:nodeId",
+      "source": "apps/web/src/plugin/builtin/workflows.tsx",
+      "line": 254
+    },
+    {
+      "id": "task-node",
+      "path": "/tasks/:id/nodes/:nodeId",
+      "source": "apps/web/src/plugin/builtin/workflows.tsx",
+      "line": 255
+    }
+  ],
+  "workflows": [
+    {
+      "id": "example.reviewed-subtitles",
+      "source": "packages/builtin/src/workflow-templates/reviewed-subtitles.json",
+      "nodes": [
+        {
+          "id": "prepare",
+          "type": "youdub.prepare",
+          "provider": {
+            "id": "youdub.media"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "recognize",
+          "type": "youdub.transcribe",
+          "provider": {
+            "id": "whisper",
+            "model": "tiny",
+            "device": "cpu"
+          },
+          "autoContinue": false
+        },
+        {
+          "id": "translate",
+          "type": "youdub.translate",
+          "provider": {
+            "id": "openai"
+          },
+          "autoContinue": false
+        },
+        {
+          "id": "export",
+          "type": "youdub.export",
+          "provider": {
+            "id": "youdub.media"
+          },
+          "autoContinue": true
+        }
+      ]
+    },
+    {
+      "id": "example.source-clone-dubbing",
+      "source": "packages/builtin/src/workflow-templates/source-clone-dubbing.json",
+      "nodes": [
+        {
+          "id": "prepare",
+          "type": "youdub.prepare",
+          "provider": {
+            "id": "youdub.media"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "separate",
+          "type": "youdub.separate",
+          "provider": {
+            "id": "demucs",
+            "model": "htdemucs",
+            "device": "cpu"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "recognize",
+          "type": "youdub.transcribe",
+          "provider": {
+            "id": "whisper",
+            "model": "tiny",
+            "device": "cpu"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "translate",
+          "type": "youdub.translate",
+          "provider": {
+            "id": "openai"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "reference",
+          "type": "youdub.reference",
+          "provider": {
+            "id": "youdub.media"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "synthesize",
+          "type": "youdub.synthesize",
+          "provider": {
+            "id": "voxcpm",
+            "model": "VoxCPM2",
+            "device": "cpu"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "mix",
+          "type": "youdub.mix",
+          "provider": {
+            "id": "youdub.media"
+          },
+          "autoContinue": true
+        },
+        {
+          "id": "export",
+          "type": "youdub.export",
+          "provider": {
+            "id": "youdub.media"
+          },
+          "autoContinue": true
+        }
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "source": "apps/web/src/components/app-updates.tsx",
+      "exports": [
+        "UpdateNotice",
+        "UpdateSettings"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/brand/brand-mark.tsx",
+      "exports": [
+        "BrandMark"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/inline-alert.tsx",
+      "exports": [
+        "InlineAlert"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/language-switcher.tsx",
+      "exports": [
+        "LanguageSwitcher",
+        "LanguageMenuButton"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/localize-task-config.tsx",
+      "exports": [
+        "TaskOptions",
+        "ModelLabel",
+        "ConfigRow",
+        "Field",
+        "FieldSelect",
+        "ModelField",
+        "LanguageField",
+        "TaskConfigForm"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/CustomProviderCard.tsx",
+      "exports": [
+        "CustomProviderCard"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/DeepSeekModelsEditor.tsx",
+      "exports": [
+        "DeepSeekModelsEditor"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/EditorFooter.tsx",
+      "exports": [
+        "EditorFooter"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/ModelListEditor.tsx",
+      "exports": [
+        "IconChevron",
+        "IconTrash",
+        "ModelListEditor"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/ModelsSection.tsx",
+      "exports": [
+        "ModelsSection",
+        "Loaded"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/ProviderEditor.tsx",
+      "exports": [
+        "ProviderEditor"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/index.tsx",
+      "exports": [
+        "ModelsSettings"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/models-settings/primitives.tsx",
+      "exports": [
+        "Modal"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/page-layout.tsx",
+      "exports": [
+        "PageContainer",
+        "Page",
+        "PageHeader"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/section-card.tsx",
+      "exports": [
+        "SectionCard"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/settings-resources.tsx",
+      "exports": [
+        "SettingsResources"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/setup-diagnostics.tsx",
+      "exports": [
+        "SetupDiagnostics"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/setup-gate.tsx",
+      "exports": [
+        "SetupGate"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/setup-resources.tsx",
+      "exports": [
+        "ResourceProgress",
+        "EnvironmentSteps",
+        "ModelDownloadRow"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/setup-screen.tsx",
+      "exports": [
+        "SetupScreen"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/sidebar-link.tsx",
+      "exports": [
+        "SidebarLink"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/task-cover.tsx",
+      "exports": [
+        "TaskCover"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/theme-toggle.tsx",
+      "exports": [
+        "ThemeToggle"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/translation-setup.tsx",
+      "exports": [
+        "TranslationSetup",
+        "TranslationSetupView"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/ui/button.tsx",
+      "exports": [
+        "Button"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/ui/input.tsx",
+      "exports": [
+        "Input"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/ui/label.tsx",
+      "exports": [
+        "Label"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/ui/segmented.tsx",
+      "exports": []
+    },
+    {
+      "source": "apps/web/src/components/ui/select.tsx",
+      "exports": [
+        "Select",
+        "SelectTrigger",
+        "SelectContent",
+        "SelectItem"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/ui/switch.tsx",
+      "exports": [
+        "Switch"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/ui/tooltip.tsx",
+      "exports": [
+        "Tooltip"
+      ]
+    },
+    {
+      "source": "apps/web/src/components/video-player.tsx",
+      "exports": [
+        "ControlButton",
+        "VideoPlayer"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/library.tsx",
+      "exports": [
+        "Library",
+        "RerunEditor",
+        "RerunForm",
+        "Actions",
+        "TaskDetail",
+        "AudioOutput",
+        "TaskLog"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/localize-editor.tsx",
+      "exports": [
+        "LocalizeEditor"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/media-upload.tsx",
+      "exports": [
+        "UploadSlot",
+        "LaunchCard"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/schema-form.tsx",
+      "exports": [
+        "Fields",
+        "ConfigEditor"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/settings.tsx",
+      "exports": [
+        "Section",
+        "Extensions",
+        "ExtensionSection",
+        "ExtensionSettings",
+        "Settings"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/shell.tsx",
+      "exports": [
+        "Shell",
+        "Root"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/studio.tsx",
+      "exports": [
+        "Composer",
+        "TaskSection",
+        "Studio"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/task-status.tsx",
+      "exports": [
+        "TaskState",
+        "TaskProgress"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-canvas.tsx",
+      "exports": [
+        "NodeCard",
+        "WorkflowCanvas"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-errors.tsx",
+      "exports": [
+        "WorkflowDiagnostics"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-guard.tsx",
+      "exports": []
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-options.tsx",
+      "exports": [
+        "WorkflowOptions"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-rerun.tsx",
+      "exports": [
+        "WorkflowRerun"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-resources.tsx",
+      "exports": [
+        "WorkflowResources"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-run.tsx",
+      "exports": [
+        "WorkflowRun"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-settings.tsx",
+      "exports": [
+        "FallbackButton",
+        "SynthesizeNodeEditor",
+        "NodeSettings",
+        "GraphPorts"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflow-task.tsx",
+      "exports": [
+        "SegmentTextArea",
+        "TaskWorkflowPanel",
+        "TaskGraph",
+        "TaskNodePage",
+        "NodeDetail",
+        "NodeConfiguration",
+        "ConfigurationValues",
+        "TranscriptEditor",
+        "TranscriptNodeDetails",
+        "TranslationNodeDetails",
+        "TranslationEditor",
+        "SpeechResult",
+        "Media",
+        "RawResult",
+        "ResultViewer",
+        "NodeLog"
+      ]
+    },
+    {
+      "source": "apps/web/src/plugin/builtin/workflows.tsx",
+      "exports": [
+        "WorkflowLibrary",
+        "WorkflowRoute",
+        "NewEditor",
+        "SavedEditor",
+        "Editor",
+        "GraphStudio"
+      ]
+    }
+  ],
+  "interpretation": "Static inventory from the preserved YouDub source snapshot. Presence in this list is not proof of migrated implementation or end-to-end acceptance."
+}

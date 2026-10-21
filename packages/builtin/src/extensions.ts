@@ -16,7 +16,7 @@ const compatible = (value: unknown) => ['1.0.0', '^1.0.0', '~1.0.0', '1.1.0', '^
 const cleanId = (id: unknown): id is string => typeof id === 'string' && /^[a-z][a-z0-9.-]{1,100}$/.test(id)
 const mime: Record<string, string> = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 export default class ExtensionsService extends Service {
-  static inject = ['process', 'tasks']
+  static inject = ['youdubWorker', 'tasks']
   private installed: Installed[] = []
   private active = new Set<string>()
   private bootEnabled = new Set<string>()
@@ -91,7 +91,7 @@ export default class ExtensionsService extends Service {
       try {
         const npm = command === 'npm'
           ? process.env.npm_execpath || (process.platform === 'win32' ? join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js') : undefined) : undefined
-        const result = await this.ctx.process.run({ command: npm ? process.execPath : command, args: npm ? [npm, ...args] : args, cwd })
+        const result = await this.ctx.youdubWorker.run({ command: npm ? process.execPath : command, args: npm ? [npm, ...args] : args, cwd })
         log.push(result.stdout, result.stderr); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); return result.stdout
       } catch (error) { log.push(String(error)); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); throw error }
     }

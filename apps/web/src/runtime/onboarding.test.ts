@@ -52,6 +52,30 @@ it('keeps setup failures visible until an explicit reconnect', async () => {
   controller.stop()
 })
 
+it('does not restore a stale model selection after preparing the selected models', async () => {
+  vi.useFakeTimers()
+  const choosing = { ...setup, resourceSelection: { required: true, selections: [{ providerId: 'whisper', model: 'tiny' }], items: [], prepared: false } }
+  const preparing = { ...choosing, resourceSelection: { ...choosing.resourceSelection, required: false } }
+  let finishPoll!: (state: unknown) => void
+  const request = vi.fn().mockResolvedValueOnce(choosing)
+    .mockImplementationOnce(() => new Promise(resolve => { finishPoll = resolve }))
+    .mockResolvedValueOnce(preparing)
+    .mockResolvedValue({ ...preparing, phase: 'ready' })
+  const controller = new SetupController(request as never)
+  controller.start()
+  await vi.advanceTimersByTimeAsync(800)
+  await controller.prepare(choosing.resourceSelection.selections)
+  expect(controller.getSnapshot().state?.resourceSelection?.required).toBe(false)
+  finishPoll(choosing)
+  await vi.advanceTimersByTimeAsync(0)
+  expect(controller.getSnapshot().state?.resourceSelection?.required).toBe(false)
+  await vi.advanceTimersByTimeAsync(800)
+  expect(controller.getSnapshot().state?.phase).toBe('ready')
+  await vi.advanceTimersByTimeAsync(1600)
+  expect(request).toHaveBeenCalledTimes(4)
+  controller.stop()
+})
+
 it('aborts first-run provider requests when the setup view closes', async () => {
   let finish!: (value: Response) => void
   const fetch = vi.fn().mockImplementation((path: string) => {
@@ -69,4 +93,41 @@ it('aborts first-run provider requests when the setup view closes', async () => 
   await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
   expect(controller.getSnapshot().ready).toBe(false)
   await expect(controller.request('/api/v2/models/settings')).rejects.toThrow('closed')
+})
+
+it('uses the injected Harness transport and waits for Continue after a provider becomes usable', async () => {
+  let providers: unknown[] = []
+  const request = vi.fn(async (path: string) => path === '/api/v2/catalog' ? { providers } : {})
+  const fetch = vi.fn()
+  vi.stubGlobal('fetch', fetch)
+  const controller = new TranslationSetupController(request as never)
+  controller.start()
+  await vi.waitFor(() => expect(controller.getSnapshot().loaded).toBe(true))
+  expect(controller.getSnapshot()).toMatchObject({ configured: false, ready: false })
+  providers = [{ id: 'llm.example', capability: 'translation', available: true }]
+  await controller.refreshConfigured()
+  expect(controller.getSnapshot()).toMatchObject({ configured: true, ready: false })
+  expect(fetch).not.toHaveBeenCalled()
+  expect(request.mock.calls.every(([path]) => path !== '/api/auth/session')).toBe(true)
+  controller.continue()
+  expect(controller.getSnapshot().ready).toBe(true)
+  controller.stop()
+})
+
+it('persists Configure later through the injected transport and restores it on the next start', async () => {
+  let deferred = false
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return { providers: [] }
+    if (init?.method === 'PATCH') deferred = JSON.parse(init.body as string).plugin.config.translationDeferred
+    return { plugins: { 'youdub.onboarding': { translationDeferred: deferred } } }
+  })
+  const controller = new TranslationSetupController(request as never)
+  controller.start()
+  await vi.waitFor(() => expect(controller.getSnapshot().loaded).toBe(true))
+  await controller.skip()
+  expect(controller.getSnapshot().ready).toBe(true)
+  controller.start()
+  await vi.waitFor(() => expect(controller.getSnapshot().ready).toBe(true))
+  expect(controller.getSnapshot().configured).toBe(false)
+  controller.stop()
 })

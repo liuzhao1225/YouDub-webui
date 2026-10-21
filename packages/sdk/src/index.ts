@@ -185,7 +185,7 @@ declare module 'cordis' {
   interface Events { 'app/ready'(): void; 'app/stopping'(): void | Promise<void>; 'settings/updated'(settings: JsonObject): void }
   interface Context {
     catalog: CatalogService; tasks: TasksService; store: StoreService; settings: SettingsService;
-    files: FilesService; process: ProcessService;
+    files: FilesService; youdubWorker: ProcessService;
     secrets: { get(reference: string): Promise<string | null>; set(reference: string, value: string): Promise<void>; delete(reference: string): Promise<void> }
   }
 }

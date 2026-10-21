@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Invocation, InvocationContext, JsonObject } from '@youdub/sdk'
 import { translateWithModel, validateWireTokenLimit } from '../src/llm-translation.js'
+import { CHINESE_SUBTITLE_PUNCTUATION_RULES } from '../src/translation-punctuation.js'
 
 const answer = JSON.stringify({ segments: [{ segment_id: 'segment-b', text: '第二段' }, { segment_id: 'segment-a', text: '你好' }] })
 function respond(res: ServerResponse, api: string, content = answer) {
@@ -57,6 +58,7 @@ for (const [api, path, token] of [['openai-completions', '/v1/chat/completions',
     assert.equal(received.length, 1)
     assert.equal(received[0].url, path)
     assert.equal(received[0].body[token], 65535)
+    for (const rule of CHINESE_SUBTITLE_PUNCTUATION_RULES.split('\n')) assert.ok(JSON.stringify(received[0].body).includes(rule))
     assert.equal(api === 'anthropic-messages' ? received[0].key : received[0].authorization, api === 'anthropic-messages' ? 'local-fixture-key' : 'Bearer local-fixture-key')
     assert.equal(prepared.length, 1); assert.equal(updated[0].state, 'succeeded')
     const evidence = JSON.parse(await readFile(join(request.workDir, 'translation_raw/0001.request.json'), 'utf8'))
@@ -64,6 +66,16 @@ for (const [api, path, token] of [['openai-completions', '/v1/chat/completions',
     assert.equal(JSON.parse(await readFile(join(request.workDir, 'translation_raw/0001.response.json'), 'utf8')).stopReason, 'stop')
   })
 }
+test('non-Chinese translations omit the Chinese punctuation rules and retain segment units', async t => {
+  const { request, context, received } = await fixture(t)
+  request.binding.options.targetLanguage = 'ja'
+  const result = await translateWithModel('local', request, context)
+  assert.equal(result.state, 'completed')
+  if (result.state !== 'completed') throw new Error('Expected synchronous completion')
+  assert.deepEqual(result.outputs.translation.segments.map((segment: JsonObject) => segment.segment_id), ['segment-a', 'segment-b'])
+  assert.equal(received[0].body.max_completion_tokens, 65535)
+  assert.ok(!JSON.stringify(received[0].body).includes('对于长句，使用逗号进行更详细的分句。'))
+})
 test('insufficient catalog capacity and an SDK-clamped wire cap stop before submission', async t => {
   const { request, context, received, prepared } = await fixture(t)
   context.credentials['llm.local'].profile!.models[0].maxTokens = 4096

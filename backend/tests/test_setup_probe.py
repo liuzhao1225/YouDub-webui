@@ -6,6 +6,21 @@ from types import SimpleNamespace
 from backend.workers import setup_probe
 
 
+def test_harness_punkt_does_not_accept_machine_nltk_data(monkeypatch, tmp_path):
+    import nltk.data
+    machine = tmp_path / "machine"
+    english = machine / "tokenizers/punkt_tab/english"
+    english.mkdir(parents=True)
+    for name in ("collocations.tab", "sent_starters.txt", "abbrev_types.txt", "ortho_context.tab"):
+        (english / name).write_text("fixture")
+    monkeypatch.setattr(nltk.data, "path", [str(machine)])
+    monkeypatch.delenv("YOUDUB_HARNESS_RUNTIME", raising=False)
+    assert setup_probe.punkt()["ready"] is True
+    monkeypatch.setenv("YOUDUB_HARNESS_RUNTIME", "1")
+    monkeypatch.setenv("NLTK_DATA", str(tmp_path / "private"))
+    assert setup_probe.punkt()["ready"] is False
+
+
 def test_base_and_subtitles_do_not_inspect_or_import_optional_tts(monkeypatch):
     checked, imported = [], []
     forbidden = {"voxcpm", "transformers", "librosa", "openunmix", "dora", "julius", "torchcodec"}

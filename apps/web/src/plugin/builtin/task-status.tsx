@@ -1,3 +1,4 @@
+import { Tag } from '@/components/ui/tag'
 import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { text, type TaskStatus, type TaskSummary, type TaskView } from '../sdk'
@@ -17,7 +18,7 @@ export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapsho
 
 export function TaskState({ status }: { status: string }) {
   const tx = useText()
-  return <span className={cn('shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium', status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'paused' || status === 'awaiting_review' ? 'bg-status-warning/10 text-status-warning-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground')}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</span>
+  return <Tag tone={status === 'failed' ? 'danger' : status === 'paused' || status === 'awaiting_review' ? 'warning' : status === 'succeeded' || status === 'completed' ? 'success' : 'neutral'}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</Tag>
 }
 
 export function TaskProgress({ task }: { task: TaskSummary }) {

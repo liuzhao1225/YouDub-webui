@@ -1,0 +1,27 @@
+# Test-only patch over the shipped headless profile. The production bundle
+# layers own the agent services, tools, persistence plugin, and defaults.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- id: agent-loop
+  config:
+    agents:
+      - id: main
+        provider: time-context-mock
+        model: time-context-mock
+        cwd: !!js process.cwd()
+
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+
+- insert:
+    - id: time-context-mock-llm
+      name: './mock-llm.ts'
+
+    - id: time-context
+      name: '@deepseek-ai/dsh-time-context'

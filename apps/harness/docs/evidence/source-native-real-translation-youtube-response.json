@@ -1,0 +1,6 @@
+{
+  "text": "{\"segments\":[{\"segment_id\":\"segment-000001\",\"text\":\"好了，我们现在看到的是其中一头大象。\"},{\"segment_id\":\"segment-000002\",\"text\":\"这些家伙令人期待的酷炫之处在于，它们的前部真的非常长，这很酷。\"},{\"segment_id\":\"segment-000003\",\"text\":\"它们差不多就是在表达这些。\"}]}",
+  "finish": {
+    "kind": "stop"
+  }
+}

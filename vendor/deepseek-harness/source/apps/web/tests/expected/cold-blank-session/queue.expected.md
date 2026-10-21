@@ -1,0 +1,6 @@
+- list:
+  - listitem:
+    - text: Accepted before the Host restarted
+    - button "Edit queued message"
+    - button "Remove queued message"
+    - button "Steer queued message" [disabled]

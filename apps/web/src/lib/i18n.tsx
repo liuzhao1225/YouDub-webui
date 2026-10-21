@@ -53,7 +53,7 @@ type Messages = {
   }
 }
 
-const messages: Record<UiLanguage, Messages> = {
+export const messages: Record<UiLanguage, Messages> = {
   en: {
     nav: {
       newTask: "New task",

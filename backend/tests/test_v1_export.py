@@ -217,24 +217,28 @@ def test_dubbing_rejects_inconsistent_timeline_or_audio(context, bad_input):
     assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("欢迎来到YouDub，今天测试视频翻译，保留完整连续配音。",
+@pytest.mark.parametrize("language,text,expected", [
+    ("zh", "欢迎来到YouDub，今天测试视频翻译，保留完整连续配音。",
      ["欢迎来到YouDub，", "今天测试视频翻译，", "保留完整连续配音。"]),
-    ("这里介绍《第一章，第二章》，然后继续说明流程。",
+    ("zh", "这里介绍《第一章，第二章》，然后继续说明流程。",
      ["这里介绍《第一章，第二章》，", "然后继续说明流程。"]),
-    ('这是一个完整句子！”接着说明另一个句子。',
-     ['这是一个完整句子！”', "接着说明另一个句子。"]),
-    ("Use v1.2 with example.com. Then continue talking.",
+    ("zh", '这是一个完整句子！”接着说明另一个句子。',
+     ['这是一个完整句子！”接着说明另一个句子。']),
+    ("en", "Use v1.2 with example.com. Then continue talking.",
      ["Use v1.2 with example.com.", " Then continue talking."]),
-    ("好的，欢迎来到这里。结束。", ["好的，欢迎来到这里。结束。"]),
-    ("全球前三模型中有两个——Claude和Gemini——是在这里训练的。",
-     ["全球前三模型中有两个——", "Claude和Gemini——", "是在这里训练的。"]),
-    ("这里介绍《第一章——第二章》，然后继续说明流程。",
+    ("zh", "好的，欢迎来到这里。结束。", ["好的，欢迎来到这里。", "结束。"]),
+    ("zh", "全球前三模型中有两个——Claude和Gemini——是在这里训练的。",
+     ["全球前三模型中有两个——Claude和Gemini——是在这里训练的。"]),
+    ("zh", "这里介绍《第一章——第二章》，然后继续说明流程。",
      ["这里介绍《第一章——第二章》，", "然后继续说明流程。"]),
-    ("Use state-of-the-art tools with v1.2.", ["Use state-of-the-art tools with v1.2."]),
+    ("en", "Use state-of-the-art tools with v1.2.", ["Use state-of-the-art tools with v1.2."]),
+    ("en", "Keep (one, two) and [three; four] together. Then finish.",
+     ["Keep (one, two) and [three; four] together.", " Then finish."]),
+    ("zh", "  请保留 （第一段，第二段）内容，  最后结束。  ",
+     ["  请保留 （第一段，第二段）内容，  ", "最后结束。  "]),
 ])
-def test_subtitle_display_parts_preserve_content_and_protected_punctuation(text, expected):
-    assert export._display_parts(text) == expected
+def test_subtitle_display_parts_preserve_content_and_protected_punctuation(language, text, expected):
+    assert export._display_parts(text, language) == expected
     assert "".join(expected) == text
 
 

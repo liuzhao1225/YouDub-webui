@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "YouDub subtitle workflow proof of concept on DeepSeek Harness",
+  "description": "YouDub 视频处理、字幕与配音工作流",
   "license": "Apache-2.0",
   "main": "dist/host.mjs",
   "exports": {
@@ -21,7 +21,9 @@
         "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-theme"
+        "@deepseek-ai/dsh-client-ui-theme",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-api-remotes"
       ]
     }
   },
@@ -29,22 +31,35 @@
     "build": "node build.mjs",
     "start": "node launch.mjs",
     "desktop": "node desktop.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "check:composition": "node check-composition.mjs",
+    "check:upstream": "node baselines/verify.mjs",
+    "build:desktop": "node build-desktop.mjs",
+    "build:framework": "node build-framework.mjs",
+    "build:product": "node build.mjs && node build-desktop.mjs",
+    "dev": "node desktop.mjs"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "4.0.5",
     "@deepseek-ai/dsh": "0.2.1-rc.2",
     "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-atomic-write": "0.2.1-rc.2",
     "@deepseek-ai/schemastery": "3.18.5",
     "clsx": "2.1.1",
-    "tailwind-merge": "3.5.0",
-    "@deepseek-ai/dsh-atomic-write": "0.2.1-rc.2"
+    "tailwind-merge": "3.5.0"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-client-store": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.1-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-subprocess-local": "0.2.1-rc.2",
+    "electron": "44.7.0",
+    "electron-updater": "6.8.9",
     "esbuild": "0.25.10",
-    "@deepseek-ai/dsh-subprocess-local": "0.2.1-rc.2"
+    "lightningcss": "1.33.0",
+    "pnpm": "11.28.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tsdown": "0.22.2"
   }
 }

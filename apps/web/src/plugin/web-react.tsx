@@ -1,5 +1,5 @@
 /** Framework-only binding between client services and props-based React features. */
-import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode, type ComponentType } from 'react'
+import { createContext, useContext, useEffect, useMemo, type ReactNode, type ComponentType } from 'react'
 import type { Context } from 'cordis'
 import type { SlotMap, WorkflowDocument } from './sdk'
 import type { Observable, Request, SessionSnapshot } from './runtime/types'
@@ -7,36 +7,10 @@ import { QueryClient, type QueryResult, type WorkflowDocuments } from './runtime
 import { WorkflowResourceChecks, changesResources, resourceKey, type WorkflowResourcesResult } from './runtime/workflow-resources'
 import { UpdatesController, type Updates } from './runtime/updates'
 
-export function useObservableSource<T>(source: Observable<T>): T {
-  return useSyncExternalStore(source.subscribe, source.getSnapshot, source.getSnapshot)
-}
+import { useObservableSource } from './view-hooks'
+export { useObservableSource, useActiveView, usePendingUnload, protectPendingSubmissions } from './view-hooks'
 export function bindObservable<T>(source: Observable<T>): () => T {
   return function useSnapshot() { return useObservableSource(source) }
-}
-/** Async feature actions may update their controller after unmount, but cannot navigate an unrelated page. */
-export function useActiveView() {
-  const active = useRef(true)
-  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
-  return active
-}
-export function usePendingUnload(pending: boolean) {
-  useEffect(() => {
-    if (!pending) return
-    const unload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
-    window.addEventListener('beforeunload', unload)
-    return () => window.removeEventListener('beforeunload', unload)
-  }, [pending])
-}
-/** A pending task import remains protected even while its owner page is not mounted. */
-export function protectPendingSubmissions(ctx: Context, source: Observable<{ submissions: Record<string, unknown> }>) {
-  ctx.effect(() => {
-    const unload = (event: BeforeUnloadEvent) => {
-      if (!Object.keys(source.getSnapshot().submissions).length) return
-      event.preventDefault(); event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', unload)
-    return () => window.removeEventListener('beforeunload', unload)
-  })
 }
 export type UseQuery = <T>(path: string, pollMs?: number, shouldPoll?: (value: T) => boolean) => QueryResult<T>
 export function createQueryHook(client: QueryClient, subscribeChanges?: (refresh: () => void) => () => void): UseQuery {

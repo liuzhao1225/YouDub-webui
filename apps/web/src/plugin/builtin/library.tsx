@@ -1,10 +1,11 @@
+import { NativeSelect, Choice } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Check, Download, FileText, ListVideo, Loader2, RotateCw, Square, Trash2 } from 'lucide-react'
 import { Link, text, type Catalog, type JsonObject, type PanelProps, type RouteProps, type TaskAction, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../web-react'
+import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
@@ -17,13 +18,13 @@ import { Page, PageHeader } from '@/components/page-layout'
 import { ConfigEditor, defaultConfig, useEditorSupported } from './schema-form'
 import { STATUS_LABELS, TaskProgress, TaskState, taskDisplayName } from './task-status'
 
-function Library({ useQuery }: Bindings<'useQuery'>) {
+export function Library({ useQuery, navigate }: Bindings<'useQuery' | 'navigate'>) {
   const tx = useText()
   const [status, setStatus] = useState(''), [offset, setOffset] = useState(0)
   const { data, error, refresh } = useQuery<TaskPage>(`/api/v2/tasks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`, 3000)
   return <Page>
-    <PageHeader title={tx('Library', '任务库', 'ライブラリ')} actions={<Button nativeButton={false} render={<Link href="/" />}>{tx('New task', '新建任务', '新しいタスク')}</Button>} />
-    <div className="flex flex-wrap items-center gap-2"><select aria-label={tx('Task status', '任务状态', 'タスクの状態')} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} className="h-9 rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">{tx('All statuses', '全部状态', 'すべての状態')}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(...STATUS_LABELS[item])}</option>)}</select><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx('Refresh', '刷新', '更新')}</Button></div>
+    <PageHeader title={tx('Library', '任务库', 'ライブラリ')} actions={<Button onClick={() => navigate('/')}>{tx('New task', '新建任务', '新しいタスク')}</Button>} />
+    <div className="flex flex-wrap items-center gap-2"><NativeSelect aria-label={tx('Task status', '任务状态', 'タスクの状態')} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} className="h-9 rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">{tx('All statuses', '全部状态', 'すべての状態')}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(...STATUS_LABELS[item])}</option>)}</NativeSelect><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx('Refresh', '刷新', '更新')}</Button></div>
     {error && <InlineAlert>{error}</InlineAlert>}
     {!data && !error && <p role="status" className="py-12 text-center text-sm text-muted-foreground">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}
     {data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{status ? tx('No tasks with this status', '没有符合此状态的任务', 'この状態のタスクはありません') : tx('No tasks yet', '还没有任务', 'タスクはまだありません')}</div>}
@@ -49,7 +50,7 @@ function RerunEditor({ submissionStore, task, close, locked, onLockChange, reque
     <h2 className="font-semibold">{tx('Generate again', '重新生成', '再生成')}</h2>
     {error && <InlineAlert>{error}</InlineAlert>}
     {catalog && !workflow && <InlineAlert>{tx('No workflows are available.', '当前没有可用流程。', '利用可能なワークフローがありません。')}</InlineAlert>}
-    {workflow && <><label className="grid gap-2 text-sm">{tx('Workflow', '处理流程', 'ワークフロー')}<select disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-10 rounded-lg border border-input bg-input-bg px-3">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</select></label><RerunForm submissionStore={submissionStore} request={request} navigate={navigate} useSlot={useSlot} key={`${workflow.id}:${workflow.version}`} task={task} workflow={workflow} close={close} onLockChange={onLockChange} /></>}
+    {workflow && <><label className="grid gap-2 text-sm">{tx('Workflow', '处理流程', 'ワークフロー')}<NativeSelect disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-10 rounded-lg border border-input bg-input-bg px-3">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></label><RerunForm submissionStore={submissionStore} request={request} navigate={navigate} useSlot={useSlot} key={`${workflow.id}:${workflow.version}`} task={task} workflow={workflow} close={close} onLockChange={onLockChange} /></>}
     {!workflow && <Button variant="outline" onClick={close}>{tx('Close', '关闭', '閉じる')}</Button>}
   </section>
 }
@@ -69,7 +70,7 @@ function RerunForm({ submissionStore, task, workflow, close, onLockChange, reque
   const supported = useEditorSupported(useSlot, workflow.id, workflow.configSchema)
   return <div className="space-y-5">
     <ConfigEditor useSlot={useSlot} ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || submitted} onChange={setConfig} />
-    {task.mayStillRun && <label className="flex gap-2 text-sm"><input type="checkbox" disabled={submitted} checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />{tx('The remote request may still be running. Create a new task.', '远端请求可能仍在执行，确认创建新任务。', 'リモート処理が続いている可能性があります。新しいタスクを作成します。')}</label>}
+    {task.mayStillRun && <Choice className="flex gap-2 text-sm" label={tx('The remote request may still be running. Create a new task.', '远端请求可能仍在执行，确认创建新任务。', 'リモート処理が続いている可能性があります。新しいタスクを作成します。')} disabled={submitted} checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />}
     {failure && <InlineAlert>{failure} · {newId}</InlineAlert>}
     {submitted && !busy && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => {
       void submissionStore.check(submissionKey, request).then(next => { if (next) openTask(next) })
@@ -82,7 +83,7 @@ function RerunForm({ submissionStore, task, workflow, close, onLockChange, reque
     }}>{busy && <Loader2 className="animate-spin" />}{submitted ? tx('Submit with the same ID', '使用同一 ID 提交', '同じ ID で送信') : tx('Create task', '创建任务', 'タスクを作成')}</Button><Button variant="outline" onClick={close} disabled={busy || submitted}>{tx('Close', '关闭', '閉じる')}</Button></div>
   </div>
 }
-function Actions({ submissionStore, task, refresh, prepareDelete, request, navigate, useQuery, useSlot }: PanelProps & { submissionStore: StudioDraftStore; prepareDelete(value: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
+function Actions({ heading, submissionStore, task, refresh, prepareDelete, request, navigate, useQuery, useSlot }: PanelProps & { heading: ReactNode; submissionStore: StudioDraftStore; prepareDelete(value: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
   const tx = useText()
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [confirmDelete, setConfirmDelete] = useState(false), [rerun, setRerun] = useState(() => Object.values(submissionStore.getSnapshot().submissions).some(item => item.path === `/api/v2/tasks/${task.id}/rerun`)), [rerunLocked, setRerunLocked] = useState(false)
   async function act(action: TaskAction) {
@@ -94,15 +95,15 @@ function Actions({ submissionStore, task, refresh, prepareDelete, request, navig
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
   }
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2">{task.allowedActions.includes('cancel') && <Button variant="outline" disabled={busy || rerunLocked} onClick={() => void act('cancel')}><Square />{tx("Cancel task", "取消任务", "タスクをキャンセル")}</Button>}{task.allowedActions.includes('retry') && <Button disabled={busy || rerunLocked} onClick={() => void act('retry')}><RotateCw />{tx("Retry from start", "从头重试", "最初から再試行")}</Button>}{!task.graphSnapshot && task.allowedActions.includes('rerun') && <Button variant="outline" disabled={busy || rerunLocked} onClick={() => setRerun(!rerun)}>{tx("Generate again", "重新生成", "再生成")}</Button>}{task.allowedActions.includes('delete') && <Button variant={confirmDelete ? 'destructive' : 'ghost'} disabled={busy || rerunLocked} onClick={() => { if (confirmDelete) void act('delete'); else { setConfirmDelete(true); prepareDelete(true) } }}><Trash2 />{confirmDelete ? tx('Delete task and files', '确认删除任务与文件', 'タスクとファイルを削除') : tx('Delete task', '删除任务', 'タスクを削除')}</Button>}{confirmDelete && <Button variant="ghost" onClick={() => { setConfirmDelete(false); prepareDelete(false) }}>{tx("Keep task", "保留", "タスクを保持")}</Button>}</div>{task.mayStillRun && <InlineAlert tone="warning">{tx("The remote request may still be running.", "远端请求可能仍在执行。", "リモート処理が続いている可能性があります。")}</InlineAlert>}{error && <InlineAlert>{error}</InlineAlert>}{rerun && <RerunEditor submissionStore={submissionStore} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} task={task} close={() => setRerun(false)} locked={rerunLocked} onLockChange={setRerunLocked} />}</div>
+  return <header className="space-y-4"><div className="flex flex-wrap items-start justify-between gap-3">{heading}<div className="flex flex-wrap items-center gap-2">{task.allowedActions.includes('cancel') && <Button variant="outline" disabled={busy || rerunLocked} onClick={() => void act('cancel')}><Square />{tx("Cancel task", "取消任务", "タスクをキャンセル")}</Button>}{task.allowedActions.includes('retry') && <Button disabled={busy || rerunLocked} onClick={() => void act('retry')}><RotateCw />{tx("Retry from start", "从头重试", "最初から再試行")}</Button>}{!task.graphSnapshot && task.allowedActions.includes('rerun') && <Button variant="outline" disabled={busy || rerunLocked} onClick={() => setRerun(!rerun)}>{tx("Generate again", "重新生成", "再生成")}</Button>}{task.allowedActions.includes('delete') && <Button variant={confirmDelete ? 'destructive' : 'ghost'} disabled={busy || rerunLocked} onClick={() => { if (confirmDelete) void act('delete'); else { setConfirmDelete(true); prepareDelete(true) } }}><Trash2 />{confirmDelete ? tx('Delete task and files', '确认删除任务与文件', 'タスクとファイルを削除') : tx('Delete task', '删除任务', 'タスクを削除')}</Button>}{confirmDelete && <Button variant="ghost" onClick={() => { setConfirmDelete(false); prepareDelete(false) }}>{tx("Keep task", "保留", "タスクを保持")}</Button>}</div></div>{task.mayStillRun && <InlineAlert tone="warning">{tx("The remote request may still be running.", "远端请求可能仍在执行。", "リモート処理が続いている可能性があります。")}</InlineAlert>}{error && <InlineAlert>{error}</InlineAlert>}{rerun && <RerunEditor submissionStore={submissionStore} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} task={task} close={() => setRerun(false)} locked={rerunLocked} onLockChange={setRerunLocked} />}</header>
 }
-function TaskDetail({ submissionStore, params, request, navigate, useQuery, useSlot }: RouteProps & { submissionStore: StudioDraftStore } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
+export function TaskDetail({ submissionStore, params, request, navigate, useQuery, useSlot }: RouteProps & { submissionStore: StudioDraftStore } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
   const tx = useText(), { language } = useI18n()
   const { data: task, error, refresh } = useQuery<TaskView>(`/api/v2/tasks/${encodeURIComponent(params.id)}`, 1500, taskNeedsPolling)
   const panels = useSlot('task.detail.panels'), actions = useSlot('task.detail.actions')
   const [mediaReleased, setMediaReleased] = useState(false), [showLog, setShowLog] = useState(false)
   const loadError = error && <div className="space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx('Reload task', '重新加载任务', 'タスクを再読み込み')}</Button></div>
-  if (!task) return <Page>{loadError || <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</Page>
+  if (!task) return <Page className="space-y-4 py-4">{loadError || <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</Page>
   const video = task.outputs.find((output) => output.mimeType?.startsWith('video/'))
   const completed = task.steps.filter((step) => step.status === 'completed').length
   const stepList = <ol className="space-y-4">{task.steps.map((step) => <li key={step.id} className="flex gap-3">
@@ -112,11 +113,17 @@ function TaskDetail({ submissionStore, params, request, navigate, useQuery, useS
       {step.message && <p className="mt-1 break-words text-xs text-muted-foreground">{step.message}</p>}{step.error && <p className="mt-1 text-xs text-status-danger-fg">{step.error.message}</p>}
     </div>
   </li>)}</ol>
-  return <Page>
-    <Link href="/tasks" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{tx('Library', '任务库', 'ライブラリ')}</Link>
-    <PageHeader title={taskDisplayName(task)} actions={<TaskState status={task.status} />}><p className="mt-2 text-xs text-muted-foreground">{taskDisplayName(task) !== (task.graphSnapshot?.title || task.workflowId) && <>{task.graphSnapshot?.title || task.workflowId} · </>}{formatDateTime(task.createdAt)}</p></PageHeader>
+  return <Page className="space-y-4 py-4">
+    <Actions submissionStore={submissionStore} useQuery={useQuery} useSlot={useSlot} request={request} navigate={navigate} task={task} refresh={refresh} prepareDelete={setMediaReleased} heading={<div className="min-w-0 flex-auto space-y-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Link href="/tasks" className="inline-flex shrink-0 items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{tx('Library', '任务库', 'ライブラリ')}</Link>
+        <span aria-hidden="true" className="text-subtle-foreground">/</span>
+        <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">{taskDisplayName(task)}</h1>
+        <TaskState status={task.status} />
+      </div>
+      <p className="text-xs text-muted-foreground">{taskDisplayName(task) !== (task.graphSnapshot?.title || task.workflowId) && <>{task.graphSnapshot?.title || task.workflowId} · </>}<time dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></p>
+    </div>} />
     {loadError}{task.error && <InlineAlert>{task.error.message}</InlineAlert>}
-    <Actions submissionStore={submissionStore} useQuery={useQuery} useSlot={useSlot} request={request} navigate={navigate} task={task} refresh={refresh} prepareDelete={setMediaReleased} />
     {actions.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
     {video && !mediaReleased && <div className="overflow-hidden rounded-2xl border border-border bg-black"><VideoPlayer src={video.url} /></div>}
     {!!task.outputs.length && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card"><h2 className="font-semibold">{tx('Generated files', '生成文件', '生成ファイル')}</h2><div className="grid gap-3 sm:grid-cols-2">{task.outputs.map((output) => <div key={output.id} className="space-y-2 rounded-xl border border-border p-3">
@@ -146,7 +153,7 @@ export function apply(ctx: Context) {
   ctx.effect(() => () => submissionStore.reset())
   protectPendingSubmissions(ctx, submissionStore)
   const BoundTaskDetail = bindComponent(ctx, ['request', 'navigate', 'useQuery', 'useSlot'], TaskDetail)
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'library', path: '/tasks', component: bindComponent(ctx, ['useQuery'], Library), access: 'authenticated' }))
+  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'library', path: '/tasks', component: bindComponent(ctx, ['useQuery','navigate'], Library), access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.routes', { id: 'task-detail', path: '/tasks/:id', component: props => <BoundTaskDetail {...props} submissionStore={submissionStore} />, access: 'authenticated' }))
   ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'library', routeId: 'library', label: { default: 'Library', translations: { zh: '任务库', ja: 'タスク' } }, order: 20, icon: ListVideo }))
 }

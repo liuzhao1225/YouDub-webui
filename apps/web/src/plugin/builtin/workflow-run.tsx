@@ -15,14 +15,14 @@ import { nodeDefinition } from './workflow-utils'
 import { WorkflowResources } from './workflow-resources'
 import { workflowDiagnostics, WorkflowDiagnostics } from './workflow-errors'
 
-import { useActiveView, useObservableSource, usePendingUnload } from '../web-react'
+import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
 import { StudioDraftStore, type WorkflowRunDraft } from '@/runtime/studio-draft'
 export type { WorkflowRunDraft } from '@/runtime/studio-draft'
 
 export function WorkflowRun({ document, types, revision = null, afterInputs, prominent = false, submissionStore, draft, onDraftChange, onStarted, onLockChange, request, navigate, useSlot, useWorkflowResources }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision?: number | null; afterInputs?: ReactNode; prominent?: boolean; submissionStore?: StudioDraftStore; draft?: WorkflowRunDraft; onDraftChange?: Dispatch<SetStateAction<WorkflowRunDraft>>; onStarted?(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const [localDraft, setLocalDraft] = useState<WorkflowRunDraft>({ selectedFiles: [], sourceUrl: '', runtimeByDocument: {} })
-  const { selectedFiles, sourceUrl, runtimeByDocument } = draft ?? localDraft
+  const { selectedFiles, sourceUrl, proxyPort = 0, runtimeByDocument } = draft ?? localDraft
   const setDraft = onDraftChange ?? setLocalDraft
   const setFiles = (selectedFiles: InputFile[]) => setDraft((current) => ({ ...current, selectedFiles }))
   const setSourceUrl = (sourceUrl: string) => setDraft((current) => ({ ...current, sourceUrl }))
@@ -33,7 +33,9 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   if (linkInput && sourceUrl.trim()) {
     try { source = videoSource(sourceUrl) } catch (failure) { linkError = failure instanceof Error ? failure.message : String(failure) }
   }
-  const imported = linkInput && source ? withVideoLink(document, types, linkInput.id, source.url) : undefined
+  const imported = linkInput && source ? withVideoLink(document, types, linkInput.id, source.url, proxyPort) : undefined
+  const download = imported?.document.nodes[0]
+  const proxyField = download && nodeDefinition(download, types)?.configSchema.properties?.proxyPort
   const runDocument = imported?.document ?? document
   const runtime = runtimeByDocument[document.id] ?? {}
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
@@ -102,6 +104,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
         {sourceUrl && <Button variant="ghost" size="icon-sm" disabled={locked} aria-label={tx('Clear link', '清空链接', 'リンクをクリア')} onClick={() => { setSourceUrl(''); setLinkTouched(false) }}><X /></Button>}
       </div>
       {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
+      {proxyField && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { proxyPort: proxyField } }} value={{ proxyPort }} diagnostics={[]} readOnly={locked} onChange={(config) => setDraft((current) => ({ ...current, proxyPort: config.proxyPort as number | undefined }))} /></div>}
       <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx('or upload a video', '或上传本地视频', 'または動画をアップロード')}<span className="h-px flex-1 bg-border" /></div>
     </div>}
     <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>

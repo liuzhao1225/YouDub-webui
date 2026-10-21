@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 "use client"
 
 import { CSSProperties, KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react"
@@ -45,7 +46,7 @@ function ControlButton({
   children: ReactNode
 }) {
   return (
-    <button
+    <Button variant="ghost" size="icon-sm"
       type="button"
       onClick={onClick}
       aria-label={label}
@@ -53,11 +54,12 @@ function ControlButton({
       className="flex size-8 shrink-0 items-center justify-center rounded-md text-white/90 transition-colors outline-none hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 [&_svg]:size-[18px]"
     >
       {children}
-    </button>
+    </Button>
   )
 }
 
-export function VideoPlayer({ src, className, onError }: { src: string; className?: string; onError?: () => void }) {
+export type SpeedControlProps = { rate:number; options:number[]; label:string; onChange(value:number):void }
+export function VideoPlayer({ src, className, onError, renderSpeedControl }: { src: string; className?: string; onError?: () => void; renderSpeedControl?:(props:SpeedControlProps) => ReactNode }) {
   const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<VideoElement>(null)
@@ -280,14 +282,14 @@ export function VideoPlayer({ src, className, onError }: { src: string; classNam
       />
 
       {!started ? (
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={togglePlay}
           aria-label={t.player.play}
-          className="absolute inset-0 z-10 m-auto flex size-16 items-center justify-center rounded-full bg-white/15 text-white shadow-[0_8px_32px_rgb(0_0_0/0.35)] ring-1 ring-white/25 backdrop-blur-md transition-[background-color,transform] outline-none hover:scale-105 hover:bg-white/25 focus-visible:ring-3 focus-visible:ring-white/60"
+          className="absolute inset-0 z-10 m-auto flex size-16 p-0 items-center justify-center rounded-full bg-white/15 text-white shadow-[0_8px_32px_rgb(0_0_0/0.35)] ring-1 ring-white/25 backdrop-blur-md transition-[background-color,transform] outline-none hover:scale-105 hover:bg-white/25 focus-visible:ring-3 focus-visible:ring-white/60"
         >
           <Play className="ml-1 size-7 fill-current" />
-        </button>
+        </Button>
       ) : null}
 
       {/* 渐变遮罩本身不拦截点击，轻点遮罩区域仍然作用于视频；只有控件可交互。 */}
@@ -333,8 +335,8 @@ export function VideoPlayer({ src, className, onError }: { src: string; classNam
             {formatClock(currentTime)} / {formatClock(duration)}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
-            <div ref={speedMenuRef} className="relative">
-              <button
+            {renderSpeedControl ? renderSpeedControl({rate,options:SPEEDS,label:t.player.speed,onChange:changeRate}) : <div ref={speedMenuRef} className="relative">
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setSpeedOpen((open) => !open)}
                 aria-label={t.player.speed}
@@ -344,7 +346,7 @@ export function VideoPlayer({ src, className, onError }: { src: string; classNam
                 className="flex h-8 min-w-11 items-center justify-center rounded-md px-2 font-mono text-xs font-semibold tabular-nums text-white/90 transition-colors outline-none hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 aria-expanded:bg-white/15"
               >
                 {rate}x
-              </button>
+              </Button>
               {speedOpen ? (
                 <div
                   role="menu"
@@ -352,24 +354,24 @@ export function VideoPlayer({ src, className, onError }: { src: string; classNam
                   className="absolute right-0 bottom-10 min-w-28 rounded-xl border border-white/10 bg-black/85 p-1 shadow-[0_12px_32px_rgb(0_0_0/0.5)] backdrop-blur-md"
                 >
                   {SPEEDS.map((value) => (
-                    <button
+                    <Button variant="ghost"
                       key={value}
                       type="button"
                       role="menuitemradio"
                       aria-checked={rate === value}
                       onClick={() => changeRate(value)}
                       className={cn(
-                        "flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-left font-mono text-xs transition-colors outline-none hover:bg-white/15 focus-visible:bg-white/15",
+                        "flex h-auto w-full items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-left font-mono text-xs transition-colors outline-none hover:bg-white/15 focus-visible:bg-white/15",
                         rate === value ? "text-[#5fd0f5]" : "text-white/90",
                       )}
                     >
                       {value}x
                       {rate === value ? <Check className="size-3.5" /> : null}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               ) : null}
-            </div>
+            </div>}
             {pipSupported ? (
               <ControlButton label={t.player.pip} onClick={togglePictureInPicture}>
                 <PictureInPicture2 />

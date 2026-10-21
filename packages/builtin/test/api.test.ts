@@ -21,7 +21,7 @@ async function setup(t: any, fileService = Files) {
     // Dependencies must be ACTIVE before awaiting their consumers. Providing
     // them on this still-loading parent leaves child plugins PENDING.
     await context.plugin(services => {
-      services.reflect.provide('process', {})
+      services.reflect.provide('youdubWorker', {})
       services.reflect.provide('auth', {})
       services.reflect.provide('settings', { locked: async (action: () => Promise<any>) => action(), read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
       services.reflect.provide('store', { call: async (method: string) => { if (method === 'settings.raw') return {}; throw new Error(`Unexpected store call: ${method}`) } })

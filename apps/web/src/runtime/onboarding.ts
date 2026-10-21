@@ -1,4 +1,4 @@
-import type { SetupAction, SetupState } from '@/runtime/setup-contracts'
+import type { ResourceSelection, SetupAction, SetupState } from '@/runtime/setup-contracts'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { Request } from '@/plugin/runtime/types'
 import type { Catalog } from '@/plugin/contracts'
@@ -19,7 +19,8 @@ interface SetupSnapshot { state: SetupState | null; error: string; busy: boolean
 export class SetupController extends SnapshotStore<SetupSnapshot> {
   private controller: AbortController | null = null
   private timer: ReturnType<typeof setTimeout> | undefined
-  constructor() { super({ state: null, error: '', busy: false }) }
+  private mutationRevision = 0
+  constructor(private readonly api?: Request) { super({ state: null, error: '', busy: false }) }
   start = () => {
     this.stop()
     this.controller = new AbortController()
@@ -33,29 +34,34 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
   }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async request(controller: AbortController, init?: RequestInit): Promise<SetupState> {
+    if (this.api) return this.api<SetupState>('/api/setup', { ...init, signal: controller.signal })
     const response = await fetch('/api/setup', { ...init, signal: controller.signal, cache: 'no-store', credentials: 'same-origin' })
     const body = await response.text()
     if (!response.ok) throw new Error(`环境准备请求失败 (${response.status})：${body}`)
     return JSON.parse(body)
   }
   private async poll(controller: AbortController) {
+    const revision = this.mutationRevision
     try {
       const state = await this.request(controller)
       if (!this.current(controller)) return
-      this.update({ state })
-      if (state.phase !== 'ready' && !this.snapshot.error) this.timer = setTimeout(() => void this.poll(controller), 800)
+      // A read started before an applied action cannot restore its old state.
+      if (revision === this.mutationRevision && !this.snapshot.busy) this.update({ state })
+      if (this.snapshot.state?.phase !== 'ready' && !this.snapshot.error) this.timer = setTimeout(() => void this.poll(controller), 800)
     } catch (failure) {
       if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })
     }
   }
-  action = async (action: SetupAction, id?: string) => {
+  action = (action: SetupAction, id?: string) => this.mutate({ action, id })
+  prepare = (selections: ResourceSelection[]) => this.mutate({ action: 'prepare', selections })
+  private async mutate(body: { action: SetupAction; id?: string } | { action: 'prepare'; selections: ResourceSelection[] }) {
     const { state, busy } = this.snapshot
     const controller = this.controller
     if (!state || busy || !controller) return
     this.update({ busy: true })
     try {
-      const next = await this.request(controller, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-YouDub-Setup': state.token }, body: JSON.stringify({ action, id }) })
-      if (this.current(controller)) this.update({ state: next })
+      const next = await this.request(controller, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-YouDub-Setup': state.token }, body: JSON.stringify(body) })
+      if (this.current(controller)) { this.mutationRevision++; this.update({ state: next }) }
     } catch (failure) {
       if (this.current(controller)) {
         clearTimeout(this.timer)
@@ -73,7 +79,7 @@ interface TranslationSnapshot { loaded: boolean; configured: boolean; ready: boo
 export class TranslationSetupController extends SnapshotStore<TranslationSnapshot> {
   private csrf = ''
   private controller: AbortController | null = null
-  constructor() { super({ loaded: false, configured: false, ready: false, busy: false, error: '' }) }
+  constructor(private readonly suppliedRequest?: Request) { super({ loaded: false, configured: false, ready: false, busy: false, error: '' }) }
   readonly request: Request = <T>(path: string, init?: RequestInit) => {
     if (!this.controller) return Promise.reject(new Error('Translation setup is closed.'))
     return this.api<T>(this.controller, path, init)
@@ -86,9 +92,23 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
   }
   stop = () => { this.controller?.abort(); this.controller = null }
   setConfigured = (configured: boolean) => { if (this.controller) this.update({ configured }) }
+  refreshConfigured = async () => {
+    const controller = this.controller
+    if (!controller) return
+    try {
+      const catalog = await this.api<Catalog>(controller, '/api/v2/catalog')
+      if (this.current(controller)) this.update({ configured: catalog.providers.some(provider => !provider.legacy && provider.available && provider.capability === 'translation'), error: '' })
+    } catch (failure) {
+      if (this.current(controller)) this.update({ configured: false, error: failure instanceof Error ? failure.message : String(failure) })
+    }
+  }
   continue = () => { if (this.controller && this.snapshot.configured) this.update({ ready: true }) }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async api<T>(controller: AbortController, path: string, init?: RequestInit): Promise<T> {
+    if (this.suppliedRequest) {
+      const signal = init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal
+      return this.suppliedRequest<T>(path, { ...init, signal })
+    }
     const headers = new Headers(init?.headers)
     if (init?.body) headers.set('Content-Type', 'application/json')
     if (init?.method && !['GET', 'HEAD'].includes(init.method.toUpperCase())) headers.set('X-CSRF-Token', this.csrf)
@@ -98,9 +118,11 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
   }
   private async load(controller: AbortController) {
     try {
-      const session = await this.api<{ csrf_token: string }>(controller, '/api/auth/session')
-      if (!this.current(controller)) return
-      this.csrf = session.csrf_token
+      if (!this.suppliedRequest) {
+        const session = await this.api<{ csrf_token: string }>(controller, '/api/auth/session')
+        if (!this.current(controller)) return
+        this.csrf = session.csrf_token
+      }
       const [settings, catalog] = await Promise.all([
         this.api<{ plugins?: Record<string, { translationDeferred?: boolean }> }>(controller, '/api/v2/settings'),
         this.api<Catalog>(controller, '/api/v2/catalog'),

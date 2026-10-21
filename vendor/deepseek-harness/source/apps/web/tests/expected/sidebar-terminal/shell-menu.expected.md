@@ -1,0 +1,3 @@
+- menu:
+  - menuitem "bash"
+  - menuitem "sh"

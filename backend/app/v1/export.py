@@ -17,6 +17,7 @@ from . import media
 from .audio_segments import read_alignment
 from .errors import ApiError
 from .segments import Segment, Transcript, Translation, read_transcript, read_translation
+from .sentence_split import split_sentence_by_punctuation
 from .steps import Completed, StageContext
 
 
@@ -86,11 +87,12 @@ def _subtitle_rows(transcript: Transcript, translation: Translation, duration_ms
 
 
 def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool,
+               language: str = "zh",
                aligned_cues: list[tuple[int, int, str]] | None = None) -> None:
     cues = []
     display = aligned_cues if aligned_cues is not None else [
         cue for segment, translation in rows
-        for cue in _display_cues(translation if translated else segment.text, segment.start_ms, segment.end_ms)
+        for cue in _display_cues(translation if translated else segment.text, segment.start_ms, segment.end_ms, language)
     ]
     for start, end, part in display:
         # Keep complete cue text through alignment validation; hide only the
@@ -116,8 +118,26 @@ def _validate_prepared_cues(cues: list[tuple[int, int, str]], rows: list[tuple[S
         raise _invalid("Aligned subtitle cues do not preserve the complete translation.")
 
 
-def _display_parts(text: str) -> list[str]:
+def _display_parts(text: str, language: str = "zh") -> list[str]:
     """Split subtitle display text without changing a translation/TTS unit."""
+    if language == "zh":
+        # The original splitter omits separators and normalizes whitespace.
+        # Map its unchanged decisions back to source spans for Qwen and the
+        # complete-translation check. No text or punctuation is discarded here.
+        parts = split_sentence_by_punctuation(text)
+        separators = frozenset("，,；;：:。?？!！、")
+        keep = lambda char: not char.isspace() and char not in separators
+        offsets = [index for index, char in enumerate(text) if keep(char)]
+        normalized = ["".join(char for char in part if keep(char)) for part in parts]
+        if "".join(normalized) != "".join(text[index] for index in offsets):
+            raise _invalid("Original subtitle splitting did not preserve the complete translation.")
+        result, start, consumed = [], 0, 0
+        for index, part in enumerate(normalized):
+            consumed += len(part)
+            end = len(text) if index == len(parts) - 1 else offsets[consumed]
+            result.append(text[start:end])
+            start = end
+        return result
     pairs = {"《": "》", "（": "）", "【": "】", "「": "」", "『": "』", "(": ")", "[": "]"}
     punctuation = frozenset(SUBTITLE_BREAK_PUNCTUATION)
     closing = frozenset("\"'”’」』》）】)]")
@@ -161,13 +181,13 @@ def _display_parts(text: str) -> list[str]:
     return merged
 
 
-def _display_cues(text: str, start_ms: int, end_ms: int) -> list[tuple[int, int, str]]:
+def _display_cues(text: str, start_ms: int, end_ms: int, language: str = "zh") -> list[tuple[int, int, str]]:
     """Estimate display timing inside a whole utterance's source/dubbed span.
 
     This follows youdub-backend's character-weighted subtitle timing. These
     estimates do not change source ASR timestamps or split the synthesized audio.
     """
-    parts = _display_parts(text)
+    parts = _display_parts(text, language)
     duration = end_ms - start_ms
     if not parts or duration < len(parts):
         raise _invalid("The subtitle interval cannot contain its display fragments.")
@@ -241,8 +261,9 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
     if include_subtitles:
         if prepared_cues is not None:
             _validate_prepared_cues(prepared_cues, translated_rows, info["duration_ms"])
-        _write_srt(source_srt, rows, translated=False)
-        _write_srt(translated_srt, translated_rows, translated=True, aligned_cues=prepared_cues)
+        _write_srt(source_srt, rows, translated=False, language=transcript.detected_language)
+        _write_srt(translated_srt, translated_rows, translated=True,
+                   language=translation.target_language, aligned_cues=prepared_cues)
         outputs.update(source_subtitles=source_srt, translated_subtitles=translated_srt)
     progress(None, "Rendering output video")
     command = [

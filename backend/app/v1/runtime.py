@@ -49,7 +49,8 @@ def _whisper_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
     from nltk.data import find
 
     try:
-        punkt = Path(str(find("tokenizers/punkt_tab/english/")))
+        paths = [os.environ["NLTK_DATA"]] if os.getenv("YOUDUB_HARNESS_RUNTIME") == "1" else None
+        punkt = Path(str(find("tokenizers/punkt_tab/english/", paths=paths)))
     except LookupError:
         return [], "缺少 Whisper 英文分句数据；请运行 .venv/bin/python -m nltk.downloader punkt_tab。"
     if any(not (punkt / name).is_file() or (punkt / name).stat().st_size == 0 for name in (

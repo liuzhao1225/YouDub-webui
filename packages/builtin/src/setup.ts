@@ -45,7 +45,7 @@ const localPath = (path: string) => resolve(path.startsWith('~/') ? join(homedir
 declare module 'cordis' { interface Context { setup: SetupService } }
 
 export default class SetupService extends Service {
-  static inject = ['http', 'process', 'loader']
+  static inject = ['http', 'youdubWorker', 'loader']
   private client = new DownloadClient()
   private stopping = new AbortController()
   private token = randomBytes(32).toString('base64url')

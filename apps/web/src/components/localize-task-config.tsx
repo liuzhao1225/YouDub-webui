@@ -346,7 +346,7 @@ export function TaskConfigForm({ value, runtime, onChange, showTranslation = tru
       <Field caption={text("Background audio", "背景音", "背景音")}>
         <label className="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-input-bg px-3 text-sm">
           <span id="keep-background-label">{text("Keep background audio", "保留背景音", "背景音を残す")}</span>
-          <Switch aria-labelledby="keep-background-label" checked={value.keep_background} onCheckedChange={(checked) => change({ keep_background: checked })} />
+          <Switch aria-label={text("Keep background audio", "保留背景音", "背景音を残す")} aria-labelledby="keep-background-label" checked={value.keep_background} onCheckedChange={(checked) => change({ keep_background: checked })} />
         </label>
       </Field>
       {value.separation ? <ModelField kind="separation" id="model-separation" caption={text("Model", "模型", "モデル")} srPrefix={text("Audio separation ", "音源分离", "音源分離")} value={value.separation} runtime={runtime} onChange={(separation) => change({ separation })} /> : null}

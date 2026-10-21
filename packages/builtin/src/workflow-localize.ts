@@ -2,6 +2,7 @@ import type { Context } from 'cordis'
 import { type WorkflowDefinition, type JsonObject, type Diagnostic, type CatalogService, type WorkflowPlan, type ExactProviderBinding } from '@youdub/sdk'
 import { videoSource } from '@youdub/sdk/video-source'
 import { operations } from './media-contracts.js'
+import { nodeDescriptors } from './node-contracts.js'
 
 export const name = 'workflow-localize'
 export const inject = ['catalog', 'settings']
@@ -14,6 +15,7 @@ export const localizeSchema: JsonObject = {
   required: ['source_language', 'target_language', 'output_mode', 'keep_background', 'asr', 'translation', 'tts', 'separation'],
   properties: {
     source_url: { type: 'string', minLength: 1, maxLength: 2048 },
+    source_proxy_port: nodeDescriptors.download.configSchema.properties!.proxyPort,
     source_language: { type: 'string', minLength: 2 }, target_language: { type: 'string', minLength: 2 },
     output_mode: { enum: ['subtitles', 'dubbing', 'both'] }, keep_background: { type: 'boolean' },
     asr: selection({ initial_prompt: { type: ['string', 'null'], maxLength: 500 } }), translation: selection(),
@@ -80,7 +82,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
       binding('media', 'youdub.media')
       if (config.source_url) {
         binding('download', 'youdub.download')
-        plan.bindings.download.options = { maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }
+        plan.bindings.download.options = { maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296), proxyPort: config.source_proxy_port ?? 0 }
         plan.config.source_url = videoSource(config.source_url).url
       }
       for (const kind of ['asr', 'translation', 'tts', 'separation', 'subtitle_alignment']) if (config[kind]) binding(kind, pick(kind, config, catalog)!.id, config[kind])

@@ -24,6 +24,7 @@ export interface SetupState {
   platform: string; arch: string; version?: string; osVersion?: string; homeDir?: string
   environment: EnvironmentStep[]; models: SetupModel[]; error?: string; canRetry: boolean; token: string
   resources?: ResourcePreparation
+  resourceSelection?: { required: boolean; selections: ResourceSelection[]; items: ResourceItem[]; prepared: boolean }
 }
 export interface ResourceItem extends ResourceSelection {
   label: LocalizedText; automatic: boolean; downloadId?: string

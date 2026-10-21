@@ -1,3 +1,4 @@
+import { copyText } from '@/lib/clipboard'
 'use client'
 
 import { useState } from 'react'
@@ -15,7 +16,7 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
   const failed = Boolean(requestError || state?.error || state?.resources?.status === 'failed' || state?.environment.some(step => step.status === 'failed') || state?.models.some(model => model.status === 'failed'))
   async function copy() {
     setCopyError('')
-    try { await navigator.clipboard.writeText(report); setCopied(report) }
+    try { await copyText(report); setCopied(report) }
     catch (error) { setCopied(''); setCopyError(`复制失败：${error instanceof Error ? error.message : String(error)}。请在下方日志中全选并复制。`) }
   }
   return <section aria-label="诊断日志" className={cn('mt-4 rounded-xl border border-border bg-card p-4', failed && 'border-status-danger/25 bg-status-danger/10')}>

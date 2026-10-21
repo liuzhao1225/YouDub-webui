@@ -18,10 +18,12 @@ const BLUE_BARS = [
 export function BrandMark({
   animated = false,
   wordmark = false,
+  wordmarkSrc = "/youdub-logo.svg",
   className,
 }: {
   animated?: boolean
   wordmark?: boolean
+  wordmarkSrc?: string
   className?: string
 }) {
   const barClass = animated ? "animate-eq origin-center [transform-box:fill-box]" : undefined
@@ -63,7 +65,7 @@ export function BrandMark({
       {wordmark && (
         // Crop the original asset to its wordmark, preserving the lettering and gradient.
         <svg x="717" width="943" height="355" viewBox="717 0 943 355" overflow="hidden">
-          <image href="/youdub-logo.svg" width="1660" height="355" />
+          <image href={wordmarkSrc} width="1660" height="355" />
         </svg>
       )}
     </svg>

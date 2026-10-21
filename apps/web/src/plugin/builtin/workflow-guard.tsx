@@ -34,7 +34,7 @@ export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigati
         <div className="flex flex-wrap gap-2">
           {save && <Button disabled={busy} onClick={() => { const action = latest.current.save; if (!action) return; setBusy(true); setError(''); void action().then(() => finish(true)).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx('Save and leave', '保存并离开', '保存して移動')}</Button>}
           <Button variant="outline" disabled={busy} onClick={() => { latest.current.onDiscard?.(); finish(true) }}>{tx('Discard changes', '放弃修改', '変更を破棄')}</Button>
-          <Button ref={keepEditing} variant="ghost" disabled={busy} onClick={() => finish(false)}>{tx('Keep editing', '继续编辑', '編集を続ける')}</Button>
+          <Button data-modal-autofocus ref={keepEditing} variant="ghost" disabled={busy} onClick={() => finish(false)}>{tx('Keep editing', '继续编辑', '編集を続ける')}</Button>
         </div>
       </Dialog.Popup>
       </Dialog.Portal>

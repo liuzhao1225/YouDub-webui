@@ -15,6 +15,7 @@ const WorkflowRerun = bindTestComponent(WorkflowRerunView, ['request', 'navigate
 import { HttpError } from './builtin/api'
 import { WorkflowDiagnostics } from './builtin/workflow-errors'
 import * as apiPlugin from './builtin/api'
+import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 
 const types: NodeTypeDefinition[] = [{
   type: 'test.transcribe', version: '1', providerId: 'test', operation: 'transcribe',
@@ -59,7 +60,7 @@ it('rejects an unsupported dropped file with a visible error', async () => {
 })
 
 it('keeps the original link-above-upload layout and submits URL input through a download node', async () => {
-  const withDownload: NodeTypeDefinition[] = [...types, { type: 'youdub.download', version: '1', providerId: 'media', operation: 'download', provider: { id: 'media', operations: [] }, label: '下载', category: 'input', inputs: [], outputs: [{ name: 'video', kind: 'artifact', schemaId: 'video/mp4/v1', required: true }], configSchema: {}, defaults: {} }]
+  const withDownload: NodeTypeDefinition[] = [...types, { ...nodeDescriptors.download, providerId: 'media', operation: 'download', provider: { id: 'media', operations: [] }, outputs: [{ name: 'video', kind: 'artifact', schemaId: 'video/mp4/v1', required: true }] }]
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     if (path.includes('/validate')) return { valid: true, diagnostics: [] }
     if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
@@ -75,6 +76,11 @@ it('keeps the original link-above-upload layout and submits URL input through a 
   await user.upload(upload, new File(['local'], 'local.mp4', { type: 'video/mp4' }))
   fireEvent.change(link, { target: { value: 'https://youtu.be/abcdefghijk' } })
   expect(screen.queryByText('local.mp4')).not.toBeInTheDocument()
+  const proxy = screen.getByRole('spinbutton', { name: '本机 HTTP 代理端口（0 为直连）' })
+  expect(proxy).toHaveValue(0)
+  expect(proxy).toHaveAttribute('min', '0')
+  expect(proxy).toHaveAttribute('max', '65535')
+  fireEvent.change(proxy, { target: { value: '7897' } })
   await waitFor(() => expect(screen.getByRole('button', { name: '下载并处理' })).toBeEnabled())
   await user.click(screen.getByRole('button', { name: '下载并处理' }))
   await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/created'))
@@ -83,6 +89,7 @@ it('keeps the original link-above-upload layout and submits URL input through a 
   expect(body.has('input.source')).toBe(false)
   expect(submitted.graphDocument.inputs).toEqual([])
   expect(submitted.graphDocument.nodes[0].type).toBe('youdub.download')
+  expect(submitted.graphDocument.nodes[0].config.proxyPort).toBe(7897)
   expect(submitted.nodeRuntimeInputs['source-download'].url).toBe('https://www.youtube.com/watch?v=abcdefghijk')
   expect(submitted.config).toEqual({})
   expect(JSON.stringify(submitted.graphDocument)).not.toContain('youtube.com')

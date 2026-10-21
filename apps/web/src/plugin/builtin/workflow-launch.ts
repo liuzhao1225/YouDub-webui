@@ -31,7 +31,7 @@ export function videoLinkInput(document: WorkflowDocument, types: NodeTypeDefini
   const input = videoInputs.length === 1 ? videoInputs[0] : undefined
   return input && downloadForInput(document, types, input) ? input : undefined
 }
-export function withVideoLink(document: WorkflowDocument, types: NodeTypeDefinition[], inputId: string, url: string): { document: WorkflowDocument; runtime: Record<string, JsonObject> } {
+export function withVideoLink(document: WorkflowDocument, types: NodeTypeDefinition[], inputId: string, url: string, proxyPort = 0): { document: WorkflowDocument; runtime: Record<string, JsonObject> } {
   const input = document.inputs.find((item) => item.id === inputId)
   const { definition, output } = input && downloadForInput(document, types, input) || {}
   if (!input || !definition || !output) throw new Error('The workflow cannot import this video link.')
@@ -41,7 +41,7 @@ export function withVideoLink(document: WorkflowDocument, types: NodeTypeDefinit
   return {
     document: {
       ...document, inputs: document.inputs.filter((item) => item.id !== inputId),
-      nodes: [{ id, type: definition.type, typeVersion: definition.version, provider: { id: definition.providerId }, config: structuredClone(definition.defaults), autoContinue: true }, ...document.nodes],
+      nodes: [{ id, type: definition.type, typeVersion: definition.version, provider: { id: definition.providerId }, config: { ...structuredClone(definition.defaults), proxyPort }, autoContinue: true }, ...document.nodes],
       edges: document.edges.map((edge) => ({ ...edge, source: source(edge.source) })),
       outputs: document.outputs.map((item) => ({ ...item, source: source(item.source) })),
       presentation: { ...document.presentation, positions: { ...document.presentation.positions, [id]: { x: 0, y: 0 } } },

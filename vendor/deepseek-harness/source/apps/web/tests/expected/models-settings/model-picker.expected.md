@@ -1,0 +1,18 @@
+- dialog "选择要添加的模型":
+  - heading "选择要添加的模型" [level=2]
+  - button "关闭"
+  - paragraph: 以下是模型提供商的可用模型，勾选要添加的模型。
+  - searchbox "搜索模型"
+  - button "取消全选"
+  - list:
+    - listitem:
+      - checkbox "MiniMax-M2.7" [checked]
+      - text: MiniMax-M2.7
+    - listitem:
+      - checkbox "MiniMax-M2.7-highspeed" [checked]
+      - text: MiniMax-M2.7-highspeed
+    - listitem:
+      - checkbox "MiniMax-M3" [checked]
+      - text: MiniMax-M3
+  - button "取消"
+  - button "添加所选"

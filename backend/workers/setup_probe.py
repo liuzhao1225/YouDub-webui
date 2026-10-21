@@ -73,7 +73,8 @@ def punkt():
     from nltk.data import find
     from pathlib import Path
     try:
-        directory = Path(str(find("tokenizers/punkt_tab/english/")))
+        paths = [os.environ["NLTK_DATA"]] if os.getenv("YOUDUB_HARNESS_RUNTIME") == "1" else None
+        directory = Path(str(find("tokenizers/punkt_tab/english/", paths=paths)))
     except LookupError:
         return {"ready": False}
     return {"ready": all((directory / name).is_file() and (directory / name).stat().st_size > 0

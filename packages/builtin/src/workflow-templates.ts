@@ -22,12 +22,11 @@ export function workflowTemplates(catalog: CatalogService, settings: JsonObject)
   }
   const plain = build(subtitles, 'youdub.subtitles', '字幕翻译')
   plain.nodes.forEach(node => { node.autoContinue = true })
-  const review = build(subtitles, 'youdub.reviewed-subtitles', '字幕翻译 · 人工校对')
   const dub = build(dubbing, 'youdub.dubbing', '视频配音')
   const both = build(dubbing, 'youdub.subtitles-dubbing', '字幕＋配音')
   both.nodes.find(node => node.type === 'youdub.export')!.config.renderSubtitles = true
   both.outputs.push(...structuredClone(plain.outputs.filter(output => output.schemaId === 'application/x-subrip/v1')))
-  const records: { id: string; revision: number; origin: 'builtin' | 'plugin'; document: WorkflowDocument }[] = [plain, review, dub, both].map(document => ({ id: document.id, revision: 0, origin: 'builtin', document }))
+  const records: { id: string; revision: number; origin: 'builtin' | 'plugin'; document: WorkflowDocument }[] = [plain, dub, both].map(document => ({ id: document.id, revision: 0, origin: 'builtin', document }))
   for (const workflow of catalog.describe().workflows) {
     if (!workflow.graphTemplate) continue
     const document = parseWorkflowDocument(workflow.graphTemplate)

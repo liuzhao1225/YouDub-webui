@@ -1,9 +1,12 @@
+import { assetUrl } from '@/lib/asset-url'
+import { copyText } from '@/lib/clipboard'
+import { NativeSelect } from '@/components/ui/native-select'
 import type { Bindings } from '../sdk'
 import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
 import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, RotateCw, Save, Search } from 'lucide-react'
 import { Link, text, type GraphNode, type JsonObject, type JsonSchema, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { useActiveView, useObservableSource, usePendingUnload } from '../web-react'
+import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
@@ -190,7 +193,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx('Check submission', '查询提交结果', '送信結果を確認')}</Button></div>}
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">{(['result', 'inputs', 'config', 'log'] as const).map((value) => <Button key={value} variant={tab === value ? 'secondary' : 'ghost'} size="sm" onClick={() => setTab(value)}>{value === 'result' ? tx('Results', '结果', '結果') : value === 'inputs' ? tx('Inputs', '输入', '入力') : value === 'config' ? tx('Configuration', '配置', '設定') : tx('Task log', '任务日志', 'タスクログ')}</Button>)}
-      {!!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs">{tx('Version', '版本', 'バージョン')}<select className="h-8 rounded-lg border border-input bg-input-bg px-2" disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx('Original', '原始结果', '元の結果') : tx('Correction', '订正', '修正')}{detail.approvedRevision === item.revision ? ` · ${tx('Approved', '已确认', '確認済み')}` : ''}</option>)}</select></label>}
+      {!!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs">{tx('Version', '版本', 'バージョン')}<NativeSelect className="h-8 rounded-lg border border-input bg-input-bg px-2" disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx('Original', '原始结果', '元の結果') : tx('Correction', '订正', '修正')}{detail.approvedRevision === item.revision ? ` · ${tx('Approved', '已确认', '確認済み')}` : ''}</option>)}</NativeSelect></label>}
     </div>
     {tab === 'result' && historical && !!definition?.corrections && (awaitingReview || terminal) && <Button variant="outline" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={() => {
       const current = detail.resultRevisions.find((item) => item.revision === detail.outputRevision)?.outputs ?? detail.step.outputs ?? {}
@@ -269,7 +272,7 @@ function TranscriptEditor({ value, readOnly, onChange, onSeek }: { value: Transc
 }
 export function TranscriptNodeDetails({ detail, outputs, draft, readOnly, onDraftChange }: NodeDetailProps) {
   const audio = detail.inputs.audio as { id?: string; schemaId?: string } | undefined
-  const url = audio?.id ? `/api/v2/tasks/${detail.taskId}/artifacts/${audio.id}` : ''
+  const url = audio?.id ? assetUrl(`/api/v2/tasks/${encodeURIComponent(detail.taskId)}/artifacts/${encodeURIComponent(audio.id)}`) : ''
   const ref = useRef<HTMLAudioElement>(null)
   useReleaseMediaOnUnmount(ref, url)
   const value = (draft.transcript ?? outputs.transcript) as Transcript | undefined
@@ -300,7 +303,7 @@ function SpeechResult({ taskId, value, translation, historical, raw }: { taskId:
       // The worker preserves the translation segment ID; array order is not an association.
       const matches = historical ? [] : translation?.segments.filter((item) => item.segment_id === segment.id) ?? []
       const sentence = matches.length === 1 ? matches[0].text : undefined
-      const url = `/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(segment.audio.id)}`
+      const url = assetUrl(`/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(segment.audio.id)}`)
       const label = `${tx('Speech', '配音', '吹き替え')} ${index + 1}`
       return <li key={`${segment.id}-${index}`} aria-label={label} className="grid items-center gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-2">
         <div className="min-w-0"><span className="text-xs text-muted-foreground" title={segment.id}>{index + 1}</span>{sentence ? <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5">{sentence}</p> : !historical && <p className="mt-1 text-sm text-muted-foreground">{tx('No unique matching translation.', '未找到唯一对应的译文。', '対応する訳文を特定できません。')}</p>}</div>
@@ -330,7 +333,7 @@ function ResultViewer({ taskId, value }: { taskId: string; value: unknown }) {
   }
   visit(value)
   return <div className="space-y-2">{[...artifacts.values()].map((artifact, index) => {
-    const url = `/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(artifact.id)}`
+    const url = assetUrl(`/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(artifact.id)}`)
     const audio = artifact.schemaId.startsWith('audio/'), video = artifact.schemaId.startsWith('video/')
     return <div key={artifact.id} className={`rounded-lg border border-border bg-card p-2 ${audio ? 'flex flex-col gap-2 sm:flex-row sm:items-center' : 'space-y-2'}`}>
       {(audio || video) && <div className="min-w-0 flex-1"><Media url={url} video={video} /></div>}
@@ -341,5 +344,5 @@ function ResultViewer({ taskId, value }: { taskId: string; value: unknown }) {
 function NodeLog({ taskId, active, useQuery }: { taskId: string; active: boolean } & Bindings<'useQuery'>) {
   const tx = useText(), [error, setError] = useState('')
   const query = useQuery<string>(`/api/v2/tasks/${taskId}/log`, active ? 3000 : undefined)
-  return <section className="space-y-3"><Button variant="outline" size="sm" disabled={!query.data} onClick={() => { void navigator.clipboard.writeText(query.data ?? '').catch((failure: Error) => setError(failure.message)) }}><Copy />{tx('Copy task log', '复制任务日志', 'タスクログをコピー')}</Button>{(query.error || error) && <InlineAlert>{query.error || error}</InlineAlert>}{query.error && <Button variant="outline" size="sm" onClick={query.refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button>}<pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-card p-4 text-xs">{query.data}</pre></section>
+  return <section className="space-y-3"><Button variant="outline" size="sm" disabled={!query.data} onClick={() => { void copyText(query.data ?? '').catch((failure: Error) => setError(failure.message)) }}><Copy />{tx('Copy task log', '复制任务日志', 'タスクログをコピー')}</Button>{(query.error || error) && <InlineAlert>{query.error || error}</InlineAlert>}{query.error && <Button variant="outline" size="sm" onClick={query.refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button>}<pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-card p-4 text-xs">{query.data}</pre></section>
 }

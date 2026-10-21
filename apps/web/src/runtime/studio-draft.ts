@@ -4,7 +4,7 @@ import type { InputFile } from '@/plugin/builtin/workflow-launch'
 import type { Request } from '@/plugin/runtime/types'
 import type { TaskView } from '@/plugin/contracts'
 
-export type WorkflowRunDraft = { selectedFiles: InputFile[]; sourceUrl: string; runtimeByDocument: Record<string, Record<string, JsonObject>> }
+export type WorkflowRunDraft = { selectedFiles: InputFile[]; sourceUrl: string; proxyPort?: number; runtimeByDocument: Record<string, Record<string, JsonObject>> }
 export type ComposerDraft = { files: Record<string, File>; sourceUrl: string; config: JsonObject }
 export type Submission = { id: string; path: string; body: FormData | string; busy: boolean; error: string; failure?: unknown; task?: TaskView }
 type StudioDraft = { selected: string; selectedGraph: string; draft: WorkflowRunDraft; overrides: Record<string, Record<string, JsonObject>>; composers: Record<string, ComposerDraft>; submissions: Record<string, Submission> }

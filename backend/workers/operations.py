@@ -120,7 +120,8 @@ class Operation:
     def download(self):
         from .download import download_video
         path, metadata = download_video(self.inputs["url"], self.work, self.wire,
-                                        int(self.option("maxBytes", default=4 * 1024 ** 3)))
+                                        int(self.option("maxBytes", default=4 * 1024 ** 3)),
+                                        proxy_port=self.option("proxyPort", default=0))
         return {"video": self.artifact("video", path, "video/mp4/v1", "video/mp4", metadata)}
 
     def prepare(self):

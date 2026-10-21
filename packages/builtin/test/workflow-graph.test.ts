@@ -43,9 +43,16 @@ test('independent templates compile without mutating graph and only freeze selec
     return result.plan
   }))
   assert.ok(plans[0].steps.every(step => !['synthesize', 'separate', 'reference', 'mix'].includes(step.id)))
-  assert.equal(plans[1].steps.find(step => step.id === 'recognize')?.autoContinue, false)
-  assert.equal(plans[2].bindings.export.options.outputMode, 'dubbing')
-  assert.equal(plans[3].bindings.export.options.outputMode, 'both')
+  assert.deepEqual(templates.map(item => item.id), ['youdub.subtitles', 'youdub.dubbing', 'youdub.subtitles-dubbing'])
+  assert.equal(plans[1].bindings.export.options.outputMode, 'dubbing')
+  assert.equal(plans[2].bindings.export.options.outputMode, 'both')
+  const reviewed = structuredClone(templates[0].document)
+  reviewed.nodes.find(node => node.id === 'recognize')!.autoContinue = false
+  reviewed.nodes.find(node => node.id === 'translate')!.autoContinue = false
+  const reviewedPlan = (await compile(reviewed)).plan
+  assert.equal(reviewedPlan.steps.find(step => step.id === 'recognize')?.autoContinue, false)
+  assert.equal(reviewedPlan.steps.find(step => step.id === 'translate')?.autoContinue, false)
+  assert.equal(plans[0].steps.find(step => step.id === 'recognize')?.autoContinue, true)
 })
 
 test('new templates use a configured model provider and reject a model with insufficient output capacity', async t => {
@@ -126,6 +133,18 @@ test('download URL is validated as per-run input and never saved in exported gra
   doc.nodes.unshift({ id: 'download', type: 'youdub.download', typeVersion: '1.0.0', provider: { id: 'youdub.download' }, config: {}, autoContinue: true })
   doc.edges.forEach(edge => { if (edge.source.nodeId === '$inputs') edge.source = { nodeId: 'download', portId: 'video' } })
   const result = await compile(doc, { download: { url: 'https://youtu.be/jNQXAC9IVRw' } }, {} as any)
+  assert.equal(result.plan.bindings.download.options.proxyPort, 0)
+  for (const proxyPort of [1, 7897, 65535]) {
+    const proxied = structuredClone(doc)
+    proxied.nodes[0].config.proxyPort = proxyPort
+    const configured = await compile(proxied, { download: { url: 'https://youtu.be/jNQXAC9IVRw' } }, {} as any)
+    assert.equal(configured.plan.bindings.download.options.proxyPort, proxyPort)
+  }
+  for (const proxyPort of [-1, 65536, 1.5, '7897']) {
+    const invalid = structuredClone(doc)
+    invalid.nodes[0].config.proxyPort = proxyPort
+    await assert.rejects(compile(invalid, { download: { url: 'https://youtu.be/jNQXAC9IVRw' } }, {} as any), /validation failed/)
+  }
   assert.equal(result.plan.steps[0].input.url, 'https://www.youtube.com/watch?v=jNQXAC9IVRw')
   assert.ok(!JSON.stringify(result.graphSnapshot).includes('youtu.be'))
   await assert.rejects(compile(doc, { download: { url: 'file:///etc/passwd' } }, {} as any), /validation failed/)

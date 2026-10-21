@@ -1,0 +1,139 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/subagent/tool-subagent/README.md
+/:
+  en: c6db6e2344a91be8
+  zh: 4febc8331d506a22
+/deepseek-ai-dsh-tool-subagent:
+  en: 686fb5136bef0a3b
+  zh: d25d6569174a01b5
+/deepseek-ai-dsh-tool-subagent/summary:
+  en: c09d40329253a9d8
+  zh: 91c1bbe5557bdda9
+/deepseek-ai-dsh-tool-subagent/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-tool-subagent/use-this-package:
+  en: 93f1701f5209ecb5
+  zh: 6310fd012400aead
+/deepseek-ai-dsh-tool-subagent/use-this-package/minimal-configuration:
+  en: 6a82283a51912841
+  zh: 35728acc16931bb4
+/deepseek-ai-dsh-tool-subagent/use-this-package/managed-delegation:
+  en: bb715d037cde14bd
+  zh: a88e98c07115fbd1
+/deepseek-ai-dsh-tool-subagent/use-this-package/selecting-a-child-preset:
+  en: 1950ef92bab0f46e
+  zh: 593f5f64ed9b5631
+/deepseek-ai-dsh-tool-subagent/use-this-package/selecting-a-child-llm:
+  en: 0d37e3b3957515e4
+  zh: ea1a94b2f29e7d9a
+/deepseek-ai-dsh-tool-subagent/understand-the-implementation:
+  en: 6ce5f749256a7e6c
+  zh: a4f2adb04a70d9cf
+/deepseek-ai-dsh-tool-subagent/understand-the-implementation/design-concept:
+  en: e9df1e3d504a3625
+  zh: 4eca7bb1bc6def62
+/deepseek-ai-dsh-tool-subagent/understand-the-implementation/activation-ownership:
+  en: ef692c4d17290920
+  zh: b1d0d3dab011e2cd
+/deepseek-ai-dsh-tool-subagent/understand-the-implementation/result-acknowledgement:
+  en: 3cdb913209febc42
+  zh: ea6ebfbe9d21fb3e
+/deepseek-ai-dsh-tool-subagent/understand-the-implementation/context-sensitive-wording:
+  en: 1733728ac5aa6bb0
+  zh: 341ffc6e21a289af
+/deepseek-ai-dsh-tool-subagent/understand-the-implementation/source-map:
+  en: ce5147d9e1b2849c
+  zh: 67a707f05b2b7dc5
+/deepseek-ai-dsh-tool-subagent/further-exploration:
+  en: fa3c9a967b636afb
+  zh: a9ce930a9766d5cb
+/deepseek-ai-dsh-tool-subagent/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-subagent/model-experience/tool-schema:
+  en: e4c7376d4f29dbd5
+  zh: 6b7a9eaf69c9ea53
+/deepseek-ai-dsh-tool-subagent/model-experience/tool-schema/what-the-model-sees:
+  en: cdaa88b47ba03e23
+  zh: 2b7429db53e0aea7
+/deepseek-ai-dsh-tool-subagent/model-experience/tool-schema/token-effect:
+  en: 0c6cf11d65ba83dc
+  zh: 6e2b2e64bf1f18f2
+/deepseek-ai-dsh-tool-subagent/model-experience/tool-schema/kv-cache-effect:
+  en: 46f736c6c389052a
+  zh: a7765541030e9104
+/deepseek-ai-dsh-tool-subagent/model-experience/model-selection-and-discovery:
+  en: a4ca31b9cbacda6b
+  zh: 91ac3e0784a14697
+/deepseek-ai-dsh-tool-subagent/model-experience/model-selection-and-discovery/what-the-model-sees:
+  en: 1c9dd328eaf96683
+  zh: 3be88d3b00f51cfa
+/deepseek-ai-dsh-tool-subagent/model-experience/model-selection-and-discovery/token-effect:
+  en: 8137e72f630f0190
+  zh: 73b1d9374b6cbccd
+/deepseek-ai-dsh-tool-subagent/model-experience/model-selection-and-discovery/kv-cache-effect:
+  en: 7dc47a34d5574fbd
+  zh: bd7bd2a4da2f8ae2
+/deepseek-ai-dsh-tool-subagent/model-experience/system-prompt:
+  en: cf78b9dd5596495f
+  zh: bd44560f8c2435e8
+/deepseek-ai-dsh-tool-subagent/model-experience/system-prompt/what-the-model-sees:
+  en: 64a1c2edb455950c
+  zh: 15d280ff2c918672
+/deepseek-ai-dsh-tool-subagent/model-experience/system-prompt/what-the-model-sees/tool-guidance-section:
+  en: 82b3cd08b3961c98
+  zh: bdc2a34bcea16cac
+/deepseek-ai-dsh-tool-subagent/model-experience/system-prompt/token-effect:
+  en: 58ee76659f75c73e
+  zh: 726c5b789e96677c
+/deepseek-ai-dsh-tool-subagent/model-experience/system-prompt/kv-cache-effect:
+  en: eaee0378bf87c980
+  zh: 2783a481ee349f1e
+/deepseek-ai-dsh-tool-subagent/model-experience/runtime-depth-context:
+  en: 1e58e87365d88e45
+  zh: 7648aa3b3865057f
+/deepseek-ai-dsh-tool-subagent/model-experience/runtime-depth-context/what-the-model-sees:
+  en: fde048c427103086
+  zh: 6614730cc00f02e4
+/deepseek-ai-dsh-tool-subagent/model-experience/runtime-depth-context/what-the-model-sees/depth-limit-notice:
+  en: 0ae8dbcee66d0cd6
+  zh: 5a69283739ae59e0
+/deepseek-ai-dsh-tool-subagent/model-experience/runtime-depth-context/token-effect:
+  en: dae9cd59b9649b5a
+  zh: 8bb35289ebaeaf7b
+/deepseek-ai-dsh-tool-subagent/model-experience/runtime-depth-context/kv-cache-effect:
+  en: 9e6e8bc993992908
+  zh: 4de1e9d85ab3bfca
+/deepseek-ai-dsh-tool-subagent/model-experience/start-result:
+  en: 45854c8f4da73af7
+  zh: 7a9803ca8c03c40f
+/deepseek-ai-dsh-tool-subagent/model-experience/start-result/what-the-model-sees:
+  en: 15772cb4c28bf562
+  zh: 7452e7a7114d587c
+/deepseek-ai-dsh-tool-subagent/model-experience/start-result/token-effect:
+  en: 807d71626c81c858
+  zh: ba4b85709fa46c84
+/deepseek-ai-dsh-tool-subagent/model-experience/start-result/kv-cache-effect:
+  en: f5d5f97a153f7c70
+  zh: 3d6bc05b9eadfbc2
+/deepseek-ai-dsh-tool-subagent/model-experience/completion-delivery:
+  en: b6ed0eef154aa546
+  zh: 34160884aa30ffec
+/deepseek-ai-dsh-tool-subagent/model-experience/completion-delivery/what-the-model-sees:
+  en: 8f5e3a083eb7f807
+  zh: 6bfc2b38f49a6f79
+/deepseek-ai-dsh-tool-subagent/model-experience/completion-delivery/token-effect:
+  en: 615348e27c0c9bc0
+  zh: 1655fdbc42932909
+/deepseek-ai-dsh-tool-subagent/model-experience/completion-delivery/kv-cache-effect:
+  en: f5d5f97a153f7c70
+  zh: 3d6bc05b9eadfbc2
+/deepseek-ai-dsh-tool-subagent/known-limitations-and-deferred-work:
+  en: c17c91a188bb0d8c
+  zh: d77c1ffcf1eca737
+/deepseek-ai-dsh-tool-subagent/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

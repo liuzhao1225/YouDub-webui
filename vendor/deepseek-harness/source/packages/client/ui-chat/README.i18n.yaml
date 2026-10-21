@@ -1,0 +1,52 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-chat/README.md
+/:
+  en: d88f75fc0178ba53
+  zh: 52bc7ae9551ab1cf
+/deepseek-ai-dsh-client-ui-chat:
+  en: 02bd72c12ada3218
+  zh: 331b3a38b3ddfc6e
+/deepseek-ai-dsh-client-ui-chat/summary:
+  en: fba5b2fb8080e2dd
+  zh: 32c337123b7dfbcb
+/deepseek-ai-dsh-client-ui-chat/table-of-contents:
+  en: 41cd21266011d571
+  zh: 3172d1a2acbb27b7
+/deepseek-ai-dsh-client-ui-chat/reference-previews:
+  en: aa6b1abec265bf1b
+  zh: 7260ce78afba2584
+/deepseek-ai-dsh-client-ui-chat/hidden-chat-rows:
+  en: cbf1f0a2205046a5
+  zh: 2e59d0815351349f
+/deepseek-ai-dsh-client-ui-chat/command-and-failure-rows:
+  en: 41dcd70e14ebe9cc
+  zh: ededead572b59037
+/deepseek-ai-dsh-client-ui-chat/turn-token-usage:
+  en: bb20da372b144302
+  zh: 75a8c5ab7ec8d665
+/deepseek-ai-dsh-client-ui-chat/completed-turn-footer:
+  en: b4cd36e7ab91281e
+  zh: 8ccf412b9dde61d5
+/deepseek-ai-dsh-client-ui-chat/turn-process-folding:
+  en: 4cd7c81d70d2f365
+  zh: 18eca6d16e44b6c2
+/deepseek-ai-dsh-client-ui-chat/grouped-rendering:
+  en: 81d7ca7595c34d39
+  zh: 29eb8248c75e9ea6
+/deepseek-ai-dsh-client-ui-chat/scroll-ownership:
+  en: 284737900cb75668
+  zh: 12e0844082ff79ce
+/deepseek-ai-dsh-client-ui-chat/model-experience:
+  en: c17b4dd43a61c569
+  zh: f7414309810c3a08
+/deepseek-ai-dsh-client-ui-chat/model-experience/kv-cache-effect:
+  en: 15a7151ff9268f15
+  zh: 6eae68c718be579b
+/deepseek-ai-dsh-client-ui-chat/known-limitations-and-deferred-work:
+  en: 811787a5d2feaa90
+  zh: 3f1697bbc1fc7691
+/deepseek-ai-dsh-client-ui-chat/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: e88aeb617ffb74ea

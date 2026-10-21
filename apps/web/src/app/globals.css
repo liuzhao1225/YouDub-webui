@@ -111,11 +111,11 @@
   --card-foreground: #0b0b0f;
   --popover: #ffffff;
   --popover-foreground: #0b0b0f;
-  /* 比 logo 红略深一档，白字对比度达到 WCAG AA。 */
-  --primary: #e6002e;
-  --primary-hover: #cc0029;
+  /* 主操作与品牌标识使用同一红色。 */
+  --primary: #ff0033;
+  --primary-hover: #e6002e;
   --primary-foreground: #ffffff;
-  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 6px 18px -6px rgb(230 0 46 / 0.55);
+  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 4px 12px -6px rgb(255 0 51 / 0.2);
   --secondary: rgb(0 174 236 / 0.1);
   --secondary-foreground: #00739f;
   --muted: rgb(9 9 11 / 0.04);
@@ -152,7 +152,7 @@
   --radius: 0.75rem;
   --sidebar: #fbfbfc;
   --sidebar-foreground: #0b0b0f;
-  --sidebar-primary: #e6002e;
+  --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: rgb(9 9 11 / 0.05);
   --sidebar-accent-foreground: #0b0b0f;
@@ -171,10 +171,10 @@
   --card-foreground: #ededf0;
   --popover: #18181f;
   --popover-foreground: #ededf0;
-  --primary: #e6002e;
-  --primary-hover: #ec0030;
-  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.45),
-    0 10px 30px -8px rgb(255 0 51 / 0.6);
+  --primary: #ff0033;
+  --primary-hover: #e6002e;
+  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.2),
+    0 6px 18px -8px rgb(255 0 51 / 0.24);
   --secondary: rgb(0 174 236 / 0.14);
   --secondary-foreground: #5fd0f5;
   --muted: rgb(255 255 255 / 0.04);

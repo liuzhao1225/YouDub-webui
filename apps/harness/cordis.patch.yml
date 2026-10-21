@@ -4,6 +4,20 @@
   disabled: true
 - id: ui-settings-account
   disabled: true
+# YouDub supplies a provider-neutral model setup. Accounts and built-in
+# DeepSeek routes belong to the Harness product, not its shared services.
+- id: deepseek-account
+  disabled: true
+- id: account-controller
+  disabled: true
+- id: llm-deepseek-account
+  disabled: true
+- id: llm-deepseek
+  disabled: true
+- id: product-analytics
+  disabled: true
+- id: desktop-product-telemetry
+  disabled: true
 - id: ui-theme
   disabled: false
 - id: ui-shortcuts
@@ -27,9 +41,11 @@
 - id: ui-settings
   disabled: false
 - id: ui-settings-general
-  disabled: true
+  disabled: false
 - id: ui-settings-models
-  disabled: true
+  disabled: false
+  config:
+    credentialOnboarding: false
 - id: ui-plugin-manager
   disabled: true
 - id: ui-settings-plugin-inventory
@@ -106,6 +122,7 @@
     - id: youdub-subtitles
       name: '@youdub/harness-subtitles'
       config:
-        python: !!js new URL('../../.venv/bin/python', `file://${process.cwd()}/`).pathname
+        python: !!js >-
+          dshHomePath(process.platform === 'win32' ? 'youdub/runtime/venv/Scripts/python.exe' : 'youdub/runtime/venv/bin/python')
         modelsDir: !!js dshHomePath('youdub/models/whisper')
         dataDir: !!js dshHomePath('youdub')

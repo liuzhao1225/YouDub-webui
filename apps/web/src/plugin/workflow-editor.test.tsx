@@ -1,7 +1,7 @@
 import type { Context } from 'cordis'
 import { useEffect, useRef, useState } from 'react'
 import type { ComponentType, RefObject } from 'react'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
@@ -10,6 +10,7 @@ import { apply, GraphStudio as GraphStudioView } from './builtin/workflows'
 import { bindTestComponent } from './test-bindings'
 const GraphStudio = bindTestComponent(GraphStudioView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
 import { serializeWorkflowEdits, workflowDrafts, workflowViews } from './builtin/workflow-utils'
+import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 
 vi.mock('./builtin/workflow-canvas', () => ({
   WorkflowCanvas: ({ document, fitOnLoad, onReady, onOpen, onSelect, onChange, addNodeRef }: {
@@ -34,10 +35,10 @@ vi.mock('./builtin/workflow-rerun', () => ({ WorkflowRerun: () => <div>重跑表
 const type: NodeTypeDefinition = { type: 'test.node', version: '1', providerId: 'test', operation: 'test', label: '测试节点', category: 'internal.category', provider: { id: 'test', label: '测试服务', operations: [] }, inputs: [], outputs: [], configSchema: { type: 'object', properties: { language: { type: 'string', title: '语言' } } }, defaults: {} }
 const document: WorkflowDocument = { format: 'youdub.workflow', formatVersion: 1, id: 'example', title: '测试工作流', nodes: [{ id: 'node', type: type.type, typeVersion: '1', provider: { id: 'test' }, config: {}, autoContinue: true }], edges: [], inputs: [], outputs: [], presentation: { positions: {}, viewport: { x: 10, y: 20, zoom: 0.7 } } }
 const record: WorkflowDocumentRecord = { id: 'example', revision: 1, document, origin: 'user' }
-function mount(path = '/workflows/example', options: { record?: WorkflowDocumentRecord; empty?: boolean; studio?: boolean } = {}) {
+function mount(path = '/workflows/example', options: { record?: WorkflowDocumentRecord; empty?: boolean; studio?: boolean; types?: NodeTypeDefinition[] } = {}) {
   const current = structuredClone(options.record ?? record)
   const request = vi.fn(async (url: string, init?: RequestInit) => {
-    if (url === '/api/v2/node-types') return { items: [type] }
+    if (url === '/api/v2/node-types') return { items: options.types ?? [type] }
     if (url.startsWith('/api/v2/workflow-documents?')) return { items: options.empty ? [] : [current], hasMore: false }
     if (url.endsWith('/validate')) return { valid: true, diagnostics: [] }
     if (init?.method === 'PUT' || init?.method === 'POST') return { ...current, revision: 2, document: JSON.parse(init.body as string).document }
@@ -87,6 +88,20 @@ it('starts a new workflow as a draft with the node library open', async () => {
   expect(screen.queryByText('已保存')).not.toBeInTheDocument()
   expect(screen.getByLabelText('搜索节点')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '运行' })).toBeDisabled()
+})
+
+it('adds the existing download node and saves its proxy port through the generic settings editor', async () => {
+  const download: NodeTypeDefinition = { ...nodeDescriptors.download, providerId: 'youdub.download', operation: 'download', provider: { id: 'youdub.download', label: 'YouTube / B 站', operations: [] }, outputs: [{ name: 'video', kind: 'artifact', schemaId: 'video/mp4/v1', required: true }] }
+  const { request } = mount('/workflows/new', { types: [download] })
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: /下载视频/ }))
+  await user.click(screen.getByRole('button', { name: '详情 added' }))
+  const proxy = await screen.findByRole('spinbutton', { name: '本机 HTTP 代理端口（0 为直连）' })
+  expect(proxy).toHaveAttribute('step', '1')
+  fireEvent.change(proxy, { target: { value: '7897' } })
+  await user.click(screen.getByRole('button', { name: '保存' }))
+  const saved = request.mock.calls.find(([url, init]) => url === '/api/v2/workflow-documents' && init?.method === 'POST')
+  expect(JSON.parse(String(saved?.[1]?.body)).document.nodes[0].config.proxyPort).toBe(7897)
 })
 
 it('keeps viewport and undo history when opening full settings and returning', async () => {

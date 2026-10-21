@@ -16,12 +16,12 @@ const media = ['media.py']
 const python = (...names: string[]) => names.map(name => 'backend/app/v1/' + name)
 export const executionFiles: Record<string, string[]> = {
   'youdub.download': [...worker, 'backend/workers/download.py', 'packages/sdk/src/video-source.ts', ...python('runtime_limits.py'), 'backend/requirements/download.txt'],
-  'youdub.media': [...worker, ...python(...media, 'runtime_limits.py', 'mix.py', 'export.py', 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
+  'youdub.media': [...worker, ...python(...media, 'runtime_limits.py', 'mix.py', 'export.py', 'sentence_split.py', 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
   whisper: [...worker, ...python(...media, 'asr.py', 'asr_process.py'), 'backend/requirements/whisper.txt'],
   openai: [...worker, ...python('translate.py'), 'backend/requirements/openai.txt'],
   voxcpm: [...worker, ...python(...media, 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
   demucs: [...worker, ...python(...media, 'separate.py', 'separate_process.py'), 'backend/requirements/demucs.txt'],
-  qwen_forced_aligner: [...worker, ...python(...media, 'export.py', 'forced_alignment.py', 'forced_alignment_process.py'), 'backend/requirements/qwen_forced_aligner.txt'],
+  qwen_forced_aligner: [...worker, ...python(...media, 'export.py', 'sentence_split.py', 'forced_alignment.py', 'forced_alignment_process.py'), 'backend/requirements/qwen_forced_aligner.txt'],
   'youdub.localize': ['packages/builtin/src/workflow-localize.ts', 'packages/sdk/src/video-source.ts'],
   'youdub.graph': ['packages/builtin/src/workflow-graph.ts', 'packages/builtin/src/workflow-document.ts', 'packages/builtin/src/media-graph-validation.ts', 'packages/sdk/src/video-source.ts'],
 }

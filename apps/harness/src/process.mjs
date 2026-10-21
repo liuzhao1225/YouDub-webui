@@ -4,12 +4,12 @@ import { StringDecoder } from 'node:string_decoder';
 // environment filtering, cancellation and the lifetime of its process range.
 const WORKER_PROTOCOL = 'youdub-worker/v1';
 const MAX_MESSAGE_BYTES = 32 * 1024 * 1024;
-const errorWithCode = (code, message, details) => Object.assign(new Error(message), { code, ...(details ? { details } : {}) });
+const errorWithCode = (code, message, details) => Object.assign(new Error(message), { code, ...(Number.isInteger(details?.status) && details.status >= 400 && details.status <= 599 ? { status: details.status } : {}), ...(details ? { details } : {}) });
 
 async function usingProcess(subprocess, request, stdio, consume) {
   request.signal?.throwIfAborted();
   const handle = subprocess.spawn({
-    argv: [request.command, ...request.args], cwd: request.cwd, stdio,
+    argv: [request.command, ...request.args], cwd: request.cwd ?? process.cwd(), stdio,
     graceMs: 5000, signal: request.signal,
     env: { ...request.env, PYTHONUNBUFFERED: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
   });
@@ -29,10 +29,10 @@ async function usingProcess(subprocess, request, stdio, consume) {
   return value;
 }
 
-function assertExit(handle, request, exit, code) {
+function assertExit(handle, request, exit, code, stderrText) {
   request.signal?.throwIfAborted();
   if (exit.exitCode !== 0) {
-    const stderr = handle.collected.stderr.readFrom(0);
+    const stderr = stderrText === undefined ? handle.collected.stderr.readFrom(0) : { text: stderrText, lossy: false };
     throw errorWithCode(code, `${request.command} exited (${exit.exitCode ?? exit.signal}).\n${stderr.lossy ? '[earlier stderr omitted]\n' : ''}${stderr.text}`);
   }
 }
@@ -54,9 +54,18 @@ export async function runWorker(subprocess, request, invocation, context) {
   const signal = request.signal === context.signal ? context.signal : AbortSignal.any([context.signal, ...(request.signal ? [request.signal] : [])]);
   const workerRequest = { ...request, signal };
   return usingProcess(subprocess, workerRequest, {
-    stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: 1024 * 1024 },
+    stdin: 'pipe', stdout: 'pipe', stderr: context.log ? 'pipe' : { maxBytes: 1024 * 1024 },
   }, async handle => {
-    let inputSeq = 0, outputSeq = 0, result, inputError;
+    let inputSeq = 0, outputSeq = 0, result, inputError, stderrTail = '';
+    const readStderr = async () => {
+      if (!context.log) return;
+      const decoder = new StringDecoder('utf8'); let buffer = '';
+      for await (const chunk of handle.stderr) {
+        const text = decoder.write(chunk); stderrTail = (stderrTail + text).slice(-1024 * 1024); buffer += text;
+        let end; while ((end = buffer.indexOf('\n')) >= 0) { await context.log(buffer.slice(0, end)); buffer = buffer.slice(end + 1); }
+      }
+      buffer += decoder.end(); if (buffer) await context.log(buffer);
+    };
     const onInputError = error => { inputError = error; handle.terminate(); };
     handle.stdin.on('error', onInputError);
     const send = (type, payload) => new Promise((resolve, reject) => {
@@ -112,12 +121,13 @@ export async function runWorker(subprocess, request, invocation, context) {
         await send('execute', { ...invocation, inputs: await resolveInputs(invocation.inputs), options: invocation.binding.options, credentials: context.credentials });
       })()),
       observe(handle.done),
+      observe(readStderr()),
     ]);
     if (failures.length > 1) throw new AggregateError(failures, 'Harness worker transport failed', { cause: failures[0] });
     if (failures.length) throw failures[0];
     if (inputError) throw inputError;
-    assertExit(handle, workerRequest, outcomes[2].value, 'WORKER_EXITED');
-    if (!result) throw errorWithCode('PROTOCOL_ERROR', `Worker exited without a result.\n${handle.collected.stderr.readFrom(0).text}`);
+    assertExit(handle, workerRequest, outcomes[2].value, 'WORKER_EXITED', context.log ? stderrTail : undefined);
+    if (!result) throw errorWithCode('PROTOCOL_ERROR', `Worker exited without a result.\n${context.log ? stderrTail : handle.collected.stderr.readFrom(0).text}`);
     if (result.state === 'waiting') return result;
     if (result.state !== 'completed' || !result.outputs) throw errorWithCode('PROTOCOL_ERROR', 'Invalid operation result.');
     const refs = {};

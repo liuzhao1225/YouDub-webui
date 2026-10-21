@@ -20,7 +20,7 @@ const make = (type: string, zh: string, en: string, ja: string, category: string
   ui: { quickFields: Object.keys(properties).slice(0, 3) },
 })
 export const nodeDescriptors: Record<string, NodeDescriptor> = {
-  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { maxBytes: { type: 'integer', minimum: 1, maximum: 4294967296 } }, { maxBytes: 4294967296 }), ui: { quickFields: [] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1, maxLength: 2048 } }, ['url']) },
+  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { maxBytes: { type: 'integer', minimum: 1, maximum: 4294967296 }, proxyPort: { type: 'integer', minimum: 0, maximum: 65535 } }, { maxBytes: 4294967296, proxyPort: 0 }), ui: { quickFields: ['proxyPort'] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1, maxLength: 2048 } }, ['url']) },
   prepare: make('prepare', '准备媒体', 'Prepare media', 'メディアを準備', 'media', [video()]),
   separate: make('separate', '分离人声', 'Separate vocals', '音声を分離', 'audio', [audio('sourceAudio', '原始音频')]),
   recognize: { ...make('transcribe', '语音识别', 'Transcribe', '文字起こし', 'text', [audio('audio', '音频'), media()], { ...source, initialPrompt: { type: ['string', 'null'], maxLength: 500 } }, { sourceLanguage: 'auto', initialPrompt: null }), corrections: { outputPorts: ['transcript'], schemaIds: ['transcript/v1'] }, ui: { quickFields: ['sourceLanguage'], detailId: 'youdub.transcript' } },
@@ -56,6 +56,7 @@ const fieldTitles: Record<string, [string, string, string]> = {
   sourceLanguage: ['原文语言', 'Source language', '元の言語'], targetLanguage: ['目标语言', 'Target language', '翻訳先の言語'],
   initialPrompt: ['识别提示词', 'Recognition prompt', '認識プロンプト'], maxCompletionTokens: ['最大输出 Token', 'Maximum output tokens', '最大出力トークン'],
   maxBytes: ['最大文件大小（字节）', 'Maximum file size (bytes)', '最大ファイルサイズ（バイト）'],
+  proxyPort: ['本机 HTTP 代理端口（0 为直连）', 'Local HTTP proxy port (0 for direct)', 'ローカル HTTP プロキシポート（0 は直接接続）'],
   voice: ['声音', 'Voice', '音声'], keepBackground: ['保留背景音', 'Keep background audio', '背景音を保持'],
   renderSubtitles: ['烧录字幕', 'Burn subtitles', '字幕を焼き込む'], url: ['视频链接', 'Video URL', '動画リンク'],
 }

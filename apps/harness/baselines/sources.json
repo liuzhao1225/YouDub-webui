@@ -1,0 +1,97 @@
+{
+  "formatVersion": 1,
+  "createdAt": "2026-10-21T11:13:03.431Z",
+  "baselineRoot": "/Users/liuzhao/code/youdub-harness-baselines/20261021",
+  "upstreamUrl": "https://github.com/deepseek-ai/deepseek-harness.git",
+  "sources": [
+    {
+      "version": "0.1.0-rc.7",
+      "tag": "dsh-v0.1.0-rc.7",
+      "commit": "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca",
+      "tree": "3bc8f89fe494a4755c188be354add4e8b1e7b188",
+      "bundle": "harness-source-0.1.0-rc.7.bundle",
+      "archive": "harness-source-0.1.0-rc.7.tar.gz"
+    },
+    {
+      "version": "0.2.1-rc.2",
+      "tag": "dsh-v0.2.1-rc.2",
+      "commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+      "tree": "f127f0f96a815eac4dea336a2ae0d9cd0f2aa82d",
+      "bundle": "harness-source-0.2.1-rc.2.bundle",
+      "archive": "harness-source-0.2.1-rc.2.tar.gz"
+    }
+  ],
+  "originalSource": {
+    "path": "/Users/liuzhao/code/deepseek-harness",
+    "commit": "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca",
+    "trackedAndUntrackedStatus": ""
+  },
+  "desktop": {
+    "path": "/Applications/DeepSeek Harness.app",
+    "savedCopy": "DeepSeek Harness.app",
+    "version": "0.2.1-rc.2",
+    "buildCommit": "332895e0f7c9d4dbfb29729f5eb367fa263ff986",
+    "buildDirty": false,
+    "sourceAvailable": false,
+    "sourceRetrievalError": "Official GitHub upload-pack rejected the embedded build commit: not our ref. The public dsh-v0.2.1-rc.2 tag has a different commit; its saved source is not asserted to reproduce this binary.",
+    "treeSha256": "393156801eca1e53bd5ccf5c4ede03e244785a79cf177f89be21d371162b0475",
+    "files": 6438,
+    "asarSha256": "b9ec4c2bbc20c9dbc3e39fa4c961434a943434ab0a803052b26753dd15f3b066",
+    "executableSha256": "00ec2d482787f6a6c2a95efd39c989423cdbc050641f9014f737c36441ed611e",
+    "platform": "darwin-arm64"
+  },
+  "youdub": {
+    "sourceThread": "01a1521a-3113-7362-90ed-8b2f7c760ef3",
+    "sourceHead": "5c2fdf08ead4d0fd8d1c5ec7e13ea6d2e14a987f",
+    "sourceSnapshot": "f6f927903581b165f2bf6c840ea65b896d319524",
+    "sourceTree": "67041e0b5bfbfba74f81cb7f89f20d291796bead",
+    "pocCommit": "4967caf782e96bfdf9d586406ef45733f6775323",
+    "bundle": "youdub-initial.bundle",
+    "excluded": [
+      "output/ generated artifacts and local data; retained in the original source worktree",
+      "ignored runtime assets, environments and credentials; not committed"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "harness-source-0.1.0-rc.7.bundle",
+      "sha256": "7f480b5b569987fafd33477bb9fc313940f4f25ad68be7884c8502fb726c40e1"
+    },
+    {
+      "path": "harness-source-0.1.0-rc.7.tar.gz",
+      "sha256": "54f05331e9aa2acc8eb0a0973568ec3ffa10e9062d8189d43296610eb4c6098b"
+    },
+    {
+      "path": "harness-source-0.2.1-rc.2.bundle",
+      "sha256": "562bfec860f2a393b1c596732d941d4bfaf7bad8156de07a757554c944111258"
+    },
+    {
+      "path": "harness-source-0.2.1-rc.2.tar.gz",
+      "sha256": "84967be5b4c939209a0a777def51f420e4d5b4ddc834ddc931bfe859c91a1e0e"
+    },
+    {
+      "path": "youdub-initial.bundle",
+      "sha256": "c114afebcf0803488704f7b64d7a5ceb9cd27c60f25ac68755905b3901bc9657"
+    },
+    {
+      "path": "initial-state.json",
+      "sha256": "b2a1a19cf6f770c74835fe7bea0676bbc4fadfe2d01652af9ac4e5ad64ca1ae1"
+    },
+    {
+      "path": "youdub-source-status.z",
+      "sha256": "77b5cfd41f291d56c5347d75628148633062d4501bc55963f9c98ce18d25eb27"
+    },
+    {
+      "path": "youdub-source.diff",
+      "sha256": "d1bc3f4661d74a7e35e4d87f029d0c79c8bf4f318c3a4c7ab1ca1539f9e27326"
+    },
+    {
+      "path": "desktop-file-hashes.json",
+      "sha256": "f101292add51a26f754b34f33393319522ee82717a7fa485f467047dd7d35c66"
+    },
+    {
+      "path": "npm/manifest.json",
+      "sha256": "ad0ae2ea76d828a6888a92cfa2eabd77772ce3e2326abbe2425d7610ec5279d7"
+    }
+  ]
+}

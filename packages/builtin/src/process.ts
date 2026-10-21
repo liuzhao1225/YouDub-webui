@@ -31,7 +31,7 @@ function lines(child: Managed, consume: (message: any) => Promise<void> | void, 
 export default class Processes extends Service implements ProcessService {
   private children = new Set<Managed>()
   constructor(ctx: Context) {
-    super(ctx, 'process')
+    super(ctx, 'youdubWorker')
     ctx.effect(() => async () => { await Promise.all([...this.children].map(child => child.stop())) })
   }
   private launch(request: ProcessRequest): Managed {

@@ -38,20 +38,7 @@ declare module 'cordis' {
 
 export { PluginContextProvider, useClient, useObservable, useSlot, usePathname, Link } from './legacy'
 
-export function text(value: LocalizedText | undefined, language = 'zh'): string {
-  return typeof value === 'string' ? value : value?.translations?.[language] ?? value?.default ?? ''
-}
-export function matchRoute(path: string, pattern: string): Record<string, string> | null {
-  const parts = path.split('/').filter(Boolean), tokens = pattern.split('/').filter(Boolean)
-  if (parts.length !== tokens.length) return null
-  const params: Record<string, string> = {}
-  for (let index = 0; index < tokens.length; index++) {
-    if (tokens[index].startsWith(':')) {
-      try { params[tokens[index].slice(1)] = decodeURIComponent(parts[index]) } catch { return null }
-    } else if (tokens[index] !== parts[index]) return null
-  }
-  return params
-}
+export {text,matchRoute} from './domain-helpers'
 export function parseManifest(value: unknown): ClientManifest {
   const manifest = value as ClientManifest
   if (!manifest || manifest.version !== 1 || manifest.sdkVersion !== SDK_VERSION || manifest.platformVersion !== '1' || !Array.isArray(manifest.modules)) throw new Error('Client manifest version is unsupported')

@@ -1,0 +1,5 @@
+- term: name
+- definition: policy-shared
+- term: description
+- definition: Available to both model and user invocation
+- heading "policy-shared" [level=1]

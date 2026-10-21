@@ -19,7 +19,7 @@
     "test:windows": "node scripts/smoke-windows.mjs",
     "test:release": "node --test scripts/release-version.test.mjs scripts/download-releases.test.mjs",
     "dev:api": "node --import tsx apps/host/src/main.ts",
-    "start": "node --import tsx apps/host/src/main.ts",
+    "start": "npm --prefix apps/harness run desktop",
     "plugins": "node --import tsx apps/host/src/plugins.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test packages/*/test/*.test.ts",
@@ -27,7 +27,12 @@
     "build:plugins": "npm --prefix apps/web run plugins:build",
     "test:backend": "node scripts/test-backend.mjs",
     "lint:web": "npm --prefix apps/web run lint",
-    "build:web": "npm --prefix apps/web run build"
+    "build:web": "npm --prefix apps/web run build",
+    "start:legacy": "node --import tsx apps/host/src/main.ts",
+    "build:youdub": "npm --prefix apps/harness run build:product",
+    "check:harness": "npm --prefix apps/harness run check:composition && npm --prefix apps/harness run check:upstream",
+    "build:framework": "npm --prefix apps/harness run build:framework",
+    "dev": "npm --prefix apps/harness run desktop"
   },
   "dependencies": {
     "@cordisjs/plugin-include": "1.1.0",

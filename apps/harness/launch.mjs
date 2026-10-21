@@ -1,39 +1,20 @@
-import { mkdir, symlink, lstat, realpath, readFile, writeFile } from 'node:fs/promises';
-import { resolve, dirname } from 'node:path';
+import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { initProfile } from '@deepseek-ai/dsh-app-boot';
+import { prepareSourceDevelopment } from './prepare-source-development.mjs';
+import { prepareYouDubProfile } from './prepare-profile.mjs';
 
-// Only compose and launch an official Harness profile. Configuration is owned
-// by Harness: bundle defaults -> profile patch -> home patch -> --patch.
+// Both development surfaces consume the same unchanged, source-built Harness packages.
 const here = fileURLToPath(new URL('.', import.meta.url));
-const home = resolve(process.env.DSH_HOME || resolve(here, '../../.cache/harness/dsh'));
-const profile = resolve(home, 'profiles/youdub');
-const bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@youdub/harness-subtitles'];
-initProfile(profile, bundles);
-const manifestPath = resolve(profile, 'package.json');
-const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-const configuredBundles = manifest.dsh?.profile?.bundles;
-if (JSON.stringify(configuredBundles) === JSON.stringify(['@youdub/harness-subtitles'])) {
-  // Migrate only the known standalone POC composition. Keep profile settings
-  // and all manifest fields; Harness applies its existing patch over the bundles.
-  manifest.dsh.profile.bundles = bundles;
-  await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
-  console.log(`Migrated YouDub profile to the official base + web bundles: ${manifestPath}`);
-} else if (JSON.stringify(configuredBundles) !== JSON.stringify(bundles)) {
-  throw new Error(`Unsupported YouDub profile bundle list in ${manifestPath}: ${JSON.stringify(configuredBundles)}. Expected ${JSON.stringify(bundles)}.`);
-}
-const link = resolve(profile, 'node_modules/@youdub/harness-subtitles');
-await mkdir(dirname(link), { recursive: true });
-try {
-  await lstat(link);
-  if (await realpath(link) !== await realpath(here)) throw new Error(`Profile plugin link points to another checkout: ${link}`);
-} catch (error) {
-  if (error.code !== 'ENOENT') throw error;
-  await symlink(here, link, 'dir');
-}
-const child = spawn(process.execPath, [resolve(here, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '--profile', 'youdub', '--host', '127.0.0.1', '--port', '3086', '--no-open', ...process.argv.slice(2)], {
-  cwd: here, stdio: 'inherit', env: { ...process.env, DSH_HOME: home },
+const root = resolve(here, '../..');
+const home = resolve(process.env.DSH_HOME || join(root, '.cache/harness/dsh'));
+const profile = join(home, 'profiles/youdub');
+const { project, pluginRoot, pnpm, node } = await prepareSourceDevelopment({ projectDirectory: join(here, 'dist/web-runtime') });
+await prepareYouDubProfile(profile, pluginRoot, project, { command: process.execPath, args: [pnpm] });
+const args = process.argv.slice(2);
+const diagnostic = args.some(arg => ['--dump-config', '--dump-config-schema', '--dump-default-config'].includes(arg));
+const child = spawn(process.execPath, [join(project, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '--profile', 'youdub', ...(diagnostic ? args : ['--host', '127.0.0.1', '--port', '3086', '--no-open', ...args])], {
+  cwd: project, stdio: 'inherit', env: { ...process.env, DSH_HOME: home, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: node },
 });
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));
 child.once('error', error => { console.error(error); process.exitCode = 1; });

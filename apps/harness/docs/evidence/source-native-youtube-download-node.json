@@ -1,0 +1,43 @@
+{
+  "taskId": "874d381f-4750-459a-aa07-ebb1c435715a",
+  "nodeId": "source-download",
+  "status": "completed",
+  "sourceUrl": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "proxyPort": 7897,
+  "proxy": "http://127.0.0.1:7897",
+  "enteredThroughNativeUi": true,
+  "graphAndPinnedBindingMatch": true,
+  "bytes": 533931,
+  "sha256": "539b4849bf85ab2a435b7a0f41404ee0f7a6469385a064796487dd389612a039",
+  "media": {
+    "duration": "19.063583",
+    "streams": [
+      {
+        "codec_type": "video",
+        "codec_name": "av1",
+        "width": 320,
+        "height": 240
+      },
+      {
+        "codec_type": "audio",
+        "codec_name": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    ]
+  },
+  "defaultTemplateIds": [
+    "youdub.subtitles",
+    "youdub.dubbing",
+    "youdub.subtitles-dubbing"
+  ],
+  "userWorkflowIds": [
+    "7f13765c-dd4b-4640-b3b7-5abb4c0fe17e",
+    "c401b095-af96-47f8-b052-21fff14c1187"
+  ],
+  "priorTaskSnapshotAndOutputsUnchanged": true,
+  "priorTaskId": "01bbba6b-c230-436f-b0e0-ad7fe7890fc7",
+  "limitations": [
+    "Bilibili is supported by the existing downloader and proxy contract tests; this live input is YouTube."
+  ]
+}

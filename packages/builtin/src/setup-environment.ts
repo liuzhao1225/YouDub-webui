@@ -9,7 +9,7 @@ export { dependencyGroups, type DependencyGroup } from './runtime-resources.js'
 
 export type SetupStage = 'pending' | 'running' | 'ready' | 'failed'
 export interface EnvironmentStep { id: string; name: string; status: SetupStage; detail?: string; source?: string }
-export interface EnvironmentConfig { root: string; repoRoot: string; python: string }
+export interface EnvironmentConfig { root: string; repoRoot: string; python: string; privateEnvironment?: boolean }
 export function platformTarget(platform = process.platform, arch = process.arch) {
   const targets: Record<string, string> = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin', 'linux-arm64': 'aarch64-unknown-linux-gnu', 'linux-x64': 'x86_64-unknown-linux-gnu', 'win32-x64': 'x86_64-pc-windows-msvc' }
   const target = targets[`${platform}-${arch}`]
@@ -34,7 +34,7 @@ export class EnvironmentSetup {
   private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; index: string; variant: string; findLinks: string; installed: boolean; packages: string[]; prerequisites: string[] }
   constructor(private ctx: Context, readonly config: EnvironmentConfig, private client: DownloadClient, private signal: AbortSignal) {}
   private run(command: string, args: string[], env?: Record<string, string>, cwd = this.config.repoRoot) {
-    return this.ctx.process.run({ command, args, cwd, env, signal: this.signal })
+    return this.ctx.youdubWorker.run({ command, args, cwd, env, signal: this.signal })
   }
   private python(args: string[]) { return this.run(this.config.python, args) }
   async probe(action: string, groups: string[] = ['base']) {
@@ -50,13 +50,17 @@ export class EnvironmentSetup {
     return this.run(this.config.python, ['-m', 'pip', 'install', '--disable-pip-version-check', '--retries', '0',
       '--prefer-binary', '--index-url', 'https://mirrors.aliyun.com/pypi/simple/', ...args], {
       PIP_CONFIG_FILE: process.platform === 'win32' ? 'NUL' : '/dev/null', PIP_EXTRA_INDEX_URL: '', PIP_FIND_LINKS: '',
+      ...(this.config.privateEnvironment ? { PIP_TARGET: '', PIP_PREFIX: '', PIP_ROOT: '', PIP_USER: '0' } : {}),
       HTTP_PROXY: '', HTTPS_PROXY: '', ALL_PROXY: '', http_proxy: '', https_proxy: '', all_proxy: '', NO_PROXY: '*', no_proxy: '*',
     })
   }
   private async pythonEnvironment() {
     const environment = dirname(dirname(this.config.python))
     if (!await fileSize(this.config.python)) {
-      if (process.env.YOUDUB_PYTHON?.trim()) throw new Error(`YOUDUB_PYTHON 不存在：${this.config.python}`)
+      if (this.config.privateEnvironment) {
+        const managed = join(this.config.root, 'runtime', 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
+        if (this.config.python !== managed) throw new Error(`配置的 Python 不存在：${this.config.python}`)
+      } else if (process.env.YOUDUB_PYTHON?.trim()) throw new Error(`YOUDUB_PYTHON 不存在：${this.config.python}`)
       const windows = process.platform === 'win32'
       const asset = runtimeManifest.python[`${process.platform}-${process.arch}` as keyof typeof runtimeManifest.python]
       const folder = join(this.config.root, 'runtime', 'python')
@@ -111,8 +115,8 @@ export class EnvironmentSetup {
     for (const name of ['ffmpeg', 'ffprobe']) {
       const envKey = name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
       const managed = join(binDirectory, name + (windows ? '.exe' : ''))
-      const explicit = process.env[envKey]?.trim()
-      const path = explicit || (await fileSize(managed) ? managed : await executable(name))
+      const explicit = this.config.privateEnvironment ? undefined : process.env[envKey]?.trim()
+      const path = explicit || (await fileSize(managed) ? managed : this.config.privateEnvironment ? undefined : await executable(name))
       if (path) {
         const args = name === 'ffmpeg' ? ['-hide_banner', '-filters'] : ['-version']
         const result = await this.run(path, args)
@@ -145,7 +149,7 @@ export class EnvironmentSetup {
   }
   private async resources() {
     const data = join(this.config.root, 'nltk_data')
-    process.env.NLTK_DATA = [...new Set([data, ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
+    process.env.NLTK_DATA = this.config.privateEnvironment ? data : [...new Set([data, ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
     if (!(await this.probe('punkt')).ready) {
       this.source('resources', 'ModelScope 阿里云 OSS')
       const asset = runtimeManifest.punkt
@@ -162,13 +166,13 @@ export class EnvironmentSetup {
     const directories: string[] = []
     for (const [name, key] of [['ffmpeg', 'FFMPEG_PATH'], ['ffprobe', 'FFPROBE_PATH']] as const) {
       const path = join(directory, name + (windows ? '.exe' : ''))
-      if (!process.env[key]?.trim() && await fileSize(path)) {
+      if ((this.config.privateEnvironment || !process.env[key]?.trim()) && await fileSize(path)) {
         process.env[key] = path
         directories.push(directory)
       }
     }
     if (directories.length) process.env.PATH = [...new Set([...directories, ...(process.env.PATH || '').split(delimiter)])].join(delimiter)
-    process.env.NLTK_DATA = [...new Set([join(this.config.root, 'nltk_data'), ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
+    process.env.NLTK_DATA = this.config.privateEnvironment ? join(this.config.root, 'nltk_data') : [...new Set([join(this.config.root, 'nltk_data'), ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
   }
   async prepare(groups: DependencyGroup[] = ['base']) {
     platformTarget()
