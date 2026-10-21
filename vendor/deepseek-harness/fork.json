@@ -6,6 +6,402 @@
   "productBaselineTag": "youdub-desktop-refactor-base-20261022",
   "changes": [
     {
+      "path": "apps/desktop-host/src/index.ts",
+      "before": {
+        "path": "apps/desktop-host/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6280,
+        "sha256": "1f61890c63da8898cef678479450d7647163530c416751d161dde6b397c654d3"
+      },
+      "after": {
+        "path": "apps/desktop-host/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5580,
+        "sha256": "234c5069c1efa2109ee62cbf0aefe6d53d8c3b3feec7ee6f2d1fc06df2c69842"
+      },
+      "reason": "Remove Office runtime installation and DeepSeek platform-session publication from the YouDub Host; retain official profile boot, authenticated transport, IPC, shutdown and task admission."
+    },
+    {
+      "path": "apps/desktop-host/src/quit-inspection.ts",
+      "before": {
+        "path": "apps/desktop-host/src/quit-inspection.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1961,
+        "sha256": "d732d8706a6fe5eb993c4dfd90fdec7203889507b0b13b957cfebebd80cd16e2"
+      },
+      "after": {
+        "path": "apps/desktop-host/src/quit-inspection.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1100,
+        "sha256": "f2db086761692e4b69bb18c94875c500f57713ce4ecc5845455ffe4672ee561f"
+      },
+      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+    },
+    {
+      "path": "apps/desktop-host/src/update-tasks.ts",
+      "before": {
+        "path": "apps/desktop-host/src/update-tasks.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2952,
+        "sha256": "ace98160f307323fd04055dc990ab1d52faeb848a0a03ec9cf43c475fad9972b"
+      },
+      "after": {
+        "path": "apps/desktop-host/src/update-tasks.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2907,
+        "sha256": "daee0456fbe247bebc8c85484777fb5eca35728afeffc21480bc3e07a456ef1a"
+      },
+      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+    },
+    {
+      "path": "apps/desktop-host/tests/quit-inspection.spec.ts",
+      "before": {
+        "path": "apps/desktop-host/tests/quit-inspection.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4689,
+        "sha256": "eb9c043d089c1cd708a905de223eb9a838dfd4fbf4e9504b5696fe9620466e20"
+      },
+      "after": {
+        "path": "apps/desktop-host/tests/quit-inspection.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3784,
+        "sha256": "d525f53d5dc91535e8fe9dcee363aa4f5fd8e93b8c95dc000c87268521141a7a"
+      },
+      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+    },
+    {
+      "path": "apps/desktop/src/project-manager.ts",
+      "before": {
+        "path": "apps/desktop/src/project-manager.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7004,
+        "sha256": "2ad0aacba5377e82c1ed2bd70f52003ffdf91fa0e287dd3d51cfd896f2249748"
+      },
+      "after": {
+        "path": "apps/desktop/src/project-manager.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6940,
+        "sha256": "23298e6b7035a5d5e80332e1051bc4ebef46880d092f66c300253d4447d949b5"
+      },
+      "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
+    },
+    {
+      "path": "apps/desktop/tests/host-update-tasks.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/host-update-tasks.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6945,
+        "sha256": "e0f230468c5cf3498bb55d67dc1add9df8b778ae77142752f23e17261a4b3a2b"
+      },
+      "after": {
+        "path": "apps/desktop/tests/host-update-tasks.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6268,
+        "sha256": "c9754645d00c2fd907f171b3820fe3540ae2bc79db785f2a7673788318ffe9ef"
+      },
+      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+    },
+    {
+      "path": "apps/desktop/tests/project-manager.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/project-manager.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16784,
+        "sha256": "df4c9ba3163412f5b491db5216c6ea02fba2aa46738e0f746ef66da72f33126c"
+      },
+      "after": {
+        "path": "apps/desktop/tests/project-manager.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16785,
+        "sha256": "29be8d7b7d4574188ed32b418b1d2d0139213c3d8d00e840cbb17b75204a1416"
+      },
+      "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
+    },
+    {
+      "path": "packages/client/ui-layout/README.md",
+      "before": {
+        "path": "packages/client/ui-layout/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 10144,
+        "sha256": "ad1192655cbdc59794f1f448afcac09e411b487c338f0c2bcec27719f766adb3"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 10070,
+        "sha256": "e5031c0b6940bed3e81cecbfc5b988a60743ef23aa591d725baa744872e6055f"
+      },
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-layout/README.zh.md",
+      "before": {
+        "path": "packages/client/ui-layout/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 9009,
+        "sha256": "c9ad17ac0fd5d5eb5a8efd6a920f2b32120a0ad90de674eb44f97a3de06c0838"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 8966,
+        "sha256": "013718b8abc659279adc4061f93c02914478202317fc330b4410005ae3fb5a7a"
+      },
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-layout/src/client/AppFrame.tsx",
+      "before": {
+        "path": "packages/client/ui-layout/src/client/AppFrame.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 14286,
+        "sha256": "c45f1ed8ba134bba265af4ac1f9786067f686b8572a13e3617d489cf929644ea"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/src/client/AppFrame.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 14201,
+        "sha256": "82cd534534451a80a949c9594f3aea51a731104510d945501a329d7d0087c3b5"
+      },
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-layout/src/client/DocumentTitle.tsx",
+      "before": {
+        "path": "packages/client/ui-layout/src/client/DocumentTitle.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 1284,
+        "sha256": "b2bef9a37e736e49ff4dab129fcd46b47aa6cf63c930ebf68d7e4ab2300bee53"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/src/client/DocumentTitle.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 653,
+        "sha256": "ce27aed8124aa635057b8b676ca956dc5ef0eac87ad62749e1701c598bdb0563"
+      },
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-layout/tests/app-frame.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-layout/tests/app-frame.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 30564,
+        "sha256": "a052df910f6d536423e3558c8ca9c8b08e6a174ac95dd7a5b0e5b1e0e59ec429"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/tests/app-frame.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 30499,
+        "sha256": "5c3321438dac34bcaef680a66d8878b29e56be71850336eb504e9e1cf8756453"
+      },
+      "reason": "Keep original frame and panel regression tests; expect product titles without reading chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-layout/tests/document-title.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-layout/tests/document-title.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 4088,
+        "sha256": "8a6a1d0a08b81432b224d7c6a0d478d6cfb47d9f31f87afba0f5e2f8a0076e98"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/tests/document-title.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 1082,
+        "sha256": "20d073d990bec6aaf25113bac15c5784e3a3b3de7a4c7ea2e943b722e1440921"
+      },
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-renderer/README.md",
+      "before": {
+        "path": "packages/client/ui-renderer/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 6347,
+        "sha256": "bfd27c6b6ef9a4abdd34d6439c389a6709e12d7edff93dc9cb979d66cd8838b4"
+      },
+      "after": {
+        "path": "packages/client/ui-renderer/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 6495,
+        "sha256": "29d1db0e043c8bc4fe6894f8a70812e15c004afa99aa7b18be85f88aa7efd69d"
+      },
+      "reason": "Allow root-only products without a Session adapter; retain adapter requirements for explicit Session scopes and the original reactive scope lifecycle."
+    },
+    {
+      "path": "packages/client/ui-renderer/README.zh.md",
+      "before": {
+        "path": "packages/client/ui-renderer/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 5786,
+        "sha256": "b60fa7e998d8453338f3b336224b318ae104da303a4870cef380c30b8d62bf42"
+      },
+      "after": {
+        "path": "packages/client/ui-renderer/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 5934,
+        "sha256": "2ad08977968910c68280e044a7418cfccd6baad35897e624435eb116cc4e3e96"
+      },
+      "reason": "Allow root-only products without a Session adapter; retain adapter requirements for explicit Session scopes and the original reactive scope lifecycle."
+    },
+    {
+      "path": "packages/client/ui-renderer/src/client/scoped-slots.tsx",
+      "before": {
+        "path": "packages/client/ui-renderer/src/client/scoped-slots.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 53787,
+        "sha256": "ff53b648f9a6fbd59bc13b89fbe33c67b32421c99ab7923689bfa1b47cea95c1"
+      },
+      "after": {
+        "path": "packages/client/ui-renderer/src/client/scoped-slots.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 54817,
+        "sha256": "e0ad8337aa411f492b5689c200b67b064454eec3886e9118e2936bbe292dbfae"
+      },
+      "reason": "Allow root-only products without a Session adapter; retain adapter requirements for explicit Session scopes and the original reactive scope lifecycle."
+    },
+    {
+      "path": "packages/client/ui-renderer/tests/scoped-slots-real-core.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-renderer/tests/scoped-slots-real-core.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 6598,
+        "sha256": "37cf5bbf632249a74bbe2c9ae22fde81db7a4f5447edcd42c68d82c84026e1b6"
+      },
+      "after": {
+        "path": "packages/client/ui-renderer/tests/scoped-slots-real-core.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 7468,
+        "sha256": "f0c37533e9ff74a3506388cf8c669455faf641f80090e56fe50379eec43a3961"
+      },
+      "reason": "Allow root-only products without a Session adapter; retain adapter requirements for explicit Session scopes and the original reactive scope lifecycle."
+    },
+    {
+      "path": "packages/client/ui-settings-general/README.md",
+      "before": {
+        "path": "packages/client/ui-settings-general/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 13547,
+        "sha256": "be8ee0063561ac6ade8ec188e4f3941eee8595596dfeeed79d79ab4fa7f6a47c"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 13668,
+        "sha256": "fdc9409df84952150e1dcce732a8809e96a3591054c7d23336cb8c22e9ac183d"
+      },
+      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+    },
+    {
+      "path": "packages/client/ui-settings-general/README.zh.md",
+      "before": {
+        "path": "packages/client/ui-settings-general/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 12226,
+        "sha256": "ad4065e982da236937d7c27817ae9ed68fbce62b49ef0b4a45dbaeae801716da"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 12342,
+        "sha256": "cbd8065acdbc17f3c1483aa772d09a922b286673b7138225236811daa42465a0"
+      },
+      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+    },
+    {
+      "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 12101,
+        "sha256": "01966a7299b66d16b2f80106c72dd1f37c541bbfe2d3a0397ca9edd96c21f466"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 11370,
+        "sha256": "260565ce51604551ba8243b4dba5a4389e7a02ebd41e9e1fddf481cee7ff96f4"
+      },
+      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+    },
+    {
+      "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 24558,
+        "sha256": "e188a4b77bc7a082214672e8a9189a9e354580c82bf675b724d73f16c9f50c43"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 23031,
+        "sha256": "7e2e70997cdf967b84ce770f883cf7068348bf4ab29663d69fad0bd799a3dff1"
+      },
+      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+    },
+    {
+      "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9428,
+        "sha256": "db11a8d5c3657ba7f902e2471000f3ea1dc34602b2b1e6c895d78058e36b900f"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9158,
+        "sha256": "feba87a2cfd421062f41029e0206e1d739feea7130d541897bfb167e48bbd08f"
+      },
+      "reason": "Verify the original settings ledger and reload behavior without the retired DeepSeek onboarding registrations; keep explicit editor registration coverage."
+    },
+    {
       "path": "packages/client/ui-settings-models/README.md",
       "before": {
         "path": "packages/client/ui-settings-models/README.md",
@@ -184,6 +580,78 @@
         "sha256": "96cb80ccdeea5c8b362f5918247436f141774e05d19d6f65e6f5d51f27a160ac"
       },
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/test-support/client-runtime/README.md",
+      "before": {
+        "path": "packages/test-support/client-runtime/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 18487,
+        "sha256": "c7dd710d0f4fea9a9e66f7aceac5a6d45fd1ed36c1d510f11ab8cfd0ed8d8f72"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 18538,
+        "sha256": "d73c2b95a709de6f7e8df4f8d277c8955b8e43f4f3773704e1a608222445e989"
+      },
+      "reason": "Document package self-reference resolution for linked bundle assembly tests."
+    },
+    {
+      "path": "packages/test-support/client-runtime/README.zh.md",
+      "before": {
+        "path": "packages/test-support/client-runtime/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 17313,
+        "sha256": "402a3425b9952778bf441727101eb248b41a18983d571491bf31de2ae11bc838"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 17368,
+        "sha256": "21f482518bf2e1ecec382dbab92327cb3ff35f802695cac1b59bdd7fc8ed49d8"
+      },
+      "reason": "Document package self-reference resolution for linked bundle assembly tests."
+    },
+    {
+      "path": "packages/test-support/client-runtime/src/assembly/bundle-roster.ts",
+      "before": {
+        "path": "packages/test-support/client-runtime/src/assembly/bundle-roster.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7889,
+        "sha256": "bbbced22b0a0e5ea7053edd51f755995fe49b874a88215d56b808d54f1d730b8"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/src/assembly/bundle-roster.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8208,
+        "sha256": "4960cc79adafeeac69220405888797a56e65f3ca4fc5e71327a7f2259b0b6c80"
+      },
+      "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference."
+    },
+    {
+      "path": "packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts",
+      "before": {
+        "path": "packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12899,
+        "sha256": "fbe2d69ffe4340efb16cb77ffd1d1ab853b7839d216e9e22367dd6d425e7bded"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12943,
+        "sha256": "08317c3d6bf9c08ccc14c477f79d8b08c681293c86e6e637fb825fea38f5a694"
+      },
+      "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference."
     },
     {
       "path": "vitest.config.ts",

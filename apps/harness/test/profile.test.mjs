@@ -14,7 +14,7 @@ const sourceBuild = resolve(here, '../../.cache/harness/source-build');
 const sourceRequire = createRequire(join(sourceBuild, 'packages/boot/plugin-manager/package.json'));
 const packageManager = { command: process.execPath, args: [resolve(here, 'node_modules/pnpm/bin/pnpm.mjs')] };
 const { runPluginCommand } = await import(pathToFileURL(join(sourceBuild, 'packages/boot/plugin-manager/lib/types/operations.js')));
-const required = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@youdub/harness-subtitles'];
+const required = ['@youdub/harness-subtitles'];
 const fixture = join(import.meta.dirname, 'fixtures/file-transform');
 const fixtureName = '@youdub/harness-example-file-transform';
 const readManifest = async profile => JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'));
@@ -82,7 +82,7 @@ test('profile helpers require the explicit runtime app-boot without falling back
   await assert.rejects(assertYouDubProfile(profile, join(runtime, 'package.json')), missingRuntimeModule);
 });
 
-test('official composition keeps YouDub dependencies without coding agents or DeepSeek product services', async t => {
+test('positive product composition contains framework services without retired product entries', async t => {
   const { profile, runtime } = await temporaryProfile(t);
   const parsed = await assertYouDubProfile(profile, join(runtime, 'package.json'));
   const { composeEntries } = await import(pathToFileURL(join(sourceBuild, 'packages/boot/app-boot/lib/index.js')));
@@ -94,16 +94,46 @@ test('official composition keeps YouDub dependencies without coding agents or De
     'terminal-controller', 'workspace-files', 'workspace-changes', 'web-search-deepseek', 'web-fetch-http',
     'cordis-host-runner', 'cordis-client-runner', 'skill', 'mcp-resources',
     'deepseek-account', 'account-controller', 'llm-deepseek', 'llm-deepseek-account',
-    'product-analytics', 'desktop-product-telemetry', 'ui-chat', 'ui-conversation', 'ui-settings-account']) {
-    assert.equal(rows.get(id)?.disabled, true, `${id} must not run in YouDub`);
+    'product-analytics', 'desktop-product-telemetry', 'ui-chat', 'ui-conversation', 'ui-settings-account',
+    'agent', 'agent-default-model', 'session', 'session-controller', 'ui-session', 'attachment-local',
+    'file-upload', 'workspace', 'sandbox-policy', 'fs-sandbox', 'commands', 'job-controller',
+    'storage', 'storage-json', 'storage-domain']) {
+    assert.equal(rows.has(id), false, `${id} must not be loaded in YouDub`);
   }
   for (const id of ['llm', 'llm-pi-ai', 'credentials', 'settings', 'subprocess', 'jobs', 'connection',
-    'modules', 'session-controller', 'file-upload', 'plugin-manager', 'ui-layout', 'ui-renderer',
+    'modules', 'plugin-manager', 'ui-layout', 'ui-renderer',
     'ui-theme', 'locale', 'ui-settings', 'ui-settings-general', 'ui-settings-models', 'youdub-subtitles']) {
     assert(rows.has(id), `${id} must be provided by the official composition`);
     assert.notEqual(rows.get(id).disabled, true, `${id} is a required YouDub dependency`);
   }
-  assert.deepEqual(rows.get('agent-default-model').config, { provider: '', model: '' });
+  assert.deepEqual(parsed.layers.map(layer => layer.packageName), required);
+  assert.equal(rows.get('web-runtime').config.surfaceContext, false);
+});
+
+test('legacy product prefix migrates once while extensions, settings and dependency metadata survive', async t => {
+  const { profile, plugin, runtime } = await temporaryProfile(t);
+  const manifest = await readManifest(profile);
+  manifest.dsh.profile.bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', ...required, fixtureName];
+  manifest.dependencies[fixtureName] = `link:${fixture}`;
+  manifest.dsh.profile.productNote = 'preserve';
+  await saveManifest(profile, manifest);
+  const fixtureLink = join(profile, 'node_modules', fixtureName);
+  await mkdir(dirname(fixtureLink), { recursive: true });
+  await symlink(fixture, fixtureLink, 'dir');
+  const patch = '# User configuration\n- id: locale\n  config:\n    language: ja\n';
+  await writeFile(join(profile, 'cordis.patch.yml'), patch);
+
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+  const expected = structuredClone(manifest);
+  expected.dsh.profile.bundles = [...required, fixtureName];
+  assert.deepEqual(await readManifest(profile), expected);
+  assert.equal(await readFile(join(profile, 'cordis.patch.yml'), 'utf8'), patch);
+  assert.equal(await realpath(fixtureLink), await realpath(fixture));
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+  assert.deepEqual(await readManifest(profile), expected);
+  const parsed = await assertYouDubProfile(profile, join(runtime, 'package.json'));
+  assert.deepEqual(parsed.layers.map(layer => layer.packageName), [...required, fixtureName]);
+  assert.deepEqual(parsed.skippedBundles, []);
 });
 
 for (const [index, name] of required.entries()) {

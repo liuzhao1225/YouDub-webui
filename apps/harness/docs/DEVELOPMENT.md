@@ -34,7 +34,7 @@ npm run build:youdub
 | `build:framework` | 校验上游，构建到 `.cache/harness/source-build`；内部使用官方 `scripts/build.ts --scope artifacts` |
 | `build:youdub` | 生成 `apps/harness/dist/host.mjs`、`client.js` 和桌面产品入口 |
 
-官方源码目录保持原样；生成目录位于 `.cache` 和 `dist`。当前开发壳使用官方完整构建的 preload，按源构建路径加载 CLI、Host、Web 和服务。
+`vendor/deepseek-harness/source` 是活动产品 fork；原始归档和固定清单保持不变，修改逐项登记在 `fork.json`。生成目录位于 `.cache` 和 `dist`。当前开发壳使用源码构建的 preload，按源构建路径加载 CLI、Host、Web 和服务。替换框架产物前停止使用它的开发实例，避免逐文件更新触发不完整的 HMR 状态。
 
 ### 准备官方 runtime 资源
 

@@ -7,13 +7,21 @@ import { assertYouDubProfile } from './check-profile.mjs';
 // Official profile initialization is shared by the CLI launcher and Finder cold starts.
 export async function prepareYouDubProfile(profile, pluginRoot, runtimeProject, packageManager) {
   const runtimeRequire = createRequire(join(runtimeProject, 'package.json'));
-  const { initProfile } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-app-boot')));
-  const bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@youdub/harness-subtitles'];
+  const { initProfile, writeProfileBundles } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-app-boot')));
+  const bundles = ['@youdub/harness-subtitles'];
+  const legacyBundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', ...bundles];
   initProfile(profile, bundles);
   const manifestPath = join(profile, 'package.json');
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  let manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   const configuredBundles = manifest.dsh?.profile?.bundles;
-  if (!Array.isArray(configuredBundles) || bundles.some((name, index) => configuredBundles[index] !== name)) {
+  if (!Array.isArray(configuredBundles)) {
+    throw new Error(`Unexpected YouDub profile composition: ${manifestPath}`);
+  }
+  if (legacyBundles.every((name, index) => configuredBundles[index] === name)) {
+    // Replace only the known product prefix. Keep installed extensions, their
+    // order, dependency metadata and the user's separate patch unchanged.
+    manifest = writeProfileBundles(profile, manifest, [...bundles, ...configuredBundles.slice(legacyBundles.length)]);
+  } else if (bundles.some((name, index) => configuredBundles[index] !== name)) {
     throw new Error(`Unexpected YouDub profile composition: ${manifestPath}`);
   }
   const dependency = `link:${pluginRoot}`;

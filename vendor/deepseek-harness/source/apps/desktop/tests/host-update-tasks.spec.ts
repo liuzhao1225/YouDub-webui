@@ -1,17 +1,15 @@
 import { Context } from '@deepseek-ai/cordis'
 import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
-import { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { Readable } from 'node:stream'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installDesktopUpdateTaskControl } from '../../desktop-host/src/update-tasks.ts'
 
-type AgentState = { id: SessionId; status: 'idle' | 'running'; inbox: { nextTurn: object[]; nextStep: object[] } }
-
 let ctx: Context
 let inspect: ReturnType<typeof installDesktopUpdateTaskControl>
-const agents: AgentState[] = []
+let productActive = false
 const jobs = new Map<SessionId | undefined, JobStatus[]>()
 
 /** A registry whose only served member is the per-owner roster the inspector reads. */
@@ -39,18 +37,16 @@ class RosterOnlyJobRegistry extends JobRegistry {
 }
 
 beforeEach(() => {
-  agents.length = 0
+  productActive = false
   jobs.clear()
   ctx = new Context()
   // Narrow service doubles exercise the inspector against a real Cordis event lifecycle.
-  ctx.provide('agents', { list: () => agents } as unknown as Context['agents'])
+  ctx.on('desktop/active-tasks', async () => productActive)
   new RosterOnlyJobRegistry(ctx)
   inspect = installDesktopUpdateTaskControl(ctx)
 })
 
 afterEach(async () => { await ctx.fiber.dispose() })
-
-function idleAgent(): AgentState { return { id: SessionId('update-task-owner'), status: 'idle', inbox: { nextTurn: [], nextStep: [] } } }
 
 function request(next: () => Promise<void>) {
   const incoming = Readable.from([]) as IncomingMessage
@@ -59,27 +55,19 @@ function request(next: () => Promise<void>) {
 }
 
 describe('Desktop Host update task protection', () => {
-  it.each(['running', 'nextTurn', 'nextStep'] as const)('counts %s agent work without stopping it', async (kind) => {
-    const agent = idleAgent()
-    if (kind === 'running') agent.status = 'running'
-    else agent.inbox[kind].push({ queued: true })
-    agents.push(agent)
+  it('counts product work without Agent or Session services', async () => {
+    expect(ctx.get('agents')).toBeUndefined()
+    productActive = true
     expect(await inspect('inspect')).toBe(true)
-    agent.status = 'idle'
-    agent.inbox.nextTurn.length = 0
-    agent.inbox.nextStep.length = 0
+    productActive = false
     expect(await inspect('inspect')).toBe(false)
   })
 
-  it.each(['running', 'stopping'] as const)('counts global and agent-owned %s jobs', async (status) => {
-    const agent = idleAgent()
-    agents.push(agent)
-    for (const owner of [undefined, agent.id]) {
-      jobs.set(owner, [status])
-      expect(await inspect('inspect')).toBe(true)
-      jobs.set(owner, ['completed'])
-      expect(await inspect('inspect')).toBe(false)
-    }
+  it.each(['running', 'stopping'] as const)('counts %s global jobs', async (status) => {
+    jobs.set(undefined, [status])
+    expect(await inspect('inspect')).toBe(true)
+    jobs.set(undefined, ['completed'])
+    expect(await inspect('inspect')).toBe(false)
   })
 
   it('does not warn for reads but drains admitted requests before completing the lock', async () => {
@@ -117,9 +105,7 @@ describe('Desktop Host update task protection', () => {
     const pending = request(async () => {
       entered.resolve(undefined)
       await finish.promise
-      const agent = idleAgent()
-      agent.inbox.nextTurn.push({ queued: true })
-      agents.push(agent)
+      productActive = true
     })
     try {
       await entered.promise
@@ -163,7 +149,7 @@ describe('Desktop Host update task protection', () => {
     const empty = new Context()
     try {
       const unavailable = installDesktopUpdateTaskControl(empty)
-      await expect(unavailable('lock')).rejects.toThrow('task services are unavailable')
+      await expect(unavailable('lock')).rejects.toThrow('jobs service is unavailable')
     } finally { await empty.fiber.dispose() }
   })
 })

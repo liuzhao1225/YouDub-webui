@@ -1,20 +1,14 @@
 import { Context } from '@deepseek-ai/cordis'
 import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
-import { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { SessionActivity } from '@deepseek-ai/dsh-workspace'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { installDesktopQuitInspection } from '../src/quit-inspection.ts'
 
-type AgentState = { id: SessionId; status: 'idle' | 'running'; inbox: { nextTurn: object[]; nextStep: object[] } }
-
 let ctx: Context
 let inspect: ReturnType<typeof installDesktopQuitInspection>
-const agents: AgentState[] = []
+let productActive = false
 const jobs = new Map<SessionId | undefined, JobStatus[]>()
-/** Activity each provider family reports per session; the inspector must count only `schedule`. */
-const activity = new Map<SessionId, SessionActivity[]>()
-
 /** A registry whose only served member is the per-owner roster the inspector reads. */
 class RosterOnlyJobRegistry extends JobRegistry {
   readonly events = { subscribe: () => () => {} }
@@ -39,59 +33,53 @@ class RosterOnlyJobRegistry extends JobRegistry {
   attachController(): () => void { return () => {} }
 }
 
-function agent(id: string, status: 'idle' | 'running' = 'idle'): AgentState {
-  return { id: SessionId(id), status, inbox: { nextTurn: [], nextStep: [] } }
-}
-
 beforeEach(() => {
-  agents.length = 0
+  productActive = false
   jobs.clear()
-  activity.clear()
   ctx = new Context()
   // Narrow service doubles exercise the inspector against a real Cordis event lifecycle.
-  ctx.provide('agents', { list: () => agents } as never)
   new RosterOnlyJobRegistry(ctx)
-  ctx.on('workspace/session-activity', async ({ sessionId }, next) => [...activity.get(sessionId) ?? [], ...await next()])
+  ctx.on('desktop/active-tasks', async () => productActive)
   inspect = installDesktopQuitInspection(ctx)
 })
 
 afterEach(async () => { await ctx.fiber.dispose() })
 
 describe('Desktop Host quit inspection', () => {
-  it('reports neither active nor scheduled work for idle loaded sessions', async () => {
-    agents.push(agent('quiet'))
-    activity.set(SessionId('quiet'), [{ kind: 'turn' }])
+  it('inspects an idle product without Agent or Session services', async () => {
+    expect(ctx.get('agents')).toBeUndefined()
     expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
   })
 
-  it.each(['running', 'nextTurn', 'nextStep', 'job'] as const)('counts %s work with the same rule as the update restart check', async (kind) => {
-    const owner = agent('busy')
-    if (kind === 'running') owner.status = 'running'
-    else if (kind === 'job') jobs.set(owner.id, ['stopping'])
-    else owner.inbox[kind].push({ queued: true })
-    agents.push(owner)
+  it('uses the product work state without starting or stopping tasks', async () => {
+    productActive = true
     expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: false })
+    productActive = false
+    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
   })
 
-  it('counts an armed schedule family in any loaded session and stops at the first one', async () => {
-    const asked: SessionId[] = []
-    ctx.on('workspace/session-activity', async ({ sessionId }, next) => { asked.push(sessionId); return next() })
-    agents.push(agent('first'), agent('second'), agent('third'))
-    activity.set(SessionId('second'), [{ kind: 'schedule', items: [{ id: 'reminder-1', label: 'stand-up' }] }])
-    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: true })
-    expect(asked).toEqual([SessionId('first'), SessionId('second')])
+  it.each(['running', 'stopping'] as const)('counts %s global jobs', async (status) => {
+    jobs.set(undefined, [status])
+    expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: false })
+    jobs.set(undefined, ['completed'])
+    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
   })
 
-  it('reports both when a running session also holds a reminder', async () => {
-    agents.push(agent('both', 'running'))
-    activity.set(SessionId('both'), [{ kind: 'job', items: [{ id: 'bash-1' }] }, { kind: 'schedule', items: [{ id: 'reminder-2' }] }])
-    expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: true })
+  it('rejects an absent or failing product inspector instead of reporting idle', async () => {
+    const empty = new Context()
+    try {
+      new RosterOnlyJobRegistry(empty)
+      const check = installDesktopQuitInspection(empty)
+      await expect(check()).rejects.toThrow('product inspector is unavailable')
+      empty.on('desktop/active-tasks', async () => { throw new Error('storage unavailable') })
+      await expect(check()).rejects.toThrow('storage unavailable')
+    } finally { await empty.fiber.dispose() }
   })
 
   it('does not classify unavailable task services as idle', async () => {
     const empty = new Context()
     try {
-      await expect(installDesktopQuitInspection(empty)()).rejects.toThrow('task services are unavailable')
+      await expect(installDesktopQuitInspection(empty)()).rejects.toThrow('jobs service is unavailable')
     } finally { await empty.fiber.dispose() }
   })
 

@@ -14,6 +14,7 @@ import { registerModels } from './backend/llm.mjs';
 import { registerExampleRoutes } from './backend/examples.mjs';
 import { registerSetupRoutes } from './backend/setup.mjs';
 import { registerCredentialPreview } from './backend/credential-preview.mjs';
+import { hasInterruptibleTasks } from './backend/activity.mjs';
 import modelManifest from '../../../packages/builtin/src/setup-models.json' with { type: 'json' };
 import Store from '../../../packages/builtin/src/store.ts';
 import Files from '../../../packages/builtin/src/files.ts';
@@ -114,7 +115,8 @@ async function activateDomain(domain, { config, root, data, forms, modelRoots, v
     registerExtensionRoutes(child, transport);
     // These domain lifecycle events start and stop only the existing graph queue;
     // the enclosing plugin and every worker remain owned by the one Harness Host.
-    services = { resources: child.youdubResources, settings: child.settings, start: () => child.emit('app/ready') };
+    services = { resources: child.youdubResources, settings: child.settings,
+      inspectTasks: () => hasInterruptibleTasks(child.store), start: () => child.emit('app/ready') };
   } });
   return services;
 }

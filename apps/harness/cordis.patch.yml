@@ -1,264 +1,108 @@
-# Shared YouDub overlay on the official Harness base + web bundles.
-# Keep the official layout, theme, session and settings services.
-# ModelsSettings and file uploads require the official session/agent registries.
-# Keep those service dependencies; no coding agent, tools or conversation is mounted.
-- id: agent-default-model
-  config:
-    provider: ''
-    model: ''
-- id: deepseek-llm-api-extensions
-  disabled: true
-- id: session-log-deepseek
-  disabled: true
-- id: plugin-package-inventory-deepseek
-  disabled: true
-- id: session-title
-  disabled: true
-- id: session-title-llm
-  disabled: true
-- id: llm-retry
-  disabled: true
-- id: agent-loop
-  disabled: true
-- id: system-prompt
-  disabled: true
-- id: tools
-  disabled: true
-- id: user-questions
-  disabled: true
-- id: goal
-  disabled: true
-- id: goal-round-driver
-  disabled: true
-- id: token-meter
-  disabled: true
-- id: subagent
-  disabled: true
-- id: subagent-spawn-in-process
-  disabled: true
-- id: subagent-fork-in-process
-  disabled: true
-- id: subagent-model-selection-settings
-  disabled: true
-- id: agent-preset-registry
-  disabled: true
-- id: preset-standard
-  disabled: true
-- id: preset-ptc
-  disabled: true
-- id: preset-minimal
-  disabled: true
-- id: preset-cordis
-  disabled: true
-- id: schedule
-  disabled: true
-- id: ptc-runtime
-  disabled: true
-- id: timeout-policy
-  disabled: true
-- id: spill-local
-  disabled: true
-- id: spill-policy
-  disabled: true
-- id: session-checkpoint-policy
-  disabled: true
-- id: image-offload
-  disabled: true
-- id: repeat-tool-reminder
-  disabled: true
-- id: working-directory
-  disabled: true
-- id: tool-working-directory
-  disabled: true
-- id: terminal-controller
-  disabled: true
-- id: workspace-files
-  disabled: true
-- id: workspace-changes
-  disabled: true
-- id: workspace-controller
-  disabled: true
-- id: bash-sandbox
-  disabled: true
-- id: pwsh-sandbox
-  disabled: true
-- id: sandbox
-  disabled: true
-- id: approval
-  disabled: true
-- id: permission
-  disabled: true
-- id: shell-env
-  disabled: true
-- id: fs-observation-policy
-  disabled: true
-- id: skill
-  disabled: true
-- id: command-feedback
-  disabled: true
-- id: message-feedback
-  disabled: true
-- id: session-log-download
-  disabled: true
-- id: session-reference
-  disabled: true
-- id: file-reference-local
-  disabled: true
-- id: session-stats
-  disabled: true
-- id: session-turn-outline
-  disabled: true
-- id: session-projection-cache
-  disabled: true
-- id: otel
-  disabled: true
-- id: session-telemetry-otel
-  disabled: true
-- id: web
-  disabled: true
-- id: web-search-deepseek
-  disabled: true
-- id: web-deepseek-api
-  disabled: true
-- id: web-fetch-http
-  disabled: true
-- id: mcp-resources
-  disabled: true
-- id: cordis-host-runner
-  disabled: true
-- id: cordis-inspect-providers
-  disabled: true
-- id: cordis-client-runner
-  disabled: true
-- id: harness-dev-context
-  disabled: true
-- id: open-in-app
-  disabled: true
-- id: resources
-  disabled: true
-- id: office-to-pdf
-  disabled: true
-- id: ui-open-in-app
-  disabled: true
-- id: ui-settings-account
-  disabled: true
-# YouDub supplies a provider-neutral model setup. Accounts and built-in
-# DeepSeek routes belong to the Harness product, not its shared services.
-- id: deepseek-account
-  disabled: true
-- id: account-controller
-  disabled: true
-- id: llm-deepseek-account
-  disabled: true
-- id: llm-deepseek
-  disabled: true
-- id: product-analytics
-  disabled: true
-- id: desktop-product-telemetry
-  disabled: true
-- id: ui-theme
-  disabled: false
-- id: ui-shortcuts
-  disabled: true
-- id: ui-layout
-  disabled: false
-- id: ui-session
-  disabled: false
-- id: ui-sidebar
-  disabled: true
-- id: ui-sidebar-right
-  disabled: true
-- id: ui-sidebar-documentpreview
-  disabled: true
-- id: ui-sidebar-browser
-  disabled: true
-- id: ui-sidebar-terminal
-  disabled: true
-- id: ui-sidebar-files
-  disabled: true
-- id: ui-settings
-  disabled: false
-- id: ui-settings-general
-  disabled: false
-- id: ui-settings-models
-  disabled: false
-- id: ui-plugin-manager
-  disabled: true
-- id: ui-settings-plugin-inventory
-  disabled: true
-- id: ui-conversation
-  disabled: true
-- id: ui-approval
-  disabled: true
-- id: ui-chat
-  disabled: true
-- id: ui-brand-official
-  disabled: true
-- id: ui-attachment
-  disabled: true
-- id: ui-tool
-  disabled: true
-- id: ui-cordis
-  disabled: true
-- id: ui-deliverables
-  disabled: true
-- id: ui-workspace
-  disabled: true
-- id: ui-workflow-run
-  disabled: true
-- id: ui-input-trigger
-  disabled: true
-- id: ui-commands
-  disabled: true
-- id: ui-skill
-  disabled: true
-- id: ui-subagent
-  disabled: true
-- id: ui-reference
-  disabled: true
-- id: ui-secret-mask
-  disabled: true
-- id: ui-jobs
-  disabled: true
-- id: ui-schedule
-  disabled: true
-- id: ui-goal
-  disabled: true
-- id: ui-message-feedback
-  disabled: true
-- id: ui-model-selection
-  disabled: true
-- id: ui-deepseek-model-label-1017
-  disabled: true
-- id: ui-permission
-  disabled: true
-- id: ui-agent-preset
-  disabled: true
-- id: ui-settings-session-log
-  disabled: true
-- id: ui-settings-plugins
-  disabled: true
-- id: ui-settings-shell
-  disabled: true
-- id: ui-settings-agent-loop
-  disabled: true
-- id: ui-settings-subagent
-  disabled: true
-- id: ui-settings-web-search
-  disabled: true
-- id: ui-plan
-  disabled: true
-- id: ui-user-questions
-  disabled: true
-- id: ui-trajectory
-  disabled: true
-- id: directory-picker
-  disabled: true
+# YouDub product composition over the original Harness Loader.
+# Entries and configuration are copied from the archived base/web bundles.
+# Stable ids keep existing model, theme, language and product settings addressable.
+# User patches and third-party bundles are still applied by the official profile runner.
 - insert:
+    - id: plugin-manager
+      name: '@deepseek-ai/dsh-plugin-manager'
+      disabled: !!js '!ctx.get(''profileContext'')'
+    - id: timer
+      name: '@deepseek-ai/cordis-plugin-timer'
+    - id: hmr
+      name: '@deepseek-ai/dsh-hmr'
+      disabled: !!js '!ctx.get(''profileContext'')'
+      config:
+        root: []
+    - id: llm
+      name: '@deepseek-ai/dsh-llm'
+    - id: typert
+      name: '@deepseek-ai/dsh-typert-registry'
+    - id: typert-loader
+      name: '@deepseek-ai/dsh-typert-loader'
+    - id: typert-gateway
+      name: '@deepseek-ai/dsh-api-gateway'
+    - id: remote-access
+      name: '@deepseek-ai/dsh-api-remote-access'
+    - id: jobs
+      name: '@deepseek-ai/dsh-jobs-local'
+    - id: config-editor
+      name: '@deepseek-ai/dsh-config-editor'
+      disabled: !!js '!ctx.get(''profileContext'')'
+    - id: settings
+      name: '@deepseek-ai/dsh-settings'
+      disabled: !!js '!ctx.get(''profileContext'')'
+    - id: authorization
+      name: '@deepseek-ai/dsh-authorization'
+    - id: credentials
+      name: '@deepseek-ai/dsh-credentials-local'
+    - id: llm-pi-ai
+      name: '@deepseek-ai/dsh-llm-pi-ai'
+    - id: subprocess
+      name: '@deepseek-ai/dsh-subprocess-local'
+    - id: plugin-inventory
+      name: '@deepseek-ai/dsh-host-plugin-inventory'
+    - id: settings-controller
+      name: '@deepseek-ai/dsh-api-settings-controller'
+    - id: web-startup
+      name: '@deepseek-ai/dsh-web-app/startup'
+    - id: webserver
+      name: '@deepseek-ai/dsh-host-webserver'
+      inject:
+        - webStartup
+      config:
+        host: !!js ctx.webStartup.host ?? '127.0.0.1'
+        port: !!js ctx.webStartup.port ?? 3080
+        tls: !!js ctx.webStartup.tls
+        compression: gzip
+        compressionLevel: 1
+        compressionThresholdBytes: 1024
+    - id: web-runtime
+      name: '@deepseek-ai/dsh-web-app'
+      inject:
+        - webStartup
+      config:
+        openBrowser: !!js ctx.webStartup.openBrowser
+        printUrl: true
+        publicUrl: !!js ctx.webStartup.publicUrl
+        surfaceContext: false
+    - id: client-hmr
+      name: '@deepseek-ai/dsh-client-hmr'
+    - id: modules
+      name: '@deepseek-ai/dsh-client-modules'
+    - id: connection
+      name: '@deepseek-ai/dsh-client-connection'
+      inject:
+        - webStartup
+      config:
+        trustedHosts: !!js ctx.webStartup.trustedHosts
+    - id: api-remotes
+      name: '@deepseek-ai/dsh-api-remotes'
+    - id: ui-theme
+      name: '@deepseek-ai/dsh-client-ui-theme'
+      disabled: false
+    - id: locale
+      name: '@deepseek-ai/dsh-client-locale'
+    - id: shortcuts
+      name: '@deepseek-ai/dsh-client-shortcuts'
+    - id: ui-layout
+      name: '@deepseek-ai/dsh-client-ui-layout'
+      disabled: false
+    - id: ui-renderer
+      name: '@deepseek-ai/dsh-client-ui-renderer'
+    - id: ui-settings
+      name: '@deepseek-ai/dsh-client-ui-settings'
+      disabled: false
+    - id: ui-settings-general
+      name: '@deepseek-ai/dsh-client-ui-settings-general'
+      disabled: false
+    - id: ui-settings-models
+      name: '@deepseek-ai/dsh-client-ui-settings-models'
+      disabled: false
     - id: youdub-subtitles
       name: '@youdub/harness-subtitles'
       config:
         python: !!js >-
-          dshHomePath(process.platform === 'win32' ? 'youdub/runtime/venv/Scripts/python.exe' : 'youdub/runtime/venv/bin/python')
+          dshHomePath(process.platform === 'win32' ? 'youdub/runtime/venv/Scripts/python.exe' :
+          'youdub/runtime/venv/bin/python')
         modelsDir: !!js dshHomePath('youdub/models/whisper')
         dataDir: !!js dshHomePath('youdub')

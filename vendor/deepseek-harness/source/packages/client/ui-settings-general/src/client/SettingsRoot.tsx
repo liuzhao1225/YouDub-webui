@@ -111,14 +111,13 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
  */
 export function SettingsRoot(props: SettingsRootComponentProps) {
   const {
-    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, useSessions, renderSlot, t,
+    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, renderSlot, t,
     useDesktopUpdate, openDesktopUpdate, useStore, actions, useShortcuts,
   } = props
   const { open, activeId } = useStore(state => state)
   const shortcut = useShortcuts(rows => rows.find(row => row.id === 'settings.open'))
   const { close, openSection } = actions
   const [requestedOnboarding, setRequestedOnboarding] = useState<string | undefined>()
-  const [completedOnboarding, setCompletedOnboarding] = useState<ReadonlySet<string>>(() => new Set())
   const [showRecovery, setShowRecovery] = useState(false)
   const [holdConnecting, setHoldConnecting] = useState(false)
   const connectingShownAt = useRef<number | undefined>(undefined)
@@ -131,21 +130,8 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   const connectionState = useConnectionState(state => state)
   const previousConnectionState = useRef(connectionState)
   const onboardingSteps = useOnboardingSteps(s => s)
-  const onboardingActive = useSessions((state) => {
-    const main = Object.values(state.byId)
-      .find(session => (session.retainedBy.mainView ?? 0) > 0)
-    return state.phase === 'ready' && (main === undefined || main.blank)
-  })
-  const onboardingStep = requestedOnboarding !== undefined
-    ? onboardingSteps.find(step => step.id === requestedOnboarding)
-    : onboardingActive
-      ? onboardingSteps.find(step => !completedOnboarding.has(step.id))
-      : undefined
-
-  useEffect(() => {
-    if (onboardingActive) return
-    setCompletedOnboarding(new Set())
-  }, [onboardingActive])
+  // The product owns first-run readiness. Settings only opens explicitly requested editors.
+  const onboardingStep = onboardingSteps.find(step => step.id === requestedOnboarding)
 
   const onboardingStepSeen = useRef(onboardingStep)
   // An onboarding step owns the viewport and marks `#root` inert. The panel portals
@@ -194,12 +180,8 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     }
   }, [connectionState])
 
-  const completeOnboardingStep = useCallback((id: string) => {
+  const completeOnboardingStep = useCallback(() => {
     setRequestedOnboarding(undefined)
-    setCompletedOnboarding((previous) => {
-      if (previous.has(id)) return previous
-      return new Set([...previous, id])
-    })
   }, [])
 
   let connectionIndicator: ConnectionIndicatorState | undefined
@@ -257,8 +239,8 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           renders null, so nothing paints or blocks while it decides. */}
       {onboardingStep !== undefined && renderSlot('settings.onboarding', {
         stepId: onboardingStep.id,
-        explicit: requestedOnboarding !== undefined,
-        complete: () => { completeOnboardingStep(onboardingStep.id) },
+        explicit: true,
+        complete: completeOnboardingStep,
         openSection,
       }, { only: onboardingStep.id })}
     </>

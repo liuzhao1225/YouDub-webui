@@ -81,7 +81,7 @@ describe('bundleRoster on a scratch installation', () => {
     const dependency = join(bundle, 'node_modules', '@t', 'theme')
     mkdirSync(dependency, { recursive: true })
     writeFileSync(join(bundle, 'package.json'), JSON.stringify({ name: '@t/linked', dsh: { bundle: { patch: './cordis.patch.yml' } } }))
-    writeFileSync(join(bundle, 'cordis.patch.yml'), "- insert:\n    - id: theme\n      name: '@t/theme'\n")
+    writeFileSync(join(bundle, 'cordis.patch.yml'), "- insert:\n    - id: runtime\n      name: '@t/linked'\n    - id: theme\n      name: '@t/theme'\n")
     writeFileSync(join(dependency, 'package.json'), JSON.stringify({ name: '@t/theme', dsh: { client: { platform: 'web' } } }))
     linked.pkg('@t/theme', {})
     symlinkSync(bundle, join(linked.root, 'app', 'node_modules', '@t', 'linked'), 'junction')

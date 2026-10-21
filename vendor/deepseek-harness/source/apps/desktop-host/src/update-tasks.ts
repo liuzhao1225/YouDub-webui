@@ -1,23 +1,27 @@
 /** Desktop installation admission and task inspection for the shared Web Host. */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-jobs'
 import type {} from '@deepseek-ai/dsh-client-connection'
 
+declare module '@deepseek-ai/cordis' {
+  interface Events {
+    /** Product-owned work; a Desktop product must provide an authoritative inspector. */
+    'desktop/active-tasks'(next: () => Promise<boolean>): Promise<boolean>
+  }
+}
+
 /**
- * Whether stopping the Host now would interrupt work: a generating or tool-running
- * agent (including subagents and turns waiting for approval), queued inbox
- * messages, or a running or stopping background job.
- * @param liveAgents - Current agent roster.
- * @param jobs - Job registry queried for the global roster and each agent's own jobs.
- * @returns true when any of those conditions holds.
+ * Read product work and unowned background jobs without requiring Agent sessions.
+ * @param ctx - Desktop Host context with a product inspector and Jobs service.
+ * @returns true when the product reports work or a global job is running or stopping.
+ * @throws when an owner is unavailable or cannot inspect its current state.
  */
-export function hasDesktopActiveTasks(liveAgents: ReturnType<Context['agents']['list']>, jobs: Context['jobs']): boolean {
-  return liveAgents.some(agent => agent.status === 'running'
-    || agent.inbox.nextTurn.length > 0 || agent.inbox.nextStep.length > 0)
-    || [undefined, ...liveAgents].some(agent => jobs.list(agent?.id)
-      .some(job => job.status === 'running' || job.status === 'stopping'))
+export async function hasDesktopActiveTasks(ctx: Context): Promise<boolean> {
+  const jobs = ctx.get('jobs')
+  if (jobs === undefined) throw new Error('desktop activity: jobs service is unavailable')
+  const active = await ctx.waterfall('desktop/active-tasks', () => Promise.reject(new Error('desktop activity: product inspector is unavailable')))
+  return active || jobs.list().some(job => job.status === 'running' || job.status === 'stopping')
 }
 
 /**
@@ -45,9 +49,6 @@ export function installDesktopUpdateTaskControl(ctx: Context): (action: 'inspect
   return async (action) => {
     if (stopped) throw new Error('desktop update: Host is stopping')
     if (action === 'unlock') { locked = false; lockGeneration++ }
-    const agents = ctx.get('agents')
-    const jobs = ctx.get('jobs')
-    if (agents === undefined || jobs === undefined) throw new Error('desktop update: task services are unavailable')
     if (action === 'lock') {
       locked = true
       const generation = ++lockGeneration
@@ -57,6 +58,6 @@ export function installDesktopUpdateTaskControl(ctx: Context): (action: 'inspect
       if (stopped) throw new Error('desktop update: Host is stopping')
       if (generation !== lockGeneration) throw new Error('desktop update: admission lock was superseded')
     }
-    return hasDesktopActiveTasks(agents.list(), jobs)
+    return hasDesktopActiveTasks(ctx)
   }
 }

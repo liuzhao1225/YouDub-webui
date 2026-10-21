@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-Use this package to give the dsh web client a Settings panel, connection-recovery control, feature-contributed navigation, and sequential first-run onboarding. Users can open it from the sidebar, retry a failed connection immediately, and access a local configuration file when the Host makes one available on a loopback browser. Feature packages supply their own settings rows, sections, and onboarding steps; this package supplies their shared presentation and the Coding Tools switch without adding onboarding copy.
+Use this package to give the dsh web client a Settings panel, connection-recovery control, feature-contributed navigation, and explicitly opened onboarding editors. Users can open it from the sidebar, retry a failed connection immediately, and access a local configuration file when the Host makes one available on a loopback browser. Feature packages supply their own settings rows, sections, and onboarding steps; this package supplies their shared presentation and the Coding Tools switch without adding onboarding copy.
 
 ## Table of Contents
 
@@ -53,7 +53,7 @@ On a loopback browser, the shell renders **Open configuration file** only when t
 
 ### Onboarding steps
 
-The onboarding ledger projects in ascending order and mounts exactly one step at a time. Registrants own durable completion, capability readiness, copy, mutations, and their visible wrapper, so independently registered flows cannot stack and the shell does not become a second configuration fact source. Visible steps own their dialog chrome and app-root `inert` lifecycle.
+The product owns automatic first-run readiness. The settings shell mounts a registered editor only when a launcher calls `openOnboarding(id)`; it does not read chat Session state. Registrants own durable completion, capability readiness, copy, mutations, and their visible wrapper, so independently registered flows cannot stack and the shell does not become a second configuration fact source. Visible steps own their dialog chrome and app-root `inert` lifecycle.
 
 -----
 
@@ -69,7 +69,7 @@ The shell owns the chrome and the projections; it contributes the Coding Tools a
 
 ### Ledger projections
 
-The navigation is a projection of the `settings.section` ledger; nav labels may be locale-following thunks, resolved through `resolveSlotLabel` and re-rendered on the section ledger bump or the locale revision (an optional `ctx.get('locale')` read; no hard locale dependency). The onboarding ledger projects in ascending order; the active registrant receives its id, `complete()`, and an `openSection(id)` callback, and completing or skipping transfers ownership to the next entry.
+The navigation is a projection of the `settings.section` ledger; nav labels may be locale-following thunks, resolved through `resolveSlotLabel` and re-rendered on the section ledger bump or the locale revision (an optional `ctx.get('locale')` read; no hard locale dependency). The onboarding ledger identifies explicitly requested editors. The active registrant receives its id, `explicit: true`, `complete()`, and an `openSection(id)` callback. Completion closes that editor without starting another step.
 
 ### Connection recovery
 

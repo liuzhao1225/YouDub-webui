@@ -993,6 +993,9 @@ function FactoryOutlet({ name, inputProps, slots: selected = EMPTY_FACTORY_SELEC
   const definition = host.factoryOf(name)
   const nextAncestors = useMemo(() => new Set(ancestors).add(name), [ancestors, name])
   if (definition === undefined) return <>{fallback ?? null}</>
+  if (definition.scope !== 'root' && host.scope(definition.scope) === undefined) {
+    throw new SlotAssemblyError(`scope '${definition.scope}' rendered without an installed adapter`)
+  }
   if (ancestors.has(name)) throw new SlotOwnershipError(`recursive render of factory '${name}'`)
   for (const localName of Object.keys(selected)) {
     if (definition.slots?.[localName] === undefined) {
@@ -1109,6 +1112,9 @@ function renderOutletContent(
   spec: SlotSpec<SlotEntryDef>,
 ): ReactNode {
   const Anchor = spec.inline === true ? 'span' : 'div'
+  if (spec.scope !== 'root' && host.scope(spec.scope) === undefined) {
+    throw new SlotAssemblyError(`scope '${spec.scope}' rendered without an installed adapter`)
+  }
   if (spec.kind === 'chain' && opts?.fallbackOnly === true) {
     return renderChainResult(slotKey, null, opts, Anchor)
   }
@@ -1309,6 +1315,18 @@ function RootOutlet({ ownerProps }: { ownerProps: object }) {
   )
 }
 
+/** Bind an installed Session scope without requiring one for root-only products. */
+function RootScopes({ children }: { children: ReactNode }) {
+  const host = useHost()
+  observableHook(host.scopeRevision)(value => value)
+  const unbound = useMemo<StandardSourceBinding>(() => ({ key: undefined, hooks: {}, keyedHooks: {}, props: {} }), [])
+  // A root-only product has no Session owner. Explicit scoped outlets still
+  // require their adapter; installing one binds the normal scoped subtree.
+  return host.scope('session-maybe') === undefined
+    ? <ScopeBindingProvider binding={unbound}>{children}</ScopeBindingProvider>
+    : <ScopeProvider scope="session-maybe">{children}</ScopeProvider>
+}
+
 /**
  * Build the renderer installed into the `ui-renderer` SlotRegistry
  * (ctx.slots.install(createSlotRenderer()) at boot; the service owns the
@@ -1321,9 +1339,9 @@ export function createSlotRenderer(): SlotRenderer {
       return (
         <HostContext.Provider value={host}>
           <RootStandardProvider>
-            <ScopeProvider scope="session-maybe">
+            <RootScopes>
               <RootOutlet ownerProps={ownerProps} />
-            </ScopeProvider>
+            </RootScopes>
           </RootStandardProvider>
         </HostContext.Provider>
       )

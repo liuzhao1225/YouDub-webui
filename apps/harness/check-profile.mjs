@@ -10,7 +10,7 @@ export async function assertYouDubProfile(profileDirectory, installAnchor) {
   if (profile.skippedBundles.length) {
     throw new Error(profile.skippedBundles.map(item => `${item.packageName}: ${item.reason}`).join('\n'));
   }
-  for (const name of ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@youdub/harness-subtitles']) {
+  for (const name of ['@youdub/harness-subtitles']) {
     if (!profile.layers.some(layer => layer.packageName === name)) throw new Error(`YouDub profile is missing ${name}: ${profileDirectory}`);
   }
   return profile;

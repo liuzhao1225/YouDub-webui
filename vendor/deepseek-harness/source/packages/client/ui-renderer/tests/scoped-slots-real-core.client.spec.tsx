@@ -79,6 +79,24 @@ function mountFrame(core: SlotCore, body: (renderSlot: FrameSlots['renderSlot'])
 }
 
 describe('createSlotRenderer over the real SlotCore', () => {
+  it('renders a root-only product without installing a Session adapter', async () => {
+    const core = new SlotCore()
+    const host = hostOver(core)
+    host.scope = () => undefined
+    const disposeRoot = core.register({ name: 'root', children: {
+      'spec.single': { kind: 'single', scope: 'root' },
+    } }, (props: PropsRenderSlots<'spec.single'>) => props.renderSlot('spec.single', {}, { fallback: <i>empty</i> }))
+    const view = render(<>{createSlotRenderer().renderRoot(host, {})}</>)
+    expect(view.container.textContent).toBe('empty')
+    let dispose = () => {}
+    await act(async () => { dispose = core.register({ name: 'spec.single' }, () => <b>YouDub</b>) })
+    expect(view.container.textContent).toBe('YouDub')
+    await act(async () => { dispose() })
+    expect(view.container.textContent).toBe('empty')
+    view.unmount()
+    disposeRoot()
+  })
+
   it('renders registrations live through real microtask batching: register, dispose back to fallback', async () => {
     const core = new SlotCore()
     const { view } = mountFrame(core, renderSlot =>

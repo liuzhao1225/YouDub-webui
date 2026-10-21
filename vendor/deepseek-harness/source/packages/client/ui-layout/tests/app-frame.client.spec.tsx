@@ -189,14 +189,14 @@ describe('AppFrame', () => {
     expect(document.title).toBe('DSH Local Build')
   })
 
-  it('follows the selected durable Session title', () => {
+  it('keeps the product title independent of Session selection', () => {
     vi.stubEnv('DSH_CLIENT_TITLE', 'Product')
     selectedSessionTitle = 'First'
     const { rerenderFrame } = mountFrame()
-    expect(document.title).toBe('First — Product')
+    expect(document.title).toBe('Product')
     selectedSessionTitle = 'Revised'
     rerenderFrame()
-    expect(document.title).toBe('Revised — Product')
+    expect(document.title).toBe('Product')
     selectedSession = undefined
     rerenderFrame()
     expect(document.title).toBe('Product')
@@ -285,7 +285,7 @@ describe('AppFrame', () => {
       expect(instance.getSnapshot().layoutInfo).toBe(layoutInfo)
       expect(tracks(frame)).toEqual([280, 0])
       expect(selectedSession).toBe(sessionId)
-      expect(document.title).toBe(panelId === null ? 'Session title — DSH Local Build' : 'DSH Local Build')
+      expect(document.title).toBe('DSH Local Build')
     }
   })
 })

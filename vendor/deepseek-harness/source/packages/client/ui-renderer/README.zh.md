@@ -47,7 +47,7 @@ kind: "package-reference"
 
 ### 激活与挂载
 
-插件在 `slots`、`sessions` 与 `layout` 就绪后激活；它安装 `createSlotRenderer()` 并 reflect `uiRenderer` 服务。`mountApp` 会查找启动内核的 `[data-dsh-boot]` 元素：存在时经 `BootHandoff`（一个保留加载 DOM 的单帧透传）hydrate，否则创建全新的根节点并同步提交渲染。
+插件安装 `createSlotRenderer()` 并提供 `slots` 与 `uiRenderer` 服务，无需 Session 服务。仅使用 root 作用域的产品可以直接渲染；安装 Session 适配器后会绑定根子树，显式使用会话作用域的 outlet 仍必须提供对应适配器。`mountApp` 会查找启动内核的 `[data-dsh-boot]` 元素：存在时经 `BootHandoff`（一个保留加载 DOM 的单帧透传）hydrate，否则创建全新的根节点并同步提交渲染。
 
 ### Slot 绑定
 

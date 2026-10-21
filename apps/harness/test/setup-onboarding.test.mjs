@@ -12,7 +12,7 @@ const normalize = value => [...new Map(value.map(item => [JSON.stringify(item), 
 async function fixture(t, savedState = {}, readyModels = []) {
   t.mock.method(EnvironmentSetup.prototype, 'prepare', async function () { this.steps = [{ id: 'python', status: 'ready' }]; });
   t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ ready: true }));
-  const routes = new Map(), disposers = [], errors = [], writes = [], actions = [], calls = [];
+  const events = new Map(), routes = new Map(), disposers = [], errors = [], writes = [], actions = [], calls = [];
   const transport = { register(method, path, handler) { routes.set(method + ' ' + path, handler); return () => routes.delete(method + ' ' + path); }, json(request, status, value) { request.result = { status, value }; } };
   const models = manifest.map(model => ({ ...model, status: readyModels.includes(model.id) ? 'ready' : 'pending', received: 0, total: model.files.reduce((total, file) => total + file.size, 0), speed: 0 }));
   const items = Object.entries(requirements.providers).filter(([, value]) => value.model).map(([providerId, value]) => ({ providerId, model: value.model.id, downloadId: value.model.downloadId, automatic: true }));
@@ -45,8 +45,9 @@ async function fixture(t, savedState = {}, readyModels = []) {
     },
     settings: { async read() { return { plugins: { 'youdub.onboarding': savedState } }; }, async patch(value) { writes.push(value); Object.assign(savedState, value.plugin.config); } },
     start() { started++; },
+    async inspectTasks() { return false; },
   };
-  const ctx = { effect(action) { const dispose = action(); if (dispose) disposers.push(dispose); }, logger: { error(error) { errors.push(error); } }, jobs: {
+  const ctx = { on(event, listener) { events.set(event, listener); disposers.push(() => events.delete(event)); }, effect(action) { const dispose = action(); if (dispose) disposers.push(dispose); }, logger: { error(error) { errors.push(error); } }, jobs: {
     attachController() { return () => {}; }, start(spec) { return spec.run({ updateProgress() {} }); },
   } };
   registerSetupRoutes(ctx, transport, { root: '/unused', repoRoot: '/unused', python: '/unused/python', version: 'test' }, async () => { activated = true; return domain; });
@@ -55,7 +56,7 @@ async function fixture(t, savedState = {}, readyModels = []) {
   for (let i = 0; !activated; i++) { assert(i < 30); await new Promise(resolve => setTimeout(resolve, 1)); }
   // Let the same bootstrap turn finish reading the saved preference.
   await new Promise(resolve => setTimeout(resolve, 0));
-  return { request, transport, domain, items, models, calls, writes, actions, errors, get started() { return started; }, get resources() { return resources; } };
+  return { request, transport, domain, items, models, calls, writes, actions, errors, inspectActivity: () => events.get('desktop/active-tasks')(), get started() { return started; }, get resources() { return resources; } };
 }
 
 test('first run requires all four source models and preserves explicit start, pause and retry', async t => {
@@ -167,4 +168,16 @@ test('resource ready cannot release tasks with missing model or dependency readi
     assert.equal(state.phase, 'failed'); assert.match(state.error, /尚未全部就绪/); assert.equal(state.resourceSelection.prepared, false); assert.equal(app.started, 0);
     assert.throws(() => app.transport.assertReady('/api/v2/tasks'), error => error.code === 'ENVIRONMENT_NOT_READY');
   });
+});
+
+
+test('desktop activity follows the initialized domain instead of first-run completion alone', async t => {
+  const app = await fixture(t);
+  assert.equal((await app.request('GET')).phase, 'models');
+  assert.equal(await app.inspectActivity(), false);
+  app.domain.inspectTasks = async () => true;
+  assert.equal(await app.inspectActivity(), true);
+  const error = new Error('Task storage unavailable');
+  app.domain.inspectTasks = async () => { throw error; };
+  await assert.rejects(app.inspectActivity(), value => value === error);
 });

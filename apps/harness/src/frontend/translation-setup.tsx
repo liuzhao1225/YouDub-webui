@@ -63,6 +63,8 @@ export function TranslationSetup({ request, onReady, wordmarkSrc, renderSlot, tr
   useEffect(() => { controller.start(); return controller.stop }, [controller])
   useEffect(() => { if (state.ready) onReady() }, [state.ready, onReady])
   useEffect(() => { if (models.status === 'ready') void controller.refreshConfigured() }, [controller, models])
+  // onReady releases this root registration; stop rendering its outlets before that effect runs.
+  if (state.ready) return null
   return <TranslationSetupView controller={controller} wordmarkSrc={wordmarkSrc} renderModels={props => <ModelsSurface busy={activity.pending > 0} onBusyChange={props.onBusyChange}>{renderSlot('youdub.setup.models')}</ModelsSurface>} />
 }
 

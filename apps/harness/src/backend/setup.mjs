@@ -37,6 +37,12 @@ export function registerSetupRoutes(ctx, transport, config, activate) {
     return required;
   };
   ctx.effect(() => ctx.jobs.attachController('youdub-environment'));
+  ctx.on('desktop/active-tasks', async () => {
+    if (preparing || finishing || selecting) return true;
+    if (domain) return domain.inspectTasks();
+    if (bootAttempted) throw new AppError('TASK_RUNTIME_UNAVAILABLE', failure || 'YouDub domain activation did not finish.', 503);
+    return false;
+  });
   const saveSelection = resourcesPrepared => domain.settings.patch({ plugin: { id: 'youdub.onboarding', config: { resourceSelections: selected, resourcesPrepared } } });
   const finish = () => finishing ??= (async () => {
     await saveSelection(true);

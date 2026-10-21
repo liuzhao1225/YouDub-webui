@@ -6,8 +6,6 @@ import { useEffect, useState } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createSettingsShellStore } from '../src/client/shell-store.ts'
 import { allowAllAccess, bindSnapshotSelector, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
-import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
-import { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SettingsRootComponentProps } from '../src/client/shell-contract.ts'
 import { SettingsRoot } from '../src/client/SettingsRoot.tsx'
 import { en, zh } from '../src/client/locales.ts'
@@ -45,8 +43,6 @@ function mount({
   dictionary = en,
   connectionState = 'connected',
   desktopUpdate = { failed: false, opening: false },
-  onboardingActive = true,
-  mainView = true,
   rows = [
     { id: 'general', order: 0, label: 'General' },
     { id: 'models', order: 10, label: 'Models' },
@@ -62,8 +58,6 @@ function mount({
   dictionary?: typeof en | typeof zh
   connectionState?: ConnectionSnapshot
   desktopUpdate?: DesktopUpdateView
-  onboardingActive?: boolean
-  mainView?: boolean
   rows?: Row[]
   steps?: Step[]
 } = {}) {
@@ -80,27 +74,12 @@ function mount({
       return SEAT_CONTENT[key] ?? opts?.fallback
     }) as SettingsRootComponentProps['renderSlot'],
   )
-  const activeId = SessionId('active-session')
-  const sessions: SessionListState = {
-    ids: [activeId],
-    byId: {
-      [activeId]: {
-        id: activeId,
-        displayTitle: 'Active',
-        blank: onboardingActive,
-        running: false,
-        retainedBy: mainView ? { mainView: 1 } : {},
-        updatedAt: 0,
-      },
-    },
-    phase: 'ready', projectionsBySession: {},
-  }
   const unusedHook = (() => { throw new Error('unused by SettingsRoot') }) as never
   const shell = createSettingsShellStore().create()
   const props: SettingsRootComponentProps = {
     useStore: bindSnapshotSelector(shell), actions: shell.actions,
     useShortcuts: select => select(shortcuts),
-    useSessions: select => select(sessions),
+    useSessions: unusedHook,
     useSessionStatus,
     usePanelInfo, useSessionRetainInfo: () => undefined, useResource,
     useWorkspaces: unusedHook,
@@ -152,14 +131,7 @@ function mount({
     shortcuts = next
     view.rerender(<SettingsRoot {...props} />)
   }
-  /** Turn the mounted Session blank, which is what makes an onboarding step appear. */
-  const setOnboardingActive = (next: boolean) => {
-    const session = sessions.byId[activeId]
-    if (session === undefined) throw new Error('expected the mounted Session')
-    act(() => { sessions.byId[activeId] = { ...session, blank: next } })
-    view.rerender(<SettingsRoot {...props} />)
-  }
-  return { view, renderSlot, bump, listeners, reconnect, setConnectionState, setDesktopUpdate, setShortcuts, setOnboardingActive }
+  return { view, renderSlot, bump, listeners, reconnect, setConnectionState, setDesktopUpdate, setShortcuts }
 }
 
 function openPanel() {
@@ -401,47 +373,28 @@ describe('SettingsPanel navigation', () => {
     expect(screen.queryByTestId('section-general')).toBeNull()
   })
 
-  it('mounts onboarding steps in order and transfers ownership only on completion', () => {
+  it('keeps product onboarding out of settings until an editor is explicitly requested', () => {
     const { renderSlot } = mount()
-    const first = renderSlot.mock.calls.find(call => call[0] === 'settings.onboarding')
-    expect(first?.[1]).toMatchObject({ stepId: 'welcome' })
-    expect(first?.[2]).toEqual({ only: 'welcome' })
-    act(() => {
-      (first?.[1] as { complete: () => void }).complete()
-      ;(first?.[1] as { complete: () => void }).complete()
-    })
-    const onboardingCalls = renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding')
-    const second = onboardingCalls.at(-1)
-    expect(second?.[1]).toMatchObject({ stepId: 'credential' })
-    expect(second?.[2]).toEqual({ only: 'credential' })
-
-    act(() => {
-      (second?.[1] as { openSection: (id: string) => void }).openSection('models')
-    })
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(screen.getByTestId('section-models')).toBeTruthy()
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Models' }))
-
-    cleanup()
-    const inactive = mount({ onboardingActive: false }).renderSlot.mock.calls
-      .filter(call => call[0] === 'settings.onboarding')
-    expect(inactive).toHaveLength(0)
+    expect(renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding')).toHaveLength(0)
+    openPanel()
+    expect(screen.getByTestId('section-general')).toBeTruthy()
+    expect(renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding')).toHaveLength(0)
   })
 
-  it('takes the panel down when an onboarding step appears beneath it', () => {
-    const { setOnboardingActive } = mount({ onboardingActive: false })
+  it('takes the panel down when an onboarding editor is requested', () => {
+    const { renderSlot } = mount()
     openPanel()
     expect(screen.getByRole('dialog')).toBeDefined()
 
     // The step's overlay marks only #root inert, and the panel is portalled beside it.
-    setOnboardingActive(true)
+    const launcher = renderSlot.mock.calls.find(call => call[0] === 'settings.launcher')!
+    act(() => { (launcher[1] as { openOnboarding: (id: string) => void }).openOnboarding('credential') })
     expect(screen.queryByRole('dialog')).toBeNull()
-  })
-
-  it('keeps onboarding active before a main Session is retained', () => {
-    const { renderSlot } = mount({ mainView: false })
-
-    expect(renderSlot.mock.calls.some(call => call[0] === 'settings.onboarding')).toBe(true)
+    const step = renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding').at(-1)!
+    expect(step[1]).toMatchObject({ stepId: 'credential', explicit: true })
+    act(() => { (step[1] as { openSection: (id: string) => void }).openSection('models') })
+    expect(screen.getByTestId('section-models')).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Models' }))
   })
 
   it('paints no takeover chrome of its own around the mounted step', () => {
@@ -486,15 +439,15 @@ describe('SettingsPanel navigation', () => {
   })
 })
 
-it('explicitly reopens one onboarding editor during an existing session', () => {
-  const { renderSlot } = mount({ onboardingActive: false })
+it('closes the requested onboarding editor on completion without starting another step', () => {
+  const { renderSlot } = mount()
   const launcher = renderSlot.mock.calls.find(call => call[0] === 'settings.launcher')
   act(() => { (launcher?.[1] as { openOnboarding: (id: string) => void }).openOnboarding('credential') })
   const call = renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding').at(-1)
   expect(call?.[1]).toMatchObject({ stepId: 'credential', explicit: true })
-  act(() => { (call?.[1] as { complete: () => void }).complete() })
   renderSlot.mockClear()
-  expect(screen.queryByTestId('onboarding')).toBeNull()
+  act(() => { (call?.[1] as { complete: () => void }).complete() })
+  expect(renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding')).toHaveLength(0)
 })
 
 it('opens Account from the contributed sidebar launcher', () => {

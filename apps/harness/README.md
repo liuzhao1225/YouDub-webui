@@ -14,15 +14,15 @@
 
 | 部分 | 当前承载 |
 | --- | --- |
-| 官方源码 | [vendor/deepseek-harness/source](../../vendor/deepseek-harness/source)，公开 tag `dsh-v0.2.1-rc.2`，commit `687f282e8625c6b8d11ff58211a90524be2e4317`；原样保存源码文件、各包及完整构建支持文件；数量和哈希以 source-manifest.json 为准 |
+| 框架源码 | [vendor/deepseek-harness/source](../../vendor/deepseek-harness/source) 是活动 YouDub fork；原始公开 tag `dsh-v0.2.1-rc.2`、commit `687f282e8625c6b8d11ff58211a90524be2e4317` 保存在独立归档与不可改写的 source-manifest.json，活动差异逐项记录在 fork.json |
 | 桌面产品入口 | [desktop-main.mjs](src/desktop-main.mjs) → [desktop-product.ts](src/desktop-product.ts)；组合官方 HostProcess、ProjectManager、BackendController、协议转发、preload、目录选择、快捷键、主题/全屏、退出确认和错误报告 |
-| Host 与插件生命周期 | 原样官方 Desktop Host 源码、app-boot、Cordis、Loader；profile 为 `dsh-base` + `dsh-web-app` + `@youdub/harness-subtitles` |
+| Host 与插件生命周期 | 复用 Desktop Host、app-boot、Cordis、Loader；YouDub bundle 正向装配需要的服务和前端条目，保留第三方 bundle 与用户 patch；Host 已解除 Office 与平台账号接线 |
 | 前端框架 | 官方 Renderer、ModuleLoader、Slots、Layout、Store、locale 和 theme；官方 primitives、模型设置和插件页面承载通用交互 |
 | 原 YouDub 页面与元素 | 直接导入 `apps/web/src` 的业务组件，保留原动态 Logo、大标题、首屏动效、工作流画布、任务和校对页面；通用控件通过构建边界接官方实现 |
 | 原 YouDub 业务 | 直接导入 `packages/builtin` 的任务、图工作流、文件、资源与媒体合同；Python worker 和算法入口仍在 `backend` |
 | 后端适配 | [src/backend](src/backend)：官方 Connection 负责 HTTP/鉴权，Subprocess 负责进程，Jobs 负责执行状态，Settings/Credentials 负责配置与密钥，LLM 负责模型调用，PluginManager 负责扩展管理 |
 
-上游原件始终保存在 `vendor/deepseek-harness/source`，YouDub 的装配、品牌与路径配置写在该目录以外。上游未导出的原生窗口与 Windows 菜单片段逐字复制到产品入口，并纳入来源校验。产品入口直接进入 YouDub 的 `SetupGate`，不要求 DeepSeek 登录或占位 API Key。
+原始归档与活动 fork 分别校验，修改需要记录文件差异与原因。YouDub 的产品装配位于 `apps/harness`，框架内部的具体产品耦合直接在活动源码中解除。改造阶段、实际验证与未完成事项见[详细计划](docs/YOUDUB-DESKTOP-REFACTOR-PLAN.md)和[调研记录](docs/REFACTOR-RESEARCH.md)。产品入口进入 YouDub 的 `SetupGate`，不要求 DeepSeek 登录或占位 API Key。
 
 功能/API 拆解见 [FUSION-COVERAGE.md](docs/FUSION-COVERAGE.md)，前端组件对应见 [FRONTEND-MAPPING.md](FRONTEND-MAPPING.md)。清单描述迁移范围；实际通过范围与未完成项以 [validation.md](docs/validation.md) 的本分支证据为准。
 
@@ -47,7 +47,7 @@ node apps/harness/desktop.mjs --prepare-only \
 
 其他机器须提供适配其 OS/架构的原版 runtime 目录。没有 payload 时启动会明确失败。
 
-`build:framework` 将保存的原版源码复制到 `.cache/harness/source-build`，执行上游 `scripts/build.ts --scope artifacts`；不生成 tarball、App 或安装包。第一次构建框架后，日常 YouDub 代码修改只需：
+`build:framework` 校验活动 fork 的来源与差异后复制到 `.cache/harness/source-build`，执行保留的 `scripts/build.ts --scope artifacts`；不生成 tarball、App 或安装包。第一次构建框架后，日常 YouDub 代码修改只需：
 
 ```sh
 npm --prefix apps/harness run build:product

@@ -131,7 +131,7 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 - [x] 为保留、修改、删除的上游模块记录来源与理由；构建收据对应实际 fork 提交和选定输入。
 - [x] 调整 `build-framework.mjs`、`prepare-source-development.mjs`、`baselines/*` 的全量原件假设，继续验证实际输入、输出和路径一致。
 - [x] 接入本次修改的上游模块原有测试及其必要配置/生成工具；原本未复制进活动目录的测试支持文件按来源补齐。继续使用原断言验证控件、凭据、进程与生命周期行为。当前模型设置模块已接入，后续修改的模块继续按本规则补齐。
-- [ ] 为融合分支接入源码构建、类型、相关测试、活动模块和语言检查；保留现有 `main` 发行链的独立边界。
+- [x] 为融合分支接入源码构建、类型、相关测试、活动模块和语言检查；保留现有 `main` 发行链的独立边界。干净 macOS runner 检查已通过，见 [39646789113](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39646789113)。后续每批改动继续运行该检查。
 - [x] 审核 CI 的调用链，确保开发检查不生成安装包、不触发签名、release 或 Pages 发布。真实模型任务独立记录，不把凭据写入公共 CI。
 
 重点文件：[基线工具](../baselines)、[构建](../build-framework.mjs)、[运行时准备](../prepare-source-development.mjs)、[CI](../../../.github/workflows/ci.yml)。
@@ -142,11 +142,11 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 
 前置：P1 完成；R1/R8 的依赖和状态表可用。
 
-- [ ] 基于现有 bundle 实现建立 YouDub 正向装配清单，仅加载明确需要的框架服务、前端模块和业务插件；继续复用原 Loader/profile 配置语义。
-- [ ] 从模型设置移除 DeepSeek 账号登录、默认账号路由和专属 onboarding；保留提供商发现、添加/编辑、凭据管理和已有 LLM 接口。用户自行配置的 DeepSeek API 提供商仍属于普通模型提供商能力。
-- [ ] 解除 `ui-settings-models` 与 YouDub Client 对 `remote.session` 的不必要依赖；逐项检查 `ui-session`、SessionController、agent registry、attachments、workspace registry 的剩余消费者。
+- [x] 基于现有 bundle 实现建立 YouDub 正向装配清单，仅加载明确需要的框架服务、前端模块和业务插件；继续复用原 Loader/profile 配置语义。
+- [x] 从模型设置移除 DeepSeek 账号登录、默认账号路由和专属 onboarding；保留提供商发现、添加/编辑、凭据管理和已有 LLM 接口。用户自行配置的 DeepSeek API 提供商仍属于普通模型提供商能力。
+- [x] 解除 `ui-settings-models` 与 YouDub Client 对 `remote.session` 的不必要依赖；逐项检查 `ui-session`、SessionController、agent registry、attachments、workspace registry 的剩余消费者。
 - [ ] 将退出保护接到 YouDub 实际运行任务、排队工作、下载/安装、远端请求状态及前端未保存内容；等待人工确认的持久任务与未保存草稿分别判断。
-- [ ] 断开平台账号 session 发布、聊天、编码、子智能体、计划提醒等产品接线；确认共享功能无消费者后移除对应启动项。
+- [x] 断开平台账号 session 发布、聊天、编码、子智能体、计划提醒等产品接线；确认共享功能无消费者后移除对应启动项。
 - [ ] 保留 Electron sandbox/contextIsolation、IPC 来源校验、Connection 请求准入、文件授权、凭据边界和进程清理。
 
 重点文件：[产品入口](../src/desktop-product.ts)、[Host 入口](../../../vendor/deepseek-harness/source/apps/desktop-host/src/index.ts)、[模型设置](../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client)、[Client](../src/client.jsx)、[profile](../prepare-profile.mjs)。
@@ -223,7 +223,7 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 - [ ] 完成 macOS ARM64 的真实 Electron 交互、任务执行和导出；Windows x64 完成来源构建、路径/进程检查及真实桌面操作。缺平台或原生交互条件时保持对应项目待验收。
 - [ ] 验证干净首启和现有配置两条路径；新 profile 保持空账号/空用户提供商，已有 profile 保留用户配置。
 - [ ] 复核无关功能在源依赖、活动构建、启动注册和可见 UI 中的移除情况，区分第三方库内部合理依赖。
-- [ ] 更新架构、开发命令、功能/元素映射、扩展合同和本次验收记录；明确 Windows、网络或模型质量的任何剩余限制。
+- [ ] 更新架构、开发命令、功能/元素映射、扩展合同和本次验收记录；明确 Windows、网络或模型质量的任何剩余限制。全部改造与验收完成后，使用建平飞书配置同步[全页面展示文档](https://my.feishu.cn/docx/WvNdd2dWEo0NB8xCO4fcFeIdnAe)与[架构和接口设计文档](https://my.feishu.cn/docx/Nm3bdG4CGoDu6gxvMSmcOp43nWd)，更新前读取最新内容，保留图片、评论和历史事实。用户已明确要求最后统一更新。
 - [ ] 在当前分支保存阶段提交与验证记录。分支同步后检查源码开发 CI，未通过不能宣布改造完成；不自动合并到 `main`/`atomgit`。
 
 退出条件：本次范围内所有必要验收通过，干净工作区可复现，历史数据兼容，无未解释的核心失败。完成描述限定为源码开发版；安装、更新和公开发行另行验收。
@@ -303,8 +303,8 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 | 阶段 | 状态 | 完成标志 |
 | --- | --- | --- |
 | P0 调研与基线 | 进行中；来源恢复、57 项原集成回归及同 Host 页面已核对；原生交互待解锁 | R1–R10、基线运行与裁剪决策齐全 |
-| P1 来源与开发检查 | 进行中；来源分离及全新目录源码构建通过，开发 CI 已接入待远端执行 | fork 可验证，原件不变，源码 CI 无打包 |
-| P2 产品解耦 | 待执行 | 最小组合、模型设置和退出保护通过 |
+| P1 来源与开发检查 | 已完成；来源分离、干净构建及提交 `1960d82f` 的源码 CI 通过 | fork 可验证，原件不变，源码 CI 无打包 |
+| P2 产品解耦 | 进行中；33 条正向装配、会话解耦及同 Host 页面通过，原生退出/草稿保护待验收 | 最小组合、模型设置和退出保护通过 |
 | P3 私有运行资源 | 待执行 | 干净准备、四模型门控、配置隔离通过 |
 | P4 前端统一 | 待执行 | 原版视觉、组件、语言与原生交互通过 |
 | P5 业务与扩展 | 待执行 | 功能映射、历史兼容和插件生命周期通过 |
