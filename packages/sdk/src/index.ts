@@ -7,7 +7,7 @@ export type JsonObject = Record<string, any>
 export type Disposer = () => void | Promise<void>
 export type TaskStatus = 'queued' | 'running' | 'waiting' | 'paused' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'
 export type StepStatus = 'pending' | 'running' | 'waiting' | 'awaiting_review' | 'completed' | 'cancelled' | 'failed'
-export interface Diagnostic { code: string; message: string; field?: string; nodeId?: string; portId?: string; edgeId?: string }
+export interface Diagnostic { code: string; message: string; field?: string; nodeId?: string; portId?: string; edgeId?: string; stage?: string; action?: string; status?: number; details?: unknown }
 export class AppError extends Error {
   constructor(public code: string, message: string, public status = 400, public details?: unknown) { super(message); this.name = 'AppError' }
 }
@@ -38,7 +38,7 @@ export interface WorkflowDescription {
   configSchema: JsonObject; defaults: JsonObject; ui?: JsonObject; graphTemplate?: WorkflowDocument
 }
 export interface WorkflowDefinition {
-  id: string; version: string; pluginId: string; pluginVersion: string; integrity: string;
+  id: string; version: string; pluginId: string; pluginVersion: string; integrity: string; compatibleIntegrities?: string[];
   describe(): WorkflowDescription;
   validate(input: Record<string, ArtifactRef>, config: JsonObject, catalog: CatalogService): Promise<Diagnostic[]> | Diagnostic[];
   plan(input: Record<string, ArtifactRef>, config: JsonObject, catalog: CatalogService): Promise<WorkflowPlan> | WorkflowPlan
@@ -76,7 +76,8 @@ export interface RerunTask {
   sourceRevisions?: Record<string, number>; corrections?: Record<string, { revision: number; patch: JsonObject }>
 }
 export interface ProviderDescription {
-  id: string; label: string; pluginId: string; pluginVersion: string; integrity: string;
+  id: string; label: string; pluginId: string; pluginVersion: string; integrity: string; compatibleIntegrities?: string[];
+  resources?: { dependencyGroups: string[]; model?: { id: string; downloadId: string } };
   operations: { id: string; inputSchema: JsonObject; outputs: OutputPort[]; node?: NodeDescriptor }[];
   configSchema?: JsonObject; capability?: string; adapter?: string; execution?: 'local' | 'remote';
   models?: JsonObject[]; available?: boolean; unavailableReason?: string | null; [key: string]: any
@@ -92,11 +93,12 @@ export interface Invocation {
 export interface InvocationContext {
   signal: AbortSignal;
   progress(value: number | null, message: string): Promise<void>;
+  log?(message: string): Promise<void>;
   externalPrepare(request: Omit<ExternalRequest, 'state' | 'mayStillRun'>): Promise<void>;
   externalUpdate(request: ExternalRequest): Promise<void>;
   register(descriptor: ArtifactDescriptor): Promise<ArtifactRef>;
   resolve(ref: ArtifactRef): Promise<string>;
-  credentials: Record<string, { base_url: string; api_key?: string | null }>
+  credentials: Record<string, { base_url: string; api_key?: string | null; profile?: JsonObject }>
 }
 export type OperationResult = { state: 'completed'; outputs: JsonObject } | { state: 'waiting'; operation: JsonObject; nextPollAt: string }
 export interface OperationProvider {
@@ -119,13 +121,19 @@ export interface TaskRecord {
   legacy?: boolean; rawSnapshot?: JsonObject; [key: string]: any
 }
 export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot' | 'outputs'> {
-  cover?: { url?: string };
+  cover?: { artifactId?: string; url?: string };
   outputs: Array<{ id: string; label: string; role: string; name: string; mimeType: string; size: number }>;
   allowedActions: string[]; mayStillRun: boolean; [key: string]: any
 }
+export type TaskSummary = Pick<TaskRecord,
+  'id' | 'revision' | 'attempt' | 'status' | 'sourceName' | 'workflowId' | 'workflowVersion' | 'workflowSource' |
+  'error' | 'message' | 'createdAt' | 'updatedAt' | 'queuedAt' | 'startedAt' | 'finishedAt' | 'nextPollAt' |
+  'legacy'> & Pick<TaskView, 'cover' | 'outputs' | 'allowedActions' | 'mayStillRun'> & {
+  steps: Pick<StepState, 'id' | 'label' | 'status' | 'progress' | 'message' | 'startedAt' | 'finishedAt' | 'error'>[]
+}
 export interface CreateTask { id: string; workflowId: string; workflowVersion?: string; config: JsonObject; inputs: Record<string, ArtifactRef>; artifacts?: Record<string, Artifact>; sourceName?: string; graphDocument?: WorkflowDocument; documentRevision?: number | null; nodeRuntimeInputs?: Record<string, JsonObject> }
 export interface TaskQuery { limit?: number; offset?: number; status?: string; active?: boolean }
-export interface TaskPage { items: TaskView[]; limit: number; offset: number; hasMore: boolean }
+export interface TaskPage { items: TaskSummary[]; limit: number; offset: number; hasMore: boolean }
 export interface TasksService {
   assertReady(): void;
   create(request: CreateTask): Promise<TaskView>; get(id: string): Promise<TaskView>; record(id: string): Promise<TaskRecord>;
@@ -139,10 +147,13 @@ export interface TasksService {
   action(id: string, actionId: string): Promise<NodeActionReceipt | null>;
   delete(id: string, expectedAttempt: number): Promise<void>; idle(): Promise<boolean>
 }
+export type OutputValidator = (value: any, context: { inputs: JsonObject; outputs: JsonObject }) => void
 export interface CatalogService {
   listProviders(): ProviderDescription[];
   registerProvider(provider: OperationProvider): Disposer; registerWorkflow(workflow: RegisteredWorkflow): Disposer;
-  provider(id: string): OperationProvider; workflow(id: 'youdub.localize'): WorkflowDefinition; workflow(id: string): RegisteredWorkflow;
+  provider(id: string): OperationProvider; workflow(id: string): RegisteredWorkflow;
+  registerOutputValidator(schemaId: string, validator: OutputValidator): Disposer;
+  validateOutput(schemaId: string, value: unknown, context: { inputs: JsonObject; outputs: JsonObject }): void;
   describe(): { providers: ProviderDescription[]; workflows: WorkflowDescription[] };
   refresh(): Promise<void>
 }

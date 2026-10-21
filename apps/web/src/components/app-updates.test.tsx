@@ -3,7 +3,12 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { PluginContextProvider } from '@/plugin/sdk'
 import { LanguageProvider } from '@/lib/i18n'
-import { UpdateNotice, UpdateProvider, UpdateSettings } from './app-updates'
+import { UpdateNotice as UpdateNoticeView, UpdateProvider as UpdateProviderView, UpdateSettings as UpdateSettingsView } from './app-updates'
+
+import { bindTestComponent } from '@/plugin/test-bindings'
+const UpdateNotice = bindTestComponent(UpdateNoticeView, ['useUpdates'])
+const UpdateSettings = bindTestComponent(UpdateSettingsView, ['useUpdates'])
+const UpdateProvider = bindTestComponent(UpdateProviderView, ['request'])
 
 afterEach(() => { cleanup(); vi.useRealTimers(); window.localStorage.clear() })
 const available = { version: '0.0.5', url: 'https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.5',

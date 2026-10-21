@@ -6,8 +6,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, useClient, type NodeTypeDefinition, type RouteEntry, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord } from './sdk'
-import { apply, GraphStudio } from './builtin/workflows'
-import { workflowDrafts } from './builtin/workflow-utils'
+import { apply, GraphStudio as GraphStudioView } from './builtin/workflows'
+import { bindTestComponent } from './test-bindings'
+const GraphStudio = bindTestComponent(GraphStudioView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
+import { serializeWorkflowEdits, workflowDrafts, workflowViews } from './builtin/workflow-utils'
 
 vi.mock('./builtin/workflow-canvas', () => ({
   WorkflowCanvas: ({ document, fitOnLoad, onReady, onOpen, onSelect, onChange, addNodeRef }: {
@@ -66,7 +68,7 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
   render(<Host />)
   return { request, push, navigate }
 }
-afterEach(() => { cleanup(); workflowDrafts.clear(); window.localStorage.clear(); window.history.replaceState(null, '', '/'); vi.restoreAllMocks() })
+afterEach(() => { cleanup(); workflowDrafts.clear(); workflowViews.clear(); window.localStorage.clear(); window.history.replaceState(null, '', '/'); vi.restoreAllMocks() })
 
 it('offers use and edit separately and opens use directly in the run panel', async () => {
   const { push } = mount('/workflows', { record: { ...record, origin: 'builtin', revision: 0 } })
@@ -161,4 +163,21 @@ it('shows an empty workflow selection without an endless loading message', async
   await screen.findByText('暂无工作流')
   expect(screen.queryByText('加载工作流…')).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: '新建工作流' })).toHaveAttribute('href', '/workflows/new')
+})
+
+
+it('does not retain a clean document over a newer server revision', async () => {
+  mount()
+  await screen.findByLabelText('工作流名称')
+  expect(workflowDrafts.has(record.id)).toBe(false)
+  cleanup()
+  mount('/workflows/example', { record: { ...record, revision: 2, document: { ...document, title: '服务端新版' } } })
+  expect(await screen.findByLabelText('工作流名称')).toHaveValue('服务端新版')
+})
+
+it('keeps a dirty draft on revision conflict and explicitly identifies its older base', async () => {
+  workflowDrafts.set(record.id, { document: { ...document, title: '未保存修改' }, saved: serializeWorkflowEdits(document), revision: 1, origin: 'user' })
+  mount('/workflows/example', { record: { ...record, revision: 2, document: { ...document, title: '服务端新版' } } })
+  expect(await screen.findByLabelText('工作流名称')).toHaveValue('未保存修改')
+  expect(screen.getByText('此草稿基于旧版本工作流，可另存副本保留修改。')).toBeInTheDocument()
 })

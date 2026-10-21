@@ -331,6 +331,35 @@ class SqliteStore:
                          (serialized(document), now_iso(), id))
             return self._workflow(conn.execute("SELECT * FROM workflow_documents WHERE id=?", (id,)).fetchone())
 
+    def workflow_migrate_defaults(self, document, expectedDefaults):
+        """Commit the preference workflow and completion marker together, once."""
+        from backend.app.paths import now_iso
+        key = "plugin:youdub.localize"
+        if not isinstance(document, dict) or document.get("id") != "user.legacy-defaults-v1":
+            raise WorkerError("INVALID_CONFIG", "Invalid migrated workflow ID.")
+        timestamp = now_iso()
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("SELECT value_json FROM settings WHERE key=?", (key,)).fetchone()
+            plugin = json.loads(row[0]) if row else {}
+            if not isinstance(plugin, dict):
+                raise WorkerError("INVALID_CONFIG", "Stored localization settings are not an object.")
+            previous = plugin.get("defaultsMigration") or {}
+            if previous.get("version") == 1 and previous.get("status") == "complete":
+                return previous
+            row = conn.execute("SELECT value_json FROM settings WHERE key='defaults'").fetchone()
+            if not row or json.loads(row[0]) != expectedDefaults:
+                raise WorkerError("REVISION_CONFLICT", "Saved processing preferences changed during migration.")
+            if conn.execute("SELECT 1 FROM workflow_documents WHERE id=?", (document["id"],)).fetchone():
+                raise WorkerError("WORKFLOW_DOCUMENT_EXISTS", "The migration workflow ID is already in use; existing work was preserved.")
+            conn.execute("INSERT INTO workflow_documents VALUES(?,1,?,?,?)",
+                         (document["id"], serialized(document), timestamp, timestamp))
+            state = {"version": 1, "status": "complete", "documentId": document["id"], "revision": 1}
+            plugin["defaultsMigration"] = state
+            conn.execute("INSERT INTO settings VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at",
+                         (key, serialized(plugin), timestamp))
+            return state
+
     def workflow_delete(self, id, expectedRevision):
         with self.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -343,6 +372,26 @@ class SqliteStore:
     def settings_values(self):
         with self.connect() as conn:
             return {row["key"]: json.loads(row["value_json"]) for row in conn.execute("SELECT key,value_json FROM settings")}
+
+    def migrate_connection_model(self):
+        from backend.app.paths import now_iso
+        with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            values = {row["key"]: json.loads(row["value_json"]) for row in conn.execute("SELECT key,value_json FROM settings WHERE key IN ('defaults','connections')")}
+            defaults = values.get("defaults")
+            selection = defaults.get("translation") if isinstance(defaults, dict) else None
+            model = selection.get("model") if isinstance(selection, dict) else None
+            if not isinstance(model, str) or not model.strip():
+                return
+            connections = values.get("connections", [])
+            changed = False
+            for connection in connections:
+                if connection["adapter"] == selection.get("adapter") and "model" not in connection:
+                    connection["model"] = model
+                    changed = True
+            if changed:
+                conn.execute("UPDATE settings SET value_json=?,updated_at=? WHERE key='connections'",
+                             (serialized(connections), now_iso()))
 
     def write_setting(self, key, value):
         from backend.app.paths import now_iso

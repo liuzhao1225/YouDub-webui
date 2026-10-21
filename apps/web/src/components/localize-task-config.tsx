@@ -38,7 +38,7 @@ type Choice = { value: ModelSelection; model: ModelCapability }
 
 function choices(runtime: Runtime, kind: Kind): Choice[] {
   return runtime.capabilities.filter((item) => item.capability === kind && item.available).flatMap((item) => (
-    item.models.flatMap((model) => model.devices.filter((device) => (
+    item.models.filter(model => model.available !== false).flatMap((model) => model.devices.filter((device) => (
       item.execution === "remote" ? device === "remote" : runtime.devices.some((entry) => entry.id === device && entry.available)
     )).map((device) => ({ value: { adapter: item.adapter, model: model.id, device: device as ModelSelection["device"] }, model })))
   ))
@@ -93,16 +93,6 @@ function languageChoices(config: TaskConfig, runtime: Runtime) {
 
 function updateConfig(config: TaskConfig, patch: Partial<TaskConfig>, runtime: Runtime) {
   return normalize({ ...config, ...patch }, runtime)
-}
-
-export function initialTaskConfig(runtime: Runtime, defaults?: Partial<TaskConfig> | null): TaskConfig {
-  return {
-    source_language: "auto", target_language: "zh", output_mode: "subtitles", keep_background: false,
-    tts: null, separation: null, subtitle_alignment: null,
-    ...defaults,
-    asr: defaults?.asr ?? firstSelection(runtime, "asr"),
-    translation: defaults?.translation ?? firstSelection(runtime, "translation"),
-  }
 }
 
 export function TaskOptions({ value, runtime, onChange }: {

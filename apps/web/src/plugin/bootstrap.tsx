@@ -7,6 +7,7 @@ import * as JsxDevRuntime from 'react/jsx-dev-runtime'
 import * as Cordis from 'cordis'
 import * as SDK from './sdk'
 import { disposeFiber, ModuleLoader } from './loader'
+import { Page } from '@/components/page-layout'
 
 declare global { var __YOUDUB_PLATFORM__: Readonly<Record<string, unknown>> | undefined }
 function publishPlatform() {
@@ -52,6 +53,6 @@ export function PluginBootstrap() {
     })
     return () => { stopped = true; if (app) void disposeFiber(root, app).catch((failure: Error) => console.error('Client cleanup failed', failure)) }
   }, [])
-  if (error) return <main className="mx-auto max-w-xl p-8" role="alert"><h1 className="text-lg font-semibold">应用启动失败</h1><pre className="mt-4 whitespace-pre-wrap text-sm">{error}</pre></main>
-  return context ? <PluginRoot context={context} /> : <div className="p-8 text-sm text-muted-foreground" role="status">正在加载…</div>
+  if (error) return <Page className="max-w-xl space-y-4" role="alert"><h1 className="text-lg font-semibold">应用启动失败</h1><pre className="whitespace-pre-wrap text-sm">{error}</pre></Page>
+  return context ? <PluginRoot context={context} /> : <Page className="max-w-xl"><p className="text-sm text-muted-foreground" role="status">正在加载…</p></Page>
 }

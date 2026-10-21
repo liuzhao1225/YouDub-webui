@@ -53,6 +53,9 @@ export default class HttpService extends Service {
       }).finally(() => { this.requests.delete(request) })
       this.requests.add(request)
     })
+    // Large media uploads are bounded by the upload handler's size limit;
+    // their duration must not inherit Node's five-minute request deadline.
+    server.requestTimeout = 0
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject)
       server.listen(this.config.port, this.config.host, () => { server.off('error', reject); resolve() })

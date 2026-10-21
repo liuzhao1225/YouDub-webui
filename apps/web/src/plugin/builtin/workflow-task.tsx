@@ -1,12 +1,16 @@
+import type { Bindings } from '../sdk'
 import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
 import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, RotateCw, Save, Search } from 'lucide-react'
-import { Link, text, useClient, useSlot, type GraphNode, type JsonObject, type JsonSchema, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
+import { Link, text, type GraphNode, type JsonObject, type JsonSchema, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
+import { StudioDraftStore } from '@/runtime/studio-draft'
+import { useActiveView, useObservableSource, usePendingUnload } from '../web-react'
+import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
 import { Button } from '@/components/ui/button'
+import { Page, PageHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
-import { useQuery } from './use-query'
 import { WorkflowCanvas } from './workflow-canvas'
 import { TaskState } from './task-status'
 import { NodePluginBoundary } from './workflow-settings'
@@ -56,12 +60,12 @@ function SegmentTextArea({ value, ...props }: ComponentProps<'textarea'>) {
   return <textarea {...props} ref={ref} rows={1} value={value} className="min-h-9 w-full min-w-0 resize-y rounded-lg border border-input bg-input-bg px-2 py-1.5 text-sm leading-5 text-foreground focus-visible:outline-ring" />
 }
 
-export function TaskWorkflowPanel({ task }: PanelProps) {
+export function TaskWorkflowPanel({ task, request, navigate, useQuery }: PanelProps & Bindings<'request' | 'navigate' | 'useQuery'>) {
   if (!task.graphSnapshot) return null
-  return <TaskGraph task={task} />
+  return <TaskGraph request={request} navigate={navigate} useQuery={useQuery} task={task} />
 }
-function TaskGraph({ task }: { task: TaskView }) {
-  const tx = useText(), { apiClient, navigation } = useClient()
+function TaskGraph({ task, request, navigate, useQuery }: { task: TaskView } & Bindings<'request' | 'navigate' | 'useQuery'>) {
+  const tx = useText()
   const { data, error, refresh } = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   const [failure, setFailure] = useState(''), [busy, setBusy] = useState(false)
   return <section className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -69,26 +73,28 @@ function TaskGraph({ task }: { task: TaskView }) {
       <Button variant="outline" size="sm" disabled={busy} onClick={() => {
         setBusy(true); setFailure('')
         const document = { ...task.graphSnapshot!, id: crypto.randomUUID(), title: `${task.graphSnapshot!.title} · ${tx('Copy', '副本', 'コピー')}` }
-        void apiClient.request<WorkflowDocumentRecord>('/api/v2/workflow-documents', { method: 'POST', body: JSON.stringify({ document }) }).then((record) => navigation.push(`/workflows/${record.id}?sourceTask=${task.id}`)).catch((failure: Error) => setFailure(failure.message)).finally(() => setBusy(false))
+        void request<WorkflowDocumentRecord>('/api/v2/workflow-documents', { method: 'POST', body: JSON.stringify({ document }) }).then((record) => navigate(`/workflows/${record.id}?sourceTask=${task.id}`)).catch((failure: Error) => setFailure(failure.message)).finally(() => setBusy(false))
       }}><Copy />{tx('Edit workflow copy', '编辑工作流副本', 'ワークフローのコピーを編集')}</Button>
     </div></header>
     {(error || failure) && <div className="space-y-2 p-4"><InlineAlert>{error || failure}</InlineAlert>{error && <Button variant="outline" size="sm" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button>}</div>}
-    <div className="h-[min(60dvh,36rem)] min-h-80">{data && <WorkflowCanvas document={task.graphSnapshot!} types={data.items} steps={task.steps} readOnly onOpen={(id) => navigation.push(`/tasks/${task.id}/nodes/${id}`)} />}</div>
+    <div className="h-[min(60dvh,36rem)] min-h-80">{data && <WorkflowCanvas document={task.graphSnapshot!} types={data.items} steps={task.steps} readOnly onOpen={(id) => navigate(`/tasks/${task.id}/nodes/${id}`)} />}</div>
   </section>
 }
 
-export function TaskNodePage({ params }: RouteProps) {
+export function TaskNodePage({ submissionStore, params, request, navigate, blockNavigation, useQuery, useSlot }: RouteProps & { submissionStore?: StudioDraftStore } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot'>) {
   const tx = useText()
-  const task = useQuery<TaskView>(`/api/v2/tasks/${encodeURIComponent(params.id)}`, 2000)
-  const detail = useQuery<TaskNodeDetail>(`/api/v2/tasks/${encodeURIComponent(params.id)}/nodes/${encodeURIComponent(params.nodeId)}`, 2000)
+  const [localStore] = useState(() => new StudioDraftStore())
+  const store = submissionStore ?? localStore
+  const task = useQuery<TaskView>(`/api/v2/tasks/${encodeURIComponent(params.id)}`, 2000, taskNeedsPolling)
+  const detail = useQuery<TaskNodeDetail>(`/api/v2/tasks/${encodeURIComponent(params.id)}/nodes/${encodeURIComponent(params.nodeId)}`, 2000, taskNeedsPolling)
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   const failure = task.error || detail.error || types.error
   const refresh = () => { task.refresh(); detail.refresh(); types.refresh() }
-  if (!task.data || !detail.data || !types.data) return <main className="space-y-3 p-6">{failure ? <><InlineAlert>{failure}</InlineAlert><Button variant="outline" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button></> : <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</main>
-  return <NodeDetail task={task.data} detail={detail.data} types={types.data.items} error={failure} refresh={refresh} />
+  if (!task.data || !detail.data || !types.data) return <Page>{failure ? <><InlineAlert>{failure}</InlineAlert><Button variant="outline" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button></> : <p role="status">{tx('Loading…', '正在加载…', '読み込み中…')}</p>}</Page>
+  return <NodeDetail submissionStore={store} useQuery={useQuery} request={request} navigate={navigate} blockNavigation={blockNavigation} useSlot={useSlot} task={task.data} detail={detail.data} types={types.data.items} error={failure} refresh={refresh} />
 }
-function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; detail: TaskNodeDetail; types: NodeTypeDefinition[]; error: string; refresh(): void }) {
-  const tx = useText(), { language } = useI18n(), { apiClient, navigation } = useClient()
+function NodeDetail({ submissionStore, task, detail, types, error, refresh, request, navigate, blockNavigation, useSlot, useQuery }: { submissionStore: StudioDraftStore; task: TaskView; detail: TaskNodeDetail; types: NodeTypeDefinition[]; error: string; refresh(): void } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useSlot' | 'useQuery'>) {
+  const tx = useText(), { language } = useI18n()
   const node = task.graphSnapshot?.nodes.find((item) => item.id === detail.nodeId)
   const definition = node && nodeDefinition(node, types)
   const details = useSlot('workflow.node.details')
@@ -96,8 +102,13 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
   const [patch, setPatch] = useState<JsonObject>({})
   const [tab, setTab] = useState<'result' | 'inputs' | 'config' | 'log'>('result')
   const [viewRevision, setViewRevision] = useState<number | null>(null)
-  const [failure, setFailure] = useState(''), [busy, setBusy] = useState(false), [pending, setPending] = useState('')
-  const [preview, setPreview] = useState<RerunPreview | null>(null), [newTaskId, setNewTaskId] = useState('')
+  const [localFailure, setFailure] = useState(''), [operationBusy, setBusy] = useState(false), [pending, setPending] = useState('')
+  const [preview, setPreview] = useState<RerunPreview | null>(null)
+  const { submissions } = useObservableSource(submissionStore)
+  const submissionKey = `derived:${task.id}:${detail.nodeId}`, submission = submissions[submissionKey]
+  const newTaskId = submission?.id ?? '', busy = operationBusy || !!submission?.busy, failure = submission?.error || localFailure
+  const activeView = useActiveView()
+  usePendingUnload(!!newTaskId || !!pending)
   const revision = viewRevision ?? detail.outputRevision
   const result = detail.resultRevisions.find((item) => item.revision === revision)
   const outputs = result?.outputs ?? detail.step.outputs ?? {}
@@ -127,7 +138,7 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
     baseline.current = { revision: detail.outputRevision, taskRevision: detail.taskRevision, outputs: detail.step.outputs ?? {} }
     refresh()
   }
-  const guard = useUnsavedChanges(dirty, canReview ? () => submit(false) : undefined)
+  const guard = useUnsavedChanges(blockNavigation, dirty, canReview ? () => submit(false) : undefined)
   async function submit(continueAfter: boolean) {
     if (!canReview || pending) throw new Error(tx('This result cannot be approved now.', '当前结果无法确认。', 'この結果は現在確認できません。'))
     setBusy(true); setFailure('')
@@ -135,9 +146,9 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
     const body = { actionId, expectedAttempt: detail.attempt, expectedTaskRevision: dirty ? baseline.current.taskRevision : detail.taskRevision, expectedOutputRevision: dirty ? baseline.current.revision : detail.outputRevision, ...(dirty ? { patch, continue: continueAfter } : {}) }
     try {
       setPending(actionId)
-      await apiClient.request(`/api/v2/tasks/${task.id}/nodes/${detail.nodeId}/${dirty ? 'corrections' : 'approve'}`, { method: 'POST', body: JSON.stringify(body) })
+      await request(`/api/v2/tasks/${task.id}/nodes/${detail.nodeId}/${dirty ? 'corrections' : 'approve'}`, { method: 'POST', body: JSON.stringify(body) })
       setPending(''); setPatch({}); setViewRevision(null); refresh()
-      if (continueAfter) { guard.bypass(); navigation.push(`/tasks/${task.id}`) }
+      if (continueAfter && activeView.current) { guard.bypass(); navigate(`/tasks/${task.id}`) }
     } catch (error) {
       if ((error as { status?: number }).status && (error as { status: number }).status < 500) setPending('')
       setFailure(error instanceof Error ? error.message : String(error)); throw error
@@ -146,21 +157,20 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
   async function rerunPreview() {
     setBusy(true); setFailure('')
     try {
-      const request = { config: {}, graphDocument: task.graphSnapshot, expectedAttempt: detail.attempt, expectedTaskRevision: detail.taskRevision, corrections: { [detail.nodeId]: { revision, patch } } }
-      setPreview(await apiClient.request<RerunPreview>(`/api/v2/tasks/${task.id}/rerun-preview`, { method: 'POST', body: JSON.stringify(request) }))
+      const payload = { config: {}, graphDocument: task.graphSnapshot, expectedAttempt: detail.attempt, expectedTaskRevision: detail.taskRevision, corrections: { [detail.nodeId]: { revision, patch } } }
+      setPreview(await request<RerunPreview>(`/api/v2/tasks/${task.id}/rerun-preview`, { method: 'POST', body: JSON.stringify(payload) }))
     } catch (error) { setFailure(error instanceof Error ? error.message : String(error)) }
     finally { setBusy(false) }
   }
+  function openDerived(next: TaskView) {
+    if (!activeView.current) return
+    submissionStore.clearSubmission(submissionKey); setPatch({}); guard.bypass(); navigate(`/tasks/${next.id}`)
+  }
   async function createDerived() {
-    if (!preview) return
-    setBusy(true); setFailure('')
-    const id = crypto.randomUUID(); setNewTaskId(id)
-    try {
-      const next = await apiClient.request<TaskView>(`/api/v2/tasks/${task.id}/rerun`, { method: 'POST', body: JSON.stringify({ ...preview, id, config: {}, graphDocument: task.graphSnapshot, corrections: { [detail.nodeId]: { revision, patch } } }) })
-      setPatch({}); guard.bypass(); navigation.push(`/tasks/${next.id}`)
-    } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
-    } finally { setBusy(false) }
+    if (!preview || busy || newTaskId) return
+    setFailure('')
+    const next = await submissionStore.submit(submissionKey, request, JSON.stringify({ ...preview, id: crypto.randomUUID(), config: {}, graphDocument: task.graphSnapshot, corrections: { [detail.nodeId]: { revision, patch } } }), `/api/v2/tasks/${task.id}/rerun`)
+    if (next) openDerived(next)
   }
   const generic = detail.spec.operation === 'speech.synthesize/v1' && displayed.speechAudio
     ? <SpeechResult taskId={task.id} value={displayed.speechAudio as SpeechAudio} translation={historical ? undefined : detail.inputs.translation as Translation | undefined} historical={historical} raw={displayed} />
@@ -169,15 +179,15 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
     (definition?.corrections?.outputPorts.includes('transcript') && !!displayed.transcript)
     || (definition?.corrections?.outputPorts.includes('translation') && !!displayed.translation)
   ))
-  return <main className="mx-auto max-w-6xl space-y-5 px-5 py-8 sm:px-8">
+  return <Page>
     {guard.dialog}
     <Link href={`/tasks/${task.id}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />{tx('Back to task', '返回任务', 'タスクへ戻る')}</Link>
-    <header className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold">{node?.label || text(definition?.label, language) || text(detail.step.label, language)}</h1><TaskState status={detail.step.status} /></header>
+    <PageHeader title={node?.label || text(definition?.label, language) || text(detail.step.label, language)} actions={<TaskState status={detail.step.status} />} />
     {(error || failure) && <div className="space-y-2"><InlineAlert>{error || failure}</InlineAlert>{error && <Button variant="outline" size="sm" onClick={refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button>}</div>}
     {detail.step.error && <InlineAlert>{detail.step.error.message}</InlineAlert>}
     {['running', 'waiting'].includes(detail.step.status) && <div className="space-y-2 text-sm text-muted-foreground" role="status">{detail.step.message && <p>{detail.step.message}</p>}{detail.step.status === 'running' && detail.step.progress != null && <progress aria-label={tx('Node progress', '节点进度', 'ノードの進捗')} value={detail.step.progress} max={1} className="block h-1.5 w-full accent-primary" />}</div>}
     {pending && !busy && <div className="space-y-2"><InlineAlert tone="warning">{tx('Submission needs verification.', '提交结果待核实。', '送信結果を確認してください。')}</InlineAlert><Button variant="outline" disabled={busy} onClick={() => {
-      setBusy(true); void apiClient.request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
+      setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx('Check submission', '查询提交结果', '送信結果を確認')}</Button></div>}
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">{(['result', 'inputs', 'config', 'log'] as const).map((value) => <Button key={value} variant={tab === value ? 'secondary' : 'ghost'} size="sm" onClick={() => setTab(value)}>{value === 'result' ? tx('Results', '结果', '結果') : value === 'inputs' ? tx('Inputs', '输入', '入力') : value === 'config' ? tx('Configuration', '配置', '設定') : tx('Task log', '任务日志', 'タスクログ')}</Button>)}
       {!!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs">{tx('Version', '版本', 'バージョン')}<select className="h-8 rounded-lg border border-input bg-input-bg px-2" disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx('Original', '原始结果', '元の結果') : tx('Correction', '订正', '修正')}{detail.approvedRevision === item.revision ? ` · ${tx('Approved', '已确认', '確認済み')}` : ''}</option>)}</select></label>}
@@ -196,19 +206,19 @@ function NodeDetail({ task, detail, types, error, refresh }: { task: TaskView; d
     </section>}
     {tab === 'inputs' && <ResultViewer taskId={task.id} value={detail.inputs} />}
     {tab === 'config' && <NodeConfiguration node={node} definition={definition} raw={node ?? detail.spec} />}
-    {tab === 'log' && <NodeLog taskId={task.id} />}
+    {tab === 'log' && <NodeLog useQuery={useQuery} active={taskNeedsPolling(task)} taskId={task.id} />}
     {canReview && <div className="sticky bottom-20 z-20 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-card p-4 shadow-card lg:bottom-4">
       <Button variant="outline" disabled={!dirty || busy || !!pending} onClick={() => void submit(false).catch(() => undefined)}><Save />{tx('Save correction', '保存订正', '修正を保存')}</Button>
       <Button disabled={busy || !!pending} onClick={() => void submit(true).catch(() => undefined)}>{busy ? <Loader2 className="animate-spin" /> : <Check />}{finishesTask ? dirty ? tx('Save and complete', '保存并完成', '保存して完了') : tx('Approve and complete', '确认并完成', '確認して完了') : dirty ? tx('Save and continue', '保存并继续', '保存して続行') : tx('Approve and continue', '确认并继续', '確認して続行')}</Button>
     </div>}
-    {canDerive && dirty && <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+    {((canDerive && dirty) || newTaskId) && <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
       <h2 className="font-semibold">{tx('Generate again with corrections', '使用订正重新生成', '修正を反映して再生成')}</h2>
       {!preview && <Button disabled={busy || !!newTaskId} variant="outline" onClick={() => void rerunPreview()}><GitBranch />{tx('Review affected steps', '查看需重新处理的步骤', '再処理するステップを確認')}</Button>}
       {preview && <><p className="text-sm">{tx('Keep existing results', '保留已有结果', '既存の結果を使用')}: {preview.reusedSteps.map(nodeName).join('、') || '—'}</p><p className="text-sm">{tx('Process again', '重新处理', '再処理')}: {preview.dirtySteps.map(nodeName).join('、') || '—'}</p><Button disabled={busy || !!newTaskId} onClick={() => void createDerived()}>{tx('Create task and generate', '创建任务并重新生成', 'タスクを作成して再生成')}</Button></>}
-      {newTaskId && !busy && <Button variant="outline" onClick={() => { setBusy(true); void apiClient.request<TaskView>(`/api/v2/tasks/${newTaskId}`).then((next) => { guard.bypass(); navigation.push(`/tasks/${next.id}`) }).catch((error: Error) => setFailure(error.message)).finally(() => setBusy(false)) }}>{tx('Check task status', '查询创建结果', 'タスクを確認')}</Button>}
-      {newTaskId && !busy && <Button variant="outline" onClick={() => { setBusy(true); void apiClient.request(`/api/v2/imports/${newTaskId}`, { method: 'DELETE' }).then(() => { setNewTaskId(''); setPreview(null); setFailure('') }).catch((error: Error) => setFailure(error.message)).finally(() => setBusy(false)) }}>{tx('Return to editing', '返回修改', '編集に戻る')}</Button>}
+      {newTaskId && !busy && <Button variant="outline" onClick={() => { void submissionStore.check(submissionKey, request).then(next => { if (next) openDerived(next) }) }}>{tx('Check task status', '查询创建结果', 'タスクを確認')}</Button>}
+      {newTaskId && !busy && <Button variant="outline" onClick={() => { void submissionStore.discard(submissionKey, request).then(cleared => { if (cleared && activeView.current) { setPreview(null); setFailure('') } }) }}>{tx('Return to editing', '返回修改', '編集に戻る')}</Button>}
     </section>}
-  </main>
+  </Page>
 }
 function NodeConfiguration({ node, definition, raw }: { node?: GraphNode; definition?: NodeTypeDefinition; raw: unknown }) {
   const tx = useText(), { language } = useI18n()
@@ -328,8 +338,8 @@ function ResultViewer({ taskId, value }: { taskId: string; value: unknown }) {
     </div>
   })}<RawResult value={value} /></div>
 }
-function NodeLog({ taskId }: { taskId: string }) {
+function NodeLog({ taskId, active, useQuery }: { taskId: string; active: boolean } & Bindings<'useQuery'>) {
   const tx = useText(), [error, setError] = useState('')
-  const query = useQuery<string>(`/api/v2/tasks/${taskId}/log`, 3000)
+  const query = useQuery<string>(`/api/v2/tasks/${taskId}/log`, active ? 3000 : undefined)
   return <section className="space-y-3"><Button variant="outline" size="sm" disabled={!query.data} onClick={() => { void navigator.clipboard.writeText(query.data ?? '').catch((failure: Error) => setError(failure.message)) }}><Copy />{tx('Copy task log', '复制任务日志', 'タスクログをコピー')}</Button>{(query.error || error) && <InlineAlert>{query.error || error}</InlineAlert>}{query.error && <Button variant="outline" size="sm" onClick={query.refresh}><RotateCw />{tx('Reload', '重新加载', '再読み込み')}</Button>}<pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-card p-4 text-xs">{query.data}</pre></section>
 }

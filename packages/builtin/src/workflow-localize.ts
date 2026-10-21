@@ -24,19 +24,19 @@ export const localizeSchema: JsonObject = {
     separation: nullable(selection()), subtitle_alignment: nullable(selection()),
   },
 }
-export async function apply(ctx: Context, plugin: { integrity: string; version?: string }) {
+export async function apply(ctx: Context, plugin: { integrity: string; compatibleIntegrities?: string[]; version?: string }) {
   const version = plugin.version ?? '1.0.0', pluginId = 'youdub.workflow-localize'
   let settings = await ctx.settings.read()
   ctx.on('settings/updated', updated => { settings = updated })
   const first = (capability: string) => {
-    const provider = ctx.catalog.listProviders().find(item => item.capability === capability && item.available)
-    const model = provider?.models?.[0]
+    const provider = ctx.catalog.listProviders().find(item => item.capability === capability && item.available && !item.legacy)
+    const model = provider?.models?.find(item => item.available !== false)
     return provider && model ? { adapter: provider.adapter ?? provider.id, model: model.id, device: model.devices[0] } : null
   }
   const defaults = () => settings.defaults ?? { source_language: 'auto', target_language: 'zh', output_mode: 'subtitles', keep_background: false, asr: first('asr'), translation: first('translation'), tts: null, separation: null, subtitle_alignment: null }
   const pick = (kind: string, config: JsonObject, catalog: CatalogService) => catalog.listProviders().find(item => item.capability === kind && (item.adapter ?? item.id) === config[kind]?.adapter)
   const workflow: WorkflowDefinition = {
-    id: 'youdub.localize', version, pluginId, pluginVersion: version, integrity: plugin.integrity,
+    id: 'youdub.localize', version, pluginId, pluginVersion: version, integrity: plugin.integrity, compatibleIntegrities: plugin.compatibleIntegrities,
     describe: () => ({ id: 'youdub.localize', version, label: '视频翻译与配音', inputs: [{ name: 'video', label: '视频', required: false, acceptedMimeTypes: ['video/*'], maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }], configSchema: localizeSchema, defaults: structuredClone(defaults()), ui: { editor: 'youdub.localize', sourceUrlInput: 'video' } }),
     validate: async (inputs, config, catalog) => {
       const errors: Diagnostic[] = []
@@ -55,20 +55,18 @@ export async function apply(ctx: Context, plugin: { integrity: string; version?:
       if (config.subtitle_alignment && config.output_mode !== 'both') fail('Subtitle alignment requires both mode.')
       const needsSeparation = config.keep_background || config.tts?.voice?.mode === 'source_clone'
       if (needsSeparation !== Boolean(config.separation)) fail('Separation must match the background and voice requirements.', 'separation')
-      const connections = (await ctx.settings.read()).connections
       for (const kind of ['asr', 'translation', 'tts', 'separation', 'subtitle_alignment']) {
         const selection = config[kind]; if (!selection) continue
         const provider = pick(kind, config, catalog)
         if (!provider?.available) { fail(provider?.unavailableReason || `Provider ${selection.adapter} is unavailable.`, `${kind}.adapter`); continue }
         const model = provider.models?.find(item => item.id === selection.model)
-        if (!model || !model.devices.includes(selection.device)) { fail('Selected model or device is unavailable.', `${kind}.model`); continue }
+        if (!model || model.available === false || !model.devices.includes(selection.device)) { fail(model?.unavailableReason || 'Selected model or device is unavailable.', `${kind}.model`); continue }
         if (['asr', 'translation'].includes(kind) && config.source_language !== 'auto' && !model.source_languages.includes(config.source_language)) fail('Source language is unsupported.', 'source_language')
         if (['translation', 'tts', 'subtitle_alignment'].includes(kind) && !model.target_languages.includes(config.target_language)) fail('Target language is unsupported.', 'target_language')
         if (kind === 'tts') {
           if (!model.voice_modes.includes(selection.voice.mode)) fail('Selected voice mode is unsupported.', 'tts.voice')
           if (selection.voice.mode === 'preset' && !model.voices?.some((voice: any) => voice.id === selection.voice.id && voice.languages.includes(config.target_language))) fail('Selected preset voice is unavailable.', 'tts.voice.id')
         }
-        if (provider.execution === 'remote' && !connections.some((connection: any) => connection.adapter === selection.adapter && connection.base_url && connection.has_api_key)) fail('Provider connection is not configured.', `${kind}.adapter`)
       }
       return errors
     },

@@ -7,7 +7,7 @@ from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
-from .contracts import Contract, NonEmptyString, PositiveInt
+from .data_contracts import Contract, NonEmptyString, PositiveInt
 from .errors import ApiError
 from .segments import Transcript
 

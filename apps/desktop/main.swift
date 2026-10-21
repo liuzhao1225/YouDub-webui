@@ -13,6 +13,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     var buffer = ""
     var logURL: URL!
     var lockDescriptor: Int32 = -1
+    var smokeStarted = false
+    var smokeExitCode: Int32 = 0
+    let smokeReport: URL? = {
+        let args = CommandLine.arguments
+        return args.count == 3 && args[1] == "--smoke-ready" ? URL(fileURLWithPath: args[2]) : nil
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
@@ -88,7 +94,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         environment["YOUDUB_DESKTOP_DATA_DIR"] = data.path
         environment["PATH"] = resources.path + ":/usr/bin:/bin:/usr/sbin:/sbin"
         environment["NODE_ENV"] = "production"
-        environment["NEXT_TELEMETRY_DISABLED"] = "1"
         environment.removeValue(forKey: "NODE_OPTIONS")
         process.environment = environment
         process.standardInput = input
@@ -126,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     @objc func openLog() { if let logURL { NSWorkspace.shared.open(logURL) } }
     @objc func reload() { webView.reload() }
     func showError(_ title: String, _ message: String) {
+        if smokeReport != nil { finishSmoke(["ok": false, "error": "\(title): \(message)"]); return }
         let alert = NSAlert()
         alert.alertStyle = .critical
         alert.messageText = title
@@ -134,6 +140,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
         alert.addButton(withTitle: "查看日志")
         alert.beginSheetModal(for: window) { [weak self] result in
             if result == .alertSecondButtonReturn { self?.openLog() }
+        }
+    }
+    func finishSmoke(_ result: [String: Any]) {
+        guard let report = smokeReport else { return }
+        smokeExitCode = result["ok"] as? Bool == true ? 0 : 1
+        do { try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted]).write(to: report, options: .atomic) }
+        catch { smokeExitCode = 1; fputs("Smoke report failed: \(error)\n", stderr) }
+        NSApp.terminate(nil)
+    }
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard smokeReport != nil, !smokeStarted, let url = webView.url, local(url) else { return }
+        smokeStarted = true
+        Task { @MainActor in
+            do {
+                let script = try String(contentsOf: Bundle.main.resourceURL!.appendingPathComponent("runtime/apps/desktop/ready-smoke.js"), encoding: .utf8)
+                _ = try await webView.evaluateJavaScript(script)
+                for _ in 0..<1800 {
+                    let value = try await webView.evaluateJavaScript("JSON.stringify(window.__youdubReadySmoke || null)")
+                    if let json = value as? String, let bytes = json.data(using: .utf8), let result = try JSONSerialization.jsonObject(with: bytes) as? [String: Any] {
+                        if result["state"] as? String == "failed" {
+                            throw NSError(domain: "YouDubSmoke", code: 1, userInfo: [NSLocalizedDescriptionKey: result["error"] as? String ?? "Browser smoke failed"])
+                        }
+                        if result["state"] as? String == "completed" {
+                            finishSmoke(["ok": true, "url": origin!.absoluteString, "serverPid": server!.processIdentifier, "ready": result])
+                            return
+                        }
+                    }
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                }
+                throw NSError(domain: "YouDubSmoke", code: 1, userInfo: [NSLocalizedDescriptionKey: "Ready plugin pages timed out"])
+            } catch { finishSmoke(["ok": false, "error": error.localizedDescription]) }
         }
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
@@ -209,3 +246,4 @@ let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.regular)
 app.run()
+exit(delegate.smokeExitCode)

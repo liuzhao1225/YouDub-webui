@@ -64,6 +64,8 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
         await context.externalPrepare({ externalRequestId: 'remote-1', requestKey: request.invocationId })
         throw new Error('Remote response disconnected after acceptance')
       }
+      if (request.config.mode === 'semantic-error') return { state: 'completed', outputs: { document: { text: 'structurally valid' } } }
+      if (request.config.mode === 'worker-error') return ctx.process.worker({ command: process.execPath, args: ['-e', `process.stdin.once('data',raw=>{const m=JSON.parse(raw);process.stderr.write('original_provider.py:42\\n');process.stdout.write(JSON.stringify({version:m.version,invocationId:m.invocationId,seq:1,type:'error',payload:{code:'MODEL_INCOMPATIBLE',message:'Token limit unsupported',status:422,field:'translation.model',stage:'translate',action:'adjust_settings',details:{requested:65535}}})+'\\n');process.stdin.destroy();});`] }, request, context)
       if (request.config.mode === 'bad-json') return { state: 'completed', outputs: { document: { text: 42 } } }
       if (request.config.mode === 'deleted' || request.config.mode === 'forged') {
         await writeFile(join(request.workDir, 'result.txt'), 'registered before return')
@@ -81,7 +83,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
   }
   const workflow: WorkflowDefinition = {
     id: 'test.workflow', version: '1.0.0', ...identity,
-    describe: () => ({ id: 'test.workflow', version: '1.0.0', label: 'Test workflow', inputs: [], defaults: { mode: 'text' }, configSchema: { type: 'object', required: ['mode'], properties: { mode: { enum: ['text', 'wait', 'wait-offset', 'bad', 'cancel', 'bad-json', 'deleted', 'forged', 'unknown'] } }, additionalProperties: false } }),
+    describe: () => ({ id: 'test.workflow', version: '1.0.0', label: 'Test workflow', inputs: [], defaults: { mode: 'text' }, configSchema: { type: 'object', required: ['mode'], properties: { mode: { enum: ['text', 'wait', 'wait-offset', 'semantic-error', 'worker-error', 'bad', 'cancel', 'bad-json', 'deleted', 'forged', 'unknown'] } }, additionalProperties: false } }),
     validate: () => [],
     plan: (_, config) => ({ workflow: { id: 'test.workflow', version: '1.0.0', ...identity }, config, bindings: { main: { providerId: provider.id, ...identity, modelRevision: null, options: {} } }, steps: stepIds.map((id, index) => ({ id, label: id, bindingKey: 'main', operation: 'test/v1', input: index ? { previous: { from: 'step', stepId: stepIds[index - 1], output: 'file' }, nested: { from: 'step', stepId: stepIds[index - 1], output: 'nested' } } : {}, outputs: contract === 'omitted' ? [] : ports.map(port => ({ ...port, required: contract !== 'downgraded' })) })), outputs: contract === 'json' || contract === 'omitted' ? [] : [{ id: 'file', label: 'File', role: 'file', source: { stepId: stepIds.at(-1)!, output: 'file' }, required: true }] }),
   }
@@ -258,4 +260,46 @@ test('partial rerun rejects incomplete prefixes and corrupted reusable artifacts
   const id = randomUUID()
   await assert.rejects(ctx.tasks.rerun(task.id, { id, config: { mode: 'text' }, fromStep: 'synthesize' }), (error: any) => error.code === 'OUTPUT_NOT_FOUND')
   await assert.rejects(ctx.tasks.record(id), (error: any) => error.code === 'TASK_NOT_FOUND')
+})
+
+test('retry accepts only explicitly reviewed identities and preserves the original task plan', async t => {
+  const { ctx, create, until, identity, workflow } = await setup(t)
+  const first = await create('bad')
+  await until(first.id, state => state.status === 'failed')
+  identity.integrity = 'reviewed-upgrade'; workflow.integrity = identity.integrity
+  await assert.rejects(ctx.tasks.retry(first.id, 1), { code: 'WORKFLOW_VERSION_UNAVAILABLE' })
+  workflow.compatibleIntegrities = ['test-fixed']
+  await assert.rejects(ctx.tasks.retry(first.id, 1), { code: 'PLUGIN_VERSION_UNAVAILABLE' })
+  Object.assign(identity, { compatibleIntegrities: ['test-fixed'] })
+  await ctx.tasks.retry(first.id, 1)
+  await until(first.id, state => state.status === 'failed')
+  const saved = await ctx.tasks.record(first.id)
+  assert.equal(saved.attempt, 2)
+  assert.equal(saved.plan.workflow.integrity, 'test-fixed')
+  assert.equal(saved.plan.bindings.main.integrity, 'test-fixed')
+})
+
+test('producer semantic validation fails the producing node before any result becomes completed', async t => {
+  const { ctx, create, until } = await setup(t, 'json')
+  const dispose = ctx.catalog.registerOutputValidator('document/v1', () => { throw new AppError('INVALID_PROVIDER_RESULT', 'semantic result mismatch', 500) })
+  t.after(dispose)
+  const task = await create('semantic-error')
+  const failed = await until(task.id, state => state.status === 'failed')
+  assert.equal(failed.steps[0].status, 'failed')
+  assert.deepEqual(failed.steps[0].outputs, {})
+  assert.match(failed.error.message, /process.document: semantic result mismatch/)
+  assert.equal(failed.error.field, 'document')
+  assert.equal(failed.error.nodeId, 'process')
+})
+
+test('worker diagnostics survive persistence and appear in the task log', async t => {
+  const { ctx, create, until } = await setup(t)
+  const task = await create('worker-error')
+  const failed = await until(task.id, state => state.status === 'failed')
+  assert.equal(failed.error.code, 'MODEL_INCOMPATIBLE')
+  assert.equal(failed.error.field, 'translation.model')
+  assert.equal(failed.error.stage, 'translate')
+  assert.equal(failed.error.action, 'adjust_settings')
+  assert.deepEqual(failed.error.details.details, { requested: 65535 })
+  assert.match(await readFile(join(ctx.files.taskRoot(task.id), 'task.log'), 'utf8'), /original_provider.py:42/)
 })

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { resolve, join } from 'node:path'
-import { run, runNpm, nodeVersion, assembleRuntime, bundleNode } from './desktop-runtime.mjs'
+import { run, runNpm, nodeVersion, nodeChecksumFilename, assembleRuntime, bundleNode } from './desktop-runtime.mjs'
 import { appVersion, validateReleaseVersion } from './release-version.mjs'
 
 if (process.platform !== 'darwin' || process.arch !== 'arm64') throw new Error('This build targets macOS arm64 and must run on Apple Silicon.')
@@ -14,19 +14,20 @@ const version = nodeVersion
 const cache = join(root, '.cache/mac')
 const archive = `node-v${version}-darwin-arm64.tar.gz`
 await mkdir(cache, { recursive: true })
-for (const file of [archive, 'SHASUMS256.txt']) {
-  try { await access(join(cache, file)) }
+const checksumFile = nodeChecksumFilename(version)
+for (const [file, cached] of [[archive, archive], ['SHASUMS256.txt', checksumFile]]) {
+  try { await access(join(cache, cached)) }
   catch (error) {
     if (error.code !== 'ENOENT') throw error
-    run('curl', ['-fL', '--connect-timeout', '20', '-o', join(cache, file), `https://nodejs.org/dist/v${version}/${file}`])
+    run('curl', ['-fL', '--connect-timeout', '20', '-o', join(cache, cached), `https://nodejs.org/dist/v${version}/${file}`])
   }
 }
-const expected = (await readFile(join(cache, 'SHASUMS256.txt'), 'utf8')).split('\n').find(line => line.endsWith(`  ${archive}`))?.split(' ')[0]
+const expected = (await readFile(join(cache, checksumFile), 'utf8')).split('\n').find(line => line.endsWith(`  ${archive}`))?.split(' ')[0]
 const actual = createHash('sha256').update(await readFile(join(cache, archive))).digest('hex')
 if (!expected || expected !== actual) throw new Error('Bundled Node archive SHA-256 mismatch.')
 run('tar', ['-xzf', join(cache, archive), '-C', cache])
 if (!process.argv.includes('--reuse-web')) {
-  runNpm(['--prefix', 'apps/web', 'run', 'build', '--', '--webpack'], { env: { ...process.env, YOUDUB_DESKTOP_BUILD: '1' } })
+  runNpm(['--prefix', 'apps/web', 'run', 'build'])
 }
 const app = join(root, 'dist/YouDub.app')
 await rm(app, { recursive: true, force: true })

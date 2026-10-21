@@ -10,6 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .audio_segments import SpeechClip, SpeechClips
+from .audio import audio_info
 from .errors import ApiError
 from .segments import LANGUAGES, Segment, Transcript, read_transcript, read_translation
 from .steps import Completed, StageContext
@@ -66,31 +67,13 @@ def _word_reference(segment: Segment) -> Segment:
                    text="".join(word[2] for word in best))
 
 
-def _audio_info(path: Path):
-    if not path.is_file() or path.stat().st_size == 0:
-        raise ApiError(500, "STAGE_OUTPUT_MISSING", "A speech audio file is missing or empty.", stage="tts")
-    try:
-        import soundfile as sf
-    except ImportError as exc:
-        raise ApiError(503, "MODEL_NOT_READY", "Install soundfile in the backend environment.", stage="tts") from exc
-    try:
-        info = sf.info(str(path))
-        if info.format not in {"WAV", "WAVEX"} or info.frames <= 0 or info.samplerate <= 0 or info.channels not in {1, 2}:
-            raise ValueError(f"Invalid WAV metadata: format={info.format}, frames={info.frames}, "
-                             f"sample_rate={info.samplerate}, channels={info.channels}")
-    except (OSError, RuntimeError, ValueError) as exc:
-        raise ApiError(502, "INVALID_PROVIDER_RESULT", f"Speech audio {path.name} is not valid WAV audio: {exc}",
-                       stage="tts", action="retry") from exc
-    return info
-
-
 def prepare_reference_audio(context: StageContext, transcript: Transcript, progress: Callable) -> dict:
     """Prepare cloning inputs independently of a speech model invocation."""
     from ..config import ffmpeg_binary
     from .media import _run_media
 
     vocals = context.input_files["vocals"]
-    source_info = _audio_info(vocals)
+    source_info = audio_info(vocals, stage=context.stage)
     source_duration_ms = round(source_info.frames * 1000 / source_info.samplerate)
     if any(segment.end_ms > source_duration_ms for segment in transcript.segments):
         raise ApiError(422, "INVALID_MEDIA", "A source utterance lies outside the separated vocals.", stage="tts")
@@ -118,7 +101,7 @@ def prepare_reference_audio(context: StageContext, transcript: Transcript, progr
             raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffmpeg is unavailable.", stage="tts") from exc
         if result.returncode != 0:
             raise ApiError(422, "INVALID_MEDIA", "The source utterance reference could not be extracted.", stage="tts")
-        info = _audio_info(path)
+        info = audio_info(path, stage=context.stage)
         if round(info.frames * 1000 / info.samplerate) != duration_ms:
             raise ApiError(422, "INVALID_MEDIA", "The source reference does not cover the selected utterance interval.", stage="tts")
         prepared[reference.id] = {"path": path, "text": reference.text}
@@ -186,7 +169,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
     for clip in clips:
         context.check_cancel()
         path = Path(clip["output_path"])
-        info = _audio_info(path)
+        info = audio_info(path, stage=context.stage)
         duration_ms = round(info.frames * 1000 / info.samplerate)
         if duration_ms <= 0:
             raise ApiError(502, "INVALID_PROVIDER_RESULT", "A generated speech clip has no measurable duration.", stage="tts")

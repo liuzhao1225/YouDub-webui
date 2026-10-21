@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SetupState } from '@/components/setup-screen'
 import { redactDiagnostics, setupIssue, setupReport } from './setup-diagnostics'
+import { resourceSetupState } from '@/runtime/setup-contracts'
 
 const state: SetupState = {
   version: '0.0.6', platform: 'win32', arch: 'x64', osVersion: '10.0.26100', phase: 'failed', token: 'private-setup-token', canRetry: true,
@@ -10,6 +11,18 @@ const state: SetupState = {
 }
 
 describe('setup diagnostic reports', () => {
+  it('includes selected resource failures in the same complete report and keeps errors last', () => {
+    const resources = { status: 'failed' as const, selections: [{ providerId: 'whisper', model: 'tiny' }], requirements: [],
+      environment: state.environment, models: state.models, error: 'resource preparation failed\nlast cause' }
+    const report = setupReport({ ...state, phase: 'ready', error: undefined, environment: [], models: [], resources })
+    expect(report).toContain('阶段: 准备失败')
+    expect(report).toContain('Qwen3 Aligner')
+    expect(report).toContain('last cause')
+    expect(report.indexOf(resources.error)).toBeGreaterThan(report.indexOf('错误日志:'))
+    const projected = resourceSetupState({ ...state, version: '0.0.7', osVersion: '25', homeDir: '/home/example', items: [], resources })
+    expect(setupReport(projected)).toContain('last cause')
+    expect(projected.environment).toEqual(resources.environment)
+  })
   it('includes version, platform, environment and model failures without copying the setup token', () => {
     const report = setupReport(state)
     for (const text of ['0.0.6', 'win32 x64 / 10.0.26100', '运行依赖', '阿里 PyPI', state.error!, 'No matching distribution', 'Qwen3 Aligner', '12/100 bytes', 'HTTP 503']) expect(report).toContain(text)

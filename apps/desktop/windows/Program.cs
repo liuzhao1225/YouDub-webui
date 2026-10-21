@@ -30,6 +30,7 @@ internal sealed class DesktopWindow : Form
     private readonly string data;
     private readonly string report;
     private readonly bool hold;
+    private readonly bool readySmoke;
     private readonly object logLock = new object();
     private readonly TaskCompletionSource<string> ready = new TaskCompletionSource<string>();
     private FileStream instanceLock;
@@ -42,10 +43,11 @@ internal sealed class DesktopWindow : Form
     public DesktopWindow(string[] args)
     {
         data = Path.GetFullPath(Environment.GetEnvironmentVariable("YOUDUB_DESKTOP_DATA_DIR") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "YouDub"));
-        if (args.Length == 2 && (args[0] == "--smoke-test" || args[0] == "--smoke-hold"))
+        if (args.Length == 2 && (args[0] == "--smoke-test" || args[0] == "--smoke-hold" || args[0] == "--smoke-ready"))
         {
             report = Path.GetFullPath(args[1]);
             hold = args[0] == "--smoke-hold";
+            readySmoke = args[0] == "--smoke-ready";
             ShowInTaskbar = false;
             Opacity = 0;
         }
@@ -150,7 +152,6 @@ internal sealed class DesktopWindow : Form
             };
             start.EnvironmentVariables["YOUDUB_DESKTOP_DATA_DIR"] = data;
             start.EnvironmentVariables["NODE_ENV"] = "production";
-            start.EnvironmentVariables["NEXT_TELEMETRY_DISABLED"] = "1";
             start.EnvironmentVariables.Remove("NODE_OPTIONS");
             // Some GUI launch environments omit System32 (tar, where, etc.).
             start.EnvironmentVariables["PATH"] = resources + ";" + Environment.SystemDirectory + ";" + start.EnvironmentVariables["PATH"];
@@ -213,16 +214,23 @@ internal sealed class DesktopWindow : Form
 
     private async Task SmokeAsync()
     {
+        if (readySmoke) { await ReadySmokeAsync(); return; }
         string[] routes = { "/", "/favicon.ico", "/icon.svg", "/tasks", "/settings", "/api/setup", "/plugin-platform/1/react.mjs", "/examples/index.html", "/examples/player.js", "/examples/demos.js" };
         using (var client = new HttpClient(new HttpClientHandler { UseProxy = false }))
         {
             client.Timeout = TimeSpan.FromSeconds(15);
             foreach (string path in routes)
             {
-                using (var response = await client.GetAsync(new Uri(origin, path)))
+                using (var request = new HttpRequestMessage(HttpMethod.Get, new Uri(origin, path)))
                 {
-                    response.EnsureSuccessStatusCode();
-                    await response.Content.ReadAsByteArrayAsync();
+                    if (path == "/" || path == "/tasks" || path == "/settings" || path == "/examples/index.html")
+                        request.Headers.Accept.ParseAdd("text/html");
+                    using (var response = await client.SendAsync(request))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                            throw new Exception("内置页面或资源请求失败：" + path + "（HTTP " + (int)response.StatusCode + "）。");
+                        await response.Content.ReadAsByteArrayAsync();
+                    }
                 }
             }
         }
@@ -260,6 +268,28 @@ internal sealed class DesktopWindow : Form
         using (var png = File.Create(report + ".png")) await browser.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, png);
         WriteReport(new { ok = true, url = origin.ToString(), serverPid = server.Id, browserPid = browser.CoreWebView2.BrowserProcessId, webview2 = browser.CoreWebView2.Environment.BrowserVersionString, routes = routes, rendered = new[] { "/", "/tasks", "/settings", "/examples/index.html" } });
         if (!hold) Close();
+    }
+
+    private async Task ReadySmokeAsync()
+    {
+        var script = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "resources", "runtime", "apps", "desktop", "ready-smoke.js"));
+        await browser.ExecuteScriptAsync(script);
+        var serializer = new JavaScriptSerializer();
+        for (int attempt = 0; attempt < 1800; attempt++)
+        {
+            string value = await browser.ExecuteScriptAsync("JSON.stringify(window.__youdubReadySmoke || null)");
+            var json = serializer.Deserialize<string>(value);
+            var result = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(json);
+            if (result != null && (string)result["state"] == "failed") throw new Exception((string)result["error"]);
+            if (result != null && (string)result["state"] == "completed")
+            {
+                WriteReport(new { ok = true, url = origin.ToString(), serverPid = server.Id, browserPid = browser.CoreWebView2.BrowserProcessId, ready = result });
+                Close();
+                return;
+            }
+            await Task.Delay(100);
+        }
+        throw new TimeoutException("准备完成后的插件页面验收超时。");
     }
 
     private void WriteReport(object value)

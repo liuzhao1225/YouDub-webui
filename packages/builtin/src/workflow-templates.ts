@@ -7,14 +7,16 @@ export function workflowTemplates(catalog: CatalogService, settings: JsonObject)
   const build = (source: unknown, id: string, title: string): WorkflowDocument => {
     const document = structuredClone(source) as WorkflowDocument
     document.id = id; document.title = title
-    const defaults = settings.defaults ?? {}
     for (const node of document.nodes) {
+      if (node.type === 'youdub.translate' && node.provider.id === 'openai') {
+        const selected = catalog.listProviders().find(provider => provider.capability === 'translation' && !provider.legacy && provider.available && provider.id.startsWith('llm.'))
+        if (selected) node.provider = { id: selected.id, device: 'remote' }
+      }
       const provider = catalog.listProviders().find(provider => provider.id === node.provider.id)
-      const selection = defaults[provider?.capability ?? '']
-      if (selection && provider && selection.adapter === (provider.adapter ?? provider.id)) node.provider = { id: node.provider.id, model: selection.model, device: selection.device }
-      else if (provider?.models?.length && !provider.models.some(model => model.id === node.provider.model)) node.provider = { id: node.provider.id, model: provider.models[0].id, device: provider.models[0].devices?.[0] }
-      if ('sourceLanguage' in node.config) node.config.sourceLanguage = defaults.source_language ?? 'auto'
-      if ('targetLanguage' in node.config) node.config.targetLanguage = defaults.target_language ?? 'zh'
+      if (node.provider.model) continue
+      const connection = (settings.connections ?? []).find((item: JsonObject) => item.adapter === (provider?.adapter ?? provider?.id))
+      const model = connection?.model ?? provider?.models?.find(item => item.available !== false)?.id
+      if (model) node.provider = { ...node.provider, model, device: node.provider.device ?? provider?.models?.find(item => item.id === model)?.devices?.[0] ?? (provider?.execution === 'remote' ? 'remote' : undefined) }
     }
     return document
   }

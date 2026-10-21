@@ -17,7 +17,7 @@
       "type": "youdub.transcribe",
       "typeVersion": "1.0.0",
       "provider": { "id": "whisper", "model": "tiny", "device": "cpu" },
-      "config": { "sourceLanguage": "en" },
+      "config": { "sourceLanguage": "auto" },
       "autoContinue": false
     },
     {
@@ -26,7 +26,7 @@
       "typeVersion": "1.0.0",
       "provider": { "id": "openai" },
       "config": {
-        "sourceLanguage": "en",
+        "sourceLanguage": "auto",
         "targetLanguage": "zh",
         "maxCompletionTokens": 65535
       },
@@ -38,7 +38,7 @@
       "typeVersion": "1.0.0",
       "provider": { "id": "youdub.media" },
       "config": {
-        "sourceLanguage": "en",
+        "sourceLanguage": "auto",
         "targetLanguage": "zh",
         "renderSubtitles": true
       },

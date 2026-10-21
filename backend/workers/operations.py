@@ -52,8 +52,8 @@ class Operation:
         return {"$artifact": key}
 
     def audio(self, key: str, path: Path):
-        from backend.app.v1.tts import _audio_info
-        info = _audio_info(path)
+        from backend.app.v1.audio import audio_info
+        info = audio_info(path, stage=self.request["operation"])
         metadata = {"sampleRate": info.samplerate, "channels": info.channels, "sampleCount": info.frames}
         return self.artifact(key, path, "audio/wav/v1", "audio/wav", metadata), metadata
 
@@ -74,17 +74,29 @@ class Operation:
             if name == "tts":
                 values["voice"] = SimpleNamespace(**self.option("voice", default=values.get("voice") or {"mode": "source_clone"}))
             return SimpleNamespace(**values)
-        config = SimpleNamespace(
-            source_language=self.option("sourceLanguage", "source_language", "auto"),
-            target_language=self.option("targetLanguage", "target_language", "zh"),
-            output_mode=self.option("outputMode", "output_mode", "both"),
-            keep_background=self.option("keepBackground", "keep_background", False),
-            max_completion_tokens=self.option("maxCompletionTokens", "max_completion_tokens", 65535),
-            record_raw=True,
-            asr=selection("asr", "whisper"), translation=selection("translation", "openai"),
-            tts=selection("tts", "voxcpm"), separation=selection("separation", "demucs"),
-            subtitle_alignment=selection("subtitle_alignment", "qwen_forced_aligner") if stage == "align" else None,
-        )
+        # Build only this operation's parameters. Historical task aliases remain
+        # accepted by option(); unrelated model selections never enter the stage.
+        fields = {
+            "asr": lambda: {"source_language": self.option("sourceLanguage", "source_language", "auto"),
+                    "asr": selection("asr", "whisper")},
+            "translate": lambda: {"target_language": self.option("targetLanguage", "target_language", "zh"),
+                          "max_completion_tokens": self.option("maxCompletionTokens", "max_completion_tokens", 65535),
+                          "record_raw": True, "translation": selection("translation", "openai")},
+            "tts": lambda: {"target_language": self.option("targetLanguage", "target_language", "zh"),
+                    "tts": selection("tts", "voxcpm")},
+            "separate": lambda: {"separation": selection("separation", "demucs")},
+            "mix": lambda: {"keep_background": self.option("keepBackground", "keep_background", False),
+                    "output_mode": self.option("outputMode", "output_mode", "both")},
+            "align": lambda: {"target_language": self.option("targetLanguage", "target_language", "zh"),
+                      "output_mode": self.option("outputMode", "output_mode", "both"),
+                      "subtitle_alignment": selection("subtitle_alignment", "qwen_forced_aligner")},
+            "export": lambda: {"target_language": self.option("targetLanguage", "target_language", "zh"),
+                       "output_mode": self.option("outputMode", "output_mode", "both")},
+            "reference": lambda: {},
+        }
+        if stage not in fields:
+            raise WorkerError("INVALID_OPERATION", f"No parameter contract for {stage}.")
+        config = SimpleNamespace(**fields[stage]())
         return StageContext(task_id=self.request["taskId"], attempt=self.request["attempt"], stage=stage,
                             config=config, input_files=files, work_dir=self.work,
                             connections=self.request.get("credentials", {}), check_cancel=self.wire.check_cancel,
@@ -114,7 +126,7 @@ class Operation:
     def prepare(self):
         from backend.app.config import ffmpeg_binary
         from backend.app.v1 import media
-        from backend.app.v1.runtime import RUNTIME_LIMITS
+        from backend.app.v1.runtime_limits import RUNTIME_LIMITS
         source = self.path(self.inputs["video"])
         info = media.inspect_video(source, RUNTIME_LIMITS, self.wire.check_cancel)
         audio = self.work / "source.wav"

@@ -34,7 +34,7 @@ export class ModuleLoader extends Service implements ClientModules {
   }
   async mount(entries: ClientModule[], label: string): Promise<Fiber> {
     const modules = await Promise.all(entries.map(async (entry) => ({
-      entry, plugin: await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ entry.url) as Plugin,
+      entry, plugin: await import(/* @vite-ignore */ entry.url) as Plugin,
     })))
     if (this.disposed) throw new Error('Client application was disposed during module loading')
     const group = this.ctx.plugin({ name: label, async apply(ctx: Context) {

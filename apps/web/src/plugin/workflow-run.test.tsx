@@ -5,9 +5,13 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
 import { PluginContextProvider, requireActive, type NodeTypeDefinition, type WorkflowDocument } from './sdk'
-import { WorkflowRun } from './builtin/workflow-run'
-import { WorkflowRerun } from './builtin/workflow-rerun'
-import { useWorkflowResources, WorkflowResources, type ResourceState } from './builtin/workflow-resources'
+import { WorkflowRun as WorkflowRunView } from './builtin/workflow-run'
+import { WorkflowRerun as WorkflowRerunView } from './builtin/workflow-rerun'
+import { WorkflowResources, type ResourceState } from './builtin/workflow-resources'
+import { bindTestComponent } from './test-bindings'
+import type { Bindings } from './sdk'
+const WorkflowRun = bindTestComponent(WorkflowRunView, ['request', 'navigate', 'useSlot', 'useWorkflowResources'])
+const WorkflowRerun = bindTestComponent(WorkflowRerunView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowResources'])
 import { HttpError } from './builtin/api'
 import { WorkflowDiagnostics } from './builtin/workflow-errors'
 import * as apiPlugin from './builtin/api'
@@ -35,17 +39,76 @@ const ready: ResourceState = { status: 'ready', requirements: [{ providerId: 'te
 const missing: ResourceState = { status: 'missing', requirements: [{ providerId: 'test', model: 'tiny', ready: false, automatic: true, reason: '模型文件尚未安装。' }] }
 const base = '/api/v2/workflow-documents/resources/'
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.useRealTimers(); vi.unstubAllGlobals() })
+
+it('keeps workbench resource requirements collapsed and preserves visible failure causes', () => {
+  const state: ResourceState = { ...missing, status: 'failed', error: 'Download denied', environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }] }
+  render(<LanguageProvider><WorkflowResources resources={{ result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }} types={types} hideReady /></LanguageProvider>)
+  expect(screen.getByText('Download denied')).toBeVisible()
+  expect(screen.getByRole('button', { name: '重试准备' })).toBeVisible()
+  expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
+  expect(screen.getByText(/Python 3.12/).closest('details')).not.toHaveAttribute('open')
+})
+
+it('rejects an unsupported dropped file with a visible error', async () => {
+  mount(<WorkflowRun document={graph()} types={types} />, vi.fn(async () => ready))
+  await screen.findByText('资源已就绪')
+  const input = screen.getByLabelText('视频 *')
+  fireEvent.drop(input.parentElement!, { dataTransfer: { files: [new File(['no'], 'notes.txt', { type: 'text/plain' })] } })
+  expect(screen.getByText('notes.txt 的文件类型不支持。')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '开始运行' })).toBeDisabled()
+})
+
+it('keeps the original link-above-upload layout and submits URL input through a download node', async () => {
+  const withDownload: NodeTypeDefinition[] = [...types, { type: 'youdub.download', version: '1', providerId: 'media', operation: 'download', provider: { id: 'media', operations: [] }, label: '下载', category: 'input', inputs: [], outputs: [{ name: 'video', kind: 'artifact', schemaId: 'video/mp4/v1', required: true }], configSchema: {}, defaults: {} }]
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.includes('/validate')) return { valid: true, diagnostics: [] }
+    if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
+    return ready
+  })
+  const { push } = mount(<WorkflowRun prominent document={graph()} types={withDownload} />, request)
+  const user = userEvent.setup()
+  const link = screen.getByLabelText('视频链接'), upload = screen.getByLabelText('视频 *')
+  expect(link.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(screen.getByText('或上传本地视频')).toBeInTheDocument()
+  expect(link).toHaveClass('h-12')
+  expect(upload.parentElement).toHaveClass('min-h-[132px]', 'py-6')
+  await user.upload(upload, new File(['local'], 'local.mp4', { type: 'video/mp4' }))
+  fireEvent.change(link, { target: { value: 'https://youtu.be/abcdefghijk' } })
+  expect(screen.queryByText('local.mp4')).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('button', { name: '下载并处理' })).toBeEnabled())
+  await user.click(screen.getByRole('button', { name: '下载并处理' }))
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/created'))
+  const body = request.mock.calls.find(([path]) => path === '/api/v2/tasks')![1]!.body as FormData
+  const submitted = JSON.parse(String(body.get('request')))
+  expect(body.has('input.source')).toBe(false)
+  expect(submitted.graphDocument.inputs).toEqual([])
+  expect(submitted.graphDocument.nodes[0].type).toBe('youdub.download')
+  expect(submitted.nodeRuntimeInputs['source-download'].url).toBe('https://www.youtube.com/watch?v=abcdefghijk')
+  expect(submitted.config).toEqual({})
+  expect(JSON.stringify(submitted.graphDocument)).not.toContain('youtube.com')
+})
 function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
   const push = vi.fn()
-  const context = { apiClient: { request }, navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] } } as unknown as Context
+  const context = { effect: (effect: () => unknown) => effect(), apiClient: { request }, navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] } } as unknown as Context
   const wrap = (child: ReactNode) => <PluginContextProvider context={context}><LanguageProvider>{child}</LanguageProvider></PluginContextProvider>
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
 }
-function Resources({ document = graph() }: { document?: WorkflowDocument }) {
+function ResourceView({ document = graph(), useWorkflowResources }: { document?: WorkflowDocument } & Bindings<'useWorkflowResources'>) {
   const resources = useWorkflowResources(document)
   return <><WorkflowResources resources={resources} types={types} /><button disabled={!resources.ready}>继续</button></>
 }
+const Resources = bindTestComponent(ResourceView, ['useWorkflowResources'])
+it('shows connection configuration separately from language support and blocks starting', async () => {
+  const request = vi.fn(async () => ({ status: 'missing', requirements: [{ providerId: 'test', ready: false, automatic: false, configurationRequired: true, reason: 'Provider connection is not configured.' }] }))
+  const { push } = mount(<Resources />, request)
+  await screen.findByText('语音识别未配置')
+  expect(screen.getByText('请配置服务地址、API Key 和模型。')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
+  expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
+  await userEvent.setup().click(screen.getByRole('link', { name: '配置服务连接' }))
+  expect(push).toHaveBeenCalledWith('/settings/models')
+})
 it('checks automatically and leaves only the ready state when no download is needed', async () => {
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<ResourceState>>(async () => ready)
   mount(<Resources />, request)
@@ -282,7 +345,7 @@ it('leads with node names and actions for configuration errors while keeping ori
   ]
   mount(<WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} onSelect={onSelect} />, vi.fn())
   expect(screen.getByText('识别字幕: 请在设置中填写服务地址和 API Key。')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings')
+  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/models')
   expect(screen.getByText('成片导出: 请为此节点选择模型和运行设备。')).toBeInTheDocument()
   expect(screen.getByText('Select a model and device.').closest('details')).not.toHaveAttribute('open')
   expect(screen.getByText('Provider connection is not configured.').closest('details')).not.toHaveAttribute('open')

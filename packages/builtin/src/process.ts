@@ -117,6 +117,19 @@ export default class Processes extends Service implements ProcessService {
     }
     const fail = (error: Error) => { failure ??= error; void child.stop().catch(error => { failure = new AggregateError([failure, error]) }) }
     child.child.stdin.on('error', fail)
+    let stderrBuffer = '', stderrWrites = Promise.resolve()
+    const logLine = (line: string) => {
+      stderrWrites = stderrWrites.then(() => context.log!(line)).catch(fail)
+    }
+    if (context.log) child.child.stderr.on('data', (chunk: string) => {
+      // Keep complete lines so credentials split between stream chunks are
+      // redacted together by the task owner. The bounded tail stays on errors.
+      stderrBuffer += chunk
+      let end: number
+      while ((end = stderrBuffer.indexOf('\n')) >= 0) {
+        logLine(stderrBuffer.slice(0, end)); stderrBuffer = stderrBuffer.slice(end + 1)
+      }
+    })
     const flush = lines(child, async message => {
       if (message.version !== WORKER_PROTOCOL || message.invocationId !== invocation.invocationId || message.seq !== ++outputSeq) throw new AppError('PROTOCOL_ERROR', 'Worker version, invocation or sequence mismatch.', 500)
       const payload = message.payload
@@ -126,7 +139,7 @@ export default class Processes extends Service implements ProcessService {
         case 'external.prepare': await context.externalPrepare(payload); send('external.accepted', { externalRequestId: payload.externalRequestId }); break
         case 'external.update': await context.externalUpdate(payload); send('external.recorded', { externalRequestId: payload.externalRequestId }); break
         case 'result': result = payload; break
-        case 'error': throw new AppError(payload.code ?? 'WORKER_ERROR', payload.message ?? 'Worker failed.', 500, payload)
+        case 'error': throw new AppError(payload.code ?? 'WORKER_ERROR', payload.message ?? 'Worker failed.', Number.isInteger(payload.status) && payload.status >= 400 && payload.status <= 599 ? payload.status : 500, payload)
         default: throw new AppError('PROTOCOL_ERROR', `Unknown worker message: ${message.type}`, 500)
       }
     }, fail)
@@ -146,6 +159,8 @@ export default class Processes extends Service implements ProcessService {
     try {
       send('execute', { ...invocation, inputs: await resolveInputs(invocation.inputs), options: invocation.binding.options, credentials: context.credentials })
       const exit = await child.done
+      if (context.log && stderrBuffer) logLine(stderrBuffer)
+      await stderrWrites
       await flush()
       if (failure) throw failure
       context.signal.throwIfAborted()
@@ -167,6 +182,11 @@ export default class Processes extends Service implements ProcessService {
         return value
       }
       return { state: 'completed', outputs: resolveOutput(result.outputs) }
+    } catch (error) {
+      // Structured worker errors travel over stdout; their Python traceback is
+      // on stderr. Preserve both before the owned process is disposed.
+      if (error instanceof Error && child.stderr && !context.log) error.stack = `${error.stack ?? error.message}\nWorker stderr:\n${child.stderr}`
+      throw error
     } finally {
       context.signal.removeEventListener('abort', abort)
       // Check the owned process group even if a third-party worker exited

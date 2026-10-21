@@ -12,6 +12,26 @@ import Processes from '../src/process.js'
 import * as PythonProvider from '../src/python-provider.js'
 import { startHost } from '../../../apps/host/src/bootstrap.js'
 
+test('Python correction validation is opt-in and supports non-media output schemas', async t => {
+  const ctx = new Context()
+  const support = await ctx.plugin({ apply(scope) { scope.reflect.provide('process', {}) } })
+  const catalog = await ctx.plugin(Catalog)
+  const config: PythonProvider.PythonProviderConfig = {
+    descriptor: { id: 'example.dictionary', label: 'Dictionary', pluginId: 'example.dictionary', pluginVersion: '1.0.0', integrity: 'test', operations: [{ id: 'lookup/v1', inputSchema: {}, outputs: [{ name: 'entry', schemaId: 'dictionary/v1', kind: 'json', required: true }] }] },
+    command: 'python3', args: ['unused.py'], cwd: process.cwd(),
+  }
+  let plugin = await ctx.plugin(PythonProvider, config)
+  t.after(async () => { await plugin.dispose(); await catalog.dispose(); await support.dispose() })
+  assert.equal(ctx.catalog.provider(config.descriptor.id).validateCorrection, undefined)
+  await plugin.dispose()
+  plugin = await ctx.plugin(PythonProvider, { ...config, corrections: 'schema' })
+  const baselineOutputs = { entry: { meaning: 'before' }, source: 'dictionary' }, patch = { entry: { meaning: 'after' } }
+  const corrected = await ctx.catalog.provider(config.descriptor.id).validateCorrection!({ operation: 'lookup/v1', inputs: {}, baselineOutputs, patch })
+  assert.deepEqual(corrected, { entry: { meaning: 'after' }, source: 'dictionary' })
+  assert.deepEqual(baselineOutputs.entry, { meaning: 'before' })
+  assert.notEqual(corrected.entry, patch.entry, 'corrections do not retain mutable request references')
+})
+
 test('independent local package installs, activates after restart, converts a real file, and unregisters', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-extension-'))
   const ctx = new Context()

@@ -10,6 +10,7 @@ import Http from '../src/http.js'
 import Setup from '../src/setup.js'
 import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
+import { builtinResources } from '../src/runtime-resources.js'
 import { runtimePaths } from '../../../apps/host/src/paths.js'
 
 function probeResult(action: string) {
@@ -220,7 +221,7 @@ test('base setup opens the workbench before optional packages/models and prepare
       }
       return { stderr: '', stdout: args.includes('-filters') ? ' ... subtitles ... ' : '3.12.12\n' }
     } })
-    owner.reflect.provide('catalog', { provider: (id: string) => ({ probe: async () => { refreshed.push(id); return { available: true } } }) })
+    owner.reflect.provide('catalog', { listProviders: () => ['youdub.media', 'whisper', 'openai'].map(id => ({ id, resources: builtinResources(id), available: true, models: id === 'whisper' && modelReady ? [{ id: 'tiny' }] : [] })), provider: (id: string) => ({ probe: async () => { refreshed.push(id); return { available: true } } }) })
     owner.reflect.provide('loader', { create: async (entry: any) => { created.push(entry.id) }, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
     await owner.plugin(Setup, { root, repoRoot: resolve('.'), python, version: '0.0.6', entries: [{ id: 'runtime', name: 'runtime' }] })
@@ -273,6 +274,98 @@ test('base setup opens the workbench before optional packages/models and prepare
   assert.equal(started.length, 2, 'a missing non-default model must not silently download tiny')
 })
 
+test('installed remote dependencies do not make an unconfigured service ready', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-remote-configuration-'))
+  const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
+  let configured = false
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(this: EnvironmentSetup) { this.steps = [] })
+  t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ missing: [], media: true, punkt: true, demucsSource: true }))
+  const ctx = new Context()
+  const app = await ctx.plugin(async function remoteConfiguration(owner) {
+    owner.reflect.provide('process', { run: async () => { throw new Error('Checking configuration must not execute a model') } })
+    owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
+    owner.reflect.provide('catalog', {
+      provider: () => ({ probe: async () => ({}) }),
+      listProviders: () => [{ id: 'openai', resources: builtinResources('openai'), execution: 'remote', available: configured, unavailableReason: configured ? undefined : 'Provider connection is not configured.', models: configured ? [{ id: 'qwen-test' }] : [] }],
+    })
+    await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
+    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
+  })
+  t.after(async () => {
+    await app.dispose(); await rm(root, { recursive: true })
+    if (previous === undefined) delete process.env.YOUDUB_DESKTOP_DATA_DIR
+    else process.env.YOUDUB_DESKTOP_DATA_DIR = previous
+  })
+  ctx.emit('app/ready')
+  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
+  const missing = await ctx.setup.checkResources([{ providerId: 'openai' }])
+  assert.equal(missing.status, 'missing')
+  assert.equal(missing.requirements[0]?.automatic, false)
+  assert.equal(missing.requirements[0]?.configurationRequired, true)
+  assert.equal(missing.requirements[0]?.reason, 'Provider connection is not configured.')
+  await assert.rejects(ctx.setup.prepareResources([{ providerId: 'openai' }]), { code: 'MANUAL_RESOURCE_REQUIRED' })
+  configured = true
+  assert.equal((await ctx.setup.checkResources([{ providerId: 'openai' }])).status, 'missing')
+  assert.equal((await ctx.setup.checkResources([{ providerId: 'openai', model: 'unknown' }])).status, 'missing')
+  assert.equal((await ctx.setup.checkResources([{ providerId: 'openai', model: 'qwen-test' }])).status, 'ready')
+})
+
+test('configuration checks and explicit retries persist recovery after dependency preparation', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-resource-configuration-recovery-'))
+  const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
+  let installed = false, configured = false, installations = 0
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(this: EnvironmentSetup, groups: string[] = ['base']) {
+    this.steps = []
+    if (groups.includes('openai')) { installed = true; installations++ }
+  })
+  t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ missing: installed ? [] : ['openai'], media: true, punkt: true, demucsSource: true }))
+  const ctx = new Context(), errors: unknown[] = []
+  const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
+  const app = await ctx.plugin(async function configurationRecovery(owner) {
+    owner.reflect.provide('process', { run: async () => { throw new Error('Configuration checks must not execute a model') } })
+    owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
+    owner.reflect.provide('catalog', {
+      provider: () => ({ probe: async () => ({}) }),
+      listProviders: () => [{ id: 'openai', resources: builtinResources('openai'), execution: 'remote', available: installed && configured, unavailableReason: installed ? configured ? undefined : 'Provider connection is not configured.' : 'OpenAI SDK is missing.', models: installed && configured ? [{ id: 'qwen-test' }] : [] }],
+    })
+    await owner.plugin(Http, { host: '127.0.0.1', port: 0 })
+    await owner.plugin(Setup, { root, repoRoot: resolve('.'), python: '/unused/python', version: '0.0.7', entries: [] })
+  })
+  t.after(async () => {
+    await app.dispose(); await logging(); await rm(root, { recursive: true })
+    if (previous === undefined) delete process.env.YOUDUB_DESKTOP_DATA_DIR
+    else process.env.YOUDUB_DESKTOP_DATA_DIR = previous
+  })
+  ctx.emit('app/ready')
+  await waitFor(() => ctx.setup.snapshot().phase === 'ready')
+  const selections = [{ providerId: 'openai', model: 'qwen-test' }]
+  const original = 'openai: Provider connection is not configured.'
+  for (const action of ['check', 'prepare'] as const) {
+    installed = false; configured = false
+    const before = installations
+    assert.equal((await ctx.setup.checkResources(selections)).requirements[0]?.automatic, true)
+    await ctx.setup.prepareResources(selections)
+    await waitFor(() => ctx.setup.snapshot().resources?.status === 'failed')
+    const failed = ctx.setup.snapshot().resources!
+    assert.equal(failed.error, original)
+    assert.equal(failed.requirements[0]?.configurationRequired, true)
+    assert.equal(failed.requirements[0]?.automatic, false)
+    assert.deepEqual(failed.requirements[0]?.missingPackages, [])
+    assert.equal(failed.requirements[0]?.reason, 'Provider connection is not configured.')
+    assert.equal((await ctx.setup.checkResources(selections)).error, original)
+    assert.equal(ctx.setup.snapshot().resources?.status, 'failed')
+    assert.equal(installations, before + 1, 'checking the failed configuration must not reinstall dependencies')
+    configured = true
+    const recovered = action === 'check' ? await ctx.setup.checkResources(selections) : await ctx.setup.prepareResources(selections)
+    assert.equal(recovered.status, 'ready')
+    assert.equal(ctx.setup.snapshot().resources?.status, 'ready')
+    assert.equal(ctx.setup.snapshot().resources?.error, undefined)
+    assert.equal((await ctx.setup.checkResources(selections)).status, 'ready')
+    assert.equal(installations, before + 1, 'explicit recovery must not repeat successful installation')
+  }
+  assert.equal(errors.filter(error => error instanceof Error && error.message === original).length, 2)
+})
+
 test('failed selected model download retains the error and leaves the workbench ready', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-resource-failure-'))
   const previous = process.env.YOUDUB_DESKTOP_DATA_DIR
@@ -288,6 +381,7 @@ test('failed selected model download retains the error and leaves the workbench 
   const errors: unknown[] = []
   const logging = ctx.logger.exporter({ export(entry) { if (entry.type === 'error') errors.push(...entry.args) } })
   const app = await ctx.plugin(async function resourceFailure(owner) {
+    owner.reflect.provide('catalog', { provider: () => ({ probe: async () => ({}) }), listProviders: () => [{ id: 'whisper', resources: builtinResources('whisper'), available: false, models: [] }] })
     owner.reflect.provide('process', { run: async () => { throw new Error('unexpected process') } })
     owner.reflect.provide('loader', { create: async () => {}, await: async () => {}, *entries() {} })
     await owner.plugin(Http, { host: '127.0.0.1', port: 0 })

@@ -379,3 +379,25 @@ except BaseException as exc:
         if process.poll() is None:
             process.kill()
         process.communicate()
+
+
+def test_stage_parameters_do_not_construct_unrelated_model_selections(tmp_path):
+    operation = invoke(tmp_path, "text.translate/v1", {},
+                       config={"graph": True},
+                       binding={"model": "qwen3-max", "device": "remote",
+                                "options": {"targetLanguage": "ja", "voice": "unrelated legacy value"}})
+    context = operation.context("translate", {})
+    assert vars(context.config).keys() == {"target_language", "max_completion_tokens", "record_raw", "translation"}
+    assert context.config.translation.model == "qwen3-max"
+    assert context.config.target_language == "ja"
+    assert context.config.max_completion_tokens == 65535
+
+
+def test_shared_audio_validation_reports_the_actual_operation(tmp_path):
+    path = tmp_path / "invalid.wav"
+    path.write_text("not audio")
+    operation = invoke(tmp_path, "audio.mix/v1", {})
+    from backend.app.v1.errors import ApiError
+    with pytest.raises(ApiError) as caught:
+        operation.audio("mixed", path)
+    assert caught.value.content["error"]["stage"] == "audio.mix/v1"

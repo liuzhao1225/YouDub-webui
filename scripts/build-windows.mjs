@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { resolve, join, basename, dirname, relative, isAbsolute } from 'node:path'
-import { run, runNpm, nodeVersion, assembleRuntime, bundleNode } from './desktop-runtime.mjs'
+import { run, runNpm, nodeVersion, nodeChecksumFilename, assembleRuntime, bundleNode } from './desktop-runtime.mjs'
 import { appVersion, validateReleaseVersion } from './release-version.mjs'
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Build Windows x64 on Windows x64.')
@@ -42,7 +42,7 @@ async function download(name, url) {
 }
 await mkdir(cache, { recursive: true })
 const archive = await download(nodeArchive, `https://nodejs.org/dist/v${nodeVersion}/${nodeArchive}`)
-const sums = await download(`node-${nodeVersion}-SHASUMS256.txt`, `https://nodejs.org/dist/v${nodeVersion}/SHASUMS256.txt`)
+const sums = await download(nodeChecksumFilename(), `https://nodejs.org/dist/v${nodeVersion}/SHASUMS256.txt`)
 const expected = (await readFile(sums, 'utf8')).split(/\r?\n/).find(line => line.endsWith(`  ${nodeArchive}`))?.split(' ')[0]
 const nodeHash = await sha256(archive)
 if (!expected || expected !== nodeHash) throw new Error('Bundled Node archive SHA-256 mismatch.')
@@ -55,7 +55,7 @@ await removeGenerated(sdk)
 await mkdir(sdk, { recursive: true })
 extractZip(webview, sdk)
 if (!process.argv.includes('--reuse-web')) {
-  runNpm(['--prefix', 'apps/web', 'run', 'build', '--', '--webpack'], { env: { ...process.env, YOUDUB_DESKTOP_BUILD: '1', NEXT_TELEMETRY_DISABLED: '1' } })
+  runNpm(['--prefix', 'apps/web', 'run', 'build'])
 }
 await removeGenerated(app)
 await assembleRuntime(root, runtime)

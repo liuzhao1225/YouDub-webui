@@ -70,7 +70,7 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 - **字幕显示。** 按逗号、顿号、中文破折号等拆分显示，合并过短片段，隐藏字幕片段末尾的分隔标点。
 - **任务管理。** 查看封面、步骤进度、错误和产物，支持取消、重试、重新生成、播放及下载。
 
-工作台保留视频、语言和输出模式等基本选项；模型、设备、声音、字幕对齐、背景音默认值及服务连接统一在设置中管理。
+工作台选择视频和工作流，并显示节点声明的快捷设置。语言、模型、设备、声音和字幕参数保存在工作流节点中；模型供应商、本地环境与模型安装在设置中管理。
 
 ## 界面预览
 
@@ -97,8 +97,8 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 
 首次启动准备基础运行环境；所需模型和推理依赖按工作流准备。安装要求与升级方法见[安装指南](docs/upgrade.md)。
 
-1. 在「设置」配置翻译连接，确认所需模型就绪，保存默认处理配置。
-2. 在「工作台」导入视频，选择语言和输出模式，创建任务。
+1. 在首次配置或「设置 → 模型」添加供应商、密钥和翻译模型。
+2. 在「工作台」导入视频，选择工作流并调整节点选项，按提示准备所需资源后创建任务。
 3. 在「任务库」查看进度，播放或下载结果。
 
 ## 社区交流
@@ -149,7 +149,7 @@ test .env -ef env.txt
 | 能力 | 默认提供者 | 模型路径（相对数据目录） |
 | --- | --- | --- |
 | 语音识别 | Whisper | `models/whisper/`，如 `tiny.pt`；另需上面安装的 `punkt_tab` |
-| 翻译 | OpenAI 兼容 API | 在设置页配置连接、密钥及模型 |
+| 翻译 | 供应商目录及自定义兼容接口 | 在「设置 → 模型」配置供应商、密钥及模型；须满足最大输出参数要求 |
 | 配音生成 | VoxCPM2 | `models/voxcpm/VoxCPM2/` |
 | 人声分离 | Demucs htdemucs | `models/demucs/955717e8-8726e21a.th` |
 | 字幕对齐 | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
@@ -170,17 +170,19 @@ npm start
 另开一个终端，在同一目录启动前端：
 
 ```bash
-npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
+npm --prefix apps/web run dev -- --host 127.0.0.1 --port 3000
 ```
 
 打开 [http://127.0.0.1:3000](http://127.0.0.1:3000)，首次使用显示基础环境准备；环境已就绪时直接进入工作台，再按工作流准备所需资源。
 
-需要运行构建后的前端时，用以下命令替代开发前端；Host 仍单独运行：
+运行生产构建时，停止上述开发服务，然后执行：
 
 ```bash
 npm run build:web
-npm --prefix apps/web start -- --hostname 127.0.0.1 --port 3000
+npm --prefix apps/web start
 ```
+
+生产启动由一个 Cordis Host 同源提供页面和 API，默认地址为 `http://127.0.0.1:3000`；通过 `YOUDUB_HOST`、`YOUDUB_PORT` 环境变量调整监听地址。开发模式的 Vite 代理默认连接 `http://127.0.0.1:8000`，可用 `YOUDUB_API_URL` 调整。
 
 ## Everything is a plugin
 
@@ -199,6 +201,8 @@ Client 页面插件 → API / 认证插件 → 通用任务引擎插件
 workflow 声明处理步骤和输入输出，provider 实现约定的 operation，文件通过 ArtifactRef 传递。Python 继续承担媒体处理与模型推理，每次 operation 通过受管进程和 stdio 协议调用；纯 Python 插件也可以直接接入。
 
 替换 ASR、翻译或 TTS 时，提供符合契约的插件即可；新的处理流程可以注册自己的 workflow。架构和边界见[架构说明](docs/design/cordis-plugin-architecture.md)，数据结构见[插件契约](docs/design/cordis-plugin-contracts.md)。
+
+前端使用 React 19、Vite 8 和 Cordis 页面插件，保留 YouDub 的 Tailwind、Base UI 和 React Flow 视觉组件。客户端分为无 React 依赖的运行逻辑、React 绑定和页面组件；参考来源与适配范围见[前端实现说明](docs/design/harness-frontend-migration.md)。
 
 ## 安装与开发插件
 
@@ -256,7 +260,7 @@ packages/sdk/      公共服务、workflow 与 operation 契约
 packages/builtin/  基础服务、通用任务引擎、workflow 和模型桥
 backend/workers/   Python 计算与 SQLite 事务桥
 backend/app/       模型、媒体、凭据与历史数据格式
-apps/web/          Next 引导、Client SDK 和页面插件
+apps/web/          Vite 入口、客户端运行逻辑、React 绑定和页面插件
 fixtures/plugins/  独立 Host/Client/Python 插件示例
 submodule/demucs/   Demucs 源码子模块
 ```

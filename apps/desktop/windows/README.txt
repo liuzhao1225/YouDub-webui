@@ -2,7 +2,7 @@ YouDub Windows x64
 
 Setup.exe 提供安装、快捷方式和卸载；ZIP 完整解压后运行 YouDub.exe。支持 Windows 10 22H2 / Windows 11 x64。
 需要 Microsoft Edge WebView2 Evergreen Runtime；缺少时启动器会提供微软下载入口。
-Node 已内置，无需安装 Node 或打开终端；首次启动在应用数据目录准备独立 Python、FFmpeg 和模型，主要资源使用阿里和 ModelScope 国内源。
+Node 已内置，无需安装 Node 或打开终端；首次启动在应用数据目录准备独立 Python 和基础依赖。FFmpeg、推理依赖和模型按工作流准备，主要资源使用阿里和 ModelScope 国内源。
 
 数据、模型和配置：%LOCALAPPDATA%\YouDub
 日志：%LOCALAPPDATA%\YouDub\logs\desktop.log

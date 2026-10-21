@@ -42,7 +42,7 @@ for (const [path, meta] of Object.entries(result.metafile.outputs)) {
 await writeFile(resolve(output, 'manifest.json'), JSON.stringify({ version: 1, sdkVersion: '1.1.0', platformVersion: '1', modules, publicAssets }, null, 2) + '\n')
 const platformDir = resolve(root, 'public/plugin-platform/1')
 await mkdir(platformDir, { recursive: true })
-const sdkExports = ['SDK_VERSION', 'PluginContextProvider', 'useClient', 'useObservable', 'useSlot', 'usePathname', 'Link', 'text', 'matchRoute', 'parseManifest', 'requireActive']
+const sdkExports = ['SDK_VERSION', 'PluginContextProvider', 'useClient', 'useObservable', 'useSlot', 'usePathname', 'Link', 'text', 'matchRoute', 'parseManifest', 'requireActive', 'bindComponent', 'UpdateProvider']
 for (const [specifier, asset] of Object.entries(shared)) {
   const namespace = specifier === 'cordis' ? await import('cordis') : specifier === '@youdub/sdk/client' ? null : require(specifier)
   const names = (namespace ? Object.keys(namespace) : sdkExports).filter((key) => key !== 'default' && /^[A-Za-z_$][\w$]*$/.test(key))

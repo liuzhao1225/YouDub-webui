@@ -10,6 +10,7 @@ import { EnvironmentSetup, type EnvironmentConfig, type DependencyGroup, type En
 import modelManifest from './setup-models.json' with { type: 'json' }
 import { parseWorkflowDocument } from './workflow-document.js'
 import { nodeTypes } from './workflow-graph.js'
+import { acceleratedGroups, providerResources } from './runtime-resources.js'
 
 export interface SetupConfig extends EnvironmentConfig { entries: EntryOptions[]; version: string }
 type ModelStatus = 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
@@ -19,7 +20,7 @@ export interface ModelDownload {
 }
 export interface ResourceSelection { providerId: string; model?: string }
 export interface ResourceRequirement extends ResourceSelection {
-  ready: boolean; automatic: boolean; missingPackages: string[]; reason?: string
+  ready: boolean; automatic: boolean; missingPackages: string[]; reason?: string; configurationRequired?: boolean
 }
 export interface ResourcePreparationSnapshot {
   status: 'missing' | 'preparing' | 'ready' | 'failed'
@@ -30,13 +31,6 @@ export interface ResourcePreparationSnapshot {
   error?: string
   activePreparation?: { selections: ResourceSelection[]; status: ResourcePreparationSnapshot['status']; error?: string }
 }
-const providerGroups: Record<string, DependencyGroup[]> = {
-  'youdub.media': ['media'], 'youdub.download': ['download', 'media'], openai: ['openai'],
-  whisper: ['media', 'whisper'], voxcpm: ['media', 'voxcpm'],
-  demucs: ['media', 'demucs'], qwen_forced_aligner: ['media', 'qwen_forced_aligner'],
-}
-const modelProviders: Record<string, string> = { whisper: 'whisper', voxcpm: 'voxcpm', demucs: 'demucs', qwen_forced_aligner: 'qwen' }
-const automaticModels: Record<string, string> = { whisper: 'tiny', voxcpm: 'VoxCPM2', demucs: 'htdemucs', qwen_forced_aligner: 'Qwen3-ForcedAligner-0.6B-hf' }
 const message = (error: unknown) => error instanceof Error ? error.message : String(error)
 function cancelled(error: unknown, signal: AbortSignal): boolean {
   if (!signal.aborted) return false
@@ -77,7 +71,15 @@ export default class SetupService extends Service {
       scope.effect(() => () => { this.catalog = undefined })
     })
     ctx.inject(['catalog', 'auth'], scope => {
+      scope.effect(() => scope.http.register('GET', '/api/v2/resources', async request => {
+        scope.http.json(request, 200, await this.resourceInventory())
+      }))
       for (const action of ['check', 'prepare'] as const) {
+        scope.effect(() => scope.http.register('POST', `/api/v2/resources/${action}`, async request => {
+          const { selections } = await readJson(request)
+          const selected = this.catalogSelections(selections)
+          scope.http.json(request, 200, await (action === 'check' ? this.checkResources(selected) : this.prepareResources(selected)))
+        }))
         scope.effect(() => scope.http.register('POST', `/api/v2/workflow-documents/resources/${action}`, async request => {
           const { document: raw } = await readJson(request)
           const document = parseWorkflowDocument(raw), types = nodeTypes(scope.catalog)
@@ -90,6 +92,11 @@ export default class SetupService extends Service {
           scope.http.json(request, 200, await (action === 'check' ? this.checkResources(selections) : this.prepareResources(selections)))
         }))
       }
+      scope.effect(() => scope.http.register('POST', '/api/v2/resources/action', async request => {
+        const { action, id } = await readJson(request)
+        await this.resourceAction(action, id)
+        scope.http.json(request, 200, await this.resourceInventory())
+      }))
     })
     let started = false
     ctx.on('app/ready', () => { if (!started) { started = true; this.prepare() } })
@@ -116,21 +123,7 @@ export default class SetupService extends Service {
         if (this.bootAttempted) throw new AppError('RESTART_REQUIRED', '工作台启动失败，请查看错误后重启应用。', 409)
         this.prepare()
       } else {
-        if (this.phase !== 'ready' || !this.resourceState) throw new AppError('ENVIRONMENT_NOT_READY', '当前没有正在准备的工作流依赖。', 409)
-        const targets = this.resourceState.models.filter(model => (!id || model.id === id) && model.status !== 'ready')
-        if (action === 'pause') {
-          for (const model of targets) {
-            const job = this.jobs.get(model.id)
-            if (job) job.controller.abort(new Error('Paused by user'))
-            else if (model.status !== 'failed') model.status = 'paused'
-          }
-          await Promise.all(targets.map(model => this.jobs.get(model.id)?.promise))
-        } else if (!this.resourceJob) {
-          await this.prepareResources(this.resourceState.selections)
-        } else for (const model of targets) if (['paused', 'failed', 'pending'].includes(model.status)) {
-          model.status = 'pending'
-          if (this.resourceEnvironment.steps.every(step => step.status === 'ready')) this.download(model.id)
-        }
+        await this.resourceAction(action, id)
       }
       this.ctx.http.json(request, 200, this.snapshot())
     }))
@@ -149,72 +142,171 @@ export default class SetupService extends Service {
     return { phase: this.phase, version: this.config.version, platform: process.platform, arch: process.arch, osVersion: release(), homeDir: homedir(), environment: this.environment.steps,
       models: [], resources: this.resourceState, error: this.error, canRetry: !this.bootAttempted, token: this.token }
   }
+  private catalogSelections(value: ResourceSelection[]) {
+    const selections = this.selections(value)
+    const providers = this.catalog!.listProviders()
+    for (const selection of selections) {
+      const provider = providers.find(item => item.id === selection.providerId)
+      if (!provider) throw new AppError('PROVIDER_UNAVAILABLE', `Provider ${selection.providerId} is not registered.`, 422)
+      if (selection.model && selection.model !== providerResources(provider)?.model?.id && !provider.models?.some(model => model.id === selection.model)) {
+        throw new AppError('MODEL_UNAVAILABLE', `所选模型不可用：${selection.model}`, 422)
+      }
+    }
+    return selections
+  }
+  async resourceInventory() {
+    const providers = (this.catalog?.listProviders() || []).filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
+    const items = providers.flatMap(provider => {
+      const resources = providerResources(provider)
+      const models = [...new Set([...(resources?.model ? [resources.model.id] : []), ...(provider.models || []).map(model => model.id)])]
+      return (models.length ? models : [undefined]).map(model => ({
+        providerId: provider.id, ...(model ? { model } : {}), label: provider.label || provider.id,
+        automatic: Boolean(resources) && (!model || model === resources?.model?.id),
+        ...(resources?.model && model === resources.model.id ? { downloadId: resources.model.downloadId } : {}),
+      }))
+    })
+    const models = this.models.filter(model => items.some(item => item.downloadId === model.id))
+    await this.refreshModelSizes(models)
+    return { version: this.config.version, platform: process.platform, arch: process.arch, osVersion: release(), homeDir: homedir(),
+      environment: this.environment.steps, items, models, resources: this.resourceState && { ...this.resourceState,
+        environment: this.resourceJob ? this.resourceEnvironment.steps : this.resourceState.environment } }
+  }
+  async resourceAction(action: string, id?: string) {
+    if (!['pause', 'resume', 'retry'].includes(action) || (id !== undefined && typeof id !== 'string')) throw new AppError('INVALID_INPUT', 'Invalid resource action or model.', 422)
+    if (this.phase !== 'ready' || !this.resourceState) throw new AppError('ENVIRONMENT_NOT_READY', '当前没有正在准备的运行依赖。', 409)
+    if (id !== undefined && !this.resourceState.models.some(model => model.id === id)) throw new AppError('INVALID_INPUT', '该模型不属于当前准备任务。', 422)
+    const targets = this.resourceState.models.filter(model => (!id || model.id === id) && model.status !== 'ready')
+    if (action === 'pause') {
+      for (const model of targets) {
+        const job = this.jobs.get(model.id)
+        if (job) job.controller.abort(new Error('Paused by user'))
+        else if (model.status !== 'failed') model.status = 'paused'
+      }
+      await Promise.all(targets.map(model => this.jobs.get(model.id)?.promise))
+    } else {
+      for (const model of targets) if (['paused', 'failed', 'pending'].includes(model.status)) { model.status = 'pending'; model.error = undefined }
+      if (!this.resourceJob) await this.prepareResources(this.resourceState.selections)
+      else for (const model of targets) if (model.status === 'pending' && this.resourceEnvironment.steps.every(step => step.status === 'ready')) this.download(model.id)
+    }
+  }
   private selections(value: ResourceSelection[]) {
-    if (!Array.isArray(value) || value.some(item => !item || typeof item.providerId !== 'string' || !item.providerId || (item.model !== undefined && typeof item.model !== 'string'))) {
+    if (!Array.isArray(value) || value.some(item => !item || typeof item.providerId !== 'string' || !item.providerId || Object.keys(item).some(key => !['providerId', 'model'].includes(key)) || (item.model !== undefined && typeof item.model !== 'string'))) {
       throw new AppError('INVALID_INPUT', '工作流依赖必须包含有效的 providerId 和 model。', 422)
     }
     return [...new Map(value.map(({ providerId, model }) => [JSON.stringify([providerId, model]), { providerId, ...(model ? { model } : {}) }])).values()]
       .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
   }
   private groups(selections: ResourceSelection[]) {
-    return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => providerGroups[item.providerId] || [])])]
+    const providers = this.catalog?.listProviders() ?? []
+    return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => {
+      const provider = providers.find(provider => provider.id === item.providerId)
+      return provider ? providerResources(provider)?.dependencyGroups ?? [] : []
+    })])]
   }
   private async inspectResources(selections: ResourceSelection[]): Promise<ResourcePreparationSnapshot> {
     const requirements: ResourceRequirement[] = []
     const requiredModels = new Set<string>()
+    const inspections = new Map<string, Promise<any>>()
+    const inspect = (groups: DependencyGroup[]) => {
+      const selected = [...new Set<DependencyGroup>(['base', ...groups])].sort()
+      const key = selected.join(',')
+      if (!inspections.has(key)) inspections.set(key, this.resourceEnvironment.probe('resources', selected))
+      return inspections.get(key)!
+    }
+    const base = await inspect(['base'])
+    const missingPackages = new Set<string>(base.missing)
+    let mediaReady = true, mediaReason: string | undefined, punktReady = true
     // A user may have installed a package/model outside this process. Refresh
     // only this graph's providers so validation sees the same current readiness.
     if (this.catalog) for (const providerId of new Set(selections.map(item => item.providerId))) {
       await this.catalog.provider(providerId).probe()
     }
     for (const selection of selections) {
-      const groups = providerGroups[selection.providerId]
+      const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
+      const resources = provider && providerResources(provider)
+      const groups = resources?.dependencyGroups
       if (!groups) {
-        const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
         const ready = provider?.available === true && (!selection.model || provider.models?.some(model => model.id === selection.model) === true)
         requirements.push({ ...selection, ready, automatic: false, missingPackages: [],
           ...(!ready ? { reason: provider?.unavailableReason || '请根据该插件的要求准备运行依赖。' } : {}) })
         continue
       }
-      const result = await this.resourceEnvironment.probe('resources', ['base', ...groups])
+      const result = await inspect(groups)
+      for (const name of result.missing) missingPackages.add(name)
+      if (!result.media) { mediaReady = false; mediaReason = result.mediaReason }
+      if (!result.punkt) punktReady = false
       let reason = result.missing.length ? `缺少运行依赖：${result.missing.join(', ')}` :
         !result.media ? result.mediaReason || '缺少 FFmpeg 或 FFprobe。' : !result.punkt ? '缺少 Whisper 分句资源。' :
           !result.demucsSource ? '缺少 Demucs 子模块源码。' : undefined
-      const modelId = modelProviders[selection.providerId]
-      const automatic = !modelId || !selection.model || selection.model === automaticModels[selection.providerId]
+      const modelId = resources?.model?.downloadId
+      let automatic = !modelId || !selection.model || selection.model === resources?.model?.id
+      let configurationRequired = false
+      if (!reason && provider?.execution === 'remote') {
+        const model = provider.models?.find(model => model.id === selection.model)
+        if (!provider.available) reason = provider.unavailableReason || '远端服务尚未配置。'
+        else if (!selection.model) reason = '请在工作流节点中选择翻译模型。'
+        else if (!model || model.available === false) reason = model?.unavailableReason || `所选模型不可用：${selection.model}`
+        if (reason) { automatic = false; configurationRequired = true }
+      }
       if (modelId && automatic) requiredModels.add(modelId)
       if (!reason && modelId) {
-        const modelProbe = (await this.resourceEnvironment.probe('models', [selection.providerId]))[selection.providerId]
-        const selectedModel = selection.model || automaticModels[selection.providerId]
-        if (!modelProbe.models.some((model: { id: string }) => model.id === selectedModel)) {
-          reason = modelProbe.unavailable_reason || `未安装模型：${selectedModel}`
+        const selectedModel = selection.model || resources?.model?.id
+        if (!provider?.models?.some(model => model.id === selectedModel)) {
+          reason = provider?.unavailableReason || `未安装模型：${selectedModel}`
         }
       }
-      requirements.push({ ...selection, ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}) })
+      if (!reason && provider?.available !== true) reason = provider?.unavailableReason || '运行服务尚未就绪。'
+      requirements.push({ ...selection, ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
     }
     const models = this.models.filter(model => requiredModels.has(model.id))
+    await this.refreshModelSizes(models)
     for (const model of models) {
-      if (this.jobs.has(model.id)) continue
-      const definition = modelManifest.find(item => item.id === model.id)!
-      const sizes = await Promise.all(definition.files.map(file => fileSize(join(this.root(model.id), file.path))))
-      model.received = sizes.reduce((sum, size, i) => sum + (size === definition.files[i]!.size ? size : 0), 0)
-      model.status = sizes.every((size, i) => size === definition.files[i]!.size) ? 'ready' : 'pending'
       if (model.status !== 'ready') for (const requirement of requirements) {
-        if (requirement.automatic && modelProviders[requirement.providerId] === model.id) {
+        if (requirement.automatic && this.catalog?.listProviders().some(provider => provider.id === requirement.providerId && providerResources(provider)?.model?.downloadId === model.id)) {
           requirement.ready = false
           requirement.reason ??= `${model.name} 模型文件未安装或不完整。`
         }
       }
     }
-    return { status: requirements.every(item => item.ready) ? 'ready' : 'missing', selections, requirements, models, environment: [] }
+    const groups = this.groups(selections)
+    const environment: EnvironmentStep[] = this.environment.steps.filter(step => step.id === 'python').map(step => ({ ...step, detail: [step.detail, this.config.python].filter(Boolean).join(' · ') }))
+    if (groups.some(group => acceleratedGroups.includes(group))) {
+      const plan = await this.resourceEnvironment.probe('acceleration-plan')
+      if (plan.installed) {
+        const actual = await this.resourceEnvironment.probe('acceleration')
+        const failed = actual.devices?.some((device: { available: boolean }) => !device.available)
+        environment.push({ id: 'acceleration', name: 'GPU 与推理后端', status: failed ? 'failed' : actual.backend ? 'ready' : 'pending', detail: actual.detail || '尚未取得推理后端检测结果。' })
+      } else environment.push({ id: 'acceleration', name: 'GPU 与推理后端', status: 'pending', detail: plan.detail })
+    }
+    environment.push({ id: 'dependencies', name: groups.length > 1 ? '运行依赖' : '基础运行依赖', status: missingPackages.size ? 'pending' : 'ready', ...(missingPackages.size ? { detail: `缺少：${[...missingPackages].join(', ')}` } : {}) })
+    if (groups.includes('media')) environment.push({ id: 'ffmpeg', name: 'FFmpeg', status: mediaReady ? 'ready' : 'pending', ...(mediaReason ? { detail: mediaReason } : {}) })
+    if (groups.includes('whisper')) environment.push({ id: 'resources', name: '分句资源', status: punktReady ? 'ready' : 'pending' })
+    return { status: !missingPackages.size && requirements.every(item => item.ready) ? 'ready' : 'missing', selections, requirements, models, environment }
+  }
+  private async refreshModelSizes(models: ModelDownload[]) {
+    for (const model of models) {
+      if (this.jobs.has(model.id)) continue
+      const definition = modelManifest.find(item => item.id === model.id)!
+      const sizes = await Promise.all(definition.files.map(async file => ({ size: await fileSize(join(this.root(model.id), file.path)), partial: await fileSize(join(this.root(model.id), file.path) + '.part') })))
+      model.received = sizes.reduce((sum, size, i) => sum + Math.min(definition.files[i]!.size, size.size || size.partial), 0)
+      // Reading status must not erase a paused transfer or a failed verification.
+      if (!['paused', 'failed'].includes(model.status)) model.status = sizes.every((size, i) => size.size === definition.files[i]!.size) ? 'ready' : 'pending'
+    }
   }
   async checkResources(value: ResourceSelection[]) {
     const selections = this.selections(value)
-    if (this.resourceState && JSON.stringify(this.resourceState.selections) === JSON.stringify(selections) &&
-        (this.resourceJob || this.resourceState.status === 'failed')) {
-      return { ...this.resourceState, environment: this.resourceEnvironment.steps }
+    const previous = this.resourceState
+    const sameSelection = previous && JSON.stringify(previous.selections) === JSON.stringify(selections)
+    if (sameSelection && (this.resourceJob || (previous.status === 'failed' && !previous.requirements.some(item => item.configurationRequired)))) {
+      return { ...previous, environment: this.resourceEnvironment.steps }
     }
     const inspected = await this.inspectResources(selections)
+    if (sameSelection && this.resourceState === previous && !this.resourceJob) {
+      this.resourceState = previous.status === 'failed' && inspected.status !== 'ready'
+        ? { ...inspected, status: 'failed', error: previous.error, environment: this.resourceEnvironment.steps }
+        : inspected
+      return this.resourceState
+    }
     if (this.resourceState && JSON.stringify(this.resourceState.selections) !== JSON.stringify(selections)) {
       inspected.activePreparation = { selections: this.resourceState.selections, status: this.resourceState.status, ...(this.resourceState.error ? { error: this.resourceState.error } : {}) }
     }
@@ -236,7 +328,7 @@ export default class SetupService extends Service {
     const initial = await this.inspectResources(selections)
     const manual = initial.requirements.filter(item => !item.ready && !item.automatic)
     if (manual.length) throw new AppError('MANUAL_RESOURCE_REQUIRED', manual.map(item => `${item.providerId}: ${item.reason}`).join('\n'), 422)
-    if (initial.status === 'ready') return initial
+    if (initial.status === 'ready') { this.resourceState = initial; return initial }
     this.resourceState = { ...initial, status: 'preparing' }
     this.resourceJob = (async () => {
       await this.resourceEnvironment.prepare(this.groups(selections))
@@ -246,15 +338,16 @@ export default class SetupService extends Service {
       if (failed) throw new Error(`${failed.name}: ${failed.error}`)
       if (this.resourceState!.models.some(model => model.status !== 'ready')) {
         this.resourceState!.status = 'missing'
+        this.resourceState!.environment = this.resourceEnvironment.steps
         return
       }
       await this.resourceEnvironment.probe('verify', this.groups(selections))
       const final = await this.inspectResources(selections)
-      if (final.status !== 'ready') throw new Error(final.requirements.filter(item => !item.ready).map(item => `${item.providerId}: ${item.reason}`).join('\n'))
       this.resourceState = { ...final, environment: this.resourceEnvironment.steps }
+      if (final.status !== 'ready') throw new Error(final.requirements.filter(item => !item.ready).map(item => `${item.providerId}: ${item.reason}`).join('\n'))
     })().catch(error => {
       if (cancelled(error, this.stopping.signal)) return
-      this.resourceState!.status = 'failed'; this.resourceState!.error = message(error)
+      this.resourceState!.status = 'failed'; this.resourceState!.error = message(error); this.resourceState!.environment = this.resourceEnvironment.steps
       this.ctx.logger.error(error)
     }).finally(() => { this.resourceJob = undefined })
     return { ...this.resourceState, environment: this.resourceEnvironment.steps }

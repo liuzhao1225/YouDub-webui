@@ -4,8 +4,8 @@ import { isDeepStrictEqual } from 'node:util'
 import Ajv from 'ajv/dist/2020.js'
 import { setTimeout as delay } from 'node:timers/promises'
 import {
-  AppError, requireId, type TasksService, type TaskRecord, type TaskView, type TaskQuery, type CreateTask,
-  type JsonObject, type WorkflowPlan, type StepState, type Invocation, type InvocationContext, type ArtifactRef,
+  AppError, requireId, type TasksService, type TaskRecord, type TaskView, type TaskSummary, type TaskQuery, type CreateTask,
+  type Diagnostic, type JsonObject, type WorkflowPlan, type StepState, type Invocation, type InvocationContext, type ArtifactRef,
   type StepSpec, type WorkflowDocument, type ReviewCommand, type NodeActionReceipt, type RerunTask,
 } from '@youdub/sdk'
 import { taskCover } from './task-cover.js'
@@ -20,6 +20,23 @@ function validate(schema: JsonObject, value: unknown, label: string, code = 'INV
 function redact(message: string, credentials: InvocationContext['credentials'] = {}) {
   for (const value of Object.values(credentials)) if (value.api_key) message = message.replaceAll(value.api_key, '[redacted]')
   return message.replace(/(authorization|api[_-]?key|cookie)\s*[:=]\s*[^\r\n]+/gi, '$1: [redacted]')
+}
+function safeDetails(value: any, credentials: InvocationContext['credentials']): any {
+  if (typeof value === 'string') return redact(value, credentials)
+  if (Array.isArray(value)) return value.map(item => safeDetails(item, credentials))
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, /api[_-]?key|password|credential|authorization|secret|cookie/i.test(key) ? '[redacted]' : safeDetails(item, credentials)]))
+  return value
+}
+function taskDiagnostic(error: any, message: string, nodeId: string | undefined, credentials: InvocationContext['credentials']): Diagnostic {
+  const payload = error.details && typeof error.details === 'object' && !Array.isArray(error.details) ? error.details : {}
+  return { code: error.code ?? 'WORKER_ERROR', message, ...(nodeId ? { nodeId } : {}),
+    ...Object.fromEntries(['field', 'stage', 'action'].filter(key => typeof payload[key] === 'string').map(key => [key, redact(payload[key], credentials)])),
+    ...(typeof error.status === 'number' ? { status: error.status } : {}),
+    ...(error.details !== undefined ? { details: safeDetails(error.details, credentials) } : {}),
+  }
+}
+function acceptsIntegrity(current: { integrity: string; compatibleIntegrities?: string[] }, pinned: string) {
+  return current.integrity === pinned || current.compatibleIntegrities?.includes(pinned) === true
 }
 function ref(value: any): value is ArtifactRef { return value && typeof value.id === 'string' && typeof value.schemaId === 'string' && Object.keys(value).length === 2 }
 function fingerprint(value: any): string {
@@ -60,13 +77,14 @@ export default class Tasks extends Service implements TasksService {
   }
   private view(task: TaskRecord): TaskView {
     const { artifacts, credentialRefs, rawSnapshot, actionReceipts, ...publicTask } = task
+    const cover = taskCover(task)
     const mayStillRun = Object.values(task.externalRequests ?? {}).some(value => value.mayStillRun)
     const allowedActions = terminal.has(task.status) ? ['rerun', 'delete'] : ['cancel']
     if (!task.legacy && ['failed', 'cancelled'].includes(task.status) && !mayStillRun) allowedActions.unshift('retry')
     if (task.graphSnapshot && !terminal.has(task.status) && task.status !== 'cancelling' && task.steps.some(step => step.status === 'awaiting_review')) allowedActions.unshift('approve', 'correct')
     return {
       ...publicTask, mayStillRun, allowedActions,
-      ...(taskCover(task) ? { cover: {} } : {}),
+      ...(cover ? { cover: { artifactId: cover.id } } : {}),
       outputs: (task.outputs ?? []).map(output => {
         const file = artifacts?.[output.artifact.id]
         if (!file) throw new AppError('OUTPUT_MISSING', `Output artifact missing: ${output.artifact.id}`, 500)
@@ -74,10 +92,17 @@ export default class Tasks extends Service implements TasksService {
       }),
     }
   }
+  private summary(task: TaskRecord): TaskSummary {
+    const value = this.view(task)
+    const { id, revision, attempt, status, sourceName, workflowId, workflowVersion, workflowSource, error, message, createdAt, updatedAt, queuedAt, startedAt, finishedAt, nextPollAt, legacy, cover, outputs, allowedActions, mayStillRun } = value
+    return { id, revision, attempt, status, sourceName, workflowId, workflowVersion, workflowSource: workflowSource ?? (task.graphSnapshot ? { documentId: task.graphSnapshot.id, documentRevision: null, title: task.graphSnapshot.title } : undefined), error, message, createdAt, updatedAt, queuedAt, startedAt, finishedAt, nextPollAt, legacy, cover, outputs, allowedActions, mayStillRun,
+      steps: task.steps.map(({ id, label, status, progress, message, startedAt, finishedAt, error }) => ({ id, label, status, progress, message, startedAt, finishedAt, error })),
+    }
+  }
   async get(id: string) { return this.view(await this.record(id)) }
   async list(query: TaskQuery = {}) {
     const page = await this.ctx.store.call('store.list', { limit: query.limit ?? 30, offset: query.offset ?? 0, ...query })
-    return { ...page, items: page.items.map((task: TaskRecord) => this.view(task)) }
+    return { ...page, items: page.items.map((task: TaskRecord) => this.summary(task)) }
   }
   private async save(task: TaskRecord) {
     task.updatedAt = now()
@@ -90,14 +115,14 @@ export default class Tasks extends Service implements TasksService {
   private checkPlan(plan: WorkflowPlan) {
     const ids = new Set<string>()
     const workflow = this.ctx.catalog.workflow(plan.workflow.id)
-    if (['version', 'pluginId', 'pluginVersion', 'integrity'].some(key => workflow[key as keyof typeof workflow] !== plan.workflow[key as keyof typeof plan.workflow])) throw new AppError('WORKFLOW_VERSION_UNAVAILABLE', 'Pinned workflow is unavailable.', 409)
+    if (['version', 'pluginId', 'pluginVersion'].some(key => workflow[key as keyof typeof workflow] !== plan.workflow[key as keyof typeof plan.workflow]) || !acceptsIntegrity(workflow, plan.workflow.integrity)) throw new AppError('WORKFLOW_VERSION_UNAVAILABLE', 'Pinned workflow is unavailable.', 409)
     if (!plan.steps.length) throw new AppError('INVALID_PLAN', 'Workflow plan has no steps.', 422)
     for (const step of plan.steps) {
       if (!step.id || ids.has(step.id)) throw new AppError('INVALID_PLAN', 'Step IDs must be unique.', 422)
       const binding = plan.bindings[step.bindingKey]
       if (!binding) throw new AppError('INVALID_PLAN', `Missing binding ${step.bindingKey}`, 422)
       const provider = this.ctx.catalog.provider(binding.providerId).describe()
-      if (provider.pluginId !== binding.pluginId || provider.pluginVersion !== binding.pluginVersion || provider.integrity !== binding.integrity) throw new AppError('PLUGIN_VERSION_UNAVAILABLE', `Pinned provider ${binding.providerId} is unavailable.`, 409)
+      if (provider.pluginId !== binding.pluginId || provider.pluginVersion !== binding.pluginVersion || !acceptsIntegrity(provider, binding.integrity)) throw new AppError('PLUGIN_VERSION_UNAVAILABLE', `Pinned provider ${binding.providerId} is unavailable.`, 409)
       const operation = provider.operations.find(item => item.id === step.operation)
       if (!operation) throw new AppError('INVALID_PLAN', `Provider does not support ${step.operation}.`, 422)
       if (new Set(step.outputs.map(port => port.name)).size !== step.outputs.length) throw new AppError('INVALID_PLAN', 'Output port names must be unique.', 422)
@@ -233,6 +258,15 @@ export default class Tasks extends Service implements TasksService {
     }
     return inputs
   }
+  private validateOutputSemantics(spec: StepSpec, outputs: JsonObject, inputs: JsonObject, code = 'INVALID_PROVIDER_RESULT') {
+    for (const port of spec.outputs) if (port.kind === 'json' && outputs[port.name] !== undefined) {
+      try { this.ctx.catalog.validateOutput(port.schemaId, outputs[port.name], { inputs, outputs }) }
+      catch (error) {
+        if (!(error instanceof AppError)) throw error
+        throw new AppError(code, `${spec.id}.${port.name}: ${error.message}`, code === 'INVALID_CORRECTION' ? 422 : 500, { field: port.name, nodeId: spec.id, details: error.details })
+      }
+    }
+  }
   private async verifyOutputs(task: TaskRecord, spec: StepSpec, outputs: JsonObject, code = 'INVALID_CORRECTION') {
     if (!outputs || typeof outputs !== 'object' || Array.isArray(outputs)) throw new AppError(code, 'Node outputs must be an object.', 422)
     if (Object.keys(outputs).some(name => !spec.outputs.some(port => port.name === name))) throw new AppError(code, 'Node returned an undeclared output port.', 422)
@@ -245,6 +279,7 @@ export default class Tasks extends Service implements TasksService {
       if (port.kind === 'artifact' && (!ref(output) || output.schemaId !== port.schemaId)) throw new AppError(code, `Invalid ${spec.id}.${port.name}.`, 422)
       if (port.kind === 'json' && !validator.validate(port.schema!, output)) throw new AppError(code, `${spec.id}.${port.name}: ${validator.errorsText()}`, 422)
     }
+    this.validateOutputSemantics(spec, outputs, this.inputs(task, spec), code)
     const verify = async (value: any): Promise<void> => {
       if (ref(value)) {
         const artifact = task.artifacts[value.id]
@@ -405,11 +440,12 @@ export default class Tasks extends Service implements TasksService {
     if (!source.graphSnapshot) throw new AppError('GRAPH_REQUIRED', 'Only graph tasks support dependency reuse.', 422)
     const dirty = new Set<string>(), reasons: Record<string, string> = {}, corrections: Record<string, JsonObject> = {}
     const sourceRevisions: Record<string, number> = {}
-    const identity = (taskPlan: WorkflowPlan, spec: StepSpec) => ({
-      operation: spec.operation, input: spec.input,
-      outputs: spec.outputs.map(({ label, ...port }) => port),
-      binding: taskPlan.bindings[spec.bindingKey],
-    })
+    const identity = (taskPlan: WorkflowPlan, spec: StepSpec) => {
+      const binding = taskPlan.bindings[spec.bindingKey], provider = this.ctx.catalog.provider(binding.providerId).describe()
+      return { operation: spec.operation, input: spec.input, outputs: spec.outputs.map(({ label, ...port }) => port),
+        binding: { ...binding, integrity: acceptsIntegrity(provider, binding.integrity) ? provider.integrity : binding.integrity },
+      }
+    }
     for (const spec of plan.steps) {
       const originalSpec = source.plan.steps.find(step => step.id === spec.id)
       const originalNode = source.graphSnapshot.nodes.find(node => node.id === spec.id), node = graph.nodes.find(node => node.id === spec.id)
@@ -634,6 +670,7 @@ export default class Tasks extends Service implements TasksService {
       const invocation: Invocation = { invocationId, taskId: initial.id, attempt: initial.attempt, stepId: spec.id, operation: spec.operation, binding, inputs, workDir, taskDir: this.ctx.files.taskRoot(initial.id), config: started.config }
       const context: InvocationContext = {
         signal: controller.signal, credentials,
+        log: message => this.ctx.files.log(initial.id, `[${spec.id}] ${redact(message, credentials)}`),
         progress: async (value, message) => {
           controller.signal.throwIfAborted()
           if (value !== null && (!Number.isFinite(value) || value < 0 || value > 1)) throw new AppError('PROTOCOL_ERROR', 'Invalid progress.', 500)
@@ -689,6 +726,7 @@ export default class Tasks extends Service implements TasksService {
         if (output.kind === 'artifact' && (!ref(value) || value.schemaId !== output.schemaId || !invocationArtifacts[value.id])) throw new AppError('INVALID_PROVIDER_RESULT', `Invalid artifact port ${output.name}.`, 500)
         if (output.kind === 'json') validate(output.schema!, value, `${spec.id}.${output.name}`, 'INVALID_PROVIDER_RESULT')
       }
+      this.validateOutputSemantics(spec, result.outputs, inputs)
       await verifyReferences(result.outputs)
       await this.ctx.files.log(initial.id, `[${spec.id}] completed`)
       await update(async (task, step) => {
@@ -713,7 +751,7 @@ export default class Tasks extends Service implements TasksService {
         }
         const cancelled = task.status === 'cancelling'
         task.status = cancelled ? 'cancelled' : 'failed'; task.finishedAt = now(); task.message = message
-        task.error = cancelled ? null : { code: error.code ?? 'WORKER_ERROR', message }
+        task.error = cancelled ? null : taskDiagnostic(error, message, currentStep?.id, credentials)
         for (const request of Object.values(task.externalRequests)) if (request.mayStillRun) request.state = 'unknown'
         const step = task.steps.find(step => step.id === currentStep?.id)
         if (step) { step.status = cancelled ? 'cancelled' : 'failed'; step.error = task.error; step.finishedAt = now() }

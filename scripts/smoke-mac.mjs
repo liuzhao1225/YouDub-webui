@@ -1,11 +1,13 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { demos } from '../site/demos.js'
 import { appVersion } from './release-version.mjs'
+import { smokePython } from './desktop-smoke.mjs'
 
 const app = resolve(process.argv[2] || 'dist/YouDub.app')
+const readyPython = smokePython()
 function verify() {
   const result = spawnSync('codesign', ['--verify', '--deep', '--strict', app], { encoding: 'utf8' })
   if (result.error) throw result.error
@@ -41,7 +43,7 @@ if (extension.error) throw extension.error
 if (extension.status !== 0) throw new Error(`Bundled extension build failed: ${extension.stdout}\n${extension.stderr}`)
 const server = spawn(join(resources, 'node'), ['--expose-internals', '--import', 'tsx', 'apps/desktop/server.mjs'], {
   cwd: join(resources, 'runtime'),
-  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data },
+  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: data, YOUDUB_PYTHON: readyPython },
   stdio: ['pipe', 'pipe', 'pipe'],
 })
 let diagnostics = ''
@@ -58,16 +60,25 @@ try {
     })
     exited.then(result => { clearTimeout(timer); reject(new Error(`Desktop exited during startup: ${JSON.stringify(result)}\n${diagnostics}`)) }, reject)
   })
-  for (const path of ['/', '/favicon.ico', '/icon.svg', '/tasks', '/settings', '/api/setup', '/examples/index.html', '/examples/player.js', '/examples/demos.js',
+  for (const path of ['/', '/favicon.ico', '/icon.svg', '/tasks', '/settings', '/workflows/youdub.subtitles', '/api/setup', '/examples/index.html', '/examples/player.js', '/examples/demos.js',
     ...Object.keys(demos).flatMap(id => [`/examples/assets/${id}-en.mp4`, `/examples/assets/${id}-zh.mp4`, `/examples/assets/${id}-poster.jpg`])]) {
-    const response = await fetch(base + path, { signal: AbortSignal.timeout(10000) })
+    const response = await fetch(base + path, { headers: { Accept: 'text/html' }, signal: AbortSignal.timeout(10000) })
     if (!response.ok) throw new Error(`Desktop ${path}: HTTP ${response.status}`)
     await response.arrayBuffer()
+  }
+  const html = await (await fetch(base + '/workflows/youdub.subtitles', { headers: { Accept: 'text/html' } })).text()
+  if (!/<div\s+id="root"/.test(html)) throw new Error('Packaged workflow URL did not serve the client shell.')
+  const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^"?#]+)"/g)].map(match => match[1])
+  if (!assets.some(asset => asset.endsWith('.js'))) throw new Error('Packaged client shell has no JavaScript entry.')
+  for (const asset of new Set(assets)) {
+    const response = await fetch(base + asset, { signal: AbortSignal.timeout(10000) })
+    if (!response.ok || !/(?:javascript|css)/.test(response.headers.get('content-type') || '')) throw new Error(`Packaged client asset failed: ${asset} (${response.status}).`)
+    if (!(await response.arrayBuffer()).byteLength) throw new Error(`Packaged client asset is empty: ${asset}`)
   }
   const setup = await (await fetch(base + '/api/setup')).json()
   if (setup.version !== appVersion || setup.platform !== 'darwin' || !setup.osVersion) throw new Error('Packaged setup diagnostics metadata is missing or incorrect.')
   verify()
-  console.log('Desktop routes and icons respond; signed application remains unchanged.')
+  console.log('Desktop client routes, JavaScript, styles and icons respond; signed application remains unchanged.')
 } finally {
   server.stdin.end()
   const timer = setTimeout(() => { console.error('Desktop shutdown timed out; terminating smoke process.'); server.kill('SIGKILL') }, 30000)
@@ -77,3 +88,27 @@ try {
   await rm(data, { recursive: true })
 }
 verify()
+const nativeData = await mkdtemp(join(tmpdir(), 'youdub-native-smoke-'))
+const report = join(nativeData, 'ready.json')
+const native = spawn(join(app, 'Contents/MacOS/YouDub'), ['--smoke-ready', report], {
+  env: { ...process.env, YOUDUB_DESKTOP_DATA_DIR: nativeData, YOUDUB_PYTHON: readyPython }, stdio: ['ignore', 'pipe', 'pipe'],
+})
+let nativeOutput = ''
+native.stdout.on('data', chunk => { nativeOutput += chunk })
+native.stderr.on('data', chunk => { nativeOutput += chunk })
+try {
+  const result = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { native.kill('SIGKILL'); reject(new Error(`Native WKWebView smoke timed out. ${nativeOutput}`)) }, 240000)
+    native.once('error', error => { clearTimeout(timer); reject(error) })
+    native.once('exit', (code, signal) => { clearTimeout(timer); resolve({ code, signal }) })
+  })
+  const evidence = JSON.parse(await readFile(report, 'utf8'))
+  if (result.code !== 0 || !evidence.ok) throw new Error(`Native WKWebView smoke failed: ${JSON.stringify(evidence)}\n${nativeOutput}`)
+  await writeFile(resolve('dist/macos-smoke.json'), JSON.stringify(evidence, null, 2) + '\n')
+  verify()
+  console.log('Native WKWebView authenticated plugin pages passed; signed application remains unchanged.')
+  await rm(nativeData, { recursive: true })
+} catch (error) {
+  console.error(`Native smoke diagnostics retained at ${nativeData}`)
+  throw error
+}

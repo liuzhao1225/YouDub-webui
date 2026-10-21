@@ -1,6 +1,6 @@
 import { type Context } from 'cordis'
 import Busboy from 'busboy'
-import type { Artifact, CreateTask, TaskView } from '@youdub/sdk'
+import type { Artifact, CreateTask, TaskView, TaskSummary } from '@youdub/sdk'
 import { AppError, requireId } from '@youdub/sdk'
 import { readJson, type HttpRequest } from './http.js'
 import { taskCover } from './task-cover.js'
@@ -8,6 +8,7 @@ import { checkForUpdates, updatePlatform } from './updates.js'
 import { nodeTypes, inspectGraph } from './workflow-graph.js'
 import { parseWorkflowDocument } from './workflow-document.js'
 import { workflowTemplates } from './workflow-templates.js'
+import { migrateLegacyDefaults, readDefaultsMigration, type DefaultsMigration } from './legacy-defaults-migration.js'
 import './auth.js'
 import './extensions.js'
 
@@ -17,7 +18,7 @@ export function apply(ctx: Context, config: { version: string }) {
   if (!config?.version) throw new Error('The API requires the application version from its composition.')
   const currentVersion = config.version
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => ctx.http.register(method, path, handler))
-  const view = (task: TaskView) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
+  const view = <T extends TaskView | TaskSummary>(task: T) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(task.cover.artifactId!)}` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
   route('GET', '/api/health', request => {
     ctx.tasks.assertReady()
     ctx.http.json(request, 200, { status: 'ready', api_version: 'v2' })
@@ -26,12 +27,33 @@ export function apply(ctx: Context, config: { version: string }) {
   route('GET', '/api/v2/workflows', request => ctx.http.json(request, 200, { items: ctx.catalog.describe().workflows }))
   const base = '/api/v2'
   const templates = async () => workflowTemplates(ctx.catalog, await ctx.settings.read())
+  let migrationFailure: DefaultsMigration | undefined
+  const migrateDefaults = async () => {
+    try {
+      const result = await ctx.settings.locked(() => migrateLegacyDefaults(ctx.store, ctx.catalog))
+      migrationFailure = undefined
+      return result
+    } catch (error) {
+      migrationFailure = { version: 1, status: 'blocked', diagnostics: [{ code: error instanceof AppError ? error.code : 'DEFAULTS_MIGRATION_FAILED', message: error instanceof Error ? error.message : String(error) }] }
+      throw error
+    }
+  }
+  let initialization: Promise<void> | undefined
+  ctx.on('app/ready', () => {
+    initialization ??= migrateDefaults().then(() => {}, error => { ctx.logger.error(error) })
+  })
+  const migrationStatus = async () => { await initialization; return migrationFailure ?? await readDefaultsMigration(ctx.store) }
+  route('POST', `${base}/workflow-documents/migrate-defaults`, async request => {
+    await initialization
+    ctx.http.json(request, 200, await migrateDefaults())
+  })
   route('GET', `${base}/node-types`, request => ctx.http.json(request, 200, { items: nodeTypes(ctx.catalog) }))
   route('GET', `${base}/workflow-documents`, async request => {
     const limit = Number(request.url.searchParams.get('limit') ?? 100), offset = Number(request.url.searchParams.get('offset') ?? 0)
     if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isInteger(offset) || offset < 0) throw new AppError('INVALID_CONFIG', 'Invalid workflow pagination.', 422)
+    const legacyDefaultsMigration = await migrationStatus()
     const page = await ctx.store.call('store.workflow_list', { limit, offset })
-    ctx.http.json(request, 200, { ...page, items: [...(offset === 0 ? await templates() : []), ...page.items.map((item: any) => ({ ...item, origin: 'user' }))] })
+    ctx.http.json(request, 200, { ...page, legacyDefaultsMigration, items: [...(offset === 0 ? await templates() : []), ...page.items.map((item: any) => ({ ...item, origin: 'user' }))] })
   })
   route('POST', `${base}/workflow-documents`, async request => {
     const document = parseWorkflowDocument((await readJson(request)).document)

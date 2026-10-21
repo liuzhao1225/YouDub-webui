@@ -1,6 +1,6 @@
 import type { Context } from 'cordis'
 import type { ComponentType } from 'react'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
@@ -18,8 +18,9 @@ function mount(request: ReturnType<typeof vi.fn>, route = 'task-detail') {
     effect: (effect: () => unknown) => effect(),
   } as unknown as Context
   apply(context)
-  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{ id: task.id }} /></LanguageProvider></PluginContextProvider>)
-  return push
+  const show = () => render(<PluginContextProvider context={context}><LanguageProvider><Page params={{ id: task.id }} /></LanguageProvider></PluginContextProvider>)
+  const view = show()
+  return Object.assign(push, { unmount: view.unmount, show })
 }
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.restoreAllMocks() })
 
@@ -107,4 +108,27 @@ it('shows graph results before a collapsed step list and uses the workflow title
   await userEvent.setup().click(screen.getByText(/步骤列表/))
   expect(steps.open).toBe(true)
   expect(screen.getByRole('link', { name: '翻译' })).toHaveAttribute('href', '/tasks/original/nodes/translate')
+})
+
+
+it('restores an unresolved rerun on return and does not navigate after its source view closes', async () => {
+  let complete!: (value: TaskView) => void
+  const request = vi.fn(async (path: string) => {
+    if (path === '/api/v2/catalog') return catalog
+    if (path.endsWith('/rerun')) return new Promise<TaskView>(resolve => { complete = resolve })
+    return task
+  })
+  const push = mount(request), user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: '重新生成' }))
+  await user.selectOptions(await screen.findByLabelText('mode *'), 'lower')
+  await user.click(screen.getByRole('button', { name: '创建任务' }))
+  await waitFor(() => expect(complete).toBeDefined())
+  push.unmount()
+  await act(async () => complete({ ...task, id: 'new-task' }))
+  expect(push).not.toHaveBeenCalled()
+  push.show()
+  expect(await screen.findByLabelText('mode *')).toHaveValue('lower')
+  expect(screen.getByLabelText('mode *')).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: '查询创建结果' }))
+  expect(push).toHaveBeenCalledWith('/tasks/new-task')
 })

@@ -1,6 +1,6 @@
 # Cordis 插件版运行与扩展指南
 
-本文适用于当前 `main` 的 Cordis 插件实现。Host、Client 和 Python 执行桥已实现，三种真实媒体流程及本地切换已验收。测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)。截至 2026-10-09，验证环境为 macOS arm64 / Node.js 22，远端插件下载及其他平台尚未验收。
+本文描述当前源码的 Cordis Host、React/Vite Client 与 Python 执行桥。前端分层与参考来源见[前端实现说明](harness-frontend-migration.md)。历史媒体流程测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)，各记录中的日期、环境与验证范围保留原义。
 
 节点工作流和按图准备资源见[使用指南](../workflows.md)及 [2026-10-20 验收记录](../validation/workflow-nodes-2026-10-20.md)。旧版首次启动流程保留在 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
 
@@ -27,7 +27,7 @@ Python、FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，CPU/CU
 | VoxCPM2 | `models/voxcpm/VoxCPM2` | `YOUDUB_VOXCPM_MODEL_DIR` |
 | Qwen 对齐 | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf` | `YOUDUB_FORCED_ALIGNER_MODEL_DIR` |
 
-VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。翻译模型列表由 `YOUDUB_TRANSLATION_MODELS` 配置，连接 URL 和密钥在设置页保存。
+VoxCPM2 与 Qwen 需要完整的模型、tokenizer 和 processor 配置；设置页显示实际探测结果。“模型”分区与首次配置共用 Harness 模型供应商编辑器，保存供应商地址、协议、模型候选和凭据引用，实际执行模型固定在工作流节点绑定中。旧 `openai` 连接及 `YOUDUB_TRANSLATION_MODELS` 保留给历史任务和首次旧配置导入；新供应商由 `llm.<route>` 注册，不持续读取旧 defaults。模型候选获取不代表真实翻译调用成功，执行时要求最大输出参数至少为 65,535。
 
 Whisper provider 还需要 `nltk==3.10.3` 和预训练 `punkt_tab` 数据。准备含 Whisper 的工作流时会下载到应用数据目录的 `nltk_data/`，已有 NLTK 资源可复用；自定义目录使用 `NLTK_DATA`。推理时只检查本地包和四个英文参数文件；缺失时明确报告 `MODEL_NOT_READY`。
 
@@ -51,9 +51,10 @@ test .env -ef env.txt
 | --- | --- |
 | `YOUDUB_CONFIG` | 仓库根 `youdub.config.ts`；也接受 Loader entries JSON 文件 |
 | `YOUDUB_PYTHON` | 根目录 `.venv/bin/python`，Windows 为 `.venv/Scripts/python.exe`；官方模型和存储执行环境 |
-| `YOUDUB_HOST` / `YOUDUB_PORT` | `127.0.0.1` / `8000` |
+| `YOUDUB_HOST` / `YOUDUB_PORT` | `127.0.0.1` / `8000`；`npm --prefix apps/web start` 默认端口为 `3000` |
 | `YOUDUB_DESKTOP_DATA_DIR` | macOS 为 `~/Library/Application Support/YouDub`；可改为隔离验证目录 |
-| `NEXT_SERVER_API_BASE_URL` | Next 代理目标，默认 `http://127.0.0.1:8000`；在 Next 构建/启动命令环境设置 |
+| `YOUDUB_API_URL` | Vite 开发/预览代理目标，默认 `http://127.0.0.1:8000`；生产同源服务无需配置 |
+| `YOUDUB_WEB_ROOT` | 可选静态构建目录；生产前端启动脚本与桌面启动器设置为 `apps/web/dist` 的绝对路径 |
 | `YOUDUB_AUTH_*` | 会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
 | `LOCAL_UPLOAD_MAX_BYTES` | 默认 4 GiB；具名输入还受 workflow 的 `maxBytes` 限制 |
 
@@ -78,21 +79,27 @@ npm start
 终端二启动开发前端：
 
 ```bash
-npm --prefix apps/web run dev -- --hostname 127.0.0.1 --port 3000
+npm --prefix apps/web run dev -- --host 127.0.0.1 --port 3000
 ```
 
-开发前端的 `predev` 会构建官方 Client 插件。生产前端使用：
+开发前端的 `predev` 会构建官方 Client 插件。Vite 将 `/api` 代理到 Host；Host 使用非默认端口时，在启动 Vite 前设置 `YOUDUB_API_URL`。
+
+生产运行使用一个 Host 同源提供页面和 API。先停止上述两个开发服务，再执行：
 
 ```bash
 npm run build:web
-npm --prefix apps/web start -- --hostname 127.0.0.1 --port 3000
+npm --prefix apps/web start
 ```
 
-`build:web` 的 `prebuild` 同样执行插件构建。`build:plugins` 生成 `apps/web/plugin-dist/manifest.json` 和官方 ESM，Host 在启动时读取清单；首次启动 Host 前该文件必须存在。浏览器打开 `http://127.0.0.1:3000`。`/api/health` 只证明宿主就绪，模型是否具备条件查看 Runtime；真实推理仍需实际任务验收。
+`build:web` 的 `prebuild` 同样执行插件构建，Vite 产物位于 `apps/web/dist`。生产启动脚本设置静态目录和默认端口 `3000`，然后启动 Cordis Host；监听地址通过 `YOUDUB_HOST`、`YOUDUB_PORT` 环境变量配置，命令不接收原 Next 的 `--hostname`/`--port` 参数。`NEXT_SERVER_API_BASE_URL` 已移除，生产构建不固定 API 代理地址。
+
+静态 Web 插件与环境准备插件并列挂载，Python 尚未准备时仍能显示准备页；桌面安装包使用同一套静态构建与 Host，监听本机动态端口。页面深链接由 Host 返回 SPA 入口，缺失资源和 API 路径保留 404。
+
+`build:plugins` 生成 `apps/web/plugin-dist/manifest.json` 和官方 ESM，Host 在启动时读取清单；首次启动 Host 前该文件必须存在。浏览器打开 `http://127.0.0.1:3000`。`/api/health` 只证明宿主就绪，模型是否具备条件查看 Runtime；真实推理仍需实际任务验收。
 
 `npm run dev:api` 与 `npm start` 均运行 Cordis Host。旧 FastAPI、旧调度器和 `dev:legacy` 已移除；HTTP 统一使用 `/api/v2`。
 
-主页保留视频上传、输出内容、原文语言、目标语言和任务概览。模型、设备、声音、字幕对齐及背景音默认值在「设置 → 默认处理配置」保存，服务地址和密钥在「服务连接」保存。新任务读取已保存的默认配置；主页切换输出模式后再切回会恢复原配置。旧任务重跑保留完整配置编辑，允许调整已失效的模型选择。
+主页保留视频链接、拖拽上传、工作流选择和节点声明的快捷设置。语言、模型、设备、声音、字幕和背景音参数归工作流节点；保存工作流可复用这些设置。全局设置分为通用、模型、环境与模型、扩展、关于与更新。齿轮入口位于桌面侧栏底部、移动端顶栏；点击后以分类弹窗覆盖当前页面，保留原位置与草稿。分类切换不新增浏览器历史，关闭、Escape 或遮罩回到来源页面；直接打开 `/settings[/section]` 时关闭回工作台。`/settings/models` 提供模型供应商管理，旧 `/settings/connections` replace 到该路径。窄屏使用全屏弹窗与左侧图标栏。旧处理 defaults 迁移成“原默认处理配置”工作流，官方模板不再持续读取它。旧任务重跑保留完整配置编辑，允许调整已失效的模型选择。
 
 ## 3. 安装、启停和重启
 
@@ -139,7 +146,9 @@ Git ref 解析为固定 commit 后 detached checkout；npm 必须指定精确版
 
 `youdub.host` 和 `youdub.client.entry` 指向已编译资产。可选 `youdub.build: "npm"` 要求包提供 `npm run build`。Cordis 和 SDK 使用宿主提供的模块身份，不放入普通 `dependencies`。`sdkVersion` 指公共协议兼容范围；当前工作区 SDK 包是本地实现，并未据此宣布 npm 发布。
 
-Client 采用原生 ESM；`react`、`react-dom`、`react-dom/client`、`react/jsx-runtime`、`react/jsx-dev-runtime`、`cordis`、`@youdub/sdk/client` 标记为 external，通过宿主 import map 解析。其余代码打入入口，CSS 用 `client.css` 声明。当前外部资产服务仅公开声明的入口和 CSS，不要生成未声明的额外共享 chunk。安装预编译 Client 后重启 Host、刷新页面，无需重建 Next。示例新增 `/extensions/text`、导航、React Hooks 计数器和任务面板。
+Client 采用原生 ESM；`react`、`react-dom`、`react-dom/client`、`react/jsx-runtime`、`react/jsx-dev-runtime`、`cordis`、`@youdub/sdk/client` 标记为 external，通过宿主 import map 解析。其余代码打入入口，CSS 用 `client.css` 声明。当前外部资产服务仅公开声明的入口和 CSS，不要生成未声明的额外共享 chunk。安装预编译 Client 后重启 Host、刷新页面，无需重建 Vite 外壳。示例新增 `/extensions/text`、导航、React Hooks 计数器和任务面板。
+
+内置页面通过 `bindComponent` 在插件注册时注入查询、导航、会话和插槽能力，组件通过显式 props 使用这些能力。查询、资源准备与更新检查的状态放在无 React 依赖的 runtime，React 订阅集中于 `web-react`。公共 Client SDK 仍为 `1.1.0`，保留已有第三方插件使用的 `useClient`、`useSlot`、`Link` 等入口；本次分层不要求插件改写。
 
 ## 5. Python 作者入口与 stdio 协议
 
@@ -164,7 +173,11 @@ Client 采用原生 ESM；`react`、`react-dom`、`react-dom/client`、`react/js
 }
 ```
 
-上段是 `youdub` 内部字段；`requirements` 无依赖时省略。当前 entry 是包内 Python 脚本路径。安装器使用 PATH 中的 `python3` 创建独立 `.venv`，安装前应确认该解释器满足插件依赖；官方计算环境另由 `YOUDUB_PYTHON` 指定。启动时由普通 `python-provider` 插件转换成 provider 注册；同一包的 `host` 和 `python` 入口互斥。需要自定义 workflow 时使用 Host 入口，并自行调用公开 `process` 服务。
+上段是 `youdub` 内部字段；`requirements` 无依赖时省略。entry 是包内 Python 脚本路径。安装器优先使用 Host 配置的 Python 或 `YOUDUB_PYTHON` 创建插件自己的 `.venv`；独立 CLI 未指定时才使用 PATH 中的 `python3`（Windows 为 `python`）。安装前确认该解释器满足插件依赖。启动时由普通 `python-provider` 插件转换成 provider 注册；同一包的 `host` 和 `python` 入口互斥。需要自定义 workflow 时使用 Host 入口，并自行调用公开 `process` 服务。
+
+需要人工订正的纯 Python provider 可显式声明 `python.corrections: "schema"`，按输出 JSON Schema 校验订正；输出端口和文件归属仍由任务服务检查。复杂领域规则由 Host provider 的 `validateCorrection` 实现。内置媒体 provider 显式使用媒体校验，通用 Python adapter 不隐式套用媒体规则。
+
+provider 可通过 `resources: { dependencyGroups, model?: { id, downloadId } }` 选择宿主已知的依赖组和模型资源；未声明的插件继续按自身安装指导准备。依赖组、模块名、兼容范围和内置 provider 资源映射统一来自 `backend/requirements/resources.json`。各组的 `.txt` 是安装需求，兼容范围单独声明；资源契约不接受任意下载地址或安装命令。
 
 每次 operation 启动一个受管进程。stdin/stdout 使用逐行 JSON，stdout 仅输出协议，日志与 traceback 写 stderr。首条输入：
 
@@ -198,8 +211,9 @@ Client 插件可向 `settings.sections` 注册设置区域。组件收到本区�
 npm run typecheck
 npm test
 npm run test:backend
+npm --prefix apps/web test
 npm run lint:web
 npm run build:web
 ```
 
-本轮通过真实字幕、配音和字幕加配音任务、独立 Python 提供者、外部 workflow/Client 页面、原数据迁移与本地页面验收；逐项证据及未验证范围见迁移记录。首版采用单机单活跃任务，扩展启停在重启后生效；DAG 编辑器、热替换、插件市场、权限沙箱和分布式 worker 不在 MVP 范围内。
+历史真实字幕、配音、字幕加配音任务、独立 Python 提供者、外部 workflow/Client 页面与数据迁移的证据见[迁移记录](cordis-plugin-migration.md)。当前节点工作流支持分叉、汇合与逐节点人工确认，按单执行槽运行，等待确认的节点释放执行槽。扩展启停在重启后生效；热替换、插件市场、权限沙箱、循环和分布式 worker 尚未实现。前端迁移的验证范围见[实现说明](harness-frontend-migration.md#验证范围)，历史验收不代表本次迁移已通过。
