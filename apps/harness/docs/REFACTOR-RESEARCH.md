@@ -18,7 +18,7 @@
 | R1 依赖闭包 | 模型设置仅在 DeepSeek 账号分支读取 `remote.session.modelCatalog`；其余模型 CRUD 使用 LLM/Settings/Credentials。桌面退出检查直接要求 agents/jobs | 逐项解除后核对新运行 inventory 和生成类型；不据静态发现批量删包 |
 | R2 运行与构建范围 | 改造前 profile 使用 base/web-app/YouDub 三层、117 个禁用覆盖；当前建立 33 条正向装配。框架构建仍覆盖 362 包、325 个客户端产物 | 结合当前消费者裁剪源码和编译依赖，启动条目减少不等于包体已经缩减 |
 | R3 恢复/来源 | 归档恢复和初始状态检查通过，已建立产品改造前标签；原 Desktop 内嵌提交与公开 tag 的差异继续保留 | 首次行为改动后验证差异账本和产物来源 |
-| R4 运行资源 | 启动器和开发项目读取 primary-runtime 的 Node/pnpm，Host 无条件安装 Office；profile 测试也误用了该 runtime 的 pnpm | 私有最小资源的来源、版本、哈希和跨平台准备流程；本批先让测试使用锁定的开发依赖 pnpm |
+| R4 运行资源 | 已定位 Node 的消费者为 Host、pnpm 和 yt-dlp；活动开发入口改用仓库 Electron 的 Node 模式和锁定 pnpm，Host 解除 Office | 全新工作区和跨平台复现；P6 删除旧开发 App 脚本及无关依赖 |
 | R5 功能覆盖 | 冻结清单重新核对：58 路由、11 媒体操作、11 worker 操作、9 页面、50 组件文件；已有[功能账本](FUSION-COVERAGE.md) | 本次候选完整流程、B 站、音色等真实输入验收 |
 | R6 界面 | 同一个 Electron Host 的浏览器入口可读，当前日语首屏保留 Logo/大标题，设置显示产品版本 0.0.7，模型页仅显示用户已配置提供商 | Mac 锁屏，原生窗口、保存框、画布与动效需解锁实测；截图只证明静态状态 |
 | R7 数据/配置 | 启动器默认使用本工作区 `.cache/harness/desktop`，媒体、模型和缓存放在 YouDub 数据目录；已有凭据未改 | 环境回退、稳定 ID、迁移副本的完整复核 |
@@ -100,3 +100,13 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 当前活动 fork：7 个原构建 gate 全部通过（29.73 秒）；框架相关 43 文件、788 passed、1 个原有平台限定 skipped；YouDub Harness 集成 62 passed；组合与中英日语言检查通过。此轮本地日志为 `/tmp/youdub-refactor-p2-upstream-tests.log`、`/tmp/youdub-refactor-p2-integration.log`。
 - 同一 Electron Host 的浏览器入口 `127.0.0.1:60233`：首页及大标题、日语通用设置、用户提供商原编辑器与 URL/模型字段正常读回；取消编辑未保存配置。旧 zoo 下载任务详情显示原视频/音频/字幕文件和十节点历史图；扩展页显示 YouDub 内置功能及安装入口。没有重新运行该历史任务，不把旧产物计入本次完整流程通过。
 - 当前原生 Mac 仍锁屏；实际窗口、保存、退出与未保存表单保护保持待验收。首启过程中语言仍有中日混合，列入 P4。P2 尚未整体完成。
+
+## P3 开发运行资源独立化（2026-10-22）
+
+- 已核实 Node 的实际消费者：Desktop/浏览器 Host、profile 与扩展包管理、Python 下载 worker 调用的 yt-dlp JavaScript runtime；媒体业务没有 Office 消费者。
+- 直接复用原 `desktopNodeEnvironment` 和 `scripts/node-bin`，由本应用 `electron` 提供 Node，包管理入口为锁文件指定的 `apps/harness/node_modules/pnpm/bin/pnpm.mjs`。`desktop.mjs`、`launch.mjs`、产品入口与真实 Host 测试移除 primary-runtime 参数；旧 `prepare-youdub-app.mjs` 不在开发启动链，留待 P6 删除。
+- Node wrapper 只加入包管理子进程的 PATH；媒体 worker 使用绝对 Electron 可执行路径并保留 `ELECTRON_RUN_AS_NODE=1`。原 Subprocess 会剥离 `DSH_*`，因此不能把依赖该变量的 wrapper 当作媒体 Node。真实 Python 子进程已执行本应用 Electron 的 Node 模式，确认 executable/version；媒体、模型、NLTK、pip、HF、Torch、ModelScope 路径均在 YouDub 私有数据目录。
+- 原 HostProcess/Node 环境测试 23 passed；框架 7 gate 全部通过（31.23 秒），产品构建、组合与精确 fork 来源检查通过。真实 Host、profile、worker 与首启针对性测试 28 passed，覆盖原 401→303/cookie 认证、四模型未齐禁止 ready、退出 IPC 与关闭清理。临时日志：`/tmp/youdub-refactor-p3-host-process-tests.log`、`/tmp/youdub-refactor-p3-framework-build.log`、`/tmp/youdub-refactor-p3-integration.log`。
+- `desktop.mjs --prepare-only` 成功；停止旧主进程/Host 后重建并启动现有 profile。同 Host 浏览器入口 `127.0.0.1:63837` 已读回原首页、历史 zoo 任务、日语设置、产品版本 0.0.7、用户配置提供商和密钥掩码；没有新增默认账号或模型。页面当前 origin error 日志为空，首页截图 `/tmp/youdub-refactor-p3-home.png`。这次没有重新调用翻译或运行完整媒体链。
+- P2 checkpoint `569c3e3c` 的[源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39652654855) 已全部通过；本节 P3 修改仍需自己的 CI。原始来源清单未改，当前 fork 为 42 项记录差异。
+- 原生 Mac 仍锁屏。P3 整体仍待新工作区首启、页面配置写入/重启和实际下载节点验证；P2 仍待前端草稿退出保护，P4/P6/P7 保持未完成。两份飞书文档按用户要求在全部改造和验收结束后更新。

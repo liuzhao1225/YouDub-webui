@@ -36,18 +36,17 @@ npm run build:youdub
 
 `vendor/deepseek-harness/source` 是活动产品 fork；原始归档和固定清单保持不变，修改逐项登记在 `fork.json`。生成目录位于 `.cache` 和 `dist`。当前开发壳使用源码构建的 preload，按源构建路径加载 CLI、Host、Web 和服务。替换框架产物前停止使用它的开发实例，避免逐文件更新触发不完整的 HMR 状态。
 
-### 准备官方 runtime 资源
+### 准备开发 profile
 
-源码和 npm 依赖之外，当前启动还需要原版 runtime 中的 `primary-runtime` 与 `office-skills`。资源必须匹配目标 OS/架构，来源与完整性记录见[基线说明](../baselines/README.md)。新机器需要单独提供这一目录；`npm ci` 不会完成这一步。
+启动依赖来自上述 npm 锁文件与源码构建。Host 和下载节点使用本应用 Electron 的 Node 模式；profile 与扩展安装使用本工作区 pnpm。Python、FFmpeg、分句资源和四模型由应用首启准备。
 
-在工作区尚未复制 runtime 时，使用实际来源替换占位路径：
+需要单独验证 profile 时执行：
 
 ```sh
-node apps/harness/desktop.mjs --prepare-only \
-  --runtime-source '/绝对路径/runtime'
+node apps/harness/desktop.mjs --prepare-only
 ```
 
-该目录应直接包含上述两个子目录。脚本复制到 `.cache/harness/runtime` 并准备开发 profile；已有副本时日常启动省略 `--runtime-source`。它不会启动来源目录里的 Harness 应用。默认运行也不调用 `/Applications/DeepSeek Harness.app` 或共享 `~/.dsh`。
+`npm start` 也会完成同一准备步骤。当前启动无需复制 `primary-runtime` 或 `office-skills`，默认运行不调用已安装 Harness 应用或共享 `~/.dsh`。旧开发 App 组装脚本已脱离根开发命令，待 P6 清理，本轮不执行。
 
 ## 日常修改与启动
 
@@ -94,7 +93,7 @@ npm --prefix apps/harness start
 | Python / venv | `$DSH_HOME/youdub/runtime/python`、`runtime/venv` |
 | 模型 | `$DSH_HOME/youdub/models` |
 | 媒体工具与分句资源 | `$DSH_HOME/youdub/runtime/ffmpeg`、`$DSH_HOME/youdub/nltk_data` |
-| 官方 runtime 副本 | `.cache/harness/runtime` |
+| Node / pnpm | 本工作区 `apps/harness/node_modules/electron` 与 `pnpm` |
 | 桌面源码运行时链接 | `apps/harness/dist/desktop/runtime-project` |
 | 浏览器 home / profile | `.cache/harness/dsh` / `profiles/youdub` |
 
@@ -104,7 +103,7 @@ npm --prefix apps/harness start
 DSH_HOME="$PWD/.cache/harness/desktop-fresh" npm start
 ```
 
-Electron 用户数据跟随为该 home 加 `-user-data`。新 home 复用工作区的官方 runtime，只隔离 profile、业务环境和数据；重新使用同一路径会继续读取前次实验数据。不要通过删除用户 home 来制造首启场景。
+Electron 用户数据跟随为该 home 加 `-user-data`。新 home 复用工作区的 Electron、pnpm 和源码构建，独立保存 profile、业务环境、模型和数据；重新使用同一路径会继续读取前次实验数据。不要通过删除用户 home 来制造首启场景。
 
 bundle 默认配置在 [`cordis.patch.yml`](../cordis.patch.yml)，用户覆盖位于 profile 的同名文件；加载和优先级遵循官方机制。密钥和模型配置通过页面输入，保存到官方 Settings/Credentials 管理的位置。
 
@@ -151,7 +150,7 @@ node apps/harness/baselines/verify.mjs --report /tmp/youdub-harness-integrity.js
 | 现象 | 先检查 |
 | --- | --- |
 | 找不到 `.dsh-build/client-build-environment.json` 或官方 CLI/Host | `build:framework` 是否成功，源码构建目录是否完整 |
-| `Missing official runtime payload` | `.cache/harness/runtime` 的资源是否按 OS/架构正确复制 |
+| Electron 或 pnpm 缺失 | `npm --prefix apps/harness ci` 是否成功，Electron 平台二进制是否安装完整 |
 | Host / web boot 报 pending service | 官方诊断中的条目与 `inject`，产品 patch 是否关闭了所需服务 |
 | `Legacy platform code entered the Harness plugin bundle` | 构建输入中的旧框架依赖，修正导入/接线后重建 |
 | 修改页面后界面未变化 | 是否构建产品并重启正确的 Electron/浏览器实例，当前使用哪个 home |

@@ -38,14 +38,13 @@ npm run build:framework
 npm run build:youdub
 ```
 
-官方运行资源需复制到本工作区 `.cache/harness/runtime`，包含 `primary-runtime` 和 `office-skills`。本机已保存的来源是独立基线归档中的 runtime；初始化命令只复制资源，不启动归档里的官方应用。仅在工作区尚无该资源时执行：
+上述依赖和构建完成后，启动器直接使用本仓库 Electron 的 Node 模式和锁文件指定的 pnpm。可单独检查开发 profile：
 
 ```sh
-node apps/harness/desktop.mjs --prepare-only \
-  --runtime-source '/Users/liuzhao/code/youdub-harness-baselines/20261021/DeepSeek Harness.app/Contents/Resources/runtime'
+node apps/harness/desktop.mjs --prepare-only
 ```
 
-其他机器须提供适配其 OS/架构的原版 runtime 目录。没有 payload 时启动会明确失败。
+当前启动无需原 Harness 应用的 runtime 副本。Python、FFmpeg、分句资源和四模型由 YouDub 首启流程准备；Windows 的实际交互仍待验收。
 
 `build:framework` 校验活动 fork 的来源与差异后复制到 `.cache/harness/source-build`，执行保留的 `scripts/build.ts --scope artifacts`；不生成 tarball、App 或安装包。第一次构建框架后，日常 YouDub 代码修改只需：
 
@@ -79,7 +78,7 @@ npm start
 | Electron 开发入口 | `apps/harness/dist/desktop/main.mjs` |
 | 官方源码构建工作区 | `.cache/harness/source-build` |
 | 桌面开发运行时 | `apps/harness/dist/desktop/runtime-project` |
-| 官方 primary runtime 与 office payload | `.cache/harness/runtime/` |
+| 开发包管理器 | `apps/harness/node_modules/pnpm/bin/pnpm.mjs` |
 | YouDub 的 Harness home | `.cache/harness/desktop` |
 | Electron 用户数据 | `.cache/harness/desktop-user-data` |
 | profile | `$DSH_HOME/profiles/desktop` |
@@ -88,22 +87,21 @@ npm start
 | 媒体工具与分句资源 | `$DSH_HOME/youdub/runtime/ffmpeg`、`$DSH_HOME/youdub/nltk_data` |
 | 模型 | `$DSH_HOME/youdub/models`；Whisper 默认在 `models/whisper` |
 
-Host 使用本应用 Electron 的 Node 模式；包管理使用私有 `primary-runtime/dependencies/pnpm`。下载节点的 yt-dlp JavaScript 运行时通过官方 `resolvePrimaryRuntime` 获取 `primary-runtime/dependencies/node/bin/node`；产品将该路径传给 worker，缺失时保留错误并停止，Harness 模式不回退到机器 PATH 中的 Node。YouDub 的媒体环境安装与任务数据使用独立目录，不写入已安装 Harness 应用或其默认数据目录。系统环境回退与最终媒体路径的隔离验收须按当前分支的环境检查证据确认。
+Host、浏览器开发入口和下载节点均使用本应用 Electron 的 Node 模式。包管理使用 `apps/harness/node_modules/pnpm`，经原 Harness `desktopNodeEnvironment` 和 `node-bin` 启动。产品将 Electron 可执行路径传给 Python worker 及 yt-dlp；缺失时保留错误并停止。媒体环境、模型、缓存和任务位于 YouDub 私有目录；实际路径与首次资源状态分别验证。
 
 开发运行所需文件如下；这些工作区文件当前仍需保留。
 
 | 依赖 | 来源与用途 |
 | --- | --- |
-| Node.js 22.19+、npm 与构建工具 | 执行开发启动脚本和源码构建；浏览器开发 Host 也使用启动脚本的 Node |
+| Node.js 22.19+、npm 与构建工具 | 执行开发启动脚本和源码构建 |
 | `vendor/deepseek-harness/source` 与 `.cache/harness/source-build` | 保存的官方源码，以及按官方构建流程生成的 CLI、Host、Web、插件和 pnpm 工作区依赖 |
 | `apps/harness/dist`、原 YouDub `backend`、`packages`、`site` 等文件 | YouDub 产品编译产物、媒体工作进程、源码校验输入和示例资源；通过 `YOUDUB_MEDIA_ROOT` 指向本仓库 |
 | `apps/harness/node_modules/electron` | npm 官方 Electron 发行二进制，直接承载桌面与 Host |
-| `.cache/harness/runtime/primary-runtime` 和同级 `office-skills` | 已保存官方 runtime 的独立本地副本，包含私有 pnpm、Node、文档依赖及 Office 技能资源；原官方 Host 启动需要这些资源 |
-| pnpm 工作区中的 `@deepseek-ai/libreoffice-kit` 与平台引擎 | 官方 Host 引用的已发布第三方运行资源；当前 macOS ARM64 使用 `libreoffice-kit-darwin-arm64`，未将其宣称为 Harness 源码构建产物 |
+| `apps/harness/node_modules/pnpm` | 锁定的开发包管理器，供原 profile 与 PluginManager 安装/卸载扩展 |
 | `submodule/demucs` | YouDub 固定的 Demucs 算法源码，版本由 Git submodule 记录；选择该模型时还需完成此源码与依赖准备 |
 | 各自 `$DSH_HOME/youdub` | 首启下载的媒体 Python、venv、FFmpeg、分句资源、所选模型和业务数据 |
 
-运行入口不调用 `/Applications/DeepSeek Harness.app`，也不以 `~/.dsh` 作为默认 home。基线归档只用于一次性获取 runtime 副本及完整性核对；开发启动使用已经复制到本工作区的文件。
+运行入口不调用 `/Applications/DeepSeek Harness.app`，也不以 `~/.dsh` 作为默认 home。基线归档用于来源核对与恢复。Office 等未使用源码及其构建依赖仍待 P6 裁剪，当前 Host 已解除对应装配。
 
 可用独立 home 重做首启验证，保留原数据：
 
@@ -112,7 +110,7 @@ DSH_HOME="$PWD/.cache/harness/desktop-fresh" \
   node apps/harness/desktop.mjs
 ```
 
-显式 `DSH_HOME` 会传入开发进程，Electron 用户目录为该路径加 `-user-data`。该测试仍共用只读的工作区 runtime，Python/任务/profile 位于新的 home。
+显式 `DSH_HOME` 会传入开发进程，Electron 用户目录为该路径加 `-user-data`。该测试共用工作区的 Electron、pnpm 与源码构建，Python/模型/任务/profile 位于新的 home。
 
 ## 配置方式
 

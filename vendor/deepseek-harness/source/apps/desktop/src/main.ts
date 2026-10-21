@@ -162,14 +162,6 @@ function runtimeResources(): RuntimeResources {
   return { node, nodeBin, pnpm, dsh }
 }
 
-function developmentPrimaryRuntime(): string {
-  const directory = process.env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR
-  if (directory === undefined || directory === '') {
-    throw new Error('dsh desktop: DSH_DESKTOP_PRIMARY_RUNTIME_DIR is required for an unpackaged launch')
-  }
-  return directory
-}
-
 function developmentHostInspectPort(enabled: boolean): number | undefined {
   const configured = process.env.DSH_DESKTOP_HOST_INSPECT_PORT
   if (!enabled || configured === undefined || configured === '') return undefined
@@ -322,9 +314,6 @@ async function main(): Promise<void> {
   const resources = runtimeResources()
   const paths = resolveDesktopPaths()
   const development = !app.isPackaged
-  const primaryRuntime = development
-    ? developmentPrimaryRuntime()
-    : join(process.resourcesPath, 'runtime', 'primary-runtime')
   const activeProject = paths.profile
   const manager = new DesktopProjectManager(paths, resources)
   // Dock and Finder launches inherit only launchd's environment; every Host shares one login-shell read.
@@ -446,7 +435,6 @@ async function main(): Promise<void> {
     const hostInspectPort = developmentHostInspectPort(development)
     const host = new DesktopHostProcess(resources.node, resources.dsh, activeProject,
       hostInspectPort, { ...hostEnvironment, DSH_CLIENT_VERSION: desktopClientVersion() }, onFailure,
-      primaryRuntime,
       resources, (next) => { platformView.setSession(next) })
     return {
       start: async () => {

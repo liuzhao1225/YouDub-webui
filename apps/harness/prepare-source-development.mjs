@@ -5,6 +5,7 @@ import { access, cp, lstat, mkdir, readFile, realpath, symlink, unlink, writeFil
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readFrameworkSource } from './baselines/framework-source.mjs';
+import { desktopNodeEnvironment } from '../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const root = resolve(here, '../..');
@@ -16,15 +17,15 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
   const receipt = JSON.parse(await readFile(join(source, 'youdub-source-build.json'), 'utf8'));
   if (receipt.sourceTreeSha256 !== framework.sha256) throw new Error('Framework source has changed since its build; run npm run build:framework.');
   const modules = join(source, 'node_modules/.pnpm/node_modules');
-  const primaryRuntime = join(root, '.cache/harness/runtime/primary-runtime');
   const electron = require('electron');
-  const pnpm = join(primaryRuntime, 'dependencies/pnpm/bin/pnpm.mjs');
+  const pnpm = join(here, 'node_modules/pnpm/bin/pnpm.mjs');
+  const nodeBin = join(here, 'dist/desktop/scripts/node-bin');
   for (const path of [join(source, '.dsh-build/client-build-environment.json'), join(source, 'apps/cli/lib/bin.js'),
     join(source, 'apps/desktop-host/lib/index.js'), join(source, 'apps/web/dist/index.html'), pnpm]) await access(path);
   const version = JSON.parse(await readFile(join(source, 'package.json'), 'utf8')).version;
   const release = { schemaVersion: 1, version, hostProtocolVersion: 4,
-    nodeVersion: execFileSync(electron, ['-p', 'process.versions.node'], { encoding: 'utf8', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } }).trim(),
-    pnpmVersion: JSON.parse(await readFile(join(primaryRuntime, 'dependencies/pnpm/package.json'), 'utf8')).version,
+    nodeVersion: execFileSync(electron, ['-p', 'process.versions.node'], { encoding: 'utf8', env: desktopNodeEnvironment(electron, undefined, process.env) }).trim(),
+    pnpmVersion: JSON.parse(await readFile(join(here, 'node_modules/pnpm/package.json'), 'utf8')).version,
   };
   const { prepareDevelopmentProject } = await import(pathToFileURL(join(here, 'dist/desktop/development-project.mjs')));
   const project = prepareDevelopmentProject({ projectDir: projectDirectory,
@@ -58,8 +59,5 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
   }
   await writeFile(join(project, 'youdub-source-runtime.json'), JSON.stringify({ version, source, pluginRoot,
     sourcePackages: resolved, development: true }, null, 2) + '\n');
-  const { resolvePrimaryRuntime } = await import(pathToFileURL(join(project, 'node_modules/@deepseek-ai/dsh-tool-workspace-dependencies/lib/index.js')));
-  const { node } = await resolvePrimaryRuntime(primaryRuntime);
-  if (!node) throw new Error('The official YouDub runtime payload does not contain Node.js.');
-  return { project, pluginRoot, source, modules, primaryRuntime, pnpm, electron, node };
+  return { project, pluginRoot, source, modules, pnpm, electron, node: electron, nodeBin };
 }

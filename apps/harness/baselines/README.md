@@ -49,7 +49,7 @@ node apps/harness/baselines/desktop-build.mjs --record
 npm start
 ```
 
-首次准备前需按主 README 放置官方 `primary-runtime` 与 `office-skills` payload。`npm start` 直接运行仓库 Electron 与源码开发入口；不生成 App 或安装包。默认 `DSH_HOME` 为 `.cache/harness/desktop`，Python、模型、缓存与任务留在该应用目录中；显式设置后可以验证另一份独立首启。当前开发运行依赖本工作区及源码构建结果，无需启动已安装的 Harness。产品版本读取根 `package.json`，框架版本单独记录。
+`npm start` 直接运行仓库 Electron 与源码开发入口，Node 模式和锁定的 pnpm 承载 Host 与包管理；无需原 Harness 的 `primary-runtime` 或 `office-skills` 副本，不生成 App 或安装包。默认 `DSH_HOME` 为 `.cache/harness/desktop`，Python、模型、缓存与任务留在该应用目录中；显式设置后可以验证另一份独立首启。当前开发运行依赖本工作区及源码构建结果。产品版本读取根 `package.json`，框架版本单独记录。
 
 当前开发壳尚未配置 YouDub 更新源，更新操作明确显示该限制。真实交互、首次安装和任务验收见 `../docs/validation.md`，构建来源验证不替代功能验收。
 

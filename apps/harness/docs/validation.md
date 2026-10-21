@@ -63,7 +63,7 @@
 
 Mac 解锁后，外部文本插件页面计数按钮从 0 变为 1；原生自定义校对界面编辑并保存 revision 2 后仍待确认，确认后导出 83 B 文本。两个测试插件均通过官方卸载，原生导航随之移除，SDK 与 lock 继续指向源码运行时。见 [插件原生验收](evidence/source-native-client-plugins.json)、[校对界面](evidence/source-native-plugin-review.png)。
 
-源码开发运行需要本工作区、完整框架构建结果、仓库 Electron、私有 `primary-runtime` 及同级 `office-skills`。后二者已有独立副本，当前启动不读取已安装 Harness app 或其默认账号目录。第三方原生资源 `libreoffice-kit` 及其平台引擎保留发行产物。详细依赖与路径见 [README](../README.md#启动与首次环境准备)。
+2026-10-22 的活动 fork 已将 Node/pnpm 切换为仓库 Electron 的 Node 模式和锁定 pnpm，启动无需 `primary-runtime` 与 `office-skills` 副本。同一真实 Host 的浏览器页面已读回首页、历史任务与用户模型配置；原生 Mac 当前锁屏，本次窗口与完整媒体链验收仍待完成。旧 Office 源码和构建依赖仍待裁剪。详细证据见[本次改造调研](REFACTOR-RESEARCH.md)，路径见 [README](../README.md#启动与首次环境准备)。
 
 `submodule/demucs` 已按原 Git 子模块流程初始化，固定提交为 `e976d93ecc3865e5757426930257e200846a520a`。完整实验统一使用 Demucs → Whisper → 翻译 → TTS → 混音与字幕导出，真实执行结果见上方完整媒体链证据，媒体准备与处理执行分别记录。
 

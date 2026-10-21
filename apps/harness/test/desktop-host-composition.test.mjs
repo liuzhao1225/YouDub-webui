@@ -2,16 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
-import { access, cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { access, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
-import { prepareDevelopmentProject } from '../dist/desktop/development-project.mjs';
 import { prepareYouDubProfile } from '../prepare-profile.mjs';
+import { prepareSourceDevelopment } from '../prepare-source-development.mjs';
+import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts';
 
 const app = resolve(import.meta.dirname, '..'), root = resolve(app, '../..');
-const source = join(root, '.cache/harness/source-build');
-const require = createRequire(join(app, 'package.json'));
 
 test('real Desktop Host boots the product Loader, protects requests and reports first-run work without sessions or Office', { timeout: 60_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'youdub-host-composition-'));
@@ -29,21 +27,10 @@ test('real Desktop Host boots the product Loader, protects requests and reports 
     } finally { await rm(directory, { recursive: true, force: true }); }
   });
   const home = join(directory, 'home'), profile = join(home, 'profiles/desktop');
-  const version = JSON.parse(await readFile(join(source, 'package.json'), 'utf8')).version;
-  const pnpm = join(app, 'node_modules/pnpm/bin/pnpm.mjs');
-  const runtime = prepareDevelopmentProject({
-    projectDir: join(directory, 'runtime'), cliDir: join(source, 'apps/cli'),
-    hostDir: join(source, 'apps/desktop-host'), dependencyDir: join(source, 'node_modules/.pnpm/node_modules'),
-    release: { schemaVersion: 1, version, hostProtocolVersion: 4, nodeVersion: process.versions.node,
-      pnpmVersion: JSON.parse(await readFile(join(app, 'node_modules/pnpm/package.json'), 'utf8')).version },
-    target: `${process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : process.platform}-${process.arch}`,
-  });
-  await symlink(dirname(require.resolve('busboy/package.json')), join(runtime, 'node_modules/busboy'), 'dir');
-  const plugin = join(runtime, 'youdub-plugin');
-  await mkdir(join(plugin, 'dist'), { recursive: true });
-  for (const file of ['package.json', 'cordis.patch.yml', 'dist/host.mjs', 'dist/client.js']) await cp(join(app, file), join(plugin, file));
-  await symlink(join(runtime, 'node_modules'), join(plugin, 'node_modules'), 'dir');
-  await prepareYouDubProfile(profile, plugin, runtime, { command: process.execPath, args: [pnpm] });
+  const { project: runtime, pluginRoot: plugin, node, pnpm, nodeBin } = await prepareSourceDevelopment({ projectDirectory: join(directory, 'runtime') });
+  assert(node.startsWith(join(app, 'node_modules/electron') + sep), 'Node must belong to this application Electron installation');
+  assert.equal(pnpm, join(app, 'node_modules/pnpm/bin/pnpm.mjs'));
+  await prepareYouDubProfile(profile, plugin, runtime, { command: node, args: ['--expose-internals', pnpm], env: desktopNodeEnvironment(node, nodeBin, process.env) });
   await writeFile(join(profile, 'cordis.patch.yml'), JSON.stringify([{ id: 'youdub-subtitles', config: {
     python: process.env.YOUDUB_TEST_PYTHON || join(root, '.venv/bin/python'),
     modelsDir: join(home, 'youdub/models/whisper'), dataDir: join(home, 'youdub'),
@@ -52,9 +39,9 @@ test('real Desktop Host boots the product Loader, protects requests and reports 
   // Use the actual compiled Host and its IPC contract. No fake framework services,
   // account, Agent, model downloads or second application runtime are supplied.
   child = fork(join(runtime, 'node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js'),
-    [runtime, profile, join(directory, 'absent-office-runtime'), pnpm, join(app, 'dist/desktop/scripts/node-bin')], {
-      cwd: runtime, execArgv: ['--expose-internals'], silent: true,
-      env: { ...process.env, DSH_HOME: home, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: process.execPath },
+    [runtime, profile, pnpm, nodeBin], {
+      cwd: runtime, execPath: node, execArgv: ['--expose-internals'], silent: true,
+      env: { ...desktopNodeEnvironment(node, undefined, process.env), DSH_HOME: home, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: node },
     });
   let stderr = '';
   child.stderr.on('data', data => { stderr = (stderr + data).slice(-16_384); });

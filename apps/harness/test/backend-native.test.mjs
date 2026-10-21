@@ -1,8 +1,9 @@
 import test from 'node:test';
+import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { resolve, join } from 'node:path';
+import { resolve, join, sep } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
 import LocalSubprocess from '@deepseek-ai/dsh-subprocess-local';
 import LocalJobs from '@deepseek-ai/dsh-jobs-local';
@@ -14,7 +15,11 @@ const python = process.env.YOUDUB_TEST_PYTHON || join(repo, '.venv/bin/python');
 test('official Host scope preserves root services and requires all first-run models before domain APIs', { timeout: 45_000 }, async t => {
   const data = await mkdtemp(join(repo, '.native-test-'));
   const previousNode = process.env.YOUDUB_NODE_PATH;
-  process.env.YOUDUB_NODE_PATH = join(data, 'official-runtime/dependencies/node/bin/node');
+  const node = createRequire(import.meta.url)('electron');
+  const previousNodeMode = process.env.ELECTRON_RUN_AS_NODE;
+  process.env.YOUDUB_NODE_PATH = node;
+  process.env.ELECTRON_RUN_AS_NODE = '1';
+  t.after(() => { if (previousNodeMode === undefined) delete process.env.ELECTRON_RUN_AS_NODE; else process.env.ELECTRON_RUN_AS_NODE = previousNodeMode; });
   t.after(() => { if (previousNode === undefined) delete process.env.YOUDUB_NODE_PATH; else process.env.YOUDUB_NODE_PATH = previousNode; });
   const ctx = new Context(), handlers = new Map();
   const sub = ctx.plugin(LocalSubprocess); await sub;
@@ -60,11 +65,15 @@ test('official Host scope preserves root services and requires all first-run mod
       const parentPythonHome = process.env.PYTHONHOME;
       process.env.PYTHONHOME = '/machine/python-home-that-must-not-be-used';
       childTest.after(() => { if (parentPythonHome === undefined) delete process.env.PYTHONHOME; else process.env.PYTHONHOME = parentPythonHome; });
-      const result = await ctx.youdubWorker.run({ command: python, cwd: repo, args: ['-c', 'import json, os, site; print(json.dumps({"userSite": site.ENABLE_USER_SITE, "paths": {name: os.environ[name] for name in ["YOUDUB_NODE_PATH", "FFMPEG_PATH", "FFPROBE_PATH", "NLTK_DATA", "PIP_CACHE_DIR", "HF_HOME", "HF_HUB_CACHE", "TORCH_HOME", "MODELSCOPE_CACHE", "YOUDUB_WHISPER_MODELS_DIR", "YOUDUB_VOXCPM_MODEL_DIR", "YOUDUB_DEMUCS_MODELS_DIR", "YOUDUB_FORCED_ALIGNER_MODEL_DIR"]}}))'] });
+      const result = await ctx.youdubWorker.run({ command: python, cwd: repo, args: ['-c', 'import json, os, site, subprocess; print(json.dumps({"node": json.loads(subprocess.check_output([os.environ["YOUDUB_NODE_PATH"], "-p", "JSON.stringify({executable: process.execPath, electron: process.versions.electron})"], text=True)), "userSite": site.ENABLE_USER_SITE, "paths": {name: os.environ[name] for name in ["YOUDUB_NODE_PATH", "FFMPEG_PATH", "FFPROBE_PATH", "NLTK_DATA", "PIP_CACHE_DIR", "HF_HOME", "HF_HUB_CACHE", "TORCH_HOME", "MODELSCOPE_CACHE", "YOUDUB_WHISPER_MODELS_DIR", "YOUDUB_VOXCPM_MODEL_DIR", "YOUDUB_DEMUCS_MODELS_DIR", "YOUDUB_FORCED_ALIGNER_MODEL_DIR"]}}))'] });
       const runtime = JSON.parse(result.stdout);
       assert.equal(runtime.userSite, false);
-      for (const [name, path] of Object.entries(runtime.paths)) assert(path.startsWith(data + '/'), `${name} escaped the YouDub data directory: ${path}`);
-      assert.equal(runtime.paths.FFMPEG_PATH.includes('/runtime/ffmpeg/'), true);
+      for (const [name, path] of Object.entries(runtime.paths)) {
+        if (name !== 'YOUDUB_NODE_PATH') assert(path.startsWith(data + sep), `${name} escaped the YouDub data directory: ${path}`);
+      }
+      assert.equal(await realpath(runtime.node.executable), await realpath(node));
+      assert.equal(runtime.node.electron, JSON.parse(await readFile(join(repo, 'apps/harness/node_modules/electron/package.json'), 'utf8')).version);
+      assert.equal(runtime.paths.FFMPEG_PATH.includes(`${sep}runtime${sep}ffmpeg${sep}`), true);
       assert.equal(runtime.paths.YOUDUB_NODE_PATH, process.env.YOUDUB_NODE_PATH);
     });
     await t.test('the isolated domain exposes all native operations while Connection keeps CRUD behind setup', async () => {

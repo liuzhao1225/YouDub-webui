@@ -1,4 +1,4 @@
-/** YouDub product assembly. Harness service implementations remain unchanged in vendor/. */
+/** YouDub product assembly using the reviewed Harness framework fork. */
 import { prepareYouDubProfile } from '../prepare-profile.mjs'
 import { assertYouDubProfile } from '../check-profile.mjs'
 import { readFile } from 'node:fs/promises'
@@ -24,6 +24,7 @@ import { DesktopBrowserGuests } from '../../../vendor/deepseek-harness/source/ap
 import { installDesktopShortcuts } from '../../../vendor/deepseek-harness/source/apps/desktop/src/keyboard.ts'
 import { DesktopUpdateOverlays } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-overlay.ts'
 import { DesktopQuitConfirmation } from '../../../vendor/deepseek-harness/source/apps/desktop/src/quit-confirmation.ts'
+import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts'
 import { WINDOWS_TITLEBAR_HEIGHT } from '../../../vendor/deepseek-harness/source/apps/desktop/src/windows-layout.ts'
 
 let focusPrimaryWindow = (): void => {}
@@ -192,8 +193,6 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
 async function main(): Promise<void> {
   await pruneCrashReports(app.getPath('logs'))
   const resources = runtimeResources()
-  const primaryRuntime = process.env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR
-  if (!primaryRuntime) throw new Error('YouDub Desktop requires DSH_DESKTOP_PRIMARY_RUNTIME_DIR.')
   const manifest = JSON.parse(await readFile(join(app.getAppPath(), 'package.json'), 'utf8'))
   const paths = resolveDesktopPaths()
   const manager = new DesktopProjectManager(paths, resources)
@@ -226,7 +225,7 @@ async function main(): Promise<void> {
   const backend = new DesktopBackendController(onFailure => {
     const host = new DesktopHostProcess(resources.node, resources.dsh, paths.profile, undefined,
       { ...hostEnvironment, DSH_CLIENT_VERSION: manifest.harnessRuntimeVersion }, onFailure,
-      primaryRuntime, resources)
+      resources)
     return {
       start: async () => {
         const ready = await host.start()
@@ -295,7 +294,7 @@ async function main(): Promise<void> {
   const startup = backend.start(async () => {
     const pluginRoot = process.env.YOUDUB_HARNESS_PLUGIN_ROOT
     if (!pluginRoot) throw new Error('YouDub source plugin is not prepared. Run desktop.mjs.')
-    await prepareYouDubProfile(paths.profile, pluginRoot, resources.dsh, { command: resources.node, args: [resources.pnpm], env: { ELECTRON_RUN_AS_NODE: '1' } })
+    await prepareYouDubProfile(paths.profile, pluginRoot, resources.dsh, { command: resources.node, args: ['--expose-internals', resources.pnpm], env: desktopNodeEnvironment(resources.node, resources.nodeBin, process.env) })
     await manager.applyRelease()
     await assertYouDubProfile(paths.profile, join(resources.dsh, 'package.json'))
     hostEnvironment = await loginShell

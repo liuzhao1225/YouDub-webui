@@ -1,4 +1,4 @@
-import { access, cp, readFile, writeFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -6,32 +6,21 @@ import { parseArgs } from 'node:util';
 import { prepareYouDubProfile } from './prepare-profile.mjs';
 import { assertYouDubProfile } from './check-profile.mjs';
 import { prepareSourceDevelopment } from './prepare-source-development.mjs';
+import { desktopNodeEnvironment } from '../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const root = resolve(here, '../..');
 const output = join(here, 'dist/desktop');
 const { values } = parseArgs({ options: {
   python: { type: 'string' }, 'models-dir': { type: 'string' },
-  'runtime-source': { type: 'string' }, 'prepare-only': { type: 'boolean', default: false },
+  'prepare-only': { type: 'boolean', default: false },
 } });
 const home = resolve(process.env.DSH_HOME || join(root, '.cache/harness/desktop'));
 const userData = home + '-user-data';
-const runtime = join(root, '.cache/harness/runtime');
-const primaryRuntime = join(runtime, 'primary-runtime');
 await access(join(output, 'lib/youdub-main.js'));
-if (values['runtime-source']) {
-  const source = resolve(values['runtime-source']);
-  for (const name of ['primary-runtime', 'office-skills']) {
-    await access(join(source, name));
-    await cp(join(source, name), join(runtime, name), { recursive: true, errorOnExist: true, force: false });
-  }
-}
-await access(primaryRuntime).catch(error => {
-  throw new Error('Missing official runtime payload. Run with --runtime-source <directory containing primary-runtime and office-skills>.', { cause: error });
-});
-const { project, pluginRoot, source, pnpm, electron, node } = await prepareSourceDevelopment();
+const { project, pluginRoot, source, pnpm, electron, node, nodeBin } = await prepareSourceDevelopment();
 const profile = join(home, 'profiles/desktop');
-await prepareYouDubProfile(profile, pluginRoot, project, { command: process.execPath, args: [pnpm] });
+await prepareYouDubProfile(profile, pluginRoot, project, { command: node, args: ['--expose-internals', pnpm], env: desktopNodeEnvironment(node, nodeBin, process.env) });
 if (values.python || values['models-dir']) {
   if (!values.python || !values['models-dir']) throw new Error('Set both --python and --models-dir to configure media execution.');
   await access(values.python);
@@ -46,10 +35,11 @@ if (values.python || values['models-dir']) {
 }
 await assertYouDubProfile(profile, join(project, 'package.json'));
 const env = { ...process.env, DSH_HOME: home, DSH_DESKTOP_DSH_DIR: project,
-  DSH_DESKTOP_PRIMARY_RUNTIME_DIR: primaryRuntime, DSH_DESKTOP_PNPM_ENTRY: pnpm,
+  DSH_DESKTOP_PNPM_ENTRY: pnpm,
   YOUDUB_HARNESS_PLUGIN_ROOT: pluginRoot, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: node,
 };
 delete env.ELECTRON_RUN_AS_NODE;
+delete env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR;
 if (values['prepare-only']) {
   console.log(`Prepared YouDub Desktop source runtime: ${project}\nHarness profile: ${profile}\nOfficial source workspace: ${source}`);
 } else {

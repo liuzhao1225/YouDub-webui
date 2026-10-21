@@ -19,9 +19,9 @@
         "type": "file",
         "executable": false,
         "size": 5580,
-        "sha256": "234c5069c1efa2109ee62cbf0aefe6d53d8c3b3feec7ee6f2d1fc06df2c69842"
+        "sha256": "b519395ab28eb159973e6c291448aee76c63c65c8fbb1b10fa630db1eeeb3bed"
       },
-      "reason": "Remove Office runtime installation and DeepSeek platform-session publication from the YouDub Host; retain official profile boot, authenticated transport, IPC, shutdown and task admission."
+      "reason": "Remove Office runtime installation, its launch argument and DeepSeek platform-session publication from the YouDub Host; retain official profile boot, authenticated transport, package-manager injection, IPC, shutdown and task admission."
     },
     {
       "path": "apps/desktop-host/src/quit-inspection.ts",
@@ -78,6 +78,60 @@
       "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
     },
     {
+      "path": "apps/desktop/scripts/smoke-runtime.ts",
+      "before": {
+        "path": "apps/desktop/scripts/smoke-runtime.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11976,
+        "sha256": "2d3907d92f348e389df5c8c7ad5077d559c4457cb60624e3db8e8a7520601042"
+      },
+      "after": {
+        "path": "apps/desktop/scripts/smoke-runtime.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11933,
+        "sha256": "cf50c2d49ab84d7a3f34698765524734745c3575ae0e4b15e1cc65529eaf3c26"
+      },
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+    },
+    {
+      "path": "apps/desktop/src/host-process.ts",
+      "before": {
+        "path": "apps/desktop/src/host-process.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14849,
+        "sha256": "6b9d3e558f526b7832020fb43d6682a07a68bf2d5657f26951f50a4f3eabfa28"
+      },
+      "after": {
+        "path": "apps/desktop/src/host-process.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14566,
+        "sha256": "d19a74371c8fb2959dea9eb22a450d7ef425f52ad60465c0cda1e8a7d67b7665"
+      },
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+    },
+    {
+      "path": "apps/desktop/src/main.ts",
+      "before": {
+        "path": "apps/desktop/src/main.ts",
+        "type": "file",
+        "executable": false,
+        "size": 68435,
+        "sha256": "e345eda0425f2df795d20413bb87bb9a3ddc46e71ceb1cec0755ad1cca3fb847"
+      },
+      "after": {
+        "path": "apps/desktop/src/main.ts",
+        "type": "file",
+        "executable": false,
+        "size": 67983,
+        "sha256": "08d476a3e98a3cba09903ff2bd8de1533e32e43bb262043584c46e0387d18ddf"
+      },
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+    },
+    {
       "path": "apps/desktop/src/project-manager.ts",
       "before": {
         "path": "apps/desktop/src/project-manager.ts",
@@ -94,6 +148,24 @@
         "sha256": "23298e6b7035a5d5e80332e1051bc4ebef46880d092f66c300253d4447d949b5"
       },
       "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
+    },
+    {
+      "path": "apps/desktop/tests/host-process.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/host-process.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12386,
+        "sha256": "b539b90d064ba2b52f2a5a2faf3a83d08911cc69f8644bc4783f17dbc98fcb86"
+      },
+      "after": {
+        "path": "apps/desktop/tests/host-process.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12293,
+        "sha256": "faa5c0e6492fcd23897f04c485d5e4aa47c1316846cded656d484d21ab172154"
+      },
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
     },
     {
       "path": "apps/desktop/tests/host-update-tasks.spec.ts",
