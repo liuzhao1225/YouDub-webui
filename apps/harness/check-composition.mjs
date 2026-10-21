@@ -23,4 +23,12 @@ for (const [side, metafile] of Object.entries(metadata)) {
   report[side] = { activeModules: active.size, externalImports: [...imports].sort() };
 }
 if (failures.length) throw new Error('Legacy platform code entered the Harness plugin bundle:\n' + failures.join('\n'));
+const desktop = JSON.parse(await readFile(resolve(here, 'dist/desktop/build-inputs.json'), 'utf8'));
+const desktopInputs = Object.values(desktop.product.outputs).flatMap(output =>
+  Object.entries(output.inputs).filter(([, value]) => value.bytesInOutput).map(([path]) => path));
+for (const path of desktopInputs) {
+  if (/\/platform-view\.ts$/.test(path)) {
+    throw new Error(`Unneeded Harness product integration entered YouDub Desktop: ${path}`);
+  }
+}
 console.log(JSON.stringify({ passed: true, ...report }, null, 2));

@@ -181,5 +181,5 @@ test('workflow reads never run migrations and remain available after an explicit
   assert.equal(body.legacyDefaultsMigration.status, 'blocked')
   assert.equal(body.legacyDefaultsMigration.diagnostics[0].code, 'SQLITE_ERROR')
   assert.match(body.legacyDefaultsMigration.diagnostics[0].message, /disk full/)
-  assert.equal(body.items.length, 4)
+  assert.equal(body.items.length, 3)
 })

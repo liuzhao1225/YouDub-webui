@@ -82,6 +82,30 @@ test('profile helpers require the explicit runtime app-boot without falling back
   await assert.rejects(assertYouDubProfile(profile, join(runtime, 'package.json')), missingRuntimeModule);
 });
 
+test('official composition keeps YouDub dependencies without coding agents or DeepSeek product services', async t => {
+  const { profile, runtime } = await temporaryProfile(t);
+  const parsed = await assertYouDubProfile(profile, join(runtime, 'package.json'));
+  const { composeEntries } = await import(pathToFileURL(join(sourceBuild, 'packages/boot/app-boot/lib/index.js')));
+  const entries = composeEntries([...parsed.layers.map(layer => layer.patches), parsed.patches]);
+  const rows = new Map(entries.map(entry => [entry.id, entry]));
+  for (const id of ['agent-loop', 'tools', 'system-prompt', 'session-title-llm', 'llm-retry',
+    'subagent', 'subagent-spawn-in-process', 'subagent-fork-in-process', 'schedule', 'goal',
+    'agent-preset-registry', 'preset-standard', 'preset-ptc', 'preset-minimal', 'preset-cordis',
+    'terminal-controller', 'workspace-files', 'workspace-changes', 'web-search-deepseek', 'web-fetch-http',
+    'cordis-host-runner', 'cordis-client-runner', 'skill', 'mcp-resources',
+    'deepseek-account', 'account-controller', 'llm-deepseek', 'llm-deepseek-account',
+    'product-analytics', 'desktop-product-telemetry', 'ui-chat', 'ui-conversation', 'ui-settings-account']) {
+    assert.equal(rows.get(id)?.disabled, true, `${id} must not run in YouDub`);
+  }
+  for (const id of ['llm', 'llm-pi-ai', 'credentials', 'settings', 'subprocess', 'jobs', 'connection',
+    'modules', 'session-controller', 'file-upload', 'plugin-manager', 'ui-layout', 'ui-renderer',
+    'ui-theme', 'locale', 'ui-settings', 'ui-settings-general', 'ui-settings-models', 'youdub-subtitles']) {
+    assert(rows.has(id), `${id} must be provided by the official composition`);
+    assert.notEqual(rows.get(id).disabled, true, `${id} is a required YouDub dependency`);
+  }
+  assert.deepEqual(rows.get('agent-default-model').config, { provider: '', model: '' });
+});
+
 for (const [index, name] of required.entries()) {
   for (const kind of ['missing', 'wrong']) {
     test(`profile preparation rejects ${kind} required bundle ${name}`, async t => {

@@ -112,14 +112,14 @@ it('keeps the task page mounted with its edited input while settings opens and c
   expect(unmounted).not.toHaveBeenCalled()
 })
 
-it('restores collapsed navigation immediately and keeps accessible labels and a compact language control', async () => {
+it('restores collapsed navigation with accessible labels and keeps language selection in settings', async () => {
   const { mount } = setup()
   const first = mount()
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: '收起侧边栏' }))
   expect(window.localStorage.getItem('youdub-sidebar')).toBe('collapsed')
   const sidebar = screen.getByRole('complementary')
-  expect(within(sidebar).getByRole('combobox', { name: '界面语言: 中文' })).toBeInTheDocument()
+  expect(within(sidebar).queryByRole('combobox', { name: /界面语言/ })).not.toBeInTheDocument()
   expect(within(sidebar).getByRole('button', { name: '新建任务' })).toBeInTheDocument()
   expect(within(sidebar).getByRole('link', { name: '工作台' })).toBeInTheDocument()
   first.unmount()
@@ -128,5 +128,6 @@ it('restores collapsed navigation immediately and keeps accessible labels and a 
   expect(screen.queryByRole('button', { name: '收起侧边栏' })).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: '展开侧边栏' }))
   expect(window.localStorage.getItem('youdub-sidebar')).toBe('expanded')
-  expect(within(screen.getByRole('complementary')).getByRole('group', { name: '界面语言' })).toBeInTheDocument()
+  expect(within(screen.getByRole('complementary')).queryByRole('group', { name: '界面语言' })).not.toBeInTheDocument()
+  expect(within(screen.getByRole('complementary')).getByRole('button', { name: '设置' })).toBeInTheDocument()
 })

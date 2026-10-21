@@ -8,7 +8,6 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, powerMonitor, nativeTheme, n
 import { resolveDesktopPaths } from '../../../vendor/deepseek-harness/source/apps/desktop/src/paths.ts'
 import { DesktopProjectManager } from '../../../vendor/deepseek-harness/source/apps/desktop/src/project-manager.ts'
 import { DesktopHostFatalError, DesktopHostProcess } from '../../../vendor/deepseek-harness/source/apps/desktop/src/host-process.ts'
-import { DesktopPlatformView, PLATFORM_IPC, platformBounds } from '../../../vendor/deepseek-harness/source/apps/desktop/src/platform-view.ts'
 import { installDesktopDirectoryPicker } from '../../../vendor/deepseek-harness/source/apps/desktop/src/directory-picker.ts'
 import { installMicrophonePermissions } from '../../../vendor/deepseek-harness/source/apps/desktop/src/microphone-permissions.ts'
 import { DesktopBackendController } from '../../../vendor/deepseek-harness/source/apps/desktop/src/backend-controller.ts'
@@ -217,8 +216,6 @@ async function main(): Promise<void> {
   let locale = resolveDesktopStartupLocale(null, systemLanguages)
   windowsLanguage = locale.id
   const applicationUrl = `${SCHEME}://app/`
-  const platformView = new DesktopPlatformView(join(app.getAppPath(), 'lib/preload-platform-account.cjs'),
-    () => locale.id === 'zh-CN' ? 'zh_CN' : 'en_US', process.platform === 'win32' ? 'win32' : 'darwin')
   const browserGuests = new DesktopBrowserGuests(() => hostUrl)
   const updateOverlays = new DesktopUpdateOverlays()
   const assertProductSender = (event: IpcMainInvokeEvent): void => {
@@ -229,7 +226,7 @@ async function main(): Promise<void> {
   const backend = new DesktopBackendController(onFailure => {
     const host = new DesktopHostProcess(resources.node, resources.dsh, paths.profile, undefined,
       { ...hostEnvironment, DSH_CLIENT_VERSION: manifest.harnessRuntimeVersion }, onFailure,
-      primaryRuntime, resources, next => platformView.setSession(next))
+      primaryRuntime, resources)
     return {
       start: async () => {
         const ready = await host.start()
@@ -249,11 +246,7 @@ async function main(): Promise<void> {
     if (state.phase === 'error') reportFatal(state.failure, 'host')
     else if (!shuttingDown) backendReady = state.phase === 'ready'
   })
-  stopForRecovery = async () => {
-    const results = await Promise.allSettled([backend.close(), platformView.dispose()])
-    const errors = results.filter(result => result.status === 'rejected').map(result => result.reason)
-    if (errors.length) throw new AggregateError(errors, 'YouDub Desktop shutdown failed')
-  }
+  stopForRecovery = () => backend.close()
   // Protocol and websocket forwarding follow upstream main.ts. Credentials remain in the main process.
   protocol.handle(SCHEME, request => {
     const url = new URL(request.url)
@@ -292,6 +285,7 @@ async function main(): Promise<void> {
     { role: 'quit' },
   ]
   installDesktopDirectoryPicker(() => mainWindow)
+  // Retain the official media permission boundary even without a recording UI.
   installMicrophonePermissions(session.defaultSession, () => mainWindow?.webContents)
   const shortcuts = installDesktopShortcuts(() => mainWindow, app.getPath('userData'),
     process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : 'linux',
@@ -321,17 +315,6 @@ async function main(): Promise<void> {
   })
   ipcMain.handle(DESKTOP_IPC.browserAcquire, (event, workspace: unknown) => { assertProductSender(event); return browserGuests.acquire(event.sender, workspace) })
   ipcMain.handle(DESKTOP_IPC.browserRelease, (event, lease: unknown) => { assertProductSender(event); return browserGuests.release(event.sender, lease) })
-  ipcMain.on(PLATFORM_IPC.bootstrap, event => {
-    try { event.returnValue = platformView.bootstrap(event) }
-    catch (error) { console.error('Rejected Platform bootstrap:', error); event.returnValue = null }
-  })
-  ipcMain.handle(PLATFORM_IPC.open, (event, page: unknown, bounds: unknown) => {
-    assertProductSender(event)
-    if (page !== 'usage' && page !== 'top-up') throw new Error('Invalid Platform page')
-    return platformView.open(mainWindow!, page, platformBounds(bounds))
-  })
-  ipcMain.handle(PLATFORM_IPC.bounds, (event, bounds: unknown) => { assertProductSender(event); platformView.setBounds(platformBounds(bounds)) })
-  ipcMain.handle(PLATFORM_IPC.close, event => { assertProductSender(event); platformView.close() })
   ipcMain.on(DESKTOP_IPC.nativeThemeSet, (event, source: unknown) => {
     assertProductSender(event)
     if (source !== 'light' && source !== 'dark' && source !== 'system') throw new Error('Invalid native theme')
@@ -346,7 +329,7 @@ async function main(): Promise<void> {
     assertProductSender(event)
     if (typeof next !== 'string') throw new Error('Invalid Desktop locale')
     locale = resolveDesktopStartupLocale(next, systemLanguages); windowsLanguage = locale.id
-    platformView.notifyLocaleChanged(); refreshApplicationMenu()
+    refreshApplicationMenu()
   })
   ipcMain.handle(DESKTOP_IPC.deviceInfo, event => { assertProductSender(event); return readDeviceInfo() })
   ipcMain.handle(DESKTOP_IPC.onboardingApiKey, async event => {

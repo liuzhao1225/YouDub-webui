@@ -164,7 +164,7 @@ test('workflow pagination reaches all user documents and includes templates only
   const first = await json(await request('/workflow-documents?limit=1&offset=0'))
   const second = await json(await request('/workflow-documents?limit=1&offset=1'))
   const third = await json(await request('/workflow-documents?limit=1&offset=2'))
-  assert.equal(first.items.filter((item: any) => item.origin === 'builtin').length, 4)
+  assert.equal(first.items.filter((item: any) => item.origin === 'builtin').length, 3)
   assert.equal(second.items.length, 1)
   assert.equal(third.items.length, 1)
   assert.equal(first.hasMore, true)

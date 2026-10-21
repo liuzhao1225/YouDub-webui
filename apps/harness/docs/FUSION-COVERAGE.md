@@ -1,5 +1,7 @@
 # Harness × YouDub 功能与架构覆盖账本
 
+最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：新增停用 66 项无关产品模块，移除桌面账号平台接线，补测真实 Host 的字幕导入/CRUD/取消/重跑。安装更新、在线市场和未实测原生路径继续保持开放，不能将这份映射清单理解为全功能验收通过。
+
 本账本以冻结的 YouDub 源快照 `f6f927903581b165f2bf6c840ea65b896d319524` 为比较对象。源清单为 `../baselines/youdub-source-inventory.json`：58 条 API、11 个媒体操作、9 个页面入口、50 组元素定义。计数只说明清单覆盖范围，不能证明功能已经运行通过。
 
 本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E18 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
@@ -43,8 +45,8 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `GET /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
 | `PUT /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
 | `DELETE /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
-| `GET /api/v2/updates` | 官方 General 桌面更新 + PluginManager bundle 版本；旧发布源不执行 | 待验收 |
-| `POST /api/v2/updates/check` | 官方 General 桌面更新 + PluginManager bundle 版本；旧发布源不执行 | 待验收 |
+| `GET /api/v2/updates` | 官方 General 桌面更新 + PluginManager bundle 版本；旧发布源不执行 | 开发壳未配置 YouDub 更新源，属于发行能力缺口 |
+| `POST /api/v2/updates/check` | 官方 General 桌面更新 + PluginManager bundle 版本；旧发布源不执行 | 开发壳未配置 YouDub 更新源，属于发行能力缺口 |
 | `GET /api/v2/runtime` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | E1 源探针回归；E8 源码桌面私有环境实际 ready |
 | `GET /api/v2/settings` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | E2 官方服务组合/路由合同通过 |
 | `POST /api/v2/settings/test-connection` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | 旧路径显式要求官方模型设置；E5 实际官方适配器协议通过 |

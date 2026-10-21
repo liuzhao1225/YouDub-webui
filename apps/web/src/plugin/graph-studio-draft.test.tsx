@@ -118,7 +118,8 @@ it('stops inactive graph resource checks, preserves its URL and keeps an externa
   await selectWorkflow(user, '第二个工作流')
   expect(screen.getByLabelText('视频链接')).toHaveValue('https://youtu.be/abcdefghijk')
   await waitFor(() => expect(screen.getByRole('button', { name: '下载并处理' })).toBeEnabled())
-  expect(checks()).toHaveLength(countWhileHidden + 1)
+  // Returning to unchanged requirements reuses their completed readiness check.
+  expect(checks()).toHaveLength(countWhileHidden)
   expect(JSON.parse(String(checks().at(-1)![1]!.body)).document.id).toBe('second')
   await user.click(screen.getByRole('button', { name: '下载并处理' }))
   await screen.findByText('Connection interrupted')

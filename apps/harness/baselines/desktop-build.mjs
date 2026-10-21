@@ -105,7 +105,7 @@ for (const entry of manifest.entries) {
 const inputs = JSON.parse(await readFile(join(output, 'source-build-inputs.json'), 'utf8'))
 same(inputs.source, compiled, 'Official build workspace')
 same(inputs.officialBuild, 'scripts/build.ts --scope artifacts', 'Official build command')
-const expectedPreloads = ['apps/desktop/lib/preload-app.cjs', 'apps/desktop/lib/preload-platform-account.cjs']
+const expectedPreloads = ['apps/desktop/lib/preload-app.cjs']
 same(JSON.stringify(inputs.preloads), JSON.stringify(expectedPreloads), 'Official preload input set')
 const officialArtifacts = []
 for (const path of expectedPreloads) {
