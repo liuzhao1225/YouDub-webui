@@ -8,13 +8,14 @@ import { InlineAlert } from '@/components/inline-alert'
 import type { WorkflowResourcesResult } from '../runtime/workflow-resources'
 export type { ResourceState } from '../runtime/workflow-resources'
 
-export function WorkflowResources({ resources, types, disabled = false }: { resources: WorkflowResourcesResult; types: NodeTypeDefinition[]; disabled?: boolean }) {
+export function WorkflowResources({ resources, types, disabled = false, hideReady = false }: { resources: WorkflowResourcesResult; types: NodeTypeDefinition[]; disabled?: boolean; hideReady?: boolean }) {
   const tx = useText(), { language } = useI18n()
   const state = resources.result
   const preparing = state?.status === 'preparing'
   const otherPreparing = state?.activePreparation?.status === 'preparing'
   const missing = state?.requirements?.filter((item) => !item.ready) ?? []
   const manual = missing.some((item) => !item.automatic)
+  if (hideReady && resources.ready && state?.status === 'ready' && !resources.checking && !resources.error && !state.error && !state.activePreparation) return null
   const statusLabel = (status: string) => ({
     pending: tx('Waiting', '等待中', '待機中'), running: tx('Preparing', '准备中', '準備中'),
     downloading: tx('Downloading', '下载中', 'ダウンロード中'), paused: tx('Paused', '已暂停', '一時停止中'),

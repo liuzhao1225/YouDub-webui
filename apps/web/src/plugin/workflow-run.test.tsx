@@ -39,6 +39,45 @@ const ready: ResourceState = { status: 'ready', requirements: [{ providerId: 'te
 const missing: ResourceState = { status: 'missing', requirements: [{ providerId: 'test', model: 'tiny', ready: false, automatic: true, reason: '模型文件尚未安装。' }] }
 const base = '/api/v2/workflow-documents/resources/'
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.useRealTimers(); vi.unstubAllGlobals() })
+
+it('rejects an unsupported dropped file with a visible error', async () => {
+  mount(<WorkflowRun document={graph()} types={types} />, vi.fn(async () => ready))
+  await screen.findByText('资源已就绪')
+  const input = screen.getByLabelText('视频 *')
+  fireEvent.drop(input.parentElement!, { dataTransfer: { files: [new File(['no'], 'notes.txt', { type: 'text/plain' })] } })
+  expect(screen.getByText('notes.txt 的文件类型不支持。')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '开始运行' })).toBeDisabled()
+})
+
+it('keeps the original link-above-upload layout and submits URL input through a download node', async () => {
+  const withDownload: NodeTypeDefinition[] = [...types, { type: 'youdub.download', version: '1', providerId: 'media', operation: 'download', provider: { id: 'media', operations: [] }, label: '下载', category: 'input', inputs: [], outputs: [{ name: 'video', kind: 'artifact', schemaId: 'video/mp4/v1', required: true }], configSchema: {}, defaults: {} }]
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.includes('/validate')) return { valid: true, diagnostics: [] }
+    if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
+    return ready
+  })
+  const { push } = mount(<WorkflowRun prominent document={graph()} types={withDownload} />, request)
+  const user = userEvent.setup()
+  const link = screen.getByLabelText('视频链接'), upload = screen.getByLabelText('视频 *')
+  expect(link.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(screen.getByText('或上传本地视频')).toBeInTheDocument()
+  expect(link).toHaveClass('h-12')
+  expect(upload.parentElement).toHaveClass('min-h-[132px]', 'py-6')
+  await user.upload(upload, new File(['local'], 'local.mp4', { type: 'video/mp4' }))
+  fireEvent.change(link, { target: { value: 'https://youtu.be/abcdefghijk' } })
+  expect(screen.queryByText('local.mp4')).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.getByRole('button', { name: '下载并处理' })).toBeEnabled())
+  await user.click(screen.getByRole('button', { name: '下载并处理' }))
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/created'))
+  const body = request.mock.calls.find(([path]) => path === '/api/v2/tasks')![1]!.body as FormData
+  const submitted = JSON.parse(String(body.get('request')))
+  expect(body.has('input.source')).toBe(false)
+  expect(submitted.graphDocument.inputs).toEqual([])
+  expect(submitted.graphDocument.nodes[0].type).toBe('youdub.download')
+  expect(submitted.nodeRuntimeInputs['source-download'].url).toBe('https://www.youtube.com/watch?v=abcdefghijk')
+  expect(submitted.config).toEqual({})
+  expect(JSON.stringify(submitted.graphDocument)).not.toContain('youtube.com')
+})
 function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
   const push = vi.fn()
   const context = { apiClient: { request }, navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] } } as unknown as Context

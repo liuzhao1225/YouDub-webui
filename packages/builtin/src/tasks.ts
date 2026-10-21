@@ -60,13 +60,14 @@ export default class Tasks extends Service implements TasksService {
   }
   private view(task: TaskRecord): TaskView {
     const { artifacts, credentialRefs, rawSnapshot, actionReceipts, ...publicTask } = task
+    const cover = taskCover(task)
     const mayStillRun = Object.values(task.externalRequests ?? {}).some(value => value.mayStillRun)
     const allowedActions = terminal.has(task.status) ? ['rerun', 'delete'] : ['cancel']
     if (!task.legacy && ['failed', 'cancelled'].includes(task.status) && !mayStillRun) allowedActions.unshift('retry')
     if (task.graphSnapshot && !terminal.has(task.status) && task.status !== 'cancelling' && task.steps.some(step => step.status === 'awaiting_review')) allowedActions.unshift('approve', 'correct')
     return {
       ...publicTask, mayStillRun, allowedActions,
-      ...(taskCover(task) ? { cover: {} } : {}),
+      ...(cover ? { cover: { artifactId: cover.id } } : {}),
       outputs: (task.outputs ?? []).map(output => {
         const file = artifacts?.[output.artifact.id]
         if (!file) throw new AppError('OUTPUT_MISSING', `Output artifact missing: ${output.artifact.id}`, 500)

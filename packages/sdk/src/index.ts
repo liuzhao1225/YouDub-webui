@@ -119,7 +119,7 @@ export interface TaskRecord {
   legacy?: boolean; rawSnapshot?: JsonObject; [key: string]: any
 }
 export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot' | 'outputs'> {
-  cover?: { url?: string };
+  cover?: { artifactId?: string; url?: string };
   outputs: Array<{ id: string; label: string; role: string; name: string; mimeType: string; size: number }>;
   allowedActions: string[]; mayStillRun: boolean; [key: string]: any
 }

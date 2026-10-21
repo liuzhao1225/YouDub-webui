@@ -17,7 +17,7 @@ export function apply(ctx: Context, config: { version: string }) {
   if (!config?.version) throw new Error('The API requires the application version from its composition.')
   const currentVersion = config.version
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => ctx.http.register(method, path, handler))
-  const view = (task: TaskView) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
+  const view = (task: TaskView) => ({ ...task, ...(task.cover ? { cover: { url: `/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(task.cover.artifactId!)}` } } : {}), outputs: task.outputs.map(output => ({ ...output, url: `/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}` })) })
   route('GET', '/api/health', request => {
     ctx.tasks.assertReady()
     ctx.http.json(request, 200, { status: 'ready', api_version: 'v2' })

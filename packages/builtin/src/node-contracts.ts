@@ -3,7 +3,12 @@ import { isDeepStrictEqual } from 'node:util'
 
 const object = (properties: JsonObject = {}, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties, required })
 const language = { type: 'string', minLength: 2, maxLength: 24 }
-const source = { sourceLanguage: { ...language } }, target = { targetLanguage: { ...language } }
+const languageOptions = [
+  { value: 'auto', label: { default: 'Auto detect', translations: { zh: '自动识别', ja: '自動検出' } } },
+  { value: 'en', label: 'English' }, { value: 'zh', label: '中文' }, { value: 'ja', label: '日本語' },
+]
+const source = { sourceLanguage: { ...language, 'x-options': languageOptions, 'x-optionsFrom': 'source_languages', 'x-short-title': { default: 'From', translations: { zh: '原文', ja: '入力' } } } }
+const target = { targetLanguage: { ...language, 'x-options': languageOptions.filter((item) => item.value !== 'auto'), 'x-optionsFrom': 'target_languages', 'x-short-title': { default: 'To', translations: { zh: '目标', ja: '出力先' } } } }
 const port = (id: string, label: string, schema: string | string[], kind: 'json' | 'artifact' = 'json', required = true) => ({ id, label, kind, acceptedSchemaIds: typeof schema === 'string' ? [schema] : schema, required })
 const audio = (id: string, label: string, required = true) => port(id, label, 'audio/wav/v1', 'artifact', required)
 const transcript = () => port('transcript', '原文', 'transcript/v1')
@@ -15,7 +20,7 @@ const make = (type: string, zh: string, en: string, ja: string, category: string
   ui: { quickFields: Object.keys(properties).slice(0, 3) },
 })
 export const nodeDescriptors: Record<string, NodeDescriptor> = {
-  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { maxBytes: { type: 'integer', minimum: 1, maximum: 4294967296 } }, { maxBytes: 4294967296 }), runtimeInputSchema: object({ url: { type: 'string', minLength: 1, maxLength: 2048 } }, ['url']) },
+  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { maxBytes: { type: 'integer', minimum: 1, maximum: 4294967296 } }, { maxBytes: 4294967296 }), ui: { quickFields: [] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1, maxLength: 2048 } }, ['url']) },
   prepare: make('prepare', '准备媒体', 'Prepare media', 'メディアを準備', 'media', [video()]),
   separate: make('separate', '分离人声', 'Separate vocals', '音声を分離', 'audio', [audio('sourceAudio', '原始音频')]),
   recognize: { ...make('transcribe', '语音识别', 'Transcribe', '文字起こし', 'text', [audio('audio', '音频'), media()], { ...source, initialPrompt: { type: ['string', 'null'], maxLength: 500 } }, { sourceLanguage: 'auto', initialPrompt: null }), corrections: { outputPorts: ['transcript'], schemaIds: ['transcript/v1'] }, ui: { quickFields: ['sourceLanguage'], detailId: 'youdub.transcript' } },
@@ -30,6 +35,11 @@ export const nodeDescriptors: Record<string, NodeDescriptor> = {
 
 
 nodeDescriptors.synthesize.ui = { quickFields: ['targetLanguage'], editorId: 'youdub.synthesize' }
+nodeDescriptors.export.ui = { quickFields: ['targetLanguage'] }
+for (const [operation, title] of Object.entries({ synthesize: ['Dubbing language', '配音目标', '吹き替えの言語'], align: ['Alignment language', '对齐目标', '整列の言語'], export: ['Export language', '导出目标', '書き出しの言語'] })) {
+  const properties = nodeDescriptors[operation].configSchema.properties
+  properties.targetLanguage = { ...properties.targetLanguage, 'x-short-title': { default: title[0], translations: { zh: title[1], ja: title[2] } } }
+}
 
 const portTitles: Record<string, [string, string, string]> = {
   video: ['视频', 'Video', '動画'], sourceAudio: ['原始音频', 'Source audio', '元の音声'], audio: ['音频', 'Audio', '音声'],

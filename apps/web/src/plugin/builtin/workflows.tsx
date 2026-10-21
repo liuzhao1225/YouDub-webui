@@ -1,8 +1,8 @@
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, SlidersHorizontal, Trash2, Undo2, Upload, X } from 'lucide-react'
-import { Link, text, type Diagnostic, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord } from '../sdk'
+import { Link, text, type Diagnostic, type JsonObject, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,9 @@ import { WorkflowCanvas } from './workflow-canvas'
 import { GraphPorts, NodeSettings, SynthesizeNodeEditor } from './workflow-settings'
 import { blankWorkflow, parseWorkflow, serializeWorkflowEdits, workflowDrafts } from './workflow-utils'
 import { useUnsavedChanges } from './workflow-guard'
-import { WorkflowRun } from './workflow-run'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { WorkflowOptions, optionPillClassName } from './workflow-options'
+import { WorkflowRun, type WorkflowRunDraft } from './workflow-run'
 import { WorkflowRerun } from './workflow-rerun'
 import { WorkflowDiagnostics } from './workflow-errors'
 import { TaskNodePage, TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from './workflow-task'
@@ -198,22 +200,31 @@ function Editor({ initial, types, nodeId, request, navigate, replace, blockNavig
   </main>
 }
 
-export function GraphStudio({ onLockChange, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
-  const tx = useText()
+export function GraphStudio({ onLockChange, additionalWorkflows = [], renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { onLockChange?(locked: boolean): void; additionalWorkflows?: WorkflowDescription[]; renderWorkflow?(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
+  const tx = useText(), { language } = useI18n()
   const documents = useWorkflowDocuments()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
   const [selected, setSelected] = useState('')
+  const [selectedGraph, setSelectedGraph] = useState('')
+  const [draft, setDraft] = useState<WorkflowRunDraft>({ selectedFiles: [], sourceUrl: '', runtimeByDocument: {} })
+  const [overrides, setOverrides] = useState<Record<string, Record<string, JsonObject>>>({})
   const [locked, setLocked] = useState(false)
   const lockChanged = useCallback((value: boolean) => { setLocked(value); onLockChange?.(value) }, [onLockChange])
-  const record = documents.data?.items.find((item) => item.id === selected) ?? documents.data?.items[0]
+  const record = documents.data?.items.find((item) => item.id === selectedGraph) ?? documents.data?.items[0]
   if ((documents.error || types.error) && (!documents.data || !types.data)) return <div className="space-y-3"><InlineAlert>{documents.error || types.error}</InlineAlert><Button variant="outline" onClick={() => { documents.refresh(); types.refresh() }}>{tx('Retry', '重试', '再試行')}</Button></div>
   if (!documents.data || !types.data) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx('Loading workflows…', '加载工作流…', 'ワークフローを読み込み中…')}</p>
   if (!record) return <div className="space-y-3"><p className="text-sm text-muted-foreground">{tx('No workflows available', '暂无工作流', 'ワークフローがありません')}</p><Link href="/workflows/new" className="text-sm text-link">{tx('Create workflow', '新建工作流', 'ワークフローを作成')}</Link></div>
-  return <section className="space-y-5 rounded-3xl border border-border bg-card p-5 shadow-card sm:p-6">
+  const external = additionalWorkflows.find((item) => `workflow:${item.id}` === selected)
+  const changes = overrides[record.id]
+  const document = changes ? { ...record.document, nodes: record.document.nodes.map((node) => changes[node.id] ? { ...node, config: { ...node.config, ...changes[node.id] } } : node) } : record.document
+  const selector = <Select value={external ? `workflow:${external.id}` : `graph:${record.id}`} onValueChange={(value) => { if (typeof value === 'string' && !locked) { setSelected(value); if (value.startsWith('graph:')) setSelectedGraph(value.slice(6)) } }}>
+    <SelectTrigger aria-label={tx('Workflow', '工作流', 'ワークフロー')} disabled={locked} className={optionPillClassName}><span className="text-subtle-foreground">{tx('Workflow', '工作流', 'ワークフロー')}</span><span className="min-w-0 truncate font-medium">{external ? text(external.label, language) : record.document.title}</span></SelectTrigger>
+    <SelectContent>{documents.data.items.map((item) => <SelectItem key={item.id} value={`graph:${item.id}`}>{item.document.title}</SelectItem>)}{additionalWorkflows.map((item) => <SelectItem key={item.id} value={`workflow:${item.id}`}>{text(item.label, language)}</SelectItem>)}</SelectContent>
+  </Select>
+  return <section className="space-y-4">
     {(documents.error || types.error) && <InlineAlert>{documents.error || types.error}</InlineAlert>}
-    <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex min-w-0 flex-1 items-center gap-3 text-sm">{tx('Workflow', '工作流', 'ワークフロー')}<select disabled={locked} className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-input-bg px-3" value={record.id} onChange={(event) => setSelected(event.target.value)}>{documents.data.items.map((item) => <option key={item.id} value={item.id}>{item.document.title}</option>)}</select></label>{locked ? <span className="text-sm text-muted-foreground">{tx('Edit workflow', '编辑工作流', 'ワークフローを編集')}</span> : <Link href={`/workflows/${record.id}`} className="text-sm text-link">{tx('Edit workflow', '编辑工作流', 'ワークフローを編集')}</Link>}</div>
-    <WorkflowRun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} key={record.id} document={record.document} types={types.data.items} revision={record.revision} onLockChange={lockChanged} onStarted={() => lockChanged(false)} />
+    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent draft={draft} onDraftChange={setDraft} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => lockChanged(false)} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => setOverrides((current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
   </section>
 }
 export const name = 'client-workflows'

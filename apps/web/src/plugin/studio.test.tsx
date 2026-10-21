@@ -4,11 +4,67 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type Catalog, type RouteProps, type SlotMap, type TaskView } from './sdk'
+import { PluginContextProvider, type Catalog, type NodeTypeDefinition, type RouteProps, type SlotMap, type TaskView, type WorkflowDocument } from './sdk'
 import { apply } from './builtin/studio'
+import reviewedSubtitles from '../../../../packages/builtin/src/workflow-templates/reviewed-subtitles.json'
 
 const catalog: Catalog = { providers: [], workflows: [{ id: 'external.text', version: '2.0.0', label: 'Text workflow', inputs: [{ name: 'document', label: 'Document', acceptedMimeTypes: ['text/plain'], required: true }], configSchema: { type: 'object', properties: { mode: { type: 'string', enum: ['upper', 'lower'] } }, required: ['mode'] }, defaults: { mode: 'upper' } }] }
 afterEach(() => { cleanup(); window.localStorage.clear() })
+
+it('keeps dropped media across workflows and edits only each node’s declared basic settings for this run', async () => {
+  const template = structuredClone(reviewedSubtitles) as WorkflowDocument
+  template.nodes = [
+    { ...template.nodes[1], label: '第一段识别', config: { sourceLanguage: 'auto', initialPrompt: 'preserved' } },
+    { ...template.nodes[1], id: 'recognize-second', label: '第二段识别', config: { sourceLanguage: 'en', initialPrompt: 'second' } },
+  ]
+  const another = { ...structuredClone(template), id: 'another', title: '另一个工作流', inputs: [{ ...template.inputs[0], id: 'renamed-video' }] }
+  const definitions: NodeTypeDefinition[] = [{ type: 'youdub.transcribe', version: '1.0.0', providerId: 'whisper', operation: 'transcribe', provider: { id: 'whisper', operations: [] }, label: '识别', category: 'text', inputs: [], outputs: [], defaults: {}, configSchema: { type: 'object', properties: { sourceLanguage: { type: 'string', enum: ['auto', 'en', 'ja'], 'x-title': '原文语言' }, initialPrompt: { type: 'string', 'x-title': '识别提示词' } } }, ui: { quickFields: ['sourceLanguage'] } }]
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path === '/api/v2/catalog') return { providers: [], workflows: [{ ...catalog.workflows[0], id: 'youdub.graph' }, { ...catalog.workflows[0], id: 'youdub.localize', label: '旧视频流程' }, catalog.workflows[0]] }
+    if (path.startsWith('/api/v2/workflow-documents?')) return { items: [template, another].map((document) => ({ id: document.id, revision: 1, origin: 'builtin', document })) }
+    if (path === '/api/v2/node-types') return { items: definitions }
+    if (path.includes('/resources/check')) return { status: 'ready', requirements: [] }
+    if (path.includes('/validate')) return { valid: true, diagnostics: [] }
+    if (path.startsWith('/api/v2/tasks?')) return { items: [] }
+    if (path === '/api/v2/tasks' && init?.method === 'POST') throw new Error('Connection interrupted')
+    throw new Error(`Unexpected request ${path}`)
+  })
+  mount(request)
+  await screen.findByText('拖入视频，或点击选择文件')
+  expect(screen.getByRole('heading', { name: '让视频说另一种语言' })).toBeInTheDocument()
+  expect(screen.queryByText('处理流程')).not.toBeInTheDocument()
+  expect(screen.queryByText('其他处理方式')).not.toBeInTheDocument()
+  const user = userEvent.setup()
+  await user.click(screen.getByLabelText('工作流'))
+  expect(screen.queryByRole('option', { name: '旧视频流程' })).not.toBeInTheDocument()
+  expect(await screen.findByRole('option', { name: 'Text workflow' })).toBeInTheDocument()
+  await user.keyboard('{Escape}')
+  expect(screen.queryByLabelText('识别提示词')).not.toBeInTheDocument()
+  const input = screen.getByLabelText('视频 *')
+  fireEvent.drop(input.parentElement!, { dataTransfer: { files: [new File(['video'], 'dropped.mp4', { type: 'video/mp4' })] } })
+  await user.click(screen.getByLabelText('第一段识别 · 原文语言'))
+  await user.click(await screen.findByRole('option', { name: 'ja' }))
+  expect(screen.getByLabelText('第二段识别 · 原文语言')).toHaveTextContent('en')
+  await user.click(screen.getByLabelText('工作流'))
+  await user.click(await screen.findByRole('option', { name: '另一个工作流' }))
+  expect(screen.getByText('dropped.mp4')).toBeInTheDocument()
+  await user.click(screen.getByLabelText('工作流'))
+  await user.click(await screen.findByRole('option', { name: template.title }))
+  expect(screen.getByLabelText('第一段识别 · 原文语言')).toHaveTextContent('ja')
+  expect(template.nodes[0].config.sourceLanguage).toBe('auto')
+  await waitFor(() => expect(screen.getByRole('button', { name: '开始处理' })).toBeEnabled())
+  await user.click(screen.getByRole('button', { name: '开始处理' }))
+  await screen.findByText('Connection interrupted')
+  const body = request.mock.calls.find(([path, init]) => path === '/api/v2/tasks' && init?.method === 'POST')![1]!.body as FormData
+  const submitted = JSON.parse(String(body.get('request')))
+  expect(submitted).toMatchObject({ workflowId: 'youdub.graph', documentRevision: null })
+  expect(submitted.graphDocument.nodes[0].config).toEqual({ sourceLanguage: 'ja', initialPrompt: 'preserved' })
+  expect(submitted.graphDocument.nodes[1].config.sourceLanguage).toBe('en')
+  expect(submitted.graphDocument.nodes[0].autoContinue).toBe(false)
+  expect((body.get('input.video') as File).name).toBe('dropped.mp4')
+  expect(screen.getByLabelText('工作流')).toBeDisabled()
+  expect(screen.getByLabelText('第一段识别 · 原文语言')).toBeDisabled()
+})
 
 it('submits declared input slots and preserves an uncertain creation ID until explicitly cleared', async () => {
   const request = vi.fn(async (path: string, init?: RequestInit) => {
@@ -69,10 +125,10 @@ it('locks workflow selection while a submitted import still needs reconciliation
   await user.upload(input, new File(['hello'], 'input.txt', { type: 'text/plain' }))
   fireEvent.submit(input.closest('form')!)
   await screen.findByText('Connection interrupted')
-  expect(screen.getByLabelText('处理流程')).toBeDisabled()
+  expect(screen.getByLabelText('工作流')).toBeDisabled()
   await user.click(screen.getByRole('button', { name: '清理本次导入' }))
-  await waitFor(() => expect(screen.getByLabelText('处理流程')).toBeEnabled())
-  await user.selectOptions(screen.getByLabelText('处理流程'), 'another')
+  await waitFor(() => expect(screen.getByLabelText('工作流')).toBeEnabled())
+  await user.selectOptions(screen.getByLabelText('工作流'), 'another')
   expect(screen.getByLabelText('Document *')).toHaveValue('')
 })
 

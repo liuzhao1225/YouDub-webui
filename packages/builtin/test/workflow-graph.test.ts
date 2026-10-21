@@ -61,6 +61,18 @@ test('graph validation locates incompatible edges, cycles, missing ports and dis
   assert.ok(errors.some(item => item.nodeId === 'detached' && item.portId === 'audio'))
 })
 
+test('unsupported source and target languages cannot compile into a task', async t => {
+  const { ctx, subtitles, compile } = await setup(t)
+  const document = structuredClone(subtitles)
+  document.nodes.find(node => node.id === 'recognize')!.config.sourceLanguage = 'asdf'
+  document.nodes.find(node => node.id === 'translate')!.config.targetLanguage = 'asdf'
+  document.nodes.find(node => node.id === 'export')!.config.targetLanguage = 'asdf'
+  const errors = Graph.inspectGraph(document, ctx.catalog).diagnostics
+  assert.ok(errors.some(item => item.nodeId === 'recognize' && item.field === 'sourceLanguage'))
+  assert.ok(errors.some(item => item.nodeId === 'translate' && item.field === 'targetLanguage'))
+  await assert.rejects(compile(document))
+})
+
 test('bindings isolate two translations and exports, presentation never changes execution', async t => {
   const { subtitles, compile } = await setup(t)
   const doc = structuredClone(subtitles)
