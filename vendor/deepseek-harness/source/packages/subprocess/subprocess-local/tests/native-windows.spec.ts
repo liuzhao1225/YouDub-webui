@@ -210,26 +210,32 @@ describe.skipIf(!windowsNative)('Windows Job native containment', () => {
     }
   })
 
-  it('preserves missing-target and invalid-executable rejection errors', async () => {
+  it('resolves an executable relative to the requested working directory', async () => {
     const relativeExecutable = `relative-node-${String(Date.now())}.exe`
     copyFileSync(process.execPath, join(scratch, relativeExecutable))
     const relative = spec([relativeExecutable, '-e', 'process.exit(17)'])
     const relativeHandle = bindManagedProcess(relative, launchWindowsJob(relative, targetEnvironment(relative)))
     await expect(relativeHandle.done).resolves.toEqual({ exitCode: 17, signal: null })
     await expect(relativeHandle.waitForExit()).resolves.toBe(true)
+  })
 
+  it('preserves missing-target rejection errors', async () => {
     const missing = spec([`missing-native-target-${Date.now()}.exe`])
     const expectedMissing = await directSpawnFailure(missing.argv)
     const missingHandle = bindManagedProcess(missing, launchWindowsJob(missing, targetEnvironment(missing)))
     await expect(missingHandle.done).rejects.toMatchObject(expectedSpawnFailure(expectedMissing))
     await expect(missingHandle.waitForExit()).resolves.toBe(true)
+  })
 
+  it('preserves access-denied rejection errors', async () => {
     const expectedAccessDenied = await directSpawnFailure([scratch])
     const accessDenied = spec([scratch])
     const accessDeniedHandle = bindManagedProcess(accessDenied, launchWindowsJob(accessDenied, targetEnvironment(accessDenied)))
     await expect(accessDeniedHandle.done).rejects.toMatchObject(expectedSpawnFailure(expectedAccessDenied))
     await expect(accessDeniedHandle.waitForExit()).resolves.toBe(true)
+  })
 
+  it('preserves missing-working-directory rejection errors', async () => {
     const missingCwd = join(scratch, `missing-cwd-${Date.now()}`)
     const cwdArgv = [process.execPath, '-e', 'process.exit(0)']
     const expectedCwd = await directSpawnFailure(cwdArgv, missingCwd)
@@ -237,7 +243,9 @@ describe.skipIf(!windowsNative)('Windows Job native containment', () => {
     const invalidCwdHandle = bindManagedProcess(invalidCwd, launchWindowsJob(invalidCwd, targetEnvironment(invalidCwd)))
     await expect(invalidCwdHandle.done).rejects.toMatchObject(expectedSpawnFailure(expectedCwd))
     await expect(invalidCwdHandle.waitForExit()).resolves.toBe(true)
+  })
 
+  it('preserves invalid-executable rejection errors', async () => {
     const invalidExecutable = join(scratch, `direct-${Date.now()}.exe`)
     writeFileSync(invalidExecutable, 'not a Windows executable\r\n')
     const directError = await directSpawnFailure([invalidExecutable])

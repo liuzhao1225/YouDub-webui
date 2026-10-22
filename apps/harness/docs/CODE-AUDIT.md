@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。当前记录包含第 26 批首启引导清理及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。第 26 批已通过本地检查，双平台 CI 待验证；原生和完整媒体的最终验收继续开放。
+更新：2026-10-23。当前记录包含第 26 批首启引导清理及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。第 26 批已通过本地检查；Windows 原生组合用例超时后拆分，修复候选的双平台 CI 待验证；原生和完整媒体的最终验收继续开放。
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -15,7 +15,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 209 包、5,228 个树条目，源码 SHA-256 为 `8d55f64a7b3713133d97f8d18fcb113708b9bf262cb5a73dca722d68e976c42d`（第 26 批移除停用引导）。运行时和类型闭包为 141 包，含测试为 203 包。其余 6 包为通用 Typert 生成器、native/system workspace 与 4 个平台 addon；动态/根消费者已记录。第 25 批移除了无消费者的 vendored HMR 与 console logger，保留实际使用的通用 HMR 和日志实现。[第 25 批证据](evidence/refactor-unused-vendor-prune.json)
+当前活动框架为 209 包、5,228 个树条目，源码 SHA-256 为 `ac1a11eb4c2e900d3a1ee0dfea314932d80a40a7012b8ce4874bcbda0622f28c`（第 26 批及 Windows 原生测试拆分）。运行时和类型闭包为 141 包，含测试为 203 包。其余 6 包为通用 Typert 生成器、native/system workspace 与 4 个平台 addon；动态/根消费者已记录。第 25 批移除了无消费者的 vendored HMR 与 console logger，保留实际使用的通用 HMR 和日志实现。[第 25 批证据](evidence/refactor-unused-vendor-prune.json)
 
 源码构建的 235 个客户端产物包含可选框架库，不能用于推算产品实际加载的插件数。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 

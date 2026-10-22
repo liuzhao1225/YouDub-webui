@@ -670,3 +670,7 @@ AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、2
 7 项源码构建门、2 项聚合类型、367 项设置/凭据回归、123 项包边界/目录检查、6 项实际 Host/语言合同均通过。语言门先发现日语残留字段，清理后构建通过；实际 Host 日语页面的空列表、提供商选择、API Key/URL/模型编辑和取消读回通过，控制台无错误。原始归档哈希保持不变。双平台 CI 尚待验证。[证据](evidence/refactor-onboarding-prune.json)
 
 包内审计同时确认旧账号链仍由 remotes 类型与事件、product-analytics 的账号标识、llm-deepseek 的账号专属测试和 session-controller 的账号重试入口引用。它们未进入 YouDub 产品默认装配，源码退出仍需按消费者逐项处理，P6 保持开放。
+
+第 26 批首次 Windows CI 有 566 项通过、1 项失败、27 项跳过；失败是 native-windows 将相对路径启动及四种拒绝场景串行装入同一个 5 秒测试用例后超时。现按独立场景拆为五例，原来的十个 done/waitForExit 断言和每例超时全部保留。macOS 本地不支持该原生 API，因此新的 Windows CI 通过前不宣称修复完成。[原失败记录](evidence/refactor-onboarding-prune.json)
+
+旧账号与统计链的五个候选包共 75 个文件，实际运行清单均未包含；所有清理前消费者与验证要求已整理。[待执行清单](evidence/refactor-account-residual-audit.json)

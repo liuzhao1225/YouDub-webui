@@ -168,7 +168,7 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 - [x] 将基础启动依赖与界面内媒体环境准备划清：能显示首启界面的最小运行时先准备；Python、FFmpeg、分句资源、模型按现有首启流程处理。
 - [x] 首启先选择语言和私有安装目录，通过官方 Settings 保存；确认前不下载。页面确认、原生文件夹选择、Electron 退出与重启读回通过；其余资源恢复行为继续列入 A2/A3。
 - [x] 保留 Whisper、Demucs、VoxCPM2、Qwen Aligner 四模型及推理依赖全就绪的门控；模型或依赖未完成时显示实际状态，不能进入已就绪状态。新隔离 profile 已实际验证，见调研记录。
-- [x] 保留下载进度、暂停、继续、显式重试、日志和错误；原错误可定位。e0f899a1 在隔离实际 Host 中从页面重试损坏模型、下载并暂停续传，最终哈希一致；首启四模型门控及重启读回通过。原生退出与完整新环境安装继续列入 P7。[记录](evidence/refactor-resource-download-browser.json)
+- [x] 保留下载进度、暂停、继续、显式重试、日志和错误；原错误可定位。e0f899a1 在隔离实际 Host 中从页面重试损坏模型、下载并暂停续传，最终哈希一致；首启四模型门控及重启读回通过。完整新环境安装及同配置重启已通过实际 Host/浏览器验收；原生退出继续列入 P7。[下载记录](evidence/refactor-resource-download-browser.json)、[全新安装](evidence/refactor-fresh-installation.json)
 - [x] 核对 Node/pnpm、Python、媒体工具、模型、缓存和凭据的实际解析路径。8fea16f1 经隔离实际 Host 验证所选路径覆盖外部同名环境、用户 Python 包关闭、四模型路径和私有凭据优先级；新 profile 仍需显式准备操作。测试复用既有私有资源，未宣称重新下载安装或原生交互通过。[证据](evidence/refactor-runtime-isolation.json)
 - [ ] 检查旧 YouDub 私有目录可继续使用。确需改变目录/配置结构时，在隔离副本验证迁移和失败行为，保留用户数据。
 

@@ -54718,6 +54718,24 @@
       "reason": "Remove the unused TypeScript/Python embedding SDK, its dedicated executable/release/fixture tooling and external Codex/Claude/Harness subagent providers after verifying no incoming YouDub runtime, type or retained-package-test dependency."
     },
     {
+      "path": "packages/subprocess/subprocess-local/tests/native-windows.spec.ts",
+      "before": {
+        "path": "packages/subprocess/subprocess-local/tests/native-windows.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11159,
+        "sha256": "70ac6e571c974b699b2355e2a94f8a7ea4542afbfe49bc609739d14c025a65cd"
+      },
+      "after": {
+        "path": "packages/subprocess/subprocess-local/tests/native-windows.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11451,
+        "sha256": "cf6cba6a170020783bf76cffc0a72874d0f4d6b97fcd3d6b9371928c9dac2f62"
+      },
+      "reason": "Split five independent Windows native-process launch/error scenarios into individually timed cases after the combined 5-second case timed out in CI; preserve every rejection and process-exit assertion and the per-case timeout."
+    },
+    {
       "path": "packages/test-support/README.i18n.yaml",
       "before": {
         "path": "packages/test-support/README.i18n.yaml",

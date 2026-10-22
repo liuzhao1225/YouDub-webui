@@ -1,0 +1,190 @@
+{
+  "date": "2026-10-23",
+  "candidateCommit": "b6a1d9582ef32f7206e81be299046d17d444934f",
+  "status": "audit-complete-implementation-pending",
+  "candidates": [
+    {
+      "path": "packages/credentials/deepseek-account",
+      "name": "@deepseek-ai/dsh-deepseek-account",
+      "files": 10,
+      "consumers": [
+        {
+          "path": "packages/api/account-controller",
+          "sections": [
+            "devDependencies",
+            "peerDependencies"
+          ]
+        },
+        {
+          "path": "packages/api/remotes",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/product-analytics",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/llm/llm-deepseek",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/llm/llm-deepseek-account",
+          "sections": [
+            "devDependencies",
+            "peerDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/api/account-controller",
+      "name": "@deepseek-ai/dsh-api-account-controller",
+      "files": 11,
+      "consumers": [
+        {
+          "path": "packages/api/remotes",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/llm/llm-deepseek-account",
+      "name": "@deepseek-ai/dsh-llm-deepseek-account",
+      "files": 18,
+      "consumers": [
+        {
+          "path": "packages/llm/llm-deepseek",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/client/product-analytics",
+      "name": "@deepseek-ai/dsh-client-product-analytics",
+      "files": 22,
+      "consumers": [
+        {
+          "path": "packages/api/remotes",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-chat",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-conversation",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-plugin-manager",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-sidebar",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-workspace",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/host/product-telemetry-otel",
+      "name": "@deepseek-ai/dsh-host-product-telemetry-otel",
+      "files": 14,
+      "consumers": [
+        {
+          "path": "packages/client/product-analytics",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    }
+  ],
+  "remainingConsumerWork": [
+    {
+      "path": "packages/api/remotes",
+      "change": "Remove account and product-analytics Remote/type exports, account forwarded events, manifest and TS references; regenerate Remote/catalog artifacts through the existing build."
+    },
+    {
+      "path": "packages/api/session-controller",
+      "change": "Remove account-specific initializeDefaultModel and its only helper hasProviderApiKey; preserve generic selectModel and modelCatalog behavior and tests."
+    },
+    {
+      "path": "packages/llm/llm-deepseek/tests",
+      "change": "Remove account-only provider fixture and assertions; retain API-key transport, failure, streaming, disposal and generic Messages tests."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager",
+      "change": "Remove account-bound product analytics calls and their attempt bookkeeping only; preserve install/uninstall/toggle behavior, errors and state."
+    },
+    {
+      "path": "packages/client/ui-chat, ui-conversation, ui-sidebar, ui-workspace",
+      "change": "Remove optional product-analytics imports/calls and the account sign-out special display path; preserve generic framework presentation and event handling."
+    },
+    {
+      "path": "scripts and manifests",
+      "change": "Update declarations, lockfile, TS aggregates, allowlists, generated catalogs and third-party notices after removing proven exclusive consumers."
+    }
+  ],
+  "acceptance": [
+    "Current model settings remains provider-neutral and retains credential protection.",
+    "Plugin install/uninstall/toggle behavior and forwarded events remain correct.",
+    "Generic LLM API-key and Session model selection suites retain their assertions.",
+    "Source build, aggregate types, runtime/default-product isolation and dual-platform CI pass.",
+    "Original archive and manifest remain immutable; fork ledger records all changed bytes."
+  ],
+  "limitations": [
+    "This records residual dependencies. None of the five candidate packages is deleted in this audit.",
+    "The current YouDub runtime composition already excludes these account and telemetry services; source and type cleanup remains required."
+  ],
+  "runtimeReadback": {
+    "source": "Actual isolated Desktop runtime-project/desktop-runtime.json",
+    "candidateServices": [
+      {
+        "name": "@deepseek-ai/dsh-deepseek-account",
+        "inRuntimeSharedPackages": false
+      },
+      {
+        "name": "@deepseek-ai/dsh-api-account-controller",
+        "inRuntimeSharedPackages": false
+      },
+      {
+        "name": "@deepseek-ai/dsh-llm-deepseek-account",
+        "inRuntimeSharedPackages": false
+      },
+      {
+        "name": "@deepseek-ai/dsh-client-product-analytics",
+        "inRuntimeSharedPackages": false
+      },
+      {
+        "name": "@deepseek-ai/dsh-host-product-telemetry-otel",
+        "inRuntimeSharedPackages": false
+      }
+    ]
+  }
+}
