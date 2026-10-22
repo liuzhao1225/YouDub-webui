@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -67,9 +67,11 @@ describe('desktop development project', () => {
     writeFileSync(join(host, 'lib', 'index.js'), '')
     writeFileSync(join(dependencies, '@deepseek-ai', 'dsh', 'package.json'), '{}\n')
     mkdirSync(join(dependencies, 'plain-dependency'))
-    writeFileSync(join(dependencies, 'plain-dependency', 'package.json'), '{}\n')
+    writeFileSync(join(dependencies, 'plain-dependency', 'package.json'), '{"name":"plain-dependency","version":"1.0.0"}\n')
     mkdirSync(join(dependencies, '@scope', 'dependency'))
-    writeFileSync(join(dependencies, '@scope', 'dependency', 'package.json'), '{}\n')
+    writeFileSync(join(dependencies, '@scope', 'dependency', 'package.json'), '{"name":"@scope/dependency","version":"1.0.0"}\n')
+    mkdirSync(join(dependencies, 'unrelated-product'))
+    writeFileSync(join(dependencies, 'unrelated-product', 'package.json'), '{"name":"unrelated-product","version":"1.0.0"}\n')
 
     const project = prepareDevelopmentProject({
       projectDir: join(root, 'development'),
@@ -78,6 +80,7 @@ describe('desktop development project', () => {
       dependencyDir: dependencies,
       release: release(),
       target: 'win-x64',
+      packages: ['plain-dependency', '@scope/dependency'],
     })
     expect(realpathSync(join(project, 'node_modules', '@deepseek-ai', 'dsh'))).toBe(realpathSync(cli))
     expect(realpathSync(join(project, 'node_modules', '@deepseek-ai', 'dsh-desktop-host'))).toBe(realpathSync(host))
@@ -85,6 +88,7 @@ describe('desktop development project', () => {
       .toBe(realpathSync(join(dependencies, 'plain-dependency')))
     expect(realpathSync(join(project, 'node_modules', '@scope', 'dependency')))
       .toBe(realpathSync(join(dependencies, '@scope', 'dependency')))
+    expect(existsSync(join(project, 'node_modules/unrelated-product'))).toBe(false)
     const manifest = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8')) as {
       dependencies: Record<string, string>
     }

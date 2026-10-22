@@ -13,7 +13,7 @@ import { installDesktopQuitInspection } from './quit-inspection.ts'
 async function main(): Promise<void> {
   const runtimeDir = process.argv[2] as string
   const projectDir = process.argv[3] as string
-  const installAnchor = join(runtimeDir, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+  const installAnchor = join(runtimeDir, 'package.json')
   const profile = loadProfileDirectory('dsh', projectDir, installAnchor)
   reportSkippedBundles('dsh', profile)
   const application = runProfile({
@@ -21,7 +21,7 @@ async function main(): Promise<void> {
     profile: 'desktop',
     resolvedProfile: { profile, installAnchor },
     patchFiles: [],
-    args: ['--no-open', '--host', '127.0.0.1', '--port', '0'],
+    args: process.argv.length > 6 ? process.argv.slice(6) : ['--no-open', '--host', '127.0.0.1', '--port', '0'],
     ...(process.argv[4] === undefined ? {} : {
       packageManager: {
         command: process.execPath,

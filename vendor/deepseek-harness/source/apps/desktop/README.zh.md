@@ -1,4 +1,6 @@
 ---
+
+> YouDub 源码开发仅从本包构建沙箱 app preload。产品主入口在 apps/harness/src/desktop-product.ts 中组合保留的 Desktop helper。开发运行目录仅链接明确选定的产品包及其声明的 workspace 依赖，不再收集整个 pnpm hoist 目录。下文原打包与发行说明作为上游历史参考保留，当前不用于 YouDub 发行。
 description: "Desktop 在原生应用中运行 Harness 工作区。本参考文档说明应用行为、开发与集成；打包、Windows 签名和发布指南分别维护构建与发布操作。"
 ---
 

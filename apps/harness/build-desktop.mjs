@@ -50,6 +50,6 @@ await cp(join(here, 'src/desktop-main.mjs'), join(output, 'main.mjs'));
 await writeFile(join(output, 'build-inputs.json'), JSON.stringify(records, null, 2) + '\n');
 await writeFile(join(output, 'source-build-inputs.json'), JSON.stringify({ source: compiled,
   preloads: ['preload-app'].map(name => `apps/desktop/lib/${name}.cjs`),
-  host: 'apps/desktop-host/lib/index.js', cli: 'apps/cli/lib/bin.js',
+  host: 'apps/desktop-host/lib/index.js', profileBoot: 'apps/cli/lib/profile-boot.js',
   officialBuild: 'scripts/build.ts --scope artifacts' }, null, 2) + '\n');
 console.log(`YouDub Electron application: ${output}`);

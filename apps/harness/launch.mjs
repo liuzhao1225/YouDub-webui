@@ -13,8 +13,8 @@ const profile = join(home, 'profiles/youdub');
 const { project, pluginRoot, pnpm, node, nodeBin } = await prepareSourceDevelopment({ projectDirectory: join(here, 'dist/web-runtime') });
 await prepareYouDubProfile(profile, pluginRoot, project, { command: node, args: ['--expose-internals', pnpm], env: desktopNodeEnvironment(node, nodeBin, process.env) });
 const args = process.argv.slice(2);
-const diagnostic = args.some(arg => ['--dump-config', '--dump-config-schema', '--dump-default-config'].includes(arg));
-const child = spawn(node, ['--expose-internals', join(project, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), '--profile', 'youdub', ...(diagnostic ? args : ['--host', '127.0.0.1', '--port', '3086', '--no-open', ...args])], {
+const child = spawn(node, ['--expose-internals', join(project, 'node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js'),
+  project, profile, pnpm, nodeBin, '--host', '127.0.0.1', '--port', '3086', '--no-open', ...args], {
   cwd: project, stdio: 'inherit', env: { ...desktopNodeEnvironment(node, undefined, process.env), DSH_HOME: home, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: node },
 });
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));

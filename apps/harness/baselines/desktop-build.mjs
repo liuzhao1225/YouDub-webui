@@ -116,7 +116,7 @@ for (const path of expectedPreloads) {
   same(await sha256(destination), digest, `Copied source-built preload ${path}`)
   officialArtifacts.push({ path, sha256: digest, usage: 'copied-verbatim' })
 }
-for (const [field, path] of [['host', 'apps/desktop-host/lib/index.js'], ['cli', 'apps/cli/lib/bin.js']]) {
+for (const [field, path] of [['host', 'apps/desktop-host/lib/index.js'], ['profileBoot', 'apps/cli/lib/profile-boot.js']]) {
   same(inputs[field], path, `Source-built ${field} entry`)
   officialArtifacts.push({ path, sha256: await sha256(join(compiled, path)), usage: 'source-development-link' })
 }

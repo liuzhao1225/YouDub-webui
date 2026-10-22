@@ -1,5 +1,7 @@
 # `@deepseek-ai/dsh`
 
+> This YouDub fork retains the profile runner, plugin operations and configuration diagnostics. Its runtime dependencies no longer install the original Agent, Office or experimental product bundles; the consuming product declares its own composition. Historical profile fixtures remain development inputs.
+
 English | [中文](README.zh.md)
 
 The `dsh` command is the sole supported Node application launcher: profiles are ordered stacks of plugin-bundle patch layers under the user's own overrides. SDK and ACP are profiles, not separate public bins. The Python runtime wheel packages this same command; the SDK defaults to `sdk`, and the minimal example selects `sdk-minimal`. [`src/args.ts`](src/args.ts) owns the command grammar, and [`src/bin.ts`](src/bin.ts) loads only the selected runner. Invalid commands, options from another mode, and fatal configuration or boot failures exit nonzero.

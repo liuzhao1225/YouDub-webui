@@ -5,7 +5,6 @@ import {
   lstatSync,
   mkdirSync,
   readFileSync,
-  readdirSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -23,6 +22,8 @@ interface PackageManifest {
   readonly name?: string
   readonly version?: string
   readonly dependencies?: Readonly<Record<string, string>>
+  readonly peerDependencies?: Readonly<Record<string, string>>
+  readonly peerDependenciesMeta?: Readonly<Record<string, { optional?: boolean }>>
 }
 
 /** Inputs whose locations differ between the launcher and isolated tests. */
@@ -35,6 +36,8 @@ export interface DevelopmentProjectOptions {
   readonly hostDir: string
   /** pnpm's workspace-wide virtual-hoist directory. */
   readonly dependencyDir: string
+  /** Product-selected packages resolved from dependencyDir; unrelated hoisted packages are excluded. */
+  readonly packages?: readonly string[]
   /** Release identity written into the disposable project metadata. */
   readonly release: DesktopRelease
   /** Build target whose prepared payload the disposable project runs against. */
@@ -69,52 +72,34 @@ function linkDirectory(source: string, destination: string): void {
   symlinkSync(realpathSync(source), destination, process.platform === 'win32' ? 'junction' : 'dir')
 }
 
-function mirrorDependencyLinks(sourceRoot: string, destinationRoot: string): string[] {
-  const names: string[] = []
-  for (const entry of readdirSync(sourceRoot, { withFileTypes: true })) {
-    if (entry.name === '.bin') continue
-    const source = join(sourceRoot, entry.name)
-    if (entry.name.startsWith('@') && (entry.isDirectory() || entry.isSymbolicLink())) {
-      mkdirSync(join(destinationRoot, entry.name), { recursive: true })
-      for (const scoped of readdirSync(source, { withFileTypes: true })) {
-        if (!scoped.isDirectory() && !scoped.isSymbolicLink()) continue
-        linkDirectory(join(source, scoped.name), join(destinationRoot, entry.name, scoped.name))
-        names.push(`${entry.name}/${scoped.name}`)
-      }
-      continue
-    }
-    if (entry.isDirectory() || entry.isSymbolicLink()) {
-      linkDirectory(source, join(destinationRoot, entry.name))
-      names.push(entry.name)
-    }
-  }
-  return names
-}
-
-/** Configured workspace plugins must resolve from the profile even when pnpm does not hoist them. */
-function mirrorWorkspaceDependencies(roots: readonly string[], destinationRoot: string): string[] {
-  const names: string[] = []
-  const visited = new Set<string>()
+/** Link selected packages and their declared workspace dependencies, including required peers. */
+function mirrorRuntimePackages(roots: readonly string[], destinationRoot: string): string[] {
+  const selected = new Map<string, string>()
   const visit = (directory: string): void => {
     const source = realpathSync(directory)
-    if (visited.has(source)) return
-    visited.add(source)
     const manifest = readManifest(join(source, 'package.json'))
-    for (const [name, specifier] of Object.entries(manifest.dependencies ?? {})) {
+    if (typeof manifest.name !== 'string' || manifest.name === '') {
+      throw new Error(`desktop development: missing package name in ${source}`)
+    }
+    const existing = selected.get(manifest.name)
+    if (existing !== undefined) {
+      if (existing !== source) throw new Error(`desktop development: conflicting sources for ${manifest.name}`)
+      return
+    }
+    selected.set(manifest.name, source)
+    linkDirectory(source, join(destinationRoot, manifest.name))
+    for (const [name, specifier] of Object.entries({ ...manifest.peerDependencies, ...manifest.dependencies })) {
       if (!specifier.startsWith('workspace:')) continue
-      const dependency = join(source, 'node_modules', ...name.split('/'))
+      const dependency = join(source, 'node_modules', name)
       if (!existsSync(dependency)) {
+        if (manifest.dependencies?.[name] === undefined && manifest.peerDependenciesMeta?.[name]?.optional === true) continue
         throw new Error(`desktop development: ${name} is missing from ${source}; run pnpm install`)
       }
-      const destination = join(destinationRoot, ...name.split('/'))
-      removeOwnedPath(destination)
-      linkDirectory(dependency, destination)
-      names.push(name)
       visit(dependency)
     }
   }
   for (const directory of roots) visit(directory)
-  return names
+  return [...selected.keys()].sort()
 }
 
 /**
@@ -148,20 +133,22 @@ export function prepareDevelopmentProject(options: DevelopmentProjectOptions): s
   createDevelopmentProjectMetadata(options.projectDir, options.release)
   const destinationModules = join(options.projectDir, 'node_modules')
   mkdirSync(destinationModules, { recursive: true })
-  const names = [
-    ...mirrorDependencyLinks(options.dependencyDir, destinationModules),
-    ...mirrorWorkspaceDependencies([options.cliDir, options.hostDir], destinationModules),
-  ]
-  const dshLink = join(destinationModules, '@deepseek-ai', 'dsh')
-  removeOwnedPath(dshLink)
-  linkDirectory(options.cliDir, dshLink)
-  const hostLink = join(destinationModules, '@deepseek-ai', 'dsh-desktop-host')
-  removeOwnedPath(hostLink)
-  linkDirectory(options.hostDir, hostLink)
-  const sharedPackages = [...new Set([...names, '@deepseek-ai/dsh', '@deepseek-ai/dsh-desktop-host'])].flatMap((name) => {
+  const names = mirrorRuntimePackages([
+    options.cliDir, options.hostDir,
+    ...(options.packages ?? []).map(name => join(options.dependencyDir, name)),
+  ], destinationModules)
+  const sharedPackages = names.map((name) => {
     const manifest = readManifest(join(destinationModules, name, 'package.json'))
-    return typeof manifest.version === 'string' ? [{ name, version: manifest.version, path: `node_modules/${name}` }] : []
+    if (typeof manifest.version !== 'string') throw new Error(`desktop development: missing version for ${name}`)
+    return { name, version: manifest.version, path: `node_modules/${name}` }
   })
+  // Profile resolution reads this application's declarations, rather than the
+  // CLI package's old all-product dependency list.
+  const projectManifest = readManifest(join(options.projectDir, 'package.json'))
+  writeFileSync(join(options.projectDir, 'package.json'), `${JSON.stringify({
+    ...projectManifest,
+    dependencies: Object.fromEntries(sharedPackages.map(pkg => [pkg.name, pkg.version])),
+  }, undefined, 2)}\n`)
   const runtime: DesktopRuntimeDescriptor = { schemaVersion: 1, release: options.release,
     ...desktopTargetPlatform(options.target), sharedPackages, files: [] }
   writeFileSync(join(options.projectDir, DESKTOP_RUNTIME_FILE), `${JSON.stringify(runtime, undefined, 2)}\n`)

@@ -29,11 +29,11 @@ node apps/harness/baselines/framework-source.mjs
 node apps/harness/baselines/desktop-build.mjs --verify
 ```
 
-完整检查验证保存的 npm 原包、原 Desktop、原 Harness 仓库、YouDub 快照、外部归档及当前 fork 的构建来源。它依赖本机保存的历史资料，不作为新开发者启动条件。`--scope sources|desktop|npm|vendor|build` 可单独复查一类；其中 `vendor` 使用活动 fork 规则。路径可用 `--baseline-root`、`--npm-root`、`--app`、`--original-source` 指定，调整路径不改变预期哈希。
+完整检查验证保存的 npm 原包、原 Desktop、原 Harness 仓库、YouDub 快照、外部归档及当前 fork 的构建来源。它依赖本机保存的历史资料，不作为新开发者启动条件。`--scope sources|desktop|npm|vendor|build` 可单独复查一类；其中 `vendor` 使用活动 fork 规则。`npm` 默认只核验原始 tarball；显式传 `--npm-root` 时另验该历史安装目录的锁文件及包内容。当前产品不需要安装这些历史发布包。路径可用 `--baseline-root`、`--npm-root`、`--app`、`--original-source` 指定，调整路径不改变预期哈希。
 
 `vendor/deepseek-harness/source` 自 2026-10-22 起作为活动 fork；原始归档与 `source-manifest.json` 继续保持不变。`fork.json` 固定原始清单哈希，记录每项变化的原件、当前文件摘要和原因。活动检查拒绝未登记或与登记内容不同的变化。`vendor.mjs --verify-archive` 在临时目录恢复原始归档核验；`--verify` 保留严格原样对照语义。
 
-每次完成产品构建后运行 `desktop-build.mjs --record`，生成 `dist/desktop/source-provenance.json`。记录区分原样上游输入、已登记 fork 输入、YouDub 产品输入和发布依赖；核对 native 复制块、资源、实际使用的 `preload-app`、CLI/Host/Web 来源和活动包路径。后续 `--verify` 检查输入与产物是否变化；重新记录前仍须通过 fork 校验。
+每次完成产品构建后运行 `desktop-build.mjs --record`，生成 `dist/desktop/source-provenance.json`。记录区分原样上游输入、已登记 fork 输入、YouDub 产品输入和发布依赖；核对 native 复制块、资源、实际使用的 `preload-app`、profile runner/Host/Web 来源和活动包路径。后续 `--verify` 检查输入与产物是否变化；重新记录前仍须通过 fork 校验。
 
 框架构建在 `.cache/harness/source-build` 中复用 `scripts/build.ts --scope artifacts`。`youdub-source-inputs.json` 记录实际输入，`youdub-source-build.json` 记录 fork 树哈希、产品提交及 dirty 状态、改动清单和客户端构建收据。`--verify-only` 只检查，不重写收据。可用 `--stage <全新目录>` 验证独立构建；源码删除后会同步删除旧 staging 输入，最终裁剪仍须全新目录构建。原件 npm 包继续独立保存。
 

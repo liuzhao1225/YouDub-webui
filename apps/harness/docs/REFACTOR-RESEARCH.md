@@ -156,3 +156,15 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 同构建模式下，`api/remotes/lib/client.js` 从 1,083,920 字节减少到 152,973 字节。这只表示该未压缩 JS 产物缩小，未推导全应用体积、启动或推理性能收益。
 - 上一候选 `7630c4a3` 的[源码开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39661750639) 已全部通过，包括干净 runner 的 Electron 准备与并行测试。当前裁剪候选另行检查；两份飞书文档仍留到全部改造和验收后更新。
 - 本批框架 7 个构建 gate、Remote 7 项测试、Harness 66 项集成测试及来源/组合检查通过。实际页面验证设置和模型读取；通过官方 PluginManager 安装本仓库 file-transform 样例、启用、点击其注入页面的计数按钮、停用并卸载。启用时导航出现，停用后撤回，卸载后仅保留 YouDub 内置插件。样例没有写入任何用户任务；截图 `/tmp/youdub-refactor-plugin-mounted.png`。同时通过通用设置将测试 profile 改回中文，验证 settings 写入与语言事件。
+
+
+## P6 第二批：产品依赖与唯一源码运行（2026-10-22）
+
+- 删除 Desktop Host 中已无消费者的 Office 组合、账号 session 发布及旧桌面 CLI；保留还被历史打包工具引用的 Office engine helper，未将其宣称为完全删除。Host 仅输出 index；框架 Desktop bundle 仅输出 YouDub 使用的 app preload，旧 main、欢迎页和其他 preload 不再生成。
+- CLI 运行依赖从 86 项缩至 10 项；Web runtime 的实际实现依赖与历史全量 Web profile 夹具依赖分开。旧 profile 夹具仍是开发依赖，后续随原组合测试一并裁剪。
+- 原 development-project helper 现在只链接产品 patch、实际 Host 外部导入及 workspace 依赖闭包，不再遍历整个 hoist 目录。运行目录从 362 个框架包缩至 80 个；不含 Office、DeepSeek 账号、ACP、实验或终端包。仍有 Agent/Session 等声明依赖待解除，源码仍编译 362 包及 325 个客户端产物。
+- Desktop Host 的安装解析锚点改为 YouDub runtime project 的 manifest。浏览器开发入口也直接启动该 Host，并传入同一应用 pnpm；不再通过旧 CLI 产品依赖集合获得框架服务。
+- apps/harness 移除全部 `@deepseek-ai/*` npm 发布依赖，锁文件条目 820 → 142，保留依赖版本没有变化。集成测试导入改用当前 source-build，并在 pretest 校验源码/构建；临时 profile 的正常缺包失败检查保留。原 360 份 npm tarball 全部哈希校验通过。
+- 真实测试曾发现缺少 YAML/undici 等直接外部依赖，以及 profile 解析仍锚定旧 CLI。已分别按真实构建外部导入链接依赖、改用产品 manifest 后修复，未恢复全量 hoist。
+- 既有隔离验证 profile 的 node_modules 元数据仍为 pnpm 10，使用应用 pnpm 11 安装扩展时报 `ERR_PNPM_UNEXPECTED_STORE`。已明确重建该测试 profile 的依赖链接，manifest 与用户 patch 哈希不变；未修改原 Harness 账号或通用 pnpm 配置。
+- 本地框架七个构建步骤通过，66 项 Harness 集成通过；原 Desktop 相关用例 55 通过，1 项 Windows 路径大小写用例在 macOS 跳过。另在全新 `.cache/harness/source-build-p6-20261022` 中完成七步构建，70.62 秒；旧 Desktop main、欢迎页、账号 preload 与 Host CLI 产物不存在。此时间仅记录本次构建，不与增量构建比较。实际页面完成本地 JS 扩展安装、启用、页面计数 0→1、停用后导航消失、卸载后只剩内置 YouDub；截图 `/tmp/youdub-prune-plugin-mounted.png`。原生 UI 仍经工具确认锁屏，未记为通过。

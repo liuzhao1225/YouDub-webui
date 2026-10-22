@@ -1,4 +1,6 @@
 ---
+
+> In the YouDub fork, production dependencies cover the Web runtime implementation. The historical full Web profile remains a development fixture; its plugins are development dependencies. YouDub supplies its own positive Loader composition.
 description: "The browser GUI for dsh: interactive chat, model and settings management, and session history, for users running the dsh web surface."
 kind: "package-bundle"
 ---

@@ -1,6 +1,6 @@
-/** Compose the original Harness development runtime from its complete source build. */
+/** Compose the product-selected Harness development runtime from its reviewed source build. */
 import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { createRequire, isBuiltin } from 'node:module';
 import { access, cp, lstat, mkdir, readFile, realpath, symlink, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -20,7 +20,7 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
   const electron = require('electron');
   const pnpm = join(here, 'node_modules/pnpm/bin/pnpm.mjs');
   const nodeBin = join(here, 'dist/desktop/scripts/node-bin');
-  for (const path of [join(source, '.dsh-build/client-build-environment.json'), join(source, 'apps/cli/lib/bin.js'),
+  for (const path of [join(source, '.dsh-build/client-build-environment.json'), join(source, 'apps/cli/lib/profile-boot.js'),
     join(source, 'apps/desktop-host/lib/index.js'), join(source, 'apps/web/dist/index.html'), pnpm]) await access(path);
   const version = JSON.parse(await readFile(join(source, 'package.json'), 'utf8')).version;
   const release = { schemaVersion: 1, version, hostProtocolVersion: 4,
@@ -28,14 +28,41 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
     pnpmVersion: JSON.parse(await readFile(join(here, 'node_modules/pnpm/package.json'), 'utf8')).version,
   };
   const { prepareDevelopmentProject } = await import(pathToFileURL(join(here, 'dist/desktop/development-project.mjs')));
+  const sourceRequire = createRequire(join(source, 'apps/cli/package.json'));
+  const { loadOverlayPatches } = await import(pathToFileURL(sourceRequire.resolve('@deepseek-ai/dsh-app-boot')));
+  const patches = loadOverlayPatches('YouDub', join(here, 'cordis.patch.yml'));
+  const selected = new Set(['@deepseek-ai/dsh-web-frontend']);
+  for (const patch of patches) {
+    if (!Array.isArray(patch.insert)) throw new Error('YouDub product composition must declare inserted entries.');
+    for (const entry of patch.insert) {
+      if (entry.name === '@youdub/harness-subtitles') continue;
+      if (typeof entry.name !== 'string' || !entry.name.startsWith('@deepseek-ai/')) throw new Error('Unexpected product framework entry.');
+      selected.add(entry.name.split('/').slice(0, 2).join('/'));
+    }
+  }
+  // Bundled business code retains these external imports. Read the actual build
+  // record so a new external cannot silently resolve from another installation.
+  const buildInputs = JSON.parse(await readFile(join(here, 'dist/build-inputs.json'), 'utf8'));
+  const externals = new Set();
+  for (const output of Object.values(buildInputs.host.outputs)) {
+    for (const item of output.imports) {
+      if (!item.external || isBuiltin(item.path)) continue;
+      const name = item.path.startsWith('@') ? item.path.split('/').slice(0, 2).join('/') : item.path.split('/')[0];
+      if (name.startsWith('@deepseek-ai/')) selected.add(name);
+      else externals.add(name);
+    }
+  }
   const project = prepareDevelopmentProject({ projectDir: projectDirectory,
     cliDir: join(source, 'apps/cli'), hostDir: join(source, 'apps/desktop-host'), dependencyDir: modules,
+    packages: [...selected].sort(),
     release, target: `${process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'win' : process.platform}-${process.arch}`,
   });
-  // YouDub's multipart parser is not a Harness dependency. Its original installed
-  // dependency remains a third-party package; every Harness package comes from source.
-  const busboy = dirname(require.resolve('busboy/package.json'));
-  await symlink(busboy, join(project, 'node_modules/busboy'), 'dir');
+  // Business externals resolve from YouDub's own dependencies. Framework packages
+  // remain source-built; no unrelated hoisted package enters the project.
+  for (const name of externals) await symlink(dirname(require.resolve(`${name}/package.json`)), join(project, 'node_modules', name), 'dir');
+  // Profile lockfile inspection uses the same YAML parser as PluginManager.
+  const managerRequire = createRequire(join(source, 'packages/boot/plugin-manager/package.json'));
+  await symlink(dirname(managerRequire.resolve('yaml/package.json')), join(project, 'node_modules/yaml'), 'dir');
   const pluginRoot = join(project, 'youdub-plugin');
   await mkdir(join(pluginRoot, 'dist'), { recursive: true });
   for (const name of ['package.json', 'cordis.patch.yml']) await cp(join(here, name), join(pluginRoot, name));
@@ -47,7 +74,12 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
     await unlink(dependencyLink);
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await symlink(join(project, 'node_modules'), dependencyLink, 'dir');
-  const sourcePackages = framework.packages;
+  const runtime = JSON.parse(await readFile(join(project, 'desktop-runtime.json'), 'utf8'));
+  const sourcePackages = runtime.sharedPackages.map(({ name }) => {
+    const pkg = framework.packages.find(pkg => pkg.name === name);
+    if (!pkg) throw new Error(`Runtime package has no reviewed source: ${name}`);
+    return pkg;
+  });
   const resolved = [];
   for (const pkg of sourcePackages) {
     if (!pkg.name.startsWith('@deepseek-ai/')) continue;
@@ -58,6 +90,6 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
     resolved.push({ name: pkg.name, source: pkg.path });
   }
   await writeFile(join(project, 'youdub-source-runtime.json'), JSON.stringify({ version, source, pluginRoot,
-    sourcePackages: resolved, development: true }, null, 2) + '\n');
+    roots: [...selected].sort(), sourcePackages: resolved, development: true }, null, 2) + '\n');
   return { project, pluginRoot, source, modules, pnpm, electron, node: electron, nodeBin };
 }

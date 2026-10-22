@@ -6,6 +6,90 @@
   "productBaselineTag": "youdub-desktop-refactor-base-20261022",
   "changes": [
     {
+      "path": "apps/cli/README.md",
+      "before": {
+        "path": "apps/cli/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 7284,
+        "sha256": "f80e7498e2718eb5ff85fd43d2e6d389ecceff24c4378651d0d89f3843c7a29e"
+      },
+      "after": {
+        "path": "apps/cli/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 7591,
+        "sha256": "ccbc776439a0c3ac426208786383c3d3ea3bef762eab45b5e4c5ec43fc32acbd"
+      },
+      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。"
+    },
+    {
+      "path": "apps/cli/README.zh.md",
+      "before": {
+        "path": "apps/cli/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 7202,
+        "sha256": "52a3d6faef82968bc3ce8352d8010adebb1489a1accc9d402dd2e937d82cfba7"
+      },
+      "after": {
+        "path": "apps/cli/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 7425,
+        "sha256": "0c9fb953d32ab627765ccc36482dc473581043b7ad2f9f994c73cddcd77d4e0e"
+      },
+      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。"
+    },
+    {
+      "path": "apps/cli/package.json",
+      "before": {
+        "path": "apps/cli/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 8138,
+        "sha256": "d42efe9f3ff424f602f11598af8805ad25039953ebbbd3c163d67875f7e8658b"
+      },
+      "after": {
+        "path": "apps/cli/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3972,
+        "sha256": "683b2e45b0dd8fedf1c8cb62aae95db06d8fa7cdf48444455859ea352759c3f3"
+      },
+      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。"
+    },
+    {
+      "path": "apps/desktop-host/package.json",
+      "before": {
+        "path": "apps/desktop-host/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1229,
+        "sha256": "1b10acdf3fce4625682e267e17bfdcd1959afed6f4409fb31b9b4bb9933895e4"
+      },
+      "after": {
+        "path": "apps/desktop-host/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 616,
+        "sha256": "1e94434e8905ff868824d88b7b4ad0cd17fe09fe1fe5902abd5b785802b7a9cb"
+      },
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/src/cli.ts",
+      "before": {
+        "path": "apps/desktop-host/src/cli.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1618,
+        "sha256": "135981854182762fdf680fcbf0fecbaa8e109f10c30d5b7e4a48f72b5ad3f235"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
       "path": "apps/desktop-host/src/index.ts",
       "before": {
         "path": "apps/desktop-host/src/index.ts",
@@ -18,10 +102,34 @@
         "path": "apps/desktop-host/src/index.ts",
         "type": "file",
         "executable": false,
-        "size": 5580,
-        "sha256": "b519395ab28eb159973e6c291448aee76c63c65c8fbb1b10fa630db1eeeb3bed"
+        "size": 5591,
+        "sha256": "3fcc25adcf08d02fa73704e0918d6da53f9bf6fbdeef92d15d1fa6dc2109a8e8"
       },
-      "reason": "Remove Office runtime installation, its launch argument and DeepSeek platform-session publication from the YouDub Host; retain official profile boot, authenticated transport, package-manager injection, IPC, shutdown and task admission."
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/src/office.ts",
+      "before": {
+        "path": "apps/desktop-host/src/office.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1982,
+        "sha256": "476724125820e03f258aee5939ea9adbda9c3125b7b07bd41cb0e6ee48bf34e3"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/src/platform-session.ts",
+      "before": {
+        "path": "apps/desktop-host/src/platform-session.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1591,
+        "sha256": "b904c6ed4f7d07000cfef032fba8f294253a83184a4efcef8aafc89cea20d929"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
     },
     {
       "path": "apps/desktop-host/src/quit-inspection.ts",
@@ -39,7 +147,7 @@
         "size": 1100,
         "sha256": "f2db086761692e4b69bb18c94875c500f57713ce4ecc5845455ffe4672ee561f"
       },
-      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
     },
     {
       "path": "apps/desktop-host/src/update-tasks.ts",
@@ -57,7 +165,43 @@
         "size": 2907,
         "sha256": "daee0456fbe247bebc8c85484777fb5eca35728afeffc21480bc3e07a456ef1a"
       },
-      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/src/windows-cli-signals.ts",
+      "before": {
+        "path": "apps/desktop-host/src/windows-cli-signals.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1084,
+        "sha256": "e7b7103b729770c9ed072625797409e1aa625d2266b9dfe9bf23db11eb5c11ef"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/tests/office.spec.ts",
+      "before": {
+        "path": "apps/desktop-host/tests/office.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3644,
+        "sha256": "b3e0270a535e299cf97c60e7f098626bb6ec99c58d5a61f71ec1b9d82a04885e"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/tests/platform-session.spec.ts",
+      "before": {
+        "path": "apps/desktop-host/tests/platform-session.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4828,
+        "sha256": "d5b5bba5d4f245dd9dd8e7193f718848fc2a2f6a9a7ddc30a0970c6f1560dd9a"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
     },
     {
       "path": "apps/desktop-host/tests/quit-inspection.spec.ts",
@@ -75,7 +219,109 @@
         "size": 3784,
         "sha256": "d525f53d5dc91535e8fe9dcee363aa4f5fd8e93b8c95dc000c87268521141a7a"
       },
-      "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/tsconfig.json",
+      "before": {
+        "path": "apps/desktop-host/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 884,
+        "sha256": "4db6e5fcd0c3d11d68455d15cc1060e2e2706e659f1fd5cce25fc1bf8f11bd60"
+      },
+      "after": {
+        "path": "apps/desktop-host/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 509,
+        "sha256": "db773677c2fe63992c883be7d0e1252d0ae837cc569da9434eb84721fcbbe8ce"
+      },
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop-host/tsdown.config.ts",
+      "before": {
+        "path": "apps/desktop-host/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 327,
+        "sha256": "4055e3353338b36a103114cc00e54f641cc13f6850c0f1f6ccbe1402fa715e18"
+      },
+      "after": {
+        "path": "apps/desktop-host/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 327,
+        "sha256": "0f6e8513f9f31b9115147a10b11bbe2f1cafc41f711bae2b748a6ac809d57254"
+      },
+      "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
+    },
+    {
+      "path": "apps/desktop/README.md",
+      "before": {
+        "path": "apps/desktop/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 78764,
+        "sha256": "d149bd530d2aaea666afe64148942e3550d268c7994f486f59b596103153a5a0"
+      },
+      "after": {
+        "path": "apps/desktop/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 79240,
+        "sha256": "9da443c694ea4f38a426663d7262ad64f2e5e71b909bd5d6b5af591999959904"
+      },
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
+    },
+    {
+      "path": "apps/desktop/README.zh.md",
+      "before": {
+        "path": "apps/desktop/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 69866,
+        "sha256": "1f7fde0156dec035d592ad23e855e1db1ceae0f59a09401d5676e805fb772b93"
+      },
+      "after": {
+        "path": "apps/desktop/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 70239,
+        "sha256": "965c1ecfb9be4382ae5ed94934749332103d8b053b59a49d5467715b413f05a8"
+      },
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
+    },
+    {
+      "path": "apps/desktop/cli/dsh",
+      "before": {
+        "path": "apps/desktop/cli/dsh",
+        "type": "file",
+        "executable": false,
+        "size": 583,
+        "sha256": "61647349bd61a5cfff40c338c7d5af767a22f409ddce36feabfb2f693d1e66af"
+      },
+      "after": null,
+      "reason": "移除旧桌面 CLI 入口及其产物要求和专属用例。"
+    },
+    {
+      "path": "apps/desktop/scripts/development-project.ts",
+      "before": {
+        "path": "apps/desktop/scripts/development-project.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7131,
+        "sha256": "25593e70a277051406e6b7b82261e3ae922a297f370795ea17796b6952a07317"
+      },
+      "after": {
+        "path": "apps/desktop/scripts/development-project.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6975,
+        "sha256": "a4fa6e1d1a240a1c9500bcd054055c4911556218f28466f33cff14cbb47cb7d2"
+      },
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
     },
     {
       "path": "apps/desktop/scripts/smoke-runtime.ts",
@@ -94,6 +340,24 @@
         "sha256": "cf50c2d49ab84d7a3f34698765524734745c3575ae0e4b15e1cc65529eaf3c26"
       },
       "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+    },
+    {
+      "path": "apps/desktop/src/core-package-set.ts",
+      "before": {
+        "path": "apps/desktop/src/core-package-set.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7936,
+        "sha256": "578403a76103a378a6abff4257cf45ee65b9e31d0b87b83a475d12da33f85667"
+      },
+      "after": {
+        "path": "apps/desktop/src/core-package-set.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7920,
+        "sha256": "a110f6320ffb8af61021e2f9cd22be94d3eb21214b3e590438ce58620464ce98"
+      },
+      "reason": "移除旧桌面 CLI 入口及其产物要求和专属用例。"
     },
     {
       "path": "apps/desktop/src/host-process.ts",
@@ -168,6 +432,36 @@
       "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
     },
     {
+      "path": "apps/desktop/tests/desktop-cli.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/desktop-cli.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1507,
+        "sha256": "5f6514e2e4ee3f086f4a98957710d75bad46fc9f017fe05c7572b3f934853935"
+      },
+      "after": null,
+      "reason": "移除旧桌面 CLI 入口及其产物要求和专属用例。"
+    },
+    {
+      "path": "apps/desktop/tests/development-project.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/development-project.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6491,
+        "sha256": "ddc0a32999fbbd6c44be1a6a7998ff49b1ff305dd748919a3880dde49757187f"
+      },
+      "after": {
+        "path": "apps/desktop/tests/development-project.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6915,
+        "sha256": "fa6dab3db1366d9d353fba5c87733f1b1eff358c0d65cae75d0044a3d373fd6b"
+      },
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
+    },
+    {
       "path": "apps/desktop/tests/host-process.spec.ts",
       "before": {
         "path": "apps/desktop/tests/host-process.spec.ts",
@@ -220,6 +514,24 @@
         "sha256": "29be8d7b7d4574188ed32b418b1d2d0139213c3d8d00e840cbb17b75204a1416"
       },
       "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
+    },
+    {
+      "path": "apps/desktop/tsdown.config.ts",
+      "before": {
+        "path": "apps/desktop/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4432,
+        "sha256": "3400c9e70f038dddd55142fd5cdaadd9fc9181930b952d854f9a829bdc00ff58"
+      },
+      "after": {
+        "path": "apps/desktop/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 705,
+        "sha256": "32ed84eb99457d289f016dcc396d9897174774be6a6384e205e2e7aaf65c9dfe"
+      },
+      "reason": "框架步骤仅构建 YouDub 实际使用的 app preload，不再生成旧产品 main、欢迎页和账号 preload。"
     },
     {
       "path": "packages/api/remotes/README.md",
@@ -298,6 +610,60 @@
         "sha256": "d5016f38ec46ce6174f241d2783fbe98490f1fb99102cf4a56ecb21767373a14"
       },
       "reason": "Run the original built HTTP carrier check in the normal test lane with current browser artifact paths and authenticated WebSocket routing; assert YouDub namespace selection/disposal and mount Goal explicitly as a test extension."
+    },
+    {
+      "path": "packages/bundle/web-app/README.md",
+      "before": {
+        "path": "packages/bundle/web-app/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 17309,
+        "sha256": "c28e229a5a7a0167f8a4c593f98f4259fcc2b20732f45bdff0cf4638fc025a51"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 17552,
+        "sha256": "94461fb612613653dc4aac2d98a3ca33a4f1021a42392d3d9fa1ea2a1e098a58"
+      },
+      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。"
+    },
+    {
+      "path": "packages/bundle/web-app/README.zh.md",
+      "before": {
+        "path": "packages/bundle/web-app/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 16149,
+        "sha256": "f24f1a6179390093620b8980c3819542d671b3c7a32434e822565749cc2769f1"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 16339,
+        "sha256": "55d51620c27d91f4b52dfe6fb7edb131a8ec6561722df7ece1a3fee5b17a87dc"
+      },
+      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。"
+    },
+    {
+      "path": "packages/bundle/web-app/package.json",
+      "before": {
+        "path": "packages/bundle/web-app/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 10152,
+        "sha256": "610f015025c0e68079ad142227beca7936a7fc37e0866c712d28db7815d0b47b"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 10152,
+        "sha256": "c2ae7ed8880f32a2f8efdf76870974a2a98db5869c96a1f61b87bc54aeccc3be"
+      },
+      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。"
     },
     {
       "path": "packages/client/ui-layout/README.md",
@@ -922,6 +1288,24 @@
         "sha256": "08317c3d6bf9c08ccc14c477f79d8b08c681293c86e6e637fb825fea38f5a694"
       },
       "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference."
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "before": {
+        "path": "pnpm-lock.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1090222,
+        "sha256": "4637cca3b89c4c8d5a147321710e597aa62ec2444a3772ab542be5690893dfe4"
+      },
+      "after": {
+        "path": "pnpm-lock.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1034852,
+        "sha256": "0461d758da22c3992ecd274f56899d6e8d83b78d1d056d8e1f2ef011586c6b51"
+      },
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。"
     },
     {
       "path": "vitest.config.ts",

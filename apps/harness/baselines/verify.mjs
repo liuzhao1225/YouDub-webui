@@ -50,6 +50,13 @@ async function verifyDesktop() {
   result.checks.push({scope:'desktop',app,files:sources.desktop.files,treeSha256:sources.desktop.treeSha256,version:sources.desktop.version,buildCommit:sources.desktop.buildCommit,embeddedBuildSourceAvailable:sources.desktop.sourceAvailable})
 }
 async function verifyNpm() {
+  for (const pkg of npm.packages) same(await sha256(join(baseline,pkg.artifact)),pkg.artifactSha256,`Preserved npm artifact ${pkg.name}`)
+  // The product now runs reviewed workspace builds. Archived npm artifacts stay
+  // immutable evidence; only an explicit historical installation is compared to them.
+  if (!options.has('--npm-root')) {
+    result.checks.push({scope:'npm',preservedArtifacts:npm.packages.length,installedPackagesChecked:false})
+    return
+  }
   const lock = JSON.parse(await readFile(join(npmRoot,'package-lock.json'),'utf8'))
   const expected = new Set(npm.packages.map(pkg=>pkg.path))
   for (const pkg of npm.packages) {

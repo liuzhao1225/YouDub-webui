@@ -1,4 +1,6 @@
 ---
+
+> 在 YouDub fork 中，生产依赖覆盖 Web runtime 实现。原完整 Web profile 作为开发夹具保留，其插件归入开发依赖。YouDub 提供自己的正向 Loader 组合。
 description: "dsh 的浏览器 GUI：交互式聊天、模型与设置管理、会话历史，供运行 dsh web 表层的用户使用。"
 kind: "package-bundle"
 ---

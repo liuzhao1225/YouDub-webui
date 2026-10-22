@@ -1,4 +1,6 @@
 ---
+
+> YouDub source development builds only the sandboxed app preload from this package. The product main entry composes the retained Desktop helpers in apps/harness/src/desktop-product.ts. Development runtime links are limited to explicitly selected product packages and declared workspace dependencies; unrelated pnpm hoist entries are not included. The original packaging and release instructions below are historical upstream reference and are not a YouDub release workflow.
 description: "Desktop runs the Harness workspace in a native application. This reference covers application behavior, development and integration; the packaging, Windows signing and publication guides own build and release operations."
 ---
 
