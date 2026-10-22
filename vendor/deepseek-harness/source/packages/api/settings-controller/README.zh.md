@@ -67,3 +67,5 @@ kind: "package-reference"
 无。
 
 </details>
+
+YouDub fork：Credentials Remote 按需返回前六位掩码；已保存密钥原文不返回前端，模型编辑器仅将掩码作为空输入框的占位显示。

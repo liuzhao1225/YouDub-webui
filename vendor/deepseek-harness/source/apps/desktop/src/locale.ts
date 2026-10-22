@@ -341,14 +341,34 @@ export const zh = {
   mandatoryNotification: '返回应用确认安装并重启。',
 } as const satisfies DesktopMessages
 
+/** Japanese copy for the desktop surfaces used by YouDub. */
+export const ja = {
+  ...en,
+  application: 'アプリケーション', fileMenu: 'ファイル', closePage: 'ページまたはウィンドウを閉じる',
+  aboutMenu: 'YouDub について', aboutProduct: 'YouDub', aboutVersion: 'バージョン {version}',
+  hideApplication: 'YouDub を隠す', hideOtherApplications: 'ほかを隠す', showAllApplications: 'すべて表示',
+  quitApplication: 'YouDub を終了', openApplication: 'YouDub を開く', quit: '終了', cancel: 'キャンセル',
+  quitTitle: 'YouDub を終了しますか？', quitUnsavedChanges: '未保存の変更は失われます。',
+  quitActiveTasks: '実行中のタスクは中断されます。', quitScheduledTasks: '終了中は予約タスクを実行できません。',
+  quitActiveAndScheduledTasks: '実行中のタスクは中断され、終了中は予約タスクを実行できません。',
+  edit: '編集', menuBar: 'アプリケーションメニュー', delete: '削除', undo: '取り消す', redo: 'やり直す',
+  cut: 'カット', copy: 'コピー', paste: 'ペースト', selectAll: 'すべて選択',
+  startupFailed: 'YouDub を起動できません', fatalSummary: 'アプリを起動できないか、予期せず停止しました。',
+  diagnosticTruncated: '… エラー詳細を省略しました。', reportWrittenTo: '診断レポート：{path}',
+  startupReinstallAdvice: 'アプリのファイルが破損している場合は再インストールしてください。タスクは別の場所に保存されています。',
+  exitApplication: '終了', restartApplication: '再起動', recoveryOperationFailed: '復旧処理に失敗しました',
+  disableThirdPartyPlugins: '外部プラグインを無効にし、設定をバックアップして再起動',
+} as const satisfies DesktopMessages
+
 /** Locale payload exposed to the Desktop-owned renderer. */
 export interface DesktopLocale {
-  readonly id: 'en' | 'zh-CN'
+  readonly id: 'en' | 'zh-CN' | 'ja'
   readonly messages: DesktopMessages
 }
 
 /** Resolve Electron's locale to one shipped Desktop dictionary. */
 export function resolveDesktopLocale(locale: string): DesktopLocale {
+  if (locale.toLowerCase().startsWith('ja')) return { id: 'ja', messages: ja }
   return locale.toLowerCase().startsWith('zh')
     ? { id: 'zh-CN', messages: zh }
     : { id: 'en', messages: en }
@@ -362,10 +382,10 @@ export function resolveDesktopLocale(locale: string): DesktopLocale {
  */
 export function resolveDesktopStartupLocale(preference: string | null, languages: readonly string[]): DesktopLocale {
   const selected = preference?.toLowerCase()
-  if (selected === 'zh' || selected === 'en') return resolveDesktopLocale(selected)
+  if (selected === 'zh' || selected === 'en' || selected === 'ja') return resolveDesktopLocale(selected)
   for (const language of languages) {
     const primary = language.toLowerCase().split('-')[0]
-    if (primary === 'zh' || primary === 'en') return resolveDesktopLocale(primary)
+    if (primary === 'zh' || primary === 'en' || primary === 'ja') return resolveDesktopLocale(primary)
   }
   return resolveDesktopLocale('en')
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile, readFile, realpath } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile, readFile, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join, sep } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
@@ -14,6 +14,7 @@ const python = process.env.YOUDUB_TEST_PYTHON || join(repo, '.venv/bin/python');
 
 test('official Host scope preserves root services and requires all first-run models before domain APIs', { timeout: 45_000 }, async t => {
   const data = await mkdtemp(join(repo, '.native-test-'));
+  await mkdir(join(data, 'runtime'));
   const previousNode = process.env.YOUDUB_NODE_PATH;
   const node = createRequire(import.meta.url)('electron');
   const previousNodeMode = process.env.ELECTRON_RUN_AS_NODE;
@@ -35,7 +36,7 @@ test('official Host scope preserves root services and requires all first-run mod
     child.reflect.provide('llm', { listProviders: () => [], listConfigurableProviders: () => [] });
     child.reflect.provide('pluginManager', { listBundles: async () => [], listPlugins: async () => [] });
   } }); await services;
-  const plugin = ctx.plugin({ name: host.name, inject: host.inject, apply: child => host.apply(child, { python, modelsDir: join(data, 'models/whisper'), dataDir: data, preferences: { get: () => preferences } }) });
+  const plugin = ctx.plugin({ name: host.name, inject: host.inject, apply: child => host.apply(child, { python, modelsDir: join(data, 'models/whisper'), dataDir: data, installation: { get: () => null }, preferences: { get: () => preferences } }) });
   const watchdog = setTimeout(() => console.error('Host activation pending', plugin.status), 10000);
   try {
     await plugin; clearTimeout(watchdog);
@@ -126,6 +127,7 @@ test('official Host scope preserves root services and requires all first-run mod
 
 test('missing explicit Python keeps official setup accessible and reports the original failure', { timeout: 10_000 }, async () => {
   const data = await mkdtemp(join(repo, '.native-setup-test-'));
+  await mkdir(join(data, 'runtime'));
   const ctx = new Context(), handlers = new Map();
   const sub = ctx.plugin(LocalSubprocess); await sub;
   const jobs = ctx.plugin(LocalJobs); await jobs;
@@ -135,7 +137,7 @@ test('missing explicit Python keeps official setup accessible and reports the or
   } }); await services;
   const previous = process.env.YOUDUB_PYTHON, python = join(data, 'missing/bin/python');
   process.env.YOUDUB_PYTHON = python;
-  const plugin = ctx.plugin({ name: host.name, inject: host.inject, apply: child => host.apply(child, { python, modelsDir: join(data, 'models/whisper'), dataDir: data }) });
+  const plugin = ctx.plugin({ name: host.name, inject: host.inject, apply: child => host.apply(child, { python, modelsDir: join(data, 'models/whisper'), dataDir: data, installation: { get: () => null } }) });
   try {
     await plugin;
     const call = async (method, path, body) => {

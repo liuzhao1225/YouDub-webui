@@ -1,4 +1,4 @@
-/** Write-only credential input with the same reveal behavior as masked conversation text. */
+/** Write-only credential input. Stored key previews are placeholders, never values. */
 import { useState } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import type { en } from './locales.ts'
@@ -32,6 +32,10 @@ export function ApiKeyInput({ value, t, ...props }: ApiKeyInputProps): ReactNode
         type={revealed ? 'text' : 'password'}
         autoComplete="new-password"
         value={value}
+        onCopy={event => { event.preventDefault() }}
+        onCut={event => { event.preventDefault() }}
+        draggable={false}
+        onDragStart={event => { event.preventDefault() }}
         onChange={(event) => {
           setRevealedValue(undefined)
           props.onChange?.(event)

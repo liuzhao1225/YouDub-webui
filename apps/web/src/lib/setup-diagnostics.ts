@@ -1,6 +1,6 @@
 import type { SetupState } from '@/runtime/setup-contracts'
 
-const phases = { environment: '环境准备', models: '模型准备', starting: '启动工作台', ready: '已就绪', failed: '准备失败' }
+const phases = { installation: '安装设置', environment: '环境准备', models: '模型准备', starting: '启动工作台', ready: '已就绪', failed: '准备失败' }
 const statuses = { pending: '等待中', running: '准备中', downloading: '下载中', paused: '已暂停', ready: '已就绪', failed: '失败' }
 
 // Only the explicit fields below enter a report; never serialize the setup token or configuration.

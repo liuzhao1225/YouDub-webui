@@ -638,6 +638,11 @@
     "setup.issue": "Report issue",
     "setup.issueHint": "Reporting copies the full logs. Paste them into the issue.",
     "setup.viewLogs": "View logs",
-    "setup.logContent": "Diagnostic log content"
+    "setup.logContent": "Diagnostic log content",
+    "setup.installation": "Installation setup",
+    "setup.directory": "Installation folder",
+    "setup.browse": "Choose folder",
+    "setup.directoryDetail": "Runtime, models and task files are stored here.",
+    "setup.install": "Confirm and prepare"
   }
 }

@@ -639,6 +639,11 @@
     "setup.issue": "問題を報告",
     "setup.issueHint": "報告時にログがコピーされます。Issue 本文に貼り付けてください。",
     "setup.viewLogs": "ログを表示",
-    "setup.logContent": "診断ログの内容"
+    "setup.logContent": "診断ログの内容",
+    "setup.installation": "インストール設定",
+    "setup.directory": "インストール先",
+    "setup.browse": "フォルダーを選択",
+    "setup.directoryDetail": "実行環境、モデル、タスクのファイルを保存します。",
+    "setup.install": "確認して環境を準備"
   }
 }

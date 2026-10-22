@@ -78,6 +78,17 @@ describe('the credentials Remote namespace a configuration surface calls', () =>
     expect(JSON.stringify(described)).not.toContain('sk-seeded')
   })
 
+  it('returns only a requested masked prefix, never the stored secret', async () => {
+    const controller = await boot({ LONG_KEY: 'abcdef-private-secret', SHORT_KEY: 'short' })
+    const result = await controller.describe(['LONG_KEY', 'SHORT_KEY', 'MISSING_KEY'], true)
+    expect(result.LONG_KEY?.preview).toBe('abcdef***')
+    expect(result.SHORT_KEY?.preview).toBe('***')
+    expect(result.MISSING_KEY?.preview).toBeUndefined()
+    expect(JSON.stringify(result)).not.toContain('private-secret')
+    expect(JSON.stringify(result)).not.toContain('short')
+    expect((await controller.describe(['LONG_KEY'])).LONG_KEY?.preview).toBeUndefined()
+  })
+
   it('reports an invalid reference as bad-request', async () => {
     const controller = await boot()
     for (const call of [

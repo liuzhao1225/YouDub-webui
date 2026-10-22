@@ -67,3 +67,5 @@ No direct effect; reading or writing these configuration values does not alter m
 None.
 
 </details>
+
+YouDub fork: Credentials Remote optionally returns a masked six-character prefix. Stored secret values never return to the renderer; the model editor uses the prefix only as an empty input placeholder.

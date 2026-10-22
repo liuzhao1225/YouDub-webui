@@ -52,6 +52,3 @@
 /* The original first-run screen occupies the root until setup is ready. */
 .yd-startup{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--background);color:var(--foreground)}
 .yd-startup-content{flex:1;min-height:0;overflow:auto}
-.yd-credential-preview{display:flex;flex-wrap:wrap;gap:var(--spacing-2,8px);margin:0;font-size:var(--dsw-alias-font-size-sm,13px);color:var(--dsw-alias-label-secondary)}
-.yd-credential-preview code{color:var(--dsw-alias-label-primary)}
-.yd-credential-error{color:var(--status-danger-fg)}

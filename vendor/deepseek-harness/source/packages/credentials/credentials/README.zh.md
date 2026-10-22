@@ -188,3 +188,5 @@ apiKeyEnv: DEEPSEEK_API_KEY
 该 seam 的接口为 keyring、辅助命令与 KMS 后端提供方预留了扩展空间；远端设置提供方永远不必携带机密。目前没有任何一种随附，也没有当前消费方需要它们。
 
 </details>
+
+YouDub fork：Credentials Remote 按需返回前六位掩码；已保存密钥原文不返回前端，模型编辑器仅将掩码作为空输入框的占位显示。

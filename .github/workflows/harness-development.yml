@@ -62,7 +62,7 @@ jobs:
           npm --prefix apps/harness run check:composition
       - name: 检查保留的上游设置和桌面生命周期
         working-directory: .cache/harness/source-build
-        run: node node_modules/vitest/vitest.mjs run packages/api/remotes packages/client/ui-settings-models packages/client/ui-settings-general packages/client/ui-renderer packages/client/ui-layout packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts apps/desktop-host/tests/quit-inspection.spec.ts apps/desktop/tests/host-update-tasks.spec.ts apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/development-project.spec.ts apps/desktop/tests/host-process.spec.ts apps/desktop/tests/node-environment.spec.ts
+        run: node node_modules/vitest/vitest.mjs run packages/api/settings-controller/tests/credentials-controller.host.spec.ts apps/desktop/tests/locale.spec.ts packages/api/remotes packages/client/ui-settings-models packages/client/ui-settings-general packages/client/ui-renderer packages/client/ui-layout packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts apps/desktop-host/tests/quit-inspection.spec.ts apps/desktop/tests/host-update-tasks.spec.ts apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/development-project.spec.ts apps/desktop/tests/host-process.spec.ts apps/desktop/tests/node-environment.spec.ts
       - name: 检查领域、界面和语言
         run: |
           npm run typecheck

@@ -384,3 +384,5 @@ The account provider’s `embeddedPageDist` configuration adds a `dist` query pa
 ## Dev Note
 
 Pre-launch CDN and capacity decisions are tracked in the [Desktop update proposal](../../.agents/notes/proposed/feature/2026-09-08-desktop-update-policy-and-installation.md#cdn-and-capacity-qualification).
+
+YouDub fork: native locale selection recognizes Japanese, with localized quit, edit and diagnostic messages.

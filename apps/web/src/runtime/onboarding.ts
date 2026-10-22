@@ -53,8 +53,9 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
     }
   }
   action = (action: SetupAction, id?: string) => this.mutate({ action, id })
+  configure = (path: string) => this.mutate({ action: 'configure', path })
   prepare = (selections: ResourceSelection[]) => this.mutate({ action: 'prepare', selections })
-  private async mutate(body: { action: SetupAction; id?: string } | { action: 'prepare'; selections: ResourceSelection[] }) {
+  private async mutate(body: { action: SetupAction; id?: string } | { action: 'prepare'; selections: ResourceSelection[] } | { action: 'configure'; path: string }) {
     const { state, busy } = this.snapshot
     const controller = this.controller
     if (!state || busy || !controller) return

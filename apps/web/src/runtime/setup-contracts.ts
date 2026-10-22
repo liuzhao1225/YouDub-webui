@@ -20,9 +20,10 @@ export interface ResourcePreparation {
   activePreparation?: { selections: ResourceSelection[]; status: ResourcePreparation['status']; error?: string }
 }
 export interface SetupState {
-  phase: 'environment' | 'models' | 'starting' | 'ready' | 'failed'
+  phase: 'installation' | 'environment' | 'models' | 'starting' | 'ready' | 'failed'
   platform: string; arch: string; version?: string; osVersion?: string; homeDir?: string
   environment: EnvironmentStep[]; models: SetupModel[]; error?: string; canRetry: boolean; token: string
+  installation?: { required: boolean; path: string }
   resources?: ResourcePreparation
   resourceSelection?: { required: boolean; selections: ResourceSelection[]; items: ResourceItem[]; prepared: boolean }
 }

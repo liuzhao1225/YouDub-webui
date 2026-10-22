@@ -59,7 +59,6 @@ export async function checkLocales() {
       const original = await sourceDictionary('vendor/deepseek-harness/source/packages/client/' + path)
       validateDictionary(original, dictionaries[namespace] ?? {}, `${pack.id} ${namespace}`, namespace === 'pluginManager' ? ['youdub.bundleMissing', 'youdub.applicationVersion', 'youdub.packageVersion', 'youdub.bundled', 'youdub.builtinTitle'] : [])
     }
-    validateDictionary({ saved: 'Saved API Key', error: 'Could not read the key preview: ' }, dictionaries['youdub.credential-preview'] ?? {}, `${pack.id} credential preview`)
   }
   return { passed: true, languages: [...names], businessKeys: Object.keys(base).length, frameworkNamespaces: Object.keys(sources).length + 1 }
 }

@@ -22,6 +22,7 @@ const MAX_DESCRIBE_REFS = 64
 const credentialRefSchema = z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/)
 const describeRequestSchema = z.object({
   refs: z.array(credentialRefSchema).max(MAX_DESCRIBE_REFS),
+  preview: z.boolean().optional(),
 })
 const setRequestSchema = z.object({ ref: credentialRefSchema, value: z.string().min(1) })
 const unsetRequestSchema = z.object({ ref: credentialRefSchema })
@@ -76,16 +77,23 @@ export class CredentialsController extends TypertRemoteService {
    * round trip keeps those rows from settling separately.
    * @param refs - reference names, at most {@link MAX_DESCRIBE_REFS}; a name outside the grammar
    *   rejects the whole call as `gateway/bad-request`.
+   * @param preview - explicitly request a six-character masked prefix; short values are fully masked.
    * @returns one view per requested name, keyed by that name.
    * @throws RemoteError when the request is invalid or no credential provider is mounted.
    */
   @Remote
-  async describe(refs: string[]): Promise<Record<string, CredentialInfo>> {
-    const request = parseRequest('credentials.describe', describeRequestSchema, { refs })
+  async describe(refs: string[], preview?: boolean): Promise<Record<string, CredentialInfo>> {
+    const request = parseRequest('credentials.describe', describeRequestSchema, { refs, preview })
     const branded = request.refs.map(ref => [ref, credentialRef(ref)] as const)
     const credentials = this.provider()
-    const entries = await Promise.all(branded.map(async ([ref, key]) =>
-      [ref, projectCredentialInfo(await credentials.describe(key))] as const))
+    const entries = await Promise.all(branded.map(async ([ref, key]) => {
+      const info = projectCredentialInfo(await credentials.describe(key))
+      if (request.preview && info.configured) {
+        const resolved = await credentials.resolve(key)
+        if (resolved) info.preview = resolved.value.length > 6 ? resolved.value.slice(0, 6) + '***' : '***'
+      }
+      return [ref, info] as const
+    }))
     return Object.fromEntries(entries)
   }
 

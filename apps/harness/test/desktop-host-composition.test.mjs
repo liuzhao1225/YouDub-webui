@@ -88,6 +88,9 @@ test('real Desktop Host boots the product Loader, protects requests and reports 
   const response = await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body });
   assert.equal(response.status, 200);
   const setup = await response.json();
+  assert.equal(setup.phase, 'installation');
+  assert.equal(setup.environment.length, 0);
+  await assert.rejects(access(join(home, 'youdub')), { code: 'ENOENT' });
   assert.notEqual(setup.phase, 'ready', 'Missing models must not pass first-run preparation');
   assert.notEqual(setup.phase, 'failed', setup.error);
   assert.deepEqual(setup.models.map(model => model.id), ['whisper', 'voxcpm', 'demucs', 'qwen']);

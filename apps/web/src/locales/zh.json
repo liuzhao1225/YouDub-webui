@@ -639,6 +639,11 @@
     "setup.issue": "反馈 Issue",
     "setup.issueHint": "点击反馈会复制完整日志，请粘贴到 Issue 正文。",
     "setup.viewLogs": "查看日志",
-    "setup.logContent": "诊断日志内容"
+    "setup.logContent": "诊断日志内容",
+    "setup.installation": "安装设置",
+    "setup.directory": "安装目录",
+    "setup.browse": "选择文件夹",
+    "setup.directoryDetail": "运行环境、模型和任务文件保存在此目录。",
+    "setup.install": "确认并准备环境"
   }
 }

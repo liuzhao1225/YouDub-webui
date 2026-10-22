@@ -188,3 +188,5 @@ This Dev Note is working context for maintainers: open questions and undecided d
 The seam shape leaves room for keyring-, helper-command-, and KMS-backed providers; a remote settings provider never needs to carry secrets. None is shipped, and no current consumer requires one.
 
 </details>
+
+YouDub fork: Credentials Remote optionally returns a masked six-character prefix. Stored secret values never return to the renderer; the model editor uses the prefix only as an empty input placeholder.

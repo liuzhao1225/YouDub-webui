@@ -7,7 +7,6 @@ import { ThemeProvider } from './frontend/theme'
 import { Button as YouDubButton } from './frontend/controls'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { applyPlugins } from './frontend/plugins'
-import { applyCredentialPreview } from './frontend/credential-preview'
 import { TranslationSetup, applyTranslationSetup } from './frontend/translation-setup'
 import { CurrentVersionRow } from '../../../vendor/deepseek-harness/source/packages/client/ui-settings-general/src/client/CurrentVersionRow'
 import logo from 'youdub:logo'
@@ -61,12 +60,12 @@ function SidebarView({ collapsed, useStore, navigate, toggleSidebar, renderSlot 
 function Sidebar(props) { return <LanguageProvider source={props.localeSource}><ThemeProvider source={props.themeSource}><SidebarView {...props} /></ThemeProvider></LanguageProvider> }
 function Leading({ toggleSidebar, localeSource }) { return <LanguageProvider source={localeSource}><LeadingView toggleSidebar={toggleSidebar} /></LanguageProvider> }
 function LeadingView({ toggleSidebar }) { const {t}=useI18n(); return <div className="yd"><IconButton label={t.nav.expandSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton></div> }
-function Startup({ features, localeSource, themeSource, onReady, renderSlot, translationModels }) {
+function Startup({ features, localeSource, themeSource, onReady, renderSlot, translationModels, pickDirectory }) {
   const [examples,setExamples]=useState(false)
   const bindings=useMemo(() => ({...features,navigate:() => setExamples(false)}),[features])
   return <LanguageProvider source={localeSource}><ThemeProvider source={themeSource}><FeatureProvider value={bindings}>
     <div className="yd yd-feature-root yd-startup"><div className="yd-main-chrome" data-window-drag aria-hidden="true" /><div className="yd-startup-content">
-      {examples ? <ExamplesPage params={{}} /> : <SetupGate request={features.request} screenProps={{wordmarkSrc:logo,themeControl:<ThemeToggle />,examplesHref:'/api/youdub/examples/index.html',onOpenExamples:() => setExamples(true),className:'min-h-full'}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>}
+      {examples ? <ExamplesPage params={{}} /> : <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />,examplesHref:'/api/youdub/examples/index.html',onOpenExamples:() => setExamples(true),className:'min-h-full'}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>}
     </div></div>
   </FeatureProvider></ThemeProvider></LanguageProvider>
 }
@@ -93,7 +92,6 @@ function BoundWorkflowPanel(props) { return <TaskWorkflowPanel {...props} {...us
 export function apply(ctx) {
   applyPlugins(ctx)
   applyLocales(ctx)
-  applyCredentialPreview(ctx)
   const translationModels=applyTranslationSetup(ctx)
   const blockers = new Set()
   let settingsLauncher
@@ -118,7 +116,7 @@ export function apply(ctx) {
   const pageRegistry = { subscribe:listener => ctx.slots.subscribe('youdub.page',listener), getSnapshot:() => ctx.slots.getVersion('youdub.page'), entries:() => ctx.slots.entriesOfSlot('youdub.page') }
   const injected = () => ({features,navigate,localeSource,themeSource,pageRegistry,toggleSidebar:() => ctx.layout.toggleSidebar()})
   ctx.effect(() => {
-    const dispose=ctx.slots.register({name:'root',priority:-10,children:{'youdub.setup.models':{kind:'single',scope:'root'}},inject:() => ({features,localeSource,themeSource,translationModels,onReady:() => dispose()})},Startup)
+    const dispose=ctx.slots.register({name:'root',priority:-10,children:{'youdub.setup.models':{kind:'single',scope:'root'}},inject:() => ({features,localeSource,themeSource,translationModels,pickDirectory:globalThis.__DSH_DIRECTORY_PICKER__?.pick,onReady:() => dispose()})},Startup)
     return dispose
   })
   ctx.effect(() => { const previous=document.title;document.title='YouDub';return () => {document.title=previous} })

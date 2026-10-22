@@ -482,9 +482,5 @@
     "youdub.packageVersion": "プラグインのバージョン",
     "youdub.bundled": "YouDub に同梱",
     "youdub.builtinTitle": "YouDub 組み込み機能"
-  },
-  "youdub.credential-preview": {
-    "saved": "保存済み API Key",
-    "error": "キーの概要を取得できません："
   }
 }

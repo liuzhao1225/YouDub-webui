@@ -13,9 +13,11 @@ const sameSelection = (left, right) => left.providerId === right.providerId && l
 
 // Keep the original environment installer and setup screen contract. Harness
 // owns admission, the jobs, subprocesses and the lifecycle of the domain plugins.
-export function registerSetupRoutes(ctx, transport, config, activate) {
+export function registerSetupRoutes(ctx, transport, config, activate, installation) {
   const client = new DownloadClient();
   let controller, environment, preparing, phase = 'environment', failure, bootAttempted = false, domain, finishing;
+  let configuring = false;
+  if (installation?.required) phase = 'installation';
   let selectionRequired = false, selected, selecting = false, checkedResources;
   const initialModels = modelManifest.map(model => ({ id: model.id, name: model.name, variant: model.variant, purpose: model.purpose, status: 'pending', received: 0, total: model.files.reduce((sum, file) => sum + file.size, 0), speed: 0 }));
   const modelItems = inventory => inventory.items.filter(item => item.automatic && modelManifest.some(model => model.id === item.downloadId));
@@ -38,7 +40,7 @@ export function registerSetupRoutes(ctx, transport, config, activate) {
   };
   ctx.effect(() => ctx.jobs.attachController('youdub-environment'));
   ctx.on('desktop/active-tasks', async () => {
-    if (preparing || finishing || selecting) return true;
+    if (preparing || finishing || selecting || configuring) return true;
     if (domain) return domain.inspectTasks();
     if (bootAttempted) throw new AppError('TASK_RUNTIME_UNAVAILABLE', failure || 'YouDub domain activation did not finish.', 503);
     return false;
@@ -65,16 +67,21 @@ export function registerSetupRoutes(ctx, transport, config, activate) {
       osVersion: release(), homeDir: homedir(), environment: resources?.environment ?? environment?.steps ?? [],
       models: resources?.models ?? initialModels.map(model => inventory?.models.find(item => item.id === model.id) ?? model), ...(resources ? { resources } : {}),
       resourceSelection: { required: selectionRequired, selections: selected ?? items.map(selectionOf), items, prepared: phase === 'ready' },
+      ...(installation ? { installation: { required: phase === 'installation', path: config.root } } : {}),
       error: failure, canRetry: Boolean(domain) || !bootAttempted, token: '' };
   };
   const prepare = () => {
     if (preparing) return;
     controller = new AbortController();
-    environment = new EnvironmentSetup(ctx, config, client, controller.signal);
     phase = 'environment'; failure = undefined;
     let execution;
     ctx.jobs.start({ kind: 'youdub-environment', label: '准备 YouDub 运行环境', run(job) {
       execution = (async () => {
+        // The installation page is available before a worker can know its paths.
+        // Resolve the declared dependency only after that choice is committed.
+        await ctx.inject(['youdubWorker'], scope => {
+          environment = new EnvironmentSetup(scope, config, client, controller.signal);
+        });
         await environment.prepare(['base']);
         phase = 'starting'; job.updateProgress('检查运行环境');
         await environment.probe('verify');
@@ -100,8 +107,17 @@ export function registerSetupRoutes(ctx, transport, config, activate) {
   };
   ctx.effect(() => transport.register('GET', '/api/setup', async request => transport.json(request, 200, await snapshot())));
   ctx.effect(() => transport.register('POST', '/api/setup', async request => {
-    const { action, id, selections } = await readJson(request);
-    if (action === 'prepare') {
+    const { action, id, selections, path } = await readJson(request);
+    if (action === 'configure') {
+      if (phase !== 'installation' || configuring) throw new AppError('SETUP_BUSY', '安装目录已经确认。', 409);
+      configuring = true;
+      try {
+        Object.assign(config, await installation.configure(path));
+        prepare();
+      } finally { configuring = false; }
+    } else if (phase === 'installation') {
+      throw new AppError('INSTALLATION_REQUIRED', '请先选择语言和安装目录。', 409);
+    } else if (action === 'prepare') {
       if (!domain || !selectionRequired || selecting) throw new AppError('SETUP_BUSY', '当前不能开始模型准备。', 409);
       selecting = true;
       try {
@@ -134,6 +150,6 @@ export function registerSetupRoutes(ctx, transport, config, activate) {
   transport.assertReady = path => {
     if (path !== '/api/setup' && phase !== 'ready') throw new AppError('ENVIRONMENT_NOT_READY', failure || 'YouDub 运行环境正在准备。', 503, { phase });
   };
-  prepare();
+  if (phase !== 'installation') prepare();
   return { snapshot };
 }

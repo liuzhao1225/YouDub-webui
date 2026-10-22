@@ -67,6 +67,8 @@ export type CredentialRecord = ApiKeyRecord | GrantRecord
 export interface CredentialInfo {
   /** Whether resolving the reference would currently return a value. */
   configured: boolean
+  /** Optional masked prefix requested by a configuration UI; never the full secret. */
+  preview?: string
   /** Source layer currently supplying the value; absent while unconfigured. */
   source?: string
   /** Whether the active provider can write this reference. */

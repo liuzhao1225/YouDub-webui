@@ -266,7 +266,7 @@ export class ModelsSettingsStore {
     let credentialError: string | null = null
     // credentials.describe accepts at most 64 references per request.
     for (let index = 0; index < refs.length; index += 64) {
-      const response = await this.ctx.remote.credentials.describe(refs.slice(index, index + 64))
+      const response = await this.ctx.remote.credentials.describe(refs.slice(index, index + 64), true)
       // Credential state is an enrichment for the Models page: a failure
       // degrades the badge instead of failing the load. The onboarding
       // projection below retains the failure distinction.

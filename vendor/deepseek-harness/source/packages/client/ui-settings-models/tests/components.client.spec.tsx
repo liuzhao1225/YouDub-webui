@@ -1434,7 +1434,7 @@ describe('ModelsSection', () => {
     fireEvent.click(screen.getByRole('button', { name: openaiCopy(en.editProvider) }))
     // The field names the profile's reference; a stored value stays hidden.
     const editorKey = await screen.findByLabelText<HTMLInputElement>(en.keyInput)
-    expect(editorKey.placeholder).toBe(en.keyPlaceholderSaved)
+    expect(editorKey.placeholder).toBe('***')
     // pi-ai carries Base URL too: the stored override shows as the value and
     // the effective profile endpoint, ahead of the catalog's, as its placeholder.
     fireEvent.click(screen.getByText(en.customized))
@@ -1620,7 +1620,7 @@ describe('ModelsSection', () => {
     face.credentials.describe.mockImplementation(() => Promise.resolve(remoteFail('down', 'gateway/internal')))
     fireEvent.click(screen.getByRole('button', { name: openaiCopy(en.editProvider) }))
     const editorKey = await screen.findByLabelText<HTMLInputElement>(en.keyInput)
-    expect(editorKey.placeholder).toBe(en.keyPlaceholderSaved)
+    expect(editorKey.placeholder).toBe('***')
     fireEvent.change(editorKey, { target: { value: 'sk-live' } })
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(set).toHaveBeenCalledTimes(1) })
@@ -2194,7 +2194,7 @@ it.each(['file', 'env', 'project-env', 'user-env'] as const)('shows only the bla
   else expect(screen.getAllByText(hint)).toHaveLength(1)
   expect(input.value).toBe('')
   expect(input.placeholder)
-    .toBe(source === 'file' ? en.keyPlaceholderSaved : en.keyPlaceholderFallback.replace('{hint}', 'OPENAI_API_KEY'))
+    .toBe('***')
   fireEvent.change(input, { target: { value: 'new-key' } })
   expect(screen.queryByText(hint)).toBeNull()
   expect(screen.queryByText(/^API key source:/)).toBeNull()
@@ -2218,7 +2218,7 @@ it('refreshes a blank editor from saved credentials to environment detection wit
   const { face, controller } = await mountSection()
   const reads = face.credentials.describe.mock.calls.length
   fireEvent.click(screen.getByRole('button', { name: openaiCopy(en.editProvider) }))
-  expect(screen.getByLabelText<HTMLInputElement>(en.keyInput).placeholder).toBe(en.keyPlaceholderSaved)
+  expect(screen.getByLabelText<HTMLInputElement>(en.keyInput).placeholder).toBe('***')
   expect(screen.queryByText(/^API key source:/)).toBeNull()
   expect(screen.queryByText(/Env var detected/)).toBeNull()
   expect(face.credentials.describe).toHaveBeenCalledTimes(reads)
@@ -2362,7 +2362,7 @@ it.each([true, false, undefined])('shows the confirmed fallback state without as
     ...configured === undefined ? {} : { credentialChecks: { DEEPSEEK_API_KEY: { configured, writable: true } } },
   })
   const input = screen.getByLabelText<HTMLInputElement>(en.keyInput)
-  expect(input.placeholder).toBe(en.keyPlaceholderFallback.replace('{hint}', 'DEEPSEEK_API_KEY'))
+  expect(input.placeholder).toBe(configured === true ? '***' : en.keyPlaceholderFallback.replace('{hint}', 'DEEPSEEK_API_KEY'))
   const hint = configured === true ? en.keyFallbackDetected.replace('{hint}', 'DEEPSEEK_API_KEY')
     : configured === false ? en.keyFallbackMissing.replace('{hint}', 'DEEPSEEK_API_KEY') : en.keyFallbackUnchecked
   expect(screen.getByText(hint).getAttribute('role')).toBeNull()
@@ -2408,4 +2408,17 @@ it('preserves the provider display name and offers its existing editor', async (
   expect(within(item).getByText(en.edit)).toBeTruthy()
   fireEvent.click(within(item).getByText(en.edit))
   expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
+})
+
+
+it('shows a saved prefix only as an empty input placeholder and blocks copying', () => {
+  renderPiAiEditor('openai', piAiNamespaceWith('openai', { apiKeyEnv: 'OPENAI_API_KEY' }), {
+    credential: { configured: true, writable: true, source: 'file', preview: 'abcdef***' },
+  })
+  const input = screen.getByLabelText<HTMLInputElement>(en.keyInput)
+  expect(input.value).toBe('')
+  expect(input.placeholder).toBe('abcdef***')
+  expect(screen.queryByRole('button', { name: en.keyReveal })).toBeNull()
+  expect(fireEvent.copy(input)).toBe(false)
+  expect(fireEvent.cut(input)).toBe(false)
 })

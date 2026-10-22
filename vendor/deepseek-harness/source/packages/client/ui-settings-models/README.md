@@ -138,3 +138,5 @@ These limits define the editor's field coverage and the page's reach; they are c
 None.
 
 </details>
+
+YouDub fork: Credentials Remote optionally returns a masked six-character prefix. Stored secret values never return to the renderer; the model editor uses the prefix only as an empty input placeholder.

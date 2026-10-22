@@ -270,10 +270,10 @@
         "path": "apps/desktop/README.md",
         "type": "file",
         "executable": false,
-        "size": 79240,
-        "sha256": "9da443c694ea4f38a426663d7262ad64f2e5e71b909bd5d6b5af591999959904"
+        "size": 79350,
+        "sha256": "6f3c57a97f6dd898c6f957ffd29f9ce0900214a945712d9dac0565c8360846b9"
       },
-      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
     },
     {
       "path": "apps/desktop/README.zh.md",
@@ -288,10 +288,10 @@
         "path": "apps/desktop/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 70239,
-        "sha256": "965c1ecfb9be4382ae5ed94934749332103d8b053b59a49d5467715b413f05a8"
+        "size": 70339,
+        "sha256": "348fc12e780ef05c58b712245e087947927f445f71a734a16d4bc4691d03c836"
       },
-      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
     },
     {
       "path": "apps/desktop/cli/dsh",
@@ -390,10 +390,10 @@
         "path": "apps/desktop/src/locale.ts",
         "type": "file",
         "executable": false,
-        "size": 22085,
-        "sha256": "a6ecc37fdbe13e24d1c065f87993858a4e4ebd8123f767e407227287bf3a5aa5"
+        "size": 24093,
+        "sha256": "6fa69c2ab2a0a840d9b0cd75e886faf6edcbc8e469197827cc2e9dd00a7ee7aa"
       },
-      "reason": "Add typed native confirmation copy for renderer drafts; YouDub waits for beforeunload to settle before stopping its Host."
+      "reason": "Add typed native confirmation copy for renderer drafts; YouDub waits for beforeunload to settle before stopping its Host. 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
     },
     {
       "path": "apps/desktop/src/main.ts",
@@ -496,6 +496,24 @@
         "sha256": "c9754645d00c2fd907f171b3820fe3540ae2bc79db785f2a7673788318ffe9ef"
       },
       "reason": "Inspect YouDub-owned work and Harness Jobs for quit/restart; preserve request admission and disposal while removing the Agent/Session/reminder dependency."
+    },
+    {
+      "path": "apps/desktop/tests/locale.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/locale.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1378,
+        "sha256": "ff3fc21c2d8d9f04fd8992c30555062fca7d5c5d8b3e847976bfdd1f2935bdee"
+      },
+      "after": {
+        "path": "apps/desktop/tests/locale.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1372,
+        "sha256": "df9f62c5ecc26887156ffd26d1d0a580815cf544827c9b56491d03e42ab4aa54"
+      },
+      "reason": "补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
     },
     {
       "path": "apps/desktop/tests/project-manager.spec.ts",
@@ -610,6 +628,78 @@
         "sha256": "d5016f38ec46ce6174f241d2783fbe98490f1fb99102cf4a56ecb21767373a14"
       },
       "reason": "Run the original built HTTP carrier check in the normal test lane with current browser artifact paths and authenticated WebSocket routing; assert YouDub namespace selection/disposal and mount Goal explicitly as a test extension."
+    },
+    {
+      "path": "packages/api/settings-controller/README.md",
+      "before": {
+        "path": "packages/api/settings-controller/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 3486,
+        "sha256": "7a6f39bcef80ac26fde058979552e53271ff6aac2db3b1592207808b5af71052"
+      },
+      "after": {
+        "path": "packages/api/settings-controller/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 3689,
+        "sha256": "49c35989a939c83c40b977ac0b7511548b1443e390ce579476730b9614178664"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/api/settings-controller/README.zh.md",
+      "before": {
+        "path": "packages/api/settings-controller/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 3229,
+        "sha256": "4355eaf0a6b819e52f3d1bf834b492911e3135735e18e7afda4c5cb7944f4f40"
+      },
+      "after": {
+        "path": "packages/api/settings-controller/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 3396,
+        "sha256": "f622a4795c8b5dac2d5fa882142520a1b21b324f8ee80216534e8e0132a79911"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/api/settings-controller/src/credentials.ts",
+      "before": {
+        "path": "packages/api/settings-controller/src/credentials.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6506,
+        "sha256": "f84be4ca9e868fffd84575fd386ea63e0933c467c7f0739b68055da41a10a074"
+      },
+      "after": {
+        "path": "packages/api/settings-controller/src/credentials.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6931,
+        "sha256": "a14826a9ea16f09d889432d166bd4d68d7bbf8bf2726c21dc5f15f9abc989697"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/api/settings-controller/tests/credentials-controller.host.spec.ts",
+      "before": {
+        "path": "packages/api/settings-controller/tests/credentials-controller.host.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6336,
+        "sha256": "5103402fc36273d57f465f300ce9f8d3e27279561839c13a9e9a068c5827fba0"
+      },
+      "after": {
+        "path": "packages/api/settings-controller/tests/credentials-controller.host.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6988,
+        "sha256": "c2eafe88d54e79e5564bc407be506ebe3c6530b21b27cdf519d8ece1238b8446"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
     },
     {
       "path": "packages/bundle/web-app/README.md",
@@ -948,10 +1038,10 @@
         "path": "packages/client/ui-settings-models/README.md",
         "type": "file",
         "executable": false,
-        "size": 21158,
-        "sha256": "11576b5f0c405a283136a8cbb66b733e7bb5b948c131825a471d57de813ff0c4"
+        "size": 21361,
+        "sha256": "e068de9056f3413212a054b22861faec3fe63ce3fc3ce998d38c8f759ceca5ca"
       },
-      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle."
+      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
     },
     {
       "path": "packages/client/ui-settings-models/README.zh.md",
@@ -966,10 +1056,10 @@
         "path": "packages/client/ui-settings-models/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 19246,
-        "sha256": "81d583801a47970f02b5b3b93bf5c8fb9cdc039489cf494f930eac7af7d6d247"
+        "size": 19413,
+        "sha256": "34790fc598083a61f2ee22986ac8cfd8e3077f52a050bb885de6f07cb34c1a63"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
     },
     {
       "path": "packages/client/ui-settings-models/package.json",
@@ -988,6 +1078,24 @@
         "sha256": "2daaa2229fa844963d2a1ffc3edb23a23da6018916e9c6b05b4197b8687c3e78"
       },
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/ApiKeyInput.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/ApiKeyInput.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2434,
+        "sha256": "01d2b9ac8c657478c615d5f56443c79333325ce38196ec5102ed9fb6df80eaf9"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/ApiKeyInput.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2617,
+        "sha256": "2e40069f986500102a68d077d90224930a446e1e7563ea2dfd3e73a8cdbc6d5e"
+      },
+      "reason": "模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
     },
     {
       "path": "packages/client/ui-settings-models/src/client/CustomProviderCard.tsx",
@@ -1038,10 +1146,10 @@
         "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
         "type": "file",
         "executable": false,
-        "size": 29925,
-        "sha256": "bc83d450d58aaf7e92befd10d17d8b805971784ddbe03bb7ae4eb08211a801b8"
+        "size": 29947,
+        "sha256": "7b3cf8998ded687eb37d63d5ed9150cf926e2fbe2648fcf744be9dfa29d6bfc6"
       },
-      "reason": "Expose the original provider draft and partial-save state to leave checks."
+      "reason": "Expose the original provider draft and partial-save state to leave checks. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
     },
     {
       "path": "packages/client/ui-settings-models/src/client/draft-leave.tsx",
@@ -1104,10 +1212,10 @@
         "path": "packages/client/ui-settings-models/src/client/store.ts",
         "type": "file",
         "executable": false,
-        "size": 17842,
-        "sha256": "87f8a03a3a90ca5eb8bf76ae9e485cbbf6bb1fa32953808cacda158839443fb9"
+        "size": 17848,
+        "sha256": "850cbddb3d909daa05b6dc11ea63f9f420826b99d606d44d13506ff10edf6056"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
     },
     {
       "path": "packages/client/ui-settings-models/src/index.ts",
@@ -1158,10 +1266,10 @@
         "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 119234,
-        "sha256": "9096da3636b504796c4586cd5422a4562629906504d428d91e1cbcb9a58cd7de"
+        "size": 119703,
+        "sha256": "9cdb449f0390693891b912eac128b5a9695545c0489c6dbad0fdccc3050ae2dc"
       },
-      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases."
+      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
     },
     {
       "path": "packages/client/ui-settings-models/tests/provider-form.client.spec.tsx",
@@ -1216,6 +1324,60 @@
         "sha256": "9c9d238a628b8692081a165ae7b088128ba7373e7cd6b6c9df7899b072f1a181"
       },
       "reason": "Expose a section-owned leave check for unsaved YouDub model configuration."
+    },
+    {
+      "path": "packages/credentials/credentials/README.md",
+      "before": {
+        "path": "packages/credentials/credentials/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 12846,
+        "sha256": "ce14ea1b754d0ef8c85ae3b837c140b1e48bcbe24f1e18bca56aa838d495f704"
+      },
+      "after": {
+        "path": "packages/credentials/credentials/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 13049,
+        "sha256": "bd677f2317c9fabc182ed75ffa39327b42ed327369de0a341a573d3039d3c1f6"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/credentials/credentials/README.zh.md",
+      "before": {
+        "path": "packages/credentials/credentials/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 11752,
+        "sha256": "7d5d0a14d98ce15c7bef8334949ff59a49627653619b87069c5da1aa76ea88e1"
+      },
+      "after": {
+        "path": "packages/credentials/credentials/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 11919,
+        "sha256": "0ff3a63ccd69f0b0aa22625a848fe06d4a307067547ca56a719dada13148160e"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/credentials/credentials/src/types.ts",
+      "before": {
+        "path": "packages/credentials/credentials/src/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4313,
+        "sha256": "c4477b743020e14f6a191172d2f662765ffceabbe6b67b7c3681662dfed8049a"
+      },
+      "after": {
+        "path": "packages/credentials/credentials/src/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4420,
+        "sha256": "f52aaf424fc8fad6f221d6b22ee6f066d2f1b1c55f8bb7749c677a04c6b320ee"
+      },
+      "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
     },
     {
       "path": "packages/test-support/client-runtime/README.md",

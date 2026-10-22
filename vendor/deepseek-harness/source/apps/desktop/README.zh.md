@@ -384,3 +384,5 @@ node apps/desktop/node_modules/pnpm/bin/pnpm.mjs --dir apps/desktop run test:upd
 ## 开发备注
 
 上线前 CDN 与容量决策见[桌面更新提案](../../.agents/notes/proposed/feature/2026-09-08-desktop-update-policy-and-installation.zh.md#cdn-and-capacity-qualification)。
+
+YouDub fork：原生语言选择识别日语，退出、编辑和诊断提示使用对应语言。

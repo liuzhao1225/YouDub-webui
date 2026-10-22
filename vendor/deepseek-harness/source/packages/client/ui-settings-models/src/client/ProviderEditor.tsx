@@ -406,9 +406,9 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     )
     // A provider with no native key authentication has no key for this field to store.
     const keylessNativeAuth = nativeAuth?.env.length === 0 && nativeAuth.oauth
-    const keyPlaceholder = keyHint === undefined || props.credentialRequired === true
-      ? t('keyPlaceholder')
-      : t(savedCredential ? 'keyPlaceholderSaved' : 'keyPlaceholderFallback').replace('{hint}', () => keyHint)
+    const keyPlaceholder = detected?.[1]?.preview ?? (detected?.[1]?.configured ? '***'
+      : keyHint === undefined || props.credentialRequired === true ? t('keyPlaceholder')
+      : t('keyPlaceholderFallback').replace('{hint}', () => keyHint))
     /** What both family editors take: the rows, whose layer owns them, and the two writes. */
     const catalogProps = {
       models,

@@ -2,14 +2,18 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'tsx/esm/api';
 import manifest from '../../../packages/builtin/src/setup-models.json' with { type: 'json' };
+import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, parse } from 'node:path';
 import requirements from '../../../backend/requirements/resources.json' with { type: 'json' };
 const source = register({ namespace: 'youdub-onboarding-test' });
 const { EnvironmentSetup } = await source.import('../../../packages/builtin/src/setup-environment.ts', import.meta.url);
 const { registerSetupRoutes, firstRunBaseResources } = await source.import('../src/backend/setup.mjs', import.meta.url);
+const { existingInstallation, installationDirectory, privatePython } = await source.import('../src/backend/installation.mjs', import.meta.url);
 after(() => source.unregister());
 const normalize = value => [...new Map(value.map(item => [JSON.stringify(item), item])).values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
-async function fixture(t, savedState = {}, readyModels = []) {
+async function fixture(t, savedState = {}, readyModels = [], installation) {
   t.mock.method(EnvironmentSetup.prototype, 'prepare', async function () { this.steps = [{ id: 'python', status: 'ready' }]; });
   t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ ready: true }));
   const events = new Map(), routes = new Map(), disposers = [], errors = [], writes = [], actions = [], calls = [];
@@ -47,13 +51,13 @@ async function fixture(t, savedState = {}, readyModels = []) {
     start() { started++; },
     async inspectTasks() { return false; },
   };
-  const ctx = { on(event, listener) { events.set(event, listener); disposers.push(() => events.delete(event)); }, effect(action) { const dispose = action(); if (dispose) disposers.push(dispose); }, logger: { error(error) { errors.push(error); } }, jobs: {
+  const ctx = { async inject(dependencies, apply) { assert.deepEqual(dependencies, ['youdubWorker']); apply(ctx); }, on(event, listener) { events.set(event, listener); disposers.push(() => events.delete(event)); }, effect(action) { const dispose = action(); if (dispose) disposers.push(dispose); }, logger: { error(error) { errors.push(error); } }, jobs: {
     attachController() { return () => {}; }, start(spec) { return spec.run({ updateProgress() {} }); },
   } };
-  registerSetupRoutes(ctx, transport, { root: '/unused', repoRoot: '/unused', python: '/unused/python', version: 'test' }, async () => { activated = true; return domain; });
+  registerSetupRoutes(ctx, transport, { root: '/unused', repoRoot: '/unused', python: '/unused/python', version: 'test' }, async () => { activated = true; return domain; }, installation);
   const request = async (method, body) => { const request = { body }; await routes.get(method + ' /api/setup')(request); return request.result.value; };
   t.after(async () => { for (const dispose of disposers.reverse()) await dispose(); });
-  for (let i = 0; !activated; i++) { assert(i < 30); await new Promise(resolve => setTimeout(resolve, 1)); }
+  for (let i = 0; !activated && !installation?.required; i++) { assert(i < 30); await new Promise(resolve => setTimeout(resolve, 1)); }
   // Let the same bootstrap turn finish reading the saved preference.
   await new Promise(resolve => setTimeout(resolve, 0));
   return { request, transport, domain, items, models, calls, writes, actions, errors, inspectActivity: () => events.get('desktop/active-tasks')(), get started() { return started; }, get resources() { return resources; } };
@@ -180,4 +184,43 @@ test('desktop activity follows the initialized domain instead of first-run compl
   const error = new Error('Task storage unavailable');
   app.domain.inspectTasks = async () => { throw error; };
   await assert.rejects(app.inspectActivity(), value => value === error);
+});
+
+
+test('first launch waits for a confirmed directory and preserves a configuration failure', async t => {
+  const configured = [];
+  const app = await fixture(t, {}, [], { required: true, path: '/unused', async configure(path) {
+    if (path === 'invalid') throw new Error('Directory is not writable');
+    configured.push(path); return { root: path, python: path + '/runtime/venv/bin/python' };
+  } });
+  let state = await app.request('GET');
+  assert.equal(state.phase, 'installation');
+  assert.equal(state.environment.length, 0);
+  assert.equal(app.started, 0);
+  assert.equal(await app.inspectActivity(), false);
+  await assert.rejects(app.request('POST', { action: 'retry' }), { code: 'INSTALLATION_REQUIRED' });
+  await assert.rejects(app.request('POST', { action: 'configure', path: 'invalid' }), /Directory is not writable/);
+  assert.equal((await app.request('GET')).phase, 'installation');
+  await app.request('POST', { action: 'configure', path: '/selected/YouDub' });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  state = await app.request('GET');
+  assert.equal(state.installation.path, '/selected/YouDub');
+  assert.equal(state.phase, 'models');
+  assert.equal(state.models.length, 4);
+  assert.deepEqual(configured, ['/selected/YouDub']);
+  await assert.rejects(app.request('POST', { action: 'configure', path: '/different' }), { code: 'SETUP_BUSY' });
+});
+
+
+test('installation validates an independent writable directory and recognizes existing data', async t => {
+  const folder = await mkdtemp(join(tmpdir(), 'youdub-installation-'));
+  t.after(() => rm(folder, { recursive: true, force: true }));
+  assert.equal(await existingInstallation(folder), false);
+  await assert.rejects(installationDirectory('relative/path'), { code: 'INVALID_INSTALL_DIRECTORY' });
+  await assert.rejects(installationDirectory(parse(folder).root), { code: 'INVALID_INSTALL_DIRECTORY' });
+  const selected = await installationDirectory(join(folder, 'private YouDub'));
+  assert.equal(await existingInstallation(selected), false);
+  assert(privatePython(selected).startsWith(selected));
+  await mkdir(join(selected, 'runtime'));
+  assert.equal(await existingInstallation(selected), true);
 });

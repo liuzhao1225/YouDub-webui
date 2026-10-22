@@ -168,3 +168,15 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 真实测试曾发现缺少 YAML/undici 等直接外部依赖，以及 profile 解析仍锚定旧 CLI。已分别按真实构建外部导入链接依赖、改用产品 manifest 后修复，未恢复全量 hoist。
 - 既有隔离验证 profile 的 node_modules 元数据仍为 pnpm 10，使用应用 pnpm 11 安装扩展时报 `ERR_PNPM_UNEXPECTED_STORE`。已明确重建该测试 profile 的依赖链接，manifest 与用户 patch 哈希不变；未修改原 Harness 账号或通用 pnpm 配置。
 - 本地框架七个构建步骤通过，66 项 Harness 集成通过；原 Desktop 相关用例 55 通过，1 项 Windows 路径大小写用例在 macOS 跳过。另在全新 `.cache/harness/source-build-p6-20261022` 中完成七步构建，70.62 秒；旧 Desktop main、欢迎页、账号 preload 与 Host CLI 产物不存在。此时间仅记录本次构建，不与增量构建比较。实际页面完成本地 JS 扩展安装、启用、页面计数 0→1、停用后导航消失、卸载后只剩内置 YouDub；截图 `/tmp/youdub-prune-plugin-mounted.png`。原生 UI 仍经工具确认锁屏，未记为通过。
+
+## P3–P4 首启目录选择与密钥展示（2026-10-22）
+
+- 首启新增语言、安装目录和原生文件夹选择入口，使用原 LanguageProvider、Harness locale 设置及已有目录选择 preload。确认前不创建媒体数据目录、不启动 Python 或模型下载。选择的目录通过官方 Settings volatile 字段保存；私有 Python、四模型、缓存和任务文件从该目录派生。检测到既有 runtime/models/tasks/database 的安装继续使用原路径，不自动搬迁。
+- 环境页面需要先于 Worker 激活，以等待目录选择。真实 Host 回归捕获了未声明 `youdubWorker` 依赖的错误；环境任务现通过原 Cordis `inject` 获取 Worker 后运行原 EnvironmentSetup，未绕过依赖检查或另建进程执行器。
+- 原生新 profile 已显示安装设置并通过控件切换为日语，locale 写入读回为 `ja`。Mac 已解锁。多个并行会话同时使用同一 Electron 开发程序，自动化无法稳定选择指定实例；真实文件夹框、日语退出确认仍待独占目标窗口后验收。另一会话的侧栏和程序图标修改保留，未将其界面测试模式记为环境就绪。
+- 独立浏览器 profile 通过实际页面切换中文、输入已准备的 YouDub 私有目录、确认、检查四模型并进入模型配置。停止并重新启动同一 Host 后，选择的路径和中文保留，不再显示目录选择页，依赖和四模型重新检查。新 profile 没有默认账号或模型提供商。本轮复用已有验证目录中的模型文件，不声称重新下载了约 6.97 GB 资源。[安装页截图](evidence/refactor-installation-choice.png)
+- API Key 独立摘要行及自建 preview 路由/组件已删除。官方 Credentials describe 增加显式选择的掩码投影，默认元数据响应保持原状；完整密钥只在 Host 解析。原编辑器以 placeholder 显示前六位加 `***`，短密钥全部遮挡，input value 为空，没有已保存密钥的展开按钮；复制、剪切、拖动输入内容均被阻止。显示出的前六位仍能被截图或读取，不能承诺显示文字本身无法获取。
+- 在上述独立 profile 的真实页面填写无效测试密钥、回环测试 URL 和模型，保存后重新编辑、重启后再编辑，均显示占位 `youdub***`。测试未调用外部 LLM，不代表提供商可用性或翻译质量验收。[密钥页截图](evidence/refactor-api-key-inline-mask.png)
+- 原生旧版在日语界面下仍显示中文未保存提示，取消后表单与 Host 留存。活动 fork 已补齐日语退出/编辑/诊断文案及 locale 解析，相关单元检查通过；修改后的原生提示尚未完成实际交互验收。
+- 本批相关框架用例 14 文件、401 passed；首启前端/控制器 3 文件、24 passed；web 类型检查通过；修复依赖后的 Harness 集成 66 passed。中英日 646 项业务语言键及 7 个框架语言空间通过。来源检查确认原 Harness checkout、两份源码快照、YouDub 初始快照和原归档未变；活动 fork 为 87 项登记差异。共享工作区仍有其他会话编辑，完整候选 CI 另行记录。
+- 上一提交 `40a0f753` 的[源码开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39713973929) 已通过。本批仍属于开发改造；没有打包、发布或合并到 main。完整源码裁剪、业务及跨平台验收未完成，两份飞书文档按约定最后统一更新。
