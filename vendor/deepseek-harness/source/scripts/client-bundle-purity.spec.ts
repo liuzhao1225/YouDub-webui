@@ -208,6 +208,7 @@ describe('client bundle purity gate', () => {
   it('rejects the retired web-react platform package', () => {
     expect(() => resolveId('@deepseek-ai/dsh-client-web-react')).toThrow(/purity/)
     expect(() => resolveId('@deepseek-ai/dsh-client-web-react/store')).toThrow(/purity/)
+    expect(() => resolveId('@deepseek-ai/dsh-host-open-in-app/shared')).toThrow(/purity/)
   })
 
   it('lets inline-safe libraries inline', () => {
@@ -218,10 +219,8 @@ describe('client bundle purity gate', () => {
     expect(resolveId('@deepseek-ai/dsh-token-meter/client')).toBeNull()
     expect(() => resolveId('@deepseek-ai/dsh-token-meter')).toThrow(/purity/)
     expect(() => resolveId('@deepseek-ai/dsh-token-meter/client/internal')).toThrow(/purity/)
-    expect(resolveId('@deepseek-ai/dsh-host-open-in-app/shared')).toBeNull()
     expect(resolveId('@deepseek-ai/dsh-native-command/types')).toBeNull()
     expect(() => resolveId('@deepseek-ai/dsh-native-command')).toThrow('client bundle purity')
-    expect(() => resolveId('@deepseek-ai/dsh-host-open-in-app')).toThrow(/purity/)
     expect(resolveId('@deepseek-ai/dsh-plugin-manager/registry')).toBeNull()
     expect(() => resolveId('@deepseek-ai/dsh-plugin-manager')).toThrow(/purity/)
     expect(() => resolveId('@deepseek-ai/dsh-plugin-manager/registry/internal')).toThrow(/purity/)

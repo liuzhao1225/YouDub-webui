@@ -544,3 +544,13 @@ fecdf978 的 Windows 来源校验、框架/产品构建和组合隔离已通过�
 2a275a64 的 Windows 检查继续在卸载后真实路径断言失败，路径规范化并未修复行为。读取隔离测试 profile 发现，根 pnpm-lock.yaml 已指向当前 SDK，node_modules/.pnpm/lock.yaml 仍指向旧 SDK。新增两种状态回归后，本机也稳定出现 6 项通过、2 项失败。
 
 profile 准备现通过官方 PluginManager 执行离线安装，同步根锁和已安装锁；覆盖根锁已更新但安装记录仍旧的既有 profile。明确允许本次预期锁更新，两个锁核验通过才继续。原用户扩展、配置保留与卸载后 realpath 断言均保留。CI=true 下 8 项 profile 回归及两种实际 Electron Host 启动通过。Windows 实际修复效果仍待下一次远程检查；不将本机结果替代平台验收。
+
+## P6 第 22 批：旧上下文、遥测与非产品界面（2026-10-23）
+
+从运行/类型与保留包测试的闭包之外移除 21 包、327 文件，包括旧账号平台、消息反馈、会话标题、遥测、SQLite 存储与上下文扩展。编译路径、锁文件 importer、目录生成和 11 组双语说明同步更新。141 个运行/类型包和 203 个含测试闭包包保持不变；第三方 packages/snapshots 未变。保留历史消息来源枚举、通用框架合同及实际 Desktop 原生目录选择桥。
+
+最终候选 247 包、5,921 文件、243 个客户端产物，SHA 为 ebcd7c1454ad5f93dfdf48e4560c23c13f1c15eee9f56480fea6e7602082fc7d。7 项构建门禁、172 项定向回归、188 项策略断言、527 个 GUI 文件 / 8,445 项断言通过（保留 1 项 expected failure、2 项平台跳过）。两种实际 Electron Host 与 8 项 profile 回归通过。8 份 Loader 配置、11 组双语配对、组合隔离和原始归档/checkout/初始 YouDub/开发源码来源核验通过。
+
+首次完整 GUI 在已移除 Cordis 面板的主题夹具失败，现仅删除该退役面板行，其余表面检查保留。历史整体验证最初缺候选 runtime/provenance 收据；记录开发构建来源后，普通 Node 验证通过。Electron 的 ASAR 文件系统视图会改变历史安装包目录摘要，未将该工具调用误差登记为上游源码改动。失败历史见[结构化证据](evidence/refactor-leaf-products-prune.json)。合回逐文件核对原像，保留 Windows profile 修复和并行业务修改。其余裁剪、最终原生与媒体质量、远程 CI 和两份飞书文档仍未完成；未打包或发布。
+
+第 21 批与并行界面/资源改动的合并提交 2a275a64，macOS job 已正式 success：GUI 552 文件 / 8,746 项，profile 6,731 项，Web 264 项，领域 187 项，Harness 76 项和 Python 525 项通过。该 run 的 Windows job 仍因 SDK 回退失败，整条 run 为 failure；后续 d87982c4 修复和第 22 批需新一次双平台检查。[macOS 结果](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39820473291/job/119970692443)

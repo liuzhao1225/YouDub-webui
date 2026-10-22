@@ -162,7 +162,27 @@
     "No media inference, native GUI, packaging, release or final Feishu update in this batch."
   ],
   "ci": {
-    "status": "pending integrated commit"
+    "status": "macOS job passed; Windows SDK profile failure tracked separately",
+    "commit": "2a275a647fe752d6abb39474d64e74ee563d1ef9",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39820473291/job/119970692443",
+    "gui": {
+      "filesPassed": 552,
+      "testsPassed": 8746,
+      "expectedFailure": 1,
+      "skipped": 2
+    },
+    "profile": {
+      "filesPassed": 54,
+      "testsPassed": 6731,
+      "skipped": 1
+    },
+    "web": {
+      "filesPassed": 38,
+      "testsPassed": 264
+    },
+    "domainTestsPassed": 187,
+    "harnessTestsPassed": 76,
+    "pythonTestsPassed": 525
   },
   "integration": {
     "baseBeforeMerge": "fecdf9788a684bb70b9c70ff46f3e3e4fc83173e",

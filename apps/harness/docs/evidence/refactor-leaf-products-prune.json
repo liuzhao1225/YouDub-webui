@@ -1,0 +1,647 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "3142538f3092bdbe91958e3f9542bd5d1700569c",
+  "scope": "Retire 21 old product modules outside the runtime and retained package-test closure. Preserve framework services, historical serialized message types, the actual native picker and YouDub business source.",
+  "source": {
+    "packages": 247,
+    "files": 5921,
+    "sha256": "ebcd7c1454ad5f93dfdf48e4560c23c13f1c15eee9f56480fea6e7602082fc7d",
+    "clientArtifacts": 243,
+    "removedFiles": 327,
+    "removedPackages": [
+      {
+        "name": "@deepseek-ai/dsh-agent-instructions",
+        "path": "packages/context/agent-instructions"
+      },
+      {
+        "name": "@deepseek-ai/dsh-agent-tool-presentation",
+        "path": "packages/core/agent-tool-presentation"
+      },
+      {
+        "name": "@deepseek-ai/dsh-client-ui-cordis",
+        "path": "packages/extensions/ui-cordis"
+      },
+      {
+        "name": "@deepseek-ai/dsh-client-ui-message-feedback",
+        "path": "packages/client/ui-message-feedback"
+      },
+      {
+        "name": "@deepseek-ai/dsh-client-ui-open-in-app",
+        "path": "packages/client/ui-open-in-app"
+      },
+      {
+        "name": "@deepseek-ai/dsh-client-ui-sidebar-files",
+        "path": "packages/client/ui-sidebar-files"
+      },
+      {
+        "name": "@deepseek-ai/dsh-deepseek-account-platform",
+        "path": "packages/credentials/deepseek-account-platform"
+      },
+      {
+        "name": "@deepseek-ai/dsh-goal-round-driver",
+        "path": "packages/goal/goal-round-driver"
+      },
+      {
+        "name": "@deepseek-ai/dsh-harness-dev-context",
+        "path": "packages/context/harness-dev-context"
+      },
+      {
+        "name": "@deepseek-ai/dsh-host-open-in-app",
+        "path": "packages/host/open-in-app"
+      },
+      {
+        "name": "@deepseek-ai/dsh-persona",
+        "path": "packages/preset/persona"
+      },
+      {
+        "name": "@deepseek-ai/dsh-repeat-tool-reminder",
+        "path": "packages/guard/repeat-tool-reminder"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-checkpoint-policy",
+        "path": "packages/session/session-checkpoint-policy"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-telemetry",
+        "path": "packages/session/session-telemetry"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-telemetry-otel",
+        "path": "packages/session/session-telemetry-otel"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-title-first-prompt-llm",
+        "path": "packages/session/session-title-first-prompt-llm"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-title-llm",
+        "path": "packages/session/session-title-llm"
+      },
+      {
+        "name": "@deepseek-ai/dsh-storage-sqlite",
+        "path": "packages/storage/storage-sqlite"
+      },
+      {
+        "name": "@deepseek-ai/dsh-time-context",
+        "path": "packages/context/time-context"
+      },
+      {
+        "name": "@deepseek-ai/dsh-tmux-context",
+        "path": "packages/context/tmux-context"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-log-export",
+        "path": "packages/session-query/session-log-export"
+      }
+    ]
+  },
+  "preservedClosure": {
+    "roots": 79,
+    "runtimeAndTypes": 141,
+    "withPackageTests": 203,
+    "outside": 44
+  },
+  "retainedCompatibility": [
+    "Historical dsh-session-title-llm message source identifiers remain in persistence policy.",
+    "The Desktop preload directory picker remains in use; no replacement picker was introduced."
+  ],
+  "lockfile": {
+    "thirdPartyPackagesAndSnapshotsUnchanged": true,
+    "removedUnusedDevDependency": [
+      {
+        "path": "packages/goal/goal",
+        "kind": "devDependencies",
+        "name": "@deepseek-ai/dsh-session-checkpoint-policy"
+      }
+    ]
+  },
+  "validation": {
+    "framework": {
+      "gatesPassed": 7,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-build-theme.log",
+        "sha256": "eb7b839f6007e38e3da0123f1a2441c26ce23ba62732b3206d86ca5ac36c38fe"
+      }
+    },
+    "targeted": {
+      "filesPassed": 8,
+      "testsPassed": 172,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-regression.log",
+        "sha256": "0be63f5f4939b0a81cb4c671a2cdf993dfe55c1c78a847a70fbc9fe6caea2c2a"
+      }
+    },
+    "policy": {
+      "filesPassed": 6,
+      "testsPassed": 188,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-policy.log",
+        "sha256": "98d5ad47de7d7fd3fa49d8cc7325e271f6944e0ee712b5dea7eeb5e39649caf8"
+      }
+    },
+    "fullGui": {
+      "filesPassed": 527,
+      "testsPassed": 8445,
+      "expectedFailure": 1,
+      "skipped": 2,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-gui-final.log",
+        "sha256": "634a50e7b544d1011e734d4f1f7dd9efe93f7e5ec9e87ec9c7d43330ecf5aea9"
+      }
+    },
+    "hostAndProfile": {
+      "testsPassed": 10,
+      "actualHostModes": 2,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-host-final.log",
+        "sha256": "7e8042697eb64bc1267706806a97840069ce7017e5da3f549799ffa67f801308"
+      },
+      "productInputs": "Base 3142538f with d87982c4 profile synchronization; explicit existing project Python, not a fresh private-runtime installation."
+    },
+    "readmePairing": {
+      "pairsPassed": 11,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-pairing.log",
+        "sha256": "8d6e63d8395c3649e1c4b037b2311406fb59526324e3c3c9dac27fb183f37416"
+      }
+    },
+    "cordis": {
+      "configsPassed": 8,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-cordis.log",
+        "sha256": "063c331c4f4d56c31f78aca71c08406c38eb9ad6f59ff262f9a4ec2bae8cd6c8"
+      }
+    },
+    "composition": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-composition.log",
+        "sha256": "082399002d149646e2873b9cdfaabc8c4994bb17aa651829102a743cb9bda462"
+      }
+    },
+    "isolation": {
+      "packages": 87,
+      "runtimeSources": 699,
+      "configurations": 1,
+      "webPlugins": 33,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-isolation.log",
+        "sha256": "5ea7a52c26b7e20938b1ff870c185811e053eacd3e163e846706d500f91ffab5"
+      }
+    },
+    "originalSources": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-original-sources.log",
+        "sha256": "094e3bec0f3744dc4595729187ea6d16247df0eaf2c1028a8bf49eb63e05ce5d"
+      }
+    },
+    "originalArchive": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-original-archive.log",
+        "sha256": "f4936d0834a95f18868b17cea0cf6e5462e7d87a92afa0a8aaa917d84fded7ae"
+      }
+    },
+    "fullBaselineVerification": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-leaf-products-baselines-final-node.log",
+        "sha256": "30984ea0dd6823de363512e0d5a0872a38b5cc40779359c97fe46174e2c7154d"
+      },
+      "checks": [
+        "sources",
+        "desktop",
+        "npm",
+        "vendor",
+        "build"
+      ]
+    }
+  },
+  "failureHistory": [
+    {
+      "cause": "Initial full GUI run retained one elevation-style fixture for the deleted Cordis product. Removed that exact fixture row; all retained surfaces still checked.",
+      "log": {
+        "path": "/tmp/youdub-leaf-products-gui.log",
+        "sha256": "9c944a3e85f149ac0cfa2c67eed3badb148d7b3ee607a9304680125d81c0f745"
+      }
+    },
+    {
+      "cause": "Full historical baseline checker initially lacked candidate runtime/provenance receipts. Recorded the source-development runtime and provenance; these were missing evidence, not product source failures.",
+      "logs": [
+        {
+          "path": "/tmp/youdub-leaf-products-originals.log",
+          "sha256": "791daafb4b66e816b9b0585e134cf2e1cabb6365f539e64eaea6eb085ccde80e"
+        },
+        {
+          "path": "/tmp/youdub-leaf-products-baselines-final.log",
+          "sha256": "3e7618bc7d9c2c2e958b5529c9c2f9fc7a6b662932b602c5050cc4010343e187"
+        }
+      ]
+    },
+    {
+      "cause": "Running the historical installed-app hash through Electron enabled ASAR filesystem semantics and produced a different tree hash. The baseline checker uses plain Node; source and archive checks passed separately.",
+      "log": {
+        "path": "/tmp/youdub-leaf-products-baselines-recorded.log",
+        "sha256": "7eebe0f4308a0fb94685288aed93fede643085586c0708a7971d6ffcce8fcf29"
+      }
+    }
+  ],
+  "integration": {
+    "preimagesVerified": true,
+    "applied": {
+      "changedPaths": [
+        "packages/client/README.i18n.yaml",
+        "packages/client/README.md",
+        "packages/client/README.zh.md",
+        "packages/client/tsdown.client.ts",
+        "packages/client/ui-message-feedback/README.i18n.yaml",
+        "packages/client/ui-message-feedback/README.md",
+        "packages/client/ui-message-feedback/README.zh.md",
+        "packages/client/ui-message-feedback/locale/en.json",
+        "packages/client/ui-message-feedback/locale/zh.json",
+        "packages/client/ui-message-feedback/package.json",
+        "packages/client/ui-message-feedback/src/client/FeedbackDialog.module.css",
+        "packages/client/ui-message-feedback/src/client/FeedbackDialog.tsx",
+        "packages/client/ui-message-feedback/src/client/MessageFeedbackActions.module.css",
+        "packages/client/ui-message-feedback/src/client/MessageFeedbackActions.tsx",
+        "packages/client/ui-message-feedback/src/client/controller.ts",
+        "packages/client/ui-message-feedback/src/client/dialog.ts",
+        "packages/client/ui-message-feedback/src/client/index.ts",
+        "packages/client/ui-message-feedback/src/client/locales.ts",
+        "packages/client/ui-message-feedback/src/client/slots.ts",
+        "packages/client/ui-message-feedback/src/client/surface.ts",
+        "packages/client/ui-message-feedback/src/css-modules.d.ts",
+        "packages/client/ui-message-feedback/src/index.ts",
+        "packages/client/ui-message-feedback/tests/browser-plugin.client.spec.tsx",
+        "packages/client/ui-message-feedback/tests/controller.client.spec.ts",
+        "packages/client/ui-message-feedback/tests/dialog.client.spec.ts",
+        "packages/client/ui-message-feedback/tests/feedback-dialog.client.spec.tsx",
+        "packages/client/ui-message-feedback/tests/message-feedback-actions.client.spec.tsx",
+        "packages/client/ui-message-feedback/tests/styles.client.spec.ts",
+        "packages/client/ui-message-feedback/tsconfig.json",
+        "packages/client/ui-message-feedback/tsdown.config.ts",
+        "packages/client/ui-open-in-app/README.i18n.yaml",
+        "packages/client/ui-open-in-app/README.md",
+        "packages/client/ui-open-in-app/README.zh.md",
+        "packages/client/ui-open-in-app/locale/en.json",
+        "packages/client/ui-open-in-app/locale/zh.json",
+        "packages/client/ui-open-in-app/package.json",
+        "packages/client/ui-open-in-app/src/client/FileRouteAction.tsx",
+        "packages/client/ui-open-in-app/src/client/OpenInAppAction.tsx",
+        "packages/client/ui-open-in-app/src/client/OpenPathAction.tsx",
+        "packages/client/ui-open-in-app/src/client/OpenPathEmptyAction.tsx",
+        "packages/client/ui-open-in-app/src/client/OpenTargetButton.module.css",
+        "packages/client/ui-open-in-app/src/client/OpenTargetButton.tsx",
+        "packages/client/ui-open-in-app/src/client/applications.ts",
+        "packages/client/ui-open-in-app/src/client/controller.ts",
+        "packages/client/ui-open-in-app/src/client/file-applications.ts",
+        "packages/client/ui-open-in-app/src/client/index.ts",
+        "packages/client/ui-open-in-app/src/client/locales.ts",
+        "packages/client/ui-open-in-app/src/client/open-failure-toast.tsx",
+        "packages/client/ui-open-in-app/src/client/open-path.ts",
+        "packages/client/ui-open-in-app/src/css-modules.d.ts",
+        "packages/client/ui-open-in-app/src/index.ts",
+        "packages/client/ui-open-in-app/tests/browser-plugin.client.spec.ts",
+        "packages/client/ui-open-in-app/tests/controller.client.spec.ts",
+        "packages/client/ui-open-in-app/tests/file-applications.client.spec.tsx",
+        "packages/client/ui-open-in-app/tests/file-route-action.client.spec.tsx",
+        "packages/client/ui-open-in-app/tests/open-in-app-action.client.spec.tsx",
+        "packages/client/ui-open-in-app/tests/open-path-action.client.spec.tsx",
+        "packages/client/ui-open-in-app/tests/open-path.client.spec.ts",
+        "packages/client/ui-open-in-app/tsconfig.json",
+        "packages/client/ui-open-in-app/tsdown.config.ts",
+        "packages/client/ui-sidebar-files/README.i18n.yaml",
+        "packages/client/ui-sidebar-files/README.md",
+        "packages/client/ui-sidebar-files/README.zh.md",
+        "packages/client/ui-sidebar-files/locale/en.json",
+        "packages/client/ui-sidebar-files/locale/zh.json",
+        "packages/client/ui-sidebar-files/package.json",
+        "packages/client/ui-sidebar-files/src/client/FilesBody.module.css",
+        "packages/client/ui-sidebar-files/src/client/FilesBody.tsx",
+        "packages/client/ui-sidebar-files/src/client/FilesTitle.tsx",
+        "packages/client/ui-sidebar-files/src/client/definition.tsx",
+        "packages/client/ui-sidebar-files/src/client/directory-node.ts",
+        "packages/client/ui-sidebar-files/src/client/face.ts",
+        "packages/client/ui-sidebar-files/src/client/index.ts",
+        "packages/client/ui-sidebar-files/src/client/locales.ts",
+        "packages/client/ui-sidebar-files/src/client/store.ts",
+        "packages/client/ui-sidebar-files/src/css-modules.d.ts",
+        "packages/client/ui-sidebar-files/src/index.ts",
+        "packages/client/ui-sidebar-files/tests/apply.client.spec.ts",
+        "packages/client/ui-sidebar-files/tests/definition.client.spec.ts",
+        "packages/client/ui-sidebar-files/tests/directory-node.client.spec.ts",
+        "packages/client/ui-sidebar-files/tests/face.client.spec.ts",
+        "packages/client/ui-sidebar-files/tests/files-body.client.spec.tsx",
+        "packages/client/ui-sidebar-files/tests/files-title.client.spec.tsx",
+        "packages/client/ui-sidebar-files/tests/mount.client.tsx",
+        "packages/client/ui-sidebar-files/tests/scripted-list.client.ts",
+        "packages/client/ui-sidebar-files/tests/scripted-watch.client.ts",
+        "packages/client/ui-sidebar-files/tests/store.client.spec.ts",
+        "packages/client/ui-sidebar-files/tests/watch.client.spec.ts",
+        "packages/client/ui-sidebar-files/tsconfig.json",
+        "packages/client/ui-sidebar-files/tsdown.config.ts",
+        "packages/client/ui-theme/tests/elevation-styles.client.spec.ts",
+        "packages/context/README.i18n.yaml",
+        "packages/context/README.md",
+        "packages/context/README.zh.md",
+        "packages/context/agent-instructions/README.i18n.yaml",
+        "packages/context/agent-instructions/README.md",
+        "packages/context/agent-instructions/README.zh.md",
+        "packages/context/agent-instructions/locale/en.json",
+        "packages/context/agent-instructions/locale/zh.json",
+        "packages/context/agent-instructions/package.json",
+        "packages/context/agent-instructions/src/config.ts",
+        "packages/context/agent-instructions/src/digest.ts",
+        "packages/context/agent-instructions/src/files.ts",
+        "packages/context/agent-instructions/src/index.ts",
+        "packages/context/agent-instructions/src/render.ts",
+        "packages/context/agent-instructions/src/state.ts",
+        "packages/context/agent-instructions/tests/agent-instructions.e2e.ts",
+        "packages/context/agent-instructions/tests/agent-instructions.spec.ts",
+        "packages/context/agent-instructions/tsconfig.json",
+        "packages/context/harness-dev-context/README.i18n.yaml",
+        "packages/context/harness-dev-context/README.md",
+        "packages/context/harness-dev-context/README.zh.md",
+        "packages/context/harness-dev-context/package.json",
+        "packages/context/harness-dev-context/src/index.ts",
+        "packages/context/harness-dev-context/tests/harness-dev-context.spec.ts",
+        "packages/context/harness-dev-context/tsconfig.json",
+        "packages/context/time-context/README.i18n.yaml",
+        "packages/context/time-context/README.md",
+        "packages/context/time-context/README.zh.md",
+        "packages/context/time-context/locale/en.json",
+        "packages/context/time-context/locale/zh.json",
+        "packages/context/time-context/package.json",
+        "packages/context/time-context/src/index.ts",
+        "packages/context/time-context/src/request-zone.ts",
+        "packages/context/time-context/src/timestamp.ts",
+        "packages/context/time-context/tests/fixtures/driver.ts",
+        "packages/context/time-context/tests/fixtures/mock-llm.ts",
+        "packages/context/time-context/tests/fixtures/time-context.patch.yml",
+        "packages/context/time-context/tests/request-zone.spec.ts",
+        "packages/context/time-context/tests/time-context.e2e.ts",
+        "packages/context/time-context/tests/time-context.spec.ts",
+        "packages/context/time-context/tsconfig.json",
+        "packages/context/time-context/tsdown.config.ts",
+        "packages/context/tmux-context/README.i18n.yaml",
+        "packages/context/tmux-context/README.md",
+        "packages/context/tmux-context/README.zh.md",
+        "packages/context/tmux-context/package.json",
+        "packages/context/tmux-context/src/index.ts",
+        "packages/context/tmux-context/tests/tmux-context.spec.ts",
+        "packages/context/tmux-context/tsconfig.json",
+        "packages/core/README.i18n.yaml",
+        "packages/core/README.md",
+        "packages/core/README.zh.md",
+        "packages/core/agent-tool-presentation/README.i18n.yaml",
+        "packages/core/agent-tool-presentation/README.md",
+        "packages/core/agent-tool-presentation/README.zh.md",
+        "packages/core/agent-tool-presentation/locale/en.json",
+        "packages/core/agent-tool-presentation/locale/zh.json",
+        "packages/core/agent-tool-presentation/package.json",
+        "packages/core/agent-tool-presentation/src/index.ts",
+        "packages/core/agent-tool-presentation/tests/agent-tool-presentation.spec.ts",
+        "packages/core/agent-tool-presentation/tsconfig.json",
+        "packages/credentials/deepseek-account-platform/README.i18n.yaml",
+        "packages/credentials/deepseek-account-platform/README.md",
+        "packages/credentials/deepseek-account-platform/README.zh.md",
+        "packages/credentials/deepseek-account-platform/locale/en.json",
+        "packages/credentials/deepseek-account-platform/locale/zh.json",
+        "packages/credentials/deepseek-account-platform/package.json",
+        "packages/credentials/deepseek-account-platform/src/details.ts",
+        "packages/credentials/deepseek-account-platform/src/index.ts",
+        "packages/credentials/deepseek-account-platform/src/logout.ts",
+        "packages/credentials/deepseek-account-platform/src/protocol.ts",
+        "packages/credentials/deepseek-account-platform/src/types.ts",
+        "packages/credentials/deepseek-account-platform/tests/account.spec.ts",
+        "packages/credentials/deepseek-account-platform/tests/authorization-response.spec.ts",
+        "packages/credentials/deepseek-account-platform/tests/bonus.spec.ts",
+        "packages/credentials/deepseek-account-platform/tests/details.spec.ts",
+        "packages/credentials/deepseek-account-platform/tests/diagnostics.spec.ts",
+        "packages/credentials/deepseek-account-platform/tests/expected/web-exchange-failure.txt",
+        "packages/credentials/deepseek-account-platform/tests/logout.spec.ts",
+        "packages/credentials/deepseek-account-platform/tsconfig.json",
+        "packages/extensions/README.i18n.yaml",
+        "packages/extensions/README.md",
+        "packages/extensions/README.zh.md",
+        "packages/extensions/ui-cordis/README.i18n.yaml",
+        "packages/extensions/ui-cordis/README.md",
+        "packages/extensions/ui-cordis/README.zh.md",
+        "packages/extensions/ui-cordis/locale/en.json",
+        "packages/extensions/ui-cordis/locale/zh.json",
+        "packages/extensions/ui-cordis/package.json",
+        "packages/extensions/ui-cordis/src/client/CordisActionRow.tsx",
+        "packages/extensions/ui-cordis/src/client/CordisDefineRow.module.css",
+        "packages/extensions/ui-cordis/src/client/CordisDefineRow.tsx",
+        "packages/extensions/ui-cordis/src/client/CordisPanel.module.css",
+        "packages/extensions/ui-cordis/src/client/CordisPanel.tsx",
+        "packages/extensions/ui-cordis/src/client/CordisPreparingRow.tsx",
+        "packages/extensions/ui-cordis/src/client/CordisRunRow.module.css",
+        "packages/extensions/ui-cordis/src/client/CordisRunRow.tsx",
+        "packages/extensions/ui-cordis/src/client/card-model.ts",
+        "packages/extensions/ui-cordis/src/client/dynamic-port.ts",
+        "packages/extensions/ui-cordis/src/client/events.ts",
+        "packages/extensions/ui-cordis/src/client/index.ts",
+        "packages/extensions/ui-cordis/src/client/inventory.ts",
+        "packages/extensions/ui-cordis/src/client/locales.ts",
+        "packages/extensions/ui-cordis/src/client/run-card-index.ts",
+        "packages/extensions/ui-cordis/src/client/slots.ts",
+        "packages/extensions/ui-cordis/src/client/status.ts",
+        "packages/extensions/ui-cordis/src/css-modules.d.ts",
+        "packages/extensions/ui-cordis/src/index.ts",
+        "packages/extensions/ui-cordis/tests/card-model.client.spec.ts",
+        "packages/extensions/ui-cordis/tests/inventory.client.spec.ts",
+        "packages/extensions/ui-cordis/tests/status-icons.client.spec.tsx",
+        "packages/extensions/ui-cordis/tests/versioning.client.spec.ts",
+        "packages/extensions/ui-cordis/tsconfig.json",
+        "packages/extensions/ui-cordis/tsdown.config.ts",
+        "packages/goal/README.i18n.yaml",
+        "packages/goal/README.md",
+        "packages/goal/README.zh.md",
+        "packages/goal/goal-round-driver/README.i18n.yaml",
+        "packages/goal/goal-round-driver/README.md",
+        "packages/goal/goal-round-driver/README.zh.md",
+        "packages/goal/goal-round-driver/locale/en.json",
+        "packages/goal/goal-round-driver/locale/zh.json",
+        "packages/goal/goal-round-driver/package.json",
+        "packages/goal/goal-round-driver/src/index.ts",
+        "packages/goal/goal-round-driver/src/prompt.ts",
+        "packages/goal/goal-round-driver/tests/goal-round-driver.spec.ts",
+        "packages/goal/goal-round-driver/tsconfig.json",
+        "packages/goal/goal-round-driver/tsdown.config.ts",
+        "packages/goal/goal/package.json",
+        "packages/guard/README.i18n.yaml",
+        "packages/guard/README.md",
+        "packages/guard/README.zh.md",
+        "packages/guard/repeat-tool-reminder/README.i18n.yaml",
+        "packages/guard/repeat-tool-reminder/README.md",
+        "packages/guard/repeat-tool-reminder/README.zh.md",
+        "packages/guard/repeat-tool-reminder/locale/en.json",
+        "packages/guard/repeat-tool-reminder/locale/zh.json",
+        "packages/guard/repeat-tool-reminder/package.json",
+        "packages/guard/repeat-tool-reminder/src/index.ts",
+        "packages/guard/repeat-tool-reminder/tests/repeat-tool-reminder.spec.ts",
+        "packages/guard/repeat-tool-reminder/tsconfig.json",
+        "packages/host/README.i18n.yaml",
+        "packages/host/README.md",
+        "packages/host/README.zh.md",
+        "packages/host/open-in-app/README.i18n.yaml",
+        "packages/host/open-in-app/README.md",
+        "packages/host/open-in-app/README.zh.md",
+        "packages/host/open-in-app/locale/en.json",
+        "packages/host/open-in-app/locale/zh.json",
+        "packages/host/open-in-app/package.json",
+        "packages/host/open-in-app/src/catalog.ts",
+        "packages/host/open-in-app/src/icons.ts",
+        "packages/host/open-in-app/src/index.ts",
+        "packages/host/open-in-app/src/internals.ts",
+        "packages/host/open-in-app/src/resolver.ts",
+        "packages/host/open-in-app/src/shared.ts",
+        "packages/host/open-in-app/tests/host-routes.spec.ts",
+        "packages/host/open-in-app/tests/icons.spec.ts",
+        "packages/host/open-in-app/tests/launch-detached.spec.ts",
+        "packages/host/open-in-app/tests/resolver.spec.ts",
+        "packages/host/open-in-app/tsconfig.json",
+        "packages/host/open-in-app/tsdown.config.ts",
+        "packages/preset/README.i18n.yaml",
+        "packages/preset/README.md",
+        "packages/preset/README.zh.md",
+        "packages/preset/persona/README.i18n.yaml",
+        "packages/preset/persona/README.md",
+        "packages/preset/persona/README.zh.md",
+        "packages/preset/persona/locale/en.json",
+        "packages/preset/persona/locale/zh.json",
+        "packages/preset/persona/package.json",
+        "packages/preset/persona/src/index.ts",
+        "packages/preset/persona/tests/persona.spec.ts",
+        "packages/preset/persona/tsconfig.json",
+        "packages/session-query/README.i18n.yaml",
+        "packages/session-query/README.md",
+        "packages/session-query/README.zh.md",
+        "packages/session-query/session-log-export/README.i18n.yaml",
+        "packages/session-query/session-log-export/README.md",
+        "packages/session-query/session-log-export/README.zh.md",
+        "packages/session-query/session-log-export/locale/en.json",
+        "packages/session-query/session-log-export/locale/zh.json",
+        "packages/session-query/session-log-export/package.json",
+        "packages/session-query/session-log-export/src/archive.ts",
+        "packages/session-query/session-log-export/src/client/Dialog.tsx",
+        "packages/session-query/session-log-export/src/client/HeaderAction.module.css",
+        "packages/session-query/session-log-export/src/client/HeaderAction.tsx",
+        "packages/session-query/session-log-export/src/client/controller.ts",
+        "packages/session-query/session-log-export/src/client/index.ts",
+        "packages/session-query/session-log-export/src/client/locales.ts",
+        "packages/session-query/session-log-export/src/css-modules.d.ts",
+        "packages/session-query/session-log-export/src/index.ts",
+        "packages/session-query/session-log-export/src/routes.ts",
+        "packages/session-query/session-log-export/tests/archive.host.spec.ts",
+        "packages/session-query/session-log-export/tests/client-apply.client.spec.tsx",
+        "packages/session-query/session-log-export/tests/command.host.spec.ts",
+        "packages/session-query/session-log-export/tests/controller.client.spec.ts",
+        "packages/session-query/session-log-export/tests/dialog.client.spec.tsx",
+        "packages/session-query/session-log-export/tests/header-action.client.spec.tsx",
+        "packages/session-query/session-log-export/tests/loader-composition.host.spec.ts",
+        "packages/session-query/session-log-export/tests/route.host.spec.ts",
+        "packages/session-query/session-log-export/tsconfig.client.json",
+        "packages/session-query/session-log-export/tsconfig.host.json",
+        "packages/session-query/session-log-export/tsconfig.json",
+        "packages/session-query/session-log-export/tsdown.config.ts",
+        "packages/session/README.i18n.yaml",
+        "packages/session/README.md",
+        "packages/session/README.zh.md",
+        "packages/session/session-checkpoint-policy/README.i18n.yaml",
+        "packages/session/session-checkpoint-policy/README.md",
+        "packages/session/session-checkpoint-policy/README.zh.md",
+        "packages/session/session-checkpoint-policy/locale/en.json",
+        "packages/session/session-checkpoint-policy/locale/zh.json",
+        "packages/session/session-checkpoint-policy/package.json",
+        "packages/session/session-checkpoint-policy/src/index.ts",
+        "packages/session/session-checkpoint-policy/tests/crash-recovery.e2e.ts",
+        "packages/session/session-checkpoint-policy/tests/fixtures/crash-child.ts",
+        "packages/session/session-checkpoint-policy/tests/session-checkpoint-policy.spec.ts",
+        "packages/session/session-checkpoint-policy/tsconfig.json",
+        "packages/session/session-telemetry-otel/README.i18n.yaml",
+        "packages/session/session-telemetry-otel/README.md",
+        "packages/session/session-telemetry-otel/README.zh.md",
+        "packages/session/session-telemetry-otel/locale/en.json",
+        "packages/session/session-telemetry-otel/locale/zh.json",
+        "packages/session/session-telemetry-otel/package.json",
+        "packages/session/session-telemetry-otel/src/index.ts",
+        "packages/session/session-telemetry-otel/tests/egress.spec.ts",
+        "packages/session/session-telemetry-otel/tests/fixtures/driver.ts",
+        "packages/session/session-telemetry-otel/tests/fixtures/telemetry-redact-rule.ts",
+        "packages/session/session-telemetry-otel/tests/fixtures/telemetry.patch.yml",
+        "packages/session/session-telemetry-otel/tests/loader-composition.e2e.ts",
+        "packages/session/session-telemetry-otel/tests/otel.spec.ts",
+        "packages/session/session-telemetry-otel/tsconfig.json",
+        "packages/session/session-telemetry/README.i18n.yaml",
+        "packages/session/session-telemetry/README.md",
+        "packages/session/session-telemetry/README.zh.md",
+        "packages/session/session-telemetry/package.json",
+        "packages/session/session-telemetry/src/coordinator.ts",
+        "packages/session/session-telemetry/src/index.ts",
+        "packages/session/session-telemetry/tests/redact.spec.ts",
+        "packages/session/session-telemetry/tests/telemetry.spec.ts",
+        "packages/session/session-telemetry/tsconfig.json",
+        "packages/session/session-title-first-prompt-llm/README.i18n.yaml",
+        "packages/session/session-title-first-prompt-llm/README.md",
+        "packages/session/session-title-first-prompt-llm/README.zh.md",
+        "packages/session/session-title-first-prompt-llm/locale/en.json",
+        "packages/session/session-title-first-prompt-llm/locale/zh.json",
+        "packages/session/session-title-first-prompt-llm/package.json",
+        "packages/session/session-title-first-prompt-llm/src/index.ts",
+        "packages/session/session-title-first-prompt-llm/tests/loader-composition.spec.ts",
+        "packages/session/session-title-first-prompt-llm/tests/provider.e2e.ts",
+        "packages/session/session-title-first-prompt-llm/tests/provider.spec.ts",
+        "packages/session/session-title-first-prompt-llm/tsconfig.json",
+        "packages/session/session-title-llm/README.i18n.yaml",
+        "packages/session/session-title-llm/README.md",
+        "packages/session/session-title-llm/README.zh.md",
+        "packages/session/session-title-llm/package.json",
+        "packages/session/session-title-llm/src/index.ts",
+        "packages/session/session-title-llm/tests/llm.spec.ts",
+        "packages/session/session-title-llm/tsconfig.json",
+        "packages/storage/README.i18n.yaml",
+        "packages/storage/README.md",
+        "packages/storage/README.zh.md",
+        "packages/storage/storage-sqlite/README.i18n.yaml",
+        "packages/storage/storage-sqlite/README.md",
+        "packages/storage/storage-sqlite/README.zh.md",
+        "packages/storage/storage-sqlite/package.json",
+        "packages/storage/storage-sqlite/src/index.ts",
+        "packages/storage/storage-sqlite/src/schema.ts",
+        "packages/storage/storage-sqlite/src/unit.ts",
+        "packages/storage/storage-sqlite/tests/sqlite-backend.spec.ts",
+        "packages/storage/storage-sqlite/tsconfig.json",
+        "pnpm-lock.yaml",
+        "scripts/client-bundle-purity.spec.ts",
+        "scripts/doc-standard.spec.ts",
+        "scripts/gen-cordis-catalog.ts",
+        "scripts/gen-doc-graphs.ts",
+        "scripts/no-unknown-casts.baseline.json",
+        "scripts/product-package-policy.ts",
+        "scripts/request-input-types.spec.ts",
+        "scripts/rescope-vendor.ts",
+        "scripts/type-equiv.manifest.json",
+        "scripts/verify-application-entrypoints.ts",
+        "scripts/verify-package-readme-model-experience.ts",
+        "tsconfig.base.json",
+        "tsconfig.client.json",
+        "tsconfig.host.json"
+      ],
+      "sourceFiles": 5921,
+      "sourceTreeSha256": "ebcd7c1454ad5f93dfdf48e4560c23c13f1c15eee9f56480fea6e7602082fc7d",
+      "packages": 247,
+      "preservedConcurrentEntries": 3830
+    },
+    "ci": "pending",
+    "frameworkGatesPassed": 7,
+    "productBuildPassed": true
+  },
+  "limitations": [
+    "Remaining old tooling and product modules require separate review.",
+    "No native UI, full external media quality, packaging or release claim for this batch.",
+    "The two Feishu documents remain deferred until overall acceptance."
+  ]
+}

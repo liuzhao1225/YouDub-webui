@@ -813,11 +813,6 @@
     },
     {
       "doc": "docs/subsystems/session-title.md",
-      "symbol": "SessionTitleLlmRequestEventData",
-      "source": "packages/session/session-title-llm/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-title.md",
       "symbol": "SessionTitleUserMessage",
       "source": "packages/session/session-title/src/types.ts"
     },
@@ -1935,36 +1930,6 @@
       "doc": "docs/subsystems/client-modules.md",
       "symbol": "ClientArtifactBaseline",
       "source": "packages/client/modules/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-telemetry.md",
-      "symbol": "SessionTelemetryCapture",
-      "source": "packages/session/session-telemetry/src/coordinator.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-telemetry.md",
-      "symbol": "SessionTelemetryCaptureOptions",
-      "source": "packages/session/session-telemetry/src/coordinator.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-telemetry.md",
-      "symbol": "SessionTelemetrySharingStatus",
-      "source": "packages/session/session-telemetry/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-telemetry.md",
-      "symbol": "SessionTelemetrySeverity",
-      "source": "packages/session/session-telemetry/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-telemetry.md",
-      "symbol": "SessionTelemetryRecord",
-      "source": "packages/session/session-telemetry/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/session-telemetry.md",
-      "symbol": "SessionTelemetrySink",
-      "source": "packages/session/session-telemetry/src/index.ts"
     },
     {
       "doc": "docs/subsystems/typert.md",

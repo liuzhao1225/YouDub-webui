@@ -9,7 +9,6 @@ const probePath = resolve(import.meta.dirname, '__request_input_probe.ts')
 const probe = `
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Session } from '@deepseek-ai/dsh-session'
-import type { SessionTitleLlmRequestEventData } from '@deepseek-ai/dsh-session-title-llm'
 import { createUserMessage, projectFilesToText, projectImagesForTextModel, projectOffloadedImages } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, Message, MessageId, MessageSource, RequestMessage, RequestUserInput } from '@deepseek-ai/dsh-llm'
 
@@ -18,7 +17,6 @@ declare const agent: Agent
 declare const durable: Message
 declare const id: MessageId
 declare const source: MessageSource
-declare const title: SessionTitleLlmRequestEventData
 const input: RequestUserInput = { role: 'user', content: [{ type: 'text', text: 'request' }] }
 const request: GenerateOptions = { provider: 'test', model: 'test', messages: [durable, input] }
 const files: readonly RequestMessage[] = projectFilesToText([input], () => undefined)
@@ -54,10 +52,6 @@ session.append('user/message', input, { surfaceOp: 'append' })
 agent.followup(input)
 // @ts-expect-error -- injected context enters durable Session history.
 agent.inject(input)
-// @ts-expect-error -- title requests record their exact durable messages.
-const titleMessages: SessionTitleLlmRequestEventData['messages'] = [input]
-// @ts-expect-error -- the title event cannot write a request-only input.
-session.append('session/title-llm-request', { ...title, messages: [input] })
 // @ts-expect-error -- image projections retain request-only inputs and cannot manufacture identity.
 const projectedDurable: Message = images[0]!
 // @ts-expect-error -- adding an id to a request input does not create a durable message.
@@ -100,7 +94,7 @@ it('accepts mixed requests and rejects lightweight inputs at durable message wri
     },
   }
   const program = ts.createProgram([probePath], options, host)
-  for (const path of ['packages/llm/llm/src/types.ts', 'packages/core/session/src/index.ts', 'packages/session/session-title-llm/src/index.ts']) {
+  for (const path of ['packages/llm/llm/src/types.ts', 'packages/core/session/src/index.ts']) {
     expect(program.getSourceFile(resolve(root, path)), path).toBeDefined()
   }
   const source = program.getSourceFile(probePath)!

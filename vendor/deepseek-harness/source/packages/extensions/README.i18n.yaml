@@ -3,23 +3,23 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/extensions/README.md
 /:
-  en: 622a9da424be9ad7
-  zh: f275f918a42b45ab
+  en: f6eb7a4a4b555a97
+  zh: beb3e0f9ef9fa63a
 /packages-extensions:
   en: 3629b9b795f2e174
   zh: 30dbc9ce39af47c4
 /packages-extensions/summary:
-  en: c4b1aae7c562ee51
-  zh: dc1d97b0b317fd3c
+  en: ba725e99e7bdc396
+  zh: 0caa66884e16f032
 /packages-extensions/table-of-contents:
   en: 1eb35b015a6c423f
   zh: a8a3dceee2c9e943
 /packages-extensions/packages:
-  en: d5bc1d3c23a4f809
-  zh: 933071a3a1a2b395
+  en: 9d1888db6925b028
+  zh: 41646418bb0d14bb
 /packages-extensions/related-documentation:
-  en: 0aa59ef9f2adc9bb
-  zh: 41d18888911b665c
+  en: 589fff8902e657d6
+  zh: 0e75bd22798a81ba
 /packages-extensions/dev-note:
   en: 905661ec39275901
   zh: 802bf1ef52f66e0e
