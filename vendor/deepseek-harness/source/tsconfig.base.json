@@ -39,11 +39,6 @@
       "@deepseek-ai/dsh-deepseek-account-platform/types": ["./packages/credentials/deepseek-account-platform/src/types.ts"],
       "@deepseek-ai/dsh-deepseek-account": ["./packages/credentials/deepseek-account/src/index.ts"],
       "@deepseek-ai/dsh-deepseek-account/types": ["./packages/credentials/deepseek-account/src/types.ts"],
-      "@deepseek-ai/dsh-experimental-speech-to-text": ["./packages/experimental/speech-to-text/src/index.ts"],
-      "@deepseek-ai/dsh-experimental-translator": ["./packages/experimental/translator/src/index.ts"],
-      "@deepseek-ai/dsh-experimental-translator/types": ["./packages/experimental/translator/src/types.ts"],
-      "@deepseek-ai/dsh-experimental-speech-to-text/wave": ["./packages/experimental/speech-to-text/src/wave.ts"],
-      "@deepseek-ai/dsh-experimental-speech-to-text/types": ["./packages/experimental/speech-to-text/src/types.ts"],
       "@deepseek-ai/dsh/profile-boot": ["./apps/cli/src/profile-boot.ts"],
 
       "@deepseek-ai/dsh-office-to-pdf/types": ["./packages/document/office-to-pdf/src/types.ts"],

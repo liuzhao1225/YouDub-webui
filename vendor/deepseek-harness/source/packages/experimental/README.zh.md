@@ -38,8 +38,6 @@ kind: "package-group"
 |---|---|---|
 | [`tool-session-query`](tool-session-query/README.zh.md) | 按工作区授权的模型会话搜索、追踪与事件读取 | — |
 | [`tool-terminal`](tool-terminal/README.zh.md) | 持久终端工具 | — |
-| [`translator`](translator/README.zh.md) | 免登录 Google 与 Bing 文本翻译 | `ctx.translator` |
-| [`speech-to-text`](speech-to-text/README.zh.md) | 具名语音识别 Provider | `ctx.speechToText` |
 
 -----
 

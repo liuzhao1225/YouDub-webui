@@ -55,7 +55,6 @@
     "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
     "@deepseek-ai/dsh-launch-environment": "workspace:*",
     "@deepseek-ai/dsh-workspace-changes": "workspace:*",
-    "@deepseek-ai/dsh-subprocess-local": "workspace:*",
-    "@deepseek-ai/dsh-experimental-speech-to-text": "workspace:*"
+    "@deepseek-ai/dsh-subprocess-local": "workspace:*"
   }
 }

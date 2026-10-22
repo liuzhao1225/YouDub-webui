@@ -56,10 +56,8 @@ describe('release families', () => {
     expect(members
       .filter(member => member.directory.startsWith('packages/experimental/'))
       .map(member => member.name)).toEqual([
-      '@deepseek-ai/dsh-experimental-speech-to-text',
       '@deepseek-ai/dsh-tool-session-query',
       '@deepseek-ai/dsh-tool-terminal',
-      '@deepseek-ai/dsh-experimental-translator',
     ])
   })
 

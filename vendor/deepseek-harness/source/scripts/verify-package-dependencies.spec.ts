@@ -243,8 +243,6 @@ describe('package dependency scope', () => {
       'carrierKeyOf', 'createScope', 'scopeOf', 'scopeTarget',
     ])
     expect(PACKAGE_DEPENDENCY_POLICY.peerRequiredHostExports['@deepseek-ai/dsh-typert-protocol']).toBeUndefined()
-    expect(PACKAGE_DEPENDENCY_POLICY.peerRequiredHostExports['@deepseek-ai/dsh-experimental-translator'])
-      .toEqual(['TranslationError'])
   })
 
   it('discovers the Client directory, dsh.client declarations, and configured Host packages', () => {

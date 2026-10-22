@@ -226,10 +226,8 @@
     "scripts/client-bundle-purity.spec.ts"
   ],
   "references": [
-    { "path": "./packages/experimental/translator" },
     { "path": "./packages/client/product-analytics/tsconfig.host.json" },
     { "path": "./packages/telemetry/otel" },
-    { "path": "./packages/experimental/speech-to-text" },
     { "path": "./packages/client/locale/tsconfig.host.json" },
     { "path": "./packages/client/ui-theme/tsconfig.host.json" },
     { "path": "./packages/client/ui-chat/tsconfig.host.json" },

@@ -1,12 +1,12 @@
 {
-  "candidate": "f43fdf84067667144818919e19d8c333e5add045",
-  "scope": "Read-only package references from the actual runtime manifest and retained package source/tests; deletion requires dynamic-reference and build-tool review.",
-  "runtimePackages": 80,
+  "candidate": "46abd115944784eef25588026f4472c3385ac30c",
+  "scope": "Current source import and manifest dependency closure from the actual product runtime manifest; this is a deletion-candidate audit, not full dynamic-loader proof.",
+  "runtimePackages": 78,
   "desktopBuildRoots": 1,
-  "totalPackages": 362,
-  "runtimeAndTypeClosure": 144,
-  "includingPackageTests": 228,
-  "outsideBoth": 134,
+  "totalPackages": 270,
+  "runtimeAndTypeClosure": 141,
+  "includingPackageTests": 213,
+  "outsideBoth": 57,
   "originalManifestSha256": "b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c",
   "runtimeAndTypePackages": [
     "@deepseek-ai/cordis",
@@ -55,7 +55,6 @@
     "@deepseek-ai/dsh-client-ui-settings",
     "@deepseek-ai/dsh-client-ui-settings-general",
     "@deepseek-ai/dsh-client-ui-settings-models",
-    "@deepseek-ai/dsh-client-ui-sidebar",
     "@deepseek-ai/dsh-client-ui-sidebar-browser",
     "@deepseek-ai/dsh-client-ui-sidebar-right",
     "@deepseek-ai/dsh-client-ui-slots",
@@ -74,7 +73,6 @@
     "@deepseek-ai/dsh-deque",
     "@deepseek-ai/dsh-desktop",
     "@deepseek-ai/dsh-desktop-host",
-    "@deepseek-ai/dsh-experimental-webworker-runtime",
     "@deepseek-ai/dsh-file-reference",
     "@deepseek-ai/dsh-fs",
     "@deepseek-ai/dsh-goal",
@@ -124,7 +122,6 @@
     "@deepseek-ai/dsh-session-title",
     "@deepseek-ai/dsh-settings",
     "@deepseek-ai/dsh-shell",
-    "@deepseek-ai/dsh-shell-env",
     "@deepseek-ai/dsh-skill",
     "@deepseek-ai/dsh-spill",
     "@deepseek-ai/dsh-storage",
@@ -155,13 +152,11 @@
     "@deepseek-ai/schemastery"
   ],
   "testOnlyPackages": [
-    "@deepseek-ai/dsh-agent-instructions",
     "@deepseek-ai/dsh-agent-loop",
     "@deepseek-ai/dsh-agent-loop-testkit",
     "@deepseek-ai/dsh-agent-preset",
     "@deepseek-ai/dsh-attachment-local",
     "@deepseek-ai/dsh-bash-local",
-    "@deepseek-ai/dsh-bash-sandbox",
     "@deepseek-ai/dsh-client-test-runtime",
     "@deepseek-ai/dsh-client-ui-approval",
     "@deepseek-ai/dsh-client-ui-chat",
@@ -170,6 +165,7 @@
     "@deepseek-ai/dsh-client-ui-goal",
     "@deepseek-ai/dsh-client-ui-input-trigger",
     "@deepseek-ai/dsh-client-ui-reference",
+    "@deepseek-ai/dsh-client-ui-sidebar",
     "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
     "@deepseek-ai/dsh-client-ui-skill",
     "@deepseek-ai/dsh-client-ui-tool",
@@ -177,11 +173,6 @@
     "@deepseek-ai/dsh-compaction-basic",
     "@deepseek-ai/dsh-compaction-tool-result-pruner",
     "@deepseek-ai/dsh-deepseek-llm-api-extensions",
-    "@deepseek-ai/dsh-experimental-agent-team",
-    "@deepseek-ai/dsh-experimental-speech-to-text",
-    "@deepseek-ai/dsh-experimental-translator",
-    "@deepseek-ai/dsh-experimental-webworker-packer",
-    "@deepseek-ai/dsh-experimental-worktree",
     "@deepseek-ai/dsh-file-reference-local",
     "@deepseek-ai/dsh-fs-local",
     "@deepseek-ai/dsh-fs-observation-policy",
@@ -200,16 +191,13 @@
     "@deepseek-ai/dsh-remote-mock",
     "@deepseek-ai/dsh-sandbox-local",
     "@deepseek-ai/dsh-sandbox-windows-acl",
-    "@deepseek-ai/dsh-sdk-client",
-    "@deepseek-ai/dsh-sdk-protocol",
-    "@deepseek-ai/dsh-session-checkpoint-policy",
     "@deepseek-ai/dsh-session-log-deepseek",
     "@deepseek-ai/dsh-session-persistence-jsonl",
     "@deepseek-ai/dsh-session-query-sqlite",
     "@deepseek-ai/dsh-session-snapshot",
     "@deepseek-ai/dsh-session-stats",
-    "@deepseek-ai/dsh-session-title-llm",
     "@deepseek-ai/dsh-session-turn-outline",
+    "@deepseek-ai/dsh-shell-env",
     "@deepseek-ai/dsh-skill-filesystem",
     "@deepseek-ai/dsh-spill-local",
     "@deepseek-ai/dsh-spill-policy",
@@ -220,7 +208,6 @@
     "@deepseek-ai/dsh-terminal-bash",
     "@deepseek-ai/dsh-tool-bash",
     "@deepseek-ai/dsh-tool-call-timeout-policy",
-    "@deepseek-ai/dsh-tool-cordis",
     "@deepseek-ai/dsh-tool-fs",
     "@deepseek-ai/dsh-tool-jobs",
     "@deepseek-ai/dsh-tool-present",
@@ -232,11 +219,9 @@
     "@deepseek-ai/dsh-tool-terminal",
     "@deepseek-ai/dsh-tool-web",
     "@deepseek-ai/dsh-tool-working-directory",
-    "@deepseek-ai/dsh-tool-workspace-dependencies",
     "@deepseek-ai/dsh-web",
     "@deepseek-ai/dsh-web-fetch-http",
     "@deepseek-ai/dsh-web-search-exa",
-    "@deepseek-ai/dsh-webhook",
     "@deepseek-ai/dsh-workspace-changes",
     "@deepseek-ai/node-addon-system"
   ],
@@ -250,12 +235,8 @@
       "path": "vendor/logger-console"
     },
     {
-      "name": "@deepseek-ai/dsh-acp",
-      "path": "packages/acp/acp"
-    },
-    {
-      "name": "@deepseek-ai/dsh-acp-app",
-      "path": "packages/bundle/acp-app"
+      "name": "@deepseek-ai/dsh-agent-instructions",
+      "path": "packages/context/agent-instructions"
     },
     {
       "name": "@deepseek-ai/dsh-agent-tool-presentation",
@@ -266,28 +247,12 @@
       "path": "packages/bundle/base"
     },
     {
-      "name": "@deepseek-ai/dsh-browser-use",
-      "path": "packages/browser-use/browser-use"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-agent-preset",
-      "path": "packages/client/ui-agent-preset"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-attachment",
-      "path": "packages/client/ui-attachment"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-brand-official",
-      "path": "packages/client/ui-brand-official"
+      "name": "@deepseek-ai/dsh-bash-sandbox",
+      "path": "packages/shell/bash-sandbox"
     },
     {
       "name": "@deepseek-ai/dsh-client-ui-cordis",
       "path": "packages/extensions/ui-cordis"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-deepseek-model-label-1017",
-      "path": "packages/client/ui-deepseek-model-label-1017"
     },
     {
       "name": "@deepseek-ai/dsh-client-ui-directory-picker-browse",
@@ -298,100 +263,16 @@
       "path": "packages/client/ui-directory-picker-native"
     },
     {
-      "name": "@deepseek-ai/dsh-client-ui-jobs",
-      "path": "packages/client/ui-jobs"
-    },
-    {
       "name": "@deepseek-ai/dsh-client-ui-message-feedback",
       "path": "packages/client/ui-message-feedback"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-model-selection",
-      "path": "packages/client/ui-model-selection"
     },
     {
       "name": "@deepseek-ai/dsh-client-ui-open-in-app",
       "path": "packages/client/ui-open-in-app"
     },
     {
-      "name": "@deepseek-ai/dsh-client-ui-permission-presets",
-      "path": "packages/client/ui-permission-presets"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-plan",
-      "path": "packages/client/ui-plan"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-plugin-market",
-      "path": "packages/client/ui-plugin-market"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-schedule",
-      "path": "packages/client/ui-schedule"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-secret-mask",
-      "path": "packages/client/ui-secret-mask"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-account",
-      "path": "packages/client/ui-settings-account"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-agent-loop",
-      "path": "packages/client/ui-settings-agent-loop"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-plugin-inventory",
-      "path": "packages/client/ui-settings-plugin-inventory"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-plugins",
-      "path": "packages/client/ui-settings-plugins"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-session-log",
-      "path": "packages/client/ui-settings-session-log"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-shell",
-      "path": "packages/client/ui-settings-shell"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-subagent",
-      "path": "packages/client/ui-settings-subagent"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-settings-web-search",
-      "path": "packages/client/ui-settings-web-search"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-shortcuts",
-      "path": "packages/client/ui-shortcuts"
-    },
-    {
       "name": "@deepseek-ai/dsh-client-ui-sidebar-files",
       "path": "packages/client/ui-sidebar-files"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-sidebar-terminal",
-      "path": "packages/client/ui-sidebar-terminal"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-subagent",
-      "path": "packages/client/ui-subagent"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-trajectory",
-      "path": "packages/client/ui-trajectory"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-user-questions",
-      "path": "packages/client/ui-user-questions"
-    },
-    {
-      "name": "@deepseek-ai/dsh-client-ui-workflow-run",
-      "path": "packages/client/ui-workflow-run"
     },
     {
       "name": "@deepseek-ai/dsh-command-compact",
@@ -402,144 +283,12 @@
       "path": "packages/goal/command-goal"
     },
     {
-      "name": "@deepseek-ai/dsh-computer-use",
-      "path": "packages/computer-use/computer-use"
-    },
-    {
       "name": "@deepseek-ai/dsh-cordis-client-runner",
       "path": "packages/extensions/cordis-client-runner"
     },
     {
-      "name": "@deepseek-ai/dsh-cua",
-      "path": "packages/experimental/cua"
-    },
-    {
       "name": "@deepseek-ai/dsh-deepseek-account-platform",
       "path": "packages/credentials/deepseek-account-platform"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-agent-team-profile",
-      "path": "packages/experimental/agent-team-profile"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-api-speech-to-text",
-      "path": "packages/experimental/api-speech-to-text"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-auto-review",
-      "path": "packages/experimental/auto-review"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
-      "path": "packages/experimental/badge-skill-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-browser-use-chrome-devtools-mcp",
-      "path": "packages/experimental/browser-use-chrome-devtools-mcp"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-browser-use-playwright-mcp",
-      "path": "packages/experimental/browser-use-playwright-mcp"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-browser-use-runtime",
-      "path": "packages/experimental/browser-use-runtime"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-browser-use-stagehand-native",
-      "path": "packages/experimental/browser-use-stagehand-native"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-claude-code-mods",
-      "path": "packages/experimental/claude-code-mods"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-client-ui-agent-team",
-      "path": "packages/experimental/client-ui-agent-team"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-client-ui-claude-code-mods",
-      "path": "packages/experimental/client-ui-claude-code-mods"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-client-ui-cot-translation",
-      "path": "packages/experimental/client-ui-cot-translation"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-client-ui-voice-input",
-      "path": "packages/experimental/client-ui-voice-input"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-computer-use-cua-driver-mcp",
-      "path": "packages/experimental/computer-use-cua-driver-mcp"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-computer-use-cua-driver-native",
-      "path": "packages/experimental/computer-use-cua-driver-native"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
-      "path": "packages/experimental/cot-translation-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-cua-macos",
-      "path": "packages/experimental/cua-macos"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-inspector",
-      "path": "packages/experimental/inspector"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-inspector-profile",
-      "path": "packages/experimental/inspector-profile"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
-      "path": "packages/experimental/plugin-market-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-ptc-runtime-python",
-      "path": "packages/experimental/ptc-runtime-python"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-ralph-bundle",
-      "path": "packages/experimental/ralph-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-session-inspector",
-      "path": "packages/experimental/session-inspector"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-session-search",
-      "path": "packages/experimental/session-search"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-session-titles-bundle",
-      "path": "packages/experimental/session-titles-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-speech-to-text-sensevoice",
-      "path": "packages/experimental/speech-to-text-sensevoice"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-terminal-bundle",
-      "path": "packages/experimental/terminal-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-tool-agent-team",
-      "path": "packages/experimental/tool-agent-team"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-tool-worktree",
-      "path": "packages/experimental/tool-worktree"
-    },
-    {
-      "name": "@deepseek-ai/dsh-experimental-voice-input-bundle",
-      "path": "packages/experimental/voice-input-bundle"
-    },
-    {
-      "name": "@deepseek-ai/dsh-fs-ssh",
-      "path": "packages/ssh/fs-ssh"
     },
     {
       "name": "@deepseek-ai/dsh-goal-round-driver",
@@ -552,18 +301,6 @@
     {
       "name": "@deepseek-ai/dsh-headless",
       "path": "packages/bundle/headless"
-    },
-    {
-      "name": "@deepseek-ai/dsh-hook-protocol",
-      "path": "packages/experimental/hook-protocol"
-    },
-    {
-      "name": "@deepseek-ai/dsh-hooks-claude-code",
-      "path": "packages/experimental/hooks-claude-code"
-    },
-    {
-      "name": "@deepseek-ai/dsh-hooks-codex",
-      "path": "packages/experimental/hooks-codex"
     },
     {
       "name": "@deepseek-ai/dsh-host-directory-picker-auto",
@@ -582,20 +319,8 @@
       "path": "packages/host/open-in-app"
     },
     {
-      "name": "@deepseek-ai/dsh-lsp",
-      "path": "packages/lsp/lsp"
-    },
-    {
-      "name": "@deepseek-ai/dsh-lsp-stdio",
-      "path": "packages/lsp/lsp-stdio"
-    },
-    {
       "name": "@deepseek-ai/dsh-persona",
       "path": "packages/preset/persona"
-    },
-    {
-      "name": "@deepseek-ai/dsh-plugin-market-generator",
-      "path": "apps/plugin-market-generator"
     },
     {
       "name": "@deepseek-ai/dsh-pwsh-sandbox",
@@ -606,20 +331,8 @@
       "path": "packages/guard/repeat-tool-reminder"
     },
     {
-      "name": "@deepseek-ai/dsh-sandbox-ssh",
-      "path": "packages/ssh/sandbox-ssh"
-    },
-    {
-      "name": "@deepseek-ai/dsh-sdk-app",
-      "path": "packages/bundle/sdk-app"
-    },
-    {
-      "name": "@deepseek-ai/dsh-sdk-jsonrpc-server",
-      "path": "packages/sdk/server"
-    },
-    {
-      "name": "@deepseek-ai/dsh-sdk-minimal",
-      "path": "packages/bundle/sdk-minimal"
+      "name": "@deepseek-ai/dsh-session-checkpoint-policy",
+      "path": "packages/session/session-checkpoint-policy"
     },
     {
       "name": "@deepseek-ai/dsh-session-log-export",
@@ -634,52 +347,20 @@
       "path": "packages/session/session-telemetry-otel"
     },
     {
-      "name": "@deepseek-ai/dsh-session-title-all-prompts-llm",
-      "path": "packages/experimental/session-title-all-prompts-llm"
-    },
-    {
       "name": "@deepseek-ai/dsh-session-title-first-prompt-llm",
       "path": "packages/session/session-title-first-prompt-llm"
     },
     {
-      "name": "@deepseek-ai/dsh-skill-badge",
-      "path": "packages/experimental/skill-badge"
+      "name": "@deepseek-ai/dsh-session-title-llm",
+      "path": "packages/session/session-title-llm"
     },
     {
       "name": "@deepseek-ai/dsh-skill-office",
       "path": "packages/skill/skill-office"
     },
     {
-      "name": "@deepseek-ai/dsh-ssh",
-      "path": "packages/ssh/ssh"
-    },
-    {
-      "name": "@deepseek-ai/dsh-ssh-helper-runtime",
-      "path": "packages/ssh/ssh-helper-runtime"
-    },
-    {
       "name": "@deepseek-ai/dsh-storage-sqlite",
       "path": "packages/storage/storage-sqlite"
-    },
-    {
-      "name": "@deepseek-ai/dsh-subagent-acp",
-      "path": "packages/subagent/subagent-acp"
-    },
-    {
-      "name": "@deepseek-ai/dsh-subagent-claude-code",
-      "path": "packages/subagent/subagent-claude-code"
-    },
-    {
-      "name": "@deepseek-ai/dsh-subagent-codex",
-      "path": "packages/subagent/subagent-codex"
-    },
-    {
-      "name": "@deepseek-ai/dsh-subagent-dsh-sdk",
-      "path": "packages/subagent/subagent-dsh-sdk"
-    },
-    {
-      "name": "@deepseek-ai/dsh-subprocess-ssh",
-      "path": "packages/ssh/subprocess-ssh"
     },
     {
       "name": "@deepseek-ai/dsh-time-context",
@@ -698,16 +379,16 @@
       "path": "packages/shell/tool-bash-persistent"
     },
     {
+      "name": "@deepseek-ai/dsh-tool-cordis",
+      "path": "packages/extensions/tool-cordis"
+    },
+    {
       "name": "@deepseek-ai/dsh-tool-fs-search",
       "path": "packages/fs/tool-fs-search"
     },
     {
       "name": "@deepseek-ai/dsh-tool-goal",
       "path": "packages/goal/tool-goal"
-    },
-    {
-      "name": "@deepseek-ai/dsh-tool-lsp",
-      "path": "packages/lsp/tool-lsp"
     },
     {
       "name": "@deepseek-ai/dsh-tool-pwsh",
@@ -718,16 +399,16 @@
       "path": "packages/shell/tool-pwsh-persistent"
     },
     {
-      "name": "@deepseek-ai/dsh-tool-ralph",
-      "path": "packages/experimental/tool-ralph"
-    },
-    {
       "name": "@deepseek-ai/dsh-tool-skill",
       "path": "packages/skill/tool-skill"
     },
     {
       "name": "@deepseek-ai/dsh-tool-workflow",
       "path": "packages/workflow/tool-workflow"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-workspace-dependencies",
+      "path": "packages/skill/tool-workspace-dependencies"
     },
     {
       "name": "@deepseek-ai/dsh-typert-generator",
@@ -744,10 +425,6 @@
     {
       "name": "@deepseek-ai/dsh-web-search-perplexity",
       "path": "packages/web/web-search-perplexity"
-    },
-    {
-      "name": "@deepseek-ai/dsh-webhook-github",
-      "path": "packages/experimental/webhook-github"
     },
     {
       "name": "@deepseek-ai/dsh-workflow",
@@ -779,9 +456,14 @@
     }
   ],
   "unresolved": [
-    "Profile templates, DEFAULT_PROFILE_BUNDLES and OPTIONAL_BUNDLES reference packages by string.",
-    "Native platform addon package selection uses dynamic metadata.",
-    "Repository build scripts, package devDependencies and TypeScript project references need review before deleting candidates.",
-    "Legacy product tests currently retain Agent/chat/terminal and experimental packages; migrate current-framework coverage before retiring them."
-  ]
+    "51 outside-closure product/tool candidates were scanned before this batch; two experimental contracts are now removed. The remaining 49 still need dynamic-reference and generator review.",
+    "Typert generator tests import the old tool-cordis generated API catalog; migrate that consumer before removing it.",
+    "Old base/headless patches and browser test fixtures still refer to retired or candidate product packages; their fixtures and gates must be migrated together.",
+    "Office runtime preparation and third-party notices still share the old Python lock; preserve applicable licenses when removing that path.",
+    "Native addons, generator tools, Cordis HMR/logger infrastructure require build/runtime metadata review, even when lexical imports are absent.",
+    "Seventy-two packages remain reachable only through retained package tests. Preserve framework behavior assertions while decoupling obsolete product test assembly."
+  ],
+  "sourceTreeSha256": "00034c23e21465572aaa1ac372172bc818be1eba176a066a5b59ba085f9aa544",
+  "recordedAt": "2026-10-22T15:55:32.102Z",
+  "runtimeManifest": "apps/harness/dist/desktop/runtime-project/package.json"
 }

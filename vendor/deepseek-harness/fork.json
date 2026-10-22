@@ -8604,10 +8604,10 @@
         "path": "apps/web/package.json",
         "type": "file",
         "executable": false,
-        "size": 2097,
-        "sha256": "6010ba4a88f2bfc0505145928254d184a22180ab88b5d3a376dc0c282027bdec"
+        "size": 2030,
+        "sha256": "dd69e5ce17ebc657b811e7e868be4260b4c27dda994e73efb963070e63d09416"
       },
-      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "apps/web/src/preview.ts",
@@ -21793,9 +21793,9 @@
         "type": "file",
         "executable": false,
         "size": 971,
-        "sha256": "f9f54caedc876a464f4ab68ca81635dd64df202f1e858829a5761f70307fe3b7"
+        "sha256": "685e88e922b77302672b6f6ee51a1afa382d26f0cf99dc42f8dc8b23b32e4ea1"
       },
-      "reason": "Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "packages/experimental/README.md",
@@ -21810,10 +21810,10 @@
         "path": "packages/experimental/README.md",
         "type": "file",
         "executable": false,
-        "size": 3455,
-        "sha256": "8affe85c59f1f8d72c089e1167d4cb3bed536ba787b373c0af5736f2eafcd6fa"
+        "size": 3243,
+        "sha256": "1e1d82122378270462caf3d0de4bcc6b171553f6968475103d3388f2277ea007"
       },
-      "reason": "Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "packages/experimental/README.zh.md",
@@ -21828,10 +21828,10 @@
         "path": "packages/experimental/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 3012,
-        "sha256": "9daf5131c95411a58f94d37488718ea0db6c34f0b72b3a8e5f6442102a561eb5"
+        "size": 2805,
+        "sha256": "c60e69445de2b1c81f47277cdff842c747343aa51dae87e99f97c2842d2e062c"
       },
-      "reason": "Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "packages/experimental/agent-team-profile/README.i18n.yaml",
@@ -32430,6 +32430,174 @@
       "reason": "Remove unused experimental chat dictation, reasoning translation, inspection, agent review and repeated-agent product modules and their dedicated legacy Web scenarios. Verified absence from YouDub runtime, type and package-test closures; YouDub media and extension services remain."
     },
     {
+      "path": "packages/experimental/speech-to-text/README.i18n.yaml",
+      "before": {
+        "path": "packages/experimental/speech-to-text/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1539,
+        "sha256": "ec12a0546f3fee74c6320b1537d09a998f6feb8a24c336ead58f411c660a06c0"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/README.md",
+      "before": {
+        "path": "packages/experimental/speech-to-text/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 3615,
+        "sha256": "98ff7730154dbef9c526c477dedd4db799011313def1be854e53b13ee9c07ba4"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/README.zh.md",
+      "before": {
+        "path": "packages/experimental/speech-to-text/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 3217,
+        "sha256": "8b07879780f5f10eb79cffe733c5aa283dea188438a0375dd30a524628bd915f"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/locale/en.json",
+      "before": {
+        "path": "packages/experimental/speech-to-text/locale/en.json",
+        "type": "file",
+        "executable": false,
+        "size": 138,
+        "sha256": "fd84d56ce5ece16d19c3a951c9bfad184ccad178c24bf836656ed682940823f5"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/locale/zh.json",
+      "before": {
+        "path": "packages/experimental/speech-to-text/locale/zh.json",
+        "type": "file",
+        "executable": false,
+        "size": 122,
+        "sha256": "33c00c5cab036e97ddac0f8511ea4538a4e6c397dd3a8fe50745212e11e6e9b2"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/package.json",
+      "before": {
+        "path": "packages/experimental/speech-to-text/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1704,
+        "sha256": "b0415455afcda9462a33c898fde171e621650104111a8dca5005ea680646045b"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/src/index.ts",
+      "before": {
+        "path": "packages/experimental/speech-to-text/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9291,
+        "sha256": "f1b22112a39101d5b44778233bb893309a78ba8b5f994f7efca0c0c3f669f0a8"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/src/types.ts",
+      "before": {
+        "path": "packages/experimental/speech-to-text/src/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5696,
+        "sha256": "95df3b4c761f7f9131aef2fc72aff456ff99a3d51c53597d0e54b5beb4818f59"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/src/wave.ts",
+      "before": {
+        "path": "packages/experimental/speech-to-text/src/wave.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1317,
+        "sha256": "327ccada351389c7f56cc2c868cfec12bd7a065bc24b559bbe8f1ee99ab386a4"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/tests/configuration.spec.ts",
+      "before": {
+        "path": "packages/experimental/speech-to-text/tests/configuration.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3506,
+        "sha256": "119b1ddc89c83656cef632aba6b22f591031df4d25590fe406414a301b3d7559"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/tests/fixtures/selection.patch.yml",
+      "before": {
+        "path": "packages/experimental/speech-to-text/tests/fixtures/selection.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 214,
+        "sha256": "53d5ef3bac3939720388f90927e82c8f488a911b33d8c33a1c07ec5e9215a7d0"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/tests/service.spec.ts",
+      "before": {
+        "path": "packages/experimental/speech-to-text/tests/service.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11550,
+        "sha256": "162287880d5c7353cec90bbe32e0fbcfe9c65420054f06740001f150c0498509"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/tsconfig.json",
+      "before": {
+        "path": "packages/experimental/speech-to-text/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 383,
+        "sha256": "b04ad017db467edf5f7218ab9152f672eafecf392a7cab036730bab853db73a7"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/speech-to-text/tsdown.config.ts",
+      "before": {
+        "path": "packages/experimental/speech-to-text/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 219,
+        "sha256": "7d8027472e763bad3b9a5885214f5687a4d89dde847ea274d48ffcc70a7555fd"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
       "path": "packages/experimental/terminal-bundle/README.i18n.yaml",
       "before": {
         "path": "packages/experimental/terminal-bundle/README.i18n.yaml",
@@ -32908,6 +33076,282 @@
       },
       "after": null,
       "reason": "Remove unused ACP/LSP, code-agent collaboration, browser/computer-use integrations and their retired Web-profile scenarios after verifying no incoming YouDub runtime, type or retained-package-test dependency."
+    },
+    {
+      "path": "packages/experimental/translator/README.i18n.yaml",
+      "before": {
+        "path": "packages/experimental/translator/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2208,
+        "sha256": "57d711fe4bb2338cd2428b5be07cbe3ace637f2d8de6a42a839c2212083d9e2f"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/README.md",
+      "before": {
+        "path": "packages/experimental/translator/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 11481,
+        "sha256": "9e3f2dfd8cd8dceeeccf376d40deec83f4023cd9a90012e9a6c69900e229e129"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/README.zh.md",
+      "before": {
+        "path": "packages/experimental/translator/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 10580,
+        "sha256": "5daf174b786d0c198660d33c818ad34be6d66bb0633a13cd897466c8b21947f0"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/package.json",
+      "before": {
+        "path": "packages/experimental/translator/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2402,
+        "sha256": "104786fbfa0f090f1089470db3c4b09d20d52ff351e68efb7b398ed5acf3d98f"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/src/deepseek.ts",
+      "before": {
+        "path": "packages/experimental/translator/src/deepseek.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13480,
+        "sha256": "2156863dc4acc91e8367fc6cdd6b8488c94e1092236f2245d40ab6cf73dd90ea"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/src/error.ts",
+      "before": {
+        "path": "packages/experimental/translator/src/error.ts",
+        "type": "file",
+        "executable": false,
+        "size": 571,
+        "sha256": "8b0d131bd375f9a57a0eb26ea5c22874ab068682809d04a945697e1dba4269b8"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/src/index.ts",
+      "before": {
+        "path": "packages/experimental/translator/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9037,
+        "sha256": "195be853258f1a20f2b6cdfdb8bd9915cf4c8256b725fcda9125fb20b0b1a291"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/src/provider.ts",
+      "before": {
+        "path": "packages/experimental/translator/src/provider.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6927,
+        "sha256": "0d71278dfedf9c33d8e04cc0cd56f303e506790cbb8d9bf6dab9a27989d3c05f"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/src/storage.ts",
+      "before": {
+        "path": "packages/experimental/translator/src/storage.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8145,
+        "sha256": "4c2b7e7ad8a6510f204a2a9b4d8991e58e070d2e3aa6694f13b214fa5c39902c"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/src/types.ts",
+      "before": {
+        "path": "packages/experimental/translator/src/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4286,
+        "sha256": "3fb41bf69bb00d443c8821a0f6474423aaf0080280b995659fe167104e940dd5"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/audit.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/audit.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12977,
+        "sha256": "8b7b2e50ba5130d6e1a4518926e8e55cb7ab20632bb8ec5d98ff0b71589e43d3"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/deepseek.e2e.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/deepseek.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4168,
+        "sha256": "e9444761fa17b6d2e11c7c7fa59dd950871651410a167bb65853f45f8ed19b71"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/deepseek.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/deepseek.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 28864,
+        "sha256": "ffbf1b34a5f49c0ca9a9a9d0b25fc712d3a4cd30a6db3b5e3fc5d3575c43136a"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/fixtures/cordis.yml",
+      "before": {
+        "path": "packages/experimental/translator/tests/fixtures/cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 92,
+        "sha256": "1d8cdb255a4f9a8a8e7e57bea7e4238314dc2c33a4a92db1ac2b22218c52e84b"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/paid-fixture.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/paid-fixture.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12538,
+        "sha256": "b72d767944d9c3212ef851c83664f07ca452b23372367c6b1772bb0945451a54"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/storage-fixture.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/storage-fixture.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9491,
+        "sha256": "c830ececbce12091cda018461056e4196b7fedac8b2266c06259cc147a474ef5"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/storage-helper.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/storage-helper.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3582,
+        "sha256": "94ebf1b05603c4fda6ae542953d7eb34323b9712bf4901d1c2954c62af0b0f81"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/storage-lifecycle.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/storage-lifecycle.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6576,
+        "sha256": "7b4ec2eb81ffe81c06309d86c9e3e169114052a57e48e2502001a013609b8ad9"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/storage-settlement.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/storage-settlement.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5561,
+        "sha256": "d5772751cc28a193d01f0478f373add2327d8dfa7023725e951d9ab9f3fbf375"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/storage.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/storage.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15965,
+        "sha256": "6bb7fbde91dc326443d43ab19c48285199f4f4bd7e57fb275e7f5b42d98dc6d4"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/translator.spec.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/translator.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14504,
+        "sha256": "6f324e932275cd8093044bdde0ca84d2dc6f1aafa209e44eb408fecd21fd6219"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tests/upstream.e2e.ts",
+      "before": {
+        "path": "packages/experimental/translator/tests/upstream.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2236,
+        "sha256": "6f9e854b5855f83501590eb582f3617473e53002fd177c728ea3689095a634aa"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+    },
+    {
+      "path": "packages/experimental/translator/tsconfig.json",
+      "before": {
+        "path": "packages/experimental/translator/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 875,
+        "sha256": "d82b72b8536fd86c77428ac42941642a79fb2cdbe8125788ee541253b7e5ea4d"
+      },
+      "after": null,
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "packages/experimental/voice-input-bundle/README.i18n.yaml",
@@ -36318,10 +36762,10 @@
         "path": "packages/preset/agent-preset/skills/cordis-composition-reference/references/packages.md",
         "type": "file",
         "executable": false,
-        "size": 30675,
-        "sha256": "9eae655f33cced5c716fde2f0a5934047547f67c334e42eba90b1af88e2897c2"
+        "size": 30439,
+        "sha256": "8814e100705bce414c44a9ef4b707c4db1d1fbd574186e72cad8bbd45a9ec21f"
       },
-      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "packages/preset/agent-preset/tests/skills.spec.ts",
@@ -39048,10 +39492,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 777025,
-        "sha256": "551420f26f3b4472ba0a97db33ee073c967552f82406d4ccf7d01147e74763d3"
+        "size": 773577,
+        "sha256": "2ae850770283c64cf038ecd2458978e048d18fcab527648f20455d8d297b0626"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded. Remove retired browser preview workspace and HTTP server dependency entries without upgrading retained dependencies. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -40416,10 +40860,10 @@
         "path": "scripts/package-dependency-policy.ts",
         "type": "file",
         "executable": false,
-        "size": 4741,
-        "sha256": "a1f2a027386a858d50371504b3c144b1ee5baa1116b755c4493866d906e065ca"
+        "size": 4606,
+        "sha256": "7420156040f829b6e5134e20ac5ea44ef08d9be7eee9ac81a3318081cf976fe3"
       },
-      "reason": "Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "scripts/preview-workflow.spec.ts",
@@ -40506,10 +40950,10 @@
         "path": "scripts/release/families.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 22335,
-        "sha256": "2d2f7d1adc753ffbbc9c296db0a21540f96537af7c04e69594f5d6e0046f1854"
+        "size": 22231,
+        "sha256": "f4ea38e2cfa024e486d2074a917db9c8d2188104d4a9db917ceb4f516fd977ce"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "scripts/rescope-vendor.spec.ts",
@@ -41220,10 +41664,10 @@
         "path": "scripts/verify-package-dependencies.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 58574,
-        "sha256": "af7599134c8e6408ddf46e170ea3a2baef9af91dbd0eb276b0267c9d6ba869d9"
+        "size": 58431,
+        "sha256": "8541bd0ce24fca40908bd0fa2b3598085cfb68a42b1e8cf1aec11fc1101a4104"
       },
-      "reason": "Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "scripts/verify-package-readme-model-experience.ts",
@@ -41238,10 +41682,10 @@
         "path": "scripts/verify-package-readme-model-experience.ts",
         "type": "file",
         "executable": false,
-        "size": 42024,
-        "sha256": "6f1380c415f2da92eb542d6eb202e1229405b10f4fc30e189681bbf9d0037a6f"
+        "size": 41875,
+        "sha256": "7d99722aa04917e2f3fb7ff54602368a33dc309583e0fe279f33aa024eb5c20a"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "scripts/verify-product-use.spec.ts",
@@ -41352,10 +41796,10 @@
         "path": "tsconfig.base.json",
         "type": "file",
         "executable": false,
-        "size": 37798,
-        "sha256": "46749e62e6e69309a386b62c540053f5768fe9e149ff19d896671b9db10d2bfa"
+        "size": 37243,
+        "sha256": "1ea681a114801034bc77ed1c5c3c7498e6d9acc43002d24f195ffbf4f086c1fc"
       },
-      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "tsconfig.client.json",
@@ -41388,10 +41832,10 @@
         "path": "tsconfig.host.json",
         "type": "file",
         "executable": false,
-        "size": 22935,
-        "sha256": "abbbb82f5cc630935b911ed762b8c4e87be72be78c9d772c72869724704af4d1"
+        "size": 22823,
+        "sha256": "8a2de73266a9a737e00e630d552c8ec2b93725aa22b0ab403ef4665bea5aa197"
       },
-      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
     },
     {
       "path": "vitest.config.ts",

@@ -13,6 +13,8 @@
 
 ## 前期调查进展
 
+下表保留改造起点的调查状态。最新源码依赖复核见[当前依赖审计](evidence/refactor-framework-dependency-audit-20261022.json)，各批实际验收与未完成事项见本文后续记录和[完整计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)。
+
 | 项 | 当前发现与第一批修改依据 | 未完成部分 |
 | --- | --- | --- |
 | R1 依赖闭包 | 模型设置仅在 DeepSeek 账号分支读取 `remote.session.modelCatalog`；其余模型 CRUD 使用 LLM/Settings/Credentials。桌面退出检查直接要求 agents/jobs | 逐项解除后核对新运行 inventory 和生成类型；不据静态发现批量删包 |
@@ -486,3 +488,12 @@ Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通�
 全新目录最终回归 522 个文件、8,866 项通过，1 项 Windows 原生对话框检查在 macOS 跳过。此前一次广域测试的真实 pnpm 授权安装项触发 5 秒超时；原失败保留，单项及随后全量复测通过，未放宽超时。两种实际 Desktop Host 组合通过，使用本批新框架和此前已验证业务 bundle；并行界面/资源改动不计入本证据。
 
 81a2bc8d 的[远程 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39802851648)完成 9,209 项断言后，文档预览许可证检查因找不到 pnpm 失败。CI 直接使用 Node 运行测试，现显式注入应用已锁定的 pnpm 入口；排除系统 pnpm 的本地环境复验通过，远程确认待提交。源码 SHA 为 485b4c3e4c175d93d2a65ea98e757ebc206e7ae90b4e4415eef381f4934c85a9，完整边界与失败历史见[结构化证据](evidence/refactor-retired-panels-prune.json)。其余 P0–P7 事项与两份飞书文档继续保留，未打包或发布。
+
+
+## P6 第 20 批：实验识别与匿名翻译合同（2026-10-22）
+
+语法依赖、manifest、动态名称和脚本扫描确认，旧 experimental-speech-to-text / experimental-translator 已无 YouDub 运行或保留包测试消费者。移除两包 37 个文件及旧 Web 开发依赖，清理专属依赖策略、发行目录断言和双语目录；实际 Whisper worker、原分句规则和 Harness LLM 翻译源码保持原实现。
+
+活动树为 270 包、6,731 文件、253 个客户端产物，源码 SHA 为 00034c23e21465572aaa1ac372172bc818be1eba176a066a5b59ba085f9aa544。7 项框架构建、308 项依赖/策略检查、双语配对及两种实际 Desktop Host 组合通过，staging 无被删包目录。官方 LLM 适配器的 5 项现有断言通过：本地协议端点实际收到 65,535 输出上限；低上限在请求前拒绝；端点拒绝不降额重试；原标点规则、分句 ID 和日语规则保持。实际 Subprocess 的 7 项断言覆盖输出、失败、协议与取消。测试入口的路径/TypeScript 解析失败均保留于[证据](evidence/refactor-experimental-contracts-prune.json)，最终 LLM/Host 使用此前已验证业务 bundle 与本批框架；不据此宣称并行未提交 UI 或外部媒体质量通过。
+
+更新后的[依赖审计](evidence/refactor-framework-dependency-audit-20261022.json)记录 141 个运行/类型包、72 个仅由保留测试引用的包和 57 个闭包外包。闭包外还包括原生平台资源与构建工具，不能全部直接删除；旧 base/headless、Office、生成目录和历史浏览器夹具的相互引用继续待处理。第三方锁定版本和解析快照未变。本批不打包、不发布，两份飞书文档仍待最终验收。

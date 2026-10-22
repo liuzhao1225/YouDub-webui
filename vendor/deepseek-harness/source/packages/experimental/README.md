@@ -38,8 +38,6 @@ Promotion requires a named product role, documented public behavior and limitati
 |---|---|---|
 | [`tool-session-query`](tool-session-query/README.md) | Workspace-authorized model session search, trace, and event reads | — |
 | [`tool-terminal`](tool-terminal/README.md) | Persistent terminal tools | — |
-| [`translator`](translator/README.md) | Anonymous Google and Bing text translation | `ctx.translator` |
-| [`speech-to-text`](speech-to-text/README.md) | Named speech recognition providers | `ctx.speechToText` |
 
 -----
 
