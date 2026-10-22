@@ -586,3 +586,17 @@ Windows 82abf8c3 的两阶段锁同步仍未修复卸载后的旧 SDK 回退。�
 ### P7 B 站实际下载与媒体准备
 
 在同一提交的独立实际 Desktop Host 中，使用原仓库已有公开样本 `BV1r44y1f7Tc`、下载节点 `proxyPort=0` 和生产图工作流。下载、准备媒体两个节点在约 5.99 秒内完成；视频 10,986,939 字节、WAV 11,501,646 字节，通过官方 Connection 下载并记录 SHA-256，视频 Range 206 字节一致。媒体信息为 65.099 秒、1920×1080、HEVC/AAC。没有调用外部 LLM。原生页面输入/保存/播放、B 站代理和短链另行验收；本次未替代这些操作。[证据](evidence/refactor-bilibili-download.json)
+
+随后在源码相同的文档提交 `f0b7cbde` 补验原仓库已有 `b23.tv/BV1kh411S79S` 短链。直连下载和媒体准备约 5.98 秒完成，视频 18,096,999 字节、WAV 25,657,578 字节，官方 Connection 与 Range 再次通过。完整链接和短链均有独立任务与产物；B 站代理及原生交互仍未完成。
+
+确认本机 7897 TCP 端口可达后，以下载节点显式 `proxyPort=7897` 再运行完整链接。两个节点约 2.99 秒完成，产物大小及摘要与直连样本一致，Range 通过。三次分别保留任务和网络条件；原生页面输入、保存和播放器仍待解锁后验收。
+
+### 第 23 批干净 CI 回读
+
+`4313ec5e` 的 macOS 源码开发作业全部通过，包含 GUI 8,075 项（另有 1 项预期失败、1 项跳过）、profile/插件 6,685 项、产品集成 77 项和 Python 525 项。Windows 第一次在 `project-manager.spec.ts` 的应用迁移用例耗时 5.82 秒，超过原有 5 秒期限；相邻多项文件操作也变慢，原因尚未确认，SDK 诊断步骤未执行。没有调高期限或删改断言；待 macOS 结束后，对同一提交启动第二次 Windows 作业，保留首次失败记录。[CI 证据](evidence/refactor-remaining-products-prune.json)、[Windows 记录](evidence/windows-source-development.json)
+
+### Windows SDK 回退根因与修复
+
+第二次 Windows 作业通过桌面/进程测试，复现 SDK 回退并取得完整快照。pnpm 的进程工作目录使用 `RUNNER~1` 短路径，工作区扫描得到 `runneradmin` 实际路径；根锁和已安装锁均同时出现 `.` 与指向同一物理目录的第二个 importer。第二项仍引用旧 SDK，卸载另一插件时重新链接旧目录。仅检查 `.` 的 specifier/version 无法发现这一状态。[原始诊断](evidence/windows-sdk-alias-diagnostic.json)
+
+在官方 PluginManager 执行入口用 `realpath` 解析 pnpm 子进程工作目录；常规包操作和兼容性恢复使用同一路径，相对包参数仍以调用方目录为锚。YouDub profile 准备收敛为一次官方 install，同步两份锁。两个目录别名回归在修复前失败、修复后通过；79 项包操作、9 项 profile（含已存在重复 importer 的迁移）、2 种实际 Host、7 项框架构建及产品构建通过。双平台 CI 待运行，原生锁屏和原超时记录继续保留。[修复验证](evidence/refactor-profile-canonical-path.json)

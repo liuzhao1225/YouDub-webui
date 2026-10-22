@@ -1098,5 +1098,40 @@
     "No current native interaction acceptance: desktop tool still reports a locked Mac.",
     "Final media quality, Windows native acceptance and the two Feishu updates remain open.",
     "No installer packaging, signing or release."
-  ]
+  ],
+  "ci": {
+    "commit": "4313ec5e44d0586a6086d743b1895180580786ea",
+    "run": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39827853337",
+    "macos": {
+      "result": "success",
+      "job": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39827853337/job/119996182089",
+      "gui": {
+        "filesPassed": 504,
+        "testsPassed": 8075,
+        "expectedFailure": 1,
+        "skipped": 1
+      },
+      "profileAndPlugin": {
+        "filesPassed": 52,
+        "testsPassed": 6685,
+        "skipped": 1
+      },
+      "businessTestsPassed": 187,
+      "businessTestsSkipped": 1,
+      "webTestsPassed": 264,
+      "integrationTestsPassed": 77,
+      "pythonTestsPassed": 525,
+      "log": {
+        "path": "/tmp/youdub-macos-4313ec5e.log",
+        "sha256": "b06359120c0decd181b133318e8f525408fa01b812fe7e112373fd2521bc29f6"
+      }
+    },
+    "windows": {
+      "firstAttempt": "failed at project-manager filesystem test after 5820 ms against unchanged 5000 ms deadline; SDK diagnostic step not executed",
+      "secondAttempt": "Desktop/process tests passed; SDK rollback reproduced and identified duplicate 8.3/canonical profile importers.",
+      "jobId": 120010324585,
+      "evidence": "windows-source-development.json",
+      "followUp": "refactor-profile-canonical-path.json"
+    }
+  }
 }

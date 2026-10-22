@@ -1,6 +1,6 @@
 /** The CLI and manager share package reconciliation, path anchoring and diagnostics. */
 import { EventEmitter } from 'node:events'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { PassThrough } from 'node:stream'
@@ -578,10 +578,23 @@ it.each([runPluginCommand, runProfilePnpm])('installs into the supplied applicat
   pnpm.mutate = (target) => { install(target, 'extra') }
   const outcome = await run({ ...context, dir }, ['add', 'extra'], { execution: 'service', outputBytes: 100 })
   expect(outcome.exitCode).toBe(0)
-  expect(command.run).toHaveBeenCalledWith(expect.anything(), ['add', 'extra'], expect.objectContaining({ cwd: dir }))
+  expect(command.run).toHaveBeenCalledWith(expect.anything(), ['add', 'extra'], expect.objectContaining({ cwd: realpathSync(dir) }))
   expect(readProfileManifest('test', dir).dsh?.profile?.bundles).toEqual(['extra'])
   expect(readProfileManifest('test', namedDir).dependencies).not.toHaveProperty('extra')
   expect(readProfileManifest('test', namedDir).dsh?.profile?.bundles).toEqual([])
+})
+
+it.each([runPluginCommand, runProfilePnpm])('uses one canonical profile directory for pnpm through %s', async (run) => {
+  const { home, dir, context, pnpm } = fixture()
+  const alias = join(home, 'linked-profile')
+  symlinkSync(dir, alias, process.platform === 'win32' ? 'junction' : 'dir')
+  pnpm.mutate = target => { install(target, 'extra') }
+
+  const outcome = await run({ ...context, dir: alias }, ['add', 'extra'], { execution: 'service', outputBytes: 100 })
+
+  expect(outcome.exitCode).toBe(0)
+  expect(command.run).toHaveBeenCalledWith(expect.anything(), ['add', 'extra'], expect.objectContaining({ cwd: realpathSync(dir) }))
+  expect(readProfileManifest('test', alias).dependencies).toEqual({ extra: '1' })
 })
 
 it('retains partial package-manager changes after a failed install without activating them', async () => {

@@ -117,11 +117,40 @@
         "started": false,
         "reason": "GitHub rejected a rerun while the macOS job remained active (HTTP 403). No test deadlines or assertions changed."
       }
+    },
+    {
+      "commit": "4313ec5e44d0586a6086d743b1895180580786ea",
+      "attempt": 2,
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39827853337/job/120010324585",
+      "result": "Desktop and process tests passed; SDK rollback reproduced with two importers for one physical profile.",
+      "sourceAndProductBuildPassed": true,
+      "desktopAndProcessTests": {
+        "filesPassed": 41,
+        "filesSkipped": 3,
+        "testsPassed": 491,
+        "testsSkipped": 24
+      },
+      "productContracts": {
+        "passed": 30,
+        "failed": 1,
+        "actualElectronHostModesPassed": 2
+      },
+      "rootCause": "pnpm received a Windows 8.3 alias as its working directory while workspace discovery used the canonical path. Both locks recorded . and an alias importer for the same physical profile; the alias importer retained the old SDK and removal relinked it.",
+      "diagnostic": "windows-sdk-alias-diagnostic.json",
+      "log": {
+        "path": "/tmp/youdub-windows-4313ec5e-attempt2.log",
+        "sha256": "758d7727a16513b17623d947563267056b997dae6d54d2c555a000fbb8f7a213"
+      }
     }
   ],
   "corrections": {
     "production": "Source inventory and staging compare portable link targets; preserve file bytes, Git executable modes and POSIX backslashes. Profile preparation now writes portable pnpm link specifiers instead of Windows native backslashes. Synchronize both wanted and installed pnpm lockfiles with the official offline install operation. Detect old installed metadata even when the root lock already matches; verify both saved SDK specifiers before continuing. Explicitly allow the intentional lock update under CI. Windows still failed when wanted and installed locks started stale together. Resolve the wanted lock first with the official lock-only operation, then install from it; the installed-only path was already verified on Windows.",
-    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions. The migration regression also resolves the lockfile version to the actual SDK target before remove; post-remove realpath assertions remain. Exercise root-and-installed stale locks and installed-only stale locks; check installed metadata and the actual SDK target after removing the unrelated fixture. Assert the installed lock version equals the wanted lock version before removing the fixture."
+    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions. The migration regression also resolves the lockfile version to the actual SDK target before remove; post-remove realpath assertions remain. Exercise root-and-installed stale locks and installed-only stale locks; check installed metadata and the actual SDK target after removing the unrelated fixture. Assert the installed lock version equals the wanted lock version before removing the fixture.",
+    "canonicalWorkingDirectory": {
+      "source": "packages/boot/plugin-manager/src/operations.ts",
+      "behavior": "Resolve the pnpm child working directory with realpath for package operations and compatibility restoration; preserve caller-relative package arguments. YouDub uses one official install to synchronize wanted and installed locks.",
+      "tests": "Both public operation entrypoints are tested through an aliased directory. The product regressions assert one importer, preserve the external plugin, and keep the current SDK after removal; a saved duplicate-alias importer is also seeded to test migration."
+    }
   },
   "local": {
     "sourceTestsPassed": 7,
@@ -162,8 +191,8 @@
     }
   },
   "nextRun": {
-    "status": "waiting for the current macOS job before a same-commit Windows diagnostic rerun",
-    "purpose": "Obtain the fixture-only SDK manifests, locks and link targets. Preserve the first Windows timeout as unresolved evidence."
+    "status": "pending canonical-working-directory fix push",
+    "purpose": "Validate the root-cause fix and legacy duplicate-importer migration on Windows; retain the original timeout and SDK failures."
   },
   "limitations": [
     "The full Windows job is not yet green.",

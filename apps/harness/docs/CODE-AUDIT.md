@@ -15,7 +15,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 211 包、5,261 个文件；源码 SHA-256 为 `c44010910e6f64a10de20083b2217a9d661d3cbb1f22b3c992b7cdf9425270f5`。第 23 批移除闭包外的 36 个旧产品包及专属生成器；原 Tools 类型数据直接复制为保留测试的 fixture。运行时和类型闭包仍为 141 包，含保留包测试的闭包为 203 包。其余 8 包属于通用生成、HMR/日志和平台原生依赖；它们的保留理由继续纳入收尾审计。[第 23 批证据](evidence/refactor-remaining-products-prune.json)、[第 22 批证据](evidence/refactor-leaf-products-prune.json)
+当前活动框架为 211 包、5,261 个文件；修复包管理器工作目录后的源码 SHA-256 为 `e8a7534fee72d880639921790e143673550a1f114dfc7e53edcf4a57f99a1a16`。第 23 批移除闭包外的 36 个旧产品包及专属生成器；原 Tools 类型数据直接复制为保留测试的 fixture。运行时和类型闭包仍为 141 包，含保留包测试的闭包为 203 包。其余 8 包属于通用生成、HMR/日志和平台原生依赖；它们的保留理由继续纳入收尾审计。[工作目录修复](evidence/refactor-profile-canonical-path.json)、[第 23 批证据](evidence/refactor-remaining-products-prune.json)
 
 源码构建的 235 个客户端产物包含可选框架库，不能用于推算产品实际加载的插件数。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 
@@ -34,7 +34,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A7 语言 | 中英日、日语原生设置、工作流本地化及导入导出通过。[语言规则](LOCALIZATION.md)、[原生记录](REFACTOR-RESEARCH.md#p4p7内置工作流多语言与原生文件往返2026-10-22) | 第四语言注册及最终候选布局检查 |
 | A8 本地完整媒体 | zoo 的 Demucs、Whisper、翻译、VoxCPM2、Qwen、混音/导出九节点成功；原生播放 18.9 秒。[证据](evidence/refactor-native-zoo-review.json) | 听感和音画同步质量；完整最终候选 |
 | A9 YouTube 下载与代理 | 原生填写 zoo URL/7897，十节点完成并导出。[历史任务](evidence/source-native-youtube-download.json) | 本次最终候选网络与下载回归，历史结果不重复计为新通过 |
-| A10 B 站下载 | 4313ec5e 经实际 Host 直连下载公开 B 站视频并准备媒体，两个节点完成；10,986,939 字节视频、音频、媒体信息和 Range 读回通过。[本次证据](evidence/refactor-bilibili-download.json)、[代理合同](evidence/download-node-proxy-contract.json) | 原生页面输入、保存和播放；B 站代理与短链实测 |
+| A10 B 站下载 | 当前源码经实际 Host 验证直连完整链接、b23 短链和显式代理端口 7897，三次各自两个节点完成；视频、音频、媒体信息和 Range 读回通过。[本次证据](evidence/refactor-bilibili-download.json)、[代理合同](evidence/download-node-proxy-contract.json) | 原生页面输入、保存和播放 |
 | A11 人工审核与汇合 | 两输入校对、保存后保持等待、确认再导出及原生文件保存通过。[扩展证据](evidence/refactor-extension-lifecycle.json) | 最终候选的相关回归 |
 | A12 自动继续与持久化 | 默认模板去重；节点 autoContinue 控制审核；暂停退出、重启、确认通过。[九节点](evidence/refactor-native-zoo-review.json)、[模板去重](evidence/refactor-extension-lifecycle.json) | 合并后的最终候选 |
 | A13 重跑与冲突 | 修订冲突、结果复用及必要审核保留；4313ec5e 的隔离副本重启后，6 个历史任务、7 个工作流和 12 个产物读回一致。[业务映射](FUSION-COVERAGE.md)、[历史数据](evidence/refactor-history-readback.json) | 最终候选重跑与修订交互 |
@@ -44,7 +44,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | Vox 预设音色、设备与其他输入组合 |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
-| A20 构建与平台 | macOS 干净 CI 持续执行；2a275a64 的 macOS job 已通过，GUI 8,746 项；整个 run 因 Windows SDK 回退失败；Windows 构建、桌面进程和实际 Host 已通过；卸载后的 SDK 回退仅在本机通过；82abf8c3 的 Windows 仍失败，正在采集卸载前后锁与链接证据。[CI 失败与修正](evidence/refactor-pruned-notices.json) | 最新干净 CI、Windows 源码与原生验收 |
+| A20 构建与平台 | 4313ec5e 的 macOS 干净 CI 全部通过：GUI 8,075 项、profile/插件 6,685 项、产品集成 77 项、Python 525 项。Windows 首次文件操作超时未在同提交重跑中复现；重跑取得 SDK 回退诊断，已修复短路径导致的重复 importer，本地构建、79 项包操作、9 项 profile 和 2 种实际 Host 通过。[本批 CI](evidence/refactor-remaining-products-prune.json)、[修复证据](evidence/refactor-profile-canonical-path.json) | 修复后的双平台干净 CI、最终原生验收 |
 
 ## 尚需实施的收尾
 

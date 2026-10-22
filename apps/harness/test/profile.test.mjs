@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, mkdir, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { prepareYouDubProfile } from '../prepare-profile.mjs';
@@ -153,7 +153,7 @@ for (const [index, name] of required.entries()) {
   }
 }
 
-for (const staleLock of ['root-and-installed', 'installed-only']) {
+for (const staleLock of ['root-and-installed', 'installed-only', 'duplicate-profile-alias']) {
   test(`official package removal keeps the source SDK after migrating a stale ${staleLock} dependency lock`, async t => {
     const { profile, plugin, runtime } = await temporaryProfile(t);
     const oldPlugin = join(runtime, 'old-youdub-plugin');
@@ -165,6 +165,18 @@ for (const staleLock of ['root-and-installed', 'installed-only']) {
     };
     await operation(['add', oldPlugin, fixture, '--offline']);
     assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(oldPlugin));
+    if (staleLock === 'duplicate-profile-alias') {
+      // Older Windows runs recorded one physical profile twice, with the alias
+      // importer still pointing to the previous SDK. Reproduce that saved state.
+      const alias = join(runtime, 'legacy-profile');
+      await symlink(profile, alias, process.platform === 'win32' ? 'junction' : 'dir');
+      const { parse, stringify } = sourceRequire('yaml');
+      for (const path of [join(profile, 'pnpm-lock.yaml'), join(profile, 'node_modules/.pnpm/lock.yaml')]) {
+        const lock = parse(await readFile(path, 'utf8'));
+        lock.importers[relative(await realpath(profile), alias).split(sep).join('/')] = structuredClone(lock.importers['.']);
+        await writeFile(path, stringify(lock));
+      }
+    }
     if (staleLock === 'installed-only') {
       const manifest = await readManifest(profile);
       manifest.dependencies['@youdub/harness-subtitles'] = `link:${plugin.split(sep).join('/')}`;
@@ -175,11 +187,13 @@ for (const staleLock of ['root-and-installed', 'installed-only']) {
     assert.equal((await readManifest(profile)).dependencies[fixtureName].split(sep).join('/'), `link:${fixture.split(sep).join('/')}`);
     const { parse } = sourceRequire('yaml');
     const lock = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8'));
+    assert.deepEqual(Object.keys(lock.importers), ['.'], 'Filesystem aliases must not create a second profile importer');
     assert.equal(lock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier.split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
     const lockedVersion = lock.importers['.'].dependencies['@youdub/harness-subtitles'].version;
     assert(lockedVersion.startsWith('link:'), 'The source SDK must remain a local dependency');
     assert.equal(await realpath(resolve(profile, lockedVersion.slice('link:'.length))), await realpath(plugin));
     const installedLock = parse(await readFile(join(profile, 'node_modules/.pnpm/lock.yaml'), 'utf8'));
+    assert.deepEqual(Object.keys(installedLock.importers), ['.']);
     assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier, `link:${plugin.split(sep).join('/')}`);
     assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].version, lockedVersion);
     const sdkLink = join(profile, 'node_modules/@youdub/harness-subtitles');

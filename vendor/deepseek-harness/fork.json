@@ -15485,9 +15485,9 @@
         "type": "file",
         "executable": false,
         "size": 2161,
-        "sha256": "5f94ef440fbe4780d77f66cdcc2e83b907cc74ce6249df4d12b58c9b7d43a1d7"
+        "sha256": "31c93627883484bf6a4280598d5c63da825f5f30d35a2d34913ca0428f02bef2"
       },
-      "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation."
     },
     {
       "path": "packages/boot/plugin-manager/README.md",
@@ -15502,10 +15502,10 @@
         "path": "packages/boot/plugin-manager/README.md",
         "type": "file",
         "executable": false,
-        "size": 29069,
-        "sha256": "0362bceed23d7f1490144211e83060effed75a6c82f434936e6b9ac30e647cfc"
+        "size": 29371,
+        "sha256": "f6decc864d6799aea667eb0581cfa3740f41b8fd69013b41fa6c526ff3cf6212"
       },
-      "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation."
     },
     {
       "path": "packages/boot/plugin-manager/README.zh.md",
@@ -15520,10 +15520,10 @@
         "path": "packages/boot/plugin-manager/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 26493,
-        "sha256": "0b5386bcbf103ed10a0fb41bb3b49f939c9c3cf78d5314890d0db811611d8515"
+        "size": 26727,
+        "sha256": "5f9e191e50e99b3b6786d1743b510b0231bdc8a4fa24e989faa9811ecff3b13f"
       },
-      "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation."
     },
     {
       "path": "packages/boot/plugin-manager/package.json",
@@ -15560,6 +15560,24 @@
         "sha256": "7a7432d8cff7dcf1a4fb8845869820f3cae6073bb8dda616a1c987271ed8b137"
       },
       "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+    },
+    {
+      "path": "packages/boot/plugin-manager/src/operations.ts",
+      "before": {
+        "path": "packages/boot/plugin-manager/src/operations.ts",
+        "type": "file",
+        "executable": false,
+        "size": 32850,
+        "sha256": "f72e7e693372b3892e7156ed8292bc02aae11ebc1062f4bcfd70f33feadff447"
+      },
+      "after": {
+        "path": "packages/boot/plugin-manager/src/operations.ts",
+        "type": "file",
+        "executable": false,
+        "size": 33171,
+        "sha256": "41100be1b503f41d4cd3e0de45a5d21809434b782d4438e4fbda4dac1b8a69dc"
+      },
+      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation."
     },
     {
       "path": "packages/boot/plugin-manager/tests/manager.spec.ts",
@@ -15610,10 +15628,10 @@
         "path": "packages/boot/plugin-manager/tests/operations.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 52048,
-        "sha256": "f9913da9e215d4b5fa02f39944012e2e7d02c1304deff81209460bc7276c4773"
+        "size": 52810,
+        "sha256": "ba8dea420251f89158c610f52cd46adbc8e6d684b6152f2cafd93f1161cacbef"
       },
-      "reason": "Keep generic installer coverage using test-owned catalog fixtures after removing old product bundle defaults."
+      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation."
     },
     {
       "path": "packages/boot/plugin-manager/tests/tools.spec.ts",

@@ -1,7 +1,7 @@
 /** Shared profile package operations used by dsh plugin and the running manager. */
 import { once } from 'node:events'
 import { existsSync, readFileSync } from 'node:fs'
-import { mkdir, mkdtemp, open, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, open, realpath, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { execa } from 'execa'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
@@ -281,6 +281,7 @@ function bundleComponentManifests(manifest: ProfileManifest, dir: string, anchor
  * @returns Exit status, whether the silence bound stopped the run, and the diagnostic path.
  * A compatibility denial returns exit code 1. Service output is bounded; CLI output uses inherited descriptors.
  * The diagnostic file is closed on return or rejection, including preparation and spawn failures.
+ * pnpm runs from the profile's canonical directory so filesystem aliases share one lockfile importer.
  */
 export async function runProfilePnpm(
   context: PackageOperationContext, args: readonly string[], options: PackageOperationOptions,
@@ -350,13 +351,16 @@ export async function runProfilePnpm(
     } catch (error) { void error; continue }
   }
   if (preflight.length > 0) return await rejected(preflight, 'nothing was installed')
+  // Windows short names and junctions must not become a second workspace
+  // importer alongside the same directory's canonical name.
+  const packageDirectory = await realpath(dir)
   const cancellation = new AbortController()
   // A service run captures output, so execa terminates the tree it leads when the
   // run is killed: a lifecycle script outlives the pnpm process that started it.
   // The CLI keeps the caller's process group, so an interrupt still reaches it.
   const grouped = leadsOwnGroup(options.execution)
   const child = execa(options.command ?? 'pnpm', [...options.args ?? [], ...args.map(arg => anchorPathSpec(arg, context.cwd))], {
-    cwd: dir, env: environment, extendEnv: false, reject: false,
+    cwd: packageDirectory, env: environment, extendEnv: false, reject: false,
     stdout: options.execution === 'cli' ? 'inherit' : 'pipe',
     stderr: options.execution === 'cli' ? 'inherit' : 'pipe',
     killDescendants: options.execution === 'service',
@@ -506,7 +510,7 @@ export async function runProfilePnpm(
         const hadLockfile = savedFiles.some(file => file.path.endsWith('pnpm-lock.yaml') && file.text !== undefined)
         const repair = ['install', hadLockfile ? '--frozen-lockfile' : '--config.lockfile=false']
         const repairing = execa(options.command ?? 'pnpm', [...options.args ?? [], ...repair], {
-          cwd: dir, env: environment, extendEnv: false, reject: false, stdin: 'ignore',
+          cwd: packageDirectory, env: environment, extendEnv: false, reject: false, stdin: 'ignore',
           ...options.idleTimeoutMs === undefined ? {} : { timeout: options.idleTimeoutMs },
         })
         await recordRun(dir, { pid: repairing.pid, grouped: false })
