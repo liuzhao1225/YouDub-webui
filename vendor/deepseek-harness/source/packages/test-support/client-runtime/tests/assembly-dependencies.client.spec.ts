@@ -5,12 +5,12 @@ import { createClientTest, webApp } from '../src/assembly/index.ts'
 
 const HMR = '@deepseek-ai/dsh-client-hmr'
 const MODULES = '@deepseek-ai/dsh-client-modules'
-const SESSIONS = '@deepseek-ai/dsh-api-session-controller'
-const FILE_UPLOAD = '@deepseek-ai/dsh-client-file-upload'
+const LOCALE = '@deepseek-ai/dsh-client-locale'
+const SETTINGS = '@deepseek-ai/dsh-client-ui-settings'
 const hmrRoster = webApp.closure([HMR])
-const sessionRoster = webApp.closure([SESSIONS])
+const localeRoster = webApp.closure([LOCALE])
 const hmrTest = createClientTest({ roster: hmrRoster }, { awaitConnected: false })
-const sessionTest = createClientTest({ roster: sessionRoster })
+const localeTest = createClientTest({ roster: localeRoster })
 
 describe('bundle dependency closures', () => {
   hmrTest('activates HMR with its declared module provider and no Connection', async ({ start }) => {
@@ -22,16 +22,16 @@ describe('bundle dependency closures', () => {
     expect(client.ctx.get('connection')).toBeUndefined()
   }, 60_000)
 
-  sessionTest('activates Session Controller with its declared file-upload provider', async ({ mock, start }) => {
-    expect(sessionRoster.rows.map(row => row.name)).toContain(FILE_UPLOAD)
+  localeTest('activates Locale with its declared configuration forms provider', async ({ mock, start }) => {
+    expect(localeRoster.rows.map(row => row.name)).toContain(SETTINGS)
     const client = await start()
-    const entry = [...client.ctx.loader.entries()].find(row => row.options.name === SESSIONS)
+    const entry = [...client.ctx.loader.entries()].find(row => row.options.name === LOCALE)
     expect(entry?.fiber?.state).toBe(FiberState.ACTIVE)
-    expect(client.ctx.get('fileUpload')).toBeDefined()
+    expect(client.ctx.get('configForms')).toBeDefined()
+    await client.ctx.configForms.describe().ensure()
     await vi.waitFor(() => {
-      expect(client.ctx.sessions.list.getSnapshot().phase).toBe('ready')
-      expect(mock.log.calls('session/list')).toHaveLength(1)
-      expect(mock.log.streams('session/control')).toHaveLength(1)
+      expect(client.ctx.locale.getSnapshot().locales.length).toBeGreaterThan(0)
+      expect(mock.log.calls('settings/describe').length).toBeGreaterThan(0)
     })
   }, 60_000)
 })

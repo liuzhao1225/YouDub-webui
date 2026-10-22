@@ -3,6 +3,7 @@
 import { existsSync, globSync, readFileSync, statSync } from 'node:fs'
 import { dirname, extname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 import { JSDOM } from 'jsdom'
 import ts from 'typescript'
 import { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
@@ -16,7 +17,6 @@ import { collectRuntimeLocalSourceSpecifiers, collectRuntimeSourceSpecifiers } f
 
 const PROFILE_SOURCE = 'packages/boot/app-boot/src/profile.ts'
 const ON_DEMAND_SOURCE = 'packages/boot/app-boot/src/official-bundle-packages.ts'
-const PROFILES = ['acp', 'web', 'headless', 'sdk', 'sdk-minimal']
 const PICKER_SOURCE = 'packages/host/directory-picker-auto/src/index.ts'
 const DYNAMIC_MOUNTS: Readonly<Record<string, readonly string[]>> = {
   [PICKER_SOURCE]: ['BACKEND_PACKAGES', 'SURFACE_PACKAGES'],
@@ -55,10 +55,12 @@ export interface ProductUseResult {
  * Verify effective product composition and source imports without reading built workspace outputs.
  * @param root - Repository root with source mappings and shipped profile declarations.
  * @param policy - Explicit non-default roles; defaults to the repository-owned policy.
+ * @param product - Application-owned compositions and source entries, relative to root or absolute.
  * @returns Default/optional reachability and every undeclared or stale package-policy violation.
  */
 export function verifyProductUse(
   root: string, policy: Readonly<Record<string, ProductPackagePolicy>> = PRODUCT_PACKAGE_POLICY,
+  product: { patches?: readonly string[]; entries?: readonly string[] } = {},
 ): ProductUseResult {
   const failures: string[] = []
   const display = (path: string): string => relative(root, path).replaceAll('\\', '/')
@@ -195,7 +197,6 @@ export function verifyProductUse(
     ...stringList(literalDeclaration(catalogFile, 'ON_DEMAND_BUNDLES'), ON_DEMAND_SOURCE),
   ]
   if (!isRecord(templates)) throw new Error(`${PROFILE_SOURCE}: PROFILE_TEMPLATES must be a literal object`)
-  for (const name of PROFILES) if (!isRecord(templates[name])) failures.push(`${PROFILE_SOURCE}: missing shipped ${name} profile`)
   const layers = (names: readonly string[], reach: Reachability): PatchOptions[][] => names.flatMap((name) => {
     const pkg = packages.get(name)
     if (pkg?.bundle === undefined) { failures.push(`${PROFILE_SOURCE}: ${name} must declare dsh.bundle.patch`); return [] }
@@ -217,6 +218,13 @@ export function verifyProductUse(
     const webBundles = stringList(web.bundles, `${PROFILE_SOURCE} web`)
     for (const bundle of optionals) scanEntries(composeEntries(layers([...webBundles, bundle], optional)), profilePath, optional)
   }
+  const productPatches = (product.patches ?? []).map(path => {
+    const filename = resolve(root, path)
+    configs.add(filename)
+    return loadOverlayPatches('verify-product-use', filename)
+  })
+  if (productPatches.length > 0) scanEntries(composeEntries(productPatches), profilePath, defaults)
+  for (const path of product.entries ?? []) scanSource(resolve(root, path), defaults)
   for (const path of ['apps/desktop-host/src/index.ts', 'apps/desktop/src/preload-app.ts']) scanSource(resolve(root, path), defaults)
   const htmlPath = resolve(root, 'apps/web/index.html')
   const dom = new JSDOM(readFileSync(htmlPath, 'utf8'))
@@ -309,7 +317,13 @@ function literalDeclaration(file: ts.SourceFile, name: string): unknown {
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const result = verifyProductUse(resolve(dirname(fileURLToPath(import.meta.url)), '..'))
+  const { values } = parseArgs({ options: {
+    root: { type: 'string' }, patch: { type: 'string', multiple: true }, entry: { type: 'string', multiple: true },
+  } })
+  const root = values.root === undefined ? resolve(dirname(fileURLToPath(import.meta.url)), '..') : resolve(values.root)
+  const result = verifyProductUse(root, PRODUCT_PACKAGE_POLICY, {
+    patches: values.patch?.map(path => resolve(path)), entries: values.entry?.map(path => resolve(path)),
+  })
   for (const failure of result.failures) console.error(failure)
   if (result.failures.length > 0) process.exitCode = 1
   else console.log(`Product use: ${String(result.defaultPackages.length)} default, ${String(result.optionalPackages.length)} optional packages; ${String(result.sourceCount)} source modules.`)

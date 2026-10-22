@@ -9,11 +9,12 @@ import { describe, expect, onTestFinished, vi } from 'vitest'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { ok, type RemoteMock } from '@deepseek-ai/dsh-remote-mock'
 import type { SettingsNamespaceView } from '@deepseek-ai/dsh-settings/types'
-import { createClientTest, type TestClient, webApp } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
+import { createClientTest, type TestClient } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
 import { graphFromRoster } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/roster.ts'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { LOCALE_SETTINGS_NAMESPACE, LocaleSettingsSchema } from '@deepseek-ai/dsh-client-locale/src/locale-settings.ts'
 import { inject } from '../src/client/index.ts'
+import { SIDEBAR, settingsPlan } from './settings-plan.ts'
 import type { DeveloperToolsRowInjected } from '../src/client/DeveloperToolsRow.tsx'
 import { HostReleasePrompt, type HostReleasePromptInjected } from '../src/client/HostReleasePrompt.tsx'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
@@ -22,8 +23,7 @@ import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx
 import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocumentAction.tsx'
 
 const SELF = '@deepseek-ai/dsh-client-ui-settings-general'
-const SIDEBAR = '@deepseek-ai/dsh-client-ui-sidebar'
-const it = createClientTest({ roster: webApp })
+const it = createClientTest(settingsPlan)
 /** The whole roster's first boot pays the cold module transform of every plugin package. */
 const COLD_BOOT_TIMEOUT_MS = 60_000
 /** Dictionary namespace this plugin owns; every seat it fills declares it. */
@@ -295,7 +295,7 @@ describe('ui-settings-general apply', () => {
     expect(injected.hooks.releaseChange).toBe(c.ctx.modules.entries.releaseChange)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const release = { version: '2.0.0' }
-    await c.ctx.modules.entries.sync({ ...graphFromRoster(webApp.rows), release })
+    await c.ctx.modules.entries.sync({ ...graphFromRoster(settingsPlan.roster.rows), release })
     expect(injected.hooks.releaseChange.getSnapshot()).toEqual({ page: undefined, previous: undefined, host: release })
     expect(warn).toHaveBeenCalledOnce()
     injected.dismissRelease()

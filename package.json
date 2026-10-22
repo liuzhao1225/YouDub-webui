@@ -29,7 +29,8 @@
     "build:youdub": "npm --prefix apps/harness run build:product",
     "check:harness": "npm --prefix apps/harness run check:composition && npm --prefix apps/harness run check:upstream",
     "build:framework": "npm --prefix apps/harness run build:framework",
-    "dev": "npm --prefix apps/harness run desktop"
+    "dev": "npm --prefix apps/harness run desktop",
+    "check:framework-use": "node .cache/harness/source-build/node_modules/tsx/dist/cli.mjs --tsconfig .cache/harness/source-build/tsconfig.base.json .cache/harness/source-build/scripts/verify-product-use.ts --root vendor/deepseek-harness/source --patch apps/harness/cordis.patch.yml --entry apps/harness/src/host.mjs --entry apps/harness/src/client.jsx --entry apps/harness/src/desktop-product.ts"
   },
   "dependencies": {
     "@cordisjs/plugin-include": "1.1.0",

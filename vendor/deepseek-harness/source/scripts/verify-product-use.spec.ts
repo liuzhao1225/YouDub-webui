@@ -293,10 +293,34 @@ describe('product package use', () => {
     expect(failures(root, policy)).toBe('')
   })
 
-  it('fails when the shipped profile corpus is narrowed', () => {
+  it('accepts an application composition with no shipped product profiles', () => {
     const root = fixture()
-    const source = readFileSync(join(root, profile), 'utf8')
-    write(root, profile, source.replace(/"acp":\{"bundles":\[[^\]]+\]\},/, ''))
-    expect(failures(root)).toContain('missing shipped acp profile')
+    rmSync(join(root, 'packages/bundle/base'), { recursive: true })
+    write(root, profile, 'export const PROFILE_TEMPLATES = {}\nexport const DEFAULT_PROFILE_BUNDLES = []\nexport const OPTIONAL_BUNDLES = []\n')
+    write(root, 'product/cordis.patch.yml', [{ insert: [{ id: 'core', name: core }] }])
+    expect(verifyProductUse(root, {}, { patches: ['product/cordis.patch.yml'] }))
+      .toMatchObject({ failures: [], configCount: 1 })
+    expect(failures(root)).toContain('no product runtime use')
+  })
+
+  it('follows application source entries and reports a missing entry', () => {
+    const root = fixture()
+    pkg(root, candidateDir, candidate)
+    write(root, 'product/client.ts', `import '${candidate}'`)
+    expect(verifyProductUse(root, {}, { entries: ['product/client.ts'] }).failures).toEqual([])
+    expect(verifyProductUse(root, {}, { entries: ['product/missing.ts'] }).failures.join('\n'))
+      .toContain('product/missing.ts: missing product source entry')
+  })
+
+  it('composes application patches before counting enabled plugins', () => {
+    const root = fixture()
+    pkg(root, candidateDir, candidate)
+    write(root, 'product/base.yml', [{ insert: [{ id: 'candidate', name: candidate }] }])
+    write(root, 'product/disabled.yml', [{ id: 'candidate', disabled: true }])
+    expect(verifyProductUse(root, {}, { patches: ['product/base.yml'] }).failures).toEqual([])
+    expect(verifyProductUse(root, {}, { patches: ['product/base.yml', 'product/disabled.yml'] }).failures.join('\n'))
+      .toContain(`${candidateDir} (${candidate}): no product runtime use`)
+    expect(() => verifyProductUse(root, {}, { patches: ['product/missing.yml'] }))
+      .toThrow('failed to read overlay')
   })
 })

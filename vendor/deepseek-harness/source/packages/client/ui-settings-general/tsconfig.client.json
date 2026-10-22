@@ -16,7 +16,6 @@
     { "path": "../ui-slots" },
     { "path": "../ui-primitives" },
     { "path": "../ui-renderer" },
-    { "path": "../ui-session" },
     { "path": "../store" },
     { "path": "../ui-settings/tsconfig.client.json" },
     { "path": "../locale/tsconfig.client.json" },

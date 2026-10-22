@@ -242,3 +242,21 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 当前产品构建、composition 与构建来源收据通过。共享工作区集成 72 项通过，包含另一会话新增的资源测试；该测试最初因 Node 原生 TypeScript 剥离不支持参数属性失败，现复用已有 onboarding 测试的 `tsx` 注册方式加载，资源业务源码未因此改写。此新增测试及其他会话的界面/资源管理变更保留在工作区，不纳入本批框架提交。
 
 同一私有 profile 的实际 Electron 重启后仍为日语，进入原版 Logo/大标题首屏；[桌面首屏](evidence/refactor-profile-prune-home.png)、[扩展页](evidence/refactor-profile-prune-plugins.png)已留证。扩展页仅显示 YouDub 内置功能，模型页没有默认账号或提供商，通用设置显示 YouDub 0.0.7。该验证 profile 未配置翻译服务，界面明确阻止开始工作流；本批未进行外部 LLM 调用，不计为完整媒体流程验收。
+
+本批提交 `84504e04` 的[干净 macOS 源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39728001077) 已全部通过，覆盖源码构建、官方设置与桌面生命周期、profile/插件生命周期、领域/界面/语言及媒体合同。实际 Electron 正常退出（进程返回 0）后再次启动，同一 profile 恢复日语工作台。未打包、发布或合并到 main。
+
+### 下一批使用检查调研（基于 84504e04）
+
+临时复用原 `verifyProductUse` 实现，加入 `apps/harness/cordis.patch.yml` 及 Host、Client、Desktop 产品源码入口后，识别出 70 个直接运行包、595 个源码模块。检查仍有 212 条结果：207 个包未发现运行使用，另有 5 条要求已退休 ACP/headless/SDK/Web profile 的旧规则。此试验没有改动活动源码或检查规则；剩余结果不能视为删除许可。下一批需要把显式产品配置正式接入检查器，替换旧产品 profile 假设，再结合类型、测试和平台动态依赖核对。
+
+保守的源码/声明依赖闭包仍为 144 个包，计入包内测试后为 221；另外 141 个候选中，有 59 个仍被保留包的 devDependencies 引用，其中 53 个来自 `packages/bundle/web-app`。该包同时承载通用 Web 运行服务和旧聊天产品 patch/presets；应保留前者，逐项拆除后者及其专属测试依赖。其余 root scripts、TypeScript references、旧 Python SDK 和根 Host/Web 入口继续留在 P6。
+
+## P6 第七批：以实际 YouDub 组合驱动框架检查（2026-10-22）
+
+- 原产品使用分析器新增显式 `--patch` 与 `--entry` 参数，根命令 `npm run check:framework-use` 读取 YouDub 的实际配置与 Host、Client、Desktop 入口。仍复用原 AST 归属、配置合成、禁用项和源码遍历；移除强制存在 ACP/headless/SDK/Web profile 的旧产品规则。缺文件与无法解析的配置继续明确失败。
+- 框架全客户端测试通过 `DSH_TEST_PRODUCT_BUNDLE` 读取已准备的 YouDub bundle，不再隐式加载 `dsh-base` 和旧 `dsh-web-app` 组合。通用 bundle 读取、依赖闭包、并行客户端、连接错误、重载、卸载及清理测试保留；旧账号/聊天场景按产品范围替换为设置、语言和测试专属侧栏的验证。业务 UI 继续由产品集成测试覆盖。
+- 修正实际组合暴露的两条旧启动顺序依赖：布局不再等待 Session，通用设置不再等待旧聊天侧栏。设置侧栏槽仍由产品拥有，测试明确提供槽声明并验证销毁和恢复。类型层仍需要的旧侧栏合同暂时保留，后续随合同归属一起整理。
+- 锁文件只删除四条工作区链接，没有升级保留依赖。原始 Harness 归档、初始 YouDub 快照和其他会话的侧栏/资源管理变更不在本批修改范围。
+- 第一轮全测试工具回归暴露四处旧产品假设，修正后通过 12 个文件、125 项测试，另有 1 项既有预期失败。源码构建随后发现 Node 测试工具误用浏览器限定的环境类型，已改用 `node:process` 并让测试包仅启用 Node 环境声明；产品浏览器声明不变。
+
+最终源码构建七个步骤通过，产品构建、实际组合与源码来源收据通过。设置、桌面生命周期、布局及完整客户端测试工具共 86 个文件通过，1,179 项通过、1 项既有预期失败、1 项按平台条件跳过；共享工作区产品集成 72 项通过。正式产品使用检查仍返回 207 个未发现运行使用的包，保留失败状态继续核对类型、测试和动态依赖；不能据此直接删除。该批开发版已启动，Mac 锁屏阻止了新的原生界面读回，已请求解锁；上一批截图不计入本批验收。

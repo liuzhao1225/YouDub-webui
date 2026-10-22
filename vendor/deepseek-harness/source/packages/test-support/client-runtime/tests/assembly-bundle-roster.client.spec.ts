@@ -1,29 +1,29 @@
-/** bundleRoster: the real web profile read from its bundles, and every reader decision on a scratch installation. */
+/** bundleRoster: the actual product framework selection and every reader decision on a scratch installation. */
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { getStaticModules } from '@deepseek-ai/dsh-client-web/src/seed.ts'
 import { afterAll, describe, expect, it, onTestFinished } from 'vitest'
 import { MODULES_PACKAGE } from '../src/assembly/modules.ts'
-import { WEB_PROFILE_BUNDLES, bundleRoster, webApp } from '../src/assembly/bundle-roster.ts'
+import { PRODUCT_BUNDLES, PRODUCT_MANIFEST, bundleRoster, webApp } from '../src/assembly/bundle-roster.ts'
 
 function profileScope(name: string) {
   const services: Record<string, object | undefined> = { profileContext: { name } }
   return { get: (key: string) => services[key] }
 }
 
-describe('webApp (the real web profile)', () => {
-  it('composes dsh-base then dsh-web-app: unique names, inject edges on roster rows or platform seed words', () => {
-    expect(WEB_PROFILE_BUNDLES).toEqual(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
+describe('webApp (the product framework selection)', () => {
+  it('reads unique names and complete injection edges from the prepared product', () => {
+    expect(PRODUCT_BUNDLES).toHaveLength(1)
     const names = webApp.rows.map(row => row.name)
     expect(new Set(names).size).toBe(names.length)
     const known = new Set([...names, ...Object.keys(getStaticModules())])
     const dangling = webApp.rows.flatMap(row => row.inject.filter(target => !known.has(target)).map(target => `${row.name} -> ${target}`))
     expect(dangling).toEqual([])
-    expect(bundleRoster(WEB_PROFILE_BUNDLES, undefined, profileScope('web')).rows).toEqual(webApp.rows)
+    expect(bundleRoster(PRODUCT_BUNDLES, PRODUCT_MANIFEST, profileScope('desktop')).rows
+      .filter(row => row.name.startsWith('@deepseek-ai/'))).toEqual(webApp.rows)
     expect(names).not.toContain('@deepseek-ai/dsh-client-ui-sidebar-browser')
-    expect(bundleRoster(WEB_PROFILE_BUNDLES, undefined, profileScope('desktop')).rows.map(row => row.name))
-      .toContain('@deepseek-ai/dsh-client-ui-sidebar-browser')
+    expect(names).not.toContain('@deepseek-ai/dsh-client-ui-conversation')
   })
 
   it('keeps browser rows with their declarations and drops Host-only, disabled, and subpath rows', () => {
@@ -35,7 +35,7 @@ describe('webApp (the real web profile)', () => {
     const names = webApp.rows.map(row => row.name)
     expect(names).toContain('@deepseek-ai/dsh-client-ui-settings-general')
     expect(names).not.toContain('@deepseek-ai/dsh-llm') // Host only
-    expect(names).toContain('@deepseek-ai/dsh-client-ui-schedule')
+    expect(names).not.toContain('@deepseek-ai/dsh-client-ui-schedule')
     expect(names).not.toContain('@deepseek-ai/dsh-web-app') // Host runtime glue, its `/startup` row is a subpath
   })
 })

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * TestClient over the web profile's roster read from its bundles: production
+ * TestClient over the selected product's framework roster: production
  * `bootClient` over in-process modules, every Remote call answered by a
  * `RemoteMock` bound to that client's Connection instance, mount, HMR-style reload,
  * unload, and fail-loud teardown.
@@ -14,11 +14,10 @@ import { ClientRoster, TestClient, remoteDefaultResponses, webApp } from '../src
 /** The Gateway client and what it injects: the Typert registry and the Connection. */
 const API_ROSTER = webApp.closure(['@deepseek-ai/dsh-api-gateway'])
 const MODULES = '@deepseek-ai/dsh-client-modules'
-const SIDEBAR = '@deepseek-ai/dsh-client-ui-sidebar'
+const SIDEBAR = '@test/product-sidebar'
 const PARALLEL_PROBE = '@deepseek-ai/dsh-client-test-parallel-probe'
-/** Declared by ui-sidebar, whose SlotMap merge is outside this package's compilation face. */
 const SIDEBAR_SETTINGS = 'sidebar.settings' as never
-const BRAND = '@deepseek-ai/dsh-client-ui-brand-official'
+const HMR = '@deepseek-ai/dsh-client-hmr'
 const globals = globalThis as { EventSource?: unknown; ResizeObserver?: unknown }
 /** The whole roster's first boot pays the cold module transform of every plugin package. */
 const COLD_BOOT_TIMEOUT_MS = 60_000
@@ -31,7 +30,7 @@ async function started(plan: AssemblyPlan, options?: TestClientOptions): Promise
 }
 
 describe('TestClient (jsdom)', () => {
-  it('boots the whole web-app roster, connects, mounts, and disposes with nothing unmatched', async () => {
+  it('boots the selected product framework roster, connects, mounts, and disposes with nothing unmatched', async () => {
     // Exercise missing-API cleanup independently of the suite's browser defaults.
     vi.stubGlobal('ResizeObserver', undefined)
     onTestFinished(() => { vi.unstubAllGlobals() })
@@ -204,13 +203,27 @@ describe('TestClient (jsdom)', () => {
 
   it('boots with a provided row in place of the real plugin', async () => {
     const apply = vi.fn()
-    const client = await started({ roster: webApp, provide: { [BRAND]: { apply } } }, { mount: true })
+    const client = await started({ roster: webApp, provide: { [HMR]: { apply } } }, { mount: true })
     expect(apply).toHaveBeenCalledOnce()
-    expect([...client.ctx.loader.entries()].some(entry => entry.options.name === BRAND)).toBe(true)
+    expect([...client.ctx.loader.entries()].some(entry => entry.options.name === HMR)).toBe(true)
   })
 
   it('reload rebuilds the declaring entry; unload collapses it', async () => {
-    const client = await started({ roster: webApp }, { mount: true })
+    // The selected product supplies its sidebar. This fixture exercises the same
+    // slot-owner lifecycle without loading a business UI or the retired chat sidebar.
+    const client = await started({
+      roster: ClientRoster.of([...webApp.rows, {
+        name: SIDEBAR, inject: ['@deepseek-ai/dsh-client-ui-layout'], immediately: false,
+      }]),
+      provide: { [SIDEBAR]: {
+        inject: ['slots'],
+        apply(ctx) {
+          ctx.slots.inject('sidebar', () => ctx.slots.register({
+            name: 'sidebar', children: { 'sidebar.settings': { kind: 'single', scope: 'root' } },
+          }, () => null))
+        },
+      } },
+    }, { mount: true })
     expect(client.ctx.slots.entries(SIDEBAR_SETTINGS)).toHaveLength(1)
     await client.reload(SIDEBAR)
     await client.flush()
@@ -241,7 +254,7 @@ describe('TestClient (jsdom)', () => {
   it('fails loud by teardown at the latest when a boot-time endpoint has no fixture', async () => {
     const mock = RemoteMock.create()
     const run = TestClient.start({ roster: webApp }, mock, { mount: true }).then(client => client.dispose())
-    await expect(run).rejects.toThrow(/session\/control|workspace\/follow|session\/list|settings\/describe/)
+    await expect(run).rejects.toThrow(/settings\/describe/)
   })
 
   it('waits through a carrier flap for the connection to become ready', async () => {
@@ -262,12 +275,11 @@ describe('TestClient (jsdom)', () => {
   })
 
   it('reports the log when the connection never becomes ready', async () => {
-    // No fixtures: workspace-controller's follow has no rule, so the proxy dispatches it as a unary call the mock
-    // logs as unmatched, while $events never sends ready.
-    const roster = webApp.closure(['@deepseek-ai/dsh-api-workspace-controller'])
+    // The settings mirror records its unmatched describe call while $events never sends ready.
+    const roster = webApp.closure(['@deepseek-ai/dsh-client-ui-settings'])
     const mock = RemoteMock.create().stream('$events', openStream([]))
     await expect(TestClient.start({ roster }, mock, { connectTimeoutMs: 300 }))
-      .rejects.toThrow(/connection state is \S+ after 300ms; unmatched: \[unary workspace\/follow\]; streams: \[.*\$events \(open\).*\]/)
+      .rejects.toThrow(/connection state is \S+ after 300ms; unmatched: \[unary settings\/describe\]; streams: \[.*\$events \(open\).*\]/)
     expect(globals.EventSource).toBeUndefined()
   })
 })

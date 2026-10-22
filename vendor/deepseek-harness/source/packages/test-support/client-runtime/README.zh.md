@@ -9,7 +9,7 @@ kind: "package-library"
 
 ## 概述
 
-`SlotTestRuntime.create()` 让 Vitest 套件在 jsdom 中驱动生产 slot、store、带类型的 Session 与 Workspace fixture，并对局部 DOM 断言。面向插件激活、重载、重连与清理的测试，`createClientTest` 使用具名端点 Remote mock 启动 web profile 的 bundle roster，无需业务 Host。缺失服务与未打桩调用会明确失败。整机 fixture 拥有启动和销毁，局部 runtime 提供幂等销毁。通过 `devDependencies` 将本包用于客户端测试；它不是产品插件。
+`SlotTestRuntime.create()` 让 Vitest 套件在 jsdom 中驱动生产 slot、store、带类型的 Session 与 Workspace fixture，并对局部 DOM 断言。面向插件激活、重载、重连与清理的测试，`createClientTest` 使用具名端点 Remote mock 启动 所选产品的框架插件组合，无需业务 Host。缺失服务与未打桩调用会明确失败。整机 fixture 拥有启动和销毁，局部 runtime 提供幂等销毁。通过 `devDependencies` 将本包用于客户端测试；它不是产品插件。
 
 链接到工作区的 bundle 从自身 manifest 解析指向自己的 Host 条目，从实际包目录解析依赖；各 bundle 自身目录中的依赖优先于祖先目录中继承的包。
 
@@ -80,10 +80,10 @@ import { createClientTest, webApp } from '@deepseek-ai/dsh-client-test-runtime/s
 import { ok } from '@deepseek-ai/dsh-remote-mock'
 
 const test = createClientTest({ roster: webApp }, { mount: true })
-test('registers into the sidebar', async ({ remote, start }) => {
+test('registers the application frame', async ({ remote, start }) => {
   remote.settings.describe.mockResolvedValue(ok({ writable: true, hasDocument: false, namespaces: [] }))
   const client = await start()
-  expect(client.ctx.slots.entries('sidebar.settings')).toHaveLength(1)
+  expect(client.ctx.slots.entries('root')).toHaveLength(1)
 })
 ```
 
@@ -93,7 +93,7 @@ test('registers into the sidebar', async ({ remote, start }) => {
 
 ### Roster 与启动行为
 
-`webApp` 是 `web` profile 的浏览器 roster，首次 import 装配入口时从它的 bundle（先 `dsh-base`、再 `dsh-web-app`）按启动器的方式现读，只是匹配不到任何行的补丁在这里抛错、启动器只警告：每个 bundle 的 `dsh.bundle.patch` 列表用 include 插件的 YAML 方言解析、用它的 `applyEntryPatches` 合成，每个未禁用且其包声明 `dsh.client.platform === 'web'` 的行成为一行，带上该声明的 `inject` 与 `immediately`；`bundleRoster(bundles, anchor, disabledContext)` 接受显式 Loader 求值作用域来处理条件 `disabled` 标记；未提供作用域时拒绝浏览器表达式。`webApp` 仅提供 Web profile 名称，不提供业务 Host 服务。没有任何东西从 bundle 拷贝出来，bundle 一改下次跑测试就能看见。`webApp.closure(names)` 保留点名的行及其传递注入的全部行（即按 bundle 组合方式起这些插件所需的行），`webApp.pick(names)` 与 `webApp.without(names)` 手工裁剪，三者都对未知名字抛错，`ClientRoster.of(rows)` 内联构造一份。`remoteDefaultResponses` 是 roster 在没有 session、没有 workspace、默认设置下启动时恰好会打的那些 Remote 端点的默认响应；测试用 `mock.load(table)` 在其上叠加自己的 `RemoteTable`，任何没有规则的调用都会在 `dispose()` 时经 `mock.assertNoUnmatched()` 让测试失败。`mount` 要求 roster 提供 `uiRenderer`；否则 `start` 响亮失败而不是返回一个空容器。`client.connection` 是 roster 的 Connection 服务（没有任何 `Context` 增强声明它），`connectTimeoutMs` 限定等就绪的时长，超时消息列出 mock log。`reload(name)` 通过共享的 Client Modules 辅助函数重建一个 Loader entry（先拆 registry，再 `entry.refresh()`）；每个客户端都保留自己的模块系统和绑定实例的 Connection 替换，因此启动与重载可以重叠而无需改写页面全局变量。`unload(name)` 移除 entry 并等待插件清理完成，`flush()` 在 `act` 内让 React 落定。jsdom 既没有 `EventSource`（client-hmr 在 apply 时打开一个）也没有 `ResizeObserver` 和 `document.fonts` 事件目标（布局组件挂载时观察尺寸与字体加载），所以 `start` 对缺失的全局惰性桩做引用计数，`dispose` 只移除它装的那些——这是 jsdom 的缺口，不是客户端身份通道。每个 roster 里的 `@deepseek-ai/dsh-api-remotes` 行都会被去掉：它生成的 Remote 客户端只存在于构建后的 `lib/`，而 `remote.<ns>` 正是本档要替掉的东西。自行挂载其生成 contribution 的 `@deepseek-ai/dsh-api-remote-access` 行同样会被去掉，`start` 改为安装 `allowAllAccessPlugin`；计划中为这两行之一提供的 `provide` 项会被拒绝。`start` 改为给 roster 注入的每个 `remote.<ns>` 服务（加上此刻 mock 登记过规则的命名空间；之后才首次登记的命名空间没有代理）提供一个无契约代理；`ctx.remote.<ns>.<method>(...args)` 变成对端点 `<ns>/<method>` 的调用，携带位置参数，mock 登记了 `stream()` 脚本的走流、否则走一元，并沿用生成客户端的结果折叠（载体抛错折成 `gateway/internal`，中止折成 `gateway/cancelled`）。没有规则的端点照样发出，所以 mock 会记下它、`dispose()` 让测试失败。
+`webApp` 包含实际产品选中的框架浏览器插件。导入装配入口前，将 `DSH_TEST_PRODUCT_BUNDLE` 指向已准备的产品 bundle manifest；YouDub 的 `apps/harness/test/source-framework.mjs` 预加载器使用真实开发运行目录。该 bundle 必须能解析自己的框架依赖，业务插件由产品集成测试覆盖。读取器按启动器的方式现读并合成，只是匹配不到任何行的补丁在这里抛错、启动器只警告：每个 bundle 的 `dsh.bundle.patch` 列表用 include 插件的 YAML 方言解析、用它的 `applyEntryPatches` 合成，每个未禁用且其包声明 `dsh.client.platform === 'web'` 的行成为一行，带上该声明的 `inject` 与 `immediately`；`bundleRoster(bundles, anchor, disabledContext)` 接受显式 Loader 求值作用域来处理条件 `disabled` 标记；未提供作用域时拒绝浏览器表达式。`webApp` 提供 Desktop profile 名称，不提供业务 Host 服务。没有任何东西从 bundle 拷贝出来，bundle 一改下次跑测试就能看见。`webApp.closure(names)` 保留点名的行及其传递注入的全部行（即按 bundle 组合方式起这些插件所需的行），`webApp.pick(names)` 与 `webApp.without(names)` 手工裁剪，三者都对未知名字抛错，`ClientRoster.of(rows)` 内联构造一份。`remoteDefaultResponses` 是 roster 在没有 session、没有 workspace、默认设置下启动时恰好会打的那些 Remote 端点的默认响应；测试用 `mock.load(table)` 在其上叠加自己的 `RemoteTable`，任何没有规则的调用都会在 `dispose()` 时经 `mock.assertNoUnmatched()` 让测试失败。`mount` 要求 roster 提供 `uiRenderer`；否则 `start` 响亮失败而不是返回一个空容器。`client.connection` 是 roster 的 Connection 服务（没有任何 `Context` 增强声明它），`connectTimeoutMs` 限定等就绪的时长，超时消息列出 mock log。`reload(name)` 通过共享的 Client Modules 辅助函数重建一个 Loader entry（先拆 registry，再 `entry.refresh()`）；每个客户端都保留自己的模块系统和绑定实例的 Connection 替换，因此启动与重载可以重叠而无需改写页面全局变量。`unload(name)` 移除 entry 并等待插件清理完成，`flush()` 在 `act` 内让 React 落定。jsdom 既没有 `EventSource`（client-hmr 在 apply 时打开一个）也没有 `ResizeObserver` 和 `document.fonts` 事件目标（布局组件挂载时观察尺寸与字体加载），所以 `start` 对缺失的全局惰性桩做引用计数，`dispose` 只移除它装的那些——这是 jsdom 的缺口，不是客户端身份通道。每个 roster 里的 `@deepseek-ai/dsh-api-remotes` 行都会被去掉：它生成的 Remote 客户端只存在于构建后的 `lib/`，而 `remote.<ns>` 正是本档要替掉的东西。自行挂载其生成 contribution 的 `@deepseek-ai/dsh-api-remote-access` 行同样会被去掉，`start` 改为安装 `allowAllAccessPlugin`；计划中为这两行之一提供的 `provide` 项会被拒绝。`start` 改为给 roster 注入的每个 `remote.<ns>` 服务（加上此刻 mock 登记过规则的命名空间；之后才首次登记的命名空间没有代理）提供一个无契约代理；`ctx.remote.<ns>.<method>(...args)` 变成对端点 `<ns>/<method>` 的调用，携带位置参数，mock 登记了 `stream()` 脚本的走流、否则走一元，并沿用生成客户端的结果折叠（载体抛错折成 `gateway/internal`，中止折成 `gateway/cancelled`）。没有规则的端点照样发出，所以 mock 会记下它、`dispose()` 让测试失败。
 
 ### 何时使用
 

@@ -8754,6 +8754,24 @@
       "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
     },
     {
+      "path": "packages/client/ui-layout/package.json",
+      "before": {
+        "path": "packages/client/ui-layout/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1928,
+        "sha256": "e9e57caed05a9479405e30dfca2eabff082ce59c934b8f72e2c9b0a68bbb9e9e"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1825,
+        "sha256": "2a610e834054666f63b63cbedad07f26f186bbdb5f0ab65f3cb294ebc73ab7da"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
       "path": "packages/client/ui-layout/src/client/AppFrame.tsx",
       "before": {
         "path": "packages/client/ui-layout/src/client/AppFrame.tsx",
@@ -8790,6 +8808,24 @@
       "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
     },
     {
+      "path": "packages/client/ui-layout/src/client/index.ts",
+      "before": {
+        "path": "packages/client/ui-layout/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10824,
+        "sha256": "ab1cdd016582d3f2b7c978ec0afa994a8636390cc18cef800d8301d239d46b9e"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10760,
+        "sha256": "e15da4597f63a63ae917c30b504d78e6492cf457d0ad303fc21efac2dbebc08c"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
       "path": "packages/client/ui-layout/tests/app-frame.client.spec.tsx",
       "before": {
         "path": "packages/client/ui-layout/tests/app-frame.client.spec.tsx",
@@ -8824,6 +8860,24 @@
         "sha256": "20d073d990bec6aaf25113bac15c5784e3a3b3de7a4c7ea2e943b722e1440921"
       },
       "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+    },
+    {
+      "path": "packages/client/ui-layout/tsconfig.json",
+      "before": {
+        "path": "packages/client/ui-layout/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 677,
+        "sha256": "38d9b7c8094107a3fb7c07a533387bd74e9277eefd1300ce4ee23c60a3cafe44"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 634,
+        "sha256": "b85410786a5f715385c2909ac314beda3eed165269deb7f3023f96eb29ee25c6"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
     },
     {
       "path": "packages/client/ui-renderer/README.md",
@@ -8934,6 +8988,24 @@
       "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
     },
     {
+      "path": "packages/client/ui-settings-general/package.json",
+      "before": {
+        "path": "packages/client/ui-settings-general/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2773,
+        "sha256": "38371811a03110f0cb8dd43c5cf27f0810496220d769edbbc181b0c0b8ccfc95"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2670,
+        "sha256": "df59f3f91bcbbd02b16c027bede4220a1888c835b14f6e6e950faf1fec6ce106"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
       "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
       "before": {
         "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
@@ -8950,6 +9022,54 @@
         "sha256": "a2c58f0d485a3463d083cb5bbcf21d48361bb14ab878543d7ee2d7a5365cb361"
       },
       "reason": "Retain the Harness settings shell and honor section-owned draft checks on close and navigation."
+    },
+    {
+      "path": "packages/client/ui-settings-general/src/client/index.ts",
+      "before": {
+        "path": "packages/client/ui-settings-general/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12128,
+        "sha256": "e48b77e65dcf8c6e09c7d37792907e998953bc180fce6cabcfa873d26fd307dc"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12064,
+        "sha256": "8bff01a0c860a57a2240a2d4818cca4a613562fde36d8ae3c73342a0ebb55003"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
+      "path": "packages/client/ui-settings-general/tests/apply.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-settings-general/tests/apply.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15836,
+        "sha256": "8e0aace568246a75a4dcbed5151ca229525b8d4b6944ed2a43d197fcf82cd9a6"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/tests/apply.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15841,
+        "sha256": "b0965fa2f88e13de2554e2d72c038736f35ddc62cbf52ce1ede29ebc73321220"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
+      "path": "packages/client/ui-settings-general/tests/settings-plan.ts",
+      "before": null,
+      "after": {
+        "path": "packages/client/ui-settings-general/tests/settings-plan.ts",
+        "type": "file",
+        "executable": false,
+        "size": 796,
+        "sha256": "7d66a15cf6a914fa568d5601a5ebbbd7519e91872a5854759b54c5216c023c46"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
     },
     {
       "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
@@ -8982,10 +9102,28 @@
         "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 9158,
-        "sha256": "feba87a2cfd421062f41029e0206e1d739feea7130d541897bfb167e48bbd08f"
+        "size": 8095,
+        "sha256": "a33feec434cbcb90c9c4415e0d3959db84923635e923e0886aa2cb3297ae5b21"
       },
-      "reason": "Verify the original settings ledger and reload behavior without the retired DeepSeek onboarding registrations; keep explicit editor registration coverage."
+      "reason": "Verify the original settings ledger and reload behavior without the retired DeepSeek onboarding registrations; keep explicit editor registration coverage. Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
+      "path": "packages/client/ui-settings-general/tsconfig.client.json",
+      "before": {
+        "path": "packages/client/ui-settings-general/tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 911,
+        "sha256": "c21150f99c5adc6b2abcdd264d7d9a38633e7e41db818f6f79220861fdb88f9c"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 878,
+        "sha256": "86b7f8ac3d08ca8ffee19a070154699258e37878290ae0f3b59204b46fd187c9"
+      },
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
     },
     {
       "path": "packages/client/ui-settings-models/README.md",
@@ -9354,10 +9492,10 @@
         "path": "packages/test-support/client-runtime/README.md",
         "type": "file",
         "executable": false,
-        "size": 18538,
-        "sha256": "d73c2b95a709de6f7e8df4f8d277c8955b8e43f4f3773704e1a608222445e989"
+        "size": 18849,
+        "sha256": "459319180e777dd4ae1f8eb65d04b8c9302a5fb5aa61e13d5227400f804d07d6"
       },
-      "reason": "Document package self-reference resolution for linked bundle assembly tests."
+      "reason": "Document package self-reference resolution for linked bundle assembly tests. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
     },
     {
       "path": "packages/test-support/client-runtime/README.zh.md",
@@ -9372,10 +9510,28 @@
         "path": "packages/test-support/client-runtime/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 17368,
-        "sha256": "21f482518bf2e1ecec382dbab92327cb3ff35f802695cac1b59bdd7fc8ed49d8"
+        "size": 17596,
+        "sha256": "c5ec74ee05e970d1613ed078e719fadcc626b769e645c8a1e86570b856acdd19"
       },
-      "reason": "Document package self-reference resolution for linked bundle assembly tests."
+      "reason": "Document package self-reference resolution for linked bundle assembly tests. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+    },
+    {
+      "path": "packages/test-support/client-runtime/package.json",
+      "before": {
+        "path": "packages/test-support/client-runtime/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 4008,
+        "sha256": "eaace31c70f0e73f59032a025efa29ad28088a76d543cd833499927caaf73ed5"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3940,
+        "sha256": "7cce9801a7e88201f91e18c851a0786ca41a01729ac2be3a36058989558befb8"
+      },
+      "reason": "Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
     },
     {
       "path": "packages/test-support/client-runtime/src/assembly/bundle-roster.ts",
@@ -9390,10 +9546,10 @@
         "path": "packages/test-support/client-runtime/src/assembly/bundle-roster.ts",
         "type": "file",
         "executable": false,
-        "size": 8208,
-        "sha256": "4960cc79adafeeac69220405888797a56e65f3ca4fc5e71327a7f2259b0b6c80"
+        "size": 8670,
+        "sha256": "5c2d4b8ed8b6e2f1a3a027bdd7b1e649016f7aa5a75ae523f1ad0f939663ba8d"
       },
-      "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference."
+      "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
     },
     {
       "path": "packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts",
@@ -9408,10 +9564,64 @@
         "path": "packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 12943,
-        "sha256": "08317c3d6bf9c08ccc14c477f79d8b08c681293c86e6e637fb825fea38f5a694"
+        "size": 12859,
+        "sha256": "d2e52e39ed83c8107c35d0981a685662676c76b342348ae16d97ea3ed9bb0933"
       },
-      "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference."
+      "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+    },
+    {
+      "path": "packages/test-support/client-runtime/tests/assembly-dependencies.client.spec.ts",
+      "before": {
+        "path": "packages/test-support/client-runtime/tests/assembly-dependencies.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1912,
+        "sha256": "67deccc9788863af79b211219e97aba0507117b73d42a632f3b23450ad210011"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/tests/assembly-dependencies.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1892,
+        "sha256": "e07bd1ea3f88957d61a029b68f0613f01d6f5ed7bee5775ee520659d00514b8d"
+      },
+      "reason": "Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+    },
+    {
+      "path": "packages/test-support/client-runtime/tests/assembly-test-client.client.spec.ts",
+      "before": {
+        "path": "packages/test-support/client-runtime/tests/assembly-test-client.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13628,
+        "sha256": "a6096ec8bb89dc24a0dd1d7c392d73f31733a9dd4a6197adbc5ce56c23e1a1b7"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/tests/assembly-test-client.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13971,
+        "sha256": "6b72d5a3b20408dc79acd60c9871ff6be11d4dd32974d18cd2e725f402365c43"
+      },
+      "reason": "Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+    },
+    {
+      "path": "packages/test-support/client-runtime/tsconfig.json",
+      "before": {
+        "path": "packages/test-support/client-runtime/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 1767,
+        "sha256": "b1f48fb35d6cdb6f8c135619f8e10fac4da83ab827a86a27b870febcda6bbf5d"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 1739,
+        "sha256": "55eb8fac76dea19f9ef598a717b758337682c4f68a784575937b2a226b7b4799"
+      },
+      "reason": "Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
     },
     {
       "path": "patches/@electron__osx-sign@1.3.3.patch",
@@ -9450,10 +9660,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 977497,
-        "sha256": "4864c30f6bd970b75e37284921d5e7371c375cfa9e6f1c9d97b46b58378535ce"
+        "size": 977065,
+        "sha256": "0e616eb9dcaedf19e57e3b33cb61ad7e4b818293b9a96e44e3dd17a238c0fa14"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies."
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -9630,10 +9840,10 @@
         "path": "scripts/verify-product-use.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 15929,
-        "sha256": "69bbd7f6d084cf15cdfde6ce33da1c19f94a7d956eec17ab152b2fdf92a07977"
+        "size": 17443,
+        "sha256": "3aef8ffc71ad69839d3c98ff82032f186364d44c00f46c266cafa2989285fa9e"
       },
-      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Read explicit application compositions and source entries with the existing product-use analyzer; retire mandatory legacy Harness profile names and retain missing-source and effective-patch checks."
     },
     {
       "path": "scripts/verify-product-use.ts",
@@ -9648,10 +9858,10 @@
         "path": "scripts/verify-product-use.ts",
         "type": "file",
         "executable": false,
-        "size": 18791,
-        "sha256": "3b02d536dfd63d80905055ab94dc29555f92232425a6f34822e1b5c9770455ca"
+        "size": 19569,
+        "sha256": "30c1c3095761214896ed3160e37e6515a4b554775a8919445419fa58b91073b6"
       },
-      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Read explicit application compositions and source entries with the existing product-use analyzer; retire mandatory legacy Harness profile names and retain missing-source and effective-patch checks."
     },
     {
       "path": "tsconfig.base.json",

@@ -1,5 +1,5 @@
 /**
- * The browser roster of a `dsh --profile`, read from its bundle patch files
+ * The browser roster of an explicitly selected product, read from its bundle patch files
  * the way the launcher composes them: each bundle's `dsh.bundle.patch` file list is
  * parsed with the include plugin's YAML dialect (`entryListSchema`) and
  * composed by its `applyEntryPatches`; every enabled row whose package
@@ -17,14 +17,19 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { env } from 'node:process'
 import { evaluate, isJsExpr, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
 import { applyEntryPatches, entryListSchema, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { exactPackageSpecifier, parseDshClient } from '@deepseek-ai/dsh-client-modules/client'
 import * as yaml from 'js-yaml'
 import { ClientRoster, type ClientRosterRow } from './roster.ts'
 
-/** The `web` profile's bundle layers, in the order `dsh --profile web` applies them (app-boot `PROFILE_TEMPLATES.web`). */
-export const WEB_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
+/** The product under test supplies its bundle manifest after preparing its runtime dependencies. */
+export const PRODUCT_MANIFEST = env.DSH_TEST_PRODUCT_BUNDLE
+if (!PRODUCT_MANIFEST) throw new Error('client-test-runtime: set DSH_TEST_PRODUCT_BUNDLE to the prepared product bundle manifest')
+const productName = readManifest(PRODUCT_MANIFEST).name
+if (typeof productName !== 'string' || !productName) throw new Error('client-test-runtime: product bundle manifest requires a package name')
+export const PRODUCT_BUNDLES: readonly string[] = [productName]
 
 interface PackageManifest {
   name?: unknown
@@ -155,9 +160,9 @@ function describe(message: string, args: readonly unknown[]): string {
   return message.replace(/%C/g, () => JSON.stringify(args[index++]))
 }
 
-const webProfileServices: Readonly<Record<string, object | undefined>> = { profileContext: { name: 'web' } }
+const webProfileServices: Readonly<Record<string, object | undefined>> = { profileContext: { name: 'desktop' } }
 
-/** The `web` profile's browser roster, composed with its profile name and no business Host services. */
-export const webApp: ClientRoster = bundleRoster(WEB_PROFILE_BUNDLES, undefined, {
+/** Framework rows selected by the actual product; application business plugins have their own integration tests. */
+export const webApp: ClientRoster = ClientRoster.of(bundleRoster(PRODUCT_BUNDLES, PRODUCT_MANIFEST, {
   get: (name: string) => webProfileServices[name],
-})
+}).rows.filter(row => row.name.startsWith('@deepseek-ai/')))

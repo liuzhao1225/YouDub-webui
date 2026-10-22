@@ -1,21 +1,21 @@
 // @vitest-environment jsdom
 /**
  * Settings shell registration inside the assembled web client: the shell
- * occupies the `sidebar.settings` hole ui-sidebar declares, its ledger
+ * occupies the `sidebar.settings` hole the product sidebar declares, its ledger
  * projections read the product's real sections, its connection control is the
  * roster's Connection, and it survives a Loader rebuild of the declarer.
  */
 import { describe, expect, onTestFinished, vi } from 'vitest'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { createClientTest, type TestClient, webApp } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
+import { createClientTest, type TestClient } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
 import { inject } from '../src/client/index.ts'
+import { SIDEBAR, settingsPlan } from './settings-plan.ts'
 import type { SettingsRootInjected } from '../src/client/shell-contract.ts'
 import { SettingsRoot } from '../src/client/SettingsRoot.tsx'
 import type { DesktopUpdatePresentation } from '../src/types.ts'
 
 const SELF = '@deepseek-ai/dsh-client-ui-settings-general'
-const SIDEBAR = '@deepseek-ai/dsh-client-ui-sidebar'
-const it = createClientTest({ roster: webApp })
+const it = createClientTest(settingsPlan)
 /** The whole roster's first boot pays the cold module transform of every plugin package. */
 const COLD_BOOT_TIMEOUT_MS = 60_000
 
@@ -37,11 +37,9 @@ const CHILD_SPECS = {
 const CHILD_NAMES = Object.keys(CHILD_SPECS) as Array<keyof typeof CHILD_SPECS>
 
 /**
- * Section ids the web-app roster registers, in nav order: this package, then
- * ui-settings-models, ui-settings-plugins, and ui-agent-preset. A plugin
- * adding a section changes this list.
+ * Section ids selected by YouDub: core preferences and model providers.
  */
-const PRODUCT_SECTIONS: readonly string[] = ['general', 'models', 'plugins', 'agent-presets']
+const PRODUCT_SECTIONS: readonly string[] = ['general', 'models']
 
 describe('ui-settings-general shell', () => {
   it('shares one carrier subscription between both update locations and releases it on unload', async ({ start }) => {
@@ -75,7 +73,7 @@ describe('ui-settings-general shell', () => {
     expect(inject).toEqual(['slots', 'locale', 'connection', 'remote', 'remote.settings', 'configForms', 'shortcuts', 'modules'])
   })
 
-  it('occupies sidebar.settings, declared by ui-sidebar, and declares every child slot', async ({ start }) => {
+  it('occupies sidebar.settings, declared by the product sidebar, and declares every child slot', async ({ start }) => {
     const c = await start()
     expect(c.ctx.slots.entries('sidebar.settings').map(entry => entry.component)).toEqual([SettingsRoot])
     for (const name of CHILD_NAMES) expect(c.ctx.slots.spec(name)).toEqual(CHILD_SPECS[name])
@@ -102,21 +100,6 @@ describe('ui-settings-general shell', () => {
     expect(listener).toHaveBeenCalled()
     expect(sections.getSnapshot()).not.toBe(rows)
     off()
-  })
-
-  it('shows Account first only while signed in and removes it on sign-out', async ({ start }) => {
-    const c = await start()
-    const { sections } = injectedOf(c).hooks
-    await c.mock.streams.opened('account/watch', 1)
-    expect(sections.getSnapshot().map(row => row.id)).toEqual(PRODUCT_SECTIONS)
-    c.mock.streams.push('account/watch', { status: 'credential-stored', attempt: null })
-    await vi.waitFor(() => {
-      expect(sections.getSnapshot().map(row => row.id)).toEqual(['account', ...PRODUCT_SECTIONS])
-    })
-    c.mock.streams.push('account/watch', { status: 'credential-stored', attempt: null })
-    await vi.waitFor(() => { expect(sections.getSnapshot().filter(row => row.id === 'account')).toHaveLength(1) })
-    c.mock.streams.push('account/watch', { status: 'signed-out', attempt: null })
-    await vi.waitFor(() => { expect(sections.getSnapshot().map(row => row.id)).toEqual(PRODUCT_SECTIONS) })
   })
 
   it('projects the roster Connection control without copying its state; reconnect opens a new $events generation', async ({ start }) => {
