@@ -39,7 +39,13 @@ test('keeps the immutable manifest separate from exact reviewed additions, edits
   assert.equal(result.fork.changes.length, 3)
   assert.equal(result.original.sha256, original.sha256)
   await writeFile(join(source, 'keep.js'), 'export const value = 3\n')
-  await assert.rejects(readFrameworkSource(root), /differs from the reviewed fork ledger/)
+  await assert.rejects(readFrameworkSource(root), error => {
+    assert.match(error.message, /differs from the reviewed fork ledger; 1 mismatched entries/)
+    assert.match(error.message, /"path":"keep.js"/)
+    assert.match(error.message, /"expected".*"actual"/)
+    assert.doesNotMatch(error.message, /export const value/)
+    return true
+  })
 })
 
 test('rejects rewriting the upstream manifest and missing change reasons', async t => {

@@ -25,8 +25,17 @@ export function verifyChanges(original, current, changes) {
   for (const entry of changes) {
     if (typeof entry.reason !== 'string' || !entry.reason.trim()) throw new Error(`Missing fork change reason: ${entry.path}`)
   }
-  same(sourceChanges(original, current), changes.map(({ path, before, after }) => ({ path, before, after })),
-    'Framework source differs from the reviewed fork ledger; inspect the diff and record its exact bytes and reason')
+  const actual = sourceChanges(original, current)
+  const expected = changes.map(({ path, before, after }) => ({ path, before, after }))
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    const reviewed = new Map(expected.map(entry => [entry.path, entry]))
+    const observed = new Map(actual.map(entry => [entry.path, entry]))
+    const differences = [...new Set([...reviewed.keys(), ...observed.keys()])].sort().flatMap(path => {
+      const expected = reviewed.get(path) ?? null, actual = observed.get(path) ?? null
+      return JSON.stringify(expected) === JSON.stringify(actual) ? [] : [{ path, expected, actual }]
+    })
+    throw new Error(`Framework source differs from the reviewed fork ledger; ${differences.length} mismatched entries. Inspect exact bytes, modes and links: ${JSON.stringify(differences.slice(0, 10))}`)
+  }
 }
 
 export async function readFrameworkSource(root = repository, { platform = process.platform } = {}) {
