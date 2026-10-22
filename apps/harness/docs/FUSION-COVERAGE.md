@@ -4,7 +4,7 @@
 
 本账本以冻结的 YouDub 源快照 `f6f927903581b165f2bf6c840ea65b896d319524` 为比较对象。源清单为 `../baselines/youdub-source-inventory.json`：58 条 API、11 个媒体操作、9 个页面入口、50 组元素定义。计数只说明清单覆盖范围，不能证明功能已经运行通过。
 
-本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E22 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
+本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E23 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
 
 ## 基线与不可变边界
 
@@ -37,7 +37,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `GET /api/health` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
 | `GET /api/v2/catalog` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
 | `GET /api/v2/workflows` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 实际 Host 读取内置与外部工作流目录通过
-| `POST /api/v2/workflow-documents/migrate-defaults` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 新 profile 的迁移空操作通过；含旧默认配置的转换仍以源回归为证
+| `POST /api/v2/workflow-documents/migrate-defaults` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 空操作；E23 旧字幕默认配置自动迁移、重复请求、编辑/删除后重启与历史记录保留通过；其他输出模式及非法配置仍以源回归为证 |
 | `GET /api/v2/node-types` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | 原生图编辑器和 E17 链接运行实际读取节点目录；全部外部节点组合未覆盖 |
 | `GET /api/v2/workflow-documents` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 内置/插件模板、用户文档分页及越界拒绝通过
 | `POST /api/v2/workflow-documents` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 实际 Host 创建并持久化用户图通过
@@ -286,3 +286,4 @@ E13同时暴露长中文烧录行裁切。随后增加的显示换行补丁曾�
 - **E21 当前私有运行资源（8fea16f1）**：实际 Host/Python 读回 Node、pnpm、Python、FFmpeg、模型、缓存和配置解析路径；显式提交全部资源选择后四模型 ready，正常退出。合成凭据验证管理存储优先级；复用已有私有资源，不声明全新下载或原生验收。见[隔离证据](evidence/refactor-runtime-isolation.json)。
 
 - **E22 双语字幕导入与真实媒体导出（8fea16f1）**：官方 Connection multipart 上传英文 BOM/CRLF SRT、中文 SRT 和 zoo 视频，经原 Python `subtitles.import/v1` 保留两段文本、语言和精确时码；FFmpeg 导出视频、双 SRT，封面实际生成并读回。时间轴不匹配及坏 SRT 均保留原始 `INVALID_SUBTITLES`，不产生最终输出。导出继续沿用原分句/去末尾标点规则，原导入结果保留完整文本。见[字幕导入证据](evidence/refactor-subtitle-import.json)。未调用 ASR/LLM/TTS；原生保存与播放另验收。
+- **E23 旧默认配置迁移（6102ac42）**：隔离复制已有验收数据库，在实际 Host 中将旧字幕默认配置转换为工作流；保留模型、设备、提示词、语言和 65,535 输出上限。重复迁移不覆盖用户编辑，编辑和删除状态均经过重启读回。6 个历史任务、2 个用户工作流与原默认配置的数据库内容逐项保持一致，源数据库未改动，三次 Host 均正常退出。见[迁移证据](evidence/refactor-legacy-defaults-host.json)。复用已有私有资源，无新媒体推理或原生界面验收。

@@ -86,6 +86,36 @@ describe('Menu', () => {
     { id: 'b', label: 'Beta', disabled: true },
   ]
 
+  it.each(['input', 'button'])('focuses the first enabled %s after portal placement without stealing focus on reposition', (kind) => {
+    let anchor: DOMRect | null = null
+    function Harness() {
+      const [open, setOpen] = useState(false)
+      return <Menu portal autoFocus open={open} getAnchorRect={() => anchor}
+        anchor={<button onClick={() => setOpen(true)}>trigger</button>} onClose={() => setOpen(false)}>
+        <input disabled aria-label="Disabled field" />
+        {kind === 'input' ? <input aria-label="First" /> : <button>First</button>}
+        <input aria-label="Second" />
+      </Menu>
+    }
+    render(<Harness />)
+    const trigger = screen.getByRole('button', { name: 'trigger' })
+    trigger.focus()
+    fireEvent.click(trigger)
+    expect(document.activeElement).toBe(trigger)
+    anchor = new DOMRect(20, 20, 100, 32)
+    fireEvent.resize(window)
+    const first = kind === 'input' ? screen.getByRole('textbox', { name: 'First' }) : screen.getByRole('button', { name: 'First' })
+    expect(document.activeElement).toBe(first)
+    const second = screen.getByRole('textbox', { name: 'Second' })
+    second.focus()
+    anchor = new DOMRect(40, 40, 100, 32)
+    fireEvent.resize(window)
+    expect(document.activeElement).toBe(second)
+    fireEvent.keyDown(second, { key: 'Escape' })
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
   it('shows items only while open; select fires onSelect', () => {
     const onSelect = vi.fn()
     const { rerender } = render(

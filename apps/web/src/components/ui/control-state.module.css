@@ -1,3 +1,4 @@
+.input { box-sizing: border-box; }
 .input:has(input:disabled) { opacity: .5; }
 .input:has(input[aria-invalid='true']), .textarea[aria-invalid='true'] { border-color: var(--dsw-alias-state-error-primary); }
 .textarea:disabled { opacity: .5; }

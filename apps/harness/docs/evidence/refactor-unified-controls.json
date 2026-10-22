@@ -45,9 +45,17 @@
     ],
     "screenshots": [
       "refactor-unified-controls-home.png",
-      "refactor-unified-controls-node.png"
+      "refactor-unified-controls-node.png",
+      "refactor-unified-controls-committed.png"
     ],
-    "shutdown": "clean IPC shutdown, exit 0"
+    "shutdown": "clean IPC shutdown, exit 0",
+    "committedCandidateRecheck": [
+      "Clean Host restart at candidate commit",
+      "Homepage visible with original hero and logo",
+      "Source-language menu selects English and restores automatic detection",
+      "No console warning or error entries",
+      "Clean Host IPC shutdown, exit 0"
+    ]
   },
   "limitations": [
     "Native CUA inventory still reported Mac locked; no native-window/file-dialog acceptance claimed",
@@ -56,5 +64,6 @@
   ],
   "ci": {
     "status": "pending for committed candidate"
-  }
+  },
+  "candidateCommit": "6102ac42981ad2cb2cf8e7ce6f7bb9a435df18a7"
 }

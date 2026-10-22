@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-23",
+  "baseCommit": "6102ac42981ad2cb2cf8e7ce6f7bb9a435df18a7",
+  "scope": "P4 shared workflow field popover and demonstrated portal autofocus/width fixes; source development only",
+  "changes": [
+    "WorkflowOptions uses shared ui/popover.tsx backed by the retained Harness Menu; removed Desktop-only Popover and build alias.",
+    "Actual browser revealed premature input autofocus in the hidden portal. Menu now focuses its first enabled button or form field after placement; reposition does not steal focus.",
+    "Actual browser revealed a full-width Input wrapper adding padding and border outside its container. Shared Input uses border-box to retain the requested width."
+  ],
+  "framework": {
+    "packages": 209,
+    "treeEntries": 5239,
+    "sha256": "492775bfde1e1cde9526b647178d6814f17f6efcc8bf15804b7f28f12866ed38",
+    "changed": [
+      "packages/client/ui-primitives/src/Menu.tsx",
+      "packages/client/ui-primitives/tests/atoms.client.spec.tsx",
+      "packages/client/ui-primitives/README.md"
+    ],
+    "originalArchiveVerified": true,
+    "originalSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85"
+  },
+  "local": {
+    "frameworkGui": {
+      "files": 455,
+      "passed": 7593,
+      "failed": 0
+    },
+    "businessFrontend": {
+      "files": 38,
+      "passed": 268,
+      "failed": 0
+    },
+    "finalFocusedTests": 15,
+    "webTypecheck": "passed",
+    "frameworkBuild": "passed",
+    "productBuild": "passed",
+    "composition": "passed",
+    "sourceReceipt": "passed",
+    "frameworkAggregateTypecheck": "passed",
+    "documentationLinks": {
+      "checked": 180,
+      "missing": 0
+    }
+  },
+  "browser": {
+    "host": "actual source Desktop Host in isolated profile",
+    "language": "ja",
+    "fixture": "Existing graph-text-review template, no task submitted",
+    "checks": [
+      "Open first text quick field: INPUT with aria-label text owns focus",
+      "Edit text updates only the chosen quick field",
+      "Escape closes the menu and restores its trigger",
+      "Input wrapper border-box; field group and viewport both have clientWidth=scrollWidth=264",
+      "No console warnings or errors",
+      "Host clean IPC shutdown exit 0"
+    ],
+    "screenshot": "refactor-shared-popover.png"
+  },
+  "limitations": [
+    "Native CUA still reports Mac locked; native window/file dialogs remain open",
+    "No new media inference or quality acceptance",
+    "Retired upstream product browser replay entry is absent; actual YouDub Host browser validation used for the changed interaction"
+  ],
+  "ci": {
+    "status": "pending for committed candidate"
+  }
+}

@@ -50,6 +50,10 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 
 已删除八类控件的桌面专用实现与构建替换；业务测试和 Desktop 共用原 `components/ui/*`，通过统一入口接到 Harness 源码/官方运行时。268 项前端回归、类型检查、产品构建和活动模块检查通过；独立实际 Host 验证日语首页菜单、节点语言、人工审核开关与撤销。框架源码和原始归档未修改。原生窗口与完整媒体验收继续开放。[证据](evidence/refactor-unified-controls.json)
 
+随后将快捷字段浮层统一到共享 `ui/popover.tsx`，删除对应桌面适配和 alias。实际页面发现隐藏 Portal 中的提前聚焦失效，以及全宽输入框加上内边距后产生横向溢出。活动 fork 的 `Menu.autoFocus` 现在等待定位后聚焦首个可用按钮或表单字段，重新定位保持用户焦点；共享 Input 使用 `border-box`。7,593 项框架 GUI、268 项业务界面、构建与实际页面验证通过，原始归档完整性不变。[浮层证据](evidence/refactor-shared-popover.json)
+
+旧默认配置也已补齐实际 Host 验收：自动转换、重复迁移、编辑和删除后的重启读回通过；6 个历史任务和 2 个用户工作流的数据库行保持一致。[迁移证据](evidence/refactor-legacy-defaults-host.json)
+
 ## 尚需实施的收尾
 
 1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；8fea16f1 的实际 Windows CI 已通过三种旧锁迁移及卸载后 SDK 链接检查。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)

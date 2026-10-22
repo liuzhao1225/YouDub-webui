@@ -121,7 +121,7 @@ const MEASURE_STYLE: CSSProperties = { visibility: 'hidden', left: 0, top: 0 }
  * anchor's first button, and selecting a row does the same — the rows unmount
  * with the list. Only a keyboard on the trigger or inside the list is
  * intercepted; Tab presses elsewhere on the page stay the browser's.
- * @param props.autoFocus - focus the first item on open; the arrow keys walk the list either way.
+ * @param props.autoFocus - focus the first enabled button or form field after the list is placed; the arrow keys walk menu rows either way.
  * @param props.open - whether the list is showing (owner-controlled).
  * @param props.anchor - the trigger element (rendered in place).
  * @param props.items - selectable data rows and optional separators (default none; with no `children` either, the list is empty).
@@ -309,12 +309,13 @@ export function Menu({ open, anchor, items = [], children, selectedId, selectedI
     triggerRef.current = active instanceof HTMLElement && rootRef.current?.contains(active) === true ? active : null
   }, [open])
 
+  const placed = !portal || fixedPos !== null
   useEffect(() => {
-    if (!open || !autoFocus) return
-    const first = listRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')
-    walkIndex.current = first === undefined || first === null ? null : 0
+    if (!open || !autoFocus || !placed) return
+    const first = listRef.current?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled)')
+    walkIndex.current = first?.tagName === 'BUTTON' ? 0 : null
     if (first != null) focusWithoutRing(first)
-  }, [open, autoFocus])
+  }, [open, autoFocus, placed])
 
   useEffect(() => {
     if (!open) {

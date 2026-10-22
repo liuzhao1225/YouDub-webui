@@ -19,7 +19,7 @@
 | 工作流库、画布、节点配置 | [`workflows.tsx`](../../web/src/plugin/builtin/workflows.tsx)、[`workflow-canvas.tsx`](../../web/src/plugin/builtin/workflow-canvas.tsx)、[`workflow-settings.tsx`](../../web/src/plugin/builtin/workflow-settings.tsx) | React Flow 作为业务画布使用，页面接入在 `workflow-pages.tsx` |
 | 字幕、翻译与音频订正 | [`workflow-task.tsx`](../../web/src/plugin/builtin/workflow-task.tsx) | 使用已有草稿、保存、确认和节点详情合同 |
 | 侧栏、主区域、官方设置入口 | [`client.jsx`](../src/client.jsx) | 通过官方 Layout 与 Slots 装配 |
-| 通用控件属性转换 | [`ui/`](../../web/src/components/ui)、[`harness-primitives.ts`](../../web/src/components/ui/harness-primitives.ts)、[`dialog.tsx`](../src/frontend/dialog.tsx)、[`popover.tsx`](../src/frontend/popover.tsx) | 使用官方交互实现，转换原业务组件需要的属性 |
+| 通用控件属性转换 | [`ui/`](../../web/src/components/ui)、[`harness-primitives.ts`](../../web/src/components/ui/harness-primitives.ts)、[`dialog.tsx`](../src/frontend/dialog.tsx)、[`popover.tsx`](../../web/src/components/ui/popover.tsx) | 使用官方交互实现，转换原业务组件需要的属性 |
 | 产品布局 | [`style.css`](../src/style.css) | YouDub 页面与侧栏范围内的布局规则 |
 | 色彩、品牌动效 | [`globals.css`](../../web/src/app/globals.css)、[`build.mjs`](../build.mjs) | 提取原主题变量和动效，映射到官方 theme tokens |
 | 模型与扩展页面 | [`translation-setup.tsx`](../src/frontend/translation-setup.tsx)、[`plugins.tsx`](../src/frontend/plugins.tsx) | 使用官方 ModelsSection、PluginManagerPage 和对应控制器 |
@@ -56,7 +56,7 @@
 | 原组件依赖 | Harness 接入 |
 | --- | --- |
 | Button、Input、Select、Tooltip、Switch、Tag、Segmented 等 | `components/ui/*` → `harness-primitives.ts`；测试载入官方源码，Desktop 连接官方共享运行时 |
-| Base UI Dialog/Popover 的旧调用形状 | `frontend/dialog.tsx` / `popover.tsx` → 官方 Modal/Menu |
+| Base UI Dialog 的旧调用形状 | `frontend/dialog.tsx` → 官方 Modal；快捷字段浮层已直接使用共享 `ui/popover.tsx` 和官方 Menu |
 | 原 `plugin/sdk` 的导航与辅助接口 | `frontend/sdk.tsx` → 注入的页面导航与原领域纯函数 |
 | `zustand/vanilla`（限原 Web 源文件） | `frontend/store.ts` → 官方 `createSnapshotStore` |
 | 原 i18n、theme、clipboard、asset-url | 对应 `frontend/*` 绑定 |

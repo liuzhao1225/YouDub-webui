@@ -21454,10 +21454,10 @@
         "path": "packages/client/ui-primitives/README.md",
         "type": "file",
         "executable": false,
-        "size": 42595,
-        "sha256": "36c6e3b1f6a64960eb6a03dbc33e8f347ad36b768c336fdc887f104b746b8e2b"
+        "size": 42879,
+        "sha256": "f68a061c46d520648ae77f3107c2dee11aeaf0f63ed4bafb1a597e349b97ec2b"
       },
-      "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+      "reason": "YouDub quick-field menus reuse the retained Menu; defer autofocus until portal placement and support enabled form fields, preserving focus on reposition and return on Escape. Include focused regression and consumer documentation."
     },
     {
       "path": "packages/client/ui-primitives/README.zh.md",
@@ -21476,6 +21476,42 @@
         "sha256": "066dbf26442c162007d17cd9616fa58a657d68369b027e0ea82f914638335179"
       },
       "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Menu.tsx",
+      "before": {
+        "path": "packages/client/ui-primitives/src/Menu.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 26643,
+        "sha256": "6a1acc8cc2310d036471b42a7a047a803c0e0629ba46810836bcf4f7c786d4b1"
+      },
+      "after": {
+        "path": "packages/client/ui-primitives/src/Menu.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 26804,
+        "sha256": "7fafdee6051518d1f0ea72ec33478add3c98d5dd84fc50a73eaaa717bf7940ce"
+      },
+      "reason": "YouDub quick-field menus reuse the retained Menu; defer autofocus until portal placement and support enabled form fields, preserving focus on reposition and return on Escape. Include focused regression and consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-primitives/tests/atoms.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-primitives/tests/atoms.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 30078,
+        "sha256": "27e8b5013453386da44ed12f83bd102a58f69d44b476d6e5ae3395fc6e552738"
+      },
+      "after": {
+        "path": "packages/client/ui-primitives/tests/atoms.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 31498,
+        "sha256": "1e6b52312f8f4ac10b80e4074560ce377fb0f81335f0a5ccd50991ac174ba4cd"
+      },
+      "reason": "YouDub quick-field menus reuse the retained Menu; defer autofocus until portal placement and support enabled form fields, preserving focus on reposition and return on Escape. Include focused regression and consumer documentation."
     },
     {
       "path": "packages/client/ui-renderer/README.md",
