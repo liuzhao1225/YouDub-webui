@@ -649,6 +649,10 @@
     "setup.directory": "安装目录",
     "setup.browse": "选择文件夹",
     "setup.directoryDetail": "运行环境、模型和任务文件保存在此目录。",
-    "setup.install": "确认并准备环境"
+    "setup.install": "确认并准备环境",
+    "workflows.output.dubbedVideo": "配音视频",
+    "workflows.output.dubbedAudio": "配音音频",
+    "workflows.output.sourceSubtitles": "原文字幕",
+    "workflows.output.translatedSubtitles": "译文字幕"
   }
 }

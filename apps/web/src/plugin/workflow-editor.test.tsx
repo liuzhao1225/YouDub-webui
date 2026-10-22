@@ -11,6 +11,7 @@ import { bindTestComponent } from './test-bindings'
 const GraphStudio = bindTestComponent(GraphStudioView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
 import { serializeWorkflowEdits, workflowDrafts, workflowViews } from './builtin/workflow-utils'
 import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
+import dubbingTemplate from '../../../../packages/builtin/src/workflow-templates/source-clone-dubbing.json'
 
 vi.mock('./builtin/workflow-canvas', () => ({
   WorkflowCanvas: ({ document, fitOnLoad, onReady, onOpen, onSelect, onChange, addNodeRef }: {
@@ -70,6 +71,39 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
   return { request, push, navigate }
 }
 afterEach(() => { cleanup(); workflowDrafts.clear(); workflowViews.clear(); window.localStorage.clear(); window.history.replaceState(null, '', '/'); vi.restoreAllMocks() })
+
+it('shows built-in names in Japanese and saves a copy with the displayed names and custom port edits', async () => {
+  window.localStorage.setItem('youdub-ui-language', 'ja')
+  const template = { ...structuredClone(dubbingTemplate), id: 'youdub.dubbing', title: '视频配音' } as WorkflowDocument
+  const original = structuredClone(template)
+  const { request } = mount('/workflows/youdub.dubbing', { record: { id: template.id, revision: 0, origin: 'builtin', document: template } })
+  const user = userEvent.setup()
+  expect(await screen.findByLabelText('ワークフロー名')).toHaveValue('動画の吹き替え')
+  await user.click(screen.getByRole('button', { name: '入力 / 出力' }))
+  expect(screen.getByLabelText('入力名')).toHaveValue('動画')
+  const outputs = screen.getAllByLabelText('出力名')
+  expect(outputs[0]).toHaveValue('吹き替え動画')
+  expect(outputs[1]).toHaveValue('吹き替え音声')
+  await user.clear(outputs[1]); await user.type(outputs[1], 'My narration')
+  await user.click(screen.getByRole('button', { name: 'コピーを保存' }))
+  const saved = request.mock.calls.find(([url, init]) => url === '/api/v2/workflow-documents' && init?.method === 'POST')
+  const copy = JSON.parse(String(saved?.[1]?.body)).document as WorkflowDocument
+  expect(copy.id).not.toBe(template.id)
+  expect(copy.title).toBe('動画の吹き替え · コピー')
+  expect(copy.inputs[0].label).toBe('動画')
+  expect(copy.outputs.map(port => port.label)).toEqual(['吹き替え動画', 'My narration'])
+  expect(template).toEqual(original)
+})
+
+it('preserves custom workflow and port names when the interface language changes', async () => {
+  window.localStorage.setItem('youdub-ui-language', 'ja')
+  const custom = { ...structuredClone(dubbingTemplate), id: 'my-dubbing', title: '我的配音' } as WorkflowDocument
+  mount('/workflows/my-dubbing', { record: { id: custom.id, revision: 1, origin: 'user', document: custom } })
+  expect(await screen.findByLabelText('ワークフロー名')).toHaveValue('我的配音')
+  await userEvent.setup().click(screen.getByRole('button', { name: '入力 / 出力' }))
+  expect(screen.getByLabelText('入力名')).toHaveValue('视频')
+  expect(screen.getAllByLabelText('出力名').map(input => (input as HTMLInputElement).value)).toEqual(['配音视频', '配音音频'])
+})
 
 it('offers use and edit separately and opens use directly in the run panel', async () => {
   const { push } = mount('/workflows', { record: { ...record, origin: 'builtin', revision: 0 } })

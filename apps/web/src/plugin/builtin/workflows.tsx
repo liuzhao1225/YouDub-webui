@@ -7,14 +7,14 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, SlidersHorizontal, Trash2, Undo2, Upload, X } from 'lucide-react'
 import { Link, text, type Diagnostic, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
-import type { MessageKey, Text } from '@/locales'
+import type { Text } from '@/locales'
 import { Button } from '@/components/ui/button'
 import { Page, PageHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { WorkflowCanvas } from './workflow-canvas'
 import { GraphPorts, NodeSettings, SynthesizeNodeEditor } from './workflow-settings'
-import { blankWorkflow, parseWorkflow, serializeWorkflowEdits, workflowDrafts, workflowViews } from './workflow-utils'
+import { blankWorkflow, copyWorkflowLabels, parseWorkflow, serializeWorkflowEdits, workflowDrafts, workflowViews, workflowTemplateTitle } from './workflow-utils'
 import { useUnsavedChanges } from './workflow-guard'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { WorkflowOptions, optionPillClassName } from './workflow-options'
@@ -23,14 +23,8 @@ import { WorkflowRerun } from './workflow-rerun'
 import { WorkflowDiagnostics } from './workflow-errors'
 import { TaskNodePage, TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from './workflow-task'
 
-const templateTitles: Record<string, MessageKey> = {
-  'youdub.subtitles': 'workflows.template.subtitles',
-  'youdub.dubbing': 'workflows.template.dubbing',
-  'youdub.subtitles-dubbing': 'workflows.template.subtitlesDubbing',
-}
 function workflowTitle(record: WorkflowDocumentRecord, tx: Text) {
-  const key = record.origin === 'builtin' ? templateTitles[record.id] : undefined
-  return key ? tx(key) : record.document.title
+  return record.origin === 'builtin' ? workflowTemplateTitle(record.document, tx) : record.document.title
 }
 
 export function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bindings<'request' | 'navigate' | 'useWorkflowDocuments'>) {
@@ -152,7 +146,8 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
     setBusy(true); setError('')
     try {
       const create = copy || initial.origin !== 'user' || !revision
-      const next = create ? { ...current.current, id: crypto.randomUUID(), title: copy || initial.origin !== 'user' ? `${current.current.title} · ${tx("workflows.copy")}` : current.current.title } : current.current
+      const copied = initial.origin === 'builtin' ? copyWorkflowLabels(current.current, tx) : current.current
+      const next = create ? { ...copied, id: crypto.randomUUID(), title: copy || initial.origin !== 'user' ? `${copied.title} · ${tx("workflows.copy")}` : copied.title } : current.current
       const record = await request<WorkflowDocumentRecord>(create ? '/api/v2/workflow-documents' : `/api/v2/workflow-documents/${initial.id}`, { method: create ? 'POST' : 'PUT', body: JSON.stringify(create ? { document: next } : { document: next, expectedRevision: revision }) })
       workflowDrafts.delete(initial.id)
       setSaved(serializeWorkflowEdits(record.document)); setRevision(record.revision); setDocument(record.document); current.current = record.document
@@ -191,7 +186,7 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
     {guard.dialog}
     <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-3">
       <Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx("workflows.back")} onClick={() => navigate(nodeId ? `/workflows/${initial.id}${sourceQuery}` : '/workflows')}><ArrowLeft className="size-4" /></Button>
-      <Input aria-label={tx("workflows.workflow.name")} disabled={editingLocked} className="min-w-32 flex-1 border-0 bg-transparent text-base font-semibold shadow-none sm:max-w-xs" value={document.title} onChange={(event) => change({ ...document, title: event.target.value })} />
+      <Input aria-label={tx("workflows.workflow.name")} disabled={editingLocked} className="min-w-32 flex-1 border-0 bg-transparent text-base font-semibold shadow-none sm:max-w-xs" value={initial.origin === 'builtin' ? workflowTemplateTitle(document, tx) : document.title} onChange={(event) => change({ ...document, title: event.target.value })} />
       <span className="mr-auto text-xs text-muted-foreground">{dirty ? tx("workflows.unsaved") : initial.origin !== 'user' ? tx("workflows.template") : revision ? tx("workflows.saved") : tx("workflows.draft")}</span>
       <Button size="icon-sm" variant="ghost" disabled={editingLocked || !undo.length} aria-label={tx("workflows.undo")} onClick={undoChange}><Undo2 /></Button><Button size="icon-sm" variant="ghost" disabled={editingLocked || !redo.length} aria-label={tx("workflows.redo")} onClick={redoChange}><Redo2 /></Button>
       <Button size="sm" variant="outline" disabled={editingLocked || (initial.origin === 'user' && revision > 0 && !dirty)} onClick={() => void save().catch(() => undefined)}><Save />{initial.origin !== 'user' ? tx("workflows.save.copy") : tx("workflows.save")}</Button>

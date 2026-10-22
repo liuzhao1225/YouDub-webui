@@ -648,6 +648,10 @@
     "setup.directory": "Installation folder",
     "setup.browse": "Choose folder",
     "setup.directoryDetail": "Runtime, models and task files are stored here.",
-    "setup.install": "Confirm and prepare"
+    "setup.install": "Confirm and prepare",
+    "workflows.output.dubbedVideo": "Dubbed video",
+    "workflows.output.dubbedAudio": "Dubbed audio",
+    "workflows.output.sourceSubtitles": "Original subtitles",
+    "workflows.output.translatedSubtitles": "Translated subtitles"
   }
 }

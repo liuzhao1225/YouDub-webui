@@ -649,6 +649,10 @@
     "setup.directory": "インストール先",
     "setup.browse": "フォルダーを選択",
     "setup.directoryDetail": "実行環境、モデル、タスクのファイルを保存します。",
-    "setup.install": "確認して環境を準備"
+    "setup.install": "確認して環境を準備",
+    "workflows.output.dubbedVideo": "吹き替え動画",
+    "workflows.output.dubbedAudio": "吹き替え音声",
+    "workflows.output.sourceSubtitles": "原文字幕",
+    "workflows.output.translatedSubtitles": "翻訳字幕"
   }
 }

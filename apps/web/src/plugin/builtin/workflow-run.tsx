@@ -11,7 +11,7 @@ import { acceptsInputMime, compatibleInputFiles, videoLinkInput, withVideoLink, 
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
 import { ConfigEditor } from './schema-form'
-import { nodeDefinition } from './workflow-utils'
+import { nodeDefinition, workflowPortLabel } from './workflow-utils'
 import { WorkflowResources } from './workflow-resources'
 import { workflowDiagnostics, WorkflowDiagnostics } from './workflow-errors'
 
@@ -107,7 +107,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
       {proxyField && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { proxyPort: proxyField } }} value={{ proxyPort }} diagnostics={[]} readOnly={locked} onChange={(config) => setDraft((current) => ({ ...current, proxyPort: config.proxyPort as number | undefined }))} /></div>}
       <div className="my-2 text-center text-xs text-subtle-foreground">{tx("workflow.run.or.upload.a.video")}</div>
     </div>}
-    <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id, label: ['youdub.subtitles', 'youdub.dubbing', 'youdub.subtitles-dubbing'].includes(document.id) && input.id === 'video' && input.label === '视频' ? tx("workflow.run.video") : input.label }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>
+    <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id, label: workflowPortLabel(document, input, tx) }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>
     </div>
   const status = <div className="space-y-3">
     {document.nodes.map((node) => { const definition = nodeDefinition(node, types); return definition?.runtimeInputSchema ? <fieldset className="space-y-3" key={node.id}><legend className="mb-2 text-sm font-medium">{node.label || text(definition.label, language)}</legend><ConfigEditor useSlot={useSlot} ownerId={`runtime:${node.type}`} value={runtime[node.id] ?? {}} schema={definition.runtimeInputSchema} diagnostics={[]} readOnly={locked} onChange={(value) => { setDraft((current) => ({ ...current, runtimeByDocument: { ...current.runtimeByDocument, [document.id]: { ...current.runtimeByDocument[document.id], [node.id]: value } } })); setDiagnostics([]) }} /></fieldset> : null })}

@@ -1,5 +1,33 @@
 import type { Endpoint, GraphNode, NodeTypeDefinition, WorkflowDocument } from '../contracts'
 import { text } from '../sdk'
+import { translateMessage, type MessageKey, type Text } from '@/locales'
+
+const templateTitles: Record<string, MessageKey> = {
+  'youdub.subtitles': 'workflows.template.subtitles',
+  'youdub.dubbing': 'workflows.template.dubbing',
+  'youdub.subtitles-dubbing': 'workflows.template.subtitlesDubbing',
+}
+const templatePorts: Record<string, MessageKey[]> = {
+  video: ['workflow.run.video', 'workflows.output.dubbedVideo'],
+  audio: ['workflows.output.dubbedAudio'],
+  'source-subtitles': ['workflows.output.sourceSubtitles'],
+  'translated-subtitles': ['workflows.output.translatedSubtitles'],
+}
+export function workflowTemplateTitle(document: WorkflowDocument, tx: Text) {
+  const key = templateTitles[document.id]
+  return key && document.title === translateMessage('zh', key) ? tx(key) : document.title
+}
+export function workflowPortLabel(document: WorkflowDocument, port: { id: string; label: string }, tx: Text) {
+  const key = templateTitles[document.id] && templatePorts[port.id]?.find(key => port.label === translateMessage('zh', key))
+  return key ? tx(key) : port.label
+}
+/** A saved copy receives the names currently displayed; custom names remain unchanged. */
+export function copyWorkflowLabels(document: WorkflowDocument, tx: Text): WorkflowDocument {
+  return { ...document, title: workflowTemplateTitle(document, tx),
+    inputs: document.inputs.map(port => ({ ...port, label: workflowPortLabel(document, port, tx) })),
+    outputs: document.outputs.map(port => ({ ...port, label: workflowPortLabel(document, port, tx) })),
+  }
+}
 
 export const INPUTS_ID = '$inputs', OUTPUTS_ID = '$outputs'
 export function nodeDefinition(node: GraphNode, types: NodeTypeDefinition[]) {
@@ -7,7 +35,7 @@ export function nodeDefinition(node: GraphNode, types: NodeTypeDefinition[]) {
 }
 export function sources(document: WorkflowDocument, types: NodeTypeDefinition[], language = 'en') {
   return [
-    ...document.inputs.map((input) => ({ source: { nodeId: INPUTS_ID, portId: input.id }, label: input.label, kind: input.kind, schemaId: input.schemaId })),
+    ...document.inputs.map((input) => ({ source: { nodeId: INPUTS_ID, portId: input.id }, label: workflowPortLabel(document, input, key => translateMessage(language, key)), kind: input.kind, schemaId: input.schemaId })),
     ...document.nodes.flatMap((node) => {
       const definition = nodeDefinition(node, types)
       const repeated = !node.label && document.nodes.filter((item) => item.type === node.type && !item.label).length > 1

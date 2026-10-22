@@ -9,7 +9,7 @@ import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { TaskState } from './task-status'
 import { fieldOptions, fieldType, fieldValue, nodeModel } from '@/runtime/schema-fields'
-import { canConnect, connect, INPUTS_ID, nodeDefinition, OUTPUTS_ID, removeNodes } from './workflow-utils'
+import { canConnect, connect, INPUTS_ID, nodeDefinition, OUTPUTS_ID, removeNodes, workflowPortLabel } from './workflow-utils'
 import '@xyflow/react/dist/style.css'
 import './workflow.css'
 
@@ -102,8 +102,8 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
     const inputPosition = { x: xs.length ? Math.min(...xs) - NODE_COLUMN_SPACING : 0, y: centerY }
     const outputPosition = { x: xs.length ? Math.max(...xs) + NODE_COLUMN_SPACING : NODE_COLUMN_SPACING, y: centerY }
     const virtual: FlowNode[] = []
-    if (document.inputs.length) virtual.push({ id: INPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[INPUTS_ID] ?? document.presentation.positions[INPUTS_ID] ?? inputPosition, data: { label: tx("workflow.canvas.inputs"), inputs: [], outputs: document.inputs.map((input) => ({ id: input.id, label: input.label })), readOnly, disabled, missing: false, virtual: 'input' } })
-    if (document.outputs.length) virtual.push({ id: OUTPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[OUTPUTS_ID] ?? document.presentation.positions[OUTPUTS_ID] ?? outputPosition, data: { label: tx("workflow.canvas.outputs"), outputs: [], inputs: document.outputs.map((output) => ({ id: output.id, label: output.label, required: output.required, connected: true })), readOnly, disabled, missing: false, virtual: 'output' } })
+    if (document.inputs.length) virtual.push({ id: INPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[INPUTS_ID] ?? document.presentation.positions[INPUTS_ID] ?? inputPosition, data: { label: tx("workflow.canvas.inputs"), inputs: [], outputs: document.inputs.map((input) => ({ id: input.id, label: workflowPortLabel(document, input, tx) })), readOnly, disabled, missing: false, virtual: 'input' } })
+    if (document.outputs.length) virtual.push({ id: OUTPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[OUTPUTS_ID] ?? document.presentation.positions[OUTPUTS_ID] ?? outputPosition, data: { label: tx("workflow.canvas.outputs"), outputs: [], inputs: document.outputs.map((output) => ({ id: output.id, label: workflowPortLabel(document, output, tx), required: output.required, connected: true })), readOnly, disabled, missing: false, virtual: 'output' } })
     return [...virtual, ...execution].map((node) => ({ ...node, measured: measurements[node.id] }))
   }, [document, types, language, readOnly, disabled, steps, selected, viewPositions, measurements, onChange, onOpen, tx])
   useEffect(() => {

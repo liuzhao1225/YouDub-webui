@@ -2,9 +2,10 @@ import { createRef, useEffect, useRef } from 'react'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider, useI18n } from '@/lib/i18n'
 import type { NodeTypeDefinition, TaskStep, WorkflowDocument } from './contracts'
 import { WorkflowCanvas } from './builtin/workflow-canvas'
+import subtitlesTemplate from '../../../../packages/builtin/src/workflow-templates/reviewed-subtitles.json'
 
 const flow = vi.hoisted(() => ({
   screenToFlowPosition: vi.fn(() => ({ x: 1200, y: -300 })),
@@ -24,6 +25,27 @@ vi.mock('@xyflow/react', () => ({
 const type: NodeTypeDefinition = { type: 'test.node', version: '1', providerId: 'test', operation: 'test', label: '测试节点', category: 'test', provider: { id: 'test', operations: [] }, inputs: [], outputs: [], configSchema: { type: 'object', properties: { language: { type: 'string', title: '语言', enum: ['zh', 'en'] } } }, defaults: { language: 'zh' }, ui: { quickFields: ['language'] } }
 function graph(): WorkflowDocument { return { format: 'youdub.workflow', formatVersion: 1, id: 'graph', title: 'Graph', nodes: ['a', 'b', 'c'].map((id) => ({ id, type: type.type, typeVersion: '1', provider: { id: 'test' }, config: { language: 'zh' }, autoContinue: id === 'c' })), inputs: [], outputs: [], edges: [], presentation: { positions: {}, viewport: { x: -600, y: 50, zoom: 0.5 } } } }
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); window.localStorage.clear() })
+
+it('updates built-in canvas ports when switching languages without rewriting the workflow', async () => {
+  const document = { ...structuredClone(subtitlesTemplate), id: 'youdub.subtitles', title: '字幕翻译', nodes: [], edges: [] } as WorkflowDocument
+  const change = vi.fn()
+  function LanguageSwitch() {
+    const { setLanguage } = useI18n()
+    return <><button onClick={() => setLanguage('ja')}>日本語</button><button onClick={() => setLanguage('en')}>English</button></>
+  }
+  render(<LanguageProvider><LanguageSwitch /><WorkflowCanvas document={document} types={[]} onChange={change} onOpen={() => {}} /></LanguageProvider>)
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: '日本語' }))
+  expect(screen.getByTestId('$inputs')).toHaveTextContent('動画')
+  expect(screen.getByTestId('$outputs')).toHaveTextContent('原文字幕')
+  expect(screen.getByTestId('$outputs')).toHaveTextContent('翻訳字幕')
+  await user.click(screen.getByRole('button', { name: 'English' }))
+  expect(screen.getByTestId('$inputs')).toHaveTextContent('Video')
+  expect(screen.getByTestId('$outputs')).toHaveTextContent('Original subtitles')
+  expect(screen.getByTestId('$outputs')).toHaveTextContent('Translated subtitles')
+  expect(document.inputs[0].label).toBe('视频')
+  expect(change).not.toHaveBeenCalled()
+})
 
 it('places clicked nodes using the current viewport and preserves the graph', async () => {
   const document = graph(), change = vi.fn(), selected = vi.fn()
