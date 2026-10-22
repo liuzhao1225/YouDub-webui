@@ -7,8 +7,8 @@ import { join, sep } from 'node:path'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 const stage = join(root, '.cache/harness/source-build')
-// Whole-client framework tests read the same bundle and dependency links as Desktop.
-process.env.DSH_TEST_PRODUCT_BUNDLE = join(root, 'apps/harness/dist/desktop/runtime-project/youdub-plugin/package.json')
+// Whole-client framework tests use prepare-framework-client.mjs and the same composer as Desktop.
+process.env.DSH_TEST_PRODUCT_BUNDLE = join(root, '.cache/harness/framework-client-project/youdub-plugin/package.json')
 // npm pretest verifies the fork and staged bytes once before test workers start.
 const framework = JSON.parse(readFileSync(join(stage, 'youdub-source-inputs.json'), 'utf8'))
 const receipt = JSON.parse(readFileSync(join(stage, 'youdub-source-build.json'), 'utf8'))

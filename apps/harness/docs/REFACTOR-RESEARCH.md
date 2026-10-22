@@ -260,3 +260,13 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 第一轮全测试工具回归暴露四处旧产品假设，修正后通过 12 个文件、125 项测试，另有 1 项既有预期失败。源码构建随后发现 Node 测试工具误用浏览器限定的环境类型，已改用 `node:process` 并让测试包仅启用 Node 环境声明；产品浏览器声明不变。
 
 最终源码构建七个步骤通过，产品构建、实际组合与源码来源收据通过。设置、桌面生命周期、布局及完整客户端测试工具共 86 个文件通过，1,179 项通过、1 项既有预期失败、1 项按平台条件跳过；共享工作区产品集成 72 项通过。正式产品使用检查仍返回 207 个未发现运行使用的包，保留失败状态继续核对类型、测试和动态依赖；不能据此直接删除。该批开发版已启动，Mac 锁屏阻止了新的原生界面读回，已请求解锁；上一批截图不计入本批验收。
+
+提交 `9765291f` 对应的本地 profile、插件生命周期及分析器回归补记：37 个文件、6,047 项通过，1 项按平台条件跳过。两组框架回归合计 123 个文件、7,226 项通过，2 项平台跳过、1 项既有预期失败。该数字不包含 72 项产品集成，也不代表完整媒体流程通过。
+
+下一批的只读 AST 调研：`web-app` 的 3 个服务源码与 4 个通用测试仍需要静态文件挂载、连接令牌、公开 URL、浏览器交接和启动参数处理；135 条开发依赖中有 131 条未被这 7 个文件直接引用，多数服务于旧聊天/Agent/Office 组合。裁剪前须同时处理其 `dsh.bundle.patch`、4 个 agent preset、4 个专属场景及文档转换夹具，核对 `verify-runtime-closure`、`verify-default-product-isolation` 和 agent-preset 测试的旧路径，不能只删依赖声明。`surfaceContext`/`DSH_WEB_URL` 是仍残留的 Agent shell 接线，YouDub 配置已关闭，适合随旧组合一起移除。测试工具已脱离该旧组合，可继续复用其服务回归。
+
+该下一批调研也实际运行了两个旧根检查器：`verify-default-product-isolation` 在空 `PROFILE_TEMPLATES` 上直接失败；`verify-runtime-closure --manifest apps/desktop-host/package.json` 仍强制装入旧 Agent preset，并输出误指 Python SDK 的标题。这两项尚未适配当前产品，失败日志已保留；需与旧 Web 配置删除一起修正检查入口和测试，不能把当前源码构建/选定回归通过解释为全仓架构检查已通过。
+
+`9765291f` 的[干净 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39732051353) 在源码构建后失败：客户端测试要求的 `dist/desktop/runtime-project/youdub-plugin/package.json` 由桌面启动生成，构建本身不生成；本地之前启动过桌面，因而遗漏了这个前置条件。修正新增 `test/prepare-framework-client.mjs`，直接调用现有 `prepareSourceDevelopment` 和 Harness `prepareDevelopmentProject`，在独立 `.cache/harness/framework-client-project` 准备同一产品组合；CI 在框架测试前显式调用一次。预加载器只读取该测试项目，缺失时继续报错；无需启动窗口、修改用户 profile 或回退到旧 Harness bundle。
+
+新的独立测试项目首次准备后，同一组 86 个文件、1,179 项回归通过，既有预期失败和平台跳过各 1 项。原生运行项目与用户 profile 未被测试准备过程重建；本地测试无需先启动桌面。干净 CI 待新候选完成后补记。
