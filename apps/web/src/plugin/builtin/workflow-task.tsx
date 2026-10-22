@@ -3,7 +3,7 @@ import { copyText } from '@/lib/clipboard'
 import { NativeSelect } from '@/components/ui/native-select'
 import type { Bindings } from '../sdk'
 import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
-import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, RotateCw, Save, Search } from 'lucide-react'
+import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, LocateFixed, RotateCw, Save, Search } from 'lucide-react'
 import { Link, text, type GraphNode, type JsonObject, type JsonSchema, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
 import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
@@ -177,7 +177,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
   }
   const generic = detail.spec.operation === 'speech.synthesize/v1' && displayed.speechAudio
     ? <SpeechResult taskId={task.id} value={displayed.speechAudio as SpeechAudio} translation={historical ? undefined : detail.inputs.translation as Translation | undefined} historical={historical} raw={displayed} />
-    : <ResultViewer taskId={task.id} value={displayed} />
+    : <ResultViewer taskId={task.id} value={displayed} labels={Object.fromEntries((definition?.outputs ?? []).map(port => [port.name, text(port.label, language)]))} />
   const hasEditor = !!Custom || (!definition?.ui?.detailId && (
     (definition?.corrections?.outputPorts.includes('transcript') && !!displayed.transcript)
     || (definition?.corrections?.outputPorts.includes('translation') && !!displayed.translation)
@@ -193,7 +193,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx("workflow.task.check.submission")}</Button></div>}
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">{(['result', 'inputs', 'config', 'log'] as const).map((value) => <Button key={value} variant={tab === value ? 'secondary' : 'ghost'} size="sm" onClick={() => setTab(value)}>{value === 'result' ? tx("workflow.task.results") : value === 'inputs' ? tx("workflow.task.inputs") : value === 'config' ? tx("workflow.task.configuration") : tx("workflow.task.task.log")}</Button>)}
-      {!!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs">{tx("workflow.task.version")}<NativeSelect className="h-8 rounded-lg border border-input bg-input-bg px-2" disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
+      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect className="h-8 rounded-lg border border-input bg-input-bg px-2 text-foreground" disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
     </div>
     {tab === 'result' && historical && !!definition?.corrections && (awaitingReview || terminal) && <Button variant="outline" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={() => {
       const current = detail.resultRevisions.find((item) => item.revision === detail.outputRevision)?.outputs ?? detail.step.outputs ?? {}
@@ -207,10 +207,10 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       {Custom ? <NodePluginBoundary key={definition!.ui!.detailId} fallback={generic}><Custom detail={displayedDetail} outputs={dirty ? baseline.current.outputs : outputs} draft={patch} readOnly={!editable} onDraftChange={changeDraft} /></NodePluginBoundary> : definition?.ui?.detailId ? <><InlineAlert>{tx("workflow.task.the.node.detail.plugin.is.unavailable")}</InlineAlert>{generic}</> : definition?.corrections?.outputPorts.includes('transcript') && displayed.transcript ? <TranscriptEditor value={displayed.transcript as Transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, transcript: value })} /> : definition?.corrections?.outputPorts.includes('translation') && displayed.translation ? <TranslationEditor value={displayed.translation as Translation} transcript={transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, translation: value })} /> : generic}
       {hasEditor && Object.entries(displayed).filter(([name]) => name !== 'transcript' && name !== 'translation').map(([name, value]) => <details key={name} className="rounded-lg border border-border bg-card p-2"><summary className="cursor-pointer text-sm font-medium">{text(definition?.outputs.find((port) => port.name === name)?.label, language) || (name === 'raw' ? tx("workflow.task.original.response") : name)}</summary><div className="mt-2"><ResultViewer taskId={task.id} value={value} /></div></details>)}
     </section>}
-    {tab === 'inputs' && <ResultViewer taskId={task.id} value={detail.inputs} />}
+    {tab === 'inputs' && <ResultViewer taskId={task.id} value={detail.inputs} labels={Object.fromEntries((definition?.inputs ?? []).map(port => [port.id, text(port.label, language)]))} />}
     {tab === 'config' && <NodeConfiguration node={node} definition={definition} raw={node ?? detail.spec} />}
     {tab === 'log' && <NodeLog useQuery={useQuery} active={taskNeedsPolling(task)} taskId={task.id} />}
-    {canReview && <div className="sticky bottom-20 z-20 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-card p-4 shadow-card lg:bottom-4">
+    {canReview && <div className="sticky bottom-20 z-20 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background/95 py-3 backdrop-blur-sm lg:bottom-0">
       <Button variant="outline" disabled={!dirty || busy || !!pending} onClick={() => void submit(false).catch(() => undefined)}><Save />{tx("workflow.task.save.correction")}</Button>
       <Button disabled={busy || !!pending} onClick={() => void submit(true).catch(() => undefined)}>{busy ? <Loader2 className="animate-spin" /> : <Check />}{finishesTask ? dirty ? tx("workflow.task.save.and.complete") : tx("workflow.task.approve.and.complete") : dirty ? tx("workflow.task.save.and.continue") : tx("workflow.task.approve.and.continue")}</Button>
     </div>}
@@ -226,17 +226,17 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
 function NodeConfiguration({ node, definition, raw }: { node?: GraphNode; definition?: NodeTypeDefinition; raw: unknown }) {
   const tx = useText(), { language } = useI18n()
   return <section className="space-y-4">
-    {node && <dl className="grid gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
-      <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.provider")}</dt><dd className="mt-1 text-sm">{text(definition?.provider.label, language) || node.provider.id}</dd></div>
-      {node.provider.model && <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.model")}</dt><dd className="mt-1 break-words text-sm">{node.provider.model}</dd></div>}
-      {node.provider.device && <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.device")}</dt><dd className="mt-1 text-sm">{node.provider.device.toUpperCase()}</dd></div>}
-      <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.after.completion")}</dt><dd className="mt-1 text-sm">{node.autoContinue ? tx("workflow.task.continue.automatically") : tx("workflow.task.wait.for.approval")}</dd></div>
+    {node && <dl className="divide-y divide-border rounded-xl border border-border bg-card px-4 [&>div]:grid [&>div]:gap-1 [&>div]:py-3 sm:[&>div]:grid-cols-[minmax(8rem,1fr)_minmax(0,3fr)] sm:[&>div]:gap-6">
+      <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.provider")}</dt><dd className="break-words text-sm">{text(definition?.provider.label, language) || node.provider.id}</dd></div>
+      {node.provider.model && <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.model")}</dt><dd className="break-words text-sm">{node.provider.model}</dd></div>}
+      {node.provider.device && <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.device")}</dt><dd className="text-sm">{node.provider.device.toUpperCase()}</dd></div>}
+      <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.after.completion")}</dt><dd className="text-sm">{node.autoContinue ? tx("workflow.task.continue.automatically") : tx("workflow.task.wait.for.approval")}</dd></div>
     </dl>}
     {node && Object.keys(node.config).length > 0 && <ConfigurationValues value={node.config} schema={definition?.configSchema} />}
     <details className="rounded-xl border border-border bg-card p-4"><summary className="cursor-pointer text-sm text-muted-foreground">{tx("workflow.task.raw.configuration")}</summary><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></details>
   </section>
 }
-function ConfigurationValues({ value, schema }: { value: JsonObject; schema?: JsonSchema }) {
+function ConfigurationValues({ value, schema, nested = false }: { value: JsonObject; schema?: JsonSchema; nested?: boolean }) {
   const tx = useText(), { language } = useI18n()
   const labels: Record<string, string> = {
     sourceLanguage: tx("workflow.task.source.language"), targetLanguage: tx("workflow.task.target.language"),
@@ -245,9 +245,9 @@ function ConfigurationValues({ value, schema }: { value: JsonObject; schema?: Js
     keepBackground: tx("workflow.task.keep.background.audio"), renderSubtitles: tx("workflow.task.render.subtitles"),
   }
   const names: Record<string, string> = { en: tx("workflow.task.english"), zh: tx("workflow.task.chinese"), ja: tx("workflow.task.japanese"), auto: tx("workflow.task.auto.detect"), source_clone: tx("workflow.task.source.voice.clone"), preset: tx("workflow.task.preset.voice") }
-  return <dl className="space-y-3 rounded-xl border border-border bg-card p-4">{Object.entries(value).map(([key, item]) => {
+  return <dl className={nested ? 'divide-y divide-border' : 'divide-y divide-border rounded-xl border border-border bg-card px-4'}>{Object.entries(value).map(([key, item]) => {
     const field = schema?.properties?.[key]
-    return <div key={key} className="space-y-1"><dt className="text-xs text-muted-foreground">{text(field?.['x-title'] ?? field?.title, language) || labels[key] || key}</dt><dd className="break-words whitespace-pre-wrap text-sm">{item && typeof item === 'object' && !Array.isArray(item) ? <ConfigurationValues value={item as JsonObject} schema={field} /> : typeof item === 'boolean' ? item ? tx("workflow.task.on") : tx("workflow.task.off") : item === null || item === '' ? '—' : typeof item === 'string' ? names[item] || item : JSON.stringify(item)}</dd></div>
+    return <div key={key} className="grid gap-1 py-3 sm:grid-cols-[minmax(8rem,1fr)_minmax(0,3fr)] sm:gap-6"><dt className="text-xs text-muted-foreground">{text(field?.['x-title'] ?? field?.title, language) || labels[key] || key}</dt><dd className="min-w-0 break-words whitespace-pre-wrap text-sm">{item && typeof item === 'object' && !Array.isArray(item) ? <ConfigurationValues value={item as JsonObject} schema={field} nested /> : typeof item === 'boolean' ? item ? tx("workflow.task.on") : tx("workflow.task.off") : item === null || item === '' ? '—' : typeof item === 'string' ? names[item] || item : JSON.stringify(item)}</dd></div>
   })}</dl>
 }
 function TranscriptEditor({ value, readOnly, onChange, onSeek }: { value: Transcript; readOnly: boolean; onChange(value: Transcript): void; onSeek?(seconds: number): void }) {
@@ -258,16 +258,20 @@ function TranscriptEditor({ value, readOnly, onChange, onSeek }: { value: Transc
   }
   return <section className="space-y-2"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx("workflow.task.search.transcript")} placeholder={tx("workflow.task.search.transcript")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
     {!visible.length && <p className="py-4 text-sm text-muted-foreground" role="status">{tx("workflow.task.no.matching.text")}</p>}
-    {visible.map(({ segment, index }) => <div key={segment.id} className="grid items-start gap-2 rounded-lg border border-border bg-card p-2 lg:grid-cols-[minmax(14rem,1fr)_minmax(0,2fr)]">
-      <div className="min-w-0 space-y-1">
-        <div className="flex min-h-7 items-center justify-between gap-1"><span className="truncate text-xs text-muted-foreground" title={String(segment.id)}>{index + 1}</span>{onSeek && <Button size="xs" variant="ghost" onClick={() => onSeek(segment.start_ms / 1000)}>{tx("workflow.task.locate")}</Button>}</div>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="flex items-center gap-1 text-[11px] whitespace-nowrap text-muted-foreground">{tx("workflow.task.start.s")}<Input className="h-7 px-2 text-xs md:text-xs" aria-label={`${tx("workflow.task.start")} ${index + 1}`} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.start_ms / 1000} onChange={(event) => update(index, { start_ms: Math.round(Number(event.target.value) * 1000) })} /></label>
-          <label className="flex items-center gap-1 text-[11px] whitespace-nowrap text-muted-foreground">{tx("workflow.task.end.s")}<Input className="h-7 px-2 text-xs md:text-xs" aria-label={`${tx("workflow.task.end")} ${index + 1}`} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.end_ms / 1000} onChange={(event) => update(index, { end_ms: Math.round(Number(event.target.value) * 1000) })} /></label>
+    {visible.length > 0 && <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+    {visible.map(({ segment, index }) => <div key={segment.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 lg:grid-cols-[auto_auto_minmax(0,1fr)]">
+      <span className="flex h-9 min-w-[2ch] items-center justify-end text-xs tabular-nums text-muted-foreground" title={String(segment.id)}>{index + 1}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex h-9 items-center rounded-lg border border-input bg-input-bg px-1">
+          <Input className="h-7 w-20 border-0 bg-transparent px-2 text-xs tabular-nums shadow-none md:text-xs" aria-label={`${tx("workflow.task.start")} ${index + 1}`} title={tx("workflow.task.start.s")} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.start_ms / 1000} onChange={(event) => update(index, { start_ms: Math.round(Number(event.target.value) * 1000) })} />
+          <span aria-hidden="true" className="text-xs text-subtle-foreground">—</span>
+          <Input className="h-7 w-20 border-0 bg-transparent px-2 text-xs tabular-nums shadow-none md:text-xs" aria-label={`${tx("workflow.task.end")} ${index + 1}`} title={tx("workflow.task.end.s")} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.end_ms / 1000} onChange={(event) => update(index, { end_ms: Math.round(Number(event.target.value) * 1000) })} />
+          <span aria-hidden="true" className="pr-2 text-xs text-subtle-foreground">s</span>
         </div>
+        {onSeek && <Button size="icon-sm" variant="ghost" aria-label={`${tx("workflow.task.locate")} ${index + 1}`} title={tx("workflow.task.locate")} onClick={() => onSeek(segment.start_ms / 1000)}><LocateFixed /></Button>}
       </div>
-      <SegmentTextArea aria-label={`${tx("workflow.task.transcript")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => update(index, { text: event.target.value })} />
-    </div>)}
+      <div className="col-start-2 min-w-0 lg:col-start-auto"><SegmentTextArea aria-label={`${tx("workflow.task.transcript")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => update(index, { text: event.target.value })} /></div>
+    </div>)}</div>}
   </section>
 }
 export function TranscriptNodeDetails({ detail, outputs, draft, readOnly, onDraftChange }: NodeDetailProps) {
@@ -287,27 +291,30 @@ function TranslationEditor({ value, transcript, readOnly, onChange }: { value: T
   const visible = value.segments.map((segment, index) => ({ segment, index, source: transcript?.segments.find((item) => item.id === segment.segment_id)?.text ?? '' })).filter(({ segment, source }) => !search || `${source} ${segment.text}`.toLowerCase().includes(search.toLowerCase()))
   return <section className="space-y-2"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx("workflow.task.search.translation")} placeholder={tx("workflow.task.search.translation")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
     {!visible.length && <p className="py-4 text-sm text-muted-foreground" role="status">{tx("workflow.task.no.matching.text")}</p>}
-    {visible.map(({ segment, index, source }) => {
-      return <div key={segment.segment_id} className={`grid items-start gap-2 rounded-lg border border-border bg-card p-2 ${transcript ? 'md:grid-cols-2' : ''}`}>
-        {transcript && <div className="min-w-0"><span className="block truncate text-xs leading-4 text-muted-foreground" title={String(segment.segment_id)}>{index + 1}</span><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5">{source}</p></div>}
-        <label className="grid min-w-0 gap-1 text-xs leading-4 text-muted-foreground">{tx("workflow.task.translation")}{!transcript && ` ${index + 1}`}<SegmentTextArea aria-label={`${tx("workflow.task.translation")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => onChange({ ...value, segments: value.segments.map((item, i) => i === index ? { ...item, text: event.target.value } : item) })} /></label>
-      </div>
-    })}
+    {visible.length > 0 && <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+      <div aria-hidden="true" className={`hidden gap-3 bg-muted/40 px-3 py-2 text-muted-foreground md:grid ${transcript ? 'grid-cols-[2ch_minmax(0,1fr)_minmax(0,1fr)]' : 'grid-cols-[2ch_minmax(0,1fr)]'}`}><span />{transcript && <span className="text-xs">{tx("workflow.task.transcript")}</span>}<span className="text-xs">{tx("workflow.task.translation")}</span></div>
+      {visible.map(({ segment, index, source }) => <div key={segment.segment_id} className={`grid grid-cols-[2ch_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 ${transcript ? 'md:grid-cols-[2ch_minmax(0,1fr)_minmax(0,1fr)]' : ''}`}>
+        <span className="flex h-9 items-center justify-end text-xs tabular-nums text-muted-foreground" title={String(segment.segment_id)}>{index + 1}</span>
+        {transcript && <div className="min-w-0"><span className="text-xs text-muted-foreground md:hidden">{tx("workflow.task.transcript")}</span><p className="py-1.5 whitespace-pre-wrap break-words text-sm leading-5">{source}</p></div>}
+        <div className={`min-w-0 ${transcript ? 'col-start-2 md:col-start-auto' : ''}`}><span className="text-xs text-muted-foreground md:hidden">{tx("workflow.task.translation")}</span><SegmentTextArea aria-label={`${tx("workflow.task.translation")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => onChange({ ...value, segments: value.segments.map((item, i) => i === index ? { ...item, text: event.target.value } : item) })} /></div>
+      </div>)}
+    </div>}
   </section>
 }
 function SpeechResult({ taskId, value, translation, historical, raw }: { taskId: string; value: SpeechAudio; translation?: Translation; historical: boolean; raw: JsonObject }) {
   const tx = useText()
   return <div className="space-y-3">
     {historical && <p className="text-sm text-muted-foreground">{tx("workflow.task.this.historical.version.has.no.saved.text")}</p>}
-    <ol className="space-y-2">{value.segments.map((segment, index) => {
+    <ol className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">{value.segments.map((segment, index) => {
       // The worker preserves the translation segment ID; array order is not an association.
       const matches = historical ? [] : translation?.segments.filter((item) => item.segment_id === segment.id) ?? []
       const sentence = matches.length === 1 ? matches[0].text : undefined
       const url = assetUrl(`/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(segment.audio.id)}`)
       const label = `${tx("workflow.task.speech")} ${index + 1}`
-      return <li key={`${segment.id}-${index}`} aria-label={label} className="grid items-center gap-3 rounded-lg border border-border bg-card p-3 md:grid-cols-2">
-        <div className="min-w-0"><span className="text-xs text-muted-foreground" title={segment.id}>{index + 1}</span>{sentence ? <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-5">{sentence}</p> : !historical && <p className="mt-1 text-sm text-muted-foreground">{tx("workflow.task.no.unique.matching.translation")}</p>}</div>
-        <div className="flex min-w-0 items-center gap-2"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className="shrink-0 rounded-md p-2 text-link hover:bg-muted"><Download className="size-4" /></a></div>
+      return <li key={`${segment.id}-${index}`} aria-label={label} className="grid grid-cols-[2ch_minmax(0,1fr)] items-center gap-3 p-3 md:grid-cols-[2ch_minmax(0,1fr)_minmax(16rem,1fr)]">
+        <span className="text-right text-xs tabular-nums text-muted-foreground" title={segment.id}>{index + 1}</span>
+        <div className="min-w-0">{sentence ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{sentence}</p> : !historical && <p className="text-sm text-muted-foreground">{tx("workflow.task.no.unique.matching.translation")}</p>}</div>
+        <div className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className="shrink-0 rounded-md p-2 text-link hover:bg-muted"><Download className="size-4" /></a></div>
       </li>
     })}</ol>
     <RawResult value={raw} />
@@ -320,29 +327,33 @@ function Media({ url, video, label }: { url: string; video: boolean; label?: str
 }
 function RawResult({ value }: { value: unknown }) {
   const tx = useText()
-  return <details className="rounded-lg border border-border bg-card p-2"><summary className="cursor-pointer text-xs text-muted-foreground">{tx("workflow.task.raw.data")}</summary><pre className="mt-2 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-card p-2 text-xs">{JSON.stringify(value, null, 2)}</pre></details>
+  return <details className="rounded-xl border border-border bg-card p-3"><summary className="cursor-pointer text-xs text-muted-foreground">{tx("workflow.task.raw.data")}</summary><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></details>
 }
-function ResultViewer({ taskId, value }: { taskId: string; value: unknown }) {
+function ResultViewer({ taskId, value, labels = {} }: { taskId: string; value: unknown; labels?: Record<string, string> }) {
   const tx = useText()
-  const artifacts = new Map<string, { id: string; schemaId: string }>()
-  const visit = (item: unknown) => {
+  const artifacts = new Map<string, { id: string; schemaId: string; label: string }>()
+  const visit = (item: unknown, label = '') => {
     if (!item || typeof item !== 'object') return
     const object = item as JsonObject
-    if (typeof object.id === 'string' && typeof object.schemaId === 'string') artifacts.set(object.id, object as { id: string; schemaId: string })
-    else Object.values(object).forEach(visit)
+    if (typeof object.id === 'string' && typeof object.schemaId === 'string') artifacts.set(object.id, { id: object.id, schemaId: object.schemaId, label })
+    else Object.entries(object).forEach(([key, child]) => visit(child, label || labels[key] || ''))
   }
   visit(value)
+  const counts = new Map<string, number>(), seen = new Map<string, number>()
+  for (const artifact of artifacts.values()) counts.set(artifact.label, (counts.get(artifact.label) ?? 0) + 1)
   return <div className="space-y-2">{[...artifacts.values()].map((artifact, index) => {
     const url = assetUrl(`/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(artifact.id)}`)
     const audio = artifact.schemaId.startsWith('audio/'), video = artifact.schemaId.startsWith('video/')
-    return <div key={artifact.id} className={`rounded-lg border border-border bg-card p-2 ${audio ? 'flex flex-col gap-2 sm:flex-row sm:items-center' : 'space-y-2'}`}>
+    seen.set(artifact.label, (seen.get(artifact.label) ?? 0) + 1)
+    const label = artifact.label + ((counts.get(artifact.label) ?? 0) > 1 ? ` ${seen.get(artifact.label)}` : '')
+    return <div key={artifact.id} className="space-y-3 rounded-xl border border-border bg-card p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">{artifact.label && <span className="text-sm font-medium">{label}</span>}<a href={url} target="_blank" rel="noreferrer" className="ml-auto inline-flex shrink-0 items-center gap-2 text-xs text-link"><Download className="size-4" />{audio ? tx("workflow.task.open.audio") : video ? tx("workflow.task.open.video") : tx("workflow.task.open.file")}{!artifact.label && artifacts.size > 1 ? ` ${index + 1}` : ''}</a></div>
       {(audio || video) && <div className="min-w-0 flex-1"><Media url={url} video={video} /></div>}
-      <a href={url} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-2 text-xs text-link"><Download className="size-4" />{audio ? tx("workflow.task.open.audio") : video ? tx("workflow.task.open.video") : tx("workflow.task.open.file")}{artifacts.size > 1 ? ` ${index + 1}` : ''}</a>
     </div>
   })}<RawResult value={value} /></div>
 }
 function NodeLog({ taskId, active, useQuery }: { taskId: string; active: boolean } & Bindings<'useQuery'>) {
   const tx = useText(), [error, setError] = useState('')
   const query = useQuery<string>(`/api/v2/tasks/${taskId}/log`, active ? 3000 : undefined)
-  return <section className="space-y-3"><Button variant="outline" size="sm" disabled={!query.data} onClick={() => { void copyText(query.data ?? '').catch((failure: Error) => setError(failure.message)) }}><Copy />{tx("workflow.task.copy.task.log")}</Button>{(query.error || error) && <InlineAlert>{query.error || error}</InlineAlert>}{query.error && <Button variant="outline" size="sm" onClick={query.refresh}><RotateCw />{tx("workflow.task.reload")}</Button>}<pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-xl border border-border bg-card p-4 text-xs">{query.data}</pre></section>
+  return <section className="space-y-3">{(query.error || error) && <InlineAlert>{query.error || error}</InlineAlert>}<div className="overflow-hidden rounded-xl border border-border bg-card"><div className="flex items-center justify-end gap-2 border-b border-border p-3">{query.error && <Button variant="outline" size="sm" onClick={query.refresh}><RotateCw />{tx("workflow.task.reload")}</Button>}<Button variant="outline" size="sm" disabled={!query.data} onClick={() => { void copyText(query.data ?? '').catch((failure: Error) => setError(failure.message)) }}><Copy />{tx("workflow.task.copy.task.log")}</Button></div><pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words p-4 text-xs leading-relaxed">{query.data}</pre></div></section>
 }
