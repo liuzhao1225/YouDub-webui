@@ -70,10 +70,12 @@
     "Retired upstream product browser replay entry is absent; actual YouDub Host browser validation used for the changed interaction"
   ],
   "ci": {
-    "status": "in_progress",
+    "status": "passed",
     "headSha": "cf9fdb9c6bb21be34538bf2efd71b69e29859d9f",
     "runId": 39857602285,
-    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39857602285"
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39857602285",
+    "macOS": "all steps passed",
+    "windows": "all steps passed"
   },
   "candidateCommit": "cf9fdb9c6bb21be34538bf2efd71b69e29859d9f"
 }

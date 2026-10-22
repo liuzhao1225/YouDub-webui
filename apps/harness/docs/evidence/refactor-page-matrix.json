@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-23",
+  "candidateCommit": "e0f899a1c7b2d7489052d7585b2448b29ae8fd2e",
+  "status": "passed",
+  "scope": "Browser UI on actual source Desktop Host, isolated existing acceptance profile",
+  "viewport": {
+    "width": 1280,
+    "height": 720,
+    "horizontalOverflow": false
+  },
+  "checks": [
+    "Chinese dark settings: language, appearance and product version 0.0.7",
+    "Models empty; no default DeepSeek account/provider; opening and cancelling provider composer leaves empty state",
+    "Original hero retained; 16 equalizer rects have active eq animation; sampled scaleY changes from 0.436056 to 0.456481",
+    "Sidebar collapse and expand preserve main content",
+    "Resources page reports installed private runtime, tools and four models as available",
+    "Library completed filter returns 3 of 6 historical tasks; completed bilingual import task shows 3/3 steps",
+    "Existing exported video plays: 19.072 seconds, readyState 4, no media error, time observed at 12.931778 while playing; 1.5x selection reads back",
+    "Built-in extension details show product version 0.0.7, bundle 0.1.0 and running YouDub plugin",
+    "English general/models settings and workflow template labels verified",
+    "Japanese/light restored through settings; reload reads back Japanese navigation, original hero and light theme",
+    "Browser console contains no warnings or errors",
+    "Host shutdown via IPC and runner exit 0"
+  ],
+  "screenshots": [
+    "refactor-page-matrix-zh-settings-dark.png",
+    "refactor-page-matrix-zh-home-dark.png",
+    "refactor-page-matrix-zh-home-collapsed.png",
+    "refactor-page-matrix-zh-resources-dark.png",
+    "refactor-page-matrix-en-workflows-dark.png",
+    "refactor-page-matrix-ja-settings-light.png",
+    "refactor-page-matrix-ja-home-light.png"
+  ],
+  "limitations": [
+    "Browser checks do not establish native window, native file dialog, Windows UI or perceived animation quality",
+    "Uses existing resource files and media; no new inference, download or listening-quality acceptance",
+    "Native CUA reports Mac locked despite user unlock reply"
+  ]
+}

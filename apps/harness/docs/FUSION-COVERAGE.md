@@ -4,7 +4,7 @@
 
 本账本以冻结的 YouDub 源快照 `f6f927903581b165f2bf6c840ea65b896d319524` 为比较对象。源清单为 `../baselines/youdub-source-inventory.json`：58 条 API、11 个媒体操作、9 个页面入口、50 组元素定义。计数只说明清单覆盖范围，不能证明功能已经运行通过。
 
-本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E23 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
+本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E24 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
 
 ## 基线与不可变边界
 
@@ -20,7 +20,7 @@
 | HTTP、身份、桌面传输 | Connection.fetch / 官方 Desktop 协议 | 固定 v2/upload/file 端点内的业务路由分派 | JSON、multipart、Range、错误体都经同一官方连接 |
 | 子进程、退出、取消 | Subprocess | JSONL worker 与 SQLite RPC 编解码 | worker 失败原因、取消退出、未知提交结果可见 |
 | 实时执行状态 | Jobs | 图调度、持久化确认、结果修订、资源依赖选择 | operation 与资源准备都应接 Jobs；确认等待不占执行槽 |
-| 配置和密钥 | Harness settings/configForms + Credentials | 业务偏好结构、任务引用快照；API 密钥字段中的只读掩码 | 保存/重开已实测；完整凭据不回填，API 密钥字段显示前六位与***；删除密钥的最终原生验收仍待完成 |
+| 配置和密钥 | Harness settings/configForms + Credentials | 业务偏好结构、任务引用快照；API 密钥字段中的只读掩码 | 保存/重开已实测；完整凭据不回填，API 密钥字段显示前六位与***；隔离实际 Host 的浏览器新增、掩码/复制、删除及重载读回通过；原生删除交互保持待验收 |
 | LLM | Harness llm /官方模型设置 | 批次翻译提示、segment 对齐、结果校验、原始证据 | 单次输出上限 >=65535；不支持则调用前显式停止 |
 | 页面、状态、控件 | 官方 Renderer / Slots / Layout / Store / primitives / locale / theme | 首屏、图画布、媒体播放器、字幕编辑、任务数据 | 不执行旧 PluginBootstrap/createRoot/复制模型管理 |
 | 扩展安装、启停、卸载 | PluginManager + 官方 Plugins 页面 | YouDub domain bridge 与业务 slot | 官方执行结果保留 applied/restart-required/failed 区别 |
@@ -69,7 +69,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `GET /api/v2/tasks/:id/files/:output` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
 | `GET /api/v2/tasks/:id/log` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 实际 Host 日志读取及非法 lines 拒绝通过
 | `GET /api/v2/extensions` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
-| `DELETE /api/v2/imports/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 已属于任务的导入删除返回 409；孤立导入清理待验收
+| `DELETE /api/v2/imports/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 已属于任务的导入删除返回 409；E24 失败上传残留、重复上传拒绝、显式清理、重复清理和清理后 ID 重用通过
 | `POST /api/v2/extensions/install` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
 | `PATCH /api/v2/extensions/:id` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
 | `DELETE /api/v2/extensions/:id` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
@@ -82,7 +82,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `PATCH /api/v2/models/settings` | 官方模型设置 / configForms / Credentials / llm；旧模型 API 不执行 | 官方页面保存火山方舟 URL、模型及 65535 上限通过，实际翻译见 E13/E16/E17 |
 | `POST /api/v2/models/credentials/describe` | 官方模型设置 / configForms / Credentials / llm；旧模型 API 不执行 | 官方已保存状态与产品卡片摘要经原生重启/重开读回，见 evidence/source-native-key-preview.json |
 | `PUT /api/v2/models/credentials/:ref` | 官方模型设置 / configForms / Credentials / llm；旧模型 API 不执行 | 官方 UI 保存与重开通过；完整密钥不出现在卡片摘要或可访问性文本 |
-| `DELETE /api/v2/models/credentials/:ref` | 官方模型设置 / configForms / Credentials / llm；旧模型 API 不执行 | 待验收 |
+| `DELETE /api/v2/models/credentials/:ref` | 官方模型设置 / configForms / Credentials / llm；旧模型 API 不执行 | 通过官方模型页面删除自建测试提供商，凭据值与引用均移除，重载空列表；见[凭据生命周期证据](evidence/refactor-credential-lifecycle.json) |
 | `POST /api/v2/models/discover` | 官方模型设置 / configForms / Credentials / llm；旧模型 API 不执行 | 原生官方页面发现并保存 doubao-seed-evolving，通过真实调用验证，见 E13 |
 | `GET /api/v2/resources` | backend/resources.ts → Subprocess / Jobs + 领域资源检查 | E12 原生四模型及全部依赖实际 ready；E13 完整模型真实执行 |
 | `POST /api/v2/resources/check` | backend/resources.ts → Subprocess / Jobs + 领域资源检查 | E1 所选依赖检查回归；E7 私有目录探针通过 |
@@ -110,6 +110,8 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `subtitles.import/v1` | Python 字幕解析；字幕导入节点 | transcript、translation；错误字幕显式报错 | E22 官方 Host 双语 SRT multipart 上传、真实 Python 导入和 zoo 视频/双 SRT 导出通过；时间轴不匹配与坏格式保留 INVALID_SUBTITLES |
 
 ## 页面与前端元素映射
+
+2026-10-23 对当前实际构建重新核对原 50 组元素：34 个原文件有实际输出字节，16 个由官方能力替代或属于已排除的发行/旧根界面。每个未进入产物的文件均已注明去向，没有据此推导界面验收通过。[逐文件来源记录](evidence/refactor-component-source-audit.json)
 
 历史 Whisper-only 首启及人工译文 fixture 流程保留为 E8 证据。当前原生页面已完成四模型和全部相关依赖准备，六项资源要求均 ready，见 [完整首次准备](evidence/desktop-full-first-run.json)。官方模型页已完成提供商保存、模型发现及 65,535 输出上限读回，保存的 API Key 卡片摘要在重启及关闭重开后保持，见 [模型配置](evidence/source-native-model-configuration.json) 与 [密钥摘要](evidence/source-native-key-preview.json)。字幕 UI 订正保存 revision 3 后仍待确认、重启恢复及人工确认已有历史实测；随后原生导入原格式 9 节点工作流、上传视频并运行完整真实配音链，播放到 11.9 秒，双 SRT 以正确默认文件名经原生保存框落盘并核对哈希，见 [完整媒体链](evidence/source-native-full-dubbing.json)、[播放与保存](evidence/source-native-full-dubbing-ui.json)。真实外部翻译证据与历史 fixture 分开记录，当前原分句恢复已完成 E16 原生全链；E17 在原生输入公网 YouTube URL 和代理端口后完成下载至导出的10节点并播放到14秒。默认模板已合为3个，见 E18。更完整的前端操作与未覆盖分支见 [前端映射](../FRONTEND-MAPPING.md)。
 
@@ -287,3 +289,9 @@ E13同时暴露长中文烧录行裁切。随后增加的显示换行补丁曾�
 
 - **E22 双语字幕导入与真实媒体导出（8fea16f1）**：官方 Connection multipart 上传英文 BOM/CRLF SRT、中文 SRT 和 zoo 视频，经原 Python `subtitles.import/v1` 保留两段文本、语言和精确时码；FFmpeg 导出视频、双 SRT，封面实际生成并读回。时间轴不匹配及坏 SRT 均保留原始 `INVALID_SUBTITLES`，不产生最终输出。导出继续沿用原分句/去末尾标点规则，原导入结果保留完整文本。见[字幕导入证据](evidence/refactor-subtitle-import.json)。未调用 ASR/LLM/TTS；原生保存与播放另验收。
 - **E23 旧默认配置迁移（6102ac42）**：隔离复制已有验收数据库，在实际 Host 中将旧字幕默认配置转换为工作流；保留模型、设备、提示词、语言和 65,535 输出上限。重复迁移不覆盖用户编辑，编辑和删除状态均经过重启读回。6 个历史任务、2 个用户工作流与原默认配置的数据库内容逐项保持一致，源数据库未改动，三次 Host 均正常退出。见[迁移证据](evidence/refactor-legacy-defaults-host.json)。复用已有私有资源，无新媒体推理或原生界面验收。
+
+- **E24 失败上传的孤立导入清理**：`e0f899a1` 的隔离实际 Desktop Host 接收合成 multipart 文件后，因工作流版本不匹配返回 409，保留原残留文件且未建任务；同 ID 再次上传返回 `IMPORT_RESIDUE` 并保持文件字节。显式删除返回 204、目录消失，重复删除仍为 204；清理后同 ID 可重新占用，第二次残留再次显式清理。非法 ID 返回 422；已有任务列表完全一致，Host 正常退出。该检查没有执行媒体算法或原生文件框。[七项实际检查](evidence/refactor-orphan-import-host.json)
+
+### 当前候选的页面增量回归
+
+`e0f899a1` 的独立实际 Host 浏览器验收覆盖中英日设置、深浅主题、原首屏、侧栏开合、资源、任务筛选、视频播放与倍速、工作流和内置扩展详情。日语/浅色恢复后刷新读回，控制台无警告或错误。浏览器结果不代替原生窗口与媒体质量验收。[本次页面证据](evidence/refactor-page-matrix.json)

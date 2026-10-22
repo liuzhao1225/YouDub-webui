@@ -648,3 +648,17 @@ AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、2
 55621d17 的[双平台源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39847912792) 已全部通过。macOS：七项源码构建、两项聚合类型检查、504 个 GUI 文件/8,075 项通过，52 个 profile 文件/6,689 项通过，175 项包边界、187 项领域、264 项业务界面、78 项产品集成和 525 项 Python 回归通过。Windows：七项源码构建、567 项桌面/进程与 32 项产品合同通过。预期失败与平台跳过在[证据](evidence/refactor-unused-vendor-prune.json)中单列。
 
 当前运行源码与该候选保持一致；后续仅补充[第四语言实际 Host 验收](evidence/refactor-fourth-locale.json)、[VoxCPM 原始能力边界](evidence/refactor-voxcpm-voice-scope.json)和文档说明。两次验收 Host 均正常关闭，临时语言插件已卸载。Mac 原生工具仍报告锁屏，Windows 原生界面、最终音画质量、资源交互和启动测量继续开放；两份飞书文档保持最后统一更新的约定。
+
+## P3 当前资源流程与重启读回（2026-10-23）
+
+`e0f899a1` 使用新建的隔离 profile 与 Whisper 目录，复用既有私有 Python/FFmpeg、分句资源及另外三个模型。首启拒绝预置的无效测试文件，保持未完成状态并显示原始校验错误；移走测试文件后从页面点击重试。真实下载在 15,884 字节处经 Connection 暂停，页面继续后完成，随后显示 LLM 配置步骤。
+
+资源页另一次通过“准备、暂停、继续”验证：暂停分片为 55,967,744 字节，继续后增长并完成。两份完整下载均为 75,572,083 字节，SHA-256 与原清单一致。Host 重启重新验证四模型和依赖并直接进入工作台，没有再次发起准备。两次 Host 均干净退出；不将复用私有依赖表述为全新安装，原生退出仍待验收。[证据](evidence/refactor-resource-download-browser.json)
+
+### 全新私有安装与凭据删除验收（e0f899a1）
+
+从空目录通过实际 Host 的首次启动页面选择中文及含中文、空格的安装路径，安装私有 Python 3.12.15、推理依赖、FFmpeg、分句资源和四模型。全部可用性检查完成后才出现翻译配置页。选择稍后配置，再关闭并重启同一 Host/profile/runtime-project，中文、路径、四模型及配置选择均保留。私有目录内 180 个链接全部指向目录内部，系统 site-packages 与 user site 均未启用。[安装证据](evidence/refactor-fresh-installation.json)
+
+独立配置中的合成测试密钥通过页面发现模型、保存、重开掩码和复制测试、删除确认与重载。完整密钥未出现在 DOM，空输入框没有可复制值；删除后凭据文件及 profile 均不再引用测试值。[凭据证据](evidence/refactor-credential-lifecycle.json)
+
+以上使用源码 Desktop Host 和浏览器交互，未替代原生窗口控件与文件框验收，也未执行打包或发布。

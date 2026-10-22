@@ -70,6 +70,47 @@
     "No packaging, signing, or release"
   ],
   "ci": {
-    "status": "pending for committed candidate"
-  }
+    "status": "passed",
+    "headSha": "e0f899a1c7b2d7489052d7585b2448b29ae8fd2e",
+    "runId": 39860116755,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39860116755",
+    "macOS": {
+      "jobId": 120108340929,
+      "allStepsPassed": true,
+      "gui": {
+        "files": 504,
+        "passed": 8077,
+        "expectedFailure": 1,
+        "skipped": 1
+      },
+      "profile": {
+        "files": 52,
+        "passed": 6689,
+        "skipped": 1
+      },
+      "packageBoundaries": 175,
+      "generatedEntrypoint": {
+        "passed": 1,
+        "skipped": 21
+      },
+      "web": {
+        "files": 38,
+        "passed": 268
+      },
+      "product": 78,
+      "python": 525
+    },
+    "windows": {
+      "jobId": 120108341135,
+      "allStepsPassed": true,
+      "desktop": {
+        "filesPassed": 43,
+        "filesSkipped": 3,
+        "passed": 567,
+        "skipped": 27
+      },
+      "product": 32
+    }
+  },
+  "candidateCommit": "e0f899a1c7b2d7489052d7585b2448b29ae8fd2e"
 }
