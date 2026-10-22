@@ -25,14 +25,11 @@ interface LauncherPolicy {
 
 /** Public product launcher plus the build-only WebWorker packer. */
 const MANIFEST_BIN_ALLOWLIST = new Map<string, ManifestBin>([
-  ['packages/experimental/webworker-packer/package.json', { 'dsh-pack-vfs-image': './bin.js' }],
 ])
 
 /** Every JavaScript executable in an application or packaging workspace has one explicit role. */
 const EXECUTABLE_SOURCE_ALLOWLIST = new Map<string, string>([
   ['packages/context/time-context/tests/fixtures/driver.ts', 'test-only subprocess driver'],
-  ['packages/experimental/webworker-packer/bin.js', 'build-only wrapper'],
-  ['packages/experimental/webworker-packer/src/bin.ts', 'build-only implementation'],
   ['packages/sdk/client/tests/fake-runtime.ts', 'test-only SDK runtime peer'],
   ['packages/session/session-telemetry-otel/tests/fixtures/driver.ts', 'test-only subprocess driver'],
   ['packages/shell/tool-pwsh/tests/fixtures/loader/driver.ts', 'test-only subprocess driver'],

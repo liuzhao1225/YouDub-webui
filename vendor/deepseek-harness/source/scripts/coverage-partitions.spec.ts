@@ -203,7 +203,7 @@ describe('weighted partition assignment', () => {
 describe('coverage file inventory', () => {
   it('keeps JSON file paths and project ownership while dropping exempt suites', async () => {
     const root = await temporaryRoot()
-    const exemptDir = join(root, 'packages/experimental/webworker-runtime/tests')
+    const exemptDir = join(root, 'packages/typert/generator/tests')
     await mkdir(exemptDir, { recursive: true })
     await writeFile(join(exemptDir, 'transform-corpus.spec.ts'), '')
     const output = JSON.stringify([

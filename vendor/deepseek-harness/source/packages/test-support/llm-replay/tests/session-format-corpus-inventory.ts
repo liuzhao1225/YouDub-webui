@@ -1,17 +1,5 @@
 /** Exact historical conversion refusals; current-generation fixtures never qualify. */
 export const expectedUnsupported: Readonly<Partial<Record<string, { sourceVersion: number; reason: string }>>> = {
-  'packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-architecture-review/session.v2.jsonl': {
-    sourceVersion: 2,
-    reason: 'session snapshot line 3: format v2 surface before first step cannot acquire a system head without changing chronology',
-  },
-  'packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-follow-up-builder/session.v2.jsonl': {
-    sourceVersion: 2,
-    reason: 'session snapshot line 3: format v2 surface before first step cannot acquire a system head without changing chronology',
-  },
-  'packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v2.jsonl': {
-    sourceVersion: 2,
-    reason: 'session snapshot line 3: format v2 surface before first step cannot acquire a system head without changing chronology',
-  },
   'packages/test-support/session-snapshot/tests/fixtures/suite/pin-turn/session.v2.jsonl': {
     sourceVersion: 2,
     reason: 'session snapshot line 3: format v2 changed request prompt outside an open step cannot retain source chronology',

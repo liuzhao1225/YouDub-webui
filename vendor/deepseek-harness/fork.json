@@ -10020,6 +10020,2094 @@
       "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
     },
     {
+      "path": "packages/experimental/webworker-packer/README.i18n.yaml",
+      "before": {
+        "path": "packages/experimental/webworker-packer/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1323,
+        "sha256": "605c279c96d05b3b9ae723ba55673ac0903246c461f5858ff76b9a6e2dd6a932"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/README.md",
+      "before": {
+        "path": "packages/experimental/webworker-packer/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 8214,
+        "sha256": "1a5bcf5ded5c2a12ca1e57797d687ee90ee69e0e0d15a8bbb6a5a8ae0a77b531"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/README.zh.md",
+      "before": {
+        "path": "packages/experimental/webworker-packer/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 7659,
+        "sha256": "e52c40da77852124135f2e77acb77eaf81ee4e8cccffdeea77e8cec504f66938"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/bin.js",
+      "before": {
+        "path": "packages/experimental/webworker-packer/bin.js",
+        "type": "file",
+        "executable": true,
+        "size": 796,
+        "sha256": "b51b7b4e55a758e78193df83f496b3ba0e0929e9100e3d24024dc6edc5170cd3"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/package.json",
+      "before": {
+        "path": "packages/experimental/webworker-packer/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1512,
+        "sha256": "216f4c0d722e0d798db0016e65bbd3ca2b067a2765afd29b961a0d4cbf997a8a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/bin.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/bin.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3457,
+        "sha256": "957aacc26914b4cfa05debc87d92782031bdf5e3497cd469d479893e7faa77c0"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/index.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 703,
+        "sha256": "ae6625314f24503b775bec8a717b126bb7ad9c51985a62ceb8ab0f382e0bde99"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/pack.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/pack.ts",
+        "type": "file",
+        "executable": false,
+        "size": 35691,
+        "sha256": "27a4ebf72a57c2f2e4cc863bc95c48155fcae462d1e5c5635f22d1c8e8565469"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/preview.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/preview.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5159,
+        "sha256": "8cb612d1532718951acc1759b3469afbcdece9aa3c830a56770e4f7f74927f54"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/repository.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/repository.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14343,
+        "sha256": "5b13748f6b465a663fa7b43095588f17216451779c00e3f2333b297dde7807e9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/rules.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/rules.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2627,
+        "sha256": "51cbf9f974abc9aa9967208928625d0bfc5fa0b49042ed80a5666d0bac88035c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/src/transform-image.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/src/transform-image.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1100,
+        "sha256": "0cb740676f699bb34724059abb78d4fce680bfe200fbefd2750ae7e6132457da"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/built-lib.e2e.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/built-lib.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7650,
+        "sha256": "8affa7c3046425895998ce13e2fc53c90f13e972c068cc9ccc200cc53f14875d"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/entry-seeds.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/entry-seeds.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 771,
+        "sha256": "c0b368da65fca6a96bfd2f450795521df7db63b4be2b05dfd581197ac883ce06"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/exports.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/exports.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3022,
+        "sha256": "03afe0a0f9c0bcd39b743eabdd11ebf595235260c4e99092fa335507d7a3156b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/image-loadable.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/image-loadable.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15923,
+        "sha256": "f4951fa2cf404d920d0753c2a86aa55b768488dee2ffd145072128303e7620bb"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/lazy-chunks.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/lazy-chunks.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4634,
+        "sha256": "24ea0f1df329f2b29ed44ef731e199a07b6128bab200966d9a9e78cbea95f16d"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/preview.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/preview.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7344,
+        "sha256": "af03dc2f0825bad0dfc4a9cca47b4be8ced3567a41c1efdd100fa6b4702ef5f7"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tests/profile-image.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tests/profile-image.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5739,
+        "sha256": "7749c5075f6e6eadd7d79efe42c12c1ad764161f80d83ec7ef1b2e656a99d049"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tsconfig.json",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 553,
+        "sha256": "f3b0cb0474ae0f94a071b904bc6408bf00bbd855d6cf4926388e153130068825"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-packer/tsdown.config.ts",
+      "before": {
+        "path": "packages/experimental/webworker-packer/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 577,
+        "sha256": "b833b188a2b1215aeaf8f23cca441f7a0aefb4cf7af19c2eebe94fa7772c3676"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/README.i18n.yaml",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1332,
+        "sha256": "fba313f6c0eb03b0c84660adf2bad29b2cf222a6388b809e64facfb58f40cf1f"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/README.md",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 17235,
+        "sha256": "718518ec76fba7de918cab06b3f1a23e6d14faa90dde4cc8a5149099003ffe27"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/README.zh.md",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 16017,
+        "sha256": "5a0cc4564a2835fa574cc4d62470d6f829cbba5ba49a3085b1fd85858d55f656"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/package.json",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2686,
+        "sha256": "dcd12cb2acae3ba506e1f15fe1fcfad748e8b4a247a4f43fe7e297a99dbd4784"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/client/apply-injections.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/client/apply-injections.ts",
+        "type": "file",
+        "executable": false,
+        "size": 145,
+        "sha256": "ee0585d773573ddb9b5a583ae6ee7893d7b09e5c40bf9f562571bb2804cd4c65"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/client/client.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/client/client.ts",
+        "type": "file",
+        "executable": false,
+        "size": 22185,
+        "sha256": "ffe80ac12768a83e5634bb8c95cf3bda0b58b456c916811867ba8212a9082cc1"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/client/index.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7462,
+        "sha256": "c55f0e01725b10cc99655584c4f1b7c4060f9b0a8957cdfc1381a187aa144b66"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/client/source-chooser.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/client/source-chooser.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8863,
+        "sha256": "dc18719339f74c698e40738962741fcff41f48778a2dd439129bfc4a96f11c00"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/client/text-viewer.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/client/text-viewer.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3141,
+        "sha256": "9c32f3f8a9ab1ac1b26cda11e7db254c5e844a93f4e0a2ef1b9060fa06cd81e8"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/compile/transform.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/compile/transform.ts",
+        "type": "file",
+        "executable": false,
+        "size": 26083,
+        "sha256": "f628bc18b82101298907eba3d1728f11b5037c1ba83604aa3249277042577af3"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/fixture-manifest.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/fixture-manifest.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3032,
+        "sha256": "e2cdeeb4456778dae48de4c7fa6855439db765ec00b39dd1c407b6a29aaaa54c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/image-layout.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/image-layout.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2809,
+        "sha256": "77275ab4cb2c32e6c4338b01d0490c337f009128072583275cefb6e4199a14c9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/image-manifest.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/image-manifest.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4781,
+        "sha256": "2af3170bc2ab1d049717c0de1e4c99628841b4fb147957af1d0172e92a1b0248"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/index.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2945,
+        "sha256": "9390bf0ddc194232ffeaa9c78f3e472e297652df3b08f1e8e1660a1786721f1f"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/module-proxies.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/module-proxies.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5424,
+        "sha256": "078746f23bd0b8a68f6aacaf60e2aa2fb9bbc5475179158198e4c54a6293f21f"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/module-system/module-loader.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/module-system/module-loader.ts",
+        "type": "file",
+        "executable": false,
+        "size": 20596,
+        "sha256": "bb86ed53bf82fef8e4d6a72026ab5570342ce663736cd594ab684999e76f9b7b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/module-system/posix-path.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/module-system/posix-path.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6183,
+        "sha256": "9f30ac9222b9001be76da68dee6af51a5d3f2c4a7ecc6859bfad227ed21c7e4c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/abort-error.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/abort-error.ts",
+        "type": "file",
+        "executable": false,
+        "size": 580,
+        "sha256": "b6bceebecb598faab5cf393bbb241ff98fefd5bd8940e1937c0d056d46f61278"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/assert/strict.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/assert/strict.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1083,
+        "sha256": "26e75f8401060ea07cb450acfe00e1e3dec8233b370d28370597d63e981fe6ed"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/async_hooks.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/async_hooks.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16425,
+        "sha256": "62741c78a788360678165e23c0416daf46aaf2fb2a66f07033a6ef389925740c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/buffer.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/buffer.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1075,
+        "sha256": "e054d70e0808cce82287c1db1c31d83105fb9e2a6ee98c997ee5229b15888c70"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/child_process.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/child_process.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18322,
+        "sha256": "d71f1798a80ffa6af1733d3b90a5c210cbf88fc1b5e5ba96083aadd4cbfdd417"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/crypto.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/crypto.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4373,
+        "sha256": "147612319c192a69e7d8a67ab3448803847cd504031307667b7459fcfd782be1"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/events.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/events.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4624,
+        "sha256": "20cf6925fa44040d7d8beca54a1d78434a1bddd8d00c62a2f7d7b88f82849f15"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/fs-watch.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/fs-watch.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15429,
+        "sha256": "1baaf2fb9d7063c086538db8c95d34a67db7099d9b6d13e47f3f0d7fd2d2ff94"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/fs.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/fs.ts",
+        "type": "file",
+        "executable": false,
+        "size": 31811,
+        "sha256": "6b1bf73d414ab09ecf105943c1634a437f922d7a43a8dd84a54cb7c5b4438f92"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/fs/promises.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/fs/promises.ts",
+        "type": "file",
+        "executable": false,
+        "size": 768,
+        "sha256": "bd7303412503f368c790df18f3226adb9dccddf17cd94670284eb51284fab331"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/http.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/http.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5972,
+        "sha256": "35673b88daaad1a797c7274fdf5a47ee5bf3d3456f91978b0d4354046492d7e2"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/module.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/module.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3167,
+        "sha256": "e66137c098657d50c3d8da8b17200d4925c663d2c59c3cb03c8f39798572164d"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/os.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/os.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2898,
+        "sha256": "50f3bd1b55f3ab3437497ec1719f314a7b41e8bd55ec3e6c15691389e4aa2a0c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/path.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/path.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13549,
+        "sha256": "1081d55ae6058534e4c68b01cce8e8a000c0716a8f72ac2a339b3f6c53ca2c84"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/perf_hooks.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/perf_hooks.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1151,
+        "sha256": "ee23b5141ebe1e5c5d041abb932b26019ef1640aeef4e0c2707fd4555fbfc4a3"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/stream.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/stream.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2653,
+        "sha256": "c5b56f42691a0a0d17d9cdcfe1660fae2af434817c23b01ed517fd59cfb590b9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/stream/promises.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/stream/promises.ts",
+        "type": "file",
+        "executable": false,
+        "size": 571,
+        "sha256": "ce404d5cc61d9c9c73b8fdc98902c823cb3e360645a0129c0d43da0aa2f0a051"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/timers/promises.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/timers/promises.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2240,
+        "sha256": "171fc560e8824fa4626cb46c53c5951921da4720480375968aa37fe6c745c889"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/tty.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/tty.ts",
+        "type": "file",
+        "executable": false,
+        "size": 668,
+        "sha256": "8a8039bd921d320423cbf266a1606472865ce63b9d64399858466ac17b751b94"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/url.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/url.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2702,
+        "sha256": "ddd564673da7b2ebd1b52c208df10a321fb103ea3a235688f696ec8930c9dd23"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/util.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/util.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8174,
+        "sha256": "4864c7698c05e8f98cb1ab537b8a54a559a76acb9999d8a6daf2d55cef18dace"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/util/types.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/util/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 578,
+        "sha256": "8c5fd9853abe476f2ddadabee7ccb690f9310dc0e43bde4419bdb68891d5b81a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/zlib.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/zlib.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3952,
+        "sha256": "cba58e5d1673cc8553915d5dce4e4cd1acfe6f9d472bd6ac83541ee847ed52c9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/dns/promises.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/dns/promises.ts",
+        "type": "file",
+        "executable": false,
+        "size": 869,
+        "sha256": "0451d58c92df0353f04c293a3fe02bd6c8b48d5b36fca6393f20bbfe1f0b4fab"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/https.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/https.ts",
+        "type": "file",
+        "executable": false,
+        "size": 635,
+        "sha256": "8ea5320eb4c89770e9159ae094dec2feb2dbb7305ff60e676fa9e212b5f76a20"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/net.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/net.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2898,
+        "sha256": "57b77d21f0422463a4a32a234fc8a2424f54b09ab1eab357adb01df7384f5bef"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/sqlite.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/sqlite.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1284,
+        "sha256": "543008388888ff48761881f6b4d2e74edb0b42ffb8de741f2cd2b61939428a2e"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/vm.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/vm.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1658,
+        "sha256": "3b38390f0b014ce1f8f8db4c32074b915f5a61036dac56688d5db1a2e88c65a4"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/worker_threads.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtin_modules/mock/worker_threads.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2146,
+        "sha256": "16f609d3e99d43780f246f5b10bd0e0da5e29a4380f0d0ac394ca3ab7942b558"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/builtins.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/builtins.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6879,
+        "sha256": "0b56e9e0b87651cf4f36884bb888cde1b3fc56c12b7c47b6862be5ddb94fe454"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/execa.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/execa.ts",
+        "type": "file",
+        "executable": false,
+        "size": 262,
+        "sha256": "44dcd9023a29d92039f4f1d6d08bab42b5abc30ab81f02995faeec592e9d4a22"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/got.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/got.ts",
+        "type": "file",
+        "executable": false,
+        "size": 392,
+        "sha256": "75cb62fd5e362578fa9ff6133449202dea5b1984c913f32a897b445c81ab2138"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/koffi.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/koffi.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5009,
+        "sha256": "b31dcbb496674b070019b69fb8acec19ab6de578df6021c0f9c8909eec948c72"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/libreoffice-kit.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/libreoffice-kit.ts",
+        "type": "file",
+        "executable": false,
+        "size": 502,
+        "sha256": "c3aa9f8204bcd926e4c2973616e9d03f3351b340cffe53fe12b90182bb9aeb28"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/node-addon-require-builtin.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/node-addon-require-builtin.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1868,
+        "sha256": "46cfa5a76c75939c04f021f70a8ef600b5f4e10e7ca5d0f189df78126699c573"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/node-addon-system-flock.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/node-addon-system-flock.ts",
+        "type": "file",
+        "executable": false,
+        "size": 684,
+        "sha256": "b49db39c4f6f517b6eaff4ec236e4efaae10b9528124a571b05668ab7ac13ce9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/node-pty.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/node-pty.ts",
+        "type": "file",
+        "executable": false,
+        "size": 714,
+        "sha256": "2e52e07b9f145103d0c76713c868de4f0d823e2e11292981a5184b2253a444a3"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/pi-ai.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/pi-ai.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4068,
+        "sha256": "8fa4e24f0d283f40c2ef91909de291de758317f27f862bad4b10976245f6af7f"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/replaced-externals.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/replaced-externals.ts",
+        "type": "file",
+        "executable": false,
+        "size": 659,
+        "sha256": "d484bff401d388a6256e5af8d951261c6f66b54b0de5a65fa89ca306b96893ea"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/ripgrep.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/ripgrep.ts",
+        "type": "file",
+        "executable": false,
+        "size": 643,
+        "sha256": "e5b955b2a24b461fa490973c2b426d25a0024f4ba87b0aff404d9bcc9235f66a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/sharp.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/sharp.ts",
+        "type": "file",
+        "executable": false,
+        "size": 500,
+        "sha256": "5f49da255399b6ce030bed0e78d006027547a5586e09bc74581d2573e690e7b3"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/external_packages/ws.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/external_packages/ws.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2071,
+        "sha256": "3bf680a17d6766146ff6f34f63eb9fcd3b0da5f4521cd850bebd69f32999e03a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/globals/crypto.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/globals/crypto.ts",
+        "type": "file",
+        "executable": false,
+        "size": 817,
+        "sha256": "f9c7a2f766a2564b28cf95c67eaf89140bff6aa374ab50c190dd50a32dded693"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/globals/process.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/globals/process.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5966,
+        "sha256": "7323ef8e95bfec672e93a3084e3026cb54f193203d8139517cb7e2e41dafe706"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/globals/timers.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/globals/timers.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2963,
+        "sha256": "ed9c96be1aaef9dc4074603b4b70d6625fbb3ad86ec53368fb184c3e4e9aa297"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/internal_modules/esm-loader.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/internal_modules/esm-loader.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3487,
+        "sha256": "d021f4118318958109bbb4b9c11bb781084acc84dc8cb8bd86ed128958ed637b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/internal_modules/module-map.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/internal_modules/module-map.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4384,
+        "sha256": "a24eadad9c59ce5fa96f26fed7fbe2788d39a9851392249c1cbe802c5fe83737"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/internal_modules/package-surfaces.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/internal_modules/package-surfaces.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2206,
+        "sha256": "15cbe48aebd3016c6cc6d9341942d03db0edbce9ed929507813d89610ae384e8"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/notImplementedFail.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/notImplementedFail.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2641,
+        "sha256": "3ae8d2dae0fce8bc61064c38361d4b448b5ab19182f041e93ac1063e08aa1b28"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/node/process-table.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/node/process-table.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2768,
+        "sha256": "44cc464df8930ceb9389c0a3929932b0abe23faef8960bab218ca0215406d796"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/polyfill/async-context/als-runtime.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/polyfill/async-context/als-runtime.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4172,
+        "sha256": "de357c44ef566547395346dc9f2f4999d49ce90d0470a3563b3728f96757fd24"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/polyfill/async-context/async-context-hooks.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/polyfill/async-context/async-context-hooks.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3963,
+        "sha256": "84f4fef2a4c695baff39b177b2594e39a512e56586c3f04a8a9491d11f7c5ddd"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/ast.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/ast.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1061,
+        "sha256": "acd07e736e954a0e5e2238fee6b6308303ee39a02c87ad7dc85f0aca07e0e134"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/expand.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/expand.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9283,
+        "sha256": "8e4f8ff12ce2878edf90651f7322a2f8ae4dcefc0da7ff2d348d64228a8440cc"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/fs-access.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/fs-access.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4841,
+        "sha256": "34bb2eb62ede96c605e6ea0728a193873feb5b827480239fa6b77766fd7be370"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/interpret.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/interpret.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15956,
+        "sha256": "096b2a7b0f6cfb059e0cba75176cac7bd8e0e0818458546514fbee4b113a8344"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/process/child.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/process/child.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4168,
+        "sha256": "4991ad00bdea5cdad8383f7de785907bdcdc84bececcd5a12c8762ccb78d6901"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/process/host.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/process/host.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7003,
+        "sha256": "1be054b68981917c9e5c01a18465d853f56a4c23e1e1d85a8e08fbd6f91dba4c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/process/landlock.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/process/landlock.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8186,
+        "sha256": "a07d349a5fa0a04386277e1e6149eb302503929094920aa80325cff6998d1517"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/process/protocol.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/process/protocol.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2975,
+        "sha256": "fba02977b918dbefa741327928a1798b8a314af7284ef41cf42b926c627842da"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/process/virtual-executables.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/process/virtual-executables.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2542,
+        "sha256": "9cd39a06ffe33534da8d5bdc05917376dd2dcbcdaefcca9329af2e95c41b70a1"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/process/xdg-open.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/process/xdg-open.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1820,
+        "sha256": "38c6ebec2591ce67a07e62230a4a27fbc1d7b6387cadda7e48dec2a93c3fa651"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/programs/builtins.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/programs/builtins.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7057,
+        "sha256": "85be675ce60aba2472081a52a83efe9d2435da230a8dca6afedab61cffc3f68d"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/programs/files.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/programs/files.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10076,
+        "sha256": "4d4b95dcb12758c62a0cf5fd6080895fa6a93e09e2858915b19e4608ee5043fa"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/programs/index.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/programs/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1540,
+        "sha256": "59bc1bd8729b62f3157c4f9232c56e04b7b0203f4df050ed192c6ac011cbded9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/programs/options.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/programs/options.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3404,
+        "sha256": "84a6057196fdaf57a06f90132957fbc93280e56dac1e6273c6e332b523eee167"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/programs/text.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/programs/text.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14242,
+        "sha256": "204f2a91bfa37c89d2237907e9b0ffff1d0a6eace640fe4e4c0a6dcaf5ab50b4"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/shell/types.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/shell/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5530,
+        "sha256": "d8bee335135ec2267d2adec3a55ea1302234ed572770ad62560003d83daae437"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/storage/active.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/storage/active.ts",
+        "type": "file",
+        "executable": false,
+        "size": 826,
+        "sha256": "4a530f6b88249ba39e6c7e22b937ccae7608c0025624216f4e1fb91e2a0a2476"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/storage/image-gzip.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/storage/image-gzip.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4644,
+        "sha256": "dcb2708c5b6c0fb6ca597c7c1e61f22c55da3b72c8532ec3799411a0e5cbaa7e"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/storage/memory.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/storage/memory.ts",
+        "type": "file",
+        "executable": false,
+        "size": 49226,
+        "sha256": "9eaaea7a9c495c65ffcb569ace021ffa5eefb4d5f6ab22fb0af9468d0793b703"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/storage/paths.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/storage/paths.ts",
+        "type": "file",
+        "executable": false,
+        "size": 867,
+        "sha256": "bdf833195500cf1ac93d6bbd6f2d02a3a39a044e6629154330536e4ec182665d"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/storage/tar.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/storage/tar.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5656,
+        "sha256": "95f8312718f2da5330a0ef9703eff05ab2e5c62f32df42470b19a1a43bccde41"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/storage/types.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/storage/types.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11602,
+        "sha256": "4d1f91c0822f7a7242452f5a9f6eac5cbea48261df535b4503aa1267f17a1cee"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/transport/frames.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/transport/frames.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7018,
+        "sha256": "bb0b16cd5c732cdd745b5b16fa1064c03016866fd27cc0be019bf77b4971d3d4"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/transport/synthetic-http.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/transport/synthetic-http.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5438,
+        "sha256": "a3f9c8d8207ceed2a0aeaa0cfb3d5b14850ccb306d419c1cc66afb0c6bd2fdfa"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/transport/tunnel.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/transport/tunnel.ts",
+        "type": "file",
+        "executable": false,
+        "size": 21567,
+        "sha256": "8d5b35f8fe3e859a26ef677f0119825be9aa515d99070f062be1f3376b656ad0"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/worker-host.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/worker-host.ts",
+        "type": "file",
+        "executable": false,
+        "size": 23179,
+        "sha256": "9c0eb0c5b9e96db1de0f8514f65fc11025e518e52c6f6a29e09a696b99ce62ef"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/src/worker.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/src/worker.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4216,
+        "sha256": "b4116cea01186ad20f81e883679560ac7df9ad5a029d9d5393eb12a881968a60"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/client/apply-injections.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/client/apply-injections.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 842,
+        "sha256": "d9a4f5faf83507f40cae621aaf4303282f1b7e3f94212011700474fff342d16b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/client/load-bundle.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/client/load-bundle.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3062,
+        "sha256": "3f4c5429f7cf10a656f04f3904d9c5919b90951b72a536a407c928b5ba6982d8"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/client/source-chooser.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/client/source-chooser.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6357,
+        "sha256": "b039f2e2f28e9f5f5901b63a66e55ea062b029ac8a08b6412273a906e5588d90"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/client/text-viewer.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/client/text-viewer.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1627,
+        "sha256": "b8a617ad083af0efe0a7fce512ed0a6175cc612cd18bf8de4c7d090ef6f5ff18"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/compile/transform-corpus-check.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/compile/transform-corpus-check.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6229,
+        "sha256": "8317dbf288511a2d6dcfc6d34a6ffbfc3adb951d133b3afbb3a6f149c45a94e8"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/compile/transform-corpus.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/compile/transform-corpus.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4543,
+        "sha256": "dd13fd5dc1abc279790a1aa70fd31aef603f4ae3d2d4f5681d1a895f1f7b9f5c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/compile/transform.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/compile/transform.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 33792,
+        "sha256": "453943596ac95fbc9c46277cebe26e4ea70c4c1092c979daf86f2c3d8bcf2107"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixture-manifest.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixture-manifest.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1683,
+        "sha256": "0acd99d098bef09e4c5122b5fbc8381e11dc421b7047d4fb0f1b2b0af5de91ab"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-architecture-review/session.v2.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-architecture-review/session.v2.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 37628,
+        "sha256": "7902cb86909243eec01452fec549d707b9490f5ca315668d5fff9653c77d11e6"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-architecture-review/session.v3.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-architecture-review/session.v3.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 37628,
+        "sha256": "16d22a123437e5f2163de295bb145a164e0b436147cfda5ddaada27bc4c46541"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-follow-up-builder/session.v2.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-follow-up-builder/session.v2.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 1782,
+        "sha256": "d945c2cb23f0481c4cef7b6c057e8356965b551a90942861d761557b1fc7750d"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-follow-up-builder/session.v3.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-follow-up-builder/session.v3.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 1782,
+        "sha256": "7cf8c37beaf398238b3bb2b75294fef23f7b2cc173f799ed782d66bf7df6448b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v2.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v2.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 54182,
+        "sha256": "67102c6f7f9595505963ebd899bd98c00358d32bc1cc1fb9baa5474caaafe886"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v3.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v3.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 54182,
+        "sha256": "eb7ecaf5fdd8a2b95959ef9cc5eebba5761848f014e4e1a99eaf6134515898cb"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v4.jsonl",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/preview-showcase/session.v4.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 60176,
+        "sha256": "d4483f4275785beff03ef3cabb3d75f2fc1f5d8dddbea1c77fbb958b2de2bcde"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/storages/schedule.json",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/storages/schedule.json",
+        "type": "file",
+        "executable": false,
+        "size": 1587,
+        "sha256": "d1389b5c0c309478d72b4792ca114cfac4a7146d75a9716c121c4ca36246df9c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/storages/session_projcache.json",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/storages/session_projcache.json",
+        "type": "file",
+        "executable": false,
+        "size": 522,
+        "sha256": "40fb84ac738a35495a7d4290a7968507872d318e8e59b65dece4c72816cbc01a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/.agents/skills/preview-tour/SKILL.md",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/.agents/skills/preview-tour/SKILL.md",
+        "type": "file",
+        "executable": false,
+        "size": 257,
+        "sha256": "4486d12747d1c0fd2d9987c01d576c91158971a1fe5213400513fd1f109a20b2"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/PREVIEW.md",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/PREVIEW.md",
+        "type": "file",
+        "executable": false,
+        "size": 360,
+        "sha256": "87fed9d353c14ff8bf07e1aaebab72ed86e0130a459621330cd17f202899e73f"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/data/tasks.json",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/data/tasks.json",
+        "type": "file",
+        "executable": false,
+        "size": 289,
+        "sha256": "ebced91ee592098b190d4eccda786c37b00aad60008d4d9d9dacab47835a5b98"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/src/preview.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/fixtures/vfs-example/workspace/src/preview.ts",
+        "type": "file",
+        "executable": false,
+        "size": 115,
+        "sha256": "5b7f0967d374d0b553bdc1be19ad4c308081b37a5f60243a286d1b555d094f97"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/log-sink.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/log-sink.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4397,
+        "sha256": "badef9313e14114df83e08087d96f4dfcfbd99d0d22f6dfc39a1de7880d7d823"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/assert-strict.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/assert-strict.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3437,
+        "sha256": "85b32b84a2fa7503f709bbc67bc3b6cb87ac54e1ab1cb8e225195862e2ff24ee"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/builtins-table.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/builtins-table.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6492,
+        "sha256": "0fe02175dac5c87f0cba571e1796065b1335b4eaff84490cc11e8de8a41bcc25"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/child-process.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/child-process.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16205,
+        "sha256": "da5d91641891d80c3b1345918952b73060df016c45c1f34b66b9618ff941da47"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/chokidar.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/chokidar.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8935,
+        "sha256": "d8ceec3057e503921ac855de9db7b08bb4b563522b29b89af3685d38bbc08871"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/crypto-globals.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/crypto-globals.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1570,
+        "sha256": "0914d3f6bf47fea77a1a839ca9534a1d1fd7985445b089ad303dc992a3c632c8"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/events.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/events.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5294,
+        "sha256": "586348be166dfbf45d0ea815e74b5559e7e0749cb425cfe3fa989183cb83aa18"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/fs-watch-context.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/fs-watch-context.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3449,
+        "sha256": "5c45b960f938e9fa413a6967f12f25e744c2bab7f49728aa3ee682e240475ba2"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/fs-watch-stream.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/fs-watch-stream.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 33187,
+        "sha256": "231b642d762f13ee917da55fd276902bf55026eccff3451e9c1f2184f2266f1b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/fs.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/fs.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13268,
+        "sha256": "d74b1b25044c42b156e09fb5a47d5dab6678656dca316792d0019476a71b44f0"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/http-server.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/http-server.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3315,
+        "sha256": "63ce94a02a94efd967c44e77fea52c512f6cd0ccc340459ee4cb123f27fe016b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/node-stubs.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/node-stubs.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9684,
+        "sha256": "cc966a992ed8355803cd0180f5160541e38b2a228238651cd154e126fd7c29e0"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/path-diff.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/path-diff.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4132,
+        "sha256": "690f64e131f4c596aa5fd83ae12647c30ab4d655586811204c7547c01ba907af"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/process-shim.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/process-shim.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2633,
+        "sha256": "defbaafe68fb534632b21d1d6ce602c59a2d20210904a6c4f3e0383c42503a02"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/require-builtin.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/require-builtin.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7699,
+        "sha256": "2a5116a8b3b7390e57a377600dab3abf9579ca7c66dc05cbeefd5ac4a31c0ec5"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/sandbox-stack.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/sandbox-stack.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5220,
+        "sha256": "253baccc3db6cf05e91c7d006a4a658c7c1963f7d5dac1b8d0890bfa634fcbcc"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/shim-diff.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/shim-diff.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5385,
+        "sha256": "d793f6353c40aa2d1d79bb5fc9f890455161cb7dd1c4425b5cc166d6b882e34a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/node/timers-promises.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/node/timers-promises.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2547,
+        "sha256": "6f47dc2281419b48049c472dbf41e8231e0f300f4ca2465e1fa6d850b3b694d0"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/polyfill/als-runtime.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/polyfill/als-runtime.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16630,
+        "sha256": "8edaa76893f49b08658ea6fa5d3797b8be74c3a69d66f8e52079e51e9b120ea2"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/polyfill/als-shim.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/polyfill/als-shim.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16344,
+        "sha256": "d21b3da29dc0ccf1f2e07547e4ff9a203c86af35a199b7472b31ad44b2c8fa32"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/polyfill/als.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/polyfill/als.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3064,
+        "sha256": "0e89f165e85c296b97f1df655b81ff21b1eb6d03a74a8b091c57d2acb567c7a0"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/shell/injected-run.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/shell/injected-run.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7383,
+        "sha256": "153bf995968eabb7d274290db0c1c028be93393d93551d0e68371a5a92e75b66"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/shell/shell-process.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/shell/shell-process.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7050,
+        "sha256": "5bbe3016fe110eb7662c8e35f84eb98c3f6ab6806c5f2c197d55ed0e3401f519"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/shell/shell.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/shell/shell.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9149,
+        "sha256": "3aa5bac14122983d94bed99da4a9ba8311e22b7367d6989fc2b78d02e45f43dd"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/shell/xdg-open.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/shell/xdg-open.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2452,
+        "sha256": "17e74f1075d566c380825dcc8ad8bba75bdd596d90095db275a4da9c0be9605e"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/storage/image-gzip.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/storage/image-gzip.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3872,
+        "sha256": "a1a68025e2bc7ac5da85d477ab01b09ca897336f9cfda82e67806a9d6088799f"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/storage/lazy-archive.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/storage/lazy-archive.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9757,
+        "sha256": "1697404d99017850d7ac91e33d6f3003ffbbe3ad4bdf7d92393fee164934b342"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/storage/memory-vfs.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/storage/memory-vfs.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16827,
+        "sha256": "b9b3bfc15e66fffc11dd23f4001e965ee3cc39bd743aed357c50d085aa2eabd2"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/storage/tar.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/storage/tar.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2724,
+        "sha256": "16e34ee5c17e8aca26d9150a9ef1ea7b5d9af83b06f42b9315dc242cdfa08e46"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/transport/frames.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/transport/frames.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2347,
+        "sha256": "2440e099214b93ca73b364338e5d11615b427a514aabfde54fff3a256ce7b49c"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/transport/tunnel-client.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/transport/tunnel-client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16140,
+        "sha256": "80d0e9f66d381e8c213e550b9287558bee4929ed7dcf4d0bec7241d5ac004e29"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/transport/tunnel-server.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/transport/tunnel-server.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12446,
+        "sha256": "448925c89b7be275a7c233d95dfde78f54038c22c270a4e62fb25c7a6a3b8f66"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/vfs-example-fixture.spec.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/vfs-example-fixture.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12195,
+        "sha256": "9ae8691d43f3a2113827eb9f43fab748f6fc9f3634865d89ed3d4e8ef7ac69d9"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tests/vfs-example-fixture.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tests/vfs-example-fixture.ts",
+        "type": "file",
+        "executable": false,
+        "size": 21898,
+        "sha256": "cffbf85ffe00d90ffd3db38d12297dbe89f2bba55e0c27b37775c6840fb86735"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tsconfig.json",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 804,
+        "sha256": "2e56ac3e032d9edd9a77b60dd0452d0a45521674c2fc5d45d0731198aa21f68a"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/tsdown.config.ts",
+      "before": {
+        "path": "packages/experimental/webworker-runtime/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3702,
+        "sha256": "bbffcd7b9cee527354f6c90dc41bb67ed37984329d4ccef781d028ba237dbda6"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker runtime and VFS image packer after removing their only product entry; neither is referenced by the YouDub runtime, types or retained package tests."
+    },
+    {
       "path": "packages/extensions/cordis-client-runner/src/client/slot-catalog.ts",
       "before": {
         "path": "packages/extensions/cordis-client-runner/src/client/slot-catalog.ts",
@@ -10218,6 +12306,24 @@
       "reason": "Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
     },
     {
+      "path": "packages/test-support/llm-replay/tests/session-format-corpus-inventory.ts",
+      "before": {
+        "path": "packages/test-support/llm-replay/tests/session-format-corpus-inventory.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4730,
+        "sha256": "4ad5ac7edd1974056e8db9f11d357370ef25f4526fc74ae55e89b6d61652c3df"
+      },
+      "after": {
+        "path": "packages/test-support/llm-replay/tests/session-format-corpus-inventory.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3810,
+        "sha256": "864b83a3177fa56c9dcaf0a80a5f5333b47ccdab69f95f4e51de89bacb88adf5"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
       "path": "patches/@electron__osx-sign@1.3.3.patch",
       "before": {
         "path": "patches/@electron__osx-sign@1.3.3.patch",
@@ -10254,10 +12360,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 955078,
-        "sha256": "b84bfce4f34debd33ac420082dcca2d4fec71019eb91c0e6c275a359e5361e69"
+        "size": 949190,
+        "sha256": "71944c8c661a587b0abc49104374966e666e2a71811ba536756a151ecb84cfc6"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded. Remove retired browser preview workspace and HTTP server dependency entries without upgrading retained dependencies."
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded. Remove retired browser preview workspace and HTTP server dependency entries without upgrading retained dependencies. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -10278,6 +12384,24 @@
       "reason": "删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。"
     },
     {
+      "path": "scripts/check-workspace-constraints.ts",
+      "before": {
+        "path": "scripts/check-workspace-constraints.ts",
+        "type": "file",
+        "executable": false,
+        "size": 33618,
+        "sha256": "aec2e46fcc0f39056cebda61f81a47d688510a50b29b80e188f40d8d2c308384"
+      },
+      "after": {
+        "path": "scripts/check-workspace-constraints.ts",
+        "type": "file",
+        "executable": false,
+        "size": 33531,
+        "sha256": "5c5af22f4a556ff634e6923c84ee1792bd2fd2b92e9cee3268375bc7be760f18"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
       "path": "scripts/client-build-environment.client.spec.ts",
       "before": {
         "path": "scripts/client-build-environment.client.spec.ts",
@@ -10294,6 +12418,42 @@
         "sha256": "915f017c4f76edf0238213127158e69cbb8c19137163905246d4e7233385c0e0"
       },
       "reason": "Validate the explicit YouDub development workflow instead of retired Harness release workflows; missing configuration still fails, and client environment and artifact integrity assertions are retained."
+    },
+    {
+      "path": "scripts/coverage-exempt.ts",
+      "before": {
+        "path": "scripts/coverage-exempt.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3042,
+        "sha256": "702b44875e47bfaf973a76d63b3b99024a5d1bd7761952199ea5df0d9b32fa7e"
+      },
+      "after": {
+        "path": "scripts/coverage-exempt.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2036,
+        "sha256": "62d1c68010842cb6f8fccbe9ca6871f3b2eca590e71c080e57bf9b61b19a6c2a"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
+      "path": "scripts/coverage-partitions.spec.ts",
+      "before": {
+        "path": "scripts/coverage-partitions.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 32346,
+        "sha256": "e7b5b5ddca88557a8060e521095d68a51e87751ee25118f7f449da33fc30e7db"
+      },
+      "after": {
+        "path": "scripts/coverage-partitions.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 32332,
+        "sha256": "17e5d7bb03916b699af6b6f2bfac42633cc852d1a453cb01af02e44558de0e09"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "scripts/demo-ptc.mjs",
@@ -10330,6 +12490,24 @@
       },
       "after": null,
       "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/doc-standard.spec.ts",
+      "before": {
+        "path": "scripts/doc-standard.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24887,
+        "sha256": "2ab0fb97c375354ef50688f89c9d4bd1caa739931f7e6f3f9f21a0be6078b4ae"
+      },
+      "after": {
+        "path": "scripts/doc-standard.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24679,
+        "sha256": "d96cbd4080178990e573e98b90943b500f2dfa38adfa5b7b1f3b74e171d7430b"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "scripts/gen-cli-help.spec.ts",
@@ -10404,10 +12582,10 @@
         "path": "scripts/no-unknown-casts.baseline.json",
         "type": "file",
         "executable": false,
-        "size": 113534,
-        "sha256": "f3ec7de03cf008b9820d1ae175a8edb6e5c0c9f4073065594bad3e44497af1f0"
+        "size": 111438,
+        "sha256": "7d73fa13f8d412c516ed43f73ea9368fb86582ddcd89e6b2b7a9c46cd94c12e3"
       },
-      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "scripts/optional-bundles.spec.ts",
@@ -10434,6 +12612,78 @@
       "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
     },
     {
+      "path": "scripts/release/families.spec.ts",
+      "before": {
+        "path": "scripts/release/families.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24279,
+        "sha256": "145e762c1d88d688b5cb52a1168a6e4c2720468b44affb820679edc9e4b94abf"
+      },
+      "after": {
+        "path": "scripts/release/families.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24166,
+        "sha256": "0e84dd3c872ce93e1f866f59cf3360cde3c09a6e5e8ad1ab110e6d66a2a893a7"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
+      "path": "scripts/run-gates.spec.ts",
+      "before": {
+        "path": "scripts/run-gates.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 60041,
+        "sha256": "faecdfe3249e0a240d9f007f5c7b4556d7986f329309092e685c891b6d272e3a"
+      },
+      "after": {
+        "path": "scripts/run-gates.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 59990,
+        "sha256": "3dd5942271d2c97bbd7d74167027ad277ec8318d52687a9f2cf114e308d01f13"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
+      "path": "scripts/session-fixture-layout.spec.ts",
+      "before": {
+        "path": "scripts/session-fixture-layout.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10691,
+        "sha256": "39f8a7e190ed386cad64351678558a8a5f92569b813a2eb66fe3451bff4063af"
+      },
+      "after": {
+        "path": "scripts/session-fixture-layout.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10165,
+        "sha256": "ab156df78c60a3e3a78229826f5f985d5cba8098cfc6278a1bf2745479a715bc"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
+      "path": "scripts/session-fixture-layout.ts",
+      "before": {
+        "path": "scripts/session-fixture-layout.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12346,
+        "sha256": "59bc33073982baac40602e3cefb6d1a19014f8f678a81f3e0cbbfa567b8b7819"
+      },
+      "after": {
+        "path": "scripts/session-fixture-layout.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11973,
+        "sha256": "b300b25ebbfcf40aa874683dcbc22308f9609a29ef4b5c26caa4ce48fc4d55e8"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
       "path": "scripts/verify-application-entrypoints.ts",
       "before": {
         "path": "scripts/verify-application-entrypoints.ts",
@@ -10446,10 +12696,10 @@
         "path": "scripts/verify-application-entrypoints.ts",
         "type": "file",
         "executable": false,
-        "size": 8267,
-        "sha256": "104efff48c806f1cbc9c8cadc95c5a84c94e711ab7a4bf15686280f11ac17331"
+        "size": 8009,
+        "sha256": "5601f454e512bc8d71ea8befa64b4f32a87599709e4a9ca3fded19749c107506"
       },
-      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "scripts/verify-default-product-isolation.spec.ts",
@@ -10486,6 +12736,42 @@
         "sha256": "a8eae3b96da68a238429eb76c633f30fab393ac50f4f3e1562fa246bfedd751b"
       },
       "reason": "Read explicit application entries and selected bundle compositions when excluding experimental dependencies; stop treating the retired Python SDK and unselected global Agent presets as mandatory product roots while preserving source, alias and missing-input checks."
+    },
+    {
+      "path": "scripts/verify-no-top-level-await.spec.ts",
+      "before": {
+        "path": "scripts/verify-no-top-level-await.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10112,
+        "sha256": "a9140afddfb21960da0eb4c4d9c6e3169001533e4f8f03fca200d7c7f65f4f8f"
+      },
+      "after": {
+        "path": "scripts/verify-no-top-level-await.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10024,
+        "sha256": "82077018e82c0f696c4b64b0f7e150d74c240e19ad13946443fa8f4bcecbe640"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
+      "path": "scripts/verify-package-readme-model-experience.ts",
+      "before": {
+        "path": "scripts/verify-package-readme-model-experience.ts",
+        "type": "file",
+        "executable": false,
+        "size": 51541,
+        "sha256": "10d251fddd015e4b757450c0ad92b2399daf5973948c3f1a44f27ba6b24855d2"
+      },
+      "after": {
+        "path": "scripts/verify-package-readme-model-experience.ts",
+        "type": "file",
+        "executable": false,
+        "size": 51183,
+        "sha256": "3f36dfeec6559432605b00fd56bdec05a875a3e0158d355357fbc6b62fde6880"
+      },
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "scripts/verify-product-use.spec.ts",
@@ -10572,10 +12858,10 @@
         "path": "tsconfig.base.json",
         "type": "file",
         "executable": false,
-        "size": 49556,
-        "sha256": "0ce116fa7ab69975638fca21cae96a770d2988ffb692ed0ff61a30589e2a1c90"
+        "size": 49342,
+        "sha256": "add2a2a13b34c60e23758b7ae81fa6909ac3fbe08de4513e0a510a1ebf79c196"
       },
-      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "tsconfig.client.json",
@@ -10608,10 +12894,10 @@
         "path": "tsconfig.host.json",
         "type": "file",
         "executable": false,
-        "size": 26847,
-        "sha256": "4efa663737d82153cd8071e4d1e25d802fe1037ef13fc2ceeb34a1e9c61bdbaa"
+        "size": 26787,
+        "sha256": "68d87b21e238fb7f6dfd4673a97fcc58b335bf98df6cfdad6bb555dc7d641dce"
       },
-      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "vitest.config.ts",
@@ -10620,10 +12906,10 @@
         "path": "vitest.config.ts",
         "type": "file",
         "executable": false,
-        "size": 22806,
-        "sha256": "89a99f902309439b3cbb9857313a3c866315d74454a89a9e04e1c3c42c62ef9b"
+        "size": 20949,
+        "sha256": "55eda800d404e6cc9d0893eb760e2a709c1e7123386d65c5302602badc1d546a"
       },
-      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
     },
     {
       "path": "vitest.shared.ts",

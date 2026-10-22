@@ -49,30 +49,10 @@ const windowsUnsupportedTests = process.platform === 'win32'
       'packages/subprocess/subprocess-local/tests/process-inspector.spec.ts',
       'packages/subprocess/subprocess-local/tests/spawn.spec.ts',
       'packages/subprocess/subprocess-local/tests/terminal.spec.ts',
-      // Oracle-diff suites: they compare the worker's POSIX path/url faces
-      // against the host Node's own answers, which are win32 semantics on
-      // Windows. The worker always speaks POSIX; the Linux lanes hold the diff.
-      'packages/experimental/webworker-runtime/tests/node/path-diff.spec.ts',
-      'packages/experimental/webworker-runtime/tests/node/shim-diff.spec.ts',
-      // The subprocess ladder over the worker's child_process face: its kill
-      // rung reaches the in-worker process table through `process.kill`,
-      // which the ladder's win32 branch replaces with taskkill-by-real-pid —
-      // undeliverable to a table pid. The worker host always reports 'linux',
-      // so the Linux lanes hold the ladder.
-      'packages/experimental/webworker-runtime/tests/node/child-process.spec.ts',
     ]
   : []
 
-// These suites compare against or assemble the Worker's fixed Linux platform.
-// Host-native Windows and macOS behavior is not their oracle.
-const nonLinuxWebWorkerTests = process.platform === 'linux'
-  ? []
-  : [
-      'packages/experimental/webworker-runtime/tests/node/fs-watch-stream.spec.ts',
-      'packages/experimental/webworker-runtime/tests/node/sandbox-stack.spec.ts',
-    ]
-
-const platformUnsupportedTests = [...windowsUnsupportedTests, ...nonLinuxWebWorkerTests]
+const platformUnsupportedTests = windowsUnsupportedTests
 
 const windowsUnsupportedCoveragePackages = process.platform === 'win32'
   ? [...windowsUnsupportedPackages, 'packages/subprocess/*']
@@ -285,11 +265,6 @@ export default defineConfig({
         'packages/client/ui-layout/src/*',
         'packages/client/web/src/*',
         'packages/host/webserver/src/*',
-        // Retired browser-worker deployment, outside the YouDub desktop
-        // composition. Its algorithmic unit specs remain until source pruning;
-        // there is no current product-level browser-worker acceptance lane.
-        'packages/experimental/webworker-runtime/src/**',
-        'packages/experimental/webworker-packer/src/*',
         // Inspector execution adapters run in a Node Worker, the Host native
         // inspector session, or a browser realm, outside attributable parent
         // Vitest coverage.
@@ -366,10 +341,6 @@ export default defineConfig({
         // Typert correctness is checked by its uninstrumented suites,
         // including compiler fixtures and byte-for-byte catalog reproduction.
         'packages/typert/*/src/**/*.{ts,tsx}',
-        // Experimental webworker-runtime is outside the coverage requirement
-        // by decision: its correctness signal is its uninstrumented suite and
-        // the packer's end-to-end image spec.
-        'packages/experimental/webworker-runtime/src/**/*.ts',
         // Projection/command round: executor lifecycle branches and the
         // registry's drive tails need the same maturing lanes. TODO(gui):
         // cover and remove with the client test lane above.

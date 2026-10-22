@@ -1115,44 +1115,6 @@
   "packages/experimental/webhook/tests/session.spec.ts": {
     "febbe0687d7079e44a15b802235157043bad5a5f188348db89fe00f50532bee8": 1
   },
-  "packages/experimental/webworker-packer/src/preview.ts": {
-    "cdd46c8ceda6d5707bc2abfba329351ba06bcc030b314a3c799d72a4971bd5a4": 1
-  },
-  "packages/experimental/webworker-packer/tests/preview.spec.ts": {
-    "cdd46c8ceda6d5707bc2abfba329351ba06bcc030b314a3c799d72a4971bd5a4": 1
-  },
-  "packages/experimental/webworker-runtime/src/compile/transform.ts": {
-    "48bb7e26a882fa7a44a4175f843d20846606976c7d6fdaf67c8a08dd8830b95e": 1
-  },
-  "packages/experimental/webworker-runtime/src/node/builtin_modules/implemented/stream.ts": {
-    "8d4298961ca8095e069df7c940bd5082e0a90f76a24f517d5f547566e0631b6c": 1
-  },
-  "packages/experimental/webworker-runtime/src/storage/image-gzip.ts": {
-    "6e98416b48d495e803b58ad4c34c66ddd8f1857e08cbba9016eef0a31f15382a": 1
-  },
-  "packages/experimental/webworker-runtime/tests/client/load-bundle.spec.ts": {
-    "23ba66e2bbb47a4f75d61a471b0126fc3544f01768b4e593fcb7dfaca81d4af9": 1
-  },
-  "packages/experimental/webworker-runtime/tests/node/child-process.spec.ts": {
-    "7fe58280287ff63d40e979e72329f975e11015a95e9a8eec207a5a78748d3c89": 1
-  },
-  "packages/experimental/webworker-runtime/tests/node/fs-watch-stream.spec.ts": {
-    "353205721417fcf2b8e50fe2c09a1692d33cd248680ba761c0aabf7ed0688c79": 1,
-    "48a9c1c41789eb408cf6c1db9979f8afc245546ac41d03e3ab65eec3137d42fe": 1,
-    "5741e967f70a1c9cf4d39b864c51457fa1e7a079fe99079013936543d80d3cba": 1,
-    "7f6509f26ad866cf393071affc3560444301146138d7f62e3ed622cf9999b3ad": 1,
-    "a8ae2770b4b6b0b3eeb99fc83295c66af54716c54725ed1de9e667a1ff55e21a": 1
-  },
-  "packages/experimental/webworker-runtime/tests/transport/tunnel-client.spec.ts": {
-    "57012c2a1a6607e1296bdf33eb3d118eb2caae1abbbb1e8eed966837de75cd55": 1,
-    "ce85127d7198918f7141235a5784b3db422482fcd6a5a3ae24c5d94f22f4239e": 2
-  },
-  "packages/experimental/webworker-runtime/tests/vfs-example-fixture.spec.ts": {
-    "e3b3858336ae260253abe549d2b763f5087ab4e8650f4eb5b323339eff0a6ce4": 1
-  },
-  "packages/experimental/webworker-runtime/tests/vfs-example-fixture.ts": {
-    "d3e642e91bcbc51168a96a4ab1d85291de54989eec33c4f36bb5acb18aef7a39": 1
-  },
   "packages/extensions/cordis-client-runner/src/client/providers.ts": {
     "3706ba0e7ecb37ef9aa4d5e6bb732001b78443acf77f015f97b1b11d3a2cf941": 1,
     "e22cd09a6cb7792f97b8fda8b5bc6a52d014f90d6e2266b052f07b0c7906b337": 1,

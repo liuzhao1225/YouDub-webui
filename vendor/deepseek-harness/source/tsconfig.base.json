@@ -342,8 +342,6 @@
       "@deepseek-ai/dsh-experimental-tool-agent-team": ["./packages/experimental/tool-agent-team/src"],
       "@deepseek-ai/dsh-experimental-worktree": ["./packages/experimental/worktree/src"],
       "@deepseek-ai/dsh-experimental-tool-worktree": ["./packages/experimental/tool-worktree/src"],
-      "@deepseek-ai/dsh-experimental-webworker-runtime": ["./packages/experimental/webworker-runtime/src"],
-      "@deepseek-ai/dsh-experimental-webworker-packer": ["./packages/experimental/webworker-packer/src"],
       "@deepseek-ai/dsh-experimental-inspector": ["./packages/experimental/inspector/src"],
       "@deepseek-ai/dsh-experimental-inspector-profile": ["./packages/experimental/inspector-profile/src"],
       "@deepseek-ai/dsh-experimental-session-inspector": ["./packages/experimental/session-inspector/src"],

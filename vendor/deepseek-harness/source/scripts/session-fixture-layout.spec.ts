@@ -198,12 +198,6 @@ describe('canonicalSessionFixture', () => {
 describe('isPhysicalSessionFixture', () => {
   it('recognizes fixtures that preserve physical persistence encoding', () => {
     expect(isPhysicalSessionFixture(
-      'packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/main/session.jsonl',
-    )).toBe(true)
-    expect(isPhysicalSessionFixture(
-      'packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/--dsh-workspace--/main/session.v1.jsonl',
-    )).toBe(true)
-    expect(isPhysicalSessionFixture(
       'scripts/snapshots/python-sdk-single-exe/advanced/session.1.jsonl',
     )).toBe(true)
     expect(isPhysicalSessionFixture(
@@ -215,9 +209,6 @@ describe('isPhysicalSessionFixture', () => {
     expect(isPhysicalSessionFixture(
       'scripts/snapshots/python-sdk-single-exe/restart/session.2.jsonl',
     )).toBe(true)
-    expect(isPhysicalSessionFixture(
-      'packages/experimental/webworker-runtime/tests/fixtures/vfs-example/home/sessions/README.jsonl',
-    )).toBe(false)
     expect(isPhysicalSessionFixture(
       'scripts/snapshots/python-sdk-single-exe/advanced/requests.jsonl',
     )).toBe(false)

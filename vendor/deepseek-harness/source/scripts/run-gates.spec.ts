@@ -504,7 +504,7 @@ describe('gate graph validation', () => {
     expect(byId.get('coverage')?.needs).toContain('build')
     expect(byId.get('coverage-exempt-heavy')?.needs).toContain('build')
     expect(byId.get('coverage-exempt-heavy')?.args).toContain(
-      'packages/experimental/webworker-packer/tests/image-loadable.spec.ts',
+      'packages/typert/',
     )
     expect(observational).not.toHaveLength(0)
     for (const gate of observational) {

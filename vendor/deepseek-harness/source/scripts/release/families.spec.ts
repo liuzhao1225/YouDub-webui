@@ -93,8 +93,6 @@ describe('release families', () => {
       '@deepseek-ai/dsh-experimental-voice-input-bundle',
       '@deepseek-ai/dsh-webhook-github',
       '@deepseek-ai/dsh-webhook',
-      '@deepseek-ai/dsh-experimental-webworker-packer',
-      '@deepseek-ai/dsh-experimental-webworker-runtime',
       '@deepseek-ai/dsh-experimental-worktree',
     ])
   })
