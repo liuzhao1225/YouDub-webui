@@ -33,7 +33,7 @@ function fixture(): string {
   write(root, 'python/sdk-runtime/package.json', { name: '@deepseek-ai/dsh-python-runtime' })
   write(root, 'packages/core/core/package.json', { name: core })
   write(root, 'packages/core/core/src/index.ts', 'export {}\n')
-  write(root, 'packages/bundle/base/package.json', { name: base, dsh: { bundle: { patch: './cordis.patch.yml' } } })
+  write(root, 'packages/bundle/base/package.json', { name: base, dsh: { bundle: { patch: ['./cordis.patch.yml', '../web-app/presets/standard.patch.yml'] } } })
   write(root, patch, [{ insert: [{ name: core }] }])
   write(root, preset, [{ insert: [{ name: '@deepseek-ai/dsh-agent-preset', config: { id: 'standard', plugins: [{ name: core }] } }] }])
   write(root, 'packages/preset/agent-preset/package.json', { name: '@deepseek-ai/dsh-agent-preset' })
@@ -102,7 +102,7 @@ describe('default product isolation', () => {
     write(root, 'apps/web/src/preview.ts', `import '${experimental}'\n`)
     write(root, 'packages/experimental/prototype/cordis.patch.yml', [{ name: experimental }])
 
-    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 6, configCount: 2 })
+    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 5, configCount: 2 })
   })
 
   it('ignores dependency trees and directories whose names end in a source extension', () => {
@@ -126,7 +126,7 @@ describe('default product isolation', () => {
     write(root, profile, `export const PROFILE_TEMPLATES = { web: { bundles: ['${base}'] } }\n`
       + `export const DEFAULT_PROFILE_BUNDLES = ['${base}']\n`
       + `export const OPTIONAL_BUNDLES = ['${layer}']\n`)
-    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 6 })
+    expect(verifyDefaultProductIsolation(root)).toMatchObject({ failures: [], packageCount: 5 })
 
     // The exception covers the dependency edge alone: a runtime import or a default template still names the product.
     write(root, 'apps/cli/src/bin.ts', `import '${layer}'\n`)
@@ -206,7 +206,7 @@ describe('default product isolation', () => {
     const root = fixture()
     manifest(root, 'apps/cli/package.json', { dependencies: { '@deepseek-ai/dsh-experimental-missing': '*' } })
     manifest(root, 'packages/experimental/prototype/package.json', { name: '@fixture/innocent' })
-    manifest(root, 'python/sdk-runtime/package.json', { dependencies: { '@fixture/innocent': '*' } })
+    manifest(root, 'apps/web/package.json', { dependencies: { '@fixture/innocent': '*' } })
 
     const failures = verifyDefaultProductIsolation(root).failures.join('\n')
     expect(failures).toContain('@deepseek-ai/dsh-experimental-missing')
@@ -444,6 +444,7 @@ describe('default product isolation', () => {
   it('reports an empty effective Web tree even when the raw patch names a package', () => {
     const root = fixture()
     write(root, patch, [{ id: 'missing-target', name: core }])
+    write(root, preset, [])
 
     expect(verifyDefaultProductIsolation(root).failures).toContain(`${profile}: composed Web profile contains no plugins`)
   })
@@ -472,7 +473,7 @@ describe('default product isolation', () => {
     expect(verifyDefaultProductIsolation(root).failures.join('\n')).toContain(experimental)
   })
 
-  it.each(['apps/cli/package.json', 'apps/web/index.html', 'python/sdk-runtime/package.json', preset])(
+  it.each(['apps/cli/package.json', 'apps/web/index.html'])(
     'fails closed when required input %s is missing',
     (path) => {
       const root = fixture()
@@ -481,11 +482,38 @@ describe('default product isolation', () => {
     },
   )
 
+  it('does not make an unselected SDK installation a product root', () => {
+    const root = fixture()
+    manifest(root, 'python/sdk-runtime/package.json', { dependencies: { [experimental]: 'workspace:*' } })
+    expect(verifyDefaultProductIsolation(root).failures).toEqual([])
+  })
+
+  it('accepts empty framework profiles and inspects the explicit application composition', () => {
+    const root = fixture()
+    write(root, profile, 'export const PROFILE_TEMPLATES = {}; export const DEFAULT_PROFILE_BUNDLES = []')
+    write(root, 'application/cordis.patch.yml', [{ insert: [{ name: core }] }])
+    expect(verifyDefaultProductIsolation(root, { patches: ['application/cordis.patch.yml'] }).failures).toEqual([])
+    write(root, 'application/cordis.patch.yml', [{ insert: [{ name: experimental }] }])
+    expect(verifyDefaultProductIsolation(root, { patches: ['application/cordis.patch.yml'] }).failures.join('\n'))
+      .toContain(experimental)
+  })
+
+  it('inspects application source entries outside framework packages and fails on missing inputs', () => {
+    const root = fixture()
+    write(root, 'application/client.ts', `import '${experimental}'`)
+    expect(verifyDefaultProductIsolation(root, { entries: ['application/client.ts'] }).failures.join('\n'))
+      .toContain(experimental)
+    expect(() => verifyDefaultProductIsolation(root, { entries: ['application/missing.ts'] })).toThrow('ENOENT')
+    expect(() => verifyDefaultProductIsolation(root, { patches: ['application/missing.yml'] })).toThrow('failed to read overlay')
+    rmSync(join(root, preset))
+    expect(() => verifyDefaultProductIsolation(root)).toThrow('failed to read overlay')
+  })
+
   it.each([
     '',
-    'export const PROFILE_TEMPLATES = {}; export const DEFAULT_PROFILE_BUNDLES = []',
+    'export const PROFILE_TEMPLATES = { web: { bundles: [] } }; export const DEFAULT_PROFILE_BUNDLES = []',
     'export const PROFILE_TEMPLATES = computedProfiles(); export const DEFAULT_PROFILE_BUNDLES = []',
-  ])('rejects absent, empty, or uninspectable default profile definitions', (source) => {
+  ])('rejects absent or uninspectable default profile definitions', (source) => {
     const root = fixture()
     write(root, profile, source)
     expect(() => verifyDefaultProductIsolation(root)).toThrow('profile')

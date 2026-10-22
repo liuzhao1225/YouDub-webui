@@ -270,3 +270,9 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 `9765291f` 的[干净 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39732051353) 在源码构建后失败：客户端测试要求的 `dist/desktop/runtime-project/youdub-plugin/package.json` 由桌面启动生成，构建本身不生成；本地之前启动过桌面，因而遗漏了这个前置条件。修正新增 `test/prepare-framework-client.mjs`，直接调用现有 `prepareSourceDevelopment` 和 Harness `prepareDevelopmentProject`，在独立 `.cache/harness/framework-client-project` 准备同一产品组合；CI 在框架测试前显式调用一次。预加载器只读取该测试项目，缺失时继续报错；无需启动窗口、修改用户 profile 或回退到旧 Harness bundle。
 
 新的独立测试项目首次准备后，同一组 86 个文件、1,179 项回归通过，既有预期失败和平台跳过各 1 项。原生运行项目与用户 profile 未被测试准备过程重建；本地测试无需先启动桌面。干净 CI 待新候选完成后补记。
+
+## P6 第八批准备：产品隔离检查入口（2026-10-22）
+
+原 `verify-default-product-isolation` 已加入显式应用配置和源码入口，根命令为 `npm run check:framework-isolation`。允许框架的 profile 声明为空，仍拒绝缺失声明、动态定义和非空但不完整的声明；预设随被选中的 bundle 读取，未选中的旧 Python SDK 不再自动成为产品安装根。实验包别名、传递依赖、运行导入、配置和缺失文件检查继续保留。应用源码位于框架包目录外时，也会检查其直接框架引用。
+
+新增和保留的 168 项回归通过。源码构建七个步骤、产品构建、组合检查和来源收据通过；实际隔离检查通过，覆盖 230 个包、1,920 个源码文件、6 个配置及 33 个组合插件。该检查确认实验模块隔离，使用闭包检查仍有 207 个候选待核对。旧 Web 组合、旧 SDK 与构建范围仍待清理，本批没有删除它们。

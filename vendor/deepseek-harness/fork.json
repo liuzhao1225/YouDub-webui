@@ -9828,6 +9828,42 @@
       "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
+      "path": "scripts/verify-default-product-isolation.spec.ts",
+      "before": {
+        "path": "scripts/verify-default-product-isolation.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 26533,
+        "sha256": "abfdf276c23411383fb0a773fdd1ffa3a85b98f428ad530b5e1fe363b13bafa1"
+      },
+      "after": {
+        "path": "scripts/verify-default-product-isolation.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 28229,
+        "sha256": "69c71951a8942b68ba53df0e2b015669f0274cb8ed66333ea96db5bcb06705e9"
+      },
+      "reason": "Read explicit application entries and selected bundle compositions when excluding experimental dependencies; stop treating the retired Python SDK and unselected global Agent presets as mandatory product roots while preserving source, alias and missing-input checks."
+    },
+    {
+      "path": "scripts/verify-default-product-isolation.ts",
+      "before": {
+        "path": "scripts/verify-default-product-isolation.ts",
+        "type": "file",
+        "executable": false,
+        "size": 21156,
+        "sha256": "c9d83316d9d79335ceda05099885ae4a4c4061ac676236462ad791903cf8389a"
+      },
+      "after": {
+        "path": "scripts/verify-default-product-isolation.ts",
+        "type": "file",
+        "executable": false,
+        "size": 21968,
+        "sha256": "a8eae3b96da68a238429eb76c633f30fab393ac50f4f3e1562fa246bfedd751b"
+      },
+      "reason": "Read explicit application entries and selected bundle compositions when excluding experimental dependencies; stop treating the retired Python SDK and unselected global Agent presets as mandatory product roots while preserving source, alias and missing-input checks."
+    },
+    {
       "path": "scripts/verify-product-use.spec.ts",
       "before": {
         "path": "scripts/verify-product-use.spec.ts",

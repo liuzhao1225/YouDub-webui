@@ -7,6 +7,7 @@
 import { existsSync, globSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, extname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
 import { JSDOM } from 'jsdom'
 import ts from 'typescript'
 import { applyEntryPatches, type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
@@ -24,7 +25,6 @@ import { isExperimentalPackageName } from './experimental-package-policy.ts'
 // The independently published entry package owns platform-engine dependencies.
 const EXTERNAL_KIT_PACKAGES = new Set(['@deepseek-ai/libreoffice-kit'])
 const PROFILE_SOURCE = 'packages/boot/app-boot/src/profile.ts'
-const PRESET_PATTERN = 'packages/bundle/web-app/presets/*.patch.yml'
 const RUNTIME_SECTIONS = ['dependencies', 'optionalDependencies', 'peerDependencies'] as const
 
 interface Manifest {
@@ -58,7 +58,10 @@ export interface ProductIsolationResult {
  * @param root - repository root; no build outputs or installed workspace links are read.
  * @returns violations and the sizes of the checked package, source, and configuration sets.
  */
-export function verifyDefaultProductIsolation(root: string): ProductIsolationResult {
+export function verifyDefaultProductIsolation(
+  root: string,
+  product: { patches?: readonly string[]; entries?: readonly string[] } = {},
+): ProductIsolationResult {
   const failures: string[] = []
   const packages = new Map<string, Package>()
   const directories = new Map<string, Package>()
@@ -74,7 +77,7 @@ export function verifyDefaultProductIsolation(root: string): ProductIsolationRes
     packages.set(manifest.name, pkg)
     directories.set(pkg.directory, pkg)
   }
-  for (const path of ['apps/cli/package.json', 'apps/web/package.json', 'python/sdk-runtime/package.json']) {
+  for (const path of ['apps/cli/package.json', 'apps/web/package.json']) {
     if (!existsSync(resolve(root, path))) failures.push(`missing default product root ${path}`)
   }
   const cli = directories.get(resolve(root, 'apps/cli'))
@@ -155,12 +158,11 @@ export function verifyDefaultProductIsolation(root: string): ProductIsolationRes
   }
   const sourceReference = (specifier: string, path: string): void => {
     const owner = ownerOf(path)
-    if (owner === undefined) return
     reference(specifier, display(path), owner)
     const name = barePackageName(specifier)
     const range = [...RUNTIME_SECTIONS, 'devDependencies' as const]
-      .map(section => owner.manifest[section]?.[name]).find(value => value !== undefined)
-    if (range !== undefined) dependency(name, range, owner, display(path))
+      .map(section => owner?.manifest[section]?.[name]).find(value => value !== undefined)
+    if (owner !== undefined && range !== undefined) dependency(name, range, owner, display(path))
   }
   const scanSource = (path: string, followLocal = false, inlineSource?: string): void => {
     if (sources.has(path)) return
@@ -238,7 +240,7 @@ export function verifyDefaultProductIsolation(root: string): ProductIsolationRes
 
   for (const pkg of packages.values()) {
     const path = display(pkg.directory)
-    if (path.startsWith('apps/') || path === 'python/sdk-runtime') add(pkg, path)
+    if (path.startsWith('apps/')) add(pkg, path)
   }
   if (selection !== undefined) {
     for (const name of selection.packages) {
@@ -256,15 +258,19 @@ export function verifyDefaultProductIsolation(root: string): ProductIsolationRes
     })
     if (webLayers.length !== selection.webBundles.length) {
       failures.push(`${PROFILE_SOURCE}: default Web bundle layers are incomplete`)
-    } else {
+    } else if (webLayers.length > 0) {
       const entries = composeEntries(webLayers)
       scanEntries(entries, profilePath, true)
       if (webPluginCount === 0) failures.push(`${PROFILE_SOURCE}: composed Web profile contains no plugins`)
     }
   } else failures.push(`missing default profile source ${PROFILE_SOURCE}`)
-  const presets = globSync(PRESET_PATTERN, { cwd: root }).sort()
-  if (presets.length === 0) failures.push(`no shipped presets matched ${PRESET_PATTERN}`)
-  for (const path of presets) scanConfig(resolve(root, path))
+  const productPatches = (product.patches ?? []).map(path => {
+    const filename = resolve(root, path)
+    configs.add(filename)
+    return loadOverlayPatches('verify-default-product-isolation', filename)
+  })
+  if (productPatches.length > 0) scanEntries(composeEntries(productPatches), profilePath, true)
+  for (const path of product.entries ?? []) scanSource(resolve(root, path), true)
 
   const html = resolve(root, 'apps/web/index.html')
   if (existsSync(html)) {
@@ -380,6 +386,11 @@ function profilePackages(source: string): { packages: string[]; webBundles: stri
       literals(node.expression, path)
     } else throw new Error(`${PROFILE_SOURCE}: default profile packages must use static literal lists`)
   }
+  const emptyLiteral = (node: ts.Node): boolean => {
+    if (ts.isAsExpression(node) || ts.isSatisfiesExpression(node) || ts.isParenthesizedExpression(node)) return emptyLiteral(node.expression)
+    return ts.isArrayLiteralExpression(node) && node.elements.length === 0
+      || ts.isObjectLiteralExpression(node) && node.properties.length === 0
+  }
   for (const statement of file.statements) {
     if (!ts.isVariableStatement(statement)) continue
     for (const declaration of statement.declarationList.declarations) {
@@ -390,18 +401,23 @@ function profilePackages(source: string): { packages: string[]; webBundles: stri
       if (required.has(declaration.name.text)) found.add(declaration.name.text)
       const before = packages.length
       literals(declaration.initializer, [declaration.name.text])
-      if (declaration.name.text !== 'OPTIONAL_BUNDLES' && packages.length === before) {
+      if (declaration.name.text !== 'OPTIONAL_BUNDLES' && packages.length === before && !emptyLiteral(declaration.initializer)) {
         throw new Error(`${PROFILE_SOURCE}: ${declaration.name.text} has no default bundles`)
       }
     }
   }
   if (found.size !== required.size) throw new Error(`${PROFILE_SOURCE}: missing default profile declarations`)
-  if (webBundles.length === 0) throw new Error(`${PROFILE_SOURCE}: missing default Web bundle list`)
   return { packages, webBundles, optionalBundles }
 }
 
 if (import.meta.main) {
-  const result = verifyDefaultProductIsolation(resolve(import.meta.dirname, '..'))
+  const { values } = parseArgs({ options: {
+    root: { type: 'string' }, patch: { type: 'string', multiple: true }, entry: { type: 'string', multiple: true },
+  } })
+  const root = values.root === undefined ? resolve(import.meta.dirname, '..') : resolve(values.root)
+  const result = verifyDefaultProductIsolation(root, {
+    patches: values.patch?.map(path => resolve(path)), entries: values.entry?.map(path => resolve(path)),
+  })
   if (result.failures.length > 0) {
     for (const failure of result.failures) console.error(`verify-default-product-isolation: ${failure}`)
     process.exitCode = 1

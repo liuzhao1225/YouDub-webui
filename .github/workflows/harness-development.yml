@@ -60,6 +60,7 @@ jobs:
           node apps/harness/build-framework.mjs --verify-only
           npm run build:youdub
           npm --prefix apps/harness run check:composition
+          npm run check:framework-isolation
       - name: 检查保留的上游设置和桌面生命周期
         working-directory: .cache/harness/source-build
         run: |
@@ -67,7 +68,7 @@ jobs:
           node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/api/settings-controller/tests/credentials-controller.host.spec.ts apps/desktop/tests packages/api/remotes packages/client/ui-settings-models packages/client/ui-settings-general packages/client/ui-renderer packages/client/ui-layout packages/test-support/client-runtime apps/desktop-host/tests/quit-inspection.spec.ts
       - name: 检查 profile 与插件生命周期
         working-directory: .cache/harness/source-build
-        run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-product-use.spec.ts
+        run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-product-use.spec.ts scripts/verify-default-product-isolation.spec.ts
       - name: 检查领域、界面和语言
         run: |
           npm run typecheck
