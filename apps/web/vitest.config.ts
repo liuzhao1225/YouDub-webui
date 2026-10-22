@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   resolve: {
-    dedupe: ["react", "react-dom", "clsx"],
+    dedupe: ["react", "react-dom", "clsx", "zustand", "immer"],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },

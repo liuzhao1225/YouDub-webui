@@ -63,7 +63,31 @@
     "No new full media inference or listening quality acceptance in this batch"
   ],
   "ci": {
-    "status": "pending for committed candidate"
+    "status": "passed",
+    "headSha": "6102ac42981ad2cb2cf8e7ce6f7bb9a435df18a7",
+    "runId": 39853560337,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39853560337",
+    "macOS": {
+      "frameworkGui": {
+        "passed": 8075,
+        "expectedFailure": 1,
+        "skipped": 1
+      },
+      "profile": {
+        "passed": 6689,
+        "skipped": 1
+      },
+      "frontend": 268,
+      "python": 525
+    },
+    "windows": {
+      "desktopAndProcess": {
+        "passed": 567,
+        "skipped": 27
+      },
+      "actualHostAndProductContracts": "passed"
+    },
+    "releaseOrPackaging": false
   },
   "candidateCommit": "6102ac42981ad2cb2cf8e7ce6f7bb9a435df18a7"
 }

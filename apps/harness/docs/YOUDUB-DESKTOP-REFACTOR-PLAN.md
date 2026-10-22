@@ -6,6 +6,8 @@
 
 2026-10-23 P4 增量：八类基础控件已统一到原 `components/ui/*`，桌面专用重复实现与对应构建替换已移除。268 项前端回归、类型和构建通过；实际 Host 的首页菜单与节点编辑验证通过，原生交互仍待最终验收。[统一控件证据](evidence/refactor-unified-controls.json)
 
+2026-10-23 P4 后续：工作流 Modal 与控制器 Store 已在业务源码中统一复用官方实现，桌面专用 Dialog/Store 及对应构建替换已删除。268 项前端回归和实际 Host 的键盘、草稿检查通过；原生验收保持开放。[证据](evidence/refactor-shared-modal-store.json)
+
 同日追加：快捷字段浮层共用 Harness Menu；根据实际页面修复隐藏 Portal 的聚焦时机和全宽输入框的横向溢出。7,593 项框架 GUI、268 项业务界面与实际 Host 浏览器验证通过。[浮层记录](evidence/refactor-shared-popover.json) 旧字幕默认配置的实际迁移、重复调用、编辑/删除后重启及历史记录保留也已验证。[迁移记录](evidence/refactor-legacy-defaults-host.json)
 
 ## 1. 目标与范围

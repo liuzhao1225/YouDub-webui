@@ -1,5 +1,5 @@
 import type { ResourceSelection, SetupAction, SetupState } from '@/runtime/setup-contracts'
-import { createStore, type StoreApi } from 'zustand/vanilla'
+import { createStore, type StoreApi } from '@/lib/store'
 import type { Request } from '@/plugin/runtime/types'
 import type { Catalog } from '@/plugin/contracts'
 import { responseBody } from './http'

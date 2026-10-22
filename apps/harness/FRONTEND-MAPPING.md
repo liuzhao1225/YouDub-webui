@@ -21,7 +21,7 @@
 
 ## 公共元素
 
-`apps/web/src/components/ui/*` 直接复用 Harness `Button`、`Input`、`Menu`、`Checkbox`、`Switch`、`SegmentedControl`、`Tooltip`、`Tag`，在原组件中转换 YouDub 的尺寸、变体和字段回调。桌面与业务测试使用同一份组件源码，已删除桌面专用 `frontend/controls.tsx` 及八类控件的构建替换。`harness-primitives.ts` 是统一框架依赖入口：测试读取保留的框架源文件，Desktop 解析到 ModuleLoader 已加载的官方模块，避免第二份菜单/弹层状态。菜单焦点、键盘和 Portal 继续由官方组件负责；快捷字段浮层也使用共享 `ui/popover.tsx`，已删除桌面专用 Popover 与对应构建替换；原复合 Dialog 暂留薄适配层接到官方 Modal。[本次验证](docs/evidence/refactor-unified-controls.json)
+`apps/web/src/components/ui/*` 直接复用 Harness `Button`、`Input`、`Menu`、`Checkbox`、`Switch`、`SegmentedControl`、`Tooltip`、`Tag`，在原组件中转换 YouDub 的尺寸、变体和字段回调。桌面与业务测试使用同一份组件源码，已删除桌面专用 `frontend/controls.tsx` 及八类控件的构建替换。`harness-primitives.ts` 是统一框架依赖入口：测试读取保留的框架源文件，Desktop 解析到 ModuleLoader 已加载的官方模块，避免第二份菜单/弹层状态。菜单焦点、键盘和 Portal 继续由官方组件负责；快捷字段浮层也使用共享 `ui/popover.tsx`，已删除桌面专用 Popover 与对应构建替换；工作流离开保护直接使用官方 Modal，桌面 Dialog 适配和两条构建替换已删除。业务查询、资源、首启和草稿控制器共用 `lib/store.ts` 与 Harness Store，测试与桌面不再使用不同的存储实现。[本次验证](docs/evidence/refactor-unified-controls.json)
 
 `frontend/sdk.tsx` 只提供导航链接和原 `domain-helpers` 的纯函数。原 `bootstrap`、Cordis 前端容器、legacy context、router、Base UI 组件和自建模型设置不进入活跃 Harness 客户端。页面按完整路径 key 保留原组件生命周期；静态路由优先级复用原 `resolveRoute`。
 

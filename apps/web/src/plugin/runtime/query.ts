@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla'
+import { createStore } from '@/lib/store'
 import type { Request } from './types'
 import type { Diagnostic, WorkflowDocumentRecord } from '../contracts'
 

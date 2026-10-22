@@ -60,16 +60,20 @@ const host = await build({ ...common, entryPoints: ['src/host.mjs'], outfile: 'd
 const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile: 'dist/client.js', platform: 'browser', format: 'cjs', jsx: 'automatic', metafile: true,
   external: ['react', 'react/jsx-runtime', 'react-dom', '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-store'], loader: { '.css': 'text' }, nodePaths: [resolve(here, 'node_modules'), resolve(web, 'node_modules')],
   define: { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(product.version), 'process.env.DSH_CLIENT_TITLE': JSON.stringify('YouDub') },
-  alias: { '@/components/ui/dialog': resolve(frontend, 'dialog.tsx'), '@base-ui/react/dialog': resolve(frontend, 'dialog.tsx'), '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@/components/video-player': resolve(frontend, 'video-player.tsx'), '@': resolve(web, 'src') },
+  alias: { '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@/components/video-player': resolve(frontend, 'video-player.tsx'), '@': resolve(web, 'src') },
   plugins: [sourceBuiltImports, officialAssets, { name: 'youdub-component-boundaries', setup(builder) {
     builder.onResolve({ filter: /^cordis$/ }, () => ({ path: '@deepseek-ai/cordis', external: true }));
-    builder.onResolve({ filter: /^zustand\/vanilla$/ }, args => args.importer.startsWith(resolve(web, 'src')) ? { path: resolve(frontend, 'store.ts') } : undefined);
     builder.onResolve({ filter: /^lucide-react$/ }, args => args.importer !== resolve(frontend, 'icons.tsx') ? { path: resolve(frontend, 'icons.tsx') } : undefined);
     // Both tests and Desktop use the same YouDub wrappers. Only resolve their shared
     // framework dependency to the module already owned by the official client loader.
     builder.onResolve({ filter: /(?:^|\/)harness-primitives$/ }, args => {
       if (resolve(dirname(args.importer), args.path) === resolve(web, 'src/components/ui/harness-primitives')) {
         return { path: '@deepseek-ai/dsh-client-ui-primitives', external: true };
+      }
+    });
+    builder.onResolve({ filter: /(?:^|\/)harness-store$/ }, args => {
+      if (resolve(dirname(args.importer), args.path) === resolve(web, 'src/lib/harness-store')) {
+        return { path: '@deepseek-ai/dsh-client-store', external: true };
       }
     });
     builder.onResolve({ filter: /(?:^|\/)sdk(?:\.tsx)?$/ }, args => {

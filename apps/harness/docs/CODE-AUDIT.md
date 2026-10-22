@@ -15,7 +15,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 209 包、5,239 个树条目，源码 SHA-256 为 `360f68435977bb4785d7d9b93da6e46e7313aea8c580b5ba321b89733c10fbee`。运行时和类型闭包为 141 包，含测试为 203 包。其余 6 包为通用 Typert 生成器、native/system workspace 与 4 个平台 addon；动态/根消费者已记录。第 25 批移除了无消费者的 vendored HMR 与 console logger，保留实际使用的通用 HMR 和日志实现。[第 25 批证据](evidence/refactor-unused-vendor-prune.json)
+当前活动框架为 209 包、5,239 个树条目，源码 SHA-256 为 `492775bfde1e1cde9526b647178d6814f17f6efcc8bf15804b7f28f12866ed38`（含快捷字段聚焦修复）。运行时和类型闭包为 141 包，含测试为 203 包。其余 6 包为通用 Typert 生成器、native/system workspace 与 4 个平台 addon；动态/根消费者已记录。第 25 批移除了无消费者的 vendored HMR 与 console logger，保留实际使用的通用 HMR 和日志实现。[第 25 批证据](evidence/refactor-unused-vendor-prune.json)
 
 源码构建的 235 个客户端产物包含可选框架库，不能用于推算产品实际加载的插件数。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 
@@ -62,3 +62,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。
 
 本轮交付范围为源码开发版。安装包、签名、发布、自动更新服务和在线插件市场继续按用户要求排除；已有环境/模型准备界面属于开发版功能。[发行边界](YOUDUB-DESKTOP-REFACTOR-PLAN.md#10-后续发行边界)
+
+## P4 弹窗与状态存储统一（2026-10-23）
+
+工作流离开保护直接调用官方 Modal，删除桌面 Dialog 适配及对应构建替换；查询、资源、首启和草稿控制器共用 Harness Store 来源入口，删除桌面专用 Store 和 Zustand 构建替换。268 项前端回归、类型、产品构建与组合检查通过。独立实际 Host 已验证日语弹窗焦点循环、Escape 保留草稿、放弃后读回原工作流，以及打开设置后首页视频链接仍保留；没有提交媒体任务。剩余 locale/theme 绑定只读写官方服务，文件及导航边界有明确消费者。原生文件框、窗口动效和最终平台验收继续开放。[证据](evidence/refactor-shared-modal-store.json)

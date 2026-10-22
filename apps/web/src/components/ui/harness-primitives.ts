@@ -2,6 +2,7 @@
 export { Button } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Button'
 export { Input } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Input'
 export { Menu } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Menu'
+export { Modal } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Modal'
 export type { MenuItem } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Menu'
 export { Checkbox } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Checkbox'
 export { Switch } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Switch'

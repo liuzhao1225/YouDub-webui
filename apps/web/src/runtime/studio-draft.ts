@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla'
+import { createStore } from '@/lib/store'
 import type { JsonObject } from '@/plugin/sdk'
 import type { InputFile } from '@/plugin/builtin/workflow-launch'
 import type { Request } from '@/plugin/runtime/types'

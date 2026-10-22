@@ -1,12 +1,14 @@
 # YouDub on DeepSeek Harness：桌面字幕验证
 
+> 历史 POC 记录：以下命令和架构描述对应早期验证。当前独立源码开发请使用[开发说明](DEVELOPMENT.md)。
+
 使用未修改的官方 **DeepSeek Harness Desktop 0.2.1-rc.2** 和同版本 Harness 发布包。YouDub 插件保留原版动态 Logo、大标题、配色及首屏动效，接入导入视频、Whisper 识别、人工校对确认和 SRT 导出。当前分支为 `codex/harness-subtitle-poc`，上游核心代码修改为 **0**。
 
-桌面启动、原生文件选择、真实识别、修改保存、人工确认及原生下载已实测，下载文件与 Host 产物哈希一致。固定侧栏、深浅首页及 Logo 声波变化已验证。当前官方组合的浏览器首页、既有任务和再次下载回归也已通过；具体证据见 [验收记录](docs/validation.md)。
+桌面启动、原生文件选择、真实识别、修改保存、人工确认及原生下载已实测，下载文件与 Host 产物哈希一致。固定侧栏、深浅首页及 Logo 声波变化已验证。当前官方组合的浏览器首页、既有任务和再次下载回归也已通过；具体证据见 [验收记录](validation.md)。
 
-![桌面深色首屏](docs/evidence/desktop-home-dark.png)
+![桌面深色首屏](evidence/desktop-home-dark.png)
 
-[桌面浅色首屏](docs/evidence/desktop-home-light.png)
+[桌面浅色首屏](evidence/desktop-home-light.png)
 
 ## 官方能力与业务边界
 
@@ -24,7 +26,7 @@
 | 原版视觉 | 直接引用现有 `BrandMark` 与 SVG；构建时从原 `apps/web/src/app/globals.css` 提取主题变量和动画，不修改原文件 |
 | 业务组件与算法 | 视频预览、字幕多行编辑、识别进度保留业务实现；现有公共组件没有与这些交互直接匹配的接口。识别复用现有 FFmpeg、Whisper worker，导出复用 `Transcript` 合同与 `_write_srt` |
 
-官方 `ui-layout`、`ui-theme`、`ui-session`、`ui-settings` 及其依赖继续提供服务。共享 [cordis.patch.yml](cordis.patch.yml) 关闭被 YouDub 页面替代的业务 UI，保留底层服务；[desktop.patch.yml](desktop.patch.yml) 仅设置机器相关路径。桌面架构可对照 [Harness 官方说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md#desktop-application)。
+官方 `ui-layout`、`ui-theme`、`ui-session`、`ui-settings` 及其依赖继续提供服务。共享 [cordis.patch.yml](../cordis.patch.yml) 关闭被 YouDub 页面替代的业务 UI，保留底层服务；[desktop.patch.yml](../desktop.patch.yml) 仅设置机器相关路径。桌面架构可对照 [Harness 官方说明](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/architecture.md#desktop-application)。
 
 ## 环境
 
@@ -85,7 +87,7 @@ npm run desktop -- --app '../../.cache/harness/YouDub Harness.app'
 npm start -- --dump-config
 ```
 
-首次会初始化 `.cache/harness/dsh/profiles/youdub`。按 [profile.example.yml](profile.example.yml) 在该 profile 的 `cordis.patch.yml` 配置 Python、模型和数据路径。旧版仅含 YouDub 单 bundle 的已知 profile 会迁移为官方三 bundle 组合，其他不匹配清单会报错，已有配置保留。
+首次会初始化 `.cache/harness/dsh/profiles/youdub`。按 [profile.example.yml](../profile.example.yml) 在该 profile 的 `cordis.patch.yml` 配置 Python、模型和数据路径。旧版仅含 YouDub 单 bundle 的已知 profile 会迁移为官方三 bundle 组合，其他不匹配清单会报错，已有配置保留。
 
 ```sh
 # 确认端口未被占用，再启动。
@@ -124,7 +126,7 @@ npm start -- --patch /absolute/path/to/override.yml
 npm test
 ```
 
-当前测试汇总为 11 项通过：6 项工作流测试，加上官方子进程集成测试父项及其 4 个子项。真实桌面和历史浏览器证据见 [验收记录](docs/validation.md)。
+当前测试汇总为 11 项通过：6 项工作流测试，加上官方子进程集成测试父项及其 4 个子项。真实桌面和历史浏览器证据见 [验收记录](validation.md)。
 
 本次范围为本地视频、Whisper tiny/CPU、原语言字幕、固定识别时间轴、文本修改、人工确认及 SRT 导出，单个识别执行位、文件上限 512 MB。翻译、配音、完整工作流编辑器、字幕拆分合并和时间轴编辑尚未迁移。
 

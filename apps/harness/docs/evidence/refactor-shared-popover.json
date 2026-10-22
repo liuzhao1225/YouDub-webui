@@ -54,7 +54,15 @@
       "No console warnings or errors",
       "Host clean IPC shutdown exit 0"
     ],
-    "screenshot": "refactor-shared-popover.png"
+    "screenshot": "refactor-shared-popover.png",
+    "committedCandidateRecheck": [
+      "Restarted actual source Desktop Host at cf9fdb9c",
+      "Quick-field input receives focus after opening",
+      "Group and viewport each clientWidth=scrollWidth=264; input wrapper border-box",
+      "Typed Harness quick-field validation text; Escape closes and returns trigger focus",
+      "No console warnings or errors",
+      "Clean IPC shutdown, exit 0"
+    ]
   },
   "limitations": [
     "Native CUA still reports Mac locked; native window/file dialogs remain open",
@@ -62,6 +70,10 @@
     "Retired upstream product browser replay entry is absent; actual YouDub Host browser validation used for the changed interaction"
   ],
   "ci": {
-    "status": "pending for committed candidate"
-  }
+    "status": "in_progress",
+    "headSha": "cf9fdb9c6bb21be34538bf2efd71b69e29859d9f",
+    "runId": 39857602285,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39857602285"
+  },
+  "candidateCommit": "cf9fdb9c6bb21be34538bf2efd71b69e29859d9f"
 }

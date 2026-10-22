@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla'
+import { createStore } from '@/lib/store'
 import type { Request } from './types'
 export type UpdateInfo = { currentVersion: string; automatic: boolean; supported: boolean }
 export type UpdateResult = { checkedAt: string; available: { version: string; url: string; download: string; checksum: string } | null }

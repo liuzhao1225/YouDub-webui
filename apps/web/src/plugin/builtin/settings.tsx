@@ -1,7 +1,7 @@
 import { bindComponent, text, type Bindings, type JsonObject, type RouteProps, type SettingsSectionProps } from '../sdk'
 import { Context } from 'cordis'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Dialog } from '@/components/ui/dialog'
+import { Modal } from '../../components/ui/harness-primitives'
 import { Database, HardDrive, Info, Loader2, Plug, Puzzle, Settings2, Settings as SettingsIcon, X } from '@/lib/icons'
 import { useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -81,8 +81,6 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
   const onModelsBusyChange = useCallback((value: boolean) => { savingRef.current = value; setSaving(value) }, [])
   const blockDialog = useCallback<SettingsBindings['blockNavigation']>(handler => blockNavigation(path => savingRef.current ? Promise.resolve(false) : handler(path), 'dialog'), [blockNavigation])
   const guard = useUnsavedChanges(blockDialog, dirty.section === section && Object.values(dirty.fields).some(Boolean))
-  const closeButton = useRef<HTMLButtonElement>(null)
-  const [opener] = useState(() => document.activeElement instanceof HTMLElement ? document.activeElement : null)
   useEffect(() => { if (!params.section) replace('/settings/general'); else if (params.section === 'connections') replace('/settings/models') }, [params.section, replace])
   const categories = [
     { id: 'general', label: tx("settings.general"), icon: Settings2 },
@@ -93,13 +91,11 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
   ]
   const active = categories.find(item => item.id === section)
   const title = tx("settings.settings")
-  return <Dialog.Root open onOpenChange={open => { if (!open && !saving && !guard.dialog) dismissDialog() }}>
-    <Dialog.Portal>
-      <Dialog.Backdrop />
-      <Dialog.Popup initialFocus={closeButton} finalFocus={() => opener?.isConnected ? opener : true} className="h-[min(50rem,100%)] w-[min(50rem,100%)] overflow-hidden p-0" aria-describedby={undefined}>
+  return <Modal open onClose={() => { if (!saving && !guard.dialog) dismissDialog() }} title={title} headless className="h-[min(50rem,100%)] w-[min(50rem,100%)] overflow-hidden p-0">
+      <div className="flex h-full min-h-0 flex-col">
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-          <Dialog.Title >{title}</Dialog.Title>
-          <Dialog.Close disabled={saving} render={<Button ref={closeButton} variant="ghost" size="icon-sm" aria-label={tx("settings.close.settings")} />}><X /></Dialog.Close>
+          <h2 className="m-0 text-base leading-6 font-medium">{title}</h2>
+          <Button data-modal-autofocus disabled={saving} onClick={() => { if (!guard.dialog) dismissDialog() }} variant="ghost" size="icon-sm" aria-label={tx("settings.close.settings")}><X /></Button>
         </header>
         <div className="flex min-h-0 flex-1">
           <nav aria-label={tx("settings.settings.categories")} className="flex w-14 shrink-0 flex-col gap-1 border-r border-border bg-surface p-2 sm:w-48 sm:p-3">
@@ -115,9 +111,8 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
           </section>
         </div>
         {guard.dialog}
-      </Dialog.Popup>
-    </Dialog.Portal>
-  </Dialog.Root>
+      </div>
+  </Modal>
 }
 export const name = 'client-settings'
 export const inject = ['slots', 'apiClient', 'navigation']

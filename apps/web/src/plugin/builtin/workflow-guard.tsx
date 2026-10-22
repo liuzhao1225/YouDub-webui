@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Dialog } from '@/components/ui/dialog'
+import { Modal } from '../../components/ui/harness-primitives'
 import type { ClientBindings } from '../sdk'
 import { useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
+import layout from '../../components/ui/surfaces.module.css'
 
 export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigation'], dirty: boolean, save?: () => Promise<void>, allow?: (path: string) => boolean, onDiscard?: () => void) {
   const tx = useText()
@@ -12,7 +13,6 @@ export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigati
   const bypass = useRef(false)
   const [pending, setPending] = useState<{ resolve(value: boolean): void } | null>(null)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false)
-  const keepEditing = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     const remove = blockNavigation(async (path) => {
       if (bypass.current || !latest.current.dirty || latest.current.allow?.(path)) return true
@@ -25,19 +25,16 @@ export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigati
   function finish(value: boolean) { pending?.resolve(value); setPending(null); setError('') }
   return {
     bypass: () => { bypass.current = true },
-    dialog: pending ? <Dialog.Root open onOpenChange={open => { if (!open && !busy) finish(false) }}>
-      <Dialog.Portal>
-      <Dialog.Backdrop />
-      <Dialog.Popup initialFocus={keepEditing} aria-describedby={undefined} className="">
-        <Dialog.Title >{tx("workflow.guard.unsaved.changes")}</Dialog.Title>
+    dialog: pending ? <Modal open onClose={() => { if (!busy) finish(false) }} title={tx("workflow.guard.unsaved.changes")} headless className={layout.dialogContent}>
+      <div className="flex min-h-0 flex-col gap-5">
+        <h2 className="m-0 text-base leading-6 font-medium">{tx("workflow.guard.unsaved.changes")}</h2>
         {error && <InlineAlert>{error}</InlineAlert>}
         <div className="flex flex-wrap gap-2">
           {save && <Button disabled={busy} onClick={() => { const action = latest.current.save; if (!action) return; setBusy(true); setError(''); void action().then(() => finish(true)).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx("workflow.guard.save.and.leave")}</Button>}
           <Button variant="outline" disabled={busy} onClick={() => { latest.current.onDiscard?.(); finish(true) }}>{tx("workflow.guard.discard.changes")}</Button>
-          <Button data-modal-autofocus ref={keepEditing} variant="ghost" disabled={busy} onClick={() => finish(false)}>{tx("workflow.guard.keep.editing")}</Button>
+          <Button data-modal-autofocus variant="ghost" disabled={busy} onClick={() => finish(false)}>{tx("workflow.guard.keep.editing")}</Button>
         </div>
-      </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root> : null,
+      </div>
+    </Modal> : null,
   }
 }

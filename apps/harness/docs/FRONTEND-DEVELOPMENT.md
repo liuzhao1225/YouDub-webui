@@ -19,7 +19,7 @@
 | 工作流库、画布、节点配置 | [`workflows.tsx`](../../web/src/plugin/builtin/workflows.tsx)、[`workflow-canvas.tsx`](../../web/src/plugin/builtin/workflow-canvas.tsx)、[`workflow-settings.tsx`](../../web/src/plugin/builtin/workflow-settings.tsx) | React Flow 作为业务画布使用，页面接入在 `workflow-pages.tsx` |
 | 字幕、翻译与音频订正 | [`workflow-task.tsx`](../../web/src/plugin/builtin/workflow-task.tsx) | 使用已有草稿、保存、确认和节点详情合同 |
 | 侧栏、主区域、官方设置入口 | [`client.jsx`](../src/client.jsx) | 通过官方 Layout 与 Slots 装配 |
-| 通用控件属性转换 | [`ui/`](../../web/src/components/ui)、[`harness-primitives.ts`](../../web/src/components/ui/harness-primitives.ts)、[`dialog.tsx`](../src/frontend/dialog.tsx)、[`popover.tsx`](../../web/src/components/ui/popover.tsx) | 使用官方交互实现，转换原业务组件需要的属性 |
+| 通用控件属性转换 | [`ui/`](../../web/src/components/ui)、[`harness-primitives.ts`](../../web/src/components/ui/harness-primitives.ts)、[`popover.tsx`](../../web/src/components/ui/popover.tsx) | 使用官方交互实现，转换原业务组件需要的属性 |
 | 产品布局 | [`style.css`](../src/style.css) | YouDub 页面与侧栏范围内的布局规则 |
 | 色彩、品牌动效 | [`globals.css`](../../web/src/app/globals.css)、[`build.mjs`](../build.mjs) | 提取原主题变量和动效，映射到官方 theme tokens |
 | 模型与扩展页面 | [`translation-setup.tsx`](../src/frontend/translation-setup.tsx)、[`plugins.tsx`](../src/frontend/plugins.tsx) | 使用官方 ModelsSection、PluginManagerPage 和对应控制器 |
@@ -56,15 +56,17 @@
 | 原组件依赖 | Harness 接入 |
 | --- | --- |
 | Button、Input、Select、Tooltip、Switch、Tag、Segmented 等 | `components/ui/*` → `harness-primitives.ts`；测试载入官方源码，Desktop 连接官方共享运行时 |
-| Base UI Dialog 的旧调用形状 | `frontend/dialog.tsx` → 官方 Modal；快捷字段浮层已直接使用共享 `ui/popover.tsx` 和官方 Menu |
+| 工作流离开保护、快捷字段浮层 | `workflow-guard.tsx` 直接使用官方 Modal；`ui/popover.tsx` 使用官方 Menu；已移除两类桌面适配与构建替换 |
 | 原 `plugin/sdk` 的导航与辅助接口 | `frontend/sdk.tsx` → 注入的页面导航与原领域纯函数 |
-| `zustand/vanilla`（限原 Web 源文件） | `frontend/store.ts` → 官方 `createSnapshotStore` |
+| 查询、资源、首启和草稿状态 | `lib/store.ts` 保留原控制器的局部更新 API；`lib/harness-store.ts` 统一接到官方 `createSnapshotStore`，已移除桌面专用 Store 及 Zustand 构建替换 |
 | 原 i18n、theme、clipboard、asset-url | 对应 `frontend/*` 绑定 |
 | 图标 | `frontend/icons.tsx` 中的映射 |
 
 在 Harness 专属组件中可以直接导入 `@deepseek-ai/dsh-client-ui-primitives`。原 YouDub 的通用控件属性差异在原 `components/ui/*` 统一处理；焦点、键盘、Portal、弹层和滚动条遵循官方实现。业务画布、视频播放器与逐句编辑继续使用现有领域组件。
 
 菜单测试通过可见菜单项选择，保留原业务结果、字段类型、禁用与草稿断言。`controls.test.tsx` 检查键盘选项跳转、关闭和焦点返回；实际 Host 页面证据见[统一控件验证](evidence/refactor-unified-controls.json)。
+
+`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；原 Web 的 localStorage 实现仅由历史组件测试使用，不进入产品。`sdk`、文件 URL、剪贴板、播放器和图标的边界仍服务于官方导航、Connection 文件授权、官方剪贴板、播放器倍速菜单及官方图标来源，继续通过构建清单核对。[本轮绑定审计](evidence/refactor-shared-modal-store.json)
 
 不要为新页面创建额外 React root、Cordis 根、路由容器或模型配置表单。构建脚本仅对明确的导入边界进行替换；新增依赖后运行活动模块检查，确认没有带入旧平台实现或第二份 React。
 

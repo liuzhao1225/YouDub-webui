@@ -32,6 +32,15 @@
       ],
       "react-dom": [
         "./node_modules/@types/react-dom"
+      ],
+      "zustand": [
+        "./node_modules/zustand"
+      ],
+      "zustand/*": [
+        "./node_modules/zustand/*"
+      ],
+      "immer": [
+        "./node_modules/immer"
       ]
     },
     "types": [
