@@ -6,9 +6,9 @@
 
 [`package.json`](../package.json) 的 `dsh.client` 声明客户端所需官方模块，[`src/client.jsx`](../src/client.jsx) 的 `inject` 声明运行时服务。官方 Loader 满足依赖后调用 `apply(ctx)`。
 
-[`build.mjs`](../build.mjs) 将 Client 打成 `dist/client.js`，使用 `window.__ModuleLoader__.load` 注册 bundle。React、React DOM、官方 Cordis、Store、Slots 和 primitives 作为共享模块，由运行时提供。当前 Harness 侧依赖 React `18.3.1`；`apps/web/package.json` 中 React 19/Vite 8 服务于独立 Web 入口，业务组件接入时必须兼容 Harness 的 React 版本。
+[`build.mjs`](../build.mjs) 将 Client 打成 `dist/client.js`，使用 `window.__ModuleLoader__.load` 注册 bundle。React、React DOM、官方 Cordis、Store、Slots 和 primitives 作为共享模块，由运行时提供。当前 Harness 侧依赖 React `18.3.1`；`apps/web/package.json` 中 React 19/Vite 8 用于保留的组件测试，业务组件接入时必须兼容 Harness 的 React 版本。
 
-修改桌面 UI 后执行根目录 `npm run build:youdub`，再重启当前 YouDub 开发实例。当前脚本使用显式构建，不提供桌面 HMR。`npm run dev:web` 只启动原独立 Web 入口，无法验收 Harness 的插槽、模型设置和原生桌面行为。
+修改桌面 UI 后执行根目录 `npm run build:youdub`，再重启当前 YouDub 开发实例。当前脚本使用显式构建，不提供桌面 HMR。`npm run dev:web` 使用同一 Harness Host 与前端架构提供浏览器开发入口；原生文件框、窗口和退出行为需要在 Electron 中验收。
 
 ## 修改位置
 

@@ -1,18 +1,12 @@
-# YouDub 业务组件与独立 Web 入口
+# YouDub 业务组件与测试
 
-当前 Harness 分支直接复用本目录的业务组件。桌面由官方 Harness Renderer、Slots、Store 和共享 React 承载，控件与服务接线位于 `apps/harness/src/frontend`；本目录的 `main.tsx` 和 `plugin/bootstrap.tsx` 不进入桌面活动构建。修改当前产品请阅读[前端开发说明](../harness/docs/FRONTEND-DEVELOPMENT.md)与[本地运行](../harness/docs/DEVELOPMENT.md)。
+本目录保留 YouDub 页面、动态 Logo、动画、画布、校对组件和领域测试。桌面由 Harness Renderer、ModuleLoader、Slots、Store 和共享 React 承载；控件与服务接线位于 `apps/harness/src/frontend`。
 
-## 原独立 Web 入口
+产品构建使用根目录 `npm run build:youdub`，Electron 启动使用 `npm start`。`npm run dev:web` 启动同一 Harness Host 的浏览器开发入口。原独立 Vite 页面、浏览器 Context 引导和插件 import-map 构建已移除。
 
-React 19 与 Vite 提供客户端薄壳；生产环境由 Cordis Host 同源提供页面、静态资源和 API，页面深链接返回 SPA 入口。业务界面由 Cordis Client 插件通过公共 slots 注册。
+- `src/plugin/builtin/`：工作台、任务库、工作流、画布和任务校对组件。
+- `src/components/`：业务组件；通用控件在产品构建中接入 Harness 实现。
+- `src/locales/`：中文、英文、日语业务文案。
+- `src/plugin/sdk.tsx`、`loader.ts`：保留组件及领域测试使用的合同，产品接入由 Harness 侧负责。
 
-- `src/plugin/bootstrap.tsx`：创建浏览器 Context，按服务端 manifest 加载原生 ESM 插件。
-- `src/main.tsx`：React 根与首次准备入口。
-- `src/plugin/sdk.tsx`：公开的 Client slots、导航和 React 绑定。
-- `src/plugin/builtin/`：会话、外壳、工作台、任务库、工作流、设置与旧任务配置编辑器。
-- `src/plugin/web-react.tsx`：将 React-free runtime 快照与服务绑定到页面。
-- `scripts/build-plugins.mjs`：构建官方 Client 插件与 React/Cordis 共享实例桥接。
-
-在此目录运行 `npm test`、`npm run lint`、`npx tsc --noEmit`。`npm run dev` 和 `npm run build` 会先构建官方 Client 插件。
-
-安装扩展、启动完整服务和运行环境配置见[项目说明](../../README.md)。
+在本目录执行 `npm test`、`npm run typecheck` 和 `npm run lint`。修改当前产品请阅读[前端开发说明](../harness/docs/FRONTEND-DEVELOPMENT.md)与[本地运行](../harness/docs/DEVELOPMENT.md)。

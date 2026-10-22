@@ -74,15 +74,15 @@ npm --prefix apps/harness start
 
 发现已有监听时先识别原进程，复用已有实例或结束属于本次开发的实例，避免重复启动。`lsof` 未发现监听时可以启动。打开终端打印的认证地址；浏览器默认 home 与桌面分离，需要在对应 profile 内配置和准备资源。
 
-### 开发入口与待迁移代码
+### 开发入口与共享组件
 
 | 命令或目录 | 当前用途 |
 | --- | --- |
 | `npm start` / `npm run dev` | 当前 Harness Electron 产品 |
 | `npm run build:youdub` / `npm run build:desktop` | 同一 Electron 开发构建，不生成安装包 |
-| `npm --prefix apps/harness start` | 当前 Harness 浏览器开发入口 |
-| `npm run dev:web` / `apps/web/src/main.tsx` | 原独立 Web 入口，可用于原组件对照 |
-| `npm run start:legacy` / `apps/host` | 原 YouDub Host；仍有领域测试依赖，待迁移后移除 |
+| `npm run dev:web` / `npm --prefix apps/harness start` | 同一 Harness Host 的浏览器开发入口 |
+| `apps/web/src` | 直接复用的业务组件和领域测试，无独立 Web 启动入口 |
+| `packages/builtin/test/helpers` | 领域回归使用的隔离组合夹具，不进入产品构建 |
 
 旧 Swift/C# 桌面壳、`build:mac`、`build:windows`、专属安装测试和发行 CI 已从本分支移除。`apps/desktop/icon.svg` 由 Electron 产品继续复用。历史源码见[裁剪前提交](https://github.com/liuzhao1225/YouDub-webui/tree/711e40e8e69d2c6f2065f15aecc90550dcbf695d/apps/desktop)；`main`、`atomgit` 与官网发布链保持不变。
 

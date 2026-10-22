@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/host",
     "packages/sdk",
     "packages/builtin"
   ],
@@ -15,17 +14,12 @@
   "scripts": {
     "build:desktop": "npm run build:youdub",
     "test:downloads": "node --test scripts/download-releases.test.mjs",
-    "dev:api": "node --import tsx apps/host/src/main.ts",
     "start": "npm --prefix apps/harness run desktop",
-    "plugins": "node --import tsx apps/host/src/plugins.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test packages/*/test/*.test.ts",
-    "dev:web": "npm --prefix apps/web run dev",
-    "build:plugins": "npm --prefix apps/web run plugins:build",
+    "dev:web": "npm --prefix apps/harness start",
     "test:backend": "node scripts/test-backend.mjs",
     "lint:web": "npm --prefix apps/web run lint",
-    "build:web": "npm --prefix apps/web run build",
-    "start:legacy": "node --import tsx apps/host/src/main.ts",
     "build:youdub": "npm --prefix apps/harness run build:product",
     "check:harness": "npm --prefix apps/harness run check:composition && npm --prefix apps/harness run check:upstream",
     "build:framework": "npm --prefix apps/harness run build:framework",

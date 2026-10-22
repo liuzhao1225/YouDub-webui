@@ -4,8 +4,7 @@ import { mkdtemp, writeFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { startHost } from '../../../apps/host/src/bootstrap.js'
-import { directoryURL } from '../../../apps/host/src/paths.js'
+import { startHost, directoryURL } from './helpers/composition.js'
 
 test('composition and plugins load from native paths containing spaces, Unicode and URL characters', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub 路径 #% '))

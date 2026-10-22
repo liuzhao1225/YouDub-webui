@@ -1,5 +1,7 @@
 # YouDub Cordis 全插件架构设计
 
+> 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
+
 2026-10-09 · 已实施，本地集成验收进行中 · 分支 `codex/plugin`。代码基线为 `codex/mvp-mainline` 的 `e0dcb58dbbbb68ed0d0f92c3810d3e3dbe8a017a`。
 
 本方案将 Cordis 作为服务端和浏览器端的插件底座。任务、存储、凭据、进程执行、模型、处理流程、认证、API 和产品页面全部通过插件装配。官方功能与外部插件使用同一套公开契约。MVP 保留单机、单活跃任务、现有三种输出和三页界面，减少实现数量，同时建立完整的替换边界。
@@ -152,7 +154,7 @@ Host 协议的类型定义位于[SDK 源码](../../packages/sdk/src/index.ts)，
 
 ## 6. Python 和远端执行
 
-Node Host 中的 Cordis `tasks` 服务是唯一调度和状态推进者。Python 调用端不启动 FastAPI、旧 worker 或 `run_task`，不扫描队列，不写 Task 状态。算法函数由[operation 桥](../../backend/workers/operations.py)直接调用，旧 FastAPI、executor 和 worker 已移除；当前入口为 [Host main](../../apps/host/src/main.ts)。
+Node Host 中的 Cordis `tasks` 服务是唯一调度和状态推进者。Python 调用端不启动 FastAPI、旧 worker 或 `run_task`，不扫描队列，不写 Task 状态。算法函数由[operation 桥](../../backend/workers/operations.py)直接调用，旧 FastAPI、executor 和 worker 已移除；当前入口为 [Host main](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/apps/host/src/main.ts)。
 
 首版使用受管标准输入输出通信：每行一个 JSON 消息，音视频通过工作区文件引用交换。envelope 带 `version / invocationId / seq / type / payload`，execute payload 包含 taskId、attempt 和 stepId。stdout 只承载协议；原始库输出和诊断走 stderr。按一次步骤启动 Python，步骤内部可处理整批 utterance，无需每句话启动模型进程。
 

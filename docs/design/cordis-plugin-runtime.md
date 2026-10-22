@@ -1,6 +1,8 @@
 # Cordis 插件版运行与扩展指南
 
-本文描述当前源码的 Cordis Host、React/Vite Client 与 Python 执行桥。前端分层与参考来源见[前端实现说明](harness-frontend-migration.md)。历史媒体流程测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)，各记录中的日期、环境与验证范围保留原义。
+> 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
+
+本文记录旧独立产品的 Cordis Host、React/Vite Client 与 Python 执行桥。前端分层与参考来源见[前端实现说明](harness-frontend-migration.md)。历史媒体流程测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)，各记录中的日期、环境与验证范围保留原义。
 
 节点工作流和按图准备资源见[使用指南](../workflows.md)及 [2026-10-20 验收记录](../validation/workflow-nodes-2026-10-20.md)。旧版首次启动流程保留在 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
 
@@ -197,7 +199,7 @@ provider 可通过 `resources: { dependencyGroups, model?: { id, downloadId } }`
 
 ## 6. 服务、流程和结果契约
 
-[默认组合](../../youdub.config.ts)装配普通 Cordis 插件：`process`、`files`、`store`、`secrets`、`settings`、`catalog`、`tasks`、`http`、`auth`、`api`、扩展装配和模型/workflow。bootstrap 只建立 Context、加载选定组合、检查生命周期和退出；空组合不创建产品数据库、HTTP 或任务循环。
+[默认组合](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/youdub.config.ts)装配普通 Cordis 插件：`process`、`files`、`store`、`secrets`、`settings`、`catalog`、`tasks`、`http`、`auth`、`api`、扩展装配和模型/workflow。bootstrap 只建立 Context、加载选定组合、检查生命周期和退出；空组合不创建产品数据库、HTTP 或任务循环。
 
 服务用 `Service` 提供、`inject` 声明依赖，目录和 UI 注册的 disposer 交给 `ctx.effect`。没有默认 workflow 或模型特判藏在 bootstrap。`tasks` 将单任务调度和通用引擎合为一个可替换插件；实现 [TasksService](../../packages/sdk/src/index.ts) 即可替换，API 和 workflow 消费公共契约。workflow 通过 `catalog.registerWorkflow` 返回固定有序步骤计划，provider 通过 `catalog.registerProvider` 实现 operation，默认与第三方走同一条路径。
 

@@ -10,7 +10,7 @@ import Extensions from '../src/extensions.js'
 import Catalog from '../src/catalog.js'
 import Processes from '../src/process.js'
 import * as PythonProvider from '../src/python-provider.js'
-import { startHost } from '../../../apps/host/src/bootstrap.js'
+import { startHost } from './helpers/composition.js'
 
 test('Python correction validation is opt-in and supports non-media output schemas', async t => {
   const ctx = new Context()

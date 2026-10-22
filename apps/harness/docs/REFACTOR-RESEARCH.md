@@ -600,3 +600,11 @@ Windows 82abf8c3 的两阶段锁同步仍未修复卸载后的旧 SDK 回退。�
 第二次 Windows 作业通过桌面/进程测试，复现 SDK 回退并取得完整快照。pnpm 的进程工作目录使用 `RUNNER~1` 短路径，工作区扫描得到 `runneradmin` 实际路径；根锁和已安装锁均同时出现 `.` 与指向同一物理目录的第二个 importer。第二项仍引用旧 SDK，卸载另一插件时重新链接旧目录。仅检查 `.` 的 specifier/version 无法发现这一状态。[原始诊断](evidence/windows-sdk-alias-diagnostic.json)
 
 在官方 PluginManager 执行入口用 `realpath` 解析 pnpm 子进程工作目录；常规包操作和兼容性恢复使用同一路径，相对包参数仍以调用方目录为锚。YouDub profile 准备收敛为一次官方 install，同步两份锁。两个目录别名回归在修复前失败、修复后通过；79 项包操作、9 项 profile（含已存在重复 importer 的迁移）、2 种实际 Host、7 项框架构建及产品构建通过。双平台 CI 待运行，原生锁屏和原超时记录继续保留。[修复验证](evidence/refactor-profile-canonical-path.json)
+
+## P6 第 24 批：收拢旧 Host/Web 活动入口（2026-10-23）
+
+引用核对后移除 `apps/host`、根 `youdub.config.ts`、独立 Vite 页面、浏览器 Context 引导、import map 和旧插件 CLI。原 `startHost` 实现逐字迁入领域测试夹具，保留启动失败、路径、生命周期和扩展合同；产品仍通过实际 Harness Desktop Host 测试。
+
+`npm start` / `npm run dev` 使用 Electron，`npm run dev:web` 使用同一源码 Host 的浏览器启动器。通过独立 home、端口 3094 实际运行根命令，首启测试模式经 Connection 返回 200，启动器退出码为 0。共享业务页面、原视觉与动画、网站和插件示例保留。
+
+领域 187 项通过、1 项跳过；组件 264 项分别在应用携带的 Node 24 与本机 Node 26 通过；实际 Host/profile/首启共 26 项通过。Node 26 的初次组件运行失败保留，修复仅显式关闭测试 worker 的服务端 Web Storage，使 jsdom 拥有浏览器存储。来源原件核验、类型、产品构建与组合边界通过。Windows、新候选 CI 和原生交互待验收。[结构化证据](evidence/refactor-legacy-entries-prune.json)

@@ -11,7 +11,6 @@ import Setup from '../src/setup.js'
 import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
 import { builtinResources } from '../src/runtime-resources.js'
-import { runtimePaths } from '../../../apps/host/src/paths.js'
 
 // Installer processes are faked in these unit tests; source connectivity is tested separately.
 const actualFetch = globalThis.fetch
@@ -92,8 +91,7 @@ test('desktop Python stays in its data directory even when a system Python is on
   process.env.YOUDUB_PYTHON_ENV_DIR = environment
   process.env.FFMPEG_PATH = join(media, 'ffmpeg')
   process.env.FFPROBE_PATH = join(media, 'ffmpeg')
-  const { python } = runtimePaths(root)
-  assert.equal(python, join(environment, windows ? 'Scripts/python.exe' : 'bin/python'))
+  const python = join(environment, windows ? 'Scripts/python.exe' : 'bin/python')
   const commands: string[][] = []
   const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ command, args }: { command: string; args: string[] }) => {
     commands.push(args)

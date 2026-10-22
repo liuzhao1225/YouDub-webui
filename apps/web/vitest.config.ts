@@ -11,6 +11,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // Browser storage belongs to jsdom, including on Node versions with Web Storage enabled.
+    execArgv: ["--no-webstorage"],
     setupFiles: ["./vitest.setup.ts"],
     clearMocks: true,
   },

@@ -2,9 +2,14 @@ import { Context, Logger, type Fiber } from 'cordis'
 import Loader, { type EntryOptions } from '@cordisjs/plugin-loader'
 import { writeFile, mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import '@youdub/sdk'
+
+// Test-only domain fixture; the product boots through Harness Desktop Host.
+export function directoryURL(directory: string) {
+  return pathToFileURL(join(resolve(directory), sep)).href
+}
 
 export async function startHost(entries: EntryOptions[], baseUrl: string, options: { ready?: boolean } = {}) {
   const ctx = new Context()

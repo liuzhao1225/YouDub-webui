@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。当前记录包含第 23 批裁剪及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。合并后的最终候选尚待验收。
+更新：2026-10-23。当前记录包含第 24 批裁剪及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。合并后的最终候选尚待验收。
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -48,7 +48,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 
 ## 尚需实施的收尾
 
-1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退仍需定位并验证修复。
+1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；修复后的实际 Windows 链接仍待 CI 验证。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
 2. 收拢并行界面、资源及媒体拖动改动，形成固定候选，完成上表未通过的真实操作和输入验收。
 3. 已补齐当前目录体积及历史数据副本记录；继续测量原生冷/热启动，完成全新私有路径及 Windows 验收。[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。

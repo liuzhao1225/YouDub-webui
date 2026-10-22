@@ -176,7 +176,7 @@ npm --prefix apps/harness test
 ```text
 apps/harness/      Electron 产品入口、Host/Client 插件与开发工具
 vendor/deepseek-harness/source/  Harness 框架活动 fork
-apps/host/         待迁移的旧 Host 与领域测试依赖
+packages/builtin/test/helpers/  领域测试夹具，产品由 Harness Host 启动
 packages/sdk/      公共服务、workflow 与 operation 契约
 packages/builtin/  基础服务、通用任务引擎、workflow 和模型桥
 backend/workers/   Python 计算与 SQLite 事务桥

@@ -176,7 +176,7 @@ npm --prefix apps/harness test
 ```text
 apps/harness/      Electron entry, Host/Client plugins and development tools
 vendor/deepseek-harness/source/  Active Harness framework fork
-apps/host/         Legacy Host and domain test dependencies awaiting migration
+packages/builtin/test/helpers/  Domain test fixtures; the product boots through Harness Host
 packages/sdk/      Public service, workflow and operation contracts
 packages/builtin/  Services, generic task engine, workflows and model bridge
 backend/workers/   Python computation and SQLite transaction bridge
