@@ -207,7 +207,6 @@
     "tests/workflow-run.e2e.ts"
   ],
   "references": [
-    { "path": "../../packages/experimental/auto-review" },
     {
       "path": "../../packages/client/store"
     },

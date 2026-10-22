@@ -31,7 +31,6 @@ const windowsUnsupportedPackages = process.platform === 'win32'
       'packages/shell/bash-sandbox',
       'packages/shell/tool-bash',
       'packages/terminal/terminal-bash',
-      'packages/experimental/ptc-runtime-python',
       'packages/sandbox/sandbox-local',
       // OpenSSH multiplexing and Unix-socket helper streams require POSIX endpoints.
     ]
@@ -258,22 +257,9 @@ export default defineConfig({
         // Inspector execution adapters run in a Node Worker, the Host native
         // inspector session, or a browser realm, outside attributable parent
         // Vitest coverage.
-        'packages/experimental/inspector/src/client/**',
-        'packages/experimental/inspector/src/host/bridge/**',
-        'packages/experimental/inspector/src/host/cdp/**',
-        'packages/experimental/inspector/src/worker/bridge/**',
-        'packages/experimental/inspector/src/worker/cdp/**',
-        'packages/experimental/inspector/src/worker/realms/**',
-        'packages/experimental/inspector/src/worker/{entry,server}.ts',
         // Keep already-complete Inspector modules under the per-file gate and
         // enumerate the remaining direct-test debt instead of exempting src/**.
         // TODO(inspector): close these branch gaps and remove the entries.
-        'packages/experimental/inspector/src/shared/bridge/{control-codec,rpc}.ts',
-        'packages/experimental/inspector/src/shared/bridge/messages/observation.ts',
-        'packages/experimental/inspector/src/shared/bridge/messages/query/codec.ts',
-        'packages/experimental/inspector/src/shared/bridge/messages/runtime/{command-codec,console-frames,frames,value-codec}.ts',
-        'packages/experimental/inspector/src/shared/bridge/messages/sources/{codec,frames}.ts',
-        'packages/experimental/inspector/src/worker/inspection/{cordis-store,query-router,realm-store}.ts',
         // Web config-tree boot round: the new host-side web-transport halves
         // whose remaining branches need real-composition/process harnesses.
         // TODO(gui): cover and remove with the client test lane above.
@@ -291,7 +277,6 @@ export default defineConfig({
         // the generated Team Remote contribution, which likewise exists only in lib.
         // The speech entry also imports generated Remote definitions; voice-input.e2e.ts
         // exercises the built entry, while source tests cover mountVoiceInput.
-        'packages/experimental/client-ui-voice-input/src/client/index.ts',
         // The mods band entry imports the bridge's generated Remote contribution, which exists only in lib;
         // the Web snapshot exercises the built entry, while source tests cover mountModsBand.
         // The access entry imports its generated Remote contribution, which exists only in lib;

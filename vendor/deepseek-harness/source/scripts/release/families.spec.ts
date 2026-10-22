@@ -56,30 +56,10 @@ describe('release families', () => {
     expect(members
       .filter(member => member.directory.startsWith('packages/experimental/'))
       .map(member => member.name)).toEqual([
-      '@deepseek-ai/dsh-experimental-api-speech-to-text',
-      '@deepseek-ai/dsh-experimental-auto-review',
-      '@deepseek-ai/dsh-experimental-badge-skill-bundle',
-      '@deepseek-ai/dsh-experimental-client-ui-cot-translation',
-      '@deepseek-ai/dsh-experimental-client-ui-voice-input',
-      '@deepseek-ai/dsh-experimental-cot-translation-bundle',
-      '@deepseek-ai/dsh-experimental-inspector-profile',
-      '@deepseek-ai/dsh-experimental-inspector',
-      '@deepseek-ai/dsh-experimental-plugin-market-bundle',
-      '@deepseek-ai/dsh-experimental-ptc-runtime-python',
-      '@deepseek-ai/dsh-experimental-ralph-bundle',
-      '@deepseek-ai/dsh-experimental-session-inspector',
-      '@deepseek-ai/dsh-experimental-session-search',
-      '@deepseek-ai/dsh-session-title-all-prompts-llm',
-      '@deepseek-ai/dsh-experimental-session-titles-bundle',
-      '@deepseek-ai/dsh-skill-badge',
-      '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice',
       '@deepseek-ai/dsh-experimental-speech-to-text',
-      '@deepseek-ai/dsh-experimental-terminal-bundle',
-      '@deepseek-ai/dsh-tool-ralph',
       '@deepseek-ai/dsh-tool-session-query',
       '@deepseek-ai/dsh-tool-terminal',
       '@deepseek-ai/dsh-experimental-translator',
-      '@deepseek-ai/dsh-experimental-voice-input-bundle',
     ])
   })
 

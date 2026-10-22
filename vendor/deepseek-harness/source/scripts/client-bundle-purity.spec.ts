@@ -274,8 +274,7 @@ describe('client bundle purity gate', () => {
 })
 
 describe('client bundle experimental input isolation', () => {
-  const experimental = '@deepseek-ai/dsh-experimental-client-ui-voice-input'
-  const experimentalDir = packageDir('experimental/client-ui-voice-input')
+  const experimental = '@deepseek-ai/dsh-experimental-test-input'
 
   function fixture() {
     const root = mkdtempSync(join(tmpdir(), 'dsh-client-inputs-'))
@@ -380,7 +379,7 @@ describe('client bundle experimental input isolation', () => {
     const { owner, entry, prototype } = fixture()
     writeFileSync(entry, `export { marker } from ${JSON.stringify(importPath(entry, prototype))}\n`)
 
-    await expect(bundle(owner, config(kind, experimentalDir))).resolves.toContain('experimental sentinel')
+    await expect(bundle(owner, config(kind, dirname(dirname(prototype))))).resolves.toContain('experimental sentinel')
   })
 
   it('rejects experimental ownership preserved only by an emitted compiler source map', async () => {

@@ -306,14 +306,6 @@ describe('package payload constraints', () => {
     ])
   })
 
-  it('accepts the Voice Input icon payload and rejects its omission', () => {
-    const dir = 'packages/experimental/voice-input-bundle'
-    const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
-    expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
-    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: manifest.files!.filter(file => file !== 'icon.svg') } }))
-      .toEqual([expect.stringContaining('package.json files must be')])
-  })
-
   it.each([
     { exports: { './locale/*.json': './locale/*.json' }, resources: ['locale/*.json'] },
     { exports: { './search/locale/*.json': './resources/search/*.json' }, resources: ['resources/search/*.json'] },
@@ -339,9 +331,9 @@ describe('package payload constraints', () => {
     })).toEqual(['lib/index.js', 'lib/types/**/*.d.ts'])
   })
 
-  it.each(['cot-translation-bundle', 'voice-input-bundle', 'auto-review', 'client-ui-voice-input', 'api-speech-to-text'])(
+  it.each(['settings/settings', 'llm/llm', 'host/webserver'])(
     'accepts the published locale files for %s and rejects their omission', (name) => {
-      const dir = `packages/experimental/${name}`
+      const dir = `packages/${name}`
       const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
       expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
       expect(checkWorkspaceManifest({ dir, manifest: {
@@ -358,7 +350,7 @@ describe('package payload constraints', () => {
   })
 
   it('rejects locale publication entries without their resource exports', () => {
-    const dir = 'packages/experimental/auto-review'
+    const dir = 'packages/settings/settings'
     const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
     const exports = { ...manifest.exports }
     delete exports['./locale/*.json']
@@ -420,16 +412,6 @@ it('requires Office skill bodies and helpers in the published payload', () => {
   } })).toEqual([expect.stringContaining('package.json files must be')])
 })
 
-it('requires the local speech worker and locked runtime in the published payload', () => {
-  const dir = 'packages/experimental/speech-to-text-sensevoice'
-  const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
-  expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
-  for (const omitted of ['lib/worker.js', 'runtime/assets.json']) {
-    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: manifest.files!.filter(file => file !== omitted) } }))
-      .toEqual([expect.stringContaining('package.json files must be')])
-  }
-})
-
 it('requires both Node execution bootstraps in the published payload', () => {
   const dir = 'packages/ptc-runtime/ptc-runtime-node'
   const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
@@ -437,16 +419,6 @@ it('requires both Node execution bootstraps in the published payload', () => {
   for (const omitted of ['lib/process.js', 'lib/persistent-process.js']) {
     const files = expectedDshPackageFiles(manifest).filter(file => file !== omitted)
     expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files } }))
-      .toEqual([expect.stringContaining('package.json files must be')])
-  }
-})
-
-it('requires the Inspector Worker, Client chunks, and mirrored DevTools resources in the published payload', () => {
-  const dir = 'packages/experimental/inspector'
-  const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
-  expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
-  for (const omitted of ['lib/client.*.js', 'lib/worker.js', 'lib/devtools/**']) {
-    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: manifest.files!.filter(file => file !== omitted) } }))
       .toEqual([expect.stringContaining('package.json files must be')])
   }
 })

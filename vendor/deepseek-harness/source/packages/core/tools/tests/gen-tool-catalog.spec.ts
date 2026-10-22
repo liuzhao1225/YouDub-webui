@@ -31,7 +31,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       'create_goal', 'edit', 'exit_plan_mode', 'get_goal', 'glob', 'grep',
       'interrupt_agent', 'job_kill', 'job_list', 'job_output',
       'list_agents', 'list_mcp_resource_templates', 'list_mcp_resources',
-      'list_subagent_models', 'load_workspace_dependencies', 'plugin_manager', 'plugin_market', 'present', 'pwsh', 'pwsh', 'ralph',
+      'list_subagent_models', 'load_workspace_dependencies', 'plugin_manager', 'plugin_market', 'present', 'pwsh', 'pwsh',
       'read', 'read_image', 'read_mcp_resource', 'run_code', 'schedule_create', 'schedule_delete',
       'schedule_list', 'schedule_update', 'send_message', 'session_event_read', 'session_event_search',
       'session_event_trace', 'session_search', 'session_trace', 'skill',

@@ -130,11 +130,66 @@
     }
   ],
   "limits": [
-    "Actions used the isolated Desktop Host through the in-app browser while macOS was locked. Native dialogs are not covered.",
+    "Initial extension lifecycle actions used the isolated Desktop Host browser while macOS was locked. The later native follow-up verifies restart readback and all three artifact exports through macOS save dialogs.",
     "The validation clone has its own venv and task data but its copied venv points to the earlier YouDub first-run fixture base interpreter. This is not proof of a freshly independent installation.",
-    "Download UI events timed out. Artifact HTTP content and retention were verified separately.",
+    "Initial browser download events timed out. Native export subsequently passed; initial failures remain recorded.",
     "Graph fixture was reinstalled after lifecycle checks solely to verify the fixed menu; remains enabled in isolated validation profile.",
     "Media listening, remaining architecture audit and overall P0-P7 are still open. No packaging/release."
   ],
-  "ci": "pending"
+  "ci": {
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39785054855",
+    "commit": "feb38596afb3238e772adef2121d6dc68e69fdf8",
+    "conclusion": "failure",
+    "cause": "Web typecheck: WorkflowDescription omitted graphTemplate. Domain and UI tests passed.",
+    "fix": "Added the existing backend graphTemplate field to the frontend contract. Web typecheck now passes. Follow-up CI pending."
+  },
+  "nativeFollowup": {
+    "recordedAt": "2026-10-22T13:57:20.833778+00:00",
+    "application": "com.youdub.review-validation",
+    "home": "isolated validation home and user-data",
+    "restartReadback": true,
+    "nativeSaveDialog": true,
+    "outputs": [
+      {
+        "kind": "graph",
+        "path": "/tmp/youdub-native-extension-reviewed-20261022.txt",
+        "bytes": 77,
+        "sha256": "80243b5e90b5f2ed17191738f323b912a76b4e83f77f607cc7c8394280a0228a"
+      },
+      {
+        "kind": "javascript",
+        "path": "/tmp/youdub-native-js-extension-20261022.txt",
+        "bytes": 62,
+        "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d"
+      },
+      {
+        "kind": "python",
+        "path": "/tmp/youdub-native-python-extension-20261022.txt",
+        "bytes": 62,
+        "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d"
+      },
+      {
+        "kind": "zoo-subtitles",
+        "path": "/tmp/youdub-native-resume-zoo-20261022.srt",
+        "bytes": 353,
+        "sha256": "d2c1581332142a7b518e622260b1a863962fc1635bf8168a711b5277a9455c78"
+      }
+    ],
+    "zooPlayback": {
+      "taskId": "1d068171-410f-4f4e-a222-cfc159440432",
+      "completedNodes": 9,
+      "observedTimeSeconds": 18.9,
+      "listeningAndTimingQuality": "not accepted"
+    },
+    "screens": [
+      {
+        "file": "refactor-extension-native-export.png",
+        "sha256": "b7829bbbf11231534a86ddfdc7a3a222c9cd5e7bf415701d785487f4e46992b0"
+      },
+      {
+        "file": "refactor-extension-native-zoo.png",
+        "sha256": "29247a11e78c24ece36b3300f46f97c7c27614cfd4d95640cb3eaf0d9745eba1"
+      }
+    ]
+  }
 }

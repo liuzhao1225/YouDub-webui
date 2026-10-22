@@ -15,6 +15,7 @@ export type WorkflowDescription = {
   id: string; version: string; label: LocalizedText; description?: LocalizedText
   inputs: InputSlot[]; configSchema: JsonSchema; defaults?: JsonObject
   ui?: { editor?: string; sourceUrlInput?: string }
+  graphTemplate?: WorkflowDocument
 }
 export type ProviderDescription = {
   id: string; label?: LocalizedText; operations: { id: string }[]; capability?: string; adapter?: string; contractVersion?: string

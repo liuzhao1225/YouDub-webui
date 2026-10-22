@@ -14,7 +14,6 @@ import * as yaml from 'js-yaml'
 import parseSpdx from 'spdx-expression-parse'
 import primaryRuntimeLock from './primary-runtime/lock.json' with { type: 'json' }
 import { browserBundledExternals } from './browser-bundled-externals.ts'
-import { DEVTOOLS_NPM_VERSION, DEVTOOLS_SOURCE_REVISION } from '../packages/experimental/inspector/scripts/devtools/source.ts'
 
 const root = resolve(import.meta.dirname, '..')
 const OUT = 'THIRD_PARTY_NOTICES.md'
@@ -491,8 +490,6 @@ function renderNpmTable(deps: ExternalDep[]): string {
  */
 export async function render(): Promise<string> {
   const browser = await browserBundledExternals(root)
-  // The Inspector's Host build hook compiles this standalone frontend outside the Client bundle graph.
-  browser.add('chrome-devtools-frontend')
   // The linked-manifest cache is keyed by name only, so it must not outlive
   // the manifests map it was resolved from; render() owns that single load.
   workspaceLinkedManifestCache.clear()
@@ -537,10 +534,6 @@ ${renderNpmTable(runtimeDeps)}
 pnpm applies local patches to the following packages at install time, so shipped artifacts carry modified copies; each patch file is the complete record of the modification:
 
 ${patchedLines.join('\n')}
-
-## Chrome DevTools frontend
-
-The optional experimental Inspector distributes a locally compiled copy of [chrome-devtools-frontend ${DEVTOOLS_NPM_VERSION}](https://www.npmjs.com/package/chrome-devtools-frontend/v/${DEVTOOLS_NPM_VERSION}), from upstream revision [${DEVTOOLS_SOURCE_REVISION}](https://chromium.googlesource.com/devtools/devtools-frontend/+/${DEVTOOLS_SOURCE_REVISION}). The build includes the Chromium [BSD-3-Clause license](packages/experimental/inspector/assets/devtools/LICENSE) and the third-party license and notice files supplied by the npm source. The Chromium root license does not replace those dependencies' licenses.
 
 ${kitRuntime ? `
 ## LibreOffice conversion kit
