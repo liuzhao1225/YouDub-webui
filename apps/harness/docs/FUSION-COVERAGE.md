@@ -1,6 +1,6 @@
 # Harness × YouDub 功能与架构覆盖账本
 
-最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：新增停用 66 项无关产品模块，移除桌面账号平台接线，补测真实 Host 的字幕导入/CRUD/取消/重跑。安装更新、在线市场和未实测原生路径继续保持开放，不能将这份映射清单理解为全功能验收通过。
+最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：活动 fork 已完成第 23 批裁剪，正向装配所需框架服务，并保留原 YouDub 领域功能。Windows SDK 回退、最终原生交互及媒体质量验收仍开放。本轮只交付源码开发版，安装包、更新源与在线市场不在范围内。
 
 本账本以冻结的 YouDub 源快照 `f6f927903581b165f2bf6c840ea65b896d319524` 为比较对象。源清单为 `../baselines/youdub-source-inventory.json`：58 条 API、11 个媒体操作、9 个页面入口、50 组元素定义。计数只说明清单覆盖范围，不能证明功能已经运行通过。
 
@@ -16,15 +16,15 @@
 
 | 职责 | 官方实现 | YouDub 保留的领域逻辑 | 验收边界 |
 | --- | --- | --- | --- |
-| 启动、配置层叠、插件生命周期 | 从原样源码构建的官方 app-boot / Cordis Loader / Electron 能力 | YouDub 自有入口、cordis.patch.yml 组合与独立 profile | vendor 和保存的原安装应用零改；YouDub 开发入口及私有首启见 E12 |
+| 启动、配置层叠、插件生命周期 | 从受审计活动 fork 构建的 app-boot / Cordis Loader / Electron 能力 | YouDub 自有入口、cordis.patch.yml 组合与独立 profile | 活动 fork 按差异账本维护；固定来源清单、原归档和初始 YouDub 保持不变 |
 | HTTP、身份、桌面传输 | Connection.fetch / 官方 Desktop 协议 | 固定 v2/upload/file 端点内的业务路由分派 | JSON、multipart、Range、错误体都经同一官方连接 |
 | 子进程、退出、取消 | Subprocess | JSONL worker 与 SQLite RPC 编解码 | worker 失败原因、取消退出、未知提交结果可见 |
 | 实时执行状态 | Jobs | 图调度、持久化确认、结果修订、资源依赖选择 | operation 与资源准备都应接 Jobs；确认等待不占执行槽 |
-| 配置和密钥 | Harness settings/configForms + Credentials | 业务偏好结构、任务引用快照；官方卡片插槽的已保存密钥摘要 | 保存/重开已实测；只返回前六位与***，编辑输入仍官方只写；删除密钥未做原生验收 |
+| 配置和密钥 | Harness settings/configForms + Credentials | 业务偏好结构、任务引用快照；API 密钥字段中的只读掩码 | 保存/重开已实测；完整凭据不回填，API 密钥字段显示前六位与***；删除密钥的最终原生验收仍待完成 |
 | LLM | Harness llm /官方模型设置 | 批次翻译提示、segment 对齐、结果校验、原始证据 | 单次输出上限 >=65535；不支持则调用前显式停止 |
 | 页面、状态、控件 | 官方 Renderer / Slots / Layout / Store / primitives / locale / theme | 首屏、图画布、媒体播放器、字幕编辑、任务数据 | 不执行旧 PluginBootstrap/createRoot/复制模型管理 |
 | 扩展安装、启停、卸载 | PluginManager + 官方 Plugins 页面 | YouDub domain bridge 与业务 slot | 官方执行结果保留 applied/restart-required/failed 区别 |
-| 桌面更新 | 官方 General/DesktopUpdateIndicator | YouDub bundle 版本由官方插件管理呈现 | 不再把旧 YouDub DMG 当成 Harness 更新 |
+| 产品版本与发行 | 官方通用设置与 PluginManager | 通用设置显示 YouDub 产品版本，扩展展示各自版本 | 旧产品更新控件已移除，自动更新和安装包属于后续发行范围 |
 
 YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数据。官方 storageDomain 的单记录接口与 fs 的文本操作不能完整表达这些事务/媒体操作，保留这部分逻辑有明确功能需求。它们的进程生命周期、配置、鉴权与传输均交给 Harness。
 
@@ -45,8 +45,8 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `GET /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
 | `PUT /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
 | `DELETE /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
-| `GET /api/v2/updates` | 官方 General 桌面更新 + PluginManager bundle 版本；旧发布源不执行 | 开发壳未配置 YouDub 更新源，属于发行能力缺口 |
-| `POST /api/v2/updates/check` | 官方 General 桌面更新 + PluginManager bundle 版本；旧发布源不执行 | 开发壳未配置 YouDub 更新源，属于发行能力缺口 |
+| `GET /api/v2/updates` | 后续 YouDub 发行能力；当前开发版不加载旧更新服务 | 按当前仅编码、不打包的范围排除；不能算作已迁移发行能力 |
+| `POST /api/v2/updates/check` | 后续 YouDub 发行能力；当前开发版不加载旧更新服务 | 按当前仅编码、不打包的范围排除；不能算作已迁移发行能力 |
 | `GET /api/v2/runtime` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | E1 源探针回归；E8 源码桌面私有环境实际 ready |
 | `GET /api/v2/settings` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | E2 官方服务组合/路由合同通过 |
 | `POST /api/v2/settings/test-connection` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | 旧路径显式要求官方模型设置；E5 实际官方适配器协议通过 |
@@ -127,7 +127,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 
 | 源元素文件 | 融合对应 | 状态 |
 | --- | --- | --- |
-| `apps/web/src/components/app-updates.tsx` | 官方 General/DesktopUpdateIndicator + Plugins bundle 更新 | 待验收 |
+| `apps/web/src/components/app-updates.tsx` | 当前 Electron 不加载旧更新页面；产品版本来自根 manifest，扩展版本由 PluginManager 管理 | 安装包与自动更新属于后续发行范围 |
 | `apps/web/src/components/brand/brand-mark.tsx` | 原动态 Logo、大标题、首屏动效；theme token 映射和官方 shell | Web原版对照及原生深色/收起侧栏动态图标与hero通过；source-development-home-dark-collapsed |
 | `apps/web/src/components/inline-alert.tsx` | 官方 StateDot/Tag + 业务状态文案 | 待验收 |
 | `apps/web/src/components/language-switcher.tsx` | 官方 theme/locale 设置；业务文案跟随 locale | 实测中→英→中，官方偏好写入 |
@@ -207,7 +207,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `test/fixtures/graph-text-review` | 两文本节点→合并→人工修订确认→导出；自定义校对页 | domain bridge + workflow.node.details | E10 原生自定义校对保存仍暂停、确认后83B产物、官方卸载通过；E11 两路状态机通过 |
 | `test/fixtures/python-text` | 独立 Python worker→大写文本产物 | registerPythonProvider + 官方 Subprocess | E4 官方安装/启停/卸载和实际产物通过；Client UI 尚待桌面 |
 
-构建：`node apps/harness/test/fixtures/build.mjs`。原 `fixtures/plugins` 不改，迁移包保留 SOURCE.json。生成的 dist 被 Git 忽略，安装或测试前必须先构建。本地路径安装由官方 pnpm 使用 link；开发目录需先安装声明的 SDK peer。E4 的 npm 运行时曾链接本工作区 `apps/harness`；源码开发 Electron 的 Client 验收包已明确改为 `apps/harness/dist/desktop/runtime-project/youdub-plugin`，Cordis 与 React 同样来自该源码运行时，避免引入第二份上下文。安装后核对实际解析路径，再由官方 PluginManager 启用；未修改官方解析器或安装器。这三类测试包覆盖源 SDK 的 JS Host、Python worker、Client 页面/节点扩展能力；未知旧插件仍需转换声明。
+构建：`node apps/harness/test/fixtures/build.mjs`。原 `fixtures/plugins` 不改，迁移包保留 SOURCE.json。生成的 dist 被 Git 忽略，安装或测试前必须先构建。本地路径安装由官方 pnpm 使用 link；开发目录需先安装声明的 SDK peer。E4 的 npm 运行时曾链接本工作区 `apps/harness`；源码开发 Electron 的 Client 验收包已明确改为 `apps/harness/dist/desktop/runtime-project/youdub-plugin`，Cordis 与 React 同样来自该源码运行时，避免引入第二份上下文。安装后核对实际解析路径，再由官方 PluginManager 启用；最初验收沿用官方解析器；随后在活动 fork 中修复顶层包卸载重装的路径解析，见[修复证据](evidence/refactor-plugin-reinstall.json)。这三类测试包覆盖源 SDK 的 JS Host、Python worker、Client 页面/节点扩展能力；未知旧插件仍需转换声明。
 
 ## 必须使用真实 Electron 的验收
 
@@ -219,7 +219,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 6. 安装 file-transform bundle→重启（若官方要求）→独立页面按钮→上传→下载→停用→卸载；不得只检查 inventory enabled。
 7. 安装 graph-text-review bundle→自定义节点校对→保存→确认→导出；卸载后对应页面和节点贡献消失。
 8. Python 插件真实执行与取消；扩展安装失败日志可见；官方UI对 restart-required 与 activation failed 表达准确。
-9. 官方通用设置的版本/更新入口；内置示例入口和媒体示例真实可打开。
+9. 官方通用设置显示 YouDub 产品版本；内置示例入口和媒体示例真实可打开。当前开发版不显示旧产品更新入口。
 
 ## 持久化与完整工作流验收
 
@@ -274,3 +274,7 @@ E13同时暴露长中文烧录行裁切。随后增加的显示换行补丁曾�
 - **E17 原生公网 YouTube 下载与完整10节点**：复用既有 `youdub.download` / `media.download/v1`，新增节点配置 `proxyPort`，整数范围0–65535，默认0明确直连；正数构造 `http://127.0.0.1:<port>`，yt-dlp 与 b23 短链解析使用同一代理，不继承机器代理。节点设置和链接快捷入口复用原 ConfigEditor 与 Harness 官方 Input；URL 保持每次运行输入，未写入可导出图配置。原生运行面板输入 [Me at the zoo](https://www.youtube.com/watch?v=jNQXAC9IVRw) 与7897，创建任务 `874d381f-4750-459a-aa07-ebb1c435715a`，下载节点与固定 binding 的端口一致，真实下载533931B视频后接入prepare，至导出的10个节点全部完成。MP4 745386B、WAV3635180B、原文SRT285B、译文SRT340B，摘要/Range/音轨来源通过；真实翻译上限65535，Qwen输出56词/3输入片段，最终5条独立字幕。原生视频实际播放14秒，两帧成片另留证。见 [下载节点](evidence/source-native-youtube-download-node.json)、[完整产物](evidence/source-native-youtube-download.json)、[实际翻译](evidence/source-native-real-translation-youtube.json)、[原生回看](evidence/source-native-youtube-download-ui.png)、[代理输入](evidence/source-native-youtube-proxy-input.png)。本次ASR为long fronts；B站实际公网下载、其他代理端口/网络条件未做实机验收。针对性合同见 [代理与私有Node](evidence/download-node-proxy-contract.json)：Python29项、图编译8项；前端51项、旧localize端口传递1项及Web/根类型检查日志为 `/tmp/youdub-download-proxy-frontend-tests.log`、`/tmp/youdub-download-proxy-localize-tests.log`、`/tmp/youdub-download-proxy-web-tsc.log`、`/tmp/youdub-download-proxy-root-tsc.log`。
 
 - **E18 默认模板合并**：当前内置默认列表保留 `youdub.subtitles`（字幕翻译）、`youdub.dubbing`（视频配音）、`youdub.subtitles-dubbing`（字幕＋配音）三项。移除只在自动下一步配置上不同的独立“字幕翻译 · 人工校对”入口；用户仍通过同一节点的“自动下一步”配置决定该节点是否暂停确认。原识别/翻译人工确认状态机保留，15项模板/图回归通过，日志 `/tmp/youdub-merged-workflow-tests.log`。E17真实Host读回恰好三项默认ID，并保留两个用户工作流；前一任务的图快照与输出未改变，见 [默认列表与历史任务核对](evidence/source-native-youtube-download-node.json)。历史 `fusion-workflows.png` 和人工校对模板截图仅记录合并前状态，不能表示当前模板数量；未把历史任务或用户副本改成自动运行。
+
+## 当前 fork 的历史数据读回补验收
+
+提交 `4313ec5e` 使用独立副本启动真实 Desktop Host，四模型就绪检查通过，读回 6 个历史任务和 7 个工作流。重启同一副本后，12 个产物通过官方 Connection 下载，其字节数与 SHA-256 均匹配历史文件；两份视频的 Range 206 与头部字节一致。原始数据库哈希未变。没有触发外部 LLM 调用；复用既有 YouDub 私有 runtime/model 的此次检查不代表全新安装、原生播放器或听感验收。[完整记录](evidence/refactor-history-readback.json)

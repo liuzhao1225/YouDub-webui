@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-10-22T17:00:44.146Z",
+  "recordedAt": "2026-10-22T18:20:02.464Z",
   "scope": "Windows 2025 source build and actual Host contracts; no installer or native GUI claim.",
   "runs": [
     {
@@ -88,6 +88,35 @@
         "path": "/tmp/youdub-windows-82abf8c3.log",
         "sha256": "ba9426150375744f80e81576073f2016f13de548719bbceaa50b31b9618e568f"
       }
+    },
+    {
+      "commit": "4313ec5e44d0586a6086d743b1895180580786ea",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39827853337/job/119996182539",
+      "result": "Windows desktop filesystem test exceeded the unchanged 5-second test deadline; product and SDK diagnostics step did not run.",
+      "sourceAndProductBuildPassed": true,
+      "desktopAndProcessTests": {
+        "filesPassed": 40,
+        "filesFailed": 1,
+        "filesSkipped": 3,
+        "testsPassed": 490,
+        "testsFailed": 1,
+        "testsSkipped": 24
+      },
+      "failure": {
+        "test": "desktop external plugin profile > keeps plugin files and patches through a compatible release and application relocation",
+        "durationMs": 5820,
+        "deadlineMs": 5000,
+        "cause": "Unresolved. Several neighboring filesystem tests were slower in the same run; this is insufficient to prove a runner cause."
+      },
+      "log": {
+        "path": "/tmp/youdub-windows-4313ec5e.log",
+        "sha256": "5fc5f0e2e3a598bc24fcba1629e3eca599fad7672da7caca642872c54bd55249"
+      },
+      "diagnosticRerun": {
+        "requested": true,
+        "started": false,
+        "reason": "GitHub rejected a rerun while the macOS job remained active (HTTP 403). No test deadlines or assertions changed."
+      }
     }
   ],
   "corrections": {
@@ -133,8 +162,8 @@
     }
   },
   "nextRun": {
-    "status": "pending push",
-    "purpose": "Capture fixture-only manifests, locks and link targets immediately before and after the failing removal. Existing assertions remain unchanged."
+    "status": "waiting for the current macOS job before a same-commit Windows diagnostic rerun",
+    "purpose": "Obtain the fixture-only SDK manifests, locks and link targets. Preserve the first Windows timeout as unresolved evidence."
   },
   "limitations": [
     "The full Windows job is not yet green.",

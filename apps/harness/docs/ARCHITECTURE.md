@@ -23,7 +23,7 @@ flowchart TB
 
 | 层 | 源码入口 | 负责的行为 |
 | --- | --- | --- |
-| 上游原件 | [`vendor/deepseek-harness/source`](../../../vendor/deepseek-harness/source) | 官方 CLI、Host、Web、Desktop、服务和前端包的完整来源 |
+| 活动框架 fork | [`vendor/deepseek-harness/source`](../../../vendor/deepseek-harness/source) | 保留的 Host、Web、Desktop、服务与前端实现；精确差异见 [`fork.json`](../../../vendor/deepseek-harness/fork.json)，原件见[来源基线](../baselines/README.md) |
 | 产品启动与装配 | [`desktop.mjs`](../desktop.mjs)、[`desktop-product.ts`](../src/desktop-product.ts) | YouDub 名称、独立路径、profile、窗口与官方桌面能力的组合 |
 | bundle 声明 | [`package.json`](../package.json)、[`cordis.patch.yml`](../cordis.patch.yml) | Host/Client 入口、模块依赖、官方条目的启停和 YouDub 插件配置 |
 | Host 业务接入 | [`host.mjs`](../src/host.mjs)、[`backend/`](../src/backend) | 依赖官方服务，装配 YouDub 领域服务与 API |
@@ -34,7 +34,7 @@ flowchart TB
 
 ### 版本与来源
 
-官方源码固定为 `dsh-v0.2.1-rc.2`，提交 `687f282e8625c6b8d11ff58211a90524be2e4317`，见[源码清单](../../../vendor/deepseek-harness/source-manifest.json)。YouDub 产品版本来自[根 package.json](../../../package.json)，当前为 `0.0.7`；业务 bundle 名为 `@youdub/harness-subtitles`，当前为 `0.1.0`。这个包名沿用最初接入名称，现已包含工作流、字幕、配音、资源与扩展功能。
+活动 fork 的上游基准固定为 `dsh-v0.2.1-rc.2`，提交 `687f282e8625c6b8d11ff58211a90524be2e4317`，见[源码清单](../../../vendor/deepseek-harness/source-manifest.json)。YouDub 产品版本来自[根 package.json](../../../package.json)，当前为 `0.0.7`；业务 bundle 名为 `@youdub/harness-subtitles`，当前为 `0.1.0`。这个包名沿用最初接入名称，现已包含工作流、字幕、配音、资源与扩展功能。
 
 原 YouDub 冻结快照为 `f6f927903581b165f2bf6c840ea65b896d319524`。公开源码 tag、原安装应用与 npm 包分别留有[来源记录](../baselines/sources.json)，不能用一个来源的哈希代表其他来源。
 
@@ -49,21 +49,19 @@ flowchart TB
 
 桌面窗口中页面与 Host 的连接通过官方协议转发处理；浏览器开发入口直接访问同一框架的 HTTP Host。桌面 Host 端口由桌面控制器管理，开发脚本输出实际地址。浏览器入口默认使用 `3086`。
 
-源码构建产生工作区产物。Electron、Python、pnpm 和部分上游原生引擎使用发行二进制；开发启动还需要本地官方 runtime payload。运行路径和准备方法见[本地开发](DEVELOPMENT.md)。
+源码构建产生工作区产物。Electron 与 pnpm 从本仓库锁定依赖安装，Node 使用该 Electron 的 Node 模式；Python、媒体工具和模型通过 YouDub 首启资源流程准备。开发启动不读取已安装的 Harness Desktop 或另一应用的 runtime payload。运行路径和准备方法见[本地开发](DEVELOPMENT.md)。
 
 ## profile 与插件生命周期
 
 [`prepare-profile.mjs`](../prepare-profile.mjs) 通过官方 `initProfile` 按顺序组合：
 
 ```text
-@deepseek-ai/dsh-base
-@deepseek-ai/dsh-web-app
 @youdub/harness-subtitles
 ```
 
-YouDub 的 patch 停用 DeepSeek 账号、聊天、编码 Agent、终端工作区、计划任务等产品入口，保留所需框架服务。用户的本地配置继续使用官方 profile/home patch 规则，实际结果以官方配置解析器为准。
+YouDub 的 patch 正向声明所需框架服务与业务插件。DeepSeek 账号、聊天、编码 Agent、终端工作区和计划任务等产品入口不参与装配。用户的本地配置继续使用官方 profile/home patch 规则，实际结果以官方配置解析器为准。
 
-部分服务的名称仍含 `session` 或 `agent`。官方模型设置依赖 `remote.session`，相关控制器继续依赖 session、agent registry、attachments 等注册服务。这些依赖需要结合[当前 patch](../cordis.patch.yml)和[profile 检查](../check-profile.mjs)理解。`agent-loop`、tools 和聊天界面在当前产品组合中停用。
+模型设置已解除 `remote.session` 依赖，产品不挂载 session、agent registry、attachments 或 `agent-loop`。部分类型和框架测试仍引用这些上游合同；源码保留范围与产品加载范围分别记录。实际服务以[当前 patch](../cordis.patch.yml)、[profile 检查](../check-profile.mjs)和[裁剪证据](evidence/refactor-remaining-products-prune.json)为准。
 
 插件入口使用 `inject` 声明服务依赖，由 Loader 安排激活和销毁。监听、插槽、路由和进程资源通过官方 context 生命周期释放。必需条目出现 pending/failed 时需要修复依赖与配置，启动诊断保留具体原因。
 
@@ -110,7 +108,7 @@ sequenceDiagram
 
 ## 数据隔离与完整性
 
-桌面默认 home 为 `.cache/harness/desktop`，业务数据在其 `youdub/` 下，Python/venv、媒体工具、缓存和模型使用产品指定目录。Electron 用户数据位于相邻的 `desktop-user-data`。显式 `DSH_HOME` 可隔离首启实验；浏览器入口默认使用另一个 home。详见[路径表](DEVELOPMENT.md#数据与配置)。
+桌面默认配置 home 为 `.cache/harness/desktop`，首次启动先选择语言和独立安装目录。业务数据、Python/venv、媒体工具、缓存和模型使用该保存的目录；既有明确配置的旧目录继续读取。Electron 用户数据位于相邻的 `desktop-user-data`。显式 `DSH_HOME` 可隔离首启实验；浏览器入口默认使用另一个 home。详见[路径表](DEVELOPMENT.md#数据与配置)。
 
 上游原件与 YouDub 适配代码分开保存。上游未导出的窗口与 Windows 菜单片段在产品入口中逐字复制，由[桌面来源检查](../baselines/desktop-build.mjs)校验。新增适配优先使用官方导出、组件属性、服务或插槽；需要引入上游源码片段时保留来源和逐字检查。
 

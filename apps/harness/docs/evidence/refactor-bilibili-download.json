@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "commit": "4313ec5e44d0586a6086d743b1895180580786ea",
+  "sourceSha256": "c44010910e6f64a10de20083b2217a9d661d3cbb1f22b3c992b7cdf9425270f5",
+  "date": "2026-10-22T18:22:00.858Z",
+  "kind": "actual Electron Desktop Host; official Connection API; production graph and private Python worker",
+  "source": "https://www.bilibili.com/video/BV1r44y1f7Tc/",
+  "proxyPort": 0,
+  "taskId": "f8ad577a-1b39-400b-b6c1-dfdc6b414fb3",
+  "taskStatus": "succeeded",
+  "elapsedMs": 5990,
+  "steps": [
+    {
+      "id": "download",
+      "status": "completed",
+      "error": null
+    },
+    {
+      "id": "prepare",
+      "status": "completed",
+      "error": null
+    }
+  ],
+  "outputs": [
+    {
+      "name": "source.mp4",
+      "mimeType": "video/mp4",
+      "bytes": 10986939,
+      "sha256": "0be361967606d19c094190aea224362f5445b847930370035712f9a3ce3c6820",
+      "range206": true
+    },
+    {
+      "name": "source.wav",
+      "mimeType": "audio/wav",
+      "bytes": 11501646,
+      "sha256": "77ff2d871eb4207eb5a910c9738f1dbc1c8a1f1d1496f341d303aae679bf6a7b"
+    }
+  ],
+  "mediaInfo": {
+    "duration_ms": 65099,
+    "width": 1920,
+    "height": 1080,
+    "frame_rate": 30.00031682362237,
+    "video_codec": "hevc",
+    "audio_codec": "aac"
+  },
+  "downloadOperation": "media.download/v1",
+  "downloadSource": "https://www.bilibili.com/video/BV1r44y1f7Tc/",
+  "noExternalLlmCall": true,
+  "nativeUi": false,
+  "limits": [
+    "This validates direct Bilibili public download and media preparation through the actual Host, production graph, and private Python worker.",
+    "No page input, native save dialog or player acceptance is claimed.",
+    "No Bilibili proxy or b23 short-link acceptance is claimed by this run.",
+    "The existing private YouDub runtime was reused; this is not a fresh installation."
+  ],
+  "log": "/tmp/youdub-bilibili-host.log",
+  "result": "/tmp/youdub-bilibili-host-result.json"
+}

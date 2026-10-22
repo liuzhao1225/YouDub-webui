@@ -572,3 +572,17 @@ profile 准备现通过官方 PluginManager 执行离线安装，同步根锁和
 Windows 82abf8c3 的两阶段锁同步仍未修复卸载后的旧 SDK 回退。卸载前根锁与已安装锁的 specifier/version 均通过，卸载后实际 realpath 仍指向 old-youdub-plugin；installed-only 场景通过。保留原断言，并增加失败时输出临时测试目录中 manifest、两份锁、模块元数据和前后链接的诊断。实际 Host 两种模式已通过，完整 Windows job 继续记为失败。[Windows 证据](evidence/windows-source-development.json)
 
 桌面工具仍明确返回 Mac 锁屏，本批不新增原生交互通过声明。当前阶段继续只构建源码开发版，不打包、不签名、不发布；两份飞书文档按约定等整体验收后更新。
+
+## P3/P5 历史数据副本与重启读回（2026-10-23）
+
+在 `4313ec5e` 下复制此前独立原生验收的 profile、数据库、任务和本地扩展来源。第一次复制遗漏扩展目录，官方安装器原样报 ENOENT；补齐复制后重新验证。真实 Host 正常启动，四项模型通过检查，6 个任务和 7 个工作流可读。重启后通过官方 Connection 下载 12 个产物，与历史文件摘要和大小一致；两份视频 Range 返回 206 且字节一致。原始数据库哈希未变，没有外部 LLM 请求。本次显式复用既有 YouDub 私有 runtime/models，不能作为全新安装或桌面冷/热启动性能结论。见[数据读回证据](evidence/refactor-history-readback.json)。
+
+同步修正架构和功能账本中的旧状态描述：活动 fork、单一正向 bundle、模型设置解除 session 依赖、API 字段内密钥掩码、应用自有 Node/pnpm、首启选择私有目录和退役更新入口。旧实验记录保留原提交语境，飞书文档仍待整体验收后统一更新。
+
+### P0 当前构建体积快照
+
+在 `4313ec5e`、macOS arm64 上记录活动源码、staging、产品构建、Electron 和 pnpm 的独立目录体积，不跟随符号链接，不把这些目录相加当作发行体积。复用 staging 的七项框架构建为 18.10 秒；该数值不含全新依赖安装，也不表示启动性能提升。窗口冷/热启动和完整 Renderer 进程测量仍待桌面可操作后完成。[测量条件和结果](evidence/refactor-current-footprint.json)
+
+### P7 B 站实际下载与媒体准备
+
+在同一提交的独立实际 Desktop Host 中，使用原仓库已有公开样本 `BV1r44y1f7Tc`、下载节点 `proxyPort=0` 和生产图工作流。下载、准备媒体两个节点在约 5.99 秒内完成；视频 10,986,939 字节、WAV 11,501,646 字节，通过官方 Connection 下载并记录 SHA-256，视频 Range 206 字节一致。媒体信息为 65.099 秒、1920×1080、HEVC/AAC。没有调用外部 LLM。原生页面输入/保存/播放、B 站代理和短链另行验收；本次未替代这些操作。[证据](evidence/refactor-bilibili-download.json)
