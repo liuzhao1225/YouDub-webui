@@ -25,16 +25,15 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-将服务与 `workingDirectory`、`fs`、`subprocess`、`sandbox` 和 `sandboxPolicy` 提供方一起挂载。模型需要此操作时，再添加工具包。
+将服务与 `workingDirectory`、`fs`、`subprocess`、`sandbox` 和 `sandboxPolicy` 提供方一起挂载。程序化消费者调用 `ctx.worktrees.create`。
 
 ```yaml
 - name: '@deepseek-ai/dsh-experimental-worktree'
-- name: '@deepseek-ai/dsh-experimental-tool-worktree'
 ```
 
 `ctx.worktrees.create(agent, { name?, from? }, signal?)` 创建新分支与检出目录，再通过 `ctx.workingDirectory.set` 进入规范化的检出目录。`from` 在创建前解析为本地提交，默认是 `HEAD`；暂存、未暂存、未跟踪以及被忽略的源文件均不复制。`baseCommit` 报告解析出的提交对象名称；仓库本地的替换引用仍作用于检出的内容。检出操作禁用已配置的 Git clean、smudge 和 process 过滤器，不修改仓库配置。分支或检出路径已存在时会报错。返回记录包含 `path`、`branch`、`baseCommit` 和 `repositoryRoot`。
 
-默认检出目录是 `<current checkout root>/.agents/worktrees/<name>`。返回的 `repositoryRoot` 是调用方当前检出目录的顶层目录；如果它是链接检出目录，工作树父目录就嵌套在其中。省略名称时，使用 `worktree-` 加 UUID。仅当服务的分配操作创建了父目录时，服务才会写入内容为 `*` 加换行符的 `.gitignore`；已有文件与忽略规则保持不变。相对路径 `directory`、生成名称使用的 `namePrefix`、可执行程序与进程限制可在[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-experimental-worktree)中查阅。
+默认检出目录是 `<current checkout root>/.agents/worktrees/<name>`。返回的 `repositoryRoot` 是调用方当前检出目录的顶层目录；如果它是链接检出目录，工作树父目录就嵌套在其中。省略名称时，使用 `worktree-` 加 UUID。仅当服务的分配操作创建了父目录时，服务才会写入内容为 `*` 加换行符的 `.gitignore`；已有文件与忽略规则保持不变。相对路径 `directory`、生成名称使用的 `namePrefix`、可执行程序与进程限制可在[配置目录](../../../docs/config-catalog.md#deepseek-aidsh-experimental-worktree)中查阅。
 
 -----
 
@@ -61,11 +60,11 @@ Git 与目录分配通过挂载的子进程及沙箱提供方执行，沿用调�
 <a id="further-exploration"></a>
 ## 深入探索
 
-- [工作树子系统](../../../docs/subsystems/worktrees.zh.md)——请求、结果与服务参考。
+- [工作树子系统](../../../docs/subsystems/worktrees.md)——请求、结果与服务参考。
 - [工作目录](../../session/working-directory/README.zh.md) — 记录的 Session 目录与目录切换。
-- [工作树工具](../tool-worktree/README.zh.md) — 面向模型的创建操作。
+- [工作树工具](../tool-worktree/README.md) — 面向模型的创建操作。
 - [子进程](../../subprocess/subprocess/README.zh.md) — 进程所有权与执行环境。
-- [创建决策](../../../.agents/notes/implemented/feature/2026-09-13-explicit-worktree-creation.zh.md) — 保留检出目录与既有写权限。
+- [创建决策](../../../.agents/notes/implemented/feature/2026-09-13-explicit-worktree-creation.md) — 保留检出目录与既有写权限。
 
 -----
 

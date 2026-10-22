@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-experimental-agent-team` 为一个会话提供 Lead、具名 teammate、直接消息和持久共享任务板。发送使用目标 agent（智能体）的 inbox，并可冷恢复已存储的 teammate。Team 保留 roster 与任务状态，消息持久化遵循目标 Agent 的常规策略。挂载 `dsh-experimental-tool-agent-team` 可提供模型工具。本包为实验性功能，需要持久会话存储。
+`dsh-experimental-agent-team` 为一个会话提供 Lead、具名 teammate、直接消息和持久共享任务板。发送使用目标 agent（智能体）的 inbox，并可冷恢复已存储的 teammate。Team 保留 roster 与任务状态，消息持久化遵循目标 Agent 的常规策略。本 fork 为内部测试消费者保留该服务。本包为实验性功能，需要持久会话存储。
 
 ## 目录
 
@@ -25,7 +25,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-当一个 agent 需要共享工作目录中的具名助手、直接 peer 消息以及持久 roster 与任务状态时，加入本包。与 `@deepseek-ai/dsh-experimental-tool-agent-team` 一起挂载可提供模型工具。
+当一个 agent 需要共享工作目录中的具名助手、直接 peer 消息以及持久 roster 与任务状态时，加入本包。程序化消费者调用 `ctx.agentTeams` 服务。
 
 ### 何时选择
 
@@ -35,16 +35,15 @@ kind: "package-reference"
 
 <a id="smallest-working-setup"></a>
 
-对现有组合的最小增量是持久会话存储加两个 Team 包：
+对现有组合的最小增量是持久会话存储加 Team 服务：
 
 ```yaml
-# smallest team setup — durable storage plus both Team packages
+# smallest team setup — durable storage plus the Team service
 - name: '@deepseek-ai/dsh-session-persistence-jsonl'
 - name: '@deepseek-ai/dsh-experimental-agent-team'
-- name: '@deepseek-ai/dsh-experimental-tool-agent-team'
 ```
 
-工具安装后，模型会按请求完成其余工作——例如先「创建一个名为 reviewer 的 teammate 检查 diff」，再「把变更摘要发给 reviewer」。所有限制都是可选的，并在启动时校验：
+服务消费者通过公开 API 创建 teammate 和发送消息。所有限制都是可选的，并在启动时校验：
 
 | 字段 | 默认值 | 含义 |
 |---|---|---|
@@ -53,7 +52,7 @@ kind: "package-reference"
 | `maxMessageBytes` | `65,536` | 单条发送消息的最大尺寸 |
 | `disposalTimeoutMs` | `5,000` | 关闭清理允许的时间 |
 
-生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-experimental-agent-team)是每个受支持字段及其 JSDoc 的穷尽式真源。
+生成的[配置目录](../../../docs/config-catalog.md#deepseek-aidsh-experimental-agent-team)是每个受支持字段及其 JSDoc 的穷尽式真源。
 
 ### Teammate
 
@@ -106,7 +105,7 @@ Lead 可以停止 teammate 的当前轮次，而不会删除其排队的消息�
 - **显式权限。** 每个服务方法都接收确切的实时调用方 `Agent`；只有 Lead 可以 spawn、reassign 或 interrupt。
 - **超出上限时明确失败。** 每个限制都是经过校验的部署值，耗尽时报告类型化错误，而不是复用 id 或名字。
 
-[Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-05-agent-teams.zh.md)负责 roster、mailbox、任务与共享 checkout 决策。[runtime-context 身份决策](../../../.agents/notes/implemented/architecture/2026-10-13-team-identity-runtime-context.zh.md)负责面向模型的身份。
+[Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-05-agent-teams.md)负责 roster、mailbox、任务与共享 checkout 决策。[runtime-context 身份决策](../../../.agents/notes/implemented/architecture/2026-10-13-team-identity-runtime-context.md)负责面向模型的身份。
 
 ### 源码地图
 
@@ -160,9 +159,9 @@ Mailbox 投影与 checkpoint 准入保留本地声明的校验器之外获准内
 
 当包级约定不够用时阅读以下页面。它们从共享子系统类型逐步进入工具表面与设计背后的决策。
 
-- [Agent Teams 子系统](../../../docs/subsystems/agent-team.zh.md)——持久 Team 类型与 `ctx.agentTeams` 服务 API。
-- [tool-agent-team 包](../tool-agent-team/README.zh.md)——让模型创建 teammate、向其发送消息并进行协调的工具。
-- [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-05-agent-teams.zh.md)——roster、mailbox、任务与共享 checkout 决策。
+- [Agent Teams 子系统](../../../docs/subsystems/agent-team.md)——持久 Team 类型与 `ctx.agentTeams` 服务 API。
+- [tool-agent-team 包](../tool-agent-team/README.md)——让模型创建 teammate、向其发送消息并进行协调的工具。
+- [Agent Teams Agent Note](../../../.agents/notes/implemented/feature/2026-08-05-agent-teams.md)——roster、mailbox、任务与共享 checkout 决策。
 - [实验包参考](../AGENTS.md)——位置、公开发布与依赖隔离。
 
 -----
@@ -171,9 +170,9 @@ Mailbox 投影与 checkpoint 准入保留本地声明的校验器之外获准内
 
 ### 浏览器投影
 
-`agentTeam` Session 投影发布 Lead Session 的持久成员身份与阶段、成员错误、未删除任务视图，以及最后有效状态旁的 `failure`。其 `apply` 只替换被触及的集合；仅邮箱的变化保留客户端视图引用，不产生 frame。[子系统参考](../../../docs/subsystems/agent-team.zh.md#web-projection) 定义传输类型。
+`agentTeam` Session 投影发布 Lead Session 的持久成员身份与阶段、成员错误、未删除任务视图，以及最后有效状态旁的 `failure`。其 `apply` 只替换被触及的集合；仅邮箱的变化保留客户端视图引用，不产生 frame。[子系统参考](../../../docs/subsystems/agent-team.md#web-projection) 定义传输类型。
 
-[Web UI](../client-ui-agent-team/README.zh.md) 读取共享 Session 投影，并从 Session 状态叠加活动信息。任务创建与更新由 Team agent 通过服务和模型工具完成。`./client` 导出可供浏览器使用的 roster、任务与投影类型。
+[Web UI](../client-ui-agent-team/README.md) 读取共享 Session 投影，并从 Session 状态叠加活动信息。任务创建与更新由 Team agent 通过服务和模型工具完成。`./client` 导出可供浏览器使用的 roster、任务与投影类型。
 
 ## 模型体验
 
@@ -185,7 +184,7 @@ Mailbox 投影与 checkpoint 准入保留本地声明的校验器之外获准内
 
 #### Token 影响
 
-每次 peer 投递都会把发送者前缀与消息内容加入 target 历史。任务与 roster 变更不增加模型 token；其面向模型的呈现属于 `@deepseek-ai/dsh-experimental-tool-agent-team` 结果。
+每次 peer 投递都会把发送者前缀与消息内容加入 target 历史。任务与 roster 变更不增加模型 token；调用方负责面向模型的呈现。
 
 #### KV Cache 影响
 

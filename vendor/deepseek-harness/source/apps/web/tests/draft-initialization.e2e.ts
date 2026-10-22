@@ -52,7 +52,7 @@ interface WorkspaceApplyContext {
 }
 
 async function observeDraftApi(page: Page): Promise<void> {
-  // Observe one shipped module's apply, using the page-owned loader interception from default-product-isolation.e2e.ts.
+  // Observe one shipped module's apply through the page-owned loader interception.
   await page.addInitScript(() => {
     const observation: DraftApiObservation = {}
     Reflect.set(globalThis, '__dshDraftApiObservation', observation)

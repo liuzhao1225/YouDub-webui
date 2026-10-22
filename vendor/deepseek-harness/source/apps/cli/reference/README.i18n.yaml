@@ -4,10 +4,10 @@
 #   pnpm run verify-translation-pairing --write apps/cli/reference/README.md
 /dsh-cli-behavior-reference:
   en: aa4e56df9fd994e6
-  zh: 0f1fdc4c6c77598b
+  zh: 789a1e2147663e09
 /dsh-cli-behavior-reference/profile-boot:
-  en: b474a6fc3c98837d
-  zh: da9219f91177b6c8
+  en: 48f9d8bfedc13404
+  zh: 6af418aef2c29f43
 /dsh-cli-behavior-reference/profile-boot/app-arguments:
   en: 60b4e6837299427e
   zh: 88eac566a2e63881
@@ -22,7 +22,7 @@
   zh: a3855f673f13ca54
 /dsh-cli-behavior-reference/web-profile:
   en: 2d2db1912a0ceb1f
-  zh: ae546a6fa284f0a2
+  zh: f15c35447554cd80
 /dsh-cli-behavior-reference/shared-deployment-behavior:
   en: 6a7abc9339e8f37f
   zh: 133adb834c8e195d

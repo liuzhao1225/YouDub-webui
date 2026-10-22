@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-experimental-agent-team` gives one session a Lead, named teammates, direct messages, and a durable shared task board. Sends use each target Agent’s inbox and can cold-resume stored teammates. Team retains roster and task state; message persistence follows the target Agent’s normal policy. Mount `dsh-experimental-tool-agent-team` for model tools. The package is experimental and requires durable session storage.
+`dsh-experimental-agent-team` gives one session a Lead, named teammates, direct messages, and a durable shared task board. Sends use each target Agent’s inbox and can cold-resume stored teammates. Team retains roster and task state; message persistence follows the target Agent’s normal policy. This fork retains the service for internal test consumers. The package is experimental and requires durable session storage.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-Add this package when one agent needs named helpers in a shared working directory, direct peer messages, and durable roster and task state. Mount it with `@deepseek-ai/dsh-experimental-tool-agent-team` to expose the model tools.
+Add this package when one agent needs named helpers in a shared working directory, direct peer messages, and durable roster and task state. Programmatic consumers call the `ctx.agentTeams` service.
 
 ### When to choose it
 
@@ -35,16 +35,15 @@ Choose it for cooperation in one shared workspace with durable roster and task s
 
 <a id="smallest-working-setup"></a>
 
-The smallest addition to an existing composition is durable session storage plus both Team packages:
+The smallest addition to an existing composition is durable session storage plus the Team service:
 
 ```yaml
-# smallest team setup — durable storage plus both Team packages
+# smallest team setup — durable storage plus the Team service
 - name: '@deepseek-ai/dsh-session-persistence-jsonl'
 - name: '@deepseek-ai/dsh-experimental-agent-team'
-- name: '@deepseek-ai/dsh-experimental-tool-agent-team'
 ```
 
-With the tools installed, the model does the rest on request — for example, "create a teammate named reviewer to check the diff", then "send reviewer the change summary". All limits are optional and validated at startup:
+Service consumers create teammates and send messages through the public API. All limits are optional and validated at startup:
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -185,7 +184,7 @@ Each peer message is a user-role message prefixed with its sender name, followed
 
 #### Token effect
 
-Each peer delivery adds the sender prefix plus message content to the target history. Task and roster mutations add no model tokens; their model-facing representation belongs to `@deepseek-ai/dsh-experimental-tool-agent-team` results.
+Each peer delivery adds the sender prefix plus message content to the target history. Task and roster mutations add no model tokens; the caller owns their model-facing representation.
 
 #### KV Cache effect
 

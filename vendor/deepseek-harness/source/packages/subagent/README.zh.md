@@ -27,7 +27,6 @@ subagent 包家族让 agent（智能体）将任务委派给子 agent、继续�
 | [`subagent/`](subagent/README.zh.md) | 定义委派服务：提供方注册表、一次性运行、可继续子级与发现 | `ctx.subagents` |
 | [`subagent-spawn-in-process/`](subagent-spawn-in-process/README.zh.md) | 运行全新的进程内子 agent | 注册到 `ctx.subagents` |
 | [`subagent-fork-in-process/`](subagent-fork-in-process/README.zh.md) | 运行从父级已完成历史派生的进程内子 agent | 注册到 `ctx.subagents` |
-| [`subagent-acp/`](subagent-acp/README.zh.md) | 经 Agent Client Protocol 运行进程外子 agent | 注册到 `ctx.subagents` |
 | [`tool-subagent/`](tool-subagent/README.zh.md) | 向模型公开委派 | 注册到 `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.zh.md) | 向模型提供向相邻 agent 发送消息、中断工作和列出子级状态的操作 | 注册到 `ctx.tools` |
 
@@ -36,9 +35,9 @@ subagent 包家族让 agent（智能体）将任务委派给子 agent、继续�
 <a id="related-documentation"></a>
 ## 相关文档
 
-- [Subagent 子系统](../../docs/subsystems/subagent.zh.md)——服务约定、提供方约定与终态结果语义。
+- [Subagent 子系统](../../docs/subsystems/subagent.md)——服务约定、提供方约定与终态结果语义。
 - [历史Subagent 能力 seam](../../.agents/notes/archived/feature/2026-06-21-subagent-capability-seam.md)——委派能力家族的设计记录。
-- [可继续的 subagent](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.zh.md)——接受后续轮次的持久子级。
+- [可继续的 subagent](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.md)——接受后续轮次的持久子级。
 - [tool-subagent-control README](tool-subagent-control/README.zh.md)——后续消息、中断与列举接口。
 
 <a id="dev-note"></a>

@@ -102,7 +102,6 @@ const GROUP_ORDER = [
   'storage',
   'workspace',
   'support',
-  'acp',
   'ui',
 ]
 
@@ -176,7 +175,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Git worktree creation',
     mode: 'seam',
     implementations: ['experimental-worktree'],
-    consumers: ['experimental-tool-worktree'],
+    consumers: [],
     note: 'Explicit experimental creation from a pinned local commit. Existing write permissions govern checkout and shared Git metadata; the working-directory service owns the resulting Session directory.',
   },
   {
@@ -196,24 +195,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['mcp-client'],
     consumers: ['mcp-resources'],
     note: 'Connection-owned providers serve shared resource tools in the calling agent scope.',
-  },
-  {
-    key: 'browserUse',
-    pkg: 'browser-use',
-    title: 'Browser-use provider registration',
-    mode: 'seam',
-    implementations: ['experimental-browser-use-playwright-mcp', 'experimental-browser-use-chrome-devtools-mcp', 'experimental-browser-use-stagehand-native'],
-    consumers: ['experimental-browser-use-playwright-mcp', 'experimental-browser-use-chrome-devtools-mcp', 'experimental-browser-use-stagehand-native'],
-    note: 'One provider-owned name per service instance. Providers own their tools and browser resources per live Session; the shared service has no browser operation API.',
-  },
-  {
-    key: 'computerUse',
-    pkg: 'computer-use',
-    title: 'Computer-use provider registration',
-    mode: 'seam',
-    implementations: ['experimental-computer-use-cua-driver-mcp', 'experimental-computer-use-cua-driver-native'],
-    consumers: ['experimental-computer-use-cua-driver-mcp', 'experimental-computer-use-cua-driver-native'],
-    note: 'One provider-owned name per service instance. Each provider also owns its model tools; the service has no common action API, runtime selection, or Session workflow lock.',
   },
   {
     key: 'officeToPdf', pkg: 'office-to-pdf', title: 'Office to PDF conversion',
@@ -392,7 +373,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Durable session persistence seam',
     mode: 'seam',
     implementations: ['session-persistence-jsonl'],
-    consumers: ['agent-loop', 'tool-bash', 'hooks-claude-code', 'hooks-codex', 'session-query', 'session-query-sqlite', 'message-feedback'],
+    consumers: ['agent-loop', 'tool-bash', 'session-query', 'session-query-sqlite', 'message-feedback'],
     note: 'The JSONL backend persists the SessionEvent vocabulary as one artifact per Session.',
   },
   {
@@ -625,7 +606,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'agent',
     title: 'Agent service',
     mode: 'core',
-    consumers: ['agent-loop', 'acp', 'subagent'],
+    consumers: ['agent-loop', 'subagent'],
     note: 'Owns live Agent handles, the create/resume factory seam, and process-local initiator propagation.',
   },
   {
@@ -672,7 +653,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Subprocess seam',
     mode: 'seam',
     implementations: ['subprocess-local'],
-    consumers: ['bash-local', 'bash-sandbox', 'terminal-bash', 'lsp-stdio', 'subagent-acp'],
+    consumers: ['bash-local', 'bash-sandbox', 'terminal-bash',],
     note: 'The bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP subagent backend spawn through ctx.subprocess; the service owns process coordinates, tree/session lifetime, stdio dispositions, terminal mechanics, and kill escalation.',
   },
   {
@@ -681,7 +662,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Bash executor seam',
     mode: 'seam',
     implementations: ['bash-local', 'bash-sandbox', 'pwsh-local'],
-    consumers: ['tool-bash', 'tool-pwsh', 'hooks-claude-code', 'hooks-codex'],
+    consumers: ['tool-bash', 'tool-pwsh',],
     note: 'The model-facing shell tools and hook bridges consume this seam; sandboxed, remote, or PowerShell executors replace bash-local without touching them.',
   },
   {
@@ -725,7 +706,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Approval seam',
     mode: 'seam',
     implementations: [],
-    consumers: ['tools', 'tool-bash', 'acp'],
+    consumers: ['tools', 'tool-bash',],
     note: 'One-shot permission decisions dispatched over the `approval/request` waterfall; answerers are listeners (the ACP bridge for its own agents), absence fails closed to `unavailable`.',
   },
   {
@@ -769,7 +750,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'subagent',
     title: 'Subagent provider and continuation service',
     mode: 'seam',
-    implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp'],
+    implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process',],
     consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph'],
     note: 'Providers prepare local children or execute external tasks; one activation manager owns both lifecycles. The delegation tool selects a backend, control tools deliver local follow-ups, and workflows await activation results.',
   },
@@ -787,15 +768,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'experimental-agent-team',
     title: 'Agent Teams coordination domain',
     mode: 'core',
-    consumers: ['experimental-tool-agent-team'],
-    note: 'Owns the implicit-root roster, direct peer inbox delivery, shared task DAG, and continuable-child lifecycle; tool-agent-team contributes model controls.',
-  },
-  {
-    key: 'claudeCodeMods',
-    pkg: 'experimental-claude-code-mods',
-    title: 'Claude Code mods bridge',
-    mode: 'core',
-    note: 'Loads mods that defineMod plugins add, raises their hook chains from harness extension points, and draws the band above the prompt over its Remote.',
+    consumers: [],
+    note: 'Owns the implicit-root roster, direct peer inbox delivery, shared task DAG, and continuable-child lifecycle.',
   },
   {
     key: 'inspector',
@@ -878,17 +852,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'webhook',
     title: 'Webhook rule runtime',
     mode: 'core',
-    consumers: ['webhook-github'],
+    consumers: [],
     note: 'Provider adapters dispatch authenticated deliveries; trusted plugins register independent process-local rules, and the runtime turns non-null results into ordinary Workspace-backed Sessions without delivery or completion state.',
-  },
-  {
-    key: 'lsp',
-    pkg: 'lsp',
-    title: 'Language-server navigation seam',
-    mode: 'seam',
-    implementations: ['lsp-stdio'],
-    consumers: ['tool-lsp'],
-    note: 'Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result.',
   },
   {
     key: 'dynamicCordisRunner',

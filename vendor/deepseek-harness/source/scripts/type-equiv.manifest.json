@@ -1712,56 +1712,6 @@
       "source": "packages/workflow/workflow/src/runtime-types.ts"
     },
     {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspOperation",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspPosition",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspRange",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspQueryRequest",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspProviderQuery",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspLocation",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspHover",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspQueryResult",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspProvider",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/lsp.md",
-      "symbol": "LspService",
-      "source": "packages/lsp/lsp/src/types.ts"
-    },
-    {
       "doc": "docs/subsystems/persistence.md",
       "symbol": "SessionPersistenceRevision",
       "source": "packages/session/session-persistence/src/revision.ts"

@@ -665,14 +665,6 @@ describe('CI workflow', () => {
     }
   })
 
-  it('keeps supported LSP source under native Windows coverage', () => {
-    const config = readFileSync(resolve(root, 'vitest.config.ts'), 'utf8')
-
-    expect(config).not.toContain('packages/lsp/lsp-stdio/src/connection.ts')
-    expect(config).not.toContain('packages/lsp/lsp-stdio/src/index.ts')
-    expect(config).not.toContain('packages/lsp/lsp-stdio/src/instance.ts')
-  })
-
   it('keeps every Vitest project process-isolated on native Windows', () => {
     const config = readFileSync(resolve(root, 'vitest.config.ts'), 'utf8')
 
