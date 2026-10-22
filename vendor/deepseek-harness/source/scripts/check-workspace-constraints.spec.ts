@@ -396,14 +396,6 @@ it('requires the shared Web injection entry in the published payload', () => {
   } })).toEqual([expect.stringContaining('package.json files must be')])
 })
 
-it('requires Office skill bodies and helpers in the published payload', () => {
-  const manifest = JSON.parse(readFileSync(new URL('../packages/skill/skill-office/package.json', import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
-  expect(checkWorkspaceManifest({ dir: 'packages/skill/skill-office', manifest })).toEqual([])
-  expect(checkWorkspaceManifest({ dir: 'packages/skill/skill-office', manifest: {
-    ...manifest, files: ['lib/index.js', 'lib/types/**/*.d.ts'],
-  } })).toEqual([expect.stringContaining('package.json files must be')])
-})
-
 it('requires both Node execution bootstraps in the published payload', () => {
   const dir = 'packages/ptc-runtime/ptc-runtime-node'
   const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']

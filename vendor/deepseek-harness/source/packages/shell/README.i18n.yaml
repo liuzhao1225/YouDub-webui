@@ -3,23 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/shell/README.md
 /:
-  en: d6cefb5c7640e7e6
-  zh: 55d41fa2f53300e6
+  en: c1ffd6b1f487048e
+  zh: dd96590f0fe4d639
 /shell-bash-capability-family:
   en: 712a3d4fac6a470d
   zh: bd628a49105b1532
 /shell-bash-capability-family/summary:
-  en: d1a8ea04bb48ab49
-  zh: 14e06126bf109289
+  en: 47e0c1524b74d3f2
+  zh: e4c8c82d942eab5b
 /shell-bash-capability-family/table-of-contents:
-  en: 1eb35b015a6c423f
-  zh: a8a3dceee2c9e943
+  en: ecc05c7b811ae5ae
+  zh: d4c9442f100e8ea8
 /shell-bash-capability-family/packages:
-  en: e37d8906d04f2bc5
-  zh: e6a672011f17fe73
-/shell-bash-capability-family/related-documentation:
-  en: afe5d0c108398796
-  zh: 07912a7804b7d19f
+  en: 082a3e043f2bca19
+  zh: 3107b13933dd32e1
 /shell-bash-capability-family/dev-note:
   en: b75c8458928b72b9
   zh: 003ba4e17b4b5269

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
 import { createRequire } from 'node:module';
@@ -182,8 +182,22 @@ for (const staleLock of ['root-and-installed', 'installed-only']) {
     const installedLock = parse(await readFile(join(profile, 'node_modules/.pnpm/lock.yaml'), 'utf8'));
     assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier, `link:${plugin.split(sep).join('/')}`);
     assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].version, lockedVersion);
+    const sdkLink = join(profile, 'node_modules/@youdub/harness-subtitles');
+    const readDependencyState = async () => {
+      const files = {};
+      for (const file of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'node_modules/.pnpm/lock.yaml', 'node_modules/.modules.yaml', 'node_modules/.pnpm-workspace-state-v1.json']) {
+        try { files[file] = await readFile(join(profile, file), 'utf8'); }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+      }
+      return { link: await readlink(sdkLink), target: await realpath(sdkLink), files };
+    };
+    const beforeRemoval = await readDependencyState();
     await operation(['remove', fixtureName, '--config.offline=true']);
-    assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(plugin));
+    const afterRemoval = await readDependencyState();
+    if (afterRemoval.target !== await realpath(plugin)) {
+      t.diagnostic(JSON.stringify({ staleLock, beforeRemoval, afterRemoval }));
+    }
+    assert.equal(afterRemoval.target, await realpath(plugin));
     assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'].split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
     assert.equal((await readManifest(profile)).dependencies[fixtureName], undefined);
   });

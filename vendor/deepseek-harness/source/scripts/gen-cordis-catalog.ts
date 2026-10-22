@@ -39,7 +39,6 @@ import { rewriteTranslationLinkLocales } from './translation-links.ts'
 const root = resolve(import.meta.dirname, '..')
 const SUBSYSTEMS_DIR = 'docs/subsystems'
 const OUT_INHERITED = 'docs/cordis-api/inherited.md'
-const OUT_RUNTIME_API = 'packages/extensions/tool-cordis/src/api-catalog.ts'
 
 export { REGION_BEGIN, REGION_END }
 
@@ -165,8 +164,7 @@ export const SERVICE_PAGE: Record<string, string> = {
  * installs before the tree mounts, which the analyzer skips by rule because no
  * plugin provides it and `inject` cannot reach it. A client-face key belongs to
  * the browser Context, which this host-face program never sees; the browser
- * surface has its own generated catalog (`scripts/gen-client-catalog.ts`, served
- * to a model as `cordis_runtime_inspect what:"client"`).
+ * surface has its own contract analyzer (`scripts/gen-client-catalog.ts`).
  */
 export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
   invocation: 'not a service: per-call accessor (RemoteInvocation | undefined) the Gateway derives for each Remote call — packages/api/gateway/README.md owns the contract',
@@ -197,7 +195,6 @@ export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
   modules: 'client-side interface-typed browser service — packages/client/modules/README.md owns the API',
   remote: 'client-side interface-typed gateway accessor (ClientRemote) — packages/api/gateway/README.md owns the API',
   inputTriggers: 'client-side interface-typed browser service — packages/client/ui-input-trigger/README.md owns the API',
-  timer: 'client-side dynamic-package timer service — packages/extensions/cordis-client-runner/README.md owns the API',
   slots: 'client-side interface-typed browser service — packages/client/ui-renderer/README.md owns the API',
   theme: 'client-side interface-typed browser service — packages/client/ui-theme/README.md owns the API',
   workspaces: 'client-side interface-typed browser service — packages/api/workspace-controller/README.md owns the API',
@@ -956,9 +953,6 @@ export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   SessionForkSource: 'service-local fork input is owned by packages/core/session/src/index.ts',
   SubagentRunEndInfo: 'event payload contract is owned by packages/subagent/subagent/src/types.ts',
   SubagentRunInfo: 'event payload contract is owned by packages/subagent/subagent/src/types.ts',
-  WorkflowAgentEndInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',
-  WorkflowAgentInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',
-  WorkflowResultInfo: 'event-local snapshot is owned by packages/workflow/workflow/src/index.ts',
   WorkspaceFileScope: 'Host workspace file lookup contract is owned by packages/api/workspace-files/README.md',
   WorkspaceByteReadOptions: 'Host workspace file endpoint contract is owned by packages/api/workspace-files/README.md',
   WorkspaceByteRange: 'Host workspace file endpoint contract is owned by packages/api/workspace-files/README.md',
@@ -1221,7 +1215,6 @@ export function computeOutputs(): [string, string][] {
   const pages = [...new Set([...Object.values(SERVICE_PAGE), ...Object.values(EVENT_SCOPE_PAGE)])].sort()
   const outputs: [string, string][] = [
     [OUT_INHERITED, renderInheritedPage(CORDIS_CATALOG_POLICY)],
-    [OUT_RUNTIME_API, projector.renderRuntimeApi(model)],
   ]
   for (const page of pages) {
     const region = renderPageRegion(

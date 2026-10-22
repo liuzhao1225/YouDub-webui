@@ -3,23 +3,23 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/fs/README.md
 /:
-  en: 8dc77e3367b5280a
-  zh: 83474ca14682aaf2
+  en: 8b24a706eeadd172
+  zh: 83408292ccd590d1
 /packages-fs:
   en: 659c4654ba00d846
   zh: 7107fd3d4d0e6f7c
 /packages-fs/summary:
-  en: 7d52fac0842e833e
-  zh: 53402054019f2e45
+  en: 66b3938a282d9a20
+  zh: 80bfb11be9921d63
 /packages-fs/table-of-contents:
   en: 1eb35b015a6c423f
   zh: a8a3dceee2c9e943
 /packages-fs/packages:
-  en: 21e9692beda57ac9
-  zh: 5b6dab849af81774
+  en: 641ae47f784dd9b4
+  zh: 34e48e4af1496aa8
 /packages-fs/related-documentation:
-  en: 2682ce38d0a99122
-  zh: 6e794fcfd13c3ef3
+  en: e7f4117d927b7c14
+  zh: 5f58bb9ec8c084ce
 /packages-fs/dev-note:
   en: 5de1d6304e00c58f
   zh: 8d8225361cfa29e5

@@ -1,5 +1,5 @@
 ---
-description: "The test-support group map: keyless test harnesses, LLM mock and replay servers, and Loader smoke helpers for developers writing and running repository tests."
+description: "Deterministic framework and browser test support."
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The test-support group gives repository tests deterministic, keyless ways to exercise the real product. It includes Loader application harnesses, session-log snapshot adapters, a replay LLM plugin, and a scriptable OpenAI-compatible fault server. Each package is support-tier infrastructure; a package moves out of this group when it gains a product contract and product consumers.
+The test-support group retains Loader, AgentLoop, browser slot, Remote and mock-provider helpers for tests of the shared framework. These helpers are not part of the default product composition.
 
 ## Table of Contents
 
@@ -24,20 +24,17 @@ The test-support group gives repository tests deterministic, keyless ways to exe
 
 | Package | Role |
 |---|---|
-| [`session-snapshot`](session-snapshot/README.md) | Provides session-log snapshot support and protocol adapters for profile-driven tests |
 | [`agent-loop-testkit`](agent-loop-testkit/README.md) | Provides the shared prerequisite services for tests that exercise the concrete AgentLoop |
 | [`client-runtime`](client-runtime/README.md) | Provides the jsdom slot test bench for browser feature specs |
 | [`remote-mock`](remote-mock/README.md) | Provides the endpoint-named Typert Remote mock and the Connection carrier face whole-client specs install |
 | [`loader-smoke`](loader-smoke/README.md) | Boots Loader-composed applications and drives fixture turns for smoke tests |
 | [`llm-mock-server`](llm-mock-server/README.md) | Provides a scriptable OpenAI-compatible fault server for recovery tests |
-| [`llm-replay`](llm-replay/README.md) | Replays recorded model streams for keyless tests and demos |
 
 -----
 
 <a id="related-documentation"></a>
 ## Related documentation
 
-- [Testing policy](../../docs/testing.md) — the keyless snapshot tier these harnesses serve and when it is required.
 - [Package groups](../README.md) — how support groups relate to the product groups.
 
 -----

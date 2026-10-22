@@ -444,7 +444,6 @@ function nodeCompatSmokeGates(options: { cliSmoke?: boolean } = {}): Gate[] {
     pnpmExec('source-compat-smokes', [
       'vitest',
       'run',
-      'packages/workflow/workflow-ptc/tests/source-runtime.compat.spec.ts',
       'packages/session/session-persistence-jsonl/tests/zstd.compat.spec.ts',
       'apps/cli/tests/source-launch.compat.spec.ts',
       'scripts/vitest-environment.compat.spec.ts',
@@ -782,14 +781,10 @@ function docSyncLeafGates(options: {
     pnpmScript('markdown-links', 'verify-md-links', { label: 'markdown links', quick: true }),
     pnpmScript('type-equivalence', 'verify-type-equiv', { label: 'type equivalence', quick: true }),
     pnpmScript('cordis-catalog', 'verify-cordis-catalog', { label: 'cordis catalog' }),
-    pnpmScript('cordis-inspect-catalog', 'verify-cordis-inspect-catalog', { label: 'Cordis inspect catalog' }),
-    pnpmScript('workflow-guest', 'verify-workflow-guest', { label: 'workflow guest source' }),
     pnpmScript('mermaid', 'verify-mermaid'),
     pnpmScript('translation-pairing', 'verify-translation-pairing', { label: 'translation pairing', quick: true }),
     pnpmScript('markdown-wrap', 'verify-md-wrap', { label: 'markdown wrap', quick: true }),
-    pnpmScript('client-catalog', 'verify-client-catalog', { label: 'client catalog' }),
     pnpmScript('export-jsdoc', 'verify-export-jsdoc', { label: 'export jsdoc' }),
-    pnpmScript('tool-catalog', 'verify-tool-catalog', { label: 'tool catalog' }),
     pnpmScript('config-catalog', 'verify-config-catalog', { label: 'config catalog' }),
     pnpmScript('plugin-packages', 'verify-plugin-packages', { label: 'skill plugin package list' }),
     pnpmScript('persistence-catalog', 'verify-persistence-catalog', { label: 'persistence catalog' }),
@@ -850,14 +845,11 @@ function builtBinSmokeGate(needs: string[] = ['build']): Gate {
     'apps/cli/tests/profiles/headless/tests/source-tool.built.e2e.ts',
     'apps/cli/tests/built-bin.e2e.ts',
     'apps/desktop/tests/acl-skill.built.e2e.ts',
-    'packages/host/directory-picker-native/tests/built-worker.e2e.ts',
-    'packages/deliverables/tool-present/tests/built-errors.e2e.ts',
     'packages/subprocess/subprocess-local/tests/spawn-runner-built.e2e.ts',
     'packages/api/remotes/tests/built-lib.e2e.ts',
     // Built execution consumers: the only automated proof that package-name
     // imports reach their lib/ entrypoints under plain Node. The e2e lane runs
     // unbuilt, so these files self-skip there.
-    'packages/workflow/workflow-ptc/tests/built-runtime.e2e.ts',
     'packages/ptc-runtime/ptc-runtime-node/tests/built-lib.e2e.ts',
     'packages/session/session-persistence-jsonl/tests/built-migration-worker.e2e.ts',
   ], {

@@ -1,5 +1,5 @@
 ---
-description: "持久目标状态及显式使用的工具与命令。"
+description: "持久目标状态服务。"
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-group"
 
 ## 概述
 
-goal 组保留持久目标状态、模型工具和用户命令，供显式 Agent 组合使用。每个会话保存一个当前目标。旧的自动轮次驱动已移除。
+goal 组保留供框架使用方显式选择的持久目标状态服务。状态归所属会话管理，遵循现有持久化约定。
 
 ## 目录
 
@@ -24,8 +24,6 @@ goal 组保留持久目标状态、模型工具和用户命令，供显式 Agent
 | 包 | 职责 | ctx 键 |
 |---|---|---|
 | [`goal`](goal/README.zh.md) | 每个会话一个持久目标：创建、编辑、暂停、恢复、完成、阻塞和清除 | `ctx.goals` |
-| [`tool-goal`](tool-goal/README.zh.md) | 模型工具 `get_goal`、`create_goal`、`update_goal` | 注册到 `ctx.tools` |
-| [`command-goal`](command-goal/README.zh.md) | UI 命令平面中的用户 `/goal` 命令 | 注册到 `ctx.commands` |
 
 -----
 

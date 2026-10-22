@@ -2,30 +2,18 @@
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write apps/cli/reference/README.md
-/dsh-cli-behavior-reference:
-  en: aa4e56df9fd994e6
-  zh: 789a1e2147663e09
-/dsh-cli-behavior-reference/profile-boot:
-  en: 48f9d8bfedc13404
-  zh: 6af418aef2c29f43
-/dsh-cli-behavior-reference/profile-boot/app-arguments:
-  en: 60b4e6837299427e
-  zh: 88eac566a2e63881
-/dsh-cli-behavior-reference/profile-boot/config-schema-dump:
-  en: a356f8a68f3b3685
-  zh: c718713b5d709295
-/dsh-cli-behavior-reference/startup-diagnostics:
-  en: d6368bf97a02bd57
-  zh: 2ab7888a108961ce
-/dsh-cli-behavior-reference/plugin-management:
-  en: bea05071c7652b12
-  zh: a3855f673f13ca54
-/dsh-cli-behavior-reference/web-profile:
-  en: 2d2db1912a0ceb1f
-  zh: f15c35447554cd80
-/dsh-cli-behavior-reference/shared-deployment-behavior:
-  en: 6a7abc9339e8f37f
-  zh: 133adb834c8e195d
-/dsh-cli-behavior-reference/source-execution:
-  en: 05c2b23790f7b296
-  zh: 51f809020fb230a1
+/profile-runner-reference:
+  en: 1c45ba912f795db0
+  zh: 12bf8023cd178c18
+/profile-runner-reference/profile-startup:
+  en: c0ea61363398557d
+  zh: f226e225f4410d0e
+/profile-runner-reference/environment-and-failures:
+  en: 67ea936e41f6676c
+  zh: cf7070700b98a668
+/profile-runner-reference/process-shutdown:
+  en: 53aec61aff51ecc9
+  zh: 8d181a2a53b0d41c
+/profile-runner-reference/plugin-management:
+  en: 16a35c6473d42312
+  zh: 37db6f47df56407b

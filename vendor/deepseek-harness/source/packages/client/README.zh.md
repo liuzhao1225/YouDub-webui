@@ -1,5 +1,5 @@
 ---
-description: "web GUI 浏览器侧的包映射：外壳启动、浏览器与宿主通信、共享客户端服务、本地化、开发重载与 UI 功能插件。"
+description: "共享浏览器运行时、服务与界面组件。"
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-group"
 
 ## 概述
 
-`client/` 组提供 dsh web GUI 的浏览器体验，包括对话、导航、设置、批准、文件访问及其他交互功能。添加浏览器中可见的行为时，请选择本系列中的包；服务端页面交付与宿主集成则使用 [`host/`](../host/README.zh.md)。本系列同时涵盖共享浏览器基础与专门的 UI 功能，各子包 README 拥有其配置与行为说明。编写规则见 [AGENTS.md](AGENTS.md)，下方相关文档解释跨包组合方式。
+client 组保留浏览器启动、传输、插槽、状态、主题、多语言及共享界面组件。产品 profile 选择加载的插件；各包说明自己的公开约定。
 
 ## 目录
 
@@ -61,9 +61,6 @@ kind: "package-group"
 | [`ui-settings-general/`](ui-settings-general/README.zh.md) | 提供常规设置分区 | — |
 | [`ui-settings-models/`](ui-settings-models/README.zh.md) | 提供模型提供方配置与 DeepSeek 引导 | — |
 | [`ui-plugin-manager/`](ui-plugin-manager/README.zh.md) | 贡献侧栏的“插件”面板：安装、启用、停用、重试与组合已安装的包 | — |
-| [`ui-deliverables/`](ui-deliverables/README.zh.md) | 生成改动文件卡片及其对比 tab、交付文件卡片与可点击的最终响应文件引用 | — |
-| [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.zh.md) | 面向工作区目录流程的应用内目录浏览界面 | — |
-| [`ui-directory-picker-native/`](ui-directory-picker-native/README.zh.md) | 驱动本地 Desktop 或 Host OS 选择器的原生目录选择界面 | — |
 
 -----
 

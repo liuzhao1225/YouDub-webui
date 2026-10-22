@@ -1,5 +1,5 @@
 ---
-description: "会话压缩（compaction）功能家族的包映射：自动压缩、按需 /compact 命令与工具输出修剪。"
+description: "共享上下文压缩约定与策略。"
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-group"
 
 ## 概述
 
-`compaction/` 组让长时 agent（智能体）会话在接近模型上下文上限时仍能正常工作：token 压力上升时自动把较早历史压缩为摘要，可用 `/compact` 按需压缩，超大工具输出也可以先被修剪，从而减少需要压缩的内容，支持图片的路由发不出的图片则被替换为占位文本。随附 `dsh` 基础配置默认启用该功能。显式挂载各包即可调整压缩发生的时机与方式。决定何时压缩的 token 测量属于独立的 LLM（大语言模型）家族服务。
+compaction 组保留框架组合与测试使用的摘要、上下文压力和工具输出策略，不额外装配产品功能。
 
 ## 目录
 
@@ -30,7 +30,6 @@ kind: "package-group"
 | [`compaction-basic/`](compaction-basic/README.zh.md) | 随 token 压力上升自动把较早历史压缩为摘要 | 注册 `ctx.compaction` |
 | [`compaction-tool-result-pruner/`](compaction-tool-result-pruner/README.zh.md) | 修剪超大工具输出，减少需要压缩的历史 | `ctx.toolResultPruner` |
 | [`compaction-image-offload/`](compaction-image-offload/README.zh.md) | 支持图片的路由拒绝请求时，把超出预算的请求图片替换为占位文本 | 监听 `agent/request-error` |
-| [`command-compact/`](command-compact/README.zh.md) | 按需压缩历史的 `/compact` 命令 | 注册到 `ctx.commands` |
 
 -----
 
@@ -39,10 +38,7 @@ kind: "package-group"
 
 先从子系统参考了解共享词汇，再阅读两份 Agent Note 了解设计依据。
 
-- [压缩子系统参考](../../docs/subsystems/compaction.zh.md)——压缩词汇、结果与服务行为。
-- [历史压缩能力 seam Agent Note](../../.agents/notes/archived/feature/2026-06-18-compaction-capability-seam.md)——家族如何拆分，以及为何依赖会话与 LLM 词汇。
 - [排队手动压缩 参考](compaction/README.zh.md)——按需 `/compact` 如何与运行中的轮次串行化。
-- [能力 seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md)——本家族遵循的 Service Definition / Service Provider / Consumer 拆分。
 
 <a id="dev-note"></a>
 ## 开发备注

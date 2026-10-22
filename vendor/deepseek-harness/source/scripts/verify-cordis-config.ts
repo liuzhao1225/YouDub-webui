@@ -40,22 +40,6 @@ const appOverlayFiles = new Set([
 ])
 const metadataFields = ['id', 'name', 'group', 'inject', 'intercept', 'isolate'] as const
 
-/** The adaptive directory-picker chooser package (mounts a backend row at boot). */
-const CHOOSER_PACKAGE = '@deepseek-ai/dsh-host-directory-picker-auto'
-
-/**
- * The packages the chooser mounts by runtime string (mirror of its exported
- * `BACKEND_PACKAGES` and `SURFACE_PACKAGES`), invisible to yml-row scanning: a
- * composition mounting the chooser must resolve every one, or keyless Linux CI
- * (which only ever resolves `browse`) hides a dropped `-native` dependency
- * until a macOS boot.
- */
-const CHOOSER_BACKEND_PACKAGES = [
-  '@deepseek-ai/dsh-host-directory-picker-native',
-  '@deepseek-ai/dsh-host-directory-picker-browse',
-  '@deepseek-ai/dsh-client-ui-directory-picker-browse',
-  '@deepseek-ai/dsh-client-ui-directory-picker-native',
-]
 const errors: string[] = []
 const pluginReferences: PluginReference[] = []
 
@@ -387,9 +371,6 @@ function missingPluginDependencies(
     const packageName = packageNameFromSpecifier(reference.name)
     if (packageName === undefined) continue
     require(packageName, reference.file)
-    if (packageName === CHOOSER_PACKAGE) {
-      for (const backend of CHOOSER_BACKEND_PACKAGES) require(backend, reference.file)
-    }
   }
   return [...requiredPackages].flatMap(([packageName, locations]) => packageName in dependencies
     ? []

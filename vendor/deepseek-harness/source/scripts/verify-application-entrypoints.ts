@@ -29,7 +29,6 @@ const MANIFEST_BIN_ALLOWLIST = new Map<string, ManifestBin>([
 
 /** Every JavaScript executable in an application or packaging workspace has one explicit role. */
 const EXECUTABLE_SOURCE_ALLOWLIST = new Map<string, string>([
-  ['packages/shell/tool-pwsh/tests/fixtures/loader/driver.ts', 'test-only subprocess driver'],
   ['packages/test-support/loader-smoke/tests/fixtures/headless-driver.ts', 'test-only subprocess driver'],
   ['packages/test-support/llm-mock-server/src/bin.ts', 'test-only model server'],
 ])

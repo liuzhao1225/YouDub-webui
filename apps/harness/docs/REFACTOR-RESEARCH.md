@@ -560,3 +560,15 @@ profile 准备现通过官方 PluginManager 执行离线安装，同步根锁和
 5a078bc7 的 Windows 源码构建、桌面与实际 Host 仍通过。产品合同 30 项通过、1 项失败：根锁已更新而已安装锁过旧的迁移通过；两份锁同时过旧时，卸载后仍返回旧 SDK。安装记录的 specifier 已更新，不能只用该字段认定完成。
 
 初始化现先通过官方锁文件操作解析当前 SDK，再通过官方安装同步已安装记录，复用本次 Windows 已通过的后半段迁移。新增安装记录 version 与根锁 version 的一致性断言；保留卸载后的 realpath 检查。CI=true 本机 8 项 profile 及两种实际 Host 通过，远程结果继续待验收。[Windows 失败结果](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39823710411/job/119981317649)
+
+## P6 第 23 批：闭包外旧工具与专属生成器（2026-10-23）
+
+以 5a078bc7 为隔离候选基线，删除 36 个未挂载且不在保留测试闭包中的 Office、搜索、旧 Agent 工具、目录选择产品和 Agent workflow 包。YouDub 的领域工作流、媒体节点、实际 Desktop 文件框和共享服务均保留。原 tool-cordis 的 Tools API 数据原样复制为类型生成器 fixture；通用槽位与类型分析实现保持原逻辑。第三方 lock 的 packages/snapshots 未变，原始归档、来源清单和 YouDub 初始状态校验通过。
+
+最终候选 211 包、5,261 文件、235 客户端构建产物；7 项框架构建、产品构建、504 文件/8,075 项 GUI、47 文件/6,287 项 profile 测试、10 项实际 Host/profile、7 份 Loader 配置通过。移除专属脚本后，run-gates 的 148 项测试再次通过。完整结果、输入 hash、失败过程和限制见[第 23 批证据](evidence/refactor-remaining-products-prune.json)。
+
+第 22 批 macOS CI 在 profile 与 GUI 通过后，因 CLI 参考文档仍链接已删除的遥测模块而失败。链接归一化使共享部署章节的配对 hash 失效；文档还在描述早已移除的公开 dsh 命令。本批将中英文参考同步改为当前 profile runner 的实际启动、环境、失败清理、退出和 PluginManager 边界；六份 CI 指定文档配对通过。没有修改翻译校验规则。
+
+Windows 82abf8c3 的两阶段锁同步仍未修复卸载后的旧 SDK 回退。卸载前根锁与已安装锁的 specifier/version 均通过，卸载后实际 realpath 仍指向 old-youdub-plugin；installed-only 场景通过。保留原断言，并增加失败时输出临时测试目录中 manifest、两份锁、模块元数据和前后链接的诊断。实际 Host 两种模式已通过，完整 Windows job 继续记为失败。[Windows 证据](evidence/windows-source-development.json)
+
+桌面工具仍明确返回 Mac 锁屏，本批不新增原生交互通过声明。当前阶段继续只构建源码开发版，不打包、不签名、不发布；两份飞书文档按约定等整体验收后更新。

@@ -379,9 +379,9 @@ describe('gate graph validation', () => {
   it('schedules the longest documentation leaves before short checks', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
 
-    expect(ids.slice(0, 11)).toEqual([
+    expect(ids.slice(0, 9)).toEqual([
       'doc-typecheck', 'docs-site-build', 'doc-graphs', 'cli-help', 'markdown-links', 'type-equivalence',
-      'cordis-catalog', 'cordis-inspect-catalog', 'workflow-guest', 'mermaid', 'translation-pairing',
+      'cordis-catalog', 'mermaid', 'translation-pairing',
     ])
   })
 
@@ -844,7 +844,6 @@ describe('Node compatibility graph', () => {
         'exec',
         'vitest',
         'run',
-        'packages/workflow/workflow-ptc/tests/source-runtime.compat.spec.ts',
         'packages/session/session-persistence-jsonl/tests/zstd.compat.spec.ts',
         'apps/cli/tests/source-launch.compat.spec.ts',
         'scripts/vitest-environment.compat.spec.ts',

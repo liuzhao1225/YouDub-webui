@@ -1,8 +1,1 @@
-{
-  "ui-deliverables/src/client/ChangedFiles.module.css": [
-    ".tile: border-radius: 10px"
-  ],
-  "ui-deliverables/src/client/Deliverables.module.css": [
-    ".fileIcon: border-radius: 10px"
-  ]
-}
+{}

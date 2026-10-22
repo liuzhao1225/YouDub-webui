@@ -71,6 +71,23 @@
         "actualElectronHostModesPassed": 2
       },
       "installedMetadataSpecifierCheckPassed": true
+    },
+    {
+      "commit": "82abf8c3823ba65a8cd71ff483a4bc8e0d15b1be",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39826109693/job/119989712742",
+      "result": "Two-phase migration still fails root-and-installed stale case after remove; installed-only case passes.",
+      "sourceAndProductBuildPassed": true,
+      "desktopAndProcessTestsPassed": true,
+      "productContracts": {
+        "passed": 30,
+        "failed": 1,
+        "actualElectronHostModesPassed": 2
+      },
+      "wantedAndInstalledVersionsMatchBeforeRemoval": true,
+      "log": {
+        "path": "/tmp/youdub-windows-82abf8c3.log",
+        "sha256": "ba9426150375744f80e81576073f2016f13de548719bbceaa50b31b9618e568f"
+      }
     }
   ],
   "corrections": {
@@ -106,11 +123,18 @@
       "actualHostModes": 2,
       "ciEnvironment": true,
       "log": "/tmp/youdub-profile-two-phase-local.log"
+    },
+    "failureDiagnostics": {
+      "profileTestsPassed": 8,
+      "log": {
+        "path": "/tmp/youdub-profile-diagnostics-local.log",
+        "sha256": "cc69af893396a77a21b8c5410706c7e8053cbccf3c813e3720171e0ff6ecf208"
+      }
     }
   },
   "nextRun": {
     "status": "pending push",
-    "purpose": "Verify the wanted-lock then installed-lock migration on Windows, including both stale states and actual SDK destination after remove."
+    "purpose": "Capture fixture-only manifests, locks and link targets immediately before and after the failing removal. Existing assertions remain unchanged."
   },
   "limitations": [
     "The full Windows job is not yet green.",

@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。当前记录包含第 22 批裁剪及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。合并后的最终候选尚待验收。
+更新：2026-10-23。当前记录包含第 23 批裁剪及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。合并后的最终候选尚待验收。
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -15,9 +15,9 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 247 包、5,921 个文件；合并后的源码 SHA-256 为 `ebcd7c1454ad5f93dfdf48e4560c23c13f1c15eee9f56480fea6e7602082fc7d`。旧 base/headless 组合已删除，Office、Agent 工具及其生成器仍需逐项处理。此前依赖闭包审计用于保留范围判断，本批隔离候选已通过实际 Host 与组合检查。[第 22 批证据](evidence/refactor-leaf-products-prune.json)、[第 21 批证据](evidence/refactor-retired-products-prune.json)、[此前依赖审计](evidence/refactor-framework-dependency-audit-20261022.json)
+当前活动框架为 211 包、5,261 个文件；源码 SHA-256 为 `c44010910e6f64a10de20083b2217a9d661d3cbb1f22b3c992b7cdf9425270f5`。第 23 批移除闭包外的 36 个旧产品包及专属生成器；原 Tools 类型数据直接复制为保留测试的 fixture。运行时和类型闭包仍为 141 包，含保留包测试的闭包为 203 包。其余 8 包属于通用生成、HMR/日志和平台原生依赖；它们的保留理由继续纳入收尾审计。[第 23 批证据](evidence/refactor-remaining-products-prune.json)、[第 22 批证据](evidence/refactor-leaf-products-prune.json)
 
-源码构建的 243 个客户端产物包含可选框架库，不等于产品加载了 243 个插件。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
+源码构建的 235 个客户端产物包含可选框架库，不等于产品加载了 243 个插件。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 
 ## 功能验收矩阵
 
@@ -44,11 +44,11 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | Vox 预设音色、设备与其他输入组合 |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；任务原件保留，profile 迁移有测试。[profile 测试](../test/profile.test.mjs)、[Host](../src/host.mjs) | 最新私有路径和历史数据副本的整体验收 |
-| A20 构建与平台 | macOS 干净 CI 持续执行；2a275a64 的 macOS job 已通过，GUI 8,746 项；整个 run 因 Windows SDK 回退失败；Windows 构建、桌面进程和实际 Host 已通过；卸载后的 SDK 回退已在本机修复，待远程确认。[CI 失败与修正](evidence/refactor-pruned-notices.json) | 最新干净 CI、Windows 源码与原生验收 |
+| A20 构建与平台 | macOS 干净 CI 持续执行；2a275a64 的 macOS job 已通过，GUI 8,746 项；整个 run 因 Windows SDK 回退失败；Windows 构建、桌面进程和实际 Host 已通过；卸载后的 SDK 回退仅在本机通过；82abf8c3 的 Windows 仍失败，正在采集卸载前后锁与链接证据。[CI 失败与修正](evidence/refactor-pruned-notices.json) | 最新干净 CI、Windows 源码与原生验收 |
 
 ## 尚需实施的收尾
 
-1. 清理仍留在活动源码中的Office、Agent 工具等产品模块及遗留文档/构建门禁；先迁移生成器和通用测试消费者，保留 Harness 通用框架与许可。
+1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退仍需定位并验证修复。
 2. 收拢并行界面、资源及媒体拖动改动，形成固定候选，完成上表未通过的真实操作和输入验收。
 3. 补齐启动性能/体积的条件化记录、私有路径与历史数据兼容，以及 Windows 验收。
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。

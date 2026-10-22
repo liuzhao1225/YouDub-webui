@@ -1,5 +1,5 @@
 ---
-description: "Durable goal state with explicit tools and command consumers."
+description: "Durable goal state service."
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The goal group retains durable objective state, model tools and a human command for explicit Agent compositions. A session has one current goal. The former automatic round driver has been retired.
+The goal group retains the durable goal state service for explicit framework consumers. The state belongs to its session and follows the existing persistence contract.
 
 ## Table of Contents
 
@@ -24,8 +24,6 @@ The goal group retains durable objective state, model tools and a human command 
 | Package | Role | ctx key |
 |---|---|---|
 | [`goal`](goal/README.md) | One durable goal per session: create, edit, pause, resume, complete, block, and clear | `ctx.goals` |
-| [`tool-goal`](tool-goal/README.md) | Model tools `get_goal`, `create_goal`, `update_goal` | registers on `ctx.tools` |
-| [`command-goal`](command-goal/README.md) | Human `/goal` command in UI command planes | registers on `ctx.commands` |
 
 -----
 

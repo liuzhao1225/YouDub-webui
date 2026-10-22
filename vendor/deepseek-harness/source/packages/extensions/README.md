@@ -1,5 +1,5 @@
 ---
-description: "Runtime API inspection and process-local Host and Client runners."
+description: "Process-local Host extension execution and inspection."
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The extensions group retains runtime API inspection and process-local Host and Client runners. Persistent plugin installation remains owned by Plugin Manager.
+The extensions group retains the Host definition registry, extension lifecycle and inspection service used by framework consumers. Persistent plugin installation belongs to Plugin Manager.
 
 ## Table of Contents
 
@@ -24,9 +24,7 @@ The extensions group retains runtime API inspection and process-local Host and C
 
 | Package | Role | ctx key |
 |---|---|---|
-| [`tool-cordis`](tool-cordis/README.md) | Two read-only tools for runtime API discovery | registers on `ctx.tools` |
 | [`cordis-host-runner`](cordis-host-runner/README.md) | Host half: definition registry, sandboxed host-half lifecycle, and the inspect registry that answers browser queries | provides `ctx.dynamicCordisRunner` and `ctx.cordisInspect` |
-| [`cordis-client-runner`](cordis-client-runner/README.md) | Browser half: evaluates a browser-half source into a live plugin and answers run requests | client face; provides browser `ctx.dynamicCordisRunner` |
 
 -----
 

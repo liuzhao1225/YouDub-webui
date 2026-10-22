@@ -1597,36 +1597,6 @@
       "source": "packages/subagent/subagent/src/types.ts"
     },
     {
-      "doc": "docs/subsystems/web.md",
-      "symbol": "WebSearchRequest",
-      "source": "packages/web/web/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/web.md",
-      "symbol": "WebSearchResult",
-      "source": "packages/web/web/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/web.md",
-      "symbol": "WebSearchSource",
-      "source": "packages/web/web/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/web.md",
-      "symbol": "WebFetchRequest",
-      "source": "packages/web/web/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/web.md",
-      "symbol": "WebFetchResult",
-      "source": "packages/web/web/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/web.md",
-      "symbol": "WebFetchBody",
-      "source": "packages/web/web/src/types.ts"
-    },
-    {
       "doc": "docs/subsystems/spill.md",
       "symbol": "SaveTextSpill",
       "source": "packages/spill/spill/src/types.ts"
@@ -1650,26 +1620,6 @@
       "doc": "docs/subsystems/spill.md",
       "symbol": "SpillLocator",
       "source": "packages/spill/spill/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/workflow.md",
-      "symbol": "WorkflowStartRequest",
-      "source": "packages/workflow/workflow/src/runtime-types.ts"
-    },
-    {
-      "doc": "docs/subsystems/workflow.md",
-      "symbol": "WorkflowMeta",
-      "source": "packages/workflow/workflow/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/workflow.md",
-      "symbol": "WorkflowResult",
-      "source": "packages/workflow/workflow/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/workflow.md",
-      "symbol": "WorkflowRun",
-      "source": "packages/workflow/workflow/src/runtime-types.ts"
     },
     {
       "doc": "docs/subsystems/persistence.md",
@@ -2265,36 +2215,6 @@
       "doc": "docs/subsystems/mcp.md",
       "symbol": "McpResourceProvider",
       "source": "packages/mcp/mcp-resources/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/deliverables.md",
-      "symbol": "PresentedFile",
-      "source": "packages/deliverables/tool-present/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/deliverables.md",
-      "symbol": "WorkspaceChangedFile",
-      "source": "packages/deliverables/workspace-changes/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/deliverables.md",
-      "symbol": "WorkspaceChangesSummary",
-      "source": "packages/deliverables/workspace-changes/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/deliverables.md",
-      "symbol": "WorkspaceDiffHunk",
-      "source": "packages/deliverables/workspace-changes/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/deliverables.md",
-      "symbol": "WorkspaceFileDiff",
-      "source": "packages/deliverables/workspace-changes/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/deliverables.md",
-      "symbol": "WorkspaceChanges",
-      "source": "packages/deliverables/workspace-changes/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",

@@ -17,11 +17,6 @@ import { collectRuntimeLocalSourceSpecifiers, collectRuntimeSourceSpecifiers } f
 
 const PROFILE_SOURCE = 'packages/boot/app-boot/src/profile.ts'
 const ON_DEMAND_SOURCE = 'packages/boot/app-boot/src/official-bundle-packages.ts'
-const PICKER_SOURCE = 'packages/host/directory-picker-auto/src/index.ts'
-const DYNAMIC_MOUNTS: Readonly<Record<string, readonly string[]>> = {
-  [PICKER_SOURCE]: ['BACKEND_PACKAGES', 'SURFACE_PACKAGES'],
-}
-
 interface Package {
   directory: string
   name: string
@@ -136,14 +131,7 @@ export function verifyProductUse(
       ts.forEachChild(node, visit)
     }
     visit(file)
-    for (const declaration of DYNAMIC_MOUNTS[display(path)] ?? []) {
-      const value = literalDeclaration(file, declaration)
-      if (!isRecord(value) || Object.keys(value).length === 0 || !Object.values(value).every(item => typeof item === 'string')) {
-        failures.push(`${display(path)}: dynamic mount ${declaration} must declare literal package targets`)
-        continue
-      }
-      for (const target of Object.values(value)) if (typeof target === 'string') mount(target, path, reach)
-    }
+
   }
   const reference = (specifier: string, from: string, reach: Reachability): void => {
     if (specifier.startsWith('cordis:')) return

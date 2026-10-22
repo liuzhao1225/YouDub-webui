@@ -3,20 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/host/README.md
 /:
-  en: 4f630bd7e644e888
-  zh: 9e3f551bd246b886
+  en: 21d798c8c17d8cd9
+  zh: 86b8ba60d428b958
 /host-web-gui-host-half:
   en: dfb700c867632d7f
   zh: 8afebea57ae7845a
 /host-web-gui-host-half/summary:
-  en: cad9ca57abce652b
-  zh: bd5ebe465ee70abf
+  en: bfef22ed6d152909
+  zh: 975a58ce28354174
 /host-web-gui-host-half/table-of-contents:
   en: 1eb35b015a6c423f
   zh: a8a3dceee2c9e943
 /host-web-gui-host-half/packages:
-  en: 220c75314ed112e8
-  zh: cda7aac482f031d7
+  en: e4f3f5c50c211bd2
+  zh: 571beb6ce0c7a4a9
 /host-web-gui-host-half/related-documentation:
   en: 95b99ba7c5a4e958
   zh: b1070e510f8c3289

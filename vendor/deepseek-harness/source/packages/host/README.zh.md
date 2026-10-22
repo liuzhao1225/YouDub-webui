@@ -1,5 +1,5 @@
 ---
-description: "HTTP 服务、前端文件分发、目录选择和插件清单服务。"
+description: "HTTP 服务、前端分发与插件清单。"
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-group"
 
 ## 概述
 
-host 组保留 HTTP(S) 服务、前端文件分发、目录选择和只读插件清单。产品通过自己的 profile 组合这些服务；浏览器传输层位于 client 组。
+host 组保留 HTTP(S) 服务、构建后的前端分发与只读插件清单。YouDub 显式选择 Host 服务；原生文件对话框由 Desktop preload 桥提供。
 
 ## 目录
 
@@ -29,9 +29,6 @@ host 组保留 HTTP(S) 服务、前端文件分发、目录选择和只读插件
 | [`webserver/`](webserver/README.zh.md) | 浏览器 HTTP 服务器：具名路由、upgrade、index 转换与回退席位 | `ctx.webServer` |
 | [`frontend-static/`](frontend-static/README.zh.md) | 占据 webserver 回退席位的 SPA dist 服务器 | 消费 `ctx.webServer` |
 | [`directory-picker/`](directory-picker/README.zh.md) | 工作区目录选择 seam：能力约定与错误词汇 | `ctx.directoryPicker` |
-| [`directory-picker-native/`](directory-picker-native/README.zh.md) | 面向宿主屏幕前操作者的原生 OS 选择器后端 | 注册 `ctx.directoryPicker` |
-| [`directory-picker-browse/`](directory-picker-browse/README.zh.md) | 应用内目录浏览器后端，也服务于远程客户端 | 注册 `ctx.directoryPicker` |
-| [`directory-picker-auto/`](directory-picker-auto/README.zh.md) | 在启动时挂载匹配后端的宿主自适应选择器 | 挂载一个后端 |
 | [`plugin-inventory/`](plugin-inventory/README.zh.md) | 当前 Loader 条目的只读投影 | Remote `pluginInventory/list` |
 | [`product-telemetry-otel/`](product-telemetry-otel/README.zh.md) | 通过 OTLP/HTTP 显式上报产品使用事件 | `ctx.productTelemetry` |
 

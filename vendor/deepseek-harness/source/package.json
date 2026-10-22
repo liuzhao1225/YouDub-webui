@@ -17,7 +17,6 @@
     "website"
   ],
   "scripts": {
-    "prepare:primary-runtime": "tsx scripts/primary-runtime/prepare.ts",
     "build": "tsx scripts/build.ts",
     "build:artifacts": "tsx scripts/build.ts --scope artifacts",
     "build:check": "tsx scripts/build.ts --scope check",
@@ -52,7 +51,6 @@
     "test:snapshot": "vitest run --config vitest.snapshot.config.ts",
     "test:snapshot:record": "DSH_SNAPSHOT=record vitest run --config vitest.snapshot.config.ts --update",
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
-    "migrate:packed-session-fixtures": "tsx scripts/migrate-packed-session-fixtures.ts",
     "migrate:sessions-to-v4": "tsx scripts/migrate-sessions-to-v4.ts",
     "benchmark:npm-resolution": "tsx scripts/benchmark-npm-resolution.ts",
     "benchmark:npm-resolution:next": "tsx scripts/benchmark-next-package-dependency.ts",
@@ -134,15 +132,7 @@
     "verify-cordis-catalog": "tsx scripts/gen-cordis-catalog.ts --check",
     "gen-cordis-api": "tsx scripts/gen-cordis-api.ts",
     "verify-cordis-api": "tsx scripts/gen-cordis-api.ts --check",
-    "gen-client-catalog": "tsx scripts/gen-client-catalog.ts",
-    "gen-cordis-inspect-catalog": "tsx scripts/gen-cordis-inspect-catalog.ts",
-    "verify-cordis-inspect-catalog": "tsx scripts/gen-cordis-inspect-catalog.ts --check",
-    "verify-client-catalog": "tsx scripts/gen-client-catalog.ts --check",
     "verify-export-jsdoc": "tsx scripts/verify-export-jsdoc.ts",
-    "gen-tool-catalog": "tsx scripts/gen-tool-catalog.ts",
-    "gen-workflow-guest": "tsx scripts/gen-workflow-guest.ts",
-    "verify-workflow-guest": "tsx scripts/gen-workflow-guest.ts --check",
-    "verify-tool-catalog": "tsx scripts/gen-tool-catalog.ts --check",
     "gen-config-catalog": "tsx scripts/gen-config-catalog.ts",
     "verify-config-catalog": "tsx scripts/gen-config-catalog.ts --check",
     "gen-plugin-packages": "tsx scripts/gen-plugin-packages.ts",
@@ -185,10 +175,8 @@
   "devDependencies": {
     "@deepseek-ai/dsh-tool-terminal": "workspace:*",
     "@deepseek-ai/dsh-agent": "workspace:*",
-    "@deepseek-ai/dsh-llm-replay": "workspace:*",
     "@deepseek-ai/dsh-mcp-client": "workspace:*",
     "@deepseek-ai/dsh-tool-session-query": "workspace:*",
-    "@deepseek-ai/dsh-web-fetch-http": "workspace:*",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
@@ -234,8 +222,6 @@
     "vite": "8.2.2",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.11",
-    "@deepseek-ai/dsh-skill-office": "workspace:*",
-    "@deepseek-ai/dsh-tool-workspace-dependencies": "workspace:*",
     "@deepseek-ai/dsh-tool-working-directory": "workspace:*",
     "@deepseek-ai/dsh-working-directory": "workspace:*"
   }

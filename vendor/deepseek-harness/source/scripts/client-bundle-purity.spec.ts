@@ -512,15 +512,15 @@ describe('client bundle debug artifacts', () => {
     expect(resolved.pathname).toBe('/packages/client/ui-goal/src/client/GoalBar.tsx')
   })
 
-  it('maps dual-face host sources to the host package group', () => {
-    const configs = clientConfigs(packageDir('host/directory-picker-native'))
+  it('maps dual-face API sources to the API package group', () => {
+    const configs = clientConfigs(packageDir('api/gateway'))
     const outputOptions = configs[0]?.outputOptions
     if (typeof outputOptions !== 'object' || outputOptions === null) throw new Error('client output options missing')
     const transform = outputOptions.sourcemapPathTransform
     if (transform === undefined) throw new Error('client sourcemap path transform missing')
 
-    const source = transform('../src/client/index.ts', clientSourceMapPath('host/directory-picker-native'))
-    expect(source).toBe('../../../packages/host/directory-picker-native/src/client/index.ts')
+    const source = transform('../src/client/index.ts', clientSourceMapPath('api/gateway'))
+    expect(source).toBe('../../../packages/api/gateway/src/client/index.ts')
   })
 
   it('maps inlined workspace sources to packages and leaves dependencies outside it unchanged', () => {

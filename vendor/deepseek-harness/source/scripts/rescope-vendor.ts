@@ -10,7 +10,7 @@
  * scalar. A match needs a quote (or `name: `) immediately left and the matching
  * quote — optionally after a `/subpath` — immediately right, which excludes
  * `cordis.yml`, the Loader's `cordis:` builtin prefix, `cordis-config-entry`,
- * `@deepseek-ai/dsh-tool-cordis`, and `cordiverse/cordis`, and makes the
+ * `cordiverse/cordis`, and makes the
  * rewrite idempotent because the scoped name's `cordis` is preceded by `/`.
  * Markdown follows the rename inside every fence, and in `docs/` prose too:
  * a tutorial that teaches an unresolvable name is wrong, while prose elsewhere
@@ -104,18 +104,12 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'docs/subsystems/extensions.md', upstream: ['cordis'] },
   { file: 'docs/subsystems/extensions.zh.md', upstream: ['cordis'] },
   { file: 'packages/api/remotes/src/remote-events.ts', upstream: ['cordis'] },
-  { file: 'packages/extensions/cordis-client-runner/src/client/index.ts', upstream: ['cordis'] },
-  { file: 'packages/extensions/cordis-client-runner/src/client/runtime.ts', upstream: ['cordis'] },
-  { file: 'packages/extensions/cordis-client-runner/tests/orchestrator.client.spec.ts', upstream: ['cordis'] },
-  { file: 'packages/extensions/cordis-client-runner/tests/plugin.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/src/index.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/src/inspect-registry.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/src/types.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/tests/helpers.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/tests/runner.spec.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/tests/versioning.spec.ts', upstream: ['cordis'] },
-  { file: 'packages/extensions/tool-cordis/src/api-catalog.ts', upstream: ['cordis'] },
-  { file: 'packages/extensions/tool-cordis/src/providers.ts', upstream: ['cordis'] },
   // `cordis/tree` is an Inspector observation topic, not a package subpath.
   { file: 'scripts/gen-cordis-catalog.ts', upstream: ['cordis'] },
   // The UI locale namespace and input-trigger source id are product keys.

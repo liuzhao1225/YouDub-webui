@@ -1,5 +1,5 @@
 ---
-description: "运行时 API 检查，以及进程内的 Host 和 Client 执行服务。"
+description: "进程内 Host 扩展执行与检查。"
 kind: "package-group"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-group"
 
 ## 概述
 
-extensions 组保留运行时 API 检查及进程内的 Host、Client 执行服务。持久插件安装由 Plugin Manager 负责。
+extensions 组保留框架使用方依赖的 Host 定义注册、扩展生命周期和检查服务。持久插件安装由 Plugin Manager 负责。
 
 ## 目录
 
@@ -24,9 +24,7 @@ extensions 组保留运行时 API 检查及进程内的 Host、Client 执行服�
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
-| [`tool-cordis`](tool-cordis/README.zh.md) | 两个只读运行时 API 发现工具 | 注册到 `ctx.tools` |
 | [`cordis-host-runner`](cordis-host-runner/README.zh.md) | host 半：定义注册表、沙箱化的 host 半生命周期，以及用于应答浏览器查询的 inspect 注册表 | 提供 `ctx.dynamicCordisRunner` 与 `ctx.cordisInspect` |
-| [`cordis-client-runner`](cordis-client-runner/README.zh.md) | 浏览器半：将浏览器半源码求值为运行中的插件，并应答运行请求 | client 面；提供浏览器侧 `ctx.dynamicCordisRunner` |
 
 -----
 

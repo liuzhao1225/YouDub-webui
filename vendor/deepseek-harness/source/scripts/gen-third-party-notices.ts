@@ -549,9 +549,9 @@ External packages **directly declared** for development, tests, types, or toolin
 
 ${renderNpmTable(devDeps)}
 ${renderNonPermissiveNote(nonPermissiveDev)}
-## Bundled Python distributions
+## Archived upstream Python distributions
 
-The [shared runtime lock](scripts/primary-runtime/lock.json) records each distribution version and the wheel download hashes. The table includes every entry in \`pythonPackages\`, including transitive dependencies. Wheel extraction preserves distribution metadata and the license and notice files supplied by each archive. Project licenses below do not enumerate the separate licenses of native libraries bundled inside wheels.
+The archived [upstream runtime lock](scripts/primary-runtime/lock.json) records each distribution version and the wheel download hashes. The table preserves every historical \`pythonPackages\` entry, including transitive dependencies. YouDub prepares its own private media runtime. Wheel extraction preserves distribution metadata and the license and notice files supplied by each archive. Project licenses below do not enumerate the separate licenses of native libraries bundled inside wheels.
 
 | Distribution | Locked version | Project license |
 | --- | --- | --- |

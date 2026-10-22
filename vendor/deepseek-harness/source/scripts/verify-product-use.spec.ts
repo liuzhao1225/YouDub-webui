@@ -258,19 +258,6 @@ describe('product package use', () => {
     expect(failures(root)).toBe('')
   })
 
-  it('follows explicit directory-picker dynamic mounts and their client face', () => {
-    const root = fixture()
-    const picker = '@deepseek-ai/dsh-host-directory-picker-auto'
-    pkg(root, 'packages/host/directory-picker-auto', picker)
-    pkg(root, candidateDir, candidate, { dsh: { client: { platform: 'web' } } })
-    pkg(root, 'packages/client/indirect', '@deepseek-ai/dsh-client-indirect')
-    write(root, `${candidateDir}/src/client.ts`, "import '@deepseek-ai/dsh-client-indirect'")
-    write(root, 'packages/host/directory-picker-auto/src/index.ts',
-      `export const BACKEND_PACKAGES = { native: '${candidate}' }\nexport const SURFACE_PACKAGES = { native: '${candidate}' }\n`)
-    write(root, patch, [{ insert: [{ name: core }, { name: picker }] }])
-    expect(failures(root)).toBe('')
-  })
-
   it('accepts declaration-only infrastructure and rejects missing or miscategorized policy entries', () => {
     const root = fixture()
     const directory = 'packages/util/package-manifest'

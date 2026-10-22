@@ -3,20 +3,20 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/client/README.md
 /:
-  en: 8d88d189ae9b47b5
-  zh: c228c9f1732419ad
+  en: 0751839e0e3e407b
+  zh: 0c112934646ff091
 /client-web-gui-browser-half:
   en: 0b0e5d73f258a814
   zh: 5705a9605c112c44
 /client-web-gui-browser-half/summary:
-  en: 43e9fd5c8fbcb676
-  zh: 52076d2e78c5d4c1
+  en: c113b6980c7668ef
+  zh: 5493766b3bf1b66f
 /client-web-gui-browser-half/table-of-contents:
   en: 1eb35b015a6c423f
   zh: a8a3dceee2c9e943
 /client-web-gui-browser-half/packages:
-  en: 62af5a4bdb2e48e7
-  zh: d30d120e43e1ff30
+  en: e77e2bfd2f4cecc7
+  zh: ccb436760a43e65d
 /client-web-gui-browser-half/related-documentation:
   en: 74ff34905d2126e9
   zh: 45ecf2d3a6b0ed46
