@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-10-22T18:20:02.464Z",
+  "recordedAt": "2026-10-22T18:56:33.877Z",
   "scope": "Windows 2025 source build and actual Host contracts; no installer or native GUI claim.",
   "runs": [
     {
@@ -141,6 +141,25 @@
         "path": "/tmp/youdub-windows-4313ec5e-attempt2.log",
         "sha256": "758d7727a16513b17623d947563267056b997dae6d54d2c555a000fbb8f7a213"
       }
+    },
+    {
+      "commit": "230bce531a6581b4b3c6d4969df83d9b43c817e7",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39834484129/job/120019057430",
+      "result": "Four cwd expectation failures; no actual SDK verification ran.",
+      "sourceAndProductBuildPassed": true,
+      "desktopAndProcessTests": {
+        "filesPassed": 42,
+        "filesFailed": 1,
+        "filesSkipped": 3,
+        "testsPassed": 563,
+        "testsFailed": 4,
+        "testsSkipped": 27
+      },
+      "cause": "Four new cwd assertions used non-native realpathSync, preserving RUNNER~1. Actual process cwd correctly expands runneradmin; use realpathSync.native for the expected canonical path.",
+      "log": {
+        "path": "/tmp/youdub-windows-230bce53.log",
+        "sha256": "a41f1a2ac1574fe1aaca8f9298a1b1a622f293a38c10cad86229ea8108376617"
+      }
     }
   ],
   "corrections": {
@@ -191,7 +210,7 @@
     }
   },
   "nextRun": {
-    "status": "pending canonical-working-directory fix push",
+    "status": "pending native cwd assertion correction push",
     "purpose": "Validate the root-cause fix and legacy duplicate-importer migration on Windows; retain the original timeout and SDK failures."
   },
   "limitations": [

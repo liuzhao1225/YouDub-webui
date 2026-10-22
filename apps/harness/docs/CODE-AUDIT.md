@@ -15,7 +15,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 211 包、5,261 个文件；修复包管理器工作目录后的源码 SHA-256 为 `e8a7534fee72d880639921790e143673550a1f114dfc7e53edcf4a57f99a1a16`。第 23 批移除闭包外的 36 个旧产品包及专属生成器；原 Tools 类型数据直接复制为保留测试的 fixture。运行时和类型闭包仍为 141 包，含保留包测试的闭包为 203 包。其余 8 包属于通用生成、HMR/日志和平台原生依赖；它们的保留理由继续纳入收尾审计。[工作目录修复](evidence/refactor-profile-canonical-path.json)、[第 23 批证据](evidence/refactor-remaining-products-prune.json)
+当前活动框架为 211 包、5,261 个文件；修复包管理器工作目录后的源码 SHA-256 为 `861aad977d13985df8c3175545a0b3db5bacd977e405db751e16588f39c6a7e4`。第 23 批移除闭包外的 36 个旧产品包及专属生成器；原 Tools 类型数据直接复制为保留测试的 fixture。运行时和类型闭包仍为 141 包，含保留包测试的闭包为 203 包。其余 8 包属于通用生成、HMR/日志和平台原生依赖；它们的保留理由继续纳入收尾审计。[工作目录修复](evidence/refactor-profile-canonical-path.json)、[第 23 批证据](evidence/refactor-remaining-products-prune.json)
 
 源码构建的 235 个客户端产物包含可选框架库，不能用于推算产品实际加载的插件数。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 

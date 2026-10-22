@@ -73,11 +73,54 @@
     }
   },
   "ci": {
-    "status": "pending push"
+    "commit": "230bce531a6581b4b3c6d4969df83d9b43c817e7",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39834484129",
+    "windows": {
+      "status": "failed",
+      "job": 120019057430,
+      "passed": 563,
+      "failed": 4,
+      "skipped": 27,
+      "filesPassed": 42,
+      "filesFailed": 1,
+      "filesSkipped": 3,
+      "actualSdkStep": "not run",
+      "cause": "Four new cwd assertions used non-native realpathSync, preserving RUNNER~1. Actual process cwd correctly expands runneradmin; use realpathSync.native for the expected canonical path.",
+      "log": {
+        "path": "/tmp/youdub-windows-230bce53.log",
+        "sha256": "a41f1a2ac1574fe1aaca8f9298a1b1a622f293a38c10cad86229ea8108376617"
+      }
+    },
+    "macOS": {
+      "status": "in progress"
+    }
   },
   "limits": [
     "Windows fix not yet confirmed on the runner.",
     "First Windows 5-second desktop filesystem timeout did not recur on the same-commit rerun; its underlying cause is not established.",
     "Native UI remains blocked by the locked Mac; no installer or release was produced."
-  ]
+  ],
+  "assertionFollowup": {
+    "sourceSha256": "861aad977d13985df8c3175545a0b3db5bacd977e405db751e16588f39c6a7e4",
+    "scope": "Tests only: use native realpath and restrict failure diagnostics to arguments/cwd, omitting process environment.",
+    "local": {
+      "packageOperations": {
+        "passed": 79,
+        "files": 2,
+        "log": {
+          "path": "/tmp/youdub-native-cwd-tests.log",
+          "sha256": "deda681cd042e3bec646df4e3fb5afd108cf73ad6bff9fcc60d1ea7e445938c5"
+        }
+      },
+      "framework": {
+        "gates": 7,
+        "seconds": 21,
+        "log": {
+          "path": "/tmp/youdub-native-cwd-build.log",
+          "sha256": "d641c63fcd0c8050ff0be962bb1be83cd9c6247073be0afa8c16a0f6988b4866"
+        }
+      }
+    },
+    "ci": "pending push"
+  }
 }

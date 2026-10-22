@@ -15628,10 +15628,10 @@
         "path": "packages/boot/plugin-manager/tests/operations.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 52810,
-        "sha256": "ba8dea420251f89158c610f52cd46adbc8e6d684b6152f2cafd93f1161cacbef"
+        "size": 52924,
+        "sha256": "5e0b12969d939cc68ce367d03105c4b218344420391cdf250d1820ba5e2e6e62"
       },
-      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation."
+      "reason": "Canonicalize the pnpm child working directory so Windows short names and directory links identify one profile importer; preserve caller-relative package arguments, locks, diagnostics and dependency assertions. Include a failing-before/passing-after alias regression and paired implementation documentation. Use the native realpath API for Windows 8.3 canonical cwd assertions and report only command arguments and cwd on failure."
     },
     {
       "path": "packages/boot/plugin-manager/tests/tools.spec.ts",

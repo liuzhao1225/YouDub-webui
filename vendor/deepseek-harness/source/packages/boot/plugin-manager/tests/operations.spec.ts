@@ -578,7 +578,8 @@ it.each([runPluginCommand, runProfilePnpm])('installs into the supplied applicat
   pnpm.mutate = (target) => { install(target, 'extra') }
   const outcome = await run({ ...context, dir }, ['add', 'extra'], { execution: 'service', outputBytes: 100 })
   expect(outcome.exitCode).toBe(0)
-  expect(command.run).toHaveBeenCalledWith(expect.anything(), ['add', 'extra'], expect.objectContaining({ cwd: realpathSync(dir) }))
+  expect(command.run.mock.calls.map(([, args, options]) => ({ args, cwd: (options as { cwd: string }).cwd })))
+    .toContainEqual({ args: ['add', 'extra'], cwd: realpathSync.native(dir) })
   expect(readProfileManifest('test', dir).dsh?.profile?.bundles).toEqual(['extra'])
   expect(readProfileManifest('test', namedDir).dependencies).not.toHaveProperty('extra')
   expect(readProfileManifest('test', namedDir).dsh?.profile?.bundles).toEqual([])
@@ -593,7 +594,8 @@ it.each([runPluginCommand, runProfilePnpm])('uses one canonical profile director
   const outcome = await run({ ...context, dir: alias }, ['add', 'extra'], { execution: 'service', outputBytes: 100 })
 
   expect(outcome.exitCode).toBe(0)
-  expect(command.run).toHaveBeenCalledWith(expect.anything(), ['add', 'extra'], expect.objectContaining({ cwd: realpathSync(dir) }))
+  expect(command.run.mock.calls.map(([, args, options]) => ({ args, cwd: (options as { cwd: string }).cwd })))
+    .toContainEqual({ args: ['add', 'extra'], cwd: realpathSync.native(dir) })
   expect(readProfileManifest('test', alias).dependencies).toEqual({ extra: '1' })
 })
 
