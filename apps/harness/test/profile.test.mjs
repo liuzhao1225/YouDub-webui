@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { copyFile, mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { prepareYouDubProfile } from '../prepare-profile.mjs';
@@ -75,7 +75,7 @@ test('profile restart preserves an appended plugin bundle, dependency and user p
 test('profile helpers require the explicit runtime app-boot without falling back to launcher dependencies', async t => {
   const { profile, plugin, runtime } = await temporaryProfile(t);
   await rm(join(runtime, 'node_modules/@deepseek-ai/dsh-app-boot'));
-  const missingRuntimeModule = error => error.code === 'MODULE_NOT_FOUND' && error.message.includes('@deepseek-ai/dsh-app-boot');
+  const missingRuntimeModule = error => error.code === 'MODULE_NOT_FOUND' && error.message.split(sep).join('/').includes('@deepseek-ai/dsh-app-boot');
   await assert.rejects(prepareYouDubProfile(profile, plugin, runtime, packageManager), missingRuntimeModule);
   await assert.rejects(assertYouDubProfile(profile, join(runtime, 'package.json')), missingRuntimeModule);
 });
@@ -165,12 +165,12 @@ test('official package removal keeps the source SDK after migrating a stale depe
   await operation(['add', oldPlugin, fixture, '--offline']);
   assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(oldPlugin));
   await prepareYouDubProfile(profile, plugin, runtime, packageManager);
-  assert.equal((await readManifest(profile)).dependencies[fixtureName], `link:${fixture}`);
+  assert.equal((await readManifest(profile)).dependencies[fixtureName].split(sep).join('/'), `link:${fixture.split(sep).join('/')}`);
   const { parse } = sourceRequire('yaml');
   const lock = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8'));
-  assert.equal(lock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier, `link:${plugin}`);
+  assert.equal(lock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier.split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
   await operation(['remove', fixtureName, '--config.offline=true']);
   assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(plugin));
-  assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'], `link:${plugin}`);
+  assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'].split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
   assert.equal((await readManifest(profile)).dependencies[fixtureName], undefined);
 });

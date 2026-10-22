@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T17:00:44.146Z",
+  "scope": "Windows 2025 source build and actual Host contracts; no installer or native GUI claim.",
+  "runs": [
+    {
+      "commit": "8b8f6282588c11638c38e9495bacd1c176a49bb8",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39814903516",
+      "result": "failed source ledger verification",
+      "cause": "Windows readlink uses native backslashes; detailed follow-up 83beaa3b isolated one ACP link."
+    },
+    {
+      "commit": "fecdf9788a684bb70b9c70ff46f3e3e4fc83173e",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39817521035/job/119960164133",
+      "result": "failed two profile path assertions",
+      "sourceAndProductBuildPassed": true,
+      "sourceTests": {
+        "passed": 6,
+        "skipped": 1
+      },
+      "desktopAndProcessTests": {
+        "filesPassed": 41,
+        "filesSkipped": 3,
+        "testsPassed": 491,
+        "testsSkipped": 24
+      },
+      "productContracts": {
+        "passed": 28,
+        "failed": 2,
+        "actualElectronHostModesPassed": 2
+      },
+      "failures": [
+        "Missing app-boot was correctly rejected, but the assertion matched only POSIX package separators.",
+        "pnpm add wrote a portable link specifier, while the assertion expected native Windows backslashes."
+      ]
+    }
+  ],
+  "corrections": {
+    "production": "Source inventory and staging compare portable link targets; preserve file bytes, Git executable modes and POSIX backslashes.",
+    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions."
+  },
+  "local": {
+    "sourceTestsPassed": 7,
+    "profileTestsPassed": 7,
+    "profileLog": "/tmp/youdub-windows-profile-path-regression.log"
+  },
+  "nextRun": {
+    "status": "pending push"
+  },
+  "limitations": [
+    "The full Windows job is not yet green.",
+    "No interactive Windows native dialog or installed-app acceptance.",
+    "Final product candidate and media quality remain open."
+  ]
+}
