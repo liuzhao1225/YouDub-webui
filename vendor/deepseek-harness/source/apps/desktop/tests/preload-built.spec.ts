@@ -1,5 +1,5 @@
 /** Built preloads must execute with only Electron's sandbox-supported require. */
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it, vi } from 'vitest'
@@ -48,8 +48,8 @@ function browserEnvironment() {
   }
 }
 
-describe.skipIf(!existsSync(preload('preload-app')))('built sandboxed Desktop preloads', () => {
-  it.each(['preload-app', 'preload-welcome'])('%s loads without filesystem module access', async (name) => {
+describe('built sandboxed Desktop preloads', () => {
+  it.each(['preload-app'])('%s loads without filesystem module access', async (name) => {
     const exposed = new Map<string, Record<string, unknown>>()
     const invoke = vi.fn<(...args: unknown[]) => Promise<unknown>>(() => Promise.resolve({ languages: ['en-US'], preference: 'zh' }))
     const send = vi.fn()
@@ -64,7 +64,7 @@ describe.skipIf(!existsSync(preload('preload-app')))('built sandboxed Desktop pr
         if (id !== 'electron') throw new Error(`sandbox cannot load ${id}`)
         return electron
       },
-      process: { argv: ['electron', '--dsh-welcome-locale=en'], isMainFrame: true },
+      process: { argv: ['electron'], isMainFrame: true },
       location: new URL('dsh-app://app/'),
       exports: {},
     })
@@ -82,11 +82,7 @@ describe.skipIf(!existsSync(preload('preload-app')))('built sandboxed Desktop pr
       expect(invoke).toHaveBeenCalledWith('dsh-desktop:locale-bootstrap')
       bridge.onChange('zh')
       expect(send).toHaveBeenCalledWith('dsh-desktop:locale-changed', 'zh')
-    } else {
-      expect(exposed.has('dshWelcome')).toBe(true)
-      const bridge = exposed.get('dshWelcome') as { takeNotice(): Promise<unknown> }
-      void bridge.takeNotice()
-      expect(invoke).toHaveBeenCalledWith('dsh-welcome:take-notice')
+
     }
   })
 })

@@ -26,6 +26,7 @@ for (const entry of ['preload-app']) {
   await cp(join(compiled, 'apps/desktop/lib', entry + '.cjs'), join(output, 'lib', entry + '.cjs'));
 }
 for (const folder of ['renderer', 'resources', 'scripts/node-bin']) {
+  await rm(join(output, folder), { recursive: true, force: true });
   await cp(join(upstream, folder), join(output, folder), { recursive: true });
 }
 

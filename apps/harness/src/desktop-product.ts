@@ -18,7 +18,7 @@ import { claimDesktopSingleInstance } from '../../../vendor/deepseek-harness/sou
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from '../../../vendor/deepseek-harness/source/apps/desktop/src/web-document.ts'
 import { DesktopFatalRecovery } from '../../../vendor/deepseek-harness/source/apps/desktop/src/fatal-recovery.ts'
 import { pruneCrashReports, RendererConsoleTail, writeCrashReport, type CrashReportSource } from '../../../vendor/deepseek-harness/source/apps/desktop/src/crash-report.ts'
-import { connectDesktopWelcome, type DesktopWelcomeBackend } from '../../../vendor/deepseek-harness/source/apps/desktop/src/welcome-backend.ts'
+import { connectDesktopSettings, type DesktopSettingsBackend } from '../../../vendor/deepseek-harness/source/apps/desktop/src/desktop-settings.ts'
 import { readDesktopLoginShellEnvironment, resolveDesktopLoginShellConfig } from '../../../vendor/deepseek-harness/source/apps/desktop/src/login-shell-environment.ts'
 import { DesktopBrowserGuests } from '../../../vendor/deepseek-harness/source/apps/desktop/src/browser-guests.ts'
 import { installDesktopShortcuts } from '../../../vendor/deepseek-harness/source/apps/desktop/src/keyboard.ts'
@@ -212,7 +212,7 @@ async function main(): Promise<void> {
   let hostUrl: string | undefined
   let hostCookie: string | undefined
   let injections: readonly unknown[] = []
-  let metadata: DesktopWelcomeBackend | undefined
+  let metadata: DesktopSettingsBackend | undefined
   const systemLanguages = app.getPreferredSystemLanguages()
   let locale = resolveDesktopStartupLocale(null, systemLanguages)
   windowsLanguage = locale.id
@@ -236,8 +236,7 @@ async function main(): Promise<void> {
         if (ready.injections === undefined) throw new Error('Desktop Host did not provide boot injections')
         injections = ready.injections
         // Reuse the official authenticated metadata transport. Authentication never chooses the product entry page.
-        metadata = await connectDesktopWelcome(ready.url, (input, init) => net.fetch(input, init),
-          async () => (await session.defaultSession.cookies.get({ url: ready.url })).map(cookie => `${cookie.name}=${cookie.value}`).join('; '))
+        metadata = await connectDesktopSettings(ready.url, (input, init) => net.fetch(input, init))
         locale = resolveDesktopStartupLocale(await metadata.readLocalePreference(), systemLanguages)
         windowsLanguage = locale.id
       },
@@ -333,18 +332,6 @@ async function main(): Promise<void> {
     refreshApplicationMenu()
   })
   ipcMain.handle(DESKTOP_IPC.deviceInfo, event => { assertProductSender(event); return readDeviceInfo() })
-  ipcMain.handle(DESKTOP_IPC.onboardingApiKey, async event => {
-    assertProductSender(event); await startup
-    if (!metadata) throw new Error('Desktop metadata is unavailable')
-    return (await metadata.read()).hasApiKey
-  })
-  ipcMain.on(DESKTOP_IPC.onboardingActive, (event, active: unknown) => {
-    assertProductSender(event)
-    if (typeof active !== 'boolean') throw new Error('Invalid onboarding state')
-    const window = mainWindow!
-    window.setMinimumSize(active ? 960 : 520, 600)
-    if (active) { const { width, height } = window.getBounds(); if (width < 960) window.setSize(960, height) }
-  })
   // No YouDub release feed exists for this workspace development shell. Idle means no running update.
   ipcMain.handle(DESKTOP_IPC.updatesStatus, event => { assertProductSender(event); return { phase: 'idle' } })
   ipcMain.handle(DESKTOP_IPC.updatesOpen, async event => {

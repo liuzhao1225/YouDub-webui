@@ -258,6 +258,24 @@
       "reason": "移除 YouDub 不使用的 Office、平台账号和独立桌面 CLI 入口，保留真实 Host 与生命周期实现。"
     },
     {
+      "path": "apps/desktop/README.i18n.yaml",
+      "before": {
+        "path": "apps/desktop/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2709,
+        "sha256": "471071c227241153014f9963c7b39d826a364eb46e54dfe825851cae5a221d9c"
+      },
+      "after": {
+        "path": "apps/desktop/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 719,
+        "sha256": "c43406ee37c4ade71accea5432994d6a2f00a3e4113f136a851f202e638ec362"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
       "path": "apps/desktop/README.md",
       "before": {
         "path": "apps/desktop/README.md",
@@ -270,10 +288,10 @@
         "path": "apps/desktop/README.md",
         "type": "file",
         "executable": false,
-        "size": 79350,
-        "sha256": "6f3c57a97f6dd898c6f957ffd29f9ce0900214a945712d9dac0565c8360846b9"
+        "size": 2038,
+        "sha256": "7bf1a020ce5a5107006cd8d7bc3b462c3b155c9b8419b123fa21c531f5b833a6"
       },
-      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。 收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
     },
     {
       "path": "apps/desktop/README.zh.md",
@@ -288,10 +306,10 @@
         "path": "apps/desktop/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 70339,
-        "sha256": "348fc12e780ef05c58b712245e087947927f445f71a734a16d4bc4691d03c836"
+        "size": 1729,
+        "sha256": "b4740888ffe68de568038c134240be4059aaaff236d839d527c6df3ded69bafe"
       },
-      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
+      "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。 补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。 收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
     },
     {
       "path": "apps/desktop/cli/dsh",
@@ -304,6 +322,96 @@
       },
       "after": null,
       "reason": "移除旧桌面 CLI 入口及其产物要求和专属用例。"
+    },
+    {
+      "path": "apps/desktop/package.json",
+      "before": {
+        "path": "apps/desktop/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3904,
+        "sha256": "913095d3048ad424335acccf8e3193bb9523961604709062a430f57c4ac22479"
+      },
+      "after": {
+        "path": "apps/desktop/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3544,
+        "sha256": "1c192c3981d9126e0d1f33f4c5d7b82779ed6952a793a4e496591308ca88a8aa"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/renderer/assets/welcome-brand.svg",
+      "before": {
+        "path": "apps/desktop/renderer/assets/welcome-brand.svg",
+        "type": "file",
+        "executable": false,
+        "size": 15929,
+        "sha256": "182f040f9d3eccf25b20f5bbfc9d50a21296a88978b91b4dec7e64cbd16b4039"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/renderer/policy-login-loading.html",
+      "before": {
+        "path": "apps/desktop/renderer/policy-login-loading.html",
+        "type": "file",
+        "executable": false,
+        "size": 1734,
+        "sha256": "5129e856f96a21a29adfa96f393c98087c120cdd6f65ca0adaf7b17ae5b381f6"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/renderer/welcome.css",
+      "before": {
+        "path": "apps/desktop/renderer/welcome.css",
+        "type": "file",
+        "executable": false,
+        "size": 7425,
+        "sha256": "d625b4775d44f218105bebcadeeeee2d8f806eecbe6f2f4bbc6cfdd472cbf91c"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/renderer/welcome.html",
+      "before": {
+        "path": "apps/desktop/renderer/welcome.html",
+        "type": "file",
+        "executable": false,
+        "size": 645,
+        "sha256": "02a6b02c152e6bd93d079597151ddc1d45b6ee349cbe83690af779467fdc9813"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/scripts/dev.ts",
+      "before": {
+        "path": "apps/desktop/scripts/dev.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5971,
+        "sha256": "bb5a07605166252645995a8d3a79ce242cbff9a55c5695aa8e051513ba6184e5"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/scripts/development-app.ts",
+      "before": {
+        "path": "apps/desktop/scripts/development-app.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3819,
+        "sha256": "9c2c8fad9979baf099d14d2fa43476f0845ad8202c7fbbdffc50eecf0403b1ef"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
     },
     {
       "path": "apps/desktop/scripts/development-project.ts",
@@ -342,6 +450,54 @@
       "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
     },
     {
+      "path": "apps/desktop/src/account-backend.ts",
+      "before": {
+        "path": "apps/desktop/src/account-backend.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7837,
+        "sha256": "951d52ffc2189b907c044a15efe26ca0600f8467b193c90aef7e40dcf404bc61"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/client/WelcomePage.tsx",
+      "before": {
+        "path": "apps/desktop/src/client/WelcomePage.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 11146,
+        "sha256": "d3d2984f45c372e65672f2f40ffc27b1a923a8cd7dabe619ae6f4526d6d7fffc"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/client/styles.d.ts",
+      "before": {
+        "path": "apps/desktop/src/client/styles.d.ts",
+        "type": "file",
+        "executable": false,
+        "size": 86,
+        "sha256": "1795f07f6d1cb1ff6145481f29dc355373ba22c8f025203cefcebb9b4f4c78b1"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/client/welcome.tsx",
+      "before": {
+        "path": "apps/desktop/src/client/welcome.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 1146,
+        "sha256": "c3ba28426e1bd4d28c2f1d0d01adec13c4f2719427fd7d801e2e31e55936ab3a"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
       "path": "apps/desktop/src/core-package-set.ts",
       "before": {
         "path": "apps/desktop/src/core-package-set.ts",
@@ -360,6 +516,18 @@
       "reason": "移除旧桌面 CLI 入口及其产物要求和专属用例。"
     },
     {
+      "path": "apps/desktop/src/desktop-settings.ts",
+      "before": null,
+      "after": {
+        "path": "apps/desktop/src/desktop-settings.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2770,
+        "sha256": "e1e65eae51481750a6303852c0c83efb75c3e371366195cf97fd5ba04f0d5ea6"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
       "path": "apps/desktop/src/host-process.ts",
       "before": {
         "path": "apps/desktop/src/host-process.ts",
@@ -372,10 +540,28 @@
         "path": "apps/desktop/src/host-process.ts",
         "type": "file",
         "executable": false,
-        "size": 14566,
-        "sha256": "d19a74371c8fb2959dea9eb22a450d7ef425f52ad60465c0cda1e8a7d67b7665"
+        "size": 12636,
+        "sha256": "04ec3291a675859d6274066052d4ba2a4fdcb154e8c1063b3c58363163635b08"
       },
-      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test. 收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/src/ipc.ts",
+      "before": {
+        "path": "apps/desktop/src/ipc.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4429,
+        "sha256": "b7ee202112d7485c524741ffcfe257c5c4f6dca18281aa5ac01c4510b69c6a08"
+      },
+      "after": {
+        "path": "apps/desktop/src/ipc.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4273,
+        "sha256": "4b45a61608ed8fb345bf69d2c02a19e4931ad13290519ed24ade3344f080766c"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
     },
     {
       "path": "apps/desktop/src/locale.ts",
@@ -404,14 +590,86 @@
         "size": 68435,
         "sha256": "e345eda0425f2df795d20413bb87bb9a3ddc46e71ceb1cec0755ad1cca3fb847"
       },
-      "after": {
-        "path": "apps/desktop/src/main.ts",
+      "after": null,
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test. 移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/platform-ipc.ts",
+      "before": {
+        "path": "apps/desktop/src/platform-ipc.ts",
         "type": "file",
         "executable": false,
-        "size": 67983,
-        "sha256": "08d476a3e98a3cba09903ff2bd8de1533e32e43bb262043584c46e0387d18ddf"
+        "size": 509,
+        "sha256": "60e71892d7cb2a8c3dd72180a77ca3a24ff8af3245d2025a0f4c8cc792495bad"
       },
-      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/platform-view.ts",
+      "before": {
+        "path": "apps/desktop/src/platform-view.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13289,
+        "sha256": "88d582c4b3ff220006f6de4659116dd475a9f77d1f0838c7f92c37f79ffc78b0"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/policy-test-auth.ts",
+      "before": {
+        "path": "apps/desktop/src/policy-test-auth.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8126,
+        "sha256": "915e05809ed60a26400e19844413a5991d1d66c39f4c207a48dffe7234f1e547"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/preload-app.ts",
+      "before": {
+        "path": "apps/desktop/src/preload-app.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5849,
+        "sha256": "cff269a4f049d276a44974c3c40008ceb9d6a0b35105a54d6605f7dcf59a64eb"
+      },
+      "after": {
+        "path": "apps/desktop/src/preload-app.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4840,
+        "sha256": "61ab0109c6969e29cf45ce140a73af052f80cc0c9c7050618145bb19a39e868b"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/src/preload-platform-account.ts",
+      "before": {
+        "path": "apps/desktop/src/preload-platform-account.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2016,
+        "sha256": "1cc924e6215fd4b5c570e5540fdaad5c2f53fda6da3eebea24fd731bbc9ae2da"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/preload-welcome.ts",
+      "before": {
+        "path": "apps/desktop/src/preload-welcome.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1814,
+        "sha256": "37c861632587638800d60b1fec6ecba8a534841afea42b15b3bc8bdb77189428"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
     },
     {
       "path": "apps/desktop/src/project-manager.ts",
@@ -432,6 +690,54 @@
       "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
     },
     {
+      "path": "apps/desktop/src/welcome-api.ts",
+      "before": {
+        "path": "apps/desktop/src/welcome-api.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3375,
+        "sha256": "aeda390c9dbd6db9cd19ea1b7b67ec1744c731d1cac3f2e4dc5b4ca96ac15f9c"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/welcome-backend.ts",
+      "before": {
+        "path": "apps/desktop/src/welcome-backend.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8017,
+        "sha256": "83861a2c4cdd35f067c9b916b3f56cb08374a4e180609b2dd243464aa5cb896a"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/src/welcome-window.ts",
+      "before": {
+        "path": "apps/desktop/src/welcome-window.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5889,
+        "sha256": "b997ef87a8628a77b957edb3f3f5bd0853b4e1b5ad1f2ec6ceb5ed206ae90dd4"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/account-backend.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/account-backend.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6142,
+        "sha256": "58ba0b624729e262141270b156a7d46668ed55ea515b596d5d615577e3f4829d"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
       "path": "apps/desktop/tests/desktop-cli.spec.ts",
       "before": {
         "path": "apps/desktop/tests/desktop-cli.spec.ts",
@@ -442,6 +748,30 @@
       },
       "after": null,
       "reason": "移除旧桌面 CLI 入口及其产物要求和专属用例。"
+    },
+    {
+      "path": "apps/desktop/tests/desktop-settings.spec.ts",
+      "before": null,
+      "after": {
+        "path": "apps/desktop/tests/desktop-settings.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2586,
+        "sha256": "8bd58b0f68d6dc1bf62e32fe4060b0330f35a3f6d2f6cd5bf3a25b0dbaa0d7ca"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/tests/development-app.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/development-app.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1610,
+        "sha256": "ab33bf93b0f6d1d64ac5cc0a2feb9c7c3eaf683a9efc2b3f35636cf04be6e62f"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
     },
     {
       "path": "apps/desktop/tests/development-project.spec.ts",
@@ -462,6 +792,18 @@
       "reason": "开发运行目录按产品声明和 workspace 依赖生成，并验证无关 hoist 包不会混入。"
     },
     {
+      "path": "apps/desktop/tests/fixtures/platform-storage-smoke.mjs",
+      "before": {
+        "path": "apps/desktop/tests/fixtures/platform-storage-smoke.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 6111,
+        "sha256": "ed8c591b2305dea8f7660290679804ea429bc906fb6c33b22ec16a3aefae5aef"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
       "path": "apps/desktop/tests/host-process.spec.ts",
       "before": {
         "path": "apps/desktop/tests/host-process.spec.ts",
@@ -474,10 +816,10 @@
         "path": "apps/desktop/tests/host-process.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 12293,
-        "sha256": "faa5c0e6492fcd23897f04c485d5e4aa47c1316846cded656d484d21ab172154"
+        "size": 11091,
+        "sha256": "626ba6d4050b7b85b1f4d5991130d020d07b282db78f0574c3565a1f1a24ffd6"
       },
-      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test."
+      "reason": "Remove the retired Office payload argument from Desktop Host launch; retain the original Node-mode process lifecycle and package-manager injection. Update every caller and the original argument-contract test. 收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
     },
     {
       "path": "apps/desktop/tests/host-update-tasks.spec.ts",
@@ -516,6 +858,108 @@
       "reason": "补齐原生退出、编辑、诊断的日语文案，并尊重已选日语。"
     },
     {
+      "path": "apps/desktop/tests/main-startup.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/main-startup.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 127302,
+        "sha256": "ef37e6257004ae386093afa73e63d16f10ead3421ba9d9982a6286437182fd3f"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/platform-preload.e2e.ts",
+      "before": {
+        "path": "apps/desktop/tests/platform-preload.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3774,
+        "sha256": "c670cd8f48f80c23b130c379312bb269278194cab6da470df0ef0b546917605d"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/platform-storage.e2e.ts",
+      "before": {
+        "path": "apps/desktop/tests/platform-storage.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4290,
+        "sha256": "cf361dab0b2525703159e2ffdd6992d323deb66dac82e95681b1f65c2f1512e5"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/platform-view.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/platform-view.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 25241,
+        "sha256": "b56f7ab74737104564e24a03b44b8d5f75c5701fccc65cfae0c4494c6f008936"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/policy-test-auth.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/policy-test-auth.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10135,
+        "sha256": "4d7af0777cd57495cfc1f6fc371d252da3bf30b93211af555640ebd19c59d949"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/preload-app.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/preload-app.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13688,
+        "sha256": "f57ba38e77d6aa40e3aa61db62812af65af2bf6c3e1a4f3b0222eec26760b2a3"
+      },
+      "after": {
+        "path": "apps/desktop/tests/preload-app.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12084,
+        "sha256": "154443ca8d7418bc2e6502b7d71ac9ef9f90659a69cf4ca989fa6e9e7b5beb82"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/tests/preload-built.spec.ts",
+      "before": null,
+      "after": {
+        "path": "apps/desktop/tests/preload-built.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3976,
+        "sha256": "b212a26a13ed224a0c31719da1c6521be7c2a13b1c13b52afa15157f6a1f287a"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/tests/preload.e2e.ts",
+      "before": {
+        "path": "apps/desktop/tests/preload.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4326,
+        "sha256": "2b967f8afd868d2f83dd3b6d2a4c2c264d914ca30ff83a03ecfcee392301196a"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
       "path": "apps/desktop/tests/project-manager.spec.ts",
       "before": {
         "path": "apps/desktop/tests/project-manager.spec.ts",
@@ -534,6 +978,114 @@
       "reason": "Initialize and recover the YouDub product bundle through the original profile manager; preserve its lock, external package state and configuration recovery behavior."
     },
     {
+      "path": "apps/desktop/tests/welcome-flow.e2e.ts",
+      "before": {
+        "path": "apps/desktop/tests/welcome-flow.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10630,
+        "sha256": "4251fd969048369d7340a95ca65a7c860d1ac048e4b3f5cac8f32581c571f6f0"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/welcome-host.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/welcome-host.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6051,
+        "sha256": "0b6dc585adbc9441cb7c42df3f71f7767cfb6f27fd087fe21597932eb25588b5"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/welcome-renderer.client.spec.tsx",
+      "before": {
+        "path": "apps/desktop/tests/welcome-renderer.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 19143,
+        "sha256": "abd16dfc64c0cc1e7e7a2d7382cd5a7ba593af9927c2b71638e9ae7d6232106d"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/welcome-startup.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/welcome-startup.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14788,
+        "sha256": "cd3bf84a6aa420bd903bd1c1f2518a7eaad97c9a9021d8dcf50320cf42b22e3c"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tests/welcome-window.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/welcome-window.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10775,
+        "sha256": "2e8ee838864ee8929a6ea667f38e2b67b11072b69b7ea42b0be00621891c14b6"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tsconfig.client.json",
+      "before": {
+        "path": "apps/desktop/tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 461,
+        "sha256": "938484f3adbd521089b1cf3a95a5d605b9fb16a2417f48dd1bea0d87341ac36a"
+      },
+      "after": null,
+      "reason": "移除 YouDub 不使用的旧 Harness 主入口、原生欢迎/账号界面及其专属启动器和测试；原件仍保存在不可变归档。"
+    },
+    {
+      "path": "apps/desktop/tsconfig.host.json",
+      "before": {
+        "path": "apps/desktop/tsconfig.host.json",
+        "type": "file",
+        "executable": false,
+        "size": 794,
+        "sha256": "f5412d99db4f4a7dee3558e8923e240184c95943a71c21bded3b3371ce92a89f"
+      },
+      "after": {
+        "path": "apps/desktop/tsconfig.host.json",
+        "type": "file",
+        "executable": false,
+        "size": 669,
+        "sha256": "a718e9c23180bdba15959ce26566795b1b67a0046107119136407d76eb6a1e13"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
+      "path": "apps/desktop/tsconfig.json",
+      "before": {
+        "path": "apps/desktop/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 142,
+        "sha256": "ad1b25d36ea100440140e543e2a2af188178934da74eadce1b27ef14e91b335e"
+      },
+      "after": {
+        "path": "apps/desktop/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 90,
+        "sha256": "bf6f501d13619076b8c97ef317feb3a631a32aa138711fd2ff474444782962dd"
+      },
+      "reason": "收拢 Electron 框架包：仅保留设置语言读取与应用 preload，去掉原生账号/欢迎页桥接及账号 IPC；保留原认证和生命周期合同并验证。"
+    },
+    {
       "path": "apps/desktop/tsdown.config.ts",
       "before": {
         "path": "apps/desktop/tsdown.config.ts",
@@ -550,6 +1102,36 @@
         "sha256": "32ed84eb99457d289f016dcc396d9897174774be6a6384e205e2e7aaf65c9dfe"
       },
       "reason": "框架步骤仅构建 YouDub 实际使用的 app preload，不再生成旧产品 main、欢迎页和账号 preload。"
+    },
+    {
+      "path": "apps/web/tests/desktop-onboarding.e2e.ts",
+      "before": {
+        "path": "apps/web/tests/desktop-onboarding.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 30691,
+        "sha256": "619626c5d0a67967f73b82a51b8d36242cd48ef2e208c7a5c651225e764689c7"
+      },
+      "after": null,
+      "reason": "移除已退休的原生账号/赠金 onboarding 专属验收；YouDub 私有环境首启使用自身集成验收。"
+    },
+    {
+      "path": "package.json",
+      "before": {
+        "path": "package.json",
+        "type": "file",
+        "executable": false,
+        "size": 18994,
+        "sha256": "12bb41cd8212021a784b33a20c2b84372189a9505b42081d5e3869e21ff5cffc"
+      },
+      "after": {
+        "path": "package.json",
+        "type": "file",
+        "executable": false,
+        "size": 18852,
+        "sha256": "c124d33df254a8c3b104e4a0989c3ace61d89fdb290347c6404ff9f44a1527ff"
+      },
+      "reason": "移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。"
     },
     {
       "path": "packages/api/remotes/README.md",
@@ -1464,10 +2046,64 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 1034852,
-        "sha256": "0461d758da22c3992ecd274f56899d6e8d83b78d1d056d8e1f2ef011586c6b51"
+        "size": 1034160,
+        "sha256": "6676a0b1f2c07faae14abd31a3bef68eaab1bab2ab029d3fdf4e254adec8d918"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。"
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。"
+    },
+    {
+      "path": "scripts/verify-product-use.spec.ts",
+      "before": {
+        "path": "scripts/verify-product-use.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15787,
+        "sha256": "63ea0d19863f54fc85adb5a4ee3bc70c557c79eca7613b4123b9f3dbc7e30865"
+      },
+      "after": {
+        "path": "scripts/verify-product-use.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15801,
+        "sha256": "0d5e380f60e265c202b02f8201f6671710051f47e53f158ffb64dc6e0245dfdb"
+      },
+      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。"
+    },
+    {
+      "path": "scripts/verify-product-use.ts",
+      "before": {
+        "path": "scripts/verify-product-use.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18868,
+        "sha256": "2c86e81f400f932667f28c83d3f87c40b33df2ca1528892f458871140231df5d"
+      },
+      "after": {
+        "path": "scripts/verify-product-use.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18875,
+        "sha256": "a3b1762a186d5d614d58f358df39ac4892aef5afe297118ada721368b0fea47f"
+      },
+      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。"
+    },
+    {
+      "path": "tsconfig.client.json",
+      "before": {
+        "path": "tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 8406,
+        "sha256": "551f5f377152492c0a1771f2350e9408ac8b796325cc9701f81e87df8d1229ba"
+      },
+      "after": {
+        "path": "tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 8351,
+        "sha256": "61afd7797e03551078fb17bf28578e5ecd82ec0c49c9c1d059eb5741142eab2e"
+      },
+      "reason": "移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。"
     },
     {
       "path": "vitest.config.ts",

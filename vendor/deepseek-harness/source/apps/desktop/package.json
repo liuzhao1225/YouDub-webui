@@ -1,17 +1,14 @@
 {
   "name": "@deepseek-ai/dsh-desktop",
-  "description": "Electron desktop shell for a bundled dsh runtime and external plugins",
+  "description": "Electron framework services and sandboxed preload for YouDub Desktop",
   "version": "0.2.1-rc.2",
   "private": true,
   "license": "MIT",
   "type": "module",
-  "main": "lib/main.js",
   "scripts": {
     "test:installer": "node scripts/test-windows-installer.mjs",
     "build": "tsc -b && pnpm run bundle",
     "bundle": "tsdown --config-loader native",
-    "dev": "tsx scripts/dev.ts",
-    "start": "tsx scripts/dev.ts --skip-build",
     "test:updates:local": "pnpm run build && node scripts/test-local-updater.mjs",
     "prepare:runtime": "tsx scripts/prepare-runtime.ts",
     "render:tray-icon": "tsx scripts/render-tray-icon.ts",
@@ -70,15 +67,9 @@
     "pnpm": "11.28.5",
     "sharp": "0.35.5",
     "typescript": "^6.0.3",
-    "@deepseek-ai/dsh-deepseek-account": "workspace:*",
     "@types/ws": "^8.18.1",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "vite": "^6.4.3",
-    "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
     "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
-    "@deepseek-ai/dsh-client-product-analytics": "workspace:*"
+    "@deepseek-ai/dsh-deepseek-account": "workspace:*"
   }
 }

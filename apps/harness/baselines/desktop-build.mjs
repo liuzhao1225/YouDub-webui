@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFile, writeFile, stat, realpath } from 'node:fs/promises'
 import { isBuiltin, createRequire } from 'node:module'
 import { join, relative, resolve, sep } from 'node:path'
@@ -85,18 +86,18 @@ for (const [prefix, target] of [['apps/desktop/renderer/', 'renderer/'], ['apps/
     report.copiedAssets.push({ path, upstreamPath: entry.path, sha256: entry.sha256 })
   }
 }
-// Private native window/menu helpers are copied verbatim because upstream does not export them.
-const upstreamMain = await readFile(join(source, 'apps/desktop/src/main.ts'), 'utf8')
+// Original blocks remain byte-for-byte in the product after retiring the upstream product entry.
+const nativeBlocks = JSON.parse(await readFile(join(here, 'baselines/native-blocks.json'), 'utf8'))
+same(nativeBlocks.upstreamCommit, manifest.commit, 'Copied native blocks upstream revision')
+same(nativeBlocks.sourceSha256, original.get(nativeBlocks.source)?.sha256, 'Copied native blocks original source')
 const productMain = await readFile(join(here, 'src/desktop-product.ts'), 'utf8')
-const copiedBlocks = [
-  ['chromeFallbackFill', 'function chromeFallbackFill()', '/**\n * Add the effective Desktop palette'],
-  ['createWindow', 'function createWindow(', 'async function main():'],
-  ['windowsMenuAndAppearance', "  if (process.platform === 'win32') {\n    ipcMain.handle(DESKTOP_IPC.windowsMenu", '  const hideMainWindow ='],
-]
-report.copiedNativeBlocks = copiedBlocks.map(([name, start, end]) => {
-  const block = upstreamMain.slice(upstreamMain.indexOf(start), upstreamMain.indexOf(end))
-  if (!block || !productMain.includes(block)) throw new Error(`Copied official native block changed: ${name}`)
-  return { name, source: 'apps/desktop/src/main.ts', product: 'apps/harness/src/desktop-product.ts', bytes: Buffer.byteLength(block) }
+report.copiedNativeBlocks = nativeBlocks.blocks.map(({ name, start, characters, bytes, sha256 }) => {
+  const index = productMain.indexOf(start)
+  if (index < 0) throw new Error(`Missing copied native block: ${name}`)
+  const block = productMain.slice(index, index + characters)
+  same(createHash('sha256').update(block).digest('hex'), sha256, `Copied official native block ${name}`)
+  same(Buffer.byteLength(block), bytes, `Copied official native block size ${name}`)
+  return { name, source: nativeBlocks.source, product: 'apps/harness/src/desktop-product.ts', bytes, sha256 }
 })
 same(await sha256(join(here, 'src/desktop-main.mjs')), await sha256(join(output, 'main.mjs')), 'YouDub product entry')
 report.productEntry = { source: 'apps/harness/src/desktop-main.mjs', output: 'main.mjs', sha256: await sha256(join(output, 'main.mjs')) }

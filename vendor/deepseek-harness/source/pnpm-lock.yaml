@@ -457,24 +457,15 @@ importers:
       '@deepseek-ai/dsh-atomic-write':
         specifier: workspace:*
         version: link:../../packages/util/atomic-write
-      '@deepseek-ai/dsh-client-product-analytics':
-        specifier: workspace:*
-        version: link:../../packages/client/product-analytics
       '@deepseek-ai/dsh-client-shortcuts':
         specifier: workspace:*
         version: link:../../packages/client/shortcuts
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: workspace:*
-        version: link:../../packages/client/ui-primitives
       '@deepseek-ai/dsh-client-ui-settings-general':
         specifier: workspace:*
         version: link:../../packages/client/ui-settings-general
       '@deepseek-ai/dsh-client-ui-sidebar-browser':
         specifier: workspace:*
         version: link:../../packages/client/ui-sidebar-browser
-      '@deepseek-ai/dsh-client-ui-theme':
-        specifier: workspace:*
-        version: link:../../packages/client/ui-theme
       '@deepseek-ai/dsh-deepseek-account':
         specifier: workspace:*
         version: link:../../packages/credentials/deepseek-account
@@ -526,21 +517,12 @@ importers:
       pnpm:
         specifier: 11.28.5
         version: 11.28.5
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.3.1(react@18.3.1)
       sharp:
         specifier: 0.35.5
         version: 0.35.5(@types/node@22.20.1)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
-      vite:
-        specifier: ^6.4.3
-        version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.13)(yaml@2.9.0)
 
   apps/desktop-host:
     dependencies:

@@ -180,3 +180,18 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 原生旧版在日语界面下仍显示中文未保存提示，取消后表单与 Host 留存。活动 fork 已补齐日语退出/编辑/诊断文案及 locale 解析，相关单元检查通过；修改后的原生提示尚未完成实际交互验收。
 - 本批相关框架用例 14 文件、401 passed；首启前端/控制器 3 文件、24 passed；web 类型检查通过；修复依赖后的 Harness 集成 66 passed。中英日 646 项业务语言键及 7 个框架语言空间通过。来源检查确认原 Harness checkout、两份源码快照、YouDub 初始快照和原归档未变；活动 fork 为 87 项登记差异。共享工作区仍有其他会话编辑，完整候选 CI 另行记录。
 - 上一提交 `40a0f753` 的[源码开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39713973929) 已通过。本批仍属于开发改造；没有打包、发布或合并到 main。完整源码裁剪、业务及跨平台验收未完成，两份飞书文档按约定最后统一更新。
+
+
+## P6 第三批：原生账号入口与 Desktop 框架边界（2026-10-22）
+
+- 从活动源码删除旧 Harness main、原生登录/欢迎页、Platform 账号视图及其专属开发启动器、素材和测试。Desktop 包只保留框架模块与应用 preload，产品入口继续是 `apps/harness/src/desktop-product.ts`；未修改不可变归档和初始 YouDub 快照。
+- 从原 welcome transport 保留 Web 认证、关联请求校验和语言读取，改为 `desktop-settings.ts`。应用 preload 不再暴露 `dshOnboarding`/`dshPlatform`，Host IPC 拒绝已退休的 `platform-session`。首启与模型配置继续走 YouDub 页面及原 Settings/Credentials 服务。
+- 删除欢迎页的 React/Vite 等六项直接开发依赖和独立 Client 编译面，锁文件未升级保留依赖。首次构建指出旧强制更新策略仍需 `deepseek-account` 的请求头与类型；该编译依赖保留并列为后续裁剪项。实际产品入口和 80 包运行目录不加载账号包。源码范围仍为 362 包，未宣称全量裁剪完成。
+- 旧 main 删除后，三个直接复制的窗口/菜单代码块继续按原始归档提取的哈希校验；`native-blocks.json` 绑定原始提交和 main 文件哈希。产品构建重新生成 renderer/resources/node-bin，避免删除素材后旧产物残留。
+- 在独立 staging 中完成七步框架构建，并在默认开发目录构建当前源码。最后一次七步构建 42.52 秒，属于增量运行；未据此推导性能改善。相关模块 10 个测试文件、130 项通过；真实 Desktop Host 的默认首启与显式界面测试模式 2 项通过。产物来源、原始档案及复制代码块检查通过。
+- 原沙箱 preload 验收文件的 `.e2e.ts` 后缀不在常规 Vitest 收集范围；已迁入 `.spec.ts` 并加入 CI，移除旧欢迎页测试入口，要求真实构建产物存在。单独运行该用例通过。
+- 首次实际 Electron 启动捕获产品组合的 `metadata is not defined`：语言桥接仍需要外层设置后端引用。已修正作用域并重建桌面主进程，重新启动同一 profile 后首屏正常。失败诊断保留在本机，未通过禁用插件绕过启动检查。
+- 实际 macOS 验收：切换日语 → 原生文件夹框选择既有测试私有目录 → 回填并确认 → 检查四模型 → 进入空模型配置。退出并重新启动后，日语保持、目录步骤不重复；认证 API 读回 `installation.required=false` 且路径与页面选择一致。使用已有约 6.97 GB 模型，未重新下载、未调用外部 LLM。[目录选择证据](evidence/refactor-native-directory-ja.png)
+- 日语模型编辑器输入仅含 ID 的测试草稿后，Cmd+Q 显示日语退出提示；取消后 ID 保留。随后通过原丢弃确认结束草稿、空闲退出，启动器返回 0；重启后可进入原 Logo/大标题工作台。[退出保护证据](evidence/refactor-native-quit-ja.png)、[工作台证据](evidence/refactor-native-home-ja.png)。macOS 系统文件框使用系统语言；日本语界面中的 MPS 探测详情仍有中文，继续列入语言验收。
+- 另一会话的侧栏、图标和资源页面改动按用户要求保留。截图反映共享开发工作区；本批提交仅包含本任务文件与共享文件中的对应改动。上一提交 `ec186a9b` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39718278958) 已全部通过。
+- 仍待完成：旧更新/发行工具和其余未用包的源码闭包裁剪、完整媒体流程和历史数据回归、Windows 真实验收。两个飞书文档继续留到全部改造验收完成后统一更新；没有打包或发布。

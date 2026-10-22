@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import { JSDOM } from 'jsdom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { installMandatoryUpdateOverlay } from '../src/preload-mandatory-overlay.ts'
 import { syncWindowsAppearance } from '../src/preload-windows.ts'
@@ -19,22 +18,13 @@ vi.mock('../src/preload-mandatory-overlay.ts', () => ({ installMandatoryUpdateOv
 beforeEach(() => { vi.stubGlobal('process', { ...process, isMainFrame: true }) })
 afterEach(() => { document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks(); vi.resetModules() })
 
-it('reads only native login API-key presence through the onboarding bridge', async () => {
-  vi.stubGlobal('location', new URL('dsh-app://app/'))
-  electron.ipcRenderer.invoke.mockResolvedValueOnce(true)
-  await import('../src/preload-app.ts')
-  const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshOnboarding')?.[1] as { hasApiKey(): Promise<boolean> }
-  expect(await api.hasApiKey()).toBe(true)
-  expect(electron.ipcRenderer.invoke).toHaveBeenCalledWith(DESKTOP_IPC.onboardingApiKey)
-})
-
-it('exposes onboarding size activation to the application document', async () => {
+it('does not expose retired account or onboarding bridges', async () => {
   vi.stubGlobal('location', new URL('dsh-app://app/'))
   await import('../src/preload-app.ts')
-  const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshOnboarding')?.[1] as { setActive(active: boolean): void }
-  api.setActive(true)
-  api.setActive(false)
-  expect(electron.ipcRenderer.send.mock.calls).toEqual([[DESKTOP_IPC.onboardingActive, true], [DESKTOP_IPC.onboardingActive, false]])
+  const names = electron.contextBridge.exposeInMainWorld.mock.calls.map(([name]) => name)
+  expect(names).not.toContain('dshOnboarding')
+  expect(names).not.toContain('dshPlatform')
+  expect(electron.ipcRenderer.invoke).not.toHaveBeenCalled()
 })
 
 it('limits product documents to update status and a native confirmation action', async () => {
@@ -134,26 +124,6 @@ it.each(['dsh-app://app/', 'dsh-app://shell/plugin-manager.html', 'https://examp
     expect(syncWindowsAppearance).toHaveBeenCalledTimes(url === 'dsh-app://app/' ? 1 : 0)
   },
 )
-
-it('moves welcome-entry focus to the document without changing keyboard tab order', async () => {
-  const dom = new JSDOM('<body><button>Sidebar</button><input></body>')
-  try {
-    vi.stubGlobal('document', dom.window.document)
-    vi.stubGlobal('location', new URL('dsh-app://app/'))
-    await import('../src/preload-app.ts')
-    const enter = electron.ipcRenderer.on.mock.calls.find(([channel]) => channel === DESKTOP_IPC.enterWorkspace)![1] as () => void
-    const button = dom.window.document.querySelector('button')!
-    button.focus()
-    enter()
-    expect(dom.window.document.activeElement).toBe(dom.window.document.body)
-    expect(dom.window.document.body.hasAttribute('tabindex')).toBe(false)
-    expect(button.tabIndex).toBe(0)
-    dom.window.document.body.setAttribute('tabindex', '-1')
-    button.focus()
-    enter()
-    expect(dom.window.document.body.getAttribute('tabindex')).toBe('-1')
-  } finally { dom.window.close() }
-})
 
 it.each(['win32', 'darwin'] as const)('installs the embedded mandatory UI only in the Windows app document (%s)', async (platform) => {
   vi.stubGlobal('process', { ...process, platform })
