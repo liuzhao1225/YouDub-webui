@@ -92,7 +92,12 @@
       }
     },
     "macOS": {
-      "status": "in progress"
+      "status": "passed",
+      "job": 120019057063,
+      "log": {
+        "path": "/tmp/youdub-macos-230bce53.log",
+        "sha256": "6c2a4a5113d96f242a14ed324ef66d354487f2be3b84b8cd95692e34065ba0fc"
+      }
     }
   },
   "limits": [
