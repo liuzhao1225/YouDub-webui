@@ -158,7 +158,14 @@
       "log": "/tmp/youdub-code-extensions-host.log"
     },
     "lockfile": "Removed only selected importers and named workspace edges; remaining importer values, versions and resolution snapshots unchanged",
-    "ci": "pending",
+    "ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "headSha": "55f5a7e1fd5e34f400e776b6cbc7c295025f0317",
+      "runId": 39773213132,
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39773213132",
+      "completedAt": "2026-10-22T11:59:52Z"
+    },
     "productIsolation": "verify-default-product-isolation: 89 packages, 710 runtime sources, 1 configurations, 33 composed Web plugins exclude experimental packages."
   },
   "failuresPreserved": [

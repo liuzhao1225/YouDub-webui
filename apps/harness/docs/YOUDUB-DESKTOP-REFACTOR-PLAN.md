@@ -320,7 +320,7 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 
 ### P6 第 15 批开发验收补充
 
-已裁剪 26 个 ACP/LSP、代码协作与电脑浏览器扩展包及 508 个文件。独立源码构建七项、695 项定向回归、六组双语文档、75 包运行闭包及真实 Desktop Host 的两种首启/退出模式通过。本批 CI 待验证；原生插件生命周期、其余源码收拢与完整产品验收保留待办。详见[本批证据](evidence/refactor-code-extensions-prune.json)。
+已裁剪 26 个 ACP/LSP、代码协作与电脑浏览器扩展包及 508 个文件。独立源码构建七项、695 项定向回归、六组双语文档、75 包运行闭包及真实 Desktop Host 的两种首启/退出模式通过。本批 `55f5a7e1` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39773213132) 已通过；原生插件生命周期、其余源码收拢与完整产品验收保留待办。详见[本批证据](evidence/refactor-code-extensions-prune.json)。
 
 ## 10. 后续发行边界
 
