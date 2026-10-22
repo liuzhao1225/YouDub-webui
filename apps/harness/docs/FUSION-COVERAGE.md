@@ -1,10 +1,10 @@
 # Harness × YouDub 功能与架构覆盖账本
 
-最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：活动 fork 已完成第 23 批裁剪，正向装配所需框架服务，并保留原 YouDub 领域功能。Windows SDK 回退、最终原生交互及媒体质量验收仍开放。本轮只交付源码开发版，安装包、更新源与在线市场不在范围内。
+最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：活动 fork 已完成第 24 批裁剪，正向装配所需框架服务，并保留原 YouDub 领域功能。8fea16f1 的 Windows CI 已验证 SDK 回退修复；同提交 macOS CI 因测试 Node 参数不兼容已取消，修正后待重跑；最终原生交互及媒体质量验收仍开放。本轮只交付源码开发版，安装包、更新源与在线市场不在范围内。
 
 本账本以冻结的 YouDub 源快照 `f6f927903581b165f2bf6c840ea65b896d319524` 为比较对象。源清单为 `../baselines/youdub-source-inventory.json`：58 条 API、11 个媒体操作、9 个页面入口、50 组元素定义。计数只说明清单覆盖范围，不能证明功能已经运行通过。
 
-本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E18 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
+本账本区分源回归、官方 Host 边界和真实媒体运行。E1–E22 的日志与产物见文末；已完成的 Electron 交互逐项记录，未覆盖路径保持待验收。旧 POC 结果不能替代本分支验收；四模型和外部翻译已在记录的真实输入上运行通过，其他输入质量与未走分支单列。
 
 ## 基线与不可变边界
 
@@ -36,15 +36,15 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | --- | --- | --- |
 | `GET /api/health` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
 | `GET /api/v2/catalog` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
-| `GET /api/v2/workflows` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `POST /api/v2/workflow-documents/migrate-defaults` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
+| `GET /api/v2/workflows` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 实际 Host 读取内置与外部工作流目录通过
+| `POST /api/v2/workflow-documents/migrate-defaults` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 新 profile 的迁移空操作通过；含旧默认配置的转换仍以源回归为证
 | `GET /api/v2/node-types` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | 原生图编辑器和 E17 链接运行实际读取节点目录；全部外部节点组合未覆盖 |
-| `GET /api/v2/workflow-documents` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
-| `POST /api/v2/workflow-documents` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
+| `GET /api/v2/workflow-documents` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 内置/插件模板、用户文档分页及越界拒绝通过
+| `POST /api/v2/workflow-documents` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 实际 Host 创建并持久化用户图通过
 | `POST /api/v2/workflow-documents/validate` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E13/E16/E17 原生提交经过图校验并实际执行；所有拒绝分支仍以源回归为证 |
-| `GET /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
-| `PUT /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
-| `DELETE /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E2 官方服务组合/路由合同通过 |
+| `GET /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 创建/修改后读回及删除后 404 通过
+| `PUT /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 修订递增、旧修订 409、内容保持通过
+| `DELETE /api/v2/workflow-documents/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 修订保护、删除读回及内置模板保护通过
 | `GET /api/v2/updates` | 后续 YouDub 发行能力；当前开发版不加载旧更新服务 | 按当前仅编码、不打包的范围排除；不能算作已迁移发行能力 |
 | `POST /api/v2/updates/check` | 后续 YouDub 发行能力；当前开发版不加载旧更新服务 | 按当前仅编码、不打包的范围排除；不能算作已迁移发行能力 |
 | `GET /api/v2/runtime` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | E1 源探针回归；E8 源码桌面私有环境实际 ready |
@@ -52,24 +52,24 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `POST /api/v2/settings/test-connection` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | 旧路径显式要求官方模型设置；E5 实际官方适配器协议通过 |
 | `PATCH /api/v2/settings` | backend/settings.mjs → 官方 settings / Credentials / 领域 runtime | E2 官方服务组合/路由合同通过；3087 语言切换已现场验证 |
 | `POST /api/v2/tasks` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
-| `GET /api/v2/tasks` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | 原生任务列表与进入详情实际通过；全部筛选/分页组合未覆盖 |
+| `GET /api/v2/tasks` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 分页、status/active 筛选及非法分页拒绝通过；全部状态组合未穷举
 | `GET /api/v2/tasks/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
-| `POST /api/v2/tasks/:id/cancel` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `POST /api/v2/tasks/:id/retry` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `POST /api/v2/tasks/:id/rerun` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
+| `POST /api/v2/tasks/:id/cancel` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 暂停任务取消、旧修订 409 及状态持久化通过；运行中媒体取消见原生历史证据
+| `POST /api/v2/tasks/:id/retry` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 取消后 attempt 递增、重新执行及旧 attempt 拒绝通过
+| `POST /api/v2/tasks/:id/rerun` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 依赖复用保留 second，仅重算 first/review/export，派生产物通过
 | `GET /api/v2/tasks/:id/nodes/:nodeId` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
 | `GET /api/v2/tasks/:id/nodes/:nodeId/results/:revision` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
 | `POST /api/v2/tasks/:id/nodes/:nodeId/corrections` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
 | `POST /api/v2/tasks/:id/nodes/:nodeId/approve` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
-| `GET /api/v2/tasks/:id/actions/:actionId` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `POST /api/v2/tasks/:id/rerun-preview` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `GET /api/v2/tasks/:id/artifacts/:artifactId` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `DELETE /api/v2/tasks/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
-| `GET /api/v2/tasks/:id/cover` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
+| `GET /api/v2/tasks/:id/actions/:actionId` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 校对回执读回、重复提交幂等、非法 ID 422 与未记录 UUID 404 通过
+| `POST /api/v2/tasks/:id/rerun-preview` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 修改单个上游后的复用/重算清单及修订依据通过
+| `GET /api/v2/tasks/:id/artifacts/:artifactId` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 所属产物内容、跨任务与原型属性访问拒绝通过
+| `DELETE /api/v2/tasks/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 attempt 冲突、活动任务保护、删除后 404 和派生产物独立性通过
+| `GET /api/v2/tasks/:id/cover` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 无封面任务 404、E22 实际 zoo 导入任务的图片封面生成与读回通过
 | `GET /api/v2/tasks/:id/files/:output` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E3 真实官方 Host 字幕流程通过 |
-| `GET /api/v2/tasks/:id/log` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
+| `GET /api/v2/tasks/:id/log` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 实际 Host 日志读取及非法 lines 拒绝通过
 | `GET /api/v2/extensions` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
-| `DELETE /api/v2/imports/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E1 源领域回归通过；官方边界尚未逐项执行 |
+| `DELETE /api/v2/imports/:id` | backend/api.ts → Connection.fetch + 原 YouDub 领域服务 | E19 已属于任务的导入删除返回 409；孤立导入清理待验收
 | `POST /api/v2/extensions/install` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
 | `PATCH /api/v2/extensions/:id` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
 | `DELETE /api/v2/extensions/:id` | backend/extensions.mjs → 官方 pluginManager | E4 真实官方 PluginManager 安装/行为/启停/移除通过 |
@@ -97,7 +97,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 
 | 操作 | 实现与对应前端 | 必要产物/行为 | 状态 |
 | --- | --- | --- | --- |
-| `media.download/v1` | 原 Python yt-dlp，经官方 Subprocess；现有下载节点与链接入口 | 任务内下载节点产生视频并接到 prepare；坏链接保留真实错误 | E17 原生输入 YouTube 原 zoo URL 和本机 HTTP 代理端口7897，下载533931B并完成10节点；B站公网下载仍未实测 |
+| `media.download/v1` | 原 Python yt-dlp，经官方 Subprocess；现有下载节点与链接入口 | 任务内下载节点产生视频并接到 prepare；坏链接保留真实错误 | E17 原生输入 YouTube 原 zoo URL 和本机 HTTP 代理端口7897，下载533931B并完成10节点；E20 已补齐 B 站完整链接/短链/代理三次实际 Host 下载 |
 | `media.prepare/v1` | Python FFmpeg，经官方 Subprocess；本地/链接导入 | 视频可播放，mediaInfo 与 sourceAudio 可读取 | E3 与 E8 源码桌面真实 FFmpeg；E9 原失败任务素材派生复验媒体准备成功 |
 | `audio.separate/v1` | Python Demucs，经官方 Subprocess；分离节点 | 人声与背景音输出 | E7 源回归；E13 真实 Demucs 人声/背景双音轨，44.1kHz双声道、样本数与源音频一致 |
 | `speech.transcribe/v1` | Python Whisper，经官方 Subprocess；识别/校对节点 | 有时码的 transcript、原始识别证据 | E3 与 E8 源码桌面私有 Whisper tiny 的 3 段真实识别 |
@@ -107,7 +107,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `audio.mix/v1` | Python FFmpeg，经官方 Subprocess；混音节点 | finalAudio、dubbedTimeline、adjustedSpeech | E13 finalAudio、dubbedTimeline、adjustedSpeech齐全；最终WAV为48kHz双声道且精确覆盖视频时长 |
 | `text.align/v1` | Python Qwen Forced Aligner；字幕对齐节点 | wordAlignment 与最终字幕时间轴 | E13 私有Qwen实际输出3片段/51词；字幕文字完整对应真实译文，原始词时码留存 |
 | `media.export/v1` | Python FFmpeg；导出节点和任务输出 | 视频、音频、原文 SRT、译文 SRT；原生保存 | E13双SRT原生保存/哈希通过；E16原分句恢复后9节点及17秒播放通过；E17在线下载后10节点与14秒播放通过。E14显示换行补丁已撤回，仅保留历史证据 |
-| `subtitles.import/v1` | Python 字幕解析；字幕导入节点 | transcript、translation；错误字幕显式报错 | E7 原字幕解析与错误回归通过；官方 Host 导入入口待实际验收 |
+| `subtitles.import/v1` | Python 字幕解析；字幕导入节点 | transcript、translation；错误字幕显式报错 | E22 官方 Host 双语 SRT multipart 上传、真实 Python 导入和 zoo 视频/双 SRT 导出通过；时间轴不匹配与坏格式保留 INVALID_SUBTITLES |
 
 ## 页面与前端元素映射
 
@@ -278,3 +278,11 @@ E13同时暴露长中文烧录行裁切。随后增加的显示换行补丁曾�
 ## 当前 fork 的历史数据读回补验收
 
 提交 `4313ec5e` 使用独立副本启动真实 Desktop Host，四模型就绪检查通过，读回 6 个历史任务和 7 个工作流。重启同一副本后，12 个产物通过官方 Connection 下载，其字节数与 SHA-256 均匹配历史文件；两份视频的 Range 206 与头部字节一致。原始数据库哈希未变。没有触发外部 LLM 调用；复用既有 YouDub 私有 runtime/model 的此次检查不代表全新安装、原生播放器或听感验收。[完整记录](evidence/refactor-history-readback.json)
+
+## 本轮补充证据
+
+- **E19 当前 Host 业务边界（8fea16f1）**：独立 profile、实际 Desktop Host 和官方 Connection，直接使用既有 Harness 文本校对 fixture。7 组场景、105 次请求通过；覆盖工作流 CRUD/CAS、分页、任务取消/重试、人工修订与回执、部分依赖复用、文件归属和删除保护，退出正常。完整请求结果和夹具修正历史见[业务边界证据](evidence/refactor-host-api-boundaries.json)。没有外部 LLM 调用；不代表原生界面或真实媒体推理验收。
+- **E20 B 站公网下载**：在隔离实际 Host 中验证完整链接直连、b23 短链、显式本机代理三条路径；各自完成下载与媒体准备，产物和 Range 读回通过。见[B 站证据](evidence/refactor-bilibili-download.json)。原生输入/保存/播放仍待验收。
+- **E21 当前私有运行资源（8fea16f1）**：实际 Host/Python 读回 Node、pnpm、Python、FFmpeg、模型、缓存和配置解析路径；显式提交全部资源选择后四模型 ready，正常退出。合成凭据验证管理存储优先级；复用已有私有资源，不声明全新下载或原生验收。见[隔离证据](evidence/refactor-runtime-isolation.json)。
+
+- **E22 双语字幕导入与真实媒体导出（8fea16f1）**：官方 Connection multipart 上传英文 BOM/CRLF SRT、中文 SRT 和 zoo 视频，经原 Python `subtitles.import/v1` 保留两段文本、语言和精确时码；FFmpeg 导出视频、双 SRT，封面实际生成并读回。时间轴不匹配及坏 SRT 均保留原始 `INVALID_SUBTITLES`，不产生最终输出。导出继续沿用原分句/去末尾标点规则，原导入结果保留完整文本。见[字幕导入证据](evidence/refactor-subtitle-import.json)。未调用 ASR/LLM/TTS；原生保存与播放另验收。

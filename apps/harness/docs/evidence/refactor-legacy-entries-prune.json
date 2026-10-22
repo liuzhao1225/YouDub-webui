@@ -139,11 +139,26 @@
     }
   },
   "ci": {
-    "status": "pending push"
+    "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370",
+    "windows": {
+      "status": "passed",
+      "job": 120028526133
+    },
+    "macOS": {
+      "status": "cancelled after observed test-runner failure",
+      "job": 120028525792,
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028525792",
+      "cause": "Node 24.20.0 rejects --no-webstorage. Vitest repeatedly attempted to start workers; the run was explicitly cancelled after inspecting live logs.",
+      "log": {
+        "path": "/tmp/youdub-macos-8fea16f1.log",
+        "sha256": "65b54d544f9053c65d7d0f20c10a2c4b8e67d72132ae17a8b548931cb9584df6"
+      }
+    }
   },
   "limitations": [
     "No native UI acceptance while the Mac is locked.",
-    "Windows CI and final full-product acceptance remain pending.",
+    "Windows source CI passed; native Windows and final full-product acceptance remain pending.",
     "No installer, signing, release, main/atomgit merge or Feishu update."
   ]
 }

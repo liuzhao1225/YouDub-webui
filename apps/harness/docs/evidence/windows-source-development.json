@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-10-22T18:56:33.877Z",
+  "recordedAt": "2026-10-22T19:16:49.750Z",
   "scope": "Windows 2025 source build and actual Host contracts; no installer or native GUI claim.",
   "runs": [
     {
@@ -160,6 +160,40 @@
         "path": "/tmp/youdub-windows-230bce53.log",
         "sha256": "a41f1a2ac1574fe1aaca8f9298a1b1a622f293a38c10cad86229ea8108376617"
       }
+    },
+    {
+      "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028526133",
+      "result": "passed",
+      "sourceAndProductBuildPassed": true,
+      "sourceTests": {
+        "passed": 6,
+        "skipped": 1
+      },
+      "buildGates": {
+        "passed": 7,
+        "seconds": 100.69
+      },
+      "desktopAndProcessTests": {
+        "filesPassed": 43,
+        "filesSkipped": 3,
+        "testsPassed": 567,
+        "testsSkipped": 27
+      },
+      "productContracts": {
+        "passed": 32,
+        "failed": 0,
+        "actualElectronHostModesPassed": 2
+      },
+      "actualSdkMigrations": [
+        "root-and-installed",
+        "installed-only",
+        "duplicate-profile-alias"
+      ],
+      "log": {
+        "path": "/tmp/youdub-windows-8fea16f1.log",
+        "sha256": "3c8f502dd6d83ba659c99c0659ab405d15915131191e8eeb42dc13408308114b"
+      }
     }
   ],
   "corrections": {
@@ -209,12 +243,7 @@
       }
     }
   },
-  "nextRun": {
-    "status": "pending native cwd assertion correction push",
-    "purpose": "Validate the root-cause fix and legacy duplicate-importer migration on Windows; retain the original timeout and SDK failures."
-  },
   "limitations": [
-    "The full Windows job is not yet green.",
     "No interactive Windows native dialog or installed-app acceptance.",
     "Final product candidate and media quality remain open."
   ]

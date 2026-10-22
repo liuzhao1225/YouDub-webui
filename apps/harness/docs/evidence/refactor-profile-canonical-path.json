@@ -101,7 +101,6 @@
     }
   },
   "limits": [
-    "Windows fix not yet confirmed on the runner.",
     "First Windows 5-second desktop filesystem timeout did not recur on the same-commit rerun; its underlying cause is not established.",
     "Native UI remains blocked by the locked Mac; no installer or release was produced."
   ],
@@ -126,6 +125,53 @@
         }
       }
     },
-    "ci": "pending push"
+    "ci": {
+      "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370",
+      "windows": {
+        "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028526133",
+        "result": "passed",
+        "sourceAndProductBuildPassed": true,
+        "sourceTests": {
+          "passed": 6,
+          "skipped": 1
+        },
+        "buildGates": {
+          "passed": 7,
+          "seconds": 100.69
+        },
+        "desktopAndProcessTests": {
+          "filesPassed": 43,
+          "filesSkipped": 3,
+          "testsPassed": 567,
+          "testsSkipped": 27
+        },
+        "productContracts": {
+          "passed": 32,
+          "failed": 0,
+          "actualElectronHostModesPassed": 2
+        },
+        "actualSdkMigrations": [
+          "root-and-installed",
+          "installed-only",
+          "duplicate-profile-alias"
+        ],
+        "log": {
+          "path": "/tmp/youdub-windows-8fea16f1.log",
+          "sha256": "3c8f502dd6d83ba659c99c0659ab405d15915131191e8eeb42dc13408308114b"
+        }
+      },
+      "macOS": {
+        "status": "cancelled after observed test-runner failure",
+        "job": 120028525792,
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028525792",
+        "cause": "Node 24.20.0 rejects --no-webstorage. Vitest repeatedly attempted to start workers; the run was explicitly cancelled after inspecting live logs.",
+        "log": {
+          "path": "/tmp/youdub-macos-8fea16f1.log",
+          "sha256": "65b54d544f9053c65d7d0f20c10a2c4b8e67d72132ae17a8b548931cb9584df6"
+        }
+      }
+    }
   }
 }

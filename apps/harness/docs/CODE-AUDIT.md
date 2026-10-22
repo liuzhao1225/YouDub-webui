@@ -37,20 +37,20 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A10 B 站下载 | 当前源码经实际 Host 验证直连完整链接、b23 短链和显式代理端口 7897，三次各自两个节点完成；视频、音频、媒体信息和 Range 读回通过。[本次证据](evidence/refactor-bilibili-download.json)、[代理合同](evidence/download-node-proxy-contract.json) | 原生页面输入、保存和播放 |
 | A11 人工审核与汇合 | 两输入校对、保存后保持等待、确认再导出及原生文件保存通过。[扩展证据](evidence/refactor-extension-lifecycle.json) | 最终候选的相关回归 |
 | A12 自动继续与持久化 | 默认模板去重；节点 autoContinue 控制审核；暂停退出、重启、确认通过。[九节点](evidence/refactor-native-zoo-review.json)、[模板去重](evidence/refactor-extension-lifecycle.json) | 合并后的最终候选 |
-| A13 重跑与冲突 | 修订冲突、结果复用及必要审核保留；4313ec5e 的隔离副本重启后，6 个历史任务、7 个工作流和 12 个产物读回一致。[业务映射](FUSION-COVERAGE.md)、[历史数据](evidence/refactor-history-readback.json) | 最终候选重跑与修订交互 |
+| A13 重跑与冲突 | 修订冲突、结果复用及必要审核保留；4313ec5e 的隔离副本重启后，6 个历史任务、7 个工作流和 12 个产物读回一致。[业务映射](FUSION-COVERAGE.md)、[历史数据](evidence/refactor-history-readback.json) | 8fea16f1 的实际 Host 修订、取消/重试、重跑复用及删除独立性通过；最终原生交互仍待验收。[边界证据](evidence/refactor-host-api-boundaries.json) |
 | A14 取消、远端与退出 | 运行中原生退出取消保留任务，持久审核可退出；排队/远端未知状态合同及原错误传播已有回归。[活动测试](../test/desktop-activity.test.mjs)、[退出测试](../test/desktop-unload.test.mjs) | 资源下载、远端等待、排队组合的最终原生退出验收 |
-| A15 工作流与任务管理 | 创建/修改、模板副本、原生导入导出、重启及模板去重通过。[前端映射](../FRONTEND-MAPPING.md) | 全部列表过滤、删除和节点编辑分支 |
+| A15 工作流与任务管理 | 创建/修改、模板副本、原生导入导出、重启及模板去重通过。[前端映射](../FRONTEND-MAPPING.md) | E19 已验证实际 Host 分页、状态/活动筛选和删除保护；原生列表及节点编辑分支仍待验收 |
 | A16 字幕与播放 | 原生字幕导出字节一致；播放器完整播放、产物 Range 和媒体探测有证据。[原生任务](evidence/refactor-native-zoo-review.json) | 正在并行修改的媒体拖动修复及同步播放验收 |
 | A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | Vox 预设音色、设备与其他输入组合 |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
-| A20 构建与平台 | 4313ec5e 的 macOS 干净 CI 全部通过：GUI 8,075 项、profile/插件 6,685 项、产品集成 77 项、Python 525 项。Windows 首次文件操作超时未在同提交重跑中复现；重跑取得 SDK 回退诊断，已修复短路径导致的重复 importer，本地构建、79 项包操作、9 项 profile 和 2 种实际 Host 通过。[本批 CI](evidence/refactor-remaining-products-prune.json)、[修复证据](evidence/refactor-profile-canonical-path.json) | 修复后的双平台干净 CI、最终原生验收 |
+| A20 构建与平台 | 4313ec5e 的 macOS 干净 CI 全部通过：GUI 8,075 项、profile/插件 6,685 项、产品集成 77 项、Python 525 项。Windows 首次文件操作超时未在同提交重跑中复现；重跑取得 SDK 回退诊断，已修复短路径导致的重复 importer，本地构建、79 项包操作、9 项 profile 和 2 种实际 Host 通过。[本批 CI](evidence/refactor-remaining-products-prune.json)、[修复证据](evidence/refactor-profile-canonical-path.json) | 8fea16f1 Windows：567 项桌面/进程、32 项产品合同及两种实际 Host 通过；同提交 macOS CI 遇 Node 24.20 不兼容测试参数并取消；修正后本地 Node 24/26 各 264 项通过，待新 CI，最终原生验收开放 |
 
 ## 尚需实施的收尾
 
-1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；修复后的实际 Windows 链接仍待 CI 验证。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
+1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；8fea16f1 的实际 Windows CI 已通过三种旧锁迁移及卸载后 SDK 链接检查。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
 2. 收拢并行界面、资源及媒体拖动改动，形成固定候选，完成上表未通过的真实操作和输入验收。
-3. 已补齐当前目录体积及历史数据副本记录；继续测量原生冷/热启动，完成全新私有路径及 Windows 验收。[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
+3. 已补齐当前目录体积及历史数据副本记录；当前私有路径已由实际 Host/Python 读回验证；继续测量原生冷/热启动，完成全新下载及 Windows 原生验收。[路径证据](evidence/refactor-runtime-isolation.json)、[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。
 
 本轮交付范围为源码开发版。安装包、签名、发布、自动更新服务和在线插件市场继续按用户要求排除；已有环境/模型准备界面属于开发版功能。[发行边界](YOUDUB-DESKTOP-REFACTOR-PLAN.md#10-后续发行边界)

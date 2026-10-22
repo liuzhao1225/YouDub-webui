@@ -608,3 +608,21 @@ Windows 82abf8c3 的两阶段锁同步仍未修复卸载后的旧 SDK 回退。�
 `npm start` / `npm run dev` 使用 Electron，`npm run dev:web` 使用同一源码 Host 的浏览器启动器。通过独立 home、端口 3094 实际运行根命令，首启测试模式经 Connection 返回 200，启动器退出码为 0。共享业务页面、原视觉与动画、网站和插件示例保留。
 
 领域 187 项通过、1 项跳过；组件 264 项分别在应用携带的 Node 24 与本机 Node 26 通过；实际 Host/profile/首启共 26 项通过。Node 26 的初次组件运行失败保留，修复仅显式关闭测试 worker 的服务端 Web Storage，使 jsdom 拥有浏览器存储。来源原件核验、类型、产品构建与组合边界通过。Windows、新候选 CI 和原生交互待验收。[结构化证据](evidence/refactor-legacy-entries-prune.json)
+
+## P3 实际 Host 私有路径与凭据优先级（2026-10-23）
+
+8fea16f1 在独立 home/profile 中经官方 Loader 启动临时探针，通过 YouDubWorker → Harness Subprocess 运行真实私有 Python。Node 为本应用 Electron 内的 24.21.0，pnpm 来自本工作区；Python、FFmpeg、四模型、NLTK 和缓存由选择的安装目录指定，`PYTHONNOUSERSITE=1` 且实际 `site.ENABLE_USER_SITE=false`。故意注入的全局 Python/HF 路径没有覆盖产品路径。合成凭据证明 home 内已保存值优先于进程和 .env；没有读取或输出真实密钥。
+
+初次探针因测试 patch 漏掉必填配置未激活；补全配置后，新 profile 按设计停在四模型确认，显式 prepare 后四项 ready、整体 ready，Host 正常清理退出。失败记录与修正步骤保留。运行资源通过链接复用既有私有 YouDub 安装；这次验证不代表全新下载和原生交互。[结构化记录](evidence/refactor-runtime-isolation.json)
+
+## P4–P5：实际 Host 业务边界补验收（2026-10-23）
+
+在 8fea16f1 的独立 profile 中，通过官方 Desktop Host/Connection 验证工作流 CRUD 和修订冲突、任务取消后重试、校对历史与幂等回执、派生任务部分复用、文件归属和删除保护。7 组场景、105 次请求通过，Host 正常退出。直接使用已有 Harness 文本校对 fixture，未修改产品源码或真实任务。夹具入口、空迁移和公共返回形状的早期断言错误保留在证据中；不将这些错误记作产品修复。[完整证据](evidence/refactor-host-api-boundaries.json)
+
+## P5：双语字幕文件导入（2026-10-23）
+
+当前 8fea16f1 的实际 Host 接收 BOM/CRLF 英文 SRT、中文 SRT 与 zoo 视频，经原 Python 字幕解析及 FFmpeg 成功导出 MP4 和双 SRT，封面生成与读取通过。导入结果保留原文本和时码；导出按原 YouDub 分句规则移除末尾显示标点。时间轴不匹配和坏格式两例均保留 `INVALID_SUBTITLES`，没有最终输出。见[证据](evidence/refactor-subtitle-import.json)。
+
+## CI：Node 24 的 Web Storage 参数修正（2026-10-23）
+
+8fea16f1 的 Windows CI 全部通过；macOS 的框架 GUI/profile 已通过，界面阶段的 Node 24.20 拒绝 `--no-webstorage`，Vitest 持续启动失败。读取实时日志确认后取消该作业，保留日志。官方 Node 24.20 二进制重现退出码 9；改用原支持的 `--no-experimental-webstorage` 后，Node 24.20 与 Node 26.7 的 38 文件/264 项界面测试均通过，配置 lint 通过。变更仅限测试启动参数，新 CI 待执行。见[失败与修正证据](evidence/refactor-webstorage-test-flag.json)。

@@ -8,7 +8,7 @@ YouDub Harness 版在「设置 → 通用 → 语言」中选择界面语言，�
 - `apps/web/src/locales/index.ts`：内置语言目录和类型。组件通过 `useText()` 按键取文案，动态内容使用 `{parameter}`，不要在组件中按中英日位置排列字符串。
 - `apps/harness/locales/ja.json`：官方设置、模型、主题、插件管理和通用操作的日语字典，按 Harness 原有 namespace/key 注册。官方中文和英文继续使用上游字典。
 - `apps/harness/src/frontend/locales.ts`：通过官方 `locale.register` 和 `locale.addLanguage` 注册字典及语言。
-- `apps/harness/src/frontend/i18n.tsx`：业务组件订阅官方语言状态，用 `locale.bind('youdub')` 翻译；偏好由 Harness Host 持久化。独立 Web 入口保留自己的浏览器偏好。
+- `apps/harness/src/frontend/i18n.tsx`：业务组件订阅官方语言状态，用 `locale.bind('youdub')` 翻译；偏好由 Harness Host 持久化。浏览器开发入口使用同一 Harness 服务；原独立 Web 启动入口已退役。
 
 用户输入的任务名、工作流名、提供商名称和历史结果保留原文。内置工作流的展示名称按界面语言翻译，原始工作流文档保持不变。业务节点的名称、端口和参数继续使用现有 `LocalizedText` 契约，其 `default` 是缺失翻译时的显示文本。
 
