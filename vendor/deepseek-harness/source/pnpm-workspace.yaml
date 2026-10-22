@@ -12,7 +12,6 @@ packages:
   - website
   # Deploy root of the single-exe build: a pure dependency manifest whose
   # closure is what the exe bundles and what the Python runtime distributes.
-  - python/sdk-runtime
 
 overrides:
   'extract-zip>yauzl': '3.4.0'
@@ -78,20 +77,6 @@ minimumReleaseAgeExclude:
   - node-addon-require-builtin-win32-ia32-msvc@0.1.9
   - node-addon-require-builtin-win32-x64-msvc@0.1.9
   - node-addon-require-builtin@0.1.9
-  # The active pnpm supply-chain policy blocks this reviewed runtime closure
-  # until its release-age window expires unless every exact package is exempt.
-  - '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-linux-arm64-musl@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-linux-arm64@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-linux-x64-musl@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-linux-x64@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.263'
-  - '@anthropic-ai/claude-agent-sdk@0.3.263'
-  # All platform aliases resolve to the @openai/codex package name, so their
-  # reviewed exact versions must share one version-union policy entry.
-  - '@openai/codex@0.153.4||0.153.4-darwin-arm64||0.153.4-darwin-x64||0.153.4-linux-arm64||0.153.4-linux-x64||0.153.4-win32-arm64||0.153.4-win32-x64'
   # The native computer-use provider pins this reviewed upstream runtime closure.
   - '@trycua/cua-driver-darwin-arm64@0.28.0'
   - '@trycua/cua-driver-darwin-x64@0.28.0'

@@ -4,16 +4,11 @@ import { tmpdir } from 'node:os'
 import { describe, expect, it } from 'vitest'
 import primaryRuntimeLock from './primary-runtime/lock.json' with { type: 'json' }
 import {
-  CLAUDE_AGENT_SDK_PACKAGE,
   assertRuntimeLicenses,
-  claudeDistributionFromManifest,
-  collectPythonDependencies,
   collectBundledPythonDependencies,
-  isOwnerAuthorizedRuntime,
   isPermissive,
   type Manifest,
   manifestPatterns,
-  parsePyprojectRequirements,
   parseVendoredRows,
   render,
   tierExternalDeps,
@@ -84,8 +79,8 @@ describe('tierExternalDeps', () => {
     expect(dependencies.map(dep => dep.name)).toEqual(['browser-lib'])
     expect(() => { assertRuntimeLicenses(dependencies) }).toThrow('browser-lib (GPL-3.0-only)')
     expect(() => { assertRuntimeLicenses([{ name: 'browser-lib', license: 'MIT' }]) }).not.toThrow()
-    expect(() => { assertRuntimeLicenses([{ name: CLAUDE_AGENT_SDK_PACKAGE, license: 'SEE LICENSE IN README.md' }]) })
-      .not.toThrow()
+    expect(() => { assertRuntimeLicenses([{ name: '@anthropic-ai/claude-agent-sdk', license: 'SEE LICENSE IN README.md' }]) })
+      .toThrow('@anthropic-ai/claude-agent-sdk')
   })
 
   it('keeps browser-bundled development dependencies in runtime disclosures', () => {
@@ -238,93 +233,6 @@ describe('parseVendoredRows', () => {
   })
 })
 
-describe('parsePyprojectRequirements', () => {
-  it('reads the committed manifests', () => {
-    expect(parsePyprojectRequirements(readFileSync(resolve(root, 'python/sdk/pyproject.toml'), 'utf8'))).toContain('pydantic')
-  })
-
-  it('locates requirement arrays by TOML table, so author-named groups are not missed', () => {
-    expect(parsePyprojectRequirements([
-      '[build-system]',
-      'requires = ["hatchling>=1.24.0"]',
-      '',
-      '[project]',
-      'name = "not-a-requirement"',
-      'dependencies = ["pydantic>=2.12"]',
-      '',
-      '[project.optional-dependencies]',
-      'cli = ["click"]',
-      '',
-      '[dependency-groups]',
-      'docs = ["sphinx>=7"]',
-      '',
-      '[tool.hatch.build.targets.wheel]',
-      'packages = ["src/deepseek_harness"]',
-      '',
-      '[tool.pytest.ini_options]',
-      'testpaths = ["tests"]',
-    ].join('\n'))).toEqual(['hatchling', 'pydantic', 'click', 'sphinx'])
-  })
-
-  it('does not truncate an array at a bracket inside extras', () => {
-    expect(parsePyprojectRequirements('[project]\ndependencies = ["httpx[http2]", "requests"]\n'))
-      .toEqual(['httpx', 'requests'])
-  })
-
-  it('reads names whether or not requirements carry versions, extras, or markers', () => {
-    expect(parsePyprojectRequirements("[project]\ndependencies = [\"pydantic>=2.12\", \"requests\", \"httpx[http2]\", \"tomli ; python_version < '3.11'\", \"hatchling >= 1.24.0\"]\n"))
-      .toEqual(['pydantic', 'requests', 'httpx', 'tomli', 'hatchling'])
-  })
-
-  it('reads single-quoted TOML literals and rejects an unreadable requirement', () => {
-    expect(parsePyprojectRequirements("[project]\ndependencies = ['requests', \"pydantic>=2\"]\n")).toEqual(['requests', 'pydantic'])
-    expect(() => parsePyprojectRequirements('[project]\ndependencies = ["!!broken"]\n')).toThrow(/cannot read a distribution name/)
-  })
-
-  it('reads a multi-line array', () => {
-    expect(parsePyprojectRequirements('[project]\ndependencies = [\n  "pydantic>=2.12",\n  "typing-extensions",\n]\n'))
-      .toEqual(['pydantic', 'typing-extensions'])
-  })
-
-  it('obeys TOML comments, quoted keys, and escaped strings', () => {
-    expect(parsePyprojectRequirements([
-      '[project] # a legal header comment',
-      'dependencies = [',
-      '  "pydantic", # ] does not close the array',
-      '  # "old-package" is not a dependency',
-      '  "tomli; python_version < \'3.11\'",',
-      ']',
-      '',
-      '[dependency-groups]',
-      '"test.docs" = ["pytest"]',
-    ].join('\n'))).toEqual(['pydantic', 'tomli', 'pytest'])
-  })
-
-  it('accepts dependency-group includes and rejects unsupported requirement forms', () => {
-    expect(parsePyprojectRequirements('[dependency-groups]\nbase = ["pytest"]\nall = [{ include-group = "base" }]\n'))
-      .toEqual(['pytest'])
-    expect(() => parsePyprojectRequirements('[project]\ndependencies = "pytest"\n')).toThrow(/must be an array/)
-    expect(() => parsePyprojectRequirements('[dependency-groups]\ntest = [{ unknown = "pytest" }]\n')).toThrow(/unsupported requirement entry/)
-  })
-})
-
-describe('collectPythonDependencies', () => {
-  it('labels shared Python metadata in the Python-project context', () => {
-    const dependencies = collectPythonDependencies(['[project]\ndependencies = ["numpy", "pandas", "six", "tzdata"]\n'])
-    expect(dependencies.map(({ role }) => role)).toEqual(Array(4).fill('Python project dependency'))
-  })
-
-  it('excludes normalized local project names without exempting a third-party prefix', () => {
-    const pyprojects = [
-      '[project]\nname = "deepseek-harness-runtime-bin"\ndependencies = ["pydantic"]\n',
-      '[project]\nname = "deepseek-harness-sdk"\ndependencies = ["DeepSeek.Harness_Runtime-Bin", "deepseek-unrelated"]\n',
-    ]
-    expect(() => collectPythonDependencies(pyprojects)).toThrow(
-      'python dependency deepseek-unrelated is missing from PYTHON_METADATA',
-    )
-  })
-})
-
 describe('collectBundledPythonDependencies', () => {
   it('discloses the committed bundled Python closure with its exact locked versions', () => {
     const dependencies = collectBundledPythonDependencies(primaryRuntimeLock.pythonPackages)
@@ -395,66 +303,6 @@ describe('isPermissive', () => {
     expect(['MIT)', '((MIT', '(MIT OR GPL-3.0-only', 'MIT OR OR GPL-3.0-only'].some(isPermissive)).toBe(false)
     expect(isPermissive('MIT+')).toBe(false)
     expect(isPermissive('GPL-2.0-only WITH Classpath-exception-2.0')).toBe(false)
-  })
-})
-
-describe('official Claude distribution authorization', () => {
-  it('authorizes only the direct SDK identity without relabeling its license', () => {
-    expect(isOwnerAuthorizedRuntime(CLAUDE_AGENT_SDK_PACKAGE)).toBe(true)
-    expect(isOwnerAuthorizedRuntime(`${CLAUDE_AGENT_SDK_PACKAGE}-linux-x64`))
-      .toBe(false)
-    expect(isOwnerAuthorizedRuntime('@anthropic-ai/unrelated')).toBe(false)
-    expect(isPermissive('SEE LICENSE IN README.md')).toBe(false)
-  })
-
-  it('derives version-independent platform payloads from the official SDK manifest', () => {
-    expect(claudeDistributionFromManifest({
-      name: CLAUDE_AGENT_SDK_PACKAGE,
-      version: '9.8.7',
-      license: 'future declared terms',
-      claudeCodeVersion: '6.5.4',
-      optionalDependencies: {
-        [`${CLAUDE_AGENT_SDK_PACKAGE}-linux-x64`]: '9.8.7',
-        [`${CLAUDE_AGENT_SDK_PACKAGE}-darwin-arm64`]: '9.8.7',
-      },
-    })).toEqual({
-      sdkVersion: '9.8.7',
-      claudeCodeVersion: '6.5.4',
-      payloads: [
-        {
-          name: `${CLAUDE_AGENT_SDK_PACKAGE}-darwin-arm64`,
-          version: '9.8.7',
-        },
-        {
-          name: `${CLAUDE_AGENT_SDK_PACKAGE}-linux-x64`,
-          version: '9.8.7',
-        },
-      ],
-    })
-  })
-
-  it('rejects a wrong SDK identity, missing payloads, and unrelated optionals', () => {
-    expect(() => claudeDistributionFromManifest({
-      name: '@anthropic-ai/unrelated',
-      version: '1.0.0',
-      claudeCodeVersion: '1.0.0',
-      optionalDependencies: {
-        [`${CLAUDE_AGENT_SDK_PACKAGE}-linux-x64`]: '1.0.0',
-      },
-    })).toThrow(`expected ${CLAUDE_AGENT_SDK_PACKAGE} manifest`)
-    expect(() => claudeDistributionFromManifest({
-      name: CLAUDE_AGENT_SDK_PACKAGE,
-      version: '1.0.0',
-      claudeCodeVersion: '1.0.0',
-    })).toThrow('declares no optional platform payloads')
-    expect(() => claudeDistributionFromManifest({
-      name: CLAUDE_AGENT_SDK_PACKAGE,
-      version: '1.0.0',
-      claudeCodeVersion: '1.0.0',
-      optionalDependencies: {
-        '@anthropic-ai/unrelated': '1.0.0',
-      },
-    })).toThrow('outside its authorized platform-payload identity')
   })
 })
 

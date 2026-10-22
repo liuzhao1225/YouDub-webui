@@ -83,13 +83,13 @@ describe('application entrypoints', () => {
     ])
   })
 
-  it('rejects a private Python application carrier outside dsh', () => {
+  it('rejects a private application carrier outside dsh', () => {
     const root = fixture()
-    write(root, 'packages/sdk/rogue-python-runtime/package.json', JSON.stringify({ private: true }))
-    write(root, 'packages/sdk/rogue-python-runtime/src/bin.ts', '#!/usr/bin/env node\n')
+    write(root, 'packages/host/rogue-runtime/package.json', JSON.stringify({ private: true }))
+    write(root, 'packages/host/rogue-runtime/src/bin.ts', '#!/usr/bin/env node\n')
 
     expect(applicationEntrypointViolations(root)).toEqual([
-      'packages/sdk/rogue-python-runtime/src/bin.ts: executable source has no application/build/test classification',
+      'packages/host/rogue-runtime/src/bin.ts: executable source has no application/build/test classification',
     ])
   })
 

@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 import { expect, it, onTestFinished } from 'vitest'
 import { officialBundleInstallTarget } from '../src/official-install-target.ts'
 
-const name = '@deepseek-ai/dsh-subagent-codex'
+const name = '@deepseek-ai/dsh-experimental-ralph-bundle'
 const version = '0.2.1-alpha.1'
 
 function fixture() {

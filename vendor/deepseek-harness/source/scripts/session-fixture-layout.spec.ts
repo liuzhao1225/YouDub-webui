@@ -7,7 +7,6 @@ import { scrubSessionSnapshot } from '@deepseek-ai/dsh-session-snapshot'
 import {
   canonicalSessionFixture,
   inspectSessionFixtureLayouts,
-  isPhysicalSessionFixture,
 } from './session-fixture-layout.ts'
 
 const HEADER = `  {"type":"session","version":${SESSION_FORMAT_VERSION},"id":"fixture","createdAt":1,"isSeeded":false,"delegationDepth":0}  `
@@ -192,27 +191,6 @@ describe('canonicalSessionFixture', () => {
     const releasedHeader = '{"type":"session","version":0,"id":"fixture","createdAt":1,"delegationDepth":0}'
     expect(() => canonicalSessionFixture(`${releasedHeader}\n{"type":"text-chunks"}\n`, 'broken.jsonl'))
       .toThrow(/broken\.jsonl: session snapshot line 2: released text-chunks row 0 lacks required member "data"/)
-  })
-})
-
-describe('isPhysicalSessionFixture', () => {
-  it('recognizes fixtures that preserve physical persistence encoding', () => {
-    expect(isPhysicalSessionFixture(
-      'scripts/snapshots/python-sdk-single-exe/advanced/session.1.jsonl',
-    )).toBe(true)
-    expect(isPhysicalSessionFixture(
-      'scripts/snapshots/python-sdk-single-exe/advanced/session.1.v1.jsonl',
-    )).toBe(true)
-    expect(isPhysicalSessionFixture(
-      'scripts/snapshots/python-sdk-single-exe/advanced/session.jsonl',
-    )).toBe(true)
-    expect(isPhysicalSessionFixture(
-      'scripts/snapshots/python-sdk-single-exe/restart/session.2.jsonl',
-    )).toBe(true)
-    expect(isPhysicalSessionFixture(
-      'scripts/snapshots/python-sdk-single-exe/advanced/requests.jsonl',
-    )).toBe(false)
-    expect(isPhysicalSessionFixture('apps/web/tests/snapshots/example/session.jsonl')).toBe(false)
   })
 })
 

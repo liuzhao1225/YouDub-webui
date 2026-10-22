@@ -658,9 +658,7 @@ describe('PluginManagerPage', () => {
           '@deepseek-ai/dsh-base',
           '@deepseek-ai/dsh-web-app',
           '@deepseek-ai/dsh-headless',
-          '@deepseek-ai/dsh-sdk-app',
           '@deepseek-ai/dsh-acp-app',
-          '@deepseek-ai/dsh-sdk-minimal',
         ].map(name => pkg({ name })),
         pkg({ name: '@acme/dsh-base', readOnlyReason: 'management-required' }),
         pkg({ name: 'dsh-better-sidebar' }),
@@ -1035,8 +1033,8 @@ describe('PluginManagerPage', () => {
         { packages: [
           pkg({ name: '@deepseek-ai/dsh-experimental-badge-skill-bundle', official: true, enabled: false }),
           pkg({ name: '@deepseek-ai/dsh-experimental-agent-team-profile', installed: false, optional: true, removable: false, enabled: false }),
-          pkg({ name: '@deepseek-ai/dsh-subagent-claude-code', official: true, availability: 'missing', installed: false, enabled: false }),
-          pkg({ name: '@deepseek-ai/dsh-subagent-codex', official: true, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-plugin-market-bundle', official: true, availability: 'missing', installed: false, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, enabled: false }),
           pkg({ name: '@deepseek-ai/dsh-experimental-tool-worktree', official: true, enabled: false }),
           pkg({ name: '@acme/new-official', official: true }),
           pkg(),
@@ -1067,7 +1065,7 @@ describe('PluginManagerPage', () => {
         .toEqual(['more'])
       const more = document.querySelector('[data-plugin-group="more"]') as HTMLElement
       expect(within(more).getAllByRole('listitem').map(card => card.getAttribute('data-plugin-package')))
-        .toEqual([team, '@acme/new-official', '@deepseek-ai/dsh-experimental-tool-worktree', '@deepseek-ai/dsh-experimental-badge-skill-bundle', '@deepseek-ai/dsh-subagent-codex', '@deepseek-ai/dsh-subagent-claude-code'])
+        .toEqual([team, '@acme/new-official', '@deepseek-ai/dsh-experimental-tool-worktree', '@deepseek-ai/dsh-experimental-badge-skill-bundle', '@deepseek-ai/dsh-experimental-ralph-bundle', '@deepseek-ai/dsh-experimental-plugin-market-bundle'])
       expect(document.querySelector('[data-plugin-package="dsh-better-sidebar"]')).toBeNull()
       fireEvent.click(screen.getByRole('button', { name: en.openDetail.replace('{name}', team) }))
       fireEvent.click(screen.getByRole('button', { name: en.backToPackage.replace('{name}', en.moreTitle) }))
@@ -2108,7 +2106,7 @@ describe('PluginManagerPage', () => {
     try {
       const { actions, set } = renderTab({ packages: [
         pkg({ name, official: true, enabled: false }),
-        pkg({ name: '@deepseek-ai/dsh-subagent-codex', official: true, enabled: false }),
+        pkg({ name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, enabled: false }),
       ] })
       expect(document.querySelector(`[data-plugin-package="${name}"]`)).toBeNull()
       set({ highlight: name })
@@ -2325,8 +2323,8 @@ it('supplies the accepted entry values and atomic mutation action to a custom pl
 
 
 describe('on-demand Official bundles', () => {
-  const name = '@deepseek-ai/dsh-subagent-codex'
-  const title = 'Codex subagent'
+  const name = '@deepseek-ai/dsh-experimental-ralph-bundle'
+  const title = 'Ralph bundle'
   const catalog = (): PackageView => ({ name, meta: { title }, official: true, availability: 'missing', installed: false,
     optional: false, removable: false, enabled: false, rows: [],
     installTarget: { spec: `${name}@2.0.0`, version: '2.0.0' },

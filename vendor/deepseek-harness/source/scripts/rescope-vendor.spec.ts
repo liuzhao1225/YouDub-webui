@@ -7,9 +7,6 @@ const ANCHOR = '\n## Sync procedure'
 const INSERTED = `\n15. **rescope**: one log entry.\n${ANCHOR}`
 
 describe('rescope file selection', () => {
-  it('preserves the recorded npm resolution', () => {
-    expect(isRescopeExcluded('scripts/dependency-catalog/package-lock.json')).toBe(true)
-  })
 
   it.each([
     'scripts/dependency-catalog/package.json',

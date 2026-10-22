@@ -85,10 +85,10 @@ it('preserves selected bundle load errors in the agent list result', async () =>
 it('exposes an absent Official bundle installation target without display metadata', async () => {
   const { manager, call } = await fixture()
   const offered: BundleInfo = {
-    name: '@deepseek-ai/dsh-subagent-codex', official: true, availability: 'missing',
+    name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, availability: 'missing',
     installed: false, enabled: false, optional: false, removable: false, rows: [], overrides: [],
-    installTarget: { spec: '@deepseek-ai/dsh-subagent-codex@1.2.3', version: '1.2.3' },
-    meta: { title: 'Codex subagent' },
+    installTarget: { spec: '@deepseek-ai/dsh-experimental-ralph-bundle@1.2.3', version: '1.2.3' },
+    meta: { title: 'Ralph bundle' },
   }
   manager.listBundles.mockResolvedValue([offered])
   expect(JSON.parse(resultText(await call({ action: 'list_bundles' })))).toMatchInlineSnapshot(`
@@ -98,11 +98,11 @@ it('exposes an absent Official bundle installation target without display metada
           "availability": "missing",
           "enabled": false,
           "installTarget": {
-            "spec": "@deepseek-ai/dsh-subagent-codex@1.2.3",
+            "spec": "@deepseek-ai/dsh-experimental-ralph-bundle@1.2.3",
             "version": "1.2.3",
           },
           "installed": false,
-          "name": "@deepseek-ai/dsh-subagent-codex",
+          "name": "@deepseek-ai/dsh-experimental-ralph-bundle",
           "official": true,
           "optional": false,
           "overrides": [],

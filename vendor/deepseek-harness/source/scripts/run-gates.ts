@@ -331,7 +331,6 @@ export function gatesForMode(selected: Mode): Gate[] {
       return nodeCompatGates()
     case 'check-all':
       return [
-        pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
         pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
         pnpmScript('client-domain-graph', 'verify-client-domain-graph', { label: 'client domain graph' }),
         pnpmScript('test', 'test'),
@@ -354,7 +353,6 @@ export function gatesForMode(selected: Mode): Gate[] {
       return [
         ...hygieneLeafGates(),
         pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
-        pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
       ]
     case 'doc-sync':
       return docSyncLeafGates()
@@ -365,7 +363,6 @@ export function gatesForMode(selected: Mode): Gate[] {
 
 function ciSharedStaticGates(): Gate[] {
   return [
-    pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
     pnpmScript('default-product-isolation', 'verify-default-product-isolation', { label: 'default product isolation' }),
     pnpmScript('product-use', 'verify-product-use', { label: 'product package classification' }),
     pnpmScript('official-bundle-catalog', 'verify-official-bundle-catalog', { label: 'Official bundle catalog' }),
@@ -833,7 +830,6 @@ function docSyncLeafGates(options: {
     pnpmScript('tool-catalog', 'verify-tool-catalog', { label: 'tool catalog' }),
     pnpmScript('config-catalog', 'verify-config-catalog', { label: 'config catalog' }),
     pnpmScript('plugin-packages', 'verify-plugin-packages', { label: 'skill plugin package list' }),
-    pnpmScript('dependency-catalog', 'verify-dependency-catalog', { label: 'npm dependency catalog', quick: true }),
     pnpmScript('persistence-catalog', 'verify-persistence-catalog', { label: 'persistence catalog' }),
     pnpmScript('persistence-changes', 'verify-persistence-changes', { label: 'persistence type history' }),
     pnpmScript('persistence-releases', 'verify-persistence-releases', { label: 'released persistence history' }),
@@ -893,11 +889,8 @@ function builtBinSmokeGate(needs: string[] = ['build']): Gate {
     'apps/cli/tests/built-bin.e2e.ts',
     'apps/desktop/tests/acl-skill.built.e2e.ts',
     'packages/host/directory-picker-native/tests/built-worker.e2e.ts',
-    'packages/sdk/server/tests/built-scope-carrier.e2e.ts',
     'packages/deliverables/tool-present/tests/built-errors.e2e.ts',
     'packages/subprocess/subprocess-local/tests/spawn-runner-built.e2e.ts',
-    'packages/subagent/subagent-codex/tests/loader-composition.e2e.ts',
-    'packages/subagent/subagent-claude-code/tests/loader-composition.e2e.ts',
     'packages/api/remotes/tests/built-lib.e2e.ts',
     'packages/experimental/agent-team/tests/built-lib.e2e.ts',
     // Built execution consumers: the only automated proof that package-name

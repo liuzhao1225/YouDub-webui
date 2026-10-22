@@ -47,7 +47,6 @@ Use the core packages to build or extend an agent that records durable session h
 - [Scoped registration subsystem](../../docs/subsystems/scope.md) — the scoped-layer primitive these registries build on.
 - [Architecture](../../docs/architecture.md) — the turn flow and where new behavior goes.
 - [Base bundle](../bundle/base/README.md) — the default product composition.
-- [SDK minimal bundle](../bundle/sdk-minimal/README.md) — a complete standalone composition with a deliberately smaller feature set.
 
 -----
 

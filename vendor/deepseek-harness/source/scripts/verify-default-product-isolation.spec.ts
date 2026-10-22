@@ -30,7 +30,7 @@ function fixture(): string {
   write(root, 'apps/web/package.json', { name: '@deepseek-ai/dsh-web-frontend' })
   write(root, 'apps/web/index.html', '<script type="module" src="/src/main.ts"></script>')
   write(root, 'apps/web/src/main.ts', 'export {}\n')
-  write(root, 'python/sdk-runtime/package.json', { name: '@deepseek-ai/dsh-python-runtime' })
+  write(root, 'packages/host/unused-runtime/package.json', { name: '@deepseek-ai/dsh-unused-runtime' })
   write(root, 'packages/core/core/package.json', { name: core })
   write(root, 'packages/core/core/src/index.ts', 'export {}\n')
   write(root, 'packages/bundle/base/package.json', { name: base, dsh: { bundle: { patch: ['./cordis.patch.yml', '../web-app/presets/standard.patch.yml'] } } })
@@ -107,8 +107,8 @@ describe('default product isolation', () => {
 
   it('ignores dependency trees and directories whose names end in a source extension', () => {
     const root = fixture()
-    mkdirSync(join(root, 'python/sdk-runtime/src/vendor.js'), { recursive: true })
-    write(root, 'python/sdk-runtime/src/node_modules/vendor/index.js', `import '${experimental}'\n`)
+    mkdirSync(join(root, 'packages/host/unused-runtime/src/vendor.js'), { recursive: true })
+    write(root, 'packages/host/unused-runtime/src/node_modules/vendor/index.js', `import '${experimental}'\n`)
 
     expect(verifyDefaultProductIsolation(root).failures).toEqual([])
   })
@@ -482,9 +482,9 @@ describe('default product isolation', () => {
     },
   )
 
-  it('does not make an unselected SDK installation a product root', () => {
+  it('does not make an unselected runtime installation a product root', () => {
     const root = fixture()
-    manifest(root, 'python/sdk-runtime/package.json', { dependencies: { [experimental]: 'workspace:*' } })
+    manifest(root, 'packages/host/unused-runtime/package.json', { dependencies: { [experimental]: 'workspace:*' } })
     expect(verifyDefaultProductIsolation(root).failures).toEqual([])
   })
 

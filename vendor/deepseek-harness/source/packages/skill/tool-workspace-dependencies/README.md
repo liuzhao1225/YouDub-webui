@@ -46,13 +46,13 @@ Mount the plugin beside the tool registry with the payload directory. Configurat
 
 On macOS and Linux, the builder retains `python` and `python3` as relative links to the sibling versioned interpreter (for example, `python3.12`). Installation preserves these two aliases and materializes other links. Alias validation requires the exact sibling filename and a regular target file; carriers that cannot preserve links, including Python wheels, retain supported regular command files. Windows keeps its ordinary `python.exe` file.
 
-The packaged `sdk` profile uses its bundled Python and Office skills by default; `DSH_PRIMARY_RUNTIME` overrides the resource location, and an empty value opts out. Source launches without a carrier default remain opt-in. See [runtime configuration](../../../python/sdk-runtime/README.md) for independent skill selection. Missing skill resources produce a startup warning; invalid or incomplete external runtime payloads fail the first tool call. Profile configuration changes require restarting the SDK process.
+Source launches opt in through `DSH_PRIMARY_RUNTIME`, which supplies the resource location; an empty value opts out. Missing skill resources produce a startup warning; invalid or incomplete external runtime payloads fail the first tool call. Profile configuration changes require restarting the process.
 
 ### Build a carrier payload
 
 From a repository checkout with dependencies installed, `CI=true pnpm run prepare:primary-runtime --target linux-x64 --output /tmp/dsh-office` writes `primary-runtime/` and `office-skills/`. The shared [download lock](../../../scripts/primary-runtime/lock.json) also covers `linux-arm64`, `mac-arm64`, `mac-x64`, and `win-x64`. `--python-only` omits Node.js and pnpm; `--cache` selects the hash-verified archive cache. The entry executes interpreter and Office read/write checks only for a native target. Cross-target builds require those checks on the target host before deployment.
 
-A container can copy both directories into an immutable image layer and set `DSH_PRIMARY_RUNTIME` to the absolute `primary-runtime/` path. The SDK queries that payload in place. Desktop uses the same builder and retains its Harness-home installation and signing checks.
+A container can copy both directories into an immutable image layer and set `DSH_PRIMARY_RUNTIME` to the absolute `primary-runtime/` path. The workspace dependency service queries that payload in place. Desktop uses the same builder and retains its Harness-home installation and signing checks.
 
 -----
 

@@ -47,7 +47,7 @@ Every operation resolves the server in the calling agent's scope. A missing serv
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The [base](../../bundle/base/README.md) and standalone [sdk-minimal](../../bundle/sdk-minimal/README.md) bundles each own this row:
+The [base](../../bundle/base/README.md) bundle owns this row:
 
 ```yaml
 - id: mcp-resources

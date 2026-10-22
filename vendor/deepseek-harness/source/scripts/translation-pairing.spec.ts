@@ -144,21 +144,21 @@ describe('translation pairing switchers', () => {
   })
 
   it('accepts only the canonical public URL for an absolute switcher', () => {
-    const targets = languageSwitcherTargets('python/sdk/README.zh.md')
-    const canonicalMarkdown = '# README\n\nEnglish | [中文](https://github.com/deepseek-ai/deepseek-harness/blob/master/python/sdk/README.zh.md)\n'
+    const targets = languageSwitcherTargets('packages/core/core/README.zh.md')
+    const canonicalMarkdown = '# README\n\nEnglish | [中文](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/core/core/README.zh.md)\n'
     const canonical = parseTranslationMarkdown(canonicalMarkdown)
     const wrongMarkdown = '# README\n\nEnglish | [中文](https://github.com/deepseek-ai/deepseek-harness/blob/master/other/README.zh.md)\n'
     const wrongPath = parseTranslationMarkdown(wrongMarkdown)
 
     expect(translationStructureSignature(canonical, targets, {
       repoRoot: process.cwd(),
-      sourcePath: 'python/sdk/README.md',
+      sourcePath: 'packages/core/core/README.md',
       isTranslationPairSource: fixturePairSource,
       markdown: canonicalMarkdown,
     }).links).toEqual([])
     expect(translationStructureSignature(wrongPath, targets, {
       repoRoot: process.cwd(),
-      sourcePath: 'python/sdk/README.md',
+      sourcePath: 'packages/core/core/README.md',
       isTranslationPairSource: fixturePairSource,
       markdown: wrongMarkdown,
     }).links).toEqual([
@@ -387,8 +387,6 @@ describe('translation scope discovery', () => {
     '.agents/notes/proposed/feature.md',
     'docs/guide.md',
     'python/guide.md',
-    'python/sdk-runtime/README.md',
-    'python/sdk-runtime/src/deepseek_harness_runtime/README.md',
   ])('includes %s', (file) => {
     expect(isTranslationScopeFile(file)).toBe(true)
   })
@@ -404,9 +402,6 @@ describe('translation scope discovery', () => {
     'packages/example/node_modules/dependency/README.md',
     'packages/example/lib/README.md',
     'coverage/report/README.md',
-    'python/sdk-runtime/src/deepseek_harness_runtime/runtime/deepseek-harness-sdk-runtime-macos-arm64/README.md',
-    'python/sdk-runtime/src/deepseek_harness_runtime/runtime/node/README.md',
-    'python/sdk-runtime/src/deepseek_harness_runtime/runtime/macos-arm64/office-skills/office-docx/SKILL.md',
   ])('excludes non-source or non-README path %s', (file) => {
     expect(isTranslationScopeFile(file)).toBe(false)
   })

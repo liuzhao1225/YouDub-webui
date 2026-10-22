@@ -86,17 +86,7 @@ dsh --profile web --patch ./extra.yml --dump-config
 
 `dsh plugin` 只在被转发的参数之前读取 `--profile`；被转发的参数从它无法识别的第一个 token 开始，因此 `--profile <name>` 必须写在最前面。被转发的参数以 pnpm 命令开头时，该命令之后的所有内容都会原样交给 pnpm，包括 `-h` 和 `--help`。被转发的参数以 `--filter <selector>` 或 `-r` 等 pnpm 选项开头时，后面的 `-h` 或 `--help` 仍会打印转发器的帮助而不是 pnpm 的帮助，因此要查看 pnpm 的帮助，需把 pnpm 命令写在它们之前。在任何被转发的参数之前出现的 `-h` 或 `--help` 会打印转发器自身的帮助并以 0 退出。
 
-Codex 与 Claude Code subagent 提供方是两个彼此独立的可选组合包。可以只添加一个包、在同一命令中添加两个包，或独立移除任一包：
-
-```sh
-dsh plugin --profile <name> add @deepseek-ai/dsh-subagent-codex
-dsh plugin --profile <name> add @deepseek-ai/dsh-subagent-claude-code
-dsh plugin --profile <name> add @deepseek-ai/dsh-subagent-codex @deepseek-ai/dsh-subagent-claude-code
-dsh plugin --profile <name> remove @deepseek-ai/dsh-subagent-codex
-dsh plugin --profile <name> remove @deepseek-ai/dsh-subagent-claude-code
-```
-
-pnpm 操作成功后会改变磁盘上的 Profile manifest 与组合包列表；正在运行的 Profile 会保留本次启动时的组合包集合。添加、移除或更新组合包后须重启该 Profile。这个启动边界只适用于组合包成员变化，Profile 或 home 中普通 `cordis.patch.yml` 的编辑通过热重载生效。下一次启动时，每个已安装组合包只注册自己的休眠 Host 提供方；还须在复制出的 Preset 中单独启用对应工具行，新 Agent 才能看到该工具。[Codex provider README](../../../packages/subagent/subagent-codex/README.zh.md) 与 [Claude Code provider README](../../../packages/subagent/subagent-claude-code/README.zh.md) 负责可执行文件、身份验证、载荷与失败细节；[base 组合包参考](../../../packages/bundle/base/README.zh.md) 负责默认依赖闭包。
+pnpm 操作成功后会改变磁盘上的 Profile manifest 与组合包列表；正在运行的 Profile 会保留本次启动时的组合包集合。添加、移除或更新组合包后须重启该 Profile。这个启动边界只适用于组合包成员变化，Profile 或 home 中普通 `cordis.patch.yml` 的编辑通过热重载生效。
 
 ```sh
 dsh plugin --profile tui add github:deepseek-harness/turtle-ui

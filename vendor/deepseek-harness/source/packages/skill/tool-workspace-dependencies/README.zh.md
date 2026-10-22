@@ -46,13 +46,13 @@ kind: "package-reference"
 
 在 macOS 和 Linux 上，构建器将 `python` 和 `python3` 保留为指向同目录版本化解释器（例如 `python3.12`）的相对链接。安装时保留这两个别名，其他链接展开为实际文件。别名校验要求目标名称与同目录解释器文件名完全一致，且目标为普通文件；Python wheel 等无法保留链接的载体使用普通命令文件，同样受支持。Windows 保留普通的 `python.exe` 文件。
 
-打包的 `sdk` profile 默认使用随包 Python 和 Office skills；`DSH_PRIMARY_RUNTIME` 覆盖资源位置，空值表示禁用。没有载体默认路径的源码启动仍需显式启用。独立选择 skills 的方式见[运行时配置](../../../python/sdk-runtime/README.zh.md)。缺少 skill 资源会产生启动警告；无效或不完整的外部运行时 payload 在首次工具调用时失败。profile 配置变更需要重启 SDK 进程。
+源码启动通过 `DSH_PRIMARY_RUNTIME` 指定资源位置并显式启用，空值表示禁用。缺少 skill 资源会产生启动警告；无效或不完整的外部运行时 payload 在首次工具调用时失败。profile 配置变更需要重启进程。
 
 ### 构建载体 payload
 
 在已安装依赖的仓库 checkout 中运行 `CI=true pnpm run prepare:primary-runtime --target linux-x64 --output /tmp/dsh-office`，会生成 `primary-runtime/` 和 `office-skills/`。[共享下载锁](../../../scripts/primary-runtime/lock.json)还覆盖 `linux-arm64`、`mac-arm64`、`mac-x64` 和 `win-x64`。`--python-only` 省略 Node.js 和 pnpm；`--cache` 选择经过哈希校验的归档缓存。入口仅对本机目标执行解释器与 Office 读写检查。跨目标构建必须在部署前到目标主机执行这些检查。
 
-容器可将这两个目录复制到不可变镜像层，并将 `DSH_PRIMARY_RUNTIME` 设为 `primary-runtime/` 的绝对路径。SDK 原位查询该 payload。Desktop 使用同一构建器，并保留 Harness-home 安装与签名检查。
+容器可将这两个目录复制到不可变镜像层，并将 `DSH_PRIMARY_RUNTIME` 设为 `primary-runtime/` 的绝对路径。工作区依赖服务原位查询该 payload。Desktop 使用同一构建器，并保留 Harness-home 安装与签名检查。
 
 -----
 

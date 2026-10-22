@@ -1831,9 +1831,9 @@ it('reports a successful install with only documented result fields', async () =
 
 
 const CATALOG: BundleInfo = {
-  name: '@deepseek-ai/dsh-subagent-codex', official: true, availability: 'missing', installed: false, optional: false,
+  name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, availability: 'missing', installed: false, optional: false,
   enabled: false, removable: false, rows: [], overrides: [],
-  installTarget: { spec: '@deepseek-ai/dsh-subagent-codex@2.0.0', version: '2.0.0' },
+  installTarget: { spec: '@deepseek-ai/dsh-experimental-ralph-bundle@2.0.0', version: '2.0.0' },
 }
 
 it('installs an absent Official entry directly at the host target and enables it through the normal installer', async () => {
@@ -2008,7 +2008,7 @@ it('ignores a stale update target and prevents a disposed tab from beginning an 
 
 
 it('installs a source Official entry as a local path through the ordinary installer', async () => {
-  const spec = 'link:/development/dsh/packages/subagent/subagent-codex'
+  const spec = 'link:/development/dsh/packages/experimental/ralph-bundle'
   const entry = { ...CATALOG, installTarget: { spec, version: '2.0.0' } }
   const { controller, plugins, face, state } = bench({ listBundles: vi.fn().mockResolvedValue(ok([entry])) })
   await controller.load()
@@ -2023,7 +2023,7 @@ it('installs a source Official entry as a local path through the ordinary instal
 })
 
 it.each([true, false])('replaces a same-version registry package with its source link and preserves enabled=%s', async (enabled) => {
-  const spec = 'link:/development/dsh/packages/subagent/subagent-codex'
+  const spec = 'link:/development/dsh/packages/experimental/ralph-bundle'
   const entry: BundleInfo = { ...CATALOG, installTarget: { spec, version: '2.0.0' }, availability: 'profile',
     installed: true, version: '2.0.0', source: `${CATALOG.name}@2.0.0`, enabled, removable: true }
   const { controller, plugins, face, state } = bench({ listBundles: vi.fn().mockResolvedValue(ok([entry])),

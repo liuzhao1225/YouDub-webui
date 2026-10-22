@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T10:58:44.964Z",
+  "baseCommit": "04cbf740bdf9d775415cddb86a3f411b4f3dcee0",
+  "scope": "P6 batch 14: remove unused embedding SDK and external subagent providers",
+  "removedPackages": [
+    "@deepseek-ai/dsh-sdk-app",
+    "@deepseek-ai/dsh-sdk-client",
+    "@deepseek-ai/dsh-sdk-minimal",
+    "@deepseek-ai/dsh-sdk-protocol",
+    "@deepseek-ai/dsh-subagent-claude-code",
+    "@deepseek-ai/dsh-subagent-codex",
+    "@deepseek-ai/dsh-subagent-dsh-sdk",
+    "@deepseek-ai/dsh-sdk-jsonrpc-server"
+  ],
+  "deletedSourceFiles": 228,
+  "sourceTreeSha256": "b8f6a54d1542c37898bb3d3286ddca2dc8b315d2ba998798c786d8f11e937bce",
+  "originalArchiveSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
+  "closure": {
+    "roots": 79,
+    "runtimeAndTypes": 141,
+    "includingPackageTests": 218,
+    "removedPackageIncomingEdges": [],
+    "runtimeWorkspacePackages": 75,
+    "runtimeSourcePackages": 78
+  },
+  "validation": {
+    "frameworkBuild": {
+      "passed": 7,
+      "failed": 0,
+      "clientArtifacts": 319,
+      "log": "/tmp/youdub-sdk-framework-verified.log"
+    },
+    "targetedTests": {
+      "files": 15,
+      "passed": 932,
+      "failed": 0,
+      "log": "/tmp/youdub-sdk-targeted-verified.log"
+    },
+    "applicationEntrypoints": "passed",
+    "originalArchive": "verified unchanged",
+    "native": {
+      "bundleId": "com.youdub.review-validation",
+      "frameworkSource": ".cache/harness/source-build-sdk-prune-20261022",
+      "desktop": ".cache/harness/native-review-isolated-20261022/desktop-sdk-prune",
+      "businessBundle": "Previously validated YouDub bundle unchanged; framework runtime and preload refreshed",
+      "views": [
+        "animated hero home",
+        "YouDub extensions",
+        "general settings 0.0.7",
+        "configured model provider",
+        "completed zoo task"
+      ],
+      "taskId": "1d068171-410f-4f4e-a222-cfc159440432",
+      "status": "succeeded",
+      "revision": 38,
+      "completedNodes": 9,
+      "outputs": 4,
+      "reranMedia": false,
+      "export": {
+        "path": "/tmp/youdub-sdk-prune-reviewed-20261022.srt",
+        "bytes": 353,
+        "sha256": "d2c1581332142a7b518e622260b1a863962fc1635bf8168a711b5277a9455c78",
+        "byteIdenticalToPreviousExport": true
+      },
+      "screenshots": [
+        "/tmp/youdub-sdk-prune-home.png",
+        "/tmp/youdub-sdk-prune-extensions.png",
+        "/tmp/youdub-sdk-prune-task.png"
+      ]
+    }
+  },
+  "limits": [
+    "This is a framework-pruning regression; it does not replace the remaining P0-P7 product/installation/media-quality audit.",
+    "The default shared source-build directory and original validation application were left unchanged to avoid disrupting concurrent work.",
+    "No packaging or release. Branch CI for this batch is pending."
+  ]
+}

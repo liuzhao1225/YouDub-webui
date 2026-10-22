@@ -39,7 +39,7 @@ describe('workspace dependency ranges', () => {
 
   describe.each([
     '.', 'packages/core/probe', 'packages/experimental/probe', 'apps/cli', 'apps/web',
-    'apps/desktop', 'apps/desktop-host', 'benchmarks', 'website', 'python/sdk-runtime', 'tools/probe',
+    'apps/desktop', 'apps/desktop-host', 'benchmarks', 'website', 'apps/test-runtime', 'tools/probe',
     'vendor/loader', 'native/system', 'native/system/packages/entry',
   ])('consumer %s', (dir) => {
     it.each(['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'] as const)(
@@ -82,10 +82,10 @@ describe('workspace manifest discovery', () => {
   it('checks root, app, runtime, tooling, and newly declared members while honoring exclusions', () => {
     const root = mkdtempSync(join(tmpdir(), 'dsh-workspace-ranges-'))
     onTestFinished(() => { rmSync(root, { recursive: true, force: true }) })
-    const consumers = ['.', 'apps/cli', 'apps/web', 'apps/desktop', 'apps/desktop-host', 'benchmarks', 'website', 'python/sdk-runtime', 'tools/probe']
+    const consumers = ['.', 'apps/cli', 'apps/web', 'apps/desktop', 'apps/desktop-host', 'benchmarks', 'website', 'apps/test-runtime', 'tools/probe']
     writeFileSync(join(root, 'pnpm-workspace.yaml'), [
       'packages:', '  - packages/*/*', '  - apps/*', '  - apps/cli', '  - benchmarks',
-      '  - website', '  - python/sdk-runtime', '  - tools/*', '  - "!tools/excluded"',
+      '  - website', '  - apps/test-runtime', '  - tools/*', '  - "!tools/excluded"',
     ].join('\n'))
     for (const dir of [...consumers, 'tools/excluded', 'unlisted/probe', 'packages/core/runtime']) {
       mkdirSync(join(root, dir), { recursive: true })
@@ -228,7 +228,7 @@ describe('experimental workspace constraints', () => {
     ])
   })
 
-  it('allows development and experimental consumers but rejects the Python release runtime', () => {
+  it('allows development and experimental consumers but rejects the application runtime', () => {
     const manifests: WorkspaceManifest[] = [experimental, {
       dir: 'packages/core/test-only',
       manifest: {
@@ -242,15 +242,15 @@ describe('experimental workspace constraints', () => {
         dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
       },
     }, {
-      dir: 'python/sdk-runtime',
+      dir: 'apps/test-runtime',
       manifest: {
-        name: '@deepseek-ai/dsh-python-runtime',
+        name: '@deepseek-ai/dsh-test-runtime',
         dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
       },
     }]
 
     expect(checkExperimentalDependencyIsolation(manifests)).toEqual([
-      '@deepseek-ai/dsh-python-runtime: dependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
+      '@deepseek-ai/dsh-test-runtime: dependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
     ])
   })
 })

@@ -47,7 +47,7 @@ kind: "package-reference"
 <details>
 <summary>实现内部细节——点击展开</summary>
 
-[base](../../bundle/base/README.zh.md) 与独立的 [sdk-minimal](../../bundle/sdk-minimal/README.zh.md) bundle 分别拥有以下配置行：
+[base](../../bundle/base/README.zh.md) bundle 拥有以下配置行：
 
 ```yaml
 - id: mcp-resources

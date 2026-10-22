@@ -357,13 +357,6 @@ describe('gate graph validation', () => {
     expect(quick).toEqual(full.filter(gate => gate.quick === true))
   })
 
-  it('checks the recorded npm dependency catalog in both documentation aggregates', () => {
-    for (const mode of ['doc-sync', 'doc-quick'] as const) {
-      expect(withPnpmEntrypoint(() => gatesForMode(mode).find(gate => gate.id === 'dependency-catalog')))
-        .toMatchObject({ args: ['/private/pnpm.cjs', 'run', 'verify-dependency-catalog'] })
-    }
-  })
-
   it('keeps the hygiene aggregate aligned with the package script checks', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('hygiene').map(subject => subject.id))
 
@@ -371,8 +364,7 @@ describe('gate graph validation', () => {
       'rescope-vendor', 'publint', 'constraints', 'default-product-isolation', 'product-use', 'official-bundle-catalog', 'provider-data', 'package-dependencies', 'application-entrypoints',
       'dsh-package-licenses', 'node-next-types',
       'optional-dependency-imports', 'client-packages', 'client-ui-i18n', 'client-route-resolution', 'no-bare-dispatcher',
-      'plugin-record-callers', 'no-unknown-casts', 'no-top-level-await',
-      'cordis-config', 'runtime-closure',
+      'plugin-record-callers', 'no-unknown-casts', 'no-top-level-await', 'cordis-config',
     ])
   })
 
@@ -974,8 +966,6 @@ describe('Node 24 lane ownership', () => {
         'apps/cli/tests/profiles/headless/tests/source-tool.built.e2e.ts',
         'apps/desktop/tests/acl-skill.built.e2e.ts',
         'packages/subprocess/subprocess-local/tests/spawn-runner-built.e2e.ts',
-        'packages/subagent/subagent-codex/tests/loader-composition.e2e.ts',
-        'packages/subagent/subagent-claude-code/tests/loader-composition.e2e.ts',
         'packages/experimental/agent-team/tests/built-lib.e2e.ts',
       ]),
     )

@@ -384,3 +384,15 @@ Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通�
 用户要求另开窗口避免同时操作：建立独立 `com.youdub.review-validation` 开发实例，配置、私有安装目录和 Chromium 数据均使用 `.cache/harness/native-review-isolated-20261022` 副本；任务库通过 SQLite 在线备份取得一致快照。独立实例中译文订正已保存为版本 3 并确认；原窗口读回仍为修订号 14、译文等待确认，证明数据隔离。该副本随后完成九节点流程：VoxCPM2、混音、Qwen3-ForcedAligner-0.6B-hf 与最终导出均实际执行；Qwen 原始结果含 3 个音频片段，输出 6 条字幕，时间范围与顺序检查通过。播放器走到 18.9 秒，macOS 保存框导出的 `/tmp/youdub-native-zoo-reviewed-20261022.srt` 与任务产物逐字节一致。正常退出返回 0，重启后原生页面显示 9/9 完成及四个文件；截图 `/tmp/youdub-isolated-review-after-restart.png`。该结果是已暂停任务副本的接续，准备媒体与分离结果被复用。音频试听和音画同步质量仍未验收。
 
 「连接设置」已在原生窗口直接打开模型分区，关闭后普通设置按钮仍打开通用分区；截图 `/tmp/youdub-isolated-settings-model-route.png`。设置修复对应 `fa0e76ee` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39758629485) 已全部通过。
+
+## P6 第 14 批：SDK 与外部 Agent 裁剪（2026-10-22）
+
+在 `04cbf740` 重查后执行上述八包的删除，共移除 228 个活动源码文件；355 包收敛为 347 包、8,681 文件。TypeScript/Python embedding SDK、三种外部 subagent、专属单文件构建与发行工具、SDK 快照以及旧 npm 发布目录退出活动树；原始源码归档的 SHA-256 仍为 `3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85`。YouDub 自身的 `packages/sdk`、Python 媒体业务与私有环境保持原有归属。
+
+同步移除了管理组件的旧分类、工作区与编译条目、专属许可证例外及说明。`verify-runtime-closure` 现在要求显式指定 manifest，继续验证必需 workspace peer 和传递依赖；产品 CI 已显式传入实际运行项目。通用插件管理、安装、许可证拒绝、会话夹具检查和 bundled-Python 声明继续保留。语法层追踪的 79 个根、141 包运行/类型闭包、218 包含测试闭包均未扩大，没有指向被删包的保留包导入。
+
+为避免影响用户正在操作的窗口，源码构建使用 `.cache/harness/source-build-sdk-prune-20261022`。七项框架构建全部通过，319 个客户端产物保留；15 个定向测试文件共 932 项通过。首次定向回归发现测试夹具使用了错误的保留包名、通用门禁期望漏项及已退役载体的版本断言，修正后完整重跑通过；原失败日志保留。活动源码 SHA-256：`b8f6a54d1542c37898bb3d3286ddca2dc8b315d2ba998798c786d8f11e937bce`。
+
+独立 `com.youdub.review-validation` 使用本批框架、原已验证业务 bundle，实际打开原版首页、扩展、通用/模型设置和 zoo 任务。Host 的 75 个 workspace 包运行闭包成立，78 个源码包链接均指向新构建。原任务仍为修订 38、9/9 完成及四个产物；macOS 保存框再次导出的 353 字节 SRT 与前次结果一致，SHA-256 为 `d2c1581332142a7b518e622260b1a863962fc1635bf8168a711b5277a9455c78`。本批没有重新执行媒体链或进行试听，不据此扩大质量验收结论。
+
+[结构化证据](evidence/refactor-sdk-prune.json) 记录构建、测试、运行来源和本机截图。前一批安装源兼容与原生九节点记录随 `04cbf740` 的[macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39763710459) 已通过；本批分支 CI 尚待提交后验证。整体 P6 及 P0–P7 剩余矩阵继续开放，两份飞书文档仍按用户要求在全部完成后更新。
