@@ -37,7 +37,7 @@ def resources(groups):
     if "media" in groups:
         result["mediaReason"] = media_error()
         result["media"] = result["mediaReason"] is None
-    if "whisper" in groups:
+    if "whisper" in groups or "punkt" in groups:
         result["punkt"] = False
         if importlib.util.find_spec("nltk") is not None:
             result["punkt"] = punkt()["ready"]

@@ -69,7 +69,7 @@ export function bindComponent<P extends object, K extends keyof ClientBindings>(
         const source = useMemo(() => owner.cache.get(document), [key])
         useEffect(() => source.setDocument(document), [source, document])
         const snapshot = useObservableSource(source)
-        return { ...snapshot, ready: !snapshot.error && !snapshot.checking && snapshot.result?.status === 'ready', check: source.check, prepare: source.prepare }
+        return { ...snapshot, ready: !snapshot.error && !snapshot.checking && snapshot.result?.status === 'ready', check: source.check, prepare: source.prepare, action: source.action }
       }
     }
     const queries = new QueryClient(request)

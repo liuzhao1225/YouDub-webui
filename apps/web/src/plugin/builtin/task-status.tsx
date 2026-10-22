@@ -1,3 +1,4 @@
+import { Progress } from '@/components/ui/progress'
 import type { MessageKey } from '@/locales'
 import { Tag } from '@/components/ui/tag'
 import { useI18n, useText } from '@/lib/i18n'
@@ -44,6 +45,6 @@ export function TaskProgress({ task }: { task: TaskSummary }) {
       {task.steps.length > 0 && <span className="whitespace-nowrap">{tx("task.status.value.value.steps.completed", { value1: completed, value2: task.steps.length })}</span>}
     </div>
     {reviews > 0 && <p className="text-status-warning-fg">{tx("task.status.value.nodes.awaiting.review", { value1: reviews })}</p>}
-    {progress != null && <progress aria-label={`${label} ${tx("task.status.progress")}`} value={progress} max={1} className="block h-1.5 w-full accent-primary" />}
+    {progress != null && <Progress label={`${label} ${tx("task.status.progress")}`} value={progress} />}
   </div>
 }

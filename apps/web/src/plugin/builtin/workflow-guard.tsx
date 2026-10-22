@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Dialog } from '@base-ui/react/dialog'
+import { Dialog } from '@/components/ui/dialog'
 import type { ClientBindings } from '../sdk'
 import { useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
@@ -27,9 +27,9 @@ export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigati
     bypass: () => { bypass.current = true },
     dialog: pending ? <Dialog.Root open onOpenChange={open => { if (!open && !busy) finish(false) }}>
       <Dialog.Portal>
-      <Dialog.Backdrop className="fixed inset-0 z-[80] bg-black/50" />
-      <Dialog.Popup initialFocus={keepEditing} aria-describedby={undefined} className="fixed top-1/2 left-1/2 z-[80] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl border border-border bg-card p-6 shadow-float outline-none">
-        <Dialog.Title className="text-lg font-semibold">{tx("workflow.guard.unsaved.changes")}</Dialog.Title>
+      <Dialog.Backdrop />
+      <Dialog.Popup initialFocus={keepEditing} aria-describedby={undefined} className="">
+        <Dialog.Title >{tx("workflow.guard.unsaved.changes")}</Dialog.Title>
         {error && <InlineAlert>{error}</InlineAlert>}
         <div className="flex flex-wrap gap-2">
           {save && <Button disabled={busy} onClick={() => { const action = latest.current.save; if (!action) return; setBusy(true); setError(''); void action().then(() => finish(true)).catch((failure: Error) => setError(failure.message)).finally(() => setBusy(false)) }}>{tx("workflow.guard.save.and.leave")}</Button>}

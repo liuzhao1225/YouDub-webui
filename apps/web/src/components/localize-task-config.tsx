@@ -126,7 +126,7 @@ export function TaskOptions({ value, runtime, onChange }: {
   ]
   return <div className="flex flex-wrap items-center gap-2">{fields.map((field) => (
     <Select key={field.id} value={field.value} onValueChange={(next) => { if (typeof next === "string") field.change(next) }}>
-      <SelectTrigger id={field.id} aria-label={field.aria} className="inline-flex h-8 w-auto max-w-full gap-1.5 rounded-full border-border bg-muted px-3 text-[13px] shadow-none hover:bg-accent">
+      <SelectTrigger id={field.id} aria-label={field.aria} className="inline-flex w-auto max-w-full gap-1.5">
         <span className="text-subtle-foreground">{field.label}</span><span className="min-w-0 truncate font-medium">{field.display}</span>
       </SelectTrigger>
       <SelectContent>{field.options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
@@ -323,15 +323,12 @@ export function TaskConfigForm({ value, runtime, onChange, showTranslation = tru
       <ModelField kind="tts" id="model-tts" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.voice")} value={value.tts} runtime={runtime} onChange={(selection) => change({ tts: selectTts(runtime, selection, value.target_language) })} />
       {value.tts && voice ? <Field caption={text("localize.task.config.voice.source")}>
         {voiceModes.length > 1 ? (
-          <Segmented ariaLabel={text("localize.task.config.voice.source")} value={voice.mode} className="flex h-10 w-full"
+          <Segmented ariaLabel={text("localize.task.config.voice.source")} value={voice.mode} className="flex w-full"
             options={voiceModes.map((mode) => ({ value: mode, label: voiceModeLabel(mode) }))}
             onChange={(mode) => change({ tts: { ...value.tts!, voice: mode === "source_clone"
               ? { mode: "source_clone" } : { mode: "preset", id: presetVoices[0]?.id ?? "" } } })} />
         ) : (
-          <div role="group" aria-label={text("localize.task.config.voice.source")}
-            className={cn("flex h-10 items-center rounded-lg border border-input bg-input-bg px-3 text-sm", !voiceModes.includes(voice.mode) && "text-status-warning-fg")}>
-            {voiceModes.includes(voice.mode) ? voiceModeLabel(voice.mode) : text("localize.task.config.unavailable")}
-          </div>
+          <Input readOnly aria-label={text("localize.task.config.voice.source")} value={voiceModes.includes(voice.mode) ? voiceModeLabel(voice.mode) : text("localize.task.config.unavailable")} />
         )}
       </Field> : null}
       {value.tts && voice?.mode === "preset" ? <Field id="voice-id" caption={text("localize.task.config.voice.2")}>

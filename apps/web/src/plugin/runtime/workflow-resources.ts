@@ -1,17 +1,18 @@
 import { createStore } from 'zustand/vanilla'
 import type { Request } from './types'
 import type { WorkflowDocument } from '../contracts'
-import type { ResourceInventory, ResourcePreparation, ResourceSelection, SetupAction } from '@/runtime/setup-contracts'
+import type { ResourceInventory, ResourcePreparation, ResourceSelection, SetupAction, ResourceEntry } from '@/runtime/setup-contracts'
 
 export type ResourceState = {
+  entries?: ResourceEntry[]
   status: string; error?: string | { message?: string }
-  requirements?: { providerId: string; model?: string; ready: boolean; automatic: boolean; reason?: string; configurationRequired?: boolean }[]
+  requirements?: { resourceId?: string; providerId: string; model?: string; ready: boolean; automatic: boolean; reason?: string; configurationRequired?: boolean }[]
   environment?: { id: string; name: string; status: string; detail?: string }[]
   models?: { id: string; name: string; status: string; error?: string; received?: number; total?: number; speed?: number }[]
   activePreparation?: { status: string; error?: string }
 }
 type ResourceSnapshot = { result?: ResourceState; inventory?: ResourceInventory; inspection?: ResourcePreparation; error?: string; checking: boolean }
-export type WorkflowResourcesResult = ResourceSnapshot & { ready: boolean; prepare(): void; check(): void }
+export type WorkflowResourcesResult = ResourceSnapshot & { ready: boolean; prepare(): void; check(): void; action?(action: SetupAction, id?: string): void }
 
 export function resourceKey(document: WorkflowDocument) {
   return JSON.stringify([...new Set(document.nodes.map(node => JSON.stringify([node.type, node.typeVersion, node.provider.id, node.provider.model ?? null])))].sort())
@@ -73,8 +74,9 @@ export class ResourcesController {
   invalidate = () => { this.stale = true; if (this.subscribers && !this.state.getState().checking) this.check() }
   check = () => this.document ? this.run('check') : this.runInventory()
   prepare = (selections?: ResourceSelection[]) => this.document ? this.run('prepare') : this.runInventory({ action: 'prepare', selections })
-  action = (action: SetupAction, id?: string) => this.runInventory({ action, id })
-  private runInventory(operation?: { action: SetupAction | 'prepare'; id?: string; selections?: ResourceSelection[] }) {
+  prepareResource = (id: string) => this.runInventory({ action: 'prepare', resourceIds: [id] })
+  action = (action: SetupAction, id?: string) => this.document ? this.run('check', { action, id }) : this.runInventory({ action, id })
+  private runInventory(operation?: { action: SetupAction | 'prepare'; id?: string; selections?: ResourceSelection[]; resourceIds?: string[] }) {
     this.stop()
     const controller = new AbortController()
     this.controller = controller
@@ -97,14 +99,14 @@ export class ResourcesController {
         if (inventory.resources?.status === 'preparing') this.timer = setTimeout(() => void load(false), 1200)
         else if (this.stale && this.subscribers) this.check()
       } catch (failure) {
-        if (current()) { this.stale = false; this.state.setState({ checking: false, error: failure instanceof Error ? failure.message : String(failure) }) }
+        if (current()) { this.stale = false; this.state.setState({ checking: false, inspection: undefined, result: undefined, error: failure instanceof Error ? failure.message : String(failure) }) }
       }
     }
     void (async () => {
       if (operation) {
         try {
           await this.request(`/api/v2/resources/${operation.action === 'prepare' ? 'prepare' : 'action'}`, { method: 'POST',
-            body: JSON.stringify(operation.action === 'prepare' ? { selections: operation.selections } : { action: operation.action, id: operation.id }), signal: controller.signal })
+            body: JSON.stringify(operation.action === 'prepare' ? { selections: operation.selections, resourceIds: operation.resourceIds } : { action: operation.action, resourceId: operation.id }), signal: controller.signal })
         } catch (failure) {
           if (current()) { this.stale = false; this.state.setState({ checking: false, error: failure instanceof Error ? failure.message : String(failure) }) }
           return
@@ -114,7 +116,7 @@ export class ResourcesController {
       await load(true)
     })()
   }
-  private run(action: 'check' | 'prepare') {
+  private run(action: 'check' | 'prepare', operation?: { action: SetupAction; id?: string }) {
     this.stop()
     const controller = new AbortController()
     this.controller = controller
@@ -133,7 +135,13 @@ export class ResourcesController {
         if (!controller.signal.aborted) { this.stale = false; this.state.setState({ checking: false, error: failure instanceof Error ? failure.message : String(failure) }) }
       }
     }
-    void load(action)
+    if (!operation) void load(action)
+    else {
+      this.state.setState({ checking: true, error: undefined })
+      void this.request('/api/v2/resources/action', { method: 'POST', body: JSON.stringify(operation), signal: controller.signal })
+        .then(() => { if (!controller.signal.aborted) return load('check') })
+        .catch(failure => { if (!controller.signal.aborted) this.state.setState({ checking: false, error: failure instanceof Error ? failure.message : String(failure) }) })
+    }
   }
 }
 export class WorkflowResourcesController extends ResourcesController {}

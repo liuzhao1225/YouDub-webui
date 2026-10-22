@@ -34,7 +34,7 @@ const officialClient = clientBundle(here, ['src/host.mjs'])({}).find(config => c
 const assetPlugins = officialClient.plugins.filter(plugin => ['dsh-css-modules-inline', 'dsh-css-text-inline', 'dsh-image-inline', 'dsh-css-global-inline'].includes(plugin.name));
 const officialAssets = { name: 'official-client-assets', setup(builder) {
   builder.onResolve({ filter: /\.(?:css(?:\?inline)?|svg|png|webp)$/ }, async args => {
-    if (!args.importer.includes('/vendor/deepseek-harness/') && !args.path.includes('/vendor/deepseek-harness/')) return;
+    if (!args.importer.includes('/vendor/deepseek-harness/') && !args.path.includes('/vendor/deepseek-harness/') && !args.path.endsWith('.module.css')) return;
     for (const plugin of assetPlugins) {
       const path = await plugin.resolveId?.call({}, args.path, args.importer);
       if (typeof path === 'string') return { path, namespace: 'official-client-asset' };
@@ -57,12 +57,12 @@ const host = await build({ ...common, entryPoints: ['src/host.mjs'], outfile: 'd
     builder.onResolve({ filter: /^@youdub\/sdk\// }, args => ({ path: resolve(root, 'packages/sdk/src', args.path.slice('@youdub/sdk/'.length) + '.ts') }));
   } }],
 });
-const controlNames = ['button', 'input', 'select', 'native-select', 'tooltip', 'label', 'tag', 'switch', 'segmented'];
+const controlNames = ['button', 'input', 'select', 'native-select', 'tooltip', 'tag', 'switch', 'segmented'];
 const aliases = Object.fromEntries(controlNames.map(name => [`@/components/ui/${name}`, resolve(frontend, 'controls.tsx')]));
 const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile: 'dist/client.js', platform: 'browser', format: 'cjs', jsx: 'automatic', metafile: true,
   external: ['react', 'react/jsx-runtime', 'react-dom', '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-store'], loader: { '.css': 'text' }, nodePaths: [resolve(here, 'node_modules'), resolve(web, 'node_modules')],
   define: { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(product.version), 'process.env.DSH_CLIENT_TITLE': JSON.stringify('YouDub') },
-  alias: { ...aliases, '@base-ui/react/dialog': resolve(frontend, 'dialog.tsx'), '@base-ui/react/popover': resolve(frontend, 'popover.tsx'), '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@/components/inline-alert': resolve(frontend, 'alerts.tsx'), '@/components/video-player': resolve(frontend, 'video-player.tsx'), '@': resolve(web, 'src') },
+  alias: { ...aliases, '@/components/ui/dialog': resolve(frontend, 'dialog.tsx'), '@base-ui/react/dialog': resolve(frontend, 'dialog.tsx'), '@base-ui/react/popover': resolve(frontend, 'popover.tsx'), '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@/components/video-player': resolve(frontend, 'video-player.tsx'), '@': resolve(web, 'src') },
   plugins: [sourceBuiltImports, officialAssets, { name: 'youdub-component-boundaries', setup(builder) {
     builder.onResolve({ filter: /^cordis$/ }, () => ({ path: '@deepseek-ai/cordis', external: true }));
     builder.onResolve({ filter: /^zustand\/vanilla$/ }, args => args.importer.startsWith(resolve(web, 'src')) ? { path: resolve(frontend, 'store.ts') } : undefined);
@@ -111,18 +111,11 @@ const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile
       const variables = selector => Object.fromEntries([...block(selector).matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()]));
       const light = variables(':root'), dark = { ...light, ...variables('.dark') };
       const tokens = Object.fromEntries(Object.entries(light).map(([name, value]) => [name, { light: value, dark: dark[name] }]));
-      const aliases = {
-        'bg-base': 'background', 'bg-layer-1': 'card', 'bg-layer-2': 'elevated', 'bg-overlay': 'popover',
-        'label-primary': 'foreground', 'label-secondary': 'muted-foreground', 'label-tertiary': 'muted-foreground',
-        'label-caption': 'subtle-foreground', 'label-dimmed': 'subtle-foreground', 'label-primary-foreground': 'primary-foreground',
-        'border-l1': 'border', 'border-l2': 'border', 'border-l3': 'border', 'border-l4': 'input',
-        'brand-primary': 'primary', 'button-primary-fill': 'primary', 'button-primary-hover': 'primary-hover',
-        'button-tool-bar-fill': 'muted', 'button-tool-bar-hover': 'accent',
-        'interactive-bg-hover': 'accent', 'interactive-bg-active': 'muted',
-        'state-business-primary': 'link', 'state-success-primary': 'status-success-fg',
-        'state-error-primary': 'status-danger-fg', 'state-warn-primary': 'status-warning-fg',
-      };
-      for (const [alias, name] of Object.entries(aliases)) tokens['--dsw-alias-' + alias] = tokens['--' + name];
+      // Resolve the alias declarations from globals.css; Web and Desktop share one palette bridge.
+      for (const [name, value] of Object.entries(light)) {
+        const reference = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
+        if (name.startsWith('--dsw-alias-') && reference && tokens[reference]) tokens[name] = tokens[reference];
+      }
       tokens['--dsw-specific-sidebar-fill'] = tokens['--surface'];
       const theme = ['eq', 'shimmer', 'rise', 'drift'].map(name => '@keyframes yd-' + name + block('@keyframes ' + name)).join('\n');
       return { contents: 'export const tokens = ' + JSON.stringify(tokens) + ';export default ' + JSON.stringify(theme), loader: 'js' };

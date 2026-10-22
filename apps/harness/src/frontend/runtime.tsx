@@ -41,7 +41,7 @@ export function createFeatures(ctx:any, navigate:(path:string) => void, blockNav
     const key = resourceKey(document), source = useMemo(() => resources.get(document),[key])
     useEffect(() => source.setDocument(document),[source,document])
     const state = useSyncExternalStore(source.subscribe,source.getSnapshot)
-    return { ...state, ready:!state.error && !state.checking && state.result?.status === 'ready', check:source.check, prepare:source.prepare }
+    return { ...state, ready:!state.error && !state.checking && state.result?.status === 'ready', check:source.check, prepare:source.prepare, action:source.action }
   }
   function useSlot(slot:string) {
     const { renderSlot, ...bindings } = useFeatures(), key = `youdub.${slot}`

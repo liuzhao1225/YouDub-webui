@@ -1,3 +1,4 @@
+import { resourceEntries } from '@/runtime/setup-contracts'
 import { Context } from 'cordis'
 import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -45,14 +46,14 @@ it('keeps workbench resource requirements collapsed and preserves visible failur
   const state: ResourceState = { ...missing, status: 'failed', error: 'Download denied', environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }] }
   render(<LanguageProvider><WorkflowResources resources={{ result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }} types={types} hideReady /></LanguageProvider>)
   expect(screen.getByText('Download denied')).toBeVisible()
-  expect(screen.getByRole('button', { name: '重试准备' })).toBeVisible()
+  expect(screen.getByRole('button', { name: '重试' })).toBeVisible()
   expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
-  expect(screen.getByText(/Python 3.12/).closest('details')).not.toHaveAttribute('open')
+  expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
 })
 
 it('rejects an unsupported dropped file with a visible error', async () => {
   mount(<WorkflowRun document={graph()} types={types} />, vi.fn(async () => ready))
-  await screen.findByText('资源已就绪')
+  await screen.findByText('所需资源可用')
   const input = screen.getByLabelText('视频 *')
   fireEvent.drop(input.parentElement!, { dataTransfer: { files: [new File(['no'], 'notes.txt', { type: 'text/plain' })] } })
   expect(screen.getByText('notes.txt 的文件类型不支持。')).toBeInTheDocument()
@@ -71,7 +72,6 @@ it('keeps the original link-above-upload layout and submits URL input through a 
   const link = screen.getByLabelText('视频链接'), upload = screen.getByLabelText('视频 *')
   expect(link.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(screen.getByText('或上传本地视频')).toBeInTheDocument()
-  expect(link.parentElement).toHaveClass('h-12')
   expect(upload.parentElement).toHaveClass('min-h-[132px]', 'py-6')
   await user.upload(upload, new File(['local'], 'local.mp4', { type: 'video/mp4' }))
   fireEvent.change(link, { target: { value: 'https://youtu.be/abcdefghijk' } })
@@ -96,7 +96,19 @@ it('keeps the original link-above-upload layout and submits URL input through a 
 })
 function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
   const push = vi.fn()
-  const context = { effect: (effect: () => unknown) => effect(), apiClient: { request }, navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] } } as unknown as Context
+  const context = {
+    effect: (effect: () => unknown) => effect(),
+    apiClient: { request: async (...args: unknown[]) => {
+      const result = await (request as (...args: unknown[]) => Promise<ResourceState>)(...args)
+      if (!result?.models) return result
+      return { ...result, entries: resourceEntries({ ...result,
+        error: typeof result.error === 'string' ? result.error : result.error?.message,
+        requirements: result.models.map(model => ({ providerId: 'test', resourceId: model.id,
+          name: model.name, downloadId: model.id, ready: false, automatic: true })),
+      }) }
+    } },
+    navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
+  } as unknown as Context
   const wrap = (child: ReactNode) => <PluginContextProvider context={context}><LanguageProvider>{child}</LanguageProvider></PluginContextProvider>
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
@@ -123,14 +135,14 @@ it('shows connection configuration separately from language support and blocks s
   await screen.findByText('语音识别未配置')
   expect(screen.getByText('请配置服务地址、API Key 和模型。')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
-  expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getByRole('link', { name: '配置服务连接' }))
   expect(push).toHaveBeenCalledWith('/settings/models')
 })
 it('checks automatically and leaves only the ready state when no download is needed', async () => {
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<ResourceState>>(async () => ready)
   mount(<Resources />, request)
-  await screen.findByText('资源已就绪')
+  await screen.findByText('所需资源可用')
   expect(screen.getByRole('button', { name: '继续' })).toBeEnabled()
   expect(screen.queryByRole('button', { name: /检查|准备|下载|刷新/ })).not.toBeInTheDocument()
   expect(request).toHaveBeenCalledTimes(1)
@@ -143,14 +155,14 @@ it('downloads only on request, shows progress and automatically finishes prepara
     return prepared ? ready : missing
   })
   mount(<Resources />, request)
-  await screen.findByRole('button', { name: '下载所需资源' })
+  await screen.findByRole('button', { name: '准备所需资源' })
   expect(screen.getByText('语音识别 · tiny')).toBeInTheDocument()
   expect(request.mock.calls.map(([path]) => path)).toEqual([`${base}check`])
-  await userEvent.setup().click(screen.getByRole('button', { name: '下载所需资源' }))
-  await screen.findByText('Whisper tiny · 下载中')
-  expect(screen.getByText('1.0 KB / 2.0 KB · 512 B/s')).toBeInTheDocument()
+  await userEvent.setup().click(screen.getByRole('button', { name: '准备所需资源' }))
+  await screen.findByRole('group', { name: 'Whisper tiny' })
+  expect(screen.getByRole('progressbar', { name: 'Whisper tiny 下载进度' })).toHaveAttribute('aria-valuenow', '50')
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
-  await screen.findByText('资源已就绪', {}, { timeout: 3000 })
+  await screen.findByText('所需资源可用', {}, { timeout: 3000 })
   expect(screen.getByRole('button', { name: '继续' })).toBeEnabled()
   expect(screen.queryByRole('button', { name: /检查|准备|下载|刷新/ })).not.toBeInTheDocument()
 })
@@ -158,8 +170,8 @@ it('updates a different active preparation without requiring a refresh or leavin
   const request = vi.fn().mockResolvedValueOnce({ ...missing, activePreparation: { status: 'preparing' } }).mockResolvedValue({ ...ready, activePreparation: { status: 'ready' } })
   mount(<Resources />, request)
   await screen.findByText('另一工作流正在准备资源，完成后将自动更新状态。')
-  expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
-  await screen.findByText('资源已就绪', {}, { timeout: 3000 })
+  expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
+  await screen.findByText('所需资源可用', {}, { timeout: 3000 })
   expect(screen.queryByText('另一工作流正在准备资源，完成后将自动更新状态。')).not.toBeInTheDocument()
   expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   expect(screen.getAllByRole('status')).toHaveLength(1)
@@ -175,15 +187,15 @@ it('preserves a check error, stops polling and retries only when requested', asy
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '重新检查' })) })
   expect(request).toHaveBeenCalledTimes(2)
-  expect(screen.getByText('资源已就绪')).toBeInTheDocument()
+  expect(screen.getByText('所需资源可用')).toBeInTheDocument()
 })
 it('keeps the original preparation error and exposes a deliberate retry', async () => {
   const request = vi.fn().mockResolvedValueOnce({ ...missing, status: 'failed', error: 'TLS certificate verify failed' }).mockResolvedValue(ready)
   mount(<Resources />, request)
   expect(await screen.findByRole('alert')).toHaveTextContent('TLS certificate verify failed')
   expect(request).toHaveBeenCalledTimes(1)
-  await userEvent.setup().click(screen.getByRole('button', { name: '重试准备' }))
-  await screen.findByText('资源已就绪')
+  await userEvent.setup().click(screen.getByRole('button', { name: '重试' }))
+  await screen.findByText('所需资源可用')
   expect(request.mock.calls[1][0]).toBe(`${base}prepare`)
 })
 it('does not offer automatic downloads for a manual plugin requirement', async () => {
@@ -192,10 +204,10 @@ it('does not offer automatic downloads for a manual plugin requirement', async (
   await screen.findByText('请配置插件的远程服务。')
   expect(screen.getByText('语音识别')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '重新检查' })).toBeEnabled()
-  expect(screen.queryByRole('button', { name: '下载所需资源' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
 })
 it.each([
-  ['en', 'Whisper tiny · Downloading'], ['ja', 'Whisper tiny · ダウンロード中'],
+  ['en', 'Preparing · Downloading'], ['ja', '準備中 · ダウンロード'],
 ])('localizes preparation states in %s', async (language, expected) => {
   window.localStorage.setItem('youdub-ui-language', language)
   const request = vi.fn(async () => ({ ...missing, status: 'preparing', models: [{ id: 'tiny', name: 'Whisper tiny', status: 'downloading' }] }))
@@ -206,13 +218,13 @@ it('rechecks a changed model and ignores the old ready result during the check',
   let resolve!: (state: ResourceState) => void
   const request = vi.fn().mockResolvedValueOnce(ready).mockImplementationOnce(() => new Promise<ResourceState>((done) => { resolve = done }))
   const document = graph(), view = mount(<Resources document={document} />, request)
-  await screen.findByText('资源已就绪')
+  await screen.findByText('所需资源可用')
   const changed = structuredClone(document); changed.nodes[0].provider.model = 'large'
   view.rerender(<Resources document={changed} />)
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
-  expect(screen.queryByText('资源已就绪')).not.toBeInTheDocument()
+  expect(screen.queryByText('所需资源可用')).not.toBeInTheDocument()
   await act(async () => { resolve(missing) })
-  await screen.findByRole('button', { name: '下载所需资源' })
+  await screen.findByRole('button', { name: '准备所需资源' })
   expect(request.mock.calls[1][0]).toBe(`${base}check`)
   expect(JSON.parse(request.mock.calls[1][1].body).document.nodes[0].provider.model).toBe('large')
 })
@@ -220,7 +232,7 @@ it('clears a previous file when its replacement exceeds the limit and submits on
   const request = vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(async (path) => path.startsWith(base) ? ready : path.endsWith('/validate') ? { valid: true, diagnostics: [] } : { id: 'created' })
   const view = mount(<WorkflowRun document={graph()} types={types} />, request)
   const user = userEvent.setup(), input = screen.getByLabelText('视频 *')
-  await screen.findByText('资源已就绪')
+  await screen.findByText('所需资源可用')
   await user.upload(input, new File(['first'], 'first.mp4', { type: 'video/mp4' }))
   expect(screen.getByRole('button', { name: '开始运行' })).toBeEnabled()
   await user.upload(input, new File(['too many bytes'], 'large.mp4', { type: 'video/mp4' }))
@@ -245,7 +257,7 @@ it('keeps parent and file editing locked after an uncertain submission until cle
   })
   const view = mount(<WorkflowRun document={graph()} types={types} onLockChange={onLockChange} />, request)
   const user = userEvent.setup(), input = screen.getByLabelText('视频 *')
-  await screen.findByText('资源已就绪')
+  await screen.findByText('所需资源可用')
   expect(onLockChange).toHaveBeenLastCalledWith(false)
   await user.upload(input, new File(['file'], 'video.mp4', { type: 'video/mp4' }))
   await user.click(screen.getByRole('button', { name: '开始运行' }))
@@ -279,11 +291,11 @@ it('prepares dependencies before rerunning, names kept/recomputed nodes and pres
   })
   mount(<WorkflowRerun taskId="source" document={document} types={types} onStarted={vi.fn()} onLockChange={onLockChange} />, request)
   const user = userEvent.setup()
-  await screen.findByRole('button', { name: '下载所需资源' })
+  await screen.findByRole('button', { name: '准备所需资源' })
   expect(screen.getByRole('button', { name: '检查重跑范围' })).toBeDisabled()
   expect(screen.queryByLabelText('视频 *')).not.toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: '下载所需资源' }))
-  await screen.findByText('资源已就绪')
+  await user.click(screen.getByRole('button', { name: '准备所需资源' }))
+  await screen.findByText('所需资源可用')
   await user.click(screen.getByRole('button', { name: '检查重跑范围' }))
   await screen.findByText('保留结果: 识别字幕')
   expect(screen.getByText('重新处理: 成片导出')).toBeInTheDocument()
@@ -318,7 +330,7 @@ it('keeps the resource request stable through Cordis service proxies and unrelat
     const document = graph()
     const wrap = (document: WorkflowDocument) => <PluginContextProvider context={root}><LanguageProvider><Resources document={document} /></LanguageProvider></PluginContextProvider>
     const view = render(wrap(document))
-    await screen.findByText('资源已就绪')
+    await screen.findByText('所需资源可用')
     const renamed = structuredClone(document); renamed.title = '已改名'; renamed.presentation.viewport.zoom = 1.5
     view.rerender(wrap(renamed))
     await act(async () => {})
@@ -331,7 +343,7 @@ it('unlocks after validation fails before upload and identifies the affected nod
   const onLockChange = vi.fn()
   const request = vi.fn(async (path: string) => path.startsWith(base) ? ready : { valid: false, diagnostics: [{ code: 'INVALID_GRAPH', nodeId: 'node-9fa8', message: 'Select a model.' }] })
   mount(<WorkflowRun document={graph()} types={types} onLockChange={onLockChange} />, request)
-  await screen.findByText('资源已就绪')
+  await screen.findByText('所需资源可用')
   const user = userEvent.setup(), input = screen.getByLabelText('视频 *')
   await user.upload(input, new File(['file'], 'video.mp4', { type: 'video/mp4' }))
   await user.click(screen.getByRole('button', { name: '开始运行' }))
@@ -348,7 +360,7 @@ it('keeps missing resources compact while retaining expandable diagnostics and p
     environment: [{ id: 'python', name: 'Python', status: 'ready', detail: '/runtime/python -m pip install ...' }],
   }))
   mount(<Resources />, request)
-  await screen.findByRole('button', { name: '下载所需资源' })
+  await screen.findByRole('button', { name: '准备所需资源' })
   expect(screen.queryByText('Whisper tiny · 等待中')).not.toBeInTheDocument()
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
   expect(screen.getByText('模型文件尚未安装。').closest('details')).not.toHaveAttribute('open')

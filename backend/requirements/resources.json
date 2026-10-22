@@ -1,5 +1,7 @@
 {
   "groups": {
+    "acceleration": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio" } },
+    "punkt": { "modules": { "nltk": "nltk" } },
     "base": { "modules": { "dotenv": "python-dotenv", "pydantic": "pydantic", "keyring": "keyring", "packaging": "packaging" } },
     "media": { "modules": { "soundfile": "soundfile", "numpy": "numpy" } },
     "openai": { "modules": { "openai": "openai", "httpx": "httpx", "socksio": "socksio" } },

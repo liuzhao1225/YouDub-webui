@@ -1,7 +1,7 @@
 import { bindComponent, text, type Bindings, type JsonObject, type RouteProps, type SettingsSectionProps } from '../sdk'
 import { Context } from 'cordis'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Dialog } from '@base-ui/react/dialog'
+import { Dialog } from '@/components/ui/dialog'
 import { Database, HardDrive, Info, Loader2, Plug, Puzzle, Settings2, Settings as SettingsIcon, X } from '@/lib/icons'
 import { useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -95,10 +95,10 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
   const title = tx("settings.settings")
   return <Dialog.Root open onOpenChange={open => { if (!open && !saving && !guard.dialog) dismissDialog() }}>
     <Dialog.Portal>
-      <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
-      <Dialog.Popup initialFocus={closeButton} finalFocus={() => opener?.isConnected ? opener : true} className="fixed top-1/2 left-1/2 z-50 flex h-[min(50rem,calc(100dvh-3rem))] w-[min(50rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-background text-foreground shadow-float outline-none max-sm:h-dvh max-sm:w-full max-sm:rounded-none" aria-describedby={undefined}>
+      <Dialog.Backdrop />
+      <Dialog.Popup initialFocus={closeButton} finalFocus={() => opener?.isConnected ? opener : true} className="h-[min(50rem,100%)] w-[min(50rem,100%)] overflow-hidden p-0" aria-describedby={undefined}>
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-          <Dialog.Title className="text-base font-semibold">{title}</Dialog.Title>
+          <Dialog.Title >{title}</Dialog.Title>
           <Dialog.Close disabled={saving} render={<Button ref={closeButton} variant="ghost" size="icon-sm" aria-label={tx("settings.close.settings")} />}><X /></Dialog.Close>
         </header>
         <div className="flex min-h-0 flex-1">
@@ -106,7 +106,7 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
             {categories.map(({ id, label, icon: Icon }) => <Tooltip key={id} content={label} side="right" className="sm:hidden"><Button disabled={saving} variant="ghost" aria-label={label} aria-current={section === id ? 'page' : undefined} onClick={() => replace(`/settings/${id}`)} className={cn('w-full justify-center px-0 sm:justify-start sm:gap-3 sm:px-3', section === id && 'bg-accent text-foreground')}><Icon className="shrink-0" /><span className="hidden sm:inline">{label}</span></Button></Tooltip>)}
           </nav>
           <section aria-label={active?.label ?? title} className="min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6" key={section}>
-            {section !== 'models' && <h1 className="text-lg font-semibold">{active?.label ?? tx("settings.page.not.found")}</h1>}
+            {section !== 'models' && <h1 >{active?.label ?? tx("settings.page.not.found")}</h1>}
         {section === 'general' && <Section title={tx("settings.appearance")}><div className="flex items-center justify-between gap-4"><span className="text-sm">{tx("settings.language")}</span><LanguageSwitcher /></div><div className="flex items-center justify-between gap-4"><span className="text-sm">{tx("settings.theme")}</span><ThemeToggle /></div></Section>}
         {section === 'models' && <ModelsSettings request={request} onDirtyChange={onModelsDirtyChange} onBusyChange={onModelsBusyChange} />}
         {section === 'resources' && <SettingsResources request={request} />}

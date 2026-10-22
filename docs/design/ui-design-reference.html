@@ -1,20 +1,1389 @@
-<!doctype html>
-<html lang="zh-CN" data-theme="light">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>YouDub · UI 设计规范</title>
-<style>
-:root{color-scheme:light;--bg:#f6f6f8;--surface:#fbfbfc;--card:#fff;--elevated:#fff;--fg:#0b0b0f;--muted:#5f5f6b;--line:rgba(9,9,11,.08);--hover:rgba(9,9,11,.045);--red:#e6002e;--red-hover:#cc0029;--pink:#fb7299;--blue:#00aeec;--link:#00739f;--running:#c2185b;--warning:#9a5b00;--danger:#c8002a;--ring:#00739f;--input:#dedee3;--space:8px;--control-radius:12px;--panel-radius:16px;--dialog-radius:16px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
-[data-theme=dark]{color-scheme:dark;--bg:#0a0a0e;--surface:#0e0e13;--card:#121218;--elevated:#18181f;--fg:#ededf0;--muted:#a0a0ab;--line:rgba(255,255,255,.08);--hover:rgba(255,255,255,.06);--link:#3cc4f5;--running:#ff9ab8;--warning:#f7c26b;--danger:#ff6b81;--ring:#3cc4f5;--input:#383840}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-size:14px;line-height:1.5}a{color:var(--link);text-underline-offset:4px}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid var(--ring);outline-offset:3px}button{transition:background .15s,color .15s}header{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}.top{max-width:1200px;margin:auto;min-height:72px;display:flex;align-items:center;gap:24px;padding:16px 32px}.logo{width:116px;height:auto}.doc-label{border-left:1px solid var(--line);padding-left:24px;font-weight:600;letter-spacing:.04em}.meta{color:var(--muted);font-size:12px}.switch{margin-left:auto;display:flex;padding:4px;background:var(--hover);border-radius:10px;gap:4px}.switch button{border:0;background:transparent;color:var(--muted);padding:6px 14px;border-radius:7px;min-height:32px}.switch button[aria-pressed=true]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px #00000012}.shell{max-width:1200px;margin:auto;display:grid;grid-template-columns:164px minmax(0,1fr);gap:40px;padding:40px 32px 64px}nav{position:sticky;top:112px;align-self:start;display:grid;gap:4px}nav a{display:block;text-decoration:none;color:var(--muted);padding:10px 12px;border-radius:8px}nav a:hover{background:var(--hover);color:var(--fg)}nav b{font-size:11px;font-weight:500;opacity:.8;margin-right:12px;font-variant-numeric:tabular-nums}.nav-foot{border-top:1px solid var(--line);padding:20px 12px;margin-top:24px}.nav-foot a{padding:0}.hero{padding:8px 0 36px}.eyebrow{color:var(--muted);font-size:12px;letter-spacing:.12em;margin:0 0 16px}.hero h1{font-size:36px;line-height:1.25;letter-spacing:-.03em;margin:0 0 16px;max-width:680px}.hero .notice{margin-top:16px}.hero p{color:var(--muted);margin:0;max-width:620px}.brand-line{height:3px;background:linear-gradient(90deg,#ff0033,#fb7299 45%,#00aeec);margin:28px 0 0;border-radius:2px}section{scroll-margin-top:100px;margin-bottom:40px}.section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}.number{font:12px ui-monospace,monospace;color:var(--muted)}h2{font-size:20px;line-height:28px;margin:0;font-weight:600}h3{font-size:14px;line-height:20px;margin:0 0 8px;font-weight:600}p{margin:0}.caption{font-size:12px;color:var(--muted)}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--panel-radius);padding:20px;min-width:0}.trait{font-size:20px;font-weight:600;margin-bottom:8px}.trait-card{min-height:132px}.swatch{height:76px;border-radius:8px;margin-bottom:12px}.swatch-name{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}code{font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.color-foot{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 20px;border:1px solid var(--line);border-radius:12px}.color-chip{background:#e6002e;width:32px;height:32px;border-radius:8px;flex-shrink:0}.color-foot strong{font-weight:600}.surfaces{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}.surfaces>div{padding:20px 12px;min-width:0;border-right:1px solid var(--line)}.surfaces>div:last-child{border:0}.type-row{display:grid;grid-template-columns:104px minmax(0,1fr) 84px;gap:16px;padding:16px 0;align-items:baseline;border-bottom:1px solid var(--line)}.type-row:last-child{border:0}.type-row code{text-align:right;color:var(--muted)}.tokens{display:grid;grid-template-columns:1fr 1fr;gap:16px}.scale{display:flex;align-items:end;gap:12px;height:96px;margin-top:16px}.scale div{display:grid;justify-items:center;gap:8px;min-width:20px}.scale i{display:block;background:var(--link);width:16px;border-radius:3px 3px 0 0}.scale span{font-size:12px;color:var(--muted)}.radii{display:flex;justify-content:space-between;gap:12px;margin-top:24px}.radius{height:56px;width:64px;border:1px solid var(--input);background:var(--hover)}.radii p{margin-top:8px;font-size:12px;color:var(--muted);text-align:center}.demo-label{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.small-tag{white-space:nowrap;flex-shrink:0;font-size:11px;color:var(--muted);padding:3px 8px;background:var(--hover);border-radius:999px}.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 14px;line-height:20px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:14px;font-weight:500}.btn.primary{background:var(--red);border-color:transparent;color:#fff}.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}.btn.disabled{opacity:.45}.btn.danger{color:var(--danger);background:color-mix(in srgb,var(--danger) 8%,transparent);border-color:transparent}.field{display:flex;align-items:center;border:0.5px solid var(--input);border-radius:12px;min-height:40px;padding:8px 12px;background:var(--card);color:var(--muted)}.field-label{display:block;font-size:12px;font-weight:500;margin-bottom:8px}.field-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}.states{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.tag{font-size:12px;display:inline-block;padding:3px 9px;border-radius:999px;color:var(--muted);background:var(--hover)}.tag.done{color:var(--link);background:color-mix(in srgb,var(--link) 10%,transparent)}.tag.running{color:var(--running);background:color-mix(in srgb,var(--running) 10%,transparent)}.tag.warn{color:var(--warning);background:color-mix(in srgb,var(--warning) 10%,transparent)}.tag.error{color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,transparent)}.review{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}.review-head,.review-row{display:grid;grid-template-columns:2ch minmax(0,1fr) minmax(0,1fr);gap:16px;padding:12px 16px}.review-head{background:var(--hover);font-size:12px;color:var(--muted)}.review-row{border-top:1px solid var(--line);align-items:start}.index{color:var(--muted);font-size:12px;padding-top:8px}.source,.translation{line-height:20px}.source{padding:8px 0;overflow-wrap:anywhere}.translation{padding:8px 12px;border:1px solid var(--input);border-radius:8px}.mobile-label{display:none}.action-bar{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid var(--line);margin-top:16px;padding:12px 0}.action-bar .buttons{margin:0}.rules{display:grid;grid-template-columns:1fr 1fr;gap:20px}.rule{border-top:2px solid var(--line);padding-top:16px}.rule h3{margin-bottom:12px}.rule ul{margin:0;padding-left:20px;color:var(--muted)}.rule li+li{margin-top:8px}footer{padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}footer a{font-weight:500}.notice{margin-top:16px;font-size:12px;color:var(--muted);line-height:1.7}section:target h2{color:var(--link)}@media(max-width:850px){.shell{grid-template-columns:1fr;gap:24px;padding:24px}.top{padding:12px 24px}.shell nav{position:static;display:flex;overflow:auto;gap:4px;padding-bottom:8px}.shell nav a{white-space:nowrap}.nav-foot{display:none}.hero h1{font-size:30px}.hero{padding-top:0}.doc-label{display:none}}@media(max-width:580px){.shell{padding:20px 16px}.top{padding:12px 16px;gap:12px}.grid3{grid-template-columns:1fr}.trait-card{min-height:0}.swatch{height:48px}.tokens,.rules,.field-grid{grid-template-columns:1fr}.type-row{grid-template-columns:72px minmax(0,1fr);gap:8px}.type-row code{grid-column:2;text-align:left}.surfaces{grid-template-columns:1fr 1fr}.surfaces>div:nth-child(2){border-right:0}.review-head{display:none}.review-row{grid-template-columns:2ch minmax(0,1fr);gap:8px 12px}.review-row:first-of-type{border-top:0}.review-row .translation{grid-column:2}.mobile-label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.action-bar{align-items:start;flex-direction:column}.switch button{min-height:44px;padding:6px 10px}.top .logo{width:100px}.hero h1{font-size:28px}.btn{min-height:44px}.card{padding:16px}.demo-label{align-items:start}.scale{justify-content:space-between;gap:4px}h2{font-size:18px}}@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}@media print{header{position:static}nav,.switch{display:none!important}.shell{display:block;padding:16px}section{break-inside:avoid}body{background:#fff}a{color:inherit}}
-.icon-samples{display:flex;flex-wrap:wrap;gap:24px;padding-top:24px;margin-top:24px;border-top:1px solid var(--line)}.icon-samples>div{display:flex;align-items:center;gap:8px;color:var(--fg)}.icon-samples span{font-size:12px}</style></head><body>
-<header><div class="top"><img class="logo" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTY2MCIgaGVpZ2h0PSIzNTUiIHZpZXdCb3g9IjAgMCAxNjYwIDM1NSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE3NCA3MEMxNzQgMzEuMzQwMSAyMDUuMzQgMCAyNDQgMEg0NzNDNTExLjY2IDAgNTQzIDMxLjM0MDEgNTQzIDcwVjIzMEM1NDMgMjY4LjY2IDUxMS42NiAzMDAgNDczIDMwMEgyNDRDMjA1LjM0IDMwMCAxNzQgMjY4LjY2IDE3NCAyMzBWNzBaIiBmaWxsPSIjRkYwMDMzIi8+CjxwYXRoIGQ9Ik00MzQuMDgyIDEzNi45NjJDNDQ0LjE5MyAxNDIuNzE0IDQ0NC4xOTMgMTU3LjI4NiA0MzQuMDgyIDE2My4wMzhMMzI1LjY2NyAyMjQuNzE1QzMxNS42NjggMjMwLjQwNCAzMDMuMjUgMjIzLjE4MiAzMDMuMjUgMjExLjY3OFY4OC4zMjI0QzMwMy4yNSA3Ni44MTc4IDMxNS42NjggNjkuNTk1OCAzMjUuNjY3IDc1LjI4NDZMNDM0LjA4MiAxMzYuOTYyWiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTM0OC41IDMwMEMzNDguNSAzMDAgMzQ4LjczIDI5OS45NzcgMzQ5LjA4MSAzMDBINDMzQzQzMyAzMDAgMzY1LjI1IDM0OC40NTMgMzU2IDM1M0MzNDYuNDgyIDM1Ny42NzkgMzQzLjkwNCAzNTAuNSAzNDQuNSAzNDZDMzQ1LjA5NiAzNDEuNSAzNTEuNSAzMTEuNSAzNTIuNSAzMDUuNUMzNTMuMjg2IDMwMC43ODYgMzUwLjM2NyAzMDAuMDg0IDM0OS4wODEgMzAwSDM0OC41WiIgZmlsbD0iI0ZGMDAzMyIvPgo8cGF0aCBkPSJNMCAxNTcuNUMwIDE1MC4wNDQgNi4wNDQxNiAxNDQgMTMuNSAxNDRDMjAuOTU1OCAxNDQgMjcgMTUwLjA0NCAyNyAxNTcuNVYxOTQuNUMyNyAyMDEuOTU2IDIwLjk1NTggMjA4IDEzLjUgMjA4QzYuMDQ0MTYgMjA4IDAgMjAxLjk1NiAwIDE5NC41VjE1Ny41WiIgZmlsbD0iI0ZCNzI5OSIvPgo8cGF0aCBkPSJNNjkwIDE1OC41QzY5MCAxNTEuMDQ0IDY5Ni4wNDQgMTQ1IDcwMy41IDE0NUM3MTAuOTU2IDE0NSA3MTcgMTUxLjA0NCA3MTcgMTU4LjVWMTk1LjVDNzE3IDIwMi45NTYgNzEwLjk1NiAyMDkgNzAzLjUgMjA5QzY5Ni4wNDQgMjA5IDY5MCAyMDIuOTU2IDY5MCAxOTUuNVYxNTguNVoiIGZpbGw9IiMwMEExRDYiLz4KPHBhdGggZD0iTTEyNiAxMzYuNUMxMjYgMTI5LjA0NCAxMzIuMDQ0IDEyMyAxMzkuNSAxMjNDMTQ2Ljk1NiAxMjMgMTUzIDEyOS4wNDQgMTUzIDEzNi41VjIxOC41QzE1MyAyMjUuOTU2IDE0Ni45NTYgMjMyIDEzOS41IDIzMkMxMzIuMDQ0IDIzMiAxMjYgMjI1Ljk1NiAxMjYgMjE4LjVWMTM2LjVaIiBmaWxsPSIjRkI3Mjk5Ii8+CjxwYXRoIGQ9Ik01NjQgMTM2LjVDNTY0IDEyOS4wNDQgNTcwLjA0NCAxMjMgNTc3LjUgMTIzQzU4NC45NTYgMTIzIDU5MSAxMjkuMDQ0IDU5MSAxMzYuNVYyMTguNUM1OTEgMjI1Ljk1NiA1ODQuOTU2IDIzMiA1NzcuNSAyMzJDNTcwLjA0NCAyMzIgNTY0IDIyNS45NTYgNTY0IDIxOC41VjEzNi41WiIgZmlsbD0iIzAwQTFENiIvPgo8cGF0aCBkPSJNODQgNzYuNUM4NCA2OS4wNDQyIDkwLjA0NDIgNjMgOTcuNSA2M0MxMDQuOTU2IDYzIDExMSA2OS4wNDQyIDExMSA3Ni41VjI3Mi41QzExMSAyNzkuOTU2IDEwNC45NTYgMjg2IDk3LjUgMjg2QzkwLjA0NDIgMjg2IDg0IDI3OS45NTYgODQgMjcyLjVWNzYuNVoiIGZpbGw9IiNGQjcyOTkiLz4KPHBhdGggZD0iTTYwNiA3Ni41QzYwNiA2OS4wNDQyIDYxMi4wNDQgNjMgNjE5LjUgNjNDNjI2Ljk1NiA2MyA2MzMgNjkuMDQ0MiA2MzMgNzYuNVYyNzIuNUM2MzMgMjc5Ljk1NiA2MjYuOTU2IDI4NiA2MTkuNSAyODZDNjEyLjA0NCAyODYgNjA2IDI3OS45NTYgNjA2IDI3Mi41Vjc2LjVaIiBmaWxsPSIjMDBBMUQ2Ii8+CjxwYXRoIGQ9Ik00MiAxMjMuNUM0MiAxMTYuMDQ0IDQ4LjA0NDIgMTEwIDU1LjUgMTEwQzYyLjk1NTggMTEwIDY5IDExNi4wNDQgNjkgMTIzLjVWMjI2LjVDNjkgMjMzLjk1NiA2Mi45NTU4IDI0MCA1NS41IDI0MEM0OC4wNDQyIDI0MCA0MiAyMzMuOTU2IDQyIDIyNi41VjEyMy41WiIgZmlsbD0iI0ZCNzI5OSIvPgo8cGF0aCBkPSJNNjQ4IDEyNS41QzY0OCAxMTguMDQ0IDY1NC4wNDQgMTEyIDY2MS41IDExMkM2NjguOTU2IDExMiA2NzUgMTE4LjA0NCA2NzUgMTI1LjVWMjI4LjVDNjc1IDIzNS45NTYgNjY4Ljk1NiAyNDIgNjYxLjUgMjQyQzY1NC4wNDQgMjQyIDY0OCAyMzUuOTU2IDY0OCAyMjguNVYxMjUuNVoiIGZpbGw9IiMwMEExRDYiLz4KPHBhdGggZD0iTTk4MS4yMDUgMTM1LjU2MUM5OTMuNzg2IDEzNS41NjEgMTAwNS4zIDEzOC4zOTMgMTAxNS42NCAxNDQuMTM1SDEwMTUuNjRDMTAyNiAxNDkuNzQxIDEwMzQuMTUgMTU3LjgzMiAxMDQwLjA0IDE2OC4zMDFIMTA0MC4wNEMxMDQ2LjEyIDE3OC44NDMgMTA0OS4wOCAxOTAuOTg4IDEwNDkuMDggMjA0LjU3NUMxMDQ5LjA4IDIxOC4yMDggMTA0Ni4wMyAyMzAuNDUxIDEwMzkuNzcgMjQxLjE0OEMxMDMzLjcyIDI1MS42MDUgMTAyNS40MiAyNTkuNzQ3IDEwMTQuOTMgMjY1LjQ4NUMxMDA0LjQ2IDI3MS4yMTIgOTkyLjg3OSAyNzQuMDQzIDk4MC4yOTYgMjc0LjA0M0M5NjcuODU0IDI3NC4wNDMgOTU2LjQxNiAyNzEuMjA2IDk0Ni4wODggMjY1LjQ2OEw5NDYuMDc0IDI2NS40NjFMOTQ2LjA1OCAyNjUuNDUyQzkzNS44NTUgMjU5LjY5MiA5MjcuNzkzIDI1MS41MzEgOTIxLjkxMyAyNDEuMDc2TDkyMS44NjggMjQwLjk5NkM5MTYuMTIzIDIzMC4zMjcgOTEzLjMyNiAyMTguMTM5IDkxMy4zMjYgMjA0LjU3NUM5MTMuMzI2IDE5MS4xMyA5MTYuMjEzIDE3OS4wNjQgOTIyLjEzOSAxNjguNTI4TDkyMi4xNDYgMTY4LjUxNkw5MjIuMTUyIDE2OC41MDZDOTI4LjE5MyAxNTcuODkzIDkzNi40MjcgMTQ5LjcxNyA5NDYuODIzIDE0NC4xMDZDOTU3LjE0NiAxMzguMzgzIDk2OC42NDQgMTM1LjU2MSA5ODEuMjA1IDEzNS41NjFaTTEwOTUuNTQgMTM3LjYwNFYyMTIuNzQ3QzEwOTUuNTQgMjI0LjE2NyAxMDk4LjQxIDIzMi4yMzQgMTEwMy40OCAyMzcuNjg1QzExMDguNTYgMjQzLjAwNCAxMTE1LjYxIDI0NS44ODMgMTEyNS4yNyAyNDUuODgzQzExMzUuMjEgMjQ1Ljg4MiAxMTQyLjQ4IDI0Mi44NjUgMTE0Ny43MiAyMzcuMjU3QzExNTIuOTIgMjMxLjY4NiAxMTU1LjkxIDIyMy4xODUgMTE1NS45MSAyMTAuOTMxVjEzNy42MDRIMTE4Ni41N1YyNzJIMTE1NS45MVYyNjEuOTNDMTE1My4xMiAyNjQuMjY3IDExNTAuMDIgMjY2LjMwNiAxMTQ2LjYxIDI2OC4wNDhMMTE0Ni41OSAyNjguMDU3TDExNDYuNTcgMjY4LjA2N0MxMTM4Ljg2IDI3MS45MjUgMTEzMC4zNiAyNzMuODE2IDExMjEuMTggMjczLjgxNkMxMTEwLjggMjczLjgxNiAxMTAxLjMxIDI3MS43MDIgMTA5Mi44MSAyNjcuMzY5TDEwOTIuNzcgMjY3LjM1MUwxMDkyLjc0IDI2Ny4zMzNDMTA4NC4xMyAyNjIuNzc1IDEwNzcuMzIgMjU2LjAxOSAxMDcyLjM0IDI0Ny4yMTdMMTA3Mi4zMSAyNDcuMTU0QzEwNjcuNDIgMjM4LjIzMSAxMDY1LjExIDIyNy41OTkgMTA2NS4xMSAyMTUuNDcxVjEzNy42MDRIMTA5NS41NFpNODA2LjM2NiAxMDMuNzgxTDgwNy43MzUgMTA2LjU5MUw4NDIuMjg0IDE3Ny40OTdMODc2LjgzMyAxMDYuNTkxTDg3OC4yMDMgMTAzLjc4MUg5MTIuNTEzTDkwOC42ODUgMTExLjA5OEw4NTcuNzI2IDIwOC41MjdWMjcySDgyNy4wNjlWMjA4LjUzMUw3NzUuODg2IDExMS4xMDZMNzcyLjAzOSAxMDMuNzgxSDgwNi4zNjZaTTk4MC45NzcgMTYzLjQ5NEM5NzQuMjEyIDE2My40OTQgOTY4LjA4MSAxNjUuMDQxIDk2Mi40OTUgMTY4LjFMOTYyLjQ3NiAxNjguMTExTDk2Mi40NTggMTY4LjEyMUM5NTcuMjE2IDE3MC45MzMgOTUyLjg4MyAxNzUuMzIzIDk0OS41MDQgMTgxLjUzOUM5NDYuMjEgMTg3LjYgOTQ0LjQzNiAxOTUuMjA4IDk0NC40MzYgMjA0LjU3NUM5NDQuNDM2IDIxNC4xMTIgOTQ2LjE0MiAyMjEuODA0IDk0OS4yOTMgMjI3Ljg2N0M5NTIuNjY5IDIzNC4wNjggOTU3LjAwOSAyMzguNTQzIDk2Mi4yNzYgMjQxLjUwN0M5NjcuNzAzIDI0NC40MDkgOTczLjY3OSAyNDUuODgzIDk4MC4yOTYgMjQ1Ljg4M0M5ODYuODkzIDI0NS44ODMgOTkzLjA0NCAyNDQuMzQzIDk5OC44MjIgMjQxLjI1M0MxMDA0LjQyIDIzOC4yNTcgMTAwOC45OCAyMzMuNzQ2IDEwMTIuNDkgMjI3LjUzOUwxMDEyLjUxIDIyNy41MDRMMTAxMi41MyAyMjcuNDY4QzEwMTYuMDcgMjIxLjQzNiAxMDE3Ljk3IDIxMy44ODMgMTAxNy45NyAyMDQuNTc1QzEwMTcuOTcgMTk1LjIzNyAxMDE2LjEzIDE4Ny42NTcgMTAxMi43MiAxODEuNjExQzEwMDkuMiAxNzUuMzg5IDEwMDQuNzIgMTcwLjk3NyA5OTkuMzE0IDE2OC4xNDRMOTk5LjI3NCAxNjguMTIzTDk5OS4yMzMgMTY4LjFDOTkzLjYzMSAxNjUuMDMzIDk4Ny41NzMgMTYzLjQ5NCA5ODAuOTc3IDE2My40OTRaIiBmaWxsPSIjRkYwMDMzIiBzdHJva2U9IiNGRjAwMzMiIHN0cm9rZS13aWR0aD0iMTAiLz4KPHBhdGggZD0iTTE1NDguODMgOTQuMDJWMTUxLjQ0NEMxNTUyLjA5IDE0OC4zNjkgMTU1NS44MSAxNDUuNjQzIDE1NTkuOTYgMTQzLjI2MkMxNTY4Ljk3IDEzOC4wOSAxNTc5LjE1IDEzNS41NjEgMTU5MC4zNyAxMzUuNTYxQzE2MDIuMzkgMTM1LjU2MSAxNjEzLjM1IDEzOC40MTUgMTYyMy4xMSAxNDQuMjA2QzE2MzIuODYgMTQ5Ljk5MiAxNjQwLjUyIDE1OC4xNyAxNjQ2LjA3IDE2OC42MDRDMTY1MS42NyAxNzguOTg1IDE2NTQuMzkgMTkwLjk1MSAxNjU0LjM5IDIwNC4zNDhDMTY1NC4zOSAyMTcuNjA4IDE2NTEuNjcgMjI5LjYyIDE2NDYuMSAyNDAuMjYxQzE2NDAuNTYgMjUwLjg2IDE2MzIuODMgMjU5LjE5NSAxNjIyLjk0IDI2NS4xMzhMMTYyMi45NCAyNjUuMTM5QzE2MTMuMTggMjcxLjA5MyAxNjAyLjI4IDI3NC4wNDMgMTU5MC4zNyAyNzQuMDQzQzE1NzguODcgMjc0LjA0MyAxNTY4LjUzIDI3MS41MjYgMTU1OS41IDI2Ni4zNDJMMTU1OS40OSAyNjYuMzMyTDE1NTkuNDcgMjY2LjMyMkMxNTU1LjUxIDI2NC4wMDYgMTU1MS45NiAyNjEuMzc3IDE1NDguODMgMjU4LjQzNVYyNzJIMTUxOC4xOFY5NC4wMkgxNTQ4LjgzWk0xNDAyLjI3IDEzNy42MDRWMjEyLjc0N0MxNDAyLjI3IDIyNC4xNjYgMTQwNS4xNSAyMzIuMjM0IDE0MTAuMjEgMjM3LjY4NUMxNDE1LjI5IDI0My4wMDQgMTQyMi4zNCAyNDUuODgzIDE0MzIgMjQ1Ljg4M0MxNDQxLjk0IDI0NS44ODMgMTQ0OS4yMiAyNDIuODY1IDE0NTQuNDUgMjM3LjI1NkMxNDU5LjY1IDIzMS42ODUgMTQ2Mi42NCAyMjMuMTg1IDE0NjIuNjQgMjEwLjkzMVYxMzcuNjA0SDE0OTMuM1YyNzJIMTQ2Mi42NFYyNjEuOTNDMTQ1OS44NiAyNjQuMjY3IDE0NTYuNzUgMjY2LjMwNyAxNDUzLjM0IDI2OC4wNDhMMTQ1My4zMiAyNjguMDU4TDE0NTMuMzEgMjY4LjA2N0MxNDQ1LjU5IDI3MS45MjUgMTQzNy4xIDI3My44MTYgMTQyNy45MiAyNzMuODE2QzE0MTcuNTQgMjczLjgxNiAxNDA4LjA0IDI3MS43MDIgMTM5OS41NCAyNjcuMzY5TDEzOTkuNSAyNjcuMzUxTDEzOTkuNDcgMjY3LjMzMkMxMzkwLjg2IDI2Mi43NzUgMTM4NC4wNSAyNTYuMDIgMTM3OS4wNyAyNDcuMjE3TDEzNzkuMDUgMjQ3LjE4NkwxMzc5LjA0IDI0Ny4xNTRDMTM3NC4xNSAyMzguMjMxIDEzNzEuODQgMjI3LjU5OSAxMzcxLjg0IDIxNS40NzFWMTM3LjYwNEgxNDAyLjI3Wk0xMjY2Ljc0IDEwMy43ODFDMTI4NC42MiAxMDMuNzgxIDEzMDAuMzUgMTA3LjE1NCAxMzEzLjc2IDExNC4xMDJIMTMxMy43NkMxMzI3LjMgMTIwLjg4OCAxMzM3LjcyIDEzMC43MjcgMTM0NC44OCAxNDMuNTc2SDEzNDQuODhDMTM1Mi4xNyAxNTYuNCAxMzU1LjczIDE3MS4zNDMgMTM1NS43MyAxODguMjMxQzEzNTUuNzMgMjA1LjEzNyAxMzUyLjE3IDIyMC4wOTUgMTM0NC44NiAyMzIuOTI4TDEzNDQuODYgMjMyLjkyN0MxMzM3LjY4IDI0NS42MzQgMTMyNy4yNCAyNTUuMzkgMTMxMy42OSAyNjIuMTY1TDEzMTMuNjggMjYyLjE3TDEzMTMuNjcgMjYyLjE3NkMxMzAwLjI4IDI2OC43OTEgMTI4NC41OCAyNzIgMTI2Ni43NCAyNzJIMTIxMi40OFYxMDMuNzgxSDEyNjYuNzRaTTE1ODYuMDUgMTYzLjQ5NEMxNTc5LjM3IDE2My40OTQgMTU3My4yIDE2NS4xNTUgMTU2Ny40NiAxNjguNDkyTDE1NjcuNDQgMTY4LjVMMTU2Ny40MiAxNjguNTFDMTU2MS45NiAxNzEuNjMzIDE1NTcuNDQgMTc2LjI4OCAxNTUzLjkgMTgyLjY3M0wxNTUzLjU5IDE4My4yNUMxNTUwLjQ3IDE4OS4yNDQgMTU0OC44MyAxOTYuMzA2IDE1NDguODMgMjA0LjU3NUMxNTQ4LjgzIDIxMy4yNDggMTU1MC41NyAyMjAuNjQ3IDE1NTMuODkgMjI2LjkxNEMxNTU3LjQyIDIzMy4xMyAxNTYxLjk0IDIzNy44MSAxNTY3LjQ0IDI0MS4xMDFDMTU3My4xNyAyNDQuMjg5IDE1NzkuMzUgMjQ1Ljg4MyAxNTg2LjA1IDI0NS44ODNDMTU5Mi45NCAyNDUuODgzIDE1OTkuMSAyNDQuMjc3IDE2MDQuNjUgMjQxLjExM0MxNjEwLjMyIDIzNy44MTUgMTYxNC44NCAyMzMuMTMyIDE2MTguMjEgMjI2LjkzM0MxNjIxLjUzIDIyMC42NzMgMTYyMy4yOCAyMTMuMTk2IDE2MjMuMjggMjA0LjM0OEMxNjIzLjI4IDE5NS42NDYgMTYyMS41MyAxODguMzI0IDE2MTguMjEgMTgyLjIxOUMxNjE0Ljg1IDE3Ni4wMzQgMTYxMC4zNiAxNzEuNDQ5IDE2MDQuNzMgMTY4LjMwOEwxNjA0LjcxIDE2OC4yOTVMMTYwNC42OSAxNjguMjg0QzE1OTkuMTMgMTY1LjEwNyAxNTkyLjk1IDE2My40OTQgMTU4Ni4wNSAxNjMuNDk0Wk0xMjQzLjE0IDI0NC45NzVIMTI2Ni43NEMxMjg2LjMgMjQ0Ljk3NSAxMzAwLjQzIDIzOS44NDggMTMwOS45NSAyMzAuMzM4QzEzMTkuNTMgMjIwLjYxOCAxMzI0LjYyIDIwNi44MTMgMTMyNC42MiAxODguMjMxQzEzMjQuNjIgMTY5LjUwMiAxMzE5LjQ2IDE1NS41MzkgMTMwOS43MSAxNDUuNjYxTDEzMDkuNyAxNDUuNjQ5TDEzMDkuNjkgMTQ1LjYzNkMxMzAwLjE2IDEzNS44MzUgMTI4Ni4xMSAxMzAuNTc5IDEyNjYuNzQgMTMwLjU3OUgxMjQzLjE0VjI0NC45NzVaIiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXJfMThfMTApIiBzdHJva2U9InVybCgjcGFpbnQxX2xpbmVhcl8xOF8xMCkiIHN0cm9rZS13aWR0aD0iMTAiLz4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQwX2xpbmVhcl8xOF8xMCIgeDE9IjE2NjAiIHkxPSIxODcuNSIgeDI9IjEyMDAiIHkyPSIxODcuNSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBvZmZzZXQ9IjAuMSIgc3RvcC1jb2xvcj0iIzAwQUVFQyIvPgo8c3RvcCBvZmZzZXQ9IjAuOSIgc3RvcC1jb2xvcj0iI0ZCNzI5OSIvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9InBhaW50MV9saW5lYXJfMThfMTAiIHgxPSIxNjYwIiB5MT0iMTg3LjUiIHgyPSIxMjAwIiB5Mj0iMTg3LjUiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KPHN0b3Agb2Zmc2V0PSIwLjEiIHN0b3AtY29sb3I9IiMwMEFFRUMiLz4KPHN0b3Agb2Zmc2V0PSIwLjkiIHN0b3AtY29sb3I9IiNGQjcyOTkiLz4KPC9saW5lYXJHcmFkaWVudD4KPC9kZWZzPgo8L3N2Zz4K" alt="YouDub"><span class="doc-label">UI DESIGN SYSTEM</span><span class="meta">v1.0</span><div class="switch" role="group" aria-label="速查页主题"><button type="button" data-mode="light" aria-pressed="true">浅色</button><button type="button" data-mode="dark" aria-pressed="false">深色</button></div></div></header>
-<div class="shell"><nav aria-label="规范章节"><a href="#brand"><b>01</b>品牌语言</a><a href="#color"><b>02</b>色彩系统</a><a href="#type"><b>03</b>字体层级</a><a href="#geometry"><b>04</b>尺寸与节奏</a><a href="#components"><b>05</b>基础组件</a><a href="#patterns"><b>06</b>页面模式</a><a href="#rules"><b>07</b>设计边界</a><div class="nav-foot"><p class="caption">2026.10.22</p><a href="ui-design-system.md">完整规范 ↗</a></div></nav>
-<main><div class="hero"><p class="eyebrow">YOUDUB / VISUAL STANDARD</p><h1>亲和、清晰、可掌控的<br>视频语言工作台。</h1><p>保留现有品牌识别，将操作、内容和状态组织为一致的设计语言。</p><div class="brand-line"></div><p class="notice">设计目标速查 · 色值、尺寸与组件为规范示例，应用中的待收敛项见完整规范。</p></div>
-<section id="brand"><div class="section-head"><span class="number">01</span><h2>品牌语言</h2></div><div class="grid3"><div class="card trait-card"><div class="trait">亲和</div><p class="caption">柔和圆角与粉蓝品牌色。<br>让入口轻松，减少界面压力。</p></div><div class="card trait-card"><div class="trait">清晰</div><p class="caption">中性背景与稳定的对齐。<br>让视频、字幕和结果居于中心。</p></div><div class="card trait-card"><div class="trait">可掌控</div><p class="caption">真实进度与明确的动作。<br>让用户知道当前状态和下一步。</p></div></div></section>
-<section id="color"><div class="section-head"><span class="number">02</span><h2>品牌原色与功能色</h2></div><div class="grid3"><div class="card"><div class="swatch" style="background:#ff0033"></div><div class="swatch-name"><strong>品牌红</strong><code>#FF0033</code></div><p class="caption">Logo · 品牌图形</p></div><div class="card"><div class="swatch" style="background:#fb7299"></div><div class="swatch-name"><strong>声波粉</strong><code>#FB7299</code></div><p class="caption">渐变起点 · 声波</p></div><div class="card"><div class="swatch" style="background:#00aeec"></div><div class="swatch-name"><strong>声波蓝</strong><code>#00AEEC</code></div><p class="caption">渐变终点 · 声波</p></div></div><div class="color-foot"><div class="color-chip"></div><div><strong>主操作红 <code>#E6002E</code></strong><p class="caption">白色小字约 4.77:1 对比度；Logo 继续使用原色。</p></div></div><div class="surfaces"><div style="background:var(--bg)"><h3>页面</h3><code>background</code></div><div style="background:var(--surface)"><h3>外壳</h3><code>surface</code></div><div style="background:var(--card)"><h3>内容</h3><code>card</code></div><div style="background:var(--elevated)"><h3>浮层</h3><code>elevated</code></div></div></section>
-<section id="type"><div class="section-head"><span class="number">03</span><h2>字体层级</h2></div><div class="card"><div class="type-row"><span class="caption">页面标题</span><span style="font-size:24px;line-height:32px;font-weight:600">字幕翻译</span><code>24 / 32 · 600</code></div><div class="type-row"><span class="caption">分组标题</span><span style="font-size:16px;line-height:24px;font-weight:600">生成文件</span><code>16 / 24 · 600</code></div><div class="type-row"><span class="caption">正文</span><span>我们现在正站在大象面前。</span><code>14 / 20 · 400</code></div><div class="type-row"><span class="caption">辅助信息</span><span class="caption">视频 · 18 秒</span><code>12 / 18 · 400</code></div></div><p class="notice">系统无衬线字体 · 正文自然换行 · 时间、速度使用等宽数字 · 日志使用等宽字体</p></section>
-<section id="geometry"><p class="notice">控件直接沿用 Harness：普通输入和按钮圆角 12px，紧凑控件 8px，弹窗 28px。输入控件无额外蓝色外圈。</p><div class="section-head"><span class="number">04</span><h2>尺寸与节奏</h2></div><div class="tokens"><div class="card"><h3>4px 刻度，8px 主节奏</h3><p class="caption">组内 8–16px，内容组之间 24px。</p><div class="scale"><div><i style="height:4px"></i><span>4</span></div><div><i style="height:8px"></i><span>8</span></div><div><i style="height:12px"></i><span>12</span></div><div><i style="height:16px"></i><span>16</span></div><div><i style="height:24px"></i><span>24</span></div><div><i style="height:32px"></i><span>32</span></div><div><i style="height:48px"></i><span>48</span></div><div><i style="height:64px"></i><span>64</span></div></div></div><div class="card"><h3>四档圆角</h3><p class="caption">按组件角色使用，避免逐页面微调。</p><div class="radii"><div><div class="radius" style="border-radius:8px"></div><p>控件 8</p></div><div><div class="radius" style="border-radius:12px"></div><p>内容 12</p></div><div><div class="radius" style="border-radius:16px"></div><p>弹窗 16</p></div><div><div class="radius" style="border-radius:999px"></div><p>标签 ∞</p></div></div></div></div></section>
-<section id="components"><div class="section-head"><span class="number">05</span><h2>基础组件</h2></div><div class="card"><div class="demo-label"><h3>局部操作组保留一个主动作</h3><span class="small-tag">静态视觉示例</span></div><div class="buttons"><span class="btn primary">开始处理</span><span class="btn">保存修改</span><span class="btn ghost">取消</span><span class="btn danger">删除任务</span><span class="btn disabled">暂不可用</span></div><div class="field-grid"><div><span class="field-label">视频链接</span><div class="field">粘贴 YouTube 或 B 站视频链接</div></div><div><span class="field-label">目标语言</span><div class="field" style="justify-content:space-between;color:var(--fg)"><span>中文</span><span aria-hidden="true">⌄</span></div></div></div><div class="states"><span class="tag">等待中</span><span class="tag running">下载中</span><span class="tag warn">待确认</span><span class="tag done">已完成</span><span class="tag error">失败</span></div></div><div class="icon-samples"><div><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-settings" aria-hidden="true"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"></path><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path></svg><span>设置</span></div><div><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-sun" aria-hidden="true"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"></path><path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"></path></svg><span>浅色</span></div><div><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-moon" aria-hidden="true"><path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008"></path></svg><span>深色</span></div><div><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-sun-moon" aria-hidden="true"><path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657"></path><path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914"></path><path d="M3 12h1"></path><path d="M12 3v1"></path><path d="M5.6 5.6l.7 .7"></path><path d="M3 21l18 -18"></path></svg><span>跟随系统</span></div><div><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-message-report" aria-hidden="true"><path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12"></path><path d="M12 8v3"></path><path d="M12 14v.01"></path></svg><span>反馈</span></div><div><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-brand-github" aria-hidden="true"><path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5"></path></svg><span>GitHub</span></div></div><p class="notice">Tabler 原版图标 · 同组同色 · 不修改路径或拼接形状</p><p class="notice">标准按钮 36px · 表单控件 40px · 紧凑工具 32px · 触屏点击区域至少 44px</p></section>
-<section id="patterns"><div class="section-head"><span class="number">06</span><h2>内容优先的校对布局</h2></div><div class="demo-label"><p class="caption">共享表头、等宽双列、连续列表；窄屏自动上下排列。</p><span class="small-tag">静态视觉示例</span></div><div class="review"><div class="review-head"><span></span><span>原文</span><span>译文</span></div><div class="review-row"><span class="index">1</span><div class="source"><span class="mobile-label">原文</span>Alright, so here we are in front of the elephants.</div><div class="translation"><span class="mobile-label">译文</span>好了，我们现在正站在大象面前。</div></div><div class="review-row"><span class="index">2</span><div class="source"><span class="mobile-label">原文</span>And that's pretty much all there is to say.</div><div class="translation"><span class="mobile-label">译文</span>要讲的内容差不多就这些了。</div></div></div><div class="action-bar"><span class="caption">2 条字幕</span><div class="buttons"><span class="btn">保存修改</span><span class="btn primary">确认并继续</span></div></div></section>
-<section id="rules"><div class="section-head"><span class="number">07</span><h2>设计边界</h2></div><div class="rules"><div class="rule"><h3>保留并统一</h3><ul><li>原版 Logo 与粉蓝渐变方向</li><li>Tabler 原版操作图标</li><li>同组控件的尺寸、颜色和边界</li><li>真实状态、进度与可展开日志</li></ul></div><div class="rule"><h3>收敛与检查</h3><ul><li>低对比小字和功能图标</li><li>重复卡片、粗分隔和过重阴影</li><li>桌面与业务控件的几何差异</li><li>长文本、多语言和窄屏布局</li></ul></div></div></section>
-<footer><p>本页定义统一目标，未改动应用运行时。实施差异、完整规则和源文件索引见 <a href="ui-design-system.md">UI 设计规范 v1.0</a>。</p><p style="margin-top:8px">对比度依据：<a href="https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html">W3C 文本对比度</a> · <a href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html">W3C 非文本对比度</a></p></footer>
-</main></div><script>document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{document.documentElement.dataset.theme=button.dataset.mode;document.querySelectorAll('[data-mode]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));}));</script></body></html>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>YouDub × Harness · 视觉与组件规范</title><style>/* Base variables referenced by the token sheets and component CSS but defined
+ * upstream (deepsuite theme/global.css) — supplied here so the composite
+ * --dsw-font-* variables resolve and motion rides the upstream curve. Code
+ * font stack deliberately omits a bare `monospace` tail (Windows CJK falls
+ * back to SimSun otherwise). */
+:root {
+  --dsh-font-family-text-default: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --dsw-font-family: var(--dsh-font-family-text-default);
+  --dsw-font-family-brand: 'Montserrat', var(--dsh-font-family-text-default);
+  --dsh-font-family-code-default: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
+    'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
+  --ds-font-family-code: var(--dsh-font-family-code-default);
+  --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ds-transition-duration: 0.2s;
+  --ds-transition-duration-fast: 0.1s;
+  --ds-transition-duration-slow: 0.3s;
+  --dsw-radius-xs: 4px;
+  --dsw-radius-sm: 8px;
+  --dsw-radius-md: 12px;
+  --dsw-radius-lg: 16px;
+  --dsw-radius-xl: 20px;
+  --dsw-radius-panel: 28px;
+}
+
+/* User font lists (--dsh-font-family-text/-code, written on body by the theme
+ * boot script and ThemePresenter) lead the built-in stacks. An unset list
+ * falls back to the built-in stack itself; the repeated families are inert. */
+body {
+  --dsw-font-family: var(--dsh-font-family-text, var(--dsh-font-family-text-default)), var(--dsh-font-family-text-default);
+  --ds-font-family-code: var(--dsh-font-family-code, var(--dsh-font-family-code-default)), var(--dsh-font-family-code-default);
+  --dsw-alias-settings-card-fill: var(--dsw-alias-bg-layer-2);
+  --dsw-alias-settings-card-stroke: var(--dsw-alias-border-l4);
+}
+
+[data-dsh-automatic-focus]:focus,
+[data-dsh-automatic-focus]:focus:focus-visible {
+  outline: none;
+}
+
+/* Smooth corner curvature for every rounded surface. Inside the support
+ * guard, all corners curve along superellipse(1.5) — between a circular arc
+ * (round = superellipse(1)) and a squircle (superellipse(2)) — instead of the
+ * default arc; engines without corner-shape keep circular corners because the
+ * token and the rule exist only inside the guard.
+ *
+ * corner-shape does not inherit, so the universal selector applies the token
+ * to elements and their ::before/::after; other pseudo-elements (for example
+ * the ::-webkit-scrollbar parts) stay circular.
+ *
+ * Full-round shapes opt out where they are declared: a superellipse deforms a
+ * circle into a squircle and squares off capsule ends, so every effectively
+ * uncapped radius (50%, 100%, or a pill radius far above the box size) pairs
+ * `corner-shape: round` with its `border-radius` in the owning component
+ * sheet. The corner-shape stylesheet spec enforces that pairing. */
+@supports (corner-shape: superellipse(1.5)) {
+  :root {
+    --dsw-corner-shape: superellipse(1.5);
+  }
+
+  *,
+  *::before,
+  *::after {
+    corner-shape: var(--dsw-corner-shape);
+  }
+}
+
+body {
+  --dsw-linear-gradient-think: linear-gradient(180deg, #fff 20.19%, rgba(255, 255, 255, 0) 100%);
+  --dsw-linear-think-select: linear-gradient(180deg, #f5f6f7 20.19%, rgba(245, 246, 247, 0) 100%);
+  /* 阴影 */
+  --dsw-shadow-lv1: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  --dsw-shadow-lv1-blur: 0 4px 12px 0 rgba(0, 0, 0, 0.02);
+  --dsw-shadow-lv2: 0 4px 12px 0 rgba(0, 0, 0, 0.02), 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+  --dsw-shadow-lv3:
+    0 0 1px 0 rgba(0, 0, 0, 0.2), 0 0 4px 0 rgba(0, 0, 0, 0.02), 0 12px 32px 0 rgba(0, 0, 0, 0.08);
+  /* Elevation：浮层/面板/面型按钮的描边+投影三件套。0.5px 发丝描边画在
+     box-shadow 里（组件配 border: 0，不占布局），叠两层极淡柔光；深色主题下
+     柔光几乎不可见，由描边承担分离。描边颜色经 --dsw-elevation-stroke-color
+     间接，组件可重绑（菜单面重绑最浅的 l1、输入框重绑 l2，输入框的
+     workspace-trigger 态置 transparent 只保留柔光）。soft 供输入框：更大
+     模糊、更低透明度的柔光。默认色只声明在 body 上，让表面的重绑沿继承
+     传给真正消费投影的后代。 */
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l4);
+  /* Blocking masks dim the page; menu backgrounds retain their blur. */
+  --dsw-mask-blur: none;
+  --dsw-menu-backdrop-filter: blur(40px) saturate(150%);
+}
+
+body[data-ds-dark-theme] [data-menu-material] {
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l3);
+}
+
+/* 派生 elevation 值逐元素声明而非从 body 继承：继承传下来的是在 body 上就
+   已替换完 var() 的值，组件重绑 --dsw-elevation-stroke-color 将无法进入
+   var(--dsw-elevation-*)；逐元素声明让每个元素按自己看到的描边色重新替换
+   （同 scrollbar.css 对 --dsh-scrollbar-thumb 的处理）。 */
+body,
+body * {
+  --dsw-elevation-stroke: 0 0 0 0.5px var(--dsw-elevation-stroke-color);
+  --dsw-elevation-panel:
+    var(--dsw-elevation-stroke), 0 3px 8px 0 rgba(0, 0, 0, 0.03), 0 0 16px 0 rgba(0, 0, 0, 0.02);
+  --dsw-elevation-prominent:
+    var(--dsw-elevation-stroke), 0 3px 8px 0 rgba(0, 0, 0, 0.04), 0 0 20px 0 rgba(0, 0, 0, 0.05);
+  --dsw-elevation-soft:
+    var(--dsw-elevation-stroke), 0 4px 16px 0 rgba(0, 0, 0, 0.03), 0 0 24px 0 rgba(0, 0, 0, 0.03);
+}
+
+body[data-ds-dark-theme] {
+  --dsw-linear-gradient-think: linear-gradient(180deg, #151517 20.19%, rgba(21, 21, 23, 0) 100%);
+  --dsw-linear-think-select: linear-gradient(180deg, #232325 20.19%, rgba(35, 35, 37, 0) 100%);
+}
+
+/* ---------- 字体 ---------- */
+/* 由 @deepseek-figma-plugin/custom-variable-name 插件导出 */
+/* Markdown 阶梯整体按 0.875（正文 16 → 14）等比缩放，四舍五入到整数像素；
+   重新从 Figma 导出时需要保留这一缩放。 */
+/* Bootstrap and ThemePresenter set the integer content size on body (10–22px,
+   default 14px). Headings and body variants share its pixel delta. Secondary
+   text uses size − 1 through 14px, then size − 2: 10→9, 14→13, 15→13, 22→20.
+   max(13px, ...) selects the delta, not a font-size floor. Small typography keeps a
+   fixed size; code typography follows the separate code size setting. */
+body {
+  --dsh-content-font-delta: calc(var(--dsh-content-font-size, 14px) - 14px);
+  --dsh-content-font-size-secondary: min(calc(var(--dsh-content-font-size, 14px) - 1px), max(13px, calc(var(--dsh-content-font-size, 14px) - 2px)));
+  --dsh-content-font-delta-secondary: calc(var(--dsh-content-font-size-secondary) - 13px);
+  /* Code size setting (--dsh-code-font-size, integer px 10–16, default 11)
+     is the code-block size; inline code and the small tool variant move by
+     the same increment. */
+  --dsh-code-font-delta: calc(var(--dsh-code-font-size, 11px) - 11px);
+
+  --dsw-font-markdown-h1: 700 calc(21px + var(--dsh-content-font-delta)) / calc(30px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-h1-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-h1-font-weight: 700;
+  --dsw-font-markdown-h1-line-height: calc(30px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h1-font-size: calc(21px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h1-font-style: normal;
+
+  --dsw-font-markdown-h2: 700 calc(19px + var(--dsh-content-font-delta)) / calc(28px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-h2-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-h2-font-weight: 700;
+  --dsw-font-markdown-h2-line-height: calc(28px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h2-font-size: calc(19px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h2-font-style: normal;
+
+  --dsw-font-markdown-h3: 700 calc(18px + var(--dsh-content-font-delta)) / calc(26px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-h3-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-h3-font-weight: 700;
+  --dsw-font-markdown-h3-line-height: calc(26px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h3-font-size: calc(18px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h3-font-style: normal;
+
+  --dsw-font-markdown-h4: 600 var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-h4-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-h4-font-weight: 600;
+  --dsw-font-markdown-h4-line-height: calc(24px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-h4-font-size: var(--dsh-content-font-size, 14px);
+  --dsw-font-markdown-h4-font-style: normal;
+
+  --dsw-font-markdown-base: var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-base-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-base-font-weight: 400;
+  --dsw-font-markdown-base-line-height: calc(24px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-base-font-size: var(--dsh-content-font-size, 14px);
+  --dsw-font-markdown-base-font-style: normal;
+
+  --dsw-font-markdown-base-strong: 600 var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-base-strong-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-base-strong-font-weight: 600;
+  --dsw-font-markdown-base-strong-line-height: calc(24px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-base-strong-font-size: var(--dsh-content-font-size, 14px);
+  --dsw-font-markdown-base-strong-font-style: normal;
+
+  --dsw-font-markdown-base-italic: italic var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-base-italic-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-base-italic-font-weight: 400;
+  --dsw-font-markdown-base-italic-line-height: calc(24px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-base-italic-font-size: var(--dsh-content-font-size, 14px);
+  --dsw-font-markdown-base-italic-font-style: italic;
+
+  --dsw-font-markdown-base-strong-italic: italic 600 var(--dsh-content-font-size, 14px) / calc(24px + var(--dsh-content-font-delta)) var(--dsw-font-family);
+  --dsw-font-markdown-base-strong-italic-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-base-strong-italic-font-weight: 600;
+  --dsw-font-markdown-base-strong-italic-line-height: calc(24px + var(--dsh-content-font-delta));
+  --dsw-font-markdown-base-strong-italic-font-size: var(--dsh-content-font-size, 14px);
+  --dsw-font-markdown-base-strong-italic-font-style: italic;
+
+  --dsw-font-markdown-table: var(--dsh-content-font-size-secondary, 13px)/calc(22px + var(--dsh-content-font-delta-secondary, 0px)) var(--dsw-font-family);
+  --dsw-font-markdown-table-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-table-font-weight: 400;
+  --dsw-font-markdown-table-line-height: calc(22px + var(--dsh-content-font-delta-secondary, 0px));
+  --dsw-font-markdown-table-font-size: var(--dsh-content-font-size-secondary, 13px);
+  --dsw-font-markdown-table-font-style: normal;
+
+  --dsw-font-markdown-table-head: 500 var(--dsh-content-font-size-secondary, 13px)/calc(22px + var(--dsh-content-font-delta-secondary, 0px)) var(--dsw-font-family);
+  --dsw-font-markdown-table-head-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-table-head-font-weight: 500;
+  --dsw-font-markdown-table-head-line-height: calc(22px + var(--dsh-content-font-delta-secondary, 0px));
+  --dsw-font-markdown-table-head-font-size: var(--dsh-content-font-size-secondary, 13px);
+  --dsw-font-markdown-table-head-font-style: normal;
+
+  --dsw-font-markdown-small: 12px/20px var(--dsw-font-family);
+  --dsw-font-markdown-small-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-small-font-weight: 400;
+  --dsw-font-markdown-small-line-height: 20px;
+  --dsw-font-markdown-small-font-size: 12px;
+  --dsw-font-markdown-small-font-style: normal;
+
+  --dsw-font-markdown-small-strong: 600 12px/20px var(--dsw-font-family);
+  --dsw-font-markdown-small-strong-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-small-strong-font-weight: 600;
+  --dsw-font-markdown-small-strong-line-height: 20px;
+  --dsw-font-markdown-small-strong-font-size: 12px;
+  --dsw-font-markdown-small-strong-font-style: normal;
+
+  --dsw-font-markdown-small-italic: italic 12px/20px var(--dsw-font-family);
+  --dsw-font-markdown-small-italic-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-small-italic-font-weight: 400;
+  --dsw-font-markdown-small-italic-line-height: 20px;
+  --dsw-font-markdown-small-italic-font-size: 12px;
+  --dsw-font-markdown-small-italic-font-style: italic;
+
+  --dsw-font-markdown-small-strong-italic: italic 600 12px/20px var(--dsw-font-family);
+  --dsw-font-markdown-small-strong-italic-font-family: var(--dsw-font-family);
+  --dsw-font-markdown-small-strong-italic-font-weight: 600;
+  --dsw-font-markdown-small-strong-italic-line-height: 20px;
+  --dsw-font-markdown-small-strong-italic-font-size: 12px;
+  --dsw-font-markdown-small-strong-italic-font-style: italic;
+
+  --dsw-font-markdown-code: calc(12px + var(--dsh-code-font-delta)) / calc(19px + var(--dsh-code-font-delta)) var(--ds-font-family-code);
+  --dsw-font-markdown-code-font-family: var(--ds-font-family-code);
+  --dsw-font-markdown-code-font-weight: 400;
+  --dsw-font-markdown-code-line-height: calc(19px + var(--dsh-code-font-delta));
+  --dsw-font-markdown-code-font-size: calc(12px + var(--dsh-code-font-delta));
+  --dsw-font-markdown-code-font-style: normal;
+
+  --dsw-font-markdown-code-block: var(--dsh-code-font-size, 11px) / calc(19px + var(--dsh-code-font-delta)) var(--ds-font-family-code);
+  --dsw-font-markdown-code-block-font-family: var(--ds-font-family-code);
+  --dsw-font-markdown-code-block-font-weight: 400;
+  --dsw-font-markdown-code-block-line-height: calc(19px + var(--dsh-code-font-delta));
+  --dsw-font-markdown-code-block-font-size: var(--dsh-code-font-size, 11px);
+  --dsw-font-markdown-code-block-font-style: normal;
+
+  /* 手工补充（非插件导出）：tool row 展开卡片内的小号 code 字体。 */
+  --dsw-font-markdown-code-block-small: var(--dsh-code-font-size, 11px) / calc(16px + var(--dsh-code-font-delta)) var(--ds-font-family-code);
+  --dsw-font-markdown-code-block-small-font-family: var(--ds-font-family-code);
+  --dsw-font-markdown-code-block-small-font-weight: 400;
+  --dsw-font-markdown-code-block-small-line-height: calc(16px + var(--dsh-code-font-delta));
+  --dsw-font-markdown-code-block-small-font-size: var(--dsh-code-font-size, 11px);
+  --dsw-font-markdown-code-block-small-font-style: normal;
+
+  --dsw-font-xl-24: 600 24px/32px var(--dsw-font-family);
+  --dsw-font-xl-24-font-family: var(--dsw-font-family);
+  --dsw-font-xl-24-font-weight: 600;
+  --dsw-font-xl-24-line-height: 32px;
+  --dsw-font-xl-24-font-size: 24px;
+  --dsw-font-xl-24-font-style: normal;
+
+  --dsw-font-l-20: 500 20px/28px var(--dsw-font-family);
+  --dsw-font-l-20-font-family: var(--dsw-font-family);
+  --dsw-font-l-20-font-weight: 500;
+  --dsw-font-l-20-line-height: 28px;
+  --dsw-font-l-20-font-size: 20px;
+  --dsw-font-l-20-font-style: normal;
+
+  --dsw-font-m-18: 500 16px/28px var(--dsw-font-family);
+  --dsw-font-m-18-font-family: var(--dsw-font-family);
+  --dsw-font-m-18-font-weight: 500;
+  --dsw-font-m-18-line-height: 28px;
+  --dsw-font-m-18-font-size: 16px;
+  --dsw-font-m-18-font-style: normal;
+
+  --dsw-font-base-16: 16px/24px var(--dsw-font-family);
+  --dsw-font-base-16-font-family: var(--dsw-font-family);
+  --dsw-font-base-16-font-weight: 400;
+  --dsw-font-base-16-line-height: 24px;
+  --dsw-font-base-16-font-size: 16px;
+  --dsw-font-base-16-font-style: normal;
+
+  --dsw-font-base-strong-16: 500 16px/24px var(--dsw-font-family);
+  --dsw-font-base-strong-16-font-family: var(--dsw-font-family);
+  --dsw-font-base-strong-16-font-weight: 500;
+  --dsw-font-base-strong-16-line-height: 24px;
+  --dsw-font-base-strong-16-font-size: 16px;
+  --dsw-font-base-strong-16-font-style: normal;
+
+  --dsw-font-s-14: 14px/22px var(--dsw-font-family);
+  --dsw-font-s-14-font-family: var(--dsw-font-family);
+  --dsw-font-s-14-font-weight: 400;
+  --dsw-font-s-14-line-height: 22px;
+  --dsw-font-s-14-font-size: 14px;
+  --dsw-font-s-14-font-style: normal;
+
+  --dsw-font-s-strong-14: 500 14px/22px var(--dsw-font-family);
+  --dsw-font-s-strong-14-font-family: var(--dsw-font-family);
+  --dsw-font-s-strong-14-font-weight: 500;
+  --dsw-font-s-strong-14-line-height: 22px;
+  --dsw-font-s-strong-14-font-size: 14px;
+  --dsw-font-s-strong-14-font-style: normal;
+
+  --dsw-font-xs-13: 13px/20px var(--dsw-font-family);
+  --dsw-font-xs-13-font-family: var(--dsw-font-family);
+  --dsw-font-xs-13-font-weight: 400;
+  --dsw-font-xs-13-line-height: 20px;
+  --dsw-font-xs-13-font-size: 13px;
+  --dsw-font-xs-13-font-style: normal;
+
+  --dsw-font-xs-strong-13: 500 13px/20px var(--dsw-font-family);
+  --dsw-font-xs-strong-13-font-family: var(--dsw-font-family);
+  --dsw-font-xs-strong-13-font-weight: 500;
+  --dsw-font-xs-strong-13-line-height: 20px;
+  --dsw-font-xs-strong-13-font-size: 13px;
+  --dsw-font-xs-strong-13-font-style: normal;
+
+  --dsw-font-xxs-12: 12px/18px var(--dsw-font-family);
+  --dsw-font-xxs-12-font-family: var(--dsw-font-family);
+  --dsw-font-xxs-12-font-weight: 400;
+  --dsw-font-xxs-12-line-height: 18px;
+  --dsw-font-xxs-12-font-size: 12px;
+  --dsw-font-xxs-12-font-style: normal;
+
+  --dsw-font-xxs-strong-12: 500 12px/18px var(--dsw-font-family);
+  --dsw-font-xxs-strong-12-font-family: var(--dsw-font-family);
+  --dsw-font-xxs-strong-12-font-weight: 500;
+  --dsw-font-xxs-strong-12-line-height: 18px;
+  --dsw-font-xxs-strong-12-font-size: 12px;
+  --dsw-font-xxs-strong-12-font-style: normal;
+
+  --dsw-font-xxxs-11: 11px/14px var(--dsw-font-family);
+  --dsw-font-xxxs-11-font-family: var(--dsw-font-family);
+  --dsw-font-xxxs-11-font-weight: 400;
+  --dsw-font-xxxs-11-line-height: 14px;
+  --dsw-font-xxxs-11-font-size: 11px;
+  --dsw-font-xxxs-11-font-style: normal;
+
+  --dsw-font-xxxs-strong-11: 500 11px/14px var(--dsw-font-family);
+  --dsw-font-xxxs-strong-11-font-family: var(--dsw-font-family);
+  --dsw-font-xxxs-strong-11-font-weight: 500;
+  --dsw-font-xxxs-strong-11-line-height: 14px;
+  --dsw-font-xxxs-strong-11-font-size: 11px;
+  --dsw-font-xxxs-strong-11-font-style: normal;
+}
+
+:root {
+  /* Single color bridge: the native build reads these same aliases. */
+  --dsw-alias-bg-base: var(--background);
+  --dsw-alias-bg-layer-1: var(--card);
+  --dsw-alias-bg-layer-2: var(--elevated);
+  --dsw-alias-bg-layer-3: var(--elevated);
+  --dsw-alias-bg-overlay: var(--popover);
+  --dsw-alias-bg-module-platform: var(--muted);
+  --dsw-alias-label-primary: var(--foreground);
+  --dsw-alias-label-secondary: var(--muted-foreground);
+  --dsw-alias-label-tertiary: var(--muted-foreground);
+  --dsw-alias-label-caption: var(--subtle-foreground);
+  --dsw-alias-label-dimmed: var(--subtle-foreground);
+  --dsw-alias-label-primary-foreground: var(--primary-foreground);
+  --dsw-alias-label-error: var(--status-danger-fg);
+  --dsw-alias-border-l1: var(--border);
+  --dsw-alias-border-l2: var(--border);
+  --dsw-alias-border-l3: var(--border);
+  --dsw-alias-border-l4: var(--input);
+  --dsw-alias-brand-primary: var(--primary);
+  --dsw-alias-button-primary-fill: var(--primary);
+  --dsw-alias-button-primary-hover: var(--primary-hover);
+  --dsw-alias-button-tool-bar-fill: var(--muted);
+  --dsw-alias-button-tool-bar-hover: var(--accent);
+  --dsw-alias-interactive-bg-hover: var(--accent);
+  --dsw-alias-interactive-bg-active: var(--muted);
+  --dsw-alias-state-business-primary: var(--link);
+  --dsw-alias-state-success-primary: var(--status-success-fg);
+  --dsw-alias-state-error-primary: var(--status-danger-fg);
+  --dsw-alias-state-warn-primary: var(--status-warning-fg);
+  --dsw-alias-state-idle-primary: var(--status-neutral-fg);
+  --dsw-alias-switch-thumb: var(--foreground);
+  --dsw-alias-state-warn-label: var(--status-warning-fg);
+  --dsw-alias-settings-card-fill: var(--card);
+  --dsw-alias-settings-card-stroke: var(--input);
+  --dsw-alias-interactive-bg-hover-solid: var(--accent);
+  --dsw-alias-interactive-bg-hover-danger: color-mix(in srgb, var(--status-danger) 10%, transparent);
+  --dsw-alias-scrollbar-bg-l2: var(--scrollbar);
+  --dsw-alias-scrollbar-hover-l2: var(--muted-foreground);
+  --dsw-alias-tooltip-bg: #25252d;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-alias-bg-mask-1: rgb(0 0 0 / 0.4);
+  --dsw-menu-surface-fill: color-mix(in srgb, var(--elevated) 75%, transparent);
+  --dsw-font-xs-13: 13px/20px var(--dsw-font-family);
+  /* 界面字体跟随各平台的系统字体。 */
+  --app-font-sans: var(--dsw-font-family);
+  --app-font-mono: var(--ds-font-family-code);
+
+  /* Logo 原色 */
+  --brand-red: #ff0033;
+  --brand-pink: #fb7299;
+  --brand-blue: #00aeec;
+
+  --background: #f6f6f8;
+  --surface: #fbfbfc;
+  --card: #ffffff;
+  --elevated: #ffffff;
+  --input-bg: #ffffff;
+  --foreground: #0b0b0f;
+  --card-foreground: #0b0b0f;
+  --popover: #ffffff;
+  --popover-foreground: #0b0b0f;
+  /* 功能红保留品牌色相，确保白色小字对比度。 */
+  --primary: #e6002e;
+  --primary-hover: #cc0029;
+  --primary-foreground: #ffffff;
+  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 4px 12px -6px rgb(255 0 51 / 0.2);
+  --secondary: rgb(0 174 236 / 0.1);
+  --secondary-foreground: #00739f;
+  --muted: rgb(9 9 11 / 0.04);
+  --muted-foreground: #5f5f6b;
+  --subtle-foreground: #5f5f6b;
+  --accent: rgb(9 9 11 / 0.05);
+  --accent-foreground: #0b0b0f;
+  --destructive: #c8002a;
+  --border: rgb(9 9 11 / 0.08);
+  --input: #dedee3;
+  --ring: #00739f;
+  --link: #00739f;
+  --status-success: #00aeec;
+  --status-success-fg: #00739f;
+  --status-running: #fb7299;
+  --status-running-fg: #c2185b;
+  --status-danger: #ff0033;
+  --status-danger-fg: #c8002a;
+  --status-warning: #f5a524;
+  --status-warning-fg: #9a5b00;
+  --status-neutral: #71717a;
+  --status-neutral-fg: #52525b;
+  --card-shadow: 0 1px 2px rgb(9 9 11 / 0.04), 0 2px 10px -4px rgb(9 9 11 / 0.08);
+  --float-shadow: 0 20px 48px -16px rgb(9 9 11 / 0.25), 0 4px 12px -6px rgb(9 9 11 / 0.1);
+  --glass: rgb(255 255 255 / 0.75);
+  --grid-dot: rgb(9 9 11 / 0.07);
+  --aurora-opacity: 0.55;
+  --scrollbar: rgb(9 9 11 / 0.18);
+  --chart-1: #ff0033;
+  --chart-2: #00aeec;
+  --chart-3: #fb7299;
+  --chart-4: #006f99;
+  --chart-5: #a90038;
+  --radius: var(--dsw-radius-md);
+  --sidebar: #fbfbfc;
+  --sidebar-foreground: #0b0b0f;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(9 9 11 / 0.05);
+  --sidebar-accent-foreground: #0b0b0f;
+  --sidebar-border: rgb(9 9 11 / 0.08);
+  --sidebar-ring: var(--ring);
+}
+.dark {
+  --ring: #3cc4f5;
+  --background: #0a0a0e;
+  --surface: #0e0e13;
+  --card: #121218;
+  --elevated: #18181f;
+  --input-bg: rgb(255 255 255 / 0.03);
+  --foreground: #ededf0;
+  --card-foreground: #ededf0;
+  --popover: #18181f;
+  --popover-foreground: #ededf0;
+  --primary: #e6002e;
+  --primary-hover: #cc0029;
+  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.2),
+    0 6px 18px -8px rgb(255 0 51 / 0.24);
+  --secondary: rgb(0 174 236 / 0.14);
+  --secondary-foreground: #5fd0f5;
+  --muted: rgb(255 255 255 / 0.04);
+  --muted-foreground: #a0a0ab;
+  --subtle-foreground: #a0a0ab;
+  --accent: rgb(255 255 255 / 0.065);
+  --accent-foreground: #ededf0;
+  --destructive: #ff6b81;
+  --border: rgb(255 255 255 / 0.08);
+  --input: #383840;
+  --link: #3cc4f5;
+  --status-success-fg: #5fd0f5;
+  --status-running-fg: #ff9ab8;
+  --status-danger-fg: #ff6b81;
+  --status-warning-fg: #f7c26b;
+  --status-neutral: #a1a1aa;
+  --status-neutral-fg: #b4b4bd;
+  --card-shadow: 0 1px 0 rgb(255 255 255 / 0.035) inset, 0 1px 2px rgb(0 0 0 / 0.5);
+  --float-shadow: 0 28px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --glass: rgb(16 16 22 / 0.72);
+  --grid-dot: rgb(255 255 255 / 0.055);
+  --aurora-opacity: 1;
+  --scrollbar: rgb(255 255 255 / 0.16);
+  --sidebar: #0e0e13;
+  --sidebar-foreground: #ededf0;
+  --sidebar-accent: rgb(255 255 255 / 0.065);
+  --sidebar-accent-foreground: #ededf0;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  color-scheme: dark;
+}
+/* Button sizes share the global control-radius scale. */
+.Button_button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: none;
+  border-radius: var(--dsw-radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  padding: 0 14px;
+}
+
+.Button_button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.Button_md {
+  height: 36px;
+}
+
+/* Compact controls retain their dimensions across filled and outlined variants. */
+.Button_sm {
+  height: 28px;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 10px;
+  border-radius: var(--dsw-radius-sm);
+}
+
+.Button_primary {
+  background: var(--dsw-alias-button-primary-fill);
+  color: var(--dsw-alias-label-primary-foreground);
+}
+
+.Button_primary:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover);
+}
+
+.Button_ghost:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.Button_ghost:active:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+/* Outlined actions use the same neutral stroke as settings links. */
+.Button_outline {
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  background: transparent;
+}
+
+.Button_outline:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.Button_toolbar {
+  background: var(--dsw-alias-button-tool-bar-fill);
+}
+
+.Button_toolbar:hover:not(:disabled) {
+  background: var(--dsw-alias-button-tool-bar-hover);
+}
+
+.Button_icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.Input_wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.Input_wrap:focus-within {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+.Input_icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.Input_input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.Input_input::placeholder {
+  color: var(--dsw-alias-label-dimmed);
+}
+
+.InlineEditor_editor {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 28px;
+  /* Six 20px text lines plus padding and border, then the editor scrolls. */
+  max-height: 127px;
+  margin: 0;
+  padding: 3px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: var(--dsw-radius-sm);
+  outline: none;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: var(--dsw-font-xs-13);
+  font-family: Inter, var(--dsw-font-family);
+  overflow-y: auto;
+  resize: none;
+}
+
+.InlineEditor_editor:focus {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+/* The on/off appearance keys off aria-checked rather than a parallel class, so
+ * the visual state cannot disagree with the state assistive technology reads.
+ *
+ * The capsule track and circular thumb opt out of the global superellipse. */
+.Switch_switch {
+  box-sizing: border-box;
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 20px;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--dsw-alias-border-l3);
+  cursor: pointer;
+}
+
+.Switch_switch[aria-checked='true'] {
+  background: var(--dsw-alias-brand-primary);
+}
+
+.Switch_switch:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.Switch_switch:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
+}
+
+.Switch_thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--dsw-alias-label-primary-foreground);
+  transition: transform 120ms ease;
+}
+
+.Switch_switch[aria-checked='false'] .Switch_thumb {
+  background: var(--dsw-alias-switch-thumb);
+}
+
+.Switch_switch[aria-checked='true'] .Switch_thumb {
+  transform: translateX(16px);
+}
+
+.Checkbox_checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.Checkbox_checkbox input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--dsw-alias-brand-primary);
+  cursor: inherit;
+}
+
+.Checkbox_checkbox input:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: 2px;
+}
+
+.Checkbox_checkbox:has(input:disabled) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Capsule geometry is fixed: a tag reads as one size everywhere, and only its
+ * palette varies. Tone colors ride background/border/color so a render site can
+ * still position the tag with its own class without touching the palette. */
+.Tag_tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  corner-shape: round;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 17px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.Tag_tag[data-tone='outline'] {
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.Tag_tag[data-tone='solid'] {
+  background: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-bg-layer-3);
+}
+
+.Tag_tag[data-tone='neutral'] {
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.Tag_tag[data-tone='quiet'] {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Status tones tint their own color for the fill, so a palette change moves
+ * fill and text together and neither needs a second token. The tint is 10%,
+ * except `warning`, which keeps the 12% the plugin inventory's conditional
+ * tag shipped with — matching it is what makes this a pure consolidation. */
+.Tag_tag[data-tone='success'] {
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 10%, transparent);
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.Tag_tag[data-tone='info'] {
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent);
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.Tag_tag[data-tone='warning'] {
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 12%, transparent);
+  color: var(--dsw-alias-state-warn-primary);
+}
+
+.Tag_tag[data-tone='danger'] {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent);
+  color: var(--dsw-alias-state-error-primary);
+}
+
+/* The track is the same translucent fill the hover state uses, so it reads as
+ * a place rather than a second button; the one raised part is the indicator,
+ * a white pill that slides under the selected segment. Its stroke rides inside
+ * the soft elevation shadow (border: 0), the way every elevated surface draws
+ * its edge, so the elevation gate keeps it off the alias-border set.
+ *
+ * Segments are equal-width grid tracks sized to the widest label, which is
+ * what lets one indicator be placed arithmetically: the tablist carries the
+ * segment count and the selected index as custom properties, and the indicator
+ * derives its width and offset from them instead of measuring the DOM. */
+.SegmentedControl_control {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.SegmentedControl_indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc((100% - 8px - 2px * (var(--dsh-segment-count) - 1)) / var(--dsh-segment-count));
+  height: calc(100% - 8px);
+  border: 0;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: var(--dsw-elevation-soft);
+  transform: translateX(calc(var(--dsh-segment-index) * (100% + 2px)));
+  transition: transform 160ms ease;
+  pointer-events: none;
+}
+
+.SegmentedControl_tab {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  height: 28px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.SegmentedControl_tab:hover:not(:disabled),
+.SegmentedControl_tab[aria-selected='true'] {
+  color: var(--dsw-alias-label-primary);
+}
+
+.SegmentedControl_tab:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.SegmentedControl_tab:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary));
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .SegmentedControl_indicator,
+  .SegmentedControl_tab {
+    transition: none;
+  }
+}
+
+.Menu_root {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Compact translucent dropdown card shared by feature menus. */
+.Menu_list,
+.Menu_submenu {
+  /* min-widths below are the design's outer card widths — include the pad. */
+  box-sizing: border-box;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 0;
+  --dsw-elevation-stroke-color: var(--dsw-alias-border-l1);
+  box-shadow: var(--dsw-elevation-prominent);
+  /* Elevated surface: the scrollbar thumb takes the l2 elevation tokens. The
+     declaration sits on the card rather than on `.Menu_scrollable .Menu_viewport`
+     because the elevation is a property of this surface, and the custom
+     properties inherit down to whichever descendant actually scrolls (see
+     ui-theme styles/scrollbar.Menu_css for the rebinding contract). */
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+/* Primary cards grow with their content between compact and readable bounds. */
+.Menu_list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  min-width: 144px;
+  max-width: 360px;
+}
+
+/* Portal mode: fixed in the viewport, coordinates supplied inline from the
+ * anchor rect (side/align resolved in JS, the in-place offset rules above
+ * don't apply). Portaled lists must layer above modal overlays (z 1000) —
+ * an anchor inside a dialog still expects its menu on top. */
+.Menu_portal {
+  position: fixed;
+  top: auto;
+  left: auto;
+  z-index: 1100;
+}
+
+/* Open above the anchor (empty-state workspace chip: figma 122:9481). */
+.Menu_sideTop {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.Menu_alignEnd {
+  left: auto;
+  right: 0;
+}
+
+/* Viewport fit: the card stops 12px short of the viewport's top/bottom edges
+ * (the portal MARGIN in Menu.Menu_tsx; the top side widens to the frame's published
+ * overlay inset) and taller content scrolls inside
+ * .Menu_viewport, so a pinned .Menu_footer stays visible. Menus with submenu rows skip
+ * this class — the overflow clip would crop the side card, so they rely on
+ * staying short. */
+.Menu_scrollable {
+  max-height: calc(100vh - 12px - max(12px, var(--dsh-frame-overlay-top, 12px)));
+}
+
+.Menu_viewport {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.Menu_scrollable .Menu_viewport {
+  overflow-y: auto;
+}
+
+/* Pinned rows below the scroll region; l2 hairline (l1 is near-invisible on
+ * the menu surface) mirrors the .Menu_separator spacing. */
+.Menu_footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+}
+
+.Menu_itemWrap {
+  position: relative;
+}
+
+/* Menu cell: compact text, icon, and selection spacing. */
+.Menu_item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--dsw-radius-md);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+  text-align: left;
+}
+
+.Menu_item:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* Arrow navigation moves real focus, so the row the keyboard is on carries the
+   same fill the pointer gets: the fill is the row's focus indication, and the
+   browser's default ring would double it. */
+.Menu_item:focus-visible:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  outline: none;
+}
+
+.Menu_denseList .Menu_item {
+  min-height: 30px;
+  padding-block: 4px;
+}
+
+.Menu_denseList .Menu_label {
+  padding-block: 3px;
+}
+
+.Menu_list.Menu_compactList,
+.Menu_submenu.Menu_compactList {
+  min-width: 156px;
+  padding: 4px;
+}
+
+.Menu_compactList .Menu_item {
+  min-height: 24px;
+  gap: 5px;
+  padding: 2px 6px;
+  border-radius: var(--dsw-radius-sm);
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.Menu_compactList .Menu_itemIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.Menu_compactList .Menu_separator {
+  margin: 2px;
+}
+
+.Menu_compactList .Menu_label {
+  padding: 3px 6px;
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.Menu_item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.Menu_itemIcon {
+  display: inline-flex;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-alias-menu-icon);
+}
+
+.Menu_itemIcon svg,
+.Menu_check {
+  width: 14px;
+  height: 14px;
+}
+
+.Menu_compactList .Menu_itemIcon svg,
+.Menu_compactList .Menu_check {
+  width: 12px;
+  height: 12px;
+}
+
+.Menu_itemLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Menu_shortcut {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+.Menu_shortcut .Menu_shortcutKeys {
+  color: var(--dsw-alias-label-caption);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.Menu_check {
+  flex: none;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* Selected cell keeps the plain fill (marker is the trailing check); the
+ * class remains as a hook for owner-side emphasis. */
+.Menu_selected {
+  background: transparent;
+}
+
+/* Fill-mode selection: the row holds the hover fill instead of a check. */
+.Menu_selectedFill {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* Destructive row: error text/icon, danger hover fill. */
+.Menu_danger {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.Menu_danger .Menu_itemIcon {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.Menu_danger:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover-danger);
+}
+
+.Menu_danger:focus-visible:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover-danger);
+  outline: none;
+}
+
+/* Heading row: non-interactive small grey text, padding aligned with items. */
+.Menu_label {
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Separator cell (figma 122:9481): py 4 / px 2 around the hairline. l2, not
+ * l1, for the same reason as .Menu_footer: l1 is near-invisible on this surface. */
+.Menu_separator {
+  height: 0.5px;
+  margin: 3px 2px;
+  background: var(--dsw-alias-border-l2);
+}
+
+/* A data separator directly followed by a row that starts a group draws one
+ * line, not two; a group start on the list's first row draws none. */
+.Menu_separator + .Menu_separator,
+.Menu_separator + .Menu_itemWrap > .Menu_separator:first-child,
+.Menu_itemWrap:first-child > .Menu_separator:first-child {
+  display: none;
+}
+
+/* The submenu aligns with the parent's bottom edge. Its hit bridge covers
+ * the menu inset and the 6px gap so pointer movement keeps it open. */
+.Menu_submenu {
+  position: absolute;
+  top: auto;
+  bottom: -4px;
+  left: calc(100% + 10px);
+  z-index: 101;
+  min-width: 163px;
+}
+
+.Menu_submenu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -10px;
+  width: 10px;
+}
+
+.MenuSurface_surface,
+.MenuSurface_backing {
+  border-radius: var(--dsw-radius-lg);
+}
+
+.MenuSurface_compact {
+  border-radius: var(--dsw-radius-md);
+}
+
+:where(.MenuSurface_surface) {
+  position: relative;
+}
+
+.MenuSurface_surface {
+  anchor-name: var(--dsh-menu-anchor);
+  isolation: isolate;
+}
+
+/* Filtering only the background keeps nested menus and fixed overlays free of
+ * an ancestor backdrop root or a new fixed-position containing block. */
+.MenuSurface_material {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--dsw-menu-surface-fill);
+  backdrop-filter: var(--dsw-menu-backdrop-filter);
+  pointer-events: none;
+}
+
+.MenuSurface_backing {
+  display: none;
+}
+
+/* Chromium needs opaque pixels behind the page content to blur it over native
+ * vibrancy. Body isolation keeps this backing above the native window and below
+ * the page; CSS anchors limit it to this menu without a layout observer. */
+:global(html[data-platform='darwin']) .MenuSurface_backing {
+  display: block;
+  position: fixed;
+  position-anchor: var(--dsh-menu-anchor);
+  top: anchor(top);
+  left: anchor(left);
+  width: anchor-size(width, 0px);
+  height: anchor-size(height, 0px);
+  z-index: -1;
+  background: var(--dsw-alias-bg-base);
+  pointer-events: none;
+}
+
+.Tooltip_bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: fixed;
+  z-index: 100;
+  /* Fixed-position shrink-to-fit measures only the space from `left` to the
+     viewport edge, so anchors near the right edge would wrap early;
+     max-content sizes by the label alone, capped at half the viewport. */
+  width: max-content;
+  max-width: 50vw;
+  padding: 3px 7px;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-tooltip-bg);
+  color: var(--dsw-static-neutral-bluish-00);
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre-line;
+  /* Unbreakable tokens (URLs, paths) must not push past max-width. */
+  overflow-wrap: break-word;
+  pointer-events: none;
+  animation: tooltip-in 150ms var(--ds-ease-in-out);
+}
+
+.Tooltip_bubble[data-portal] { z-index: 1100; }
+.Tooltip_bubble[data-pinned] { pointer-events: auto; }
+.Tooltip_label { min-width: 0; }
+
+/* A 16px keycap centered beside a 20px label has 5px of vertical clearance. */
+.Tooltip_bubble[data-has-shortcut] { padding-inline-end: 5px; }
+.Tooltip_bubble[data-has-shortcut]:not(:has(.Tooltip_label)) { padding: 3px; }
+
+.Tooltip_bubble[data-side='right'] {
+  transform: translateY(-50%);
+}
+
+.Tooltip_bubble[data-side='bottom'] {
+  transform: translateX(-50%);
+}
+
+.Tooltip_bubble[data-side='top'] {
+  transform: translate(-50%, -100%);
+}
+
+/* End alignment: `left` carries the anchor's right edge, so the bubble sits
+   fully left of it instead of centering. */
+.Tooltip_bubble[data-side='bottom'][data-align='end'] {
+  transform: translateX(-100%);
+}
+
+.Tooltip_bubble[data-side='top'][data-align='end'] {
+  transform: translate(-100%, -100%);
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Tooltip_bubble {
+    animation: none;
+  }
+}
+
+/* Full-viewport layer (figma Mask + Dialog 451:18655): mask + centered card.
+   24px of air on every side; the top/bottom widen to the frame's published
+   overlay inset so a tall card stays clear of it.
+   Cards size against this padding box: consumers cap growth with
+   `max-height: 100%`, never their own viewport calc. */
+.Modal_root {
+  pointer-events: auto;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, var(--dsh-frame-overlay-top, 24px)) 24px;
+}
+
+/* Only paint excludes the native caption; the root still blocks background clicks. */
+.Modal_mask {
+  position: absolute;
+  inset: var(--dsh-frame-chrome-top, 0px) 0 0;
+  backdrop-filter: var(--dsw-mask-blur);
+}
+
+.Modal_mask::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--dsw-alias-bg-mask-1);
+  animation: modalEnter var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+
+/* Dialogs use the prominent elevation on the secondary layer. */
+.Modal_dialog {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(380px, 100%);
+  padding: 0 0 24px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--dsw-radius-panel);
+  background: var(--dsw-alias-bg-layer-2);
+  box-shadow: var(--dsw-elevation-prominent);
+  animation: modalEnter var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+
+@keyframes modalEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Modal_mask::after, .Modal_dialog { animation: none; }
+}
+
+.Modal_dialog:focus {
+  outline: none;
+}
+
+.Modal_content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Header row (figma Title row): pad l24/t22/r14/b12, SPACE_BETWEEN —
+ * title left, close button right. */
+.Modal_header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 22px 14px 12px 24px;
+}
+
+.Modal_title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500; /* figma wt510, rendered 500 */
+  color: var(--dsw-alias-label-primary);
+}
+
+.Modal_close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.Modal_close:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* Description and body share the 332px content column (24px side pads). */
+.Modal_description {
+  margin: 0;
+  padding: 0 24px;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--dsw-alias-label-primary);
+}
+
+.Modal_body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-top: 20px;
+  padding: 0 24px;
+}
+
+.Modal_footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 24px;
+}
+
+*{box-sizing:border-box}body{margin:0;background:var(--background);color:var(--foreground);font:14px/1.65 var(--dsw-font-family)}a{color:var(--link)}code{font:12px/1.6 var(--ds-font-family-code);overflow-wrap:anywhere}header{position:sticky;top:0;z-index:200;background:var(--surface);border-bottom:.5px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:16px}header strong{font-size:16px}header .row{margin-left:auto}.layout{display:grid;grid-template-columns:220px minmax(0,1fr);max-width:1400px;margin:auto;gap:40px;padding:32px 24px}nav{position:sticky;top:100px;align-self:start;display:grid;gap:8px;font-size:13px}nav a{text-decoration:none;color:var(--muted-foreground)}nav a:hover{color:var(--link)}h1{font-size:30px;line-height:1.3;margin:0 0 20px}h2{font-size:20px;font-weight:600;margin:40px 0 16px;scroll-margin-top:96px}h3{font-size:14px;font-weight:500;margin:0 0 12px}p{margin:12px 0}table{border-collapse:collapse;width:100%;font-size:13px;text-align:left}th,td{padding:12px;border-bottom:.5px solid var(--border);vertical-align:top}th{font-weight:500;background:var(--muted)}.table-scroll{overflow:auto;border:.5px solid var(--border);border-radius:var(--dsw-radius-lg);background:var(--card)}.muted,small{color:var(--muted-foreground)}.sample{padding:20px;margin:16px 0;border:.5px solid var(--border);border-radius:var(--dsw-radius-lg);background:var(--card)}.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.aligned{align-items:flex-start;gap:24px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.fields label{display:flex;flex-direction:column;gap:6px}.fields .Input_wrap{width:100%}.fields textarea{width:100%}.reference-menu{position:relative;top:auto;left:auto;width:180px;z-index:1}.reference-modal{width:380px;max-width:100%}.brand{width:24px;height:24px;border-radius:var(--dsw-radius-sm);background:linear-gradient(135deg,var(--brand-pink),var(--brand-blue))}@media(max-width:800px){.layout{display:block;padding:24px 16px}nav{position:static;display:flex;flex-wrap:wrap;margin-bottom:32px}.fields{grid-template-columns:1fr}header{padding:12px 16px}h1{font-size:24px}}
+</style></head><body><header><span class="brand" aria-hidden="true"></span><strong>YouDub × Harness</strong><div class="row"><button data-theme="light" class="Button_button Button_sm Button_outline">浅色</button><button data-theme="dark" class="Button_button Button_sm Button_outline">深色</button></div></header><div class="layout"><nav><a href="#components">同源组件预览</a><a href="#section-0">1. 来源与职责</a><a href="#section-1">2. 基础几何</a><a href="#section-2">3. 字体与排版</a><a href="#section-3">4. 层级与材质</a><a href="#section-4">5. 动效与焦点</a><a href="#section-5">6. 基础组件契约</a><a href="#section-6">7. 组合组件与页面清单</a><a href="#section-7">8. YouDub 颜色映射</a><a href="#section-8">9. 状态与交互验收矩阵</a><a href="#section-9">10. 开发约束</a><a href="#section-10">11. 源码依据</a><a href="#section-11">10. 页面内容边界</a><a href="component-inventory.md">组件源码索引</a></nav><main><section id="components" class="gallery"><h2>同源组件预览</h2><p class="muted">以下控件外观由 Harness 原始 CSS 生成，颜色读取 YouDub 主题。用于查看尺寸、状态和配色。</p>
+<div class="sample"><h3>操作</h3><div class="row"><button class="Button_button Button_md Button_primary">开始处理</button><button class="Button_button Button_md Button_outline">保存修改</button><button class="Button_button Button_md Button_ghost">取消</button><button disabled class="Button_button Button_md Button_primary">处理中</button><button class="Button_button Button_sm Button_outline">紧凑操作</button></div></div>
+<div class="sample"><h3>输入与编辑</h3><div class="fields"><label>视频链接<span class="Input_wrap"><input class="Input_input" placeholder="粘贴视频链接"></span></label><label>禁用<span class="Input_wrap" style="opacity:.5"><input disabled class="Input_input" placeholder="当前不可修改"></span></label><label>字幕文本<textarea class="InlineEditor_editor" rows="3">让视频说另一种语言。</textarea></label><label>输入错误<span class="Input_wrap" style="border-color:var(--status-danger-fg)"><input class="Input_input" aria-invalid="true" value="示例内容"></span><small style="color:var(--status-danger-fg)">请检查输入内容</small></label></div></div>
+<div class="sample"><h3>状态与选择</h3><div class="row"><span class="Tag_tag" data-tone="neutral">等待中</span><span class="Tag_tag" data-tone="info">提示</span><span class="Tag_tag" data-tone="success">已完成</span><span class="Tag_tag" data-tone="warning">待确认</span><span class="Tag_tag" data-tone="danger">失败</span><button class="Switch_switch" role="switch" aria-checked="true" aria-label="自动继续"><span class="Switch_thumb"></span></button><label class="Checkbox_checkbox"><input type="checkbox" checked><span>自动继续</span></label></div></div>
+<div class="sample"><h3>菜单与弹窗表面</h3><div class="row aligned"><div class="Menu_list MenuSurface_surface reference-menu"><span class="MenuSurface_material"></span><button class="Menu_item">浅色　✓</button><button class="Menu_item">深色</button><button class="Menu_item">跟随系统</button></div><div class="Modal_dialog reference-modal"><div class="Modal_header"><h3 class="Modal_title">保存修改</h3></div><p class="Modal_description">示例展示弹窗的圆角、字阶和留白。</p><div class="Modal_footer"><button class="Button_button Button_md Button_outline">取消</button><button class="Button_button Button_md Button_primary">保存修改</button></div></div></div></div></section><h1>Harness × YouDub 视觉与组件规范 v2</h1><p>2026-10-22 · 以仓库内 vendored Harness 源码为准。规范覆盖 Web 与 Harness 桌面承载的全部 YouDub 组件。</p><h2 id="section-0">1. 来源与职责</h2><p>Harness 负责控件几何、字阶、布局关系、层级、材质、交互状态和键盘行为。YouDub 保留 Logo、红色主操作、粉蓝渐变、蓝色完成态、粉色运行态以及浅深主题的中性色体系。</p><p>实现优先级：直接复用 Harness 组件 → 复用原始 CSS 与轻量属性适配 → 用 Harness token 组合业务组件。组件内部样式不在页面重新定义。颜色在主题层映射，组件和页面只消费语义 token。</p><p>上游组件的局部尺寸是具体控件的规范，不应把所有控件强行设为同一种高度或圆角。下文精确值来自源码；内容区域宽度、字幕列布局和播放器比例属于 YouDub 业务规则。</p><h2 id="section-1">2. 基础几何</h2><div class="table-scroll"><table><tr><th>Token</th><th>值</th><th>具体用途</th></tr><tr><td><code>--dsw-radius-xs</code></td><td>4px</td><td>小型内部结构</td></tr><tr><td><code>--dsw-radius-sm</code></td><td>8px</td><td>紧凑按钮、多行编辑、Tooltip</td></tr><tr><td><code>--dsw-radius-md</code></td><td>12px</td><td>标准按钮、单行输入、菜单项、紧凑菜单</td></tr><tr><td><code>--dsw-radius-lg</code></td><td>16px</td><td>菜单面、分段标签容器、Toast</td></tr><tr><td><code>--dsw-radius-xl</code></td><td>20px</td><td>大型业务内容容器</td></tr><tr><td><code>--dsw-radius-panel</code></td><td>28px</td><td>Modal</td></tr><tr><td>胶囊 / 圆形</td><td>999px / 50%</td><td>Tag、Switch、进度条、状态点</td></tr></table></div><p>圆角曲率使用 <code>superellipse(1.5)</code>，通过 <code>@supports</code> 渐进启用。胶囊和圆形显式 <code>corner-shape: round</code>。不以给所有元素套同一圆角代替组件复用。</p><p>边线以 0.5px 为控件基准；浮层描边由 elevation 的 0.5px shadow 绘制。避免 border 与 elevation 描边重复叠加。拖拽区域的虚线是 YouDub 业务可供性，保留浅色细线。</p><p>Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使用上游值：按钮4px、输入6px、菜单6px、表单6px、弹窗操作8px、弹窗内容20px、弹窗侧边24px。YouDub 页面空间使用4/8/12/16/24/32px节奏；不能据此覆盖上游6px、20px等尺寸。</p><h2 id="section-2">3. 字体与排版</h2><p>系统无衬线采用 <code>--dsw-font-family</code>；代码采用 <code>--ds-font-family-code</code>。保留平台中文字体回退。控件字阶从组件原始 CSS 继承。</p><div class="table-scroll"><table><tr><th>内容</th><th>字号 / 行高</th><th>字重</th></tr><tr><td>Button md / Input / Modal 正文</td><td>14 / 22px</td><td>默认400</td></tr><tr><td>Button sm</td><td>12 / 18px</td><td>默认400</td></tr><tr><td>多行编辑 / Tooltip / 菜单</td><td>13 / 20px</td><td>默认400</td></tr><tr><td>SegmentedControl</td><td>13 / 20px</td><td>500</td></tr><tr><td>Tag</td><td>11 / 17px</td><td>500</td></tr><tr><td>Modal 标题</td><td>16 / 24px</td><td>500</td></tr><tr><td>折叠行</td><td>13 / 24px，跟随内容字号设置</td><td>默认400</td></tr><tr><td>页面标题（Harness PluginManagerPage）</td><td>20 / 28px</td><td>500</td></tr><tr><td>工作台品牌标题（YouDub品牌）</td><td>clamp(28px,4vw,48px) / 1.2</td><td>700</td></tr></table></div><p>正文内容字号设置与固定控件字号分开；不把整个应用强制缩放。时间、字节、速度用等宽数字；代码和日志使用等宽字体。长字幕自然换行。状态文字与图标共同传达含义。</p><h2 id="section-3">4. 层级与材质</h2><ul><li><code>bg-base</code>：页面；<code>bg-layer-1</code>：内容和输入；<code>bg-layer-2/3</code>：浮层、选中面；颜色由 YouDub 映射。</li><li><code>elevation-panel</code>：0.5px描边 + 0 3px 8px / 3% + 0 0 16px / 2%。</li><li><code>elevation-prominent</code>：0.5px描边 + 0 3px 8px / 4% + 0 0 20px / 5%，用于菜单、弹窗。</li><li><code>elevation-soft</code>：0.5px描边 + 0 4px 16px / 3% + 0 0 24px / 3%。</li><li>菜单背景 blur(40px) saturate(150%)；遮罩 blur none。菜单透明度沿用 Harness，颜色基底使用 YouDub。</li><li>菜单内联层级100，Modal1000，portal菜单/Tooltip1100。关闭后恢复焦点，嵌套菜单位于弹窗上方。</li><li>普通业务列表用表面和分隔线，不叠加浮层阴影。遮罩必须阻挡背景交互。</li></ul><h2 id="section-4">5. 动效与焦点</h2><p>统一缓动 <code>cubic-bezier(0.4,0,0.2,1)</code>；基础100/200/300ms。组件特定动效沿用源码：Switch120ms、SegmentedControl160ms、Tooltip150ms、Modal200ms、StateDot1500ms。</p><p>鼠标点击与键盘焦点分开。Input 和 Textarea 聚焦仅改变现有边线颜色，outline none、无外部焦点阴影。开关、复选框、按钮等保留 Harness 的键盘焦点指示。禁止全局删除所有 focus-visible。</p><p>减少动态效果时停止位移和旋转，保留静态状态与文本。真实任务状态驱动进度；没有总量时不制造百分比。</p><p><strong>Logo 动效为必备品牌规范。</strong> Web 与桌面端的侧栏 Logo（展开与收起）、工作台主 Logo、首次准备与翻译服务配置页的品牌 Logo，均必须使用共享 <code>BrandMark animated</code>。默认展示时持续播放，不能仅在 hover 或任务运行时启用；Harness 组件迁移、样式收敛和页面重构必须保留此要求。静态文档、导出资产和系统应用图标使用原始静态 Logo。</p><ul><li>动效仅作用于左右粉色、蓝色声波条；中央红色播放气泡、白色播放符号和 YouDub 字标保持稳定，品牌原色及粉蓝渐变保持不变。</li><li>沿用既有 <code>animate-eq</code>：周期 1.1 秒、<code>ease-in-out</code>、无限循环；每根声波以自身中心沿 Y 轴缩放，起止为 0.38，中点为 1。错峰延迟读取 <code>BrandMark</code> 的既有定义，页面不另写一套关键帧或时序。</li><li>动效不改变 Logo 外框尺寸、留白、点击区域及布局，不添加整标跳动、旋转、闪烁或发光。声波表达品牌，不承担下载、播放或任务进度提示。</li><li>系统开启 <code>prefers-reduced-motion: reduce</code> 时展示完整静态 Logo；这是无障碍例外。普通动态模式下，静态替换或缺失动效均视为验收不通过。</li></ul><p>来源：<a href="../../apps/web/src/components/brand/brand-mark.tsx">BrandMark</a>、<a href="../../apps/web/src/app/globals.css">声波关键帧与减少动态效果规则</a>。上述要求是统一后的验收标准，实际页面是否启用须逐一核对。</p><h2 id="section-5">6. 基础组件契约</h2><div class="table-scroll"><table><tr><th>统一入口</th><th>Harness 来源</th><th>几何和状态</th><th>使用边界</th></tr><tr><td>Button / buttonVariants</td><td>Button</td><td>md36px /12px角；sm28px /8px角；水平14/10px；disabled40%</td><td>primary/outline/ghost/toolbar；布局可调整宽度，颜色仅语义变体</td></tr><tr><td>Input</td><td>Input</td><td>高32px，横8px，gap6px，12px角，0.5px边线</td><td>URL/搜索/密码/数字共用；icon槽16px；禁用/无效状态保留</td></tr><tr><td>Textarea</td><td>InlineEditor样式</td><td>最小28px，3px 8px内距，8px角，0.5px边线</td><td>保留显式保存、换行和表单语义；不引入聊天编辑器Enter提交行为</td></tr><tr><td>NativeSelect / Select</td><td>桌面Button+Menu，Web同源外观适配</td><td>触发器36px/12px角；菜单16px角</td><td>单选；当前项有勾选；关闭后焦点可回到触发器</td></tr><tr><td>Choice</td><td>Checkbox</td><td>原生16px复选框，标签gap6px，disabled50%</td><td>受控布尔值；可见或可访问标签必填</td></tr><tr><td>Switch</td><td>Switch</td><td>36×20px，thumb16px，padding2px，位移16px</td><td>即时二选一；不是执行按钮；checked与aria-checked一致</td></tr><tr><td>Segmented</td><td>SegmentedControl</td><td>容器padding4px/12px角；项28px/8px角；总高36px</td><td>互斥面板；方向键/Home/End；选中项唯一tab stop；关联panel</td></tr><tr><td>Tag</td><td>Tag</td><td>1px 8px，11/17px，胶囊</td><td>只读标签；outline/solid/neutral/quiet/success/info/warning/danger</td></tr><tr><td>Tooltip</td><td>Tooltip</td><td>3px 7px，8px角，最大50vw，gap8px</td><td>提供短提示；纯图标仍需aria-label；不承载必要错误</td></tr><tr><td>Dialog / Modal</td><td>Modal</td><td>默认宽380px，28px角，内容侧距24px</td><td>宽业务编辑器可调整尺寸；复用遮罩、焦点管理和关闭逻辑</td></tr><tr><td>Menu / Popover</td><td>Menu+MenuSurface</td><td>padding4px，item最小34px、6px 8px内距；菜单144–360px</td><td>viewport边距12px，避免被弹窗裁剪；自定义内容不伪装菜单项</td></tr><tr><td>Disclosure</td><td>DisclosureRow样式</td><td>行24px、leading16px、gap6px、13px字</td><td>展开日志、原始数据、步骤；原生details语义，状态保持由调用方决定</td></tr><tr><td>InlineAlert</td><td>StateDot语义 + 组合表面</td><td>12px内距，gap8px，12px角</td><td>danger用alert；info/warning用status；错误原因可见</td></tr><tr><td>Progress</td><td>YouDub组合</td><td>6px轨道，胶囊；完成蓝、运行粉蓝、暂停中性</td><td>所有安装/下载/任务进度共用；value为0–1，未知则省略aria-valuenow</td></tr><tr><td>Surface / SectionCard</td><td>Harness表面token + 组合</td><td>16px角，0.5px分隔；内容内距16px</td><td>单一容器，不在行内嵌套同类装饰卡片</td></tr></table></div><p>桌面使用 Harness 官方组件，Web 优先直接引用 vendored 无运行时依赖组件；需要保留Web表单和浮层语义的适配器引用同源CSS。兼容层仅转换属性、事件和挂载机制，不定义另一套颜色/圆角。</p><h2 id="section-6">7. 组合组件与页面清单</h2><div class="table-scroll"><table><tr><th>类别</th><th>既有/统一组件</th><th>组成与专属职责</th></tr><tr><td>外壳</td><td>Shell、SidebarLink、ThemeToggle、LanguageSwitcher</td><td>Harness框架/按钮/菜单；YouDub Logo和导航渐变标记</td></tr><tr><td>页面</td><td>Page、PageContainer、PageHeader、PageTitle</td><td>共同内容边界；画布保留全宽；标题与操作对齐</td></tr><tr><td>工作台</td><td>Studio、LaunchCard、MediaUpload、WorkflowRun、WorkflowOptions</td><td>同宽输入与上传；共享Input/Button/Select；只保留一个内容主操作</td></tr><tr><td>任务库</td><td>Library、TaskCover、StatusBadge、TaskProgress</td><td>同一Tag/Progress；缩略图、标题、元信息、动作层级</td></tr><tr><td>任务详情</td><td>TaskDetail、ResultViewer、TaskLog</td><td>文件输出、播放器、折叠日志和错误；不重画按钮和卡片</td></tr><tr><td>校对</td><td>TranscriptEditor、TranslationEditor、SpeechEditor</td><td>Input时间字段、Textarea文本、共享搜索；原文译文等宽、顶对齐</td></tr><tr><td>工作流</td><td>WorkflowCanvas、Node、WorkflowSettings、SchemaForm</td><td>节点是专属业务容器；字段使用共享组件；线/端口保留图语义</td></tr><tr><td>设置</td><td>Settings、ModelsSection、ProviderEditor、ModelListEditor</td><td>Harness设置结构；共享输入/选择/开关/弹窗；凭据仅掩码字段</td></tr><tr><td>首次准备</td><td>SetupScreen、SetupInstallation、TranslationSetupView</td><td>共享表单与表面；保留明确安装/测试跳过入口</td></tr><tr><td>资源</td><td>SettingsResources、ResourceRow、EnvironmentSteps、ModelDownloadRow</td><td>状态来源不变；准备、下载、校验共用Tag/Progress/Button</td></tr><tr><td>诊断</td><td>SetupDiagnostics、WorkflowErrors、InlineAlert、Disclosure</td><td>可展开细节；失败原因与恢复动作可见</td></tr><tr><td>更新</td><td>AppUpdates</td><td>共用状态/动作/表面；不产生独立颜色</td></tr><tr><td>媒体</td><td>VideoPlayer、音频结果</td><td>YouDub专属比例/字幕/进度；Tabler原版播放暂停图标</td></tr><tr><td>品牌</td><td>BrandMark、示例入口</td><td>保留SVG、品牌色、粉蓝渐变；品牌入口必须启用共享声波动效，遵循第5节</td></tr></table></div><p>组件盘点表见 <a href="component-inventory.md">组件源码索引</a>。业务组件单独拥有业务布局；只有重复的视觉/交互结构进入共享组件，避免为每个静态标签创建新抽象。</p><h2 id="section-7">8. YouDub 颜色映射</h2><p>品牌原色：红 <code>#FF0033</code>、粉 <code>#FB7299</code>、蓝 <code>#00AEEC</code>；主操作 <code>#E6002E</code>，hover <code>#CC0029</code>。品牌渐变保持粉→蓝。</p><div class="table-scroll"><table><tr><th>Harness语义</th><th>YouDub token</th><th>浅色 / 深色</th></tr><tr><td>brand-primary、button-primary-fill</td><td>primary</td><td>#E6002E / #E6002E</td></tr><tr><td>button-primary-hover</td><td>primary-hover</td><td>#CC0029 / #CC0029</td></tr><tr><td>bg-base</td><td>background</td><td>#F6F6F8 / #0A0A0E</td></tr><tr><td>bg-layer-1</td><td>card</td><td>#FFFFFF / #121218</td></tr><tr><td>bg-layer-2、bg-layer-3、bg-overlay</td><td>elevated</td><td>#FFFFFF / #18181F</td></tr><tr><td>label-primary</td><td>foreground</td><td>#0B0B0F / #EDEDF0</td></tr><tr><td>label-secondary、tertiary、dimmed</td><td>muted-foreground</td><td>#5F5F6B / #A0A0AB</td></tr><tr><td>border-l1/l2/l3</td><td>border</td><td>黑8% / 白8%</td></tr><tr><td>border-l4</td><td>input</td><td>#DEDEE3 / #383840</td></tr><tr><td>state-business-primary</td><td>link</td><td>#00739F / #3CC4F5</td></tr><tr><td>state-success-primary</td><td>status-success-fg</td><td>#00739F / #5FD0F5</td></tr><tr><td>state-error-primary、label-error</td><td>status-danger-fg</td><td>#C8002A / #FF6B81</td></tr><tr><td>state-warn-primary</td><td>status-warning-fg</td><td>#9A5B00 / #F7C26B</td></tr><tr><td>state-idle-primary</td><td>status-neutral-fg</td><td>#52525B / #B4B4BD</td></tr><tr><td>运行态业务语义</td><td>status-running-fg</td><td>#C2185B / #FF9AB8</td></tr></table></div><p>同一映射同时供Web CSS与Harness构建读取，禁止在两个入口维护不同映射。颜色值集中在globals.css。Tag沿用Harness10%着色（warning12%），不另外硬编码背景色。</p><h2 id="section-8">9. 状态与交互验收矩阵</h2><div class="table-scroll"><table><tr><th>场景</th><th>必须验证</th></tr><tr><td>文本输入</td><td>默认、hover、focus、内容、disabled、readonly、invalid；无外圈；placeholder可读</td></tr><tr><td>按钮</td><td>正常、hover、active、keyboard focus、disabled；忙碌由实际状态驱动</td></tr><tr><td>选择</td><td>当前值、选中勾选、键盘移动、Escape关闭、焦点返回、长选项、禁用选项</td></tr><tr><td>弹窗</td><td>遮罩、焦点进入/限制/返回、Escape、关闭按钮、长内容滚动、窄屏边距</td></tr><tr><td>折叠</td><td>鼠标与键盘切换；标题可读；展开后内容不溢出；日志更新不强制滚动用户正在读的内容</td></tr><tr><td>任务进度</td><td>0、处理中、1、暂停、未知总量；从真实值派生，错误原样可见</td></tr><tr><td>主题</td><td>light/dark/system；默认light；Logo/渐变/主操作保持YouDub颜色</td></tr><tr><td>Logo 动效</td><td>Web/原生桌面、侧栏展开/收起、工作台、首次准备与翻译配置；默认持续错峰声波，无布局抖动；浅深色一致；减少动态效果时静态展示</td></tr><tr><td>响应式</td><td>桌面、窄容器、375px；字段同宽、操作换行、菜单不裁剪</td></tr><tr><td>媒体</td><td>播放/暂停、进度、倍速、音量、全屏；图标与真实播放状态一致</td></tr></table></div><h2 id="section-9">10. 开发约束</h2><ul><li>新页面从共享入口导入控件，不引入新的UI库。</li><li>Logo 动效属于必须保留的 YouDub 品牌语言；相关入口统一使用 <code>BrandMark animated</code>，不得在 Harness 适配中删除或静态替换。</li><li>className允许宽度、布局、容器定位；需要控件新尺寸或状态时修改共享组件契约。</li><li>不在Input/Select/Button调用点写rounded、border、shadow、ring、背景色与固定控件高度。</li><li>禁止用<code>fill-current</code>填充线框播放图标；使用Tabler原版实心字形。</li><li>无现成上游组件时明确标注“YouDub组合”，不把业务自定尺寸声称为Harness标准。</li><li>上游更新后以源码为准复核规范和可交互展示；规范页不作为业务功能完成证据。</li></ul><h2 id="section-10">11. 源码依据</h2><ul><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Button.module.css">Button</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Input.module.css">Input</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/InlineEditor.module.css">InlineEditor</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Switch.module.css">Switch</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Checkbox.module.css">Checkbox</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/SegmentedTabs.module.css">SegmentedTabs</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/SegmentedControl.module.css">SegmentedControl</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tag.module.css">Tag</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Menu.module.css">Menu</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/MenuSurface.module.css">MenuSurface</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Modal.module.css">Modal</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tooltip.module.css">Tooltip</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/DisclosureRow.module.css">DisclosureRow</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/StateDot.module.css">StateDot</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Toast.module.css">Toast</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/base.css">base</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/corner-shape.css">corner-shape</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/gradient-shadow-text.css">gradient-shadow-text</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/focus.css">focus</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/design-platform.css">design-platform</a></li><li><a href="../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/scrollbar.css">scrollbar</a></li></ul><p><a href="../../apps/web/src/app/globals.css">YouDub主题</a> · <a href="../../apps/harness/src/frontend/controls.tsx">桌面控件适配</a> · <a href="ui-design-reference.html">视觉速查页</a></p><h2 id="section-11">10. 页面内容边界</h2><p>普通页面直接复用 <code>Page</code>、<code>PageHeader</code> 和 <code>PageTitle</code>。来源为 Harness <code>PluginManagerPage</code>：顶部内距28px，横向内距<code>clamp(24px, 4vw, 48px)</code>，内容最大宽960px。主内容块之间32px；标题与操作区同属一个可换行页头。返回入口置于标题行，避免独立返回行额外推低内容。</p><p>详情与编辑页复用同一页头结构：返回按钮、标题、状态标签、右侧操作。次要日期置于标题下方；工作流名称默认展示为标题，点击编辑按钮才进入输入状态。页头空白区域声明 <code>data-window-drag</code>，交互控件沿用 Harness 的 <code>no-drag</code> 规则，画布保持自身拖动行为。</p><p>工作台沿用同一内容宽度与横向内距，保留品牌标题区域。工作流画布保留全宽、填满工作区，页头顶部仍为28px；节点设置用普通页面边界。首次准备保留品牌页头与较窄的表单容器，品牌页头上边距28px。设置和扩展详情保留 Harness 原生结构。</p><p>工作流输入、输出各自拥有独立配置面板；选择输入节点仅显示输入字段，选择输出节点仅显示输出映射。使用同一层级的面板标题和共享表单控件，取消“输入 / 输出”合并分组及嵌套边框。节点点击、双击和“完整设置”均指向对应配置。</p><p>页面只设置宽度、内容排列和业务比例；输入、按钮、表面、分段选项等由共享组件提供圆角、边线和状态。除明确记录的品牌/画布/首次准备结构外，禁止页面另设<code>py-4</code>、重复页头或局部大号输入框。</p></main></div><script>document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{document.documentElement.classList.toggle('dark',b.dataset.theme==='dark');document.body.toggleAttribute('data-ds-dark-theme',b.dataset.theme==='dark')});document.querySelector('[role=switch]').onclick=e=>{const b=e.currentTarget;b.setAttribute('aria-checked',String(b.getAttribute('aria-checked')!=='true'))};</script></body></html>

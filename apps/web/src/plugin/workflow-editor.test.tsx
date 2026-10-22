@@ -21,7 +21,7 @@ vi.mock('./builtin/workflow-canvas', () => ({
     const ready = useRef(onReady)
     useEffect(() => { ready.current?.() }, [])
     useEffect(() => { if (addNodeRef) addNodeRef.current = (type) => onChange({ ...document, nodes: [...document.nodes, { id: 'added', type: type.type, typeVersion: type.version, provider: { id: type.providerId }, config: {}, autoContinue: true }] }) }, [addNodeRef, document, onChange])
-    return <div><output data-testid="canvas-view">{fitOnLoad ? 'fit' : 'preserved'}</output>{document.nodes.map((node) => <div key={node.id}><button onClick={() => onSelect?.(node.id)}>选择 {node.id}</button><button onClick={() => onOpen(node.id)}>详情 {node.id}</button></div>)}</div>
+    return <div><button onClick={() => onSelect?.('$inputs')}>选择输入节点</button><button onClick={() => onSelect?.('$outputs')}>选择输出节点</button><output data-testid="canvas-view">{fitOnLoad ? 'fit' : 'preserved'}</output>{document.nodes.map((node) => <div key={node.id}><button onClick={() => onSelect?.(node.id)}>选择 {node.id}</button><button onClick={() => onOpen(node.id)}>详情 {node.id}</button></div>)}</div>
   },
 }))
 vi.mock('./builtin/workflow-run', () => ({
@@ -78,9 +78,12 @@ it('shows built-in names in Japanese and saves a copy with the displayed names a
   const original = structuredClone(template)
   const { request } = mount('/workflows/youdub.dubbing', { record: { id: template.id, revision: 0, origin: 'builtin', document: template } })
   const user = userEvent.setup()
-  expect(await screen.findByLabelText('ワークフロー名')).toHaveValue('動画の吹き替え')
-  await user.click(screen.getByRole('button', { name: '入力 / 出力' }))
+  expect(await screen.findByRole('heading', { name: '動画の吹き替え' })).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: '入力' }))
   expect(screen.getByLabelText('入力名')).toHaveValue('動画')
+  expect(screen.queryByLabelText('出力名')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '出力' }))
+  expect(screen.queryByLabelText('入力名')).not.toBeInTheDocument()
   const outputs = screen.getAllByLabelText('出力名')
   expect(outputs[0]).toHaveValue('吹き替え動画')
   expect(outputs[1]).toHaveValue('吹き替え音声')
@@ -99,9 +102,10 @@ it('preserves custom workflow and port names when the interface language changes
   window.localStorage.setItem('youdub-ui-language', 'ja')
   const custom = { ...structuredClone(dubbingTemplate), id: 'my-dubbing', title: '我的配音' } as WorkflowDocument
   mount('/workflows/my-dubbing', { record: { id: custom.id, revision: 1, origin: 'user', document: custom } })
-  expect(await screen.findByLabelText('ワークフロー名')).toHaveValue('我的配音')
-  await userEvent.setup().click(screen.getByRole('button', { name: '入力 / 出力' }))
+  expect(await screen.findByRole('heading', { name: '我的配音' })).toBeInTheDocument()
+  await userEvent.setup().click(await screen.findByRole('button', { name: '入力' }))
   expect(screen.getByLabelText('入力名')).toHaveValue('视频')
+  await userEvent.setup().click(screen.getByRole('button', { name: '出力' }))
   expect(screen.getAllByLabelText('出力名').map(input => (input as HTMLInputElement).value)).toEqual(['配音视频', '配音音频'])
 })
 
@@ -141,7 +145,8 @@ it('adds the existing download node and saves its proxy port through the generic
 it('keeps viewport and undo history when opening full settings and returning', async () => {
   mount()
   const user = userEvent.setup()
-  const name = await screen.findByLabelText('工作流名称')
+  await user.click(await screen.findByRole('button', { name: '工作流名称' }))
+  const name = screen.getByRole('textbox', { name: '工作流名称' })
   expect(screen.getByTestId('canvas-view')).toHaveTextContent('fit')
   await user.clear(name); await user.type(name, '重命名')
   await user.click(screen.getByRole('button', { name: '详情 node' }))
@@ -153,7 +158,7 @@ it('keeps viewport and undo history when opening full settings and returning', a
   expect(screen.getByTestId('canvas-view')).toHaveTextContent('preserved')
   expect(screen.getByRole('button', { name: '撤销' })).toBeEnabled()
   await user.click(screen.getByRole('button', { name: '撤销' }))
-  expect(screen.getByLabelText('工作流名称')).not.toHaveValue('重命名')
+  expect(screen.queryByRole('heading', { name: '重命名' })).not.toBeInTheDocument()
 })
 
 it('returns to the canvas after deleting a node in full settings and allows undo', async () => {
@@ -196,7 +201,8 @@ it('blocks navigation, editing and unload while a submission is unresolved, then
 it('keeps actual edits protected after a pending submission is cleared', async () => {
   const { navigate } = mount()
   const user = userEvent.setup()
-  await user.type(await screen.findByLabelText('工作流名称'), '修改')
+  await user.click(await screen.findByRole('button', { name: '工作流名称' }))
+  await user.type(screen.getByRole('textbox', { name: '工作流名称' }), '修改')
   await user.click(screen.getByRole('button', { name: '运行' }))
   await user.click(screen.getByRole('button', { name: '模拟提交' }))
   await user.click(screen.getByRole('button', { name: '清理提交' }))
@@ -204,7 +210,7 @@ it('keeps actual edits protected after a pending submission is cleared', async (
   void navigate('/workflows')
   await screen.findByRole('dialog')
   await user.click(screen.getByRole('button', { name: '继续编辑' }))
-  expect(screen.getByLabelText('工作流名称')).toHaveValue('测试工作流修改')
+  expect(screen.getByRole('heading', { name: '测试工作流修改' })).toBeInTheDocument()
 })
 
 it('shows an empty workflow selection without an endless loading message', async () => {
@@ -221,12 +227,45 @@ it('does not retain a clean document over a newer server revision', async () => 
   expect(workflowDrafts.has(record.id)).toBe(false)
   cleanup()
   mount('/workflows/example', { record: { ...record, revision: 2, document: { ...document, title: '服务端新版' } } })
-  expect(await screen.findByLabelText('工作流名称')).toHaveValue('服务端新版')
+  expect(await screen.findByRole('heading', { name: '服务端新版' })).toBeInTheDocument()
 })
 
 it('keeps a dirty draft on revision conflict and explicitly identifies its older base', async () => {
   workflowDrafts.set(record.id, { document: { ...document, title: '未保存修改' }, saved: serializeWorkflowEdits(document), revision: 1, origin: 'user' })
   mount('/workflows/example', { record: { ...record, revision: 2, document: { ...document, title: '服务端新版' } } })
-  expect(await screen.findByLabelText('工作流名称')).toHaveValue('未保存修改')
+  expect(await screen.findByRole('heading', { name: '未保存修改' })).toBeInTheDocument()
   expect(screen.getByText('此草稿基于旧版本工作流，可另存副本保留修改。')).toBeInTheDocument()
+})
+
+
+it('shows a compact title and commits or cancels inline renaming', async () => {
+  mount()
+  const user = userEvent.setup()
+  expect(await screen.findByRole('heading', { name: '测试工作流' })).toBeInTheDocument()
+  expect(screen.queryByRole('textbox', { name: '工作流名称' })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '工作流名称' }))
+  const input = screen.getByRole('textbox', { name: '工作流名称' })
+  await user.clear(input)
+  await user.type(input, '修改名称{Enter}')
+  expect(screen.getByRole('heading', { name: '修改名称' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '工作流名称' }))
+  await user.type(screen.getByRole('textbox', { name: '工作流名称' }), '取消{Escape}')
+  expect(screen.getByRole('heading', { name: '修改名称' })).toBeInTheDocument()
+})
+
+it('opens only the selected boundary node settings and keeps changes independent', async () => {
+  const template = structuredClone(dubbingTemplate) as WorkflowDocument
+  mount('/workflows/example', { record: { ...record, document: template } })
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: '选择输入节点' }))
+  expect(screen.getByRole('heading', { name: '输入' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('输出名称')).not.toBeInTheDocument()
+  const input = screen.getByLabelText('输入名称')
+  await user.clear(input); await user.type(input, '原始视频')
+  await user.click(screen.getByRole('button', { name: '选择输出节点' }))
+  expect(screen.getByRole('heading', { name: '输出' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('输入名称')).not.toBeInTheDocument()
+  expect(screen.getAllByLabelText('输出名称')).toHaveLength(template.outputs.length)
+  await user.click(screen.getByRole('button', { name: '选择输入节点' }))
+  expect(screen.getByLabelText('输入名称')).toHaveValue('原始视频')
 })

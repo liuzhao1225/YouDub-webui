@@ -171,7 +171,7 @@ describe("本地化任务配置", () => {
       tts: { adapter: "voxcpm", model: "VoxCPM2", device: "cpu", voice: { mode: "source_clone" } },
       separation: { adapter: "test_separation", model: "separation", device: "cpu" },
     })
-    expect(within(screen.getByRole("group", { name: "声音方式" })).getByRole("button", { name: "克隆源音色" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(screen.getByRole("tablist", { name: "声音方式" })).getByRole("tab", { name: "克隆源音色" })).toHaveAttribute("aria-selected", "true")
   })
 
   it.each(["unavailable", "no-clone", "unsupported-language", "unavailable-device"])("VoxCPM2 %s 时保留现有可用模型选择", async (reason) => {
@@ -195,7 +195,7 @@ describe("本地化任务配置", () => {
     const onChange = mount(runtime, defaults)
     const user = userEvent.setup()
     expect(screen.getByLabelText("专名提示（可选）")).toHaveValue("Saved name")
-    expect(within(screen.getByRole("group", { name: "声音方式" })).getByRole("button", { name: "预设声音" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(screen.getByRole("tablist", { name: "声音方式" })).getByRole("tab", { name: "预设声音" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByLabelText("声音")).toHaveTextContent("测试声音")
     await choose(user, "目标语言", "日本語")
     expect(onChange.mock.calls.at(-1)![0].tts).toEqual(defaults.tts)

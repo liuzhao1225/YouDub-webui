@@ -305,7 +305,7 @@ export class EnvironmentSetup {
       ...(groups.some(group => acceleratedGroups.includes(group)) ? [{ id: 'acceleration', name: 'GPU 与推理后端', run: () => this.acceleration() }] : []),
       { id: 'dependencies', name: groups.length === 1 ? '基础运行依赖' : '运行依赖', run: () => this.dependencies(groups) },
       ...(groups.includes('media') ? [{ id: 'ffmpeg', name: 'FFmpeg', run: () => this.media() }] : []),
-      ...(groups.includes('whisper') ? [{ id: 'resources', name: '分句资源', run: () => this.resources() }] : []),
+      ...((groups.includes('whisper') || groups.includes('punkt')) ? [{ id: 'resources', name: '分句资源', run: () => this.resources() }] : []),
     ]
     this.steps = actions.map(({ id, name }) => ({ id, name, status: 'pending' }))
     for (const [index, action] of actions.entries()) {

@@ -1,22 +1,23 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import styles from './page-layout.module.css'
 
-type PageProps = HTMLAttributes<HTMLElement> & {
-  as?: 'main' | 'div' | 'section' | 'header'
-}
+type PageProps = HTMLAttributes<HTMLElement> & { as?: 'main' | 'div' | 'section' | 'header' }
 
-/** Shared content boundary; canvas workspaces keep their full-width layout. */
+/** Shared content boundary; canvas workspaces keep their full-width body. */
 export function PageContainer({ as: Component = 'div', className, ...props }: PageProps) {
-  return <Component className={cn('@container/page mx-auto w-full min-w-0 max-w-6xl px-4 sm:px-8', className)} {...props} />
+  return <Component className={cn(styles.container, "@container/page", className)} {...props} />
 }
-
 export function Page({ as = 'main', className, ...props }: PageProps) {
-  return <PageContainer as={as} className={cn('space-y-6 py-6', className)} {...props} />
+  return <PageContainer as={as} className={cn(styles.page, className)} {...props} />
 }
-
-export function PageHeader({ title, children, actions }: { title: ReactNode; children?: ReactNode; actions?: ReactNode }) {
-  return <header className="flex flex-wrap items-start justify-between gap-4">
-    <div className="min-w-0 flex-1"><h1 className="break-words text-2xl leading-8 font-semibold tracking-tight">{title}</h1>{children}</div>
-    {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+export function PageTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+  return <h1 className={cn(styles.title, className)} {...props} />
+}
+export function PageHeader({ title, titleControl, badge, children, actions, leading }: { title: ReactNode; titleControl?: ReactNode; badge?: ReactNode; children?: ReactNode; actions?: ReactNode; leading?: ReactNode }) {
+  return <header className={styles.header} data-window-drag>
+    <div className={styles.identity}>{leading && <div className={styles.leading}>{leading}</div>}<div className={styles.heading}><div className={styles.titleRow}>{titleControl ?? <PageTitle>{title}</PageTitle>}{badge}</div>{children}</div></div>
+    {actions && <div className={styles.actions}>{actions}</div>}
   </header>
 }
+export const pageLayoutStyles = styles

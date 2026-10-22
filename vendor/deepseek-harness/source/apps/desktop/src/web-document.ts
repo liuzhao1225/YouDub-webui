@@ -52,12 +52,12 @@ export async function authenticateWebHost(url: string): Promise<string> {
 /**
  * Response headers not relayed to the renderer. `set-cookie` would hand the
  * Host's authentication cookie to the page's cookie jar, which the shell owns
- * instead; the rest describe the Node `fetch` connection (its encoding, length,
- * and hop-by-hop transport), which Chromium never sees.
+ * instead; the rest describe the Node `fetch` connection and hop-by-hop transport.
+ * Uncompressed Content-Length must survive so Chromium can seek within media.
  */
 const WITHHELD_RESPONSE_HEADERS = [
   'set-cookie',
-  'content-encoding', 'content-length',
+  'content-encoding',
   'transfer-encoding', 'connection', 'keep-alive', 'te', 'trailer', 'upgrade', 'proxy-authenticate', 'proxy-authorization',
 ]
 
@@ -87,6 +87,9 @@ export async function forwardWebRequest(request: Request, host: string, cookie: 
   const init = { method: request.method, headers, body: request.body, signal: request.signal, duplex: 'half', redirect: 'manual' as const }
   const response = await fetch(target, init)
   const outgoing = new Headers(response.headers)
+  // Node fetch decodes compressed bodies; their encoded length is no longer valid.
+  const encoding = response.headers.get('content-encoding')
+  if (encoding && encoding !== 'identity') outgoing.delete('content-length')
   for (const name of WITHHELD_RESPONSE_HEADERS) outgoing.delete(name)
   if (PLUGIN_BUNDLE_PATH.test(source.pathname)) outgoing.set('cache-control', 'no-store')
   return new Response(response.body, { status: response.status, headers: outgoing })

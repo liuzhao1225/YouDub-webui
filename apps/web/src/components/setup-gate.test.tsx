@@ -67,14 +67,15 @@ describe('first-run setup', () => {
     const view = render(<SetupGate request={request}><div>实际工作台</div></SetupGate>)
     expect(await screen.findByText('初始化所需模型')).toBeVisible()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-    expect(screen.getByText('已下载')).toBeVisible()
+    expect(screen.queryByText('已下载')).not.toBeInTheDocument()
+    expect(screen.queryByText('可用')).not.toBeInTheDocument()
     expect(request).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('实际工作台')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '准备全部模型' }))
     await waitFor(() => expect(request).toHaveBeenCalledWith('/api/setup', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'prepare', selections }) })))
     expect(await screen.findByRole('button', { name: '暂停 VoxCPM2' })).toBeEnabled()
     expect(screen.getByRole('progressbar', { name: 'VoxCPM2 下载进度' })).toBeVisible()
-    expect(screen.getByRole('progressbar', { name: 'Whisper 下载进度' })).toHaveAttribute('aria-valuenow', '100')
+    expect(screen.queryByRole('progressbar', { name: 'Whisper 下载进度' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     expect(screen.queryByText('实际工作台')).not.toBeInTheDocument()
     view.unmount()
@@ -89,7 +90,18 @@ describe('first-run setup', () => {
     render(<SetupScreen state={{ ...modelChoices, models, resourceSelection: { ...modelChoices.resourceSelection!, required: false }, resources: { status: 'preparing', selections: [], requirements: [], environment: state.environment, models } }} onAction={vi.fn()} />)
     expect(screen.getByText('校验并启动工作台')).toBeVisible()
     expect(screen.queryByText('下载已暂停')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '继续下载' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '继续' })).not.toBeInTheDocument()
+  })
+  it('opens the workbench through final verification when all required models are already usable', () => {
+    const onPrepare = vi.fn()
+    const ready: SetupState = { ...modelChoices,
+      models: modelChoices.models.map(model => ({ ...model, status: 'ready', received: model.total })),
+      entries: modelChoices.models.map(model => ({ id: model.id, name: model.name, group: 'model', status: 'ready', actions: [], dependencies: [] })),
+    }
+    render(<SetupScreen state={ready} onAction={vi.fn()} onPrepare={onPrepare} />)
+    expect(screen.queryByRole('button', { name: '准备全部模型' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '进入工作台' }))
+    expect(onPrepare).toHaveBeenCalledWith(modelItems.map(({ providerId, model }) => ({ providerId, model })))
   })
   it('does not show unverified model placeholders as missing downloads during startup', () => {
     render(<SetupScreen state={{ ...modelChoices, phase: 'starting', resourceSelection: undefined }} onAction={vi.fn()} />)
@@ -107,7 +119,7 @@ describe('first-run setup', () => {
     expect(screen.getByRole('link', { name: '查看内置示例' })).toHaveAttribute('href', '/examples/index.html')
     fireEvent.click(screen.getByRole('button', { name: '暂停 Qwen3 Aligner' }))
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/setup', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'X-YouDub-Setup': 'setup-token' }), body: JSON.stringify({ action: 'pause', id: 'qwen' }) })))
-    await screen.findByText('已暂停')
+    expect((await screen.findAllByText('已暂停')).length).toBeGreaterThan(0)
     view.unmount(); vi.unstubAllGlobals()
   })
   it('keeps translation setup gated while any model or dependency is still preparing', async () => {
@@ -118,8 +130,8 @@ describe('first-run setup', () => {
     const view = render(<SetupGate request={request}><div>翻译服务配置</div></SetupGate>)
     await screen.findByRole('button', { name: '继续 Qwen3 Aligner' })
     expect(screen.queryByText('翻译服务配置')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '继续下载' }))
-    await screen.findByText('运行依赖')
+    fireEvent.click(screen.getByRole('button', { name: '继续' }))
+    await screen.findAllByText(/准备中.*安装/)
     expect(screen.queryByText('翻译服务配置')).not.toBeInTheDocument()
     await screen.findByText('翻译服务配置', {}, { timeout: 2000 })
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()

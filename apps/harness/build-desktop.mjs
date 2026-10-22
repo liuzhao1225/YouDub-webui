@@ -2,6 +2,7 @@ import { build } from 'esbuild';
 import { access, cp, mkdir, readFile, writeFile, symlink, lstat, readlink, rm, unlink } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const root = resolve(here, '../..');
@@ -30,6 +31,8 @@ for (const folder of ['resources', 'scripts/node-bin']) {
   await rm(join(output, folder), { recursive: true, force: true });
   await cp(join(upstream, folder), join(output, folder), { recursive: true });
 }
+const sharp = createRequire(join(root, 'apps/web/package.json'))('sharp');
+await sharp(join(root, 'apps/desktop/icon.svg')).png().toFile(join(output, 'resources/youdub-icon.png'));
 
 records.developmentProject = (await build({ ...base,
   entryPoints: [join(upstream, 'scripts/development-project.ts')], outfile: join(output, 'development-project.mjs'),

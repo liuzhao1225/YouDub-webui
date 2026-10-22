@@ -155,3 +155,15 @@ it('keeps a resource failure visible without background retries', async () => {
   expect(request).toHaveBeenCalledTimes(1)
   unsubscribe()
 })
+
+it('clears stale availability when a later inventory inspection fails', async () => {
+  const request = vi.fn().mockResolvedValueOnce(inventory).mockResolvedValueOnce({ ...inspection, status: 'ready' })
+    .mockResolvedValueOnce(inventory).mockRejectedValueOnce(new Error('inspection failed'))
+  const controller = new ResourcesController(request)
+  const unsubscribe = controller.subscribe(() => {})
+  await vi.waitFor(() => expect(controller.getSnapshot().inspection?.status).toBe('ready'))
+  controller.check()
+  await vi.waitFor(() => expect(controller.getSnapshot().error).toBe('inspection failed'))
+  expect(controller.getSnapshot().inspection).toBeUndefined()
+  unsubscribe()
+})

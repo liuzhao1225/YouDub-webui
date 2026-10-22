@@ -37,7 +37,7 @@ export function setupReport(state?: SetupState | null, requestError = '') {
     )
     lines.push('', '模型准备:')
     for (const model of state.models) lines.push(
-      `[${statuses[model.status]}] ${model.name} ${model.variant} | ${model.received}/${model.total} bytes${model.source ? ` | ${model.source}` : ''}`,
+      `[${model.status === 'ready' ? '文件已齐' : statuses[model.status]}] ${model.name} ${model.variant} | ${model.received}/${model.total} bytes${model.source ? ` | ${model.source}` : ''}`,
     )
   }
   const errors: string[] = []

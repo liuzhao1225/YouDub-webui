@@ -25,7 +25,7 @@ import { formatCapacity, parseCapacity } from './DeepSeekModelsEditor'
 import type { DeepSeekModelDraft } from './DeepSeekModelsEditor'
 import { messageOf } from './store'
 import type { en } from './locales'
-import styles from './ModelsSection.module.css'
+import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/ModelsSection.module.css'
 
 /**
  * One configured model row. Structurally open, exactly like the DeepSeek
@@ -312,20 +312,20 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
         </div>
         {props.overridden === true && props.onReset !== undefined
           ? (
-            <button
+            <Button
               type="button"
-              className={styles['linkButton']}
+              variant="ghost" size="sm"
               disabled={disabled}
               onClick={props.onReset}
             >
               {t('resetModels')}
-            </button>
+            </Button>
           )
           : null}
-        <button
+        <Button
           ref={fetchButton}
           type="button"
-          className={styles['linkButton']}
+          variant="ghost" size="sm"
           disabled={disabled || busy || !askable || props.probeBlocked !== undefined}
           title={props.probeBlocked !== undefined
             ? t(props.probeBlocked)
@@ -333,7 +333,7 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
           onClick={() => { void fetchModels() }}
         >
           {busy ? t('fetching') : t('fetchModels')}
-        </button>
+        </Button>
       </div>
       {models.length === 0 ? <p className={styles['modelEmpty']}>{t('modelsEmpty')}</p> : null}
       {models.map((model, index) => (
@@ -357,19 +357,19 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
               disabled={disabled}
               onChange={(event) => { patch(index, { name: event.target.value === '' ? undefined : event.target.value }) }}
             />
-            <button
+            <Button
               type="button"
-              className={styles['iconButton']}
+              variant="ghost" size="icon-sm"
               aria-label={`${t('modelAdvanced')} ${index + 1}`}
               aria-expanded={expanded.has(index)}
               title={t('modelAdvanced')}
               onClick={() => { toggleExpanded(index) }}
             >
               <IconChevron open={expanded.has(index)} />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`${styles['iconButton']} ${styles['iconButtonDanger']}`}
+              variant="destructive" size="icon-sm"
               aria-label={`${t('removeModel')} ${index + 1}`}
               title={t('removeModel')}
               disabled={disabled}
@@ -391,7 +391,7 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
               }}
             >
               <IconTrash />
-            </button>
+            </Button>
           </div>
           {expanded.has(index)
             ? (
@@ -427,14 +427,14 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
             : null}
         </div>
       ))}
-      <button
+      <Button
         type="button"
-        className={styles['addModelButton']}
+        variant="outline" size="default"
         disabled={disabled}
         onClick={() => { onChange([...models, { id: '' }]) }}
       >
         {t('addModel')}
-      </button>
+      </Button>
       {failure !== undefined ? <p className={styles['error']}>{failure}</p> : null}
       <Modal
         open={candidates !== undefined}

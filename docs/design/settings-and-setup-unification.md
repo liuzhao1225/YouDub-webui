@@ -221,19 +221,19 @@ flowchart TB
 | --- | --- | --- | --- |
 | 模型供应商 | ModelsSettings、ModelsSettingsStore、编辑器、模型 API 与密钥语义 | 获取 session/CSRF、是否展示引导、稍后设置、继续到工作台 | 管理供应商和模型、编辑保存、返回原任务草稿 |
 | 基础环境 | SetupService、EnvironmentSetup、探测和安装实现 | auth/Python 之前可用；基础准备完成才加载应用 | 读取安装结果与诊断，用户明确操作后处理缺项 |
-| 模型与运行依赖 | checkResources/prepareResources/action、清单、下载器 | 首次安装只准备 base，不要求下载全部模型 | 按真实节点依赖或资源选择下载；任务就绪以当前图为准 |
+| 模型与运行依赖 | checkResources/prepareResources/action、清单、下载器 | 先准备 base，再由用户确认准备四个内置模型，校验通过后进入应用 | 按真实节点依赖或资源选择下载；任务就绪以当前图为准 |
 | 客户端状态 | 公共类型、规范化 selections、展示/诊断投影 | 独立 setup 访问适配 | 设置和工作流共用应用内资源控制器 |
-| 界面 | ModelsSettings、EnvironmentSteps、ModelDownloadList、SetupDiagnostics、Page/SectionCard | 引导步骤与继续按钮 | 分类导航、资源定位、启动前检查结果 |
+| 界面 | ModelsSettings、ResourceRow、SetupDiagnostics、Page/SectionCard | 引导步骤与继续按钮 | 分类导航、资源定位、启动前检查结果 |
 
 后端当前已共享 EnvironmentSetup 和 DownloadClient，本轮是在现有服务上提取必要动作及投影。页面卸载不停止 Host 已接受的安装。跨入口进度通过同一 Host 快照恢复，不通过复制另一页的 React 状态同步。
 
 ## 7. 自动检测与按需准备
 
-首次安装自动执行应用运行所需的最小基础准备：应用自己的 Python 环境与基础依赖。基础就绪后即可进入应用；不能因为未下载 VoxCPM2 就把只需要字幕的用户挡在首次安装页。
+当前 Harness 首次安装先准备应用自己的 Python 环境与基础依赖，再由用户确认准备 Whisper、VoxCPM2、Demucs、Qwen3 Aligner 四个内置模型。四模型及其依赖通过检查后进入工作台。完成首次初始化后，资源页按项准备，工作流按当前图所需资源判断可用性。
 
 | 场景 | 自动发生 | 用户触发的写操作 |
 | --- | --- | --- |
-| 首次启动 | 检测并准备基础环境，显示逐步进度 | 失败后重试；允许的下载暂停/继续 |
+| 首次启动 | 检测基础环境，显示逐步进度 | 确认准备环境和四个模型；失败后重试；模型下载暂停/继续 |
 | 打开环境与模型页 | 检测当前安装与当前准备状态 | 下载所选模型/缺失依赖；重新检测 |
 | 工作台选择 workflow 或更改 provider/model | 计算所需资源并检测，去重相同需求 | 点击准备所需资源；就绪后开始处理 |
 | 已有后台准备任务 | 展示真实状态，复用已有下载 | 暂停/继续；冲突需求不得另起相同环境安装 |
@@ -241,7 +241,7 @@ flowchart TB
 
 现有 providerGroups 已按 media、download、openai、whisper、voxcpm、demucs、align 组织依赖。保留检测后仅安装缺失组的行为；FFmpeg 需同时具备 ffprobe 和所需字幕能力，Whisper 才需要对应分句资源。模型仅准备图中实际引用且支持自动下载的清单项；第三方资源没有下载契约时明确告知由插件提供准备方式。
 
-“环境与模型”页分别展示“已安装”“未安装”“准备中/已暂停”“失败”，没有使用的模型不算环境故障。设备检测只表示实际设备可用性，节点的 device 选择仍由 workflow 持有；更改工作流不会修改全局 GPU 模式或偷偷切 CPU。
+资源页、首次准备页和工作流共用 `ResourceEntry` 与 `ResourceRow`，统一展示“待准备”“准备中”“已暂停”“可用”“失败”“受阻”，没有使用的模型不算环境故障。设备检测只表示实际设备可用性，节点的 device 选择仍由 workflow 持有；更改工作流不会修改全局 GPU 模式或偷偷切 CPU。
 
 下载默认优先官方来源，先做最长约 3 秒的连通性测试；不可用或实际下载出现网络错误时切换已配置的国内镜像或 ModelScope。应用专用 Python、依赖、FFmpeg 和模型展示来源、实际下载进度与可展开的下载/安装日志，保留原错误及切源过程。Python 依赖由应用专用 venv 内的 uv 安装，继续使用现有 requirements 分组。准备完成需验证可执行文件、依赖及模型清单，不凭“文件夹存在”宣称就绪。设置页面重构不新建 OSS Bucket，也不把安装包下载混入模型准备；安装包及公告入口继续使用 latest 链接。
 

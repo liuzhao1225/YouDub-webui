@@ -1,3 +1,5 @@
+import { Segmented } from '@/components/ui/segmented'
+import { Tag } from '@/components/ui/tag'
 import { NativeSelect } from '@/components/ui/native-select'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
@@ -24,7 +26,7 @@ import { deriveKeyRef, messageOf, protocolChoices, providerUsable } from './stor
 import type { ModelsSettingsState, ModelsSettingsStore, ProviderRow } from './store'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor'
 import type { en } from './locales'
-import styles from './ModelsSection.module.css'
+import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/ModelsSection.module.css'
 
 /** Injected dependencies of {@link ModelsSection} (slot `inject`). */
 export interface ModelsSectionInjected {
@@ -256,9 +258,9 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
     return (
       <div className={styles['section']}>
         <p className={styles['error']}>{`${t('loadFailed')}: ${errorText}`}</p>
-        <button type="button" className={styles['secondaryButton']} onClick={() => { void controller.load() }}>
+        <Button type="button" variant="outline" size="default" onClick={() => { void controller.load() }}>
           {t('retry')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -336,7 +338,7 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
                       shipped one it also has a stored profile for, so the tag
                       follows its answer and stays off when it gives none. */}
                   {row.entry.declared === true
-                    ? <span className={styles['rowTag']}>{t('customTag')}</span>
+                    ? <Tag>{t('customTag')}</Tag>
                     : null}
                   {credentialConfigured
                     ? (
@@ -359,9 +361,9 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
                       : null}
                 </span>
                 <span className={styles['rowActions']}>
-                  <button
+                  <Button
                     type="button"
-                    className={styles['secondaryButton']}
+                    variant="outline" size="default"
                     aria-label={providerCopy(t('editProvider'), target)}
                     disabled={dirty || editorBusy}
                     onClick={() => {
@@ -375,12 +377,12 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
                     }}
                   >
                     {t('edit')}
-                  </button>
+                  </Button>
                   {row.removable
                     ? (
-                      <button
+                      <Button
                         type="button"
-                        className={styles['dangerButton']}
+                        variant="destructive" size="default"
                         aria-label={providerCopy(t('removeProvider'), target)}
                         disabled={!state.writable || dirty || editorBusy}
                         onClick={event => {
@@ -391,7 +393,7 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
                         }}
                       >
                         {t('remove')}
-                      </button>
+                      </Button>
                     )
                     : null}
                 </span>
@@ -414,11 +416,8 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
         })}
       </ul>
       {(!editing || adding || declaring) && <div className={styles['addCard']}>
-        <div role="tablist" aria-label={t('provider')} className={styles['composerTabs']}>
-          <button type="button" role="tab" id={composerId + '-preset'} aria-controls={composerId + '-panel'} aria-selected={!declaring} disabled={dirty || editorBusy} className={styles['composerTab']} onClick={() => { setAdding(true); setDeclaring(false); setEditing(undefined); setComposerRevision(value => value + 1) }}>{t('presetTab')}</button>
-          <button type="button" role="tab" id={composerId + '-custom'} aria-controls={composerId + '-panel'} aria-selected={declaring} disabled={dirty || editorBusy} className={styles['composerTab']} onClick={() => { setAdding(false); setDeclaring(true); setEditing(undefined); setComposerRevision(value => value + 1) }}>{t('customTab')}</button>
-        </div>
-        <div role="tabpanel" id={composerId + '-panel'} aria-labelledby={composerId + (declaring ? '-custom' : '-preset')}>
+        <Segmented id={composerId} ariaLabel={t('provider')} disabled={dirty || editorBusy} value={declaring ? 'custom' : 'preset'} options={[{value:'preset',label:t('presetTab')},{value:'custom',label:t('customTab')}]} onChange={value => { setAdding(value === 'preset'); setDeclaring(value === 'custom'); setEditing(undefined); setComposerRevision(revision => revision + 1) }} />
+        <div role="tabpanel" id={composerId + (declaring ? '-custom-panel' : '-preset-panel')} aria-labelledby={composerId + (declaring ? '-custom' : '-preset')}>
           {declaring ? <CustomProviderCard
             key={composerRevision}
             hideTitle

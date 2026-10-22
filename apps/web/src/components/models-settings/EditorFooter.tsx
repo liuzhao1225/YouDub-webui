@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
  * The action row every provider card ends with: dismiss on the left, commit on
@@ -16,7 +17,7 @@
 
 import type { ReactNode } from 'react'
 import type { en } from './locales'
-import styles from './ModelsSection.module.css'
+import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/ModelsSection.module.css'
 
 /** Props of {@link EditorFooter}. */
 export interface EditorFooterProps {
@@ -47,22 +48,22 @@ export function EditorFooter(props: EditorFooterProps): ReactNode {
   const { t } = props
   return (
     <div className={styles['editorActions']}>
-      <button
+      <Button
         type="button"
-        className={styles['secondaryButton']}
+        variant="outline" size="default"
         disabled={props.busy}
         onClick={props.onCancel}
       >
         {t(props.cancelLabel ?? 'cancel')}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        className={styles['primaryButton']}
+        variant="default" size="default"
         disabled={props.submitDisabled}
         onClick={props.onSubmit}
       >
         {props.busy ? t(props.submitBusyLabel) : t(props.submitLabel)}
-      </button>
+      </Button>
     </div>
   )
 }

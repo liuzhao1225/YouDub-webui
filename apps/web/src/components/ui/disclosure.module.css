@@ -1,0 +1,14 @@
+.root { min-width: 0; }
+.contained { padding: 12px 16px; }
+.summary { cursor: pointer; list-style: none; height: auto; min-height: 24px; }
+.summary::-webkit-details-marker { display: none; }
+.title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.content { margin-top: 12px; min-width: 0; }
+.root[open] > .summary svg { transform: rotate(90deg); }
+
+.inline { display: contents; }
+.inline > .summary { flex: none; }
+.inline > .content { flex-basis: 100%; width: 100%; }
+.inline:not([open]) > .content { display: none; }
+
+.inline::details-content { display: contents; }

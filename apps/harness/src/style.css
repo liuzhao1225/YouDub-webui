@@ -35,7 +35,7 @@ html[data-platform='darwin'] .yd-sidebar-chrome { height:var(--yd-window-top-cle
 .yd-main-chrome { height:var(--dsh-frame-top-clearance,0px); flex-shrink:0; }
 .yd-main { flex:1; min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; }
 .yd-feature-root { container-type:inline-size; }
-.yd-feature-page { max-width:1152px; padding:24px 32px; margin-inline:auto; }
+.yd-feature-page { max-width:calc(960px + clamp(24px,4vw,48px) * 2); padding:28px clamp(24px,4vw,48px) 48px; margin-inline:auto; }
 .yd-domain-dialog { display:flex; flex-direction:column; gap:16px; padding:24px; }
 .yd-domain-dialog h2 { margin:0; font-size:20px; line-height:28px; }
 .yd-domain-alert { display:flex; align-items:flex-start; gap:8px; padding:12px; border-radius:var(--dsw-radius-md); color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-2); }
@@ -46,15 +46,17 @@ html[data-platform='darwin'] .yd-sidebar-chrome { height:var(--yd-window-top-cle
 .yd-danger-action { color:var(--status-danger-fg); }
 /* These element defaults are scoped to domain content and remain below utilities. */
 @layer base {
-  .yd-feature-root :where(h1,h2,h3,p,ol,ul,figure) { margin:0; }
+  .yd-feature-root :where(h1,h2,h3,p,ol,ul,figure,dl,dd) { margin:0; }
+  .yd-feature-root :where(fieldset) { min-width:0; margin:0; padding:0; border:0; }
+  .yd-feature-root :where(legend) { padding:0; }
   .yd-feature-root :where(ol,ul) { list-style:none; padding:0; }
   .yd-feature-root :where(img,video,svg) { display:block; vertical-align:middle; }
   .yd-feature-root :where(h1,h2,h3) { font-size:inherit; font-weight:inherit; }
   .yd-feature-root :where(a) { color:inherit; text-decoration:inherit; }
   .yd-feature-root :where(textarea) { font:inherit; }
 }
-@media(max-width:640px) { .yd-feature-page { padding:16px; } }
-.yd-original-examples { display:block; width:100%; height:100%; border:0; }
+
+.yd-original-examples { display:block; width:100%; min-height:360px; border:0; }
 
 .yd-settings-control { width:32px; flex-shrink:0; }
 

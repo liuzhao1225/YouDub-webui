@@ -15,7 +15,7 @@ it('labels numerical progress as the current step, while retaining completed ste
   render(<LanguageProvider><TaskProgress task={task} /></LanguageProvider>)
   expect(screen.getByText('生成配音 · 25%')).toBeInTheDocument()
   expect(screen.getByText('已完成 1/2 步')).toBeInTheDocument()
-  expect(screen.getByRole('progressbar', { name: '生成配音 进度' })).toHaveAttribute('value', '0.25')
+  expect(screen.getByRole('progressbar', { name: '生成配音 进度' })).toHaveAttribute('aria-valuenow', '25')
 })
 
 it.each([

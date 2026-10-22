@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageTitle } from './page-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -17,15 +18,15 @@ export function SetupInstallation({ path, busy, configure, pickDirectory }: {
     finally { setChoosing(false) }
   }
   return <form className="space-y-6" onSubmit={event => { event.preventDefault(); void configure(directory) }}>
-    <h1 className="text-2xl leading-8 font-semibold">{text('setup.installation')}</h1>
+    <PageTitle>{text('setup.installation')}</PageTitle>
     <div className="space-y-2">
-      <label htmlFor="setup-language" className="text-sm font-medium">{text('nav.language')}</label>
+      <label htmlFor="setup-language" className="block text-sm font-medium">{text('nav.language')}</label>
       <NativeSelect id="setup-language" aria-label={text('nav.language')} value={language} disabled={busy || choosing} onChange={event => setLanguage(event.target.value)}>
         {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </NativeSelect>
     </div>
     <div className="space-y-2">
-      <label htmlFor="setup-directory" className="text-sm font-medium">{text('setup.directory')}</label>
+      <label htmlFor="setup-directory" className="block text-sm font-medium">{text('setup.directory')}</label>
       <div className="flex gap-2">
         <Input id="setup-directory" aria-describedby="setup-directory-detail" className="min-w-0 flex-1" value={directory} disabled={busy || choosing} onChange={event => setDirectory(event.target.value)} />
         {pickDirectory && <Button type="button" variant="outline" disabled={busy || choosing} onClick={() => void choose()}>{text('setup.browse')}</Button>}

@@ -1,2 +1,1 @@
-import React from 'react'
-export function Tag({ tone, children }: { tone?:string; children:React.ReactNode }) { return <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${tone === 'danger' ? 'bg-status-danger/10 text-status-danger-fg' : tone === 'warning' ? 'bg-status-warning/10 text-status-warning-fg' : tone === 'success' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground'}`}>{children}</span> }
+export { Tag } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tag'

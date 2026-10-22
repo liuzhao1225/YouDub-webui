@@ -34,7 +34,8 @@
     "types": [
       "vite/client",
       "vitest/globals"
-    ]
+    ],
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src/**/*.ts",

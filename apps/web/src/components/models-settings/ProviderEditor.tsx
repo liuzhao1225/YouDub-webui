@@ -39,7 +39,7 @@ import { EditorFooter } from './EditorFooter'
 import { ModelListEditor } from './ModelListEditor'
 import { deriveKeyRef, messageOf, protocolChoices } from './store'
 import type { en } from './locales'
-import styles from './ModelsSection.module.css'
+import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/ModelsSection.module.css'
 
 /** Per-adapter-family curated field sets (unknown namespaces get the hint alone). */
 type EditorLayout = 'deepseek' | 'pi-ai' | 'unknown'

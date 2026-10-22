@@ -1,3 +1,4 @@
+import { Disclosure } from '@/components/ui/disclosure'
 import { Textarea } from '@/components/ui/textarea'
 'use client'
 
@@ -35,11 +36,11 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
     </div>
     {copyError && <p role="alert" className="mb-3 text-xs text-status-danger-fg">{copyError}</p>}
     <p className="mb-3 text-xs text-muted-foreground">{text('setup.issueHint')}</p>
-    <details open={failed || Boolean(copyError)}>
-      <summary className="cursor-pointer text-xs text-muted-foreground">{text('setup.viewLogs')}</summary>
+    <Disclosure open={failed || Boolean(copyError)} contained={false} title={<>{text('setup.viewLogs')}</>}>
+
       <div role={failed ? 'alert' : undefined} className="mt-3">
         <Textarea ref={log} aria-label={text('setup.logContent')} readOnly value={report} rows={10} onScroll={event => { const node = event.currentTarget; follow.current = node.scrollTop + node.clientHeight >= node.scrollHeight - 1 }} className="p-3 font-mono text-xs leading-relaxed" />
       </div>
-    </details>
+    </Disclosure>
   </section>
 }

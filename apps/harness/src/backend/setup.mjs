@@ -3,6 +3,7 @@ import { AppError } from '../../../../packages/sdk/src/index.ts';
 import { EnvironmentSetup } from '../../../../packages/builtin/src/setup-environment.ts';
 import { DownloadClient } from '../../../../packages/builtin/src/setup-download.ts';
 import { readJson } from './transport.mjs';
+import { resourceEntries } from '../../../../packages/sdk/src/resource-state.ts';
 import modelManifest from '../../../../packages/builtin/src/setup-models.json' with { type: 'json' };
 
 // The resource service resolves model providers, their dependencies and files.
@@ -75,6 +76,7 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
       models: resources?.models ?? initialModels.map(model => inventory?.models.find(item => item.id === model.id) ?? model), ...(resources ? { resources } : {}),
       resourceSelection: { required: selectionRequired, selections: selected ?? items.map(selectionOf), items, prepared: phase === 'ready' },
       ...(installation ? { installation: { required: phase === 'installation', path: config.root } } : {}),
+      entries: resources?.entries ?? resourceEntries({ status: phase === 'environment' ? 'preparing' : phase, environment: environment?.steps ?? [] }),
       error: failure, canRetry: Boolean(domain) || !bootAttempted, token: '' };
   };
   const prepare = () => {

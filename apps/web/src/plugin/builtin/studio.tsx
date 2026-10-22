@@ -1,3 +1,4 @@
+import { Surface } from '@/components/ui/surface'
 import { NativeSelect } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
@@ -76,7 +77,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
       <div className="relative rounded-2xl p-4 sm:p-6">
         {linkSlot && <div className="pb-2">
           <div className="flex min-w-0 items-center gap-2">
-            <Input icon={<Link2 className="size-4" />} aria-label={tx("studio.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={busy || !!pendingId} placeholder={tx("studio.paste.a.youtube.or.bilibili.link")} className="h-12 flex-1" onBlur={() => setLinkTouched(true)} onChange={(event) => {
+            <Input icon={<Link2 className="size-4" />} aria-label={tx("studio.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={busy || !!pendingId} placeholder={tx("studio.paste.a.youtube.or.bilibili.link")} className="flex-1" onBlur={() => setLinkTouched(true)} onChange={(event) => {
               setSourceUrl(event.target.value); setLinkTouched(false); setError('')
               if (event.target.value) setFiles((current) => { const next = { ...current }; delete next[linkSlot]; return next })
             }} />
@@ -134,9 +135,9 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
     <section className="relative isolate flex min-h-[calc(100dvh-var(--dsh-frame-top-clearance,3.5rem))] flex-col justify-center overflow-hidden border-b border-border lg:min-h-[calc(100dvh-var(--dsh-frame-top-clearance,0px))]">
       <div aria-hidden="true" className="aurora -z-10" />
       <div aria-hidden="true" className="bg-dot-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
-      <PageContainer className="pt-10 pb-12 lg:pt-14 lg:pb-14 [@media(max-height:820px)]:pt-8 [@media(max-height:820px)]:pb-10">
+      <PageContainer className="pt-[var(--page-top)] pb-12">
         <header className="flex animate-rise flex-col items-center text-center">
-          <BrandMark className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
+          <BrandMark animated className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
           <h1 className="mt-6 text-[clamp(28px,4vw,48px)] leading-[1.2] font-bold tracking-tight text-balance">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
         </header>
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
@@ -155,11 +156,11 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
         </div>}
       </PageContainer>
     </section>
-    <PageContainer className="space-y-12 py-10 lg:py-14">
+    <PageContainer className="space-y-8 py-8">
       {taskError && <div className="space-y-2"><InlineAlert>{taskError}</InlineAlert><Button variant="outline" onClick={refreshTasks}>{tx("studio.reload.tasks")}</Button></div>}
       {active.length > 0 && <TaskSection id="studio-active" title={tx("studio.in.progress")}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-3 pr-4 transition-[border-color,transform] outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
       <TaskSection id="studio-recent" title={tx("studio.recent.tasks")}>
-        {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="overflow-hidden rounded-xl border border-border bg-card"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></div>)}</div>
+        {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <Surface as="div" key={item} className="overflow-hidden"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></Surface>)}</div>
           : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-4 text-sm font-medium">{tx("studio.no.finished.tasks.yet")}</p></div>
           : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-[border-color,box-shadow,transform] outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
       </TaskSection>

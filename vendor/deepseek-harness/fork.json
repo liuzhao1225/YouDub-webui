@@ -5592,6 +5592,24 @@
       "reason": "移除 YouDub 源码开发不使用的旧产品更新、强制策略、命令安装、打包签名上传和专属界面测试；原始归档保持不变。"
     },
     {
+      "path": "apps/desktop/src/web-document.ts",
+      "before": {
+        "path": "apps/desktop/src/web-document.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4752,
+        "sha256": "05ab6fd59199f1b7a7dd558e60f50e38f4df1085a70af671014c085d270e91cc"
+      },
+      "after": {
+        "path": "apps/desktop/src/web-document.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4980,
+        "sha256": "757e444569b289cc754859552cd7a1a214b874760ff0c1641291f299861cb36c"
+      },
+      "reason": " Preserve uncompressed media Content-Length and Range response headers for native audio seeking; remove encoded lengths only when fetch decompresses the body."
+    },
+    {
       "path": "apps/desktop/src/welcome-api.ts",
       "before": {
         "path": "apps/desktop/src/welcome-api.ts",
@@ -8080,6 +8098,24 @@
       },
       "after": null,
       "reason": "移除 YouDub 源码开发不使用的旧产品更新、强制策略、命令安装、打包签名上传和专属界面测试；原始归档保持不变。"
+    },
+    {
+      "path": "apps/desktop/tests/web-document.spec.ts",
+      "before": {
+        "path": "apps/desktop/tests/web-document.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5420,
+        "sha256": "7b8dcccededac3bb9f978e4446a00a1cf97fb7573f73fdd47e0de842bf92539b"
+      },
+      "after": {
+        "path": "apps/desktop/tests/web-document.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6819,
+        "sha256": "d6cd9b8d9b570c92a5809f4d9b4405700044395786168a5ca5c75a71fa741262"
+      },
+      "reason": " Preserve uncompressed media Content-Length and Range response headers for native audio seeking; remove encoded lengths only when fetch decompresses the body."
     },
     {
       "path": "apps/desktop/tests/welcome-flow.e2e.ts",

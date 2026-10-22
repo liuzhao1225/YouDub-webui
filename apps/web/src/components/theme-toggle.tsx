@@ -14,7 +14,7 @@ export function ThemeToggle() {
   ] as const
   const current = options.find(option => option.value === theme)!
   return <Select value={theme} onValueChange={value => { if (value) setTheme(value as Theme) }}>
-    <SelectTrigger showChevron={false} aria-label={`${tx('theme.label')} · ${current.label}`} className="size-8 justify-center border-0 bg-transparent p-0"><current.Icon className="size-4 text-foreground" /></SelectTrigger>
+    <SelectTrigger showChevron={false} aria-label={`${tx('theme.label')} · ${current.label}`} className="size-8 justify-center bg-transparent p-0"><current.Icon className="size-4 text-foreground" /></SelectTrigger>
     <SelectContent>{options.map(({ value, label, Icon }) => <SelectItem key={value} value={value}><span className="inline-flex items-center gap-2"><Icon className="size-4" />{label}</span></SelectItem>)}</SelectContent>
   </Select>
 }

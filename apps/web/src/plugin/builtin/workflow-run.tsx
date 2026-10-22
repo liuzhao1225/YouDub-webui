@@ -95,7 +95,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   const material = <div>
     {linkInput && <div className="pt-3 pb-1">
       <div className="flex min-w-0 items-center gap-2">
-        <Input icon={<Link2 className="size-4" />} aria-label={tx("workflow.run.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx("workflow.run.paste.a.youtube.or.bilibili.link")} className="h-12 flex-1" onBlur={() => setLinkTouched(true)} onChange={(event) => {
+        <Input icon={<Link2 className="size-4" />} aria-label={tx("workflow.run.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx("workflow.run.paste.a.youtube.or.bilibili.link")} className="flex-1" onBlur={() => setLinkTouched(true)} onChange={(event) => {
           setSourceUrl(event.target.value); setLinkTouched(false); setError('')
           if (event.target.value) changeFile(linkInput, undefined)
         }} />

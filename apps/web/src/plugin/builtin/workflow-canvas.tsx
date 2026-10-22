@@ -1,3 +1,4 @@
+import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, Choice } from '@/components/ui/native-select'
 import { Button } from '@/components/ui/button'
@@ -57,12 +58,13 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
       </div>}
       <div className="nodrag flex items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs">
         {data.readOnly ? <span className="text-muted-foreground">{node.autoContinue ? tx("workflow.canvas.auto.continue") : tx("workflow.canvas.manual.review")}</span> : <Choice className="flex items-center gap-2" label={tx("workflow.canvas.auto.continue")} disabled={data.disabled} checked={node.autoContinue} onChange={(event) => data.change?.({ ...node, autoContinue: event.target.checked })} />}
-        <Button variant="ghost" type="button" disabled={data.disabled} className={cn('flex h-auto items-center gap-1 rounded px-2 py-1 text-xs disabled:opacity-50', data.status?.status === 'awaiting_review' ? 'bg-primary text-primary-foreground' : 'text-link hover:bg-accent')} onClick={data.open}>{data.readOnly ? data.status?.status === 'awaiting_review' ? tx("workflow.canvas.review.result") : data.status?.status === 'completed' ? tx("workflow.canvas.view.results") : tx("workflow.canvas.view.node") : tx("workflow.canvas.full.settings")}<ExternalLink className="size-3" /></Button>
+        <Button variant={data.status?.status === 'awaiting_review' ? 'default' : 'link'} size="sm" type="button" disabled={data.disabled} onClick={data.open}>{data.readOnly ? data.status?.status === 'awaiting_review' ? tx("workflow.canvas.review.result") : data.status?.status === 'completed' ? tx("workflow.canvas.view.results") : tx("workflow.canvas.view.node") : tx("workflow.canvas.full.settings")}<ExternalLink className="size-3" /></Button>
       </div>
     </>}
+    {data.virtual && !data.readOnly && <div className="nodrag flex justify-end border-t border-border px-4 py-2.5 text-xs"><Button variant="link" size="sm" disabled={data.disabled} onClick={data.open}>{tx("workflow.canvas.full.settings")}<ExternalLink className="size-3" /></Button></div>}
     {data.status?.message && <p className="truncate px-4 pb-3 text-xs text-muted-foreground">{data.status.message}</p>}
     {data.status?.error && <p className="px-4 pb-3 text-xs text-status-danger-fg">{data.status.error.message}</p>}
-    {data.status?.status === 'running' && data.status.progress != null && <progress className="block h-1 w-full accent-primary" value={data.status.progress} max={1} aria-label={data.label} />}
+    {data.status?.status === 'running' && data.status.progress != null && <Progress value={data.status.progress} label={data.label} />}
   </div>
 }
 const nodeTypes = { workflow: NodeCard }
@@ -102,8 +104,8 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
     const inputPosition = { x: xs.length ? Math.min(...xs) - NODE_COLUMN_SPACING : 0, y: centerY }
     const outputPosition = { x: xs.length ? Math.max(...xs) + NODE_COLUMN_SPACING : NODE_COLUMN_SPACING, y: centerY }
     const virtual: FlowNode[] = []
-    if (document.inputs.length) virtual.push({ id: INPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[INPUTS_ID] ?? document.presentation.positions[INPUTS_ID] ?? inputPosition, data: { label: tx("workflow.canvas.inputs"), inputs: [], outputs: document.inputs.map((input) => ({ id: input.id, label: workflowPortLabel(document, input, tx) })), readOnly, disabled, missing: false, virtual: 'input' } })
-    if (document.outputs.length) virtual.push({ id: OUTPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[OUTPUTS_ID] ?? document.presentation.positions[OUTPUTS_ID] ?? outputPosition, data: { label: tx("workflow.canvas.outputs"), outputs: [], inputs: document.outputs.map((output) => ({ id: output.id, label: workflowPortLabel(document, output, tx), required: output.required, connected: true })), readOnly, disabled, missing: false, virtual: 'output' } })
+    if (document.inputs.length) virtual.push({ id: INPUTS_ID, selected: selected === INPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[INPUTS_ID] ?? document.presentation.positions[INPUTS_ID] ?? inputPosition, data: { label: tx("workflow.canvas.inputs"), inputs: [], outputs: document.inputs.map((input) => ({ id: input.id, label: workflowPortLabel(document, input, tx) })), readOnly, disabled, missing: false, virtual: 'input', open: () => onOpen(INPUTS_ID) } })
+    if (document.outputs.length) virtual.push({ id: OUTPUTS_ID, selected: selected === OUTPUTS_ID, type: 'workflow', dragHandle: '.workflow-node-drag', position: viewPositions[OUTPUTS_ID] ?? document.presentation.positions[OUTPUTS_ID] ?? outputPosition, data: { label: tx("workflow.canvas.outputs"), outputs: [], inputs: document.outputs.map((output) => ({ id: output.id, label: workflowPortLabel(document, output, tx), required: output.required, connected: true })), readOnly, disabled, missing: false, virtual: 'output', open: () => onOpen(OUTPUTS_ID) } })
     return [...virtual, ...execution].map((node) => ({ ...node, measured: measurements[node.id] }))
   }, [document, types, language, readOnly, disabled, steps, selected, viewPositions, measurements, onChange, onOpen, tx])
   useEffect(() => {
@@ -147,7 +149,7 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
       if (bounds.width * viewport.zoom > width - 2 * padding) await instance.setViewport({ ...viewport, x: padding - bounds.x * viewport.zoom })
     }} minZoom={0.15} maxZoom={2} defaultViewport={document.presentation.viewport} onlyRenderVisibleElements={false}
       nodesDraggable={!disabled} nodesConnectable={!readOnly && !disabled} edgesReconnectable={false} deleteKeyCode={readOnly || disabled ? null : ['Backspace', 'Delete']} panOnScroll panOnDrag zoomOnDoubleClick={false}
-      onNodeClick={(_, node) => { onSelect?.(node.id); setSelectedEdge(undefined) }} onPaneClick={() => { onSelect?.(); setSelectedEdge(undefined) }} onNodeDoubleClick={(_, node) => { if (!node.id.startsWith('$')) onOpen(node.id) }}
+      onNodeClick={(_, node) => { onSelect?.(node.id); setSelectedEdge(undefined) }} onPaneClick={() => { onSelect?.(); setSelectedEdge(undefined) }} onNodeDoubleClick={(_, node) => { if (!readOnly || !node.id.startsWith('$')) onOpen(node.id) }}
       onEdgeClick={(_, edge) => { setSelectedEdge(edge.id); onSelect?.() }} isValidConnection={valid}
       onConnect={(connection) => { if (valid(connection)) onChange?.(connect(document, { nodeId: connection.source, portId: connection.sourceHandle! }, { nodeId: connection.target, portId: connection.targetHandle! })) }}
       onNodeDragStart={() => { if (!readOnly && !disabled) onCheckpoint?.() }}
@@ -164,7 +166,7 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
       }}
       onEdgesDelete={(removed) => { if (!readOnly && !disabled) onChange?.({ ...document, edges: document.edges.filter((edge) => !removed.some((item) => item.id === edge.id)), outputs: document.outputs.filter((port) => !removed.some((item) => item.id === `output:${port.id}`)) }) }}
       onMoveEnd={(_, viewport) => { if (!readOnly && !disabled) onChange?.({ ...document, presentation: { ...document.presentation, viewport } }, false) }}
-      onKeyDown={(event) => { const target = event.target as HTMLElement; const id = target.closest('.react-flow__node')?.getAttribute('data-id'); if (event.key === 'Enter' && id && !id.startsWith('$') && !target.closest('input,button,textarea,select')) onOpen(id) }}
+      onKeyDown={(event) => { const target = event.target as HTMLElement; const id = target.closest('.react-flow__node')?.getAttribute('data-id'); if (event.key === 'Enter' && id && (!readOnly || !id.startsWith('$')) && !target.closest('input,button,textarea,select')) onOpen(id) }}
       ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': tx("workflow.canvas.zoom.in"), 'controls.zoomOut.ariaLabel': tx("workflow.canvas.zoom.out"), 'controls.fitView.ariaLabel': tx("workflow.canvas.fit.view") }}>
       <Background gap={24} size={1} /><Controls showInteractive={false} fitViewOptions={{ padding: 0.12, maxZoom: 1 }} />
     </ReactFlow>

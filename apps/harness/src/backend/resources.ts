@@ -9,17 +9,25 @@ import { parseWorkflowDocument } from '../../../../packages/builtin/src/workflow
 import { nodeTypes } from '../../../../packages/builtin/src/workflow-graph.ts'
 import { acceleratedGroups, providerResources } from '../../../../packages/builtin/src/runtime-resources.ts'
 import { readJson } from './transport.mjs'
+import { mergeResourceEntries, resourceEntries, type ResourceEntry, type ResourceNeed } from '../../../../packages/sdk/src/resource-state.ts'
+const runtimeSelections: Record<string, { providerId: string; groups: DependencyGroup[]; name: string }> = {
+  python: { providerId: '$runtime.python', groups: ['base'], name: 'Python' },
+  acceleration: { providerId: '$runtime.acceleration', groups: ['acceleration'], name: '推理运行库' },
+  resources: { providerId: '$runtime.punkt', groups: ['punkt'], name: '分句资源' },
+}
+const runtimeResource = (id: string) => Object.entries(runtimeSelections).find(([, item]) => item.providerId === id)
 type ModelStatus = 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
 export interface ModelDownload {
   id: string; name: string; variant: string; purpose: string; status: ModelStatus;
   received: number; total: number; speed: number; source?: string; error?: string; log?: string
 }
 export interface ResourceSelection { providerId: string; model?: string }
-export interface ResourceRequirement extends ResourceSelection {
+export interface ResourceRequirement extends ResourceSelection, ResourceNeed {
   ready: boolean; automatic: boolean; missingPackages: string[]; reason?: string; configurationRequired?: boolean
 }
 export interface ResourcePreparationSnapshot {
   status: 'missing' | 'preparing' | 'ready' | 'failed'
+  entries?: ResourceEntry[]
   selections: ResourceSelection[]
   requirements: ResourceRequirement[]
   environment: EnvironmentStep[]
@@ -84,6 +92,7 @@ export default class Resources extends Service {
     const selections = this.selections(value)
     const providers = this.catalog!.listProviders()
     for (const selection of selections) {
+      if (runtimeResource(selection.providerId) && !selection.model) continue
       const provider = providers.find(item => item.id === selection.providerId)
       if (!provider) throw new AppError('PROVIDER_UNAVAILABLE', `Provider ${selection.providerId} is not registered.`, 422)
       if (selection.model && selection.model !== providerResources(provider)?.model?.id && !provider.models?.some(model => model.id === selection.model)) {
@@ -91,6 +100,21 @@ export default class Resources extends Service {
       }
     }
     return selections
+  }
+  private snapshot(state: ResourcePreparationSnapshot) {
+    const current = { ...state, environment: state === this.resourceState && this.resourceJob ? this.resourceEnvironment.steps : state.environment }
+    return { ...current, entries: resourceEntries(current) }
+  }
+  async resourceTargets(ids: unknown) {
+    if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string')) throw new AppError('INVALID_INPUT', '请选择有效资源。', 422)
+    const inventory = await this.resourceInventory()
+    return this.catalogSelections(ids.map(id => {
+      const runtime = runtimeSelections[id]
+      if (runtime) return { providerId: runtime.providerId }
+      const item = inventory.items.find(item => (item.downloadId || (item.model ? `${item.providerId}:${item.model}` : item.providerId === 'youdub.media' ? 'ffmpeg' : item.providerId)) === id)
+      if (!item) throw new AppError('INVALID_INPUT', `未知资源：${id}`, 422)
+      return { providerId: item.providerId, ...(item.model ? { model: item.model } : {}) }
+    }))
   }
   async resourceInventory() {
     const providers = (this.catalog?.listProviders() || []).filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
@@ -103,11 +127,11 @@ export default class Resources extends Service {
         ...(resources?.model && model === resources.model.id ? { downloadId: resources.model.downloadId } : {}),
       }))
     })
+    for (const runtime of Object.values(runtimeSelections)) items.push({ providerId: runtime.providerId, label: runtime.name, automatic: true })
     const models = this.models.filter(model => items.some(item => item.downloadId === model.id))
     await this.refreshModelSizes(models)
     return { version: this.config.version, platform: process.platform, arch: process.arch, osVersion: release(), homeDir: homedir(),
-      environment: this.environment.steps, items, models, resources: this.resourceState && { ...this.resourceState,
-        environment: this.resourceJob ? this.resourceEnvironment.steps : this.resourceState.environment } }
+      environment: this.environment.steps, items, models, resources: this.resourceState && this.snapshot(this.resourceState) }
   }
   async resourceAction(action: string, id?: string) {
     if (!['pause', 'resume', 'retry'].includes(action) || (id !== undefined && typeof id !== 'string')) throw new AppError('INVALID_INPUT', 'Invalid resource action or model.', 422)
@@ -137,6 +161,8 @@ export default class Resources extends Service {
   private groups(selections: ResourceSelection[]) {
     const providers = this.catalog?.listProviders() ?? []
     return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => {
+      const runtime = runtimeResource(item.providerId)
+      if (runtime) return runtime[1].groups
       const provider = providers.find(provider => provider.id === item.providerId)
       return provider ? providerResources(provider)?.dependencyGroups ?? [] : []
     })])]
@@ -157,15 +183,25 @@ export default class Resources extends Service {
     // A user may have installed a package/model outside this process. Refresh
     // only this graph's providers so validation sees the same current readiness.
     if (this.catalog) for (const providerId of new Set(selections.map(item => item.providerId))) {
-      await this.catalog.provider(providerId).probe()
+      if (!runtimeResource(providerId)) await this.catalog.provider(providerId).probe()
     }
     for (const selection of selections) {
+      const runtime = runtimeResource(selection.providerId)
+      if (runtime) {
+        const [resourceId, definition] = runtime
+        const result = await inspect(definition.groups)
+        for (const name of result.missing) missingPackages.add(name)
+        if (!result.punkt) punktReady = false
+        requirements.push({ ...selection, resourceId, name: definition.name, dependencies: resourceId === 'python' ? [] : ['python'], ready: !result.missing.length && result.punkt, automatic: true, missingPackages: result.missing,
+          ...((result.missing.length || !result.punkt) ? { reason: result.missing.length ? `缺少运行依赖：${result.missing.join(', ')}` : '缺少分句资源。' } : {}) })
+        continue
+      }
       const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
       const resources = provider && providerResources(provider)
       const groups = resources?.dependencyGroups
       if (!groups) {
         const ready = provider?.available === true && (!selection.model || provider.models?.some(model => model.id === selection.model) === true)
-        requirements.push({ ...selection, ready, automatic: false, missingPackages: [],
+        requirements.push({ ...selection, remote: provider?.execution === 'remote', resourceId: selection.model ? `${selection.providerId}:${selection.model}` : selection.providerId, name: typeof provider?.label === 'string' ? provider.label : selection.providerId, ready, automatic: false, missingPackages: [],
           ...(!ready ? { reason: provider?.unavailableReason || '请根据该插件的要求准备运行依赖。' } : {}) })
         continue
       }
@@ -194,7 +230,8 @@ export default class Resources extends Service {
         }
       }
       if (!reason && provider?.available !== true) reason = provider?.unavailableReason || '运行服务尚未就绪。'
-      requirements.push({ ...selection, ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
+      requirements.push({ ...selection, remote: provider?.execution === 'remote', resourceId: modelId && automatic ? modelId : selection.model ? `${selection.providerId}:${selection.model}` : selection.providerId === 'youdub.media' ? 'ffmpeg' : selection.providerId, name: modelId ? modelManifest.find(model => model.id === modelId)!.name : typeof provider?.label === 'string' ? provider.label : selection.providerId, downloadId: automatic ? modelId : undefined,
+        dependencies: ['python', ...(groups.some(group => acceleratedGroups.includes(group)) ? ['acceleration'] : []), ...(groups.includes('media') && selection.providerId !== 'youdub.media' ? ['ffmpeg'] : []), ...(groups.includes('whisper') ? ['resources'] : [])], ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
     }
     const models = this.models.filter(model => requiredModels.has(model.id))
     await this.refreshModelSizes(models)
@@ -207,7 +244,7 @@ export default class Resources extends Service {
       }
     }
     const groups = this.groups(selections)
-    const environment: EnvironmentStep[] = this.environment.steps.filter(step => step.id === 'python').map(step => ({ ...step, detail: [step.detail, this.config.python].filter(Boolean).join(' · ') }))
+    const environment: EnvironmentStep[] = this.environment.steps.filter(step => step.id === 'python').map(step => ({ ...step, status: base.missing.length ? 'pending' as const : step.status, detail: [step.detail, this.config.python, ...base.missing].filter(Boolean).join(' · ') }))
     if (groups.some(group => acceleratedGroups.includes(group))) {
       const plan = await this.resourceEnvironment.probe('acceleration-plan')
       if (plan.installed) {
@@ -218,8 +255,12 @@ export default class Resources extends Service {
     }
     environment.push({ id: 'dependencies', name: groups.length > 1 ? '运行依赖' : '基础运行依赖', status: missingPackages.size ? 'pending' : 'ready', ...(missingPackages.size ? { detail: `缺少：${[...missingPackages].join(', ')}` } : {}) })
     if (groups.includes('media')) environment.push({ id: 'ffmpeg', name: 'FFmpeg', status: mediaReady ? 'ready' : 'pending', ...(mediaReason ? { detail: mediaReason } : {}) })
-    if (groups.includes('whisper')) environment.push({ id: 'resources', name: '分句资源', status: punktReady ? 'ready' : 'pending' })
-    return { status: !missingPackages.size && requirements.every(item => item.ready) ? 'ready' : 'missing', selections, requirements, models, environment }
+    if (groups.includes('whisper') || groups.includes('punkt')) environment.push({ id: 'resources', name: '分句资源', status: punktReady ? 'ready' : 'pending' })
+    for (const requirement of requirements) {
+      const dependency = environment.find(step => (step.id === requirement.resourceId || requirement.dependencies?.includes(step.id)) && step.status !== 'ready')
+      if (dependency) { requirement.ready = false; requirement.reason ??= dependency.detail || `${dependency.name} 尚未就绪。` }
+    }
+    return this.snapshot({ status: !missingPackages.size && requirements.every(item => item.ready) ? 'ready' : 'missing', selections, requirements, models, environment })
   }
   private async refreshModelSizes(models: ModelDownload[]) {
     for (const model of models) {
@@ -236,17 +277,18 @@ export default class Resources extends Service {
     const previous = this.resourceState
     const sameSelection = previous && JSON.stringify(previous.selections) === JSON.stringify(selections)
     if (sameSelection && (this.resourceJob || (previous.status === 'failed' && !previous.requirements.some(item => item.configurationRequired)))) {
-      return { ...previous, environment: this.resourceEnvironment.steps }
+      return this.snapshot({ ...previous, environment: this.resourceEnvironment.steps })
     }
     const inspected = await this.inspectResources(selections)
     if (sameSelection && this.resourceState === previous && !this.resourceJob) {
       this.resourceState = previous.status === 'failed' && inspected.status !== 'ready'
         ? { ...inspected, status: 'failed', error: previous.error, environment: this.resourceEnvironment.steps }
         : inspected
-      return this.resourceState
+      return this.snapshot(this.resourceState)
     }
     if (this.resourceState && JSON.stringify(this.resourceState.selections) !== JSON.stringify(selections)) {
       inspected.activePreparation = { selections: this.resourceState.selections, status: this.resourceState.status, ...(this.resourceState.error ? { error: this.resourceState.error } : {}) }
+      inspected.entries = mergeResourceEntries(inspected.entries ?? [], this.snapshot(this.resourceState).entries)
     }
     return inspected
   }
@@ -277,8 +319,7 @@ export default class Resources extends Service {
       const failed = this.resourceState!.models.find(model => model.status === 'failed')
       if (failed) throw new Error(`${failed.name}: ${failed.error}`)
       if (this.resourceState!.models.some(model => model.status !== 'ready')) {
-        this.resourceState!.status = 'missing'
-        this.resourceState!.environment = this.resourceEnvironment.steps
+        this.resourceState = { ...await this.inspectResources(selections), environment: this.resourceEnvironment.steps }
         return
       }
       await this.resourceEnvironment.probe('verify', this.groups(selections))
@@ -290,7 +331,7 @@ export default class Resources extends Service {
       this.resourceState!.status = 'failed'; this.resourceState!.error = message(error); this.resourceState!.environment = this.resourceEnvironment.steps
       this.ctx.logger.error(error)
     }).finally(() => { this.resourceJob = undefined })
-    return { ...this.resourceState, environment: this.resourceEnvironment.steps }
+    return this.snapshot({ ...this.resourceState, environment: this.resourceEnvironment.steps })
   }
   private root(id: string) {
     return this.config.modelRoots[id]!
@@ -335,8 +376,9 @@ export function registerResourceRoutes(ctx: any, http: any) {
   route('GET', '/api/v2/resources', async request => http.json(request, 200, await ctx.youdubResources.resourceInventory()))
   for (const action of ['check', 'prepare'] as const) {
     route('POST', `/api/v2/resources/${action}`, async request => {
-      const { selections } = await readJson(request)
-      const selected = ctx.youdubResources.catalogSelections(selections)
+      const { selections, resourceIds } = await readJson(request)
+      if (selections && resourceIds) throw new AppError('INVALID_INPUT', '资源选择不能同时包含 selections 和 resourceIds。', 422)
+      const selected = resourceIds ? await ctx.youdubResources.resourceTargets(resourceIds) : ctx.youdubResources.catalogSelections(selections)
       http.json(request, 200, await ctx.youdubResources[action === 'check' ? 'checkResources' : 'prepareResources'](selected))
     })
     route('POST', `/api/v2/workflow-documents/resources/${action}`, async request => {
@@ -350,8 +392,9 @@ export function registerResourceRoutes(ctx: any, http: any) {
     })
   }
   route('POST', '/api/v2/resources/action', async request => {
-    const { action, id } = await readJson(request)
-    await ctx.youdubResources.resourceAction(action, id)
+    const { action, id, resourceId } = await readJson(request)
+    if (resourceId && action === 'retry') await ctx.youdubResources.prepareResources(await ctx.youdubResources.resourceTargets([resourceId]))
+    else await ctx.youdubResources.resourceAction(action, id || resourceId)
     http.json(request, 200, await ctx.youdubResources.resourceInventory())
   })
 }

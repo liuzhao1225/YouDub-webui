@@ -83,7 +83,7 @@ it('restores history only on the results tab and never pairs old translation wit
   expect(screen.queryByText('Original source')).not.toBeInTheDocument()
   expect(screen.getByLabelText('译文 1')).toHaveValue('原始译文')
   expect(screen.getByRole('button', { name: '将此版本恢复为订正' })).toBeEnabled()
-  await userEvent.click(screen.getByRole('button', { name: '配置' }))
+  await userEvent.click(screen.getByRole('tab', { name: '配置' }))
   expect(screen.queryByRole('button', { name: '将此版本恢复为订正' })).not.toBeInTheDocument()
   expect(screen.getByText('测试服务')).toBeInTheDocument()
   expect(screen.getByText('原始配置').closest('details')).not.toHaveAttribute('open')
@@ -144,7 +144,7 @@ it('offers reload after an initial read failure and shows running progress', asy
   await screen.findByText('Read interrupted')
   await userEvent.click(screen.getByRole('button', { name: '重新加载' }))
   expect(await screen.findByText('正在识别第 2 段')).toBeInTheDocument()
-  expect(screen.getByRole('progressbar', { name: '节点进度' })).toHaveAttribute('value', '0.4')
+  expect(screen.getByRole('progressbar', { name: '节点进度' })).toHaveAttribute('aria-valuenow', '40')
 })
 
 it('uses node names in rerun preview and supplies a search empty state', async () => {

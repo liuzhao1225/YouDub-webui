@@ -1,3 +1,4 @@
+import { Choice } from '@/components/ui/native-select'
 import { ArrowDownToLine, Loader2 } from '@/lib/icons'
 import { Link, type Bindings } from '@/plugin/sdk'
 export { UpdateProvider } from '@/plugin/sdk'
@@ -26,7 +27,7 @@ export function UpdateSettings({ useUpdates }: Bindings<'useUpdates'>) {
   return <SectionCard title={tx("app.updates.software.update")}>
     <div className="space-y-4 p-6">
       {updates.info && <p className="text-sm">YouDub {updates.info.currentVersion}</p>}
-      {updates.info?.supported && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={updates.info.automatic} disabled={updates.busy} onChange={event => updates.setAutomatic(event.target.checked)} />{tx("app.updates.check.automatically.every.hour")}</label>}
+      {updates.info?.supported && <Choice label={tx("app.updates.check.automatically.every.hour")} checked={updates.info.automatic} disabled={updates.busy} onChange={event => updates.setAutomatic(event.target.checked)} />}
       {updates.error && <InlineAlert>{updates.error}</InlineAlert>}
       {updates.info && !updates.info.supported ? <p className="text-sm text-muted-foreground">{tx("app.updates.no.desktop.package.is.published.for.this.platform")}</p> : <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" disabled={updates.busy} onClick={updates.check}>{updates.busy && <Loader2 className="animate-spin" />}{tx("app.updates.check.for.updates")}</Button>

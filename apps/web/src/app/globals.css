@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/base.css";
-@import "shadcn/tailwind.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/corner-shape.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/gradient-shadow-text.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/focus.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -93,24 +95,52 @@
 
 /* 浅色主题 */
 :root {
-  --dsw-alias-border-l4: var(--input);
+  /* Single color bridge: the native build reads these same aliases. */
+  --dsw-alias-bg-base: var(--background);
+  --dsw-alias-bg-layer-1: var(--card);
+  --dsw-alias-bg-layer-2: var(--elevated);
+  --dsw-alias-bg-layer-3: var(--elevated);
+  --dsw-alias-bg-overlay: var(--popover);
+  --dsw-alias-bg-module-platform: var(--muted);
+  --dsw-alias-label-primary: var(--foreground);
+  --dsw-alias-label-secondary: var(--muted-foreground);
+  --dsw-alias-label-tertiary: var(--muted-foreground);
+  --dsw-alias-label-caption: var(--subtle-foreground);
+  --dsw-alias-label-dimmed: var(--subtle-foreground);
+  --dsw-alias-label-primary-foreground: var(--primary-foreground);
+  --dsw-alias-label-error: var(--status-danger-fg);
+  --dsw-alias-border-l1: var(--border);
+  --dsw-alias-border-l2: var(--border);
   --dsw-alias-border-l3: var(--border);
+  --dsw-alias-border-l4: var(--input);
+  --dsw-alias-brand-primary: var(--primary);
   --dsw-alias-button-primary-fill: var(--primary);
   --dsw-alias-button-primary-hover: var(--primary-hover);
-  --dsw-alias-label-primary-foreground: var(--primary-foreground);
+  --dsw-alias-button-tool-bar-fill: var(--muted);
+  --dsw-alias-button-tool-bar-hover: var(--accent);
   --dsw-alias-interactive-bg-hover: var(--accent);
   --dsw-alias-interactive-bg-active: var(--muted);
   --dsw-alias-state-business-primary: var(--link);
-  --dsw-alias-bg-layer-1: var(--input-bg);
-  --dsw-alias-bg-base: var(--input-bg);
-  --dsw-alias-label-primary: var(--foreground);
-  --dsw-alias-label-tertiary: var(--muted-foreground);
-  --dsw-alias-label-dimmed: var(--subtle-foreground);
-  --dsw-font-xs-13: 13px/20px var(--app-font-sans);
+  --dsw-alias-state-success-primary: var(--status-success-fg);
+  --dsw-alias-state-error-primary: var(--status-danger-fg);
+  --dsw-alias-state-warn-primary: var(--status-warning-fg);
+  --dsw-alias-state-idle-primary: var(--status-neutral-fg);
+  --dsw-alias-switch-thumb: var(--foreground);
+  --dsw-alias-state-warn-label: var(--status-warning-fg);
+  --dsw-alias-settings-card-fill: var(--card);
+  --dsw-alias-settings-card-stroke: var(--input);
+  --dsw-alias-interactive-bg-hover-solid: var(--accent);
+  --dsw-alias-interactive-bg-hover-danger: color-mix(in srgb, var(--status-danger) 10%, transparent);
+  --dsw-alias-scrollbar-bg-l2: var(--scrollbar);
+  --dsw-alias-scrollbar-hover-l2: var(--muted-foreground);
+  --dsw-alias-tooltip-bg: #25252d;
+  --dsw-static-neutral-bluish-00: #ffffff;
+  --dsw-alias-bg-mask-1: rgb(0 0 0 / 0.4);
+  --dsw-menu-surface-fill: color-mix(in srgb, var(--elevated) 75%, transparent);
+  --dsw-font-xs-13: 13px/20px var(--dsw-font-family);
   /* 界面字体跟随各平台的系统字体。 */
-  --app-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-    "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
-  --app-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --app-font-sans: var(--dsw-font-family);
+  --app-font-mono: var(--ds-font-family-code);
 
   /* Logo 原色 */
   --brand-red: #ff0033;
@@ -164,7 +194,7 @@
   --chart-3: #fb7299;
   --chart-4: #006f99;
   --chart-5: #a90038;
-  --radius: 0.75rem;
+  --radius: var(--dsw-radius-md);
   --sidebar: #fbfbfc;
   --sidebar-foreground: #0b0b0f;
   --sidebar-primary: var(--primary);
@@ -201,7 +231,6 @@
   --destructive: #ff6b81;
   --border: rgb(255 255 255 / 0.08);
   --input: #383840;
-  --ring: #00739f;
   --link: #3cc4f5;
   --status-success-fg: #5fd0f5;
   --status-running-fg: #ff9ab8;

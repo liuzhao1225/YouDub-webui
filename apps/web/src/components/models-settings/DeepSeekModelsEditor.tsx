@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
@@ -13,7 +14,7 @@ import {
   IconChevronDownOutline14, IconChevronRightOutline14, IconPlusOutline16, IconTrashOutline16,
 } from './primitives'
 import type { en } from './locales'
-import styles from './ModelsSection.module.css'
+import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/ModelsSection.module.css'
 
 /** One catalog entry kept structurally open so hidden or future fields survive an edit. */
 export type DeepSeekModelDraft = Record<string, unknown>
@@ -275,14 +276,14 @@ export function DeepSeekModelsEditor(props: DeepSeekModelsEditorProps): ReactNod
         </div>
         {props.overridden
           ? (
-            <button
+            <Button
               type="button"
-              className={styles['linkButton']}
+              variant="ghost" size="sm"
               disabled={props.disabled}
               onClick={reset}
             >
               {props.t('resetModels')}
-            </button>
+            </Button>
           )
           : null}
       </div>
@@ -319,26 +320,26 @@ export function DeepSeekModelsEditor(props: DeepSeekModelsEditorProps): ReactNod
                       update(index, 'name', event.target.value === '' ? undefined : event.target.value)
                     }}
                   />
-                  <button
+                  <Button
                     type="button"
-                    className={styles['iconButton']}
+                    variant="ghost" size="icon-sm"
                     aria-label={`${props.t('modelAdvanced')} ${String(index + 1)}`}
                     aria-expanded={expanded.has(index)}
                     title={props.t('modelAdvanced')}
                     onClick={() => { toggle(index) }}
                   >
                     {expanded.has(index) ? <IconChevronDownOutline14 /> : <IconChevronRightOutline14 />}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className={`${styles['iconButton']} ${styles['iconButtonDanger']}`}
+                    variant="destructive" size="icon-sm"
                     aria-label={`${props.t('removeModel')} ${String(index + 1)}`}
                     title={props.t('removeModel')}
                     disabled={props.disabled}
                     onClick={() => { remove(index) }}
                   >
                     <IconTrashOutline16 size={14} />
-                  </button>
+                  </Button>
                 </div>
                 {expanded.has(index)
                   ? (
@@ -352,15 +353,15 @@ export function DeepSeekModelsEditor(props: DeepSeekModelsEditorProps): ReactNod
             ))}
           </div>
         )}
-      <button
+      <Button
         type="button"
-        className={styles['addModelButton']}
+        variant="outline" size="default"
         disabled={props.disabled}
         onClick={() => { props.onChange([...props.models.map(model => ({ ...model })), { id: '' }]) }}
       >
         <IconPlusOutline16 size={14} />
         {props.t('addModel')}
-      </button>
+      </Button>
     </section>
   )
 }

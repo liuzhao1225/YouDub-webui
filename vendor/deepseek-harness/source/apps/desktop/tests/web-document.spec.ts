@@ -86,3 +86,26 @@ it('refuses another page origin without forwarding its request', async () => {
   expect(response.status).toBe(403)
   expect(fetch).not.toHaveBeenCalled()
 })
+
+
+it('preserves media byte ranges and uncompressed lengths for native seeking', async () => {
+  const fetch = vi.fn().mockResolvedValue(new Response('audio', { status: 206, headers: {
+    'content-type': 'audio/wav', 'content-length': '5', 'content-range': 'bytes 10-14/100', 'accept-ranges': 'bytes',
+  } }))
+  vi.stubGlobal('fetch', fetch)
+  const response = await forwardWebRequest(new Request('dsh-app://app/api/audio', { headers: { range: 'bytes=10-14' } }), 'http://127.0.0.1:1234/', 'session=owned')
+  expect(new Headers(fetch.mock.calls[0][1].headers).get('range')).toBe('bytes=10-14')
+  expect(response.status).toBe(206)
+  expect(response.headers.get('content-length')).toBe('5')
+  expect(response.headers.get('content-range')).toBe('bytes 10-14/100')
+  expect(response.headers.get('accept-ranges')).toBe('bytes')
+  expect(await response.text()).toBe('audio')
+})
+
+it('drops encoded length after Node fetch decompresses a response', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('decoded', { headers: { 'content-encoding': 'gzip', 'content-length': '40' } })))
+  const response = await forwardWebRequest(new Request('dsh-app://app/api/read'), 'http://127.0.0.1:1234/', 'session=owned')
+  expect(response.headers.get('content-length')).toBeNull()
+  expect(response.headers.get('content-encoding')).toBeNull()
+  expect(await response.text()).toBe('decoded')
+})

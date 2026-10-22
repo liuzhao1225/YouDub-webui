@@ -202,7 +202,7 @@ it('counts review nodes even while their independent branch is running', async (
   const review = await screen.findByRole('link', { name: '1 个节点待确认' })
   expect(review).toHaveAttribute('href', '/tasks/review/nodes/translate')
   expect(screen.getByRole('link', { name: '1 个任务正在处理' })).toBeInTheDocument()
-  expect(screen.getByRole('progressbar', { name: '生成配音 进度' })).toHaveValue(0.5)
+  expect(screen.getByRole('progressbar', { name: '生成配音 进度' })).toHaveAttribute('aria-valuenow', '50')
 })
 
 it('shows the selected file and clears it before allowing a fresh selection', async () => {

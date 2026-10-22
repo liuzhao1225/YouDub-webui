@@ -1,14 +1,15 @@
 /** YouDub prop vocabulary mapped to unchanged Harness controls. */
 import React, { Children, Fragment, createContext, forwardRef, isValidElement, useContext, useId, useState } from 'react'
-import { Button as HarnessButton, Input as HarnessInput, Menu, Checkbox, Switch as HarnessSwitch, SegmentedTabs, Tooltip as HarnessTooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button as HarnessButton, Input as HarnessInput, Menu, Checkbox, Switch as HarnessSwitch, SegmentedControl, Tooltip as HarnessTooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { IconChevronDown } from '@tabler/icons-react'
+import state from '../../../web/src/components/ui/control-state.module.css'
 import { cn } from '../../../web/src/lib/utils'
 export { buttonVariants } from '../../../web/src/components/ui/button-styles'
 export const Button = forwardRef<HTMLButtonElement, any>(function Button({ variant = 'default', size = 'default', className = '', ...props }, ref) {
   const variants: Record<string, any> = { default:'primary', primary:'primary', outline:'outline', secondary:'outline', tint:'ghost', ghost:'ghost', destructive:'outline', link:'ghost', toolbar:'toolbar' }
-  return <HarnessButton {...props} ref={ref} variant={variants[variant] ?? variant} size={['xs','sm','icon-xs','icon-sm'].includes(size) ? 'sm' : 'md'} className={cn('[&_svg]:size-4 [&_svg]:shrink-0',size.startsWith('icon')&&'size-8 p-0',size==='xl'&&'h-11',className)} />
+  return <HarnessButton {...props} ref={ref} variant={variants[variant] ?? variant} size={['xs','sm','icon-xs','icon-sm'].includes(size) ? 'sm' : 'md'} className={cn('[&_svg]:size-4 [&_svg]:shrink-0',size.startsWith('icon')&&'p-0',size==='icon-xs'&&'size-7',size==='icon-sm'&&'size-8',size==='icon'&&'size-9',size==='icon-lg'&&'size-10',variant==='destructive'&&'text-status-danger-fg',variant==='link'&&'text-link',size==='xl'&&'h-11',className)} />
 })
-export const Input = forwardRef<HTMLInputElement,React.ComponentProps<typeof HarnessInput>>(function Input({className,...props},ref) { return <HarnessInput {...props} ref={ref} className={cn('w-full min-w-0',className)} /> })
+export const Input = forwardRef<HTMLInputElement,React.ComponentProps<typeof HarnessInput>>(function Input({className,...props},ref) { return <HarnessInput {...props} ref={ref} className={cn(state.input,'w-full min-w-0',className)} /> })
 export function Label(props: React.LabelHTMLAttributes<HTMLLabelElement>) { return <label {...props} /> }
 export function Tooltip({ content, children, side = 'top' }: any) { return <HarnessTooltip portal label={typeof content === 'string' ? content : String(content ?? '')} side={side === 'left' ? 'right' : side}>{children}</HarnessTooltip> }
 function childrenItems(children: React.ReactNode): { id:string; label:React.ReactNode; disabled?:boolean }[] {
@@ -41,6 +42,6 @@ export function Choice({ checked, onChange, disabled, title, label, 'aria-label'
   return <Checkbox checked={!!checked} disabled={disabled} title={title} label={label ?? ariaLabel ?? ''} className={className} onChange={next => onChange?.({ target:{ checked:next }, currentTarget:{ checked:next } })} />
 }
 export function Switch({ checked, onCheckedChange, onChange, label, 'aria-label':ariaLabel, disabled, title, className }:any) { return <HarnessSwitch checked={!!checked} onChange={onCheckedChange ?? onChange} label={label ?? ariaLabel ?? ''} disabled={disabled} title={title} className={className} /> }
-export function Segmented({ value,onChange,options,ariaLabel,className }:any) { const id=useId(); return <SegmentedTabs value={value} onChange={onChange} label={ariaLabel} className={cn('inline-grid [&_svg]:size-4 [&_svg]:shrink-0',className)} items={options.map((option:any) => ({value:option.value,label:<span className="inline-flex items-center gap-1.5" aria-label={option.ariaLabel}>{option.icon}{option.label}</span>,id:`${id}-${option.value}`,panelId:`${id}-${option.value}-panel`}))} /> }
+export function Segmented({ id, value,onChange,options,ariaLabel,className,disabled }:any) { const generatedId=useId(); return <SegmentedControl id={id ?? generatedId} value={value} onChange={onChange} label={ariaLabel} disabled={disabled} className={cn('inline-grid [&_svg]:size-4 [&_svg]:shrink-0',className)} options={options} /> }
 
 export { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
