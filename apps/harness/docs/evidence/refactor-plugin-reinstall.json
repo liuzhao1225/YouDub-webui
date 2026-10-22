@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T12:54:47.089Z",
+  "scope": "P5 real profile plugin linked-to-physical reinstallation",
+  "baseCommit": "3e439abd6548b925a378845cb934d067243b493a",
+  "sourceTreeSha256": "1fcf9bdb51fd5dab92e1fa487a51357fede95809b2bbc5cf818db07659ee886d",
+  "cause": "Top-level local packages have no shared-dependency entry. The relocation table missed the physical profile directory after unlink/uninstall/reinstall. CommonJS candidate ownership also compared the stale path before relocation.",
+  "fix": "Use declared profile-local node_modules paths for former links; relocate native CommonJS candidates before ownership checks. Existing loaded module caches remain caller-owned.",
+  "validation": {
+    "runtime": "Electron Node 24.21.0",
+    "profileResolutionTests": {
+      "passed": 234,
+      "log": "/tmp/youdub-reinstall-profile-tests.log"
+    },
+    "bootAndPluginManager": {
+      "passed": 6197,
+      "skipped": 1,
+      "files": 33,
+      "temporaryDiagnosticTestsIncluded": 233,
+      "log": "/tmp/youdub-reinstall-boot-manager-tests.log"
+    },
+    "sourceBuild": {
+      "passed": 7,
+      "log": "/tmp/youdub-reinstall-build-final.log"
+    },
+    "realDesktopHost": {
+      "passed": 2,
+      "log": "/tmp/youdub-reinstall-real-host.log"
+    },
+    "bilingualPair": true,
+    "ui": {
+      "app": "com.youdub.review-validation",
+      "hostPid": 10706,
+      "operations": [
+        "link install",
+        "enable: running",
+        "disable: stopped",
+        "uninstall",
+        "file install",
+        "enable: running"
+      ],
+      "sameHostProcess": true,
+      "physicalProfileDirectory": true,
+      "sdk": "Isolated application SDK; no original Harness runtime dependency",
+      "task": {
+        "id": "7f393907-4862-4e76-8d83-96bd04352a25",
+        "status": "succeeded",
+        "revision": 4,
+        "completedSteps": 1,
+        "artifact": {
+          "name": "uppercase.txt",
+          "bytes": 62,
+          "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d",
+          "httpStatus": 200,
+          "exactUppercaseMatch": true
+        }
+      },
+      "screens": [
+        {
+          "file": "refactor-plugin-reinstall-running.png",
+          "sha256": "17688782e13b53b85886b9cfbe5f004a94b18ec2420b48bc9743ee0b0c0652c7"
+        },
+        {
+          "file": "refactor-plugin-reinstall-task.png",
+          "sha256": "c07a7dfdb8f53ef6c3034b9cb374f7956ab1e07b91c2e8a6123fd994600afcec"
+        }
+      ]
+    },
+    "ci": "pending"
+  },
+  "failuresPreserved": [
+    {
+      "log": "/tmp/youdub-reinstall-regression-before.log",
+      "result": "Regression fails with old source directory"
+    },
+    {
+      "log": "/tmp/youdub-reinstall-regression-after.log",
+      "result": "ESM repaired; CommonJS ownership lookup still fails"
+    },
+    {
+      "log": "/tmp/youdub-reinstall-regression-after-full.log",
+      "result": "Test initially expected module cache eviction beyond resolver contract; changed initial CommonJS warmup to resolve-only, retaining ESM actual import and final CommonJS actual load"
+    },
+    {
+      "screenshot": "/tmp/youdub-python-reinstall-failed.png",
+      "result": "Pre-fix UI package was enabled but component not running"
+    }
+  ],
+  "limits": [
+    "Mac remains locked. Browser operates the isolated Desktop Host; native save dialog acceptance remains open.",
+    "Browser download event timed out; artifact HTTP/readback passed. Do not report native export success.",
+    "Other extension lifecycle cases and overall P0-P7 are unfinished.",
+    "No packaging or release."
+  ]
+}

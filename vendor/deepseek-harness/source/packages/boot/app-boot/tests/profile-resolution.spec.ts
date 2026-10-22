@@ -1720,6 +1720,43 @@ describe('runtime resolution', { concurrent: false }, () => {
     expect(createRequire(parentPath).resolve('linked-lib')).toBe(join(realpathSync.native(link), 'index.cjs'))
   })
 
+  it('reinstalls a former linked top-level package from a physical profile directory', async () => {
+    const f = fixture()
+    const name = 'reinstalled-plugin'
+    const source = join(f.root, 'work', name)
+    const installed = join(f.profile.dir, 'node_modules', name)
+    const manifest = join(f.profile.dir, 'package.json')
+    const save = (dependencies: Record<string, string>) => file(manifest, JSON.stringify({
+      name: 'dsh-profile-web', private: true, dependencies,
+    }))
+    pkg(source, name, 1)
+    mkdirSync(dirname(installed), { recursive: true })
+    symlinkSync(source, installed, process.platform === 'win32' ? 'junction' : 'dir')
+    save({ [name]: `link:${source}` })
+    const parent = pathToFileURL(join(f.profile.dir, 'entry.mjs')).href
+    const require = createRequire(parent)
+    const registration = installRuntimeInterception(await resolutionOf(f))
+    registrations.push(registration)
+    expect((await importFrom(name, parent)).marker).toBe(1)
+    expect(require.resolve(name)).toBe(join(source, 'index.cjs'))
+
+    unlinkSync(installed)
+    save({})
+    registration.replace(await resolutionOf(f))
+    pkg(installed, name, 2)
+    save({ [name]: `file:${source}` })
+    const successor = await resolutionOf(f)
+    expect(successor.localPackageNames).toContain(name)
+    expect(successor.linkedRoots).toEqual([])
+    expect(successor.entries.some(entry => entry.name === name)).toBe(false)
+    registration.replace(successor)
+
+    expect(fileURLToPath(resolveFrom(name, parent))).toBe(join(installed, 'index.js'))
+    expect((await importFrom(name, parent)).marker).toBe(2)
+    expect(require.resolve(name)).toBe(join(installed, 'index.cjs'))
+    expect(require(name).marker).toBe(2)
+  })
+
   it('rejects a retained profile package moved to another directory, and maps it there once it was removed', async () => {
     const f = fixture()
     const firstDir = join(f.root, 'bundle-a', 'node_modules', 'private-lib')

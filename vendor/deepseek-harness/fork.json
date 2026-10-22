@@ -9132,6 +9132,24 @@
       "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
     },
     {
+      "path": "packages/boot/app-boot/README.i18n.yaml",
+      "before": {
+        "path": "packages/boot/app-boot/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2644,
+        "sha256": "9fbfc9f84ff294e58640a2cad47a8aaf1177f6e22aec1a7a437ccaa61f02979e"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2644,
+        "sha256": "393888ef1cde8bff58706219af55296fe263b67dbf31624e9a1236dc879bb2ce"
+      },
+      "reason": "Repair linked-to-physical top-level plugin reinstallation using actual profile declarations; relocate CommonJS lookup results before physical ownership checks. Preserve existing module-cache ownership and verify real profile generations."
+    },
+    {
       "path": "packages/boot/app-boot/README.md",
       "before": {
         "path": "packages/boot/app-boot/README.md",
@@ -9144,10 +9162,10 @@
         "path": "packages/boot/app-boot/README.md",
         "type": "file",
         "executable": false,
-        "size": 35276,
-        "sha256": "19f22d97aea12e9a6c9b7093ee7773a2767d690a2cb4c06d45333ad7cf0a8634"
+        "size": 35510,
+        "sha256": "70e94393bcba8403abe075fa10d07325ca59a090862bf6f41d6c75d96bc5324f"
       },
-      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub. Repair linked-to-physical top-level plugin reinstallation using actual profile declarations; relocate CommonJS lookup results before physical ownership checks. Preserve existing module-cache ownership and verify real profile generations."
     },
     {
       "path": "packages/boot/app-boot/README.zh.md",
@@ -9162,10 +9180,10 @@
         "path": "packages/boot/app-boot/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 32764,
-        "sha256": "dad7b737cb5c65a1adcefa58ab54f0b31021e1cca1d08058c1d0bae27443b16f"
+        "size": 32925,
+        "sha256": "0d04723a35a67790e9ef83faada7a3dc17576f3e46a0b7d0d5f60cf511ef9f66"
       },
-      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub. Repair linked-to-physical top-level plugin reinstallation using actual profile declarations; relocate CommonJS lookup results before physical ownership checks. Preserve existing module-cache ownership and verify real profile generations."
     },
     {
       "path": "packages/boot/app-boot/src/official-bundle-packages.ts",
@@ -9204,6 +9222,24 @@
       "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
     },
     {
+      "path": "packages/boot/app-boot/src/profile-resolution/resolver.ts",
+      "before": {
+        "path": "packages/boot/app-boot/src/profile-resolution/resolver.ts",
+        "type": "file",
+        "executable": false,
+        "size": 48788,
+        "sha256": "a32f79dfd944a15c0839f2690860deb73658a138ebaba92a039257b68cf22f0c"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/src/profile-resolution/resolver.ts",
+        "type": "file",
+        "executable": false,
+        "size": 49316,
+        "sha256": "71f516e9c9dd99748456f7329d0e2643c23f6f1f5786541990eb6f348fe23066"
+      },
+      "reason": "Repair linked-to-physical top-level plugin reinstallation using actual profile declarations; relocate CommonJS lookup results before physical ownership checks. Preserve existing module-cache ownership and verify real profile generations."
+    },
+    {
       "path": "packages/boot/app-boot/src/profile.ts",
       "before": {
         "path": "packages/boot/app-boot/src/profile.ts",
@@ -9232,6 +9268,24 @@
       },
       "after": null,
       "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/tests/profile-resolution.spec.ts",
+      "before": {
+        "path": "packages/boot/app-boot/tests/profile-resolution.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 139373,
+        "sha256": "f999a9eaa8070cd29ccc3e7f6532becf1f67b45b900490f48f9255ed4b9da4cc"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/tests/profile-resolution.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 141097,
+        "sha256": "bda311532ca4032a722afeb86f94dab76307405aa63282a27a8ff90a5d2754aa"
+      },
+      "reason": "Repair linked-to-physical top-level plugin reinstallation using actual profile declarations; relocate CommonJS lookup results before physical ownership checks. Preserve existing module-cache ownership and verify real profile generations."
     },
     {
       "path": "packages/boot/app-boot/tests/profile-sanitize.spec.ts",

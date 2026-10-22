@@ -144,7 +144,8 @@ export interface RuntimeInterception {
    * upgraded in place. Existing modules and Node caches remain intact: callers remove a package only after its
    * plugins stop, and replace the loaded modules of a package upgraded in place separately.
    * A previously published link name may point to another real directory; callers stop the plugins of its previous
-   * target first, as removing and installing the package again does.
+   * target first, as removing and installing the package again does. A top-level local package installed as a physical
+   * directory uses its profile node_modules path even when it has no shared-dependency mapping.
    * @param successor - fully constructed generation retaining the installation mappings.
    * @throws when the profile scope changes; and `ResolutionRestartRequired` when a retained profile mapping's real
    * directory or scope, or an installation version or declarer changes; an installation mapping is removed; or a new
@@ -504,7 +505,10 @@ class ResolutionRouter {
     for (const [name, previous] of this.linkedTargets) {
       const root = successor.linkedRoots.find(candidate => candidate.name === name)
       const entry = entries.get(name)
-      const target = root?.realPath ?? (entry?.scope === 'profile' ? canonicalPath(entry.packageDir) : undefined)
+      const packageDir = entry?.scope === 'profile' ? entry.packageDir
+        : localPackageNames.has(name) && successor.profileDir !== undefined
+          ? join(successor.profileDir, 'node_modules', name) : undefined
+      const target = root?.realPath ?? (packageDir === undefined ? undefined : canonicalPath(packageDir))
       if (target === undefined || sameResolution(previous, target)) continue
       moves.push([previous, target])
       targets.set(name, target)
@@ -996,7 +1000,10 @@ export function installRuntimeInterception(
     const routedOptions = options?.conditions === undefined ? undefined : { conditions: options.conditions }
     const state = router.routePath(request, parentFilename, {
       cacheable,
-      resolveNative: searchPaths => resolveNativeCjs(request, searchPaths, parent, parentFilename, main, options?.conditions),
+      // Ownership checks must see the current directory before comparing a native result with its physical candidate.
+      resolveNative: searchPaths => router.relocate(
+        resolveNativeCjs(request, searchPaths, parent, parentFilename, main, options?.conditions), parentFilename,
+      ),
       resolveEntry: (entry, after) => {
         delegatedCjs++
         try {

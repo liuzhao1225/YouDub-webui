@@ -181,7 +181,13 @@
     },
     "lockfile": "Exact selected importer and workspace-edge removals; all other importer values and third-party snapshots unchanged",
     "productIsolation": "verify-default-product-isolation: 89 packages, 710 runtime sources, 1 configurations, 33 composed Web plugins exclude experimental packages.",
-    "ci": "pending"
+    "ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "headSha": "3e439abd6548b925a378845cb934d067243b493a",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39777450882",
+      "verifiedAt": "2026-10-22T12:41:29.737Z"
+    }
   },
   "failuresPreserved": [
     {
