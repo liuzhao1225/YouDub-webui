@@ -350,6 +350,8 @@ Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通�
 
 提交 `96028d9e` 的[开发 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39750830763) 首次运行已通过全部源码构建、框架、领域、前端和媒体合同检查，最后的构建证据上传因 GitHub 存储域名 `ENOTFOUND` 失败。显式重跑同一提交后，后续提交 `d2f630b4` 触发分支并发策略，重跑被取消；不能将该 run 记为完整成功。后续 CI 需重新确认构建证据上传。
 
+后续提交 `d2f630b4` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39755195918) 已全部通过，包括最终的构建证据上传。该提交包含第十三批裁剪和此前工作流多语言修复；下文的设置跳转修复尚需其后提交的独立 CI 结果。
+
 ## P4/P7：原生 zoo 实验、审核持久化和设置跳转（2026-10-22）
 
 在独立 Electron 窗口中，通过模型表单输入原 YouDub 的火山方舟地址、已有凭据、模型与 65,535 输出上限。没有直接写入测试 profile 的配置文件，也没有复制旧应用账号数据。经 macOS 原生文件框选择 zoo 视频，运行内置「字幕＋配音」八节点流程；Demucs、Whisper、翻译、VoxCPM2、混音和导出全部完成。运行时原生退出弹窗提示任务将中断，取消后窗口及任务继续运行。播放器实际走到 `0:18 / 0:18`；通过原生保存框导出译文 SRT，与任务产物字节完全一致。[本次实验记录](evidence/refactor-native-zoo-review.json)
@@ -359,3 +361,18 @@ Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通�
 实际操作发现首页「配置服务连接」打开了通用设置。YouDub 导航现在将模型分区交给原设置入口；Harness 的 `openSettings(sectionId?)` 复用原 shell store 的 `openSection`，普通侧栏入口仍打开默认分区。对应分区显示、焦点、关闭后默认入口与目录生成回归 54 项通过，双语文档配对通过；七步框架构建、产品构建、73 项共享工作区 Host 集成、组合及来源校验通过。原生跳转读回因锁屏尚未完成。活动源码 SHA-256 为 `0c370dea6592783e4c2664c990d15e203f36ffc787758ebe9ab03bce322005ab`，355 包、8,909 文件、319 个客户端产物；原始归档未变。
 
 本轮原生截图：`/tmp/youdub-native-zoo-auto-completed.png`、`/tmp/youdub-native-zoo-awaiting-review.png`。操作日志和构建检查位于 `/tmp/youdub-settings-route-*.log`。共享工作区中的其他资源管理改动继续保留；飞书文档仍在全部改造与验收后更新。
+
+## P6 后续 SDK 批次的消费者审查（2026-10-22，尚未删除）
+
+在 `98f417a7` 重新运行语法层依赖追踪：355 个活动包，79 个根，运行与类型闭包 141 包，计入包内测试 218 包，闭包外 137 包。`sdk-app`、`sdk-minimal`、`sdk/client`、`sdk/protocol`、`sdk/server` 与 `subagent-claude-code`、`subagent-codex`、`subagent-dsh-sdk` 共八包均不在保留闭包中；合为一个候选集合后，没有集合外包的运行、类型或测试导入。静态结论只用于确定下一批边界，尚未执行该批删除。追踪记录为本机 `/tmp/youdub-current-package-closure.json`。
+
+| 后续对象 | 当前消费者与处理边界 |
+| --- | --- |
+| Harness TypeScript/Python SDK、三种外部 Agent 集成 | 118 个包内文件及 Python SDK 专属目录；需要同时移除编译、工作区、入口、包策略、默认插件目录和专属发行清单。仓库自己的 `packages/sdk`、Python 媒体后端与私有解释器继续保留 |
+| SDK 单文件构建、资源暂存、smoke 与快照 | 专属工具随 SDK 退出；先区分共享的 primary-runtime wheel/hash 检查与 SDK 平台清单测试，保留通用断言 |
+| `verify-runtime-closure` | 当前产品 CI 显式传入 manifest，通用传递依赖及 required/optional peer 检查继续使用。Python SDK 默认 manifest 与旧 preset 模式需要随 SDK 删除一起解除，不能删掉产品仍在用的检查器 |
+| 第三方声明生成 | 移除 Claude Agent SDK 专属发行说明及 Python SDK 的 pyproject 收集路径；保留现有 LLM 提供商使用的 Anthropic SDK，以及仍有消费者的 bundled-Python 声明、npm 许可检查与原版权信息 |
+| 旧公开 CLI 依赖目录 | `scripts/dependency-catalog` 属于历史发布目录，并非当前运行依赖；与对应生成脚本、测试及 rescope 排除条目一起核对。原始归档已经保留其历史字节 |
+| 插件管理、安装测试与示例名称 | 产品只投影 YouDub 和用户安装包；原管理组件仍含旧 SDK/Agent 分类。删除相应分类时保持安装、启用、错误、核心保护与卸载行为测试，合成夹具可改用仍存在的通用包名 |
+
+下一批退出条件仍包括完整源码构建、实际产品运行闭包、来源差异账本、保留测试与开发 CI。不能用本表将 SDK 清理或整体 P6 标为完成。
