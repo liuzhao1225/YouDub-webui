@@ -33,19 +33,35 @@
         "Missing app-boot was correctly rejected, but the assertion matched only POSIX package separators.",
         "pnpm add wrote a portable link specifier, while the assertion expected native Windows backslashes."
       ]
+    },
+    {
+      "commit": "3142538f3092bdbe91958e3f9542bd5d1700569c",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39818920982/job/119965412220",
+      "result": "failed actual SDK target after removing another plugin",
+      "sourceAndProductBuildPassed": true,
+      "desktopAndProcessTestsPassed": true,
+      "productContracts": {
+        "passed": 29,
+        "failed": 1,
+        "actualElectronHostModesPassed": 2
+      },
+      "failure": "After the path representation assertions passed, pnpm remove restored the old-youdub-plugin target despite the updated dependency specifier. The existing realpath assertion correctly caught the behavior."
     }
   ],
   "corrections": {
-    "production": "Source inventory and staging compare portable link targets; preserve file bytes, Git executable modes and POSIX backslashes.",
-    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions."
+    "production": "Source inventory and staging compare portable link targets; preserve file bytes, Git executable modes and POSIX backslashes. Profile preparation now writes portable pnpm link specifiers instead of Windows native backslashes.",
+    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions. The migration regression also resolves the lockfile version to the actual SDK target before remove; post-remove realpath assertions remain."
   },
   "local": {
     "sourceTestsPassed": 7,
     "profileTestsPassed": 7,
-    "profileLog": "/tmp/youdub-windows-profile-path-regression.log"
+    "profileLog": "/tmp/youdub-windows-profile-path-regression.log",
+    "profileLinkFixTestsPassed": 7,
+    "profileLinkFixLog": "/tmp/youdub-windows-profile-link-fix-local.log"
   },
   "nextRun": {
-    "status": "pending push"
+    "status": "pending push",
+    "purpose": "Verify portable link specifiers fix the actual Windows stale SDK target."
   },
   "limitations": [
     "The full Windows job is not yet green.",

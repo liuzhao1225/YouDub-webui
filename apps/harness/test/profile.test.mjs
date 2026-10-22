@@ -169,6 +169,9 @@ test('official package removal keeps the source SDK after migrating a stale depe
   const { parse } = sourceRequire('yaml');
   const lock = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8'));
   assert.equal(lock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier.split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
+  const lockedVersion = lock.importers['.'].dependencies['@youdub/harness-subtitles'].version;
+  assert(lockedVersion.startsWith('link:'), 'The source SDK must remain a local dependency');
+  assert.equal(await realpath(resolve(profile, lockedVersion.slice('link:'.length))), await realpath(plugin));
   await operation(['remove', fixtureName, '--config.offline=true']);
   assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(plugin));
   assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'].split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);

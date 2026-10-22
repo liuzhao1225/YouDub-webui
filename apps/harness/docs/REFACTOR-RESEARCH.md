@@ -534,3 +534,7 @@ Windows 首次执行因源码账本不一致失败。补充差异诊断后，确
 ### Windows 构建与实际 Host 的后续结果
 
 fecdf978 的 Windows 来源校验、框架/产品构建和组合隔离已通过；桌面与子进程 41 文件 / 491 项通过，3 文件 / 24 项按既有平台条件跳过。正常首启与显式测试模式的实际 Electron Host 均通过。产品合同有 28 项通过、2 项 profile 断言失败，均由 Windows/PNPM 的路径分隔符表示引起。修正测试路径比较，保留缺失依赖拒绝、真实路径、旧锁迁移、用户配置保留及卸载断言；7 项 profile 本地检查通过，下一次 Windows CI 待确认。[平台记录](evidence/windows-source-development.json)
+
+### Windows SDK 目标回退的真实失败
+
+3142538f 在 Windows 构建、桌面进程与两种实际 Host 启动通过后，profile 回归有 29 项通过、1 项失败。前两项分隔符断言修正后，原真实路径检查继续发现卸载另一个插件会恢复 old-youdub-plugin，不能将它归为测试显示差异。profile 初始化现将 pnpm link specifier 写为平台无关的斜杠路径；保留安装与移除原操作，并在移除前额外解析 lockfile version 的真实目标。本地 7 项回归通过，Windows 修复效果待下一次 CI 确认。

@@ -1,5 +1,5 @@
 import { lstat, mkdir, readFile, realpath, symlink, unlink, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { assertYouDubProfile } from './check-profile.mjs';
@@ -24,7 +24,9 @@ export async function prepareYouDubProfile(profile, pluginRoot, runtimeProject, 
   } else if (bundles.some((name, index) => configuredBundles[index] !== name)) {
     throw new Error(`Unexpected YouDub profile composition: ${manifestPath}`);
   }
-  const dependency = `link:${pluginRoot}`;
+  // pnpm link specifiers use portable paths, including on Windows. Native
+  // backslashes can leave the old lockfile target active during a later remove.
+  const dependency = `link:${pluginRoot.split(sep).join('/')}`;
   if (manifest.dependencies?.['@youdub/harness-subtitles'] !== dependency) {
     manifest.dependencies = { ...manifest.dependencies, '@youdub/harness-subtitles': dependency };
     await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
