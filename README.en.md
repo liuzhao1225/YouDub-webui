@@ -2,9 +2,9 @@
   <img src="site/assets/youdub-logo.svg" alt="YouDub" width="520" />
 </p>
 
-# YouDub WebUI
+# YouDub Desktop
 
-> This is the `codex/harness-youdub-integration` development branch. It uses the DeepSeek Harness backend and frontend framework with Electron, retaining YouDub's business UI and workflows. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese). Download links below refer to published releases; the main-branch source instructions describe the original runtime.
+> This is the `codex/harness-youdub-integration` development branch. It uses the DeepSeek Harness backend and frontend framework with Electron, retaining YouDub's business UI and workflows. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese). Download links below refer to published releases; this branch uses the Electron source development flow below.
 
 An open-source video localization workspace: import a video, transcribe and translate its speech, clone each sentence from its source audio, and produce subtitles and dubbed video.
 
@@ -111,129 +111,44 @@ QQ group: `618246010`
   <img src="apps/web/public/qq-group-618246010.jpg" alt="YouDub QQ group QR code" width="220" />
 </p>
 
-## Running the main branch from source
+## Run YouDub Desktop from source
 
-This section preserves the published version's original workflow. For this Harness branch, follow the [development guide](apps/harness/docs/DEVELOPMENT.md), including its first-run resources, data paths, and Electron entry point.
-
-[Node workflows](docs/workflows.md) · [Runtime and extension guide](docs/design/cordis-plugin-runtime.md) · [Plugin contracts](docs/design/cordis-plugin-contracts.md) · [Release workflow](docs/releasing.md)
-
-The source installation steps below target macOS / Linux shells. Real-model workflows have been validated on **macOS arm64 / CPU** and **Windows x64 / NVIDIA CUDA**. See the [Windows acceptance record](docs/validation/windows-desktop-2026-10-16.md) for first-run configuration, complete video tasks and limitations, and the [desktop build instructions](apps/desktop/README.md#windows-x64). The app detects CUDA, MPS and AMD ROCm with CPU fallback; see [device support](docs/accelerators.md). Linux, AMD and MPS inference have not been validated on real hardware in this round.
-
-### 1. Install dependencies
-
-Install Node.js 22 (at least 22.13.0) and Git. First startup detects the OS and architecture and prepares Python 3.12 and base dependencies. FFmpeg/ffprobe, sentence resources and model dependencies are prepared for the selected workflow; existing resources are reused.
+Use Node.js `^22.19.0 || >=24.0.0`, npm, Git and your platform's build tools. Initialize submodules when cloning, then run these commands from the repository root:
 
 ```bash
-git clone --branch main --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
-cd YouDub-webui
 npm ci --registry=https://registry.npmmirror.com
 npm --prefix apps/web ci --registry=https://registry.npmmirror.com
-```
-
-An existing checkout can start directly to check missing resources. Python / FFmpeg use Aliyun npmmirror, Python dependencies use Aliyun PyPI, and models use ModelScope; see [download sources and exceptions](docs/upgrade.md#国内首次启动下载). Installation, network and verification failures stay visible and require an explicit retry.
-
-### 2. Create local configuration
-
-Create the configuration on first use. Preserve an existing `.env`:
-
-```bash
-cp .env.example .env
-ln .env env.txt
-test .env -ef env.txt
-```
-
-Open the workspace directly; no access password is required. The application loads `.env`; agent tools read `env.txt`, a hard link to the same file. Both are excluded from Git.
-
-### 3. Prepare models
-
-Once the base environment is ready, open Workflows, choose a template, and prepare its missing resources. The page shows dependencies and download progress for the selected nodes. Subtitle workflows do not require a speech-generation model; workflows that import subtitles and export video can use media dependencies alone. See [node workflows](docs/workflows.md).
-
-The default data directory is `~/Library/Application Support/YouDub` on macOS, `~/.local/share/youdub` on Linux, and `%LOCALAPPDATA%/YouDub` on Windows. Override it with `YOUDUB_DESKTOP_DATA_DIR`.
-
-| Capability | Default provider | Model path, relative to the data directory |
-| --- | --- | --- |
-| Speech recognition | Whisper | `models/whisper/`, for example `tiny.pt`; also requires the `punkt_tab` data installed above |
-| Translation | Provider catalog and custom compatible endpoints | Configure the provider, key and model in Settings → Models; the model must meet the output-token requirement |
-| Speech generation | VoxCPM2 | `models/voxcpm/VoxCPM2/` |
-| Vocal separation | Demucs htdemucs | `models/demucs/955717e8-8726e21a.th` |
-| Subtitle alignment | Qwen3 Forced Aligner | `models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/` |
-
-Whisper, VoxCPM2, Demucs and Qwen use pinned ModelScope revisions; VoxCPM2 and Qwen include tokenizer/processor files. Partial downloads use `.part` files; resume requires HTTP Range support. See the [runtime guide](docs/design/cordis-plugin-runtime.md#1-安装与配置) for custom paths. First-run setup endpoints accept local requests only.
-
-Translation keys are stored in the system keyring. Configure custom translation model candidates through `YOUDUB_TRANSLATION_MODELS` in `.env`, then select a model in Settings. Default translation requests set a maximum output-token limit of at least **65,535**. The connected service and model must accept that parameter; incompatibility produces an explicit error.
-
-### 4. Start the application
-
-Confirm that ports 8000 and 3000 are unused, then run these commands from the repository root:
-
-```bash
-npm run build:plugins
+npm --prefix apps/harness ci --registry=https://registry.npmmirror.com
+npm run build:framework
+npm run build:youdub
 npm start
 ```
 
-Open another terminal in the same directory and start the frontend:
+`npm start` and `npm run dev` launch the same Electron product. `npm run build:desktop` aliases `build:youdub` and generates development artifacts. This branch has no packaging, signing or release commands. See [local development](apps/harness/docs/DEVELOPMENT.md) for browser debugging, isolated data directories and rebuilding after edits.
 
-```bash
-npm --prefix apps/web run dev -- --host 127.0.0.1 --port 3000
-```
+On first launch, select the interface language and data directory, prepare runtime resources and configure a translation model through the UI. The application uses its own Python environment, models and configuration. Translation models must accept at least **65,535** output tokens; incompatible endpoints report an error. Base environment readiness and workflow resource readiness are shown separately.
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000) to prepare the base environment on first use. Ready installations enter the workspace directly and prepare resources for the selected workflow.
-
-To run the production build, stop the development services above, then run:
-
-```bash
-npm run build:web
-npm --prefix apps/web start
-```
-
-One Cordis Host serves both pages and APIs at `http://127.0.0.1:3000`. Set `YOUDUB_HOST` and `YOUDUB_PORT` to change the listening address. In development, the Vite proxy connects to `http://127.0.0.1:8000`; override it with `YOUDUB_API_URL`.
+The previous runtime, Swift/C# shells and release process remain available in the [pre-refactor instructions](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/README.en.md#running-the-main-branch-from-source). The initial YouDub snapshot and original Harness archives are preserved in the [source baselines](apps/harness/baselines/README.md).
 
 ## Everything is a plugin
 
-YouDub uses **Cordis** to compose its services. The task engine, default workflow, model providers, HTTP/API, authentication and client pages are all plugins. See the [default composition](youdub.config.ts).
+YouDub Desktop composes its backend and frontend with Harness's Cordis runtime. Electron windows, Host lifecycle, Connection, model configuration, LLM, Subprocess, Jobs and plugin management reuse Harness. YouDub tasks, workflows, subtitles, dubbing, resources and business pages run as plugins. The [product composition](apps/harness/cordis.patch.yml) defines the active services and pages.
 
 ```text
-Client page plugins → API / authentication plugins → Task engine plugin
-                                                           ↓
-                                                     Workflow plugin
-                                                           ↓
-                                                     Provider plugin
-                                                           ↓
-                                              Python process / remote service
+YouDub Electron → Harness Desktop Host ← Official Connection ← YouDub pages
+                         ↓
+                 YouDub workflow and task plugins
+                         ↓
+             Harness LLM / Subprocess / Jobs
+                         ↓
+              Translation / Python media processing
 ```
 
-A workflow declares its steps, inputs and outputs. Providers implement operations, and files pass through ArtifactRef references. Python handles media processing and model inference through managed processes and a stdio protocol for each operation. Packages written entirely in Python can also provide operations.
+The frontend uses Harness Renderer, Slots, Layout, Store, themes, locales and shared controls with YouDub's business components, React Flow canvas and animated home screen. See the [architecture](apps/harness/docs/ARCHITECTURE.md), [frontend guide](apps/harness/docs/FRONTEND-DEVELOPMENT.md), and [backend and workflow guide](apps/harness/docs/BACKEND-DEVELOPMENT.md) for implementation boundaries and source mappings.
 
-To replace ASR, translation or TTS, supply a plugin that implements the relevant contracts. New processing flows can register their own workflows. See the [architecture](docs/design/cordis-plugin-architecture.md) and [plugin contracts](docs/design/cordis-plugin-contracts.md).
+## Installing and developing plugins
 
-The frontend uses React 19, Vite 8 and Cordis page plugins, retaining YouDub's Tailwind, Base UI and React Flow visual components. Client logic is separated into a React-free runtime, React bindings and page components. See the [frontend implementation notes](docs/design/harness-frontend-migration.md) for the reference sources and adaptation scope.
-
-## Installing and Developing Plugins
-
-Finish or cancel active tasks and stop the Host before managing plugins:
-
-```bash
-npm run plugins -- list
-npm run plugins -- install --source ./fixtures/plugins/file-transform
-npm run plugins -- disable --id example.file-transform
-npm run plugins -- enable --id example.file-transform
-```
-
-GitHub repositories and exact npm package versions are also supported. Replace the repository, commit and package placeholders below:
-
-```bash
-npm run plugins -- install --source https://github.com/OWNER/REPO --ref FULL_COMMIT_SHA
-npm run plugins -- install --source npm:PACKAGE_NAME@1.0.0
-```
-
-Installed plugins are enabled by default and take effect after restarting the Host. Refresh the browser to load extensions with precompiled Client entries. Installation scripts and Host code run with local machine permissions, so install plugins from trusted sources. Separate Python environments isolate dependencies.
-
-Start with these small examples:
-
-- [Host / workflow / Client plugin](fixtures/plugins/file-transform/README.md): registers a workflow, page and navigation entry.
-- [Python-only provider](fixtures/plugins/python-text/README.md): declares operations in a manifest and uses the stdio input/output protocol.
-
-See the [plugin contracts](docs/design/cordis-plugin-contracts.md) for package structure, artifacts, credentials and cancellation, and the [runtime guide](docs/design/cordis-plugin-runtime.md#3-安装启停和重启) for installation, enable/disable and removal. The SDK is provided in this repository and has not been published as a public npm package.
+Manage plugins in the application's Extensions page. Harness PluginManager handles installation, enabling, disabling and removal. Nodes, providers and pages follow YouDub's business contracts. Host/Client/Python examples are described in the [backend and extensions guide](apps/harness/docs/BACKEND-DEVELOPMENT.md). A public YouDub plugin marketplace is not currently available.
 
 ## Current Scope
 
@@ -254,22 +169,24 @@ npm test
 npm run test:backend
 npm --prefix apps/web test
 npm run lint:web
-npm run build:web
+npm run build:youdub
+npm --prefix apps/harness test
 ```
 
 ```text
-youdub.config.ts    Default Cordis plugin composition
-apps/host/         Host bootstrap and plugin management CLI
+apps/harness/      Electron entry, Host/Client plugins and development tools
+vendor/deepseek-harness/source/  Active Harness framework fork
+apps/host/         Legacy Host and domain test dependencies awaiting migration
 packages/sdk/      Public service, workflow and operation contracts
 packages/builtin/  Services, generic task engine, workflows and model bridge
 backend/workers/   Python computation and SQLite transaction bridge
 backend/app/       Models, media, credentials and historical data formats
-apps/web/          Vite entry, client runtime, React bindings and page plugins
+apps/web/          Reused business components, client logic and React bindings
 fixtures/plugins/  Standalone Host/Client/Python examples
 submodule/demucs/   Demucs source submodule
 ```
 
-Issues and pull requests are welcome for installation improvements, model adapters, subtitles and audio/video alignment, or independent source and workflow plugins. Historical designs remain in `docs/`; this README and the Cordis runtime guide describe the current entry points.
+Issues and pull requests are welcome for installation improvements, model adapters, subtitles and audio/video alignment, or independent source and workflow plugins. Historical designs remain in `docs/`; this README and the [Desktop development guide](apps/harness/docs/DEVELOPMENT.md) describe the current entry points.
 
 ## License
 

@@ -67,6 +67,7 @@ jobs:
         run: |
           npm run typecheck
           npm test
+          npm run test:downloads
           npm --prefix apps/web test
           apps/web/node_modules/.bin/tsc --noEmit -p apps/web/tsconfig.json
           npm --prefix apps/harness run check:locales

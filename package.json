@@ -9,15 +9,12 @@
     "packages/builtin"
   ],
   "engines": {
-    "node": ">=22.13.0"
+    "node": "^22.19.0 || >=24.0.0"
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build:desktop": "node scripts/build-desktop.mjs",
-    "build:mac": "node scripts/build-mac.mjs",
-    "build:windows": "node scripts/build-windows.mjs",
-    "test:windows": "node scripts/smoke-windows.mjs",
-    "test:release": "node --test scripts/release-version.test.mjs scripts/download-releases.test.mjs",
+    "build:desktop": "npm run build:youdub",
+    "test:downloads": "node --test scripts/download-releases.test.mjs",
     "dev:api": "node --import tsx apps/host/src/main.ts",
     "start": "npm --prefix apps/harness run desktop",
     "plugins": "node --import tsx apps/host/src/plugins.ts",

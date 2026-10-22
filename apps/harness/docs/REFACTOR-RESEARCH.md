@@ -207,3 +207,13 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 构建输入、沙箱 preload、三个原样窗口/菜单代码块、原始 Harness 归档及 YouDub 初始快照校验通过。产品构建和来源检查按框架构建、运行目录准备、收据记录、收据验证顺序完成。早期并行验证在新收据尚未写入时报告旧收据不匹配；保留该失败日志，依序验证后通过。
 - 实际 macOS Electron 使用独立 profile 重新启动，既有日语和私有安装目录保留，环境检查后进入原 Logo/大标题工作台。打开通用设置正常，显示 YouDub 0.0.7，没有旧更新入口；通过原生菜单空闲退出，启动器返回 0。[原生设置证据](evidence/refactor-native-settings-no-updater.png)。本批没有调用外部翻译/TTS，不代表完整媒体流程验收。
 - 另一会话的主题、反馈、图标及资源改动继续保留，本批提交只包含上述裁剪和必要共享文件片段。上一提交 `1bdc0980` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39720813051) 已通过。其余源码、全功能及跨平台验收继续留在计划中；两份飞书文档仍按约定最后统一更新。
+
+
+## P6 第五批：原 YouDub 桌面壳与根开发入口（2026-10-22）
+
+- 引用检查确认旧 Swift/WKWebView、C#/WebView2 壳只被旧平台构建和发行脚本消费；当前 Electron 的图标仍使用 `apps/desktop/icon.svg`，因此保留该文件。删除 12 个旧壳文件、12 个专属构建/签名/安装测试与版本校验脚本，以及旧 `ci.yml`、`windows.yml`、`release.yml` 共 27 个文件。它们可从裁剪前提交 `711e40e8e69d2c6f2065f15aecc90550dcbf695d` 恢复；初始 YouDub bundle 和原 Harness 归档校验通过，`main`、`atomgit` 未修改。
+- 根 `build:desktop` 改为 `build:youdub` 的别名；`start` 与 `dev` 继续进入同一 Electron 启动器。移除 `build:mac`、`build:windows`、旧安装测试和发行测试命令。根与锁文件的 Node 条件统一为框架要求的 `^22.19.0 || >=24.0.0`。官网 Pages、下载列表生成器和 3 项下载合同测试保留，并把后者加入源码开发 CI。
+- 中英文 README、桌面资源说明、开发指南与发行说明统一指向当前源码开发流程。旧操作说明通过固定提交链接保留，历史平台验收记录保持原样。旧 Host/Web 根仍被部分领域测试与组件对照消费，本批没有删除这些测试依赖，也没有宣称开发入口清理全部完成。
+- 实际执行根目录 `npm run build:desktop`，依序完成 Host/Client/Electron 构建、组合边界检查和 `desktop.mjs --prepare-only`。缺失旧壳不影响当前产品生成；构建保留原有 esbuild CSS side-effect 和 Node register 弃用警告，无构建失败。删除路径扫描未发现剩余活动脚本引用；根命令、engines、锁文件和复用图标校验通过。额外 YAML 检查首次误从根解析未声明的 `yaml` 包而失败，随后使用框架已锁定的 `js-yaml` 完成两份保留 workflow 解析校验。
+- 从根 `npm start` 启动同一隔离 profile，原生 Electron 完成环境检查并进入日语工作台，原 Logo/大标题保留；其他会话的主题、反馈、GitHub 入口和资源改动共存。页面明确显示翻译服务未配置，本批未运行媒体/翻译任务。
+- 上一批 `711e40e8` 的[干净 macOS 源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39722654418) 已通过。本批没有打包、签名、发布或合并到 main。其余源码闭包、全功能和 Windows 验收继续保留在计划中；两份飞书文档仍在全部改造与验收完成后统一更新。

@@ -33,7 +33,7 @@
 | 媒体执行 | 官方 Subprocess 和 Jobs 管理进程、取消和运行状态；YouDub 保留图调度、SQLite 事务、文件产物、Python 协议、媒体算法 |
 | 插件管理 | 复用官方 PluginManagerPage/Controller，产品组合展示 YouDub 内置能力和已安装扩展；尚无已发布的 YouDub 在线市场服务 |
 
-旧 HTTP/Auth、旧 Cordis 根、旧 React 根、旧扩展加载器、旧模型设置页面未进入融合产品的活动构建输入。原源码和旧发行脚本仍在仓库中用于保留初始状态；`npm start` / `npm run dev` 进入融合应用。旧 `build:mac` / `build:windows` 发行流程不能用来证明当前 Harness 应用已具备安装与更新交付能力。
+旧 HTTP/Auth、旧 Cordis 根、旧 React 根、旧扩展加载器、旧模型设置页面未进入融合产品的活动构建输入；这些源码仍待依赖与测试迁移后清理。2026-10-22 已移除 Swift/C# 旧壳、专属构建与发行 CI，历史实现保存在 Git 和初始基线。`npm start` / `npm run dev` 进入融合应用，`build:desktop` 与 `build:youdub` 使用同一 Electron 开发构建。当前安装与更新交付能力仍未验收。
 
 ## YouDub 覆盖与当前验收范围
 

@@ -14,7 +14,7 @@ git status --short --branch
 
 已有工作区先确认分支及未提交内容，不覆盖本地改动。默认开发保留 `main`、`atomgit` 和融合分支；本功能在融合分支继续维护。
 
-本文命令使用 Node.js 22（至少 `22.19.0`）、npm、Git 和平台构建工具。根 package.json 的 Node 下限服务于原 YouDub；[上游 engines](../../../vendor/deepseek-harness/source/package.json) 声明为 `^22.19.0 || >=24.0.0`。macOS 使用 Xcode Command Line Tools。
+本文命令使用 Node.js `^22.19.0 || >=24.0.0`、npm、Git 和平台构建工具。根 package.json 与[框架 engines](../../../vendor/deepseek-harness/source/package.json) 保持一致。macOS 使用 Xcode Command Line Tools。
 
 ## 首次构建
 
@@ -74,15 +74,17 @@ npm --prefix apps/harness start
 
 发现已有监听时先识别原进程，复用已有实例或结束属于本次开发的实例，避免重复启动。`lsof` 未发现监听时可以启动。打开终端打印的认证地址；浏览器默认 home 与桌面分离，需要在对应 profile 内配置和准备资源。
 
-### 保留的旧入口
+### 开发入口与待迁移代码
 
 | 命令或目录 | 当前用途 |
 | --- | --- |
 | `npm start` / `npm run dev` | 当前 Harness Electron 产品 |
+| `npm run build:youdub` / `npm run build:desktop` | 同一 Electron 开发构建，不生成安装包 |
 | `npm --prefix apps/harness start` | 当前 Harness 浏览器开发入口 |
 | `npm run dev:web` / `apps/web/src/main.tsx` | 原独立 Web 入口，可用于原组件对照 |
-| `npm run start:legacy` / `apps/host` | 原 YouDub Host，保留历史与对照用途 |
-| `npm run build:desktop` / `build:mac` / `build:windows` | 旧桌面发行脚本，当前开发任务不执行 |
+| `npm run start:legacy` / `apps/host` | 原 YouDub Host；仍有领域测试依赖，待迁移后移除 |
+
+旧 Swift/C# 桌面壳、`build:mac`、`build:windows`、专属安装测试和发行 CI 已从本分支移除。`apps/desktop/icon.svg` 由 Electron 产品继续复用。历史源码见[裁剪前提交](https://github.com/liuzhao1225/YouDub-webui/tree/711e40e8e69d2c6f2065f15aecc90550dcbf695d/apps/desktop)；`main`、`atomgit` 与官网发布链保持不变。
 
 ## 数据与配置
 

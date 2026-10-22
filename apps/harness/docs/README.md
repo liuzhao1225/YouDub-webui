@@ -19,7 +19,7 @@
 
 - 2026-10-22 起允许修改 Harness 活动源码，用于 YouDub 产品解耦与裁剪；原始归档、来源清单和 YouDub 初始快照继续保持不变。实施顺序见[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)，进展与缺口见[调研记录](REFACTOR-RESEARCH.md)。既有验收文档中的“上游原样”描述对应当时的候选提交。
 - 通用能力使用 DSH 的公开服务、组件和插槽；YouDub 业务组件和媒体算法直接复用现有源码。新增业务沿现有节点、端口和状态合同扩展。
-- 桌面开发入口为根目录 `npm start`。`apps/web` 的独立 React/Vite 入口和 `apps/desktop` 的旧桌面发行入口仍作为历史代码保留。
+- 桌面开发入口为根目录 `npm start`；`build:desktop` 与 `build:youdub` 使用同一 Electron 开发构建。`apps/web` 的独立 React/Vite 入口与旧 Host 仍待迁移测试后清理；Swift/C# 旧壳和发行脚本已移除，`apps/desktop` 仅保留复用的图标与说明。
 - 当前阶段使用源码开发构建，安装包、更新源及在线插件市场的状态见[代码复核中的剩余验收项](CODE-AUDIT.md#尚未通过的完整产品验收)。
 
 固定源码版本、原 YouDub 快照和恢复方法见[来源基线](../baselines/README.md)。当前开发分支已包含旧 workflow、Harness 前端和字幕原型的历史；源码基线可通过标签 `youdub-source-baseline-20261021` 与 `youdub-harness-poc-baseline-20261021` 定位。

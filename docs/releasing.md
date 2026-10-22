@@ -1,58 +1,9 @@
-# 从 main 发布版本
+# YouDub Desktop 发行状态
 
-GitHub Actions 执行 CI/CD，具体流程保存在 [release.yml](../.github/workflows/release.yml)。合并到 `main` 只运行检查；推送版本 tag 才发布。
+当前 `codex/harness-youdub-integration` 分支处于源码开发阶段，没有安装包、签名、上传或版本 tag 发行流程。`npm run build:desktop` 与 `npm run build:youdub` 生成相同的 Electron 开发产物。
 
-## 发布步骤
+开发安装、构建和启动见[本地开发](../apps/harness/docs/DEVELOPMENT.md)；源码、框架和业务检查由 [harness-development.yml](../.github/workflows/harness-development.yml) 执行。当前平台和业务验收缺口见[改造计划](../apps/harness/docs/YOUDUB-DESKTOP-REFACTOR-PLAN.md)。
 
-1. 从 `main` 创建短期开发分支。修改根目录 `package.json` 的 `version`，同步根目录 `package-lock.json` 的版本，通过 PR 合入 `main`。
-2. 核对 CI、升级说明与本版本真实视频验收。切换到 `main` 并更新到要发布的提交。
-3. 为该提交创建并推送不可变 tag。例如：
+原 Swift/C# 壳的发布说明、版本校验及签名流程可在[裁剪前提交](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/docs/releasing.md)读取。此次仅清理开发分支，保留 `main`、`atomgit` 和现有 Release。官网的版本列表生成脚本及下载链接测试继续保留。
 
-```sh
-git switch main
-git pull --ff-only
-git tag -a v0.0.3 -m 'YouDub v0.0.3'
-git push origin v0.0.3
-```
-
-工作流检查 tag 与应用版本相同、提交属于 `main`，重新执行质量检查。质量检查复用 [windows.yml](../.github/workflows/windows.yml) 构建 Windows x64 EXE 和 ZIP，验收安装、重装、保留数据卸载，并启动原生程序并检查 WebView2 页面、单实例锁及退出清理，上传 `windows-release`；同时在 macOS runner 通过同一 `npm run build:desktop` 入口构建 arm64 应用，检查共享入口、路径及完整包启动。两端共用运行环境组装、Node/npm 和 SDK 编译逻辑。发布阶段复用已验收的 macOS 包，进行 Developer ID 签名、启动服务访问页面及图标并复查签名、公证、验证 Gatekeeper。所有门禁通过后，在同一 Release 发布 DMG、Windows EXE、ZIP 和各自的 SHA-256 文件。两端均使用同一次运行中已经验收的应用，不在发布阶段重新构建。应用版本、构建元数据和安装包名称均由根目录版本生成。现有 Release 不会被静默覆盖。
-
-Windows 安装包和便携包尚未进行 Authenticode 签名，不使用 Apple secrets。WebView2 Runtime 缺失时，Windows CI 从微软下载引导程序、核验 Microsoft Authenticode 签名后安装。PR、main 和手动触发的构建只保存 Actions artifacts，不创建 Release。Windows 本机命令、产物和验收边界见[桌面构建说明](../apps/desktop/README.md#windows-x64)。
-
-发布失败时查看对应 job 的原始错误。未修改源码的基础设施故障可重新运行失败 job；需要修改源码时应发布新版本和新 tag，不移动已发布 tag。
-
-## 签名材料保护
-
-私钥和密码只保存在仓库的 `macos-release` Environment secrets，环境仅允许 `v*` tag 使用。仓库 tag 规则仅允许管理员创建 `v*`，并禁止更改或删除版本 tag。fork、PR 和普通分支构建无法取得这些环境密钥。
-
-| Secret | 内容 |
-| --- | --- |
-| `APPLE_CERTIFICATE_BASE64` | 带私钥的 Developer ID Application P12，Base64 编码 |
-| `P12_PASSWORD` | P12 密码 |
-| `CODESIGN_IDENTITY` | Developer ID Application 身份 |
-| `APPLE_API_KEY_BASE64` | App Store Connect 公证 P8，Base64 编码 |
-| `APP_STORE_CONNECT_KEY_ID` | 公证密钥 ID |
-| `APP_STORE_CONNECT_ISSUER_ID` | 公证签发者 ID |
-
-无密钥构建、签名和发布使用独立的 GitHub 托管临时 runner。依赖安装不带签名 secrets；只有签名步骤取得 secrets，并将其写入权限为 0700/0600 的临时目录。P12 导入临时 keychain，结束后删除 keychain 和临时文件。发布 job 仅取得安装包及仓库发布权限，不能取得 Apple 私钥。第三方 Actions 固定完整 commit SHA。
-
-密钥不会进入源码、DMG、日志或上传的 artifacts。仓库管理员仍能更改工作流和环境规则，因此应限制管理员和写入权限，保持 `main` 的 PR 与 CI 保护。新增协作者时重新审查发布权限。相关机制见 [GitHub 环境保护文档](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)。
-
-官网发布流程从 GitHub Releases 读取已经公开的正式版本，仅列出同时具有安装包和 SHA-256 文件的平台。发布工作流成功后自动刷新 Pages；历史版本按各自实际资产显示，未发布的平台不显示下载按钮。
-
-`releases.json` 保持数组及旧客户端需要的版本化资产字段；GitHub Latest 排在首项并带 `isLatest:true`。官网和新客户端更新器均按该标记选择官方当前版本；兼容旧 feed 时使用首项，不扫描历史最大版本。Latest 被调整到较低的维护版本时，新客户端不推荐历史高版本，也不主动降级。
-
-打包门禁包含轻量 Python 3.12 环境下的原生 `--smoke-ready` 路径，使用同一个 `apps/desktop/ready-smoke.js` 验证 WKWebView/WebView2 内已认证插件工作台、任务库、工作流和设置。保留准备失败、退出清理和包完整性用例。该路径于 2026-10-21 加入，当前开发轮仅完成脚本静态检查；原生编译、打包运行与发布检查尚未执行，不能将本次代码修改视为安装包验收。
-
-## 公告与固定下载链接
-
-公告、README 和官网默认下载入口统一使用 `latest`，不发送具体版本号的下载链接：
-
-- [最新版本说明](https://github.com/liuzhao1225/YouDub-webui/releases/latest)
-- [Windows EXE 安装包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe)
-- [macOS DMG](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg)
-- [Windows ZIP 便携包](https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip)
-
-发布工作流从验收过的版本化资源复制上述固定名称文件，重新生成文件名对应的 SHA-256，并以 `--latest` 发布。无需维护可移动的 Git tag；GitHub 的 [Latest 资源链接](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases) 自动指向最新 Release 中的同名文件。版本化资源继续保留，供历史回退和旧版客户端使用。
-
-每次发布后，必须回读 `/releases/latest`，下载固定入口并核对 SHA-256，确认官网默认安装包、校验文件与版本说明均为 latest 链接。只创建版本 tag、上传版本化资源或更新公告文字均不代表此项完成。
+Electron 安装、更新与发行需要在用户恢复此范围后单独实施和验收，不能沿用旧壳的安装测试作为证明。
