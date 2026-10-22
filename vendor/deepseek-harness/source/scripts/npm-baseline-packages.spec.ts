@@ -23,7 +23,7 @@ describe('npm baseline package discovery', () => {
     const expected = [
       'apps/cli/package.json',
       'packages/core/session/package.json',
-      'packages/experimental/agent-team/package.json',
+      'packages/experimental/auto-review/package.json',
       'packages/experimental/new-prototype/package.json',
       'vendor/cordis/package.json',
     ]

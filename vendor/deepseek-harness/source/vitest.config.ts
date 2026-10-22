@@ -221,13 +221,11 @@ export default defineConfig({
         // Client/web UI files whose remaining branches need a browser-grade
         // harness the jsdom lane doesn't cover yet. TODO(gui): cover and
         // remove as the client test lane matures.
-        'packages/client/ui-trajectory/src/*',
         // Electron guest integration retains its unit specs; per-file coverage
         // is deferred until a native Electron harness covers guest behavior.
         'packages/client/ui-sidebar-browser/src/client/electron/**',
         // Trajectory's compact Markdown projection retains deferred branch coverage.
         'packages/client/ui-primitives/src/markdown/plain-text.ts',
-        'packages/client/ui-user-questions/src/client/QuestionComposer.tsx',
         'packages/client/ui-primitives/src/Menu.tsx',
         'packages/client/ui-primitives/src/RiskConfirmation.tsx',
         'packages/client/ui-workspace/src/client/WorkspaceBrowser.tsx',
@@ -304,17 +302,10 @@ export default defineConfig({
         'packages/client/ui-commands/src/index.ts',
         'packages/client/ui-skill/src/index.ts',
         'packages/client/ui-input-trigger/src/index.ts',
-        'packages/client/ui-subagent/src/index.ts',
         'packages/client/ui-commands/src/client/popup.ts',
         'packages/client/ui-commands/src/client/directory.ts',
         'packages/client/ui-commands/src/client/service.ts',
         'packages/client/ui-commands/src/client/PopupSelectView.tsx',
-        'packages/client/ui-model-selection/src/index.ts',
-        'packages/client/ui-permission-presets/src/index.ts',
-        'packages/client/ui-model-selection/src/client/ModelSelect.tsx',
-        'packages/client/ui-model-selection/src/client/directory.ts',
-        'packages/client/ui-model-selection/src/client/index.ts',
-        'packages/client/ui-model-selection/src/client/service.ts',
         'packages/client/ui-input-trigger/src/client/controller.ts',
         'packages/client/ui-input-trigger/src/client/service.ts',
         'packages/client/ui-input-trigger/src/core/menu.ts',

@@ -433,41 +433,6 @@
       "source": "packages/schedule/schedule/src/types.ts"
     },
     {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamMemberProjection",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamTaskView",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamProjection",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamMemberSnapshot",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamMessageSnapshot",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamMessageSource",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/agent-team.md",
-      "symbol": "TeamTaskSnapshot",
-      "source": "packages/experimental/agent-team/src/types.ts"
-    },
-    {
       "doc": "docs/subsystems/commands.md",
       "symbol": "CommandInputDescriptor",
       "source": "packages/interaction/commands/src/types.ts"
@@ -2395,16 +2360,6 @@
       "doc": "docs/subsystems/system-prompt.md",
       "symbol": "AssembledContext",
       "source": "packages/core/system-prompt/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/worktrees.md",
-      "symbol": "CreateWorktreeRequest",
-      "source": "packages/experimental/worktree/src/types.ts"
-    },
-    {
-      "doc": "docs/subsystems/worktrees.md",
-      "symbol": "CreatedWorktree",
-      "source": "packages/experimental/worktree/src/types.ts"
     },
     {
       "doc": "docs/subsystems/boot.md",

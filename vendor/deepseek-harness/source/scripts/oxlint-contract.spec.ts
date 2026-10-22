@@ -4,7 +4,7 @@
  */
 import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync } from 'node:fs'
+import { existsSync, globSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -59,9 +59,8 @@ describe('Oxlint executable contract', () => {
       ['client package source', 'packages/client/ui-primitives/src', 'packages/client/ui-primitives/tsconfig.json'],
       // A test under packages/client states its face in the filename, so the
       // probe carries the Client suffix to reach the Client aggregate.
-      ['client package test', 'packages/client/ui-trajectory/tests', 'tsconfig.client.json', '.client.ts'],
-      ['CLI profile test', 'apps/cli/tests/profiles/headless/tests', 'tsconfig.host.json'],
-      ['website', 'website', 'tsconfig.host.json'],
+      ['client package test', 'packages/client/ui-renderer/tests', 'tsconfig.client.json', '.client.ts'],
+      ['CLI profile test', 'apps/cli/tests', 'tsconfig.host.json'],
     ] as const
     const source = `export function probePromise(): Promise<void> {
   return Promise.resolve()
@@ -201,10 +200,14 @@ export const longProbe = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
   })
 
   it('checks preserved TypeGraph syntax without type-aware analysis', () => {
+    // Explicit files keep the same corpus visible inside a Git-ignored build stage.
+    const files = globSync('packages/typert/generator/tests/fixtures/type-model/**/*.ts', { cwd: repositoryRoot })
+    expect(files.length).toBeGreaterThan(0)
+    expect(files).toContain('packages/typert/generator/tests/fixtures/type-model/packages/host/src/models.ts')
     const result = runOxlint([
       '--config',
       '.oxlintrc.staged.json',
-      'packages/typert/generator/tests/fixtures/type-model',
+      ...files,
     ])
 
     expect(result.error).toBeUndefined()

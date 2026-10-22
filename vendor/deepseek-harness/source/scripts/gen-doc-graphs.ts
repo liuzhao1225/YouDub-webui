@@ -89,7 +89,6 @@ const GROUP_ORDER = [
   'tasks',
   'workflow',
   'web',
-  'webhook',
   'spill',
   'todo',
   'plan',
@@ -168,15 +167,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'core',
     consumers: ['api-gateway', 'host-frontend-static'],
     note: 'Owns browser authentication and shared HTTP request dispatch; API adapters register endpoints and streams.',
-  },
-  {
-    key: 'worktrees',
-    pkg: 'experimental-worktree',
-    title: 'Git worktree creation',
-    mode: 'seam',
-    implementations: ['experimental-worktree'],
-    consumers: [],
-    note: 'Explicit experimental creation from a pinned local commit. Existing write permissions govern checkout and shared Git metadata; the working-directory service owns the resulting Session directory.',
   },
   {
     key: 'workingDirectory',
@@ -764,14 +754,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Routes explicit recognizers; the browser uses the authenticated Remote and keeps transcripts in the draft until submission.',
   },
   {
-    key: 'agentTeams',
-    pkg: 'experimental-agent-team',
-    title: 'Agent Teams coordination domain',
-    mode: 'core',
-    consumers: [],
-    note: 'Owns the implicit-root roster, direct peer inbox delivery, shared task DAG, and continuable-child lifecycle.',
-  },
-  {
     key: 'inspector',
     pkg: 'inspector',
     title: 'Cross-realm runtime inspection',
@@ -846,14 +828,6 @@ const SERVICE_ROLES: ServiceRole[] = [
     implementations: ['workflow-ptc'],
     consumers: ['tool-workflow', 'tool-ralph'],
     note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents.',
-  },
-  {
-    key: 'webhookRuntime',
-    pkg: 'webhook',
-    title: 'Webhook rule runtime',
-    mode: 'core',
-    consumers: [],
-    note: 'Provider adapters dispatch authenticated deliveries; trusted plugins register independent process-local rules, and the runtime turns non-null results into ordinary Workspace-backed Sessions without delivery or completion state.',
   },
   {
     key: 'dynamicCordisRunner',

@@ -17,7 +17,7 @@ import { MODULES_PACKAGE, createInProcessModules, loadPluginModules } from '../s
 
 const RENDERER = '@deepseek-ai/dsh-client-ui-renderer'
 const TYPERT = '@deepseek-ai/dsh-typert-registry'
-const BRAND = '@deepseek-ai/dsh-client-ui-brand-official'
+const PROVIDED = '@test/provided-client'
 const MISSING = '@deepseek-ai/dsh-client-does-not-exist'
 
 const row = (name: string, immediately = false) => ({ name, inject: [], immediately })
@@ -33,13 +33,13 @@ function graph(names: readonly string[]): WebBootGraph {
 describe('loadPluginModules', () => {
   it('imports real rows dynamically, takes provided rows from the plan, and pins the bootstrap row', async () => {
     const provided = { apply: () => {} }
-    const roster = ClientRoster.of([row(TYPERT), row(MODULES_PACKAGE), row(BRAND), row(RENDERER)])
-    const modules = await loadPluginModules({ roster, provide: { [BRAND]: provided } })
-    expect([...modules.keys()]).toEqual([TYPERT, MODULES_PACKAGE, BRAND, RENDERER])
+    const roster = ClientRoster.of([row(TYPERT), row(MODULES_PACKAGE), row(PROVIDED), row(RENDERER)])
+    const modules = await loadPluginModules({ roster, provide: { [PROVIDED]: provided } })
+    expect([...modules.keys()]).toEqual([TYPERT, MODULES_PACKAGE, PROVIDED, RENDERER])
     expect(modules.get(TYPERT)).toBe(typertRegistry)
     expect(modules.get(RENDERER)).toBe(uiRenderer)
     expect(modules.get(MODULES_PACKAGE)).toBe(modulesClient)
-    expect(modules.get(BRAND)).toBe(provided)
+    expect(modules.get(PROVIDED)).toBe(provided)
   })
 
   it('prefixes the package name when a /client import fails', async () => {

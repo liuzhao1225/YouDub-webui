@@ -173,7 +173,6 @@
     "tests/agent-preset-selection.e2e.ts",
     "tests/agent-preset-authoring.e2e.ts",
     "tests/shipped-composition.e2e.ts",
-    "tests/schedule-after.e2e.ts",
     "tests/feedback-command.e2e.ts",
     "tests/feedback-release.e2e.ts",
     "tests/sidebar-right.e2e.ts",

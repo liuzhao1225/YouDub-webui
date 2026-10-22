@@ -339,7 +339,7 @@ describe('package payload constraints', () => {
     })).toEqual(['lib/index.js', 'lib/types/**/*.d.ts'])
   })
 
-  it.each(['agent-team', 'voice-input-bundle', 'auto-review', 'client-ui-voice-input', 'api-speech-to-text'])(
+  it.each(['cot-translation-bundle', 'voice-input-bundle', 'auto-review', 'client-ui-voice-input', 'api-speech-to-text'])(
     'accepts the published locale files for %s and rejects their omission', (name) => {
       const dir = `packages/experimental/${name}`
       const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']

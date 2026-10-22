@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T12:18:40.851Z",
+  "baseCommit": "61fff9c75bbc8aa68d0292ee29f378a1015e1d57",
+  "scope": "P6 batch 16: unused conversation UI and orphaned collaboration services",
+  "removedPackages": [
+    {
+      "name": "@deepseek-ai/dsh-client-ui-attachment",
+      "path": "packages/client/ui-attachment"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-brand-official",
+      "path": "packages/client/ui-brand-official"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-deepseek-model-label-1017",
+      "path": "packages/client/ui-deepseek-model-label-1017"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-jobs",
+      "path": "packages/client/ui-jobs"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-model-selection",
+      "path": "packages/client/ui-model-selection"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-permission-presets",
+      "path": "packages/client/ui-permission-presets"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-plan",
+      "path": "packages/client/ui-plan"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-schedule",
+      "path": "packages/client/ui-schedule"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-secret-mask",
+      "path": "packages/client/ui-secret-mask"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-account",
+      "path": "packages/client/ui-settings-account"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-agent-loop",
+      "path": "packages/client/ui-settings-agent-loop"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-session-log",
+      "path": "packages/client/ui-settings-session-log"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-subagent",
+      "path": "packages/client/ui-settings-subagent"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-web-search",
+      "path": "packages/client/ui-settings-web-search"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-subagent",
+      "path": "packages/client/ui-subagent"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-trajectory",
+      "path": "packages/client/ui-trajectory"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-user-questions",
+      "path": "packages/client/ui-user-questions"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-workflow-run",
+      "path": "packages/client/ui-workflow-run"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-agent-team",
+      "path": "packages/experimental/agent-team"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-worktree",
+      "path": "packages/experimental/worktree"
+    },
+    {
+      "name": "@deepseek-ai/dsh-webhook",
+      "path": "packages/experimental/webhook"
+    }
+  ],
+  "deletedFiles": 655,
+  "sourcePackages": 300,
+  "sourceFiles": 7521,
+  "sourceTreeSha256": "a16a02cdd70c7dc696239c4bdd608f7155ed24f32dacfc60f1ebc5b95e9b8272",
+  "originalSourceTreeSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
+  "restoredSupport": [
+    {
+      "path": ".oxlintrc.json",
+      "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+      "sha256": "b285b45af907c2c40455fcf394270d5a35a95d1999da0475ea5eb99afa200393"
+    },
+    {
+      "path": ".oxlintrc.staged.json",
+      "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+      "sha256": "05356dceba62c7ad25d987be23eb3bc6550d84099dcb9a1962ffa8b77b9bac00"
+    },
+    {
+      "path": "lefthook.yml",
+      "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+      "sha256": "f746f1ce3c77df8f726a15da49744ae55916a941709a2ee985b6fe9576a44623"
+    }
+  ],
+  "closure": {
+    "roots": 79,
+    "runtimeAndTypes": 141,
+    "includingPackageTests": 215,
+    "removedPackageIncomingEdges": [],
+    "runtimeWorkspacePackages": 75,
+    "runtimeSourcePackages": 78
+  },
+  "deferredConsumers": [
+    {
+      "packages": [
+        "@deepseek-ai/dsh-skill-office"
+      ],
+      "reason": "The retained primary-runtime preparation tool still resolves its assets."
+    },
+    {
+      "packages": [
+        "@deepseek-ai/dsh-session-log-export",
+        "@deepseek-ai/dsh-client-ui-message-feedback"
+      ],
+      "reason": "The retained command resolver names the export provider, which depends on message feedback; require separate consumer removal."
+    }
+  ],
+  "validation": {
+    "frameworkBuild": {
+      "passed": 7,
+      "failed": 0,
+      "clientArtifacts": 279,
+      "log": "/tmp/youdub-chat-surfaces-build-final.log"
+    },
+    "targetedTests": {
+      "files": 14,
+      "passed": 712,
+      "failed": 0,
+      "log": "/tmp/youdub-chat-surfaces-tests-final.log"
+    },
+    "clientRuntime": {
+      "files": 12,
+      "passed": 125,
+      "expectedFailure": 1,
+      "expectedFailurePurpose": "The original test.fails case verifies client disposal after a failing test assertion.",
+      "log": "/tmp/youdub-chat-surfaces-client-tests.log"
+    },
+    "realDesktopHost": {
+      "businessBundle": "Unchanged previously validated YouDub business bundle; newly built framework",
+      "log": "/tmp/youdub-chat-surfaces-host-final.log",
+      "passed": 2,
+      "failed": 0
+    },
+    "bilingualPairs": 5,
+    "originalSources": {
+      "checkedAt": "2026-10-22T12:10:22.524Z",
+      "scope": "sources",
+      "passed": true,
+      "checks": [
+        {
+          "scope": "sources",
+          "officialSnapshots": 2,
+          "originalCheckoutUnchanged": true,
+          "youdubSnapshot": "f6f927903581b165f2bf6c840ea65b896d319524",
+          "preservedArtifacts": 10
+        }
+      ],
+      "limitations": [
+        "Official GitHub upload-pack rejected the embedded build commit: not our ref. The public dsh-v0.2.1-rc.2 tag has a different commit; its saved source is not asserted to reproduce this binary.",
+        "This check verifies upstream and baseline integrity. Functional parity requires the separate coverage evidence and application acceptance."
+      ]
+    },
+    "lockfile": "Exact selected importer and workspace-edge removals; all other importer values and third-party snapshots unchanged",
+    "productIsolation": "verify-default-product-isolation: 89 packages, 710 runtime sources, 1 configurations, 33 composed Web plugins exclude experimental packages.",
+    "ci": "pending"
+  },
+  "failuresPreserved": [
+    {
+      "log": "/tmp/youdub-chat-surfaces-tests.log",
+      "summary": "697 passed and one failed locale payload fixture still named removed Agent Team; replaced it with a retained package, preserving the missing-locale rejection."
+    },
+    {
+      "log": "/tmp/youdub-chat-surfaces-oxlint-prior-baseline.log",
+      "summary": "Previous batch already failed 13 of 14 lint contract tests because the partial source lacked official lint configuration and referenced a retired CLI fixture directory."
+    },
+    {
+      "log": "/tmp/youdub-chat-surfaces-oxlint-restored.log",
+      "summary": "A preliminary support-file probe used the older preserved checkout; replaced by byte-identical files from the correct public source commit. Tests also named an absent website and discovered no files under an ignored staging directory."
+    },
+    {
+      "log": "/tmp/youdub-chat-surfaces-oxlint-exact-upstream.log",
+      "summary": "13 passed; one syntax fixture discovery failed. Explicitly enumerate the unchanged fixture corpus, assert nonempty and its critical model file, then run the same linter checks."
+    },
+    {
+      "log": "/tmp/youdub-chat-surfaces-build.log",
+      "summary": "All seven compile gates passed; the final source check rejected pairing sidecars changed in staging during the run. Paired records were copied to the active source ledger and the complete build rerun."
+    }
+  ],
+  "limits": [
+    "Native extension lifecycle remains pending Mac unlock; the isolated review application is preserved.",
+    "This batch does not establish media listening quality or Windows desktop acceptance.",
+    "The shared default build stage and original application window were left unchanged.",
+    "No packaging or release. Overall P0-P7 remains open."
+  ]
+}
