@@ -1,8 +1,6 @@
 /** Shared projection of the live LLM registry into the browser model catalog. */
 
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import { credentialRef } from '@deepseek-ai/dsh-credentials'
-import type {} from '@deepseek-ai/dsh-settings'
 import type { LlmModelInfo } from '@deepseek-ai/dsh-llm'
 import type { Context } from '@deepseek-ai/cordis'
 import type {
@@ -87,30 +85,4 @@ export async function modelAvailable(ctx: Context, selection: ModelSelection): P
       { provider: selection.provider, model: selection.model })
   }
   return models.some(model => model.id === selection.model)
-}
-
-/**
- * Check configured provider API-key references independently of model availability.
- * @param ctx - Host registry, settings, and credential services.
- * @returns whether any API-key provider has a configured credential.
- */
-export async function hasProviderApiKey(ctx: Context): Promise<boolean> {
-  const settings = ctx.get('settings')
-  const credentials = ctx.get('credentials')
-  if (settings === undefined || credentials === undefined) {
-    throw new RemoteError('session/provider-credentials-unavailable', 'provider credentials are unavailable', {})
-  }
-  const namespaces = settings.describe({ redactSecrets: true })
-  for (const provider of ctx.llm.listConfigurableProviders()) {
-    if (provider.provider === 'deepseek-account') continue
-    let profile = namespaces.find(namespace => namespace.ns === provider.settingsNs)?.value
-    for (const key of provider.settingsPath) {
-      profile = typeof profile === 'object' && profile !== null ? Reflect.get(profile, key) : undefined
-    }
-    if (typeof profile !== 'object' || profile === null) continue
-    const ref: unknown = Reflect.get(profile, 'apiKeyEnv')
-    if (typeof ref === 'string' && ref.length > 0
-      && (await credentials.describe(credentialRef(ref))).configured) return true
-  }
-  return false
 }

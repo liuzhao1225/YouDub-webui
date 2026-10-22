@@ -1,7 +1,6 @@
 /** Generated Host Remote contributions used by YouDub settings and extensions. */
 
 import type { Context } from '@deepseek-ai/cordis'
-export type {} from '@deepseek-ai/dsh-client-product-analytics/remote'
 import settingsControllerRemote from '@deepseek-ai/dsh-api-settings-controller/remote'
 import llmRemote from '@deepseek-ai/dsh-llm/remote'
 import pluginManagerRemote from '@deepseek-ai/dsh-plugin-manager/remote'
@@ -29,7 +28,6 @@ export type {} from '@deepseek-ai/dsh-agent-preset-registry/remote'
 export type {} from '@deepseek-ai/dsh-user-questions/remote'
 export type {} from '@deepseek-ai/dsh-commands/remote'
 export type {} from '@deepseek-ai/dsh-api-settings-controller/remote'
-export type {} from '@deepseek-ai/dsh-api-account-controller/remote'
 export type {} from '@deepseek-ai/dsh-goal/remote'
 export type {} from '@deepseek-ai/dsh-schedule/remote'
 export type {} from '@deepseek-ai/dsh-office-to-pdf/remote'

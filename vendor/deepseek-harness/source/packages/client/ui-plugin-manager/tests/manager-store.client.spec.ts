@@ -77,7 +77,7 @@ const NO_CONFIG: HostObservable<ConfigLedger> = {
 
 const NO_TABS: HostObservable<readonly PluginTab[]> = { getSnapshot: () => [], subscribe: () => () => {} }
 
-function bench(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> = {}, enabled = true) {
+function bench(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> = {}) {
   const inventory = { list: overrides.inventory ?? vi.fn(() => Promise.resolve(ok({ entries: [], managementAvailable: true }))) }
   const plugins = {
     listBundles: vi.fn<() => Promise<ReturnType<typeof ok<BundleInfo[]>> | ReturnType<typeof refused>>>(
@@ -95,9 +95,7 @@ function bench(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> = {}
     ...overrides,
   }
   const probe = { fastest: overrides.fastest ?? vi.fn(() => Promise.resolve(ok(null))) }
-  const track = vi.fn()
   const ctx = {
-    get: () => ({ enabled, track }),
     configForms: { describe: () => ({ getSnapshot: () => ({ view: { namespaces: [] } }), subscribe: () => () => {} }), get: vi.fn((id: string) => `form:${id}`) },
     remote: { pluginManager: plugins, pluginInventory: inventory, pluginRegistryProbe: probe },
   } as never
@@ -110,7 +108,7 @@ function bench(overrides: Partial<Record<string, ReturnType<typeof vi.fn>>> = {}
     await vi.waitFor(() => { expect(state().install.phase).toBe('starting') })
     return state().install.requestId as PluginInstallRequestId
   }
-  return { plugins, inventory, probe, controller, face, state, started, track }
+  return { plugins, inventory, probe, controller, face, state, started }
 }
 
 it('hands a custom page the shared configuration form of its entry', () => {
@@ -544,7 +542,7 @@ describe('PluginManagerController', () => {
   })
 
   it('always asks before uninstalling, and cancelling runs nothing', async () => {
-    const { plugins, face, state, controller, track } = bench()
+    const { plugins, face, state, controller } = bench()
     await controller.load()
     face.uninstall(BUNDLE.name)
     expect(state().confirm).toEqual({ action: 'uninstall', packageName: BUNDLE.name })
@@ -552,12 +550,10 @@ describe('PluginManagerController', () => {
     expect(state().confirm).toBeNull()
     face.confirm()
     expect(plugins.removeBundle).not.toHaveBeenCalled()
-    expect(track).not.toHaveBeenCalled()
     face.uninstall(BUNDLE.name)
     face.confirm()
     expect(state().confirm).toBeNull()
     await vi.waitFor(() => { expect(plugins.removeBundle).toHaveBeenCalledExactlyOnceWith(BUNDLE.name) })
-    expect(track).toHaveBeenCalledExactlyOnceWith('confirm_uninstall_plugin', { plugin_name: BUNDLE.name })
     await vi.waitFor(() => { expect(state().busy).toEqual([]) })
     // A refused removal names the action it was.
     plugins.removeBundle.mockResolvedValueOnce(ok({ ...failed(), stage: 'remove', error: { code: 'not-removable' } }) as never)
@@ -587,10 +583,9 @@ describe('PluginManagerController', () => {
     const gate = deferred<ReturnType<typeof ok<ChangeResult>>>()
     const installBundle = vi.fn((): Promise<ReturnType<typeof ok<ChangeResult>>> => Promise.resolve(ok({ ...APPLIED, bundle: 'dsh-other' })))
       .mockReturnValueOnce(gate.promise)
-    const { plugins, face, state, controller, started, track } = bench({ installBundle })
+    const { plugins, face, state, controller, started } = bench({ installBundle })
     await controller.load()
     face.installFrom({ spec: 'dsh-new@1.0.0', registry: 'https://r.example/', title: 'New', version: '1.0.0' })
-    expect(track).not.toHaveBeenCalledWith('plugin_add_button_click', {})
     expect(state().install).toMatchObject({ open: true, spec: 'dsh-new@1.0.0', confirmed: { title: 'New', version: '1.0.0' }, registry: { kind: 'custom', url: 'https://r.example/' } })
     await started()
     expect(plugins.inspect).toHaveBeenCalledWith('dsh-new@1.0.0', { registry: 'https://r.example/' }, expect.any(AbortSignal))
@@ -1122,7 +1117,7 @@ describe('PluginManagerController', () => {
     expect(state().highlight).toBeNull()
   })
 
-  it.each([true, false])('offers the scripts a blocked run left pending, and retries with analytics enabled=%s', async (enabled) => {
+  it('offers the scripts a blocked run left pending and retries after approval', async () => {
     const gates: ReturnType<typeof deferred<Awaited<ReturnType<typeof ok<ChangeResult>> | ReturnType<typeof refused>>>>[] = []
     const { face, state, controller, plugins, started } = bench({
       installBundle: vi.fn(() => {
@@ -1130,7 +1125,7 @@ describe('PluginManagerController', () => {
         gates.push(gate)
         return gate.promise
       }),
-    }, enabled)
+    })
     await controller.load()
     face.openInstall()
     face.editInstallSpec('x')
@@ -1463,7 +1458,7 @@ describe('PluginManagerController', () => {
       removeItem: (key: string) => { storage.delete(key) },
     })
     try {
-      const { plugins, face, state, track } = bench({
+      const { plugins, face, state } = bench({
         inspect: vi.fn(() => Promise.resolve(ok({ ...INSPECTED, registry: 'https://npm.corp.example/' }))),
       })
       face.openInstall()
@@ -1472,9 +1467,6 @@ describe('PluginManagerController', () => {
       face.runInstall()
       expect(state().install).toMatchObject({ phase: 'idle', registryError: true, registryOpen: true })
       expect(plugins.inspect).not.toHaveBeenCalled()
-      expect(track.mock.calls.filter(([event]) => event === 'install_plugin_result')).toEqual([
-        ['install_plugin_result', expect.objectContaining({ input_value: 'dsh-new', is_success: false, error_reason: 'invalid-registry' })],
-      ])
       // Typing again clears the refusal; a URL is asked as typed, trimmed.
       face.chooseRegistry({ kind: 'custom', url: ' https://npm.corp.example ' })
       expect(state().install.registryError).toBe(false)
@@ -1482,9 +1474,6 @@ describe('PluginManagerController', () => {
       expect(plugins.inspect).toHaveBeenCalledWith('dsh-new', { registry: 'https://npm.corp.example' }, expect.any(AbortSignal))
       await vi.waitFor(() => { expect(state().install.phase).toBe('done') })
       expect(plugins.installBundle).toHaveBeenCalledWith('dsh-new', expect.objectContaining({ registry: 'https://npm.corp.example/' }))
-      const results = track.mock.calls.filter(([event]) => event === 'install_plugin_result')
-      expect(results).toHaveLength(2)
-      expect(results[1]).toEqual(['install_plugin_result', expect.objectContaining({ is_success: true, plugin_name: 'dsh-new' })])
       // A dialog opened later, by another controller, starts from the registry last used.
       const later = bench()
       later.face.openInstall()
@@ -1731,104 +1720,17 @@ it('recognizes the official registry without a trailing slash and with uppercase
 })
 
 
-describe('desktop analytics outcomes', () => {
-  it('redacts authenticated installer URLs from click and failed-result events', async () => {
-    const b = bench({ inspect: vi.fn(async () => ok({ status: 'refused', problem: 'not-bundle', reason: 'refused' })) })
-    b.face.openInstall()
-    b.face.editInstallSpec('git+https://user:private-token@example.invalid/repo.git?token=private-token')
-    b.face.runInstall()
-    await vi.waitFor(() => { expect(b.track).toHaveBeenCalledWith('install_plugin_result', expect.objectContaining({ input_value: '[git]' })) })
-    expect(b.track).toHaveBeenCalledWith('plugin_install_click', { input_value: '[git]' })
-    expect(JSON.stringify(b.track.mock.calls)).not.toContain('private-token')
-  })
-
-  it('reports input inspection failure separately from cancellation', async () => {
-    const b = bench({ inspect: vi.fn(async () => ok({ status: 'refused', problem: 'not-bundle', reason: 'not a bundle' })) })
-    b.face.openInstall()
-    b.face.editInstallSpec('dsh-new')
-    b.face.runInstall()
-    await vi.waitFor(() => { expect(b.track).toHaveBeenCalledWith('install_plugin_result', expect.objectContaining({ input_value: 'dsh-new', is_success: false, error_reason: 'not-bundle', duration: expect.any(Number) as number })) })
-    expect(b.track).toHaveBeenCalledWith('plugin_install_click', { input_value: 'dsh-new' })
-  })
-
-  it('reports unknown only after recovery confirms the result is absent', async () => {
-    const lost = deferred<ReturnType<typeof ok<ChangeResult | null>>>()
-    const b = bench({ installBundle: vi.fn(async () => refused('gateway/internal', 'offline')), waitForInstall: vi.fn(() => lost.promise) })
-    b.face.openInstall()
-    b.face.editInstallSpec('dsh-new')
-    b.face.runInstall()
-    await vi.waitFor(() => { expect(b.plugins.waitForInstall).toHaveBeenCalledTimes(1) })
-    expect(b.track.mock.calls.filter(call => call[0] === 'install_plugin_result')).toEqual([])
-    lost.resolve(ok(null))
-    await vi.waitFor(() => { expect(b.track).toHaveBeenCalledWith('install_plugin_result', expect.objectContaining({ error_reason: 'unknown_result', is_success: false })) })
-    b.face.reconcileInstall()
-    expect(b.track.mock.calls.filter(call => call[0] === 'install_plugin_result')).toHaveLength(1)
-  })
-
-  it('closing during inspection reports user_cancelled once', async () => {
-    const inspecting = deferred<ReturnType<typeof ok<typeof INSPECTED>>>()
-    const b = bench({ inspect: vi.fn(() => inspecting.promise) })
-    b.face.openInstall()
-    b.face.editInstallSpec('dsh-new')
-    b.face.runInstall()
-    await vi.waitFor(() => { expect(b.plugins.inspect).toHaveBeenCalledTimes(1) })
-    b.face.closeInstall()
-    inspecting.resolve(ok(INSPECTED))
-    await Promise.resolve()
-    const results = b.track.mock.calls.filter(call => call[0] === 'install_plugin_result')
-    expect(results).toHaveLength(1)
-    expect(results[0]?.[1]).toMatchObject({ error_reason: 'user_cancelled', is_success: false })
-    expect(results[0]?.[1]).not.toHaveProperty('result_status')
-    expect(results[0]?.[1]).not.toHaveProperty('plugin_type')
-    expect(b.plugins.installBundle).not.toHaveBeenCalled()
-  })
-
-  it('uses bundle and plugin types only after successful changes', async () => {
-    const b = bench()
-    await b.controller.load()
-    b.face.setEnabled(BUNDLE.name, true)
-    await vi.waitFor(() => { expect(b.track).toHaveBeenCalledWith('plugin_toggle', { plugin_name: BUNDLE.name, plugin_type: 'bundle', is_enabled: true, is_builtin: false }) })
-    b.face.setRowEnabled(ROW_ENTRY, false)
-    await vi.waitFor(() => { expect(b.track).toHaveBeenCalledWith('plugin_toggle', { plugin_name: BUNDLE.name, plugin_type: 'plugin', is_enabled: false, is_builtin: false }) })
-    b.plugins.setBundleEnabled.mockResolvedValueOnce(ok({ ...APPLIED, application: 'cancelled' }))
-    b.face.setEnabled(BUNDLE.name, false)
-    await vi.waitFor(() => { expect(b.state().busy).toEqual([]) })
-    expect(b.track.mock.calls.filter(call => call[0] === 'plugin_toggle')).toHaveLength(2)
-  })
-})
-
-
-it('does not retain install identity when analytics is disabled', async () => {
-  const b = bench({}, false)
-  b.face.openInstall()
-  b.face.editInstallSpec('dsh-new')
-  b.face.runInstall()
-  await vi.waitFor(() => { expect(b.state().install.phase).toBe('done') })
-  expect(b.track.mock.calls.filter(([name]) => name === 'plugin_install_click' || name === 'install_plugin_result')).toEqual([])
-})
-
-it('reports restart-required row toggles and tolerates a vanished inventory entry', async () => {
+it('applies restart-required row toggles and handles a vanished inventory entry', async () => {
   const b = bench({ setPluginEnabled: vi.fn(async () => ok({ ...APPLIED, application: 'restart-required' })) })
   await b.controller.load()
   b.face.setRowEnabled(ROW_ENTRY, true)
-  await vi.waitFor(() => { expect(b.track).toHaveBeenCalledWith('plugin_toggle', expect.objectContaining({ plugin_type: 'plugin' })) })
+  await vi.waitFor(() => { expect(b.state().busy).toEqual([]) })
+  expect(b.plugins.setPluginEnabled).toHaveBeenCalledExactlyOnceWith(ROW_ENTRY, true)
+  expect(b.state().notice?.kind).toBe('restart')
   b.face.setEnabled('vanished-package', true)
   await vi.waitFor(() => { expect(b.state().busy).toEqual([]) })
-  expect(b.track.mock.calls.filter(([name]) => name === 'plugin_toggle')).toHaveLength(1)
+  expect(b.plugins.setBundleEnabled).toHaveBeenCalledExactlyOnceWith('vanished-package', true)
 })
-
-it('reports a successful install with only documented result fields', async () => {
-  const b = bench()
-  b.face.openInstall()
-  b.face.editInstallSpec('dsh-new')
-  b.face.runInstall()
-  await vi.waitFor(() => { expect(b.state().install.phase).toBe('done') })
-  const results = b.track.mock.calls.filter(([name]) => name === 'install_plugin_result')
-  expect(results).toEqual([['install_plugin_result', {
-    input_value: 'dsh-new', is_success: true, duration: expect.any(Number) as number, plugin_name: 'dsh-new',
-  }]])
-})
-
 
 const CATALOG: BundleInfo = {
   name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, availability: 'missing', installed: false, optional: false,
@@ -1848,14 +1750,14 @@ it('installs an absent Official entry directly at the host target and enables it
   expect(state().install.subject).toMatchObject({ selection: true, saveExact: true, version: '2.0.0' })
 })
 
-it.each(['before', 'after'] as const)('reports one Official toggle when inventory refresh finishes %s installation', async (order) => {
+it.each(['before', 'after'] as const)('retains the installed Official entry when inventory refresh finishes %s installation', async (order) => {
   const installing = deferred<ReturnType<typeof ok<ChangeResult>>>()
   const refreshing = deferred<ReturnType<typeof ok<BundleInfo[]>>>()
   const installed: BundleInfo = { ...CATALOG, availability: 'profile', installed: true, enabled: true, removable: true, version: '2.0.0' }
   const result = ok({ ...APPLIED, bundle: CATALOG.name })
   const listBundles = vi.fn().mockResolvedValue(ok([installed]))
     .mockResolvedValueOnce(ok([CATALOG])).mockReturnValueOnce(refreshing.promise)
-  const { controller, face, state, started, track } = bench({ listBundles, installBundle: vi.fn(() => installing.promise) })
+  const { controller, face, state, started } = bench({ listBundles, installBundle: vi.fn(() => installing.promise) })
   const reads: Promise<void>[] = []
   onTestFinished(async () => { installing.resolve(result); refreshing.resolve(ok([installed])); await Promise.all(reads) })
   await controller.load()
@@ -1871,13 +1773,11 @@ it.each(['before', 'after'] as const)('reports one Official toggle when inventor
   }
   installing.resolve(result)
   await vi.waitFor(() => { expect(state().install.phase).toBe('done') })
-  expect(track.mock.calls.filter(([event]) => event === 'plugin_toggle')).toEqual([['plugin_toggle', {
-    plugin_name: CATALOG.name, plugin_type: 'bundle', is_enabled: true, is_builtin: false,
-  }]])
   refreshing.resolve(ok([installed]))
   await refresh
   await controller.load()
-  expect(track.mock.calls.filter(([event]) => event === 'plugin_toggle')).toHaveLength(1)
+  expect(state().packages.find(pkg => pkg.name === CATALOG.name)).toMatchObject({ availability: 'profile', enabled: true })
+  expect(state().highlight).toBe(CATALOG.name)
 })
 
 it.each([true, false])('updates an Official entry with enabled=%s by removing it, then using the same exact installer', async (enabled) => {

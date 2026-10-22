@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。当前记录包含第 26 批首启引导清理及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。第 26 批已通过本地检查；Windows 原生组合用例超时后拆分，修复候选的双平台 CI 待验证；原生和完整媒体的最终验收继续开放。
+更新：2026-10-23。第 26 批及 Windows 原生测试拆分的 a6c4d1a 双平台 CI 已通过。第 27 批移除旧账号、产品统计链并修复外部插件的 YouDub SDK 解析，本地验证通过，双平台 CI 待验证。最终原生和完整媒体验收继续开放。
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -15,9 +15,10 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 209 包、5,228 个树条目，源码 SHA-256 为 `ac1a11eb4c2e900d3a1ee0dfea314932d80a40a7012b8ce4874bcbda0622f28c`（第 26 批及 Windows 原生测试拆分）。运行时和类型闭包为 141 包，含测试为 203 包。其余 6 包为通用 Typert 生成器、native/system workspace 与 4 个平台 addon；动态/根消费者已记录。第 25 批移除了无消费者的 vendored HMR 与 console logger，保留实际使用的通用 HMR 和日志实现。[第 25 批证据](evidence/refactor-unused-vendor-prune.json)
+当前活动框架为 204 包、5,151 个树条目，源码 SHA-256 为 `8d0841733ac928cf2b40a6837631ca4aec758cd69435f05ded6849054d217f21`。第 27 批移除五个旧账号/产品统计包，保留通用凭据、API Key、日志、模型选择和扩展服务。默认产品隔离检查为 87 包、692 个运行源码、33 个 Web 插件。[本批证据](evidence/refactor-account-prune.json)
 
-源码构建的 235 个客户端产物包含可选框架库，不能用于推算产品实际加载的插件数。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
+源码构建的 233 个客户端产物包含可选框架库。第 19 批修复的 staging 清理继续生效，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
+
 
 ## 功能验收矩阵
 
@@ -44,7 +45,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | 原分支与当前 VoxCPM2 均只声明 source_clone，预设音色被明确拒绝；两项能力/拒绝合同通过。其他支持的设备和输入组合仍待验收。[边界核对](evidence/refactor-voxcpm-voice-scope.json) |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
-| A20 构建与平台 | 当前 e0f899a1 的 macOS 与 Windows 干净 CI 全部通过；聚合类型、GUI 8,077 项、profile 6,689 项、业务界面 268 项、产品 78 项、Python 525 项；Windows 桌面/进程 567 项、产品合同 32 项与两种实际 Host 通过。预期失败和跳过保留在原日志中。[当前 CI](evidence/refactor-shared-modal-store.json) | 最终原生交互、下载/退出组合、完整媒体质量及启动测量仍开放 |
+| A20 构建与平台 | a6c4d1a 的 macOS 与 Windows 干净 CI 全部通过。[CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39866708470) 第 27 批本地七项构建、两项类型门、647 项定向、7,927 项 GUI、11 项实际 Host/profile 回归通过。[记录](evidence/refactor-account-prune.json) | 第 27 批双平台 CI、最终原生交互、下载/退出组合、完整媒体质量及启动测量仍开放 |
 
 ## P4 基础控件统一（2026-10-23）
 
@@ -66,3 +67,9 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 ## P4 弹窗与状态存储统一（2026-10-23）
 
 工作流离开保护直接调用官方 Modal，删除桌面 Dialog 适配及对应构建替换；查询、资源、首启和草稿控制器共用 Harness Store 来源入口，删除桌面专用 Store 和 Zustand 构建替换。268 项前端回归、类型、产品构建与组合检查通过。独立实际 Host 已验证日语弹窗焦点循环、Escape 保留草稿、放弃后读回原工作流，以及打开设置后首页视频链接仍保留；没有提交媒体任务。剩余 locale/theme 绑定只读写官方服务，文件及导航边界有明确消费者。原生文件框、窗口动效和最终平台验收继续开放。[证据](evidence/refactor-shared-modal-store.json)
+
+## 第 27 批：账号链清理与插件 SDK 解析
+
+五个旧账号/统计包及 75 个原包文件已退出活动 fork；清除对应的 Remote 事件、专属默认模型初始化和可选统计调用。通用提供商编辑、凭据、错误传播、插件操作和 API Key 传输断言保留。缺失的消息回放夹具直接复制冻结原档中的原字节。[清理记录](evidence/refactor-account-prune.json)
+
+实际 Host 安装本地扩展时暴露 `@youdub/harness-subtitles` 无法解析。开发运行时现显式声明并链接应用自己的 SDK，继续由 Harness 原解析器处理。隔离日语页面已验证安装、页面按钮、停用、同进程启用和卸载；清理后 profile 不再引用测试插件，控制台无警告或错误。此次使用浏览器交互，原生文件框仍待最终验收。

@@ -27,7 +27,7 @@ base bundle 挂载 `@deepseek-ai/dsh-otel`。独立组合必须在注入 `otel` 
 
 返回的通道由调用方持有。普通事件 `shutdown(signal)` 在传入信号中止时取消请求和重试等待，并在传输清理完成后返回。将关闭注册到调用方的 Cordis fiber，并用配置的期限约束完整清空过程。注入机制使服务替换时卸载依赖方。调用方卸载后不得继续保留通道。产品和 Session 适配器为 UI 和反馈调用方实现这些职责。
 
-普通通道使用 SDK 按条数聚合。Session 通道将每条完整事件保留为一个记录，包含 `eventName: "session-log"`、`sessionId` 和 JSON 字符串 `content`，并保证未压缩请求不超过 4,000,000 字节。字节限制、单条拒绝、串行传输结束和关闭行为见 [Session 适配器](../../session/session-telemetry-otel/README.zh.md)。Session 通道不会与普通事件共享请求或队列。
+普通通道使用 SDK 按条数聚合。Session 通道将每条完整事件保留为一个记录，包含 `eventName: "session-log"`、`sessionId` 和 JSON 字符串 `content`，并保证未压缩请求不超过 4,000,000 字节。字节限制、单条拒绝、串行传输结束和关闭行为见 Session 适配器。Session 通道不会与普通事件共享请求或队列。
 
 Header 显式提供。服务不会附加 channel header，也不继承环境中的授权 header 或 TLS 身份。Agent factory 配置返回的 agent，包括 keepAlive。普通事件通道在关闭时销毁自己的 agent；factory 必须为每个通道提供独立 agent。每个调用方提供 scope 名称和版本，因此共享传输不会改变事件归属。
 
@@ -43,9 +43,8 @@ Header 显式提供。服务不会附加 channel header，也不继承环境中�
 <a id="further-exploration"></a>
 ## 进一步探索
 
-- [OTel 子系统](../../../docs/subsystems/otel.zh.md) — 服务职责与 API。
-- [产品适配器](../../host/product-telemetry-otel/README.zh.md) — 显式埋点策略与配置。
-- [Session 适配器](../../session/session-telemetry-otel/README.zh.md) — 反馈授权和上传限制配置。
+- OTel 子系统 — 服务职责与 API。
+- Session 适配器 — 反馈授权和上传限制配置。
 
 <a id="model-experience"></a>
 ## 模型体验

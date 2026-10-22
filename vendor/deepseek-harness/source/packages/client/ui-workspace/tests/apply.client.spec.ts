@@ -616,7 +616,7 @@ describe('ui-workspace apply', () => {
     const [request] = b.fork.mock.calls[0]!
     const { onCreated, ...payload } = request
     expect(payload).toEqual({ sessionId: 'session', increaseTitle: true, allowMigration: false })
-    expect(onCreated).toBeTypeOf('function')
+    expect(onCreated).toBeUndefined()
     expect(b.retain).not.toHaveBeenCalled()
     expect(b.selectPanel).not.toHaveBeenCalled()
 
@@ -676,7 +676,7 @@ describe('ui-workspace apply', () => {
       const [request] = b.fork.mock.calls[0]!
       const { onCreated, ...payload } = request
       expect(payload).toEqual({ sessionId: 'source', increaseTitle: true, allowMigration: false })
-      expect(onCreated).toBeTypeOf('function')
+      expect(onCreated).toBeUndefined()
       expect(toast.hooks.toast.getSnapshot()).toBeNull()
       expect(b.retain).not.toHaveBeenCalled()
       expect(b.selectPanel).not.toHaveBeenCalled()
@@ -762,7 +762,7 @@ describe('ui-workspace apply', () => {
     const [request] = b.fork.mock.calls[0]!
     const { onCreated, ...payload } = request
     expect(payload).toEqual({ sessionId: 'source', increaseTitle: true, allowMigration: false })
-    expect(onCreated).toBeTypeOf('function')
+    expect(onCreated).toBeUndefined()
     expect(toast.hooks.toast.getSnapshot()).toBeNull()
     expect(b.retain).not.toHaveBeenCalled()
     expect(b.selectPanel).not.toHaveBeenCalled()

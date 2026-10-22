@@ -30,7 +30,7 @@ function lastStep(context: ConversationNodeContext<TurnErrorState>): number {
 }
 
 /**
- * Failure shown for a turn ending: a recorded error, a sign-out cancellation,
+ * Failure shown for a turn ending: a recorded error
  * or a turn that restart recovery closed because the DSH process exited mid-turn.
  */
 function endFailure(reason: TurnEndReason): { readonly message: string; readonly code?: string } | undefined {
@@ -38,10 +38,8 @@ function endFailure(reason: TurnEndReason): { readonly message: string; readonly
     case 'error':
       return reason.error
     case 'aborted':
-      // User and parent cancellations show only the stopped turn summary.
-      return reason.reason.kind === 'hook' && reason.reason.reason === 'deepseek-account/signed-out'
-        ? { message: 'Stopped because you signed out of DeepSeek.', code: 'ACCOUNT_SIGNED_OUT' }
-        : undefined
+      // Cancellations show only the stopped turn summary.
+      return undefined
     case 'interrupted':
       return { message: 'The DSH process exited before this turn finished.', code: 'INTERRUPTED' }
     default:

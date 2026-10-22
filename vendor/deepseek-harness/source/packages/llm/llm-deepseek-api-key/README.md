@@ -37,7 +37,7 @@ Authentication resolution returns the validated API key in `x-api-key` for both 
 
 The endpoint and credential reference come from one configuration resolution. In-flight requests retain that snapshot; subsequent updates affect subsequent calls. Account login state cannot change this route’s credential.
 
-`models` is an independently configurable catalog for this provider; defaults and protocol capabilities come from the shared transport. Discovery does not probe inference endpoints. The settings namespace is the Cordis entry id, or the plugin name without an entry. Product profiles retain the official entry id `llm-deepseek` and use `llm-deepseek-account` for the account route.
+`models` is an independently configurable catalog for this provider; defaults and protocol capabilities come from the shared transport. Discovery does not probe inference endpoints. The settings namespace is the Cordis entry id, or the plugin name without an entry. Product profiles use the entry id `llm-deepseek` for this provider.
 
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
@@ -47,7 +47,7 @@ Registrations and listeners dispose with the plugin. Shared Host wiring supplies
 <a id="further-exploration"></a>
 ## Further Exploration
 
-[LLM streaming](../../../docs/subsystems/llm-streaming.md) · [Messages](../llm-deepseek/README.md)
+LLM streaming · [Messages](../llm-deepseek/README.md)
 
 <a id="model-experience"></a>
 ## Model Experience

@@ -37,7 +37,7 @@ kind: "package-reference"
 
 端点和凭据引用来自同一次配置解析；进行中的请求保留该快照，后续配置更新仅影响后续请求。账号登录态不影响该路由使用的凭据。
 
-`models` 是该 provider 独立的可配置目录；默认值和协议能力来自共享传输包。目录判断不探测推理端点。设置命名空间采用 Cordis entry id，没有 entry 时采用插件名。产品保留 official 的 `llm-deepseek` entry id，账号使用 `llm-deepseek-account`。
+`models` 是该 provider 独立的可配置目录；默认值和协议能力来自共享传输包。目录判断不探测推理端点。设置命名空间采用 Cordis entry id，没有 entry 时采用插件名。产品组合使用 `llm-deepseek` 作为该提供方的 entry id。
 
 <a id="understand-the-implementation"></a>
 ## 理解实现
@@ -47,7 +47,7 @@ kind: "package-reference"
 <a id="further-exploration"></a>
 ## 进一步探索
 
-[LLM streaming](../../../docs/subsystems/llm-streaming.zh.md) · [Messages](../llm-deepseek/README.zh.md)
+LLM streaming · [Messages](../llm-deepseek/README.zh.md)
 
 <a id="model-experience"></a>
 ## 模型体验

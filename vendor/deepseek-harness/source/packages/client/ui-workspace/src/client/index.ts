@@ -15,7 +15,6 @@
  * its relative time and its trailing status line. Export discipline:
  * packages/client/AGENTS.md.
  */
-import type {} from '@deepseek-ai/dsh-client-product-analytics/client'
 import type { Context } from '@deepseek-ai/cordis'
 import type { RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ISessions, SessionForkError } from '@deepseek-ai/dsh-api-session-controller/client'
@@ -223,9 +222,7 @@ export function apply(ctx: Context): void {
   })
   const forkInjected = (): ForkSessionInjected => ({
     forkSession: (sessionId) => {
-      uiWorkspace.forkSession(sessionId, (childId) => {
-        ctx.get('productAnalytics')?.track('branch_session_click', { session_id: childId, parent_session_id: sessionId, click_position: 'sidebar' })
-      }, { allowMigration: false }).catch((error: unknown) => {
+      uiWorkspace.forkSession(sessionId, undefined, { allowMigration: false }).catch((error: unknown) => {
         if (error instanceof Error && error.name === 'SessionForkError'
           && (error as SessionForkError).rpcError.code === 'session/migration-required') {
           notify({ kind: 'forkRequiresOpen', sessionId })

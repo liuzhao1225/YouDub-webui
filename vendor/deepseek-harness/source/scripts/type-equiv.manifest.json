@@ -2227,16 +2227,6 @@
       "source": "packages/subagent/subagent/src/types.ts"
     },
     {
-      "doc": "docs/subsystems/product-telemetry.md",
-      "symbol": "ProductTelemetryScalar",
-      "source": "packages/host/product-telemetry-otel/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/product-telemetry.md",
-      "symbol": "ProductTelemetryRecord",
-      "source": "packages/host/product-telemetry-otel/src/index.ts"
-    },
-    {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentDescendantListEntry",
       "source": "packages/subagent/subagent/src/list-children.ts"

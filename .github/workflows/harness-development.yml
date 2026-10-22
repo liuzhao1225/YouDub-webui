@@ -78,6 +78,9 @@ jobs:
       - name: 检查 profile 与插件生命周期
         working-directory: .cache/harness/source-build
         run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-no-top-level-await.spec.ts scripts/coverage-partitions.spec.ts scripts/run-gates.spec.ts scripts/translation-pairing.spec.ts scripts/rescope-vendor.spec.ts scripts/verify-product-use.spec.ts scripts/verify-default-product-isolation.spec.ts scripts/verify-runtime-closure.spec.ts scripts/web-product-bundle-isolation.spec.ts scripts/browser-bundled-externals.spec.ts scripts/check-workspace-constraints.spec.ts packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts packages/bundle/web-app
+      - name: 检查保留的 API Key 传输与模型选择
+        working-directory: .cache/harness/source-build
+        run: node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/llm/llm-deepseek/tests packages/llm/llm-deepseek-api-key/tests packages/api/session-controller/tests/session-models.host.spec.ts
       - name: 检查裁剪后的包边界和目录生成
         run: |
           cd .cache/harness/source-build

@@ -2848,15 +2848,6 @@ describe('built-in conversation node Definitions', () => {
 })
 
 
-it('retains a sign-out cancellation notice when reopening a partial turn', () => {
-  const value = assembler([
-    at(7, 'turn/end', { turn: 1, reason: { kind: 'aborted', reason: { kind: 'hook', reason: 'deepseek-account/signed-out' } } }),
-  ], true)
-  expect(node(snapshot(value), 'turn-error')?.data).toMatchObject({
-    code: 'ACCOUNT_SIGNED_OUT', message: 'Stopped because you signed out of DeepSeek.',
-  })
-})
-
 it('reports a turn closed after its process exited as a stopped turn', () => {
   const value = assembler([
     at(7, 'turn/end', { turn: 1, reason: { kind: 'interrupted' } }),

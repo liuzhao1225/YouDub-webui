@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { prepareYouDubProfile } from '../prepare-profile.mjs';
 import { prepareSourceDevelopment } from '../prepare-source-development.mjs';
 import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts';
@@ -29,6 +30,9 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   const home = join(directory, 'home'), profile = join(home, 'profiles/desktop');
   const { project: runtime, pluginRoot: plugin, node, pnpm, nodeBin } = await prepareSourceDevelopment({ projectDirectory: join(directory, 'runtime') });
   const inventory = JSON.parse(await readFile(join(runtime, 'youdub-source-runtime.json'), 'utf8'));
+  const runtimeRequire = createRequire(join(runtime, 'package.json'));
+  assert.equal(await realpath(runtimeRequire.resolve('@youdub/harness-subtitles')), await realpath(join(plugin, 'dist/host.mjs')),
+    'Source-linked extensions must resolve the application-owned YouDub SDK');
   for (const name of ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-deepseek-account', '@deepseek-ai/dsh-acp-app',
     '@deepseek-ai/dsh-skill-office', '@deepseek-ai/dsh-tool-workspace-dependencies', '@deepseek-ai/dsh-experimental-agent-team-profile']) {
     assert(!inventory.sourcePackages.some(pkg => pkg.name === name), `Unrelated runtime dependency: ${name}`);

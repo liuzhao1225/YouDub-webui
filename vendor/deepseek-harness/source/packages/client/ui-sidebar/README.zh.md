@@ -7,7 +7,6 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-桌面端产品事件使用可选的[产品埋点服务](../product-analytics/README.zh.md)，不包含普通 Web 交互。
 
 ## 概述
 
@@ -82,7 +81,7 @@ dsh Web 客户端的侧边栏让用户识别当前构建、启动新会话、将
 - [ui-settings](../ui-settings/README.zh.md)——在 `sidebar.settings` 注册触发行与设置面板的设置领域底座。
 - [ui-layout](../ui-layout/README.zh.md)——折叠所使用轨道与栏状态的布局 owner。
 - [ui-theme](../ui-theme/README.zh.md)——外壳所重新绑定的滚动条 token 间接层。
-- [slot 系统标准](../../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.zh.md)——席位背后的组合模型。
+- slot 系统标准——席位背后的组合模型。
 
 -----
 

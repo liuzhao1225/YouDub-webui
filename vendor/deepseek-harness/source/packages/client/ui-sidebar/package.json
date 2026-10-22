@@ -62,8 +62,7 @@
     "@deepseek-ai/cordis": "workspace:~",
     "react": "^18.2.0",
     "clsx": "^2.0.0",
-    "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
-    "@deepseek-ai/dsh-client-product-analytics": "workspace:*"
+    "@deepseek-ai/dsh-client-shortcuts": "workspace:*"
   },
   "files": [
     "locale/*.json",

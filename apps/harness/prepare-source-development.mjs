@@ -67,6 +67,15 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
   await mkdir(join(pluginRoot, 'dist'), { recursive: true });
   for (const name of ['package.json', 'cordis.patch.yml']) await cp(join(here, name), join(pluginRoot, name));
   for (const name of ['host.mjs', 'client.js']) await cp(join(here, 'dist', name), join(pluginRoot, 'dist', name));
+  // External source-linked plugins import the YouDub SDK as a peer. Publish
+  // that SDK from the application, alongside the framework services.
+  const productManifest = JSON.parse(await readFile(join(pluginRoot, 'package.json'), 'utf8'));
+  await mkdir(join(project, 'node_modules/@youdub'), { recursive: true });
+  await symlink(pluginRoot, join(project, 'node_modules', productManifest.name), 'dir');
+  const projectManifestPath = join(project, 'package.json');
+  const projectManifest = JSON.parse(await readFile(projectManifestPath, 'utf8'));
+  projectManifest.dependencies[productManifest.name] = productManifest.version;
+  await writeFile(projectManifestPath, JSON.stringify(projectManifest, null, 2) + '\n');
   const dependencyLink = join(pluginRoot, 'node_modules');
   try {
     const entry = await lstat(dependencyLink);

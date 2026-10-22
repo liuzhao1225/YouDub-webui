@@ -27,7 +27,6 @@ llm 组提供 harness 的模型调用能力：一个提供方无关的服务，�
 | [`llm/`](llm/README.zh.md) | 通过已注册的提供方适配器流式发起一次模型调用，并共享 harness 的消息、块与分片词汇 | `ctx.llm` |
 | [`llm-deepseek/`](llm-deepseek/README.zh.md) | 共享 Messages 协议、请求配置与模型能力 | — |
 | [`llm-deepseek-api-key/`](llm-deepseek-api-key/README.zh.md) | API key 鉴权与 official 模型发现 | `ctx.llm` |
-| [`llm-deepseek-account/`](llm-deepseek-account/README.zh.md) | 账号 token 鉴权、失效处理与模型发现 | `ctx.llm` |
 | [`llm-pi-ai/`](llm-pi-ai/README.zh.md) | 通过 pi-ai 目录与协议格式服务配置的提供方路由，包括手工声明的网关 | 注册到 `ctx.llm` |
 | [`deepseek-llm-api-extensions/`](deepseek-llm-api-extensions/README.zh.md) | 在官方 DeepSeek 请求上注册具有生命周期归属的顶层字段 | `ctx.deepseekLlmApiExtensions` |
 | [`plugin-package-inventory-deepseek/`](plugin-package-inventory-deepseek/README.zh.md) | 为官方 DeepSeek 请求贡献当前启用的 Loader 包清单 | 贡献 `dsh_plugin_packages` |
@@ -39,10 +38,10 @@ llm 组提供 harness 的模型调用能力：一个提供方无关的服务，�
 <a id="related-documentation"></a>
 ## 相关文档
 
-- [LLM 流式子系统](../../docs/subsystems/llm-streaming.zh.md)——消息与块类型、组装后的模型请求、`StreamChunk` 协议与适配器约定（adapter contract）。
-- [Token 计量子系统](../../docs/subsystems/token-meter.zh.md)——`ctx.tokenMeter` 背后的测量语义。
-- [孪生 LLM 适配器](../../.agents/notes/implemented/architecture/2026-06-13-twin-llm-adapters.zh.md)——为什么 DeepSeek 路由交付两个结构不同的适配器。
-- [按路由的模型上下文](../../.agents/notes/implemented/architecture/2026-07-20-routed-model-context-and-compaction-policy.zh.md)——loop 如何路由模型请求并压缩上下文。
+- LLM 流式子系统——消息与块类型、组装后的模型请求、`StreamChunk` 协议与适配器约定（adapter contract）。
+- Token 计量子系统——`ctx.tokenMeter` 背后的测量语义。
+- 孪生 LLM 适配器——为什么 DeepSeek 路由交付两个结构不同的适配器。
+- 按路由的模型上下文——loop 如何路由模型请求并压缩上下文。
 
 <a id="dev-note"></a>
 ## 开发备注

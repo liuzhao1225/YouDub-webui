@@ -673,4 +673,16 @@ AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、2
 
 第 26 批首次 Windows CI 有 566 项通过、1 项失败、27 项跳过；失败是 native-windows 将相对路径启动及四种拒绝场景串行装入同一个 5 秒测试用例后超时。现按独立场景拆为五例，原来的十个 done/waitForExit 断言和每例超时全部保留。macOS 本地不支持该原生 API，因此新的 Windows CI 通过前不宣称修复完成。[原失败记录](evidence/refactor-onboarding-prune.json)
 
-旧账号与统计链的五个候选包共 75 个文件，实际运行清单均未包含；所有清理前消费者与验证要求已整理。[待执行清单](evidence/refactor-account-residual-audit.json)
+旧账号与统计链的五个候选包共 75 个文件，实际运行清单均未包含；所有清理前消费者与验证要求已整理。[清理前审计](evidence/refactor-account-residual-audit.json)
+
+### 第 26 批 CI 结果与第 27 批账号链清理
+
+原生边界测试拆分候选 a6c4d1a 的 macOS、Windows 干净 CI 均已通过；原失败记录保留。[CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39866708470)、[读回](evidence/refactor-onboarding-prune.json)
+
+第 27 批移除 deepseek-account、account-controller、llm-deepseek-account、product-analytics、product-telemetry-otel 五包（75 个原包文件），清除依赖清单、TS reference、锁文件、Remote 事件、默认账号模型初始化和前端可选统计调用。API Key 的 401/403、自定义 URL、重定向拒绝、凭据可用性、流式处理、dispose 与模型选择测试继续运行；CI 增加对应回归。11 组双语 README 同步清理失效引用，原第三方声明重新生成后字节不变。
+
+最初的回放测试缺少 `session.v2.jsonl`。从冻结归档直接恢复原字节后，23 个文件的 647 项定向检查全部通过。完整 GUI 为 495 个文件、7,927 项通过、1 项预期失败、1 项跳过；源码七门、聚合类型两门及实际 Host/profile 11 项通过。原归档未修改。[完整证据及失败记录](evidence/refactor-account-prune.json)
+
+日语实际 Host 页面确认无默认账号或提供商；本地扩展安装后首次启用报 SDK 缺失。原因是开发运行时未声明应用拥有的 YouDub SDK，外部目录链接扩展无法通过既有解析器找到该 peer。`prepare-source-development.mjs` 现将产品包列入运行时依赖并链接到构建后的业务插件。修复后完成按钮交互、停用、同进程再启用和卸载读回，测试依赖已移除，最终控制台零警告/错误。额外合同比较 SDK 的实际路径，兼容 macOS `/var` 与 `/private/var`。
+
+本批源码为 204 包、5,151 个树条目、233 个客户端产物。双平台 CI 待本批提交后验证。浏览器结果与原生窗口验收分开记录，最终媒体质量和两个飞书文档更新继续保留。
