@@ -1,3 +1,5 @@
+import { NativeSelect } from '@/components/ui/native-select'
+import { Input } from '@/components/ui/input'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
  * One provider's editor card, hand-written per adapter family: the primary
@@ -372,8 +374,8 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       <>
         <div className={styles['field']}>
           <span className={styles['fieldLabel']}>{t('keyInput')}</span>
-          <input
-            className={styles['input']}
+          <Input
+
             type="password"
             autoComplete="off"
             value={keyDraft}
@@ -397,8 +399,8 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
               ? (
                 <div className={styles['field']}>
                   <span className={styles['fieldLabel']}>{t('customDisplayName')}</span>
-                  <input
-                    className={styles['input']}
+                  <Input
+
                     type="text"
                     value={stringAt(draft, 'displayName') ?? ''}
                     // What this route is called the moment the field is
@@ -419,8 +421,8 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
               : null}
             <div className={styles['field']}>
               <span className={styles['fieldLabel']}>{t('baseUrl')}</span>
-              <input
-                className={styles['input']}
+              <Input
+
                 type="text"
                 value={stringAt(draft, 'baseURL') ?? ''}
                 placeholder={family === 'deepseek'
@@ -439,8 +441,8 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
               ? (
                 <div className={styles['field']}>
                   <span className={styles['fieldLabel']}>{t('customApi')}</span>
-                  <select
-                    className={`${styles['input']} ${styles['selectInput']}`}
+                  <NativeSelect
+                    className="max-w-60"
                     value={probeApi ?? ''}
                     aria-label={t('customApi')}
                     disabled={disabled}
@@ -454,7 +456,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                         announced as a choice with no identity. */}
                     {probeApi === undefined ? <option value="">{t('customApiUnset')}</option> : null}
                     {protocols.map(choice => <option key={choice} value={choice}>{protocolLabel(choice)}</option>)}
-                  </select>
+                  </NativeSelect>
                 </div>
               )
               : null}

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/base.css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -57,13 +58,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: var(--dsw-radius-sm);
+  --radius-md: var(--dsw-radius-md);
+  --radius-lg: var(--dsw-radius-md);
+  --radius-xl: var(--dsw-radius-lg);
+  --radius-2xl: var(--dsw-radius-xl);
+  --radius-3xl: var(--dsw-radius-panel);
+  --radius-4xl: var(--dsw-radius-panel);
   --shadow-card: var(--card-shadow);
   --shadow-float: var(--float-shadow);
   --shadow-glow: var(--primary-glow);
@@ -92,6 +93,20 @@
 
 /* 浅色主题 */
 :root {
+  --dsw-alias-border-l4: var(--input);
+  --dsw-alias-border-l3: var(--border);
+  --dsw-alias-button-primary-fill: var(--primary);
+  --dsw-alias-button-primary-hover: var(--primary-hover);
+  --dsw-alias-label-primary-foreground: var(--primary-foreground);
+  --dsw-alias-interactive-bg-hover: var(--accent);
+  --dsw-alias-interactive-bg-active: var(--muted);
+  --dsw-alias-state-business-primary: var(--link);
+  --dsw-alias-bg-layer-1: var(--input-bg);
+  --dsw-alias-bg-base: var(--input-bg);
+  --dsw-alias-label-primary: var(--foreground);
+  --dsw-alias-label-tertiary: var(--muted-foreground);
+  --dsw-alias-label-dimmed: var(--subtle-foreground);
+  --dsw-font-xs-13: 13px/20px var(--app-font-sans);
   /* 界面字体跟随各平台的系统字体。 */
   --app-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
     "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
@@ -111,22 +126,22 @@
   --card-foreground: #0b0b0f;
   --popover: #ffffff;
   --popover-foreground: #0b0b0f;
-  /* 主操作与品牌标识使用同一红色。 */
-  --primary: #ff0033;
-  --primary-hover: #e6002e;
+  /* 功能红保留品牌色相，确保白色小字对比度。 */
+  --primary: #e6002e;
+  --primary-hover: #cc0029;
   --primary-foreground: #ffffff;
   --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 4px 12px -6px rgb(255 0 51 / 0.2);
   --secondary: rgb(0 174 236 / 0.1);
   --secondary-foreground: #00739f;
   --muted: rgb(9 9 11 / 0.04);
   --muted-foreground: #5f5f6b;
-  --subtle-foreground: #8b8b96;
+  --subtle-foreground: #5f5f6b;
   --accent: rgb(9 9 11 / 0.05);
   --accent-foreground: #0b0b0f;
   --destructive: #c8002a;
   --border: rgb(9 9 11 / 0.08);
-  --input: rgb(9 9 11 / 0.13);
-  --ring: #00aeec;
+  --input: #dedee3;
+  --ring: #00739f;
   --link: #00739f;
   --status-success: #00aeec;
   --status-success-fg: #00739f;
@@ -157,11 +172,12 @@
   --sidebar-accent: rgb(9 9 11 / 0.05);
   --sidebar-accent-foreground: #0b0b0f;
   --sidebar-border: rgb(9 9 11 / 0.08);
-  --sidebar-ring: #00aeec;
+  --sidebar-ring: var(--ring);
 }
 
-/* 深色主题（默认） */
+/* 深色主题；首次启动默认为浅色。 */
 .dark {
+  --ring: #3cc4f5;
   --background: #0a0a0e;
   --surface: #0e0e13;
   --card: #121218;
@@ -171,21 +187,21 @@
   --card-foreground: #ededf0;
   --popover: #18181f;
   --popover-foreground: #ededf0;
-  --primary: #ff0033;
-  --primary-hover: #e6002e;
+  --primary: #e6002e;
+  --primary-hover: #cc0029;
   --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.2),
     0 6px 18px -8px rgb(255 0 51 / 0.24);
   --secondary: rgb(0 174 236 / 0.14);
   --secondary-foreground: #5fd0f5;
   --muted: rgb(255 255 255 / 0.04);
   --muted-foreground: #a0a0ab;
-  --subtle-foreground: #7a7a86;
+  --subtle-foreground: #a0a0ab;
   --accent: rgb(255 255 255 / 0.065);
   --accent-foreground: #ededf0;
   --destructive: #ff6b81;
   --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.12);
-  --ring: #00aeec;
+  --input: #383840;
+  --ring: #00739f;
   --link: #3cc4f5;
   --status-success-fg: #5fd0f5;
   --status-running-fg: #ff9ab8;
@@ -209,7 +225,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     @apply font-sans;

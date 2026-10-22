@@ -1,3 +1,5 @@
+import { NativeSelect } from '@/components/ui/native-select'
+import { Input } from '@/components/ui/input'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
  * The card that declares a provider pi-ai does not ship — an OpenAI-compatible
@@ -206,8 +208,8 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
       </div>}
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('customRoute')}</span>
-        <input
-          className={styles['input']}
+        <Input
+
           type="text"
           value={route}
           placeholder="acme-gateway"
@@ -223,8 +225,8 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
         : <p className={styles['advancedHint']}>{t('customRouteHint')}</p>}
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('customDisplayName')}</span>
-        <input
-          className={styles['input']}
+        <Input
+
           type="text"
           value={displayName}
           placeholder={route.length === 0 ? t('customDisplayName') : route}
@@ -235,8 +237,8 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
       </div>
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('baseUrl')}</span>
-        <input
-          className={styles['input']}
+        <Input
+
           type="text"
           value={baseURL}
           placeholder={protocol === 'anthropic-messages' ? 'https://gateway.example' : 'https://gateway.example/v1'}
@@ -247,20 +249,20 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
       </div>
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('customApi')}</span>
-        <select
-          className={`${styles['input']} ${styles['selectInput']}`}
+        <NativeSelect
+          className="max-w-60"
           value={protocol}
           aria-label={t('customApi')}
           disabled={profileDisabled}
           onChange={(event) => { setProtocol(event.target.value) }}
         >
           {protocols.map(choice => <option key={choice} value={choice}>{protocolLabel(choice)}</option>)}
-        </select>
+        </NativeSelect>
       </div>
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('keyInput')}</span>
-        <input
-          className={styles['input']}
+        <Input
+
           type="password"
           autoComplete="off"
           value={keyDraft}

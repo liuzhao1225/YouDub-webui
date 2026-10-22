@@ -7,6 +7,22 @@
   <title>内置示例 — YouDub</title>
   <link rel="icon" href="./assets/youdub-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css?v=0.0.2">
+  <style>
+    :root { color-scheme: light; --background:#f6f6f8; --surface:#fbfbfc; --card:#fff; --elevated:#fff; --foreground:#0b0b0f; --muted:#5f5f6b; --border:rgb(11 11 15 / .08); }
+    body { font-size:14px; line-height:20px; }
+    body::before { display:none; }
+    .wrap { width:min(1152px,calc(100% - 64px)); }
+    .site-header { min-height:72px; }
+    .examples { max-width:1152px; padding-block:24px; }
+    .examples .demo-topline { align-items:flex-start; gap:8px; }
+    .examples h1 { font-size:24px; line-height:32px; font-weight:600; }
+    .button { min-height:36px; padding:8px 16px; border-radius:8px; }
+    .secondary { border-color:var(--border); background:var(--card); }
+    .secondary:hover { background:var(--surface); }
+    .sample strong { font-size:14px; }.sample small { font-size:12px; }
+    .demo-caption a:hover { color:var(--foreground); }
+    @media(max-width:640px) { .wrap { width:calc(100% - 32px); } }
+  </style>
   <script src="./player.js?v=0.0.2" type="module"></script>
 </head>
 <body class="examples-page">

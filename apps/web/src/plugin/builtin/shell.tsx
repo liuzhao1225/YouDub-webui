@@ -1,6 +1,6 @@
 import { Context } from 'cordis'
 import { useState } from 'react'
-import { PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Plus } from '@/lib/icons'
 import { Link, matchRoute, type RouteEntry, text, bindComponent, type Bindings } from '../sdk'
 import { restoreTheme, ThemeProvider } from '@/lib/theme'
 import { LanguageProvider, useI18n, useText } from '@/lib/i18n'

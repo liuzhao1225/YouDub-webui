@@ -34,7 +34,7 @@ const officialClient = clientBundle(here, ['src/host.mjs'])({}).find(config => c
 const assetPlugins = officialClient.plugins.filter(plugin => ['dsh-css-modules-inline', 'dsh-css-text-inline', 'dsh-image-inline', 'dsh-css-global-inline'].includes(plugin.name));
 const officialAssets = { name: 'official-client-assets', setup(builder) {
   builder.onResolve({ filter: /\.(?:css(?:\?inline)?|svg|png|webp)$/ }, async args => {
-    if (!args.importer.includes('/vendor/deepseek-harness/')) return;
+    if (!args.importer.includes('/vendor/deepseek-harness/') && !args.path.includes('/vendor/deepseek-harness/')) return;
     for (const plugin of assetPlugins) {
       const path = await plugin.resolveId?.call({}, args.path, args.importer);
       if (typeof path === 'string') return { path, namespace: 'official-client-asset' };
@@ -119,7 +119,7 @@ const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile
         'brand-primary': 'primary', 'button-primary-fill': 'primary', 'button-primary-hover': 'primary-hover',
         'button-tool-bar-fill': 'muted', 'button-tool-bar-hover': 'accent',
         'interactive-bg-hover': 'accent', 'interactive-bg-active': 'muted',
-        'state-business-primary': 'brand-blue', 'state-success-primary': 'status-success-fg',
+        'state-business-primary': 'link', 'state-success-primary': 'status-success-fg',
         'state-error-primary': 'status-danger-fg', 'state-warn-primary': 'status-warning-fg',
       };
       for (const [alias, name] of Object.entries(aliases)) tokens['--dsw-alias-' + alias] = tokens['--' + name];

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 "use client"
 
 import { CSSProperties, KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react"
-// Standalone media glyphs; Harness' Play/Pause aliases include an enclosing circle.
+// Official filled media glyphs keep play/pause silhouettes clear on video.
 import {
   Check,
   Maximize,
@@ -13,7 +13,7 @@ import {
   Volume1,
   Volume2,
   VolumeX,
-} from "lucide-react"
+} from "@/lib/icons"
 
 import { useI18n } from "@/lib/i18n"
 import { useReleaseMediaOnUnmount } from "@/lib/media"
@@ -289,7 +289,7 @@ export function VideoPlayer({ src, className, onError, renderSpeedControl }: { s
           aria-label={t.player.play}
           className="absolute inset-0 z-10 m-auto flex size-16 p-0 items-center justify-center rounded-full bg-white/15 text-white shadow-[0_8px_32px_rgb(0_0_0/0.35)] ring-1 ring-white/25 backdrop-blur-md transition-[background-color,transform] outline-none hover:scale-105 hover:bg-white/25 focus-visible:ring-3 focus-visible:ring-white/60"
         >
-          <PlayIcon className="ml-1 size-7 fill-current" />
+          <PlayIcon className="ml-1 size-7" />
         </Button>
       ) : null}
 
@@ -314,7 +314,7 @@ export function VideoPlayer({ src, className, onError, renderSpeedControl }: { s
         />
         <div className={cn("mt-0.5 flex items-center gap-0.5", showControls && "pointer-events-auto")}>
           <ControlButton label={playing ? t.player.pause : t.player.play} shortcut="Space" onClick={togglePlay}>
-            {playing ? <PauseIcon className="fill-current" /> : <PlayIcon className="fill-current" />}
+            {playing ? <PauseIcon  /> : <PlayIcon  />}
           </ControlButton>
           <div className="group/volume flex items-center">
             <ControlButton label={effectiveVolume === 0 ? t.player.unmute : t.player.mute} shortcut="M" onClick={toggleMute}>

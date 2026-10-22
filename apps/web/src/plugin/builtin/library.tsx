@@ -2,7 +2,7 @@ import { NativeSelect, Choice } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowLeft, Check, Download, FileText, ListVideo, Loader2, RotateCw, Square, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, Download, FileText, ListVideo, Loader2, RotateCw, Square, Trash2 } from '@/lib/icons'
 import { Link, text, type Catalog, type JsonObject, type PanelProps, type RouteProps, type TaskAction, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
 import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
@@ -24,11 +24,11 @@ export function Library({ useQuery, navigate }: Bindings<'useQuery' | 'navigate'
   const { data, error, refresh } = useQuery<TaskPage>(`/api/v2/tasks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`, 3000)
   return <Page>
     <PageHeader title={tx("library.library")} actions={<Button onClick={() => navigate('/')}>{tx("library.new.task")}</Button>} />
-    <div className="flex flex-wrap items-center gap-2"><NativeSelect aria-label={tx("library.task.status")} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} className="h-9 rounded-lg border border-input bg-input-bg px-3 text-sm"><option value="">{tx("library.all.statuses")}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(STATUS_LABELS[item])}</option>)}</NativeSelect><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx("library.refresh")}</Button></div>
+    <div className="flex flex-wrap items-center gap-2"><NativeSelect aria-label={tx("library.task.status")} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} ><option value="">{tx("library.all.statuses")}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(STATUS_LABELS[item])}</option>)}</NativeSelect><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx("library.refresh")}</Button></div>
     {error && <InlineAlert>{error}</InlineAlert>}
     {!data && !error && <p role="status" className="py-12 text-center text-sm text-muted-foreground">{tx("library.loading")}</p>}
     {data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{status ? tx("library.no.tasks.with.this.status") : tx("library.no.tasks.yet")}</div>}
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data?.items.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-colors outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data?.items.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40">
       <TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="lg" className="rounded-none" />
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3"><h2 title={taskDisplayName(task)} className="line-clamp-2 min-w-0 break-words font-medium">{taskDisplayName(task)}</h2><TaskState status={task.status} /></div>
@@ -46,11 +46,11 @@ function RerunEditor({ submissionStore, task, close, locked, onLockChange, reque
   const { data: catalog, error } = useQuery<Catalog>('/api/v2/catalog')
   const [selected, setSelected] = useState(() => { const pending = Object.values(submissionStore.getSnapshot().submissions).find(item => item.path === `/api/v2/tasks/${task.id}/rerun`); return pending && typeof pending.body === 'string' ? JSON.parse(pending.body).workflowId as string : task.workflowId })
   const workflow = catalog?.workflows.find((item) => item.id === selected) ?? catalog?.workflows[0]
-  return <section className="space-y-5 rounded-2xl border border-border bg-card p-6">
+  return <section className="space-y-4 rounded-xl border border-border bg-card p-6">
     <h2 className="font-semibold">{tx("library.generate.again")}</h2>
     {error && <InlineAlert>{error}</InlineAlert>}
     {catalog && !workflow && <InlineAlert>{tx("library.no.workflows.are.available")}</InlineAlert>}
-    {workflow && <><label className="grid gap-2 text-sm">{tx("library.workflow")}<NativeSelect disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-10 rounded-lg border border-input bg-input-bg px-3">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></label><RerunForm submissionStore={submissionStore} request={request} navigate={navigate} useSlot={useSlot} key={`${workflow.id}:${workflow.version}`} task={task} workflow={workflow} close={close} onLockChange={onLockChange} /></>}
+    {workflow && <><label className="grid gap-2 text-sm">{tx("library.workflow")}<NativeSelect disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} >{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></label><RerunForm submissionStore={submissionStore} request={request} navigate={navigate} useSlot={useSlot} key={`${workflow.id}:${workflow.version}`} task={task} workflow={workflow} close={close} onLockChange={onLockChange} /></>}
     {!workflow && <Button variant="outline" onClick={close}>{tx("library.close")}</Button>}
   </section>
 }
@@ -68,7 +68,7 @@ function RerunForm({ submissionStore, task, workflow, close, onLockChange, reque
   useEffect(() => { onLockChange(submitted) }, [onLockChange, submitted])
   function openTask(next: TaskView) { if (!activeView.current) return; submissionStore.clearSubmission(submissionKey); navigate(`/tasks/${next.id}`) }
   const supported = useEditorSupported(useSlot, workflow.id, workflow.configSchema)
-  return <div className="space-y-5">
+  return <div className="space-y-4">
     <ConfigEditor useSlot={useSlot} ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || submitted} onChange={setConfig} />
     {task.mayStillRun && <Choice className="flex gap-2 text-sm" label={tx("library.the.remote.request.may.still.be.running.create.a.new.task")} disabled={submitted} checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} />}
     {failure && <InlineAlert>{failure} · {newId}</InlineAlert>}
@@ -125,15 +125,15 @@ export function TaskDetail({ submissionStore, params, request, navigate, useQuer
     </div>} />
     {loadError}{task.error && <InlineAlert>{task.error.message}</InlineAlert>}
     {actions.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
-    {video && !mediaReleased && <div className="overflow-hidden rounded-2xl border border-border bg-black"><VideoPlayer src={video.url} /></div>}
-    {!!task.outputs.length && <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-card"><h2 className="font-semibold">{tx("library.generated.files")}</h2><div className="grid gap-3 sm:grid-cols-2">{task.outputs.map((output) => <div key={output.id} className="space-y-2 rounded-xl border border-border p-3">
+    {video && !mediaReleased && <div className="overflow-hidden rounded-xl border border-border bg-black"><VideoPlayer src={video.url} /></div>}
+    {!!task.outputs.length && <section className="space-y-4"><h2 className="font-semibold">{tx("library.generated.files")}</h2><div className="grid gap-3 sm:grid-cols-2">{task.outputs.map((output) => <div key={output.id} className="space-y-2 rounded-xl border border-border p-3">
       <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{output.label || output.name || output.id}</p>{output.size !== undefined && <p className="mt-1 text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div><a href={output.url} download className="rounded-lg p-2 hover:bg-accent" aria-label={`${tx("library.download")} ${output.label || output.id}`}><Download className="size-4" /></a></div>
       {!mediaReleased && output.mimeType?.startsWith('audio/') && <AudioOutput src={output.url} />}
       {(output.mimeType?.startsWith('text/') || output.mimeType === 'application/x-subrip') && <a href={output.url} target="_blank" rel="noreferrer" className="text-xs text-link">{tx("library.preview.text")}</a>}
     </div>)}</div></section>}
     {panels.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
-    {task.graphSnapshot ? <details className="rounded-2xl border border-border bg-card p-5"><summary className="cursor-pointer text-sm font-medium">{tx("library.step.list")} · {completed}/{task.steps.length}</summary><div className="mt-4">{stepList}</div></details> : <section className="rounded-2xl border border-border bg-card p-5"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</section>}
-    <details onToggle={(event) => setShowLog(event.currentTarget.open)} className="rounded-2xl border border-border bg-card p-5"><summary className="cursor-pointer text-sm font-medium">{tx("library.task.log")}</summary>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</details>
+    {task.graphSnapshot ? <details className="rounded-xl border border-border bg-card p-4"><summary className="cursor-pointer text-sm font-medium">{tx("library.step.list")} · {completed}/{task.steps.length}</summary><div className="mt-4">{stepList}</div></details> : <section className="rounded-xl border border-border bg-card p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</section>}
+    <details onToggle={(event) => setShowLog(event.currentTarget.open)} className="rounded-xl border border-border bg-card p-4"><summary className="cursor-pointer text-sm font-medium">{tx("library.task.log")}</summary>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</details>
   </Page>
 }
 function AudioOutput({ src }: { src: string }) {

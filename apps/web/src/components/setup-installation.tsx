@@ -17,7 +17,7 @@ export function SetupInstallation({ path, busy, configure, pickDirectory }: {
     finally { setChoosing(false) }
   }
   return <form className="space-y-6" onSubmit={event => { event.preventDefault(); void configure(directory) }}>
-    <h1 className="text-xl font-semibold">{text('setup.installation')}</h1>
+    <h1 className="text-2xl leading-8 font-semibold">{text('setup.installation')}</h1>
     <div className="space-y-2">
       <label htmlFor="setup-language" className="text-sm font-medium">{text('nav.language')}</label>
       <NativeSelect id="setup-language" aria-label={text('nav.language')} value={language} disabled={busy || choosing} onChange={event => setLanguage(event.target.value)}>

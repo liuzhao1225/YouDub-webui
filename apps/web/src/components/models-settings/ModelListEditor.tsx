@@ -1,3 +1,5 @@
+import { Choice } from '@/components/ui/native-select'
+import { Input } from '@/components/ui/input'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
  * The model list of one pi-ai provider profile, plus the action that asks the
@@ -337,8 +339,8 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
       {models.map((model, index) => (
         <div key={index} className={styles['modelEntry']}>
           <div className={styles['modelRow']}>
-            <input
-              className={styles['input']}
+            <Input
+
               type="text"
               value={textOf(model, 'id')}
               placeholder={t('modelId')}
@@ -346,8 +348,8 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
               disabled={disabled}
               onChange={(event) => { patch(index, { id: event.target.value }) }}
             />
-            <input
-              className={styles['input']}
+            <Input
+
               type="text"
               value={textOf(model, 'name')}
               placeholder={t('modelName')}
@@ -396,8 +398,8 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
               <div className={styles['modelAdvanced']}>
                 <label className={styles['modelField']}>
                   <span className={styles['modelFieldLabel']}>{t('modelContextWindow')}</span>
-                  <input
-                    className={styles['input']}
+                  <Input
+
                     type="text"
                     inputMode="numeric"
                     value={capacityText(model, index, 'contextWindow')}
@@ -409,8 +411,8 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
                 </label>
                 <label className={styles['modelField']}>
                   <span className={styles['modelFieldLabel']}>{t('modelMaxTokens')}</span>
-                  <input
-                    className={styles['input']}
+                  <Input
+
                     type="text"
                     inputMode="numeric"
                     value={capacityText(model, index, 'maxTokens')}
@@ -453,8 +455,7 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
           {(candidates ?? []).map(candidate => (
             <li key={candidate.id} className={styles['candidate']}>
               <label className={styles['candidateLabel']}>
-                <input
-                  type="checkbox"
+                <Choice
                   checked={picked.has(candidate.id)}
                   onChange={() => { toggle(candidate.id) }}
                 />

@@ -1,9 +1,10 @@
+import { Textarea } from '@/components/ui/textarea'
 import { assetUrl } from '@/lib/asset-url'
 import { copyText } from '@/lib/clipboard'
 import { NativeSelect } from '@/components/ui/native-select'
 import type { Bindings } from '../sdk'
 import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
-import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, LocateFixed, RotateCw, Save, Search } from 'lucide-react'
+import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, LocateFixed, RotateCw, Save, Search } from '@/lib/icons'
 import { Link, text, type GraphNode, type JsonObject, type JsonSchema, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
 import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
@@ -60,7 +61,7 @@ function SegmentTextArea({ value, ...props }: ComponentProps<'textarea'>) {
     observer.observe(element)
     return () => observer.disconnect()
   }, [value])
-  return <textarea {...props} ref={ref} rows={1} value={value} className="min-h-9 w-full min-w-0 resize-y rounded-lg border border-input bg-input-bg px-2 py-1.5 text-sm leading-5 text-foreground focus-visible:outline-ring" />
+  return <Textarea {...props} ref={ref} rows={1} value={value} className="min-h-9" />
 }
 
 export function TaskWorkflowPanel({ task, request, navigate, useQuery }: PanelProps & Bindings<'request' | 'navigate' | 'useQuery'>) {
@@ -71,7 +72,7 @@ function TaskGraph({ task, request, navigate, useQuery }: { task: TaskView } & B
   const tx = useText()
   const { data, error, refresh } = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   const [failure, setFailure] = useState(''), [busy, setBusy] = useState(false)
-  return <section className="overflow-hidden rounded-2xl border border-border bg-card">
+  return <section className="overflow-hidden rounded-xl border border-border bg-card">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4"><h2 className="font-semibold">{tx("workflow.task.workflow")}</h2><div className="flex flex-wrap gap-2">
       <Button variant="outline" size="sm" disabled={busy} onClick={() => {
         setBusy(true); setFailure('')
@@ -193,7 +194,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx("workflow.task.check.submission")}</Button></div>}
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">{(['result', 'inputs', 'config', 'log'] as const).map((value) => <Button key={value} variant={tab === value ? 'secondary' : 'ghost'} size="sm" onClick={() => setTab(value)}>{value === 'result' ? tx("workflow.task.results") : value === 'inputs' ? tx("workflow.task.inputs") : value === 'config' ? tx("workflow.task.configuration") : tx("workflow.task.task.log")}</Button>)}
-      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect className="h-8 rounded-lg border border-input bg-input-bg px-2 text-foreground" disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
+      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect  disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
     </div>
     {tab === 'result' && historical && !!definition?.corrections && (awaitingReview || terminal) && <Button variant="outline" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={() => {
       const current = detail.resultRevisions.find((item) => item.revision === detail.outputRevision)?.outputs ?? detail.step.outputs ?? {}
@@ -202,7 +203,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setViewRevision(null); setPreview(null)
     }}>{tx("workflow.task.restore.this.version.as.a.correction")}</Button>}
     {dirty && <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-muted-foreground">{tx("workflow.task.unsaved.correction")}</span><Button variant="ghost" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={discardDraft}>{tx("workflow.task.discard.correction.and.reload")}</Button></div>}
-    {tab === 'result' && <section className="space-y-5">
+    {tab === 'result' && <section className="space-y-4">
       {!Object.keys(outputs).length && <p className="text-sm text-muted-foreground">{tx("workflow.task.no.result.yet")}</p>}
       {Custom ? <NodePluginBoundary key={definition!.ui!.detailId} fallback={generic}><Custom detail={displayedDetail} outputs={dirty ? baseline.current.outputs : outputs} draft={patch} readOnly={!editable} onDraftChange={changeDraft} /></NodePluginBoundary> : definition?.ui?.detailId ? <><InlineAlert>{tx("workflow.task.the.node.detail.plugin.is.unavailable")}</InlineAlert>{generic}</> : definition?.corrections?.outputPorts.includes('transcript') && displayed.transcript ? <TranscriptEditor value={displayed.transcript as Transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, transcript: value })} /> : definition?.corrections?.outputPorts.includes('translation') && displayed.translation ? <TranslationEditor value={displayed.translation as Translation} transcript={transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, translation: value })} /> : generic}
       {hasEditor && Object.entries(displayed).filter(([name]) => name !== 'transcript' && name !== 'translation').map(([name, value]) => <details key={name} className="rounded-lg border border-border bg-card p-2"><summary className="cursor-pointer text-sm font-medium">{text(definition?.outputs.find((port) => port.name === name)?.label, language) || (name === 'raw' ? tx("workflow.task.original.response") : name)}</summary><div className="mt-2"><ResultViewer taskId={task.id} value={value} /></div></details>)}
@@ -214,7 +215,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       <Button variant="outline" disabled={!dirty || busy || !!pending} onClick={() => void submit(false).catch(() => undefined)}><Save />{tx("workflow.task.save.correction")}</Button>
       <Button disabled={busy || !!pending} onClick={() => void submit(true).catch(() => undefined)}>{busy ? <Loader2 className="animate-spin" /> : <Check />}{finishesTask ? dirty ? tx("workflow.task.save.and.complete") : tx("workflow.task.approve.and.complete") : dirty ? tx("workflow.task.save.and.continue") : tx("workflow.task.approve.and.continue")}</Button>
     </div>}
-    {((canDerive && dirty) || newTaskId) && <section className="space-y-4 rounded-2xl border border-border bg-card p-5">
+    {((canDerive && dirty) || newTaskId) && <section className="space-y-4 rounded-xl border border-border bg-card p-4">
       <h2 className="font-semibold">{tx("workflow.task.generate.again.with.corrections")}</h2>
       {!preview && <Button disabled={busy || !!newTaskId} variant="outline" onClick={() => void rerunPreview()}><GitBranch />{tx("workflow.task.review.affected.steps")}</Button>}
       {preview && <><p className="text-sm">{tx("workflow.task.keep.existing.results")}: {preview.reusedSteps.map(nodeName).join('、') || '—'}</p><p className="text-sm">{tx("workflow.task.process.again")}: {preview.dirtySteps.map(nodeName).join('、') || '—'}</p><Button disabled={busy || !!newTaskId} onClick={() => void createDerived()}>{tx("workflow.task.create.task.and.generate")}</Button></>}
@@ -247,7 +248,7 @@ function ConfigurationValues({ value, schema, nested = false }: { value: JsonObj
   const names: Record<string, string> = { en: tx("workflow.task.english"), zh: tx("workflow.task.chinese"), ja: tx("workflow.task.japanese"), auto: tx("workflow.task.auto.detect"), source_clone: tx("workflow.task.source.voice.clone"), preset: tx("workflow.task.preset.voice") }
   return <dl className={nested ? 'divide-y divide-border' : 'divide-y divide-border rounded-xl border border-border bg-card px-4'}>{Object.entries(value).map(([key, item]) => {
     const field = schema?.properties?.[key]
-    return <div key={key} className="grid gap-1 py-3 sm:grid-cols-[minmax(8rem,1fr)_minmax(0,3fr)] sm:gap-6"><dt className="text-xs text-muted-foreground">{text(field?.['x-title'] ?? field?.title, language) || labels[key] || key}</dt><dd className="min-w-0 break-words whitespace-pre-wrap text-sm">{item && typeof item === 'object' && !Array.isArray(item) ? <ConfigurationValues value={item as JsonObject} schema={field} nested /> : typeof item === 'boolean' ? item ? tx("workflow.task.on") : tx("workflow.task.off") : item === null || item === '' ? '—' : typeof item === 'string' ? names[item] || item : JSON.stringify(item)}</dd></div>
+    return <div key={key} className="grid gap-1 py-3 @min-[640px]/page:grid-cols-[minmax(8rem,1fr)_minmax(0,3fr)] @min-[640px]/page:gap-6"><dt className="text-xs text-muted-foreground">{text(field?.['x-title'] ?? field?.title, language) || labels[key] || key}</dt><dd className="min-w-0 break-words whitespace-pre-wrap text-sm">{item && typeof item === 'object' && !Array.isArray(item) ? <ConfigurationValues value={item as JsonObject} schema={field} nested /> : typeof item === 'boolean' ? item ? tx("workflow.task.on") : tx("workflow.task.off") : item === null || item === '' ? '—' : typeof item === 'string' ? names[item] || item : JSON.stringify(item)}</dd></div>
   })}</dl>
 }
 function TranscriptEditor({ value, readOnly, onChange, onSeek }: { value: Transcript; readOnly: boolean; onChange(value: Transcript): void; onSeek?(seconds: number): void }) {
@@ -256,21 +257,21 @@ function TranscriptEditor({ value, readOnly, onChange, onSeek }: { value: Transc
   function update(index: number, patch: Partial<Transcript['segments'][number]>) {
     onChange({ ...value, segments: value.segments.map((segment, i) => i === index ? { ...segment, ...patch, words: null } : segment) })
   }
-  return <section className="space-y-2"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx("workflow.task.search.transcript")} placeholder={tx("workflow.task.search.transcript")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
+  return <section className="space-y-2"><div className="relative max-w-sm"><Input icon={<Search className="size-4" />} aria-label={tx("workflow.task.search.transcript")} placeholder={tx("workflow.task.search.transcript")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
     {!visible.length && <p className="py-4 text-sm text-muted-foreground" role="status">{tx("workflow.task.no.matching.text")}</p>}
     {visible.length > 0 && <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-    {visible.map(({ segment, index }) => <div key={segment.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 lg:grid-cols-[auto_auto_minmax(0,1fr)]">
+    {visible.map(({ segment, index }) => <div key={segment.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 @min-[720px]/page:grid-cols-[auto_auto_minmax(0,1fr)]">
       <span className="flex h-9 min-w-[2ch] items-center justify-end text-xs tabular-nums text-muted-foreground" title={String(segment.id)}>{index + 1}</span>
       <div className="flex min-w-0 items-center gap-2">
-        <div className="flex h-9 items-center rounded-lg border border-input bg-input-bg px-1">
-          <Input className="h-7 w-20 border-0 bg-transparent px-2 text-xs tabular-nums shadow-none md:text-xs" aria-label={`${tx("workflow.task.start")} ${index + 1}`} title={tx("workflow.task.start.s")} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.start_ms / 1000} onChange={(event) => update(index, { start_ms: Math.round(Number(event.target.value) * 1000) })} />
+        <div className="flex h-9 items-center gap-1">
+          <Input className="w-20 tabular-nums" aria-label={`${tx("workflow.task.start")} ${index + 1}`} title={tx("workflow.task.start.s")} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.start_ms / 1000} onChange={(event) => update(index, { start_ms: Math.round(Number(event.target.value) * 1000) })} />
           <span aria-hidden="true" className="text-xs text-subtle-foreground">—</span>
-          <Input className="h-7 w-20 border-0 bg-transparent px-2 text-xs tabular-nums shadow-none md:text-xs" aria-label={`${tx("workflow.task.end")} ${index + 1}`} title={tx("workflow.task.end.s")} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.end_ms / 1000} onChange={(event) => update(index, { end_ms: Math.round(Number(event.target.value) * 1000) })} />
+          <Input className="w-20 tabular-nums" aria-label={`${tx("workflow.task.end")} ${index + 1}`} title={tx("workflow.task.end.s")} type="number" step="0.001" min="0" readOnly={readOnly} value={segment.end_ms / 1000} onChange={(event) => update(index, { end_ms: Math.round(Number(event.target.value) * 1000) })} />
           <span aria-hidden="true" className="pr-2 text-xs text-subtle-foreground">s</span>
         </div>
         {onSeek && <Button size="icon-sm" variant="ghost" aria-label={`${tx("workflow.task.locate")} ${index + 1}`} title={tx("workflow.task.locate")} onClick={() => onSeek(segment.start_ms / 1000)}><LocateFixed /></Button>}
       </div>
-      <div className="col-start-2 min-w-0 lg:col-start-auto"><SegmentTextArea aria-label={`${tx("workflow.task.transcript")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => update(index, { text: event.target.value })} /></div>
+      <div className="col-start-2 min-w-0 @min-[720px]/page:col-start-auto"><SegmentTextArea aria-label={`${tx("workflow.task.transcript")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => update(index, { text: event.target.value })} /></div>
     </div>)}</div>}
   </section>
 }
@@ -289,14 +290,14 @@ export function TranslationNodeDetails({ detail, outputs, draft, readOnly, onDra
 function TranslationEditor({ value, transcript, readOnly, onChange }: { value: Translation; transcript?: Transcript; readOnly: boolean; onChange(value: Translation): void }) {
   const tx = useText(), [search, setSearch] = useState('')
   const visible = value.segments.map((segment, index) => ({ segment, index, source: transcript?.segments.find((item) => item.id === segment.segment_id)?.text ?? '' })).filter(({ segment, source }) => !search || `${source} ${segment.text}`.toLowerCase().includes(search.toLowerCase()))
-  return <section className="space-y-2"><div className="relative max-w-sm"><Search className="absolute top-3 left-3 size-4 text-muted-foreground" /><Input className="pl-9" aria-label={tx("workflow.task.search.translation")} placeholder={tx("workflow.task.search.translation")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
+  return <section className="space-y-2"><div className="relative max-w-sm"><Input icon={<Search className="size-4" />} aria-label={tx("workflow.task.search.translation")} placeholder={tx("workflow.task.search.translation")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
     {!visible.length && <p className="py-4 text-sm text-muted-foreground" role="status">{tx("workflow.task.no.matching.text")}</p>}
     {visible.length > 0 && <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-      <div aria-hidden="true" className={`hidden gap-3 bg-muted/40 px-3 py-2 text-muted-foreground md:grid ${transcript ? 'grid-cols-[2ch_minmax(0,1fr)_minmax(0,1fr)]' : 'grid-cols-[2ch_minmax(0,1fr)]'}`}><span />{transcript && <span className="text-xs">{tx("workflow.task.transcript")}</span>}<span className="text-xs">{tx("workflow.task.translation")}</span></div>
-      {visible.map(({ segment, index, source }) => <div key={segment.segment_id} className={`grid grid-cols-[2ch_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 ${transcript ? 'md:grid-cols-[2ch_minmax(0,1fr)_minmax(0,1fr)]' : ''}`}>
+      <div aria-hidden="true" className={`hidden gap-3 bg-muted/40 px-3 py-2 text-muted-foreground @min-[640px]/page:grid ${transcript ? 'grid-cols-[2ch_minmax(0,1fr)_minmax(0,1fr)]' : 'grid-cols-[2ch_minmax(0,1fr)]'}`}><span />{transcript && <span className="text-xs">{tx("workflow.task.transcript")}</span>}<span className="text-xs">{tx("workflow.task.translation")}</span></div>
+      {visible.map(({ segment, index, source }) => <div key={segment.segment_id} className={`grid grid-cols-[2ch_minmax(0,1fr)] items-start gap-x-3 gap-y-2 p-3 ${transcript ? '@min-[640px]/page:grid-cols-[2ch_minmax(0,1fr)_minmax(0,1fr)]' : ''}`}>
         <span className="flex h-9 items-center justify-end text-xs tabular-nums text-muted-foreground" title={String(segment.segment_id)}>{index + 1}</span>
-        {transcript && <div className="min-w-0"><span className="text-xs text-muted-foreground md:hidden">{tx("workflow.task.transcript")}</span><p className="py-1.5 whitespace-pre-wrap break-words text-sm leading-5">{source}</p></div>}
-        <div className={`min-w-0 ${transcript ? 'col-start-2 md:col-start-auto' : ''}`}><span className="text-xs text-muted-foreground md:hidden">{tx("workflow.task.translation")}</span><SegmentTextArea aria-label={`${tx("workflow.task.translation")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => onChange({ ...value, segments: value.segments.map((item, i) => i === index ? { ...item, text: event.target.value } : item) })} /></div>
+        {transcript && <div className="min-w-0"><span className="text-xs text-muted-foreground @min-[640px]/page:hidden">{tx("workflow.task.transcript")}</span><p className="py-1.5 whitespace-pre-wrap break-words text-sm leading-5">{source}</p></div>}
+        <div className={`min-w-0 ${transcript ? 'col-start-2 @min-[640px]/page:col-start-auto' : ''}`}><span className="text-xs text-muted-foreground @min-[640px]/page:hidden">{tx("workflow.task.translation")}</span><SegmentTextArea aria-label={`${tx("workflow.task.translation")} ${index + 1}`} readOnly={readOnly} value={segment.text} onChange={(event) => onChange({ ...value, segments: value.segments.map((item, i) => i === index ? { ...item, text: event.target.value } : item) })} /></div>
       </div>)}
     </div>}
   </section>
@@ -311,10 +312,10 @@ function SpeechResult({ taskId, value, translation, historical, raw }: { taskId:
       const sentence = matches.length === 1 ? matches[0].text : undefined
       const url = assetUrl(`/api/v2/tasks/${encodeURIComponent(taskId)}/artifacts/${encodeURIComponent(segment.audio.id)}`)
       const label = `${tx("workflow.task.speech")} ${index + 1}`
-      return <li key={`${segment.id}-${index}`} aria-label={label} className="grid grid-cols-[2ch_minmax(0,1fr)] items-center gap-3 p-3 md:grid-cols-[2ch_minmax(0,1fr)_minmax(16rem,1fr)]">
+      return <li key={`${segment.id}-${index}`} aria-label={label} className="grid grid-cols-[2ch_minmax(0,1fr)] items-center gap-3 p-3 @min-[640px]/page:grid-cols-[2ch_minmax(0,1fr)_minmax(16rem,1fr)]">
         <span className="text-right text-xs tabular-nums text-muted-foreground" title={segment.id}>{index + 1}</span>
         <div className="min-w-0">{sentence ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{sentence}</p> : !historical && <p className="text-sm text-muted-foreground">{tx("workflow.task.no.unique.matching.translation")}</p>}</div>
-        <div className="col-start-2 flex min-w-0 items-center gap-2 md:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className="shrink-0 rounded-md p-2 text-link hover:bg-muted"><Download className="size-4" /></a></div>
+        <div className="col-start-2 flex min-w-0 items-center gap-2 @min-[640px]/page:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className="shrink-0 rounded-md p-2 text-link hover:bg-muted"><Download className="size-4" /></a></div>
       </li>
     })}</ol>
     <RawResult value={raw} />

@@ -2,7 +2,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { useEffect, useState, type FormEvent, type ReactNode, type SetStateAction } from 'react'
-import { ArrowRight, ChevronRight, Link2, Loader2, Sparkles, X } from 'lucide-react'
+import { ArrowRight, ChevronRight, Link2, Loader2, Sparkles, X } from '@/lib/icons'
 import { Link, text, type Catalog, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { videoSource } from '@youdub/sdk/video-source'
 import { Input } from '@/components/ui/input'
@@ -72,13 +72,11 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
     if (task) openTask(task)
   }
   return <div className="relative">
-    <div aria-hidden="true" className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 bg-[radial-gradient(55%_60%_at_30%_45%,rgb(251_114_153/0.16),transparent_70%),radial-gradient(50%_60%_at_75%_55%,rgb(0_174_236/0.16),transparent_70%)] opacity-70 blur-2xl dark:opacity-100" />
-    <form onSubmit={(event) => void submit(event)} className="relative rounded-[28px] p-px before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,rgb(255_0_51/0.6),rgb(251_114_153/0.35)_42%,rgb(0_174_236/0.6))] before:opacity-45 before:transition-opacity before:duration-300 focus-within:before:opacity-100">
-      <div className="relative rounded-[27px] bg-card p-2 shadow-float">
-        {linkSlot && <div className="pt-3 pb-1">
-          <div className="relative flex items-center gap-2 rounded-xl border border-input bg-muted px-3 focus-within:border-ring">
-            <Link2 className="size-4 shrink-0 text-subtle-foreground" />
-            <Input aria-label={tx("studio.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={busy || !!pendingId} placeholder={tx("studio.paste.a.youtube.or.bilibili.link")} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
+    <form onSubmit={(event) => void submit(event)} className="relative rounded-2xl border border-border bg-card">
+      <div className="relative rounded-2xl p-4 sm:p-6">
+        {linkSlot && <div className="pb-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <Input icon={<Link2 className="size-4" />} aria-label={tx("studio.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={busy || !!pendingId} placeholder={tx("studio.paste.a.youtube.or.bilibili.link")} className="h-12 flex-1" onBlur={() => setLinkTouched(true)} onChange={(event) => {
               setSourceUrl(event.target.value); setLinkTouched(false); setError('')
               if (event.target.value) setFiles((current) => { const next = { ...current }; delete next[linkSlot]; return next })
             }} />
@@ -97,8 +95,8 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
           if (file && slot.name === linkSlot) { setSourceUrl(''); setLinkTouched(false) }
           setError(''); setFiles((current) => { const next = { ...current }; if (file) next[slot.name] = file; else delete next[slot.name]; return next })
         }} />)}</div>
-        {afterInputs && <div className="px-3 pt-5 pb-2">{afterInputs}</div>}
-        <div className={cn('flex flex-wrap items-center gap-3 px-2 pt-2.5 pb-1', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
+        {afterInputs && <div className="pt-4">{afterInputs}</div>}
+        <div className={cn('flex flex-wrap items-center gap-3 pt-4', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
           <div className="min-w-0 flex-1"><ConfigEditor useSlot={useSlot} mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
           <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx("studio.submit.with.the.same.id") : source ? tx("studio.download.and.process") : tx("studio.start.processing")}</Button>
         </div>
@@ -138,20 +136,19 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
       <div aria-hidden="true" className="bg-dot-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
       <PageContainer className="pt-10 pb-12 lg:pt-14 lg:pb-14 [@media(max-height:820px)]:pt-8 [@media(max-height:820px)]:pb-10">
         <header className="flex animate-rise flex-col items-center text-center">
-          <BrandMark animated className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
-          <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur [@media(max-height:820px)]:hidden"><Sparkles className="size-3.5 text-brand-pink" />{tx("studio.ai.translation.dubbing.subtitles")}</span>
-          <h1 className="mt-5 text-[34px] leading-[1.12] font-semibold tracking-tight text-balance sm:text-5xl lg:text-[52px] lg:[@media(max-height:820px)]:text-[44px]">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
+          <BrandMark className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
+          <h1 className="mt-6 text-[clamp(28px,4vw,48px)] leading-[1.2] font-bold tracking-tight text-balance">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
         </header>
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
-          {error && <div className="mb-5 space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx("studio.reload")}</Button></div>}
+          {error && <div className="mb-4 space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx("studio.reload")}</Button></div>}
           {!catalog && !error && <p role="status" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx("studio.loading")}</p>}
           {catalog && !workflow && <InlineAlert>{tx("studio.no.workflows.are.available")}</InlineAlert>}
           {workflow && (workflow.id === 'youdub.graph' ? <GraphStudio draftStore={draftStore} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} useWorkflowDocuments={useWorkflowDocuments} onLockChange={setLocked}
             additionalWorkflows={catalog!.workflows.filter((item) => item.id !== 'youdub.graph' && item.id !== 'youdub.localize' && !item.graphTemplate)}
             renderWorkflow={(item, selector, lockChanged) => <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${item.id}:${item.version}`} workflow={item} afterInputs={selector} onLockChange={lockChanged} />}
-          /> : <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} afterInputs={catalog!.workflows.length > 1 ? <div className="flex items-center gap-3"><Label htmlFor="workflow">{tx("studio.workflow")}</Label><NativeSelect id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="h-10 min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-sm">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></div> : undefined} />)}
+          /> : <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} afterInputs={catalog!.workflows.length > 1 ? <div className="flex items-center gap-3"><Label htmlFor="workflow">{tx("studio.workflow")}</Label><NativeSelect id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="min-w-0 flex-1">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></div> : undefined} />)}
         </div>
-        <div className="mt-5 flex justify-center">{examplesLink ?? <a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx("studio.view.built.in.examples")}</a>}</div>
+        <div className="mt-4 flex justify-center">{examplesLink ?? <a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx("studio.view.built.in.examples")}</a>}</div>
         {!!active.length && <div className="mt-6 flex flex-wrap justify-center gap-3">
           {!!awaitingReview.length && <Link href={awaitingReview.length === 1 ? `/tasks/${awaitingReview[0].task.id}/nodes/${awaitingReview[0].step.id}` : '/tasks'} className="inline-flex items-center gap-2 rounded-full border border-status-warning/25 bg-status-warning/10 px-3.5 py-1.5 text-[13px] font-medium text-status-warning-fg">{tx("studio.value.nodes.need.your.review", { value1: awaitingReview.length })}<ArrowRight className="size-3.5" /></Link>}
           {!!processing.length && <Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg">{tx("studio.value.tasks.in.progress", { value1: processing.length })}<ArrowRight className="size-3.5" /></Link>}
@@ -160,11 +157,11 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
     </section>
     <PageContainer className="space-y-12 py-10 lg:py-14">
       {taskError && <div className="space-y-2"><InlineAlert>{taskError}</InlineAlert><Button variant="outline" onClick={refreshTasks}>{tx("studio.reload.tasks")}</Button></div>}
-      {active.length > 0 && <TaskSection id="studio-active" title={tx("studio.in.progress")}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 pr-4 shadow-card transition-[border-color,transform] outline-none hover:-translate-y-px hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
+      {active.length > 0 && <TaskSection id="studio-active" title={tx("studio.in.progress")}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-3 pr-4 transition-[border-color,transform] outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
       <TaskSection id="studio-recent" title={tx("studio.recent.tasks")}>
-        {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="overflow-hidden rounded-2xl border border-border bg-card"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></div>)}</div>
-          : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-5 text-sm font-medium">{tx("studio.no.finished.tasks.yet")}</p></div>
-          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-[border-color,box-shadow,transform] outline-none hover:-translate-y-0.5 hover:border-input hover:shadow-float focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
+        {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <div key={item} className="overflow-hidden rounded-xl border border-border bg-card"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></div>)}</div>
+          : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-4 text-sm font-medium">{tx("studio.no.finished.tasks.yet")}</p></div>
+          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-[border-color,box-shadow,transform] outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
       </TaskSection>
     </PageContainer>
   </main>

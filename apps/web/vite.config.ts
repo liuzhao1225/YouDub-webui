@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
         tag: 'script', attrs: { type: 'importmap' }, children: JSON.stringify(IMPORT_MAP), injectTo: 'head-prepend',
       }] },
     }],
-    resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+    resolve: { dedupe: ['react', 'react-dom', 'clsx'], alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy: { '/api': { target } } },
     preview: { host: '127.0.0.1', port: 3000, strictPort: true, proxy: { '/api': { target } } },
     build: { target: 'es2022', sourcemap: true },

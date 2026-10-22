@@ -4,6 +4,10 @@
   "short": "日",
   "fallback": "en",
   "messages": {
+    "theme.label": "テーマ",
+    "theme.light": "ライト",
+    "theme.dark": "ダーク",
+    "theme.system": "システムに従う",
     "nav.newTask": "新規タスク",
     "nav.primary": "メインナビゲーション",
     "nav.language": "表示言語",

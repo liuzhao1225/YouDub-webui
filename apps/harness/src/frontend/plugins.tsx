@@ -20,7 +20,7 @@ function BuiltinYouDub({view,usePluginManager,t,resolveText}:any) {
   if(!bundle) return <span role="status">{state.status==='idle'||state.status==='loading'?t('loading'):state.status==='unavailable'?t('unavailable'):t('youdub.bundleMissing')}</span>
   const rows=bundle.rows.filter((row:any) => row.moduleName.startsWith('@youdub/'))
   if(view==='summary')return <>YouDub {process.env.DSH_CLIENT_VERSION} · {t('partsCountTotal',{count:String(rows.length)})}</>
-  return <div className="space-y-5 text-sm">
+  return <div className="space-y-4 text-sm">
     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3"><dt>{t('youdub.applicationVersion')}</dt><dd>{process.env.DSH_CLIENT_VERSION}</dd><dt>{t('youdub.packageVersion')}</dt><dd>{bundle.version??'—'}</dd><dt>{t('sourceTitle')}</dt><dd>{t('youdub.bundled')}</dd></dl>
     {bundle.error&&<p role="alert" className="text-status-danger-fg">{bundle.error.diagnostic??bundle.error.code}</p>}
     <div className="divide-y divide-border">{rows.map((row:any) => <div key={row.rowId} className="flex items-center gap-3 py-3"><StateDot state={row.phase==='active'?'done':row.phase==='failed'?'error':row.enabled?'ongoing':'idle'} /><div className="min-w-0 flex-1"><div>{rowText(row,resolveText).title}</div><div className="text-xs text-muted-foreground">{row.rowId}</div></div><Tag tone={row.phase==='active'?'success':row.phase==='failed'?'danger':'neutral'}>{t(row.phase==='active'?'rowPhaseActive':row.phase==='failed'?'rowPhaseFailed':row.enabled?'rowPhaseLoading':'partOff')}</Tag></div>)}</div>

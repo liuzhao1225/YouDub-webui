@@ -4,6 +4,10 @@
   "short": "中",
   "fallback": "en",
   "messages": {
+    "theme.label": "主题",
+    "theme.light": "浅色",
+    "theme.dark": "深色",
+    "theme.system": "跟随系统",
     "nav.newTask": "新建任务",
     "nav.primary": "主导航",
     "nav.language": "界面语言",

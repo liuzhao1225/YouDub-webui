@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Film, Loader2 } from "lucide-react"
+import { Film, Loader2 } from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
 import { useText } from "@/lib/i18n"

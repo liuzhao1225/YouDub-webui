@@ -28,7 +28,7 @@ export function useUnsavedChanges(blockNavigation: ClientBindings['blockNavigati
     dialog: pending ? <Dialog.Root open onOpenChange={open => { if (!open && !busy) finish(false) }}>
       <Dialog.Portal>
       <Dialog.Backdrop className="fixed inset-0 z-[80] bg-black/50" />
-      <Dialog.Popup initialFocus={keepEditing} aria-describedby={undefined} className="fixed top-1/2 left-1/2 z-[80] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 space-y-5 rounded-2xl border border-border bg-card p-6 shadow-float outline-none">
+      <Dialog.Popup initialFocus={keepEditing} aria-describedby={undefined} className="fixed top-1/2 left-1/2 z-[80] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl border border-border bg-card p-6 shadow-float outline-none">
         <Dialog.Title className="text-lg font-semibold">{tx("workflow.guard.unsaved.changes")}</Dialog.Title>
         {error && <InlineAlert>{error}</InlineAlert>}
         <div className="flex flex-wrap gap-2">

@@ -1,10 +1,5 @@
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
-/* Models settings section, in the settings-panel design language: 14/22 body,
- * 12/18 caption, capsule controls (h36 r18; h28 r14 where a row is dense),
- * 32px fields, and `border-l2` hairlines — the vocabulary GeneralSection and
- * the Button/Input primitives already use.
- *
- * Original Harness color roles map to YouDub's shared light/dark tokens. */
+/* Product geometry uses the shared control, field and panel vocabulary. */
 
 .section {
   display: flex;
@@ -25,7 +20,7 @@
 .intro {
   margin: 0;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   color: var(--muted-foreground);
 }
 
@@ -58,7 +53,7 @@
 .rowCard {
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -67,13 +62,13 @@
 .rowHead {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .rowIdentity {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -81,7 +76,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   font-weight: 500;
   color: var(--foreground);
 }
@@ -138,10 +133,10 @@
   height: 36px;
   padding: 0 14px;
   border: none;
-  border-radius: 18px;
+  border-radius: 8px;
   font: inherit;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   cursor: pointer;
 }
 
@@ -178,12 +173,12 @@
   height: 36px;
   padding: 0 14px;
   border: none;
-  border-radius: 18px;
+  border-radius: 8px;
   background: transparent;
   color: var(--status-danger-fg);
   font: inherit;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   cursor: pointer;
 }
 
@@ -194,9 +189,9 @@
 /* Provider-row controls take the dense capsule (Button `.sm`). */
 .rowActions .secondaryButton,
 .rowActions .dangerButton {
-  height: 28px;
+  height: 32px;
   padding: 0 10px;
-  border-radius: 14px;
+  border-radius: 8px;
   font-size: 12px;
   line-height: 18px;
 }
@@ -242,7 +237,7 @@
 
 .editorTitle {
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   font-weight: 500;
   color: var(--foreground);
 }
@@ -258,13 +253,13 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .fieldLabel {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-size: 12px;
   line-height: 18px;
   font-weight: 500;
@@ -275,10 +270,10 @@
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  height: 28px;
+  height: 32px;
   padding: 0 10px;
   border: none;
-  border-radius: 14px;
+  border-radius: 8px;
   background: transparent;
   color: var(--muted-foreground);
   font: inherit;
@@ -316,7 +311,7 @@
 .addActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .addButton {
@@ -327,7 +322,7 @@
      command. */
   flex: 1 1 0;
   min-width: 180px;
-  gap: 6px;
+  gap: 8px;
   height: 44px;
   border: 1px dashed var(--input);
   border-radius: 12px;
@@ -372,7 +367,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
   color: var(--muted-foreground);
   cursor: pointer;
 }
@@ -397,7 +392,7 @@
 .customizedSummary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: fit-content;
   padding: 2px 4px;
   margin-left: -4px;
@@ -447,7 +442,7 @@
 .modelCatalog {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
@@ -502,7 +497,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* Square, label-free affordances: the row's own inputs carry the meaning, so
@@ -513,7 +508,7 @@
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: 40px;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -569,10 +564,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
+  height: 32px;
   padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
   background: transparent;
   color: var(--foreground);
   font: inherit;
@@ -583,55 +578,6 @@
 
 .addModelButton:hover:not(:disabled) {
   background: var(--accent);
-}
-
-.input {
-  box-sizing: border-box;
-  width: 100%;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font: inherit;
-  font-size: 14px;
-  line-height: 22px;
-  background: var(--input-bg);
-  color: var(--foreground);
-}
-
-/* Enum pickers hold a handful of short options; a field-width dropdown reads
-   as a text field the user is expected to fill. */
-select.input {
-  max-width: 240px;
-  cursor: pointer;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.input::placeholder {
-  color: var(--muted-foreground);
-}
-
-.input:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-/* Select variant of .input: replaces the OS arrow (which sits flush against
-   the right edge) with the shared 12px chevron inset like the composer's
-   .select chips; the right pad reserves its cell. */
-.selectInput {
-  appearance: none;
-  padding-right: 32px;
-  /* Data-URI SVGs cannot resolve CSS variables; #81858C is the caption gray
-     shared by both themes. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px 12px;
 }
 
 .error {

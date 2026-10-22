@@ -1,21 +1,7 @@
 import * as React from "react"
-import { Input as InputPrimitive } from "@base-ui/react/input"
-
-import { inputClassName } from "./input-styles"
+import { Input as HarnessInput } from "../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Input"
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  return (
-    <InputPrimitive
-      type={type}
-      data-slot="input"
-      className={cn(
-        inputClassName,
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-export { Input }
+export const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<typeof HarnessInput>>(function Input({ className, ...props }, ref) {
+  return <HarnessInput {...props} ref={ref} className={cn("w-full min-w-0", className)} />
+})

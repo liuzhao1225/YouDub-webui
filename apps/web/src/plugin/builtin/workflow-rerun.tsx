@@ -1,6 +1,6 @@
 import type { Bindings } from '../sdk'
 import { useEffect, useState } from 'react'
-import { ArrowRight, GitBranch, Loader2, Square } from 'lucide-react'
+import { ArrowRight, GitBranch, Loader2, Square } from '@/lib/icons'
 import { Link, text, type Diagnostic, type JsonObject, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from '../sdk'
 import { taskNeedsPolling } from '../runtime/query'
 import { useActiveView } from '../view-hooks'

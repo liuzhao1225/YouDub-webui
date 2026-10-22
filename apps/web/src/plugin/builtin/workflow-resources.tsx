@@ -1,4 +1,4 @@
-import { Check, Download, Loader2, RotateCcw } from 'lucide-react'
+import { Check, Download, Loader2, RotateCcw } from '@/lib/icons'
 import { Link, text, type NodeTypeDefinition } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes } from '@/lib/format'

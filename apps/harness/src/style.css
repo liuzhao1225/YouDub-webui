@@ -3,7 +3,7 @@
 html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
 body:has(.yd-sidebar) { --dsh-frame-top-clearance:0px; }
 html[data-platform='darwin'] body:has([data-sidebar-collapsed]) { --dsh-frame-top-clearance:var(--yd-window-top-clearance); }
-.yd { --yd-space:8px; box-sizing:border-box; color:var(--dsw-alias-label-primary); font:14px/1.5 var(--dsw-font-family); }
+.yd { --yd-space:8px; box-sizing:border-box; color:var(--dsw-alias-label-primary); font:14px/20px var(--dsw-font-family); }
 .yd *, .yd-domain-dialog * { box-sizing:border-box; }
 .yd .yd-icon-button { width:32px; height:32px; padding:0; flex-shrink:0; }
 .yd .yd-brand { padding:0; height:auto; }
@@ -23,22 +23,22 @@ html[data-platform='darwin'] .yd-sidebar-chrome { height:var(--yd-window-top-cle
 .yd-sidebar nav button[aria-current]::before { content:""; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:16px; border-radius:3px; background:linear-gradient(180deg,var(--brand-pink),var(--brand-blue)); }
 .yd-sidebar-bottom { margin-top:auto; padding-top:calc(var(--yd-space) * 1.5); display:flex; gap:calc(var(--yd-space) / 2); align-items:center; justify-content:flex-start; border-top:1px solid var(--dsw-alias-border-l2); }
 .yd .yd-sidebar-bottom .yd-icon-button { color:var(--dsw-alias-label-primary); }
-.yd .yd-icon-link { display:inline-flex; align-items:center; justify-content:center; border-radius:12px; color:var(--dsw-alias-label-secondary); text-decoration:none; }
+.yd .yd-icon-link { display:inline-flex; align-items:center; justify-content:center; border-radius:var(--dsw-radius-md); color:var(--dsw-alias-label-primary); text-decoration:none; }
 .yd .yd-icon-link:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
-.yd .yd-icon-link:focus-visible { outline:2px solid var(--brand-blue); outline-offset:2px; }
+.yd .yd-icon-link:focus-visible { outline:2px solid var(--ring); outline-offset:2px; }
 .yd-sidebar[data-collapsed] { padding-inline:var(--yd-space); align-items:center; }
 .yd-sidebar[data-collapsed] .yd-brand-row { padding-inline:0; }
 .yd-sidebar[data-collapsed] .yd-sidebar-bottom { flex-direction:column; }
-.yd-sidebar[data-collapsed] .yd-logo { height:22px; }
+.yd-sidebar[data-collapsed] .yd-logo { height:24px; }
 .yd-sidebar[data-collapsed] nav button { justify-content:center; padding-inline:0; width:36px; }
 .yd-panel { height:100%; min-height:0; display:flex; flex-direction:column; }
 .yd-main-chrome { height:var(--dsh-frame-top-clearance,0px); flex-shrink:0; }
 .yd-main { flex:1; min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; }
 .yd-feature-root { container-type:inline-size; }
 .yd-feature-page { max-width:1152px; padding:24px 32px; margin-inline:auto; }
-.yd-domain-dialog { display:flex; flex-direction:column; gap:20px; padding:24px; }
-.yd-domain-dialog h2 { margin:0; font-size:18px; }
-.yd-domain-alert { display:flex; align-items:flex-start; gap:8px; padding:12px; border-radius:12px; color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-2); }
+.yd-domain-dialog { display:flex; flex-direction:column; gap:16px; padding:24px; }
+.yd-domain-dialog h2 { margin:0; font-size:20px; line-height:28px; }
+.yd-domain-alert { display:flex; align-items:flex-start; gap:8px; padding:12px; border-radius:var(--dsw-radius-md); color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-2); }
 .yd-domain-alert > div { min-width:0; overflow-wrap:anywhere; }
 .yd-select { max-width:100%; }
 .yd-select > button { width:100%; min-width:0; justify-content:space-between; }
@@ -61,3 +61,13 @@ html[data-platform='darwin'] .yd-sidebar-chrome { height:var(--yd-window-top-cle
 /* The original first-run screen occupies the root until setup is ready. */
 .yd-startup{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--background);color:var(--foreground)}
 .yd-startup-content{flex:1;min-height:0;overflow:auto}
+
+/* Input state semantics supplement the original Harness primitive. */
+.yd-input:has(input:disabled) { opacity:.5; }
+.yd-input:has(input[aria-invalid=true]) { border-color:var(--destructive); }
+.yd button > svg { flex-shrink:0; }
+.yd-sidebar nav button > span > svg { width:20px; height:20px; }
+@media(pointer:coarse) {
+  .yd .yd-icon-button { width:44px; height:44px; }
+  .yd-sidebar nav button { min-height:44px; }
+}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AudioLines, Check, CircleAlert, Loader2, Mic2, SlidersHorizontal, Waves } from 'lucide-react'
+import { AudioLines, Check, CircleAlert, Loader2, Mic2, SlidersHorizontal, Waves } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { useText } from '@/lib/i18n'
 import type { MessageKey } from '@/locales'
@@ -19,7 +19,7 @@ export function ResourceProgress({ value, label, paused = false }: { value: numb
 }
 export function EnvironmentSteps({ steps, actions }: { steps: EnvironmentStep[]; actions?: Record<string, ReactNode> }) {
   const text = useText()
-  return <>{steps.map(step => <div key={step.id} className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm"><div><span>{environmentNames[step.id] ? text(environmentNames[step.id]!) : step.name}</span>{step.source && <span className="ml-2 text-xs text-subtle-foreground">{step.source}</span>}{step.detail && <p className="mt-1 break-words text-xs text-muted-foreground">{step.detail}</p>}</div><span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">{actions?.[step.id] || (step.status === 'ready' ? <><Check aria-hidden="true" className="size-4 text-brand-blue" /><span className="sr-only">{text('setup.ready')}</span></> : step.status === 'running' ? <><Loader2 aria-hidden="true" className="size-3.5 animate-spin" />{text('setup.preparing')}</> : step.status === 'failed' ? <><CircleAlert aria-hidden="true" className="size-4 text-status-danger-fg" /><span className="sr-only">{text('setup.failed')}</span></> : text('setup.pending'))}</span>{step.phase === 'downloading' && step.progress && step.progress.total > 0 && <div className="w-full space-y-1"><ResourceProgress value={step.progress.received / step.progress.total} label={text('setup.currentDownload')} /><p className="text-xs tabular-nums text-muted-foreground">{sizeLabel(step.progress.received)} / {sizeLabel(step.progress.total)}{Boolean(step.progress.speed) && <> · {sizeLabel(step.progress.speed!)}/s</>}</p></div>}</div>)}</>
+  return <>{steps.map(step => <div key={step.id} className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm"><div><span>{environmentNames[step.id] ? text(environmentNames[step.id]!) : step.name}</span>{step.source && <span className="ml-2 text-xs text-subtle-foreground">{step.source}</span>}{step.detail && <p className="mt-1 break-words text-xs text-muted-foreground">{step.detail}</p>}</div><span className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">{actions?.[step.id] || (step.status === 'ready' ? <><Check aria-hidden="true" className="size-4 text-link" /><span className="sr-only">{text('setup.ready')}</span></> : step.status === 'running' ? <><Loader2 aria-hidden="true" className="size-3.5 animate-spin" />{text('setup.preparing')}</> : step.status === 'failed' ? <><CircleAlert aria-hidden="true" className="size-4 text-status-danger-fg" /><span className="sr-only">{text('setup.failed')}</span></> : text('setup.pending'))}</span>{step.phase === 'downloading' && step.progress && step.progress.total > 0 && <div className="w-full space-y-1"><ResourceProgress value={step.progress.received / step.progress.total} label={text('setup.currentDownload')} /><p className="text-xs tabular-nums text-muted-foreground">{sizeLabel(step.progress.received)} / {sizeLabel(step.progress.total)}{Boolean(step.progress.speed) && <> · {sizeLabel(step.progress.speed!)}/s</>}</p></div>}</div>)}</>
 }
 const icons = { whisper: AudioLines, voxcpm: Mic2, demucs: Waves, qwen: SlidersHorizontal }
 export function ModelDownloadRow({ model, action }: { model: SetupModel; action?: ReactNode }) {
@@ -27,8 +27,8 @@ export function ModelDownloadRow({ model, action }: { model: SetupModel; action?
   const purposeKey = modelPurposes[model.id]
   const done = model.status === 'ready'
   const Icon = icons[model.id as keyof typeof icons] || AudioLines
-  return <div className="flex items-center gap-3 py-5 sm:gap-4">
-    <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent', done ? 'text-brand-blue' : 'text-brand-pink')}><Icon className="size-4.5" /></span>
+  return <div className="flex items-center gap-3 py-4 sm:gap-4">
+    <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent', done ? 'text-link' : 'text-status-running-fg')}><Icon className="size-4.5" /></span>
     <div className="min-w-0 flex-1 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 truncate text-sm font-medium" title={`${model.name} ${model.variant}`}>{model.name}{model.variant && <span className="ml-1.5 text-[11px] font-normal text-subtle-foreground">{model.variant}</span>}</span>

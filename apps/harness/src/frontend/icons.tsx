@@ -1,25 +1,2 @@
-/** Media-specific artwork remains YouDub; shared symbols use Harness' icon set. */
-export * from 'lucide-react'
-export {
- IconChevronLeftOutlineRegular as ArrowLeft, IconChevronRightOutlineRegular as ArrowRight,
- IconChevronLeftOutlineRegular as ChevronLeft, IconChevronRightOutlineRegular as ChevronRight,
- IconChevronDownOutlineRegular as ChevronDown, IconChevronUpOutlineRegular as ChevronUp,
- IconCheckOutlineRegular as Check, IconCloseOutlineRegular as X,
- IconLinkOutlineRegular as Link2, IconLinkOutlineRegular as Link,
- IconLoadingOutlineRegular as Loader2, IconSparkleRegular as Sparkles,
- IconBranchOutlineRegular as GitBranch, IconBranchOutlineRegular as Workflow,
- IconCopyOutlineRegular as Copy, IconEditOutlineRegular as Pencil,
- IconPlayOutlineRegular as Play, IconPauseOutlineRegular as Pause,
- IconPlusOutlineRegular as Plus, IconSearchOutlineRegular as Search,
- IconSlidersTwoOutlineRegular as SlidersHorizontal, IconTrashOutlineRegular as Trash2,
- IconDownloadOutlineRegular as Download, IconRightUpOutlineRegular as ExternalLink,
- IconRefreshOutlineRegular as RefreshCw, IconRefreshOutlineRegular as RotateCw,
- IconRefreshOutlineRegular as RotateCcw, IconStopFillRegular as Square,
- IconFullscreenOutlineRegular as Maximize, IconSettingsOutlineRegular as Settings,
- IconSettingsOutlineRegular as Settings2, IconInfoOutlineRegular as Info,
- IconWarningOutlineRegular as CircleAlert, IconWarningTriangleOutlineRegular as TriangleAlert,
- IconCordisPluginOutlineRegular as Plug, IconPluginPinwheelOutlineRegular as Puzzle,
- IconDatabaseOutlineRegular as Database, IconDeliverDocRegular as FileText,
- IconPanelLeftOutlineRegular as PanelLeftClose, IconPanelLeftOutlineRegular as PanelLeftOpen,
- IconMicrophoneOutlineRegular as Mic2,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+/** Share the product icon vocabulary across Web and desktop. */
+export * from '../../../web/src/lib/icons'

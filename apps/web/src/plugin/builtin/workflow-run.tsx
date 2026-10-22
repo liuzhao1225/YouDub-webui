@@ -1,6 +1,6 @@
 import type { Bindings } from '../sdk'
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
-import { ArrowRight, Link2, Loader2, X } from 'lucide-react'
+import { ArrowRight, Link2, Loader2, X } from '@/lib/icons'
 import { Link, text, type Diagnostic, type GraphInput, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { formatBytes } from '@/lib/format'
@@ -94,9 +94,8 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   }
   const material = <div>
     {linkInput && <div className="pt-3 pb-1">
-      <div className="relative flex items-center gap-2 rounded-xl border border-input bg-muted px-3 focus-within:border-ring">
-        <Link2 className="size-4 shrink-0 text-subtle-foreground" />
-        <Input aria-label={tx("workflow.run.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx("workflow.run.paste.a.youtube.or.bilibili.link")} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
+      <div className="flex min-w-0 items-center gap-2">
+        <Input icon={<Link2 className="size-4" />} aria-label={tx("workflow.run.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx("workflow.run.paste.a.youtube.or.bilibili.link")} className="h-12 flex-1" onBlur={() => setLinkTouched(true)} onChange={(event) => {
           setSourceUrl(event.target.value); setLinkTouched(false); setError('')
           if (event.target.value) changeFile(linkInput, undefined)
         }} />
@@ -126,5 +125,5 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   const showStatus = !quietResources || error || diagnostics.length > 0 || (pending && !busy) || document.nodes.some((node) => nodeDefinition(node, types)?.runtimeInputSchema)
   const submit = <Button size={prominent ? "xl" : "default"} className={prominent ? "w-full shrink-0 sm:ml-auto sm:w-auto" : undefined} disabled={locked || !complete || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{prominent ? source ? tx("workflow.run.download.and.process") : tx("workflow.run.start.processing") : tx("workflow.run.start.workflow")}</Button>
   if (prominent) return <div className="space-y-4"><LaunchCard>{material}<div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-2 pt-2.5 pb-1"><div className="min-w-0 flex-1">{afterInputs}</div>{submit}</div></LaunchCard>{showStatus ? status : null}</div>
-  return <section className="space-y-5">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/models" className="text-xs text-muted-foreground hover:text-foreground">{tx("workflow.run.connection.settings")}</Link>}{submit}</div></section>
+  return <section className="space-y-4">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/models" className="text-xs text-muted-foreground hover:text-foreground">{tx("workflow.run.connection.settings")}</Link>}{submit}</div></section>
 }

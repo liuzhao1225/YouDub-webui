@@ -2,7 +2,7 @@ import { bindComponent, text, type Bindings, type JsonObject, type RouteProps, t
 import { Context } from 'cordis'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dialog } from '@base-ui/react/dialog'
-import { Database, HardDrive, Info, Loader2, Plug, Puzzle, Settings2, Settings as SettingsIcon, X } from 'lucide-react'
+import { Database, HardDrive, Info, Loader2, Plug, Puzzle, Settings2, Settings as SettingsIcon, X } from '@/lib/icons'
 import { useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -22,7 +22,7 @@ type SettingsData = JsonObject & { connections?: { adapter: string }[]; plugins?
 type Extension = { id: string; version: string; source: string; installed: boolean; enabled: boolean; active: boolean; restartRequired: boolean }
 type DirtyChange = (id: string, dirty: boolean) => void
 type SettingsBindings = Bindings<'request' | 'useQuery' | 'useSlot' | 'useUpdates' | 'replace' | 'dismissDialog' | 'blockNavigation'>
-function Section({ title, children }: { title: ReactNode; children: ReactNode }) { return <SectionCard title={title}><div className="space-y-5 p-6">{children}</div></SectionCard> }
+function Section({ title, children }: { title: ReactNode; children: ReactNode }) { return <SectionCard title={title}><div className="space-y-4 p-6">{children}</div></SectionCard> }
 function Extensions({ request, useQuery, onDirtyChange }: Bindings<'request' | 'useQuery'> & { onDirtyChange: DirtyChange }) {
   const tx = useText()
   const { data, error, refresh } = useQuery<{ items: Extension[] }>('/api/v2/extensions')
@@ -40,7 +40,7 @@ function Extensions({ request, useQuery, onDirtyChange }: Bindings<'request' | '
     finally { setBusy(false) }
   }
   return <>
-    <form className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card" onSubmit={event => { event.preventDefault(); void mutate('/api/v2/extensions/install', 'POST', { source: source.trim(), ...(ref.trim() ? { ref: ref.trim() } : {}) }) }}>
+    <form className="space-y-4 rounded-xl border border-border bg-card p-6" onSubmit={event => { event.preventDefault(); void mutate('/api/v2/extensions/install', 'POST', { source: source.trim(), ...(ref.trim() ? { ref: ref.trim() } : {}) }) }}>
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
         <div className="space-y-2"><Label htmlFor="extension-source">{tx("settings.github.repository.or.local.plugin.path")}</Label><Input id="extension-source" value={source} disabled={busy} onChange={event => setSource(event.target.value)} placeholder="https://github.com/owner/youdub-plugin" required /></div>
         <div className="space-y-2"><Label htmlFor="extension-ref">{tx("settings.version.commit")}</Label><Input id="extension-ref" value={ref} disabled={busy} onChange={event => setRef(event.target.value)} /></div>
@@ -97,7 +97,7 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
     <Dialog.Portal>
       <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/55 backdrop-blur-sm" />
       <Dialog.Popup initialFocus={closeButton} finalFocus={() => opener?.isConnected ? opener : true} className="fixed top-1/2 left-1/2 z-50 flex h-[min(50rem,calc(100dvh-3rem))] w-[min(50rem,calc(100vw-3rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-background text-foreground shadow-float outline-none max-sm:h-dvh max-sm:w-full max-sm:rounded-none" aria-describedby={undefined}>
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-5">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
           <Dialog.Title className="text-base font-semibold">{title}</Dialog.Title>
           <Dialog.Close disabled={saving} render={<Button ref={closeButton} variant="ghost" size="icon-sm" aria-label={tx("settings.close.settings")} />}><X /></Dialog.Close>
         </header>

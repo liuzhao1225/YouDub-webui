@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/input'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
  * Curated editor for the direct DeepSeek adapter's advisory model catalog.
@@ -243,8 +244,8 @@ export function DeepSeekModelsEditor(props: DeepSeekModelsEditorProps): ReactNod
   ): ReactNode => (
     <label className={styles['modelField']}>
       <span className={styles['modelFieldLabel']}>{props.t(field === 'contextWindow' ? 'contextWindow' : 'maxTokens')}</span>
-      <input
-        className={styles['input']}
+      <Input
+
         type="text"
         inputMode="numeric"
         value={capacityText(model, index, field)}
@@ -292,8 +293,8 @@ export function DeepSeekModelsEditor(props: DeepSeekModelsEditorProps): ReactNod
             {props.models.map((model, index) => (
               <div className={styles['modelEntry']} key={index}>
                 <div className={styles['modelRow']}>
-                  <input
-                    className={styles['input']}
+                  <Input
+
                     type="text"
                     value={typeof model['id'] === 'string' ? model['id'] : ''}
                     placeholder={props.t('modelId')}
@@ -307,8 +308,8 @@ export function DeepSeekModelsEditor(props: DeepSeekModelsEditorProps): ReactNod
                       if (trimmed !== event.target.value) update(index, 'id', trimmed)
                     }}
                   />
-                  <input
-                    className={styles['input']}
+                  <Input
+
                     type="text"
                     value={typeof model['name'] === 'string' ? model['name'] : ''}
                     placeholder={props.t('modelName')}

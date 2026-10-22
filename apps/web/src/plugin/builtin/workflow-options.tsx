@@ -4,12 +4,12 @@ import { useI18n, useText } from '@/lib/i18n'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Popover } from '@base-ui/react/popover'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from '@/lib/icons'
 import { ConfigEditor } from './schema-form'
 import { fieldOptions, fieldType, fieldValue, nodeModel } from '@/runtime/schema-fields'
 import { nodeDefinition } from './workflow-utils'
 
-export const optionPillClassName = 'inline-flex h-8 w-auto max-w-full gap-1.5 rounded-full border-border bg-muted px-3 text-[13px] shadow-none hover:bg-accent'
+export const optionPillClassName = 'inline-flex w-auto max-w-full gap-2'
 
 export function WorkflowOptions({ document, types, disabled, onChange, useSlot }: {
   document: WorkflowDocument; types: NodeTypeDefinition[]; disabled: boolean
@@ -39,7 +39,7 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
       const type = fieldType(field), numeric = type === 'number' || type === 'integer'
       const simple = numeric || type === 'string'
       return <Popover.Root key={`${document.id}:${node.id}:${key}`}>
-        <Popover.Trigger disabled={disabled} aria-label={ariaLabel} className={`border items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/25 disabled:opacity-50 ${optionPillClassName}`}><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx("workflow.options.configure")}</span><ChevronDown className="size-4 shrink-0 text-subtle-foreground" /></Popover.Trigger>
+        <Popover.Trigger disabled={disabled} aria-label={ariaLabel} className={`border items-center outline-none focus-visible:outline-none disabled:opacity-50 ${optionPillClassName}`}><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx("workflow.options.configure")}</span><ChevronDown className="size-4 shrink-0 text-subtle-foreground" /></Popover.Trigger>
         <Popover.Portal><Popover.Positioner sideOffset={6} align="start" className="z-[60]"><Popover.Popup aria-label={ariaLabel} className="w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-elevated p-3 text-popover-foreground shadow-float outline-none">
           {simple ? <Input aria-label={label} autoFocus disabled={disabled} type={numeric ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={type === 'integer' ? 1 : 'any'} minLength={field.minLength} maxLength={field.maxLength} value={value === undefined || value === null ? '' : String(value)} onChange={(event) => onChange(node.id, { ...node.config, [key]: fieldValue(field, event.target.value) })} /> : <ConfigEditor useSlot={useSlot} ownerId={`quick:${node.type}`} mode="options" schema={{ type: 'object', properties: { [key]: field } }} value={node.config} readOnly={disabled} diagnostics={[]} onChange={(config) => onChange(node.id, { ...node.config, [key]: config[key] })} />}
         </Popover.Popup></Popover.Positioner></Popover.Portal>

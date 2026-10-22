@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { CircleAlert, Info, TriangleAlert } from "lucide-react"
+import { CircleAlert, Info, TriangleAlert } from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
 
@@ -31,7 +31,7 @@ export function InlineAlert({
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm",
+        "flex items-start gap-2 rounded-xl border px-3 py-3 text-sm",
         TONE_STYLES[tone],
         className,
       )}

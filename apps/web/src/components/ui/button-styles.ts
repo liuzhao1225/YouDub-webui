@@ -1,39 +1,29 @@
-import { cva } from "class-variance-authority"
+import { cva } from 'class-variance-authority'
+import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Button.module.css'
 
-export const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow,opacity] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-45 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground shadow-glow hover:bg-primary-hover",
-        outline:
-          "border-border bg-input-bg text-foreground shadow-xs hover:border-input hover:bg-accent aria-expanded:bg-accent",
-        secondary:
-          "border-border bg-muted text-foreground hover:bg-accent aria-expanded:bg-accent",
-        tint:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/70",
-        ghost:
-          "text-muted-foreground hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
-        destructive:
-          "bg-status-danger/10 text-status-danger-fg hover:bg-status-danger/15 focus-visible:ring-status-danger/30",
-        link: "text-link underline-offset-4 hover:underline",
-      },
-      size: {
-        default:
-          "h-9 gap-2 px-3.5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        xs: "h-7 gap-1 rounded-md px-2 text-xs [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-8 gap-1.5 rounded-md px-3 text-[13px] [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-10 gap-2 px-4",
-        xl: "h-11 gap-2 rounded-xl px-5 text-[15px]",
-        icon: "size-9",
-        "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
-        "icon-sm": "size-8 rounded-md",
-        "icon-lg": "size-10",
-      },
+/** Shared Harness appearance, including links that use the button face. */
+export const buttonVariants = cva([styles.button, '[&_svg]:size-4 [&_svg]:shrink-0'], {
+  variants: {
+    variant: {
+      default: styles.primary,
+      outline: styles.outline,
+      secondary: styles.outline,
+      tint: styles.ghost,
+      ghost: styles.ghost,
+      destructive: [styles.outline, 'text-status-danger-fg'],
+      link: [styles.ghost, 'text-link'],
     },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
+    size: {
+      default: styles.md,
+      xs: styles.sm,
+      sm: styles.sm,
+      lg: styles.md,
+      xl: [styles.md, 'h-11'],
+      icon: [styles.md, 'size-9 p-0'],
+      'icon-xs': [styles.sm, 'size-7 p-0'],
+      'icon-sm': [styles.sm, 'size-8 p-0'],
+      'icon-lg': [styles.md, 'size-10 p-0'],
     },
-  }
-)
+  },
+  defaultVariants: { variant: 'default', size: 'default' },
+})

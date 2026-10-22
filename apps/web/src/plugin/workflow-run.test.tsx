@@ -71,7 +71,7 @@ it('keeps the original link-above-upload layout and submits URL input through a 
   const link = screen.getByLabelText('视频链接'), upload = screen.getByLabelText('视频 *')
   expect(link.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(screen.getByText('或上传本地视频')).toBeInTheDocument()
-  expect(link).toHaveClass('h-12')
+  expect(link.parentElement).toHaveClass('h-12')
   expect(upload.parentElement).toHaveClass('min-h-[132px]', 'py-6')
   await user.upload(upload, new File(['local'], 'local.mp4', { type: 'video/mp4' }))
   fireEvent.change(link, { target: { value: 'https://youtu.be/abcdefghijk' } })

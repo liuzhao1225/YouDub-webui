@@ -1,3 +1,4 @@
+import { NativeSelect } from '@/components/ui/native-select'
 /* Adapted from DeepSeek Harness @99f6f02 (MIT). See SOURCE.md and LICENSE. */
 /**
  * Models settings section: the provider rows joined from the configurable
@@ -430,9 +431,9 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
           /> : addTarget && addNamespace ? <>
             <div className={styles['field']}>
               <span className={styles['fieldLabel']}>{t('provider')}</span>
-              <select className={styles['input'] + ' ' + styles['selectInput']} value={addTarget.provider} aria-label={t('provider')} disabled={dirty || editorBusy} onChange={event => { const row = addable.find(candidate => candidate.entry.provider === event.target.value); if (row) setEditing(targetOf(row)) }}>
+              <NativeSelect className="max-w-60" value={addTarget.provider} aria-label={t('provider')} disabled={dirty || editorBusy} onChange={event => { const row = addable.find(candidate => candidate.entry.provider === event.target.value); if (row) setEditing(targetOf(row)) }}>
                 {addable.map(row => <option key={row.entry.provider} value={row.entry.provider}>{row.entry.displayName}</option>)}
-              </select>
+              </NativeSelect>
             </div>
             <ProviderEditor key={addTarget.provider + ':' + composerRevision}
               provider={addTarget.provider} displayName={addTarget.displayName} hideTitle namespace={addNamespace}

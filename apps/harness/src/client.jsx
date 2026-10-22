@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { defineStore } from '@deepseek-ai/dsh-client-store'
-import { Button, Tooltip, IconPanelLeftOutlineRegular as PanelLeft, IconPlusOutlineRegular as Plus, IconSparkleRegular as Sparkles, IconClockOutlineRegular as History, IconBranchOutlineRegular as Branch, IconFolderOpenOutlineRegular as Folder, IconCordisPluginOutlineRegular as Plugin } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconLayoutSidebar as PanelLeft, IconPlus as Plus, IconSparkles as Sparkles, IconHistory as History, IconGitBranch as Branch, IconFolder as Folder, IconPuzzle as Plugin } from '@tabler/icons-react'
 import { IconBrandGithub, IconMessageReport, IconSettings } from '@tabler/icons-react'
 import { SetupGate } from '@/components/setup-gate'
 import { ThemeProvider, ThemeToggle, useTheme } from './frontend/theme'
@@ -53,7 +54,7 @@ function SidebarView({ collapsed, useStore, navigate, toggleSidebar, renderSlot 
   const items = [{path:'/', label:tx("client.workbench"), icon:Sparkles}, {path:'/tasks',label:tx("client.library"),icon:History}, {path:'/workflows',label:tx("client.workflows"),icon:Branch}, {path:'/resources',label:tx("client.resources"),icon:Folder}, {path:'/extensions',label:tx("client.extensions"),icon:Plugin}]
   return <aside className="yd yd-sidebar" data-collapsed={collapsed || undefined}>
     <div className="yd-sidebar-chrome" data-window-drag aria-hidden="true" />
-    <div className="yd-brand-row"><Button className="yd-brand" aria-label={tx('client.home')} onClick={() => navigate('/')}><BrandMark wordmarkSrc={logo} animated wordmark={!collapsed} className={collapsed ? 'h-[22px]' : 'h-7'} /></Button>{!collapsed && <IconButton label={t.nav.collapseSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton>}</div>
+    <div className="yd-brand-row"><Button className="yd-brand" aria-label={tx('client.home')} onClick={() => navigate('/')}><BrandMark wordmarkSrc={logo} wordmark={!collapsed} className={collapsed ? 'h-6' : 'h-7'} /></Button>{!collapsed && <IconButton label={t.nav.collapseSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton>}</div>
     {collapsed && <div className="yd-sidebar-expand"><IconButton label={t.nav.expandSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton></div>}
     <YouDubButton size="lg" className={collapsed ? 'size-10 px-0' : 'w-full'} aria-label={t.nav.newTask} onClick={() => navigate('/')}><Plus />{!collapsed && t.nav.newTask}</YouDubButton>
     <nav aria-label={t.nav.primary}>{items.map(({path:target,label,icon:Icon}) => <Button key={target} aria-label={label} aria-current={(target === '/' ? path === '/' : path.startsWith(target)) ? 'page' : undefined} icon={<Icon />} onClick={() => navigate(target)}>{!collapsed && label}</Button>)}{renderSlot('youdub.navigation',{path,navigate,collapsed})}</nav>
@@ -72,21 +73,21 @@ function Startup({ features, localeSource, themeSource, onReady, renderSlot, tra
     </div></div>
   </FeatureProvider></ThemeProvider></LanguageProvider>
 }
-function Main({ useStore, renderSlot, features, localeSource, pageRegistry }) {
+function Main({ useStore, renderSlot, features, localeSource, themeSource, pageRegistry }) {
   const path = useStore(state => state.path), error = useStore(state => state.error), scroll = useRef(null)
   useSyncExternalStore(pageRegistry.subscribe,pageRegistry.getSnapshot)
   useEffect(() => { if (scroll.current) scroll.current.scrollTop = 0 },[path])
   const available = [...routes,...pageRegistry.entries().filter(entry => entry.options.key?.startsWith('/')).map(entry => ({path:entry.options.key,key:entry.options.key}))]
   const location = path.split('?')[0], match = resolveRoute(available,location,true), route=match?.route, params = match ? {...match.params,__search:path.includes('?') ? path.slice(path.indexOf('?')) : ''} : {}
   const bindings = useMemo(() => ({...features,renderSlot}),[features,renderSlot])
-  return <LanguageProvider source={localeSource}><NavigationContext.Provider value={features.navigate}><FeatureProvider value={bindings}>
+  return <LanguageProvider source={localeSource}><ThemeProvider source={themeSource}><NavigationContext.Provider value={features.navigate}><FeatureProvider value={bindings}>
     <div className="yd yd-panel"><div className="yd-main-chrome" data-window-drag aria-hidden="true" />
       <main className="yd-main yd-feature-root" ref={scroll} data-youdub-page={route?.key}>
         {error && <div role="alert" className="yd-domain-alert">{error}</div>}
         <React.Fragment key={path}>{route ? renderSlot('youdub.page',{params,...features},{entryKey:route.key}) : <div className="yd-feature-page"><MissingPage navigate={features.navigate} /></div>}</React.Fragment>
       </main>
     </div>
-  </FeatureProvider></NavigationContext.Provider></LanguageProvider>
+  </FeatureProvider></NavigationContext.Provider></ThemeProvider></LanguageProvider>
 }
 function MissingPage({navigate}) { const tx=useText();return <><h1>{tx('client.pageNotFound')}</h1><Button onClick={() => navigate('/')}>{tx('client.backToWorkbench')}</Button></> }
 function BoundLocalize(props) { return <LocalizeEditor {...props} {...useFeatures()} /> }

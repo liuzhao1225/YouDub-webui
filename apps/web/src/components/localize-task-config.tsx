@@ -2,7 +2,7 @@ import type { MessageKey } from '@/locales'
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { ArrowRightLeft, AudioWaveform, Captions, Clapperboard, Languages, Mic, Speech, type LucideIcon } from "lucide-react"
+import { ArrowRightLeft, AudioWaveform, Captions, Clapperboard, Languages, Mic, Speech, type LucideIcon } from "@/lib/icons"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Segmented } from "@/components/ui/segmented"
@@ -174,7 +174,7 @@ type Option = { value: string; label: ReactNode; disabled?: boolean }
 function ConfigRow({ icon: Icon, tint, title, description, children }: {
   icon: LucideIcon; tint: keyof typeof TINTS; title: string; description: string; children: ReactNode
 }) {
-  return <div className="grid gap-3 py-5 @2xl:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] @2xl:gap-6">
+  return <div className="grid gap-3 py-4 @2xl:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] @2xl:gap-6">
     <div className="flex items-start gap-3">
       <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TINTS[tint])}><Icon className="size-4" /></span>
       <div className="min-w-0">

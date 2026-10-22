@@ -3,6 +3,10 @@
   "label": "English",
   "short": "EN",
   "messages": {
+    "theme.label": "Theme",
+    "theme.light": "Light",
+    "theme.dark": "Dark",
+    "theme.system": "Follow system",
     "nav.newTask": "New task",
     "nav.primary": "Main navigation",
     "nav.language": "Language",
