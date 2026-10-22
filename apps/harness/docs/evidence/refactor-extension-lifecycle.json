@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T13:13:09.113Z",
+  "scope": "P5 isolated Desktop Host browser extension acceptance",
+  "baseCommit": "034eb0dc0682c778045b2aec7561ba0c1314d160",
+  "application": "com.youdub.review-validation",
+  "originalApplicationUntouched": true,
+  "validation": {
+    "python": {
+      "evidence": "refactor-plugin-reinstall.json",
+      "uninstalled": true,
+      "taskRetained": true,
+      "environment": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/youdub/runtime/venv",
+      "baseInterpreter": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/refactor-first-run-20261022/youdub/runtime/python/python/bin/python3.12"
+    },
+    "javascript": {
+      "install": "file:",
+      "enabled": true,
+      "sidebarAdded": true,
+      "counter": 1,
+      "taskId": "196e16b0-ee6e-40fe-934b-912a66f72155",
+      "taskStatus": "succeeded",
+      "taskRevision": 5,
+      "disabled": true,
+      "sidebarRemoved": true,
+      "uninstalled": true
+    },
+    "graph": {
+      "install": "file:",
+      "enabled": true,
+      "taskId": "bd8376b0-1f42-4be5-92b1-315fe3b57d50",
+      "review": {
+        "taskRevision": 11,
+        "status": "paused",
+        "outputRevision": 2,
+        "exportStatus": "pending",
+        "sources": 2
+      },
+      "confirmed": {
+        "taskRevision": 15,
+        "status": "succeeded",
+        "completedSteps": 4
+      },
+      "disabled": true,
+      "uninstalled": true
+    },
+    "retainedArtifacts": [
+      {
+        "id": "196e16b0-ee6e-40fe-934b-912a66f72155",
+        "artifact": "uppercase.txt",
+        "bytes": 62,
+        "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d",
+        "afterUninstall": true,
+        "exactMatch": true
+      },
+      {
+        "id": "bd8376b0-1f42-4be5-92b1-315fe3b57d50",
+        "artifact": "reviewed.txt",
+        "bytes": 77,
+        "sha256": "80243b5e90b5f2ed17191738f323b912a76b4e83f77f607cc7c8394280a0228a",
+        "afterUninstall": true,
+        "exactMatch": true
+      }
+    ],
+    "builtinProtection": "Built-in details stay running and expose no disable/uninstall control",
+    "menu": {
+      "cause": "Graph-template workflow was also listed as a legacy form workflow",
+      "fix": "Only workflows without graphTemplate enter the additional form list",
+      "beforeCount": 2,
+      "afterCount": 1,
+      "testsPassed": 15,
+      "testLog": "/tmp/youdub-template-duplicate-after-electron.log",
+      "buildLog": "/tmp/youdub-template-duplicate-build.log",
+      "sourceIsolation": {
+        "head": "034eb0dc0682c778045b2aec7561ba0c1314d160",
+        "change": "apps/web/src/plugin/builtin/studio.tsx",
+        "otherWorkingChangesReadFromHead": [
+          "apps/harness/build-desktop.mjs",
+          "apps/harness/src/backend/resources.ts",
+          "apps/harness/src/backend/setup.mjs",
+          "apps/harness/src/desktop-main.mjs",
+          "apps/harness/src/frontend/runtime.tsx",
+          "apps/web/src/components/settings-resources.test.tsx",
+          "apps/web/src/components/settings-resources.tsx",
+          "apps/web/src/components/setup-gate.test.tsx",
+          "apps/web/src/components/setup-screen.tsx",
+          "apps/web/src/lib/setup-diagnostics.ts",
+          "apps/web/src/locales/en.json",
+          "apps/web/src/locales/ja.json",
+          "apps/web/src/locales/zh.json",
+          "apps/web/src/plugin/builtin/workflow-resources.tsx",
+          "apps/web/src/plugin/runtime/resources.test.ts",
+          "apps/web/src/plugin/runtime/workflow-resources.ts",
+          "apps/web/src/plugin/web-react.tsx",
+          "apps/web/src/plugin/workflow-run.test.tsx",
+          "apps/web/src/runtime/setup-contracts.ts",
+          "backend/requirements/resources.json",
+          "packages/builtin/src/setup-environment.ts"
+        ],
+        "output": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/desktop-plugin-reinstall/ui-fix"
+      }
+    },
+    "screens": [
+      {
+        "file": "refactor-extension-client.png",
+        "sha256": "5d77b03f3a5e4b80673a82282961bc0e09b1f03463b9eeea1d91097f691b3d88"
+      },
+      {
+        "file": "refactor-extension-correction.png",
+        "sha256": "026beb3d89f552c31ab25a7cbfd50dbc6bda7703866fc3653737f8e2948daf2e"
+      },
+      {
+        "file": "refactor-extension-complete.png",
+        "sha256": "934da2dff4b95b2d3d10a81832b043f013a7c5786eb3d7ecc04105c5b621ca18"
+      },
+      {
+        "file": "refactor-extension-menu.png",
+        "sha256": "2a45d425d029c87db06aab57d65dd94c30768bd537db11de9b720624f84cde02"
+      }
+    ]
+  },
+  "failuresPreserved": [
+    {
+      "log": "/tmp/youdub-template-duplicate-before.log",
+      "cause": "Node 26.7 test environment has no window.localStorage; rerun using application Electron Node 24.21.0"
+    },
+    {
+      "log": "/tmp/youdub-template-duplicate-before-electron.log",
+      "cause": "New regression correctly finds two options instead of one before the fix"
+    }
+  ],
+  "limits": [
+    "Actions used the isolated Desktop Host through the in-app browser while macOS was locked. Native dialogs are not covered.",
+    "The validation clone has its own venv and task data but its copied venv points to the earlier YouDub first-run fixture base interpreter. This is not proof of a freshly independent installation.",
+    "Download UI events timed out. Artifact HTTP content and retention were verified separately.",
+    "Graph fixture was reinstalled after lifecycle checks solely to verify the fixed menu; remains enabled in isolated validation profile.",
+    "Media listening, remaining architecture audit and overall P0-P7 are still open. No packaging/release."
+  ],
+  "ci": "pending"
+}

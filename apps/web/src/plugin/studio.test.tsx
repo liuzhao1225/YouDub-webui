@@ -21,7 +21,7 @@ it('keeps dropped media across workflows and edits only each node’s declared b
   const another = { ...structuredClone(template), id: 'another', title: '另一个工作流', inputs: [{ ...template.inputs[0], id: 'renamed-video' }] }
   const definitions: NodeTypeDefinition[] = [{ type: 'youdub.transcribe', version: '1.0.0', providerId: 'whisper', operation: 'transcribe', provider: { id: 'whisper', operations: [] }, label: '识别', category: 'text', inputs: [], outputs: [], defaults: {}, configSchema: { type: 'object', properties: { sourceLanguage: { type: 'string', enum: ['auto', 'en', 'ja'], 'x-title': '原文语言' }, initialPrompt: { type: 'string', 'x-title': '识别提示词' } } }, ui: { quickFields: ['sourceLanguage'] } }]
   const request = vi.fn(async (path: string, init?: RequestInit) => {
-    if (path === '/api/v2/catalog') return { providers: [], workflows: [{ ...catalog.workflows[0], id: 'youdub.graph' }, { ...catalog.workflows[0], id: 'youdub.localize', label: '旧视频流程' }, catalog.workflows[0]] }
+    if (path === '/api/v2/catalog') return { providers: [], workflows: [{ ...catalog.workflows[0], id: 'youdub.graph' }, { ...catalog.workflows[0], id: 'youdub.localize', label: '旧视频流程' }, { ...catalog.workflows[0], id: 'external.graph', label: template.title, graphTemplate: template }, catalog.workflows[0]] }
     if (path.startsWith('/api/v2/workflow-documents?')) return { items: [template, another].map((document) => ({ id: document.id, revision: 1, origin: 'builtin', document })) }
     if (path === '/api/v2/node-types') return { items: definitions }
     if (path.includes('/resources/check')) return { status: 'ready', requirements: [] }
@@ -39,6 +39,7 @@ it('keeps dropped media across workflows and edits only each node’s declared b
   await user.click(screen.getByLabelText('工作流'))
   expect(screen.queryByRole('option', { name: '旧视频流程' })).not.toBeInTheDocument()
   expect(await screen.findByRole('option', { name: 'Text workflow' })).toBeInTheDocument()
+  expect(screen.getAllByRole('option', { name: template.title })).toHaveLength(1)
   await user.keyboard('{Escape}')
   expect(screen.queryByLabelText('识别提示词')).not.toBeInTheDocument()
   const input = screen.getByLabelText('视频 *')
