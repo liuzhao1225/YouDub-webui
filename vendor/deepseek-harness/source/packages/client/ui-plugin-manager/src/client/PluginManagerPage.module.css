@@ -1307,17 +1307,6 @@ label.registryOption {
   margin-top: 12px;
 }
 
-.packagePreview {
-  display: block;
-  align-self: flex-start;
-  max-width: 100%;
-  max-height: 320px;
-  margin-top: 24px;
-  border: 0.5px solid var(--dsw-alias-border-l4);
-  border-radius: var(--dsw-radius-lg);
-  object-fit: contain;
-}
-
 .detailSections {
   display: flex;
   flex-direction: column;

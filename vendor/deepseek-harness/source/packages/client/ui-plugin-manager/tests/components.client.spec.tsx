@@ -248,7 +248,7 @@ describe('PluginManagerPage', () => {
   })
 
   it('keeps the Installed tab panel through loading and the More list out of the tabs', () => {
-    const worktree = '@deepseek-ai/dsh-experimental-cot-translation-bundle'
+    const worktree = '@deepseek-ai/dsh-experimental-fixture-e'
     const { navigation, set } = renderTab({ status: 'loading', packages: [] }, {}, {
       'plugins.tab:discover': (_view, owner) => (
         <button type="button" onClick={() => { (owner as PluginTabProps).openPackage(worktree) }}>Discover open</button>
@@ -266,8 +266,8 @@ describe('PluginManagerPage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Discover' }))
     fireEvent.click(screen.getByRole('button', { name: 'Discover open' }))
     expect(document.querySelector(`[data-plugin-detail="${worktree}"]`)).not.toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: en.backToPackage.replace('{name}', en.moreTitle) }))
-    expect(screen.getByRole('heading', { name: en.moreTitle, level: 1 })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: en.backToList }))
+    expect(screen.getByRole('heading', { name: en.title, level: 1 })).toBeTruthy()
   })
 
   it('shows a confirmed version by name above its spec, as a check and a refusal with retry, without the spec form or another registry', () => {
@@ -624,14 +624,14 @@ describe('PluginManagerPage', () => {
         pkg({ name: '@acme/dsh-tool', enabled: false }),
         // Selected by the profile but not a bundle: a problem the person can switch off, in the profile's own group.
         pkg({ name: 'dsh-selected', installed: false, error: { code: 'not-bundle' } }),
-        pkg({ name: '@deepseek-ai/dsh-experimental-voice-input-bundle', installed: false, optional: true, removable: false, enabled: false }),
+        pkg({ name: '@deepseek-ai/dsh-experimental-fixture-a', installed: false, optional: true, removable: false, enabled: false }),
       ],
       busy: ['dsh-protected'],
     })
     const cards = screen.getAllByRole('listitem')
     // Offered extensions precede installed bundles.
     expect(cards.map(card => card.getAttribute('data-plugin-package'))).toEqual([
-      '@deepseek-ai/dsh-experimental-voice-input-bundle', 'dsh-better-sidebar', 'dsh-broken', 'dsh-protected', '@acme/dsh-tool', 'dsh-selected',
+      '@deepseek-ai/dsh-experimental-fixture-a', 'dsh-better-sidebar', 'dsh-broken', 'dsh-protected', '@acme/dsh-tool', 'dsh-selected',
     ])
     expect(cards.map(card => card.getAttribute('data-plugin-status'))).toEqual(['disabled', 'running', 'problem', 'running', 'disabled', 'problem'])
     // Group titles have no counts; the official bundle retains its experimental marker.
@@ -661,11 +661,11 @@ describe('PluginManagerPage', () => {
         ].map(name => pkg({ name })),
         pkg({ name: '@acme/dsh-base', readOnlyReason: 'management-required' }),
         pkg({ name: 'dsh-better-sidebar' }),
-        pkg({ name: '@deepseek-ai/dsh-experimental-voice-input-bundle', installed: false, optional: true, removable: false }),
+        pkg({ name: '@deepseek-ai/dsh-experimental-fixture-a', installed: false, optional: true, removable: false }),
       ],
     })
     expect(screen.getAllByRole('listitem').map(card => card.getAttribute('data-plugin-package'))).toEqual([
-      '@deepseek-ai/dsh-experimental-voice-input-bundle', '@acme/dsh-base', 'dsh-better-sidebar',
+      '@deepseek-ai/dsh-experimental-fixture-a', '@acme/dsh-base', 'dsh-better-sidebar',
     ])
     expect(document.querySelector('[data-plugin-count]')).toBeNull()
   })
@@ -694,18 +694,18 @@ describe('PluginManagerPage', () => {
   it('opens an official bundle\'s page with its beta tag and no uninstall, and switches it on', () => {
     const title = 'Voice Input'
     const { actions } = renderTab({
-      packages: [pkg({ name: '@deepseek-ai/dsh-experimental-voice-input-bundle', meta: { title }, installed: false, optional: true, removable: false, enabled: false })],
+      packages: [pkg({ name: '@deepseek-ai/dsh-experimental-fixture-a', meta: { title }, installed: false, optional: true, removable: false, enabled: false })],
     })
     fireEvent.click(screen.getByRole('button', { name: en.openDetail.replace('{name}', title) }))
     const detail = document.querySelector('[data-plugin-detail]') as HTMLElement
     expect(within(detail).getByText(en.statusBeta)).toBeTruthy()
     expect(within(detail).queryByRole('button', { name: en.uninstallLabel.replace('{name}', title) })).toBeNull()
     fireEvent.click(within(detail).getByRole('switch', { name: en.enableToggle.replace('{name}', title) }))
-    expect(actions.setEnabled).toHaveBeenCalledExactlyOnceWith('@deepseek-ai/dsh-experimental-voice-input-bundle', true)
+    expect(actions.setEnabled).toHaveBeenCalledExactlyOnceWith('@deepseek-ai/dsh-experimental-fixture-a', true)
   })
 
   it.each([
-    '@deepseek-ai/dsh-experimental-voice-input-bundle',
+    '@deepseek-ai/dsh-experimental-fixture-a',
     '@deepseek-ai/dsh-experimental-auto-review',
     '@deepseek-ai/dsh-experimental-fixture-input',
     '@acme/dsh-local-tools',
@@ -781,45 +781,10 @@ describe('PluginManagerPage', () => {
     expect(detailImage.width).toBe(36)
   })
 
-  it('shows a known bundle preview in its details before activation, follows the UI language, and survives decode failure', () => {
-    const name = '@deepseek-ai/dsh-experimental-badge-skill-bundle'
-    const { actions, setLanguage } = renderTab({ packages: [pkg({ name, enabled: false }), pkg()] })
-    expect(screen.queryByRole('img')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: `View ${name}` }))
-    const english = screen.getByRole('img', { name: en.previewAlt.replace('{name}', name) }).getAttribute('src')
-    expect(english).toMatch(/badge-skill-preview\.svg$/)
-    setLanguage(zh)
-    const chinese = screen.getByRole('img', { name: zh.previewAlt.replace('{name}', name) })
-    expect(chinese.getAttribute('src')).toMatch(/badge-skill-preview\.zh\.svg$/)
-    fireEvent.error(chinese)
-    expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByRole('status').textContent).toBe(zh.previewUnavailable)
-    fireEvent.click(screen.getByRole('switch', { name: zh.enableToggle.replace('{name}', name) }))
-    expect(actions.setEnabled).toHaveBeenCalledWith(name, true)
-    setLanguage(en)
-    expect(screen.getByRole('img').getAttribute('src')).toBe(english)
-    expect(screen.queryByRole('status')).toBeNull()
-  })
-
-  it('shows no preview for bundles without one', () => {
+  it('shows no artwork image when a bundle supplies no icon', () => {
     renderTab({ packages: [pkg()] })
     fireEvent.click(screen.getByRole('button', { name: 'View dsh-better-sidebar' }))
     expect(screen.queryByRole('img')).toBeNull()
-  })
-
-  it('places the new voice illustration after its description and switches the single image with the UI language', () => {
-    const name = '@deepseek-ai/dsh-experimental-voice-input-bundle'
-    const description = 'Turn speech into local notes.'
-    const { setLanguage } = renderTab({ packages: [pkg({ name, enabled: false, meta: { description }, rows: [row()] })] })
-    fireEvent.click(screen.getByRole('button', { name: `View ${name}` }))
-    const image = screen.getByRole('img')
-    expect(image.getAttribute('src')).toMatch(/voice-input-preview\.svg$/u)
-    expect(screen.getByText(description).compareDocumentPosition(image) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(image.compareDocumentPosition(screen.getByRole('heading', { name: en.partsLabel })) & Node.DOCUMENT_POSITION_FOLLOWING)
-      .toBeTruthy()
-    setLanguage(zh)
-    expect(screen.getAllByRole('img')).toHaveLength(1)
-    expect(screen.getByRole('img').getAttribute('src')).toMatch(/voice-input-preview\.zh\.svg$/u)
   })
 
   it('shows metadata diagnostics without blocking management or displaying legacy descriptions', () => {
@@ -1027,14 +992,14 @@ describe('PluginManagerPage', () => {
     }
 
     it('keeps configuration and installed plugins on the main list and shows all official plugins on the secondary page', () => {
-      const team = '@deepseek-ai/dsh-experimental-voice-input-bundle'
+      const team = '@deepseek-ai/dsh-experimental-fixture-a'
       renderTab(
         { packages: [
-          pkg({ name: '@deepseek-ai/dsh-experimental-badge-skill-bundle', official: true, enabled: false }),
-          pkg({ name: '@deepseek-ai/dsh-experimental-voice-input-bundle', installed: false, optional: true, removable: false, enabled: false }),
-          pkg({ name: '@deepseek-ai/dsh-experimental-plugin-market-bundle', official: true, availability: 'missing', installed: false, enabled: false }),
-          pkg({ name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, enabled: false }),
-          pkg({ name: '@deepseek-ai/dsh-experimental-cot-translation-bundle', official: true, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-fixture-b', official: true, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-fixture-a', installed: false, optional: true, removable: false, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-fixture-c', official: true, availability: 'missing', installed: false, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-fixture-d', official: true, enabled: false }),
+          pkg({ name: '@deepseek-ai/dsh-experimental-fixture-e', official: true, enabled: false }),
           pkg({ name: '@acme/new-official', official: true }),
           pkg(),
         ] },
@@ -1050,7 +1015,7 @@ describe('PluginManagerPage', () => {
       expect(within(extensions).getByRole('heading', { name: en.extensionsTitle })).toBeTruthy()
       expect(within(extensions).getByRole('button', { name: en.moreAction }).textContent).toBe(en.moreAction)
       expect(within(extensions).getAllByRole('listitem').map(card => card.getAttribute('data-plugin-package')))
-        .toEqual(['@deepseek-ai/dsh-experimental-voice-input-bundle', '@acme/new-official'])
+        .toEqual(['@deepseek-ai/dsh-experimental-fixture-b', team, '@deepseek-ai/dsh-experimental-fixture-c', '@deepseek-ai/dsh-experimental-fixture-d', '@deepseek-ai/dsh-experimental-fixture-e', '@acme/new-official'])
       expect(document.querySelector('[data-plugin-count]')).toBeNull()
       expect(within(basic).getByText('Limits every command.')).toBeTruthy()
       expect(within(basic).queryByRole('switch', { name: en.enableToggle.replace('{name}', 'Shell') })).toBeNull()
@@ -1064,7 +1029,7 @@ describe('PluginManagerPage', () => {
         .toEqual(['more'])
       const more = document.querySelector('[data-plugin-group="more"]') as HTMLElement
       expect(within(more).getAllByRole('listitem').map(card => card.getAttribute('data-plugin-package')))
-        .toEqual([team, '@acme/new-official', '@deepseek-ai/dsh-experimental-cot-translation-bundle', '@deepseek-ai/dsh-experimental-badge-skill-bundle', '@deepseek-ai/dsh-experimental-ralph-bundle', '@deepseek-ai/dsh-experimental-plugin-market-bundle'])
+        .toEqual(['@deepseek-ai/dsh-experimental-fixture-b', team, '@deepseek-ai/dsh-experimental-fixture-c', '@deepseek-ai/dsh-experimental-fixture-d', '@deepseek-ai/dsh-experimental-fixture-e', '@acme/new-official'])
       expect(document.querySelector('[data-plugin-package="dsh-better-sidebar"]')).toBeNull()
       fireEvent.click(screen.getByRole('button', { name: en.openDetail.replace('{name}', team) }))
       fireEvent.click(screen.getByRole('button', { name: en.backToPackage.replace('{name}', en.moreTitle) }))
@@ -1083,7 +1048,7 @@ describe('PluginManagerPage', () => {
     })
 
     it('returns from package details to the secondary page and retains it across React remounts', () => {
-      const name = '@deepseek-ai/dsh-experimental-terminal-bundle'
+      const name = '@deepseek-ai/dsh-experimental-fixture-f'
       const b = renderTab({ packages: [pkg({ name, official: true, enabled: false })] })
       fireEvent.click(screen.getByRole('button', { name: en.moreAction }))
       expect(screen.getByRole('heading', { name: en.moreTitle, level: 1 })).toBeTruthy()
@@ -1095,43 +1060,43 @@ describe('PluginManagerPage', () => {
       expect(screen.getByRole('heading', { name: en.moreTitle, level: 1 })).toBeTruthy()
       expect(document.querySelector(`[data-plugin-package="${name}"]`)).not.toBeNull()
       fireEvent.click(screen.getByRole('button', { name: en.backToList }))
-      expect(document.querySelector(`[data-plugin-package="${name}"]`)).toBeNull()
+      expect(document.querySelector(`[data-plugin-package="${name}"]`)).not.toBeNull()
     })
 
-    it('pins a bundle the profile picks onto the main list, in its full-list place', () => {
-      const team = '@deepseek-ai/dsh-experimental-voice-input-bundle'
-      const first = '@deepseek-ai/dsh-experimental-cot-translation-bundle'
-      const second = '@deepseek-ai/dsh-experimental-terminal-bundle'
+    it('preserves Host inventory order on both lists when activation changes', () => {
+      const team = '@deepseek-ai/dsh-experimental-fixture-a'
+      const first = '@deepseek-ai/dsh-experimental-fixture-e'
+      const second = '@deepseek-ai/dsh-experimental-fixture-f'
       const entry = (name: string, enabled: boolean): PackageView => pkg({ name, official: true, enabled })
       const b = renderTab({ packages: [entry(second, true), entry(team, true), entry(first, false)] })
       const cards = (group: 'extensions' | 'more'): (string | null)[] => {
         const list = document.querySelector(`[data-plugin-group="${group}"]`) as HTMLElement
         return within(list).getAllByRole('listitem').map(card => card.getAttribute('data-plugin-package'))
       }
-      expect(cards('extensions')).toEqual([team, second])
+      expect(cards('extensions')).toEqual([second, team, first])
       fireEvent.click(screen.getByRole('button', { name: en.moreAction }))
-      expect(cards('more')).toEqual([team, first, second])
+      expect(cards('more')).toEqual([second, team, first])
       fireEvent.click(screen.getByRole('switch', { name: en.enableToggle.replace('{name}', first) }))
       expect(b.actions.setEnabled).toHaveBeenCalledWith(first, true)
       b.set({ packages: [entry(second, true), entry(team, true), entry(first, true)] })
-      expect(cards('more')).toEqual([team, first, second])
+      expect(cards('more')).toEqual([second, team, first])
       fireEvent.click(screen.getByRole('button', { name: en.backToList }))
-      expect(cards('extensions')).toEqual([team, first, second])
+      expect(cards('extensions')).toEqual([second, team, first])
       fireEvent.click(screen.getByRole('switch', { name: en.enableToggle.replace('{name}', first) }))
       expect(b.actions.setEnabled).toHaveBeenCalledWith(first, false)
       b.set({ packages: [entry(second, true), entry(team, true), entry(first, false)] })
-      expect(cards('extensions')).toEqual([team, second])
+      expect(cards('extensions')).toEqual([second, team, first])
       fireEvent.click(screen.getByRole('button', { name: en.moreAction }))
-      expect(cards('more')).toEqual([team, first, second])
+      expect(cards('more')).toEqual([second, team, first])
     })
 
-    it('returns a held-back bundle opened outside the lists to the list that shows it', () => {
-      const name = '@deepseek-ai/dsh-experimental-terminal-bundle'
+    it('returns an externally opened bundle to the main list regardless of activation', () => {
+      const name = '@deepseek-ai/dsh-experimental-fixture-f'
       const b = renderTab({ packages: [pkg({ name, official: true, enabled: false })] })
       act(() => { b.navigation.actions.setView({ kind: 'package', name }) })
       expect(document.querySelector(`[data-plugin-detail="${name}"]`)).toBeTruthy()
-      fireEvent.click(screen.getByRole('button', { name: en.backToPackage.replace('{name}', en.moreTitle) }))
-      expect(screen.getByRole('heading', { name: en.moreTitle, level: 1 })).toBeTruthy()
+      fireEvent.click(screen.getByRole('button', { name: en.backToList }))
+      expect(screen.getByRole('heading', { name: en.title, level: 1 })).toBeTruthy()
       b.set({ packages: [pkg({ name, official: true, enabled: true })] })
       act(() => { b.navigation.actions.setView({ kind: 'package', name }) })
       fireEvent.click(screen.getByRole('button', { name: en.backToList }))
@@ -2075,7 +2040,7 @@ describe('PluginManagerPage', () => {
     const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
     Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true })
     try {
-      const { actions, set } = renderTab({ packages: [pkg(), pkg({ name: '@deepseek-ai/dsh-experimental-terminal-bundle', official: true })] })
+      const { actions, set } = renderTab({ packages: [pkg(), pkg({ name: '@deepseek-ai/dsh-experimental-fixture-f', official: true })] })
       // A package the list does not show has nothing to scroll to; the mark still times out.
       set({ highlight: 'missing' })
       expect(scrollIntoView).not.toHaveBeenCalled()
@@ -2096,21 +2061,22 @@ describe('PluginManagerPage', () => {
     }
   })
 
-  it('highlights only the visible list and does not extend the mark when navigating or refreshing', () => {
+  it('highlights visible cards without extending the mark when navigating or refreshing', () => {
     vi.useFakeTimers()
-    const name = '@deepseek-ai/dsh-experimental-terminal-bundle'
+    const name = '@deepseek-ai/dsh-experimental-fixture-f'
     const scrollIntoView = vi.fn()
     const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView')
     Object.defineProperty(Element.prototype, 'scrollIntoView', { value: scrollIntoView, configurable: true })
     try {
       const { actions, set } = renderTab({ packages: [
         pkg({ name, official: true, enabled: false }),
-        pkg({ name: '@deepseek-ai/dsh-experimental-ralph-bundle', official: true, enabled: false }),
+        pkg({ name: '@deepseek-ai/dsh-experimental-fixture-d', official: true, enabled: false }),
       ] })
-      expect(document.querySelector(`[data-plugin-package="${name}"]`)).toBeNull()
+      expect(document.querySelector(`[data-plugin-package="${name}"]`)).not.toBeNull()
       set({ highlight: name })
       expect(screen.getByRole('heading', { name: en.title, level: 1 })).toBeTruthy()
-      expect(scrollIntoView).not.toHaveBeenCalled()
+      expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'center', behavior: 'smooth' })
+      scrollIntoView.mockClear()
       set({ highlight: null })
       fireEvent.click(screen.getByRole('button', { name: en.moreAction }))
       set({ highlight: name })
@@ -2120,7 +2086,7 @@ describe('PluginManagerPage', () => {
       act(() => { vi.advanceTimersByTime(1_600) })
       fireEvent.click(screen.getByRole('button', { name: en.backToList }))
       expect(screen.getByRole('heading', { name: en.title, level: 1 })).toBeTruthy()
-      expect(document.querySelector(`[data-plugin-package="${name}"]`)).toBeNull()
+      expect(document.querySelector(`[data-plugin-package="${name}"]`)).not.toBeNull()
       expect(scrollIntoView).toHaveBeenCalledTimes(1)
       set({ packages: [pkg({ name, official: true, enabled: false })] })
       act(() => { vi.advanceTimersByTime(799) })
@@ -2265,7 +2231,7 @@ describe('PluginManagerPage', () => {
 })
 
 it.each([false, true])('opens activation guidance details and returns to the originating list (experimental: %s)', (fromMore) => {
-  const name = fromMore ? '@deepseek-ai/dsh-experimental-terminal-bundle' : 'dsh-better-sidebar'
+  const name = fromMore ? '@deepseek-ai/dsh-experimental-fixture-f' : 'dsh-better-sidebar'
   const bundle = pkg({ name, official: fromMore })
   const { set, actions } = renderTab({ packages: [{ ...bundle, enabled: false }] }, { bundles: new Set([name]) }, {
     [`plugins.bundle.activation:${name}`]: (_view, owner) => <button onClick={(owner as PluginActivationOwnerProps).onOpenDetails}>Go to setup</button>,
@@ -2322,8 +2288,8 @@ it('supplies the accepted entry values and atomic mutation action to a custom pl
 
 
 describe('on-demand Official bundles', () => {
-  const name = '@deepseek-ai/dsh-experimental-ralph-bundle'
-  const title = 'Ralph bundle'
+  const name = '@deepseek-ai/dsh-experimental-fixture-d'
+  const title = 'Catalog fixture'
   const catalog = (): PackageView => ({ name, meta: { title }, official: true, availability: 'missing', installed: false,
     optional: false, removable: false, enabled: false, rows: [],
     installTarget: { spec: `${name}@2.0.0`, version: '2.0.0' },
@@ -2332,7 +2298,7 @@ describe('on-demand Official bundles', () => {
   it('keeps one card on the secondary page before installation, after installation, and after removal', () => {
     const entry = catalog()
     const { actions, set } = renderTab({ packages: [entry] })
-    expect(document.querySelector(`[data-plugin-package="${name}"]`)).toBeNull()
+    expect(document.querySelectorAll(`[data-plugin-package="${name}"]`)).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: en.moreAction }))
     const assertOfficial = () => {
       expect(document.querySelectorAll(`[data-plugin-package="${name}"]`)).toHaveLength(1)

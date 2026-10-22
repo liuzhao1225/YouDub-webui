@@ -12625,9 +12625,9 @@
         "type": "file",
         "executable": false,
         "size": 2670,
-        "sha256": "1297f887f5eb7a203727dc9008bc4b51720d3aabac9cca0e3fa406b27ac6db27"
+        "sha256": "77604e04721430641f4b7ab9872932726332a7b62cd7d96ed1e858fafe886487"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
     },
     {
       "path": "packages/client/ui-plugin-manager/README.md",
@@ -12642,10 +12642,10 @@
         "path": "packages/client/ui-plugin-manager/README.md",
         "type": "file",
         "executable": false,
-        "size": 30964,
-        "sha256": "627add6811823bb0a5b1074262ea80ef063ab23f61c5a4e335db1d41221a33ba"
+        "size": 28364,
+        "sha256": "79b142724903d6086f83e65ba0186ff212b188149c7fffda041914e1592af035"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
     },
     {
       "path": "packages/client/ui-plugin-manager/README.zh.md",
@@ -12660,10 +12660,10 @@
         "path": "packages/client/ui-plugin-manager/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 27790,
-        "sha256": "dab225e911e8570650771722ac9d940bb3ed04b19a70f4e1411445d13dbda3e2"
+        "size": 25493,
+        "sha256": "a7e34dee0537863439ddc42dfdf84b564a9b0974fd336b5a7c17fc8c5d811cf4"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
     },
     {
       "path": "packages/client/ui-plugin-manager/package.json",
@@ -12684,6 +12684,24 @@
       "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
+      "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 32263,
+        "sha256": "348e68d454da869671ae5c9137b488e5d4125c963fdacd72f6c3c437e6c20757"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 32026,
+        "sha256": "c97df56212f350c733869458536bc268146d2539d883da574509fbab4bd149d9"
+      },
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+    },
+    {
       "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx",
       "before": {
         "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx",
@@ -12696,10 +12714,10 @@
         "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx",
         "type": "file",
         "executable": false,
-        "size": 86521,
-        "sha256": "b0d149b0d1583fa8e0f188fd5efd5a98a8a1fd8891f33a89ea20e6c28c40cd61"
+        "size": 81763,
+        "sha256": "0407ec3aace03280fc5407ab136f9e010179a38c573337d0f1d25df4cea15989"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages."
+      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/PluginsPanelIcon.tsx",
@@ -12720,6 +12738,54 @@
       "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
+      "path": "packages/client/ui-plugin-manager/src/client/assets/badge-skill-preview.svg",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/assets/badge-skill-preview.svg",
+        "type": "file",
+        "executable": false,
+        "size": 86562,
+        "sha256": "e9d85b848936cb813d262d9d9ab13fcf2e66783b9fb74944d495408f38d41a23"
+      },
+      "after": null,
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/src/client/assets/badge-skill-preview.zh.svg",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/assets/badge-skill-preview.zh.svg",
+        "type": "file",
+        "executable": false,
+        "size": 69193,
+        "sha256": "1a3cceed4c77632e5b0291a9a4dc14fbbfcc8efc36f201b6f56b2641045fd2a0"
+      },
+      "after": null,
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/src/client/assets/voice-input-preview.svg",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/assets/voice-input-preview.svg",
+        "type": "file",
+        "executable": false,
+        "size": 96075,
+        "sha256": "b7e6438814ad882fcc2cdfffea574f641dfa06d2a91bf1c2436e5984d92dbbb3"
+      },
+      "after": null,
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/src/client/assets/voice-input-preview.zh.svg",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/assets/voice-input-preview.zh.svg",
+        "type": "file",
+        "executable": false,
+        "size": 53832,
+        "sha256": "b51a608680750939dabfecc37233df024df7042f08f65475cc2f2b8b9f5ddc25"
+      },
+      "after": null,
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+    },
+    {
       "path": "packages/client/ui-plugin-manager/src/client/index.ts",
       "before": {
         "path": "packages/client/ui-plugin-manager/src/client/index.ts",
@@ -12738,6 +12804,24 @@
       "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
+      "path": "packages/client/ui-plugin-manager/src/client/locales.ts",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/locales.ts",
+        "type": "file",
+        "executable": false,
+        "size": 27787,
+        "sha256": "739949355102f5c9dad9cb728ea0b08ec7f11a4cf054cc4552480a6c448f2a5a"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/src/client/locales.ts",
+        "type": "file",
+        "executable": false,
+        "size": 27602,
+        "sha256": "caa3deee767a3e93a47d87ab222886901c25cda3db8b6d945a92381ad4fc9dc8"
+      },
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+    },
+    {
       "path": "packages/client/ui-plugin-manager/tests/components.client.spec.tsx",
       "before": {
         "path": "packages/client/ui-plugin-manager/tests/components.client.spec.tsx",
@@ -12750,10 +12834,10 @@
         "path": "packages/client/ui-plugin-manager/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 155940,
-        "sha256": "ab17865bba1e77e3af790bc131f264d8f6c35c7aca2a94aef6cc38f441d603b0"
+        "size": 153606,
+        "sha256": "cb71e878ecb8a066e030c012fc14982704ddc216fa7e5e78492ab1ad8ce1f949"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages."
+      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
     },
     {
       "path": "packages/client/ui-plugin-manager/tests/manager-store.client.spec.ts",
@@ -37138,6 +37222,18 @@
       },
       "after": null,
       "reason": "Remove the unused TypeScript/Python embedding SDK, its dedicated executable/release/fixture tooling and external Codex/Claude/Harness subagent providers after verifying no incoming YouDub runtime, type or retained-package-test dependency."
+    },
+    {
+      "path": "scripts/builtin-plugin-preview.spec.ts",
+      "before": {
+        "path": "scripts/builtin-plugin-preview.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4951,
+        "sha256": "1617eab8443acbe386b7e6f6ea8d9f39ab90d9e05c5081c7b4b3eb75e9068780"
+      },
+      "after": null,
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
     },
     {
       "path": "scripts/check-workspace-constraints.spec.ts",

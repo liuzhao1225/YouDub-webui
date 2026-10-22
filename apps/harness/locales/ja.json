@@ -290,8 +290,6 @@
     "statusBeta": "実験的",
     "reasonLabel": "原因",
     "metadataError": "パッケージ情報のエラー：{error}",
-    "previewAlt": "{name} のプレビュー",
-    "previewUnavailable": "プレビューを表示できません",
     "versionTag": "v{version}",
     "partsLabel": "コンポーネント",
     "sourceTitle": "提供元",

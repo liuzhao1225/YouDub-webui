@@ -15,8 +15,8 @@
   en: d152484eb41ac6b4
   zh: 09388d293f9be9cb
 /deepseek-ai-dsh-client-ui-plugin-manager/use-this-package:
-  en: 29f55c54a9887c4c
-  zh: e10e0b866fa1f96f
+  en: e7faad68b1de9704
+  zh: 90e7acb0997b46c3
 /deepseek-ai-dsh-client-ui-plugin-manager/use-this-package/installing-a-bundle:
   en: fcb2e69c8b028c0a
   zh: d505a075679974eb
@@ -27,14 +27,14 @@
   en: d3627d4dba5e6cc2
   zh: e0d0eada4c20331f
 /deepseek-ai-dsh-client-ui-plugin-manager/use-this-package/configuration-pages:
-  en: e9da90f03691101b
-  zh: 902cda935a4ce3c8
+  en: dae4968121ecd196
+  zh: 57cd3f2e687d2999
 /deepseek-ai-dsh-client-ui-plugin-manager/use-this-package/detail-page-extension-points:
   en: 5266d86638cc5cd7
   zh: 398d710df9806cea
 /deepseek-ai-dsh-client-ui-plugin-manager/use-this-package/page-tabs:
-  en: 9019cd4b269d1b27
-  zh: b3303a120d5d0180
+  en: 25451392e1118869
+  zh: 8ba84f8fdbb47b3f
 /deepseek-ai-dsh-client-ui-plugin-manager/understand-the-implementation:
   en: 50b4160248e83a24
   zh: 42c92d7a50e7f028
@@ -45,11 +45,11 @@
   en: 21a0bbe8eb92229c
   zh: 096ff63db61992bb
 /deepseek-ai-dsh-client-ui-plugin-manager/understand-the-implementation/configuration-slots:
-  en: a4db918b2400b7a5
-  zh: 231255a04b758256
+  en: 928c1bcaace6ce0c
+  zh: 64d2aad4f01b324c
 /deepseek-ai-dsh-client-ui-plugin-manager/further-exploration:
-  en: f9a42dfed0360d6a
-  zh: 455a70bcb6c69624
+  en: d7fb443e5bb3d73e
+  zh: e8833b41481054cf
 /deepseek-ai-dsh-client-ui-plugin-manager/model-experience:
   en: 8dcc6c6fbfb567d2
   zh: 43690ae350f1d6a7
@@ -57,8 +57,8 @@
   en: ca75c51c89c2c9b0
   zh: 2064958b0754647e
 /deepseek-ai-dsh-client-ui-plugin-manager/known-limitations-and-deferred-work:
-  en: 344ba1e802163bb4
-  zh: f3cc2e30ffb037cb
+  en: 149c0d23a56a4944
+  zh: e2feaadc871581ae
 /deepseek-ai-dsh-client-ui-plugin-manager/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 3bb0c20c93f16f98

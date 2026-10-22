@@ -16,9 +16,9 @@ import {
   IconChevronRightOutlineRegular, IconCloseOutlineMedium,
   IconDownloadOutlineRegular, IconInfoOutlineRegular, IconPlusOutlineRegular, IconRefreshOutlineRegular, IconTrashOutlineRegular,
   IconWarningOutlineRegular, Input, Menu, MenuItemButton, Modal, pointerModality,
-  PluginArtworkDefault, PluginArtworkLoop, PluginArtworkSearch, PluginArtworkSubagent, PluginArtworkTerminal,
+  PluginArtworkDefault,
   SegmentedTabs, StateDot, Switch, Tag, TerminalBlock, Toast, Tooltip, useAnchoredPosition, useDismissOnOutsidePointer,
-  type IconProps, type StateDotState, type TerminalBlockLabels,
+  type StateDotState, type TerminalBlockLabels,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { createNavigationStore } from './navigation-store.ts'
@@ -33,10 +33,6 @@ import { managementText, noticeText, packageText, registryText, restartText, row
 import type { PluginPackageRef, PluginRowRef, PluginsSubject } from './slot-contract.ts'
 import type { ConfigPageForm } from './slot-contract.ts'
 import css from './PluginManagerPage.module.css'
-import badgeSkillPreview from './assets/badge-skill-preview.svg'
-import badgeSkillPreviewZh from './assets/badge-skill-preview.zh.svg'
-import voiceInputPreview from './assets/voice-input-preview.svg'
-import voiceInputPreviewZh from './assets/voice-input-preview.zh.svg'
 
 /** Full component props assembled by the main slot renderer. */
 export type PluginManagerPageProps =
@@ -104,60 +100,6 @@ const BUILTIN_PROFILE_BUNDLES = new Set([
   '@deepseek-ai/dsh-headless',
 ])
 
-/** The optional bundles the main list always holds, in this order; new bundles join the main list. */
-const EXTENSION_BUNDLES = [
-  '@deepseek-ai/dsh-experimental-voice-input-bundle',
-  '@deepseek-ai/dsh-experimental-auto-review',
-  '@deepseek-ai/dsh-experimental-inspector-profile',
-]
-/** The optional bundles the main list holds back until the profile picks them; the More list shows them from the start. */
-const MORE_BUNDLES = [
-  '@deepseek-ai/dsh-experimental-cot-translation-bundle',
-  '@deepseek-ai/dsh-experimental-terminal-bundle',
-  '@deepseek-ai/dsh-experimental-session-search',
-  '@deepseek-ai/dsh-experimental-session-titles-bundle',
-  '@deepseek-ai/dsh-experimental-badge-skill-bundle',
-  '@deepseek-ai/dsh-experimental-ralph-bundle',
-  '@deepseek-ai/dsh-experimental-plugin-market-bundle',
-]
-/**
- * Whether the main list shows an official optional bundle: the always-held ones, and any held-back one the profile enabled.
- * @param pkg - the official bundle as the Host reports it.
- * @returns whether the main list shows it.
- */
-function pinnedToMainList(pkg: PackageView): boolean {
-  return !MORE_BUNDLES.includes(pkg.name) || pkg.enabled
-}
-
-/**
- * Where an optional bundle sits on both lists: the always-held ones in their order, then the bundles neither list
- * ranks, then the held-back ones in their declared order.
- * @param name - the bundle's package name.
- * @returns the rank; bundles of equal rank keep the order the Host reported.
- */
-function optionalBundleRank(name: string): number {
-  const alwaysHeld = EXTENSION_BUNDLES.indexOf(name)
-  if (alwaysHeld >= 0) return alwaysHeld
-  const heldBack = MORE_BUNDLES.indexOf(name)
-  return heldBack < 0 ? EXTENSION_BUNDLES.length : EXTENSION_BUNDLES.length + 1 + heldBack
-}
-
-/**
- * Order the official optional bundles as both lists show them, so a bundle the profile picks from the More list
- * keeps its place among the neighbours the main list already holds.
- * @param packages - the official bundles the Host offers.
- * @returns the bundles in display order.
- */
-function orderOptionalBundles(packages: readonly PackageView[]): PackageView[] {
-  return [...packages].sort((a, b) => optionalBundleRank(a.name) - optionalBundleRank(b.name))
-}
-
-/** Feature previews of official bundles, shown on their detail pages and selected by UI language. */
-const BUNDLE_PREVIEWS = new Map<string, Readonly<Record<'en' | 'zh', string>>>([
-  ['@deepseek-ai/dsh-experimental-badge-skill-bundle', { en: badgeSkillPreview, zh: badgeSkillPreviewZh }],
-  ['@deepseek-ai/dsh-experimental-voice-input-bundle', { en: voiceInputPreview, zh: voiceInputPreviewZh }],
-])
-
 /** How long a toast holds: long enough to read a failure that names what broke. */
 function toastHoldMs(text: string): number {
   return Math.min(8_000, Math.max(3_000, text.length * 80))
@@ -214,20 +156,6 @@ const CARD_ARTWORK_SIZE = 36
 /** The size the artwork renders at inside a row's 40px frame. */
 const ROW_ARTWORK_SIZE = 30
 
-/** The artwork of the official plugins that registered their configuration, by registration id. */
-const ITEM_ARTWORK = new Map<string, (props: IconProps) => ReactNode>([
-  ['shell', PluginArtworkTerminal],
-  ['agent-loop', PluginArtworkLoop],
-  ['subagent', PluginArtworkSubagent],
-  ['web-search', PluginArtworkSearch],
-])
-
-/** An official plugin's card and page artwork; plugins without their own get the default. */
-function itemArtwork(id: string): ReactNode {
-  const Artwork = ITEM_ARTWORK.get(id) ?? PluginArtworkDefault
-  return <Artwork size={CARD_ARTWORK_SIZE} />
-}
-
 /** Manifest images remain isolated from the page DOM; a failed decode keeps the position's default artwork. */
 function PackageArtwork({ src, row = false, size = row ? ROW_ARTWORK_SIZE : CARD_ARTWORK_SIZE }: {
   readonly src: string | undefined
@@ -235,19 +163,11 @@ function PackageArtwork({ src, row = false, size = row ? ROW_ARTWORK_SIZE : CARD
   readonly size?: number
 }): ReactNode {
   const [failedSource, setFailedSource] = useState<string>()
-  const Fallback = row ? PluginArtworkSubagent : PluginArtworkDefault
   return src === undefined || src === failedSource
-    ? <Fallback size={size} />
+    ? <PluginArtworkDefault size={size} />
     : <img className={css.packageImage} src={src} width={size} height={size} alt="" onError={() => { setFailedSource(src) }} />
 }
 
-/** A bundle's feature preview; a failed decode is reported in place without blocking management. */
-function PackagePreview({ src, title, t }: { readonly src: string; readonly title: string; readonly t: Translate }): ReactNode {
-  const [failedSource, setFailedSource] = useState<string>()
-  return src === failedSource
-    ? <p className={css.reason} role="status">{t('previewUnavailable')}</p>
-    : <img className={css.packagePreview} src={src} alt={t('previewAlt', { name: title })} onError={() => { setFailedSource(src) }} />
-}
 
 /** A row's switch: locked, saying why, when the Host refuses to address the row through the profile patch. */
 function RowSwitch({ row, title, t, busy, onChange }: {
@@ -576,7 +496,7 @@ function ItemCard({ item, t, onOpen, renderSlot }: {
 }): ReactNode {
   return (
     <li className={`${css.card} ${css.cardLink}`} data-plugin-item={item.id}>
-      <CardHead title={item.label} t={t} onOpen={onOpen} icon={itemArtwork(item.id)} description={renderSlot('plugins.item', { view: 'summary' }, { only: item.id })} />
+      <CardHead title={item.label} t={t} onOpen={onOpen} icon={<PluginArtworkDefault size={CARD_ARTWORK_SIZE} />} description={renderSlot('plugins.item', { view: 'summary' }, { only: item.id })} />
     </li>
   )
 }
@@ -618,7 +538,7 @@ function ItemDetail({ item, t, onBack, renderSlot, form }: {
         crumbLabel={t('backToList')}
         crumbText={t('crumbRoot')}
         onBack={onBack}
-        icon={itemArtwork(item.id)}
+        icon={<PluginArtworkDefault size={CARD_ARTWORK_SIZE} />}
         actions={<div className={css.detailActions}>{renderSlot('plugins.detail.actions', { subject })}</div>}
       />
       <div className={css.detailMain}>
@@ -713,8 +633,6 @@ function PackageDetail({
 }): ReactNode {
   const { title, description, beta } = packageText(pkg, resolveText)
   const status = packageStatus(pkg)
-  const previews = BUNDLE_PREVIEWS.get(pkg.name)
-  const preview = previews === undefined ? undefined : resolveText(previews)
   const subject: PluginsSubject = { kind: 'bundle', pkg: packageRef(pkg) }
   return (
     <div className={css.detail} data-plugin-detail={pkg.name}>
@@ -767,7 +685,6 @@ function PackageDetail({
       <MetadataError error={pkg.meta?.error} t={t} />
       {pkg.error === undefined ? null : <p className={css.reason} role="status">{t('reasonLabel')}: {managementText(pkg.error, t)}</p>}
       {pkg.readOnlyReason === undefined ? null : <p className={css.reason} role="status">{managementText({ code: pkg.readOnlyReason }, t)}</p>}
-      {preview === undefined ? null : <PackagePreview src={preview} title={title} t={t} />}
       <div className={css.detailSections}>
         {configured
           ? (
@@ -1532,13 +1449,9 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
     && (pkg.installed || pkg.official || pkg.error !== undefined))
   const mine = listed.filter(pkg => !pkg.official)
   const official = listed.filter(pkg => pkg.official)
-  // Both lists read one order over every offered bundle: the main list holds the always-held ones plus the held-back
-  // ones the profile enabled, and the More list holds all of them, so enabling a bundle from the More list pins it
-  // to the main list without moving it among its neighbours there.
-  const ordered = orderOptionalBundles(official)
-  const pinned = new Set(official.filter(pinnedToMainList).map(pkg => pkg.name))
-  const extensions = ordered.filter(pkg => pinned.has(pkg.name))
-  const more = ordered
+  // The Host owns the offered inventory and its order. Activation does not hide or reorder packages.
+  const extensions = official
+  const more = official
   const loaded = state.status === 'ready' || state.status === 'error'
   const refreshing = state.refreshStatus === 'refreshing'
   const openPkg = view.kind === 'package' || view.kind === 'row' ? listed.find(pkg => pkg.name === view.name) : undefined
@@ -1547,7 +1460,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   const onInstalled = tab === INSTALLED_TAB
   const showsCards = !onInstalled || (openPkg === undefined && openItem === undefined)
   const detailFromMore = (view.kind === 'package' || view.kind === 'row')
-    && (view.from === 'more' || (MORE_BUNDLES.includes(view.name) && !pinned.has(view.name)))
+    && view.from === 'more'
   const showsMoreList = onInstalled && showsCards && (view.kind === 'more' || detailFromMore)
   const showsMainList = showsCards && !showsMoreList
   const installedCards = onInstalled && showsCards
