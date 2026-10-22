@@ -61,6 +61,9 @@ jobs:
           npm run build:youdub
           npm --prefix apps/harness run check:composition
           npm run check:framework-isolation
+      - name: 检查裁剪后的第三方声明
+        working-directory: .cache/harness/source-build
+        run: node node_modules/vitest/vitest.mjs run scripts/gen-third-party-notices.spec.ts
       - name: 检查保留的框架 GUI、设置和桌面生命周期
         working-directory: .cache/harness/source-build
         env:
@@ -71,7 +74,7 @@ jobs:
           node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/api/settings-controller/tests/credentials-controller.host.spec.ts apps/desktop/tests packages/api/remotes packages/client packages/host packages/test-support/client-runtime scripts/gen-client-catalog.spec.ts scripts/client-build-environment.client.spec.ts apps/desktop-host/tests/quit-inspection.spec.ts
       - name: 检查 profile 与插件生命周期
         working-directory: .cache/harness/source-build
-        run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-no-top-level-await.spec.ts scripts/coverage-partitions.spec.ts scripts/run-gates.spec.ts scripts/gen-third-party-notices.spec.ts scripts/translation-pairing.spec.ts scripts/rescope-vendor.spec.ts scripts/primary-runtime/prepare.spec.ts scripts/session-fixture-layout.spec.ts scripts/verify-product-use.spec.ts scripts/verify-default-product-isolation.spec.ts scripts/verify-runtime-closure.spec.ts scripts/web-product-bundle-isolation.spec.ts scripts/browser-bundled-externals.spec.ts scripts/check-workspace-constraints.spec.ts packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts packages/bundle/web-app
+        run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-no-top-level-await.spec.ts scripts/coverage-partitions.spec.ts scripts/run-gates.spec.ts scripts/translation-pairing.spec.ts scripts/rescope-vendor.spec.ts scripts/primary-runtime/prepare.spec.ts scripts/session-fixture-layout.spec.ts scripts/verify-product-use.spec.ts scripts/verify-default-product-isolation.spec.ts scripts/verify-runtime-closure.spec.ts scripts/web-product-bundle-isolation.spec.ts scripts/browser-bundled-externals.spec.ts scripts/check-workspace-constraints.spec.ts packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts packages/bundle/web-app
       - name: 检查裁剪后的包边界和目录生成
         run: |
           cd .cache/harness/source-build

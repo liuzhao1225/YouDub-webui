@@ -42,10 +42,10 @@
         "path": "THIRD_PARTY_NOTICES.md",
         "type": "file",
         "executable": false,
-        "size": 17933,
-        "sha256": "741f49716854bd7aade5909bb42d0774e8e68f43f82f6764ed4428f6d642e74b"
+        "size": 17613,
+        "sha256": "93e3d4feaf319dd23b3ac67a62c418f9e94c2c28df57887c9fd92662c96c12de"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Synchronize notices with the retained runtime and development dependency inventory."
     },
     {
       "path": "apps/cli/README.md",
