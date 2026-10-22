@@ -240,7 +240,72 @@
       "actualHostModes": 2
     }
   },
-  "remoteVerification": "pending this candidate CI",
+  "remoteVerification": {
+    "commit": "55621d177668296fcc3acf1247fd06f85ed530f8",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39847912792",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "macOS 源码、框架与业务回归",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39847912792/job/120066033157",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T20:20:04Z",
+        "completedAt": "2026-10-22T20:42:19Z"
+      },
+      {
+        "name": "Windows 源码、Host 与桌面合同",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39847912792/job/120066033693",
+        "conclusion": "success",
+        "startedAt": "2026-10-22T20:20:02Z",
+        "completedAt": "2026-10-22T20:27:00Z"
+      }
+    ],
+    "macOS": {
+      "sourceChecks": 7,
+      "buildGates": 7,
+      "aggregateTypecheckGates": 2,
+      "thirdPartyTests": 24,
+      "guiFiles": 504,
+      "guiPassed": 8075,
+      "guiExpectedFail": 1,
+      "guiSkipped": 1,
+      "profileFiles": 52,
+      "profilePassed": 6689,
+      "profileSkipped": 1,
+      "boundaryPassed": 175,
+      "domainPassed": 187,
+      "domainSkipped": 1,
+      "downloadContractsPassed": 3,
+      "frontendPassed": 264,
+      "productPassed": 78,
+      "pythonPassed": 525,
+      "log": {
+        "path": "/tmp/youdub-55621d17-macos-ci.log",
+        "sha256": "15348471bfc46c1b84e9e0a5b15025e698233a4a440e2e3b9f9c99ee0a6c0b4e"
+      }
+    },
+    "windows": {
+      "sourcePassed": 6,
+      "sourcePlatformSkip": 1,
+      "buildGates": 7,
+      "testFiles": 43,
+      "skippedFiles": 3,
+      "desktopAndProcessesPassed": 567,
+      "skipped": 27,
+      "productContractsPassed": 32,
+      "actualHostModes": 2,
+      "log": {
+        "path": "/tmp/youdub-55621d17-windows-ci.log",
+        "sha256": "7035940f9ce8f284a2334ad7a0d095298f0262495ef0b301a73021e3cc5b00f6"
+      }
+    },
+    "notes": [
+      "CI validates source development; it does not establish native GUI interaction or final media listening quality.",
+      "GitHub warned that pinned upload-artifact action declares Node 20 and runs under forced Node 24; both jobs completed successfully.",
+      "Initial job-log download was rejected by gh because of terminal escapes; downloaded to a file with explicit escape allowance, stripped only for displayed summaries."
+    ]
+  },
   "limitations": [
     "Native inventory still reported the Mac locked; no new native UI or file-dialog acceptance.",
     "Browser evidence is separately recorded at d3f0d516 and does not establish animation or native window behavior.",

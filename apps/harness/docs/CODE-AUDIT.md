@@ -31,7 +31,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A4 模型与凭据 | 页面保存、自定义 URL、重启、API 字段内掩码；原生草稿退出保护通过。[记录](REFACTOR-RESEARCH.md#p4-模型草稿保护2026-10-22) | 最终界面与凭据边界回归 |
 | A5 翻译上限与错误 | 原生外部调用和协议测试验证 65,535；低上限拒绝，错误不降额重试。[媒体记录](evidence/refactor-native-zoo-review.json)、[合同](evidence/refactor-experimental-contracts-prune.json) | 最终候选必要回归 |
 | A6 首屏与窗口 | 原 Hero、主题、侧栏、设置和原生导出已有截图与操作证据。[前端映射](../FRONTEND-MAPPING.md) | 合并并行控件改动后逐页对照、焦点、键盘、缩放与动效 |
-| A7 语言 | 中英日、日语原生设置、工作流本地化及导入导出通过。[语言规则](LOCALIZATION.md)、[原生记录](REFACTOR-RESEARCH.md#p4p7内置工作流多语言与原生文件往返2026-10-22) | 第四语言注册及最终候选布局检查 |
+| A7 语言 | 中英日、日语原生设置、工作流本地化及导入导出通过。[语言规则](LOCALIZATION.md)、[原生记录](REFACTOR-RESEARCH.md#p4p7内置工作流多语言与原生文件往返2026-10-22) | 55621d17 的临时第四语言注册、菜单、刷新/Host 重启及卸载回退通过；最终原生布局检查仍待验收。[语言扩展](evidence/refactor-fourth-locale.json) |
 | A8 本地完整媒体 | zoo 的 Demucs、Whisper、翻译、VoxCPM2、Qwen、混音/导出九节点成功；原生播放 18.9 秒。[证据](evidence/refactor-native-zoo-review.json) | 听感和音画同步质量；完整最终候选 |
 | A9 YouTube 下载与代理 | 原生填写 zoo URL/7897，十节点完成并导出。[历史任务](evidence/source-native-youtube-download.json) | 本次最终候选网络与下载回归，历史结果不重复计为新通过 |
 | A10 B 站下载 | 当前源码经实际 Host 验证直连完整链接、b23 短链和显式代理端口 7897，三次各自两个节点完成；视频、音频、媒体信息和 Range 读回通过。[本次证据](evidence/refactor-bilibili-download.json)、[代理合同](evidence/download-node-proxy-contract.json) | 原生页面输入、保存和播放 |
@@ -41,10 +41,10 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A14 取消、远端与退出 | 运行中原生退出取消保留任务，持久审核可退出；排队/远端未知状态合同及原错误传播已有回归。[活动测试](../test/desktop-activity.test.mjs)、[退出测试](../test/desktop-unload.test.mjs) | 资源下载、远端等待、排队组合的最终原生退出验收 |
 | A15 工作流与任务管理 | 创建/修改、模板副本、原生导入导出、重启及模板去重通过。[前端映射](../FRONTEND-MAPPING.md) | E19 已验证实际 Host 分页、状态/活动筛选和删除保护；原生列表及节点编辑分支仍待验收 |
 | A16 字幕与播放 | 原生字幕导出字节一致；播放器完整播放、产物 Range 和媒体探测有证据。[原生任务](evidence/refactor-native-zoo-review.json) | 正在并行修改的媒体拖动修复及同步播放验收 |
-| A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | Vox 预设音色、设备与其他输入组合 |
+| A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | 原分支与当前 VoxCPM2 均只声明 source_clone，预设音色被明确拒绝；两项能力/拒绝合同通过。其他支持的设备和输入组合仍待验收。[边界核对](evidence/refactor-voxcpm-voice-scope.json) |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
-| A20 构建与平台 | d3f0d516 的 macOS 与 Windows 干净 CI 均通过；macOS GUI 8,075 项、profile 6,687 项、业务界面 264 项、产品 78 项、Python 525 项；Windows 桌面/进程 567 项、产品合同 32 项与两种实际 Host 通过。[CI 读回](evidence/refactor-webstorage-test-flag.json) | 第 25 批本地构建和聚合类型检查通过，已加入持续检查；新候选双平台 CI 与最终原生验收待完成。[本批记录](evidence/refactor-unused-vendor-prune.json) |
+| A20 构建与平台 | 55621d17 的 macOS 与 Windows 干净 CI 全部通过；聚合类型、GUI 8,075 项、profile 6,689 项、业务界面 264 项、产品 78 项、Python 525 项；Windows 桌面/进程 567 项、产品合同 32 项与两种实际 Host 通过。[本批 CI](evidence/refactor-unused-vendor-prune.json) | 最终原生交互、下载/退出组合、完整媒体质量及启动测量仍开放 |
 
 ## 尚需实施的收尾
 

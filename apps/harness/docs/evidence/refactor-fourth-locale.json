@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-22T20:25:00.413Z",
+  "commit": "55621d177668296fcc3acf1247fd06f85ed530f8",
+  "surface": "Browser using the actual independent Desktop Host",
+  "profile": ".cache/harness/host-boundary-20261023-ow8kph/home/profiles/desktop",
+  "fixture": {
+    "name": "@youdub/validation-locale-fr",
+    "path": ".cache/harness/fourth-locale-fixture",
+    "files": {
+      "package.json": {
+        "sha256": "2fb4127e315f4a81992173eeb852c9a23319a60d51319fe534b343220fd89827"
+      },
+      "cordis.patch.yml": {
+        "sha256": "4d74950079ddf20a300260649c0b3ef923456414172a77caea2219f359212e3f"
+      },
+      "host.mjs": {
+        "sha256": "da83a62d4d74188eb9f1398b9d8495083d0af4ae4a8bf24422f7fdf5ff2bc194"
+      },
+      "client.js": {
+        "sha256": "af7f9fe229f48d3ab545854adb3fb148124fe827c7539065255f6b38ef19facb"
+      }
+    },
+    "scope": "Disposable validation package, one French nav.newTask label plus declared English fallback; not a shipped French translation.",
+    "registration": "ctx.locale.register('youdub', 'fr', {'nav.newTask':'Nouvelle tâche'}); ctx.locale.addLanguage({id:'fr',label:'Français (validation)',fallback:'en'}); both disposers owned by ctx.effect"
+  },
+  "observations": [
+    {
+      "action": "Install through existing extension API and official PluginManager",
+      "status": 201,
+      "application": "applied"
+    },
+    {
+      "action": "Open Settings language menu",
+      "languages": [
+        "中文",
+        "English",
+        "Français (validation)",
+        "日本語"
+      ]
+    },
+    {
+      "action": "Select French",
+      "selected": "Français (validation)",
+      "translatedLabel": "Nouvelle tâche",
+      "missingKeys": "English fallback"
+    },
+    {
+      "action": "Reload browser",
+      "selected": "Français (validation)",
+      "translatedLabel": "Nouvelle tâche",
+      "note": "Immediate isVisible query returned false while startup loaded; after Settings opened, both label and selected language were read back."
+    },
+    {
+      "action": "Cleanly shut down and restart actual Host on same private profile",
+      "selected": "Français (validation)",
+      "translatedLabel": "Nouvelle tâche"
+    },
+    {
+      "action": "Remove active French plugin through official PluginManager",
+      "application": "applied",
+      "inventoryAbsent": true,
+      "selected": "English",
+      "translatedLabel": "New task"
+    },
+    {
+      "action": "Read menu after uninstall",
+      "languages": [
+        "中文",
+        "English",
+        "日本語"
+      ]
+    },
+    {
+      "action": "Restore original test preference and stop",
+      "selected": "日本語",
+      "browserClosed": true,
+      "hostShutdown": "IPC shutdown, exit code 0"
+    }
+  ],
+  "screenshot": "refactor-fourth-locale-settings.png",
+  "limitations": [
+    "No native Electron interaction; Mac UI tool continued to report locked.",
+    "No complete fourth-language content or layout acceptance; this validates registration, fallback, persistence and uninstall only.",
+    "Fixture lives under ignored test cache; user profiles and product source not modified."
+  ]
+}

@@ -1,6 +1,6 @@
 # Harness × YouDub 功能与架构覆盖账本
 
-最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：活动 fork 已完成第 24 批裁剪，正向装配所需框架服务，并保留原 YouDub 领域功能。8fea16f1 的 Windows CI 已验证 SDK 回退修复；同提交 macOS CI 因测试 Node 参数不兼容已取消，修正后待重跑；最终原生交互及媒体质量验收仍开放。本轮只交付源码开发版，安装包、更新源与在线市场不在范围内。
+最新代码复核见 [CODE-AUDIT.md](CODE-AUDIT.md)：活动 fork 已完成第 25 批裁剪，正向装配所需框架服务，并保留原 YouDub 领域功能。55621d17 的 macOS 与 Windows 源码 CI 全部通过，包含新增聚合类型检查；最终原生交互及媒体质量验收仍开放。本轮只交付源码开发版，安装包、更新源与在线市场不在范围内。
 
 本账本以冻结的 YouDub 源快照 `f6f927903581b165f2bf6c840ea65b896d319524` 为比较对象。源清单为 `../baselines/youdub-source-inventory.json`：58 条 API、11 个媒体操作、9 个页面入口、50 组元素定义。计数只说明清单覆盖范围，不能证明功能已经运行通过。
 
@@ -103,7 +103,7 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `speech.transcribe/v1` | Python Whisper，经官方 Subprocess；识别/校对节点 | 有时码的 transcript、原始识别证据 | E3 与 E8 源码桌面私有 Whisper tiny 的 3 段真实识别 |
 | `text.translate/v1` | Harness llm；官方模型设置与翻译校对节点 | segment_id 完整、原请求响应留存、人工修订 | E13 原生官方配置的火山方舟真实翻译成功，maxTokens=65535、3段ID完整；质量仍受原识别错误影响 |
 | `voice.reference/v1` | Python 媒体处理；声音参考节点 | 源声音参考切片及映射 | E13 真实3段参考切片，16kHz单声道，时长/文本对应原识别段 |
-| `speech.synthesize/v1` | Python VoxCPM，经官方 Subprocess；配音节点 | 逐句音频；预设声音与源声音克隆配置 | E13 私有VoxCPM2 CPU实际生成3段48kHz语音；源声音克隆链通过，预设音色仍未实测 |
+| `speech.synthesize/v1` | Python VoxCPM，经官方 Subprocess；配音节点 | 逐句音频；按提供商公布的声音模式配置 | E13 私有VoxCPM2 CPU实际生成3段48kHz语音；源声音克隆链通过；原快照及当前 VoxCPM2 只公布 source_clone，未配置的预设模式明确拒绝。[能力边界](evidence/refactor-voxcpm-voice-scope.json) |
 | `audio.mix/v1` | Python FFmpeg，经官方 Subprocess；混音节点 | finalAudio、dubbedTimeline、adjustedSpeech | E13 finalAudio、dubbedTimeline、adjustedSpeech齐全；最终WAV为48kHz双声道且精确覆盖视频时长 |
 | `text.align/v1` | Python Qwen Forced Aligner；字幕对齐节点 | wordAlignment 与最终字幕时间轴 | E13 私有Qwen实际输出3片段/51词；字幕文字完整对应真实译文，原始词时码留存 |
 | `media.export/v1` | Python FFmpeg；导出节点和任务输出 | 视频、音频、原文 SRT、译文 SRT；原生保存 | E13双SRT原生保存/哈希通过；E16原分句恢复后9节点及17秒播放通过；E17在线下载后10节点与14秒播放通过。E14显示换行补丁已撤回，仅保留历史证据 |

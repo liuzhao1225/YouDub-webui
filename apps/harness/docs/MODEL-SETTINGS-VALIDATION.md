@@ -1,5 +1,7 @@
 # YouDub 模型设置与首次 LLM 配置
 
+当前状态（2026-10-23）：下文记录 10 月 21 日的初始接入，不代表最终待办。活动 fork 后续已解除模型页的会话依赖，接入公开的编辑状态回调，并验证 API 字段内掩码、模型草稿关闭/导航保护及日语原生退出。d3f0d516 的独立 Host 页面仍无默认账号或提供商。[当前验收矩阵](CODE-AUDIT.md)、[模型草稿保护](REFACTOR-RESEARCH.md#p4-模型草稿保护2026-10-22)、[浏览器观察](evidence/refactor-browser-ui.json)
+
 ## 2026-10-21 实施
 
 - `cordis.patch.yml` 禁用 `deepseek-account`、`account-controller`、`llm-deepseek-account`、`llm-deepseek`、`product-analytics`、`desktop-product-telemetry`。保留官方 `llm-pi-ai`、Credentials、Settings 和模型设置页面。默认不激活任何 DeepSeek 提供商；用户仍可通过官方提供商目录自行添加 DeepSeek。

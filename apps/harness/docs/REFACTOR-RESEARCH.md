@@ -642,3 +642,9 @@ AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、2
 官方聚合类型检查暴露 289 条错误：前端 settings-plan.ts 被 Host 聚合纳入、退役产品的测试声明及旧网站/CLI 工具残留。将前端 helper 归为 .client.ts、保留通用测试断言并补齐夹具类型，移除已经失去源码所有者的专属工具，聚合检查归零并接入开发 CI。HMR 中英文说明同步，缺失文档链接改指保留的接口源码。未删减运行中功能断言。
 
 最终七项框架构建、产品构建、632 项受影响前端测试、17 项实际 Host/profile 与来源隔离通过；HMR/app-boot 等 6,064 项通过（1 跳过）发生于测试归类修正之前，运行实现此后未变。首次构建账本竞态、289 条类型错误、门禁数量断言及坏链失败均保留。本批远程 CI 和最终原生交互尚未完成。[完整证据](evidence/refactor-unused-vendor-prune.json)
+
+### 第 25 批干净 CI 读回
+
+55621d17 的[双平台源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39847912792) 已全部通过。macOS：七项源码构建、两项聚合类型检查、504 个 GUI 文件/8,075 项通过，52 个 profile 文件/6,689 项通过，175 项包边界、187 项领域、264 项业务界面、78 项产品集成和 525 项 Python 回归通过。Windows：七项源码构建、567 项桌面/进程与 32 项产品合同通过。预期失败与平台跳过在[证据](evidence/refactor-unused-vendor-prune.json)中单列。
+
+当前运行源码与该候选保持一致；后续仅补充[第四语言实际 Host 验收](evidence/refactor-fourth-locale.json)、[VoxCPM 原始能力边界](evidence/refactor-voxcpm-voice-scope.json)和文档说明。两次验收 Host 均正常关闭，临时语言插件已卸载。Mac 原生工具仍报告锁屏，Windows 原生界面、最终音画质量、资源交互和启动测量继续开放；两份飞书文档保持最后统一更新的约定。
