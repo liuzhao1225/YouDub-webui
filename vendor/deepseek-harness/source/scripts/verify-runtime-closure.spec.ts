@@ -40,7 +40,7 @@ afterEach(() => {
 
 describe('verifyRuntimeClosure', () => {
   it('checks a private worker closure without requiring application presets', async () => {
-    const manifestPath = 'packages/ssh/ssh-helper-runtime/package.json'
+    const manifestPath = 'packages/workers/private-runtime/package.json'
     const root = fixture({ [manifestPath]: { name: 'helper', dependencies: { '@scope/worker': 'workspace:^' } } })
     workspace(root, '@scope/worker', { peerDependencies: { '@scope/peer': 'workspace:^' } })
     workspace(root, '@scope/peer', {})

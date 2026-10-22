@@ -1,4 +1,4 @@
-/** Resolve the native node-pty input used by the SDK and SSH executable builders. */
+/** Resolve the native node-pty input used by the SDK executable builder. */
 
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'

@@ -1,4 +1,4 @@
-/** Shared production-deploy preparation for the SDK and SSH executable carriers. */
+/** Shared production-deploy preparation for the SDK executable carrier. */
 import { existsSync } from 'node:fs'
 import { cp, mkdir, readFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve, sep } from 'node:path'

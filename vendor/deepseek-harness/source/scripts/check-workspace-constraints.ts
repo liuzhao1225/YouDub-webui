@@ -60,8 +60,8 @@ const experimentalPackageDirectory = /^packages\/experimental\/[^/]+$/
 /** Private reference tool run from the repository; it publishes no files. */
 const pluginMarketGeneratorDirectory = 'apps/plugin-market-generator'
 /**
- * Ordinary directories whose packages this repository publishes: one release member each. The reference plugin
- * market generator is a private repository tool, not a published application.
+ * Ordinary package and application directories subject to runtime dependency policy.
+ * The private YouDub profile runner is excluded from publication below.
  */
 const standardReleaseMemberDirectory = new RegExp(
   `^(?:packages/(?!experimental/)[^/]+/[^/]+|apps/(?!desktop(?:-host)?$|${pluginMarketGeneratorDirectory.slice('apps/'.length)}$)[^/]+|vendor/[^/]+)$`,
@@ -222,12 +222,6 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-skill-badge': ['assets'],
   '@deepseek-ai/dsh-skill-office': ['assets'],
   '@deepseek-ai/dsh-subprocess': ['lib/control.js'],
-  // SSH launches a private helper and shares wire definitions and TLS setup
-  // between that helper and the connection owner.
-  '@deepseek-ai/dsh-ssh': [
-    'lib/helper.js', 'lib/protocol.js', 'lib/schemas.js',
-    'lib/protocol-*.js', 'lib/schemas-*.js', 'lib/stream-security-*.js',
-  ],
   // Ordinary native containment ships a path-loaded runner and its shared
   // runner chunk beside the existing node-pty permission repair.
   '@deepseek-ai/dsh-subprocess-local': [
@@ -398,9 +392,7 @@ export function checkExperimentalNameExceptions(manifests: readonly WorkspaceMan
 }
 
 function isReleaseMemberDirectory(dir: string): boolean {
-  // The SSH carrier is distributed as executable archives, never as an npm application.
-  if (dir === 'packages/ssh/ssh-helper-runtime') return false
-  return standardReleaseMemberDirectory.test(dir) || isPublicExperimentalPackageDirectory(dir)
+  return dir !== 'apps/cli' && (standardReleaseMemberDirectory.test(dir) || isPublicExperimentalPackageDirectory(dir))
 }
 
 /**

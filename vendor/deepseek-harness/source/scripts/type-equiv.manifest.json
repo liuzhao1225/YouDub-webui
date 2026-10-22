@@ -2377,22 +2377,6 @@
       "source": "packages/ptc-runtime/ptc-runtime/src/types.ts"
     },
     {
-      "doc": "docs/subsystems/ssh.md",
-      "symbol": "HelperLaunch",
-      "source": "packages/ssh/ssh/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/ssh.md",
-      "symbol": "Config",
-      "source": "packages/ssh/ssh/src/index.ts"
-    },
-    {
-      "doc": "docs/subsystems/ssh.md",
-      "symbol": "SshConnection",
-      "source": "packages/ssh/ssh/src/index.ts",
-      "projection": "public-api"
-    },
-    {
       "doc": "docs/subsystems/mcp.md",
       "symbol": "McpResourceRequest",
       "source": "packages/mcp/mcp-resources/src/index.ts"

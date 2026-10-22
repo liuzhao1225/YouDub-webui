@@ -12126,6 +12126,24 @@
       "reason": "Regenerate the original slot catalog from the current reviewed source, including shared layout seats and the previously changed settings and onboarding contracts."
     },
     {
+      "path": "packages/preset/agent-preset/skills/cordis-composition-reference/references/packages.md",
+      "before": {
+        "path": "packages/preset/agent-preset/skills/cordis-composition-reference/references/packages.md",
+        "type": "file",
+        "executable": false,
+        "size": 41003,
+        "sha256": "dce58b653277bbcd25cf245178916e5f7b06e558382bb98a566f00b63318474c"
+      },
+      "after": {
+        "path": "packages/preset/agent-preset/skills/cordis-composition-reference/references/packages.md",
+        "type": "file",
+        "executable": false,
+        "size": 40546,
+        "sha256": "06e7dda239ce38465cc8cca2c2d3a3057eb05908eb31be98b5d8c60d8aaf8686"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
+    },
+    {
       "path": "packages/preset/agent-preset/tests/skills.spec.ts",
       "before": {
         "path": "packages/preset/agent-preset/tests/skills.spec.ts",
@@ -12142,6 +12160,912 @@
         "sha256": "0893687a9f8044dfa23d2fb0913f07fe7d7cb891f4c84ab8a9630bd22f985f57"
       },
       "reason": "Keep the skill-size regression threshold while identifying its preset as archived rather than linking to a deleted active product file."
+    },
+    {
+      "path": "packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts",
+      "before": {
+        "path": "packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2342,
+        "sha256": "51225132a2e31ed5bd60cd8ec18796cd19b80c309bb54a705d5107b8eb979635"
+      },
+      "after": {
+        "path": "packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2342,
+        "sha256": "9d77a29e690ed29a0c469d59cedaead04df23942b298c3df1ad38f7d543e560a"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
+    },
+    {
+      "path": "packages/ssh/README.i18n.yaml",
+      "before": {
+        "path": "packages/ssh/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 947,
+        "sha256": "d6790425fabeb786c142dbc558221ffb2a879b792bf682fc558b596bdedda715"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/README.md",
+      "before": {
+        "path": "packages/ssh/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 1971,
+        "sha256": "aaa1e7627a3959b73366ffce9de9e3c468d7634d64a43194403ceccfc04a5026"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/README.zh.md",
+      "before": {
+        "path": "packages/ssh/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 1797,
+        "sha256": "64b963f8d328cf1f7ba97e34b072a0030ba436c595c72a850e07e19a311ffccc"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/README.i18n.yaml",
+      "before": {
+        "path": "packages/ssh/fs-ssh/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1312,
+        "sha256": "28c1f1589fc37c6536466fa11092188c736c3b71b6847091df9a6d85cfa83374"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/README.md",
+      "before": {
+        "path": "packages/ssh/fs-ssh/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 3739,
+        "sha256": "f5f1801ce145619d9bbad3d6482aa34b96ba382ca5651d4d1d20e062e6edbc68"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/README.zh.md",
+      "before": {
+        "path": "packages/ssh/fs-ssh/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 3428,
+        "sha256": "b8b21f2e2cd76e78a0fb5b6fdf2bea70664a1fc225cef5607126a9e9f2343f9b"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/package.json",
+      "before": {
+        "path": "packages/ssh/fs-ssh/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1285,
+        "sha256": "c5e07e0707b21ff7e0e1d9d2fdf65639c05bbc78d210eaa6d1318be26a74d634"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/src/index.ts",
+      "before": {
+        "path": "packages/ssh/fs-ssh/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5466,
+        "sha256": "3eed200df3e4034ca34dba0bb09b3868e017e8bcb7627a89ad91c6200b988a53"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/tests/provider.spec.ts",
+      "before": {
+        "path": "packages/ssh/fs-ssh/tests/provider.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11913,
+        "sha256": "f3b234b79e0f0b02a0fa13be39b4d49f7ff84f09ba535477319f5ad97fb6852c"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/fs-ssh/tsconfig.json",
+      "before": {
+        "path": "packages/ssh/fs-ssh/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 470,
+        "sha256": "bd885b5edefc67457639dab2b2b536d29a3e55105f15d795a70dfee81592910f"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/README.i18n.yaml",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1367,
+        "sha256": "4ef3c024e8eff88b6aa67038f9c3339d0755bd6c4ad0a7c7a918e5494ac44833"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/README.md",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 3117,
+        "sha256": "90dee0badf6965f9d7f16541d9c27aa39adef10e14511e2998eee26e658ba9fb"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/README.zh.md",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 2887,
+        "sha256": "09a47d8ff0de74c4e49f9b9e3c8a16ced112b778013d00aaf8c3a92e3c1a9fb3"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/package.json",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1112,
+        "sha256": "2bccec09e0549c9b5b86206fd3e10fd2b2ab61af11ae6e9d48555d87fd244823"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/src/index.ts",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1739,
+        "sha256": "80b98e93a0bb636abfe9600b6d8ab11c1404cab7c5459ebde45dfdf39ad4ca85"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/tests/provider.spec.ts",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/tests/provider.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4692,
+        "sha256": "3de5fa599fd4679ca525c6e1d14af3173fa76fab5cddcdf03bd7a88464bba13d"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/sandbox-ssh/tsconfig.json",
+      "before": {
+        "path": "packages/ssh/sandbox-ssh/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 371,
+        "sha256": "86c49edf70f7b9f902ca5effed7f5da9bf23c13d404f3145581f6eaadd614661"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/README.i18n.yaml",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1696,
+        "sha256": "7df7dc1d6cba0a0213fa3b8e346a9fd602f4ace2d945235a17c8f25c48f22505"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/README.md",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 7200,
+        "sha256": "ebfa5b940d59e71f4b1d6e3b22007417a4c2613122f32cd9c764a7dd0fb178c8"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/README.zh.md",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 6498,
+        "sha256": "45fac5d45ce84e209677e59eefbdb6b94cc751b5be8a93b8c6134e4a6cae7e0e"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/package.json",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2404,
+        "sha256": "470ace9aeae49fb8b62f68ead524c510ccc115eb108f90a3ddde2cd6126cad68"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/src/index.ts",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1859,
+        "sha256": "a4a1de011c59dfd6444ed08589a57527388c703935d0709c9210734f81170f99"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/direct-helper.ts",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/direct-helper.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4265,
+        "sha256": "e7e394a59ce88a8291357fe1dfc86f8f961dc5cbc6c016a8d885865cb2c77b01"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/driver.ts",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/driver.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8451,
+        "sha256": "2aecfb4dd27e4f97f5cddffc83297d39dd02de669b90016f1accdd2f909e5a46"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/sshd/Dockerfile",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/sshd/Dockerfile",
+        "type": "file",
+        "executable": false,
+        "size": 386,
+        "sha256": "e546713ae06d07e0dbd9f9c16d9d0cfe66ac9cf277e83aac7632c1ed04952bda"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/sshd/sshd_config",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/sshd/sshd_config",
+        "type": "file",
+        "executable": false,
+        "size": 295,
+        "sha256": "a573cd77c6f04b949f7ba8bb1b0487816664b8f33e3b6aa4065e534c74754b3f"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/sshd/start.sh",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/tests/fixtures/sshd/start.sh",
+        "type": "file",
+        "executable": false,
+        "size": 308,
+        "sha256": "b18d3dd0218971e8811a281d8d7ad0eb7d34f4748f9b94253754459c0599c50e"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh-helper-runtime/tsconfig.json",
+      "before": {
+        "path": "packages/ssh/ssh-helper-runtime/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 390,
+        "sha256": "f4baeb9bcb336190cb733f3c5cfed368b5057a93d65bd9b91af94a12760db9ca"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/README.i18n.yaml",
+      "before": {
+        "path": "packages/ssh/ssh/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1389,
+        "sha256": "e9d8ad9c500fe765a9d8bce696b0653efda98ab8018994d210104ae17568608d"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/README.md",
+      "before": {
+        "path": "packages/ssh/ssh/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 7012,
+        "sha256": "5320446694f7885d42f9f25e5548c337d1d47d0c727d048556a0cc2208254fbe"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/README.zh.md",
+      "before": {
+        "path": "packages/ssh/ssh/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 6347,
+        "sha256": "5cc46f02af538697a00d94873b60265ef09da919216a3e2a29c9e61049d0a22e"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/package.json",
+      "before": {
+        "path": "packages/ssh/ssh/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2789,
+        "sha256": "217e77cf2262beb784a43c88ccafecdc7c03344c6de678f6101a28f71c2611d2"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/helper-entry.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/helper-entry.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1346,
+        "sha256": "8c9991d9548ae5d0f9a18d1611f44018030d8b362360df0b183c5d8eb7ebb900"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/helper-processes.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/helper-processes.ts",
+        "type": "file",
+        "executable": false,
+        "size": 20616,
+        "sha256": "daa9bb734b116d8b7b938be14c1cd15108a5bb639bd11b9749adb45480d4a427"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/helper.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/helper.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14019,
+        "sha256": "23c4f536de59e65625f1e50a002d228033895e2550e1865852f7226deeefd75b"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/index.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16571,
+        "sha256": "5809b43f396aecc4ea6083dc8ed821ef77eb6ce5d2f5c4bfbf37ff6bfae80d4c"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/protocol.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/protocol.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10353,
+        "sha256": "bcf5e18dc42d2fb68156a3a0fe9d1ef4d640391fcc987f1aa0017c04fe9165e9"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/schemas.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/schemas.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6717,
+        "sha256": "2a3c156a82bac0c1a4ad3595b3e41a299779302a133fd332e137abb8d391bb82"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/src/stream-security.ts",
+      "before": {
+        "path": "packages/ssh/ssh/src/stream-security.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2522,
+        "sha256": "8bcdcb9eb7c7c428ef1fdc0491db7865c51b722f6343602a0baf7c6db3785987"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/collection.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/collection.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3767,
+        "sha256": "9aa4da34ba3d05967c10914e388373af52b84e9b49f1b5d990ec1c74829df0cb"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/connection-disposal.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/connection-disposal.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11302,
+        "sha256": "6ebd2669fa937cb989ba1c090b4e75cd6fa18b26217912e8d6cfb55fde655cbc"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/fixtures/helper.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/fixtures/helper.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2668,
+        "sha256": "559480a03a73d79aab74fda453e6f594d250ada8655690f07e1b4cfd18885699"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-boundaries.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-boundaries.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13421,
+        "sha256": "7412835d921835475ee874b37916b7fb0874a6a5729ed98d6700788201ebce9f"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-cleanup-join.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-cleanup-join.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3988,
+        "sha256": "03026f3bb3e263aaabdf9457610103d93d36346ecac487f58e9aada711ab580e"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-failure-settlement.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-failure-settlement.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2414,
+        "sha256": "b64b5433d8503d3c50152cadf9a2ad7055f81125124ef54dfa8abc3f0e5731e1"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-finalization.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-finalization.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6700,
+        "sha256": "d7cc7ba0a115edca930a37b63b458a97e923ebd893fbf4a2365e606a25b61f9b"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-lifecycle.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-lifecycle.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3174,
+        "sha256": "b7bf26fc00c802ec07808ae51331d75a46bcc3abd97408693d346bcb08228e13"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-processes.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-processes.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 21015,
+        "sha256": "afcc66ee286a3ff85899530e85c071b42fa4f35f53552547b5c54c391dc4386c"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/helper-runtime.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/helper-runtime.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8620,
+        "sha256": "c58a0d6050d0c56a1e548c57c8cf7c15f4e5f1e79b29b1aa2d18df084a9b707b"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/identifiers.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/identifiers.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1105,
+        "sha256": "69625dbafb7d355dbbffdf8b90b84350baff0615a58bd97c413ce6fbb96d65d1"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/inspector-signal.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/inspector-signal.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3005,
+        "sha256": "937e947b9ae850a693f4a7979ba65b84112498e89f361a6b8e7445c79a0bc4ea"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/live.e2e.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/live.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18740,
+        "sha256": "a14bddb6a22a1e4025c4583846e40bc6b0b69b20668a75f0095d1eddbe1e55da"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/management-capacity.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/management-capacity.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8822,
+        "sha256": "60392548e7d163f7f200033fa19792ffb282e5266b3c98769d3b4ec5b168eb96"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/protocol-boundaries.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/protocol-boundaries.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10631,
+        "sha256": "86d5224f2be844c8518304ec492c447635d7d5d6e11b1f306a73edcf2d07f031"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/protocol-disposal.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/protocol-disposal.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1545,
+        "sha256": "47254112bda23a248b6803f2169b62da103d136e332ee30ebdf8f8b179cd2a09"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/protocol.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/protocol.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3513,
+        "sha256": "1b5bd34dc34787c00fcc445060ad5aaf69314d42a30276217b6300ba651eee55"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/startup-behavior.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/startup-behavior.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16980,
+        "sha256": "e75cc09aa85be121fa74a29906fac2ef6d5e0a922773e07b81ebc90ebc93bfa3"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/stream-capability.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/stream-capability.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5234,
+        "sha256": "857a61c723f13d4160b5b57560b68d365572b01f36e149038585fbf23625b46f"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/stream-lifetime.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/stream-lifetime.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3200,
+        "sha256": "26cf111232dbba89db8170102e20a6133c6ddd9be2d6d39be365965400f169b4"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/stream-rebind.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/stream-rebind.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4768,
+        "sha256": "1ac57a0a5daab671ad151b266dd370564affad82eee3216be11f4d3d50abd25e"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tests/stream-timeout.spec.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tests/stream-timeout.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1446,
+        "sha256": "d21c486c460531d179f5071935f82ec85df1573370827c1ccaf68056572a1eac"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tsconfig.json",
+      "before": {
+        "path": "packages/ssh/ssh/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 862,
+        "sha256": "c16c00eecb43debb7283af5329e2197f1e1f3d4775dcb37fc6b4b313db5ae026"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/ssh/tsdown.config.ts",
+      "before": {
+        "path": "packages/ssh/ssh/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 338,
+        "sha256": "1e3c46c3f8134162a3552bf02fd17213ff30863fcebdcd18a15bed883c313fb9"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/README.i18n.yaml",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1400,
+        "sha256": "f7374878429dbdfc6f04c73da2f6c7359e0a99316b4f14a33be0d829ff6a7e75"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/README.md",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 4804,
+        "sha256": "35b47b88124d77c363146d1eaf34554f2f092282f13d123ff45e0670879e4e01"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/README.zh.md",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 4284,
+        "sha256": "900322ff5eaba502c2a2ededb311d06af4d815d61da586791b53947ea551b655"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/package.json",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1240,
+        "sha256": "34014b19577c38a7b9e2bbff1045c6f95b4223a700c557e3a2e24660b0bc25b2"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/src/index.ts",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 17489,
+        "sha256": "84d5a9517f8b4296188dd97fdaabfc82ab71ed995cb856b1c2c7d532e9f5ac66"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/tests/lifecycle.spec.ts",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/tests/lifecycle.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2599,
+        "sha256": "d500183d3643d4ce65198696151ab3e22d4053242ae12d29e4fa55e41f13f0eb"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/tests/process-behavior.spec.ts",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/tests/process-behavior.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15011,
+        "sha256": "cbb4ce38f2c93ca03d7abdf7d958bcb3c3f86a616a53b6eaafbdc2d28f7a50b4"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/tests/shell-discovery.spec.ts",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/tests/shell-discovery.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3354,
+        "sha256": "a492a21397470105f5d1d29fab83814f3eed55daec9d2613d427c85d9339cc1d"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/tests/stream-wait-lifecycle.spec.ts",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/tests/stream-wait-lifecycle.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8628,
+        "sha256": "8099515b41c1e682d24cf9c644c641af8fad056d996c659cdaf319ae2a643591"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/tests/terminal-behavior.spec.ts",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/tests/terminal-behavior.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10779,
+        "sha256": "671099991272316d013c8bbd9010f0ef869d11743ac7c8d60b6016fb2fb0e57f"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "packages/ssh/subprocess-ssh/tsconfig.json",
+      "before": {
+        "path": "packages/ssh/subprocess-ssh/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 440,
+        "sha256": "dd12173b6226ec404968f6fc4403d80a01bb716c95ca50d8932f2a1b74c99a57"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
     },
     {
       "path": "packages/test-support/client-runtime/README.i18n.yaml",
@@ -12360,10 +13284,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 949190,
-        "sha256": "71944c8c661a587b0abc49104374966e666e2a71811ba536756a151ecb84cfc6"
+        "size": 940835,
+        "sha256": "4285f6c5282788f4a9bb13c0dff3d00dd26985de6acc4c316557a2e9bbb593d9"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded. Remove retired browser preview workspace and HTTP server dependency entries without upgrading retained dependencies. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded. Remove retired browser preview workspace and HTTP server dependency entries without upgrading retained dependencies. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -12384,6 +13308,36 @@
       "reason": "删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。"
     },
     {
+      "path": "scripts/build-exe-for-ssh-helper.ts",
+      "before": {
+        "path": "scripts/build-exe-for-ssh-helper.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11151,
+        "sha256": "d1ed594dc5a8d49239534546785a5db1a2d7aba527401327f855eef233bee2dd"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/check-workspace-constraints.spec.ts",
+      "before": {
+        "path": "scripts/check-workspace-constraints.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24884,
+        "sha256": "7e4c84495238b2bf5f245770cace0d8a55a76f5392f765e6b0ec2ac171eacd97"
+      },
+      "after": {
+        "path": "scripts/check-workspace-constraints.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 25094,
+        "sha256": "03341265c81c388072742d3634d652f1218f2e8fde4abdd7173a754e322fb45e"
+      },
+      "reason": "Remove SSH-only export and release exceptions; classify the existing private YouDub profile runner as an internal application and retain its runtime declaration checks."
+    },
+    {
       "path": "scripts/check-workspace-constraints.ts",
       "before": {
         "path": "scripts/check-workspace-constraints.ts",
@@ -12396,10 +13350,28 @@
         "path": "scripts/check-workspace-constraints.ts",
         "type": "file",
         "executable": false,
-        "size": 33531,
-        "sha256": "5c5af22f4a556ff634e6923c84ee1792bd2fd2b92e9cee3268375bc7be760f18"
+        "size": 33080,
+        "sha256": "f35c11e6646c417af7f781aa241be16d87f8910d11159b888f13755339454b6c"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove SSH-only export and release exceptions; classify the existing private YouDub profile runner as an internal application and retain its runtime declaration checks."
+    },
+    {
+      "path": "scripts/ci-workflow.spec.ts",
+      "before": {
+        "path": "scripts/ci-workflow.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 87761,
+        "sha256": "b0c51bf09894952655555c137a7e6ca3125ee0d3bb25b63fdae00b15af2d59e2"
+      },
+      "after": {
+        "path": "scripts/ci-workflow.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 81129,
+        "sha256": "b2420998b01f0cd429e703f659631c2ffdf211f448c1144793ce2df8be181e32"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/client-build-environment.client.spec.ts",
@@ -12504,10 +13476,46 @@
         "path": "scripts/doc-standard.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 24679,
-        "sha256": "d96cbd4080178990e573e98b90943b500f2dfa38adfa5b7b1f3b74e171d7430b"
+        "size": 24553,
+        "sha256": "93abe96fe092ef5cc42e153e0ccf0601055b251d5e0d03b3f6d482241b681bd3"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
+    },
+    {
+      "path": "scripts/executable-native-pty.ts",
+      "before": {
+        "path": "scripts/executable-native-pty.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1597,
+        "sha256": "8b4cffcf54981075451f24b696ebabcb44010dcb717387d3204c2dd5aaadc392"
+      },
+      "after": {
+        "path": "scripts/executable-native-pty.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1588,
+        "sha256": "8c8230007f5997d336bdd6f97027f922ce43dd6de65d29ce5a371fe44cde2d65"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
+    },
+    {
+      "path": "scripts/executable-packaging.ts",
+      "before": {
+        "path": "scripts/executable-packaging.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3068,
+        "sha256": "b51bb4a4de0e95ecd13e7476aca36c7776fe04e0bc83637cc57501ed8c0c0f59"
+      },
+      "after": {
+        "path": "scripts/executable-packaging.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3059,
+        "sha256": "2a0a2a2270e3e4a78c3ac75cb4ea9a20186927ecfb6c5d2a7daf981d6a503551"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/gen-cli-help.spec.ts",
@@ -12582,10 +13590,10 @@
         "path": "scripts/no-unknown-casts.baseline.json",
         "type": "file",
         "executable": false,
-        "size": 111438,
-        "sha256": "7d73fa13f8d412c516ed43f73ea9368fb86582ddcd89e6b2b7a9c46cd94c12e3"
+        "size": 111184,
+        "sha256": "88b88238369b4006c54488b3f3d9e575cc4ce2344094c97c90e6861b89e00d25"
       },
-      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/optional-bundles.spec.ts",
@@ -12610,6 +13618,24 @@
       },
       "after": null,
       "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
+      "path": "scripts/product-package-policy.ts",
+      "before": {
+        "path": "scripts/product-package-policy.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4772,
+        "sha256": "607d8f9ac14b0345fb97b6b2cec45eda38b2bc4c6b61d1740d12950dd69e5b7c"
+      },
+      "after": {
+        "path": "scripts/product-package-policy.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4142,
+        "sha256": "c19696a562036d17f02dbce7dc77a4e487c7d3390f063e6cb742d62294aecf6d"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/release/families.spec.ts",
@@ -12682,6 +13708,96 @@
         "sha256": "b300b25ebbfcf40aa874683dcbc22308f9609a29ef4b5c26caa4ce48fc4d55e8"
       },
       "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+    },
+    {
+      "path": "scripts/ssh-helper/artifact.spec.ts",
+      "before": {
+        "path": "scripts/ssh-helper/artifact.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6952,
+        "sha256": "8b143be4b2aba2f6d4acb3a30fdfe4478d025ceb920f5fb17ea9d0def1f3f3c5"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/ssh-helper/artifact.ts",
+      "before": {
+        "path": "scripts/ssh-helper/artifact.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4359,
+        "sha256": "a303d852583d74d4f36c3a11c4be71ced2f299fbe10a1f04f2c7df8b6a0cd6cb"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/ssh-helper/native.ts",
+      "before": {
+        "path": "scripts/ssh-helper/native.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3768,
+        "sha256": "60b2963fbe1a2a1b131916fe342b6a045a1915de48f2c9b4f4617a3d453ea338"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/ssh-helper/probe.ts",
+      "before": {
+        "path": "scripts/ssh-helper/probe.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2021,
+        "sha256": "4f2a4319fe82a04522cc40dcbd83d81c8f51c87210382109396c66e9e099e4db"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/ssh-helper/release.ts",
+      "before": {
+        "path": "scripts/ssh-helper/release.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4525,
+        "sha256": "1aeff90ee52b3daa8cf6c023c9134f9b8304269c9d05269a472fef7482b5a0ad"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/ssh-helper/worker-probe.ts",
+      "before": {
+        "path": "scripts/ssh-helper/worker-probe.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4082,
+        "sha256": "41ebfaba51c7570f7da30f129ef273e142f82a4bde79e972b9172831899eea45"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/type-equiv.manifest.json",
+      "before": {
+        "path": "scripts/type-equiv.manifest.json",
+        "type": "file",
+        "executable": false,
+        "size": 76537,
+        "sha256": "7fcaafbfc748500bd111c8bb877a4535e254582c3f58f5078a8d043f6de1902e"
+      },
+      "after": {
+        "path": "scripts/type-equiv.manifest.json",
+        "type": "file",
+        "executable": false,
+        "size": 76112,
+        "sha256": "bdcb3b5a212ef72b78cf523147f472e3aafa000e5be99ccd81c6b257c9175712"
+      },
+      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/verify-application-entrypoints.ts",
@@ -12768,10 +13884,10 @@
         "path": "scripts/verify-package-readme-model-experience.ts",
         "type": "file",
         "executable": false,
-        "size": 51183,
-        "sha256": "3f36dfeec6559432605b00fd56bdec05a875a3e0158d355357fbc6b62fde6880"
+        "size": 50381,
+        "sha256": "4cd3a003c410efe737f69ebd960dbbaea2842f62b27938f0ee523317feb51314"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/verify-product-use.spec.ts",
@@ -12822,10 +13938,10 @@
         "path": "scripts/verify-runtime-closure.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 8347,
-        "sha256": "40ac523986ab01158501bad138ea08f3880772a47f6e7754f263cb218879d891"
+        "size": 8348,
+        "sha256": "2673792473943740439536fb4944b2888067a4ecf2345cfc1d3958dcc460f1bd"
       },
-      "reason": "Check the explicitly selected runtime manifest and declared peers, including source-built pinned dependencies; legacy Agent preset validation becomes explicit rather than mandatory for every product."
+      "reason": "Check the explicitly selected runtime manifest and declared peers, including source-built pinned dependencies; legacy Agent preset validation becomes explicit rather than mandatory for every product. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "scripts/verify-runtime-closure.ts",
@@ -12846,6 +13962,30 @@
       "reason": "Check the explicitly selected runtime manifest and declared peers, including source-built pinned dependencies; legacy Agent preset validation becomes explicit rather than mandatory for every product."
     },
     {
+      "path": "scripts/verify-ssh-helper-artifact.ts",
+      "before": {
+        "path": "scripts/verify-ssh-helper-artifact.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9026,
+        "sha256": "b6615bafeaf336148787c47c8e6f529701278c982effdaff4dcb45680a67c155"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
+      "path": "scripts/verify-ssh-helper-ssh.ts",
+      "before": {
+        "path": "scripts/verify-ssh-helper-ssh.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6418,
+        "sha256": "a5ce9c684c20384b5f6f0ac26d360521d4e12541171a9a5821b7ba164e823a64"
+      },
+      "after": null,
+      "reason": "Remove the unused SSH connection, remote providers, helper executable and dedicated release tools after verifying no incoming package imports and no YouDub runtime, type or retained-test dependency."
+    },
+    {
       "path": "tsconfig.base.json",
       "before": {
         "path": "tsconfig.base.json",
@@ -12858,10 +13998,10 @@
         "path": "tsconfig.base.json",
         "type": "file",
         "executable": false,
-        "size": 49342,
-        "sha256": "add2a2a13b34c60e23758b7ae81fa6909ac3fbe08de4513e0a510a1ebf79c196"
+        "size": 48822,
+        "sha256": "23479131aec76ee5558d74128d1817b8f3b0820d2f12d40cd848430315c46f42"
       },
-      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "tsconfig.client.json",
@@ -12894,10 +14034,10 @@
         "path": "tsconfig.host.json",
         "type": "file",
         "executable": false,
-        "size": 26787,
-        "sha256": "68d87b21e238fb7f6dfd4673a97fcc58b335bf98df6cfdad6bb555dc7d641dce"
+        "size": 26515,
+        "sha256": "85d54e0616243da0df1b1175b2332415b6a0f214b41e7dd6802f243c63354da7"
       },
-      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "vitest.config.ts",
@@ -12906,10 +14046,10 @@
         "path": "vitest.config.ts",
         "type": "file",
         "executable": false,
-        "size": 20949,
-        "sha256": "55eda800d404e6cc9d0893eb760e2a709c1e7123386d65c5302602badc1d546a"
+        "size": 20925,
+        "sha256": "8c8808c07d58156555545d1dd65c38cd7aa8ec8d4240e5ba09afb2dce5065f38"
       },
-      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption."
+      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures."
     },
     {
       "path": "vitest.shared.ts",

@@ -15,8 +15,8 @@ it('fails when the execution world cannot read the source bootstrap', () => {
 })
 
 it('uses a remote embedded worker when the client runs ordinary Node', () => {
-  const launch = resolveLaunch({ kind: 'embedded', executable: '/remote/dsh-ssh-helper' })
-  expect(launch).toEqual({ kind: 'embedded', executable: '/remote/dsh-ssh-helper' })
+  const launch = resolveLaunch({ kind: 'embedded', executable: '/remote/worker-runtime' })
+  expect(launch).toEqual({ kind: 'embedded', executable: '/remote/worker-runtime' })
   expect(bootstrapArgs(noMapping, launch, 2048)).toEqual(['2048'])
 })
 

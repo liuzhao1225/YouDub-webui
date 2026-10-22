@@ -395,9 +395,11 @@ describe('package payload constraints', () => {
   })
 })
 
-it('publishes CLI runtime declarations and rejects a payload that omits them', () => {
+it('keeps the profile runner private and rejects a payload that omits runtime declarations', () => {
   const manifest = JSON.parse(readFileSync(new URL('../apps/cli/package.json', import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
   expect(checkWorkspaceManifest({ dir: 'apps/cli', manifest })).toEqual([])
+  expect(checkWorkspaceManifest({ dir: 'apps/cli', manifest: { ...manifest, private: false } }))
+    .toEqual([expect.stringContaining('@deepseek-ai/dsh: package.json must set "private": true')])
   expect(checkWorkspaceManifest({ dir: 'apps/cli', manifest: { ...manifest, files: ['lib/*.js'] } }))
     .toEqual([expect.stringContaining('@deepseek-ai/dsh: package.json files must be ["lib/*.js","lib/types/*.d.ts"]')])
 })

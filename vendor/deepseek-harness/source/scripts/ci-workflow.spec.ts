@@ -715,7 +715,6 @@ describe('CI workflow', () => {
     const NOT_PUSH_REACHABLE = new Set([
       "github.event_name == 'workflow_dispatch' && inputs.suite == 'larger-runner-benchmark'",
       "github.event_name == 'workflow_dispatch' && inputs.suite == 'consolidated-runner-benchmark'",
-      "github.event_name == 'workflow_dispatch' && inputs.suite == 'ssh-helper'",
     ])
     const pushReachable = Object.entries(workflow.jobs)
       .filter(([, job]) => {
@@ -799,104 +798,6 @@ describe('CI workflow', () => {
       },
     })
     expect(aggregate.needs).toContain('python-runtime')
-  })
-
-  it('builds SSH executables only for explicit manual or release requests', () => {
-    const ci = loadWorkflow('.github/workflows/ci.yml')
-    if (!isRecord(ci.jobs)) throw new Error('PR CI must define jobs')
-    expect(Object.values(ci.jobs)).not.toContainEqual(expect.objectContaining({ uses: './.github/workflows/build-exe-for-ssh-helper.yml' }))
-    expect(workflowJob(ci, 'all-checks-passed').needs).not.toContain('ssh-helper')
-    const master = workflowJob(loadWorkflow('.github/workflows/ci-master.yml'), 'ssh-helper')
-    if (typeof master.if !== 'string') throw new Error('SSH manual caller must define its trigger condition')
-    for (const [event, suite, expected] of [
-      ['push', 'ssh-helper', false], ['pull_request', 'ssh-helper', false],
-      ['workflow_dispatch', 'larger-runner-benchmark', false], ['workflow_dispatch', 'ssh-helper', true],
-    ] as const) {
-      expect(runInNewContext(master.if, { github: { event_name: event, ref: 'refs/heads/master' }, inputs: { suite } }, { timeout: 1000 })).toBe(expected)
-    }
-    expect(master.with).toEqual({ targets: 'node24-linux-x64,node24-linux-arm64,node24-macos-arm64,node24-macos-x64' })
-    const workflow = loadWorkflow('.github/workflows/build-exe-for-ssh-helper.yml')
-    if (!isRecord(workflow.on)) throw new Error('SSH builder must define triggers')
-    expect(Object.keys(workflow.on).sort()).toEqual(['workflow_call', 'workflow_dispatch'])
-  })
-
-  it('requires SSH helper acceptance before uploading artifacts or publishing', () => {
-    const workflow = loadWorkflow('.github/workflows/build-exe-for-ssh-helper.yml')
-    const build = workflowJob(workflow, 'build')
-    if (!Array.isArray(build.steps)) throw new Error('SSH build must define its verification steps')
-    const steps = build.steps.filter(isRecord)
-    const artifact = steps.findIndex(step => String(step.run).includes('scripts/verify-ssh-helper-artifact.ts'))
-    const transport = steps.findIndex(step => String(step.run).includes('scripts/verify-ssh-helper-ssh.ts'))
-    const landlock = steps.findIndex(step => String(step.run).includes('--backend=landlock-run'))
-    const upload = steps.findIndex(step => String(step.uses).startsWith('actions/upload-artifact@'))
-    expect(artifact).toBeGreaterThan(-1)
-    expect(landlock).toBeGreaterThan(artifact)
-    expect(transport).toBeGreaterThan(artifact)
-    expect(upload).toBeGreaterThan(transport)
-    for (const index of [artifact, transport, landlock, upload]) expect(steps[index]).not.toHaveProperty('continue-on-error', true)
-    const publish = loadWorkflow('.github/workflows/publish-ssh-helper.yml')
-    expect(publish.permissions).toEqual({ contents: 'read' })
-    expect(workflowJob(publish, 'build')).toMatchObject({ needs: 'validate', with: { release: true } })
-    const verify = workflowJob(publish, 'verify')
-    expect(verify.needs).toEqual(['validate', 'build'])
-    expect(verify).not.toHaveProperty('if')
-    expect(verify).not.toHaveProperty('permissions')
-    if (!Array.isArray(verify.steps)) throw new Error('Release verification must define steps')
-    const verification = verify.steps.findIndex(step => isRecord(step) && String(step.run).includes('scripts/ssh-helper/release.ts'))
-    const checksums = verify.steps.findIndex(step => isRecord(step) && String(step.uses).startsWith('actions/upload-artifact@'))
-    expect(verification).toBeGreaterThan(-1)
-    expect(checksums).toBeGreaterThan(verification)
-    expect(verify.steps[verification]).not.toHaveProperty('continue-on-error', true)
-    const publication = workflowJob(publish, 'publish')
-    expect(publication).toMatchObject({ if: 'inputs.publish', needs: ['validate', 'verify'], permissions: { contents: 'write' } })
-    for (const requested of [false, true]) {
-      expect(runInNewContext(String(publication.if), { inputs: { publish: requested } }, { timeout: 1000 })).toBe(requested)
-    }
-  })
-
-  it('validates any ref by default but refuses publication without the matching SSH release tag', () => {
-    const workflow = loadWorkflow('.github/workflows/publish-ssh-helper.yml')
-    if (!isRecord(workflow.on)) throw new Error('SSH release must define triggers')
-    expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])
-    expect(workflowEvent(workflow, 'workflow_dispatch').inputs).toMatchObject({ publish: { type: 'boolean', default: false } })
-    const validate = workflowJob(workflow, 'validate')
-    expect(validate.steps).toContainEqual(expect.objectContaining({ id: 'source', env: { PUBLISH: '${{ inputs.publish }}' } }))
-    const source = nodeStepSource(validate, 'source')
-    const evaluate = (publish: boolean, type: string, name: string): string => {
-      let output = ''
-      runInNewContext(source, {
-        process: { env: { PUBLISH: String(publish), GITHUB_REF_TYPE: type, GITHUB_REF_NAME: name, GITHUB_OUTPUT: 'output' } },
-        readFileSync: () => JSON.stringify({ version: '1.2.3' }),
-        execFileSync: () => `${'a'.repeat(40)}\n`,
-        appendFileSync: (_path: string, text: string) => { output += text },
-      }, { timeout: 1000 })
-      return output
-    }
-    const expected = `version=1.2.3\ncommit=${'a'.repeat(40)}\n`
-    expect(evaluate(false, 'branch', 'worktree/helper')).toBe(expected)
-    expect(evaluate(false, 'tag', 'arbitrary-tag')).toBe(expected)
-    expect(evaluate(true, 'tag', 'dsh-v1.2.3')).toBe(expected)
-    for (const [type, name] of [['branch', 'dsh-v1.2.3'], ['tag', 'dsh-v1.2.2'], ['tag', 'python-v1.2.3']] as const) {
-      expect(() => evaluate(true, type, name)).toThrow('Publication requires the matching dsh-v<version> tag')
-    }
-  })
-
-  it('validates the SSH native matrix before allocating runners', () => {
-    const plan = workflowJob(loadWorkflow('.github/workflows/build-exe-for-ssh-helper.yml'), 'plan')
-    const source = nodeStepSource(plan, 'targets')
-    const evaluate = (requested: string): unknown => {
-      let output = ''
-      runInNewContext(source, {
-        process: { env: { REQUESTED_TARGETS: requested, GITHUB_OUTPUT: 'output' } },
-        appendFileSync: (_path: string, text: string) => { output += text },
-      }, { timeout: 1000 })
-      return JSON.parse(output.slice('matrix='.length))
-    }
-    expect(evaluate('')).toHaveLength(4)
-    expect(evaluate('node24-linux-arm64')).toEqual([{ target: 'node24-linux-arm64', runner: 'ubuntu-24.04-arm' }])
-    for (const invalid of ['node24-linux-arm64,node24-linux-arm64', 'node24-win-x64', 'node24-linux-x64,', ' ']) {
-      expect(() => evaluate(invalid)).toThrow('Invalid or duplicate')
-    }
   })
 
   it('keeps every Vitest project process-isolated on native Windows', () => {
