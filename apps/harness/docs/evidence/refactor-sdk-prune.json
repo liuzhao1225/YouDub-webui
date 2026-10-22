@@ -25,6 +25,12 @@
     "runtimeSourcePackages": 78
   },
   "validation": {
+    "ci": {
+      "commit": "3d20efcb12046962f7579fb5df696568ec2eb4d8",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39767481216",
+      "status": "completed",
+      "conclusion": "success"
+    },
     "frameworkBuild": {
       "passed": 7,
       "failed": 0,
@@ -73,6 +79,6 @@
   "limits": [
     "This is a framework-pruning regression; it does not replace the remaining P0-P7 product/installation/media-quality audit.",
     "The default shared source-build directory and original validation application were left unchanged to avoid disrupting concurrent work.",
-    "No packaging or release. Branch CI for this batch is pending."
+    "No packaging or release. Branch CI passed for commit 3d20efcb."
   ]
 }

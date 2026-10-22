@@ -395,4 +395,4 @@ Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通�
 
 独立 `com.youdub.review-validation` 使用本批框架、原已验证业务 bundle，实际打开原版首页、扩展、通用/模型设置和 zoo 任务。Host 的 75 个 workspace 包运行闭包成立，78 个源码包链接均指向新构建。原任务仍为修订 38、9/9 完成及四个产物；macOS 保存框再次导出的 353 字节 SRT 与前次结果一致，SHA-256 为 `d2c1581332142a7b518e622260b1a863962fc1635bf8168a711b5277a9455c78`。本批没有重新执行媒体链或进行试听，不据此扩大质量验收结论。
 
-[结构化证据](evidence/refactor-sdk-prune.json) 记录构建、测试、运行来源和本机截图。前一批安装源兼容与原生九节点记录随 `04cbf740` 的[macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39763710459) 已通过；本批分支 CI 尚待提交后验证。整体 P6 及 P0–P7 剩余矩阵继续开放，两份飞书文档仍按用户要求在全部完成后更新。
+[结构化证据](evidence/refactor-sdk-prune.json) 记录构建、测试、运行来源和本机截图。前一批安装源兼容与原生九节点记录随 `04cbf740` 的[macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39763710459) 已通过；本批 `3d20efcb` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39767481216) 也已通过。整体 P6 及 P0–P7 剩余矩阵继续开放，两份飞书文档仍按用户要求在全部完成后更新。
