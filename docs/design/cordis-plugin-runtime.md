@@ -16,7 +16,7 @@ npm --prefix apps/web ci --registry=https://registry.npmmirror.com
 
 默认组合先启动 HTTP 与环境准备服务。它识别系统及架构，复用或安装 Python 3.12、创建虚拟环境、安装基础依赖，完成后加载工作台插件。工作流页面按图中节点检查并显式准备媒体依赖、FFmpeg/ffprobe、分句资源和模型，显示真实进度与失败原因。资源准备失败保留工作台和图编辑入口，后续准备复用已有资源。
 
-Python、FFmpeg 使用阿里 npmmirror，Python 依赖使用阿里 PyPI，CPU/CUDA/Linux ROCm 的 Torch 使用阿里 PyTorch 镜像；Windows ROCm 7.2.1 专用包暂无对应镜像，保留 AMD 官方源并在准备界面标明。Whisper、VoxCPM2、Demucs、Qwen 模型来自固定版本的 ModelScope 仓库，NLTK 分句资源来自 ModelScope 阿里云 OSS。新安装的 Python 解释器与 venv 均位于 YouDub 数据目录的 `runtime/` 下，不依赖系统 Python。应用自动检测平台和已有资源，缺少时从上述来源直接下载，不读取代理环境变量。安装包和软件更新继续使用 GitHub。下载错误会停止对应项目并显示原因。模型文件与版本见 `packages/builtin/src/setup-models.json`；新下载文件通过 SHA-256 校验后才就绪。设备和模型选择仍保存在 workflow 配置中。
+Python、FFmpeg、NLTK 和模型优先使用上游官方来源；每个来源先做最长约 3 秒的连通性测试，官方来源不可用或实际下载遇到网络错误时，依次测试已配置的阿里镜像或 ModelScope。源测试、原始错误和来源切换均写入可展开的下载与安装日志。同一模型的来源测试短暂缓存，文件仍需通过清单大小及 SHA-256 校验。Python 解释器与 venv 均位于 YouDub 数据目录的 `runtime/` 下，依赖由该 venv 内的 uv 安装，缓存位于 `runtime/uv-cache/`；继续使用现有分组 requirements。准备界面展示实际文件字节数、速度、当前安装活动及已用时间。下载或安装后的执行/导入验证通过才标记就绪；校验错误、磁盘错误和用户取消直接停止对应操作。设备和模型选择仍保存在 workflow 配置中。
 
 工作流资源准备将选中的模型下载到以下位置，官方 provider 扫描时只读取本地资产：
 

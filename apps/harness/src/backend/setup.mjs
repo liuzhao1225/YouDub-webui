@@ -51,7 +51,8 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
     domain.start(); phase = 'ready'; failure = undefined;
   })().catch(error => { phase = 'failed'; failure = error.message; ctx.logger.error(error); }).finally(() => { finishing = undefined; });
   const snapshot = async () => {
-    const inventory = domain && await domain.resources.resourceInventory(), resources = inventory?.resources ?? checkedResources;
+    const inventory = domain && await domain.resources.resourceInventory();
+    let resources = inventory?.resources ?? checkedResources;
     if (resources && !selectionRequired && phase !== 'ready' && phase !== 'failed') {
       if (fullyReady(resources)) await finish();
       else if (resources.status === 'ready') {
@@ -62,9 +63,15 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
         phase = resources.models.some(model => model.status === 'failed') ? 'models' : 'failed';
       } else phase = resources.environment.every(step => step.status === 'ready') ? 'models' : 'environment';
     }
+    const steps = (resources?.environment ?? environment?.steps ?? []).map(step => {
+      const bootstrap = environment?.steps.find(initial => initial.id === step.id)?.log;
+      const log = [...new Set([bootstrap, step.log].filter(Boolean))].join('\n');
+      return log ? { ...step, log } : step;
+    });
+    if (resources) resources = { ...resources, environment: steps };
     const items = inventory ? modelItems(inventory) : [];
     return { phase, version: config.version, platform: process.platform, arch: process.arch,
-      osVersion: release(), homeDir: homedir(), environment: resources?.environment ?? environment?.steps ?? [],
+      osVersion: release(), homeDir: homedir(), environment: steps,
       models: resources?.models ?? initialModels.map(model => inventory?.models.find(item => item.id === model.id) ?? model), ...(resources ? { resources } : {}),
       resourceSelection: { required: selectionRequired, selections: selected ?? items.map(selectionOf), items, prepared: phase === 'ready' },
       ...(installation ? { installation: { required: phase === 'installation', path: config.root } } : {}),

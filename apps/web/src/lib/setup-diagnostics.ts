@@ -47,6 +47,8 @@ export function setupReport(state?: SetupState | null, requestError = '') {
     if (step.status === 'failed' && step.detail && step.detail !== state?.error) errors.push(`${step.name} 错误:`, step.detail)
   }
   for (const model of state?.models || []) if (model.error) errors.push(`${model.name} 错误:`, model.error)
+  const logs = [...(state?.environment || []), ...(state?.models || [])].filter(item => item.log)
+  if (logs.length) { lines.push('', '下载与安装日志:'); for (const item of logs) lines.push(`[${item.name}]`, item.log!) }
   if (errors.length) lines.push('', '错误日志:', ...errors)
   return redactDiagnostics(lines.join('\n'), state?.token, state?.homeDir)
 }

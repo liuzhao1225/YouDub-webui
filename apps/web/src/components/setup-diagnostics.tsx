@@ -1,7 +1,7 @@
 'use client'
 
 import { copyText } from '@/lib/clipboard'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, ExternalLink } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { setupIssue, setupReport } from '@/lib/setup-diagnostics'
@@ -14,6 +14,9 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
   const [copied, setCopied] = useState('')
   const [copyError, setCopyError] = useState('')
   const report = setupReport(state, requestError)
+  const log = useRef<HTMLTextAreaElement>(null)
+  const follow = useRef(true)
+  useEffect(() => { if (log.current && follow.current) log.current.scrollTop = log.current.scrollHeight }, [report])
   const issue = setupIssue(report, state)
   const failed = Boolean(requestError || state?.error || state?.resources?.status === 'failed' || state?.environment.some(step => step.status === 'failed') || state?.models.some(model => model.status === 'failed'))
   async function copy() {
@@ -34,7 +37,7 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
     <details open={failed || Boolean(copyError)}>
       <summary className="cursor-pointer text-xs text-muted-foreground">{text('setup.viewLogs')}</summary>
       <div role={failed ? 'alert' : undefined} className="mt-3">
-        <textarea aria-label={text('setup.logContent')} readOnly value={report} rows={10} className="w-full resize-y rounded-lg border border-border bg-background p-3 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        <textarea ref={log} aria-label={text('setup.logContent')} readOnly value={report} rows={10} onScroll={event => { const node = event.currentTarget; follow.current = node.scrollTop + node.clientHeight >= node.scrollHeight - 1 }} className="w-full resize-y rounded-lg border border-border bg-background p-3 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
       </div>
     </details>
   </section>

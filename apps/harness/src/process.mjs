@@ -38,6 +38,28 @@ function assertExit(handle, request, exit, code, stderrText) {
 }
 
 export async function runProcess(subprocess, request) {
+  if (request.onOutput) return usingProcess(subprocess, request, {
+    stdin: request.input === undefined ? 'ignore' : { data: request.input }, stdout: 'pipe', stderr: 'pipe',
+  }, async handle => {
+    const output = { stdout: '', stderr: '' }; let stderrLossy = false;
+    const read = async name => {
+      const decoder = new StringDecoder('utf8');
+      const consume = text => {
+        output[name] += text;
+        if (name === 'stdout' && Buffer.byteLength(output.stdout) > 1024 * 1024) throw errorWithCode('PROCESS_OUTPUT_TOO_LARGE', `${request.command} produced more than 1 MiB of stdout`);
+        if (name === 'stderr' && output.stderr.length > 1024 * 1024) { output.stderr = output.stderr.slice(-1024 * 1024); stderrLossy = true; }
+        if (text) request.onOutput(text, name);
+      };
+      for await (const chunk of handle[name]) consume(decoder.write(chunk));
+      consume(decoder.end());
+    };
+    let exit;
+    try { [, , exit] = await Promise.all([read('stdout'), read('stderr'), handle.done]); }
+    catch (error) { handle.terminate(); throw error; }
+    if (stderrLossy) output.stderr = '[earlier stderr omitted]\n' + output.stderr;
+    assertExit(handle, request, exit, 'PROCESS_EXITED', output.stderr);
+    return output;
+  });
   return usingProcess(subprocess, request, {
     stdin: request.input === undefined ? 'ignore' : { data: request.input },
     stdout: { maxBytes: 1024 * 1024 }, stderr: { maxBytes: 1024 * 1024 },

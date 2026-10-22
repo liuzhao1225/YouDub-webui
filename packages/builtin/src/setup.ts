@@ -5,7 +5,7 @@ import { homedir, release } from 'node:os'
 import { join, resolve } from 'node:path'
 import { AppError, type CatalogService } from '@youdub/sdk'
 import { readJson, type HttpRequest } from './http.js'
-import { DownloadClient, fileSize } from './setup-download.js'
+import { DownloadClient, fileSize, sourceName } from './setup-download.js'
 import { EnvironmentSetup, type EnvironmentConfig, type DependencyGroup, type EnvironmentStep } from './setup-environment.js'
 import modelManifest from './setup-models.json' with { type: 'json' }
 import { parseWorkflowDocument } from './workflow-document.js'
@@ -16,7 +16,7 @@ export interface SetupConfig extends EnvironmentConfig { entries: EntryOptions[]
 type ModelStatus = 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
 export interface ModelDownload {
   id: string; name: string; variant: string; purpose: string; status: ModelStatus;
-  received: number; total: number; speed: number; source?: string; error?: string
+  received: number; total: number; speed: number; source?: string; error?: string; log?: string
 }
 export interface ResourceSelection { providerId: string; model?: string }
 export interface ResourceRequirement extends ResourceSelection {
@@ -375,17 +375,22 @@ export default class SetupService extends Service {
     const definition = modelManifest.find(item => item.id === id)!
     const controller = new AbortController()
     const signal = AbortSignal.any([this.stopping.signal, controller.signal])
-    model.status = 'downloading'; model.error = undefined; model.source = 'ModelScope'
-    this.ctx.logger.info(`${model.name} 下载源：ModelScope`)
+    model.status = 'downloading'; model.error = undefined; model.source = undefined; model.log = ''
     const promise = (async () => {
       let completed = 0, previousBytes = 0, previousTime = Date.now()
       for (const file of definition.files) {
         let firstProgress = true
-        await this.client.download(file, join(this.root(id), file.path), signal, bytes => {
+        await this.client.download({ ...file, sourceGroup: id }, join(this.root(id), file.path), signal, bytes => {
           model.received = completed + bytes
           if (firstProgress) { previousBytes = model.received; previousTime = Date.now(); firstProgress = false }
           const elapsed = (Date.now() - previousTime) / 1000
           if (elapsed >= 0.5) { model.speed = Math.max(0, (model.received - previousBytes) / elapsed); previousBytes = model.received; previousTime = Date.now() }
+        }, event => {
+          model.source = sourceName(event.url)
+          const line = `${new Date().toISOString()} ${event.status === 'failed' ? event.error : `${event.status === 'checking' ? '测试下载源' : '下载'}：${model.source} · ${file.path}`}\n`
+          const log = (model.log || '').replace(/^\[较早日志已省略\]\n/, '') + line
+          model.log = log.length > 64 * 1024 ? '[较早日志已省略]\n' + log.slice(-64 * 1024) : log
+          this.ctx.logger.info(line.trim())
         })
         completed += file.size
         previousBytes = completed; previousTime = Date.now()

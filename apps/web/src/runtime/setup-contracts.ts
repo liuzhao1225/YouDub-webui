@@ -2,11 +2,13 @@ import type { LocalizedText } from '@/plugin/contracts'
 
 export interface EnvironmentStep {
   id: string; name: string; status: 'pending' | 'running' | 'ready' | 'failed'; detail?: string; source?: string
+  phase?: 'downloading' | 'installing' | 'verifying'; progress?: { received: number; total: number; speed?: number }
+  activity?: string; log?: string; startedAt?: number; updatedAt?: number
 }
 export interface SetupModel {
   id: string; name: string; variant: string; purpose: string
   status: 'pending' | 'downloading' | 'paused' | 'ready' | 'failed'
-  received: number; total: number; speed: number; source?: string; error?: string
+  received: number; total: number; speed: number; source?: string; error?: string; log?: string
 }
 export type SetupAction = 'pause' | 'resume' | 'retry'
 export interface ResourceSelection { providerId: string; model?: string }

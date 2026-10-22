@@ -215,3 +215,24 @@ describe('first-run setup', () => {
     view.unmount(); vi.unstubAllGlobals()
   })
 })
+
+it('shows live environment bytes, elapsed time, source and expandable installation output', () => {
+  const start = Date.now() - 10_000
+  const environment: SetupState['environment'] = [
+    { id: 'python', name: 'Python 3.12', status: 'ready' },
+    { id: 'acceleration', name: 'GPU 与推理后端', status: 'running', source: 'PyPI', phase: 'downloading', activity: 'Downloading torch-2.8.0.whl', startedAt: start, updatedAt: start + 8000, progress: { received: 40e6, total: 100e6, speed: 2e6 }, log: 'Downloading torch-2.8.0.whl\nProgress 40000000 of 100000000' },
+    { id: 'dependencies', name: '运行依赖', status: 'pending' },
+  ]
+  const view = render(<SetupScreen state={{ ...state, phase: 'environment', environment }} onAction={vi.fn()} />)
+  expect(screen.getByRole('progressbar', { name: '环境准备进度' })).toHaveAttribute('aria-valuenow', '33')
+  expect(screen.getByRole('progressbar', { name: /推理运行库 下载进度|当前文件下载进度/ })).toHaveAttribute('aria-valuenow', '40')
+  expect(screen.getByText('Downloading torch-2.8.0.whl')).toBeVisible()
+  expect(screen.getByText(/已用时 1[01] 秒/)).toBeVisible()
+  const toggle = screen.getByText('下载与安装日志')
+  fireEvent.click(toggle)
+  expect(toggle.closest('details')).toHaveAttribute('open')
+  expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('Progress 40000000 of 100000000')
+  view.rerender(<SetupScreen state={{ ...state, phase: 'environment', environment: environment.map(step => step.id === 'acceleration' ? { ...step, progress: { received: 80e6, total: 100e6, speed: 2e6 }, log: step.log + '\nProgress 80000000 of 100000000' } : step) }} onAction={vi.fn()} />)
+  expect(screen.getByRole('progressbar', { name: /推理运行库 下载进度|当前文件下载进度/ })).toHaveAttribute('aria-valuenow', '80')
+  expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('Progress 80000000 of 100000000')
+})

@@ -1,4 +1,4 @@
-import { test } from 'node:test'
+import { test, beforeEach, type TestContext } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
 import { mkdtemp, mkdir, writeFile, readFile, cp, rm, open } from 'node:fs/promises'
@@ -12,6 +12,10 @@ import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
 import { builtinResources } from '../src/runtime-resources.js'
 import { runtimePaths } from '../../../apps/host/src/paths.js'
+
+// Installer processes are faked in these unit tests; source connectivity is tested separately.
+const actualFetch = globalThis.fetch
+beforeEach(t => { (t as TestContext).mock.method(globalThis, 'fetch', async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => String(url).startsWith('https://') ? new Response('') : actualFetch(url, init)) })
 
 function probeResult(action: string) {
   if (action === 'dependencies') return { missing: [] }
@@ -56,8 +60,9 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
     extracted = true
     throw stop
   } } } as unknown as Context
-  t.mock.method(client, 'download', async (asset: { url: string }, destination: string) => {
-    assert.ok(asset.url.startsWith('https://registry.npmmirror.com/-/binary/python-build-standalone/'))
+  t.mock.method(client, 'download', async (asset: { url: string; mirrors?: string[] }, destination: string) => {
+    assert.ok(asset.url.startsWith('https://github.com/astral-sh/python-build-standalone/releases/download/'))
+    assert.ok(asset.mirrors?.[0]?.startsWith('https://registry.npmmirror.com/-/binary/python-build-standalone/'))
     await mkdir(join(data, 'runtime', 'python'), { recursive: true }); await cp(fixture, destination)
   })
   const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', windows ? 'Scripts/python.exe' : 'bin/python') }, client, new AbortController().signal)
@@ -193,7 +198,8 @@ test('private dependency installation clears machine pip destinations and instal
   const ctx = { logger: { info() {} }, youdubWorker: { run: async (request: any) => {
     requests.push(request)
     const { args } = request
-    if (args[1] === 'pip') {
+    if (args.some((arg: string) => arg.startsWith('uv=='))) return { stdout: 'Installed uv', stderr: '' }
+    if ((args[1] === 'pip' || args[1] === 'uv' && args[2] === 'pip')) {
       assert.equal(request.command, python)
       assert.equal(request.env.PIP_TARGET, ''); assert.equal(request.env.PIP_PREFIX, '')
       assert.equal(request.env.PIP_ROOT, ''); assert.equal(request.env.PIP_USER, '0')
@@ -272,7 +278,8 @@ test('base setup opens the workbench before optional packages/models and prepare
   const ctx = new Context()
   const app = await ctx.plugin(async function setupTest(owner) {
     owner.reflect.provide('youdubWorker', { run: async ({ args }: { args: string[] }) => {
-      if (args[1] === 'pip') {
+      if (args.some(arg => arg.startsWith('uv=='))) return { stdout: 'Installed uv', stderr: '' }
+      if ((args[1] === 'pip' || args[1] === 'uv' && args[2] === 'pip')) {
         assert.ok(args.includes(join(resolve('.'), 'backend', 'requirements', 'whisper.txt')))
         assert.ok(!args.some(arg => /voxcpm|demucs|qwen/.test(arg)))
         installed = true
@@ -471,4 +478,79 @@ test('failed selected model download retains the error and leaves the workbench 
   assert.match(failed.error!, /ModelScope connection interrupted after 123 bytes/)
   assert.ok(errors.includes(original))
   assert.equal(ctx.setup.snapshot().phase, 'ready')
+})
+
+test('uv bootstrap and dependency installation expose live output and select the mirror only after a failed official probe', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-live-install-')), python = join(root, 'python')
+  await writeFile(python, 'test Python')
+  const client = new DownloadClient(), requests: any[] = [], indexes: string[] = []
+  t.after(async () => { await client.close(); await rm(root, { recursive: true }) })
+  t.mock.method(globalThis, 'fetch', async (url: any) => { indexes.push(String(url)); return new Response('', { status: String(url).startsWith('https://pypi.org/') ? 503 : 200 }) })
+  let installed = false, release: (() => void) | undefined
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async (request: any) => {
+    requests.push(request)
+    const args: string[] = request.args
+    if (args.some(arg => arg.startsWith('uv=='))) {
+      request.onOutput('Downloading uv-0.13.0.whl\nProgress 20 of ', 'stdout')
+      request.onOutput('100\n', 'stdout')
+      await new Promise<void>(resolve => { release = resolve })
+      return { stdout: 'installed uv', stderr: '' }
+    }
+    if (args[1] === 'uv' && args[2] === 'pip') {
+      request.onOutput('Downloading torch (100MiB)\nDownloading sympy (6MiB)\nDownloaded sympy\n', 'stderr')
+      assert.equal(setup.steps.find(step => step.status === 'running')!.phase, 'downloading')
+      assert.equal(setup.steps.find(step => step.status === 'running')!.activity, '下载中：torch (100MiB)')
+      installed = true; request.onOutput('Downloaded torch\nResolved 3 packages\nInstalled 3 packages\n', 'stderr')
+    }
+    if (args[1] === 'backend.workers.setup_probe') return { stdout: JSON.stringify({ missing: installed ? [] : ['pydantic'] }), stderr: '' }
+    return { stdout: args[0] === '-c' && args[1]!.includes('find_spec') ? '0' : args[1] === 'uv' ? 'uv 0.13.0' : '3.12.15', stderr: '' }
+  } } } as unknown as Context
+  const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
+  const pending = setup.prepare(['base'])
+  await waitFor(() => Boolean(release))
+  const step = setup.steps.find(step => step.status === 'running')!
+  assert.equal(step.phase, 'downloading'); assert.equal(step.progress?.received, 20); assert.equal(step.progress?.total, 100)
+  assert.ok(step.startedAt && step.updatedAt); assert.match(step.activity!, /Downloading uv/)
+  assert.match(step.log!, /503/); assert.match(step.log!, /Progress 20 of 100/)
+  release!(); await pending
+  const uv = requests.find(request => request.args[1] === 'uv' && request.args[2] === 'pip')
+  assert.equal(uv.args[uv.args.indexOf('--python') + 1], python)
+  assert.equal(uv.args[uv.args.indexOf('--index-url') + 1], 'https://mirrors.aliyun.com/pypi/simple/')
+  assert.equal(uv.env.UV_CACHE_DIR, join(root, 'runtime', 'uv-cache'))
+  assert.deepEqual(indexes.slice(0, 2), ['https://pypi.org/simple/uv/', 'https://mirrors.aliyun.com/pypi/simple/uv/'])
+  assert.match(step.log!, /Installed 3 packages/)
+})
+
+for (const failure of ['probe', 'download', 'resolver']) test(`Torch ${failure} keeps official-first selection and visible failures`, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'youdub-torch-source-')), python = join(root, 'python')
+  await writeFile(python, 'test Python')
+  const client = new DownloadClient(), urls: string[] = [], installs: string[][] = []
+  t.after(async () => { await client.close(); await rm(root, { recursive: true }) })
+  t.mock.method(globalThis, 'fetch', async (url: any) => {
+    urls.push(String(url))
+    return new Response('', { status: failure === 'probe' && String(url).includes('download.pytorch.org') ? 503 : 200 })
+  })
+  const original = new Error(failure === 'download' ? 'Failed to download torch: HTTP status 503' : 'No solution found: incompatible dependencies')
+  const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ args }: any) => {
+    if (args[1] === 'uv' && args[2] === 'pip') {
+      installs.push(args)
+      if (args.includes('--index')) throw original
+    }
+    if (args[1] === 'backend.workers.setup_probe') return { stdout: JSON.stringify(args[2] === 'acceleration-plan'
+      ? { backend: 'cpu', installed: false, variant: 'cpu', version: '2.8.0', codec: '0.7.0', findLinks: 'https://download.pytorch.org/whl/cpu/', prerequisites: [], packages: [], detail: 'CPU' }
+      : args[2] === 'acceleration' ? { backend: 'cpu', detail: 'CPU verified' } : { missing: [], ready: true }), stderr: '' }
+    return { stdout: args[0] === '-c' && args[1].includes('find_spec') ? '1' : '3.12.15', stderr: '' }
+  } } } as unknown as Context
+  const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
+  const prepare = setup.prepare(['whisper'])
+  if (failure === 'resolver') {
+    await assert.rejects(prepare, error => error === original)
+    assert.ok(!urls.some(url => url.includes('aliyun')))
+  } else {
+    await prepare
+    assert.ok(urls.indexOf('https://download.pytorch.org/whl/cpu/torch/') < urls.indexOf('https://mirrors.aliyun.com/pytorch-wheels/cpu/'))
+    assert.ok(installs.at(-1)!.includes('https://mirrors.aliyun.com/pytorch-wheels/cpu/'))
+    assert.match(setup.steps.find(step => step.id === 'acceleration')!.log!, /503/)
+    if (failure === 'download') assert.ok(installs[0]!.includes('https://download.pytorch.org/whl/cpu/'))
+  }
 })

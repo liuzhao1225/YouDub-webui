@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { ArrowDownToLine, Check, CircleAlert, Cpu, Loader2, Moon, Pause, Play, RotateCcw, Sun } from 'lucide-react'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,15 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfig
 } & SetupScreenOptions) {
   const text = useText()
   const [light, setLight] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
+  const environment = state.resources?.environment ?? state.environment
+  const currentStep = environment.find(step => step.status === 'running')
+  const startedAt = currentStep?.startedAt
+  useEffect(() => {
+    if (!startedAt) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [startedAt])
   const selection = state.resourceSelection
   const awaitingPreparation = selection?.required === true
   const requiredResources = selection?.items.filter(item => item.downloadId).map(({ providerId, model }) => ({ providerId, ...(model ? { model } : {}) })) ?? []
@@ -58,7 +67,13 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfig
         {state.models.length > 0 && <><span className="text-subtle-foreground">/</span><span className={cn('inline-flex items-center gap-2', !environmentReady && 'text-muted-foreground')}>{state.phase === 'ready' && <Check className="size-4 text-brand-blue" />}{text('setup.models')}</span></>}
       </h1>
       {(!environmentReady || !state.models.length) && <section aria-label={text('setup.environment')} className="mb-5 divide-y divide-border rounded-2xl border border-border bg-card px-5 shadow-card">
-        <EnvironmentSteps steps={state.environment} />
+        {environment.length > 0 && <div className="space-y-2 py-4">
+          <div className="flex flex-wrap justify-between gap-2 text-xs tabular-nums"><span>{text('setup.environmentCompleted', { complete: environment.filter(step => step.status === 'ready').length, total: environment.length })}</span>{startedAt && <span className="text-muted-foreground">{text('setup.elapsed', { seconds: Math.max(0, Math.floor((now - startedAt) / 1000)) })}{currentStep.updatedAt && <> · {text('setup.lastOutput', { seconds: Math.max(0, Math.floor((now - currentStep.updatedAt) / 1000)) })}</>}</span>}</div>
+          <Progress value={environment.filter(step => step.status === 'ready').length / environment.length} label={text('setup.environmentProgress')} />
+          {currentStep?.activity && <p className="break-all text-xs text-muted-foreground">{currentStep.activity}</p>}
+          {currentStep?.source && <p className="text-xs text-muted-foreground">{currentStep.source}</p>}
+        </div>}
+        <EnvironmentSteps steps={environment} />
       </section>}
       {environmentReady && state.environment.find(step => step.id === 'acceleration')?.detail && <p className="mb-5 text-xs text-muted-foreground">{state.environment.find(step => step.id === 'acceleration')!.detail}</p>}
       {state.models.length > 0 && <section aria-label={text('setup.downloads')} className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
@@ -77,12 +92,12 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfig
         </div>
       </section>}
       </>}
-      <SetupDiagnostics state={state} />
       <div className="mt-5"><a href={examplesHref} onClick={onOpenExamples ? (event) => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onOpenExamples() } } : undefined} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{text('setup.examples')}</a></div>
       <div className="mt-5 flex items-center justify-between gap-3">
         <span className="text-xs tabular-nums text-muted-foreground">{awaitingPreparation || state.phase === 'starting' ? null : state.models.length ? <>{sizeLabel(received)} / {sizeLabel(total)}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : ''}</span>
         {verifying ? <Loader2 aria-label={text('setup.verifying')} className="size-5 animate-spin text-brand-pink" /> : awaitingPreparation ? <Button size="lg" disabled={busy || state.phase !== 'models' || !requiredResources.length || !onPrepare} onClick={() => onPrepare?.(requiredResources)}><ArrowDownToLine />{text('setup.prepareAll')}</Button> : state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />{text('setup.prepareAgain')}</Button> : state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? text('setup.pauseAll') : failed ? text('setup.retryDownloads') : text('setup.resumeDownloads')}</Button> : state.phase === 'starting' && <Loader2 aria-label={text('setup.starting')} className="size-5 animate-spin text-brand-pink" />}
       </div>
+      <SetupDiagnostics state={state} />
       </>}
     </PageContainer>
   </div>

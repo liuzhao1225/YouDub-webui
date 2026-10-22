@@ -14,7 +14,7 @@ after(() => source.unregister());
 const normalize = value => [...new Map(value.map(item => [JSON.stringify(item), item])).values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
 async function fixture(t, savedState = {}, readyModels = [], installation) {
-  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function () { this.steps = [{ id: 'python', status: 'ready' }]; });
+  t.mock.method(EnvironmentSetup.prototype, 'prepare', async function () { this.steps = [{ id: 'python', status: 'ready' }, { id: 'dependencies', status: 'ready', log: 'bootstrap: installed uv and base dependencies' }]; });
   t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ ready: true }));
   const events = new Map(), routes = new Map(), disposers = [], errors = [], writes = [], actions = [], calls = [];
   const transport = { register(method, path, handler) { routes.set(method + ' ' + path, handler); return () => routes.delete(method + ' ' + path); }, json(request, status, value) { request.result = { status, value }; } };
@@ -67,6 +67,7 @@ test('first run requires all four source models and preserves explicit start, pa
   const app = await fixture(t);
   let state = await app.request('GET');
   assert.equal(state.phase, 'models'); assert.equal(state.resourceSelection.required, true);
+  assert.match(state.environment.find(step => step.id === 'dependencies').log, /bootstrap: installed uv/);
   assert.deepEqual(state.models.map(model => model.id), ['whisper', 'voxcpm', 'demucs', 'qwen']);
   assert.deepEqual(state.resourceSelection.items, app.items);
   assert.equal(state.resourceSelection.selections.length, 6);
@@ -82,6 +83,9 @@ test('first run requires all four source models and preserves explicit start, pa
   const expected = normalize([...firstRunBaseResources, ...selections]);
   state = await app.request('POST', { action: 'prepare', selections });
   assert.deepEqual(app.calls, [expected]); assert.deepEqual(state.resourceSelection.selections, expected);
+  app.resources.environment[0].log = 'models: installed inference dependencies';
+  const logs = (await app.request('GET')).environment.find(step => step.id === 'dependencies').log;
+  assert.match(logs, /bootstrap: installed uv/); assert.match(logs, /models: installed inference/);
   assert.equal(state.resourceSelection.required, false); assert.equal(state.models.length, 4); assert.equal(state.models[0].received, 10);
   assert.deepEqual(app.writes[0].plugin.config, { resourceSelections: expected, resourcesPrepared: false });
   state = await app.request('POST', { action: 'pause', id: 'whisper' }); assert.equal(state.models[0].status, 'paused');

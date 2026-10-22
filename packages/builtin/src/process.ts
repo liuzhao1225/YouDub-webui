@@ -95,18 +95,25 @@ export default class Processes extends Service implements ProcessService {
     this.children.add(managed)
     return managed
   }
-  async run(request: ProcessRequest & { input?: string }) {
+  async run(request: Parameters<ProcessService['run']>[0]) {
     request.signal?.throwIfAborted()
     const child = this.launch(request)
-    let stdout = '', stopError: unknown, inputError: Error | undefined
+    let stdout = '', stopError: unknown, outputError: unknown, inputError: Error | undefined
+    const observe = (chunk: string, stream: 'stdout' | 'stderr') => {
+      if (outputError) return
+      try { request.onOutput?.(chunk, stream) }
+      catch (error) { outputError = error; void child.stop().catch(failure => { stopError = failure }) }
+    }
     child.child.stdout.setEncoding('utf8')
-    child.child.stdout.on('data', chunk => { stdout += chunk })
+    child.child.stdout.on('data', chunk => { stdout += chunk; observe(chunk, 'stdout') })
+    child.child.stderr.on('data', chunk => observe(chunk, 'stderr'))
     const abort = () => { void child.stop().catch(error => { stopError = error }) }
     request.signal?.addEventListener('abort', abort, { once: true })
     child.child.stdin.on('error', error => { inputError = error })
     child.child.stdin.end(request.input)
     try {
       const exit = await child.done
+      if (outputError) throw outputError
       if (stopError) throw stopError
       request.signal?.throwIfAborted()
       if (inputError) throw inputError

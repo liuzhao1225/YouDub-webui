@@ -23,6 +23,16 @@ test('YouDub uses real Harness subprocesses for batch, worker framing, failure a
       assert.equal((await runProcess(ctx.subprocess, { command: process.execPath, args: ['-e', 'process.stdout.write(process.cwd())'] })).stdout, process.cwd());
       await assert.rejects(runProcess(ctx.subprocess, request("process.stderr.write('writer unavailable');process.exit(7)")), error => error.code === 'PROCESS_EXITED' && /7.*\nwriter unavailable/s.test(error.message));
     });
+    await t.test('batch output is streamed before exit and retains UTF-8 and the original failure', async () => {
+      const output = []; let completed = false;
+      const result = await runProcess(ctx.subprocess, { ...request("process.stdout.write(Buffer.from([0xe4,0xb8]));setTimeout(()=>{process.stdout.write(Buffer.from([0xad,0xe6,0x96,0x87]));process.stderr.write('downloaded 20 bytes\\n');setTimeout(()=>process.exit(0),30)},30)"), onOutput(text, stream) { assert.equal(completed, false); output.push({ text, stream }); } });
+      completed = true;
+      assert.equal(result.stdout, '中文'); assert.equal(output.filter(row => row.stream === 'stdout').map(row => row.text).join(''), '中文');
+      assert.equal(output.filter(row => row.stream === 'stderr').map(row => row.text).join(''), 'downloaded 20 bytes\n');
+      await assert.rejects(runProcess(ctx.subprocess, { ...request("process.stderr.write('mirror connection failed');process.exit(9)"), onOutput() {} }), error => error.code === 'PROCESS_EXITED' && /9.*mirror connection failed/s.test(error.message));
+      const cause = new Error('output observer failed');
+      await assert.rejects(runProcess(ctx.subprocess, { ...request("process.stdout.write('ready');setInterval(()=>{},1000)"), onOutput() { throw cause; } }), error => error === cause);
+    });
     await t.test('worker progress and registered artifacts preserve the YouDub protocol', async () => {
       const progress = [], controller = new AbortController();
       const result = await runWorker(ctx.subprocess, request(workerScript("send('progress',{value:0.5,message:'recognizing'});send('result',{state:'completed',outputs:{transcript:{'$artifact':'transcript'}},artifacts:{transcript:{path:'transcript.json',schemaId:'transcript/v1'}}});process.exit(0);")), invocation, { ...context(controller.signal), progress: async (value, message) => progress.push({ value, message }) });

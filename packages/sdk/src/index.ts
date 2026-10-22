@@ -177,7 +177,7 @@ export interface FilesService {
 }
 export interface ProcessRequest { command: string; args: string[]; cwd?: string; env?: NodeJS.ProcessEnv; signal?: AbortSignal }
 export interface ProcessService {
-  run(request: ProcessRequest & { input?: string }): Promise<{ stdout: string; stderr: string }>;
+  run(request: ProcessRequest & { input?: string; onOutput?: (text: string, stream: 'stdout' | 'stderr') => void }): Promise<{ stdout: string; stderr: string }>;
   worker(request: ProcessRequest, invocation: Invocation, context: InvocationContext): Promise<OperationResult>;
   rpc(request: ProcessRequest): Promise<{ call<T = any>(method: string, params?: JsonObject): Promise<T>; close(): Promise<void> }>
 }
