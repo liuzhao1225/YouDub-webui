@@ -33,7 +33,7 @@ kind: "package-reference"
 
 功能适配器使用 `ctx.configForms.get(entryId)` 获取该 Host 条目所有编辑器共享的已接受值和写入队列。快照包含解析后的 `value`、继承 `base`、原始 `user`、修订号和可写性。`set` 与 `unset` 提交单个操作，`mutate` 提交一个原子操作列表。暂存编辑器传入编辑前读取的修订号；冲突时保留草稿。清除操作移除覆盖并恢复继承。
 
-配置表单对每个已认证浏览器都通过 Host settings 服务持久化；该策略由[已认证浏览器 Host 偏好笔记](../../../.agents/notes/implemented/bug-fix/2026-09-15-authenticated-browser-host-preferences.zh.md)拥有。写入是否被接受由 `settings.describe.writable` 决定。
+配置表单对每个已认证浏览器都通过 Host settings 服务持久化；该策略由[已认证浏览器 Host 偏好笔记](../../../.agents/notes/implemented/bug-fix/2026-09-15-authenticated-browser-host-preferences.md)拥有。写入是否被接受由 `settings.describe.writable` 决定。
 
 ### 跟随被服务的命名空间
 
@@ -52,7 +52,7 @@ kind: "package-reference"
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
-可选的 `settings.launcher` 贡献接收侧栏布局、设置面板是否覆盖侧栏、设置导航回调，以及有效的设置键位标签和无障碍组合。命令未绑定时，外壳不传快捷键展示信息；未注册入口时，外壳保留普通设置按钮。
+可选的 `settings.launcher` 贡献接收侧栏布局、设置面板是否覆盖侧栏、设置导航回调，以及有效的设置键位标签和无障碍组合。命令未绑定时，外壳不传快捷键展示信息；未注册入口时，外壳保留普通设置按钮。 入口的 `openSettings(sectionId?)` 回调打开共享面板；传入分区 ID 时直接选择对应的已注册分区。
 
 <details>
 <summary>实现细节——点击展开</summary>

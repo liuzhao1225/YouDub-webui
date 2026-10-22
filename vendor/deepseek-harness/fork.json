@@ -9415,9 +9415,9 @@
         "type": "file",
         "executable": false,
         "size": 2617,
-        "sha256": "4262081eef65c403f06da37166398b14cc6c281acb9f22176eb3d831c1207a03"
+        "sha256": "fbabd5eb8ad8397fedb68bf5d96d3263a2578922e86b9a4da06beafca6952137"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/client/ui-settings-general/README.md",
@@ -9432,10 +9432,10 @@
         "path": "packages/client/ui-settings-general/README.md",
         "type": "file",
         "executable": false,
-        "size": 13914,
-        "sha256": "f795d91dfbbc7358b54a63f89be6e872f870aa9f383a529e9bcf641277571c76"
+        "size": 14081,
+        "sha256": "1c0fcdf4167fddd655ed813d362a07daa7e55d8d2378fd5a617b200e8ca6d526"
       },
-      "reason": "Document section-owned leave checks in the existing settings shell. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Document section-owned leave checks in the existing settings shell. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/client/ui-settings-general/README.zh.md",
@@ -9450,10 +9450,10 @@
         "path": "packages/client/ui-settings-general/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 12280,
-        "sha256": "a8d156e8b98d8b56376c4de1dee8f49cdb3213506d5f05c3b9424b593b23b23d"
+        "size": 12416,
+        "sha256": "131d0a0ec7edc64c65456a0ec12a1cfb3b203ca38e73b70edc9b081139b98d10"
       },
-      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/client/ui-settings-general/package.json",
@@ -9486,10 +9486,10 @@
         "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
         "type": "file",
         "executable": false,
-        "size": 12173,
-        "sha256": "a2c58f0d485a3463d083cb5bbcf21d48361bb14ab878543d7ee2d7a5365cb361"
+        "size": 12329,
+        "sha256": "0d93c83b2d50e0f6b21a3b60e480a7415dbaaab34fb91bae7d1da296cc698af5"
       },
-      "reason": "Retain the Harness settings shell and honor section-owned draft checks on close and navigation."
+      "reason": "Retain the Harness settings shell and honor section-owned draft checks on close and navigation. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/client/ui-settings-general/src/client/index.ts",
@@ -9570,10 +9570,10 @@
         "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 24162,
-        "sha256": "97658904f0ab1da1a4b2178beef5d08942bfc3adf8efaaf082d22941250e286c"
+        "size": 24956,
+        "sha256": "1118bd637e788a2c1140d2f3dac5f1ab41835ca9e8ab226e244347bb20b16fbf"
       },
-      "reason": "Verify settings navigation, close and Escape honor the registered draft guard and disposal."
+      "reason": "Verify settings navigation, close and Escape honor the registered draft guard and disposal. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
@@ -9894,6 +9894,60 @@
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
     },
     {
+      "path": "packages/client/ui-settings/README.i18n.yaml",
+      "before": {
+        "path": "packages/client/ui-settings/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2341,
+        "sha256": "d0ca0300c35db9e00179dffd7ae80655476527e7be1398909dcde0417a2b25dc"
+      },
+      "after": {
+        "path": "packages/client/ui-settings/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2341,
+        "sha256": "e8a207804f8613533a024b4a9d80b684a3df4e981483167b4d1ce69443c3eaff"
+      },
+      "reason": "Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
+    },
+    {
+      "path": "packages/client/ui-settings/README.md",
+      "before": {
+        "path": "packages/client/ui-settings/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 8321,
+        "sha256": "794b3fa30588d28121d4aa32fd3ae83d9ad18707a6fa536edb87b1b794ae81e3"
+      },
+      "after": {
+        "path": "packages/client/ui-settings/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 8444,
+        "sha256": "9be29e5dd6cb06bc51c2438cea2adcf8915f1055f6a7af135d84ce4b61e588aa"
+      },
+      "reason": "Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
+    },
+    {
+      "path": "packages/client/ui-settings/README.zh.md",
+      "before": {
+        "path": "packages/client/ui-settings/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 7667,
+        "sha256": "812febb973438d9bfa5180d81f9c8a621b37f06aa70e922010536e36473df158"
+      },
+      "after": {
+        "path": "packages/client/ui-settings/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 7787,
+        "sha256": "6ce1d4149b0b97b95f6d9ca67a4d6c1c3f214a281a913dd90e9e5790fd0b275a"
+      },
+      "reason": "Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
+    },
+    {
       "path": "packages/client/ui-settings/src/client/contract/slots.ts",
       "before": {
         "path": "packages/client/ui-settings/src/client/contract/slots.ts",
@@ -9906,10 +9960,10 @@
         "path": "packages/client/ui-settings/src/client/contract/slots.ts",
         "type": "file",
         "executable": false,
-        "size": 8135,
-        "sha256": "9c9d238a628b8692081a165ae7b088128ba7373e7cd6b6c9df7899b072f1a181"
+        "size": 8196,
+        "sha256": "0b4058b2ef14d193dd11732f336924fd78e1eacb4d71e0470362fa350a11f056"
       },
-      "reason": "Expose a section-owned leave check for unsaved YouDub model configuration."
+      "reason": "Expose a section-owned leave check for unsaved YouDub model configuration. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
@@ -12120,10 +12174,10 @@
         "path": "packages/extensions/cordis-client-runner/src/client/slot-catalog.ts",
         "type": "file",
         "executable": false,
-        "size": 273335,
-        "sha256": "81fed3f875fedd0bcc641559d034a9323ec44e87469e89d3bba1e893944c0ca4"
+        "size": 273379,
+        "sha256": "d3da5afa20b8d9085159b27ac334b16d5ad9de0dcc530327b4ffbe9cd19e1bec"
       },
-      "reason": "Regenerate the original slot catalog from the current reviewed source, including shared layout seats and the previously changed settings and onboarding contracts."
+      "reason": "Regenerate the original slot catalog from the current reviewed source, including shared layout seats and the previously changed settings and onboarding contracts. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
       "path": "packages/preset/agent-preset/skills/cordis-composition-reference/references/packages.md",

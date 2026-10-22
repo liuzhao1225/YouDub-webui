@@ -149,8 +149,8 @@ export interface SettingsLauncherOwnerProps {
   settingsOpen: boolean
   /** Effective Settings key labels and accessible combination; omitted when unbound. */
   settingsShortcut?: { readonly keys: readonly string[]; readonly aria?: string | undefined }
-  /** Open the settings panel. */
-  openSettings: () => void
+  /** Open the settings panel, optionally selecting a registered section. */
+  openSettings: (sectionId?: string) => void
   /** @param id - registered onboarding editor to open explicitly. */
   openOnboarding: (id: string) => void
 }

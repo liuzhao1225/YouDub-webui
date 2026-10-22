@@ -44,7 +44,7 @@ function IconLink({ label, href, children }) { return <Tooltip label={label} por
 function SettingsLauncher({ openSettings, registerSettingsLauncher }) {
   const tx=useText()
   useEffect(() => registerSettingsLauncher(openSettings),[openSettings,registerSettingsLauncher])
-  return <IconButton label={tx("client.settings")} onClick={openSettings}><IconSettings size={16} aria-hidden="true" /></IconButton>
+  return <IconButton label={tx("client.settings")} onClick={() => openSettings()}><IconSettings size={16} aria-hidden="true" /></IconButton>
 }
 function SidebarView({ collapsed, useStore, navigate, toggleSidebar, renderSlot }) {
   const tx=useText(),{t,language}=useI18n(),{theme}=useTheme()
@@ -107,7 +107,12 @@ export function apply(ctx) {
       if (path.startsWith('/settings')) {
         if (path.startsWith('/settings/resources')) path = '/resources'
         else if (path.startsWith('/settings/extensions')) path = '/extensions'
-        else { if (!settingsLauncher) throw new Error(ctx.locale.bind('youdub')('client.settingsNotReady')); settingsLauncher(); return }
+        else {
+          if (!settingsLauncher) throw new Error(ctx.locale.bind('youdub')('client.settingsNotReady'))
+          const section=path.split(/[/?#]/)[2]
+          settingsLauncher(section === 'models' || section === 'connections' ? 'models' : undefined)
+          return
+        }
       }
       instance.actions.select(path); ctx.layout.selectPanel(path === '/extensions' ? 'plugins' : 'youdub'); ctx.layout.beginNavigation()
     })().catch(error => instance.actions.fail(error.message))

@@ -60,7 +60,7 @@ Web 与桌面端的通用设置底部显示当前发布版本，使用构建注�
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
-外壳声明 settings.launcher，供账号功能提供侧边栏菜单，并以设置按钮作为回退。入口接收 settingsOpen，其 false→true 边沿代表一次进入设置页，因此注册方在每次进入时执行一次，而不是在同一次打开中的每次重渲染执行。关闭对话框后，焦点返回当前入口。
+外壳声明 settings.launcher，供账号功能提供侧边栏菜单，并以设置按钮作为回退。入口接收 settingsOpen，其 false→true 边沿代表一次进入设置页，因此注册方在每次进入时执行一次，而不是在同一次打开中的每次重渲染执行。关闭对话框后，焦点返回当前入口。 产品链接可调用入口的 `openSettings(sectionId)` 回调直接打开已有分区；普通侧栏入口保持默认分区选择。
 
 <details>
 <summary>实现细节——点击展开</summary>

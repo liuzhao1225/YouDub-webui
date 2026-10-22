@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-22",
+  "source": "site/assets/zoo-en.mp4",
+  "surface": "Native macOS Electron",
+  "automaticRun": {
+    "baseCommit": "96028d9e85b23e869b7a043573249e85139a5593",
+    "frameworkSourceSha256": "f4bfb754cc98368a0550670fc22928df27f2c6c466bd36382e7e52a420a67808",
+    "sharedWorkingTree": true,
+    "taskId": "531783ef-9526-4239-969a-f06809d1d8f2",
+    "completedNodes": 8,
+    "totalNodes": 8,
+    "models": [
+      "Demucs htdemucs",
+      "Whisper tiny",
+      "doubao-seed-evolving",
+      "VoxCPM2"
+    ],
+    "translation": {
+      "configuredThrough": "Native Settings model-provider form",
+      "maxTokens": 65535,
+      "rawEvidenceRetained": true
+    },
+    "quitProtection": {
+      "promptObserved": true,
+      "cancelKeptTaskRunning": true
+    },
+    "playback": {
+      "observedSeconds": 18.9,
+      "display": "0:18 / 0:18"
+    },
+    "nativeSubtitleExport": {
+      "path": "/tmp/youdub-native-zoo-auto-20261022.srt",
+      "identicalToArtifact": true
+    },
+    "files": [
+      {
+        "name": "video.mp4",
+        "bytes": 746391,
+        "sha256": "880e8344d4a1831e279b68eb29196603035a1162c4a368a9b84c50acd640ba49"
+      },
+      {
+        "name": "audio.wav",
+        "bytes": 3635180,
+        "sha256": "f471579decae90c5f5190c7b17013b8e64a97da2bc843f9ec25c2d97a634aa4b"
+      },
+      {
+        "name": "source.srt",
+        "bytes": 286,
+        "sha256": "5502ddc3bbbc5fcba852d979b6745ffa4d03569e26c011e5e0f96cdd57b2d509"
+      },
+      {
+        "name": "translated.srt",
+        "bytes": 334,
+        "sha256": "a3514bca934621770c9f4fa4f524424614c202f92cc9df9bfad6b74016b65936"
+      }
+    ],
+    "media": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 320,
+          "height": 240
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ],
+      "format": {
+        "duration": "18.933333"
+      }
+    },
+    "sourceSubtitles": "1\n00:00:01,100 --> 00:00:03,360\nAlright so here we are one of the elephants\n\n2\n00:00:04,700 --> 00:00:14,060\nAnd the whole thing of what these guys expect is that they have really really long arms and that's cool\n\n3\n00:00:16,700 --> 00:00:18,480\nAnd that's pretty much all I was to say\n",
+    "translatedSubtitles": "1\n00:00:01,100 --> 00:00:03,941\n好了，现在我们看到的是其中一头大象\n\n2\n00:00:04,700 --> 00:00:08,097\n大家对这些家伙的最大期待\n\n3\n00:00:08,097 --> 00:00:11,495\n就是它们的手臂非常非常长\n\n4\n00:00:11,495 --> 00:00:12,344\n这很酷\n\n5\n00:00:16,700 --> 00:00:18,862\n我想说的基本上就是这些\n"
+  },
+  "manualReviewRun": {
+    "taskId": "1d068171-410f-4f4e-a222-cfc159440432",
+    "configuredThrough": "Native workflow canvas and node input controls",
+    "nodes": 9,
+    "asrAutoContinue": false,
+    "translationAutoContinue": false,
+    "addedProvider": "qwen_forced_aligner",
+    "addedModel": "Qwen3-ForcedAligner-0.6B-hf",
+    "nativeValidationPassed": true,
+    "reusedFrom": "531783ef-9526-4239-969a-f06809d1d8f2",
+    "quitExitCode": 0,
+    "afterRestart": {
+      "surface": "Authenticated API readback from the same Electron Host",
+      "status": "paused",
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "separate",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "awaiting_review"
+        },
+        {
+          "id": "translate",
+          "status": "pending"
+        },
+        {
+          "id": "reference",
+          "status": "completed"
+        },
+        {
+          "id": "synthesize",
+          "status": "completed"
+        },
+        {
+          "id": "mix",
+          "status": "completed"
+        },
+        {
+          "id": "80dcaec1-1276-4f08-8559-d66d1db2d0eb",
+          "status": "pending"
+        },
+        {
+          "id": "export",
+          "status": "pending"
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Automatic run retains Whisper tiny recognition errors, including arms instead of trunks.",
+    "Automatic run has no Qwen alignment node; the nine-node review experiment is paused before confirmation.",
+    "Mac locked after restarting; native checkpoint continuation, corrections and aligned export remain pending.",
+    "Playback completion was observed; audio audition and timing quality have not been accepted."
+  ]
+}

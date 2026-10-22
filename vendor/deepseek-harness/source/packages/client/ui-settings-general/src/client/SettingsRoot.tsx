@@ -130,6 +130,10 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   const { open, activeId } = useStore(state => state)
   const shortcut = useShortcuts(rows => rows.find(row => row.id === 'settings.open'))
   const { close, openSection } = actions
+  const openSettings = useCallback((sectionId?: string) => {
+    if (sectionId === undefined) actions.open()
+    else openSection(sectionId)
+  }, [actions, openSection])
   const [requestedOnboarding, setRequestedOnboarding] = useState<string | undefined>()
   const [showRecovery, setShowRecovery] = useState(false)
   const [holdConnecting, setHoldConnecting] = useState(false)
@@ -210,7 +214,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     <>
       <div className={clsx(css.triggerRow, !wide && css.railRow)}>
         {renderSlot('settings.launcher', {
-          wide, settingsOpen: open, openSettings: actions.open,
+          wide, settingsOpen: open, openSettings,
           ...(shortcut?.keys.length ? { settingsShortcut: { keys: shortcut.keys, aria: shortcut.aria } } : {}),
           openOnboarding: (id) => { close(); setRequestedOnboarding(id) },
         }, { fallback: <Tooltip disabled={open} label={t('trigger')} shortcutKeys={shortcut?.keys}>

@@ -395,6 +395,19 @@ describe('SettingsPanel navigation', () => {
     expect(screen.queryByTestId('section-general')).toBeNull()
   })
 
+  it('opens the requested section through the contributed launcher and focuses its navigation', () => {
+    const { renderSlot } = mount()
+    const launcher = renderSlot.mock.calls.find(call => call[0] === 'settings.launcher')!
+    act(() => { (launcher[1] as { openSettings: (id?: string) => void }).openSettings('models') })
+    expect(screen.getByRole('button', { name: 'Models' }).getAttribute('aria-current')).toBe('true')
+    expect(screen.getByTestId('section-models')).toBeTruthy()
+    expect(screen.queryByTestId('section-general')).toBeNull()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Models' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    openPanel()
+    expect(screen.getByTestId('section-general')).toBeTruthy()
+  })
+
   it('keeps product onboarding out of settings until an editor is explicitly requested', () => {
     const { renderSlot } = mount()
     expect(renderSlot.mock.calls.filter(call => call[0] === 'settings.onboarding')).toHaveLength(0)
