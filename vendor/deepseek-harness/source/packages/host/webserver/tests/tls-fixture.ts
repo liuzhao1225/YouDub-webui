@@ -20,7 +20,7 @@ const COMMON_NAME = 'localhost'
 
 let generated: { cert: string; key: string } | undefined
 
-/** One self-signed localhost certificate per process; RSA key generation is the only slow part. */
+/** One self-signed localhost trust anchor per process; Electron requires CA constraints on an explicit anchor. */
 function tlsPems(): { cert: string; key: string } {
   generated ??= (() => {
     const { cert, private: key } = generate([{ name: 'commonName', value: COMMON_NAME }], {
@@ -28,8 +28,8 @@ function tlsPems(): { cert: string; key: string } {
       days: 30,
       algorithm: 'sha256',
       extensions: [
-        { name: 'basicConstraints', cA: false },
-        { name: 'keyUsage', digitalSignature: true, keyEncipherment: true },
+        { name: 'basicConstraints', cA: true },
+        { name: 'keyUsage', digitalSignature: true, keyEncipherment: true, keyCertSign: true },
         { name: 'extKeyUsage', serverAuth: true },
         {
           name: 'subjectAltName',

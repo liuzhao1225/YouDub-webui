@@ -11340,6 +11340,42 @@
       "reason": "Remove unused legacy conversation, account, plan, agent-review and scheduling UI plus orphaned Agent Team/worktree/webhook services after checking imports, runtime compositions, manifest peers and dynamic/build consumers. YouDub media review, workflow, credentials and shared UI services remain."
     },
     {
+      "path": "packages/client/ui-deliverables/tests/prompt.host.spec.ts",
+      "before": {
+        "path": "packages/client/ui-deliverables/tests/prompt.host.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3128,
+        "sha256": "c0bbb7a664531efdb57fc4bda13f9855019cd888a4b5d70823861b79f2773366"
+      },
+      "after": {
+        "path": "packages/client/ui-deliverables/tests/prompt.host.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2718,
+        "sha256": "d3e84c5853fa13195bab51f0bf9d8c9d39134d539c2a1346d9054b4b0727bdd8"
+      },
+      "reason": "Retain guidance and mount/unmount assertions; retire coupling to removed old Web product prompt snapshots."
+    },
+    {
+      "path": "packages/client/ui-directory-picker-native/tests/desktop-picker.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-directory-picker-native/tests/desktop-picker.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 1888,
+        "sha256": "52db3c7d4ac9d156888600f6db566a5c01a10913f0ab2793a2027ed7f06751cf"
+      },
+      "after": {
+        "path": "packages/client/ui-directory-picker-native/tests/desktop-picker.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 1610,
+        "sha256": "1e50b7acac6a01331e70b44bb5bdbe8ccc2ee6257d7af6222c1620f0000de69f"
+      },
+      "reason": "Use explicit real framework package dependency closures for optional-library tests, without adding those features to the YouDub product composition."
+    },
+    {
       "path": "packages/client/ui-jobs/README.i18n.yaml",
       "before": {
         "path": "packages/client/ui-jobs/README.i18n.yaml",
@@ -14158,6 +14194,24 @@
       },
       "after": null,
       "reason": "Remove unused legacy conversation, account, plan, agent-review and scheduling UI plus orphaned Agent Team/worktree/webhook services after checking imports, runtime compositions, manifest peers and dynamic/build consumers. YouDub media review, workflow, credentials and shared UI services remain."
+    },
+    {
+      "path": "packages/client/ui-session/tests/status-controller.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-session/tests/status-controller.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3316,
+        "sha256": "743e2d2606239b8374ad2d5ce265de12a4c5114e0e2d3455d3debd343fec2577"
+      },
+      "after": {
+        "path": "packages/client/ui-session/tests/status-controller.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3408,
+        "sha256": "e48a61f1a01d106021b8a4c54b48ad5c24d53dccc5a5c9c3161fcf88116f1421"
+      },
+      "reason": "Use explicit real framework package dependency closures for optional-library tests, without adding those features to the YouDub product composition."
     },
     {
       "path": "packages/client/ui-settings-account/README.i18n.yaml",
@@ -17412,6 +17466,24 @@
       "reason": "Expose a section-owned leave check for unsaved YouDub model configuration. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
     },
     {
+      "path": "packages/client/ui-shortcuts/tests/commands.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-shortcuts/tests/commands.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8822,
+        "sha256": "a0f5e23ff46b262b0bc2faa8c3b5a36dd92d90d21b6e0e291a2f3752d6a1a90b"
+      },
+      "after": {
+        "path": "packages/client/ui-shortcuts/tests/commands.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9099,
+        "sha256": "aa1d74f2c434d3c8c73ab6cc66c7383ef6e39fe67001b80aed5dccd6c9f41700"
+      },
+      "reason": "Use explicit real framework package dependency closures for optional-library tests, without adding those features to the YouDub product composition."
+    },
+    {
       "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
       "before": {
         "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
@@ -17716,6 +17788,78 @@
       },
       "after": null,
       "reason": "Remove unused legacy conversation, account, plan, agent-review and scheduling UI plus orphaned Agent Team/worktree/webhook services after checking imports, runtime compositions, manifest peers and dynamic/build consumers. YouDub media review, workflow, credentials and shared UI services remain."
+    },
+    {
+      "path": "packages/client/ui-theme/tests/app-region-styles.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-theme/tests/app-region-styles.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11937,
+        "sha256": "43e13e7acd86739e5304cf99186f2c16d879c29da0e13042e55d96444215a63e"
+      },
+      "after": {
+        "path": "packages/client/ui-theme/tests/app-region-styles.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11458,
+        "sha256": "3d02e50d062e8de99e6e4f1d63eadd80ce871e1ff1402665d75eb3453b597c1f"
+      },
+      "reason": "Remove exact inventories for retired account, schedule and trajectory surfaces while preserving checks across all retained component sources."
+    },
+    {
+      "path": "packages/client/ui-theme/tests/expected/radius-exceptions.expected.json",
+      "before": {
+        "path": "packages/client/ui-theme/tests/expected/radius-exceptions.expected.json",
+        "type": "file",
+        "executable": false,
+        "size": 2234,
+        "sha256": "faa13da051ceb4a121458a1f36e8ddd9178d4ae72008631cb836825e4d039b04"
+      },
+      "after": {
+        "path": "packages/client/ui-theme/tests/expected/radius-exceptions.expected.json",
+        "type": "file",
+        "executable": false,
+        "size": 480,
+        "sha256": "fd5d5f9301ec0ddf0e1c958760a22c0041be2a724dcba554eee1806d6e1f301c"
+      },
+      "reason": "Remove exact inventories for retired account, schedule and trajectory surfaces while preserving checks across all retained component sources."
+    },
+    {
+      "path": "packages/client/ui-theme/tests/menu-surfaces.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-theme/tests/menu-surfaces.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5913,
+        "sha256": "bd458cfcc8898a71abfe12f5cb39058abafd7681cefcf803007708a671c9056b"
+      },
+      "after": {
+        "path": "packages/client/ui-theme/tests/menu-surfaces.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5773,
+        "sha256": "9353b3b2d4315e43cbc2a1ef7f12e3216264326e2a9e3f12ca1f0c33e5b75023"
+      },
+      "reason": "Remove exact inventories for retired account, schedule and trajectory surfaces while preserving checks across all retained component sources."
+    },
+    {
+      "path": "packages/client/ui-theme/tests/radius-styles.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-theme/tests/radius-styles.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3241,
+        "sha256": "64ce3fffc3807ab75b8aa07d74065b86a6090e39651fd9fd8205606b3d4b9c48"
+      },
+      "after": {
+        "path": "packages/client/ui-theme/tests/radius-styles.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3137,
+        "sha256": "18987b21414fc596ede39bf6e4f13f75a842b7c3fd186b5d39d224c17ae7882b"
+      },
+      "reason": "Remove exact inventories for retired account, schedule and trajectory surfaces while preserving checks across all retained component sources."
     },
     {
       "path": "packages/client/ui-trajectory/README.i18n.yaml",
@@ -33150,6 +33294,24 @@
       "reason": "Regenerate the original slot catalog from the current reviewed source, including shared layout seats and the previously changed settings and onboarding contracts. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
     },
     {
+      "path": "packages/host/webserver/tests/tls-fixture.ts",
+      "before": {
+        "path": "packages/host/webserver/tests/tls-fixture.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2384,
+        "sha256": "a8bcdc57165919342547d2917ba578ffd0c21dd4d2ab4706a7ebfd35aefcdf3f"
+      },
+      "after": {
+        "path": "packages/host/webserver/tests/tls-fixture.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2417,
+        "sha256": "f1500997b691a530e5db7830d56a82d1e24f18a2d5172f22d214ede9c1412e7c"
+      },
+      "reason": "Give the disposable explicit TLS trust anchor CA constraints accepted by Electron Node, preserving trusted and untrusted HTTPS assertions."
+    },
+    {
       "path": "packages/lsp/README.i18n.yaml",
       "before": {
         "path": "packages/lsp/README.i18n.yaml",
@@ -36322,6 +36484,18 @@
         "sha256": "5c2d4b8ed8b6e2f1a3a027bdd7b1e649016f7aa5a75ae523f1ad0f939663ba8d"
       },
       "reason": "Resolve a linked bundle own Host row from its manifest in the existing assembly test reader; the original reconnect suite failed before this refactor because dependency-only search misses package self-reference. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+    },
+    {
+      "path": "packages/test-support/client-runtime/src/assembly/package-roster.ts",
+      "before": null,
+      "after": {
+        "path": "packages/test-support/client-runtime/src/assembly/package-roster.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1671,
+        "sha256": "3c70cdae1f3e2dbec2edbf11180341289a009cbe134d97bdaa7a25c40aa7d3b6"
+      },
+      "reason": "Use explicit real framework package dependency closures for optional-library tests, without adding those features to the YouDub product composition."
     },
     {
       "path": "packages/test-support/client-runtime/tests/assembly-bundle-roster.client.spec.ts",

@@ -20,15 +20,17 @@ function mount(definition: NodeTypeDefinition, configs: JsonObject[]) {
 }
 afterEach(() => { cleanup(); window.localStorage.clear() })
 
-it('renders original language pills and direct choice lists from node metadata without restricting the schema', async () => {
+it('renders accessible language choices from node metadata without restricting the schema', async () => {
   const descriptor = nodeDescriptors.recognize
   const changed = mount({ ...type, configSchema: descriptor.configSchema, ui: descriptor.ui }, [{ sourceLanguage: 'auto', initialPrompt: 'keep' }])
   const trigger = screen.getByLabelText('原文语言')
   expect(trigger).toHaveTextContent('原文自动识别')
-  expect(trigger).toHaveClass('h-8', 'rounded-full', 'bg-muted')
+  expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+  expect(trigger).toHaveAttribute('aria-expanded', 'false')
   expect(descriptor.configSchema.properties.sourceLanguage.enum).toBeUndefined()
   const user = userEvent.setup()
   await user.click(trigger)
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
   await user.click(await screen.findByRole('option', { name: '日本語' }))
   expect(trigger).toHaveTextContent('日本語')
   expect(changed).toHaveBeenLastCalledWith('node-0', { sourceLanguage: 'ja', initialPrompt: 'keep' })

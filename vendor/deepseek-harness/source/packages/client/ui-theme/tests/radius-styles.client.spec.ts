@@ -7,10 +7,9 @@ import { packageStylesheets, parseRules, varReferences } from './stylesheet-scan
 const base = readFileSync(fileURLToPath(new URL('../src/styles/base.css', import.meta.url)), 'utf8')
 const tokens = new Set(parseRules(base).flatMap(rule => rule.declarations)
   .filter(([name]) => name.startsWith('--dsw-radius-')).map(([name]) => name))
-// Navigation markers and the 10px switch track are drawings, not control containers.
+// Navigation markers are drawings, not control containers.
 const drawings = new Map([
   ['ui-chat/src/client/chat/TurnNavigator.module.css', '.mark'],
-  ['ui-trajectory/src/client/TrajectoryToolbar.module.css', '.controlTrack'],
 ])
 
 /**

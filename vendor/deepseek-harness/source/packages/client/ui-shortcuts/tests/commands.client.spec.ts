@@ -2,7 +2,7 @@
 import { describe, expect, onTestFinished, vi } from 'vitest'
 import { createElement, Fragment, useSyncExternalStore } from 'react'
 import { act, cleanup, render } from '@testing-library/react'
-import { createClientTest, webApp } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
+import { createClientTest } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/index.ts'
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-shortcuts/client'
 import type { DesktopKeyboardApi, DesktopShortcutInput, ShortcutCommandId } from '@deepseek-ai/dsh-client-shortcuts/protocol'
@@ -11,7 +11,12 @@ import type { createLayoutStore } from '../../ui-layout/src/client/stores.ts'
 import type { ReferenceInjected } from '../src/client/Reference.tsx'
 import type { createShortcutsStore } from '../src/client/store.ts'
 
-const it = createClientTest({ roster: webApp })
+import { packageRoster } from '@deepseek-ai/dsh-client-test-runtime/src/assembly/package-roster.ts'
+
+const it = createClientTest({ roster: packageRoster([
+  '@deepseek-ai/dsh-client-ui-shortcuts', '@deepseek-ai/dsh-client-ui-settings-general',
+  '@deepseek-ai/dsh-client-ui-sidebar', '@deepseek-ai/dsh-client-ui-conversation',
+]) })
 
 describe('assembled shortcut command owners', () => {
   it('keeps desktop defaults out of Web and removes commands on owner unload', async ({ start }) => {

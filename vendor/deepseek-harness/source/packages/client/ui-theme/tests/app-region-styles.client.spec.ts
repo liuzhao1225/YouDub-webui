@@ -44,7 +44,6 @@ const SIDEBAR = 'client/ui-sidebar/src/client/SidebarRoot.module.css'
 const CONVERSATION = 'client/ui-conversation/src/client/skeleton/ConversationRoot.module.css'
 const DOCKKIT = 'client/ui-dockkit/src/components/dockkit.module.css'
 const PLUGIN_MANAGER = 'client/ui-plugin-manager/src/client/PluginManagerPage.module.css'
-const PLATFORM_OVERLAY = 'client/ui-settings-account/src/client/PlatformOverlay.module.css'
 
 /**
  * One chrome row: the sheet that lays it out, the markup that marks it, and the
@@ -66,12 +65,6 @@ interface ChromeRow {
 }
 
 const CHROME_ROWS: readonly ChromeRow[] = [
-  {
-    file: 'client/ui-settings-account/src/client/OnboardingSurface.module.css',
-    selector: '.dragBand',
-    markup: 'client/ui-settings-account/src/client/OnboardingSurface.tsx',
-    inset: ['inset', '8px'],
-  },
   {
     file: SIDEBAR,
     selector: '.topStrip',
@@ -111,12 +104,6 @@ const CHROME_ROWS: readonly ChromeRow[] = [
     file: PLUGIN_MANAGER,
     selector: '.moreHead',
     markup: 'client/ui-plugin-manager/src/client/PluginManagerPage.tsx',
-  },
-  {
-    file: PLATFORM_OVERLAY,
-    selector: '.header',
-    markup: 'client/ui-settings-account/src/client/PlatformOverlay.tsx',
-    height: ['height', '48px'],
   },
 ]
 

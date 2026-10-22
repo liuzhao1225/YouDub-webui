@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T15:13:12.606Z",
+  "baseCommit": "cb4797732afaf18a6943188c3f0f163f0694bea9",
+  "scope": "Retained framework GUI regression maintenance; no product runtime or visual changes.",
+  "source": {
+    "reviewed": 10,
+    "files": 6943,
+    "sha256": "465b07695cf970d36761e614b671599c7a07246e6c65b8529514fe4e1ec26735",
+    "packages": 280,
+    "clientArtifacts": 269,
+    "originalSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85"
+  },
+  "changes": [
+    "packages/client/ui-theme/tests/app-region-styles.client.spec.ts",
+    "packages/client/ui-theme/tests/menu-surfaces.client.spec.ts",
+    "packages/client/ui-theme/tests/expected/radius-exceptions.expected.json",
+    "packages/client/ui-theme/tests/radius-styles.client.spec.ts",
+    "packages/client/ui-deliverables/tests/prompt.host.spec.ts",
+    "packages/host/webserver/tests/tls-fixture.ts",
+    "packages/test-support/client-runtime/src/assembly/package-roster.ts",
+    "packages/client/ui-session/tests/status-controller.client.spec.ts",
+    "packages/client/ui-directory-picker-native/tests/desktop-picker.client.spec.tsx",
+    "packages/client/ui-shortcuts/tests/commands.client.spec.ts"
+  ],
+  "validation": {
+    "runtime": "Application Electron Node v24.21.0",
+    "framework": {
+      "gatesPassed": 7,
+      "gatesFailed": 0,
+      "verifyOnly": true,
+      "log": "/tmp/youdub-gui-maintenance-build.log"
+    },
+    "gui": {
+      "filesPassed": 533,
+      "filesFailed": 0,
+      "testsPassed": 8728,
+      "testsFailed": 0,
+      "testsSkipped": 1,
+      "durationSeconds": 79.63,
+      "log": "/tmp/youdub-gui-maintenance-full.log",
+      "logSha256": "cd69d69232e9018047f22615415f858b396eba438851e101bec5367ccaf6a8e0",
+      "productBundle": ".cache/harness/native-review-isolated-20261022/desktop-plugin-reinstall/runtime-project/youdub-plugin/package.json",
+      "skip": "Existing Windows-only real COM dialog test does not run on macOS."
+    },
+    "targeted": {
+      "testsPassed": 29,
+      "filesPassed": 5
+    },
+    "libraryComposition": {
+      "testsPassed": 4,
+      "filesPassed": 3,
+      "productCompositionChanged": false
+    },
+    "productRegression": {
+      "snapshot": "cb4797732afaf18a6943188c3f0f163f0694bea9 + workflow-options.test.tsx assertion update",
+      "testsPassed": 9,
+      "filesPassed": 1,
+      "log": "/tmp/youdub-workflow-options-ci-electron.log",
+      "productionUiChanged": false
+    }
+  },
+  "failureHistory": [
+    {
+      "log": "/tmp/youdub-plugin-catalog-gui.log",
+      "cause": "Retired theme inventories, removed Web prompt snapshots, optional library tests assuming the old full product, and invalid non-CA explicit trust anchor on Electron."
+    },
+    {
+      "log": "/tmp/youdub-gui-maintenance-composition.log",
+      "cause": "Test helper URL used jsdom URL semantics; corrected to resolve(import.meta.dirname).",
+      "resolved": true
+    },
+    {
+      "log": "/tmp/youdub-workflow-options-ci-regression.log",
+      "cause": "Wrong Vitest executable location in the isolated snapshot.",
+      "resolved": true
+    },
+    {
+      "log": "/tmp/youdub-workflow-options-ci-regression-fixed.log",
+      "cause": "Partial snapshot omitted referenced framework tsconfig files; complete tracked framework snapshot restored.",
+      "resolved": true
+    },
+    {
+      "log": "/tmp/youdub-workflow-options-ci-regression-snapshot.log",
+      "cause": "System Node 26 exposes unavailable Web Storage in jsdom; final test uses the application Electron Node 24.",
+      "resolvedForApplicationRuntime": true
+    }
+  ],
+  "tls": {
+    "before": {
+      "systemNode26": "accepts non-CA self-signed anchor",
+      "electronNode24": "UNABLE_TO_VERIFY_LEAF_SIGNATURE"
+    },
+    "after": "Disposable self-signed localhost anchor declares CA and keyCertSign. Trusted HTTPS, untrusted rejection, and teardown assertions all pass. Product TLS verification unchanged."
+  },
+  "ci": {
+    "previousRun": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39799311858",
+    "previousConclusion": "failure",
+    "failure": "workflow-options test pinned retired h-8 rounded-full bg-muted classes after the committed shared-control change.",
+    "fix": "Keep language choice/state assertions and check accessible popup expansion instead of retired style class names.",
+    "nextRun": "pending push",
+    "expandedLane": "Existing framework check now runs every retained packages/client and packages/host test."
+  }
+}
