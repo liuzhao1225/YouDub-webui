@@ -178,7 +178,10 @@ describe('first-run setup', () => {
     const view = render(<SetupScreen state={state} onAction={vi.fn()} />)
     expect(screen.getByRole('button', { name: '复制日志' })).toBeEnabled()
     const link = screen.getByRole('link', { name: '反馈 Issue' })
-    const body = new URL(link.getAttribute('href')!).searchParams.get('body')!
+    const url = new URL(link.getAttribute('href')!)
+    expect(url.searchParams.get('template')).toBe('setup-problem.md')
+    expect(url.searchParams.get('title')).toBe('[环境配置] 模型准备')
+    const body = url.searchParams.get('body')!
     expect(body).toContain('阶段: 模型准备')
     expect(body).not.toContain(state.token)
     expect(link).toHaveAttribute('target', '_blank')

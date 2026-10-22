@@ -93,7 +93,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     setFiles(next); setError('')
   }
   const material = <div>
-    {linkInput && <div className="px-3 pt-3 pb-1">
+    {linkInput && <div className="pt-3 pb-1">
       <div className="relative flex items-center gap-2 rounded-xl border border-input bg-muted px-3 focus-within:border-ring">
         <Link2 className="size-4 shrink-0 text-subtle-foreground" />
         <Input aria-label={tx("workflow.run.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={locked} placeholder={tx("workflow.run.paste.a.youtube.or.bilibili.link")} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
@@ -105,7 +105,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
       </div>
       {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
       {proxyField && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { proxyPort: proxyField } }} value={{ proxyPort }} diagnostics={[]} readOnly={locked} onChange={(config) => setDraft((current) => ({ ...current, proxyPort: config.proxyPort as number | undefined }))} /></div>}
-      <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx("workflow.run.or.upload.a.video")}<span className="h-px flex-1 bg-border" /></div>
+      <div className="my-2 text-center text-xs text-subtle-foreground">{tx("workflow.run.or.upload.a.video")}</div>
     </div>}
     <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id, label: ['youdub.subtitles', 'youdub.dubbing', 'youdub.subtitles-dubbing'].includes(document.id) && input.id === 'video' && input.label === '视频' ? tx("workflow.run.video") : input.label }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>
     </div>

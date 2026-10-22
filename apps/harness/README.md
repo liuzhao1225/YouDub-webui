@@ -57,6 +57,8 @@ npm start
 
 ## 启动与首次环境准备
 
+界面测试可用 `node apps/harness/desktop.mjs --skip-setup` 直接进入工作台。此参数只用于开发启动；未指定 `DSH_HOME` 时使用独立的 `.cache/harness/desktop-ui-test`，跳过安装、环境/模型准备和服务配置引导。任务库使用项目现有的 `.venv/bin/python`；可通过 `YOUDUB_TEST_PYTHON` 指定其他开发 Python。它不下载模型、不将资源标记为已就绪，媒体功能仍需真实环境。默认启动保留完整首启流程。
+
 ```sh
 npm start
 ```

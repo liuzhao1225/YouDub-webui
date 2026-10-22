@@ -1,4 +1,8 @@
 /* YouDub domain geometry; Harness owns frame, controls, overlays and scrollbars. */
+/* Expanded desktop chrome lives in the sidebar; main pages start at the top. */
+html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
+body:has(.yd-sidebar) { --dsh-frame-top-clearance:0px; }
+html[data-platform='darwin'] body:has([data-sidebar-collapsed]) { --dsh-frame-top-clearance:var(--yd-window-top-clearance); }
 .yd { --yd-space:8px; box-sizing:border-box; color:var(--dsw-alias-label-primary); font:14px/1.5 var(--dsw-font-family); }
 .yd *, .yd-domain-dialog * { box-sizing:border-box; }
 .yd .yd-icon-button { width:32px; height:32px; padding:0; flex-shrink:0; }
@@ -8,7 +12,8 @@
 .yd .fill-brand-red { fill:var(--brand-red); }
 .yd .fill-brand-blue { fill:var(--brand-blue); }
 .yd-sidebar { height:100%; min-height:0; display:flex; flex-direction:column; gap:0; padding:0 calc(var(--yd-space) * 1.5) calc(var(--yd-space) * 1.5); overflow:hidden; }
-.yd-sidebar-chrome { height:var(--dsh-frame-top-clearance,0px); flex-shrink:0; display:flex; justify-content:flex-end; align-items:center; }
+.yd-sidebar-chrome { height:0; flex-shrink:0; display:flex; justify-content:flex-end; align-items:center; }
+html[data-platform='darwin'] .yd-sidebar-chrome { height:var(--yd-window-top-clearance); }
 .yd-brand-row { height:64px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding-left:var(--yd-space); }
 .yd-sidebar-expand { padding-bottom:12px; }
 .yd .yd-new { width:100%; flex-shrink:0; }
@@ -16,7 +21,11 @@
 .yd-sidebar nav button { position:relative; justify-content:flex-start; height:36px; gap:12px; padding-inline:12px; font-weight:500; }
 .yd-sidebar nav button[aria-current] { background:var(--dsw-alias-interactive-bg-active); }
 .yd-sidebar nav button[aria-current]::before { content:""; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:16px; border-radius:3px; background:linear-gradient(180deg,var(--brand-pink),var(--brand-blue)); }
-.yd-sidebar-bottom { margin-top:auto; padding-top:12px; display:flex; gap:4px; align-items:center; justify-content:flex-end; border-top:1px solid var(--dsw-alias-border-l2); }
+.yd-sidebar-bottom { margin-top:auto; padding-top:calc(var(--yd-space) * 1.5); display:flex; gap:calc(var(--yd-space) / 2); align-items:center; justify-content:flex-start; border-top:1px solid var(--dsw-alias-border-l2); }
+.yd .yd-sidebar-bottom .yd-icon-button { color:var(--dsw-alias-label-primary); }
+.yd .yd-icon-link { display:inline-flex; align-items:center; justify-content:center; border-radius:12px; color:var(--dsw-alias-label-secondary); text-decoration:none; }
+.yd .yd-icon-link:hover { background:var(--dsw-alias-interactive-bg-hover); color:var(--dsw-alias-label-primary); }
+.yd .yd-icon-link:focus-visible { outline:2px solid var(--brand-blue); outline-offset:2px; }
 .yd-sidebar[data-collapsed] { padding-inline:var(--yd-space); align-items:center; }
 .yd-sidebar[data-collapsed] .yd-brand-row { padding-inline:0; }
 .yd-sidebar[data-collapsed] .yd-sidebar-bottom { flex-direction:column; }

@@ -1,6 +1,6 @@
 import { readFile, mkdir } from 'node:fs/promises';
 import { delimiter, join, resolve } from 'node:path';
-import { homedir } from 'node:os';
+import { homedir, release } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import z from '@deepseek-ai/schemastery';
 import YouDubWorker from './backend/worker.mjs';
@@ -47,13 +47,17 @@ export function registerPythonProvider(ctx, config) {
   return youdubContext(ctx).plugin({ name: 'youdub-python-extension', inject: [...PythonProvider.inject, ...(config.runtimeAdapter ? ['store'] : [])], apply: child => PythonProvider.apply(child, config) });
 }
 export async function apply(ctx, config) {
+  const skipSetup = process.env.YOUDUB_TEST_SKIP_SETUP === '1';
+  if (skipSetup) ctx.on('webserver/index-inject', table => { table.push({ kind: 'global', name: '__YOUDUB_TEST_SKIP_SETUP__', value: true }); });
   const root = process.env.YOUDUB_MEDIA_ROOT ? resolve(process.env.YOUDUB_MEDIA_ROOT) : fileURLToPath(new URL('../../../', import.meta.url));
   const forms = ctx.settings;
   const savedInstallation = config.installation.get();
   const legacy = !savedInstallation && await existingInstallation(resolve(config.dataDir));
   let data = resolve(savedInstallation?.path ?? config.dataDir);
   let runtimeConfig = savedInstallation ? { ...config, python: privatePython(data), modelsDir: join(data, 'models/whisper') } : config;
+  if (skipSetup && process.env.YOUDUB_TEST_PYTHON) runtimeConfig = { ...runtimeConfig, python: process.env.YOUDUB_TEST_PYTHON };
   const { version } = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
+  ctx.on('webserver/index-inject', table => { table.push({ kind: 'global', name: '__YOUDUB_APP_INFO__', value: { version, platform: process.platform, arch: process.arch, osVersion: release() } }); });
   const labels = Object.fromEntries(domainNames.map(key => [key, Symbol(`youdub.${key}`)]));
   const domain = domainNames.reduce((child, key) => child.isolate(key, labels[key]), ctx);
   let modelRoots;
@@ -79,10 +83,17 @@ export async function apply(ctx, config) {
       PATH: [mediaDirectory, process.env.PATH || ''].join(delimiter), ...modelEnvironment,
     } });
   };
-  if (savedInstallation || legacy) await initialize();
+  if (savedInstallation || legacy || skipSetup) await initialize();
   const transport = new YouDubTransport(ctx);
   transport.mount();
   registerExampleRoutes(ctx, transport, root);
+  if (skipSetup) {
+    const services = await activateDomain(domain, { config: runtimeConfig, root, data, forms, modelRoots, version, transport });
+    ctx.effect(() => transport.register('GET', '/api/setup', request => transport.json(request, 200, { phase: 'skipped', testMode: true, version, platform: process.platform, arch: process.arch, environment: [], models: [], canRetry: false, token: '' })));
+    ctx.on('desktop/active-tasks', () => services.inspectTasks());
+    services.start();
+    return;
+  }
   await domain.plugin({ name: 'youdub-environment', inject: ['jobs'], apply(child) {
     registerSetupRoutes(child, transport, { root: data, repoRoot: root, python: runtimeConfig.python, version, privateEnvironment: true }, async () => {
       return activateDomain(domain, { config: runtimeConfig, root, data, forms, modelRoots, version, transport });

@@ -298,7 +298,8 @@ async function main(): Promise<void> {
     hostEnvironment = await loginShell
     // Product paths must win over login-shell variables during source development.
     hostEnvironment = { ...hostEnvironment, DSH_HOME: process.env.DSH_HOME,
-      YOUDUB_MEDIA_ROOT: process.env.YOUDUB_MEDIA_ROOT, YOUDUB_NODE_PATH: process.env.YOUDUB_NODE_PATH }
+      YOUDUB_MEDIA_ROOT: process.env.YOUDUB_MEDIA_ROOT, YOUDUB_NODE_PATH: process.env.YOUDUB_NODE_PATH,
+      YOUDUB_TEST_SKIP_SETUP: process.env.YOUDUB_TEST_SKIP_SETUP, YOUDUB_TEST_PYTHON: process.env.YOUDUB_TEST_PYTHON }
   })
   ipcMain.handle(DESKTOP_IPC.boot, async event => {
     assertProductSender(event); await startup

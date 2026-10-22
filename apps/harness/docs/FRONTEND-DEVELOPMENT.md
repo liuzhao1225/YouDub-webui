@@ -91,7 +91,7 @@
 
 原业务 Tailwind utilities 与 React Flow CSS 会进入 Client bundle；全局 reset 和原 `:root`/`.dark` 主题块经过构建处理，防止覆盖官方应用壳。产品几何样式限定在 `.yd` 等业务范围。
 
-布局调整优先使用现有容器和间距 token。桌面顶部留位使用 `--dsh-frame-top-clearance`，主内容滚动由 `.yd-main` 承担，侧栏采用固定容器布局。不要用额外固定高度或全局滚动条样式补偿单张截图。
+布局调整优先使用现有容器和间距 token。`--yd-window-top-clearance` 在根节点保留官方 `--dsh-frame-top-clearance` 的窗口安全区。侧栏展开时，macOS 窗口按钮只在侧栏留位，主区域将官方顶部留位设为零；收起侧栏后恢复主区域安全区。Windows 由官方 frame 为标题栏留位。主内容滚动由 `.yd-main` 承担，侧栏采用固定容器布局。不要用额外固定高度或全局滚动条样式补偿单张截图。
 
 ## 多语言与验证
 

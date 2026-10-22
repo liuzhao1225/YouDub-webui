@@ -57,9 +57,35 @@ function codeBlock(text: string) {
   return `${fence}text\n${text}\n${fence}`
 }
 
+const issueIntro = '### 问题描述\n\n请描述遇到的问题。\n\n### 复现步骤\n\n1. \n2. \n\n### 预期结果\n\n\n\n### 实际结果\n\n\n\n### 基础信息\n\n'
+const issueLogs = '### 日志或截图（可选）\n\n请补充相关日志或截图，并移除 API Key、Token、密码等敏感信息。'
+function newIssue(template: 'setup-problem.md' | 'bug-report.md', title: string, body: string) {
+  return { url: `https://github.com/liuzhao1225/YouDub-webui/issues/new?${new URLSearchParams({ template, title, body })}` }
+}
+
+export interface FeedbackInfo {
+  version?: string; platform?: string; arch?: string; osVersion?: string
+  page?: string; language?: string; theme?: string; userAgent?: string
+}
+
+export function feedbackIssue(info: FeedbackInfo) {
+  const platform = ({ darwin: 'macOS', win32: 'Windows', linux: 'Linux' } as Record<string, string>)[info.platform ?? ''] ?? info.platform
+  const theme = ({ system: '自动（跟随系统）', light: '浅色', dark: '深色' } as Record<string, string>)[info.theme ?? ''] ?? info.theme
+  const details = redactDiagnostics([
+    `YouDub: ${info.version || '未知'}`,
+    `系统: ${platform || '未知'}${info.osVersion ? ` / ${info.osVersion}` : ''}`,
+    `架构: ${info.arch || '未知'}`,
+    `页面: ${info.page?.split(/[?#]/, 1)[0] || '未知'}`,
+    `语言: ${info.language || '未知'}`,
+    `主题: ${theme || '未知'}`,
+    `客户端: ${info.userAgent || '未知'}`,
+  ].join('\n'))
+  return newIssue('bug-report.md', '[问题反馈] ', issueIntro + codeBlock(details) + '\n\n' + issueLogs)
+}
+
 export function setupIssue(report: string, state?: SetupState | null) {
-  const title = `[准备问题] ${state ? phases[state.phase] : '连接准备服务'}`
-  const intro = '### 问题描述\n\n请补充出错前的操作、是否每次出现。\n\n### 环境信息\n\n'
-  const url = (body: string) => `https://github.com/liuzhao1225/YouDub-webui/issues/new?${new URLSearchParams({ template: 'setup-problem.md', title, body })}`
-  return { url: url(intro + codeBlock(report.split('\n').slice(0, 3).join('\n')) + '\n\n### 诊断日志\n\n**❗ 请务必在这里粘贴从准备页复制的完整诊断日志。**') }
+  const title = `[环境配置] ${state ? phases[state.phase] : '连接准备服务'}`
+  const intro = '### 问题描述\n\n请描述环境配置过程中遇到的问题及出错前的操作。\n\n### 环境信息\n\n'
+  const logs = '### 诊断日志\n\n请粘贴环境配置页「复制日志」得到的完整诊断日志，并补充相关截图（如有）。'
+  return newIssue('setup-problem.md', title, intro + codeBlock(report.split('\n').slice(0, 3).join('\n')) + '\n\n' + logs)
 }

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { defineStore } from '@deepseek-ai/dsh-client-store'
-import { Button, Tooltip, IconPanelLeftOutlineRegular as PanelLeft, IconPlusOutlineRegular as Plus, IconSparkleRegular as Sparkles, IconClockOutlineRegular as History, IconBranchOutlineRegular as Branch, IconFolderOpenOutlineRegular as Folder, IconCordisPluginOutlineRegular as Plugin, IconSettingsOutlineRegular as Settings } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Tooltip, IconPanelLeftOutlineRegular as PanelLeft, IconPlusOutlineRegular as Plus, IconSparkleRegular as Sparkles, IconClockOutlineRegular as History, IconBranchOutlineRegular as Branch, IconFolderOpenOutlineRegular as Folder, IconCordisPluginOutlineRegular as Plugin } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBrandGithub, IconMessageReport, IconSettings } from '@tabler/icons-react'
 import { SetupGate } from '@/components/setup-gate'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { ThemeProvider } from './frontend/theme'
+import { ThemeProvider, ThemeToggle, useTheme } from './frontend/theme'
+import { feedbackIssue } from '../../web/src/lib/setup-diagnostics'
 import { Button as YouDubButton } from './frontend/controls'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { applyPlugins } from './frontend/plugins'
@@ -39,14 +40,16 @@ const routes = [
   { path:'/examples', key:'examples', component:ExamplesPage },
 ]
 function IconButton({ label, children, ...props }) { return <Tooltip label={label} portal><Button aria-label={label} className="yd-icon-button" {...props}>{children}</Button></Tooltip> }
+function IconLink({ label, href, children }) { return <Tooltip label={label} portal><a className="yd-icon-button yd-icon-link" aria-label={label} href={href} target="_blank" rel="noopener noreferrer">{children}</a></Tooltip> }
 function SettingsLauncher({ openSettings, registerSettingsLauncher }) {
   const tx=useText()
   useEffect(() => registerSettingsLauncher(openSettings),[openSettings,registerSettingsLauncher])
-  return <IconButton label={tx("client.settings")} onClick={openSettings}><Settings /></IconButton>
+  return <IconButton label={tx("client.settings")} onClick={openSettings}><IconSettings size={16} aria-hidden="true" /></IconButton>
 }
 function SidebarView({ collapsed, useStore, navigate, toggleSidebar, renderSlot }) {
-  const tx=useText(),{t}=useI18n()
+  const tx=useText(),{t,language}=useI18n(),{theme}=useTheme()
   const path = useStore(state => state.path)
+  const issue = feedbackIssue({ ...globalThis.__YOUDUB_APP_INFO__, page:path, language, theme, userAgent:navigator.userAgent })
   const items = [{path:'/', label:tx("client.workbench"), icon:Sparkles}, {path:'/tasks',label:tx("client.library"),icon:History}, {path:'/workflows',label:tx("client.workflows"),icon:Branch}, {path:'/resources',label:tx("client.resources"),icon:Folder}, {path:'/extensions',label:tx("client.extensions"),icon:Plugin}]
   return <aside className="yd yd-sidebar" data-collapsed={collapsed || undefined}>
     <div className="yd-sidebar-chrome" data-window-drag aria-hidden="true" />
@@ -54,7 +57,7 @@ function SidebarView({ collapsed, useStore, navigate, toggleSidebar, renderSlot 
     {collapsed && <div className="yd-sidebar-expand"><IconButton label={t.nav.expandSidebar} onClick={toggleSidebar}><PanelLeft /></IconButton></div>}
     <YouDubButton size="lg" className={collapsed ? 'size-10 px-0' : 'w-full'} aria-label={t.nav.newTask} onClick={() => navigate('/')}><Plus />{!collapsed && t.nav.newTask}</YouDubButton>
     <nav aria-label={t.nav.primary}>{items.map(({path:target,label,icon:Icon}) => <Button key={target} aria-label={label} aria-current={(target === '/' ? path === '/' : path.startsWith(target)) ? 'page' : undefined} icon={<Icon />} onClick={() => navigate(target)}>{!collapsed && label}</Button>)}{renderSlot('youdub.navigation',{path,navigate,collapsed})}</nav>
-    <div className="yd-sidebar-bottom"><ThemeToggle /><div className="yd-settings-control">{renderSlot('sidebar.settings',{wide:false})}</div></div>
+    <div className="yd-sidebar-bottom"><div className="yd-settings-control">{renderSlot('sidebar.settings',{wide:false})}</div><ThemeToggle /><IconLink label={tx('client.feedback')} href={issue.url}><IconMessageReport size={16} aria-hidden="true" /></IconLink><IconLink label="GitHub" href="https://github.com/liuzhao1225/YouDub-webui"><IconBrandGithub size={16} aria-hidden="true" /></IconLink></div>
   </aside>
 }
 function Sidebar(props) { return <LanguageProvider source={props.localeSource}><ThemeProvider source={props.themeSource}><SidebarView {...props} /></ThemeProvider></LanguageProvider> }
@@ -115,7 +118,7 @@ export function apply(ctx) {
   const registerSettingsLauncher = launcher => { settingsLauncher=launcher; return () => { if(settingsLauncher===launcher) settingsLauncher=undefined } }
   const pageRegistry = { subscribe:listener => ctx.slots.subscribe('youdub.page',listener), getSnapshot:() => ctx.slots.getVersion('youdub.page'), entries:() => ctx.slots.entriesOfSlot('youdub.page') }
   const injected = () => ({features,navigate,localeSource,themeSource,pageRegistry,toggleSidebar:() => ctx.layout.toggleSidebar()})
-  ctx.effect(() => {
+  if (!globalThis.__YOUDUB_TEST_SKIP_SETUP__) ctx.effect(() => {
     const dispose=ctx.slots.register({name:'root',priority:-10,children:{'youdub.setup.models':{kind:'single',scope:'root'}},inject:() => ({features,localeSource,themeSource,translationModels,pickDirectory:globalThis.__DSH_DIRECTORY_PICKER__?.pick,onReady:() => dispose()})},Startup)
     return dispose
   })

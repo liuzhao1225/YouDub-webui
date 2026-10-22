@@ -106,6 +106,7 @@ test('positive product composition contains framework services without retired p
   }
   assert.deepEqual(parsed.layers.map(layer => layer.packageName), required);
   assert.equal(rows.get('web-runtime').name, '@deepseek-ai/dsh-web-app');
+  assert.equal(rows.get('ui-theme').config.preference, 'light');
 });
 
 test('legacy product prefix migrates once while extensions, settings and dependency metadata survive', async t => {

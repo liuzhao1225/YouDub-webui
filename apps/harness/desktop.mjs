@@ -1,4 +1,5 @@
 import { access, readFile, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
@@ -14,9 +15,12 @@ const output = join(here, 'dist/desktop');
 const { values } = parseArgs({ options: {
   python: { type: 'string' }, 'models-dir': { type: 'string' },
   'prepare-only': { type: 'boolean', default: false },
+  'skip-setup': { type: 'boolean', default: false },
 } });
-const home = resolve(process.env.DSH_HOME || join(root, '.cache/harness/desktop'));
+const home = resolve(process.env.DSH_HOME || join(root, values['skip-setup'] ? '.cache/harness/desktop-ui-test' : '.cache/harness/desktop'));
 const userData = home + '-user-data';
+const testPython = values['skip-setup'] ? resolve(values.python || process.env.YOUDUB_TEST_PYTHON || join(root, '.venv/bin/python')) : undefined;
+if (testPython) await access(testPython, constants.X_OK);
 await access(join(output, 'lib/youdub-main.js'));
 const { project, pluginRoot, source, pnpm, electron, node, nodeBin } = await prepareSourceDevelopment();
 const profile = join(home, 'profiles/desktop');
@@ -37,6 +41,8 @@ await assertYouDubProfile(profile, join(project, 'package.json'));
 const env = { ...process.env, DSH_HOME: home, DSH_DESKTOP_DSH_DIR: project,
   DSH_DESKTOP_PNPM_ENTRY: pnpm,
   YOUDUB_HARNESS_PLUGIN_ROOT: pluginRoot, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: node,
+  YOUDUB_TEST_SKIP_SETUP: values['skip-setup'] ? '1' : '0',
+  ...(testPython ? { YOUDUB_TEST_PYTHON: testPython } : {}),
 };
 delete env.ELECTRON_RUN_AS_NODE;
 delete env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR;
@@ -46,6 +52,7 @@ if (values['prepare-only']) {
   const executable = electron;
   await access(executable);
   console.log(`Starting YouDub from ${executable}\nHarness profile: ${profile}`);
+  if (values['skip-setup']) console.log('UI test mode: environment and model configuration are skipped; media readiness is not verified.');
   const args = [`--user-data-dir=${userData}`, output];
   const child = spawn(executable, args, { cwd: root, env, stdio: 'inherit' });
   for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => child.kill(signal));

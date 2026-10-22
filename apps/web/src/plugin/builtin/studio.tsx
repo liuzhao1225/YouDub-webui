@@ -75,7 +75,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
     <div aria-hidden="true" className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 bg-[radial-gradient(55%_60%_at_30%_45%,rgb(251_114_153/0.16),transparent_70%),radial-gradient(50%_60%_at_75%_55%,rgb(0_174_236/0.16),transparent_70%)] opacity-70 blur-2xl dark:opacity-100" />
     <form onSubmit={(event) => void submit(event)} className="relative rounded-[28px] p-px before:absolute before:inset-0 before:rounded-[inherit] before:bg-[linear-gradient(135deg,rgb(255_0_51/0.6),rgb(251_114_153/0.35)_42%,rgb(0_174_236/0.6))] before:opacity-45 before:transition-opacity before:duration-300 focus-within:before:opacity-100">
       <div className="relative rounded-[27px] bg-card p-2 shadow-float">
-        {linkSlot && <div className="px-3 pt-3 pb-1">
+        {linkSlot && <div className="pt-3 pb-1">
           <div className="relative flex items-center gap-2 rounded-xl border border-input bg-muted px-3 focus-within:border-ring">
             <Link2 className="size-4 shrink-0 text-subtle-foreground" />
             <Input aria-label={tx("studio.video.link")} inputMode="url" autoComplete="off" value={sourceUrl} disabled={busy || !!pendingId} placeholder={tx("studio.paste.a.youtube.or.bilibili.link")} className="h-12 min-w-0 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0" onBlur={() => setLinkTouched(true)} onChange={(event) => {
@@ -87,7 +87,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
           </div>
           {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
           {source && workflow.configSchema.properties?.source_proxy_port && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { source_proxy_port: workflow.configSchema.properties.source_proxy_port } }} value={{ source_proxy_port: config.source_proxy_port ?? 0 }} diagnostics={[]} readOnly={busy || !!pendingId} onChange={(value) => setConfig({ ...config, source_proxy_port: value.source_proxy_port })} /></div>}
-          <div className="my-4 flex items-center gap-3 text-xs text-subtle-foreground"><span className="h-px flex-1 bg-border" />{tx("studio.or.upload.a.video")}<span className="h-px flex-1 bg-border" /></div>
+          <div className="my-2 text-center text-xs text-subtle-foreground">{tx("studio.or.upload.a.video")}</div>
         </div>}
         <div className="grid gap-3">{workflow.inputs.map((slot) => <UploadSlot key={slot.name} slot={slot} alternative={slot.name === linkSlot} file={files[slot.name]} disabled={busy || !!pendingId} onChange={(file) => {
           if (file && slot.maxBytes && file.size > slot.maxBytes) {

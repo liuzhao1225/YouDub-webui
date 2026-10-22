@@ -69,4 +69,6 @@ Mac 解锁后，外部文本插件页面计数按钮从 0 变为 1；原生自�
 
 按用户当前范围，只验证源码开发运行；打包、签名、公证和分发不属于本轮工作。未进行 Windows 实机或公开发布验收。外部真实 LLM 与四模型已完成这次输入的处理链；本地输入的 Whisper tiny 把 trunks 识别为 arms；新下载的 YouTube 输入识别为 fronts，翻译分别沿用这些识别错误。模型质量与人工订正需求保留，不能声称任意输入的质量通过。
 
-Windows 标题栏存在源码可确认的重复占位，尚未修复或实机验收：官方 `vendor/deepseek-harness/source/packages/client/ui-layout/src/client/AppFrame.module.css:26` 已给 `.frame` 添加 `padding-top: var(--dsh-windows-titlebar-height)`，同文件第 93 行又将 `--dsh-frame-top-clearance` 设为该高度；YouDub `apps/harness/src/style.css:26` 的 `.yd-main-chrome` 继续使用这一变量增加高度。macOS 官方框架仅定义 48px 安全区，产品占位一次。本轮仅收紧 Mac 任务详情页内容布局，未改上述 Windows 路径或 Harness 源码。
+顶部留位已统一到产品布局：侧栏展开时主区域清除额外安全区，macOS 窗口按钮由侧栏保留官方高度，侧栏收起后主区域恢复安全区。Windows 保留官方 frame 的标题栏留位，产品主区域和侧栏不再重复增加同一高度。Windows 实机验收仍未完成。
+
+2026-10-22 已在独立 macOS 测试目录检查工作台、任务库、工作流列表与编辑器、资源、扩展页，以及侧栏收起和展开。侧栏反馈实际打开通用新建 Issue 表单，并读回版本、系统、架构、当前页面、语言、主题及客户端信息。随后通过 [PR #160](https://github.com/liuzhao1225/YouDub-webui/pull/160) 将环境配置与通用反馈拆为两个模板，并从主分支核对内容；侧栏使用 `bug-report.md`，环境配置入口使用 `setup-problem.md`，环境入口会复制完整日志。本地反馈与环境入口 24 项、真实 Desktop Host 2 项通过，框架 7 项构建门禁及完整桌面构建通过。拆分后的 GitHub 表单网页回读遇到连接中断，模板上线通过 API 确认。
