@@ -196,7 +196,6 @@
     "apps/web/tests/workflow-run.e2e.ts",
     "apps/web/stress-tests/reasoning-chunks.stress.ts",
     "apps/cli/tests/**/*.ts",
-    "apps/plugin-market-generator/tests/**/*.ts",
     "apps/desktop/scripts/**/*.ts",
     "apps/desktop/tests/**/*.ts",
     "apps/desktop-host/tests/**/*.ts",
@@ -462,7 +461,6 @@
     { "path": "./packages/llm/plugin-package-inventory-deepseek" },
     { "path": "./packages/host/webserver" },
     { "path": "./apps/cli" },
-    { "path": "./apps/plugin-market-generator" },
     { "path": "./apps/desktop-host" },
     { "path": "./apps/desktop/tsconfig.host.json" }
   ]

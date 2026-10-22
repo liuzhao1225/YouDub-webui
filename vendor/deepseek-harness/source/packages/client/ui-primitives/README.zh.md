@@ -80,7 +80,7 @@ kind: "package-library"
 
 - **`Tag` 与 `Pill`。** 11px 胶囊尺寸的只读徽章用 `Tag`；胶囊可选中（`active` 与 `onClick`，视图切换与筛选器就是这样用的），或者必须落在 24px 文本行上时用 `Pill`——`TerminalBlock` 把退出状态渲染成静态 `Pill` 正是后一种情况。这里尺寸和是否可交互同样是判据，两者不可互换。
 - **`Pill` 与 `SegmentedControl`。** 一排 `Pill` 是一组彼此独立的 chip——每个各自开关，可以同时激活多个。`SegmentedControl` 是在几种互斥模式中选一，画成带一个指示块的 tablist，并自带 tab 键盘模式（方向键在分段间移动，只有选中项在 Tab 序列里）；模型设置页的新增卡片就用它切换两张表单。
-- **`DisclosureRow` 与卡片。** 该行以固定 24px 把标题与内容左右排列。把名称叠在描述之上的卡片是另一种布局，属于功能包——`ui-settings-plugins` 的 `PluginCard` 是先例，并记录了原因。
+- **`DisclosureRow` 与卡片。** 该行以固定 24px 把标题与内容左右排列。把名称叠在描述之上的卡片是另一种布局，属于功能包。
 - **`FoldToggle` 与对外导出面。** 它是包内组件，未导出；输出卡片用它做头尾折叠。
 
 需求确实特殊时，在自己的包里写自己的组件没有问题。不可以的是复制这里已有的控件——而当第二个包需要同一个控件时，它就该住进本包。
@@ -120,11 +120,11 @@ kind: "package-library"
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
-`Button` 的 `md` 使用 H36/R12，`sm` 使用 H28/R8，包含描边控件。菜单与卡片遵循[共享圆角规则](../../../docs/web-styling.zh.md#corner-radii-and-settings-cards)；功能样式保留控件几何。
+`Button` 的 `md` 使用 H36/R12，`sm` 使用 H28/R8，包含描边控件。菜单与卡片遵循[共享圆角规则](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/web-styling.md#corner-radii-and-settings-cards)；功能样式保留控件几何。
 
 `Menu.listClassName` 独立控制菜单卡片样式，不影响入口容器，也适用于 portal 模式。前置图标使用 `--dsw-alias-menu-icon` 文本色；破坏性操作图标保留错误色。
 
-`Menu` 将卡片材质交给 `MenuSurface`，自定义菜单也使用该组件。`MenuSurface` 转发 div 属性和 ref，采用透明填充及模糊，`compact` 使用较小圆角。默认相对定位使材质层限制在容器内；调用方的类可以设置 fixed 或 absolute 定位。macOS 上，不接收交互的底层通过 CSS 锚点跟随卡片，并随卡片卸载；该底层要求 Web 外壳隔离 body 的层叠上下文。功能类控制布局和层级，组件负责材质和外圆角（[菜单规则](../../../docs/web-styling.zh.md#component-rules)）。 模态遮罩保留黑色半透明填充，不模糊背景。
+`Menu` 将卡片材质交给 `MenuSurface`，自定义菜单也使用该组件。`MenuSurface` 转发 div 属性和 ref，采用透明填充及模糊，`compact` 使用较小圆角。默认相对定位使材质层限制在容器内；调用方的类可以设置 fixed 或 absolute 定位。macOS 上，不接收交互的底层通过 CSS 锚点跟随卡片，并随卡片卸载；该底层要求 Web 外壳隔离 body 的层叠上下文。功能类控制布局和层级，组件负责材质和外圆角（[菜单规则](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/web-styling.md#component-rules)）。 模态遮罩保留黑色半透明填充，不模糊背景。
 
 `MenuGroup` 渲染以本地化标题命名的 `role="group"` 区段，标题 id 由各实例独立持有。自定义菜单与列表框共用其标题字体、间距和吸顶定位。标题原位透明；只有 `data-stuck` 才启用主题在浅／深色模式下的 94% 不透明分组标题填充。`data-platform="darwin"` 以外的标题使用 `--dsw-radius-md` 圆角；外围菜单保留半透明材质。
 
@@ -179,7 +179,7 @@ kind: "package-library"
 - [ui-tool](../ui-tool/README.zh.md)——拼装这些输出卡片的工具调用展示层。
 - [ui-conversation](../ui-conversation/README.zh.md)——渲染 Markdown 回复与工具卡片的聊天界面。
 - [ui-theme](../ui-theme/README.zh.md)——这些原子组件样式所依赖的 `--dsw-*` token 体系。
-- [Web 样式](../../../docs/web-styling.zh.md)——Web 客户端组件的权威样式规则。
+- [Web 样式](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/web-styling.md)——Web 客户端组件的权威样式规则。
 
 -----
 
@@ -207,7 +207,7 @@ kind: "package-library"
 - **鱼形标志是重新绘制的近似版本**：它来自字体字形，而本地设计数据无法导出其矢量几何；在获得精确导出路径前，使用手工重建版本代替。
 - **`Pill` 与 `Input` 没有设计来源**：两个原子组件均自行定义；与其相似的侧边栏搜索字段和视图标签条由消费方组合，不是这些原子组件。
 - **`StateDot` 没有 `Active` 变体**：支持的状态为 done、warning、ongoing、error 和 idle。
-- **面向用户的文案必须由渲染点提供**：这些原子组件是 zero-Cordis 的，拿不到 `ctx.locale`；各功能必须通过原子组件的带类型 prop 提供完整本地化 label（见[决策](../../../.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.zh.md)）。
+- **面向用户的文案必须由渲染点提供**：这些原子组件是 zero-Cordis 的，拿不到 `ctx.locale`；各功能必须通过原子组件的带类型 prop 提供完整本地化 label（见[决策](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.md)）。
 - **`TerminalBlock` 不是终端模拟器**：它渲染已结束或仍在运行的命令输出，而不是交互式会话：SGR 颜色、回车、退格、行内擦除、制表位与字符宽度会被遵循；绝对光标定位、清屏与备用屏幕序列会被剥离。
 
 <a id="dev-note"></a>

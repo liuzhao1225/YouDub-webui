@@ -57,14 +57,12 @@ const publicationSourceAllowlist: Readonly<Record<string, readonly string[]>> = 
 const publishedRepositoryUrl = 'git+https://github.com/deepseek-ai/deepseek-harness.git'
 /** Packages that participate in the experimental policy. */
 const experimentalPackageDirectory = /^packages\/experimental\/[^/]+$/
-/** Private reference tool run from the repository; it publishes no files. */
-const pluginMarketGeneratorDirectory = 'apps/plugin-market-generator'
 /**
  * Ordinary package and application directories subject to runtime dependency policy.
  * The private YouDub profile runner is excluded from publication below.
  */
 const standardReleaseMemberDirectory = new RegExp(
-  `^(?:packages/(?!experimental/)[^/]+/[^/]+|apps/(?!desktop(?:-host)?$|${pluginMarketGeneratorDirectory.slice('apps/'.length)}$)[^/]+|vendor/[^/]+)$`,
+  `^(?:packages/(?!experimental/)[^/]+/[^/]+|apps/(?!desktop(?:-host)?$)[^/]+|vendor/[^/]+)$`,
   'u',
 )
 /** Installable application assembled by electron-builder rather than published to npm. */
@@ -189,7 +187,6 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-client-ui-primitives': ['lib/**/*.css'],
   '@deepseek-ai/dsh-client-ui-dockkit': ['lib/**/*.css'],
   '@deepseek-ai/dsh-client-ui-sidebar-documentpreview': ['lib/client.*.js'],
-  '@deepseek-ai/dsh-client-ui-sidebar-terminal': ['lib/client.*.js'],
   '@deepseek-ai/dsh-client-web': ['lib/**/*.css', 'lib/apply-injections.js'],
   '@deepseek-ai/dsh-client-ui-theme': ['lib/styles'],
   // The physical-key protocol is a public entry usable without the browser service.
@@ -474,7 +471,7 @@ export function checkWorkspaceManifest({ dir, manifest }: WorkspaceManifest): st
     }
   }
 
-  if (dir.startsWith('apps/') && dir !== desktopApplicationDirectory && dir !== pluginMarketGeneratorDirectory && manifest.name?.startsWith('@deepseek-ai/')) {
+  if (dir.startsWith('apps/') && dir !== desktopApplicationDirectory && manifest.name?.startsWith('@deepseek-ai/')) {
     const expectedFiles = appPackageFiles[manifest.name]
     if (expectedFiles === undefined) {
       errors.push(`${label}: app package has no publication files policy`)

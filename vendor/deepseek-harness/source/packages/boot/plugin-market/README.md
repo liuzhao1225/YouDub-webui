@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`pluginMarket` reads the plugin market indexes the user configures, validates them with [`dsh-plugin-market-index`](../../util/plugin-market-index/README.md), and annotates every entry with the profile's installation status, DSH compatibility, and the exact arguments that install it. The Web [Discover tab](../../client/ui-plugin-market/README.md) and the `plugin_market` agent tool read through it; installation itself goes through [`pluginManager.installBundle`](../plugin-manager/README.md). The format and its rationale live in the [index format Agent Note](../../../.agents/notes/implemented/feature/2026-10-02-plugin-market-index-format.md); the Host and Web design lives in the [Discover Agent Note](../../../.agents/notes/implemented/feature/2026-10-02-plugin-market-discover.md).
+`pluginMarket` reads the plugin market indexes the user configures, validates them with [`dsh-plugin-market-index`](../../util/plugin-market-index/README.md), and annotates every entry with the profile's installation status, DSH compatibility, and the exact arguments that install it. The `plugin_market` agent tool reads through it; installation itself goes through [`pluginManager.installBundle`](../plugin-manager/README.md). The format and its rationale live in the [index format Agent Note](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/.agents/notes/implemented/feature/2026-10-02-plugin-market-index-format.md); the Host and Web design lives in the [Discover Agent Note](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/.agents/notes/implemented/feature/2026-10-02-plugin-market-discover.md).
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-The optional [custom plugin markets bundle](../../experimental/plugin-market-bundle/README.md) mounts the service as the `plugin-market` row; shipped profiles leave the bundle off. Like `plugin-manager`, the row is disabled without a profile, and it waits for `pluginManager`. No index source is configured by default, so the Host sends no market request until a user adds one.
+A profile can mount this service as a `plugin-market` row. Like `plugin-manager`, the row is disabled without a profile, and it waits for `pluginManager`. No index source is configured by default, so the Host sends no market request until a user adds one.
 
 | Config | Default | Meaning |
 |---|---|---|
@@ -85,7 +85,7 @@ Compatibility is computed per version with `evaluatePluginCompatibility`, the ve
 
 #### What the model sees
 
-The [`plugin_market` tool](../../../docs/tool-catalog.md#deepseek-aidsh-plugin-market) returns JSON: configured index URLs with English titles and last errors, one page of plugins, in index order or by best match for a `query`, with name, English title, description, and author each truncated to 300 characters, homepage, repository, category, label ids, sort-key values, installation status, the default version, and the number of versions, or one page of a plugin's versions. Each returned version carries its ISO publish time, compatibility, and install arguments. Its description states that market text is third-party content, not instructions.
+The [`plugin_market` tool](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/tool-catalog.md#deepseek-aidsh-plugin-market) returns JSON: configured index URLs with English titles and last errors, one page of plugins, in index order or by best match for a `query`, with name, English title, description, and author each truncated to 300 characters, homepage, repository, category, label ids, sort-key values, installation status, the default version, and the number of versions, or one page of a plugin's versions. Each returned version carries its ISO publish time, compatibility, and install arguments. Its description states that market text is third-party content, not instructions.
 
 #### Token effect
 

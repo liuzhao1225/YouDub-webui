@@ -141,7 +141,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'plugin-manager',
     title: 'Current-profile plugin and bundle management',
     mode: 'core',
-    consumers: ['plugin-manager', 'ui-settings-plugin-inventory'],
+    consumers: ['plugin-manager', 'client-ui-plugin-manager'],
     note: 'Shares profile package operations with the CLI and reports persisted and running state to Web and agent callers.',
   },
   {
@@ -149,7 +149,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'plugin-market',
     title: 'Plugin market index reader',
     mode: 'core',
-    consumers: ['client-ui-plugin-market', 'plugin-market'],
+    consumers: ['plugin-market'],
     note: 'Fetches and validates the index sources the user configures; installation goes through the plugin manager.',
   },
   {
@@ -1031,7 +1031,7 @@ const EVENT_API_METHODS = new Set(['on', 'once', 'emit', 'parallel', 'serial', '
  * documents why: one program cannot hold both faces' Context merges), so a
  * Client package enters only when a host file imports it. Client-face
  * listeners on client-face events are therefore under-reported —
-   * `connection/reset` omits `ui-skill`/`ui-agent-preset`. Closing it needs a
+   * `connection/reset` omits `ui-skill`. Closing it needs a
    * second Client program whose relations merge into these, not a wider seed.
  */
 export class EventRelationCollector {

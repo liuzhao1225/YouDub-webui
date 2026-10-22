@@ -77,3 +77,22 @@ test('executable mode and link target changes require review', { skip: process.p
   assert.equal(changes.find(entry => entry.path === 'linked.js').after.target, 'keep.js')
   assert.throws(() => verifyChanges(original, current, []), /differs from the reviewed fork ledger/)
 })
+
+test('retiring a package rejects and removes its compiled outputs while retaining live package outputs', async t => {
+  const { root, source } = await fixture(t)
+  const stage = join(root, 'stage'), retired = 'packages/client/retired', retained = 'packages/client/retained'
+  for (const path of [retired, retained]) {
+    await mkdir(join(source, path), { recursive: true })
+    await writeFile(join(source, path, 'package.json'), '{}\n')
+    await mkdir(join(stage, path, 'lib'), { recursive: true })
+    await writeFile(join(stage, path, 'lib/client.js'), 'compiled output\n')
+  }
+  const original = { packages: [{ path: retired }, { path: retained }], ...await tree(source) }
+  await rm(join(source, retired), { recursive: true })
+  const current = { source, original, ...await tree(source) }
+  await assert.rejects(assertStagedSource(stage, current), /Retired framework package remains/)
+  await stageFrameworkSource(current, stage, original.entries)
+  await assert.rejects(readFile(join(stage, retired, 'lib/client.js')), { code: 'ENOENT' })
+  assert.equal(await readFile(join(stage, retained, 'lib/client.js'), 'utf8'), 'compiled output\n')
+  await assertStagedSource(stage, current)
+})

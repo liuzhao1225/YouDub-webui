@@ -56,15 +56,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'settings.section': { kind: 'list'; scope: 'root'; owner: SettingsSectionOwnerProps }
     /**
-     * One page inside the Plugins settings section. The section owner renders
-     * localized entry labels as tabs and mounts each contribution inside its
-     * corresponding tab panel. Options: `id` (tab key), `order` (tab order),
-     * and `label` (registrant-localized tab text). Declared at runtime by the
-     * feature that owns the Plugins section; the type lives here so inventory
-     * and configuration plugins collaborate without depending on one another.
-     */
-    'settings.plugins.tab': { kind: 'list'; scope: 'root'; owner: SettingsPluginsTabOwnerProps }
-    /**
      * Root-scoped onboarding steps contributed by settings features. The
      * shell mounts one ordered step at a time; the active registrant either
      * completes itself or keeps ownership until the user completes its sole
@@ -95,12 +86,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** Owner share of a General preference row (the section supplies nothing). */
 export interface SettingsGeneralItemOwnerProps {
   /** Marker field: item owner props are intentionally empty. */
-  children?: never
-}
-
-/** Owner share of a Plugins tab (the section supplies nothing). */
-export interface SettingsPluginsTabOwnerProps {
-  /** Marker field: tab owner props are intentionally empty. */
   children?: never
 }
 

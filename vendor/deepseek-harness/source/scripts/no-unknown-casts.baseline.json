@@ -329,16 +329,6 @@
     "c4f0b7f87a16d26a1e4e7ef7a07991e789f0bbcfdbe2240a97fcd879668b5b3f": 1,
     "f549d88ac2b1db67fb33f18a024c116051ff83d3f8ad0433ba4ceedc679e9044": 2
   },
-  "packages/client/ui-agent-preset/tests/apply.client.spec.ts": {
-    "5c8c41ba658c0576bea6c34b1226c27e7b0328c03c9eea0d6c920f940c9d8f5b": 1,
-    "b2fb53c6878d75d54e2d39be30f77cd5e08810261e513fe15f3d687e2313fbd7": 1,
-    "c2369bc12a9476816900a58b06dd52c2f53bc92658559a076cdd70ae3d15f30b": 9,
-    "c595e4648d474f3a9538ab1e2140c25255bb4675c6e7bae8043adf9158915b69": 10,
-    "ddca8a18cd7755688ea48674c48c3c8a6107186815ea91f516424bbed0e1c518": 1
-  },
-  "packages/client/ui-agent-preset/tests/components.client.spec.tsx": {
-    "6c63f71c0aeb1a9a97ec28a3242f77eef021ecfcee48238f17592eb2f1040c09": 1
-  },
   "packages/client/ui-approval/tests/ui-approval.client.spec.tsx": {
     "3e392ff0165a51a6ac716515b99af35ec152f89607cff72080cb9afbcff63f46": 1
   },
@@ -479,15 +469,6 @@
   "packages/client/ui-settings-models/tests/store.client.spec.ts": {
     "6b8b0a920c558092d20bc17623b7050e0f7403f896fde7da17bb45677899b910": 1
   },
-  "packages/client/ui-settings-plugin-inventory/tests/browser-plugin.client.spec.tsx": {
-    "04984a2ce1486250236e638e0197da0a1a840855ed3975c59130a85358c7e5fe": 1,
-    "85f4d0d762126e709ae2178ca656f586dac1ba425eb1d8dd402cb5577d6e8225": 1
-  },
-  "packages/client/ui-settings-plugin-inventory/tests/components.client.spec.tsx": {
-    "0d78ec7c8ca39f70a4033ff4d330f8ef26832bb89932f98d1c87d76b4ce16d00": 1,
-    "79c53da50aa08004e201cebca842267ae2650a543b435a7906960f6492c2398b": 1,
-    "a3c1509d552d0102e118f3071a234002a5c83c30ca6923f8a87e9e3733ce0dcf": 1
-  },
   "packages/client/ui-settings/tests/schema.client.spec.ts": {
     "0584be4cde4cd33049ef7c02e9d1562a30ec48ef2176f2f22b328b5be2903407": 1
   },
@@ -550,15 +531,6 @@
   },
   "packages/client/ui-sidebar-right/tests/seat.client.spec.tsx": {
     "1e3017afba65017e855900ad51f65999e712b08beb1b33bfe996d3cdb137a105": 1
-  },
-  "packages/client/ui-sidebar-terminal/tests/terminal-body.client.spec.tsx": {
-    "2619b64fb6b7aaf380269d12e204e1f44eee31ff48e151313c326dae4ef2887c": 1
-  },
-  "packages/client/ui-sidebar-terminal/tests/terminal-cursor.client.spec.ts": {
-    "c17c30832b2cde55b57c2c94083562feb1e941ade2d01268f1d49d31a6c6e2ca": 1
-  },
-  "packages/client/ui-sidebar-terminal/tests/terminal-theme.client.spec.ts": {
-    "1fa946c54b497010d85a36dcb586ae0a99991d8eb4eab8ef709eb34af373fdc5": 1
   },
   "packages/client/ui-sidebar/src/client/index.ts": {
     "4c73f40f3ce989f285848573d7154fb295886bba707ad829e2c8c089e326aeea": 1

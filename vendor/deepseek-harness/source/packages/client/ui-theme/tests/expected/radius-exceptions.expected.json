@@ -4,13 +4,5 @@
   ],
   "ui-deliverables/src/client/Deliverables.module.css": [
     ".fileIcon: border-radius: 10px"
-  ],
-  "ui-shortcuts/src/client/Reference.module.css": [
-    ".dialog: border-radius: 24px",
-    ".close: border-radius: 28px",
-    ".searchField: border-radius: 12px",
-    ".keyBadge: border-radius: 10px",
-    ".unbound: border-radius: 10px",
-    ".recorder: border-radius: 10px"
   ]
 }

@@ -79,7 +79,7 @@ Read these when the inventory contract is not enough: how the Remote reaches cli
 
 - [Remote assembly](../../api/remotes/README.md) — how clients consume `pluginInventory/list` without importing the Host implementation.
 - [Cordis plugin loader](../../../vendor/loader/README.md) — the Loader whose entries this package projects.
-- [Plugin inventory settings surface](../../client/ui-settings-plugin-inventory/README.md) — the browser-side projection that renders the inventory.
+- [Plugin management surface](../../client/ui-plugin-manager/README.md) — the browser-side projection that renders the inventory.
 
 -----
 

@@ -63,6 +63,8 @@ jobs:
           npm run check:framework-isolation
       - name: 检查保留的框架 GUI、设置和桌面生命周期
         working-directory: .cache/harness/source-build
+        env:
+          npm_execpath: ${{ github.workspace }}/apps/harness/node_modules/pnpm/bin/pnpm.mjs
         run: |
           node ../../../apps/harness/test/prepare-framework-client.mjs
           node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-closure.ts --manifest ../framework-client-project/package.json

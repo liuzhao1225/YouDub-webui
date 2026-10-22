@@ -88,12 +88,6 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // `cordis` is also an agent-preset id, so in these files the bare name is
   // product data, not a package reference. Renaming it changed which preset
   // the creator flow stages and which id the roster reports.
-  { file: 'packages/client/ui-agent-preset/src/client/AgentPresetSection.tsx', upstream: ['cordis'] },
-  { file: 'packages/client/ui-agent-preset/src/client/PresetGuideDialog.tsx', upstream: ['cordis'] },
-  { file: 'packages/client/ui-agent-preset/src/client/index.ts', upstream: ['cordis'] },
-  { file: 'packages/client/ui-agent-preset/tests/apply.client.spec.ts', upstream: ['cordis'] },
-  { file: 'packages/client/ui-agent-preset/tests/locales.client.spec.ts', upstream: ['cordis'] },
-  { file: 'packages/client/ui-agent-preset/tests/section.client.spec.tsx', upstream: ['cordis'] },
   { file: 'apps/cli/tests/web-agent-presets.e2e.ts', upstream: ['cordis'] },
   { file: 'apps/cli/tests/profiles/web/tests/fixtures/creator-plugin-manager.mjs', upstream: ['cordis'] },
   { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
@@ -127,7 +121,6 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // `cordis/tree` is an Inspector observation topic, not a package subpath.
   { file: 'scripts/gen-cordis-catalog.ts', upstream: ['cordis'] },
   // The UI locale namespace and input-trigger source id are product keys.
-  { file: 'packages/client/ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisActionRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisDefineRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisPanel.tsx', upstream: ['cordis'] },
@@ -156,7 +149,6 @@ const POSTCONDITIONS: readonly PostCondition[] = [
   { file: 'vendor/README.md', text: '17. **`@deepseek-ai` rescope**', count: 1 },
   { file: 'pnpm-workspace.yaml', text: 'cordis@4.0.0-rc.7', count: 0 },
   // The preset ids in this table are product data, not package names.
-  { file: 'packages/client/ui-agent-preset/tests/locales.client.spec.ts', text: '[\'cordis\', \'presetCordisName\'', count: 1 },
   // The preset id the shipped composition documents to its own model.
 ]
 
@@ -299,14 +291,6 @@ const VENDORED_LIBRARY = /^@deepseek-ai\\/(cosmokit|schemastery)(\\/|$)/
     file: 'docs/cookbook/adding-a-vendored-package.zh.md',
     find: '保留上游的 `name`/`version`/`exports`/`type`',
     replace: '改写 `name` 的 scope（[映射](../rescope.zh.md)），保留上游的 `exports`/`type`',
-    expect: 1,
-  },
-  {
-    // The real package references in files whose other `cordis` strings are preset ids.
-    id: 'agent-preset-spec-framework-import',
-    file: 'packages/client/ui-agent-preset/tests/apply.client.spec.ts',
-    find: "import { Context } from 'cordis'",
-    replace: "import { Context } from '@deepseek-ai/cordis'",
     expect: 1,
   },
   {

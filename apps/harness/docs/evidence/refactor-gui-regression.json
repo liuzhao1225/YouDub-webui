@@ -98,7 +98,9 @@
     "previousConclusion": "failure",
     "failure": "workflow-options test pinned retired h-8 rounded-full bg-muted classes after the committed shared-control change.",
     "fix": "Keep language choice/state assertions and check accessible popup expansion instead of retired style class names.",
-    "nextRun": "pending push",
-    "expandedLane": "Existing framework check now runs every retained packages/client and packages/host test."
+    "nextRun": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39802851648",
+    "expandedLane": "Existing framework check now runs every retained packages/client and packages/host test.",
+    "nextConclusion": "failure",
+    "nextFailure": "Document preview license test: spawnSync pnpm ENOENT; CI npm_execpath fix and local validation recorded in refactor-retired-panels-prune.json."
   }
 }

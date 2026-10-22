@@ -24,13 +24,13 @@ export const remoteDefaultResponses: RemoteTable = {
       groups: [],
       failures: [],
     }),
-    // ui-agent-preset hero chip and header label on first mount.
+    // Agent preset metadata consumed by retained workspace fixtures.
     'agentPresets/list': ok({ presets: [] }),
     // cordis-client-runner `ClientCordisInspectRegistry.sync` at apply and on `connection/reset`.
     'dynamicCordisRunner/syncInspectManifest': ok(null),
     // ui-cordis inventory at apply and on `connection/reset`.
     'dynamicCordisRunner/inventory': ok([]),
-    // ui-settings-plugins web-search card `readCredential()` when the settings mirror first publishes.
+    // Credential metadata requested through the shared settings mirror.
     'credentials/describe': ok({}),
     // ui-permission-presets `PermissionCatalogDirectory` on its first read for a connection generation.
     'permissionPresets/catalog': ok({ options: [] }),

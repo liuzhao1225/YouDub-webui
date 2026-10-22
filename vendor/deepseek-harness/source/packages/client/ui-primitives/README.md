@@ -80,7 +80,7 @@ Four pairs are easy to confuse:
 
 - **`Tag` against `Pill`.** Reach for `Tag` for a read-only badge at the 11px capsule size, and for `Pill` when the capsule is selectable (`active` and `onClick`, as view switchers and filters use) or when it must sit on a 24px text line — `TerminalBlock` renders its exit status as a static `Pill` for exactly that reason. Size decides as much as interactivity here; the two are not interchangeable.
 - **`Pill` against `SegmentedControl`.** A row of `Pill`s is a set of independent chips — each one toggles on its own, and several may be active. `SegmentedControl` is one choice among a few mutually exclusive modes, drawn as a tablist with one indicator, and it comes with the tab keyboard pattern (arrow keys walk the segments, only the selected one is in the tab sequence); the Models settings add card switches its two forms with it.
-- **`DisclosureRow` against a card.** The row lays its title and content side by side at a fixed 24px. A card that stacks a name over a description is a different layout, and belongs in the feature package — `ui-settings-plugins`' `PluginCard` is the precedent and records why.
+- **`DisclosureRow` against a card.** The row lays its title and content side by side at a fixed 24px. A card that stacks a name over a description is a different layout, and belongs in the feature package.
 - **`FoldToggle` against the exported surface.** It is package-internal and not exported; the output cards use it for their head-tail fold.
 
 Writing your own component in your own package is fine when the need is genuinely specific. What is not fine is copying a control that already exists here — and once a second package needs the same control, it belongs in this package.
@@ -120,11 +120,11 @@ The atoms cannot read the application locale, so every piece of user-facing copy
 <a id="understand-the-implementation"></a>
 ## Understand the implementation
 
-`Button` uses H36/R12 for `md` and H28/R8 for `sm`, including outlined controls. Menus and cards follow the [shared radius rules](../../../docs/web-styling.md#corner-radii-and-settings-cards); feature classes preserve control geometry.
+`Button` uses H36/R12 for `md` and H28/R8 for `sm`, including outlined controls. Menus and cards follow the [shared radius rules](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/web-styling.md#corner-radii-and-settings-cards); feature classes preserve control geometry.
 
 `Menu.listClassName` styles the menu card independently of the anchor wrapper, including in portal mode. Leading icons use the `--dsw-alias-menu-icon` color; destructive icons retain their error color.
 
-`Menu` delegates its card material to `MenuSurface`; custom menus use the same component. `MenuSurface` forwards div props and refs, uses translucent fill and blur, and accepts `compact` for the smaller radius. Its default relative positioning contains the material layer; caller classes can supply fixed or absolute placement. On macOS, its non-interactive backing follows the card through CSS anchors and unmounts with it; the backing requires the Web shell’s isolated body. Feature classes control layout and elevation, while the component owns material and outer radius ([menu rules](../../../docs/web-styling.md#component-rules)). Modal masks retain their dark translucent fill without background blur.
+`Menu` delegates its card material to `MenuSurface`; custom menus use the same component. `MenuSurface` forwards div props and refs, uses translucent fill and blur, and accepts `compact` for the smaller radius. Its default relative positioning contains the material layer; caller classes can supply fixed or absolute placement. On macOS, its non-interactive backing follows the card through CSS anchors and unmounts with it; the backing requires the Web shell’s isolated body. Feature classes control layout and elevation, while the component owns material and outer radius ([menu rules](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/web-styling.md#component-rules)). Modal masks retain their dark translucent fill without background blur.
 
 `MenuGroup` renders a `role="group"` section named by its localized heading, with an instance-owned heading id. It shares heading typography, spacing, and sticky positioning between custom menus and listboxes. Headings are transparent at rest; only `data-stuck` enables the theme's 94%-opaque group-header fill in either palette. Outside `data-platform="darwin"`, headings use `--dsw-radius-md` corners; the enclosing menu keeps its translucent material.
 
@@ -179,7 +179,7 @@ These pages place the atoms in the client stack and the design system.
 - [ui-tool](../ui-tool/README.md) — the tool-call presentation layer that composes these output cards.
 - [ui-conversation](../ui-conversation/README.md) — the chat surface that renders markdown replies and tool cards.
 - [ui-theme](../ui-theme/README.md) — the `--dsw-*` token system these atoms style through.
-- [Web styling](../../../docs/web-styling.md) — the authoritative styling rules for web client components.
+- [Web styling](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/web-styling.md) — the authoritative styling rules for web client components.
 
 -----
 
@@ -207,7 +207,7 @@ These limits define how the atoms behave at the edges; they are current package 
 - **The fish logo is a redrawn approximation** — its font glyph has no exportable vector geometry in the local design data, so a hand-authored recreation stands in until an exact export path exists.
 - **`Pill` and `Input` have no design source** — both atoms are self-defined; the sidebar search field and view-tab strip that resemble them are consumer-owned compositions, not these atoms.
 - **No `Active` `StateDot` variant** — the supported states are done, warning, ongoing, error, and idle.
-- **User-facing copy is required at the render site** — the atoms are zero-Cordis and cannot reach `ctx.locale`; each feature must supply complete localized labels through the primitive's typed props ([decision](../../../.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.md)).
+- **User-facing copy is required at the render site** — the atoms are zero-Cordis and cannot reach `ctx.locale`; each feature must supply complete localized labels through the primitive's typed props ([decision](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/.agents/notes/implemented/architecture/2026-08-23-locale-owned-client-ui-copy.md)).
 - **`TerminalBlock` is not a terminal emulator** — it renders settled or still-running command output, not an interactive session: SGR colors, carriage return, backspace, erase-in-line, tab stops, and character width are honored; absolute cursor positioning, screen clearing, and alternate-screen sequences are stripped.
 
 <a id="dev-note"></a>

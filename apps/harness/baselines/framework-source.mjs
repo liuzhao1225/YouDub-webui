@@ -56,8 +56,20 @@ export function productRevision(root = repository) {
   return { commit: git('rev-parse', 'HEAD'), dirty: Boolean(git('status', '--porcelain', '--untracked-files=normal')) }
 }
 
-/** Validate only declared inputs; compiled outputs may coexist in the staging workspace. */
+/** Package directories retired from the immutable inventory by this fork. */
+function retiredPackagePaths(source) {
+  const inputs = new Set(source.entries.map(entry => entry.path))
+  // An original archive has no fork inventory and therefore no retired packages.
+  return (source.original?.packages ?? []).filter(pkg => !inputs.has(`${pkg.path}/package.json`)).map(pkg => pkg.path)
+}
+
+/** Validate declared inputs and reject outputs belonging to retired packages. */
 export async function assertStagedSource(stage, source) {
+  for (const path of retiredPackagePaths(source)) {
+    try { await lstat(join(stage, path)) }
+    catch (error) { if (error.code === 'ENOENT') continue; throw error }
+    throw new Error(`Retired framework package remains in build staging: ${path}; rebuild the framework`)
+  }
   for (const entry of source.entries) {
     const path = join(stage, entry.path), stat = await lstat(path)
     if (entry.type === 'symlink') {
@@ -78,6 +90,7 @@ export async function stageFrameworkSource(source, stage, previousEntries) {
     throw new Error('The build workspace must be separate from framework source')
   }
   const paths = new Set(source.entries.map(entry => entry.path))
+  for (const path of retiredPackagePaths(source)) await rm(join(stage, path), { recursive: true, force: true })
   for (const entry of previousEntries) {
     if (!paths.has(entry.path)) await rm(join(stage, entry.path), { force: true })
   }

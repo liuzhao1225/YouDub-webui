@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`pluginMarket` 读取用户配置的插件市场索引，用 [`dsh-plugin-market-index`](../../util/plugin-market-index/README.zh.md) 校验，并为每个条目标注 profile 中的安装状态、DSH 兼容性以及安装它所需的精确参数。Web 的[发现标签页](../../client/ui-plugin-market/README.zh.md)和 `plugin_market` agent 工具通过它读取；安装本身经由 [`pluginManager.installBundle`](../plugin-manager/README.zh.md) 进行。格式及其理由见[索引格式 Agent Note](../../../.agents/notes/implemented/feature/2026-10-02-plugin-market-index-format.zh.md)；Host 与 Web 的设计见[发现 Agent Note](../../../.agents/notes/implemented/feature/2026-10-02-plugin-market-discover.zh.md)。
+`pluginMarket` 读取用户配置的插件市场索引，用 [`dsh-plugin-market-index`](../../util/plugin-market-index/README.zh.md) 校验，并为每个条目标注 profile 中的安装状态、DSH 兼容性以及安装它所需的精确参数。`plugin_market` agent 工具通过它读取；安装本身经由 [`pluginManager.installBundle`](../plugin-manager/README.zh.md) 进行。格式及其理由见[索引格式 Agent Note](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/.agents/notes/implemented/feature/2026-10-02-plugin-market-index-format.md)；Host 与 Web 的设计见[发现 Agent Note](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/.agents/notes/implemented/feature/2026-10-02-plugin-market-discover.md)。
 
 ## 目录
 
@@ -24,7 +24,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-可选的[自定义插件市场组合包](../../experimental/plugin-market-bundle/README.zh.md)把该服务挂载为 `plugin-market` 行；随附的 profile 默认不启用该组合包。与 `plugin-manager` 一样，该行在没有 profile 时被禁用，并等待 `pluginManager`。默认不配置任何索引源，因此在用户添加索引源之前，Host 不发送任何市场请求。
+可在 profile 中将该服务挂载为 `plugin-market` 行。与 `plugin-manager` 一样，该行在没有 profile 时被禁用，并等待 `pluginManager`。默认不配置任何索引源，因此在用户添加索引源之前，Host 不发送任何市场请求。
 
 | 配置 | 默认值 | 含义 |
 |---|---|---|
@@ -85,7 +85,7 @@ Host 使用进程的 `fetch` 获取，因此配置的出站代理生效，并拒
 
 #### 模型看到什么
 
-[`plugin_market` 工具](../../../docs/tool-catalog.zh.md#deepseek-aidsh-plugin-market)返回 JSON：已配置的索引 URL 及其英文标题和最近错误，一页插件（按索引顺序，或给出 `query` 时按最佳匹配），包含名称、英文标题、描述和作者（各截断为 300 个字符）、主页、仓库、分类、标签 id、排序键值、安装状态、默认版本和版本数量，或者某个插件的一页版本。返回的每个版本都携带 ISO 发布时间、兼容性和安装参数。其描述声明市场文本是第三方内容，不是指令。
+[`plugin_market` 工具](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/docs/tool-catalog.md#deepseek-aidsh-plugin-market)返回 JSON：已配置的索引 URL 及其英文标题和最近错误，一页插件（按索引顺序，或给出 `query` 时按最佳匹配），包含名称、英文标题、描述和作者（各截断为 300 个字符）、主页、仓库、分类、标签 id、排序键值、安装状态、默认版本和版本数量，或者某个插件的一页版本。返回的每个版本都携带 ISO 发布时间、兼容性和安装参数。其描述声明市场文本是第三方内容，不是指令。
 
 #### Token 影响
 

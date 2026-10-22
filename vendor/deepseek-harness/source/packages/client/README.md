@@ -31,7 +31,6 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`connection/`](connection/README.md) | Maintains browser-host RPC communication and event delivery | `ctx.connection` |
 | [`file-upload/`](file-upload/README.md) | Sends raw Blob and byte-stream request bodies outside the page thread | `ctx.fileUpload` |
 | [`shortcuts/`](shortcuts/README.md) | Registers application keyboard commands | `ctx.shortcuts` |
-| [`ui-shortcuts/`](ui-shortcuts/README.md) | Presents the keyboard shortcut reference | — |
 | [`store/`](store/README.md) | Provides React-free observable and snapshot-store primitives | — |
 | [`hmr/`](hmr/README.md) | Refreshes client plugins during development | — |
 | [`locale/`](locale/README.md) | Provides localization preferences and message dictionaries | `ctx.locale` |
@@ -59,15 +58,10 @@ The kernel packages boot and serve the page; the UI feature packages present it.
 | [`ui-input-trigger/`](ui-input-trigger/README.md) | Coordinates inline command and reference suggestions | — |
 | [`ui-skill/`](ui-skill/README.md) | Adds skill references to inline suggestions | — |
 | [`ui-reference/`](ui-reference/README.md) | Unified Web `@file` / `@session` reference source | — |
-| [`ui-settings-plugins/`](ui-settings-plugins/README.md) | Owns the Built-in plugins settings section shell and its tab extension point | — |
-| [`ui-agent-preset/`](ui-agent-preset/README.md) | Selects a session's agent preset and authors preset compositions | — |
 | [`ui-settings/`](ui-settings/README.md) | Hosts the settings interface and its extension areas | — |
 | [`ui-settings-general/`](ui-settings-general/README.md) | Provides the general settings section | — |
 | [`ui-settings-models/`](ui-settings-models/README.md) | Provides model-provider configuration and DeepSeek onboarding | — |
-| [`ui-settings-shell/`](ui-settings-shell/README.md) | Provides the shell settings page on the Plugins page | — |
 | [`ui-plugin-manager/`](ui-plugin-manager/README.md) | Contributes the sidebar Plugins panel: install, enable, disable, retry, and compose installed packages | — |
-| [`ui-plugin-market/`](ui-plugin-market/README.md) | Contributes the Discover tab to the Plugins page: browse market indexes and install their bundles | — |
-| [`ui-settings-plugin-inventory/`](ui-settings-plugin-inventory/README.md) | Contributes the read-only Host Loader inventory tab to Plugins settings | — |
 | [`ui-deliverables/`](ui-deliverables/README.md) | Produces the changed-files card with its comparison tabs, delivery cards, and clickable final-response file references | — |
 | [`ui-message-feedback/`](ui-message-feedback/README.md) | Provides message ratings and feedback dialogs opened from ratings, `/feedback`, or the Session Header menu | `ctx.feedbackUi` |
 | [`ui-directory-picker-browse/`](ui-directory-picker-browse/README.md) | In-app directory browsing surface for the workspace directory flow | — |
