@@ -1,9 +1,9 @@
 /** Immutable upstream evidence and the reviewed, mutable YouDub framework fork. */
 import { execFileSync } from 'node:child_process'
-import { copyFile, lstat, mkdir, readFile, readlink, rm, symlink, chmod } from 'node:fs/promises'
+import { copyFile, lstat, mkdir, readFile, rm, symlink, chmod } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { sha256, tree } from './tree.mjs'
+import { readLinkTarget, sha256, tree } from './tree.mjs'
 
 const repository = fileURLToPath(new URL('../../../', import.meta.url))
 const same = (actual, expected, message) => {
@@ -95,7 +95,7 @@ export async function assertStagedSource(stage, source) {
     const path = join(stage, entry.path), stat = await lstat(path)
     if (entry.type === 'symlink') {
       if (!stat.isSymbolicLink()) throw new Error(`Staged source is no longer a symlink: ${entry.path}`)
-      same(await readlink(path), entry.target, `Staged source link differs: ${entry.path}`)
+      same(await readLinkTarget(path), entry.target, `Staged source link differs: ${entry.path}`)
     } else {
       if (!stat.isFile()) throw new Error(`Staged source is no longer a file: ${entry.path}`)
       same(await sha256(path), entry.sha256, `Staged source bytes differ: ${entry.path}`)

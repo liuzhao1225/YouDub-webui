@@ -98,6 +98,19 @@ test('Windows source verification uses Git executable modes and rejects unreview
   await assert.rejects(readFrameworkSource(root, { platform: 'win32' }), /differs from the reviewed fork ledger/)
 })
 
+test('nested symbolic links keep portable targets through inventory and staging', async t => {
+  const { root, source } = await fixture(t)
+  await mkdir(join(source, 'assets'))
+  await writeFile(join(source, 'assets', 'content.txt'), 'linked content\n')
+  await symlink('assets/content.txt', join(source, 'linked.txt'))
+  const current = { source, ...await tree(source) }
+  assert.equal(current.entries.find(entry => entry.path === 'linked.txt').target, 'assets/content.txt')
+  const stage = join(root, 'stage')
+  await stageFrameworkSource(current, stage, [])
+  await assertStagedSource(stage, current)
+  assert.equal(await readFile(join(stage, 'linked.txt'), 'utf8'), 'linked content\n')
+})
+
 test('retiring a package rejects and removes its compiled outputs while retaining live package outputs', async t => {
   const { root, source } = await fixture(t)
   const stage = join(root, 'stage'), retired = 'packages/client/retired', retained = 'packages/client/retained'

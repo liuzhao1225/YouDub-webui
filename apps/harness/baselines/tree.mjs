@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { lstat, readdir, readlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
+
+/** Record the same link target across native path separators; preserve POSIX backslashes. */
+export async function readLinkTarget(path) {
+  return (await readlink(path)).split(sep).join('/')
+}
 
 /** Hash file bytes without loading desktop binaries into memory. */
 export async function sha256(path) {
@@ -16,7 +21,7 @@ export async function tree(root, { omitNodeModules = false, executableModes } = 
   async function walk(relative) {
     const path = join(root, relative)
     const stat = await lstat(path)
-    if (stat.isSymbolicLink()) entries.push({ path: relative, type: 'symlink', target: await readlink(path) })
+    if (stat.isSymbolicLink()) entries.push({ path: relative, type: 'symlink', target: await readLinkTarget(path) })
     else if (stat.isDirectory()) {
       for (const name of (await readdir(path)).sort()) {
         if (omitNodeModules && name === 'node_modules') continue
