@@ -6,6 +6,8 @@ import { Segmented } from './segmented'
 import { Switch } from './switch'
 import { Progress } from './progress'
 import { Disclosure } from './disclosure'
+import { NativeSelect } from './native-select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from './select'
 afterEach(cleanup)
 
 it('switches enabled segments by keyboard and skips a disabled choice', async () => {
@@ -40,4 +42,26 @@ it('opens diagnostic details without losing their content', async () => {
   await user.click(screen.getByText('任务日志'))
   expect(screen.getByText('任务日志').closest('details')).toHaveAttribute('open')
   expect(screen.getByText('下载完成')).toBeVisible()
+})
+
+
+it.each(['field', 'compound'])('uses the Harness menu keyboard, disabled and focus contract for %s selection', async kind => {
+  function Example() {
+    const [value, setValue] = useState('zh')
+    if (kind === 'field') return <NativeSelect aria-label="语言" value={value} onChange={event => setValue(event.target.value)}><option value="zh">中文</option><option value="ja" disabled>日本語</option><option value="en">English</option></NativeSelect>
+    return <Select value={value} onValueChange={setValue}><SelectTrigger aria-label="语言">{value === 'zh' ? '中文' : 'English'}</SelectTrigger><SelectContent><SelectItem value="zh">中文</SelectItem><SelectItem value="ja" disabled>日本語</SelectItem><SelectItem value="en">English</SelectItem></SelectContent></Select>
+  }
+  const user = userEvent.setup(); render(<Example />)
+  const trigger = screen.getByRole('button', { name: '语言' })
+  await user.tab(); await user.keyboard('{ArrowDown}')
+  expect(screen.getByRole('menuitem', { name: '中文' })).toHaveFocus()
+  expect(screen.getByRole('menuitem', { name: '日本語' })).toBeDisabled()
+  await user.keyboard('{ArrowDown}{Enter}')
+  expect(trigger).toHaveTextContent('English')
+  expect(trigger).toHaveFocus()
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+  await user.keyboard('{ArrowDown}{Escape}')
+  expect(trigger).toHaveFocus()
+  expect(trigger).toHaveTextContent('English')
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 })

@@ -29,6 +29,9 @@
       ],
       "clsx": [
         "./node_modules/clsx"
+      ],
+      "react-dom": [
+        "./node_modules/@types/react-dom"
       ]
     },
     "types": [

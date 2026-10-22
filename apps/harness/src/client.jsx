@@ -6,7 +6,7 @@ import { IconBrandGithub, IconMessageReport, IconSettings } from '@tabler/icons-
 import { SetupGate } from '@/components/setup-gate'
 import { ThemeProvider, ThemeToggle, useTheme } from './frontend/theme'
 import { feedbackIssue } from '../../web/src/lib/setup-diagnostics'
-import { Button as YouDubButton } from './frontend/controls'
+import { Button as YouDubButton } from '../../web/src/components/ui/button'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { applyPlugins } from './frontend/plugins'
 import { TranslationSetup, applyTranslationSetup } from './frontend/translation-setup'

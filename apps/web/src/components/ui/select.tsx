@@ -1,89 +1,28 @@
-"use client"
+import { Children, createContext, isValidElement, useContext, useState, type ComponentProps, type ReactNode } from 'react'
+import { IconChevronDown } from '@tabler/icons-react'
+import { Button, Menu } from './harness-primitives'
+import { childrenItems, layoutClasses } from './menu-options'
+import { cn } from '@/lib/utils'
 
-import * as React from "react"
-import { Select as SelectPrimitive } from "@base-ui/react/select"
-import { Check, ChevronDown } from "@/lib/icons"
+const SelectContext = createContext<{ open: boolean; setOpen: (open: boolean) => void } | null>(null)
+type Props = { children: ReactNode; value?: string; defaultValue?: string; onValueChange?: (value: string) => void }
+type TriggerProps = ComponentProps<typeof Button> & { showChevron?: boolean }
 
-import menu from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Menu.module.css'
-import surface from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/MenuSurface.module.css'
-import { buttonVariants } from './button-styles'
-import { cn } from "@/lib/utils"
-
-function Select({ ...props }: SelectPrimitive.Root.Props<string>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+export function Select({ children, value, defaultValue = '', onValueChange }: Props) {
+  const [open, setOpen] = useState(false), [local, setLocal] = useState(defaultValue)
+  const parts = Children.toArray(children).filter(isValidElement<{ children?: ReactNode; className?: string }>)
+  const trigger = parts.find(child => child.type === SelectTrigger)
+  const content = parts.find(child => child.type === SelectContent)
+  return <SelectContext.Provider value={{ open, setOpen }}><Menu open={open} portal autoFocus items={childrenItems(content?.props.children)} selectedId={value ?? local} onClose={() => setOpen(false)} onSelect={next => {
+    setLocal(next); onValueChange?.(next); setOpen(false)
+  }} anchor={trigger} className={cn('yd-select w-full', layoutClasses(trigger?.props.className))} /></SelectContext.Provider>
 }
-
-function SelectTrigger({
-  className,
-  children,
-  showChevron = true,
-  ...props
-}: SelectPrimitive.Trigger.Props & { showChevron?: boolean }) {
-  return (
-    <SelectPrimitive.Trigger
-      data-slot="select-trigger"
-      className={cn(
-        buttonVariants({ variant: 'outline' }), 'w-full min-w-0 justify-between',
-        className
-      )}
-      {...props}
-    >
-      {children}
-      {showChevron && <SelectPrimitive.Icon className="shrink-0 text-subtle-foreground">
-        <ChevronDown className="size-4" />
-      </SelectPrimitive.Icon>}
-    </SelectPrimitive.Trigger>
-  )
+export function SelectTrigger({ children, className, showChevron = true, ...props }: TriggerProps) {
+  const state = useContext(SelectContext)
+  if (!state) throw new Error('SelectTrigger requires Select')
+  return <Button {...props} className={cn('w-full min-w-0 justify-between gap-2 [&_svg]:size-4 [&_svg]:shrink-0', className)} type="button" variant="outline" aria-haspopup="menu" aria-expanded={state.open} onClick={() => state.setOpen(!state.open)} onKeyDown={event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); state.setOpen(true) }
+  }}>{children}{showChevron && <IconChevronDown aria-hidden="true" />}</Button>
 }
-
-function SelectContent({
-  className,
-  children,
-  ...props
-}: SelectPrimitive.Popup.Props) {
-  return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Positioner alignItemWithTrigger={false} sideOffset={4} className="z-[1100]">
-        <SelectPrimitive.Popup
-          data-slot="select-content"
-          className={cn(
-            menu.list, surface.surface, 'relative! top-auto! left-auto! min-w-(--anchor-width) max-h-72 outline-none',
-            className
-          )}
-          {...props}
-        >
-          <span aria-hidden="true" className={surface.material} /><SelectPrimitive.List className="max-h-64 overflow-y-auto">{children}</SelectPrimitive.List>
-        </SelectPrimitive.Popup>
-      </SelectPrimitive.Positioner>
-    </SelectPrimitive.Portal>
-  )
-}
-
-function SelectItem({
-  className,
-  children,
-  ...props
-}: SelectPrimitive.Item.Props) {
-  return (
-    <SelectPrimitive.Item
-      data-slot="select-item"
-      className={cn(
-        menu.item, 'relative pl-7! data-disabled:pointer-events-none data-disabled:opacity-40 data-highlighted:bg-accent',
-        className
-      )}
-      {...props}
-    >
-      <SelectPrimitive.ItemIndicator className="absolute left-2.5 flex size-4 items-center justify-center text-primary">
-        <Check className="size-4" />
-      </SelectPrimitive.ItemIndicator>
-      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    </SelectPrimitive.Item>
-  )
-}
-
-export {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-}
+export function SelectContent({ children }: { children: ReactNode }) { return children }
+export function SelectItem({ children }: { children: ReactNode; value: string; disabled?: boolean }) { return children }

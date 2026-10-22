@@ -66,7 +66,7 @@ it('shows a review action on every waiting node and read-only result actions els
   const open = vi.fn(), steps: TaskStep[] = [{ id: 'a', label: 'A', status: 'awaiting_review', progress: 1 }, { id: 'b', label: 'B', status: 'awaiting_review', progress: 1 }, { id: 'c', label: 'C', status: 'completed', progress: 1 }]
   const { container } = render(<LanguageProvider><WorkflowCanvas document={graph()} types={[type]} steps={steps} readOnly onOpen={open} /></LanguageProvider>)
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-  expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  expect(document.querySelector('[aria-haspopup="menu"]')).not.toBeInTheDocument()
   expect(screen.getAllByRole('button', { name: '确认结果' })).toHaveLength(2)
   expect(screen.getAllByRole('button', { name: '查看结果' })).toHaveLength(1)
   expect(container.querySelectorAll('.workflow-node-review')).toHaveLength(2)
@@ -129,8 +129,10 @@ it('uses typed numeric enums and model language options for canvas quick fields'
   } }, ui: { quickFields: ['count', 'language'] } }
   const changed = vi.fn(), user = userEvent.setup()
   render(<LanguageProvider><WorkflowCanvas document={document} types={[definition]} onChange={changed} onOpen={() => {}} /></LanguageProvider>)
-  await user.selectOptions(screen.getByLabelText('次数'), '2')
+  await user.click(screen.getByLabelText('次数'))
+  await user.click(screen.getByRole('menuitem', { name: '2' }))
   expect(changed.mock.calls.at(-1)![0].nodes[0].config.count).toBe(2)
-  expect(screen.getByRole('option', { name: 'zh · 不可用' })).toBeDisabled()
-  expect(screen.getByRole('option', { name: 'English' })).toBeInTheDocument()
+  await user.click(screen.getByLabelText('语言'))
+  expect(screen.getByRole('menuitem', { name: 'zh · 不可用' })).toBeDisabled()
+  expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
 })

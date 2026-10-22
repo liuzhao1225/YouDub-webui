@@ -151,13 +151,13 @@ YouDub 的 SQLite 任务 CAS、图文档和媒体二进制产物属于领域数�
 | `apps/web/src/components/task-cover.tsx` | 保留纯业务组件；按钮、输入、菜单、弹窗、状态由官方组件映射 | 待验收 |
 | `apps/web/src/components/theme-toggle.tsx` | 官方 theme/locale 设置；业务文案跟随 locale | 原生深色→收起侧栏→展开→浅色通过；此前Web官方偏好写入通过 |
 | `apps/web/src/components/translation-setup.tsx` | 原 TranslationSetupView/Controller + 未改动的官方 ModelsSection/Store/operations | 原生空配置→稍后配置→hero及重启通过；保存凭据后继续未实测，官方草稿dirty无公开回调 |
-| `apps/web/src/components/ui/button.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 真实官方控件；原样式常量共用；主色实测rgb(255,0,51) |
-| `apps/web/src/components/ui/input.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 真实官方Input，原输入样式与全宽布局实测 |
-| `apps/web/src/components/ui/label.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 待验收 |
-| `apps/web/src/components/ui/segmented.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 原语言切换实测；官方SegmentedTabs |
-| `apps/web/src/components/ui/select.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 待验收 |
-| `apps/web/src/components/ui/switch.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 待验收 |
-| `apps/web/src/components/ui/tooltip.tsx` | frontend/controls.tsx → 官方 primitives；Label 保留原生语义 | 待验收 |
+| `apps/web/src/components/ui/button.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 真实官方控件；原样式常量共用；主色实测rgb(255,0,51) |
+| `apps/web/src/components/ui/input.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 真实官方Input，原输入样式与全宽布局实测 |
+| `apps/web/src/components/ui/label.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 待验收 |
+| `apps/web/src/components/ui/segmented.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 原语言切换实测；官方 SegmentedControl |
+| `apps/web/src/components/ui/select.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 待验收 |
+| `apps/web/src/components/ui/switch.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 待验收 |
+| `apps/web/src/components/ui/tooltip.tsx` | 原 ui 组件 → harness-primitives.ts → 官方 primitives；Label 保留原生语义 | 待验收 |
 | `apps/web/src/components/video-player.tsx` | 保留纯业务组件；按钮、输入、菜单、弹窗、状态由官方组件映射 | 原生导出视频使用原播放器播放至14秒；其他播放器操作待验收 |
 | `apps/web/src/plugin/builtin/library.tsx` | 保留纯业务组件；按钮、输入、菜单、弹窗、状态由官方组件映射 | 原生任务详情进入/重启恢复通过；删除/筛选等未覆盖 |
 | `apps/web/src/plugin/builtin/localize-editor.tsx` | 保留纯业务组件；按钮、输入、菜单、弹窗、状态由官方组件映射 | 待验收 |

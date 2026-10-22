@@ -56,7 +56,7 @@ function mount(runtime: Runtime, initial: TaskConfig = testConfig) {
 
 async function choose(user: ReturnType<typeof userEvent.setup>, label: string, option: string) {
   await user.click(screen.getByLabelText(label))
-  await user.click(await screen.findByRole("option", { name: option }))
+  await user.click(await screen.findByRole("menuitem", { name: option }))
 }
 
 afterEach(() => { cleanup(); window.localStorage.clear() })
@@ -84,7 +84,7 @@ it("主页只显示三个基础选项，切换输出后保留设置中的模型�
     return <TaskOptions value={value} runtime={runtime} onChange={(next) => { setValue(next); changed(next) }} />
   }
   render(<LanguageProvider><Options /></LanguageProvider>)
-  expect(screen.getAllByRole('combobox')).toHaveLength(3)
+  expect(document.querySelectorAll('[aria-haspopup="menu"]')).toHaveLength(3)
   expect(screen.queryByLabelText('配音模型')).not.toBeInTheDocument()
   expect(screen.queryByLabelText('专名提示（可选）')).not.toBeInTheDocument()
   const user = userEvent.setup()
@@ -133,7 +133,7 @@ describe("本地化任务配置", () => {
     mount(runtime, defaults)
     expect(screen.getByLabelText("字幕时间")).toHaveTextContent("Qwen3-ForcedAligner-0.6B-hf · 不可用")
     await userEvent.setup().click(screen.getByLabelText("字幕时间"))
-    expect(await screen.findByRole("option", { name: "Qwen — 未安装模型" })).toHaveAttribute("aria-disabled", "true")
+    expect(await screen.findByRole("menuitem", { name: "Qwen — 未安装模型" })).toBeDisabled()
   })
 
   it("专名提示默认留空，切换识别模型和输出后保留，允许清空", async () => {

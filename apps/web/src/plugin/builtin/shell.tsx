@@ -5,7 +5,7 @@ import { Link, matchRoute, type RouteEntry, text, bindComponent, type Bindings }
 import { restoreTheme, ThemeProvider } from '@/lib/theme'
 import { LanguageProvider, useI18n, useText } from '@/lib/i18n'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { InlineAlert } from '@/components/inline-alert'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -58,7 +58,7 @@ function Shell({ request, navigate, href: routeHref, useSession, useSlot, usePat
         {!collapsed && <Tooltip content={t.nav.collapseSidebar}><Button variant="ghost" size="icon-sm" aria-label={t.nav.collapseSidebar} onClick={() => changeSidebar(true)}><PanelLeftClose /></Button></Tooltip>}
       </div>
       {collapsed && <div className="flex justify-center pb-3"><Tooltip content={t.nav.expandSidebar} side="right"><Button variant="ghost" size="icon-sm" aria-label={t.nav.expandSidebar} onClick={() => changeSidebar(false)}><PanelLeftOpen /></Button></Tooltip></div>}
-      <div className={cn('px-3', collapsed && 'flex justify-center')}><Tooltip content={t.nav.newTask} side="right" className={collapsed ? undefined : 'hidden'}><Button nativeButton={false} render={<Link href="/" />} size="lg" className={collapsed ? 'size-10 px-0' : 'w-full'}><Plus /><span className={collapsed ? 'sr-only' : undefined}>{t.nav.newTask}</span></Button></Tooltip></div>
+      <div className={cn('px-3', collapsed && 'flex justify-center')}><Tooltip content={t.nav.newTask} side="right" disabled={!collapsed}><Link href="/" className={buttonVariants({ size: 'lg', className: collapsed ? 'size-10 px-0' : 'w-full' })}><Plus /><span className={collapsed ? 'sr-only' : undefined}>{t.nav.newTask}</span></Link></Tooltip></div>
       <nav aria-label={t.nav.primary} className={cn('mt-6 flex flex-col px-3', collapsed ? 'items-center gap-1' : 'gap-0.5')}>
         {primaryNavigation.map((item) => {
           const href = routeHref(item.routeId)

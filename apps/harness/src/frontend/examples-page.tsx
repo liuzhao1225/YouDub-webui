@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react'
 import { Page, PageHeader } from '../../../web/src/components/page-layout'
-import { Button } from './controls'
+import { Button } from '../../../web/src/components/ui/button'
 import { useFeatures } from './runtime'
 import { useText } from './i18n'
 import { useTheme } from './theme'

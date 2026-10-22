@@ -20,7 +20,7 @@ it('uses the refreshed runtime capabilities without replacing them with a stale 
   expect(screen.queryByLabelText('语音识别模型')).not.toBeInTheDocument()
   expect(screen.queryByLabelText('专名提示（可选）')).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getByLabelText('目标语言'))
-  expect(await screen.findByRole('option', { name: '中文' })).toBeInTheDocument()
+  expect(await screen.findByRole('menuitem', { name: '中文' })).toBeInTheDocument()
   await userEvent.setup().keyboard('{Escape}')
   // Reruns retain their full editor so old model selections can be corrected.
   rerender(<PluginContextProvider context={context}><LanguageProvider><Editor value={value} schema={{}} diagnostics={[]} readOnly={false} onChange={vi.fn()} /></LanguageProvider></PluginContextProvider>)

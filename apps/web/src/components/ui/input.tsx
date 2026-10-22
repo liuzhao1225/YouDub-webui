@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Input as HarnessInput } from "../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Input"
+import { Input as HarnessInput } from "./harness-primitives"
 import state from "./control-state.module.css"
 import { cn } from "@/lib/utils"
 

@@ -47,7 +47,7 @@ it('respects the persisted opt-out and still allows a manual check', async () =>
   fixture.available = available
   await act(async () => fireEvent.click(screen.getByRole('button', { name: '检查更新' })))
   expect(checks()).toHaveLength(1)
-  expect(screen.getByRole('button', { name: '下载 0.0.5' })).toHaveAttribute('href', available.download)
+  expect(screen.getByRole('link', { name: '下载 0.0.5' })).toHaveAttribute('href', available.download)
   await act(() => vi.advanceTimersByTimeAsync(60 * 60 * 1000))
   expect(checks()).toHaveLength(1)
 })

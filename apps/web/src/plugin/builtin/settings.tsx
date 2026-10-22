@@ -103,7 +103,7 @@ function Settings({ params, request, useQuery, useSlot, useUpdates, replace, dis
         </header>
         <div className="flex min-h-0 flex-1">
           <nav aria-label={tx("settings.settings.categories")} className="flex w-14 shrink-0 flex-col gap-1 border-r border-border bg-surface p-2 sm:w-48 sm:p-3">
-            {categories.map(({ id, label, icon: Icon }) => <Tooltip key={id} content={label} side="right" className="sm:hidden"><Button disabled={saving} variant="ghost" aria-label={label} aria-current={section === id ? 'page' : undefined} onClick={() => replace(`/settings/${id}`)} className={cn('w-full justify-center px-0 sm:justify-start sm:gap-3 sm:px-3', section === id && 'bg-accent text-foreground')}><Icon className="shrink-0" /><span className="hidden sm:inline">{label}</span></Button></Tooltip>)}
+            {categories.map(({ id, label, icon: Icon }) => <Tooltip key={id} content={label} side="right"><Button disabled={saving} variant="ghost" aria-label={label} aria-current={section === id ? 'page' : undefined} onClick={() => replace(`/settings/${id}`)} className={cn('w-full justify-center px-0 sm:justify-start sm:gap-3 sm:px-3', section === id && 'bg-accent text-foreground')}><Icon className="shrink-0" /><span className="hidden sm:inline">{label}</span></Button></Tooltip>)}
           </nav>
           <section aria-label={active?.label ?? title} className="min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6" key={section}>
             {section !== 'models' && <h1 >{active?.label ?? tx("settings.page.not.found")}</h1>}

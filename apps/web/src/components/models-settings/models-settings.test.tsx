@@ -97,7 +97,8 @@ it('uses the provider directory, preserves masked keys, and reports only actual 
   expect(calls.filter(call => call.method === 'PATCH')).toEqual([{ path: '/api/v2/models/settings', method: 'PATCH', body: { ns: 'llm-pi-ai', expectedRevision: 7, ops: [{ op: 'set', path: ['providers', 'openai', 'baseURL'], value: 'https://new.example/v1' }] } }])
   expect(calls.some(call => call.method === 'PUT')).toBe(false)
   await user.click(screen.getByRole('tab', { name: '第三方模型提供商' }))
-  expect(within(screen.getByRole('combobox', { name: '提供方' })).getByRole('option', { name: 'DeepSeek' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: '提供方' }))
+  expect(screen.getByRole('menuitem', { name: 'DeepSeek' })).toBeInTheDocument()
   expect(dirty).toHaveBeenLastCalledWith(false)
 })
 
@@ -118,9 +119,12 @@ it('discovers from unsaved custom fields, adopts models locally, and retries onl
   const { user, calls, dirty } = mount(data)
   await user.click(await screen.findByRole('tab', { name: '自定义模型 API' }))
   expect(dirty).toHaveBeenLastCalledWith(false)
-  expect(screen.getByRole('option', { name: 'OpenAI Chat Completions' })).toHaveValue('openai-completions')
-  expect(screen.getByRole('option', { name: 'OpenAI Responses' })).toHaveValue('openai-responses')
-  expect(screen.getByRole('option', { name: 'Anthropic Messages' })).toHaveValue('anthropic-messages')
+  // Exercise every protocol through the actual menu, then preserve the original selection.
+  for (const name of ['OpenAI Responses', 'Anthropic Messages', 'OpenAI Chat Completions']) {
+    await user.click(screen.getByLabelText('API 协议'))
+    await user.click(screen.getByRole('menuitem', { name }))
+    expect(screen.getByLabelText('API 协议')).toHaveTextContent(name)
+  }
   await user.type(screen.getByLabelText('Provider ID'), 'acme')
   await user.type(screen.getByLabelText('API 地址'), 'https://acme.example/v1')
   await user.type(screen.getByLabelText('API 密钥'), 'sk-new-key')
@@ -139,6 +143,20 @@ it('discovers from unsaved custom fields, adopts models locally, and retries onl
   expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(1)
   expect(calls.filter(call => call.method === 'PUT')).toHaveLength(2)
   expect(dirty).toHaveBeenLastCalledWith(false)
+})
+
+it.each([
+  ['OpenAI Responses', 'openai-responses'],
+  ['Anthropic Messages', 'anthropic-messages'],
+])('sends the selected %s protocol when discovering custom models', async (name, api) => {
+  const { user, calls } = mount()
+  await user.click(await screen.findByRole('tab', { name: '自定义模型 API' }))
+  await user.click(screen.getByLabelText('API 协议'))
+  await user.click(screen.getByRole('menuitem', { name }))
+  await user.type(screen.getByLabelText('API 地址'), 'https://acme.example/v1')
+  await user.click(screen.getByRole('button', { name: '获取可用模型' }))
+  await screen.findByRole('dialog', { name: '选择要添加的模型' })
+  expect(calls.find(call => call.path.endsWith('/discover'))?.body).toMatchObject({ api, baseURL: 'https://acme.example/v1' })
 })
 
 it('surfaces discovery failure while preserving manual model entry', async () => {

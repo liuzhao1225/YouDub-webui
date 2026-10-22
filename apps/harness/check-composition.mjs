@@ -6,7 +6,7 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const metadata = JSON.parse(await readFile(resolve(here, 'dist/build-inputs.json'), 'utf8'));
 const forbidden = {
   host: [/apps\/host\//, /packages\/builtin\/src\/(?:process|http|auth|secrets|settings|llm-models|llm-models-api|setup|bootstrap|extensions|extensions-loader)\.ts$/],
-  client: [/web\/src\/main\.tsx$/, /web\/src\/plugin\/(?:bootstrap|web-react|runtime\/(?:navigation|session|slots))\./, /web\/src\/components\/models-settings\//, /node_modules\/@base-ui\//],
+  client: [/web\/src\/main\.tsx$/, /web\/src\/plugin\/(?:bootstrap|web-react|runtime\/(?:navigation|session|slots))\./, /web\/src\/components\/models-settings\//, /node_modules\/@base-ui\//, /vendor\/deepseek-harness\/source\/packages\/client\/ui-primitives\/src\/.*\.tsx?$/],
 };
 const failures = [];
 const report = {};

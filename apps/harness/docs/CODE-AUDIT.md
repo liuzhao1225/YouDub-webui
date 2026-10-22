@@ -15,7 +15,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 211 包、5,261 个文件；修复包管理器工作目录后的源码 SHA-256 为 `861aad977d13985df8c3175545a0b3db5bacd977e405db751e16588f39c6a7e4`。第 23 批移除闭包外的 36 个旧产品包及专属生成器；原 Tools 类型数据直接复制为保留测试的 fixture。运行时和类型闭包仍为 141 包，含保留包测试的闭包为 203 包。其余 8 包属于通用生成、HMR/日志和平台原生依赖；它们的保留理由继续纳入收尾审计。[工作目录修复](evidence/refactor-profile-canonical-path.json)、[第 23 批证据](evidence/refactor-remaining-products-prune.json)
+当前活动框架为 209 包、5,239 个树条目，源码 SHA-256 为 `360f68435977bb4785d7d9b93da6e46e7313aea8c580b5ba321b89733c10fbee`。运行时和类型闭包为 141 包，含测试为 203 包。其余 6 包为通用 Typert 生成器、native/system workspace 与 4 个平台 addon；动态/根消费者已记录。第 25 批移除了无消费者的 vendored HMR 与 console logger，保留实际使用的通用 HMR 和日志实现。[第 25 批证据](evidence/refactor-unused-vendor-prune.json)
 
 源码构建的 235 个客户端产物包含可选框架库，不能用于推算产品实际加载的插件数。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 
@@ -45,6 +45,10 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
 | A20 构建与平台 | 55621d17 的 macOS 与 Windows 干净 CI 全部通过；聚合类型、GUI 8,075 项、profile 6,689 项、业务界面 264 项、产品 78 项、Python 525 项；Windows 桌面/进程 567 项、产品合同 32 项与两种实际 Host 通过。[本批 CI](evidence/refactor-unused-vendor-prune.json) | 最终原生交互、下载/退出组合、完整媒体质量及启动测量仍开放 |
+
+## P4 基础控件统一（2026-10-23）
+
+已删除八类控件的桌面专用实现与构建替换；业务测试和 Desktop 共用原 `components/ui/*`，通过统一入口接到 Harness 源码/官方运行时。268 项前端回归、类型检查、产品构建和活动模块检查通过；独立实际 Host 验证日语首页菜单、节点语言、人工审核开关与撤销。框架源码和原始归档未修改。原生窗口与完整媒体验收继续开放。[证据](evidence/refactor-unified-controls.json)
 
 ## 尚需实施的收尾
 

@@ -21,7 +21,7 @@
 
 ## 公共元素
 
-`frontend/controls.tsx` 将原属性名称映射到官方 `Button`、`Input`、`Menu`、`Checkbox`、`Switch`、`SegmentedTabs`、`Tooltip`、`Tag`。按钮和输入框样式提取为原源码公共常量，Web 与 Harness 共用。菜单的焦点、键盘和 Portal 由官方组件负责。原复合 Dialog/Popover 的属性接线由薄适配层转换，模态行为由官方 Modal/Menu 负责。
+`apps/web/src/components/ui/*` 直接复用 Harness `Button`、`Input`、`Menu`、`Checkbox`、`Switch`、`SegmentedControl`、`Tooltip`、`Tag`，在原组件中转换 YouDub 的尺寸、变体和字段回调。桌面与业务测试使用同一份组件源码，已删除桌面专用 `frontend/controls.tsx` 及八类控件的构建替换。`harness-primitives.ts` 是统一框架依赖入口：测试读取保留的框架源文件，Desktop 解析到 ModuleLoader 已加载的官方模块，避免第二份菜单/弹层状态。菜单焦点、键盘和 Portal 继续由官方组件负责；原复合 Dialog/Popover 仍通过对应薄适配层接到官方 Modal/Menu。[本次验证](docs/evidence/refactor-unified-controls.json)
 
 `frontend/sdk.tsx` 只提供导航链接和原 `domain-helpers` 的纯函数。原 `bootstrap`、Cordis 前端容器、legacy context、router、Base UI 组件和自建模型设置不进入活跃 Harness 客户端。页面按完整路径 key 保留原组件生命周期；静态路由优先级复用原 `resolveRoute`。
 

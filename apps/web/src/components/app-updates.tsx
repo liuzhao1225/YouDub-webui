@@ -3,7 +3,7 @@ import { ArrowDownToLine, Loader2 } from '@/lib/icons'
 import { Link, type Bindings } from '@/plugin/sdk'
 export { UpdateProvider } from '@/plugin/sdk'
 import { useText } from '@/lib/i18n'
-import { Button } from './ui/button'
+import { Button, buttonVariants } from './ui/button'
 import { InlineAlert } from './inline-alert'
 import { SectionCard } from './section-card'
 
@@ -31,7 +31,7 @@ export function UpdateSettings({ useUpdates }: Bindings<'useUpdates'>) {
       {updates.error && <InlineAlert>{updates.error}</InlineAlert>}
       {updates.info && !updates.info.supported ? <p className="text-sm text-muted-foreground">{tx("app.updates.no.desktop.package.is.published.for.this.platform")}</p> : <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" disabled={updates.busy} onClick={updates.check}>{updates.busy && <Loader2 className="animate-spin" />}{tx("app.updates.check.for.updates")}</Button>
-        {available && <Button nativeButton={false} render={<a href={available.download} target="_blank" rel="noreferrer" />}><ArrowDownToLine />{tx("app.updates.download")} {available.version}</Button>}
+        {available && <a className={buttonVariants()} href={available.download} target="_blank" rel="noreferrer"><ArrowDownToLine />{tx("app.updates.download")} {available.version}</a>}
         {!updates.busy && updates.result && !available && <span role="status" className="text-sm text-muted-foreground">{tx("app.updates.no.newer.version.available")}</span>}
       </div>}
       {available && <div className="flex gap-4 text-sm text-muted-foreground"><a className="underline underline-offset-4" href={available.url} target="_blank" rel="noreferrer">{tx("app.updates.release.notes")}</a><a className="underline underline-offset-4" href={available.checksum} target="_blank" rel="noreferrer">SHA-256</a></div>}

@@ -57,8 +57,8 @@ function mount() {
 }
 
 async function selectWorkflow(user: ReturnType<typeof userEvent.setup>, title: string) {
-  await user.click(screen.getByRole('combobox', { name: '工作流' }))
-  await user.click(await screen.findByRole('option', { name: title }))
+  await user.click(screen.getByRole('button', { name: '工作流' }))
+  await user.click(await screen.findByRole('menuitem', { name: title }))
 }
 
 it('preserves the selected graph, file and node runtime draft across an external workflow', async () => {
@@ -88,7 +88,7 @@ it('preserves the selected graph, file and node runtime draft across an external
   const body = calls[0][1]!.body as FormData
   expect((body.get('input.video') as File).name).toBe('keep.mp4')
   expect(JSON.parse(String(body.get('request')))).toMatchObject({ graphDocument: { id: 'second' }, nodeRuntimeInputs: { process: { note: '保留第二个工作流的备注' } } })
-  expect(screen.getByRole('combobox', { name: '工作流' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: '工作流' })).toBeDisabled()
 })
 
 it('stops inactive graph resource checks, preserves its URL and keeps an external submission locked', async () => {
@@ -106,7 +106,7 @@ it('stops inactive graph resource checks, preserves its URL and keeps an externa
   await user.upload(screen.getByLabelText('文档 *'), new File(['text'], 'document.txt', { type: 'text/plain' }))
   fireEvent.submit(screen.getByLabelText('文档 *').closest('form')!)
   await screen.findByText('Connection interrupted')
-  expect(screen.getByRole('combobox', { name: '工作流' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: '工作流' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '使用同一 ID 提交' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: '下载并处理' })).not.toBeInTheDocument()
   expect(checks()).toHaveLength(countWhileHidden)
@@ -114,7 +114,7 @@ it('stops inactive graph resource checks, preserves its URL and keeps an externa
   expect(submissions).toHaveLength(1)
   expect(JSON.parse(String((submissions[0][1]!.body as FormData).get('request'))).workflowId).toBe('external.text')
   await user.click(screen.getByRole('button', { name: '清理本次导入' }))
-  await waitFor(() => expect(screen.getByRole('combobox', { name: '工作流' })).toBeEnabled())
+  await waitFor(() => expect(screen.getByRole('button', { name: '工作流' })).toBeEnabled())
   await selectWorkflow(user, '第二个工作流')
   expect(screen.getByLabelText('视频链接')).toHaveValue('https://youtu.be/abcdefghijk')
   await waitFor(() => expect(screen.getByRole('button', { name: '下载并处理' })).toBeEnabled())
@@ -139,7 +139,7 @@ it('retains the workflow, File and node options after visiting settings', async 
   await user.type(screen.getByLabelText('运行备注'), '设置返回保留')
   revisit()
   expect(await screen.findByText('settings-return.mp4')).toBeVisible()
-  expect(screen.getByRole('combobox', { name: '工作流' })).toHaveTextContent('第二个工作流')
+  expect(screen.getByRole('button', { name: '工作流' })).toHaveTextContent('第二个工作流')
   expect(screen.getByLabelText('运行备注')).toHaveValue('设置返回保留')
   await waitFor(() => expect(screen.getByRole('button', { name: '开始处理' })).toBeEnabled())
   await user.click(screen.getByRole('button', { name: '开始处理' }))

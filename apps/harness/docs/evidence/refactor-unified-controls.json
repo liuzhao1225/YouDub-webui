@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-23",
+  "baseCommit": "cce7ed2aa1b43ae68a988daa5064a050550e4456",
+  "scope": "P4 shared control source and focused browser acceptance; no packaging or release",
+  "changes": [
+    "Removed apps/harness/src/frontend/controls.tsx and eight per-control build replacements",
+    "Original ui wrappers share a typed Harness source entry; Desktop resolves only the framework dependency to its existing ModuleLoader module",
+    "Button links keep real anchor semantics; selection tests operate official menus",
+    "Composition gate rejects embedded copies of official primitive implementations"
+  ],
+  "framework": {
+    "changed": false,
+    "packages": 209,
+    "treeEntries": 5239,
+    "sha256": "360f68435977bb4785d7d9b93da6e46e7313aea8c580b5ba321b89733c10fbee"
+  },
+  "local": {
+    "frontend": {
+      "files": 38,
+      "passed": 268,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "productBuild": "passed",
+    "composition": "passed",
+    "sourceVerification": "passed",
+    "focusedFinalButtonChecks": 13
+  },
+  "correctionsDuringValidation": [
+    "Initial typecheck exposed missing react-dom source type path; added the existing local types mapping",
+    "Tests used legacy combobox/option/selectOptions rather than Desktop menu semantics; migrated interaction while preserving business assertions",
+    "Added two menu keyboard/focus tests and custom protocol request checks",
+    "jsdom lacks ResizeObserver; test setup stubs observation only, actual geometry remains browser/native acceptance"
+  ],
+  "browser": {
+    "host": "actual compiled Desktop Host in isolated profile",
+    "language": "ja",
+    "checks": [
+      "Homepage source-language menu selection reads back Japanese",
+      "Escape closes the open menu and returns focus to its trigger",
+      "Workflow node language changes to English",
+      "Auto-continue checkbox changes to manual review",
+      "Undo restores both changes and returns the template to clean state",
+      "Browser console has no warning/error entries"
+    ],
+    "screenshots": [
+      "refactor-unified-controls-home.png",
+      "refactor-unified-controls-node.png"
+    ],
+    "shutdown": "clean IPC shutdown, exit 0"
+  },
+  "limitations": [
+    "Native CUA inventory still reported Mac locked; no native-window/file-dialog acceptance claimed",
+    "Browser uses an existing isolated validation profile; this is not fresh environment installation",
+    "No new full media inference or listening quality acceptance in this batch"
+  ],
+  "ci": {
+    "status": "pending for committed candidate"
+  }
+}
