@@ -376,3 +376,11 @@ Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通�
 | 插件管理、安装测试与示例名称 | 产品只投影 YouDub 和用户安装包；原管理组件仍含旧 SDK/Agent 分类。删除相应分类时保持安装、启用、错误、核心保护与卸载行为测试，合成夹具可改用仍存在的通用包名 |
 
 下一批退出条件仍包括完整源码构建、实际产品运行闭包、来源差异账本、保留测试与开发 CI。不能用本表将 SDK 清理或整体 P6 标为完成。
+
+## P7：原生校对恢复与独立验收窗口（2026-10-22）
+
+解锁后保存原文订正出现 `PLUGIN_VERSION_UNAVAILABLE`，原始失败保持记录。旧任务固定的七组 Python 执行指纹与 `96028d9e` 源码一致，当前 Host 与当前源码一致；执行指纹涉及的文件中，`d2f630b4` 只修改了 `backend/app/accelerators.py` 的安装源 URL。经审查在既有 `builtin-compatibility.json` 登记这两个确定版本的兼容关系，未来源码变化仍使本次映射失效，未放宽任务版本检查。相关五项既有回归、产品构建及来源检查通过。重启后，同一原生任务成功保存识别订正版本 2 并确认，依赖该结果的翻译、参考音频、配音、混音、对齐与导出结果失效并重新执行。
+
+用户要求另开窗口避免同时操作：建立独立 `com.youdub.review-validation` 开发实例，配置、私有安装目录和 Chromium 数据均使用 `.cache/harness/native-review-isolated-20261022` 副本；任务库通过 SQLite 在线备份取得一致快照。独立实例中译文订正已保存为版本 3 并确认；原窗口读回仍为修订号 14、译文等待确认，证明数据隔离。该副本随后完成九节点流程：VoxCPM2、混音、Qwen3-ForcedAligner-0.6B-hf 与最终导出均实际执行；Qwen 原始结果含 3 个音频片段，输出 6 条字幕，时间范围与顺序检查通过。播放器走到 18.9 秒，macOS 保存框导出的 `/tmp/youdub-native-zoo-reviewed-20261022.srt` 与任务产物逐字节一致。正常退出返回 0，重启后原生页面显示 9/9 完成及四个文件；截图 `/tmp/youdub-isolated-review-after-restart.png`。该结果是已暂停任务副本的接续，准备媒体与分离结果被复用。音频试听和音画同步质量仍未验收。
+
+「连接设置」已在原生窗口直接打开模型分区，关闭后普通设置按钮仍打开通用分区；截图 `/tmp/youdub-isolated-settings-model-route.png`。设置修复对应 `fa0e76ee` 的[干净 macOS CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39758629485) 已全部通过。
