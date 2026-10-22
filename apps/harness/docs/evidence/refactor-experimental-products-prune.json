@@ -198,6 +198,9 @@
     "Media listening, full independent first installation and Windows acceptance remain separate."
   ],
   "ci": {
-    "status": "pending"
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39792373892",
+    "commit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+    "status": "completed",
+    "conclusion": "success"
   }
 }

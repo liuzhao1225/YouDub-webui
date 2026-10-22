@@ -141,7 +141,13 @@
     "commit": "feb38596afb3238e772adef2121d6dc68e69fdf8",
     "conclusion": "failure",
     "cause": "Web typecheck: WorkflowDescription omitted graphTemplate. Domain and UI tests passed.",
-    "fix": "Added the existing backend graphTemplate field to the frontend contract. Web typecheck now passes. Follow-up CI pending."
+    "fix": "Added the existing backend graphTemplate field to the frontend contract. Local Web typecheck and follow-up macOS CI passed.",
+    "followup": {
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39792373892",
+      "commit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+      "status": "completed",
+      "conclusion": "success"
+    }
   },
   "nativeFollowup": {
     "recordedAt": "2026-10-22T13:57:20.833778+00:00",
@@ -189,6 +195,152 @@
       {
         "file": "refactor-extension-native-zoo.png",
         "sha256": "29247a11e78c24ece36b3300f46f97c7c27614cfd4d95640cb3eaf0d9745eba1"
+      }
+    ]
+  },
+  "nativeFailurePaths": {
+    "recordedAt": "2026-10-22T14:23:20.313Z",
+    "application": "com.youdub.review-validation",
+    "baseCommit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+    "fixtureScope": "Self-authored fixtures, isolated validation profile only",
+    "fixtures": {
+      "missing-service": {
+        "package.json": "{\n  \"name\": \"@youdub/harness-validation-missing-service\",\n  \"version\": \"1.0.0\",\n  \"type\": \"module\",\n  \"main\": \"index.mjs\",\n  \"exports\": {\n    \".\": \"./index.mjs\",\n    \"./package.json\": \"./package.json\"\n  },\n  \"dsh\": {\n    \"bundle\": {\n      \"patch\": \"./cordis.patch.yml\"\n    }\n  }\n}\n",
+        "index.mjs": "export const name = 'youdub-validation-missing-service';\nexport const inject = ['youdubValidationMissingService'];\nexport function apply() { throw new Error('Missing-service fixture must never activate'); }\n",
+        "cordis.patch.yml": "- insert:\n    - id: youdub-validation-missing-service\n      name: '@youdub/harness-validation-missing-service'\n"
+      },
+      "incompatible-version": {
+        "package.json": "{\n  \"name\": \"@youdub/harness-validation-incompatible-version\",\n  \"version\": \"1.0.0\",\n  \"type\": \"module\",\n  \"main\": \"index.mjs\",\n  \"exports\": {\n    \".\": \"./index.mjs\",\n    \"./package.json\": \"./package.json\"\n  },\n  \"engines\": {\n    \"dsh\": \">=999.0.0\"\n  },\n  \"dsh\": {\n    \"bundle\": {\n      \"patch\": \"./cordis.patch.yml\"\n    }\n  }\n}\n",
+        "index.mjs": "export const name = 'youdub-validation-incompatible-version';\nexport function apply() { throw new Error('Incompatible-version fixture must never activate'); }\n",
+        "cordis.patch.yml": "- insert:\n    - id: youdub-validation-incompatible-version\n      name: '@youdub/harness-validation-incompatible-version'\n"
+      }
+    },
+    "missingPath": {
+      "message": "该路径不存在或不是有效的插件包",
+      "installed": false
+    },
+    "missingService": {
+      "installed": true,
+      "activation": "rejected",
+      "message": "pending (waiting for service: youdubValidationMissingService)",
+      "toggle": "off",
+      "uninstalled": true
+    },
+    "incompatibleVersion": {
+      "required": "engines.dsh >=999.0.0",
+      "frameworkVersion": "0.2.1-rc.2",
+      "installed": false,
+      "exemptionGranted": false,
+      "activation": false
+    },
+    "builtinProtection": "Native details contain running core and product/bundle versions, with no disable or uninstall action",
+    "finalInventory": {
+      "graphTextReview": "enabled",
+      "missingService": "absent",
+      "incompatibleVersion": "absent"
+    },
+    "copyCorrection": {
+      "cause": "The product branding adapter labeled the framework compatibility version as the application version.",
+      "file": "apps/harness/src/frontend/plugins.tsx",
+      "fix": "Chinese and English now explicitly identify the bundled framework; Japanese already did so.",
+      "nativeReadback": "YouDub 内置框架 0.2.1-rc.2",
+      "sourceIsolation": {
+        "baseCommit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+        "overlay": "apps/harness/src/frontend/plugins.tsx",
+        "frozen": [
+          "apps/harness/build-desktop.mjs",
+          "apps/harness/build.mjs",
+          "apps/harness/src/backend/resources.ts",
+          "apps/harness/src/backend/setup.mjs",
+          "apps/harness/src/client.jsx",
+          "apps/harness/src/desktop-main.mjs",
+          "apps/harness/src/frontend/controls.tsx",
+          "apps/harness/src/frontend/examples-page.tsx",
+          "apps/harness/src/frontend/icons.tsx",
+          "apps/harness/src/frontend/plugins.tsx",
+          "apps/harness/src/frontend/runtime.tsx",
+          "apps/harness/src/frontend/video-player.tsx",
+          "apps/harness/src/style.css",
+          "apps/web/package-lock.json",
+          "apps/web/package.json",
+          "apps/web/src/app/globals.css",
+          "apps/web/src/components/app-updates.tsx",
+          "apps/web/src/components/inline-alert.tsx",
+          "apps/web/src/components/localize-task-config.tsx",
+          "apps/web/src/components/models-settings/ModelsSection.module.css",
+          "apps/web/src/components/models-settings/primitives.tsx",
+          "apps/web/src/components/page-layout.tsx",
+          "apps/web/src/components/section-card.tsx",
+          "apps/web/src/components/settings-resources.test.tsx",
+          "apps/web/src/components/settings-resources.tsx",
+          "apps/web/src/components/setup-diagnostics.tsx",
+          "apps/web/src/components/setup-gate.test.tsx",
+          "apps/web/src/components/setup-installation.tsx",
+          "apps/web/src/components/setup-resources.tsx",
+          "apps/web/src/components/setup-screen.tsx",
+          "apps/web/src/components/task-cover.tsx",
+          "apps/web/src/components/theme-toggle.tsx",
+          "apps/web/src/components/ui/button-styles.ts",
+          "apps/web/src/components/ui/input-styles.ts",
+          "apps/web/src/components/ui/native-select.tsx",
+          "apps/web/src/components/ui/select.tsx",
+          "apps/web/src/components/video-player.tsx",
+          "apps/web/src/lib/setup-diagnostics.ts",
+          "apps/web/src/lib/theme.tsx",
+          "apps/web/src/locales/en.json",
+          "apps/web/src/locales/ja.json",
+          "apps/web/src/locales/zh.json",
+          "apps/web/src/plugin/builtin/library.tsx",
+          "apps/web/src/plugin/builtin/media-upload.tsx",
+          "apps/web/src/plugin/builtin/schema-form.tsx",
+          "apps/web/src/plugin/builtin/settings.tsx",
+          "apps/web/src/plugin/builtin/shell.tsx",
+          "apps/web/src/plugin/builtin/studio.tsx",
+          "apps/web/src/plugin/builtin/workflow-canvas.tsx",
+          "apps/web/src/plugin/builtin/workflow-guard.tsx",
+          "apps/web/src/plugin/builtin/workflow-options.tsx",
+          "apps/web/src/plugin/builtin/workflow-rerun.tsx",
+          "apps/web/src/plugin/builtin/workflow-resources.tsx",
+          "apps/web/src/plugin/builtin/workflow-run.tsx",
+          "apps/web/src/plugin/builtin/workflow-settings.tsx",
+          "apps/web/src/plugin/builtin/workflow-task.tsx",
+          "apps/web/src/plugin/builtin/workflows.tsx",
+          "apps/web/src/plugin/runtime/resources.test.ts",
+          "apps/web/src/plugin/runtime/workflow-resources.ts",
+          "apps/web/src/plugin/web-react.tsx",
+          "apps/web/src/plugin/workflow-run.test.tsx",
+          "apps/web/src/runtime/setup-contracts.ts",
+          "apps/web/templates/examples.html",
+          "packages/builtin/src/setup-environment.ts"
+        ],
+        "framework": ".cache/harness/source-build-experimental-prune-20261022",
+        "output": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/desktop-plugin-reinstall/ui-version"
+      },
+      "build": "/tmp/youdub-plugin-version-build.log",
+      "languageValidation": {
+        "passed": true,
+        "languages": [
+          "zh",
+          "en",
+          "ja"
+        ],
+        "businessKeys": 680,
+        "frameworkNamespaces": 7
+      },
+      "limits": "Runtime remains the prior verified isolated Host. The replacement client was rebuilt from bdceb158 plus only the compatibility labels; concurrent source changes were read from HEAD."
+    },
+    "screenshots": [
+      {
+        "file": "refactor-plugin-native-missing-path.png",
+        "sha256": "90d3363e5a46867b26662b42fcfdc1dd97f9c9a2c872498bec4fc114e987ccc6"
+      },
+      {
+        "file": "refactor-plugin-native-missing-service.png",
+        "sha256": "6f6cfbcce01d54873d132f6b780bb65580780c282efdf20aa365f24cecc288f3"
+      },
+      {
+        "file": "refactor-plugin-native-framework-version.png",
+        "sha256": "fe79e40c0bcf255df19820f6142289d2a06813957ddf6f18ecad14224100fbba"
       }
     ]
   }
