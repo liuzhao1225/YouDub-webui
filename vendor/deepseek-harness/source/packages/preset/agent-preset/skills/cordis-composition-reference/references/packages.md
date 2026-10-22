@@ -371,12 +371,6 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 |---|---|---|
 | `@deepseek-ai/dsh-subprocess-local` | no | Local-subprocess implementation of the DeepSeek Harness subprocess seam |
 
-## telemetry
-
-| Package | Config | Description |
-|---|---|---|
-| `@deepseek-ai/dsh-otel` | no | Cordis service for independent ordinary-event and byte-bounded Session-log OTLP channels |
-
 ## terminal
 
 | Package | Config | Description |

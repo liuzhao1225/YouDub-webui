@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。第 26 批及 Windows 原生测试拆分的 a6c4d1a 双平台 CI 已通过。第 27 批移除旧账号、产品统计链并修复外部插件的 YouDub SDK 解析，本地验证通过，双平台 CI 待验证。最终原生和完整媒体验收继续开放。
+更新：2026-10-23。第 26 批及 Windows 原生测试拆分的 a6c4d1a 双平台 CI 已通过。第 27 批移除旧账号、产品统计链并修复外部插件的 YouDub SDK 解析，本地验证通过，双平台 CI 正在运行。随后移除已失去消费者的 OTLP 包，完成最终框架范围复核；该后续候选仍待 CI。最终原生和完整媒体验收继续开放。
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -15,7 +15,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
 | 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-当前活动框架为 204 包、5,151 个树条目，源码 SHA-256 为 `8d0841733ac928cf2b40a6837631ca4aec758cd69435f05ded6849054d217f21`。第 27 批移除五个旧账号/产品统计包，保留通用凭据、API Key、日志、模型选择和扩展服务。默认产品隔离检查为 87 包、692 个运行源码、33 个 Web 插件。[本批证据](evidence/refactor-account-prune.json)
+当前活动框架为 203 包、5,133 个树条目，源码 SHA-256 为 `36bc087c0d57da4e3969fe81f31bab127e198b3ebf5cf2d8314e3eaf5fb21e08`。第 27 批移除五个旧账号/产品统计包，保留通用凭据、API Key、日志、模型选择和扩展服务。源码和类型引用覆盖 136 包，连同原框架测试为 197 包；剩余六包由根生成器和平台 addon 构建消费，已逐项记录。[最终范围](evidence/refactor-final-framework-scope.json) 默认产品隔离检查为 87 包、692 个运行源码、33 个 Web 插件。[本批证据](evidence/refactor-account-prune.json)
 
 源码构建的 233 个客户端产物包含可选框架库。第 19 批修复的 staging 清理继续生效，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
 
@@ -57,9 +57,9 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 
 ## 尚需实施的收尾
 
-1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；8fea16f1 的实际 Windows CI 已通过三种旧锁迁移及卸载后 SDK 链接检查。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
+1. 最终框架范围已复核：保留的源码/类型、测试、根生成器和原生 addon 都有消费者；最终候选待双平台 CI。[范围证据](evidence/refactor-final-framework-scope.json) 第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；8fea16f1 的实际 Windows CI 已通过三种旧锁迁移及卸载后 SDK 链接检查。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
 2. 收拢并行界面、资源及媒体拖动改动，形成固定候选，完成上表未通过的真实操作和输入验收。
-3. 独立实际 Host 的日语设置、工作流与任务视频播放已通过浏览器验收，静态首屏截图与限制见[记录](evidence/refactor-browser-ui.json)。原生窗口、文件框、动效与最终媒体质量保持开放。已补齐当前目录体积及历史数据副本记录；当前私有路径已由实际 Host/Python 读回验证；继续测量原生冷/热启动，完成全新下载及 Windows 原生验收。[路径证据](evidence/refactor-runtime-isolation.json)、[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
+3. 独立实际 Host 的日语设置、工作流与任务视频播放已通过浏览器验收，静态首屏截图与限制见[记录](evidence/refactor-browser-ui.json)。原生窗口、文件框、动效与最终媒体质量保持开放。已补齐当前目录体积及历史数据副本记录；当前私有路径已由实际 Host/Python 读回验证；全新私有安装、下载暂停/续传和重启已有当前证据，继续测量原生冷/热启动及完成 Windows 原生验收。[路径证据](evidence/refactor-runtime-isolation.json)、[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。
 
 本轮交付范围为源码开发版。安装包、签名、发布、自动更新服务和在线插件市场继续按用户要求排除；已有环境/模型准备界面属于开发版功能。[发行边界](YOUDUB-DESKTOP-REFACTOR-PLAN.md#10-后续发行边界)
@@ -73,3 +73,9 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 五个旧账号/统计包及 75 个原包文件已退出活动 fork；清除对应的 Remote 事件、专属默认模型初始化和可选统计调用。通用提供商编辑、凭据、错误传播、插件操作和 API Key 传输断言保留。缺失的消息回放夹具直接复制冻结原档中的原字节。[清理记录](evidence/refactor-account-prune.json)
 
 实际 Host 安装本地扩展时暴露 `@youdub/harness-subtitles` 无法解析。开发运行时现显式声明并链接应用自己的 SDK，继续由 Harness 原解析器处理。隔离日语页面已验证安装、页面按钮、停用、同进程启用和卸载；清理后 profile 不再引用测试插件，控制台无警告或错误。此次使用浏览器交互，原生文件框仍待最终验收。
+
+## 最终框架范围复核
+
+统计链移除后，`dsh-otel` 已无运行、类型、测试或根脚本消费者，随 17 个包/组文件移除。根目录说明、生成器目录项与第三方声明同步；依赖检查发现的三条无消费者导出白名单也已清理，实际源码检查纳入 CI。完整模块分类与目录体积保存在[最终范围记录](evidence/refactor-final-framework-scope.json)。
+
+本轮本地复用依赖的七项构建耗时 16.47 秒。该值没有包含下载、安装、原生窗口就绪，也不用于声称冷启动收益。原件仍由独立清单校验，历史体积记录保持不变。

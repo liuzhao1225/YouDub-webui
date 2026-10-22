@@ -92,7 +92,6 @@ const GROUP_ORDER = [
   'session-persistence',
   'session-query',
   'session-title',
-  'telemetry',
   'storage',
   'workspace',
   'support',

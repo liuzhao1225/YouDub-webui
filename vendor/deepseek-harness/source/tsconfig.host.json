@@ -41,7 +41,6 @@
     "scripts/client-bundle-purity.spec.ts"
   ],
   "references": [
-    { "path": "./packages/telemetry/otel" },
     { "path": "./packages/client/locale/tsconfig.host.json" },
     { "path": "./packages/client/ui-theme/tsconfig.host.json" },
     { "path": "./packages/client/ui-chat/tsconfig.host.json" },

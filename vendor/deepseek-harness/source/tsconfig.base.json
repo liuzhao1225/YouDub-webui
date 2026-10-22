@@ -28,7 +28,6 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
-      "@deepseek-ai/dsh-otel": ["./packages/telemetry/otel/src"],
       "@deepseek-ai/dsh-api-gateway/stream-protocol": ["./packages/api/gateway/src/stream-protocol.ts"],
       "@deepseek-ai/dsh/profile-boot": ["./apps/cli/src/profile-boot.ts"],
 

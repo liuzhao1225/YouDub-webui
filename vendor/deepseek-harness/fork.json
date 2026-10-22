@@ -42,10 +42,10 @@
         "path": "THIRD_PARTY_NOTICES.md",
         "type": "file",
         "executable": false,
-        "size": 16964,
-        "sha256": "4f6908fff7dbf7ebc03d0e3abe04ab49941fe2cf03132d1d12ca12287520e4b6"
+        "size": 16220,
+        "sha256": "89d2c0600f92e41e595575e53ca714127db1aea3e431196f7a196b6603924bbf"
       },
-      "reason": "YouDub P6 batch 25: regenerate license inventory after retiring unused legacy vendor HMR and console logger."
+      "reason": "YouDub P6 batch 25: regenerate license inventory after retiring unused legacy vendor HMR and console logger. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "apps/cli/README.md",
@@ -14830,6 +14830,60 @@
       "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
+      "path": "packages/README.i18n.yaml",
+      "before": {
+        "path": "packages/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 932,
+        "sha256": "a490b3914918df0162433ed29f55c465149d82c02732687e90e6ea69b526ceaa"
+      },
+      "after": {
+        "path": "packages/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 932,
+        "sha256": "9e877eb609f4d915a57a73d6af358bf8dbb9b31ebbe64539290756ecb237a799"
+      },
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/README.md",
+      "before": {
+        "path": "packages/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 8437,
+        "sha256": "e55e7288792ac3eae5119e58ab5d96a8d4a249fd0c2c6c03ec2d89454623ae1e"
+      },
+      "after": {
+        "path": "packages/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 7258,
+        "sha256": "6c7cbbfe5a612b0d4c62b72c2d638d51a2b7b4e619adb8309b2f17859f2429ba"
+      },
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/README.zh.md",
+      "before": {
+        "path": "packages/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 8191,
+        "sha256": "053f069bc9f497cac1775782ffe3d98f385bb8fb0199d6b6a56a1c72b5c3d2fd"
+      },
+      "after": {
+        "path": "packages/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 7005,
+        "sha256": "cc66f73fad09f2d266a25af7bc6c0a6dc880ce130080ea2523af6c41e7fa0711"
+      },
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
       "path": "packages/acp/README.i18n.yaml",
       "before": {
         "path": "packages/acp/README.i18n.yaml",
@@ -26032,10 +26086,10 @@
         "path": "packages/client/ui-settings-models/package.json",
         "type": "file",
         "executable": false,
-        "size": 2054,
-        "sha256": "39c9b127e546f84d1b2617924e238674cc4970adc2e288ded0b4b037f40da7f1"
+        "size": 1929,
+        "sha256": "d6f4115f9187ced578973e4510578381a0e59f51aa68160e5ab771ed6e66ba92"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/ApiKeyInput.tsx",
@@ -26314,6 +26368,18 @@
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
     },
     {
+      "path": "packages/client/ui-settings-models/src/onboarding-config.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/onboarding-config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 655,
+        "sha256": "4cbdec4b54c11be9d5951c3b1d4305a7dc43bb5cc8210e2f42afbd0440df3ad9"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
       "path": "packages/client/ui-settings-models/src/onboarding-copy.ts",
       "before": {
         "path": "packages/client/ui-settings-models/src/onboarding-copy.ts",
@@ -26464,10 +26530,10 @@
         "path": "packages/client/ui-settings-models/tsconfig.json",
         "type": "file",
         "executable": false,
-        "size": 703,
-        "sha256": "027411dedaab3768b40ec8adef2bb8a9adcfbcb97630c0251654651ca3ae4ad7"
+        "size": 596,
+        "sha256": "ee3fee766ea08a9df419837ae80fb4e418edd1480a815fa2afc7f7e6ea9f65ec"
       },
-      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "packages/client/ui-settings-plugin-inventory/README.i18n.yaml",
@@ -51514,10 +51580,10 @@
         "path": "packages/preset/agent-preset/skills/cordis-composition-reference/references/packages.md",
         "type": "file",
         "executable": false,
-        "size": 29864,
-        "sha256": "36644a5f9c6c93539e660f045bab74cbadfd81fe2af84dacd45b527b9daf2e27"
+        "size": 29676,
+        "sha256": "a553fbfb7ee8d20fa4189fcc97e664ccd9ca41ee03cfbbc315444e4a9c7e46df"
       },
-      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "packages/preset/agent-preset/tests/skills.spec.ts",
@@ -56686,6 +56752,42 @@
       "reason": "Split five independent Windows native-process launch/error scenarios into individually timed cases after the combined 5-second case timed out in CI; preserve every rejection and process-exit assertion and the per-case timeout."
     },
     {
+      "path": "packages/telemetry/README.i18n.yaml",
+      "before": {
+        "path": "packages/telemetry/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 893,
+        "sha256": "bbb3fdbbf57e199c1d349fff50cb537d59d7edc25fd9c08b1d055c1aac261994"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/README.md",
+      "before": {
+        "path": "packages/telemetry/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 922,
+        "sha256": "1ab853ea38ab5b8eba535f461eb4a98f55c5c70b0ba39747cb61045315a97379"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/README.zh.md",
+      "before": {
+        "path": "packages/telemetry/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 828,
+        "sha256": "e34975fa85c0d942dccbfc38383c2aea18372ad1cb92359923e039d228da981f"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
       "path": "packages/telemetry/otel/README.i18n.yaml",
       "before": {
         "path": "packages/telemetry/otel/README.i18n.yaml",
@@ -56694,14 +56796,8 @@
         "size": 1296,
         "sha256": "99d3d90a4f394a31b50c4415741a80a35c944ca1d3583b5c719b1f407d3c65c8"
       },
-      "after": {
-        "path": "packages/telemetry/otel/README.i18n.yaml",
-        "type": "file",
-        "executable": false,
-        "size": 1296,
-        "sha256": "e86be6a2c750ed8745ac735f16f2a75868b365b2868964dd87a9d1775531f970"
-      },
-      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "packages/telemetry/otel/README.md",
@@ -56712,14 +56808,8 @@
         "size": 5169,
         "sha256": "1e37ecdbc2e9b2ed43e0265853dc0fc15306d2924e128700b89054757eddf99e"
       },
-      "after": {
-        "path": "packages/telemetry/otel/README.md",
-        "type": "file",
-        "executable": false,
-        "size": 4919,
-        "sha256": "05025b374e3c79083170ae16952b8438303a74fdf29adb9352f2af3192ebc660"
-      },
-      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "packages/telemetry/otel/README.zh.md",
@@ -56730,14 +56820,140 @@
         "size": 4579,
         "sha256": "85f72af8039271dde41a484b20e16da30d625c25b4b2cf70a99f6ba979d453fb"
       },
-      "after": {
-        "path": "packages/telemetry/otel/README.zh.md",
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/locale/en.json",
+      "before": {
+        "path": "packages/telemetry/otel/locale/en.json",
         "type": "file",
         "executable": false,
-        "size": 4331,
-        "sha256": "9b7713e6a65c79a36a7a64f5e0dbe079861303c2f25a477c4ccd0a34b9d27931"
+        "size": 40,
+        "sha256": "f963b480f6d071d5aabdbb38dfedb00be6cebc58dda5a0d573c85c63f517d472"
       },
-      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/locale/zh.json",
+      "before": {
+        "path": "packages/telemetry/otel/locale/zh.json",
+        "type": "file",
+        "executable": false,
+        "size": 151,
+        "sha256": "2ba6d65c642e07960cc43f50d162de45c8c00d6a4539db5c637f325761ab0222"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/package.json",
+      "before": {
+        "path": "packages/telemetry/otel/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1364,
+        "sha256": "5190af695056cf8c2049403f1e4b80de53d2b5e3eaa971c6e720bfa38266a2af"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/src/event-log.ts",
+      "before": {
+        "path": "packages/telemetry/otel/src/event-log.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4241,
+        "sha256": "835d64330bdf2885044de7ae965b79da5bc36c82d9b0d7f5bd3a0fbcd5d8f711"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/src/event-transport.ts",
+      "before": {
+        "path": "packages/telemetry/otel/src/event-transport.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3047,
+        "sha256": "63d8dfeba497c9b2b50cc40543e5f7905a4ffbe873020f5bb871cd9e0118575f"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/src/index.ts",
+      "before": {
+        "path": "packages/telemetry/otel/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1813,
+        "sha256": "a1525e6acc020c3ca5054f677e2b418d3e4775382164c6879a432430b381d419"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/src/session-log.ts",
+      "before": {
+        "path": "packages/telemetry/otel/src/session-log.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10189,
+        "sha256": "9704737dccf64ec6afe1a611f9c1317722862213d9e698f1227414a48e955a4f"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/src/transport.ts",
+      "before": {
+        "path": "packages/telemetry/otel/src/transport.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3322,
+        "sha256": "864c4dfd2b7be6958806a5e80518bfe917d53ace0cad46199ed4166197cf909c"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/tests/event-log.spec.ts",
+      "before": {
+        "path": "packages/telemetry/otel/tests/event-log.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5845,
+        "sha256": "385080a9ebc509cae29e31eef64d793879d815f0dede5a26f011530116edd991"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/tests/session-log.spec.ts",
+      "before": {
+        "path": "packages/telemetry/otel/tests/session-log.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 15786,
+        "sha256": "c22ca7b0de1828c693da0c63ae0fbfba6a00c3ec557335520f5dca32f9694d96"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/telemetry/otel/tsconfig.json",
+      "before": {
+        "path": "packages/telemetry/otel/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 329,
+        "sha256": "bf7a750ff8ddac6882ee41f2676beb81f2533079ed09cc7e74cf9e8ac27e58be"
+      },
+      "after": null,
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "packages/test-support/README.i18n.yaml",
@@ -60316,10 +60532,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 701362,
-        "sha256": "da76f83f20189518e8e65b462d03a114f3023517d13572c4d92ae4449edc3b03"
+        "size": 700025,
+        "sha256": "f6e67f4d5390536acd4600a096975295e9808bfa0609f3fabb3af29ebc9dcbc6"
       },
-      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -61498,10 +61714,10 @@
         "path": "scripts/gen-cordis-catalog.ts",
         "type": "file",
         "executable": false,
-        "size": 66553,
-        "sha256": "f3626ade062991b858a1e506656525547961e215254bbceb3606bba29b0e1b24"
+        "size": 66348,
+        "sha256": "43183701b66905629e2bd6eeeac71318bf3dc852fabe28060a0379fe60c1b2de"
       },
-      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "scripts/gen-cordis-inspect-catalog.ts",
@@ -61552,10 +61768,10 @@
         "path": "scripts/gen-doc-graphs.ts",
         "type": "file",
         "executable": false,
-        "size": 75988,
-        "sha256": "a08e5f7f522c6b8f9c89734bbd78cb0758e069eaa048f335d6c602fb9cc71886"
+        "size": 75973,
+        "sha256": "c252ca0b5c8ff410a7ce414b2c48ffc043db510872e12044327cacdcb5a086b4"
       },
-      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "scripts/gen-official-bundle-catalog.spec.ts",
@@ -61756,10 +61972,10 @@
         "path": "scripts/package-dependency-policy.ts",
         "type": "file",
         "executable": false,
-        "size": 4606,
-        "sha256": "7420156040f829b6e5134e20ac5ea44ef08d9be7eee9ac81a3318081cf976fe3"
+        "size": 4402,
+        "sha256": "49c8f8b8402eeb13180977713f0362338f55f524bb876e19d66fa9e66eb5d87e"
       },
-      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "scripts/preview-workflow.spec.ts",
@@ -62752,10 +62968,10 @@
         "path": "scripts/verify-package-readme-model-experience.ts",
         "type": "file",
         "executable": false,
-        "size": 37364,
-        "sha256": "d864f9cfd4816cd65a452c2f68823aefc76be1bfa70da7c9a5093aeb59acc098"
+        "size": 37229,
+        "sha256": "0b62fc70a3847fad14353674d42bf0df9f94d1ae87a79622f637db9854cb872c"
       },
-      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "scripts/verify-product-use.spec.ts",
@@ -62878,10 +63094,10 @@
         "path": "tsconfig.base.json",
         "type": "file",
         "executable": false,
-        "size": 29382,
-        "sha256": "0b10aab932bf56aa7134600038fa266a1d34e3a7f236eda6547214c00dfce0e3"
+        "size": 29316,
+        "sha256": "0523bc1cba22a86f97724b471bf7bb971c9b5b11cc214bdc5b8a1e6d9b30e193"
       },
-      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "tsconfig.client.json",
@@ -62914,10 +63130,10 @@
         "path": "tsconfig.host.json",
         "type": "file",
         "executable": false,
-        "size": 10813,
-        "sha256": "05f05c9f335af32daa69f7ad4e736b9b8d007eb704f6d02d1742bcc0ebae367a"
+        "size": 10768,
+        "sha256": "d149b8268e6c11074d157d5de897f6b610c87f76cf6a0b9a2f6e613444a75446"
       },
-      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
     {
       "path": "vendor/README.md",

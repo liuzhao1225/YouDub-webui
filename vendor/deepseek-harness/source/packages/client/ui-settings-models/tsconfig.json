@@ -9,12 +9,6 @@
   ],
   "references": [
     {
-      "path": "../../host/webserver"
-    },
-    {
-      "path": "../../../vendor/schemastery"
-    },
-    {
       "path": "../../../vendor/cordis"
     },
     {
