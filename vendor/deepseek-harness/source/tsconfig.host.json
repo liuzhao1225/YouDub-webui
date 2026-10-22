@@ -120,7 +120,6 @@
     "apps/web/tests/replay-round-trip.e2e.ts",
     "apps/web/tests/session-replay-reload.e2e.ts",
     "apps/web/tests/hmr-live.e2e.ts",
-    "apps/web/tests/preview-boot.e2e.ts",
     "apps/web/tests/seeded-history.e2e.ts",
     "apps/web/tests/cold-blank-session.e2e.ts",
     "apps/web/tests/blank-writer-reuse.e2e.ts",

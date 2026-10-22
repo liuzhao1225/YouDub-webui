@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-web-frontend",
-  "description": "Web application entry: vite build over the @deepseek-ai/dsh-client-web shell library; dist/ served by apps/cli's dsh web",
+  "description": "Application Web entry: shared Harness client runtime for the YouDub Electron Host",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"
@@ -17,16 +17,12 @@
   },
   "files": [
     "dist",
-    "!dist/**/*.map",
-    "!dist/preview.html",
-    "!dist/preview"
+    "!dist/**/*.map"
   ],
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "watch": "vite build --watch --no-emptyOutDir",
-    "build:preview": "pnpm --filter @deepseek-ai/dsh-experimental-webworker-runtime exec tsdown && pnpm --filter @deepseek-ai/dsh-experimental-webworker-packer exec tsdown && vite build && dsh-pack-vfs-image --out dist/preview/vfs-image.tar.gz",
-    "serve:preview": "http-server dist -a 0.0.0.0 -p 4173 -c-1"
+    "watch": "vite build --watch --no-emptyOutDir"
   },
   "license": "MIT",
   "devDependencies": {
@@ -43,15 +39,12 @@
     "@deepseek-ai/dsh-cmdline": "workspace:*",
     "@deepseek-ai/dsh-pwsh-local": "workspace:*",
     "@deepseek-ai/dsh-experimental-agent-team": "workspace:*",
-    "@deepseek-ai/dsh-experimental-webworker-packer": "workspace:*",
-    "@deepseek-ai/dsh-experimental-webworker-runtime": "workspace:*",
     "@deepseek-ai/dsh-remote-mock": "workspace:*",
     "@deepseek-ai/dsh-session-projection-cache": "workspace:*",
     "@deepseek-ai/dsh-util-values": "workspace:*",
     "@types/node": "^22.20.1",
     "@types/ws": "8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
-    "http-server": "^14.1.1",
     "fflate": "^0.8.2",
     "playwright": "^1.49.0",
     "react": "^18.2.0",

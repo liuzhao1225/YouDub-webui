@@ -285,12 +285,9 @@ export default defineConfig({
         'packages/client/ui-layout/src/*',
         'packages/client/web/src/*',
         'packages/host/webserver/src/*',
-        // The browser-worker runtime and its image packer: the executing
-        // composition is a real dedicated Worker driven by the web browser lane
-        // (apps/web/tests/preview-boot.e2e.ts), which unit-process V8 coverage
-        // cannot observe. Unit specs cover the algorithmic cores; the assembled
-        // evidence is that boot. TODO(webworker): revisit when a browser-grade
-        // coverage lane exists.
+        // Retired browser-worker deployment, outside the YouDub desktop
+        // composition. Its algorithmic unit specs remain until source pruning;
+        // there is no current product-level browser-worker acceptance lane.
         'packages/experimental/webworker-runtime/src/**',
         'packages/experimental/webworker-packer/src/*',
         // Inspector execution adapters run in a Node Worker, the Host native

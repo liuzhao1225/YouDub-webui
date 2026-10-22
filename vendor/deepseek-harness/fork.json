@@ -8280,6 +8280,36 @@
       "reason": "框架步骤仅构建 YouDub 实际使用的 app preload，不再生成旧产品 main、欢迎页和账号 preload。"
     },
     {
+      "path": "apps/web/package.json",
+      "before": {
+        "path": "apps/web/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3070,
+        "sha256": "ef3ce8ab4850899e84f1461e61d8ffa3cd80b09def3cef1fdc327e6fdf96d729"
+      },
+      "after": {
+        "path": "apps/web/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2504,
+        "sha256": "4ba34aad0eb721ef24db42716c5b07afb78d0c3972c85c88e8411b758e30d844"
+      },
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
+      "path": "apps/web/src/preview.ts",
+      "before": {
+        "path": "apps/web/src/preview.ts",
+        "type": "file",
+        "executable": false,
+        "size": 721,
+        "sha256": "6fb2d673b3e66b280d3e6f3d678e65545ccce02fd2672a5acdf8e4f3c3543c31"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
       "path": "apps/web/tests/desktop-onboarding.e2e.ts",
       "before": {
         "path": "apps/web/tests/desktop-onboarding.e2e.ts",
@@ -8302,6 +8332,54 @@
       },
       "after": null,
       "reason": "移除已退休 Desktop 更新/上游发行产品的专属验收；源码开发 CI 继续覆盖保留框架服务。"
+    },
+    {
+      "path": "apps/web/tests/preview-boot.e2e.ts",
+      "before": {
+        "path": "apps/web/tests/preview-boot.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 42777,
+        "sha256": "dc73a2c93bff7837a93a2717c11adf171fd9be46dbc8deda938078f5f0dcb18b"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "before": {
+        "path": "apps/web/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 8329,
+        "sha256": "2d8240fe6f7ddbeb1ac50531c1df44790985f2dea8204a46fa05608047785690"
+      },
+      "after": {
+        "path": "apps/web/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 8296,
+        "sha256": "ce1b97b05ad651a421881e057a500433d4b9ac1dbf1ab7c969cf6a354d11f218"
+      },
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "before": {
+        "path": "apps/web/vite.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11722,
+        "sha256": "121dba28f227a42cb2352ce9650f163ec22144b565e8139f67ff93ea0ed571ae"
+      },
+      "after": {
+        "path": "apps/web/vite.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8945,
+        "sha256": "4566e52dcf12f10ce457d0c4af280f1e1873fbd8b79b030d42840af53bbecfe5"
+      },
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
     },
     {
       "path": "package.json",
@@ -10176,10 +10254,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 960181,
-        "sha256": "00e94f3d933a8e80833ff27854194aaab177ed810b40ec06c35a7f54d940d35e"
+        "size": 955078,
+        "sha256": "b84bfce4f34debd33ac420082dcca2d4fec71019eb91c0e6c275a359e5361e69"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded."
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded. Remove retired browser preview workspace and HTTP server dependency entries without upgrading retained dependencies."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -10198,6 +10276,24 @@
         "sha256": "b42ff71cfa5260e238fa852903003d240749a8186bd5a16e43cbad7b60cb0a1e"
       },
       "reason": "删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。"
+    },
+    {
+      "path": "scripts/client-build-environment.client.spec.ts",
+      "before": {
+        "path": "scripts/client-build-environment.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13041,
+        "sha256": "2d0aa232f9ec087606fcf087bd77fbe7e1efd8c306704a9e9c4d825231b1ae3e"
+      },
+      "after": {
+        "path": "scripts/client-build-environment.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12895,
+        "sha256": "915f017c4f76edf0238213127158e69cbb8c19137163905246d4e7233385c0e0"
+      },
+      "reason": "Validate the explicit YouDub development workflow instead of retired Harness release workflows; missing configuration still fails, and client environment and artifact integrity assertions are retained."
     },
     {
       "path": "scripts/demo-ptc.mjs",
@@ -10324,6 +10420,18 @@
       },
       "after": null,
       "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/preview-workflow.spec.ts",
+      "before": {
+        "path": "scripts/preview-workflow.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3619,
+        "sha256": "e58cd9e0fe2cc4af37cc0b4cdad5448bb5369c0f7ef4f02572970e1db03b06fd"
+      },
+      "after": null,
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
     },
     {
       "path": "scripts/verify-application-entrypoints.ts",
@@ -10488,16 +10596,34 @@
       "reason": "移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。"
     },
     {
+      "path": "tsconfig.host.json",
+      "before": {
+        "path": "tsconfig.host.json",
+        "type": "file",
+        "executable": false,
+        "size": 26889,
+        "sha256": "d9f18524d4b0eb00e1cff0bfee748029c6051b00f47fc28b3fc57141703cead7"
+      },
+      "after": {
+        "path": "tsconfig.host.json",
+        "type": "file",
+        "executable": false,
+        "size": 26847,
+        "sha256": "4efa663737d82153cd8071e4d1e25d802fe1037ef13fc2ceeb34a1e9c61bdbaa"
+      },
+      "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
       "path": "vitest.config.ts",
       "before": null,
       "after": {
         "path": "vitest.config.ts",
         "type": "file",
         "executable": false,
-        "size": 23005,
-        "sha256": "25e0a4d485e98a93428bb4b4271c310dc2755f54dd4723ad6ac6f49f7cf4438a"
+        "size": 22806,
+        "sha256": "89a99f902309439b3cbb9857313a3c866315d74454a89a9e04e1c3c42c62ef9b"
       },
-      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace."
+      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
     },
     {
       "path": "vitest.shared.ts",

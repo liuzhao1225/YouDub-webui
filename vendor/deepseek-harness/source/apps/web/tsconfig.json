@@ -133,7 +133,6 @@
     "tests/replay-round-trip.e2e.ts",
     "tests/session-replay-reload.e2e.ts",
     "tests/hmr-live.e2e.ts",
-    "tests/preview-boot.e2e.ts",
     "tests/seeded-history.e2e.ts",
     "tests/stats-paged-history.e2e.ts",
     "tests/sidebar-scrollbar.e2e.ts",
