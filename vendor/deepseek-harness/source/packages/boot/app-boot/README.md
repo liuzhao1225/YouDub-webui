@@ -1,5 +1,5 @@
 ---
-description: "Shared Loader boot support for dsh profiles and the temporary Python SDK runtime: environment layers, patches, diagnostics, and configuration preview."
+description: "Shared Loader boot support for YouDub application profiles: environment layers, patches, diagnostics, and configuration preview."
 kind: "package-library"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-app-boot` is the shared Loader boot library behind `dsh` profiles, including the CLI packaged by the Python runtime wheel. It loads environment layers, composes profile bundles and patches, boots every plugin, and returns the running app or identifies the failed plugin and cause. Product applications use the `dsh` launcher instead of publishing separate bins; direct-config helpers remain only for lower-level embedders and tests. You can preview the effective configuration before booting, configure HMR through profile YAML, and let a terminal-owning app restore its terminal before a fatal exit.
+`dsh-app-boot` is the shared Loader boot library used by YouDub Desktop Host. It loads environment layers, composes application-owned bundles and patches, boots plugins, and returns the running app or identifies the failed plugin and cause. Applications initialize their profile explicitly and supply their own bundle list. Configuration inspection, HMR and cleanup retain the original framework mechanisms.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ Starting an app with this package is a small, explicit entry point: you give it 
 
 ### When to use it
 
-Use it when implementing the shared `dsh` launcher or embedding its lower-level boot helpers. Product features belong in profile bundles instead of new application bins; code that only adds plugins to an already-running app mounts those plugins directly.
+Use it when implementing a product Host or embedding its boot helpers. Product features belong in bundles; code that adds plugins to an already-running app mounts those plugins directly.
 
 ### Starting the app
 
@@ -47,7 +47,9 @@ const ctx = await boot('dsh', resolveConfigPath(argv[2], process.env.DSH_SNAPSHO
 
 Import profile and bundle declaration types from [`@deepseek-ai/dsh-package-manifest`](../../util/package-manifest/README.md). App-boot adapts `DshPackageManifest` to `ProfileManifest` with optional package identity because local profiles need no published version. App-boot owns profile loading, JSON validation, and resolved runtime data.
 
-A profile is how one dsh installation ships different app surfaces: `web`, `headless`, `acp`, `sdk`, and `sdk-minimal` start distinct compositions from the same launcher. A profile lives at `$DSH_HOME/profiles/<name>` and combines installable bundles with its own `cordis.patch.yml`. A bundle's `dsh.bundle.patch` names one patch file or an ordered list of files; `bundlePatchFiles` validates the declaration and `bundlePatchPaths` resolves it to absolute paths; the layer concatenates their patch lists in that order. The YAML composition enables or disables HMR. The shipped `web` template uses live reload, while the other shipped templates apply patches only at startup. `sdk-minimal` names only its standalone bundle; the other templates retain base-plus-mode stacks. `dsh --profile <name> --from-default-profile <template>` creates or replaces a custom profile at a non-shipped name from one shipped template, while `dsh plugin` initializes a base-backed profile and manages its installed bundles. Bundle resolution, manifest, and patch-loading failures skip that bundle without changing its selection; the loaded profile lists each skip in `skippedBundles`, and the launcher prints them once per start with `reportSkippedBundles`. Remaining bundles keep their order; profile and user-patch errors still fail startup. Skipping a bundle does not guarantee that the remaining composition can provide the required services. Application-owned npm projects, such as Electron's reserved Desktop profile, use `loadProfileDirectory` to load an already initialized directory without exposing it through CLI profile lookup.
+A profile lives at `$DSH_HOME/profiles/<name>` and combines installable bundles with its own `cordis.patch.yml`. A bundle declares one patch file or an ordered list through `dsh.bundle.patch`; `bundlePatchFiles` validates the declaration and `bundlePatchPaths` resolves it. YouDub initializes its reserved profile with its own bundle and loads it through `loadProfileDirectory`.
+
+This fork ships no implicit product templates, base bundle defaults or optional Harness bundles. Loading a missing named profile fails. Existing manifest fields and bundle selections remain unchanged, including names that were formerly used by a Harness template. Bundle resolution or compatibility failures are reported in `skippedBundles`; callers report the failed entries and startup still enforces required services. Profile and user-patch errors propagate.
 
 Before a profile imports a plugin, DSH checks its declared DSH requirement against the single runtime version returned by `getDshRuntimeVersion()`. When the manifest declares `engines.dsh`, that range alone decides and `peerDependencies` are ignored. Otherwise every `peerDependencies` range on `@deepseek-ai/dsh` and `@deepseek-ai/dsh-*` must match, and source-workspace `workspace:^`, `workspace:~`, and `workspace:*` peers refer to that same runtime. Prereleases participate in range matching. A manifest with neither declaration imposes no constraint; empty or invalid ranges, including a `workspace:` value in `engines.dsh`, are incompatible. A non-object `engines` or a non-string `engines.dsh` is a malformed manifest. A refusal names the unmet requirements, keyed `engines.dsh` or by peer package name. These checks are not a sandbox against malicious package code.
 
@@ -86,7 +88,7 @@ The projector preserves native omission behavior by checking literal defaults ag
 
 Use `readPluginMeta(specifier, parentURL)` or `ctx.pluginPackages.metaOf(specifier, parentURL)` to read installed package display text without importing or activating the plugin. Lookup uses the complete package specifier and the caller's resolution base, respecting Node exports. File paths and file URLs return no metadata without resolving resources. For a package-root specifier, missing locale fields fall back to the accessible `package.json`; a subpath specifier never reads a `package.json`. Malformed metadata returns an `error` diagnostic. Results retain translations for Client-side language selection. The reader also loads an image data URL, even when locale text is complete: a package root uses its manifest `icon`, or `<package>/icon` when that field is omitted; a subpath uses `<specifier>/icon`. An icon error preserves valid text alongside the diagnostic. See [Plugin display metadata](../../../docs/cookbook/adding-a-package.md#plugin-display-metadata) for the author format.
 
-`ON_DEMAND_BUNDLES` names the public Official packages installed only on request. `OFFICIAL_ON_DEMAND_CATALOG` embeds their package-owned localized metadata and icons for offline discovery; `pnpm gen-official-bundle-catalog` explicitly updates generated content, and `verify-official-bundle-catalog` checks resource completeness and freshness; builds consume the committed catalog without importing provider code. The catalog contains no install target: [Plugin Manager](../plugin-manager/README.md#use-this-package) derives it from the running version and installation and uses the ordinary bundle installer. The [product-use check](../../../scripts/verify-product-use.ts) composes shipped and on-demand selections against Web without executing providers.
+The YouDub on-demand catalog is empty. `ON_DEMAND_BUNDLES` declares a product admission list and accepts an empty list. `OFFICIAL_ON_DEMAND_CATALOG` embeds their package-owned localized metadata and icons for offline discovery; `pnpm gen-official-bundle-catalog` explicitly updates generated content, and `verify-official-bundle-catalog` checks resource completeness and freshness; builds consume the committed catalog without importing provider code. The catalog contains no install target: [Plugin Manager](../plugin-manager/README.md#use-this-package) derives it from the running version and installation and uses the ordinary bundle installer. The [product-use check](../../../scripts/verify-product-use.ts) composes shipped and on-demand selections against Web without executing providers.
 
 <a id="startup-and-reload-failures"></a>
 ### Startup and reload failures

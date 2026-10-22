@@ -1,25 +1,4 @@
 {
-  "apps/cli/tests/built-bin.e2e.ts": {
-    "e3b3858336ae260253abe549d2b763f5087ab4e8650f4eb5b323339eff0a6ce4": 1
-  },
-  "apps/cli/tests/profiles/acp/tests/acp.e2e.ts": {
-    "e3b3858336ae260253abe549d2b763f5087ab4e8650f4eb5b323339eff0a6ce4": 1
-  },
-  "apps/cli/tests/profiles/acp/tests/cleanup.ts": {
-    "04bc8a44533574365dfedf563e2356458bcf95f990a00906938c977c1d683356": 1
-  },
-  "apps/cli/tests/profiles/headless/tests/session-format-guard.expected.e2e.ts": {
-    "340837865a9f6222ae46d41b594c4c079ae3935c004433c76da047df31c8008f": 1
-  },
-  "apps/cli/tests/profiles/sdk/keyless-smoke.e2e.ts": {
-    "08756a7f91b523251984249f9feaff65e1b872dc2ec4cac53066f3f780ac9cd8": 1,
-    "0bbadf9d39ca1ba462cca60fc4ada51822b349a542af26ac043515bc11194de4": 1,
-    "52faf4558fcd91bd27dbdfa7e497843e8eeb75ea5f68ee231335018d5b3f2053": 1,
-    "e34ab721c5fc4fe363263a2dab71dad5ba379f3a1e3c3f555234e78f1c70eb02": 1
-  },
-  "apps/cli/tests/web-auth.e2e.ts": {
-    "a2b9a35fdf6552ba148d15436c9b3f98ed5763a2b91a95f579b951fd6613e75c": 1
-  },
   "apps/desktop-host/tests/office.spec.ts": {
     "3f8653cd87f99ebd70765379dae51ab308ed9c280e831d39e1abd469bfcdc6e3": 1
   },

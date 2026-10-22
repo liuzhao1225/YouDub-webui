@@ -217,3 +217,28 @@ Desktop Host 不再安装 Office 或发布 DeepSeek 平台账号 session。退�
 - 实际执行根目录 `npm run build:desktop`，依序完成 Host/Client/Electron 构建、组合边界检查和 `desktop.mjs --prepare-only`。缺失旧壳不影响当前产品生成；构建保留原有 esbuild CSS side-effect 和 Node register 弃用警告，无构建失败。删除路径扫描未发现剩余活动脚本引用；根命令、engines、锁文件和复用图标校验通过。额外 YAML 检查首次误从根解析未声明的 `yaml` 包而失败，随后使用框架已锁定的 `js-yaml` 完成两份保留 workflow 解析校验。
 - 从根 `npm start` 启动同一隔离 profile，原生 Electron 完成环境检查并进入日语工作台，原 Logo/大标题保留；其他会话的主题、反馈、GitHub 入口和资源改动共存。页面明确显示翻译服务未配置，本批未运行媒体/翻译任务。
 - 上一批 `711e40e8` 的[干净 macOS 源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39722654418) 已通过。本批没有打包、签名、发布或合并到 main。其余源码闭包、全功能和 Windows 验收继续保留在计划中；两份飞书文档仍在全部改造与验收完成后统一更新。
+
+
+本批提交 `f43fdf84` 的[干净 macOS 源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39723763577) 已通过，包括保留的框架设置/桌面生命周期、领域/界面/多语言、Harness 集成与 Python 媒体合同。
+
+## P0/P6 下一批裁剪前的引用复核（f43fdf84）
+
+[引用清单](evidence/refactor-framework-dependency-audit-20261022.json)基于当前 80 个运行包，加上 Desktop 构建包共 81 个根，从实际源码 import/export、类型导入和已声明 dependencies 追踪。362 个源码包中，144 个进入运行/类型闭包；把这些包内测试和辅助脚本的静态导入计入后扩大到 228 个，另外 134 个暂列候选，尚未删除。
+
+这份静态清单不构成删除许可：`PROFILE_TEMPLATES`、`DEFAULT_PROFILE_BUNDLES`、`OPTIONAL_BUNDLES` 仍以字符串引用旧 ACP/headless/SDK 和实验 bundle，原生 addon 也存在平台动态选择。下一批先核对这些产品配置、根构建脚本、devDependencies、TypeScript references，以及旧产品测试对 Agent/聊天/终端的间接依赖，再删除源码和同步编译范围。当前 Electron 已通过产品显式 bundle 启动；测试里的旧默认组合不能作为保留全部旧产品模块的依据。
+
+
+## P6 第六批：profile 启动库与旧 CLI 产品组合（2026-10-22）
+
+- `apps/cli` 保留原 `profile-boot` 和 `process-shutdown` 实现及其回归；删除独立 `dsh` 命令、参数处理、CLI 配置导出，以及专属于 ACP/headless/SDK/Web 产品的场景。包改为私有启动库，编译入口只生成 `profile-boot.js`。YouDub 继续通过 Desktop Host 启动显式的产品 bundle。
+- 清空默认 profile 模板、默认/可选 Harness 产品 bundle 与 Claude Code/Codex 目录。保留 profile 读取、插件安装、patch、Loader 和退出生命周期。已保存的 bundle 选择原样保留，缺失 profile 显式失败；不自动生成旧产品配置。
+- 官方目录生成器继续复用，允许产品提供空目录；目录和安装器测试改用测试专属插件。真实安装测试使用包自身声明的 pnpm 11.28.5，避免依赖已删除的 Desktop 工具目录或机器的全局 pnpm 版本。保留依赖版本未升级。
+- 删除根 CLI/Web 开发入口、相应帮助生成器及其测试，清理 18 个指向已退休 Desktop 打包/上传脚本的根命令；入口与产品使用检查改为实际 Desktop Host 根。原始 Harness 归档校验通过，初始 YouDub 清单不变。
+- 新 staging 完成七步源码构建；构建输出中没有旧 CLI `bin.js`。首次回归的 20 项失败及第二轮的 3 项失败保留在本地日志；修正测试夹具命名、原产品断言、pnpm 路径与自定义命令优先级后，安装器 96 项回归通过。完整候选回归与实际 Electron 读回结果在下方补记。
+- 静态运行/类型闭包仍为 144 个包，计入包内测试后由 228 降至 221；源码仍有 362 个包和 325 个客户端构建产物。本批没有宣称完成源码裁剪。旧 Python SDK、Office/Agent 场景、根旧 Host/Web 入口和剩余构建范围继续列入 P6，不能用本批结果替代全功能验收。
+
+候选框架回归：68 个文件通过，6,347 项通过，2 项按平台条件跳过。原应用入口与目录生成检查通过。完整 `verify-product-use` 仍报告 257 条未归属运行使用的模块：该检查还未接入仓库外层的 YouDub 产品 patch，同时确有待裁剪的旧产品模块；此失败保留，P6 后续需接入实际产品组合并逐项核对，不能把测试夹具通过等同于全仓使用闭包通过。
+
+当前产品构建、composition 与构建来源收据通过。共享工作区集成 72 项通过，包含另一会话新增的资源测试；该测试最初因 Node 原生 TypeScript 剥离不支持参数属性失败，现复用已有 onboarding 测试的 `tsx` 注册方式加载，资源业务源码未因此改写。此新增测试及其他会话的界面/资源管理变更保留在工作区，不纳入本批框架提交。
+
+同一私有 profile 的实际 Electron 重启后仍为日语，进入原版 Logo/大标题首屏；[桌面首屏](evidence/refactor-profile-prune-home.png)、[扩展页](evidence/refactor-profile-prune-plugins.png)已留证。扩展页仅显示 YouDub 内置功能，模型页没有默认账号或提供商，通用设置显示 YouDub 0.0.7。该验证 profile 未配置翻译服务，界面明确阻止开始工作流；本批未进行外部 LLM 调用，不计为完整媒体流程验收。

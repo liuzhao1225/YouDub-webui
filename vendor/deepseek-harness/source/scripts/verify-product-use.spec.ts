@@ -39,10 +39,10 @@ function fixture(): string {
   const root = mkdtempSync(join(tmpdir(), 'dsh-product-use-'))
   roots.push(root)
   write(root, 'tsconfig.base.json', { compilerOptions: { moduleResolution: 'bundler', paths: {} } })
-  pkg(root, 'apps/cli', '@deepseek-ai/dsh')
+  pkg(root, 'apps/desktop-host', '@deepseek-ai/dsh-desktop-host')
   pkg(root, 'apps/desktop', '@fixture/desktop')
   pkg(root, 'apps/web', '@fixture/web')
-  write(root, 'apps/cli/src/bin.ts', 'export {}\n')
+  write(root, 'apps/desktop-host/src/index.ts', 'export {}\n')
   write(root, 'apps/desktop/src/preload-app.ts', 'export {}\n')
   write(root, 'apps/web/src/main.ts', 'export {}\n')
   write(root, 'apps/web/index.html', '<script type="module" src="/src/main.ts"></script>')
@@ -86,7 +86,7 @@ describe('product package use', () => {
   ])('does not count type-only source: %s', (source) => {
     const root = fixture()
     pkg(root, candidateDir, candidate)
-    write(root, 'apps/cli/src/bin.ts', source)
+    write(root, 'apps/desktop-host/src/index.ts', source)
     expect(failures(root)).toContain('no product runtime use')
   })
 
@@ -96,7 +96,7 @@ describe('product package use', () => {
   ])('follows runtime source: %s', (source) => {
     const root = fixture()
     pkg(root, candidateDir, candidate)
-    write(root, 'apps/cli/src/bin.ts', source)
+    write(root, 'apps/desktop-host/src/index.ts', source)
     expect(failures(root)).toBe('')
     expect(failures(root, declarations())).toContain('stale optional policy')
   })
@@ -105,20 +105,20 @@ describe('product package use', () => {
     const root = fixture()
     const baseline = verifyProductUse(root, {}).sourceCount
     pkg(root, candidateDir, candidate)
-    write(root, 'apps/cli/src/bin.ts', "import '../../../packages/core/candidate/src/index.ts'")
+    write(root, 'apps/desktop-host/src/index.ts', "import '../../../packages/core/candidate/src/index.ts'")
     expect(verifyProductUse(root, {})).toMatchObject({ failures: [], sourceCount: baseline + 1 })
-    write(root, 'apps/cli/src/bin.ts', `import '../../../packages/core/candidate/src/index.ts'\nimport '${candidate}'`)
+    write(root, 'apps/desktop-host/src/index.ts', `import '../../../packages/core/candidate/src/index.ts'\nimport '${candidate}'`)
     expect(verifyProductUse(root, {})).toMatchObject({ failures: [], sourceCount: baseline + 1 })
   })
 
   it('follows only reached local modules, including cycles and worker URLs', () => {
     const root = fixture()
     pkg(root, candidateDir, candidate)
-    write(root, 'apps/cli/src/unreachable.ts', `import '${candidate}'`)
+    write(root, 'apps/desktop-host/src/unreachable.ts', `import '${candidate}'`)
     expect(failures(root)).toContain('no product runtime use')
-    write(root, 'apps/cli/src/bin.ts', "import './cycle.ts'\nnew URL('./worker.js', import.meta.url)")
-    write(root, 'apps/cli/src/cycle.ts', "import './bin.ts'")
-    write(root, 'apps/cli/src/worker.ts', `import '${candidate}'`)
+    write(root, 'apps/desktop-host/src/index.ts', "import './cycle.ts'\nnew URL('./worker.js', import.meta.url)")
+    write(root, 'apps/desktop-host/src/cycle.ts', "import './index.ts'")
+    write(root, 'apps/desktop-host/src/worker.ts', `import '${candidate}'`)
     expect(failures(root)).toBe('')
   })
 
@@ -246,7 +246,7 @@ describe('product package use', () => {
   it('rejects a missing workspace source mapping instead of consulting built exports', () => {
     const root = fixture()
     pkg(root, candidateDir, candidate)
-    write(root, 'apps/cli/src/bin.ts', `import '${candidate}/missing'`)
+    write(root, 'apps/desktop-host/src/index.ts', `import '${candidate}/missing'`)
     expect(failures(root)).toContain('does not resolve to workspace source')
   })
 

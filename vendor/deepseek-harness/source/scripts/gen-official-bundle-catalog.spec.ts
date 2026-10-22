@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ON_DEMAND_BUNDLES } from '../packages/boot/app-boot/src/official-bundles.ts'
 import { generateOfficialBundleCatalog, renderOfficialBundleCatalog, syncOfficialBundleCatalog } from './gen-official-bundle-catalog.ts'
 
@@ -44,7 +44,20 @@ function updateManifest(root: string, name: string, changes: Record<string, unkn
 
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
 
+vi.mock('../packages/boot/app-boot/src/official-bundle-packages.ts', () => ({
+  ON_DEMAND_BUNDLES: ['@deepseek-ai/dsh-test-media-node', '@deepseek-ai/dsh-test-subtitle-node'],
+}))
+
 describe('Official bundle catalog generation', () => {
+  it('generates an empty catalog for a product with no published bundles', () => {
+    expect(generateOfficialBundleCatalog(fixture(), [])).toEqual([])
+    expect(renderOfficialBundleCatalog([])).toContain('readonly OfficialBundleCatalogEntry[] = [\n]')
+  })
+
+  it('rejects duplicate admission names', () => {
+    expect(() => generateOfficialBundleCatalog(fixture(), ['same', 'same'])).toThrow('distinct package names')
+  })
+
   it('reads package resources without evaluating native provider entries or pinning a version', () => {
     const entries = generateOfficialBundleCatalog(fixture())
     expect(entries.map(entry => entry.packageName)).toEqual(ON_DEMAND_BUNDLES)
@@ -73,9 +86,8 @@ describe('Official bundle catalog generation', () => {
     expect(() => generateOfficialBundleCatalog(root)).toThrow('must not be installed by the DSH distribution')
   })
 
-  it('requires distinct nonempty catalog admission', () => {
+  it('requires distinct catalog admission', () => {
     const root = fixture()
-    expect(() => generateOfficialBundleCatalog(root, [])).toThrow('distinct package names')
     expect(() => generateOfficialBundleCatalog(root, [ON_DEMAND_BUNDLES[0]!, ON_DEMAND_BUNDLES[0]!])).toThrow('distinct package names')
   })
 

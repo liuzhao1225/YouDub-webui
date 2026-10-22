@@ -12,7 +12,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { afterAll, beforeAll, expect, it, onTestFinished, vi } from 'vitest'
 import {
   boot, composeEntries, initProfile, loadProfileDirectory, readProfilePatches, readProfileManifest,
-  reconcileProfilePatches, OPTIONAL_BUNDLES, OFFICIAL_ON_DEMAND_CATALOG, PluginPackages, readPluginMeta, getDshRuntimeVersion,
+  reconcileProfilePatches, OFFICIAL_ON_DEMAND_CATALOG, PluginPackages, readPluginMeta, getDshRuntimeVersion,
   type ProfileContext, type RuntimeResolution,
 } from '@deepseek-ai/dsh-app-boot'
 import PluginManager, { type Config, type PluginChange, type PluginInstallLogChunk, type PluginInstallProgress, type PluginInstallRequestId } from '../src/index.ts'
@@ -25,10 +25,24 @@ import * as githubConnection from '../src/github-connection.ts'
 import { parse, parseDocument } from 'yaml'
 import { isolateGitCommandLineConfig } from './git-environment.ts'
 
+// Installer coverage uses test-owned catalog entries; the YouDub product catalog is empty.
+vi.mock('@deepseek-ai/dsh-app-boot', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@deepseek-ai/dsh-app-boot')>()
+  return { ...actual, OFFICIAL_ON_DEMAND_CATALOG: [
+    { packageName: '@deepseek-ai/dsh-test-media-node', meta: { title: 'Media node', description: 'Test fixture', icon: 'test-icon.svg' } },
+    { packageName: '@deepseek-ai/dsh-test-subtitle-node', meta: { title: 'Subtitle node', description: 'Test fixture', icon: 'test-icon.svg' } },
+  ] }
+})
+
 // These cases install through real Git and pnpm, so the host's command-line configuration group must not reach their children.
 let restoreGitCommandLineConfig: () => void
 beforeAll(() => { restoreGitCommandLineConfig = isolateGitCommandLineConfig() })
 afterAll(() => { restoreGitCommandLineConfig() })
+
+const testPackageManager = {
+  command: process.execPath,
+  args: ['--expose-internals', fileURLToPath(new URL('./bin/pnpm.mjs', import.meta.resolve('pnpm')))],
+}
 
 async function fixture(reload: 'live' | 'startup' = 'live', overlay = false, prepare?: (ctx: Context) => void, config: Config = {}, packageManager?: ProfileContext['packageManager'], prepareFiles?: (dir: string) => void, sourceInstallation = false) {
   const temporaryHome = mkdtempSync(join(tmpdir(), 'plugin-manager-'))
@@ -63,7 +77,7 @@ async function fixture(reload: 'live' | 'startup' = 'live', overlay = false, pre
   const overlays: PatchOptions[] = overlay ? [{ id: 'managed', disabled: true }] : []
   const profile: ProfileContext = {
     name: 'test',
-    ...(packageManager === undefined ? {} : { packageManager }),
+    packageManager: packageManager ?? (config.pnpmCommand ? undefined : testPackageManager),
     startedBundles: loadProfileDirectory('test', dir, anchor).layers.map(layer => layer.packageName),
     dir, patchPath: join(dir, 'cordis.patch.yml'), installAnchor: anchor, cwd: home, home,
     overlays, telemetryDisabledEnv: undefined,
@@ -180,7 +194,7 @@ it('disposal waits for an active GitHub check to stop', async () => {
 
 it.each(['github:acme/connected', 'https://github.com/acme/connected.git', 'git+ssh://git@github.com/acme/connected.git'])(
   'installs %s through real Git and pnpm with private repository SSH fallback', async (spec) => {
-    const pnpm = fileURLToPath(new URL('../../../../apps/desktop/node_modules/pnpm/bin/pnpm.mjs', import.meta.url))
+    const pnpm = fileURLToPath(new URL('./bin/pnpm.mjs', import.meta.resolve('pnpm')))
     const env = { GIT_CONFIG_GLOBAL: '', GIT_CONFIG_NOSYSTEM: '1' }
     const { manager, dir, connection } = await fixture('startup', false, undefined, {}, {
       command: process.execPath, args: ['--expose-internals', pnpm], env,
@@ -943,7 +957,7 @@ it('streams pnpm output, reports the installation phases, and names the installe
   const requestId = 'f2340b6d-40bb-46b7-8b94-217bdf5010bd' as PluginInstallRequestId
   expect(await manager.installBundle('streamed', { enabled: false, requestId })).toMatchObject({ application: 'applied', changed: true, bundle: 'streamed' })
   expect(install).toHaveBeenCalledWith(expect.objectContaining({ profile: 'test' }), ['add', 'streamed'],
-    expect.objectContaining({ command: 'pnpm', execution: 'service' }))
+    expect.objectContaining({ ...testPackageManager, execution: 'service' }))
   const jobId = chunks[0]?.jobId
   expect(chunks).toEqual([
     { requestId, jobId, argv: ['pnpm', 'add', 'streamed'], cwd: dir, stream: 'stdout', text: 'Progress: resolved 1\n' },
@@ -1132,29 +1146,6 @@ it('refuses removal of a hot-installed bundle after HMR is disabled', async () =
   expect(await manager.removeBundle('later')).toMatchObject({ changed: false, application: 'failed' })
 })
 
-it.each(OPTIONAL_BUNDLES)('offers %s switched off and never removable', async (offered) => {
-  const { manager, profile } = await fixture()
-  // The launcher names the bundles the installation ships; the fixture supplies one of them from the
-  // installation's own node_modules, which the resolver consults before the profile's and before the repository's.
-  const supplied = join(profile.home, 'node_modules', offered)
-  mkdirSync(supplied, { recursive: true })
-  writeFileSync(join(supplied, 'package.json'), JSON.stringify({
-    name: offered, version: '3.0.0', description: 'Package one-liner.', dsh: { bundle: { patch: './cordis.patch.yml' } },
-  }))
-  writeFileSync(join(supplied, 'cordis.patch.yml'), JSON.stringify([{ insert: [{ id: 'offered-row', name: './plugin.mjs', config: { service: 'offeredProbe' } }] }]))
-  writeFileSync(join(supplied, 'plugin.mjs'), 'export function apply(ctx, config) { ctx.provide(config?.service ?? "offeredProbe", true) }\n')
-  writeFileSync(profile.installAnchor, JSON.stringify({ name: 'installation', dependencies: { [offered]: '3.0.0' } }))
-  expect((await manager.listBundles()).find(row => row.name === offered)).toEqual({
-    name: offered, version: '3.0.0', description: 'Package one-liner.',
-    meta: { title: offered, description: 'Package one-liner.' },
-    enabled: false, installed: false, official: true, availability: 'installation', optional: true, removable: false,
-    rows: [{ rowId: 'offered-row', moduleName: pathToFileURL(join(supplied, 'plugin.mjs')).href }], overrides: [],
-  })
-  expect(await manager.setBundleEnabled(offered, true)).toMatchObject({ application: 'applied' })
-  expect((await manager.listBundles()).find(row => row.name === offered)).toMatchObject({ enabled: true, optional: true, removable: false })
-  expect(await manager.removeBundle(offered)).toMatchObject({ changed: false, application: 'failed' })
-})
-
 it('removes a selected bundle no dependency holds by deselecting it without pnpm', async () => {
   const { manager, dir } = await fixture()
   const manifest = readProfileManifest('test', dir)
@@ -1219,7 +1210,7 @@ it('applies watched configuration while pnpm installation is still running', asy
 })
 
 it('installs and removes with the bundled pnpm when PATH contains no pnpm', async () => {
-  const pnpm = fileURLToPath(new URL('../../../../apps/desktop/node_modules/pnpm/bin/pnpm.mjs', import.meta.url))
+  const pnpm = fileURLToPath(new URL('./bin/pnpm.mjs', import.meta.resolve('pnpm')))
   const { manager, dir } = await fixture('startup', false, undefined, { pnpmCommand: 'must-not-be-used' }, {
     command: process.execPath, args: ['--expose-internals', pnpm], env: { PATH: '', ELECTRON_RUN_AS_NODE: '1' },
   })
@@ -1264,8 +1255,8 @@ it('asks the registries in turn while one is unreachable or stale, and names the
   answers(manifest)
   expect(await manager.inspect('dsh-x')).toEqual({ status: 'accepted', kind: 'registry', name: 'dsh-x', version: '1.0.0', bundle: true, registry: MIRROR })
   expect(asked(0)).toEqual([null, MIRROR])
-  expect(read).toHaveBeenCalledWith(dir, { command: 'pnpm', timeoutMs: 1000 })
-  expect(view).toHaveBeenLastCalledWith(expect.any(String), 'dsh-x', { command: 'pnpm', timeoutMs: 1000, registry: MIRROR })
+  expect(read).toHaveBeenCalledWith(dir, { ...testPackageManager, timeoutMs: 1000 })
+  expect(view).toHaveBeenLastCalledWith(expect.any(String), 'dsh-x', { ...testPackageManager, timeoutMs: 1000, registry: MIRROR })
   // pnpm prints a refusal as JSON on stdout with nothing on stderr: it is read the same way, and the reason is its message.
   view.mockResolvedValueOnce({ exitCode: 1, stdout: '{\n  "error": {\n    "code": "ERR_PNPM_META_FETCH_FAIL",\n    "message": "GET https://registry.npmjs.org/dsh-x: fetch failed"\n  }\n}\n', stderr: '', timedOut: false })
   answers(manifest)

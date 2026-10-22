@@ -601,7 +601,7 @@ it('initializes missing profiles under the same lock and reports initialization'
     await runPluginCommand({ ...context, profile }, ['root'], {
       execution: 'service', outputBytes: 100, lockWaitMs: 1000, onOutput: (text) => { messages.push(text) },
     })
-    expect(readProfileManifest('test', join(home, 'profiles', profile)).dsh?.profile?.bundles).toContain('@deepseek-ai/dsh-base')
+    expect(readProfileManifest('test', join(home, 'profiles', profile)).dsh?.profile?.bundles).toEqual([])
   }
   expect(messages.filter(text => text.includes('initialized profile'))).toHaveLength(2)
 })

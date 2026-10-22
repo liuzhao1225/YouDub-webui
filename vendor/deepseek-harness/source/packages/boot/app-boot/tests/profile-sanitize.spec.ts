@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
-import { initProfile, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, readProfileManifest, sanitizeProfile } from '../src/index.ts'
+import { initProfile, PROFILE_PATCH_FILENAME, readProfileManifest, sanitizeProfile } from '../src/index.ts'
 
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>()
@@ -22,7 +22,7 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), 'dsh-profile-sanitize-'))
   roots.push(root)
   const dir = join(root, 'profiles', 'web')
-  const bundles = PROFILE_TEMPLATES.web!.bundles
+  const bundles = ['test-product-bundle']
   initProfile(dir, [...bundles, 'broken-plugin'])
   const manifestPath = join(dir, 'package.json')
   const manifest = { ...readProfileManifest('test', dir), dependencies: { 'broken-plugin': '1.2.3' }, custom: 'retained' }

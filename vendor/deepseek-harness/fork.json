@@ -18,10 +18,10 @@
         "path": "apps/cli/README.md",
         "type": "file",
         "executable": false,
-        "size": 7591,
-        "sha256": "ccbc776439a0c3ac426208786383c3d3ea3bef762eab45b5e4c5ec43fc32acbd"
+        "size": 1034,
+        "sha256": "e3ac089602c9804b61a4c9b2a5a961ef6df62492ba9322ea8dd7b597e7d18bc6"
       },
-      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。"
+      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。 Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
     },
     {
       "path": "apps/cli/README.zh.md",
@@ -36,10 +36,10 @@
         "path": "apps/cli/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 7425,
-        "sha256": "0c9fb953d32ab627765ccc36482dc473581043b7ad2f9f994c73cddcd77d4e0e"
+        "size": 809,
+        "sha256": "69be56694eb5b0b06022a06fe0cb9834b0653006bb8a2b9777950f98577e1391"
       },
-      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。"
+      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。 Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
     },
     {
       "path": "apps/cli/package.json",
@@ -54,10 +54,2014 @@
         "path": "apps/cli/package.json",
         "type": "file",
         "executable": false,
-        "size": 3972,
-        "sha256": "683b2e45b0dd8fedf1c8cb62aae95db06d8fa7cdf48444455859ea352759c3f3"
+        "size": 1007,
+        "sha256": "ac82fad06b52e24a4970af71af345ead33f6060f1402a3f652d893f48e575c16"
       },
-      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。"
+      "reason": "保留实际使用的 profile runner 和通用诊断，移除无关产品 bundle 的生产依赖。 Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/args.ts",
+      "before": {
+        "path": "apps/cli/src/args.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10485,
+        "sha256": "adff9b75449f883529021bd931a25a380df25edbbf7fbda2e65e6ab2824128cd"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/bin.ts",
+      "before": {
+        "path": "apps/cli/src/bin.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2800,
+        "sha256": "7081b6503a635eb6c6d9c3e4619e740afe157252b246aa17acbf1a1ceec54c88"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/dump-config-schema.ts",
+      "before": {
+        "path": "apps/cli/src/dump-config-schema.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2243,
+        "sha256": "a4318b952fa1347581a4790fbb7ebb64110e1f5d6997f77725c8accfca373c58"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/dump-config.ts",
+      "before": {
+        "path": "apps/cli/src/dump-config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2894,
+        "sha256": "02ec1ea1d0c16aec28353c16ef59961a7351bd8a4b56b2a291e536120f08bff9"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/plugin.ts",
+      "before": {
+        "path": "apps/cli/src/plugin.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6414,
+        "sha256": "8d745164b418d3dc14a3a10ce38bea148de4fb2d9ff9b336e224073f3e43848d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/sdk-source.cordis.patch.yml",
+      "before": {
+        "path": "apps/cli/src/sdk-source.cordis.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 242,
+        "sha256": "f62a5f47337fe3d241d650db43bd93c867fbec9d32d7a5cc9c89c1be6bbcddee"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/src/startup-diagnostics.ts",
+      "before": {
+        "path": "apps/cli/src/startup-diagnostics.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2556,
+        "sha256": "8242b472467f7efbf5ae46804080e101702a71d8be382c6d96e402a51eb1ab95"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/agent-team-headless.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/agent-team-headless.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5875,
+        "sha256": "e662ce5a9e22f3bdff5b27552e20509c52669ed4017e8eb000727f0c4d93ed5e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/args.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/args.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13756,
+        "sha256": "419e7621cba7428152600f054f2a087e9663afae1968bcaec0865b15e6ac0276"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/built-bin.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/built-bin.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 59017,
+        "sha256": "d798cbcadc1cd62b07db4e4c10582f12e8969e47ce0b6566e62541603fadf03e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/desktop-host.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/desktop-host.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4915,
+        "sha256": "7f2cf534afff4c8737a14bf6d3339fb70080bcaa5dc9bd6587977c5380a01b99"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/dsh-badge.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/dsh-badge.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7738,
+        "sha256": "3badd84d1bd2f383349d34fa5787f7b876b9d7c82ecaf41d80b5ac255f190dbe"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/dump-config-schema.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/dump-config-schema.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 19248,
+        "sha256": "961018cd10ad0bc240f9e3e61218a47ff165632e9b676986d9e348a87cdf15a2"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/expected/dump-config-schema.json",
+      "before": {
+        "path": "apps/cli/tests/expected/dump-config-schema.json",
+        "type": "file",
+        "executable": false,
+        "size": 16263,
+        "sha256": "d8136e4768a6dbccd1b2ca09fab43c5e7a7b2c8a5b0248c4b1f039e44b3c7315"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/expected/launcher-help.txt",
+      "before": {
+        "path": "apps/cli/tests/expected/launcher-help.txt",
+        "type": "file",
+        "executable": false,
+        "size": 1819,
+        "sha256": "e807ad698de282236d1bf75de430cdfcd21329cc342a4d5eb27800ba99ea04e6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/agent-shutdown.mjs",
+      "before": {
+        "path": "apps/cli/tests/fixtures/agent-shutdown.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 2897,
+        "sha256": "bac9dc2a076eb61a420558da31a45cbe20a4f937b61f43119ce85a29e9c7962f"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/dsh-badge/cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/fixtures/dsh-badge/cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 173,
+        "sha256": "98c59c5d1148c9859d3470cbf2906bcfe7ad8b0cf59b453bc25b738b9338e85d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/dsh-badge/default.cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/fixtures/dsh-badge/default.cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 97,
+        "sha256": "175f450af5c5bfbdceaa3bb462e77bf82f7ae98b82bb4d9eacbba69b8c7cda8d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/dsh-badge/snapshot.ts",
+      "before": {
+        "path": "apps/cli/tests/fixtures/dsh-badge/snapshot.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2768,
+        "sha256": "54337f2cbcadf535dbda9d0e933340f12dbbdc7521446d7fa1db5acff156508f"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/github-webhook/cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/fixtures/github-webhook/cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 1201,
+        "sha256": "35832d20f3f81f74b03ffa061fab3daddbe4e0117c05d362fac4afacc03e2c75"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/github-webhook/github-webhook-rule.mjs",
+      "before": {
+        "path": "apps/cli/tests/fixtures/github-webhook/github-webhook-rule.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 1267,
+        "sha256": "8aad01e1f08419dd5580fbf5a303943c4a74f07493927c967a44258dee398b1b"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/initialize-profile-from-default.ts",
+      "before": {
+        "path": "apps/cli/tests/fixtures/initialize-profile-from-default.ts",
+        "type": "file",
+        "executable": false,
+        "size": 833,
+        "sha256": "cc30f5143bb6e77cff356093ed7cbe9b51ed0e6978f7dd24824b2c4126f94c80"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/invalid-provider.cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/fixtures/invalid-provider.cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 187,
+        "sha256": "d638b8f8fd5a403431bb17a840b48e3623313d15561ecaad676216ab9503968b"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/memory-mcp-base.cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/fixtures/memory-mcp-base.cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 327,
+        "sha256": "ca4bcf5dce4193b072081b34266e5168758cf4dca6bb46d06e1c2e88134b90ae"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/never-dispose.mjs",
+      "before": {
+        "path": "apps/cli/tests/fixtures/never-dispose.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 720,
+        "sha256": "072f6d65d557ec495998317e9560a1f2f4eb323ac99e8fb2a86954c3f4c35a3c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/source-tool-driver.ts",
+      "before": {
+        "path": "apps/cli/tests/fixtures/source-tool-driver.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2965,
+        "sha256": "d5a9889a3fa968382d5e60fc1fe4af6c50ffb91c51c7881c9dea139e59cec2b6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/web-browser-open/open.mjs",
+      "before": {
+        "path": "apps/cli/tests/fixtures/web-browser-open/open.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 1744,
+        "sha256": "ce52ce51f1961bcdbc381cb6ec5c5c7bd7029b8eb94bfbfb5e36e67959cf9434"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/fixtures/web-browser-open/register.mjs",
+      "before": {
+        "path": "apps/cli/tests/fixtures/web-browser-open/register.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 1303,
+        "sha256": "2b6d4bdb93e98802bab49ce70ba9761ef47b06b63c32d517721c0d3574138a61"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/github-webhook-real.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/github-webhook-real.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18464,
+        "sha256": "1e26d3d4911107a140465376e384e13ab0d9a5ec693c815666a3cdae80a6ea6d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/headless-shutdown.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/headless-shutdown.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4869,
+        "sha256": "fead1e9d950953d40d2183f0cd1f82c848594cc37d2dc3d60ccd205c93809fbc"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/lazy-search-startup.compat.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/lazy-search-startup.compat.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5016,
+        "sha256": "8562188067eb9107695dee22571a4e82c0dc964ea25926b153d3fce11f3ca03d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/memory-mcp-configs.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/memory-mcp-configs.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4540,
+        "sha256": "65e32404adf94a90d52d0312b32b1b561b4a3962718248b8b98a92983b261a48"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/optional-bundle-transitions.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/optional-bundle-transitions.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 19677,
+        "sha256": "e65c182eca0005624f49994b978f3eb8d59b78ce5c088c9787e944e77dc97f76"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/plugin-compatibility.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/plugin-compatibility.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4647,
+        "sha256": "b247182c90fc5c722ddeb5d3e64cd905e675838c23be0af942a00f524c9b7cc4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/plugin.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/plugin.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9827,
+        "sha256": "c035ccf266cd63a51b7c1703c4021341b9fb0b9ac034bdc6b1b8689478045e40"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profile-hmr.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/profile-hmr.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2017,
+        "sha256": "47783aef0004aacbcfe3e02f019e5e4d9096fabc1b64b98638b9c721cd5bef88"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profile-initialization.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/profile-initialization.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10355,
+        "sha256": "33fd4f680fe264b59061e0024c4873365d0003c1ee3bdea9fd9dceedefaae041"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profile-mcp.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/profile-mcp.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1834,
+        "sha256": "8da02eb290c94db5024a938d58164ec18525811c03d7ff44ede3eb16e33d8438"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/AGENTS.md",
+      "before": {
+        "path": "apps/cli/tests/profiles/AGENTS.md",
+        "type": "file",
+        "executable": false,
+        "size": 815,
+        "sha256": "462ffbacce51740114ae41d8c052549bce3487ec8692cfc1915bf50838161c7c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/acp.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/acp.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6074,
+        "sha256": "58069a028239d5ac476400e5c173de185b5726c38394aefcd4cf72544fcffdc9"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/cleanup.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/cleanup.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1494,
+        "sha256": "4a0f478f1ce8eccc99d38641b635442769ff60ee3a3e2c1aae1ecf127f369c3f"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/cleanup.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/cleanup.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1026,
+        "sha256": "e7bde219af1c66da080ca7d4b4651ff0c89c48f87132d92907e6ea959b81aa56"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/control-surface.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/control-surface.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5541,
+        "sha256": "2ec4e2aaf8039d7372b3d7c9bf19a5e30a98fbaa1c0749949f92d56f7b2ce726"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/escalation.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/escalation.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8807,
+        "sha256": "6905465518603afdd47c8b998c58a64ff286c807be157ccea7a2b2bc658c92a1"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/fixtures/control-surface/control-surface-llm.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/fixtures/control-surface/control-surface-llm.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4030,
+        "sha256": "8cf927be2dff228c46df933ed808b93fe222c12f5cc56bf9a0e0ecc073391430"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/fixtures/control-surface/cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/fixtures/control-surface/cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 515,
+        "sha256": "dcd750f4827ba2b629beedb0e492b55e88beec1c76b9092f97cefc91e6ed6778"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/fixtures/image-offload.cordis.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/fixtures/image-offload.cordis.yml",
+        "type": "file",
+        "executable": false,
+        "size": 1302,
+        "sha256": "4a932965943ce589e0337f01d4c3423c7e8efa0709fe0b61bf9676418fc8e94c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/input.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/input.json",
+        "type": "file",
+        "executable": false,
+        "size": 490,
+        "sha256": "8973745e51876d7100e5b19b86e53a552501fdca3c6a7fd5eb40cd7ac3514cc4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 2135,
+        "sha256": "c6cfdb0c1e08c363d4c5c2307fb56e5a80b7fe191086ac6a93b69bd08e2dec84"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/session.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/session.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 13155,
+        "sha256": "2bb36b9808b8c5dd63f49d9394a4034343c07823f87ad245195bc393286c33fd"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/session.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/session.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 93,
+        "sha256": "6685ed107192484a95218e9a543cbdeaddab77fc5e52811976fe4da6e809037d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/stdout.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-round-driver/stdout.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 2892,
+        "sha256": "23c7789b65449818aed1a4dc1f3748dfe7a5ec4ad661f4ced438745356c397d6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/input.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/input.json",
+        "type": "file",
+        "executable": false,
+        "size": 339,
+        "sha256": "228661426464c0bab797f8222645a63db1ea6ad171e771a5ff842f3e543e9a4e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 2398,
+        "sha256": "ecd1a6d084bb4497dab3576dadf8d8dec997334211b77d8cdf6230e5259e96cd"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/session.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/session.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 12959,
+        "sha256": "c0ccf5c1a14350df7b5346741c4dcaed227c4270e3334a493720748d27256e62"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/session.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/session.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 92,
+        "sha256": "0191d79cb5b79c0293f14adac765ee87f0e08d9bdaad296e005108d6778d95d0"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/stdout.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal-expected/goal-wrapup/stdout.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 2832,
+        "sha256": "60cde5d51c0cad71414e89db5104ed7c6be295f0c6cabc897b0c512e1cc245a1"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/goal.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/goal.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7891,
+        "sha256": "6bc5f24c407f10d87e007688e35f3b189600b93fb41edc6dcd9635c5f87da4c2"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/hooks.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/hooks.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3340,
+        "sha256": "e96b779fa80306f679a8d5070192550f49248b353f53ae9d1185dce7e38d17d8"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/acp/tests/image-offload.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/acp/tests/image-offload.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10531,
+        "sha256": "66ad8e046395681765e4b156f0c66c309a06141fa09feb702b715d92e91b4b17"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/fixtures/official-installer-observer.mjs",
+      "before": {
+        "path": "apps/cli/tests/profiles/fixtures/official-installer-observer.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 6700,
+        "sha256": "48c98ce23e4fe76d7b457e8642b4fd06ff59349497e921bd22ef73a4ba0769e8"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/credentials-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/credentials-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 705,
+        "sha256": "de0438a99655a2463fe1798e11bb7e6ffa1be781fa2847d1658d0e7d4f16c1af"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/goal-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/goal-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 624,
+        "sha256": "2656e9a810951abeeaa6659b824017d66c1a20d2e20953dfbdd6405928c63698"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/real-model.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/real-model.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 791,
+        "sha256": "5bd5ded70e7e095d1ada6d73157a111472156c9900931e1f27ab5dbc6da9bfd7"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/retry-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/retry-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 538,
+        "sha256": "dd0cde21ae1537b9993fae539ff709713334e0f90aa5340dd444a54ea1ca78f3"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/semantic-checkpoint-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/semantic-checkpoint-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 714,
+        "sha256": "0fda50aea704e9458ec6f6325c5742de06a279cdc743f8e1aa1ba4a4322fef20"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/subagent-diagnostic-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/subagent-diagnostic-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 717,
+        "sha256": "e2ae5b175ef95c8c116edfbdb61b472e2e8c534d98b771c6177d7de3a973c3ba"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/subagent-inheritance-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/subagent-inheritance-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 999,
+        "sha256": "3281422af2cd20a9242f859129df1b39b2172821ba4ec5637c203f45deb461dc"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/subagent-settlement-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/subagent-settlement-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 815,
+        "sha256": "0f6c41d50fea07a27f7ee3a53ae9cb8c041a0d97370f623bc94ea482bb8e3999"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/team-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/team-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 1092,
+        "sha256": "d641d22da560622a375a7436df738beb0cf5d0dca230437aa6331f3fe9cf5764"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/coding-task.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/coding-task.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3415,
+        "sha256": "992d23bee2e2127a28c8ba4829479ee50e08ade18265e229fbe7138a4b09e54a"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/compaction.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/compaction.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4712,
+        "sha256": "a434c4184ca19ac9d7bf33d11390ce58e7aebf46bbf51de2dc0f6784dfcc46d5"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/credentials.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/credentials.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10584,
+        "sha256": "0ad82e6cbc00008270b4866d09d675152c4abe4c863882d007ea62ec159e9f33"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/goal-tools/input.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/goal-tools/input.json",
+        "type": "file",
+        "executable": false,
+        "size": 204,
+        "sha256": "fdef235d333f641033471eb764b4f0050efdaa9ec7acdc325c13d06cc70bab6c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/goal-tools/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/goal-tools/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 2854,
+        "sha256": "bae0f03cc1f158295b49b7b8653aacd82a8667c8f91a40e956b43b5e760f5591"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/goal-tools/stream-json.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/goal-tools/stream-json.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 13053,
+        "sha256": "982fa8444fc1a0fa9a5c600db72c063498416d2f810a769a4130a747df700ba9"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/headless-profile/reasoning.stderr.expected.txt",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/headless-profile/reasoning.stderr.expected.txt",
+        "type": "file",
+        "executable": false,
+        "size": 58,
+        "sha256": "a5530eb916c913b1e0d37b641eac35b84a1317b04ca925b5f61bf5139e531ec7"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/headless-profile/session.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/headless-profile/session.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 7578,
+        "sha256": "3c0fca9d644a3c97b3fd76683c804f443507e9c7f8d9de76c5bd749f2c92080b"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/headless-profile/stderr.expected.txt",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/headless-profile/stderr.expected.txt",
+        "type": "file",
+        "executable": false,
+        "size": 38,
+        "sha256": "f93e53285852e4fd9362f2096cbfb590877dbbdd61f1885893b71dcaadb96364"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/invalid-credential/stream-json.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/invalid-credential/stream-json.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 5260,
+        "sha256": "accf132526cc2f5c0df3caf9ddc61906c8b0523584c10f7f131a0760a052a83b"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/mcp-pagination/stderr-cause.txt",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/mcp-pagination/stderr-cause.txt",
+        "type": "file",
+        "executable": false,
+        "size": 86,
+        "sha256": "e9b21fb10270b38dcb2ed35719c1b07a093246be1662774cfae9d8e707b571ec"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/missing-credential/stream-json.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/missing-credential/stream-json.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 5328,
+        "sha256": "a7e8f22ab27f385c6f1515ab96d2bcd9a43b9e11b1dcddf55ee71bbe2a8a4ab2"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/provider-retry/input.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/provider-retry/input.json",
+        "type": "file",
+        "executable": false,
+        "size": 108,
+        "sha256": "ed732edd2c1122ed99372b80e2a229163d7c06a0f27a4e1988b446616c2e6553"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/provider-retry/stream-json.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/provider-retry/stream-json.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 6276,
+        "sha256": "4cc8554be34d21d7e20e6a1706789023c96aac0963e50a37c5c1240cc3b79898"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/semantic-checkpoint/replay.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/semantic-checkpoint/replay.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 99,
+        "sha256": "9c645d55667eba34bb95bf7350e2d55bb9932cd8efc573d4119e4fafa1076d06"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/semantic-checkpoint/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/semantic-checkpoint/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 509,
+        "sha256": "48d19065835db511de48c3f0cc57362d0b375a158f69f4727a55c7df85a74c78"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/semantic-checkpoint/session.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/semantic-checkpoint/session.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 5557,
+        "sha256": "264640935df23ece90fb26c94d21917e9ac9ed814d3da662a86780077a37d690"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/startup-activation-error/stderr.expected.txt",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/startup-activation-error/stderr.expected.txt",
+        "type": "file",
+        "executable": false,
+        "size": 215,
+        "sha256": "6ca937686d24f29002bdf85b312724125c68059674bcb148e8cacdddf2ae41c6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-diagnostic/parent.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-diagnostic/parent.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 5882,
+        "sha256": "fb74f69ab328976ded7d0b361e7f1742071f87bd79fe579bcbd67c2f53916c67"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-diagnostic/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-diagnostic/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 871,
+        "sha256": "3af7d8a5b952ac2b2b41cbfb38e780adca1e877ce8a466512c6d7eba17e54a99"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/child.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/child.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 8866,
+        "sha256": "103cf26392c3c1edebe3740aa121209a92fd1495f006b4c9b600eb1af642a1a6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/child.replay.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/child.replay.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 2089,
+        "sha256": "7f155cd0f753e67fe2c3c701215ba35be9b1d749bf4d3fe82c47b9413bc973f1"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/child.replay.v3.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/child.replay.v3.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 3529,
+        "sha256": "53f9ae4a129aabdf9f194ee0ced4c31ba8899467429659026e600d5070263846"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/parent.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/parent.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 10543,
+        "sha256": "be420a5964259965e8faf11cf4178b1646e6a5bb6c9413126103cb80addfe99d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-inheritance/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 1591,
+        "sha256": "70841cab4f31ac14529fc840dcd6e960640d0c7ce144a3ee6f3424caf97be309"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/child.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/child.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 6233,
+        "sha256": "271e79cc599b83f5c52d8d4cb4b226676411df4cb142c9b0fb55ce2bcb708bf4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/child.replay.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/child.replay.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 784,
+        "sha256": "67062baf3685e4e1337ca1cdde780312cde0f0bed2ed8683c612b66e6d49739c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/parent.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/parent.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 2078,
+        "sha256": "8d58e021a0f5e24857d8c57912f35fc6e6e899b73ed1cfb7d4dc82e3e580197d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/parent.replay.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/parent.replay.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 99,
+        "sha256": "34ae47058ca79b6854157ae4f81f167ea5bfafcd084ec38390d0808fb558c86c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/stream-json.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/subagent-settlement/stream-json.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 11027,
+        "sha256": "2738844ec586bda9f17641c1c1412db0afc6f3d7b8f1356d809d133bf9a47b2c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/offline-edit/replay.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/offline-edit/replay.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 104,
+        "sha256": "3e77ec6a77216845942896838e164f5dae35ccbd68f813b3d7c1ef33a5ee884e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/offline-edit/replay.override.json",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/offline-edit/replay.override.json",
+        "type": "file",
+        "executable": false,
+        "size": 341,
+        "sha256": "c3883f66a86b37080b808cafba7a9c99104b67b89449ccf2d75e3d187a8c5139"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/offline-edit/session.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/offline-edit/session.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 5619,
+        "sha256": "aa5a1b1bf141599e515dc2810c38bc89d1911b38216d7db9cf0e769ccb18f360"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/precedence-change/session.expected.jsonl",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/expected/workspace-context-resume/precedence-change/session.expected.jsonl",
+        "type": "file",
+        "executable": false,
+        "size": 6397,
+        "sha256": "a20bcefb0807f929d16fd8b78fcadd3058a61da58b0aa5883dd6128be0691c8e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/cli.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/cli.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 725,
+        "sha256": "ca432ac03b970543024dbd36df709e6afc65673fff22a497e78474632685a789"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/deepseek-defaults.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/deepseek-defaults.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 604,
+        "sha256": "57ae82bca977e4ee4a4c557240a9b646225ce98907af34b15784a83dd0ad2c11"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/headless-profile.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/headless-profile.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 278,
+        "sha256": "a3d11cb0d29430072b0ed8f968ea24c4465f32868fbc20893413ab43ab216037"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/pi-ai-conversation-updates.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/pi-ai-conversation-updates.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 862,
+        "sha256": "b6ee7414cee6b8e08c7c441cff96eccd98dc6d245ac4b8b2fb7e134609c53567"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/pi-ai-defaults.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/pi-ai-defaults.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 753,
+        "sha256": "727aeb5cfeb4ede54a98eb97bfffd93496edf1776d629bbe6e9d96b4ecb40df9"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/retry-snapshot-backend.mjs",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/retry-snapshot-backend.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 1675,
+        "sha256": "f68c5adacdebe254726443b354f023d21c12619ed645e0fec86bd495569a66f5"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/semantic-checkpoint-agent.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/semantic-checkpoint-agent.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1017,
+        "sha256": "b964a493b0ec6e1c12441684d1b5324b9886c82cfa82400f1ad548158802a3e2"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/startup-activation-error/activation-error.mjs",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/startup-activation-error/activation-error.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 316,
+        "sha256": "c9367c2d017e26b8041d01f96948160d8e6734355f228aa106ea21ca09d5dc19"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/startup-activation-error/activation-error.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/startup-activation-error/activation-error.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 138,
+        "sha256": "61978aa5da5620aff208bcf96bc88c233301b2478d92f1758ed347fc1bb837a3"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-diagnostic-agent.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-diagnostic-agent.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1072,
+        "sha256": "36a7ff552784e32db35b278803354aaf84fc9d0897ad82e6f0b2ea76d31b1ba5"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-diagnostic-query.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-diagnostic-query.ts",
+        "type": "file",
+        "executable": false,
+        "size": 576,
+        "sha256": "d8b2bd2abd3826799efdf1861bf56f6033ca18e2e18ccb8b73736091c77a28d2"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-inheritance-agent.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-inheritance-agent.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1006,
+        "sha256": "915a08d4416ad3253be158bafcd9d3a929222624a8a1a7080f29fd710e75f6de"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-settlement-fence.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/subagent-settlement-fence.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1592,
+        "sha256": "b04d94fca08665e90bdcbd5ad39191547c4c619e4dbbbcf56bfdeda9f5cb3544"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/team-llm.mjs",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/team-llm.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 8654,
+        "sha256": "ec2fcf40646090a0ca845e23961ad752207948f36a4ef7c89720cade8c684e4d"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/fixtures/workspace-context-resume-agent.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/fixtures/workspace-context-resume-agent.ts",
+        "type": "file",
+        "executable": false,
+        "size": 999,
+        "sha256": "a255764ac815b40b06d1c86b108945e23dd8a3918fdb0f2589e335e17045f6a0"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/full-loop.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/full-loop.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2256,
+        "sha256": "5a30e1ea5eda2003db7f9bb9cee89e376bec4322bdc0502115cfee138e4824e1"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/harness.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/harness.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5461,
+        "sha256": "e6deb2ac09de51fd9920033bc16711b56c14d2cf46771301802d6c4d3a4a50f6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/headless.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/headless.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 54688,
+        "sha256": "f627d96254569b8be1acb942cafc2fa4fcca128d1b22c1f72bef383566ac8c55"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/keyless-smoke.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/keyless-smoke.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3807,
+        "sha256": "af69b80e80d6397ca990bd4405584d5ab8e6d1caa018122bc21aff9a0257534a"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/mcp-pagination.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/mcp-pagination.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2071,
+        "sha256": "59c85bb595e65348a0b8576c5af5480a483c5c1d8b70b70b81697e1086f7fec0"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/profile-resolution.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/profile-resolution.ts",
+        "type": "file",
+        "executable": false,
+        "size": 17925,
+        "sha256": "d6c13cbc1dbc3734d5da8bb45053523cf642b292fe4ba899df59f1b6ae1255aa"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/ptc.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/ptc.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18413,
+        "sha256": "5c06ac60ae3bebdef4adf287c07de21fc8995cddb143307dd84846f61da59c13"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/real-model.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/real-model.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1529,
+        "sha256": "2331c83824260fde1631afa25a6368fbbdc7e6eea3139cfa079c3c9a928dece8"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/resume.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/resume.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3310,
+        "sha256": "8743848b44fc0b83361029ba23bc79784f8d798ce087dfa0be401d8a10094420"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/semantic-checkpoint.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/semantic-checkpoint.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5897,
+        "sha256": "f71e4307299ca1aeed8d73eb798dc499b1ccd6494cabb08ef5e46abe00f699c4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/session-format-guard.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/session-format-guard.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10173,
+        "sha256": "1e42fa3d2351c9a4006bb7febd5daf15a7c9ac0ba1ddbdd35a219c548bfd11b8"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/source-tool.built.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/source-tool.built.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5167,
+        "sha256": "587d88aaeee6716a4ca0bc88fe53b091eb09ea5902dcbff82d0dfb37f0d06e9e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/subagent-diagnostic.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/subagent-diagnostic.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6896,
+        "sha256": "0fc620bd938de5bf17e484fc693821ea4ca7ae06f376c5fd2b9a222e1c4a0f90"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/subagent-inheritance.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/subagent-inheritance.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9153,
+        "sha256": "c87a9544a1da9069b51ca6d7fa5abe21c8cd3c6f15c073de56bcc6af599e3a77"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/todo-write.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/todo-write.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2656,
+        "sha256": "8704c438afdcbcc0ed4374613a69826e0af57f31d24c28dbef9d30beefefa167"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/tests/workspace-context-resume.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/tests/workspace-context-resume.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10960,
+        "sha256": "ad90ac664e27c05e3fa3b9366246486ba0e291358a9181a2057171c8a0e7592f"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/headless/workspace-context-resume-snapshot.patch.yml",
+      "before": {
+        "path": "apps/cli/tests/profiles/headless/workspace-context-resume-snapshot.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 777,
+        "sha256": "85daf5ccf4d298d7c8282dbd6933a4559520a3dd3ba13f4b4d6522a5c0a761e4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/official-installer-packed.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/official-installer-packed.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11024,
+        "sha256": "7d638d66efbdf41b35ac15c8eec43dc6b3f364e0f0fe5d22f2de5d9298aa3168"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/packed-installation.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/packed-installation.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10352,
+        "sha256": "2d43c36a651bda195b8fd5a8c38961b9f979e65c1bf554c34b9c189535e47d46"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/sdk/dynamic-tool-cache.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/sdk/dynamic-tool-cache.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 10175,
+        "sha256": "1ccb22d30d2720892fd399876bf615a71bb12504c386acec5c5fb957762243c1"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/sdk/fixtures/dynamic-tool-cache.mjs",
+      "before": {
+        "path": "apps/cli/tests/profiles/sdk/fixtures/dynamic-tool-cache.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 3283,
+        "sha256": "779e48c3eac39844a7ecaef5df546d8367d7ee80ba2e1ee51b743ff81ca41797"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/sdk/keyless-smoke.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/sdk/keyless-smoke.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 27847,
+        "sha256": "dde9a41a1eaf22e12c9134b9277ed62be5145d2e0f7296051754741e940843de"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/sdk/office-cli.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/sdk/office-cli.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8440,
+        "sha256": "0db946bcafcdcce95fcdfc582f44bbb1b396e25049b7b2e3aff87375929ed0e6"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/creator-plugin-manager.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/creator-plugin-manager.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5292,
+        "sha256": "ef0c13958050b40aca6cbcd562d3931d201d458d09a2f7a15e6e8a550830c5a1"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/default-web-process.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/default-web-process.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9616,
+        "sha256": "5bdb93edb459417456fb9626137100c28aad479c79b4b90c5c9d949273e61095"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/fixtures/creator-plugin-manager.mjs",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/fixtures/creator-plugin-manager.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 2936,
+        "sha256": "c5dd78fa28602d09387a704e8c45cadace7921c91be2eb121f28d1f771ac6114"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/fixtures/runtime-roster-observer.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/fixtures/runtime-roster-observer.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1652,
+        "sha256": "6d26c74448235b67a59402260d07e3303ffdf097c1927fd29d319ee610b7d5f2"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/office.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/office.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 555,
+        "sha256": "6586b4ddc79d8213d4ba52ebbdc587833740c0c86a530f25f148f692517e4f41"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/public-url.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/public-url.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 16555,
+        "sha256": "99d02ca8d51a457c8a8a42d0a9c1591283712145fa37209a1d1cdf6590d41faf"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/runtime-roster-isolation.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/runtime-roster-isolation.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2077,
+        "sha256": "ee97eb8adbacfe98be5765ba8c45956a3217a46b69f4eeca2027af8dcdc09c9f"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/runtime-roster-isolation.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/runtime-roster-isolation.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1353,
+        "sha256": "b80d098b14a986a110c22985da79f1e624779b3624738da1e356d0ac22ddb1b9"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/runtime-roster.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/runtime-roster.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3457,
+        "sha256": "735c76adf8961f9d90dbfc550d87e003c0b85f53dbbec6d3c8dbb14a3452adc4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/schedule-timing.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/schedule-timing.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6443,
+        "sha256": "ba9651350377757ae8959b6ea25fae80142a947126f0dcb87fa0cb8b2767bfaa"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/web-best-effort-startup.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/web-best-effort-startup.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 14376,
+        "sha256": "c7e8dc041272bc331513a3b3113b717ab7120f5874017a4cab9b57156080dd2c"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/web-default-isolation.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/web-default-isolation.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3606,
+        "sha256": "3af6ca7d41ab976692c339ac842fbb722d13f6be8be4e51e505227f47b976b8e"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/web/tests/web-failure-matrix.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/web/tests/web-failure-matrix.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24261,
+        "sha256": "8bcca6d91ea0db0bc6f211015965c19586b7c8a998f0fc46480c61fb41b766d4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/profiles/webhook-packed.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/profiles/webhook-packed.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5635,
+        "sha256": "8ab961c804414748a9e58789421c1172ebb777380d54253d959027a9cf2d0b01"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/source-launch.compat.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/source-launch.compat.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1656,
+        "sha256": "522cd381f53d971ade65ca95a7e69edfca215a4ecfc236e093301b2a80daf318"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/startup-diagnostics.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/startup-diagnostics.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7242,
+        "sha256": "e5ec48871e18ec6ebcc40d6820656886b8ccf0a701e0b777172b900f135d647a"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/telemetry-switch.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/telemetry-switch.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1004,
+        "sha256": "5636246a774509e1994265e6866683c087b820b1c0c5335bc3e9cf1c440bf3e9"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/web-agent-presets.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/web-agent-presets.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 54821,
+        "sha256": "3617b66754c00658ba022ebe8f29d1e88207f6992e61368e4cf92170d42e97ac"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/web-agent-shutdown.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/web-agent-shutdown.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3564,
+        "sha256": "868aa620b587011234c84fe6e71ee6c72b44e5c32637357268c3ca8969137043"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/web-auth.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/web-auth.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7642,
+        "sha256": "4b0c93c6c70ac13299fd01eeb953522b5daf34ecc4255d74e900788fc91b925a"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/web-browser-open.expected.e2e.ts",
+      "before": {
+        "path": "apps/cli/tests/web-browser-open.expected.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8335,
+        "sha256": "8a096d70385a8e68f94b2dad90ae7f8d7a5e05275e13237217c14550d62effed"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tests/windows-shell.spec.ts",
+      "before": {
+        "path": "apps/cli/tests/windows-shell.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9348,
+        "sha256": "0e8aae68b16be40cac9f6ae4192ae7727788c5fa3e420ce45dc4f58535b488e4"
+      },
+      "after": null,
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tsconfig.json",
+      "before": {
+        "path": "apps/cli/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 1563,
+        "sha256": "ef84f62faf08d5bbb231e1e0af7ca6b8ff5fda934f30d48e2968110769057c05"
+      },
+      "after": {
+        "path": "apps/cli/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 574,
+        "sha256": "523b49ff859cfd0b745518a2810a711e9ee9561e2f0aa0ded82219b53b3ae88a"
+      },
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
+    },
+    {
+      "path": "apps/cli/tsdown.config.ts",
+      "before": {
+        "path": "apps/cli/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 431,
+        "sha256": "4fba97da338e6d3b6ebdb50abd9d2fa398ac66fd5b2e4341c41e75729bf0a979"
+      },
+      "after": {
+        "path": "apps/cli/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 415,
+        "sha256": "73a0ed0b3feb37cc63129147102546f336c8893e46c45b72aebe2abee747d5b1"
+      },
+      "reason": "Retire the standalone dsh CLI and its product-specific scenarios; retain the profile runner, shutdown lifecycle and their tests for YouDub Desktop Host."
     },
     {
       "path": "apps/desktop-host/package.json",
@@ -6312,10 +8316,10 @@
         "path": "package.json",
         "type": "file",
         "executable": false,
-        "size": 18852,
-        "sha256": "c124d33df254a8c3b104e4a0989c3ace61d89fdb290347c6404ff9f44a1527ff"
+        "size": 16665,
+        "sha256": "d88ffb2bd290cb5e261f441b8f09238f0731313fd3307aa56c7c52cbacf7ebd1"
       },
-      "reason": "移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。"
+      "reason": "移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
       "path": "packages/api/remotes/README.md",
@@ -6466,6 +8470,198 @@
         "sha256": "c2eafe88d54e79e5564bc407be506ebe3c6530b21b27cdf519d8ece1238b8446"
       },
       "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/boot/app-boot/README.md",
+      "before": {
+        "path": "packages/boot/app-boot/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 36303,
+        "sha256": "4f7fa2f1e9f175e480c11e1b4c1c9d8878b565b46c15e11d99ef4ff786bd26a2"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 35276,
+        "sha256": "19f22d97aea12e9a6c9b7093ee7773a2767d690a2cb4c06d45333ad7cf0a8634"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/README.zh.md",
+      "before": {
+        "path": "packages/boot/app-boot/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 33789,
+        "sha256": "6eb401f5f0e4c2b36fbbdeb118dd0f315f8625cf881283362ecfce74a6525df4"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 32764,
+        "sha256": "dad7b737cb5c65a1adcefa58ab54f0b31021e1cca1d08058c1d0bae27443b16f"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/src/official-bundle-packages.ts",
+      "before": {
+        "path": "packages/boot/app-boot/src/official-bundle-packages.ts",
+        "type": "file",
+        "executable": false,
+        "size": 314,
+        "sha256": "a0bcae46162e582d565dbe2a13383e8c1c4fb3883ace0af6fe3674f3b8ed76be"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/src/official-bundle-packages.ts",
+        "type": "file",
+        "executable": false,
+        "size": 197,
+        "sha256": "19a53efd91b6c13d45605eca1113b92c3e3e68a4a1256dba936ed5a13e3a82cc"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/src/official-bundles.generated.ts",
+      "before": {
+        "path": "packages/boot/app-boot/src/official-bundles.generated.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3381,
+        "sha256": "b2b35bb8ca27663ce87ebedbafe9c912dc4650cabbd2b978884ebda097651a1d"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/src/official-bundles.generated.ts",
+        "type": "file",
+        "executable": false,
+        "size": 357,
+        "sha256": "6d9c3eac3d98fc3a5b18476b89796c5a5f3ef3f2c12117b6849c7d9b339df527"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/src/profile.ts",
+      "before": {
+        "path": "packages/boot/app-boot/src/profile.ts",
+        "type": "file",
+        "executable": false,
+        "size": 37632,
+        "sha256": "8e3c2fda0334e34b111d4c46f43859b3749b3444ed6a18c80cd06d8709f656ea"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/src/profile.ts",
+        "type": "file",
+        "executable": false,
+        "size": 33427,
+        "sha256": "82597458d3e2de1619cbb23db7eeb397934f8330065580b62af54d841067179a"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/tests/official-bundles.spec.ts",
+      "before": {
+        "path": "packages/boot/app-boot/tests/official-bundles.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1047,
+        "sha256": "baa5fcd00503cbaea498eaf5553313baf80484430c467c401c112df7b412c794"
+      },
+      "after": null,
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/tests/profile-sanitize.spec.ts",
+      "before": {
+        "path": "packages/boot/app-boot/tests/profile-sanitize.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4497,
+        "sha256": "d011b002c0e01bf5f615b1a94be7d489c89778f8f2aac7a368527f9c1f48e468"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/tests/profile-sanitize.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4471,
+        "sha256": "27e70b22e459cb1f2f7e2d7cc73c73e45bc48313f9a3a97e3215805ff8f58e14"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/app-boot/tests/profile.spec.ts",
+      "before": {
+        "path": "packages/boot/app-boot/tests/profile.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 42567,
+        "sha256": "afa97f4806403d141437a2bebaf57fd96d74918871f6fe3bc1b2c0111497a566"
+      },
+      "after": {
+        "path": "packages/boot/app-boot/tests/profile.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 40707,
+        "sha256": "4cdef02d952d37860722f79df7ba870c39ab7e4a791693c998af78a78785e593"
+      },
+      "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/boot/plugin-manager/package.json",
+      "before": {
+        "path": "packages/boot/plugin-manager/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3647,
+        "sha256": "cfb57781b1127692d05be2cec612bf1be06984c9a32261378026685fe6c5cbe2"
+      },
+      "after": {
+        "path": "packages/boot/plugin-manager/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 3670,
+        "sha256": "47a79323de07278ea251293cfd69bb421e5fcd16725d8464c8195b5d1b0c3070"
+      },
+      "reason": "Keep generic installer coverage using test-owned catalog fixtures after removing old product bundle defaults."
+    },
+    {
+      "path": "packages/boot/plugin-manager/tests/manager.spec.ts",
+      "before": {
+        "path": "packages/boot/plugin-manager/tests/manager.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 113980,
+        "sha256": "2a6d757941446d7ca5d17f3cf7b3cf75305180481309ad5d1f25a590d1498fa1"
+      },
+      "after": {
+        "path": "packages/boot/plugin-manager/tests/manager.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 112813,
+        "sha256": "42d60949de155f11539f08bdcaf30c8c9d5b8cd9f69de1383555e06a23244a62"
+      },
+      "reason": "Keep generic installer coverage using test-owned catalog fixtures after removing old product bundle defaults."
+    },
+    {
+      "path": "packages/boot/plugin-manager/tests/operations.spec.ts",
+      "before": {
+        "path": "packages/boot/plugin-manager/tests/operations.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 52071,
+        "sha256": "3593bfc2fad69cd3f51448db0d494f42bb537edc2fd35417a7eb47ba0ac20040"
+      },
+      "after": {
+        "path": "packages/boot/plugin-manager/tests/operations.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 52048,
+        "sha256": "f9913da9e215d4b5fa02f39944012e2e7d02c1304deff81209460bc7276c4773"
+      },
+      "reason": "Keep generic installer coverage using test-owned catalog fixtures after removing old product bundle defaults."
     },
     {
       "path": "packages/bundle/web-app/README.md",
@@ -7254,10 +9450,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 984460,
-        "sha256": "f5e3f718f3f0de1a2d9f50be1df70f879d779b4f712b7bd9878a9694d7a311fd"
+        "size": 977497,
+        "sha256": "4864c30f6bd970b75e37284921d5e7371c375cfa9e6f1c9d97b46b58378535ce"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。"
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -7278,6 +9474,18 @@
       "reason": "删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。"
     },
     {
+      "path": "scripts/demo-ptc.mjs",
+      "before": {
+        "path": "scripts/demo-ptc.mjs",
+        "type": "file",
+        "executable": false,
+        "size": 574,
+        "sha256": "e3c3f62f6d131cd1d049894f86ada92af0343c53f1b02529ca6b75ce47d40bd7"
+      },
+      "after": null,
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
       "path": "scripts/desktop-publish-workflow.spec.ts",
       "before": {
         "path": "scripts/desktop-publish-workflow.spec.ts",
@@ -7288,6 +9496,78 @@
       },
       "after": null,
       "reason": "移除已退休 Desktop 更新/上游发行产品的专属验收；源码开发 CI 继续覆盖保留框架服务。"
+    },
+    {
+      "path": "scripts/dev-web.ts",
+      "before": {
+        "path": "scripts/dev-web.ts",
+        "type": "file",
+        "executable": false,
+        "size": 19639,
+        "sha256": "b289d2fa54c8f04616481ce37a86541d7075216184a5da00e260ff1e522a8493"
+      },
+      "after": null,
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/gen-cli-help.spec.ts",
+      "before": {
+        "path": "scripts/gen-cli-help.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6039,
+        "sha256": "2884eda5ae4ec60c2b21dc9cfc22447a39bcdd38f1b965ebc115f7dbf6dc5ef2"
+      },
+      "after": null,
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/gen-cli-help.ts",
+      "before": {
+        "path": "scripts/gen-cli-help.ts",
+        "type": "file",
+        "executable": false,
+        "size": 12779,
+        "sha256": "a35dd707eae8e31910aebba413b299b5df6d3a78a2412a2827373c1548d42c67"
+      },
+      "after": null,
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/gen-official-bundle-catalog.spec.ts",
+      "before": {
+        "path": "scripts/gen-official-bundle-catalog.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6792,
+        "sha256": "7a6849c0d0f82e3f3e40ca11053e63575673704982a990a6d85289561bc6f259"
+      },
+      "after": {
+        "path": "scripts/gen-official-bundle-catalog.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7303,
+        "sha256": "45a378e5fd19304fff99ca84e1deca3878c41eaebe7482b0c29c8626e0fa95d7"
+      },
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/gen-official-bundle-catalog.ts",
+      "before": {
+        "path": "scripts/gen-official-bundle-catalog.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7324,
+        "sha256": "9997c5793f39864825661586c16f2ae3fe9e9723ea3790096e1da6464fab9050"
+      },
+      "after": {
+        "path": "scripts/gen-official-bundle-catalog.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7302,
+        "sha256": "de6f3e9ccce5130ae6fd5f370fe768749eb8951822196543dd235443a19a395e"
+      },
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
       "path": "scripts/no-unknown-casts.baseline.json",
@@ -7302,10 +9582,22 @@
         "path": "scripts/no-unknown-casts.baseline.json",
         "type": "file",
         "executable": false,
-        "size": 114553,
-        "sha256": "fcfe0eab7112e2627536f37fd1cd220e35890d4c7c218d26420ef76544e000a3"
+        "size": 113534,
+        "sha256": "f3ec7de03cf008b9820d1ae175a8edb6e5c0c9f4073065594bad3e44497af1f0"
       },
-      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。"
+      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "scripts/optional-bundles.spec.ts",
+      "before": {
+        "path": "scripts/optional-bundles.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13067,
+        "sha256": "a6224c31b0d7b24917dd002ada1e1c9307b46d7ad8b4e21c5436fc13f2bdb457"
+      },
+      "after": null,
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
       "path": "scripts/verify-application-entrypoints.ts",
@@ -7320,10 +9612,10 @@
         "path": "scripts/verify-application-entrypoints.ts",
         "type": "file",
         "executable": false,
-        "size": 8366,
-        "sha256": "ac64da20edd48f16d9850ea305b7a50f0f499cb0a28f40379143d47618891814"
+        "size": 8267,
+        "sha256": "104efff48c806f1cbc9c8cadc95c5a84c94e711ab7a4bf15686280f11ac17331"
       },
-      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。"
+      "reason": "移除已删除 Desktop 发行程序的入口许可和旧类型转换基线。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
       "path": "scripts/verify-product-use.spec.ts",
@@ -7338,10 +9630,10 @@
         "path": "scripts/verify-product-use.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 15801,
-        "sha256": "0d5e380f60e265c202b02f8201f6671710051f47e53f158ffb64dc6e0245dfdb"
+        "size": 15929,
+        "sha256": "69bbd7f6d084cf15cdfde6ce33da1c19f94a7d956eec17ab152b2fdf92a07977"
       },
-      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。"
+      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
       "path": "scripts/verify-product-use.ts",
@@ -7356,10 +9648,28 @@
         "path": "scripts/verify-product-use.ts",
         "type": "file",
         "executable": false,
-        "size": 18875,
-        "sha256": "a3b1762a186d5d614d58f358df39ac4892aef5afe297118ada721368b0fea47f"
+        "size": 18791,
+        "sha256": "3b02d536dfd63d80905055ab94dc29555f92232425a6f34822e1b5c9770455ca"
       },
-      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。"
+      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
+    },
+    {
+      "path": "tsconfig.base.json",
+      "before": {
+        "path": "tsconfig.base.json",
+        "type": "file",
+        "executable": false,
+        "size": 49620,
+        "sha256": "5c43c1a82cc6eac83bbe9f73637144205e6560155346d9ff506d662f7ea8ca7e"
+      },
+      "after": {
+        "path": "tsconfig.base.json",
+        "type": "file",
+        "executable": false,
+        "size": 49556,
+        "sha256": "0ce116fa7ab69975638fca21cae96a770d2988ffb692ed0ff61a30589e2a1c90"
+      },
+      "reason": "Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog."
     },
     {
       "path": "tsconfig.client.json",

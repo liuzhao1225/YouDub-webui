@@ -210,7 +210,6 @@ export function verifyProductUse(
     return stringList(value.bundles, `${PROFILE_SOURCE} ${name}`)
   }), fallback]
   for (const names of profiles) {
-    if (names.length === 0) failures.push(`${PROFILE_SOURCE}: shipped profile has no bundles`)
     scanEntries(composeEntries(layers(names, defaults)), profilePath, defaults)
   }
   const web = templates.web
@@ -218,7 +217,7 @@ export function verifyProductUse(
     const webBundles = stringList(web.bundles, `${PROFILE_SOURCE} web`)
     for (const bundle of optionals) scanEntries(composeEntries(layers([...webBundles, bundle], optional)), profilePath, optional)
   }
-  for (const path of ['apps/cli/src/bin.ts', 'apps/desktop/src/preload-app.ts']) scanSource(resolve(root, path), defaults)
+  for (const path of ['apps/desktop-host/src/index.ts', 'apps/desktop/src/preload-app.ts']) scanSource(resolve(root, path), defaults)
   const htmlPath = resolve(root, 'apps/web/index.html')
   const dom = new JSDOM(readFileSync(htmlPath, 'utf8'))
   try {

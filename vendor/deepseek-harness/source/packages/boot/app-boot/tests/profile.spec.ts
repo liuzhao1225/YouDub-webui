@@ -336,71 +336,28 @@ describe('loadProfile', () => {
     ])
   })
 
-  it('auto-initializes only shipped templates and fails loud otherwise', () => {
+  it('requires an explicitly initialized product profile and does not create Harness defaults', () => {
     const anchor = stageInstallation({})
     const home = tmp()
-    expect(() => loadProfile('t', 'custom', anchor, home))
-      .toThrow('profile "custom" does not exist')
-    expect(PROFILE_TEMPLATES.web?.bundles).toContain('@deepseek-ai/dsh-base')
-    expect(PROFILE_TEMPLATES.acp).toEqual({
-      bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-acp-app'],
-    })
-    expect(PROFILE_TEMPLATES.sdk).toEqual({
-      bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app'],
-    })
-    expect(PROFILE_TEMPLATES['sdk-minimal']).toEqual({
-      bundles: ['@deepseek-ai/dsh-sdk-minimal'],
-    })
-    loadProfile('t', 'web', anchor, home)
-    expect(readProfileManifest('t', resolveProfileDir('web', home)).dsh?.profile?.bundles)
-      .toEqual([...PROFILE_TEMPLATES.web?.bundles ?? []])
+    expect(PROFILE_TEMPLATES).toEqual({})
+    for (const name of ['custom', 'web', 'acp', 'headless', 'sdk', 'sdk-minimal']) {
+      expect(() => loadProfile('t', name, anchor, home))
+        .toThrow(`profile "${name}" does not exist`)
+      expect(existsSync(join(resolveProfileDir(name, home), 'package.json'))).toBe(false)
+    }
   })
 
-  it('normalizes only the exact installation-owned headless bundle tuple', () => {
-    const anchor = stageInstallation({
-      '@deepseek-ai/dsh-base': { patch: '[]\n' },
-      '@deepseek-ai/dsh-web-app': { patch: '[]\n' },
-      '@deepseek-ai/dsh-headless': { patch: '[]\n' },
-      'custom-bundle': { patch: '[]\n' },
-    })
+  it('preserves an explicitly configured profile instead of normalizing former product names', () => {
+    const bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless', 'custom-bundle']
+    const anchor = stageInstallation(Object.fromEntries(bundles.map(name => [name, { patch: '[]\n' }])))
     const home = tmp()
-    const stock = resolveProfileDir('headless', home)
-    initProfile(stock, [
-      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless',
-    ])
-    const retiredManifest = readProfileManifest('t', stock)
-    writeProfileManifest(stock, retiredManifest)
-    loadProfile('t', 'headless', anchor, home)
-    expect(readProfileManifest('t', stock).dsh?.profile).toEqual({
-      bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless'],
-    })
-
-    const customHome = tmp()
-    const custom = resolveProfileDir('headless', customHome)
-    initProfile(custom, [
-      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless', 'custom-bundle',
-    ])
-    loadProfile('t', 'headless', anchor, customHome)
-    expect(readProfileManifest('t', custom).dsh?.profile?.bundles).toEqual([
-      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless', 'custom-bundle',
-    ])
-  })
-
-  it('removes a retired bundle from an application-owned profile and keeps the rest of the manifest', () => {
-    const anchor = stageInstallation({
-      '@deepseek-ai/dsh-base': { patch: '[]\n' },
-      'custom-bundle': { patch: '[]\n' },
-    })
-    const dir = join(tmp(), 'app-profile')
-    initProfile(dir, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-experimental-schedule-bundle', 'custom-bundle'])
-    writeProfileManifest(dir, { ...readProfileManifest('t', dir), dependencies: { 'custom-bundle': '^1.0.0' } })
-    const profile = loadProfileDirectory('t', dir, anchor)
-    expect(profile.skippedBundles).toEqual([])
-    expect(profile.layers.map(layer => layer.packageName)).toEqual(['@deepseek-ai/dsh-base', 'custom-bundle'])
-    expect(readProfileManifest('t', dir)).toMatchObject({
-      dependencies: { 'custom-bundle': '^1.0.0' },
-      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', 'custom-bundle'] } },
-    })
+    const dir = resolveProfileDir('headless', home)
+    initProfile(dir, bundles)
+    const manifest = { ...readProfileManifest('t', dir), custom: 'retained' }
+    writeProfileManifest(dir, manifest)
+    const profile = loadProfile('t', 'headless', anchor, home)
+    expect(profile.layers.map(layer => layer.packageName)).toEqual(bundles)
+    expect(readProfileManifest('t', dir)).toEqual(manifest)
   })
 
   it.each(['missing package', 'invalid manifest', 'not a bundle', 'missing patch', 'invalid patch'])(

@@ -175,65 +175,14 @@ export function resolveProfileDir(name: string, home: string = resolveDshHome())
   return join(home, PROFILES_DIR, name)
 }
 
-/** The shipped profile templates auto-initialized on first use, by name. */
-export const PROFILE_TEMPLATES: Record<string, ProfileTemplate> = {
-  acp: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-acp-app'],
-  },
-  web: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],
-  },
-  headless: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless'],
-  },
-  sdk: {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app'],
-  },
-  'sdk-minimal': {
-    bundles: ['@deepseek-ai/dsh-sdk-minimal'],
-  },
-}
+/** Product profiles are initialized explicitly by the YouDub application. */
+export const PROFILE_TEMPLATES: Record<string, ProfileTemplate> = {}
 
-/** Installation-owned bundle tuples normalized to the shipped template. */
-const INSTALLATION_OWNED_PROFILE_TUPLES: Record<string, readonly string[]> = {
-  headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-headless'],
-}
+/** A generic new profile starts without product bundles. */
+export const DEFAULT_PROFILE_BUNDLES: readonly string[] = []
 
-/**
- * Bundles an earlier release shipped and the installation no longer carries;
- * {@link loadProfileDirectory} removes them from the profile's bundle list.
- */
-const RETIRED_BUNDLES: ReadonlySet<string> = new Set([
-  // The Web composition mounts Schedule itself
-  // ([upgrade guide](../../../../docs/upgrade-guide/v0.2.0-rc.2/schedule-bundle-retired/guide.md)).
-  '@deepseek-ai/dsh-experimental-schedule-bundle',
-])
-
-/** The bundle list a `dsh plugin` init uses for a name with no shipped template. */
-export const DEFAULT_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base']
-
-/**
- * The bundles the dsh installation ships for a person to switch on: each a
- * runtime dependency of the installation that declares `dsh.bundle.patch`,
- * an `icon`, and `./locale/*.json` display metadata, selected by no shipped
- * template, and offered switched off by the plugin manager
- * ([rationale](../../../../.agents/notes/implemented/process/2026-09-15-shipped-optional-bundles.md),
- * [admission](../../../../.agents/notes/implemented/architecture/2026-09-21-experimental-capabilities-as-optional-bundles.md)).
- */
-export const OPTIONAL_BUNDLES: readonly string[] = [
-  '@deepseek-ai/dsh-experimental-session-search',
-  '@deepseek-ai/dsh-experimental-ralph-bundle',
-  '@deepseek-ai/dsh-experimental-terminal-bundle',
-  '@deepseek-ai/dsh-experimental-badge-skill-bundle',
-  '@deepseek-ai/dsh-experimental-session-titles-bundle',
-  '@deepseek-ai/dsh-experimental-agent-team-profile',
-  '@deepseek-ai/dsh-experimental-voice-input-bundle',
-  '@deepseek-ai/dsh-experimental-cot-translation-bundle',
-  '@deepseek-ai/dsh-experimental-auto-review',
-  '@deepseek-ai/dsh-experimental-inspector-profile',
-  '@deepseek-ai/dsh-experimental-plugin-market-bundle',
-  '@deepseek-ai/dsh-experimental-tool-worktree',
-]
+/** YouDub does not ship optional Harness product bundles. */
+export const OPTIONAL_BUNDLES: readonly string[] = []
 
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:
 # a top-level YAML array of loader patch entries (id-targeted config
@@ -633,54 +582,6 @@ export function writeProfileManifest(dir: string, manifest: ProfileManifest): vo
   writeFileSync(join(dir, 'package.json'), JSON.stringify(manifest, undefined, 2) + '\n')
 }
 
-/** Return whether two bundle lists have the same values in the same order. */
-function sameBundles(left: readonly string[], right: readonly string[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index])
-}
-
-/** Return `manifest` with `dsh.profile.bundles` replaced, preserving all other fields. */
-function withBundles(manifest: ProfileManifest, bundles: readonly string[]): ProfileManifest {
-  return {
-    ...manifest,
-    dsh: {
-      ...manifest.dsh,
-      profile: {
-        ...manifest.dsh?.profile,
-        bundles: [...bundles],
-      },
-    },
-  }
-}
-
-/**
- * Normalize an exact installation-owned bundle tuple to its shipped template,
- * preserving all other manifest fields. Other bundle lists remain untouched.
- */
-function normalizeShippedProfile(name: string, dir: string, manifest: ProfileManifest): ProfileManifest {
-  const installationOwned = INSTALLATION_OWNED_PROFILE_TUPLES[name]
-  const template = PROFILE_TEMPLATES[name]
-  const bundles = manifest.dsh?.profile?.bundles
-  if (template === undefined || bundles === undefined) return manifest
-  const isRetiredTuple = installationOwned !== undefined && sameBundles(bundles, installationOwned)
-  if (!isRetiredTuple) return manifest
-  const normalized = withBundles(manifest, template.bundles)
-  writeProfileManifest(dir, normalized)
-  return normalized
-}
-
-/**
- * Remove {@link RETIRED_BUNDLES} from a profile's bundle list, writing the
- * manifest back only when it listed one.
- */
-function dropRetiredBundles(dir: string, manifest: ProfileManifest): ProfileManifest {
-  const bundles = manifest.dsh?.profile?.bundles ?? []
-  const kept = bundles.filter(bundle => !RETIRED_BUNDLES.has(bundle))
-  if (kept.length === bundles.length) return manifest
-  const normalized = withBundles(manifest, kept)
-  writeProfileManifest(dir, normalized)
-  return normalized
-}
-
 /**
  * Resolve a package's root directory from one anchor without depending on the
  * package exporting `./package.json` (`require.resolve` would need that):
@@ -743,7 +644,7 @@ export function loadProfileDirectory(
   installAnchor: string,
   options: { userLayer?: boolean } = {},
 ): Profile {
-  const manifest = dropRetiredBundles(dir, readProfileManifest(binName, dir))
+  const manifest = readProfileManifest(binName, dir)
   const bundles = manifest.dsh?.profile?.bundles ?? []
   const layers: ProfileLayer[] = []
   const skippedBundles: SkippedBundle[] = []
@@ -801,7 +702,6 @@ export function loadProfile(
     initProfile(dir, template.bundles)
   }
   removeLinkProjections(dir)
-  normalizeShippedProfile(name, dir, readProfileManifest(binName, dir))
   return loadProfileDirectory(binName, dir, installAnchor, options)
 }
 
