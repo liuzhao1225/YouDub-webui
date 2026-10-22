@@ -8,7 +8,7 @@ import { ExternalLink, FileInput, FileOutput, Workflow, X } from '@/lib/icons'
 import { text, type GraphNode, type NodeTypeDefinition, type TaskStep, type WorkflowDocument } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
-import { TaskState } from './task-status'
+import { TaskState, taskProgressMessage } from './task-status'
 import { fieldOptions, fieldType, fieldValue, nodeModel } from '@/runtime/schema-fields'
 import { canConnect, connect, INPUTS_ID, nodeDefinition, OUTPUTS_ID, removeNodes, workflowPortLabel } from './workflow-utils'
 import '@xyflow/react/dist/style.css'
@@ -62,7 +62,7 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
       </div>
     </>}
     {data.virtual && !data.readOnly && <div className="nodrag flex justify-end border-t border-border px-4 py-2.5 text-xs"><Button variant="link" size="sm" disabled={data.disabled} onClick={data.open}>{tx("workflow.canvas.full.settings")}<ExternalLink className="size-3" /></Button></div>}
-    {data.status?.message && <p className="truncate px-4 pb-3 text-xs text-muted-foreground">{data.status.message}</p>}
+    {data.status?.message && <p className="truncate px-4 pb-3 text-xs text-muted-foreground">{taskProgressMessage(data.status.message, tx)}</p>}
     {data.status?.error && <p className="px-4 pb-3 text-xs text-status-danger-fg">{data.status.error.message}</p>}
     {data.status?.status === 'running' && data.status.progress != null && <Progress value={data.status.progress} label={data.label} />}
   </div>

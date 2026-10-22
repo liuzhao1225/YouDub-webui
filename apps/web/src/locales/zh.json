@@ -683,6 +683,8 @@
     "workflows.output.dubbedVideo": "配音视频",
     "workflows.output.dubbedAudio": "配音音频",
     "workflows.output.sourceSubtitles": "原文字幕",
-    "workflows.output.translatedSubtitles": "译文字幕"
+    "workflows.output.translatedSubtitles": "译文字幕",
+    "task.progress.translation.complete": "翻译完成",
+    "task.progress.translation.batch": "翻译 {current}/{total}"
   }
 }

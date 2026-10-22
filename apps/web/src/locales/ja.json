@@ -683,6 +683,8 @@
     "workflows.output.dubbedVideo": "吹き替え動画",
     "workflows.output.dubbedAudio": "吹き替え音声",
     "workflows.output.sourceSubtitles": "原文字幕",
-    "workflows.output.translatedSubtitles": "翻訳字幕"
+    "workflows.output.translatedSubtitles": "翻訳字幕",
+    "task.progress.translation.complete": "翻訳完了",
+    "task.progress.translation.batch": "翻訳 {current}/{total}"
   }
 }

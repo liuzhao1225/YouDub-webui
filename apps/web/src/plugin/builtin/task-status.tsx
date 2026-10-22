@@ -1,5 +1,5 @@
 import { Progress } from '@/components/ui/progress'
-import type { MessageKey } from '@/locales'
+import type { MessageKey, Text } from '@/locales'
 import { Tag } from '@/components/ui/tag'
 import { useI18n, useText } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -22,6 +22,13 @@ export const STATUS_LABELS: Record<string, MessageKey> = {
 
 export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapshot'>) {
   return task.sourceName && task.sourceName !== task.workflowId ? task.sourceName : task.workflowSource?.title || task.graphSnapshot?.title || task.sourceName
+}
+
+// Keep persisted provider messages and raw logs unchanged; localize their display.
+export function taskProgressMessage(message: string, tx: Text): string {
+  if (message === '翻译完成') return tx('task.progress.translation.complete')
+  const batch = /^翻译 (\d+)\/(\d+)$/.exec(message)
+  return batch ? tx('task.progress.translation.batch', { current: batch[1], total: batch[2] }) : message
 }
 
 export function TaskState({ status }: { status: string }) {

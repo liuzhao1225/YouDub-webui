@@ -20,9 +20,9 @@ import { Page, PageHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { WorkflowCanvas } from './workflow-canvas'
-import { TaskState } from './task-status'
+import { TaskState, taskProgressMessage } from './task-status'
 import { NodePluginBoundary } from './workflow-settings'
-import { nodeDefinition } from './workflow-utils'
+import { nodeDefinition, copyWorkflowLabels } from './workflow-utils'
 import { useUnsavedChanges } from './workflow-guard'
 
 type Transcript = { detected_language: string; segments: { id: string | number; start_ms: number; end_ms: number; text: string; words?: unknown; speaker_id?: string }[] }
@@ -80,7 +80,8 @@ function TaskGraph({ task, request, navigate, useQuery }: { task: TaskView } & B
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4"><h2 className="font-semibold">{tx("workflow.task.workflow")}</h2><div className="flex flex-wrap gap-2">
       <Button variant="outline" size="sm" disabled={busy} onClick={() => {
         setBusy(true); setFailure('')
-        const document = { ...task.graphSnapshot!, id: crypto.randomUUID(), title: `${task.graphSnapshot!.title} · ${tx("workflow.task.copy")}` }
+        const copy = copyWorkflowLabels(task.graphSnapshot!, tx)
+        const document = { ...copy, id: crypto.randomUUID(), title: `${copy.title} · ${tx("workflow.task.copy")}` }
         void request<WorkflowDocumentRecord>('/api/v2/workflow-documents', { method: 'POST', body: JSON.stringify({ document }) }).then((record) => navigate(`/workflows/${record.id}?sourceTask=${task.id}`)).catch((failure: Error) => setFailure(failure.message)).finally(() => setBusy(false))
       }}><Copy />{tx("workflow.task.edit.workflow.copy")}</Button>
     </div></header>
@@ -193,7 +194,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
     <PageHeader leading={<Link href={`/tasks/${task.id}`} aria-label={tx("workflow.task.back.to.task")} title={tx("workflow.task.back.to.task")} className="inline-flex items-center text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /></Link>} title={node?.label || text(definition?.label, language) || text(detail.step.label, language)} badge={<TaskState status={detail.step.status} />} />
     {(error || failure) && <div className="space-y-2"><InlineAlert>{error || failure}</InlineAlert>{error && <Button variant="outline" size="sm" onClick={refresh}><RotateCw />{tx("workflow.task.reload")}</Button>}</div>}
     {detail.step.error && <InlineAlert>{detail.step.error.message}</InlineAlert>}
-    {['running', 'waiting'].includes(detail.step.status) && <div className="space-y-2 text-sm text-muted-foreground" role="status">{detail.step.message && <p>{detail.step.message}</p>}{detail.step.status === 'running' && detail.step.progress != null && <Progress label={tx("workflow.task.node.progress")} value={detail.step.progress} />}</div>}
+    {['running', 'waiting'].includes(detail.step.status) && <div className="space-y-2 text-sm text-muted-foreground" role="status">{detail.step.message && <p>{taskProgressMessage(detail.step.message, tx)}</p>}{detail.step.status === 'running' && detail.step.progress != null && <Progress label={tx("workflow.task.node.progress")} value={detail.step.progress} />}</div>}
     {pending && !busy && <div className="space-y-2"><InlineAlert tone="warning">{tx("workflow.task.submission.needs.verification")}</InlineAlert><Button variant="outline" disabled={busy} onClick={() => {
       setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx("workflow.task.check.submission")}</Button></div>}

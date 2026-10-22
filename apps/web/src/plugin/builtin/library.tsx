@@ -19,7 +19,8 @@ import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
 import { Page, PageHeader } from '@/components/page-layout'
 import { ConfigEditor, defaultConfig, useEditorSupported } from './schema-form'
-import { STATUS_LABELS, TaskProgress, TaskState, taskDisplayName } from './task-status'
+import { workflowTemplateTitle, workflowPortLabel } from './workflow-utils'
+import { STATUS_LABELS, TaskProgress, TaskState, taskDisplayName, taskProgressMessage } from './task-status'
 
 export function Library({ useQuery, navigate }: Bindings<'useQuery' | 'navigate'>) {
   const tx = useText()
@@ -113,21 +114,24 @@ export function TaskDetail({ submissionStore, params, request, navigate, useQuer
     <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent">{step.status === 'completed' ? <Check className="size-4 text-status-success-fg" /> : step.status === 'running' ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4 text-muted-foreground" />}</span>
     <div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2">{task.graphSnapshot ? <Link href={`/tasks/${task.id}/nodes/${step.id}`} className="text-sm font-medium text-link">{text(step.label, language)}</Link> : <span className="text-sm font-medium">{text(step.label, language)}</span>}<TaskState status={step.status} /></div>
       {step.progress != null && step.status === 'running' && <Progress label={`${text(step.label, language)} ${tx("library.progress")}`} value={step.progress} />}
-      {step.message && <p className="mt-1 break-words text-xs text-muted-foreground">{step.message}</p>}{step.error && <p className="mt-1 text-xs text-status-danger-fg">{step.error.message}</p>}
+      {step.message && <p className="mt-1 break-words text-xs text-muted-foreground">{taskProgressMessage(step.message, tx)}</p>}{step.error && <p className="mt-1 text-xs text-status-danger-fg">{step.error.message}</p>}
     </div>
   </li>)}</ol>
   return <Page>
     <Actions submissionStore={submissionStore} useQuery={useQuery} useSlot={useSlot} request={request} navigate={navigate} task={task} refresh={refresh} prepareDelete={setMediaReleased} heading={(actions) => <PageHeader title={taskDisplayName(task)} badge={<TaskState status={task.status} />} actions={actions} leading={<Button size="icon-sm" variant="ghost" aria-label={tx("library.library")} title={tx("library.library")} onClick={() => navigate('/tasks')}><ArrowLeft /></Button>}>
-      <p className="mt-1 text-xs text-muted-foreground">{taskDisplayName(task) !== (task.graphSnapshot?.title || task.workflowId) && <>{task.graphSnapshot?.title || task.workflowId} · </>}<time dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></p>
+      <p className="mt-1 text-xs text-muted-foreground">{taskDisplayName(task) !== (task.graphSnapshot?.title || task.workflowId) && <>{task.graphSnapshot ? workflowTemplateTitle(task.graphSnapshot, tx) : task.workflowId} · </>}<time dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></p>
     </PageHeader>} />
     {loadError}{task.error && <InlineAlert>{task.error.message}</InlineAlert>}
     {actions.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
     {video && !mediaReleased && <div className="overflow-hidden rounded-xl border border-border bg-black"><VideoPlayer src={video.url} /></div>}
-    {!!task.outputs.length && <section className="space-y-4"><h2 className="font-semibold">{tx("library.generated.files")}</h2><div className="grid gap-3 sm:grid-cols-2">{task.outputs.map((output) => <Surface as="div" key={output.id} className="space-y-2 p-4">
-      <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{output.label || output.name || output.id}</p>{output.size !== undefined && <p className="mt-1 text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div><a href={output.url} download className="rounded-lg p-2 hover:bg-accent" aria-label={`${tx("library.download")} ${output.label || output.id}`}><Download className="size-4" /></a></div>
+    {!!task.outputs.length && <section className="space-y-4"><h2 className="font-semibold">{tx("library.generated.files")}</h2><div className="grid gap-3 sm:grid-cols-2">{task.outputs.map((output) => {
+      const label = output.label || output.name || output.id
+      const displayLabel = task.graphSnapshot ? workflowPortLabel(task.graphSnapshot, { id: output.id, label }, tx) : label
+      return <Surface as="div" key={output.id} className="space-y-2 p-4">
+      <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{displayLabel}</p>{output.size !== undefined && <p className="mt-1 text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div><a href={output.url} download className="rounded-lg p-2 hover:bg-accent" aria-label={`${tx("library.download")} ${displayLabel}`}><Download className="size-4" /></a></div>
       {!mediaReleased && output.mimeType?.startsWith('audio/') && <AudioOutput src={output.url} />}
       {(output.mimeType?.startsWith('text/') || output.mimeType === 'application/x-subrip') && <a href={output.url} target="_blank" rel="noreferrer" className="text-xs text-link">{tx("library.preview.text")}</a>}
-    </Surface>)}</div></section>}
+    </Surface>})}</div></section>}
     {panels.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
     {task.graphSnapshot ? <Disclosure  contained={true} title={<>{tx("library.step.list")} · {completed}/{task.steps.length}</>}><div className="mt-4">{stepList}</div></Disclosure> : <Surface as="section" className="p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</Surface>}
     <Disclosure onToggle={(event) => setShowLog(event.currentTarget.open)} contained={true} title={<>{tx("library.task.log")}</>}>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</Disclosure>

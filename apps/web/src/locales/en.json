@@ -682,6 +682,8 @@
     "workflows.output.dubbedVideo": "Dubbed video",
     "workflows.output.dubbedAudio": "Dubbed audio",
     "workflows.output.sourceSubtitles": "Original subtitles",
-    "workflows.output.translatedSubtitles": "Translated subtitles"
+    "workflows.output.translatedSubtitles": "Translated subtitles",
+    "task.progress.translation.complete": "Translation complete",
+    "task.progress.translation.batch": "Translating {current}/{total}"
   }
 }
