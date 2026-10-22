@@ -102,3 +102,76 @@ jobs:
             apps/harness/dist/build-inputs.json
             apps/harness/dist/desktop/build-inputs.json
           if-no-files-found: error
+
+  source-development-windows:
+    name: Windows 源码、Host 与桌面合同
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      LEFTHOOK: "0"
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+    steps:
+      - name: 保持源码字节与链接
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.longpaths true
+          git config --global core.symlinks true
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/harness/package-lock.json
+            apps/web/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: 校验固定来源与活动 fork
+        run: |
+          node apps/harness/baselines/framework-source.mjs
+          node apps/harness/baselines/inventory.mjs
+          node --test apps/harness/test/framework-source.test.mjs
+      - name: 安装源码与 Host 测试依赖
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/harness ci --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          python -m venv .venv
+          .venv/Scripts/python.exe -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements/base.txt
+          echo "YOUDUB_TEST_PYTHON=$GITHUB_WORKSPACE/.venv/Scripts/python.exe" >> "$GITHUB_ENV"
+      - name: 从仓库源码构建 Windows 开发版
+        run: |
+          npm run build:framework
+          node apps/harness/build-framework.mjs --verify-only
+          npm run build:youdub
+          npm --prefix apps/harness run check:composition
+          npm run check:framework-isolation
+      - name: 检查 Windows 桌面与进程生命周期
+        working-directory: .cache/harness/source-build
+        env:
+          npm_execpath: ${{ github.workspace }}/apps/harness/node_modules/pnpm/bin/pnpm.mjs
+        run: |
+          node ../../../apps/harness/test/prepare-framework-client.mjs
+          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests/quit-inspection.spec.ts packages/subprocess/subprocess-local/tests
+      - name: 运行实际 Electron Host 与产品合同
+        run: |
+          node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs
+          npm run typecheck
+          npm --prefix apps/harness run check:locales
+      - name: 保存 Windows 源码构建证据
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: youdub-windows-source-build-evidence
+          path: |
+            .cache/harness/source-build/youdub-source-build.json
+            apps/harness/dist/build-inputs.json
+            apps/harness/dist/desktop/build-inputs.json
+          if-no-files-found: error

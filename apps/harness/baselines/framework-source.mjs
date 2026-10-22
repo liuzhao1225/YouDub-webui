@@ -29,7 +29,7 @@ export function verifyChanges(original, current, changes) {
     'Framework source differs from the reviewed fork ledger; inspect the diff and record its exact bytes and reason')
 }
 
-export async function readFrameworkSource(root = repository) {
+export async function readFrameworkSource(root = repository, { platform = process.platform } = {}) {
   const directory = join(root, 'vendor/deepseek-harness')
   const manifestPath = join(directory, 'source-manifest.json')
   const fork = JSON.parse(await readFile(join(directory, 'fork.json'), 'utf8'))
@@ -38,7 +38,19 @@ export async function readFrameworkSource(root = repository) {
   const original = JSON.parse(await readFile(manifestPath, 'utf8'))
   same(fork.upstreamCommit, original.commit, 'The framework fork and upstream manifest name different commits')
   const source = join(directory, 'source')
-  const current = await tree(source)
+  // Windows has no Unix executable bit. Keep checking the tracked Git mode,
+  // alongside actual file bytes and links, instead of discarding that metadata.
+  let executableModes
+  if (platform === 'win32') {
+    executableModes = new Map()
+    const index = execFileSync('git', ['ls-files', '--stage', '-z'], { cwd: source, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
+    for (const entry of index.split('\0').filter(Boolean)) {
+      const match = /^(100644|100755|120000) [0-9a-f]+ 0\t(.+)$/s.exec(entry)
+      if (!match) throw new Error('Framework source has an unresolved or unsupported Git index entry')
+      executableModes.set(match[2], match[1] === '100755')
+    }
+  }
+  const current = await tree(source, { executableModes })
   verifyChanges(original, current, fork.changes)
   const paths = new Set(current.entries.map(entry => entry.path))
   const packages = []

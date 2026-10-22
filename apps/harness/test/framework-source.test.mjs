@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,6 +14,8 @@ async function fixture(t) {
   await mkdir(source, { recursive: true })
   await writeFile(join(source, 'keep.js'), 'export const value = 1\n')
   await writeFile(join(source, 'remove.js'), 'export const unused = true\n')
+  execFileSync('git', ['init', '--quiet', root])
+  execFileSync('git', ['-C', root, 'add', '--', 'vendor/deepseek-harness/source'])
   const original = { commit: 'upstream', packages: [], ...await tree(source) }
   const manifestPath = join(directory, 'source-manifest.json')
   await writeFile(manifestPath, JSON.stringify(original))
@@ -76,6 +79,17 @@ test('executable mode and link target changes require review', { skip: process.p
   assert.equal(changes.find(entry => entry.path === 'keep.js').after.executable, true)
   assert.equal(changes.find(entry => entry.path === 'linked.js').after.target, 'keep.js')
   assert.throws(() => verifyChanges(original, current, []), /differs from the reviewed fork ledger/)
+})
+
+test('Windows source verification uses Git executable modes and rejects unreviewed mode changes', async t => {
+  const { root, source, original, fork, save } = await fixture(t)
+  execFileSync('git', ['-C', source, 'update-index', '--chmod=+x', 'keep.js'])
+  const expected = await tree(source, { executableModes: new Map([['keep.js', true]]) })
+  fork.changes = sourceChanges(original, expected).map(entry => ({ ...entry, reason: 'Review executable mode recorded in Git' }))
+  await save()
+  assert.equal((await readFrameworkSource(root, { platform: 'win32' })).sha256, expected.sha256)
+  execFileSync('git', ['-C', source, 'update-index', '--chmod=-x', 'keep.js'])
+  await assert.rejects(readFrameworkSource(root, { platform: 'win32' }), /differs from the reviewed fork ledger/)
 })
 
 test('retiring a package rejects and removes its compiled outputs while retaining live package outputs', async t => {

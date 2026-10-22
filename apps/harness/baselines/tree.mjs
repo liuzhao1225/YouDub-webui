@@ -11,7 +11,7 @@ export async function sha256(path) {
 }
 
 /** Record file bytes, executable flags and symlink targets; optionally omit dependency installs. */
-export async function tree(root, { omitNodeModules = false } = {}) {
+export async function tree(root, { omitNodeModules = false, executableModes } = {}) {
   const entries = []
   async function walk(relative) {
     const path = join(root, relative)
@@ -22,7 +22,7 @@ export async function tree(root, { omitNodeModules = false } = {}) {
         if (omitNodeModules && name === 'node_modules') continue
         await walk(relative ? `${relative}/${name}` : name)
       }
-    } else if (stat.isFile()) entries.push({ path: relative, type: 'file', executable: Boolean(stat.mode & 0o111), size: stat.size, sha256: await sha256(path) })
+    } else if (stat.isFile()) entries.push({ path: relative, type: 'file', executable: executableModes ? (executableModes.get(relative) ?? false) : Boolean(stat.mode & 0o111), size: stat.size, sha256: await sha256(path) })
     else throw new Error(`Unsupported baseline entry: ${path}`)
   }
   await walk('')

@@ -2,7 +2,7 @@
 
 日期：2026-10-22。实施分支：`codex/harness-youdub-integration`。计划基于提交 `4b9dc0a7168135f191dd4050a6d1d9a32d9e14b9` 的源码和现有验收记录。
 
-当前状态：P1 已完成，P2 正向组合及账号/会话解耦已通过干净 macOS CI。P3 已采用本应用 Electron 的 Node 模式和锁定 pnpm，新隔离 profile 已通过四模型下载、私有依赖准备及页面模型配置的重启读回。P4 已补齐首启语言文案，原模型编辑器的草稿保护通过单元测试和实际页面交互。具体证据见[调研记录](REFACTOR-RESEARCH.md)。P6 已完成 Remote 运行组合、旧 Host 产品入口及重复 npm 框架依赖的第二批裁剪；旧 Web 产品组合与 SSH 远程执行专属模块已移除，通用 Web 服务和本地执行接口保留；产品运行目录为 75 个框架包，源码编译已缩减为 270 包。实际产品隔离与运行闭包检查已接入 CI，通用设置和插件导航的插槽类型已脱离旧聊天侧栏。扩展生命周期继续在精简后的运行目录验证。Mac 已解锁，日语首启、原生目录选择、退出草稿保护及重启读回已实测；内置工作流的日语标题与端口已修正，保存副本、原生导出、重启与原生导入读回已通过。原生 zoo 八节点流程、运行中退出取消和字幕文件保存通过；九节点审核副本已通过原文与译文订正、人工确认、Qwen 对齐执行、原生字幕导出和重启读回；听感与音画同步质量仍待验收。设置链接直达模型分区的修复已通过定向回归、原生跳转读回和干净 macOS CI；其余窗口交互继续验收。旧原生账号/欢迎页、独立 Desktop 主入口，以及旧更新/强制策略/打包签名上传工具已从活动源码删除；Desktop 只保留开发构建命令。原 YouDub Swift/C# 壳及专属构建/发行 CI 已移除，根 build:desktop 统一到 Electron 开发构建，复用图标保留。第 19 批移除 8 个闲置面板/生成器包，并修复 staging 残留旧编译文件；全新目录 7 项构建、522 个测试文件/8,866 项断言和两种实际 Host 组合通过。既有 Windows 原生对话框检查在 macOS 跳过；远程 CI 的 pnpm 路径配置已修正，等待远程复验。完整源码裁剪、跨平台和最终验收尚未完成；未启动打包和发布。两份飞书文档在全部改造与验收完成后统一更新。
+当前状态（2026-10-23）：P1 已完成；原生首启、模型草稿保护、九节点人工校对、字幕导出与三类扩展已有验证。P6 已裁剪到 270 个源码包，253 个客户端产物，并修复复用构建的退役产物残留。最新提交为 `ce02e6a4`，干净 CI 正在执行；前一轮完整 GUI 8,744 项通过，后续声明检查失败已修正。P0、P2–P7 的剩余验收仍开放，统一见[当前代码审计与 A1–A20 矩阵](CODE-AUDIT.md)。并行会话未提交的界面、资源和媒体播放修改保留，需整合后验收。本轮不打包或发布，两份飞书文档在全部完成后更新。
 
 ## 1. 目标与范围
 
@@ -29,7 +29,7 @@
 | --- | --- | --- |
 | F1 | profile 组合 `dsh-base`、`dsh-web-app`、YouDub bundle；YouDub patch 有 117 个 `disabled: true`。[装配](../prepare-profile.mjs)、[patch](../cordis.patch.yml) | 建立正向列出的 YouDub 组合，记录每个保留项的使用者与依赖 |
 | F2 | 模型页强制注入 `remote.session`；Store 在 DeepSeek 账号分支调用 `modelCatalog`。[注入](../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/index.ts)、[Store](../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/src/client/store.ts) | 先移除账号专属分支，继续使用已有 LLM/Settings/Credentials 接口，再核对剩余会话依赖 |
-| F3 | Desktop Host 显式安装 Office 资源插件和平台账号 session 发布器。[入口](../../../vendor/deepseek-harness/source/apps/desktop-host/src/index.ts)、[Office](../../../vendor/deepseek-harness/source/apps/desktop-host/src/office.ts) | 仅关闭 bundle 条目无法删除这组启动逻辑；需要修改 Host 产品装配 |
+| F3 | Desktop Host 显式安装 Office 资源插件和平台账号 session 发布器。[入口](../../../vendor/deepseek-harness/source/apps/desktop-host/src/index.ts)、[Office](https://github.com/liuzhao1225/YouDub-webui/blob/4b9dc0a7168135f191dd4050a6d1d9a32d9e14b9/vendor/deepseek-harness/source/apps/desktop-host/src/office.ts) | 仅关闭 bundle 条目无法删除这组启动逻辑；需要修改 Host 产品装配 |
 | F4 | 退出与更新检查直接要求 `agents` 和 `jobs`。[退出检查](../../../vendor/deepseek-harness/source/apps/desktop-host/src/quit-inspection.ts)、[更新检查](../../../vendor/deepseek-harness/source/apps/desktop-host/src/update-tasks.ts) | 删除 Agent 前接通 YouDub 运行、排队、远端等待、资源下载和未保存内容的判断 |
 | F5 | 前端通过构建 alias 和 resolver 替换控件、旧 SDK 与 Store 导入。[构建](../build.mjs) | 逐步将源码导入接到统一入口，减少构建期替换；业务组件继续直接复用 |
 | F6 | 框架先复制到 staging 做官方全量构建；原件校验、包路径清单和构建收据绑定完整上游。[框架构建](../build-framework.mjs)、[运行时准备](../prepare-source-development.mjs)、[来源检查](../baselines/README.md) | 首次修改上游前先区分原件校验与 fork 构建校验；裁剪时同步更新生成与构建依赖 |
@@ -134,7 +134,7 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 - [x] 为融合分支接入源码构建、类型、相关测试、活动模块和语言检查；保留现有 `main` 发行链的独立边界。干净 macOS runner 检查已通过，见 [39646789113](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39646789113)。后续每批改动继续运行该检查。
 - [x] 审核 CI 的调用链，确保开发检查不生成安装包、不触发签名、release 或 Pages 发布。真实模型任务独立记录，不把凭据写入公共 CI。
 
-重点文件：[基线工具](../baselines)、[构建](../build-framework.mjs)、[运行时准备](../prepare-source-development.mjs)、[CI](../../../.github/workflows/ci.yml)。
+重点文件：[基线工具](../baselines)、[构建](../build-framework.mjs)、[运行时准备](../prepare-source-development.mjs)、[CI](../../../.github/workflows/harness-development.yml)。
 
 退出条件：合法 fork 修改有可追溯差异；错误来源和不一致构建仍会失败；开发检查能运行且不会进入旧打包路径；原始归档完整性结论不变。
 
@@ -305,14 +305,14 @@ P0 需要实际执行下表调查并记录结果。前述静态发现只覆盖�
 
 | 阶段 | 状态 | 完成标志 |
 | --- | --- | --- |
-| P0 调研与基线 | 进行中；来源恢复、57 项原集成回归及同 Host 页面已核对；原生交互待完成 | R1–R10、基线运行与裁剪决策齐全 |
+| P0 调研与基线 | 进行中；来源、依赖与功能映射已有记录；性能测量及剩余动态消费者仍待收口 | R1–R10、基线运行与裁剪决策齐全 |
 | P1 来源与开发检查 | 已完成；来源分离、干净构建及提交 `1960d82f` 的源码 CI 通过 | fork 可验证，原件不变，源码 CI 无打包 |
-| P2 产品解耦 | 进行中；33 条正向装配、会话解耦及同 Host 页面通过，日语原生退出/草稿保留通过，运行中任务保护待验收 | 最小组合、模型设置和退出保护通过 |
-| P3 私有运行资源 | 进行中；首启语言/目录、四模型及页面配置重启读回通过 | 干净准备、四模型门控、配置隔离通过 |
-| P4 前端统一 | 进行中；草稿保护、密钥占位、日语原生目录与退出通过，其余交互待完成 | 原版视觉、组件、语言与原生交互通过 |
-| P5 业务与扩展 | 待执行 | 功能映射、历史兼容和插件生命周期通过 |
-| P6 裁剪与构建 | 进行中；旧原生账号、更新发行工具、Swift/C# 壳及独立 CLI 产品入口已删除；显式 profile 启动库保留。旧 Host/Web 根、产品使用检查和源码编译闭包仍待收缩 | 干净构建、依赖/来源闭合、开发入口统一 |
-| P7 开发版验收 | 待执行 | 必要矩阵、平台、分支 CI 与文档通过 |
+| P2 产品解耦 | 进行中；正向组合、会话解耦、原生运行中退出取消及审核重启通过；资源/远端组合退出待验收 | 最小组合、模型设置和退出保护通过 |
+| P3 私有运行资源 | 进行中；首启语言/目录、四模型及模型配置重启通过；当前资源恢复与旧目录待验收 | 干净准备、四模型门控、配置隔离通过 |
+| P4 前端统一 | 进行中；草稿、掩码、日语、原生工作流文件往返通过；并行控件改动需最终对照 | 原版视觉、组件、语言与原生交互通过 |
+| P5 业务与扩展 | 进行中；三类扩展生命周期、异常路径、原生导出与九节点审核通过；其余业务输入待验收 | 功能映射、历史兼容和插件生命周期通过 |
+| P6 裁剪与构建 | 进行中；20 批裁剪后 270 包；旧 base/headless、Office 与生成器/测试消费者继续收缩 | 干净构建、依赖/来源闭合、开发入口统一 |
+| P7 开发版验收 | 进行中；macOS 原生多项通过；最终媒体质量、Windows、最终 CI 及两份飞书文档待完成 | 必要矩阵、平台、分支 CI 与文档通过 |
 
 ### P6 第 14 批开发验收补充
 

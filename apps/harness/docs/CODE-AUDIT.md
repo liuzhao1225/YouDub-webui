@@ -1,77 +1,56 @@
 # YouDub Desktop 代码复核
 
-本次结论：运行中的前后端框架与 Electron 能力来自保留的 Harness 源码；发现并修正了无关后台模块仍被加载、账号平台仍在桌面入口接线的问题。原 YouDub 的业务能力有逐项映射和回归证据，仍有明确的实机验收与发行能力缺口，不能签署“所有功能全部验收通过”。
+更新：2026-10-23。审计提交为 `ce02e6a48c54f417fe4fb7d199224c5f967ffd67`；共享工作区其他会话未提交的界面、资源与媒体播放改动不计入该候选。
 
-## 比较范围与证据
+YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
-- 原 YouDub 冻结快照：`f6f927903581b165f2bf6c840ea65b896d319524`，58 条 API、11 个媒体操作、11 个 Python worker 操作、9 个页面入口、50 组元素源文件；重新执行 [清单校验](../baselines/inventory.mjs) 通过。[冻结清单](../baselines/youdub-source-inventory.json)
-- Harness：公开源码 `dsh-v0.2.1-rc.2` / `687f282e8625c6b8d11ff58211a90524be2e4317`。官方源码、原应用、npm 包与 YouDub 初始快照分别校验，保存记录未改。[来源基线](../baselines/sources.json)
-- 审核当前入口、产品组合、实际构建输入及其与冻结业务代码的差异。Host 插件中 42 个有输出字节的模块，Client 插件中 269 个；完整上游档案和未进入产物的旧应用代码作为参考保留。模块数量不代表功能通过率。[构建边界检查](../check-composition.mjs)
-- 本轮无安装包制作、发布或外部 LLM 调用。构建结果为工作区源码开发应用；独立数据目录与源码运行时不依赖已安装的 DeepSeek Harness.app。[源码启动器](../desktop.mjs)
+## 当前结构与来源
 
-## 已修复的问题
+| 层 | 当前实现与证据 |
+| --- | --- |
+| 产品入口 | [desktop.mjs](../desktop.mjs) 与 [desktop-product.ts](../src/desktop-product.ts)；仓库内 Electron 和锁定 pnpm。正常首启配置私有安装目录，测试跳过需显式参数。独立窗口验收见[原生记录](evidence/refactor-native-zoo-review.json) |
+| 框架装配 | [正向清单](../cordis.patch.yml) 组合通用服务及 YouDub 业务；[profile](../prepare-profile.mjs) 保留用户扩展与配置。旧账号、聊天、Agent、Office 的产品接线已退出；模型设置已解除 remote.session 强制依赖。[调查与修复](REFACTOR-RESEARCH.md#正向装配与退出保护) |
+| 前端 | Harness Renderer、ModuleLoader、Slots、Store、主题、语言、设置和基础控件；原 YouDub 页面、Logo、动画、画布和校对逻辑直接接入。[元素映射](../FRONTEND-MAPPING.md) |
+| 任务与媒体 | 原任务状态机、SQLite、图调度、修订与复用；官方 Jobs/Subprocess 执行 Python，官方 LLM 执行翻译。实际调用上限至少 65,535，拒绝时保留错误。[Host](../src/host.mjs)、[LLM 合同](evidence/refactor-experimental-contracts-prune.json) |
+| 扩展 | 原 PluginManager 负责安装、版本、服务注入、启停和卸载；YouDub 提供节点、提供商与页面合同。JS、Python、多输入人工审核均经过实际 Host/原生验证。[扩展记录](evidence/refactor-extension-lifecycle.json) |
+| 来源 | 原 Harness 归档、公开提交、原始清单、YouDub 初始快照保持独立；活动 fork 允许有理由的精确差异。[来源检查](../baselines/framework-source.mjs)、[差异账本](../../../vendor/deepseek-harness/fork.json) |
 
-| 发现 | 修复 | 验证 |
+当前已提交框架有 270 包、6,731 个文件；源码 SHA-256 为 `0410534a28fd839fb83535b7180144ff940e780053d8969c2f049bf9501947ed`。运行/类型依赖闭包为 141 包，含保留包测试为 213 包；57 个闭包外包还需要结合动态生成器和平台工具判断，不能全部删除。[依赖审计](evidence/refactor-framework-dependency-audit-20261022.json)、[候选来源检查](evidence/refactor-pruned-notices.json)
+
+源码构建的 253 个客户端产物包含可选框架库，不等于产品加载了 253 个插件。第 19 批已修复复用 staging 残留退役包编译文件的问题，全新和复用构建都检查已删除目录不存在。[构建清理证据](evidence/refactor-retired-panels-prune.json)
+
+## 功能验收矩阵
+
+状态区分源码/合同、真实运行和最终候选验收。历史通过保留其提交与输入范围；不能覆盖后续未验收改动。原业务逐项映射继续保存在[功能账本](FUSION-COVERAGE.md)。
+
+| 计划项 | 已有证据 | 剩余验收 |
 | --- | --- | --- |
-| 隐藏聊天页面后，后台仍组合编码 Agent、终端、子智能体、计划任务、网页工具等 | 在 YouDub patch 中新增 66 个明确停用项；覆盖四个单独加载的 Agent 预设。未修改上游 bundle | 官方 parser/composeEntries 回归；实际 PluginManager 读回所有启用条目均 active，无 pending/failed |
-| 官方模型服务的默认选择仍指向不存在的 DeepSeek 预置路由 | 产品默认 provider/model 设为空；用户保存的模型仍由官方设置层覆盖 | 干净 profile 组合断言；实际模型页面仅显示用户已有的提供商 |
-| YouDub Electron 主入口仍创建 DeepSeek PlatformView、账号 session 回调、用量/充值 IPC | 删除这组产品层接线及账号 preload 的输出复制 | 桌面构建输入检查禁止 platform-view；官方预加载和窗口代码原样校验 |
-| 四项测试仍期待旧产品行为 | 默认模板数改为 3；侧栏不再期待语言控件；返回相同资源需求复用已完成检查 | 完整领域/前端回归通过，保留各测试原有状态、并发与错误断言 |
+| A1 独立启动与来源 | 官方源码构建、独立 Host/profile、原件和 fork 来源核验通过。[来源](evidence/refactor-pruned-notices.json) | 全部改造后的固定候选重新启动；Windows |
+| A2 首启语言与目录 | 日语原生目录选择、确认前不下载、退出与重启读回通过。[记录](REFACTOR-RESEARCH.md#p3p4-首启目录选择与密钥展示2026-10-22) | 合并并行资源改动后的最终读回 |
+| A3 环境与四模型 | 四模型/依赖门控、私有安装、旧 Whisper-only 标记重新检查通过；暂停恢复已有历史实测。[门控测试](../test/setup-onboarding.test.mjs)、[暂停恢复](evidence/model-pause-resume.json) | 当前资源界面的暂停、继续、失败重试及旧目录复用实机验收 |
+| A4 模型与凭据 | 页面保存、自定义 URL、重启、API 字段内掩码；原生草稿退出保护通过。[记录](REFACTOR-RESEARCH.md#p4-模型草稿保护2026-10-22) | 最终界面与凭据边界回归 |
+| A5 翻译上限与错误 | 原生外部调用和协议测试验证 65,535；低上限拒绝，错误不降额重试。[媒体记录](evidence/refactor-native-zoo-review.json)、[合同](evidence/refactor-experimental-contracts-prune.json) | 最终候选必要回归 |
+| A6 首屏与窗口 | 原 Hero、主题、侧栏、设置和原生导出已有截图与操作证据。[前端映射](../FRONTEND-MAPPING.md) | 合并并行控件改动后逐页对照、焦点、键盘、缩放与动效 |
+| A7 语言 | 中英日、日语原生设置、工作流本地化及导入导出通过。[语言规则](LOCALIZATION.md)、[原生记录](REFACTOR-RESEARCH.md#p4p7内置工作流多语言与原生文件往返2026-10-22) | 第四语言注册及最终候选布局检查 |
+| A8 本地完整媒体 | zoo 的 Demucs、Whisper、翻译、VoxCPM2、Qwen、混音/导出九节点成功；原生播放 18.9 秒。[证据](evidence/refactor-native-zoo-review.json) | 听感和音画同步质量；完整最终候选 |
+| A9 YouTube 下载与代理 | 原生填写 zoo URL/7897，十节点完成并导出。[历史任务](evidence/source-native-youtube-download.json) | 本次最终候选网络与下载回归，历史结果不重复计为新通过 |
+| A10 B 站下载 | 节点与代理端口合同保留。[代理合同](evidence/download-node-proxy-contract.json) | 真实公网输入尚未通过 |
+| A11 人工审核与汇合 | 两输入校对、保存后保持等待、确认再导出及原生文件保存通过。[扩展证据](evidence/refactor-extension-lifecycle.json) | 最终候选的相关回归 |
+| A12 自动继续与持久化 | 默认模板去重；节点 autoContinue 控制审核；暂停退出、重启、确认通过。[九节点](evidence/refactor-native-zoo-review.json)、[模板去重](evidence/refactor-extension-lifecycle.json) | 合并后的最终候选 |
+| A13 重跑与冲突 | 修订冲突、结果复用及必要审核保留；原始任务与隔离副本分别读回。[业务映射](FUSION-COVERAGE.md)、[原生任务](evidence/refactor-native-zoo-review.json) | 最新私有目录/历史数据兼容 |
+| A14 取消、远端与退出 | 运行中原生退出取消保留任务，持久审核可退出；排队/远端未知状态合同及原错误传播已有回归。[活动测试](../test/desktop-activity.test.mjs)、[退出测试](../test/desktop-unload.test.mjs) | 资源下载、远端等待、排队组合的最终原生退出验收 |
+| A15 工作流与任务管理 | 创建/修改、模板副本、原生导入导出、重启及模板去重通过。[前端映射](../FRONTEND-MAPPING.md) | 全部列表过滤、删除和节点编辑分支 |
+| A16 字幕与播放 | 原生字幕导出字节一致；播放器完整播放、产物 Range 和媒体探测有证据。[原生任务](evidence/refactor-native-zoo-review.json) | 正在并行修改的媒体拖动修复及同步播放验收 |
+| A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | Vox 预设音色、设备与其他输入组合 |
+| A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
+| A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；任务原件保留，profile 迁移有测试。[profile 测试](../test/profile.test.mjs)、[Host](../src/host.mjs) | 最新私有路径和历史数据副本的整体验收 |
+| A20 构建与平台 | macOS 干净 CI 持续执行；上一轮 GUI 8,744 项通过，声明失败已修正。[CI 失败与修正](evidence/refactor-pruned-notices.json) | 最新干净 CI、Windows 源码与原生验收 |
 
-修改位置：[产品组合](../cordis.patch.yml)、[桌面入口](../src/desktop-product.ts)、[profile 回归](../test/profile.test.mjs)。
+## 尚需实施的收尾
 
-## 保留的 Harness 服务为何必要
+1. 清理仍留在活动源码中的旧 base/headless、Office、Agent 工具等产品模块；先迁移生成器和通用测试消费者，保留 Harness 通用框架与许可。
+2. 收拢并行界面、资源及媒体拖动改动，形成固定候选，完成上表未通过的真实操作和输入验收。
+3. 补齐启动性能/体积的条件化记录、私有路径与历史数据兼容，以及 Windows 验收。
+4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。
 
-| 基础能力 | 官方实现与使用者 |
-| --- | --- |
-| 启动、插件与配置 | app-boot、Cordis Loader、PluginManager、config-editor/settings；产品只提供 patch 和业务插件 |
-| 桌面窗口和通信 | DesktopHostProcess、DesktopBackendController、官方 preload、协议转发、原生目录选择、退出保护、快捷键；createWindow/Windows 菜单复制块逐字校验 |
-| 权限边界 | 官方 Connection / Credentials / RemoteAccess / fs-sandbox，以及原有桌面媒体权限处理。即使 YouDub 没有录音入口，权限检查仍须保留 |
-| 前端框架 | 官方 Renderer、Slots、Layout、Store、locale、theme、primitives；原 YouDub 页面通过业务插槽和控件属性适配接入 |
-| 模型管理 | 官方 ModelsSection、configForms、Credentials、llm、llm-pi-ai；翻译继续经过官方 LLM，输出上限至少 65,535 |
-| 官方设置的依赖 | ModelsSection 要求 remote.session；SessionController 又要求 session、agent registry、attachments、workspace registry 等。保留这些依赖，没有启动 coding agent-loop、tools 或聊天界面 |
-| 媒体执行 | 官方 Subprocess 和 Jobs 管理进程、取消和运行状态；YouDub 保留图调度、SQLite 事务、文件产物、Python 协议、媒体算法 |
-| 插件管理 | 复用官方 PluginManagerPage/Controller，产品组合展示 YouDub 内置能力和已安装扩展；尚无已发布的 YouDub 在线市场服务 |
-
-旧 HTTP/Auth、旧 Cordis 根、旧 React 根、旧扩展加载器、旧模型设置页面未进入融合产品的活动构建输入；这些源码仍待依赖与测试迁移后清理。2026-10-22 已移除 Swift/C# 旧壳、专属构建与发行 CI，历史实现保存在 Git 和初始基线。`npm start` / `npm run dev` 进入融合应用，`build:desktop` 与 `build:youdub` 使用同一 Electron 开发构建。当前安装与更新交付能力仍未验收。
-
-## YouDub 覆盖与当前验收范围
-
-详细端点/元素映射沿用 [功能账本](FUSION-COVERAGE.md) 和 [前端映射](../FRONTEND-MAPPING.md)，本轮补充证据见 [审计读回](evidence/code-audit.json)。
-
-同一 Host 的 IAB 插件页面：[实际截图](evidence/code-audit-plugins.png)。
-
-| 能力 | 本轮核对 |
-| --- | --- |
-| 视频/链接导入、下载节点与代理端口 | 源合同及回归通过；历史 YouTube zoo 的十节点真实任务和四个产物仍可读取；本轮未重复远端下载 |
-| Demucs、Whisper、分句、翻译、VoxCPM、Qwen 对齐、混音与导出 | 11 个原媒体操作保留；实际四模型 ready；历史完整媒体链证据保留。本轮 Python 525 项通过，没有用测试通过代替所有输入质量验收 |
-| 字幕文件导入 | 当前真实 Host 上传双 SRT 与 zoo 视频，经原 Python worker 导入、人工确认、FFmpeg 导出成功；未新增算法实现 |
-| 工作流管理 | 当前 Host 创建/读取/修改/删除、旧修订冲突返回 409；默认三模板，人工确认仍由节点 autoContinue 控制 |
-| 任务状态机 | 当前 Host 的审核暂停、批准及动作回执、取消后拒绝继续、错误 SRT 的显式 retry 均通过 |
-| 中间结果复用 | 当前 Host rerun-preview / rerun 复用结果；需要人工确认的节点仍要求新任务确认；删除本轮源测试任务后派生结果可读 |
-| 任务历史与媒体文件 | 历史完整 YouTube 任务仍 succeeded，MP4/WAV/双 SRT 的 Range 请求均 206；原任务未修改 |
-| 首启与资源 | 回归验证未完成四模型/依赖不能放行；当前私有环境四模型均 ready |
-| UI 与多语言 | 当前 Host 的工作台、日语通用/模型设置、官方插件管理实际打开；无 DeepSeek 账号、充值、聊天、代码工作区入口；模型仅显示已有用户配置 |
-| 扩展 | 官方隔离 profile 安装/卸载和链接保持回归通过；历史 JS Host/Python/Client 插件运行证据保留；本轮未重新安装业务插件到用户 profile |
-
-本轮实测创建的工作流及任务已清理，未删除历史业务任务。测试脚本经历两次图校验拒绝（缺少最终产物、关闭字幕后未提供音轨），以及一次“复用结果仍需人工确认”的预期修正；这些都来自真实合同，未通过改业务代码绕过。最终验收脚本按正确合同运行完成。
-
-## 尚未通过的完整产品验收
-
-1. **安装与更新：实现/发行缺口。** 当前开发壳没有 YouDub 更新源。用户要求暂不打包，本轮保持该边界；不能称为已完成安装、自动更新或可分发自包含应用。开发运行依赖本仓库的源码构建及官方 runtime payload。
-2. **原生交互：本轮受阻。** Mac 锁屏，原生保存/选择文件框、窗口操作、部分画布拖拽与菜单焦点未重新验收。IAB 验证只证明同一 Host 的前端可用。
-3. **真实输入覆盖：仍待实测。** B 站公网下载、Vox 预设音色、所有媒体输入与语言/平台组合没有完整实机覆盖。保留既有源测试和成功样本，不能扩大其结论。
-4. **官方模型表单草稿：公开能力限制。** 官方组件未向公开 Store/子插槽暴露 editing/draft；当前有 pending 操作保护，未实现未保存草稿关闭确认。保持上游原样，未做 DOM 探测补丁。
-5. **插件分发：发布缺口。** 具备官方安装/启停/卸载机制和 YouDub 业务扩展接口；在线 YouDub 市场目录与发行源尚未建立。旧 `package.youdub` 插件需要转换为官方 dsh bundle 声明。
-
-## 验证结果
-
-- Harness 接入：57 passed；最终四预设停用后 profile 专项 10 passed（包含在同一测试组，不重复计数）。
-- 领域/API/图调度：172 passed，1 skipped（Windows 子进程取消，当前 macOS）。
-- 前端：245 passed / 36 files。
-- Python：525 passed。
-- 根与 Web 类型检查通过；产品构建、活动模块检查通过。
-- 官方完整性：9,817 个 vendor 源文件、362 个源码运行时包、360 个 npm 基线包、原 Desktop 6,438 个文件与保存副本、YouDub 初始快照及原生复制块校验通过。
-- 最终运行 inventory：52 个启用条目，全部 active；四个本地模型 ready。数量包含官方 include 入口，不是 YouDub 功能数量。
-
-本报告是代码审计及明确范围内的回归结论。剩余验收项保留开放状态。
+本轮交付范围为源码开发版。安装包、签名、发布、自动更新服务和在线插件市场继续按用户要求排除；已有环境/模型准备界面属于开发版功能。[发行边界](YOUDUB-DESKTOP-REFACTOR-PLAN.md#10-后续发行边界)
