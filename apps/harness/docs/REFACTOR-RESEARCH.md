@@ -538,3 +538,9 @@ fecdf978 的 Windows 来源校验、框架/产品构建和组合隔离已通过�
 ### Windows SDK 目标回退的真实失败
 
 3142538f 在 Windows 构建、桌面进程与两种实际 Host 启动通过后，profile 回归有 29 项通过、1 项失败。前两项分隔符断言修正后，原真实路径检查继续发现卸载另一个插件会恢复 old-youdub-plugin，不能将它归为测试显示差异。profile 初始化现将 pnpm link specifier 写为平台无关的斜杠路径；保留安装与移除原操作，并在移除前额外解析 lockfile version 的真实目标。本地 7 项回归通过，Windows 修复效果待下一次 CI 确认。
+
+### SDK 回退根因：已安装锁文件未同步
+
+2a275a64 的 Windows 检查继续在卸载后真实路径断言失败，路径规范化并未修复行为。读取隔离测试 profile 发现，根 pnpm-lock.yaml 已指向当前 SDK，node_modules/.pnpm/lock.yaml 仍指向旧 SDK。新增两种状态回归后，本机也稳定出现 6 项通过、2 项失败。
+
+profile 准备现通过官方 PluginManager 执行离线安装，同步根锁和已安装锁；覆盖根锁已更新但安装记录仍旧的既有 profile。明确允许本次预期锁更新，两个锁核验通过才继续。原用户扩展、配置保留与卸载后 realpath 断言均保留。CI=true 下 8 项 profile 回归及两种实际 Electron Host 启动通过。Windows 实际修复效果仍待下一次远程检查；不将本机结果替代平台验收。

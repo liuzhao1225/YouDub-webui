@@ -153,27 +153,37 @@ for (const [index, name] of required.entries()) {
   }
 }
 
-test('official package removal keeps the source SDK after migrating a stale dependency lock', async t => {
-  const { profile, plugin, runtime } = await temporaryProfile(t);
-  const oldPlugin = join(runtime, 'old-youdub-plugin');
-  await copyBundle(here, oldPlugin);
-  const operation = async args => {
-    const result = await runPluginCommand({ profile: 'youdub', dir: profile, installAnchor: join(runtime, 'package.json'), cwd: runtime }, args,
-      { ...packageManager, execution: 'service', outputBytes: 32_768, activateNewBundles: false });
-    assert.equal(result.exitCode, 0, result.output);
-  };
-  await operation(['add', oldPlugin, fixture, '--offline']);
-  assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(oldPlugin));
-  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
-  assert.equal((await readManifest(profile)).dependencies[fixtureName].split(sep).join('/'), `link:${fixture.split(sep).join('/')}`);
-  const { parse } = sourceRequire('yaml');
-  const lock = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8'));
-  assert.equal(lock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier.split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
-  const lockedVersion = lock.importers['.'].dependencies['@youdub/harness-subtitles'].version;
-  assert(lockedVersion.startsWith('link:'), 'The source SDK must remain a local dependency');
-  assert.equal(await realpath(resolve(profile, lockedVersion.slice('link:'.length))), await realpath(plugin));
-  await operation(['remove', fixtureName, '--config.offline=true']);
-  assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(plugin));
-  assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'].split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
-  assert.equal((await readManifest(profile)).dependencies[fixtureName], undefined);
-});
+for (const staleLock of ['root-and-installed', 'installed-only']) {
+  test(`official package removal keeps the source SDK after migrating a stale ${staleLock} dependency lock`, async t => {
+    const { profile, plugin, runtime } = await temporaryProfile(t);
+    const oldPlugin = join(runtime, 'old-youdub-plugin');
+    await copyBundle(here, oldPlugin);
+    const operation = async args => {
+      const result = await runPluginCommand({ profile: 'youdub', dir: profile, installAnchor: join(runtime, 'package.json'), cwd: runtime }, args,
+        { ...packageManager, execution: 'service', outputBytes: 32_768, activateNewBundles: false });
+      assert.equal(result.exitCode, 0, result.output);
+    };
+    await operation(['add', oldPlugin, fixture, '--offline']);
+    assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(oldPlugin));
+    if (staleLock === 'installed-only') {
+      const manifest = await readManifest(profile);
+      manifest.dependencies['@youdub/harness-subtitles'] = `link:${plugin.split(sep).join('/')}`;
+      await saveManifest(profile, manifest);
+      await operation(['install', '--lockfile-only', '--no-frozen-lockfile', '--offline', '--ignore-scripts']);
+    }
+    await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+    assert.equal((await readManifest(profile)).dependencies[fixtureName].split(sep).join('/'), `link:${fixture.split(sep).join('/')}`);
+    const { parse } = sourceRequire('yaml');
+    const lock = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8'));
+    assert.equal(lock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier.split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
+    const lockedVersion = lock.importers['.'].dependencies['@youdub/harness-subtitles'].version;
+    assert(lockedVersion.startsWith('link:'), 'The source SDK must remain a local dependency');
+    assert.equal(await realpath(resolve(profile, lockedVersion.slice('link:'.length))), await realpath(plugin));
+    const installedLock = parse(await readFile(join(profile, 'node_modules/.pnpm/lock.yaml'), 'utf8'));
+    assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier, `link:${plugin.split(sep).join('/')}`);
+    await operation(['remove', fixtureName, '--config.offline=true']);
+    assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(plugin));
+    assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'].split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);
+    assert.equal((await readManifest(profile)).dependencies[fixtureName], undefined);
+  });
+}

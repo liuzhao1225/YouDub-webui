@@ -24,27 +24,29 @@ export async function prepareYouDubProfile(profile, pluginRoot, runtimeProject, 
   } else if (bundles.some((name, index) => configuredBundles[index] !== name)) {
     throw new Error(`Unexpected YouDub profile composition: ${manifestPath}`);
   }
-  // pnpm link specifiers use portable paths, including on Windows. Native
-  // backslashes can leave the old lockfile target active during a later remove.
+  // pnpm link specifiers use portable paths, including on Windows.
   const dependency = `link:${pluginRoot.split(sep).join('/')}`;
   if (manifest.dependencies?.['@youdub/harness-subtitles'] !== dependency) {
     manifest.dependencies = { ...manifest.dependencies, '@youdub/harness-subtitles': dependency };
     await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
   }
   const { parse } = runtimeRequire('yaml');
-  let lock;
-  try { lock = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8')); }
-  catch (error) { if (error.code !== 'ENOENT') throw error; }
-  if (lock?.importers?.['.']?.dependencies?.['@youdub/harness-subtitles']?.specifier !== dependency) {
+  const lockPaths = [join(profile, 'pnpm-lock.yaml'), join(profile, 'node_modules/.pnpm/lock.yaml')];
+  const readSdkSpecifier = async path => {
+    try { return parse(await readFile(path, 'utf8'))?.importers?.['.']?.dependencies?.['@youdub/harness-subtitles']?.specifier; }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+  };
+  if ((await Promise.all(lockPaths.map(readSdkSpecifier))).some(specifier => specifier !== dependency)) {
     if (!packageManager?.command) throw new Error('YouDub profile preparation requires its explicit package manager.');
     const { runPluginCommand } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-plugin-manager/operations')));
-    // pnpm remove can otherwise restore an untouched dependency from its stale
-    // lock entry even after package.json and node_modules point to the new SDK.
+    // Synchronize both wanted and installed locks. Updating only pnpm-lock.yaml
+    // leaves pnpm remove able to restore the previously installed SDK target.
     const result = await runPluginCommand({ profile: 'youdub', dir: profile, installAnchor: join(runtimeProject, 'package.json'), cwd: runtimeProject },
-      ['install', '--lockfile-only', '--offline', '--ignore-scripts'], { ...packageManager, execution: 'service', outputBytes: 32_768, activateNewBundles: false });
+      ['install', '--no-frozen-lockfile', '--offline', '--ignore-scripts'], { ...packageManager, execution: 'service', outputBytes: 32_768, activateNewBundles: false });
     if (result.exitCode !== 0 || result.timedOut) throw new Error(`YouDub profile dependency synchronization failed: ${result.output}\n${result.logPath}`);
-    const saved = parse(await readFile(join(profile, 'pnpm-lock.yaml'), 'utf8'));
-    if (saved?.importers?.['.']?.dependencies?.['@youdub/harness-subtitles']?.specifier !== dependency) throw new Error(`YouDub SDK dependency was not synchronized: ${manifestPath}`);
+    for (const path of lockPaths) {
+      if (await readSdkSpecifier(path) !== dependency) throw new Error(`YouDub SDK dependency was not synchronized: ${path}`);
+    }
   }
   const layout = join(runtimeProject, 'node_modules/@deepseek-ai/dsh-client-ui-layout');
   for (const [name, target] of [['@youdub/harness-subtitles', pluginRoot], ['@deepseek-ai/dsh-client-ui-layout', layout]]) {
