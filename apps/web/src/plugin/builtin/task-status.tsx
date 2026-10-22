@@ -2,7 +2,6 @@ import { Progress } from '@/components/ui/progress'
 import type { MessageKey, Text } from '@/locales'
 import { Tag } from '@/components/ui/tag'
 import { useI18n, useText } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
 import { text, type TaskStatus, type TaskSummary, type TaskView } from '../sdk'
 
 export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'paused', 'cancelling'])
