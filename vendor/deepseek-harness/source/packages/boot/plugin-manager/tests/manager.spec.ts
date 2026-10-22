@@ -40,6 +40,7 @@ beforeAll(() => { restoreGitCommandLineConfig = isolateGitCommandLineConfig() })
 afterAll(() => { restoreGitCommandLineConfig() })
 
 const testPackageManager = {
+  env: {},
   command: process.execPath,
   args: ['--expose-internals', fileURLToPath(new URL('./bin/pnpm.mjs', import.meta.resolve('pnpm')))],
 }
@@ -77,7 +78,7 @@ async function fixture(reload: 'live' | 'startup' = 'live', overlay = false, pre
   const overlays: PatchOptions[] = overlay ? [{ id: 'managed', disabled: true }] : []
   const profile: ProfileContext = {
     name: 'test',
-    packageManager: packageManager ?? (config.pnpmCommand ? undefined : testPackageManager),
+    ...(packageManager !== undefined ? { packageManager } : config.pnpmCommand ? {} : { packageManager: testPackageManager }),
     startedBundles: loadProfileDirectory('test', dir, anchor).layers.map(layer => layer.packageName),
     dir, patchPath: join(dir, 'cordis.patch.yml'), installAnchor: anchor, cwd: home, home,
     overlays, telemetryDisabledEnv: undefined,

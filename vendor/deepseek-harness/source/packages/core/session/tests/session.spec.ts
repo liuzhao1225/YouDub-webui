@@ -17,6 +17,8 @@ import type { CreateSessionOptions, SessionEventType, SessionHeader, SessionSurf
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
+    // Historic fixture payload remains supported after its producer was retired.
+    'agent-instructions': { kind: 'agent-instructions'; form: 'instructions'; changes: [] }
     'test': { kind: 'test' } & ContextFormed
     'watcher': { kind: 'watcher' } & ContextFormed
   }

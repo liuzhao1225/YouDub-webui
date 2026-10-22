@@ -39,8 +39,6 @@ const vendoredPackages = new Set([
   '@deepseek-ai/cordis-plugin-include',
   '@deepseek-ai/cordis-plugin-group',
   '@deepseek-ai/cordis-plugin-timer',
-  '@deepseek-ai/cordis-plugin-hmr',
-  '@deepseek-ai/cordis-plugin-logger-console',
 ])
 const publicNativePackages = new Set([
   '@deepseek-ai/node-addon-system',
@@ -71,12 +69,10 @@ const localArtifactDirs = new Set(['node_modules'])
 const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh': ['lib/*.js', 'lib/types/*.d.ts'],
   '@deepseek-ai/dsh-desktop-host': [
-    'lib/index.js', 'lib/cli.js',
+    'lib/index.js',
   ],
-  // Sourcemaps stay out by payload policy; the worker-preview surface
-  // (dist/preview.html and dist/preview/) backs opt-in experimental
-  // packages and is not published.
-  '@deepseek-ai/dsh-web-frontend': ['dist', '!dist/**/*.map', '!dist/preview.html', '!dist/preview'],
+  // The retired worker-preview entry is absent; source maps remain excluded.
+  '@deepseek-ai/dsh-web-frontend': ['dist', '!dist/**/*.map'],
 }
 
 /** The subset of package.json fields this constraint check cares about. */

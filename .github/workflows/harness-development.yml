@@ -61,6 +61,9 @@ jobs:
           npm run build:youdub
           npm --prefix apps/harness run check:composition
           npm run check:framework-isolation
+      - name: 检查框架前后端聚合类型
+        working-directory: .cache/harness/source-build
+        run: node node_modules/tsx/dist/cli.mjs scripts/build.ts --scope check
       - name: 检查裁剪后的第三方声明
         working-directory: .cache/harness/source-build
         run: node node_modules/vitest/vitest.mjs run scripts/gen-third-party-notices.spec.ts

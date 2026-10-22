@@ -1035,15 +1035,6 @@ function loadWorkflow(path: string): Record<string, unknown> {
   return workflow
 }
 
-function nodeStepSource(job: Record<string, unknown>, id: string): string {
-  if (!Array.isArray(job.steps)) throw new Error('Node workflow job must define steps')
-  const step: unknown = job.steps.find(value => isRecord(value) && value.id === id)
-  if (!isRecord(step) || typeof step.run !== 'string') throw new Error(`Missing Node workflow step: ${id}`)
-  const source = step.run.split("<<'JS'\n")[1]?.split('\nJS')[0]?.replace(/^import .*;\n/gm, '')
-  if (source === undefined) throw new Error(`Workflow step ${id} must contain an executable Node script`)
-  return source
-}
-
 function workflowEvent(workflow: Record<string, unknown>, event: string): Record<string, unknown> {
   if (!isRecord(workflow.on) || !isRecord(workflow.on[event])) {
     throw new TypeError(`workflow must define the ${event} event`)

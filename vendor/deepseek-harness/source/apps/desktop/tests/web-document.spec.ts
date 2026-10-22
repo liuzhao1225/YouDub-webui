@@ -94,7 +94,7 @@ it('preserves media byte ranges and uncompressed lengths for native seeking', as
   } }))
   vi.stubGlobal('fetch', fetch)
   const response = await forwardWebRequest(new Request('dsh-app://app/api/audio', { headers: { range: 'bytes=10-14' } }), 'http://127.0.0.1:1234/', 'session=owned')
-  expect(new Headers(fetch.mock.calls[0][1].headers).get('range')).toBe('bytes=10-14')
+  expect(new Headers(fetch.mock.calls[0]![1].headers).get('range')).toBe('bytes=10-14')
   expect(response.status).toBe(206)
   expect(response.headers.get('content-length')).toBe('5')
   expect(response.headers.get('content-range')).toBe('bytes 10-14/100')

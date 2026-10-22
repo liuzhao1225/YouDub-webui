@@ -149,17 +149,17 @@ it('honors the active section guard for navigation, close, and Escape, then rele
   let allowed = false
   const guard = vi.fn(() => allowed)
   const dispose = owner.registerLeaveGuard!(guard)
-  fireEvent.click(screen.getByRole('button', { name: 'Models', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Models' }))
   expect(screen.getByTestId('section-general')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }))
   fireEvent.keyDown(document, { key: 'Escape' })
   expect(screen.getByRole('dialog')).toBeTruthy()
   expect(guard).toHaveBeenCalledTimes(3)
   allowed = true
-  fireEvent.click(screen.getByRole('button', { name: 'Models', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Models' }))
   expect(screen.getByTestId('section-models')).toBeTruthy()
   dispose()
-  fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }))
   expect(screen.queryByRole('dialog')).toBeNull()
 })
 

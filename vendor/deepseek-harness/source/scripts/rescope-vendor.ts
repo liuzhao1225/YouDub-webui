@@ -50,8 +50,6 @@ const RENAMES: readonly Rename[] = [
   { directory: 'include', upstream: '@cordisjs/plugin-include', scoped: '@deepseek-ai/cordis-plugin-include' },
   { directory: 'group', upstream: '@cordisjs/plugin-group', scoped: '@deepseek-ai/cordis-plugin-group' },
   { directory: 'timer', upstream: '@cordisjs/plugin-timer', scoped: '@deepseek-ai/cordis-plugin-timer' },
-  { directory: 'hmr', upstream: '@cordisjs/plugin-hmr', scoped: '@deepseek-ai/cordis-plugin-hmr' },
-  { directory: 'logger-console', upstream: '@cordisjs/plugin-logger-console', scoped: '@deepseek-ai/cordis-plugin-logger-console' },
 ]
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.mjs', '.cjs', '.tpl', '.json', '.yml', '.yaml', '.md'] as const
@@ -85,30 +83,18 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'packages/boot/app-boot/tests/config-schema.spec.ts', upstream: ['schemastery'] },
   // Asserts the vendored-manifest table, which gains an upstream-name column.
   { file: 'scripts/gen-third-party-notices.spec.ts', upstream: RENAMES.map(rename => rename.upstream) },
-  // `cordis` is also an agent-preset id, so in these files the bare name is
-  // product data, not a package reference. Renaming it changed which preset
-  // the creator flow stages and which id the roster reports.
-  { file: 'apps/cli/tests/web-agent-presets.e2e.ts', upstream: ['cordis'] },
-  { file: 'apps/cli/tests/profiles/web/tests/fixtures/creator-plugin-manager.mjs', upstream: ['cordis'] },
-  { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
   { file: 'packages/preset/agent-preset-registry/tests/session.spec.ts', upstream: ['cordis'] },
-  // The preset-roster loop names the `cordis` preset id, not a package.
-  { file: 'apps/cli/tests/windows-shell.spec.ts', upstream: ['cordis'] },
   // GROUP_ORDER holds `packages/<group>/` directory names, not package names.
   { file: 'scripts/gen-module-graph.ts', upstream: ['cordis'] },
   { file: 'scripts/gen-doc-graphs.ts', upstream: ['cordis'] },
-  // `cordis/*` is the extensions event domain, not a package subpath. The
-  // generated catalogs and every producer/consumer must preserve that wire id.
-  { file: 'docs/event-producer-consumer.md', upstream: ['cordis'] },
-  { file: 'docs/event-producer-consumer.zh.md', upstream: ['cordis'] },
-  { file: 'docs/subsystems/extensions.md', upstream: ['cordis'] },
-  { file: 'docs/subsystems/extensions.zh.md', upstream: ['cordis'] },
   { file: 'packages/api/remotes/src/remote-events.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/src/index.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/src/inspect-registry.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/src/types.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/tests/helpers.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/tests/runner.spec.ts', upstream: ['cordis'] },
+  // These test strings are event names, matching the existing registry producer.
+  { file: 'packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/cordis-host-runner/tests/versioning.spec.ts', upstream: ['cordis'] },
   // `cordis/tree` is an Inspector observation topic, not a package subpath.
   { file: 'scripts/gen-cordis-catalog.ts', upstream: ['cordis'] },
@@ -124,7 +110,6 @@ interface PostCondition {
 
 const POSTCONDITIONS: readonly PostCondition[] = [
   { file: 'vendor/cordis/package.json', text: '"name": "@deepseek-ai/cordis"', count: 1 },
-  { file: 'vendor/hmr/package.json', text: '"name": "@deepseek-ai/cordis-plugin-hmr"', count: 1 },
   { file: 'scripts/cordis-walk.ts', text: '@deepseek-ai\\/cordis', count: 1 },
   { file: 'scripts/cordis-walk.ts', text: '!== \'@deepseek-ai/cordis\'', count: 1 },
   { file: 'packages/typert/generator/src/analyzer.ts', text: '!== \'@deepseek-ai/cordis\'', count: 2 },
@@ -214,14 +199,6 @@ const EXACT_EDITS: readonly ExactEdit[] = [
     expect: 1,
   },
   {
-    // The root contract claimed vendored packages keep their upstream names.
-    id: 'root-agents-vendored-name-contract',
-    file: 'AGENTS.md',
-    find: 'vendored packages keep upstream names and are `private: true`. `cordis` is a peerDependency (+ dev) of every harness package.',
-    replace: 'vendor is [rescoped](docs/rescope.md) and `private: true`. Harness packages declare `@deepseek-ai/cordis` in `peerDependencies`/`devDependencies`.',
-    expect: 1,
-  },
-  {
     // The client purity gate reads `@deepseek-ai/` as "another plugin package".
     // The rescope moves the vendored framework and its libraries into that
     // namespace, where the gate would reject the library imports client
@@ -246,44 +223,6 @@ const VENDORED_LIBRARY = /^@deepseek-ai\\/(cosmokit|schemastery)(\\/|$)/
     find: '        if (INLINE_SAFE.test(source) || GENERATED_REMOTE.test(source)) return null // wire contribution: inline is the point',
     replace: `        if (VENDORED_LIBRARY.test(source)) return null // vendored library: inline, no shared identity
         if (INLINE_SAFE.test(source) || GENERATED_REMOTE.test(source)) return null // wire contribution: inline is the point`,
-    expect: 1,
-  },
-  {
-    // The step-1 file tree told the reader to keep the upstream name, one
-    // paragraph above the invariant that says to rescope it.
-    id: 'vendoring-cookbook-tree-comment',
-    file: 'docs/cookbook/adding-a-vendored-package.md',
-    find: '  package.json     # from upstream; set "private": true, keep name/exports/type',
-    replace: '  package.json     # from upstream; rescope the name, keep exports/type (publishable release member, no private flag)',
-    expect: 1,
-  },
-  {
-    id: 'vendoring-cookbook-tree-comment-zh',
-    file: 'docs/cookbook/adding-a-vendored-package.zh.md',
-    find: '  package.json     # from upstream; set "private": true, keep name/exports/type',
-    replace: '  package.json     # from upstream; rescope the name, keep exports/type (publishable release member, no private flag)',
-    expect: 1,
-  },
-  {
-    // The checklist told the next vendoring to keep upstream's name.
-    id: 'vendoring-cookbook-name-invariant',
-    file: 'docs/cookbook/adding-a-vendored-package.md',
-    find: "keep upstream's `name`/`version`/`exports`/`type`",
-    replace: "rescope the `name` ([mapping](../rescope.md)) while keeping upstream's `exports`/`type`",
-    expect: 1,
-  },
-  {
-    id: 'vendoring-cookbook-name-invariant-zh',
-    file: 'docs/cookbook/adding-a-vendored-package.zh.md',
-    find: '保留上游的 `name`/`version`/`exports`/`type`',
-    replace: '改写 `name` 的 scope（[映射](../rescope.zh.md)），保留上游的 `exports`/`type`',
-    expect: 1,
-  },
-  {
-    id: 'web-agent-presets-e2e-framework-import',
-    file: 'apps/cli/tests/web-agent-presets.e2e.ts',
-    find: "import { Context } from 'cordis'",
-    replace: "import { Context } from '@deepseek-ai/cordis'",
     expect: 1,
   },
   {

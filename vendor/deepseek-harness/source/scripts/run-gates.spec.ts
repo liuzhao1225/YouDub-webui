@@ -379,8 +379,8 @@ describe('gate graph validation', () => {
   it('schedules the longest documentation leaves before short checks', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
 
-    expect(ids.slice(0, 9)).toEqual([
-      'doc-typecheck', 'docs-site-build', 'doc-graphs', 'cli-help', 'markdown-links', 'type-equivalence',
+    expect(ids.slice(0, 8)).toEqual([
+      'doc-typecheck', 'doc-graphs', 'cli-help', 'markdown-links', 'type-equivalence',
       'cordis-catalog', 'mermaid', 'translation-pairing',
     ])
   })
@@ -482,7 +482,7 @@ describe('gate graph validation', () => {
   it('keeps native Windows coverage blocking and behind the complete build', () => {
     const complete = withPnpmEntrypoint(() => gatesForMode('ci-windows-complete'))
     const observational = withPnpmEntrypoint(() => gatesForMode('ci-windows-observational-ready'))
-      .filter(gate => gate.id !== 'docs-site-build' && gate.id !== 'electron-install')
+      .filter(gate => gate.id !== 'electron-install')
     const byId = new Map(complete.map(subject => [subject.id, subject]))
 
     expect(byId.get('coverage')?.allowFailure).not.toBe(true)
@@ -515,7 +515,7 @@ describe('gate graph validation', () => {
 
     const completeBuiltBin = withPnpmEntrypoint(() => gatesForMode('ci-windows-complete'))
       .find(gate => gate.id === 'built-bin-smoke')
-    expect(completeBuiltBin?.after).toContain('windows-site')
+    expect(completeBuiltBin?.after).not.toContain('windows-site')
     expect(completeBuiltBin?.after).not.toContain('docs-site-build')
   })
 
@@ -528,11 +528,11 @@ describe('gate graph validation', () => {
 
     expect(scripts['check:ci:windows-observational-ready']).toBe('tsx scripts/run-gates.ts ci-windows-observational-ready')
     expect(scripts).not.toHaveProperty('check:ci:windows-observational')
-    const completeOnly = new Set(['build', 'windows-site', 'native-system', 'coverage', 'coverage-exempt-heavy'])
+    const completeOnly = new Set(['build', 'native-system', 'coverage', 'coverage-exempt-heavy'])
     const shared = complete.filter(gate => !completeOnly.has(gate.id))
-    expect(ready.map(gate => gate.id).sort()).toEqual([...shared.map(gate => gate.id), 'docs-site-build'].sort())
+    expect(ready.map(gate => gate.id).sort()).toEqual(shared.map(gate => gate.id).sort())
     expect(ready.some(gate => gate.id === 'build')).toBe(false)
-    expect(ready.find(gate => gate.id === 'docs-site-build')?.displayCommand).toBe('pnpm run docs:build:mpa')
+    expect(ready.find(gate => gate.id === 'docs-site-build')).toBeUndefined()
     for (const diagnostic of shared) {
       expect(ready.find(gate => gate.id === diagnostic.id)).toMatchObject({
         command: diagnostic.command,

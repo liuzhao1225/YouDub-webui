@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22T20:19:12.293Z",
+  "baseCommit": "d3f0d516845b29798754335d75a27ccfe9676b6b",
+  "sourceSha256": "360f68435977bb4785d7d9b93da6e46e7313aea8c580b5ba321b89733c10fbee",
+  "packages": 209,
+  "sourceEntries": 5239,
+  "clientArtifacts": 235,
+  "scope": "Retire unused vendored HMR/logger packages; preserve the actual HMR and logging implementation. Repair aggregate test type boundaries and remove orphan tools of retired products.",
+  "removedPackages": [
+    "@deepseek-ai/cordis-plugin-hmr",
+    "@deepseek-ai/cordis-plugin-logger-console"
+  ],
+  "retainedImplementations": [
+    "packages/boot/hmr",
+    "packages/boot/app-boot/src/index.ts"
+  ],
+  "closure": {
+    "roots": 79,
+    "runtimeAndTypes": 141,
+    "withPackageTests": 203,
+    "outside": [
+      {
+        "name": "@deepseek-ai/dsh-typert-generator",
+        "path": "packages/typert/generator"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-darwin-arm64",
+        "path": "native/system/packages/darwin-arm64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-darwin-x64",
+        "path": "native/system/packages/darwin-x64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-linux-arm64",
+        "path": "native/system/packages/linux-arm64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-linux-x64",
+        "path": "native/system/packages/linux-x64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-workspace",
+        "path": "native/system"
+      }
+    ],
+    "retentionReasons": {
+      "generator": "Root Cordis catalog and documentation graph generators import the Typert generator.",
+      "native": "The native/system workspace owns addon builds/tests; entry dynamically resolves four platform addon optionalDependencies."
+    }
+  },
+  "lockfile": "Only removed the two workspace importers; third-party package/snapshot entries unchanged.",
+  "typecheck": {
+    "initialErrors": 289,
+    "rootCause": "Frontend-only settings fixture was included in the Host aggregate; stale declarations and orphan tests/tools still referenced retired products.",
+    "fix": "Mark client fixture with .client.ts; retain existing generic assertions with fixture-owned types, correct optional fields and remove unused retired hooks/tools.",
+    "passed": true,
+    "log": {
+      "path": "/tmp/youdub-final-aggregate-types.log",
+      "sha256": "a8ed44d38e2237f427bb30333e743cae964c4da8675d1f4a7fbe0757c023a2d2"
+    }
+  },
+  "verification": {
+    "framework": {
+      "gates": 7,
+      "log": {
+        "path": "/tmp/youdub-final-vendor-framework.log",
+        "sha256": "2cf44c5b14e59818b9799c1733f8b8eb7616326a9586acf138c0dfb913cab33d"
+      }
+    },
+    "product": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-final-vendor-product.log",
+        "sha256": "a8fc3f67bd4941aa081b138d9313cc02b1fd29b54d94a8a8caa47415e2d1f4fb"
+      }
+    },
+    "client": {
+      "files": 17,
+      "passed": 632,
+      "log": {
+        "path": "/tmp/youdub-final-aggregate-client-tests.log",
+        "sha256": "fede58397c3d7d90376113e02e84077dbbd14d4b5918db7850e1c08bd297259b"
+      }
+    },
+    "hmrAppBootAndMaintenance": {
+      "files": 33,
+      "passed": 6064,
+      "skipped": 1,
+      "scope": "Before aggregate fixture/gate maintenance; runtime implementation unchanged afterward.",
+      "log": {
+        "path": "/tmp/youdub-unused-vendor-tests.log",
+        "sha256": "fdcfb221ddc3a8aec803d049f0ed861187bf6815a1cea517641014e56be86e60"
+      }
+    },
+    "hostAndGateTests": {
+      "beforeLastAssertionFix": {
+        "passed": 646,
+        "failed": 1,
+        "log": {
+          "path": "/tmp/youdub-aggregate-host-tests.log",
+          "sha256": "0d37a979445f4f883a18ddd7cf5060c83886246aa1b3b35f5a8eec9e1ed8d484"
+        }
+      },
+      "fixedGateFile": {
+        "passed": 148,
+        "log": {
+          "path": "/tmp/youdub-final-run-gates.log",
+          "sha256": "55c16c7c07d2c5a7d19cc8322d158c84e9c77cecfb474920a2dcda5dcdc0d15e"
+        }
+      }
+    },
+    "actualHostAndProfile": {
+      "passed": 17,
+      "log": {
+        "path": "/tmp/youdub-final-vendor-host.log",
+        "sha256": "f04aa3a3a1fa1df516aa769756df6f36f3f5d34722ad2052737436398ba50dc1"
+      }
+    },
+    "isolation": {
+      "packages": 87,
+      "runtimeSources": 699,
+      "composedWebPlugins": 33,
+      "log": {
+        "path": "/tmp/youdub-final-vendor-isolation.log",
+        "sha256": "5ea7a52c26b7e20938b1ff870c185811e053eacd3e163e846706d500f91ffab5"
+      }
+    },
+    "composition": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-final-vendor-composition.log",
+        "sha256": "b4e3d8eb22026514a30ad8887ca1768da8e5f4dd3a14d9e24eafbea962ad823b"
+      }
+    },
+    "constraints": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-final-vendor-constraints.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "rescope": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-final-rescope.log",
+        "sha256": "358b18cae56b5cb13e42aa12ccc1f85672d56f7ee06afd08350afc8144dc9fa7"
+      }
+    },
+    "bilingualHmr": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-final-pairing-fixed.log",
+        "sha256": "f648fd21b531eda386e17f4ce365d5cff34872447cccc4aa4cb2b2e905022290"
+      }
+    },
+    "originalArchive": {
+      "passed": true,
+      "scope": "original-archive",
+      "commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+      "archive": "/Users/liuzhao/code/youdub-harness-baselines/20261021/harness-source-0.2.1-rc.2.tar.gz",
+      "selectedFiles": 9817,
+      "sha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85"
+    }
+  },
+  "failures": [
+    {
+      "reason": "Build started before the fork ledger update finished; correctly rejected a notice hash mismatch.",
+      "log": {
+        "path": "/tmp/youdub-unused-vendor-build.log",
+        "sha256": "4a075a7558cf62be9900ba63a73884f24efdad5c3def80f7bacf32cb89bbe3fb"
+      }
+    },
+    {
+      "reason": "Rescope checked unselected upstream AGENTS/docs; narrowed its retired explicit targets and preserved event-name exceptions.",
+      "log": {
+        "path": "/tmp/youdub-unused-vendor-rescope.log",
+        "sha256": "0d72c3efcdbfc7c38a837c5d7f55da346d64b100c5c3c7c13aa8853c66150e7a"
+      }
+    },
+    {
+      "reason": "Initial Host/client aggregate checks failed, including stale cross-face and retired-product fixtures.",
+      "log": {
+        "path": "/tmp/youdub-unused-vendor-build-check.log",
+        "sha256": "ee085b8125696177e5a9aa46677d4f5470266899161b79a7d877168fdfb2903a"
+      }
+    },
+    {
+      "reason": "After retiring a site gate, ordered-prefix test still sliced nine items instead of eight; original remaining order assertion preserved.",
+      "log": {
+        "path": "/tmp/youdub-aggregate-host-tests.log",
+        "sha256": "0d37a979445f4f883a18ddd7cf5060c83886246aa1b3b35f5a8eec9e1ed8d484"
+      }
+    },
+    {
+      "reason": "HMR bilingual link referred to an absent upstream document; both sides now link to retained ProfileReconciliation source.",
+      "log": {
+        "path": "/tmp/youdub-final-pairing.log",
+        "sha256": "68817671824ceb02556a7e9c97e77c522b8b006c20ba222b541bfb9cfe13bf7e"
+      }
+    }
+  ],
+  "previousCandidateCI": {
+    "commit": "d3f0d516845b29798754335d75a27ccfe9676b6b",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705",
+    "status": "success",
+    "jobs": [
+      {
+        "name": "macOS 源码、框架与业务回归",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705/job/120045309593",
+        "conclusion": "success"
+      },
+      {
+        "name": "Windows 源码、Host 与桌面合同",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705/job/120045309789",
+        "conclusion": "success"
+      }
+    ],
+    "log": {
+      "path": "/tmp/youdub-d3f0-ci.log",
+      "sha256": "5ad8284adac1205f416d4392d3be98f0d586d8f9cf37155a1339728c8571f485"
+    },
+    "macOS": {
+      "guiPassed": 8075,
+      "guiExpectedFailure": 1,
+      "guiSkipped": 1,
+      "profilePassed": 6687,
+      "profileSkipped": 1,
+      "domainPassed": 187,
+      "domainSkipped": 1,
+      "frontendPassed": 264,
+      "productPassed": 78,
+      "pythonPassed": 525
+    },
+    "windows": {
+      "desktopAndProcessesPassed": 567,
+      "skipped": 27,
+      "productContractsPassed": 32,
+      "actualHostModes": 2
+    }
+  },
+  "remoteVerification": "pending this candidate CI",
+  "limitations": [
+    "Native inventory still reported the Mac locked; no new native UI or file-dialog acceptance.",
+    "Browser evidence is separately recorded at d3f0d516 and does not establish animation or native window behavior.",
+    "No packaging, signing or release. Two Feishu documents remain pending until overall acceptance."
+  ]
+}

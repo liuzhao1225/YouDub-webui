@@ -811,10 +811,6 @@ function graphIndexLink(rel: string): string {
   return relative('docs', rel).replaceAll('\\', '/')
 }
 
-function linkFromDoc(docRel: string, targetRel: string): string {
-  return relative(dirname(docRel), targetRel).replaceAll('\\', '/')
-}
-
 function mermaidCode(value: string): string {
   return `<code>${value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>`
 }

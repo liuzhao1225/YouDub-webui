@@ -626,3 +626,19 @@ Windows 82abf8c3 的两阶段锁同步仍未修复卸载后的旧 SDK 回退。�
 ## CI：Node 24 的 Web Storage 参数修正（2026-10-23）
 
 8fea16f1 的 Windows CI 全部通过；macOS 的框架 GUI/profile 已通过，界面阶段的 Node 24.20 拒绝 `--no-webstorage`，Vitest 持续启动失败。读取实时日志确认后取消该作业，保留日志。官方 Node 24.20 二进制重现退出码 9；改用原支持的 `--no-experimental-webstorage` 后，Node 24.20 与 Node 26.7 的 38 文件/264 项界面测试均通过，配置 lint 通过。变更仅限测试启动参数，新 CI 待执行。见[失败与修正证据](evidence/refactor-webstorage-test-flag.json)。
+
+## 第 22–24 批双平台 CI 收口（2026-10-23）
+
+d3f0d516 的 [macOS 与 Windows 源码 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705) 均通过。macOS：504 个 GUI 文件、8,075 项通过；profile 6,687 项，业务界面 264 项、产品 78 项、Python 525 项。Windows：567 项桌面/进程、32 项产品合同和两种实际 Host 通过。原有跳过及预期失败仍单独记录；Node 24 的前次失败记录保留。[结构化结果](evidence/refactor-webstorage-test-flag.json)
+
+## P4 独立 Host 浏览器验收（2026-10-23）
+
+同一候选的独立 Host 首启模型页为空；未添加 DeepSeek 账号或默认提供商。日语设置、工作流编辑、任务页和重载读回通过；zoo 导入导出视频时长 19.072 秒，点击后播放时间从 0.175 秒推进到 6.025 秒，媒体错误为空。原 Hero 保留。浏览器 DOM 工具不提供动画读数；Mac 原生工具仍报告锁屏，未将浏览器结果当作原生窗口或文件框验收。[截图与观察](evidence/refactor-browser-ui.json)
+
+## P6 第 25 批：闭包外 vendor 与聚合类型检查（2026-10-23）
+
+AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、203 个含测试依赖包。闭包外的八个包中，仅旧 vendored HMR 和 logger-console 没有当前消费者；移除二者后保留 209 包。Typert generator 被根目录生成脚本使用；四个平台原生包经动态平台入口与 optionalDependencies 加载，native/system 拥有构建测试。实际使用的 packages/boot/hmr、app-boot 日志 exporter 和许可证继续保留。锁文件只删除两个 workspace importer。
+
+官方聚合类型检查暴露 289 条错误：前端 settings-plan.ts 被 Host 聚合纳入、退役产品的测试声明及旧网站/CLI 工具残留。将前端 helper 归为 .client.ts、保留通用测试断言并补齐夹具类型，移除已经失去源码所有者的专属工具，聚合检查归零并接入开发 CI。HMR 中英文说明同步，缺失文档链接改指保留的接口源码。未删减运行中功能断言。
+
+最终七项框架构建、产品构建、632 项受影响前端测试、17 项实际 Host/profile 与来源隔离通过；HMR/app-boot 等 6,064 项通过（1 跳过）发生于测试归类修正之前，运行实现此后未变。首次构建账本竞态、289 条类型错误、门禁数量断言及坏链失败均保留。本批远程 CI 和最终原生交互尚未完成。[完整证据](evidence/refactor-unused-vendor-prune.json)

@@ -7366,40 +7366,6 @@ importers:
         specifier: workspace:~
         version: link:../loader
 
-  vendor/hmr:
-    dependencies:
-      '@babel/code-frame':
-        specifier: ^7.29.0
-        version: 7.29.7
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../cordis
-      '@deepseek-ai/cordis-plugin-timer':
-        specifier: workspace:~
-        version: link:../timer
-      '@deepseek-ai/cosmokit':
-        specifier: link:../cosmokit
-        version: link:../cosmokit
-      '@deepseek-ai/schemastery':
-        specifier: link:../schemastery
-        version: link:../schemastery
-      chokidar:
-        specifier: ^4.0.3
-        version: 4.0.3
-      picomatch:
-        specifier: ^4.0.3
-        version: 4.0.4
-    devDependencies:
-      '@types/babel__code-frame':
-        specifier: ^7.27.0
-        version: 7.27.0
-      '@types/picomatch':
-        specifier: ^3.0.2
-        version: 3.0.2
-      esbuild:
-        specifier: ^0.28.1
-        version: 0.28.2
-
   vendor/include:
     dependencies:
       '@deepseek-ai/cordis':
@@ -7429,21 +7395,6 @@ importers:
       node-addon-require-builtin:
         specifier: ^0.1.9
         version: 0.1.9
-
-  vendor/logger-console:
-    dependencies:
-      '@deepseek-ai/cordis':
-        specifier: workspace:~
-        version: link:../cordis
-      '@deepseek-ai/cosmokit':
-        specifier: link:../cosmokit
-        version: link:../cosmokit
-      '@deepseek-ai/schemastery':
-        specifier: link:../schemastery
-        version: link:../schemastery
-      supports-color:
-        specifier: ^9.4.0
-        version: 9.4.0
 
   vendor/schemastery:
     dependencies:

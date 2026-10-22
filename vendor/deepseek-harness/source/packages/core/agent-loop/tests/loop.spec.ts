@@ -14,6 +14,8 @@ import { MockAdapter, maxTokensResponse, textResponse, toolCallResponse } from '
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
+    // Historic fixture payload remains supported after its producer was retired.
+    'agent-instructions': { kind: 'agent-instructions'; form: 'instructions'; changes: [] }
     'loop-test': { kind: 'loop-test' } & ContextFormed
     'max-tokens-test': { kind: 'max-tokens-test' } & ContextFormed
     'test': { kind: 'test' } & ContextFormed

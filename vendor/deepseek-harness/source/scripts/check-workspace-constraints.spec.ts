@@ -29,6 +29,18 @@ const experimental = {
   },
 } satisfies WorkspaceManifest
 
+describe('YouDub application payloads', () => {
+  it.each([
+    { dir: 'apps/desktop-host', retired: ['lib/cli.js'] },
+    { dir: 'apps/web', retired: ['!dist/preview.html', '!dist/preview'] },
+  ])('accepts the current $dir manifest and rejects retired entries', ({ dir, retired }) => {
+    const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+    expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: [...manifest.files!, ...retired] } }))
+      .toEqual([expect.stringContaining('package.json files must be')])
+  })
+})
+
 describe('workspace dependency ranges', () => {
   const dependency = { dir: 'packages/core/runtime', manifest: { name: '@deepseek-ai/dsh-runtime' } }
   const cli = { dir: 'apps/cli', manifest: { name: '@deepseek-ai/dsh' } }

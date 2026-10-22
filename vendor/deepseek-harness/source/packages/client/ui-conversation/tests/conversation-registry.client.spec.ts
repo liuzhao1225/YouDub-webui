@@ -17,6 +17,11 @@ import type {
   ConversationNodeDefinition, ConversationViewDefinition, ConversationViewNode,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
 
+// This custom view belongs to the registry fixture, independently of product plugins.
+declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+  interface ConversationViewSnapshotMap { trajectory: null }
+}
+
 const SESSION_ID = 'resident' as SessionId
 
 afterEach(() => { vi.unstubAllGlobals() })

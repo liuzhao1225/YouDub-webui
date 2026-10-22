@@ -102,7 +102,6 @@ const SID = sid('s1')
 type SessionSlotProps = ConversationSessionSlotProps
 
 const useChat: SessionSlotProps['useChat'] = () => { throw new Error('unused') }
-const useTrajectory: SessionSlotProps['useTrajectory'] = () => { throw new Error('unused') }
 
 function workspace(id = 'w1'): WorkspaceView {
   return {
@@ -216,7 +215,6 @@ function mount(
           useConversation={useConversation}
           useConversationViews={useConversationViews}
           useChat={useChat}
-          useTrajectory={useTrajectory}
           useSessions={props.useSessions}
           usePanelInfo={props.usePanelInfo}
           useResource={useResource}
@@ -246,7 +244,6 @@ function mount(
           useConversationViews={useConversationViews}
           useInspectCall={selector => selector(undefined)}
           useChat={useChat}
-          useTrajectory={useTrajectory}
           useSessions={props.useSessions}
           usePanelInfo={props.usePanelInfo}
           useResource={useResource}
@@ -333,7 +330,6 @@ function mount(
       useSession,
       useConversation,
       useChat,
-      useTrajectory,
       useSessions: bindSnapshotSelector(sessions),
       usePanelInfo: selector => selector({ activePanelId: null }),
       useResource,

@@ -885,3 +885,11 @@ it('leaves unnamed history titles empty for locale-owned row labels', () => {
   const sessions = list(item)
   expect(deriveFlat(sessions, [item.id], noRows, noAttention)[0]?.title).toBe('')
 })
+
+// Fixture-owned domains retain the original generic workspace status assertions.
+declare module '@deepseek-ai/dsh-client-ui-session/client' {
+  interface SessionPendingInteractionMap {
+    'plan-review': SessionPendingInteractionBase & { readonly kind: 'plan-review' }
+    'question': SessionPendingInteractionBase & { readonly kind: 'question' }
+  }
+}

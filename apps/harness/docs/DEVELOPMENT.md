@@ -36,7 +36,7 @@ npm run build:youdub
 
 `vendor/deepseek-harness/source` 是活动产品 fork；原始归档和固定清单保持不变，修改逐项登记在 `fork.json`。生成目录位于 `.cache` 和 `dist`。当前开发壳使用源码构建的 preload，按源构建路径加载 profile runner、Host、Web 和服务。替换框架产物前停止使用它的开发实例，避免逐文件更新触发不完整的 HMR 状态。
 
-运行目录从产品 patch 和 Host 构建外部导入选取根包，再沿声明的 workspace 依赖链接。2026-10-22 此清单为 80 个框架包；源码编译仍包含 362 个包，后续裁剪继续核对类型与测试消费者。
+运行目录从产品 patch 和 Host 构建外部导入选取根包，再沿声明的 workspace 依赖链接。当前运行隔离检查遍历 87 个包；完整源码保留 209 个包，覆盖类型、测试和原生构建消费者。[范围与保留原因](evidence/refactor-unused-vendor-prune.json)
 
 ### 准备开发 profile
 
@@ -138,6 +138,7 @@ test .env -ef env.txt
 | 语言 | `npm --prefix apps/harness run check:locales`，实际设置页面切换与重启读回 |
 | Python 操作 | `.venv/bin/pytest backend/tests/<相关文件>.py`，受影响的真实媒体任务 |
 | 官方源码与来源 | `node apps/harness/baselines/vendor.mjs --verify`；完整检查见下方 |
+| 框架 TypeScript、测试夹具或构建脚本 | 先构建框架，再在 `.cache/harness/source-build` 运行 `node node_modules/tsx/dist/cli.mjs scripts/build.ts --scope check`，并运行受影响的原测试 |
 
 项目 `.venv` 不存在时用 `python3 -m venv .venv` 创建，依赖优先从阿里 PyPI 安装。测试具体依赖以对应 requirements 为准，不把模型大文件安装到源码测试环境来代替应用资源准备。
 

@@ -416,7 +416,8 @@ if (import.meta.main) {
   } })
   const root = values.root === undefined ? resolve(import.meta.dirname, '..') : resolve(values.root)
   const result = verifyDefaultProductIsolation(root, {
-    patches: values.patch?.map(path => resolve(path)), entries: values.entry?.map(path => resolve(path)),
+    ...(values.patch === undefined ? {} : { patches: values.patch.map(path => resolve(path)) }),
+    ...(values.entry === undefined ? {} : { entries: values.entry.map(path => resolve(path)) }),
   })
   if (result.failures.length > 0) {
     for (const failure of result.failures) console.error(`verify-default-product-isolation: ${failure}`)

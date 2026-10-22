@@ -471,7 +471,6 @@ function makeHarness(
     useChatNodeProcess,
     useChatGroup,
     useConversation: bindSnapshotSelector(conversation),
-    useTrajectory: (() => { throw new Error('unused') }),
     useSessions: emptySessions(),
     useSessionRetainInfo: () => undefined,
     useResource,

@@ -42,10 +42,10 @@
         "path": "THIRD_PARTY_NOTICES.md",
         "type": "file",
         "executable": false,
-        "size": 17270,
-        "sha256": "79db7b8a975dc2cf457315b69304ce3472a6c7a777f35ecd5ffe28f8c6e54884"
+        "size": 16964,
+        "sha256": "4f6908fff7dbf7ebc03d0e3abe04ab49941fe2cf03132d1d12ca12287520e4b6"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Synchronize notices with the retained runtime and development dependency inventory. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub P6 batch 25: regenerate license inventory after retiring unused legacy vendor HMR and console logger."
     },
     {
       "path": "apps/cli/README.md",
@@ -5812,6 +5812,18 @@
       "reason": "移除 YouDub 源码开发不使用的旧产品更新、强制策略、命令安装、打包签名上传和专属界面测试；原始归档保持不变。"
     },
     {
+      "path": "apps/desktop/tests/cos-loopback.ts",
+      "before": {
+        "path": "apps/desktop/tests/cos-loopback.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4285,
+        "sha256": "7acc44a5e00104081664789f331aff599d5b95bc129d66acb43b4842a30615b7"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
       "path": "apps/desktop/tests/cos-operation.spec.ts",
       "before": {
         "path": "apps/desktop/tests/cos-operation.spec.ts",
@@ -8170,10 +8182,10 @@
         "path": "apps/desktop/tests/web-document.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 6819,
-        "sha256": "d6cd9b8d9b570c92a5809f4d9b4405700044395786168a5ca5c75a71fa741262"
+        "size": 6820,
+        "sha256": "9072909b32ce7ac1321136bd09295af8533b98954b6868a9983f5243fbb0a2ec"
       },
-      "reason": " Preserve uncompressed media Content-Length and Range response headers for native audio seeking; remove encoded lengths only when fetch decompresses the body."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "apps/desktop/tests/welcome-flow.e2e.ts",
@@ -8714,6 +8726,18 @@
       },
       "after": null,
       "reason": "Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks."
+    },
+    {
+      "path": "apps/web/stress-tests/reasoning-chunks.stress.ts",
+      "before": {
+        "path": "apps/web/stress-tests/reasoning-chunks.stress.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9133,
+        "sha256": "c438c61fe75d4ca696a5f05e6f4efe8a2c2745a4d6d053de69714a684a14cc5a"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "apps/web/tests/README.i18n.yaml",
@@ -14800,10 +14824,10 @@
         "path": "package.json",
         "type": "file",
         "executable": false,
-        "size": 13945,
-        "sha256": "2a2b2338aaa5730738cf76cdde9c1c46295ac9affa82b10bef939534ac97b1d6"
+        "size": 13142,
+        "sha256": "17770dcdf81e25db08959ca66c387ec86a40b2d3c72b29656ac0701ece7de750"
       },
-      "reason": "移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "packages/acp/README.i18n.yaml",
@@ -15472,6 +15496,60 @@
       "reason": "Remove implicit Harness product profiles and shipped agent catalogs; preserve explicit profile loading, user selections and framework contracts for YouDub."
     },
     {
+      "path": "packages/boot/hmr/README.i18n.yaml",
+      "before": {
+        "path": "packages/boot/hmr/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1647,
+        "sha256": "73677d51d50af0ddcb5b0ed4c032f274c9abd4c110303f126e1c63282edd6e07"
+      },
+      "after": {
+        "path": "packages/boot/hmr/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1647,
+        "sha256": "4a401d312fbbb1529b4a057d33ca7642fb3a04ddd35f5eb6962e5f2a1bb2b237"
+      },
+      "reason": "Official bilingual pairing record after reviewing equivalent HMR retirement notes and replacing the missing profile-reconciliation documentation link with its retained implementation."
+    },
+    {
+      "path": "packages/boot/hmr/README.md",
+      "before": {
+        "path": "packages/boot/hmr/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 15489,
+        "sha256": "2080066e910cad61f8736ec8ab19b9040dc2a6736d66289d784461abae3a7c41"
+      },
+      "after": {
+        "path": "packages/boot/hmr/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 15549,
+        "sha256": "02e76b6ef7ee14e3e4ba2741519ed05127684c60782f782fc746a26d297c3f3e"
+      },
+      "reason": "Document the retired unused vendor HMR package and point the bilingual ProfileReconciliation reference to its retained implementation; the original upstream docs remain in the immutable archive."
+    },
+    {
+      "path": "packages/boot/hmr/README.zh.md",
+      "before": {
+        "path": "packages/boot/hmr/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 13935,
+        "sha256": "5c03a9afa0ac010f9454c7a8702eb79579e16f31d37ade23a0a7acc28a363777"
+      },
+      "after": {
+        "path": "packages/boot/hmr/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 13968,
+        "sha256": "503293cb012c6defaecf147e5f4bf22aeed27d7d767ce719293062f71400d37a"
+      },
+      "reason": "Document the retired unused vendor HMR package and point the bilingual ProfileReconciliation reference to its retained implementation; the original upstream docs remain in the immutable archive."
+    },
+    {
       "path": "packages/boot/plugin-manager/README.i18n.yaml",
       "before": {
         "path": "packages/boot/plugin-manager/README.i18n.yaml",
@@ -15592,10 +15670,10 @@
         "path": "packages/boot/plugin-manager/tests/manager.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 112813,
-        "sha256": "42d60949de155f11539f08bdcaf30c8c9d5b8cd9f69de1383555e06a23244a62"
+        "size": 112858,
+        "sha256": "6964ff7941755fe5c246fa22fde2efadf3616d1f8d932a437100074ddde977e4"
       },
-      "reason": "Keep generic installer coverage using test-owned catalog fixtures after removing old product bundle defaults."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "packages/boot/plugin-manager/tests/official-install-target.spec.ts",
@@ -17756,6 +17834,78 @@
       },
       "after": null,
       "reason": "Remove unused legacy conversation, account, plan, agent-review and scheduling UI plus orphaned Agent Team/worktree/webhook services after checking imports, runtime compositions, manifest peers and dynamic/build consumers. YouDub media review, workflow, credentials and shared UI services remain."
+    },
+    {
+      "path": "packages/client/ui-chat/tests/chat-view.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-chat/tests/chat-view.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 208167,
+        "sha256": "db0007fbedf6858f1ae2eb48184e2ec9dada0ff3d608ae34a2c546ab9cf66e90"
+      },
+      "after": {
+        "path": "packages/client/ui-chat/tests/chat-view.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 208109,
+        "sha256": "1763bf8ba5eef467b0b2158e399eea4e68453f614bd693a5bc1bc5ecfe7acf77"
+      },
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
+    },
+    {
+      "path": "packages/client/ui-conversation/tests/conversation-registry.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-conversation/tests/conversation-registry.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18339,
+        "sha256": "bae37e50c08b87c900b4306936012917aaf5df8713896d6ff7caf3060b846883"
+      },
+      "after": {
+        "path": "packages/client/ui-conversation/tests/conversation-registry.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 18556,
+        "sha256": "98d3a936ceff993adde0eb68d63688d185bdbb1bc6734bc80881fd3e35311914"
+      },
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
+      "path": "packages/client/ui-conversation/tests/queue-dock.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-conversation/tests/queue-dock.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 36050,
+        "sha256": "8c46f3a36bfff74e4e1c8e31a2894642ac7db8e363a586d4b6acd5e940734c6e"
+      },
+      "after": {
+        "path": "packages/client/ui-conversation/tests/queue-dock.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 35957,
+        "sha256": "c64468c9d5885dbafa87f2e38ccf2059f71cda6c52b4dba7591b3339f6ea3a92"
+      },
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
+    },
+    {
+      "path": "packages/client/ui-conversation/tests/skeleton.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-conversation/tests/skeleton.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 42309,
+        "sha256": "5d11031d20022c4ac2ca18511726a768221e10dbb79ef01f43970acbc24a9a2e"
+      },
+      "after": {
+        "path": "packages/client/ui-conversation/tests/skeleton.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 42115,
+        "sha256": "cfb3375b166f69cd384935c87769edbb7bc56297c8bd0bb01143be0fff6132f3"
+      },
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "packages/client/ui-deepseek-model-label-1017/README.i18n.yaml",
@@ -24736,22 +24886,22 @@
         "path": "packages/client/ui-settings-general/tests/apply.client.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 15841,
-        "sha256": "b0965fa2f88e13de2554e2d72c038736f35ddc62cbf52ce1ede29ebc73321220"
+        "size": 15848,
+        "sha256": "2785cc426abbcb4d3736f36e39fe7e45b0a8879f48a33388f32fc2eb94b9777a"
       },
-      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
-      "path": "packages/client/ui-settings-general/tests/settings-plan.ts",
+      "path": "packages/client/ui-settings-general/tests/settings-plan.client.ts",
       "before": null,
       "after": {
-        "path": "packages/client/ui-settings-general/tests/settings-plan.ts",
+        "path": "packages/client/ui-settings-general/tests/settings-plan.client.ts",
         "type": "file",
         "executable": false,
-        "size": 796,
-        "sha256": "7d66a15cf6a914fa568d5601a5ebbbd7519e91872a5854759b54c5216c023c46"
+        "size": 939,
+        "sha256": "2ec69a3f7cfba5ba6b31f9ed13ae6d9110d46c9eff41aa3bf1bb445637c1444f"
       },
-      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
@@ -24766,10 +24916,10 @@
         "path": "packages/client/ui-settings-general/tests/settings-root.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 24956,
-        "sha256": "1118bd637e788a2c1140d2f3dac5f1ab41835ca9e8ab226e244347bb20b16fbf"
+        "size": 24904,
+        "sha256": "21cd93a8b84cbbc4b5abee48c4ca9fc2ec38e657d69011adbba11edaf4437aa0"
       },
-      "reason": "Verify settings navigation, close and Escape honor the registered draft guard and disposal. Allow the contributed settings launcher to select an existing section through its original shell store; verify direct model navigation and default sidebar opening, and update the shared contract documentation."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
@@ -24784,10 +24934,10 @@
         "path": "packages/client/ui-settings-general/tests/shell.client.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 8095,
-        "sha256": "a33feec434cbcb90c9c4415e0d3959db84923635e923e0886aa2cb3297ae5b21"
+        "size": 8102,
+        "sha256": "3abb94b75855fc9df7b30083d28616836843a29752162972de3e9fffe2040c70"
       },
-      "reason": "Verify the original settings ledger and reload behavior without the retired DeepSeek onboarding registrations; keep explicit editor registration coverage. Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "packages/client/ui-settings-general/tsconfig.client.json",
@@ -25066,10 +25216,10 @@
         "path": "packages/client/ui-settings-models/tests/provider-form.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 84345,
-        "sha256": "dd0ed106322a8ded50140c9d181feb7972c8dc7c99222c69806161fcc10ef9f1"
+        "size": 84293,
+        "sha256": "f270db9982791b9e4942857b02b4396c2cded79cf0f045e38a67b6d18f19ba41"
       },
-      "reason": "Exercise keep/discard, unload protection, provider switching and credential-write failures."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
@@ -27196,6 +27346,42 @@
       "reason": "Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references."
     },
     {
+      "path": "packages/client/ui-sidebar-right/tests/expand-button.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-sidebar-right/tests/expand-button.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 4317,
+        "sha256": "76f1cfb16a23fbf10e83ea52a57b03dd5f977ddcc33416bea0aae6b0de794901"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar-right/tests/expand-button.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 4294,
+        "sha256": "6ededa16808bfd653b1a1bbb2867ce63ec22cc8ea249bc1eca0e3f1ffb376fff"
+      },
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
+    },
+    {
+      "path": "packages/client/ui-sidebar-right/tests/guide-body.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-sidebar-right/tests/guide-body.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 10430,
+        "sha256": "5107e74a6c9eb6b70c5634720bde4aab54047245465487bfa1e1a688a7f62947"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar-right/tests/guide-body.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 10407,
+        "sha256": "d3166587a46b689539b80efac5e2a656f41a971a6d8ef962b9e7f399ca20421f"
+      },
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
+    },
+    {
       "path": "packages/client/ui-sidebar-terminal/README.i18n.yaml",
       "before": {
         "path": "packages/client/ui-sidebar-terminal/README.i18n.yaml",
@@ -29272,6 +29458,42 @@
       "reason": "Remove unused legacy conversation, account, plan, agent-review and scheduling UI plus orphaned Agent Team/worktree/webhook services after checking imports, runtime compositions, manifest peers and dynamic/build consumers. YouDub media review, workflow, credentials and shared UI services remain."
     },
     {
+      "path": "packages/client/ui-workspace/tests/tree.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-workspace/tests/tree.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 38929,
+        "sha256": "649ec5bce0592fddbab60482c4f8c9edebe3d301c1d750b59c79283d74ce9810"
+      },
+      "after": {
+        "path": "packages/client/ui-workspace/tests/tree.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 39284,
+        "sha256": "b0b437981c8cb41be6e0b76295a2f1b41745bd73e8c446f23be1c8fac7c67dbe"
+      },
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
+      "path": "packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 132402,
+        "sha256": "626e80139fface62c0e2c1380fc51526ea82d98a1ebaab245efe7bc872f208f8"
+      },
+      "after": {
+        "path": "packages/client/ui-workspace/tests/workspace-browser.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 132757,
+        "sha256": "47584f99dfbf4395cc203dd1947ec93543f062ad14580db9a3cea51f5d2c66d2"
+      },
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
       "path": "packages/compaction/README.i18n.yaml",
       "before": {
         "path": "packages/compaction/README.i18n.yaml",
@@ -30292,6 +30514,24 @@
       "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions."
     },
     {
+      "path": "packages/core/agent-loop/tests/loop.spec.ts",
+      "before": {
+        "path": "packages/core/agent-loop/tests/loop.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 87787,
+        "sha256": "2dd3acc92dd891d5cef14462f13f799283465033e10fbe5eae33591354a9b183"
+      },
+      "after": {
+        "path": "packages/core/agent-loop/tests/loop.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 87961,
+        "sha256": "dd790346bc53f5d20917122ec8eae18b982e482a390816e9a5e2dd1ca49641d8"
+      },
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
       "path": "packages/core/agent-tool-presentation/README.i18n.yaml",
       "before": {
         "path": "packages/core/agent-tool-presentation/README.i18n.yaml",
@@ -30398,6 +30638,24 @@
       },
       "after": null,
       "reason": "Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records."
+    },
+    {
+      "path": "packages/core/session/tests/session.spec.ts",
+      "before": {
+        "path": "packages/core/session/tests/session.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 72718,
+        "sha256": "d8575b92dac906c861089ec1363ab649666a069b89270e9c43c9640f0e917030"
+      },
+      "after": {
+        "path": "packages/core/session/tests/session.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 72892,
+        "sha256": "c35ef66dfaf30e1c7973bfc37b7c827549f3875e6a6175b9d8b57b0120550607"
+      },
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "packages/core/tools/tests/gen-tool-catalog.spec.ts",
@@ -54460,10 +54718,10 @@
         "path": "packages/test-support/client-runtime/tests/assembly-test-client.client.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 13971,
-        "sha256": "6b72d5a3b20408dc79acd60c9871ff6be11d4dd32974d18cd2e725f402365c43"
+        "size": 14088,
+        "sha256": "d02cd94f9f98cf28e300e19c614561d3e40d94f08902c3e3dcadce20e6bf3a50"
       },
-      "reason": "Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "packages/test-support/client-runtime/tsconfig.json",
@@ -57796,10 +58054,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 709706,
-        "sha256": "d69ce56d0965cffcafcc626f8db718bcb2b7a9bd77b113731a28feda9bb2f0a2"
+        "size": 708392,
+        "sha256": "7cc74b58bd2a172ca7a00ed397737da7d6f44318a903e7de85289fc5b7e2f7e8"
       },
-      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -58576,10 +58834,10 @@
         "path": "scripts/check-workspace-constraints.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 22128,
-        "sha256": "b1439fbb93d45ee33f4999fd891b3b3159c373acbd6d59c9df00d1cc24df5810"
+        "size": 22814,
+        "sha256": "3bb5cb6b1c84e8a0133899485d9c950e2719344b5fb2fbcbed78bd5e40cdc342"
       },
-      "reason": "Remove SSH-only export and release exceptions; classify the existing private YouDub profile runner as an internal application and retain its runtime declaration checks. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub P6 batch 25: align package payload and rescope maintenance checks with retained source; remove only named retired or unselected upstream entries, preserve current strict checks and add actual manifest regression coverage."
     },
     {
       "path": "scripts/check-workspace-constraints.ts",
@@ -58594,10 +58852,10 @@
         "path": "scripts/check-workspace-constraints.ts",
         "type": "file",
         "executable": false,
-        "size": 31493,
-        "sha256": "37ef8d1928a419015af48fa47df44a494ea9ba9ef2363816bb0836e003a609e6"
+        "size": 31259,
+        "sha256": "1a79e63193676e2796ae89bb4d5c4a2352a8fa4d11b47146e17478bf905ad375"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove SSH-only export and release exceptions; classify the existing private YouDub profile runner as an internal application and retain its runtime declaration checks. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub P6 batch 25: align package payload and rescope maintenance checks with retained source; remove only named retired or unselected upstream entries, preserve current strict checks and add actual manifest regression coverage."
     },
     {
       "path": "scripts/ci-workflow.spec.ts",
@@ -58612,10 +58870,10 @@
         "path": "scripts/ci-workflow.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 58043,
-        "sha256": "451e70be094656814435f2b317d5ee0e04bb0a52b3300735ff0cebdf295a1593"
+        "size": 57465,
+        "sha256": "2d827244fac3791a61456facd31cc564e533102591c5f69b50a98d2cb6061c1f"
       },
-      "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/client-build-environment.client.spec.ts",
@@ -58736,6 +58994,18 @@
       },
       "after": null,
       "reason": "移除已退休 Desktop 更新/上游发行产品的专属验收；源码开发 CI 继续覆盖保留框架服务。"
+    },
+    {
+      "path": "scripts/dev-web.spec.ts",
+      "before": {
+        "path": "scripts/dev-web.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9381,
+        "sha256": "4bd722872b98eb06cd6481e0df9f8d730710e3aa52c39a00ab2edeff0fc30a32"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/dev-web.ts",
@@ -58948,10 +59218,10 @@
         "path": "scripts/gen-client-catalog.ts",
         "type": "file",
         "executable": false,
-        "size": 19044,
-        "sha256": "b0c918cafb1fc60081760ca7917e0910dc444a6f7afae30b160ba8f4ce14bcf8"
+        "size": 18753,
+        "sha256": "c814a5beee13732c6e4af60349b3fc376c7550e3f7029e2a233eeea5d2a78501"
       },
-      "reason": "Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/gen-cordis-catalog.ts",
@@ -58966,10 +59236,10 @@
         "path": "scripts/gen-cordis-catalog.ts",
         "type": "file",
         "executable": false,
-        "size": 66944,
-        "sha256": "f37c07fb17a23c60df3d9e6c43b2631410dbf82bfb5972698b7d45410d3dd3f1"
+        "size": 66933,
+        "sha256": "0e3b07306c1074c9bfcf2aba9e7092bbcb50ee572eebbe804d342cb39e8862ed"
       },
-      "reason": "Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/gen-cordis-inspect-catalog.ts",
@@ -59020,10 +59290,10 @@
         "path": "scripts/gen-doc-graphs.ts",
         "type": "file",
         "executable": false,
-        "size": 76125,
-        "sha256": "3397a59b899861c4decae0b95e1902d09edf50cb85ab62b6cb5ea306b847dad6"
+        "size": 75988,
+        "sha256": "a08e5f7f522c6b8f9c89734bbd78cb0758e069eaa048f335d6c602fb9cc71886"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/gen-official-bundle-catalog.spec.ts",
@@ -59320,6 +59590,30 @@
       "reason": "Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
     },
     {
+      "path": "scripts/project-doc-site.spec.ts",
+      "before": {
+        "path": "scripts/project-doc-site.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 36541,
+        "sha256": "b7d8aa940ee42debb20298f38d4e9ac3df82841475aec3e9a963d79e397c8cc2"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
+      "path": "scripts/project-doc-site.ts",
+      "before": {
+        "path": "scripts/project-doc-site.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24096,
+        "sha256": "1397ed291c065aef7893772a539b847938e340b6cea2f58e37df6fbc75ceaeea"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
       "path": "scripts/python-runtime-download.spec.ts",
       "before": {
         "path": "scripts/python-runtime-download.spec.ts",
@@ -59410,10 +59704,10 @@
         "path": "scripts/rescope-vendor.ts",
         "type": "file",
         "executable": false,
-        "size": 31510,
-        "sha256": "5b8a5605669969b2e7617f66ddc03ebdb03fb8c452e786aca4fb44d15e057d94"
+        "size": 28091,
+        "sha256": "580ea39b1140a3c1ec202a4c45a3f52283627a9409bcbf9dcaccd8c2d0e68666"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub P6 batch 25: retain rescope checks for active packages, retire obsolete document edits, and preserve actual cordis inspector event names in their existing fixture."
     },
     {
       "path": "scripts/run-gates.spec.ts",
@@ -59428,10 +59722,10 @@
         "path": "scripts/run-gates.spec.ts",
         "type": "file",
         "executable": false,
-        "size": 58085,
-        "sha256": "74fe2ae790d8ed0874fd3a48f7d344ebc5626124aa65f772f6e9a1677bc46894"
+        "size": 57965,
+        "sha256": "302dbe6eb10f776ab5941cb2cf1324c475506572b61a135c5c5fa0769053681d"
       },
-      "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "Retired documentation-site build has no source owner in YouDub; preserve the ordered assertion for all eight remaining documentation leaves."
     },
     {
       "path": "scripts/run-gates.ts",
@@ -59446,10 +59740,10 @@
         "path": "scripts/run-gates.ts",
         "type": "file",
         "executable": false,
-        "size": 70655,
-        "sha256": "db0171ce13cb80aad9f6d12e737cb65b6ede31de53c88192c23795edd73402ab"
+        "size": 69580,
+        "sha256": "94c3aa86b9513e5f532c7d7af025064f634b5b6b117d4a0ac9cb5b99f7840d6d"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/run-web-snapshots.ts",
@@ -59486,6 +59780,18 @@
       },
       "after": null,
       "reason": "Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+    },
+    {
+      "path": "scripts/session-query-spill-command.spec.ts",
+      "before": {
+        "path": "scripts/session-query-spill-command.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3384,
+        "sha256": "7df4f19ebda58b4ccdbc5213119ed2ae0caa4fa1537787dd17d87299789403b6"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/session-snapshot-corpus-policy.spec.ts",
@@ -60106,10 +60412,34 @@
         "path": "scripts/verify-default-product-isolation.ts",
         "type": "file",
         "executable": false,
-        "size": 21933,
-        "sha256": "da52fe3892651951292c5f0d44147fcc216ca5e4569361e6c471ee4943557c3a"
+        "size": 22021,
+        "sha256": "e816e7dbceac99105f73571ae61aaf85f13de78ff4abb39ce793ee0f9b1327c8"
       },
-      "reason": "Read explicit application entries and selected bundle compositions when excluding experimental dependencies; stop treating the retired Python SDK and unselected global Agent presets as mandatory product roots while preserving source, alias and missing-input checks. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
+    },
+    {
+      "path": "scripts/verify-doc-site-fragments.spec.ts",
+      "before": {
+        "path": "scripts/verify-doc-site-fragments.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3252,
+        "sha256": "fe114336248efb4fdcad10bf96749785b864a1bd4f07cb47935b8045a5bcf253"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
+      "path": "scripts/verify-doc-site-fragments.ts",
+      "before": {
+        "path": "scripts/verify-doc-site-fragments.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6494,
+        "sha256": "f7e542c08af1810f6bf19de03cb846b72efea3b1bef8c0c239ab88a385036eee"
+      },
+      "after": null,
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
     },
     {
       "path": "scripts/verify-no-top-level-await.spec.ts",
@@ -60196,10 +60526,10 @@
         "path": "scripts/verify-product-use.ts",
         "type": "file",
         "executable": false,
-        "size": 18804,
-        "sha256": "67f060943a429d5d283f369bbc7582a9635aa9309c05cb1d0f0a89da403752f6"
+        "size": 18892,
+        "sha256": "46089d30a416ec17d4240465e7d8c1c727959289db12244cb642a1b0ec92789f"
       },
-      "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Read explicit application compositions and source entries with the existing product-use analyzer; retire mandatory legacy Harness profile names and retain missing-source and effective-patch checks. Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
       "path": "scripts/verify-runtime-closure.spec.ts",
@@ -60274,10 +60604,10 @@
         "path": "tsconfig.base.json",
         "type": "file",
         "executable": false,
-        "size": 30474,
-        "sha256": "9507eed8b15f5719a850850f97fab450d63443c4dbc94dad5a29a8f6b6532b24"
+        "size": 30328,
+        "sha256": "9483ff0ede90d882b3911a8be443f022f410c0608a16369f2949bee2c1635bec"
       },
-      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
     },
     {
       "path": "tsconfig.client.json",
@@ -60310,10 +60640,196 @@
         "path": "tsconfig.host.json",
         "type": "file",
         "executable": false,
-        "size": 11243,
-        "sha256": "a5b703578b72612723e75db1456386d560bd6aaef615a7ae08897fc69f8e3d65"
+        "size": 11112,
+        "sha256": "c81ca13e90dfc2d245bbdfe52a8ee91d3056defae0635eb18f99c7bf8f972c73"
       },
-      "reason": "Remove the unused experimental speech-recognition and anonymous translation contracts. YouDub uses its own Whisper/media worker and the retained Harness LLM service; update only related workspace, policy and documentation entries. Remove retired base/headless product compositions and their legacy Web scenarios; retain the generic Web runtime, desktop boot and font contracts, and move the original XLS fixture to its document-preview test owner. Update only corresponding compiler, gate, package, documentation and notice inventories. Retire unmounted legacy context, account-platform, telemetry, title-generation, feedback and sidebar products after runtime, package-test, manifest and script consumer review. Preserve generic framework contracts, historical message compatibility and the actual Desktop picker bridge; remove only retired compiler, dependency, catalog and bilingual records. Retire the remaining unmounted old tools, Office, search, workspace picker and Agent workflow products with their dedicated generators and corpus adapters. Preserve generic framework source, slot and type analysis contracts, verbatim Tools expectations, historical license records and the actual Desktop picker bridge."
+      "reason": "YouDub aggregate typecheck: retire orphaned old website/update/launcher/snapshot test tools with their retired owners, align gates, and preserve retained generic assertions with fixture-owned declarations and precise optional values."
+    },
+    {
+      "path": "vendor/README.md",
+      "before": {
+        "path": "vendor/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 20473,
+        "sha256": "463f0475336df70f35805c60ea897b94d15cdd295595d8a50074dedd4555d311"
+      },
+      "after": {
+        "path": "vendor/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 20521,
+        "sha256": "c95e2a863562af564b6ffeb69898220012bbb666e73b35a1c01a5069070c6401"
+      },
+      "reason": "YouDub P6 batch 25: align package payload and rescope maintenance checks with retained source; remove only named retired or unselected upstream entries, preserve current strict checks and add actual manifest regression coverage."
+    },
+    {
+      "path": "vendor/hmr/LICENSE",
+      "before": {
+        "path": "vendor/hmr/LICENSE",
+        "type": "file",
+        "executable": false,
+        "size": 1071,
+        "sha256": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/hmr/README.md",
+      "before": {
+        "path": "vendor/hmr/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 1520,
+        "sha256": "8ba455ee9d65941b8f56e07199e4e71326d25112b7946a8fe50f63eeaf7776c9"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/hmr/package.json",
+      "before": {
+        "path": "vendor/hmr/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1408,
+        "sha256": "eefcef2ce93149c6793e4103c29fd6fc889a169628785d4a087f982b769a8b65"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/hmr/src/error.ts",
+      "before": {
+        "path": "vendor/hmr/src/error.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1036,
+        "sha256": "db29dd32cfbae7199eb1055aac524866d3f06c3f98c6390bff33ad384d617ab6"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/hmr/src/index.ts",
+      "before": {
+        "path": "vendor/hmr/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 13979,
+        "sha256": "d30a1a056d76f98e519a0d16b8ac7a206e33e617b5d4b78415755532ee79eda8"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/hmr/tsconfig.json",
+      "before": {
+        "path": "vendor/hmr/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 588,
+        "sha256": "48224a053dc23444158311acc07b802b156828ed1b3d2af8f59ff347decf5c1e"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/LICENSE",
+      "before": {
+        "path": "vendor/logger-console/LICENSE",
+        "type": "file",
+        "executable": false,
+        "size": 1071,
+        "sha256": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/README.md",
+      "before": {
+        "path": "vendor/logger-console/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 877,
+        "sha256": "be96cfba268b2bd2ca95df5421ed624b564c1d056ccc574a1c4b9a35452fe4b7"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/package.json",
+      "before": {
+        "path": "vendor/logger-console/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 1043,
+        "sha256": "6c1337185a5912151bfd007e29eacc3bf710d5d3aee2d79c73837be82475442b"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/src/browser.ts",
+      "before": {
+        "path": "vendor/logger-console/src/browser.ts",
+        "type": "file",
+        "executable": false,
+        "size": 646,
+        "sha256": "a0c375ec601b7263d80798644503bc39985fbe33bb03263dd7979261f1ce07c1"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/src/index.ts",
+      "before": {
+        "path": "vendor/logger-console/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 864,
+        "sha256": "b8b3eecf6def3a9c8b3cc5f2fc5c543567d60f13ab56d03e49f0bb1f054483f0"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/src/shared.ts",
+      "before": {
+        "path": "vendor/logger-console/src/shared.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3125,
+        "sha256": "4920c2d2f5cfa5e538653494bcd43534ed77a90bd598fba43b292bb5a7fe3979"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/tsconfig.json",
+      "before": {
+        "path": "vendor/logger-console/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 471,
+        "sha256": "3c7e8d9fa19951dbcdc17a49265bfbe85b01ac426a19fbdd109f012b756e61ac"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+    },
+    {
+      "path": "vendor/logger-console/tsdown.config.ts",
+      "before": {
+        "path": "vendor/logger-console/tsdown.config.ts",
+        "type": "file",
+        "executable": false,
+        "size": 719,
+        "sha256": "0c2d1c80d7a86129345f05a5c42023be113b3d31f359f1eca076111931542b52"
+      },
+      "after": null,
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
     },
     {
       "path": "vitest.config.ts",

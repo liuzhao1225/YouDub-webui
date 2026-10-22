@@ -1,3 +1,4 @@
+import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 // @vitest-environment jsdom
 /**
  * TestClient over the selected product's framework roster: production
@@ -220,7 +221,7 @@ describe('TestClient (jsdom)', () => {
         apply(ctx) {
           ctx.slots.inject('sidebar', () => ctx.slots.register({
             name: 'sidebar', children: { 'sidebar.settings': { kind: 'single', scope: 'root' } },
-          }, () => null))
+          }, (_props: PropsRenderSlots<'sidebar.settings'>) => null))
         },
       } },
     }, { mount: true })

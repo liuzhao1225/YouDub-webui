@@ -58,6 +58,44 @@
       }
     }
   },
-  "remoteVerification": "pending next source-development CI",
+  "remoteVerification": {
+    "commit": "d3f0d516845b29798754335d75a27ccfe9676b6b",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705",
+    "status": "success",
+    "jobs": [
+      {
+        "name": "macOS 源码、框架与业务回归",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705/job/120045309593",
+        "conclusion": "success"
+      },
+      {
+        "name": "Windows 源码、Host 与桌面合同",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705/job/120045309789",
+        "conclusion": "success"
+      }
+    ],
+    "log": {
+      "path": "/tmp/youdub-d3f0-ci.log",
+      "sha256": "5ad8284adac1205f416d4392d3be98f0d586d8f9cf37155a1339728c8571f485"
+    },
+    "macOS": {
+      "guiPassed": 8075,
+      "guiExpectedFailure": 1,
+      "guiSkipped": 1,
+      "profilePassed": 6687,
+      "profileSkipped": 1,
+      "domainPassed": 187,
+      "domainSkipped": 1,
+      "frontendPassed": 264,
+      "productPassed": 78,
+      "pythonPassed": 525
+    },
+    "windows": {
+      "desktopAndProcessesPassed": 567,
+      "skipped": 27,
+      "productContractsPassed": 32,
+      "actualHostModes": 2
+    }
+  },
   "scope": "Test runner configuration only. No application behavior change."
 }

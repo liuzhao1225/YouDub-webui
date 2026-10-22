@@ -19,7 +19,7 @@ const SESSION = 's-test' as SessionId
 const unused = (): never => { throw new Error('This isolated component does not consume framework hooks') }
 const standard: GlobalStandardProps & SessionStandardProps = {
   sessionId: SESSION, useSession: unused, useProjection: unused, useConversation: unused,
-  useInput: unused, useChat: unused, useTrajectory: unused,
+  useInput: unused, useChat: unused,
   usePanelInfo: unused, useSessions: unused, useSessionStatus: unused,
   useSessionRetainInfo: unused, useResource: unused, useWorkspaces: unused,
   ...allowAllAccess,

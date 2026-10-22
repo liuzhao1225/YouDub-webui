@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。当前记录包含第 24 批裁剪及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。合并后的最终候选尚待验收。
+更新：2026-10-23。当前记录包含第 25 批裁剪及已提交的并行界面/资源修改；各验证仍以对应证据注明的输入提交为准。合并后的最终候选尚待验收。
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -44,13 +44,13 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 | A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | Vox 预设音色、设备与其他输入组合 |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
 | A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
-| A20 构建与平台 | 4313ec5e 的 macOS 干净 CI 全部通过：GUI 8,075 项、profile/插件 6,685 项、产品集成 77 项、Python 525 项。Windows 首次文件操作超时未在同提交重跑中复现；重跑取得 SDK 回退诊断，已修复短路径导致的重复 importer，本地构建、79 项包操作、9 项 profile 和 2 种实际 Host 通过。[本批 CI](evidence/refactor-remaining-products-prune.json)、[修复证据](evidence/refactor-profile-canonical-path.json) | 8fea16f1 Windows：567 项桌面/进程、32 项产品合同及两种实际 Host 通过；同提交 macOS CI 遇 Node 24.20 不兼容测试参数并取消；修正后本地 Node 24/26 各 264 项通过，待新 CI，最终原生验收开放 |
+| A20 构建与平台 | d3f0d516 的 macOS 与 Windows 干净 CI 均通过；macOS GUI 8,075 项、profile 6,687 项、业务界面 264 项、产品 78 项、Python 525 项；Windows 桌面/进程 567 项、产品合同 32 项与两种实际 Host 通过。[CI 读回](evidence/refactor-webstorage-test-flag.json) | 第 25 批本地构建和聚合类型检查通过，已加入持续检查；新候选双平台 CI 与最终原生验收待完成。[本批记录](evidence/refactor-unused-vendor-prune.json) |
 
 ## 尚需实施的收尾
 
 1. 复核剩余通用框架、测试消费者和遗留文档/构建门禁；第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；8fea16f1 的实际 Windows CI 已通过三种旧锁迁移及卸载后 SDK 链接检查。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
 2. 收拢并行界面、资源及媒体拖动改动，形成固定候选，完成上表未通过的真实操作和输入验收。
-3. 已补齐当前目录体积及历史数据副本记录；当前私有路径已由实际 Host/Python 读回验证；继续测量原生冷/热启动，完成全新下载及 Windows 原生验收。[路径证据](evidence/refactor-runtime-isolation.json)、[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
+3. 独立实际 Host 的日语设置、工作流与任务视频播放已通过浏览器验收，静态首屏截图与限制见[记录](evidence/refactor-browser-ui.json)。原生窗口、文件框、动效与最终媒体质量保持开放。已补齐当前目录体积及历史数据副本记录；当前私有路径已由实际 Host/Python 读回验证；继续测量原生冷/热启动，完成全新下载及 Windows 原生验收。[路径证据](evidence/refactor-runtime-isolation.json)、[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。
 
 本轮交付范围为源码开发版。安装包、签名、发布、自动更新服务和在线插件市场继续按用户要求排除；已有环境/模型准备界面属于开发版功能。[发行边界](YOUDUB-DESKTOP-REFACTOR-PLAN.md#10-后续发行边界)

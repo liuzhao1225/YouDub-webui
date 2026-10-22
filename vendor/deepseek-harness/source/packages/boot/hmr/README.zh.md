@@ -33,7 +33,7 @@ kind: "package-reference"
     root: ["."]
 ```
 
-已有配置将模块名 `@deepseek-ai/cordis-plugin-hmr` 替换为 `@deepseek-ai/dsh-hmr`。继续提供 `hmr` 服务键、`baseDir`、`config`、`getLinked()`、`getOuterStack()`、`hmr/change` 和 `hmr/reload`。工作区保留 vendored 包；DSH profile 使用本包。
+已有配置将模块名 `@deepseek-ai/cordis-plugin-hmr` 替换为 `@deepseek-ai/dsh-hmr`。继续提供 `hmr` 服务键、`baseDir`、`config`、`getLinked()`、`getOuterStack()`、`hmr/change` 和 `hmr/reload`。YouDub profile 使用本包。活动 fork 已移除未使用的旧 vendored HMR 包；原始源码保留在不可变 Harness 归档中。
 
 ### 配置
 
@@ -66,7 +66,7 @@ App-boot 负责 profile 解析和 patch 优先级规则。HMR 读取启动器提
 
 替换沿 ES 模块链接以及每个 CommonJS 父模块的 `children` 传播。模块的插件从其 ES 模块命名空间以及 Node 已缓存的 CommonJS exports 中读取，不求值任何代码，因此在 Loader entry 之外注册的 CommonJS 插件保留其缓存。宿主依赖及可遍历 Loader 树之外的插件保持待处理。其余已变化模块及其导入方被逐出且不保留备份，运行受影响插件的 Loader entry 被停止。HMR 本身不导入替换代码：新一代组合启动条目时，Loader 导入当前文件，因此停用、删除和不兼容的行永远不会执行替换代码，动态 `disabled` 表达式和嵌套 Include 按启动时的方式求值。
 
-受影响的运行时停止，但其条目不会被标记为停用；`reconcileProfile()` 把它们传给 app-boot 的单次 `recomposeProfile()` 调用，由该调用启动它们，包括未变化 Include 之下的条目和 profile 组合之外的条目，且不会重复导入同一条目。任何插件停止之前发生的失败会让所有插件继续运行；没有新一代组合被应用时，已停止的插件以当前 resolution 重新启动。逐出之后，导入或启动失败的替换版本属于激活失败，使操作失败；其旧代码不再运行。每次重新组合都会先让 profile 根目录下的包配置失效并逐出链接失败的模块，再次导入此前导入失败的条目，因此修正后的文件或之后安装的依赖无需重启即生效。[ProfileReconciliation](../../../docs/subsystems/boot.zh.md#profile-reconciliation) 列出需要重启的变化。在重新组合期间首次加载、且其文件在比较之后被写入的模块保持陈旧，因此激活期间的写入会在下一次加载；比较或缓存检查失败时，即使无法确定已变化的 URL，也要求重启。HMR 的监听记录这些结果。
+受影响的运行时停止，但其条目不会被标记为停用；`reconcileProfile()` 把它们传给 app-boot 的单次 `recomposeProfile()` 调用，由该调用启动它们，包括未变化 Include 之下的条目和 profile 组合之外的条目，且不会重复导入同一条目。任何插件停止之前发生的失败会让所有插件继续运行；没有新一代组合被应用时，已停止的插件以当前 resolution 重新启动。逐出之后，导入或启动失败的替换版本属于激活失败，使操作失败；其旧代码不再运行。每次重新组合都会先让 profile 根目录下的包配置失效并逐出链接失败的模块，再次导入此前导入失败的条目，因此修正后的文件或之后安装的依赖无需重启即生效。[ProfileReconciliation](src/index.ts) 列出需要重启的变化。在重新组合期间首次加载、且其文件在比较之后被写入的模块保持陈旧，因此激活期间的写入会在下一次加载；比较或缓存检查失败时，即使无法确定已变化的 URL，也要求重启。HMR 的监听记录这些结果。
 
 每次重新组合之后，HMR 逐出重新组合删除的映射所在目录之下的已加载模块，并使这些包的配置过期，因此已删除或取消选入的组合包连同其动态导入的依赖，在它再次出现时重新导入。组合包的包本身不是映射：其文件在磁盘上变化时被替换；关闭组合包而其文件未变化时，它的模块保持加载。runtime resolution 拒绝的发布（例如移动到其他目录的保留 profile 映射）会停止并重新启动新一代组合将删除的行，组合保持不变；结果带有 `restartReason: 'package-moved'`。
 

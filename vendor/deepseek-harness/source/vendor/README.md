@@ -21,10 +21,8 @@ Upstream workspace: `cordis-workspace` (local checkout: `~/repos/cordis-workspac
 | `include/` | `@deepseek-ai/cordis-plugin-include` | `@cordisjs/plugin-include` | 1.0.4 | https://github.com/deepseek-harness/cordis (`packages/include`) | `abb0a307cb1d3b0947f455d590cf5ba922d4caa4` |
 | `group/` | `@deepseek-ai/cordis-plugin-group` | `@cordisjs/plugin-group` | 1.0.0 | https://github.com/deepseek-harness/cordis (`packages/group`) | `abb0a307cb1d3b0947f455d590cf5ba922d4caa4` |
 | `timer/` | `@deepseek-ai/cordis-plugin-timer` | `@cordisjs/plugin-timer` | 1.1.2 | https://github.com/deepseek-harness/cordis (`packages/timer`) | `abb0a307cb1d3b0947f455d590cf5ba922d4caa4` |
-| `hmr/` | `@deepseek-ai/cordis-plugin-hmr` | `@cordisjs/plugin-hmr` | 1.0.15 | https://github.com/deepseek-harness/cordis (`packages/hmr`) | `abb0a307cb1d3b0947f455d590cf5ba922d4caa4` |
-| `logger-console/` | `@deepseek-ai/cordis-plugin-logger-console` | `@cordisjs/plugin-logger-console` | 1.0.0 | https://github.com/deepseek-harness/cordis (`packages/logger-console`) | `abb0a307cb1d3b0947f455d590cf5ba922d4caa4` |
 
-Third-party dependencies of the vendored packages stay on npm: `@standard-schema/spec`, `js-yaml`, `chokidar`, `picomatch`, `@babel/code-frame`, `supports-color`, `node-addon-require-builtin`.
+Third-party dependencies of the vendored packages stay on npm: `@standard-schema/spec`, `js-yaml`, `node-addon-require-builtin`.
 
 Intentionally **not** vendored (verified unused by this set): `reggol`, `@cordisjs/utils`, `@cordisjs/element`, `@cordisjs/unyaml` (dev-time YAML import hook only).
 
@@ -61,6 +59,8 @@ Keep this log exhaustive — every divergence from upstream must be listed.
 23. **`loader/src/config/entry.ts` module identity**: retains each entry's raw import result as `moduleNamespace`, before plugin export normalization. HMR matches that object to Node's cached module namespace and updates it after a successful reload. `EntryTree.import()` keeps its existing arguments and return value; `loader/README.md` documents the additive field.
 
 24. **`timer/locale/{en,zh}.json` display metadata**: local English and Chinese titles and descriptions for the Settings plugin inventory. `timer/package.json` exports and publishes these locale resources.
+
+25. **YouDub unused vendor retirement**: removed `hmr/` and `logger-console/` from the active fork after runtime, type, package-test and dynamic-consumer review found no callers. Product hot reload remains in `packages/boot/hmr`; console output remains owned by the existing Host services. Removed their workspace, TypeScript, lockfile and rescope-tool entries. The immutable Harness archive and original source manifest retain both packages. Earlier local-modification entries and the rc.11 proposal remain historical records.
 
 ## Sync procedure
 

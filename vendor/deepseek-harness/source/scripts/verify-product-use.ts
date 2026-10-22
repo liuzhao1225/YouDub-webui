@@ -309,7 +309,8 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(
   } })
   const root = values.root === undefined ? resolve(dirname(fileURLToPath(import.meta.url)), '..') : resolve(values.root)
   const result = verifyProductUse(root, PRODUCT_PACKAGE_POLICY, {
-    patches: values.patch?.map(path => resolve(path)), entries: values.entry?.map(path => resolve(path)),
+    ...(values.patch === undefined ? {} : { patches: values.patch.map(path => resolve(path)) }),
+    ...(values.entry === undefined ? {} : { entries: values.entry.map(path => resolve(path)) }),
   })
   for (const failure of result.failures) console.error(failure)
   if (result.failures.length > 0) process.exitCode = 1

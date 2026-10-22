@@ -67,9 +67,6 @@ const REGISTER_OPTIONS: Readonly<Record<(typeof KINDS)[number], readonly OptionD
   ],
 }
 
-/** The one register option a dynamic package must NOT pass, and why. */
-const PRIORITY_NOTE = 'Do NOT pass `priority`: the browser-half facade assigns one automatically, and it is LOWER than every shipped entry — in a single or keyed cell that means your entry is the one that renders.'
-
 /** Standard-kit interface that applies to each scope, beyond the global one. */
 const SCOPE_KIT: Readonly<Record<(typeof SCOPES)[number], string | undefined>> = {
   'root': undefined,

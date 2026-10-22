@@ -13,8 +13,7 @@
     "packages/*/*",
     "native/system",
     "native/system/packages/*",
-    "apps/*",
-    "website"
+    "apps/*"
   ],
   "scripts": {
     "build": "tsx scripts/build.ts",
@@ -76,7 +75,6 @@
     "doc-typecheck:contracts-ready": "tsx scripts/doc-typecheck.ts",
     "verify-md-wrap": "tsx scripts/verify-md-wrap.ts",
     "verify-md-links": "tsx scripts/verify-md-links.ts",
-    "verify-doc-site-fragments": "tsx scripts/verify-doc-site-fragments.ts",
     "verify-public-repository-links": "tsx scripts/verify-public-repository-links.ts",
     "verify-repository-references": "tsx scripts/verify-repository-references.ts",
     "verify-concrete-terms": "tsx scripts/verify-concrete-terms.ts",
@@ -101,13 +99,6 @@
     "test:docs": "tsx scripts/run-gates.ts doc-quick",
     "gen-translation-brief": "tsx scripts/gen-translation-brief.ts",
     "verify-doc-budgets": "tsx scripts/verify-doc-budgets.ts",
-    "docs:dev": "pnpm --filter @deepseek-ai/website run dev",
-    "docs:build": "tsx website/build.ts && pnpm run verify-doc-site-fragments",
-    "docs:build:mpa": "tsx website/build.ts --mpa && pnpm run verify-doc-site-fragments",
-    "docs:preview": "pnpm --filter @deepseek-ai/website run preview",
-    "docs:check": "pnpm exec vitest run scripts/project-doc-site.spec.ts scripts/verify-doc-site-fragments.spec.ts website/tests/mermaid-viewer.spec.ts website/tests/image-viewer.spec.ts website/tests/code-groups.spec.ts website/tests/page-markdown-actions.spec.ts website/tests/raw-markdown.spec.ts && pnpm run docs:build",
-    "website:dev": "pnpm run docs:dev",
-    "website:build": "pnpm run docs:build",
     "verify-package-readme-limitations": "tsx scripts/verify-package-readme-limitations.ts",
     "verify-node-next-types": "tsx scripts/verify-node-next-types.ts",
     "verify-optional-dependency-imports": "tsx scripts/verify-optional-dependency-imports.ts",

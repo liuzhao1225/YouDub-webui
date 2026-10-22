@@ -1184,7 +1184,7 @@ export function walkPartitionProblems(input: WalkPartitionInput, maps: WalkParti
  * @returns `[repo-relative path, exact content]` for every generated artifact.
  */
 export function computeOutputs(): [string, string][] {
-  const { projector, model } = projectCordisCatalog(root, CORDIS_CATALOG_POLICY)
+  const { model } = projectCordisCatalog(root, CORDIS_CATALOG_POLICY)
   const services = [...model.services]
   const events = [...model.events]
 

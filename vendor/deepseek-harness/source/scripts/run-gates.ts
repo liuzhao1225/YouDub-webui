@@ -492,7 +492,6 @@ function ciStaticGates(options: { ownsBuild: boolean }): Gate[] {
           docTypecheckScript: 'doc-typecheck:contracts-ready',
         }
         : {},
-      docsBuildScript: 'docs:build:mpa',
     }),
     pnpmScript('module-graph', 'verify-module-graph', { label: 'module graph' }),
   ]
@@ -540,7 +539,6 @@ function ciConsumerGates(): Gate[] {
 function ciWindowsBlockingGates(): Gate[] {
   return [
     ciBuildGate('windows-build', { label: 'build' }),
-    pnpmScript('windows-site', 'docs:build', { label: 'production site' }),
   ]
 }
 
@@ -551,20 +549,18 @@ function ciWindowsCompleteGates(): Gate[] {
   })
   const coverageAfter = coverage.map(gate => gate.id)
   const observational = ciWindowsObservationalGates()
-    // Coverage owns Electron preparation. The required production site replaces
-    // the MPA build, which writes to the same output directory.
-    .filter(gate => gate.id !== 'build' && gate.id !== 'docs-site-build' && gate.id !== 'electron-install')
+    // Coverage owns Electron preparation.
+    .filter(gate => gate.id !== 'build' && gate.id !== 'electron-install')
     .map(gate => ({
       ...gate,
       allowFailure: true,
       after: [...new Set([
         ...coverageAfter,
-        ...(gate.after ?? []).map(id => id === 'docs-site-build' ? 'windows-site' : id),
+        ...(gate.after ?? []),
       ])],
     }))
   return [
     ciBuildGate(),
-    pnpmScript('windows-site', 'docs:build', { label: 'production site' }),
     ...coverage,
     ...observational,
   ]
@@ -765,17 +761,14 @@ function docSyncLeafGates(options: {
   docTypecheckNeeds?: string[]
   docTypecheckEnv?: Record<string, string | undefined>
   docTypecheckScript?: 'doc-typecheck' | 'doc-typecheck:contracts-ready'
-  docsBuildScript?: 'docs:build' | 'docs:build:mpa'
 } = {}): Gate[] {
   const docTypecheckOptions: Partial<Gate> = {}
   if (options.docTypecheckNeeds !== undefined) docTypecheckOptions.needs = options.docTypecheckNeeds
   if (options.docTypecheckEnv !== undefined) docTypecheckOptions.env = options.docTypecheckEnv
   return [
-    // Stable FIFO starts the longest leaves first; only docs-site-build writes website/.generated.
     ...options.includeDocTypecheck === false
       ? []
       : [pnpmScript('doc-typecheck', options.docTypecheckScript ?? 'doc-typecheck', docTypecheckOptions)],
-    pnpmScript('docs-site-build', options.docsBuildScript ?? 'docs:build', { label: 'documentation build' }),
     pnpmScript('doc-graphs', 'verify-doc-graphs', { label: 'doc graphs' }),
     pnpmScript('cli-help', 'verify-cli-help', { label: 'CLI help reference' }),
     pnpmScript('markdown-links', 'verify-md-links', { label: 'markdown links', quick: true }),
@@ -812,15 +805,6 @@ function docSyncLeafGates(options: {
     pnpmExec('doc-standard-tests', ['vitest', 'run', 'scripts/doc-standard.spec.ts'], {
       label: 'documentation standard tests',
       quick: true,
-    }),
-    pnpmExec('docs-site-projection', [
-      'vitest', 'run', 'scripts/project-doc-site.spec.ts', 'scripts/verify-doc-site-fragments.spec.ts',
-      'website/tests/mermaid-viewer.spec.ts',
-      'website/tests/image-viewer.spec.ts',
-      'website/tests/code-groups.spec.ts',
-      'website/tests/page-markdown-actions.spec.ts', 'website/tests/raw-markdown.spec.ts',
-    ], {
-      label: 'documentation site checks',
     }),
     pnpmScript('package-readme-limitations', 'verify-package-readme-limitations', { label: 'package README limitations', quick: true }),
   ]

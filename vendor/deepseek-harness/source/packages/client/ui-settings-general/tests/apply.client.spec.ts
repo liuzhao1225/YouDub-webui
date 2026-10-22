@@ -14,7 +14,7 @@ import { graphFromRoster } from '@deepseek-ai/dsh-client-test-runtime/src/assemb
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { LOCALE_SETTINGS_NAMESPACE, LocaleSettingsSchema } from '@deepseek-ai/dsh-client-locale/src/locale-settings.ts'
 import { inject } from '../src/client/index.ts'
-import { SIDEBAR, settingsPlan } from './settings-plan.ts'
+import { SIDEBAR, settingsPlan } from './settings-plan.client.ts'
 import type { DeveloperToolsRowInjected } from '../src/client/DeveloperToolsRow.tsx'
 import { HostReleasePrompt, type HostReleasePromptInjected } from '../src/client/HostReleasePrompt.tsx'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'

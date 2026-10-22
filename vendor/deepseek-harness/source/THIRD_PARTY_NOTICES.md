@@ -22,8 +22,6 @@ The Cordis framework and its foundation libraries are source-vendored into this 
 | `@deepseek-ai/cordis-plugin-include` | `@cordisjs/plugin-include` | [vendor/include](vendor/include/) | MIT |
 | `@deepseek-ai/cordis-plugin-group` | `@cordisjs/plugin-group` | [vendor/group](vendor/group/) | MIT |
 | `@deepseek-ai/cordis-plugin-timer` | `@cordisjs/plugin-timer` | [vendor/timer](vendor/timer/) | MIT |
-| `@deepseek-ai/cordis-plugin-hmr` | `@cordisjs/plugin-hmr` | [vendor/hmr](vendor/hmr/) | MIT |
-| `@deepseek-ai/cordis-plugin-logger-console` | `@cordisjs/plugin-logger-console` | [vendor/logger-console](vendor/logger-console/) | MIT |
 
 ## Runtime npm dependencies
 
@@ -104,7 +102,6 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`sharp`](https://github.com/lovell/sharp) | Apache-2.0 |
 | [`shiki`](https://github.com/shikijs/shiki) | MIT |
 | [`simple-icons`](https://github.com/simple-icons/simple-icons) | CC0-1.0 |
-| [`supports-color`](https://github.com/chalk/supports-color) | MIT |
 | [`tsx`](https://github.com/privatenumber/tsx) | MIT |
 | [`typescript`](https://github.com/microsoft/TypeScript) | Apache-2.0 |
 | [`undici`](https://github.com/nodejs/undici) | MIT |
