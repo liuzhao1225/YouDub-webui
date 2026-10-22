@@ -10,6 +10,7 @@ import {
 } from '@youdub/sdk'
 import { taskCover } from './task-cover.js'
 import { parseWorkflowDocument } from './workflow-document.js'
+import { nodeTypes } from './workflow-graph.js'
 
 const terminal = new Set(['succeeded', 'failed', 'cancelled'])
 const now = () => new Date().toISOString()
@@ -82,8 +83,14 @@ export default class Tasks extends Service implements TasksService {
     const allowedActions = terminal.has(task.status) ? ['rerun', 'delete'] : ['cancel']
     if (!task.legacy && ['failed', 'cancelled'].includes(task.status) && !mayStillRun) allowedActions.unshift('retry')
     if (task.graphSnapshot && !terminal.has(task.status) && task.status !== 'cancelling' && task.steps.some(step => step.status === 'awaiting_review')) allowedActions.unshift('approve', 'correct')
+    const types = task.graphSnapshot ? nodeTypes(this.ctx.catalog) : []
     return {
       ...publicTask, mayStillRun, allowedActions,
+      steps: task.steps.map(step => {
+        const node = task.graphSnapshot?.nodes.find(node => node.id === step.id)
+        const type = node && types.find(type => type.type === node.type && type.version === node.typeVersion && type.providerId === node.provider.id)
+        return { ...step, label: node?.label ?? type?.label ?? step.label }
+      }),
       ...(cover ? { cover: { artifactId: cover.id } } : {}),
       outputs: (task.outputs ?? []).map(output => {
         const file = artifacts?.[output.artifact.id]
@@ -96,7 +103,7 @@ export default class Tasks extends Service implements TasksService {
     const value = this.view(task)
     const { id, revision, attempt, status, sourceName, workflowId, workflowVersion, workflowSource, error, message, createdAt, updatedAt, queuedAt, startedAt, finishedAt, nextPollAt, legacy, cover, outputs, allowedActions, mayStillRun } = value
     return { id, revision, attempt, status, sourceName, workflowId, workflowVersion, workflowSource: workflowSource ?? (task.graphSnapshot ? { documentId: task.graphSnapshot.id, documentRevision: null, title: task.graphSnapshot.title } : undefined), error, message, createdAt, updatedAt, queuedAt, startedAt, finishedAt, nextPollAt, legacy, cover, outputs, allowedActions, mayStillRun,
-      steps: task.steps.map(({ id, label, status, progress, message, startedAt, finishedAt, error }) => ({ id, label, status, progress, message, startedAt, finishedAt, error })),
+      steps: value.steps.map(({ id, label, status, progress, message, startedAt, finishedAt, error }) => ({ id, label, status, progress, message, startedAt, finishedAt, error })),
     }
   }
   async get(id: string) { return this.view(await this.record(id)) }

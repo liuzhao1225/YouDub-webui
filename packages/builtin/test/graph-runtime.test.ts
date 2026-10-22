@@ -103,6 +103,29 @@ async function setup(t: any) {
   return { ctx, create, until, command, executions, provider, workflow, identity, restart }
 }
 
+test('task views expose plugin label translations without rewriting snapshots or custom labels', async t => {
+  const { ctx, create, until, provider } = await setup(t)
+  const describe = provider.describe
+  const localized = { default: 'Document', translations: { zh: '文档', ja: 'ドキュメント' } }
+  provider.describe = () => {
+    const value = describe()
+    value.operations[0].node!.label = localized
+    return value
+  }
+  const document = graph('left')
+  document.nodes[1].label = 'My review'
+  const created = await create(document)
+  await until(created.id, 'paused')
+  const original = await ctx.store.call('store.get', { id: created.id })
+  const detail = await ctx.tasks.get(created.id)
+  const summary = (await ctx.tasks.list()).items.find(task => task.id === created.id)!
+  assert.deepEqual(detail.steps[0].label, localized)
+  assert.deepEqual(summary.steps[0].label, localized)
+  assert.equal(detail.steps[1].label, 'My review')
+  assert.equal(summary.steps[1].label, 'My review')
+  assert.deepEqual(await ctx.store.call('store.get', { id: created.id }), original)
+})
+
 test('a persisted review releases the slot, survives restart and resumes without executing the reviewed node again', async t => {
   const { ctx, create, until, command, executions, restart } = await setup(t)
   const first = await create(graph('left')), paused = await until(first.id, 'paused')

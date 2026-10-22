@@ -107,7 +107,7 @@ export interface OperationProvider {
   poll?(operation: JsonObject, context: InvocationContext): Promise<OperationResult>;
   validateCorrection?(request: { operation: string; inputs: JsonObject; baselineOutputs: JsonObject; patch: JsonObject }): Promise<JsonObject> | JsonObject;
 }
-export interface StepState { id: string; label: string; status: StepStatus; invocationId: string | null; progress: number | null; message: string | null; startedAt: string | null; finishedAt: string | null; outputs: JsonObject; error: Diagnostic | null; operation?: JsonObject; resultRevisions?: NodeResultRevision[]; outputRevision?: number; approvedRevision?: number | null; approvalActionId?: string | null }
+export interface StepState { id: string; label: LocalizedText; status: StepStatus; invocationId: string | null; progress: number | null; message: string | null; startedAt: string | null; finishedAt: string | null; outputs: JsonObject; error: Diagnostic | null; operation?: JsonObject; resultRevisions?: NodeResultRevision[]; outputRevision?: number; approvedRevision?: number | null; approvalActionId?: string | null }
 export interface TaskRecord {
   id: string; revision: number; attempt: number; status: TaskStatus; sourceName: string;
   workflowId: string; workflowVersion: string; config: JsonObject; inputs: Record<string, ArtifactRef>;
@@ -121,6 +121,7 @@ export interface TaskRecord {
   legacy?: boolean; rawSnapshot?: JsonObject; [key: string]: any
 }
 export interface TaskView extends Omit<TaskRecord, 'artifacts' | 'credentialRefs' | 'rawSnapshot' | 'outputs'> {
+  steps: StepState[];
   cover?: { artifactId?: string; url?: string };
   outputs: Array<{ id: string; label: string; role: string; name: string; mimeType: string; size: number }>;
   allowedActions: string[]; mayStillRun: boolean; [key: string]: any
