@@ -138,3 +138,5 @@ API 密钥输入框初始为空，并通过 `autocomplete="new-password"` 请求
 </details>
 
 YouDub fork：Credentials Remote 按需返回前六位掩码；已保存密钥原文不返回前端，模型编辑器仅将掩码作为空输入框的占位显示。
+
+YouDub 分支移除了停用的 DeepSeek 首启引导、预览版说明、专属状态与文案，以及仅用于该引导的凭据表单模式。首次语言、安装目录、资源与翻译配置由 YouDub 承担。通用提供商编辑器继续负责提供商配置、模型发现和只写凭据。

@@ -662,3 +662,11 @@ AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、2
 独立配置中的合成测试密钥通过页面发现模型、保存、重开掩码和复制测试、删除确认与重载。完整密钥未出现在 DOM，空输入框没有可复制值；删除后凭据文件及 profile 均不再引用测试值。[凭据证据](evidence/refactor-credential-lifecycle.json)
 
 以上使用源码 Desktop Host 和浏览器交互，未替代原生窗口控件与文件框验收，也未执行打包或发布。
+
+### P6 第 26 批：停用首启引导清理
+
+模型设置入口仅注册通用 Models 分区，DeepSeekOnboardingDialog、WelcomeNotice、OnboardingModal 及欢迎状态已无产品消费者。移除 11 个专属源码/样式/测试文件、旧就绪投影和 sign-in 席位，清除 ProviderEditor 只供旧引导调用的分支，并删除中英日各 10 个过期文案。保留 providerUsable 及其断言、所有通用提供商编辑和凭据测试。清理该包指向 product-analytics 的依赖、TS reference 与锁文件条目。
+
+7 项源码构建门、2 项聚合类型、367 项设置/凭据回归、123 项包边界/目录检查、6 项实际 Host/语言合同均通过。语言门先发现日语残留字段，清理后构建通过；实际 Host 日语页面的空列表、提供商选择、API Key/URL/模型编辑和取消读回通过，控制台无错误。原始归档哈希保持不变。双平台 CI 尚待验证。[证据](evidence/refactor-onboarding-prune.json)
+
+包内审计同时确认旧账号链仍由 remotes 类型与事件、product-analytics 的账号标识、llm-deepseek 的账号专属测试和 session-controller 的账号重试入口引用。它们未进入 YouDub 产品默认装配，源码退出仍需按消费者逐项处理，P6 保持开放。

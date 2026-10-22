@@ -140,3 +140,5 @@ None.
 </details>
 
 YouDub fork: Credentials Remote optionally returns a masked six-character prefix. Stored secret values never return to the renderer; the model editor uses the prefix only as an empty input placeholder.
+
+The YouDub fork removes the retired DeepSeek onboarding and preview-notice implementation, its private state and copy, and the credential-only editor mode. First-run language, installation directory, resources and translation setup belong to YouDub. The shared provider editor retains provider configuration, model discovery and write-only credential handling.

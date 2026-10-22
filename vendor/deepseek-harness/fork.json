@@ -25006,10 +25006,10 @@
         "path": "packages/client/ui-settings-models/README.md",
         "type": "file",
         "executable": false,
-        "size": 21361,
-        "sha256": "e068de9056f3413212a054b22861faec3fe63ce3fc3ce998d38c8f759ceca5ca"
+        "size": 21723,
+        "sha256": "816e75184417e5193d4ca00022d0ebf32f32d56b62912f18f298a2ada3a57ffe"
       },
-      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
+      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/README.zh.md",
@@ -25024,10 +25024,10 @@
         "path": "packages/client/ui-settings-models/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 19413,
-        "sha256": "34790fc598083a61f2ee22986ac8cfd8e3077f52a050bb885de6f07cb34c1a63"
+        "size": 19716,
+        "sha256": "3f03a07f2a1057fd12c07b37076c47ebe0a507a14a3211eeca8b71017d5c23d0"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/package.json",
@@ -25042,10 +25042,10 @@
         "path": "packages/client/ui-settings-models/package.json",
         "type": "file",
         "executable": false,
-        "size": 2118,
-        "sha256": "2daaa2229fa844963d2a1ffc3edb23a23da6018916e9c6b05b4197b8687c3e78"
+        "size": 2054,
+        "sha256": "39c9b127e546f84d1b2617924e238674cc4970adc2e288ded0b4b037f40da7f1"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/ApiKeyInput.tsx",
@@ -25084,6 +25084,48 @@
       "reason": "Preserve unsaved custom provider and credential input when leaving."
     },
     {
+      "path": "packages/client/ui-settings-models/src/client/DeepSeekOnboardingDialog.module.css",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/DeepSeekOnboardingDialog.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 215,
+        "sha256": "9dd7d57f7a2a681b5576e9185b59462568296c298fedc42fb2ed4e9acd4d5cf9"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/DeepSeekOnboardingDialog.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/DeepSeekOnboardingDialog.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 5506,
+        "sha256": "0a1ae2e32c4ca822f72118acd33d4f8770968098598f1e4402e8af65c1fe8454"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/EditorFooter.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/EditorFooter.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2277,
+        "sha256": "20b6c0bfc6b4b387c4d4a98605007362077206867393eec1562a5af56e39e283"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/EditorFooter.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2156,
+        "sha256": "64e270c4755e8e15d95467a4b3b713572a5491f975166d3d87b209e18f7be0fd"
+      },
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
       "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
       "before": {
         "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
@@ -25102,6 +25144,30 @@
       "reason": "Keep the original provider section and protect unsaved cards when navigating or closing."
     },
     {
+      "path": "packages/client/ui-settings-models/src/client/OnboardingModal.module.css",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/OnboardingModal.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 451,
+        "sha256": "0df69ceaa5f4a31d4aaf7789371ec9004d64d70216e2161431fbfcce0d2c8b50"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/OnboardingModal.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/OnboardingModal.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 1529,
+        "sha256": "9193fb68365d6aeec6cd8a8755be6e9b79b8c69eb3c51af0015eb3f3b65c155f"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
       "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
       "before": {
         "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
@@ -25114,10 +25180,34 @@
         "path": "packages/client/ui-settings-models/src/client/ProviderEditor.tsx",
         "type": "file",
         "executable": false,
-        "size": 29947,
-        "sha256": "7b3cf8998ded687eb37d63d5ed9150cf926e2fbe2648fcf744be9dfa29d6bfc6"
+        "size": 28218,
+        "sha256": "a285e1c720b9460776a9832fd90bda42d1b3f7c01e6f8e24635fa44b2703204a"
       },
-      "reason": "Expose the original provider draft and partial-save state to leave checks. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
+      "reason": "Expose the original provider draft and partial-save state to leave checks. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/WelcomeNotice.module.css",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/WelcomeNotice.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 454,
+        "sha256": "4765269e05cb3edaff0d2983421575b902263663e05596db853e00de373df438"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/WelcomeNotice.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/WelcomeNotice.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2732,
+        "sha256": "d4d26399cdfc5a7aa59a98cea1d2697b1d5fcf322d019acb1dacbc2764700a25"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/draft-leave.tsx",
@@ -25162,10 +25252,28 @@
         "path": "packages/client/ui-settings-models/src/client/locales.ts",
         "type": "file",
         "executable": false,
-        "size": 16523,
-        "sha256": "9c08662be5623656b2fddbc43228f4f8be978eae8e0e80c3f8caf25b2de58d3b"
+        "size": 14241,
+        "sha256": "40f2d6c1e13ff7bcf97175886b9d99b2f1d928e286bb14b588a3fd1549583a60"
       },
-      "reason": "Localize the model draft discard confirmation."
+      "reason": "Localize the model draft discard confirmation. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/slot-contract.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/slot-contract.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2827,
+        "sha256": "1098f18d118156c7ac70a7c214d5ef6b271182680c2e3bd73e4f0ed97cef8853"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/slot-contract.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2635,
+        "sha256": "7877d7dec113fb7a9526e2152839e3f68d35e2f1cfe93bce24a0d6f1a76d43df"
+      },
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/store.ts",
@@ -25180,10 +25288,22 @@
         "path": "packages/client/ui-settings-models/src/client/store.ts",
         "type": "file",
         "executable": false,
-        "size": 17848,
-        "sha256": "850cbddb3d909daa05b6dc11ea63f9f420826b99d606d44d13506ff10edf6056"
+        "size": 15453,
+        "sha256": "0796560e6645ef85376c5ed813fd8c4ac14b6ce61ee068aa883ba89d35b7bbc7"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/welcome-store.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/welcome-store.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4039,
+        "sha256": "01e4fc8ca890bc73a8375a76b3a0439dceeda9967b5ca7a249a9d531cb36fb3e"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/src/index.ts",
@@ -25202,6 +25322,18 @@
         "sha256": "43dfea2481e5b8e1c6698327ceb5687e4a8050eb26ffe5000eb35b6cd40d1ab9"
       },
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/onboarding-copy.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/onboarding-copy.ts",
+        "type": "file",
+        "executable": false,
+        "size": 485,
+        "sha256": "28b187200bbe4a3ffa840537f9cea12d228da835703b51cd5cf3afaf41d7e6f8"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/tests/apply.client.spec.ts",
@@ -25234,10 +25366,22 @@
         "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 119703,
-        "sha256": "9cdb449f0390693891b912eac128b5a9695545c0489c6dbad0fdccc3050ae2dc"
+        "size": 117431,
+        "sha256": "45df58e2d5f209dc800da1debab836d085d7aaa66ada3ec93575e3aa6f8b0213"
       },
-      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。"
+      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/onboarding-dialog.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/onboarding-dialog.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 13309,
+        "sha256": "de95dd981861645500cbeb071f41ba3ce15a0d71e4fbac219ce12b5f8c2fc3ab"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-models/tests/provider-form.client.spec.tsx",
@@ -25258,6 +25402,24 @@
       "reason": "YouDub aggregate typecheck: put frontend-only settings fixture in the client face; type existing slot owners, remove unused retired hook props and unsupported Testing Library options; omit absent optional CLI inputs without changing guard behavior."
     },
     {
+      "path": "packages/client/ui-settings-models/tests/readiness.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/readiness.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4922,
+        "sha256": "3b257d973fa3c949bde2c0e77a0721926da8151a9ecf5f05cf765110dfd2b20e"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/tests/readiness.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 1489,
+        "sha256": "6ea6e7ac379565ea1478e58682b05fd4ce25f6a06310a6dc4240e6dce97c3b07"
+      },
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
       "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
       "before": {
         "path": "packages/client/ui-settings-models/tests/store.client.spec.ts",
@@ -25274,6 +25436,48 @@
         "sha256": "96cb80ccdeea5c8b362f5918247436f141774e05d19d6f65e6f5d51f27a160ac"
       },
       "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/welcome-notice.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/welcome-notice.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 7717,
+        "sha256": "30c397111544173fc24716d6b91f1c813cd87ccb45248c9735face30037ec4d0"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tests/welcome-store.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-settings-models/tests/welcome-store.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8291,
+        "sha256": "5ddfce41a1866ef3178c6e9662acc86b253945b4d5f2df24fd6881a28a2957df"
+      },
+      "after": null,
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+    },
+    {
+      "path": "packages/client/ui-settings-models/tsconfig.json",
+      "before": {
+        "path": "packages/client/ui-settings-models/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 774,
+        "sha256": "f2ea5d89ddc0cb1d6fc1e994a25c96f68bd176c5dba5947ef108792614d57540"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 703,
+        "sha256": "027411dedaab3768b40ec8adef2bb8a9adcfbcb97630c0251654651ca3ae4ad7"
+      },
+      "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "packages/client/ui-settings-plugin-inventory/README.i18n.yaml",
@@ -58090,10 +58294,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 708392,
-        "sha256": "7cc74b58bd2a172ca7a00ed397737da7d6f44318a903e7de85289fc5b7e2f7e8"
+        "size": 708267,
+        "sha256": "e98f07aa318098379131dd7e6b6361884670ac0f20c467fa93d20734cca7338f"
       },
-      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers."
+      "reason": "YouDub P6 batch 25: retire unused legacy vendored HMR and console logger packages; retain current boot HMR and Host logging, and update exact build/tooling consumers. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -60874,10 +61078,10 @@
         "path": "vitest.config.ts",
         "type": "file",
         "executable": false,
-        "size": 18504,
-        "sha256": "098d5214eec0433e7aef6ac35c5188cdac8cff4643c59440c592b301db8df6cd"
+        "size": 18344,
+        "sha256": "37058e7463228bb3129fdaa654c53fc2b2f52a1b4ef458a388535445a5091f6c"
       },
-      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives."
+      "reason": "Copied verbatim from upstream 687f282e8625c6b8d11ff58211a90524be2e4317 archive to run the original module tests in the YouDub source workspace. Remove the retired browser Worker preview deployment and its dedicated build commands and scenarios; preserve the Electron Web entry and original transport, static assets and bundler isolation checks. Remove retired Worker package paths from compiler, executable, documentation, coverage and fixture inventories; keep the same checks for retained modules and validate coverage selection with the existing Typert exemption. Remove retired SSH package and executable entries from compiler, package, documentation and release inventories; retain generic worker launch and closure assertions using product-neutral fixtures. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired conversation product modules from workspace, compiler, package policy, generated catalogs and bilingual inventories; preserve generic loader, dependency and metadata assertions with current or explicit synthetic fixtures. Remove retired experimental products from workspace/compiler/publication/catalog/notice and bilingual inventories. Keep generic validation with retained or synthetic fixtures and preserve the source archives. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
       "path": "vitest.shared.ts",
