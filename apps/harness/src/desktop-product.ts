@@ -22,7 +22,6 @@ import { connectDesktopSettings, type DesktopSettingsBackend } from '../../../ve
 import { readDesktopLoginShellEnvironment, resolveDesktopLoginShellConfig } from '../../../vendor/deepseek-harness/source/apps/desktop/src/login-shell-environment.ts'
 import { DesktopBrowserGuests } from '../../../vendor/deepseek-harness/source/apps/desktop/src/browser-guests.ts'
 import { installDesktopShortcuts } from '../../../vendor/deepseek-harness/source/apps/desktop/src/keyboard.ts'
-import { DesktopUpdateOverlays } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-overlay.ts'
 import { DesktopQuitConfirmation } from '../../../vendor/deepseek-harness/source/apps/desktop/src/quit-confirmation.ts'
 import { closeRendererBeforeQuit } from './desktop-unload.ts'
 import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts'
@@ -218,7 +217,6 @@ async function main(): Promise<void> {
   windowsLanguage = locale.id
   const applicationUrl = `${SCHEME}://app/`
   const browserGuests = new DesktopBrowserGuests(() => hostUrl)
-  const updateOverlays = new DesktopUpdateOverlays()
   const assertProductSender = (event: IpcMainInvokeEvent): void => {
     assertDesktopSender(event, ['app'])
     if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents
@@ -250,7 +248,6 @@ async function main(): Promise<void> {
   // Protocol and websocket forwarding follow upstream main.ts. Credentials remain in the main process.
   protocol.handle(SCHEME, request => {
     const url = new URL(request.url)
-    if (url.hostname === 'shell') return serveWebDocument(request, join(app.getAppPath(), 'renderer'))
     if (url.hostname === 'app') {
       if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/assets/')
         || ['/favicon.svg', '/manifest.webmanifest'].includes(url.pathname)) {
@@ -289,7 +286,7 @@ async function main(): Promise<void> {
   installMicrophonePermissions(session.defaultSession, () => mainWindow?.webContents)
   const shortcuts = installDesktopShortcuts(() => mainWindow, app.getPath('userData'),
     process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : 'linux',
-    refreshApplicationMenu, window => updateOverlays.input(window))
+    refreshApplicationMenu, () => ({ revision: 0, blocked: false }))
   app.on('will-quit', () => shortcuts.dispose())
   app.setAboutPanelOptions({ applicationName: 'YouDub', applicationVersion: manifest.version, version: '', copyright: '' })
   const startup = backend.start(async () => {
@@ -332,13 +329,6 @@ async function main(): Promise<void> {
     refreshApplicationMenu()
   })
   ipcMain.handle(DESKTOP_IPC.deviceInfo, event => { assertProductSender(event); return readDeviceInfo() })
-  // No YouDub release feed exists for this workspace development shell. Idle means no running update.
-  ipcMain.handle(DESKTOP_IPC.updatesStatus, event => { assertProductSender(event); return { phase: 'idle' } })
-  ipcMain.handle(DESKTOP_IPC.updatesOpen, async event => {
-    assertProductSender(event)
-    await dialog.showMessageBox(mainWindow!, { type: 'info', title: 'YouDub',
-      message: locale.id === 'zh-CN' ? '当前开发版本尚未配置更新源。' : 'This development build has no update source configured.' })
-  })
 
   // Copied verbatim from upstream apps/desktop/src/main.ts.
   if (process.platform === 'win32') {

@@ -15,8 +15,7 @@ import { dirname, join } from 'node:path'
 import { createDevelopmentProjectMetadata } from '../src/project-manager.ts'
 import type { DesktopRelease } from '../src/release.ts'
 import { DESKTOP_RUNTIME_FILE, type DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
-import type { DesktopAutoUpdateTarget } from './desktop-auto-update-environment.mjs'
-import { desktopTargetPlatform } from './desktop-build-paths.mjs'
+import { desktopTargetPlatform, type DesktopBuildTarget } from './desktop-build-paths.mjs'
 
 interface PackageManifest {
   readonly name?: string
@@ -41,7 +40,7 @@ export interface DevelopmentProjectOptions {
   /** Release identity written into the disposable project metadata. */
   readonly release: DesktopRelease
   /** Build target whose prepared payload the disposable project runs against. */
-  readonly target: DesktopAutoUpdateTarget
+  readonly target: DesktopBuildTarget
 }
 
 function readManifest(path: string): PackageManifest {

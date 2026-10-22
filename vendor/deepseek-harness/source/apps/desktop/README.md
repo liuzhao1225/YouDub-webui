@@ -16,7 +16,7 @@ The retired Harness product main, native login/welcome renderer, Platform accoun
 
 Run `npm run dev` from the YouDub repository root. The framework build emits `preload-app.cjs`; the product build composes the retained Desktop modules and creates the development runtime from the explicit package closure. This package has no standalone application entry or login step.
 
-The current task covers source development. Remaining upstream release/update utilities are not wired to a YouDub release feed and are still subject to the P6 source audit; they do not establish a supported packaging path.
+This package retains source-development build commands only. The upstream updater, account-dependent mandatory update policy, command installer, packaging/signing/upload scripts and their dedicated assets have been removed from the active fork. The original archive preserves them. The native preload exposes no update installation bridge. Generic keyboard overlay input protection and its original tests remain available.
 
 ## Provenance and checks
 
