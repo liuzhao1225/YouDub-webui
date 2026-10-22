@@ -58,11 +58,24 @@
         "failed": 1,
         "actualElectronHostModesPassed": 2
       }
+    },
+    {
+      "commit": "5a078bc71693208b4ebb0837a3a9c64e59ec776c",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39823710411/job/119981317649",
+      "result": "installed-only migration passed; root-and-installed migration still restored old SDK after remove",
+      "sourceAndProductBuildPassed": true,
+      "desktopAndProcessTestsPassed": true,
+      "productContracts": {
+        "passed": 30,
+        "failed": 1,
+        "actualElectronHostModesPassed": 2
+      },
+      "installedMetadataSpecifierCheckPassed": true
     }
   ],
   "corrections": {
-    "production": "Source inventory and staging compare portable link targets; preserve file bytes, Git executable modes and POSIX backslashes. Profile preparation now writes portable pnpm link specifiers instead of Windows native backslashes. Synchronize both wanted and installed pnpm lockfiles with the official offline install operation. Detect old installed metadata even when the root lock already matches; verify both saved SDK specifiers before continuing. Explicitly allow the intentional lock update under CI.",
-    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions. The migration regression also resolves the lockfile version to the actual SDK target before remove; post-remove realpath assertions remain. Exercise root-and-installed stale locks and installed-only stale locks; check installed metadata and the actual SDK target after removing the unrelated fixture."
+    "production": "Source inventory and staging compare portable link targets; preserve file bytes, Git executable modes and POSIX backslashes. Profile preparation now writes portable pnpm link specifiers instead of Windows native backslashes. Synchronize both wanted and installed pnpm lockfiles with the official offline install operation. Detect old installed metadata even when the root lock already matches; verify both saved SDK specifiers before continuing. Explicitly allow the intentional lock update under CI. Windows still failed when wanted and installed locks started stale together. Resolve the wanted lock first with the official lock-only operation, then install from it; the installed-only path was already verified on Windows.",
+    "tests": "Normalize native separators when checking missing-module paths and equivalent pnpm link destinations; retain original cause, dependency identity, realpath, user-data and uninstall assertions. The migration regression also resolves the lockfile version to the actual SDK target before remove; post-remove realpath assertions remain. Exercise root-and-installed stale locks and installed-only stale locks; check installed metadata and the actual SDK target after removing the unrelated fixture. Assert the installed lock version equals the wanted lock version before removing the fixture."
   },
   "local": {
     "sourceTestsPassed": 7,
@@ -86,11 +99,18 @@
     "intermediateFailures": [
       "CI=true exposed default frozen-lockfile rejection; intentional migration now sets --no-frozen-lockfile.",
       "First active Host invocation correctly rejected the pre-Batch-21 build; rebuilt source before both final Host checks passed."
-    ]
+    ],
+    "twoPhaseSynchronization": {
+      "testsPassed": 10,
+      "profileTests": 8,
+      "actualHostModes": 2,
+      "ciEnvironment": true,
+      "log": "/tmp/youdub-profile-two-phase-local.log"
+    }
   },
   "nextRun": {
     "status": "pending push",
-    "purpose": "Verify synchronized installed metadata prevents the actual Windows SDK target regression."
+    "purpose": "Verify the wanted-lock then installed-lock migration on Windows, including both stale states and actual SDK destination after remove."
   },
   "limitations": [
     "The full Windows job is not yet green.",

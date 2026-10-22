@@ -181,6 +181,7 @@ for (const staleLock of ['root-and-installed', 'installed-only']) {
     assert.equal(await realpath(resolve(profile, lockedVersion.slice('link:'.length))), await realpath(plugin));
     const installedLock = parse(await readFile(join(profile, 'node_modules/.pnpm/lock.yaml'), 'utf8'));
     assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].specifier, `link:${plugin.split(sep).join('/')}`);
+    assert.equal(installedLock.importers['.'].dependencies['@youdub/harness-subtitles'].version, lockedVersion);
     await operation(['remove', fixtureName, '--config.offline=true']);
     assert.equal(await realpath(join(profile, 'node_modules/@youdub/harness-subtitles')), await realpath(plugin));
     assert.equal((await readManifest(profile)).dependencies['@youdub/harness-subtitles'].split(sep).join('/'), `link:${plugin.split(sep).join('/')}`);

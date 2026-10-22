@@ -36,14 +36,22 @@ export async function prepareYouDubProfile(profile, pluginRoot, runtimeProject, 
     try { return parse(await readFile(path, 'utf8'))?.importers?.['.']?.dependencies?.['@youdub/harness-subtitles']?.specifier; }
     catch (error) { if (error.code !== 'ENOENT') throw error; }
   };
-  if ((await Promise.all(lockPaths.map(readSdkSpecifier))).some(specifier => specifier !== dependency)) {
+  const specifiers = await Promise.all(lockPaths.map(readSdkSpecifier));
+  if (specifiers.some(specifier => specifier !== dependency)) {
     if (!packageManager?.command) throw new Error('YouDub profile preparation requires its explicit package manager.');
     const { runPluginCommand } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-plugin-manager/operations')));
-    // Synchronize both wanted and installed locks. Updating only pnpm-lock.yaml
-    // leaves pnpm remove able to restore the previously installed SDK target.
-    const result = await runPluginCommand({ profile: 'youdub', dir: profile, installAnchor: join(runtimeProject, 'package.json'), cwd: runtimeProject },
-      ['install', '--no-frozen-lockfile', '--offline', '--ignore-scripts'], { ...packageManager, execution: 'service', outputBytes: 32_768, activateNewBundles: false });
-    if (result.exitCode !== 0 || result.timedOut) throw new Error(`YouDub profile dependency synchronization failed: ${result.output}\n${result.logPath}`);
+    // Resolve the wanted lock first. pnpm on Windows can retain the old installed
+    // link when resolution and installation both start from the old lock.
+    // Then synchronize installed metadata from that resolved wanted lock.
+    const flags = ['--no-frozen-lockfile', '--offline', '--ignore-scripts'];
+    const commands = specifiers[0] !== dependency
+      ? [['install', '--lockfile-only', ...flags], ['install', ...flags]]
+      : [['install', ...flags]];
+    for (const args of commands) {
+      const result = await runPluginCommand({ profile: 'youdub', dir: profile, installAnchor: join(runtimeProject, 'package.json'), cwd: runtimeProject },
+        args, { ...packageManager, execution: 'service', outputBytes: 32_768, activateNewBundles: false });
+      if (result.exitCode !== 0 || result.timedOut) throw new Error(`YouDub profile dependency synchronization failed: ${result.output}\n${result.logPath}`);
+    }
     for (const path of lockPaths) {
       if (await readSdkSpecifier(path) !== dependency) throw new Error(`YouDub SDK dependency was not synchronized: ${path}`);
     }

@@ -554,3 +554,9 @@ profile 准备现通过官方 PluginManager 执行离线安装，同步根锁和
 首次完整 GUI 在已移除 Cordis 面板的主题夹具失败，现仅删除该退役面板行，其余表面检查保留。历史整体验证最初缺候选 runtime/provenance 收据；记录开发构建来源后，普通 Node 验证通过。Electron 的 ASAR 文件系统视图会改变历史安装包目录摘要，未将该工具调用误差登记为上游源码改动。失败历史见[结构化证据](evidence/refactor-leaf-products-prune.json)。合回逐文件核对原像，保留 Windows profile 修复和并行业务修改。其余裁剪、最终原生与媒体质量、远程 CI 和两份飞书文档仍未完成；未打包或发布。
 
 第 21 批与并行界面/资源改动的合并提交 2a275a64，macOS job 已正式 success：GUI 552 文件 / 8,746 项，profile 6,731 项，Web 264 项，领域 187 项，Harness 76 项和 Python 525 项通过。该 run 的 Windows job 仍因 SDK 回退失败，整条 run 为 failure；后续 d87982c4 修复和第 22 批需新一次双平台检查。[macOS 结果](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39820473291/job/119970692443)
+
+### Windows 同时过期的两份锁仍需分步同步
+
+5a078bc7 的 Windows 源码构建、桌面与实际 Host 仍通过。产品合同 30 项通过、1 项失败：根锁已更新而已安装锁过旧的迁移通过；两份锁同时过旧时，卸载后仍返回旧 SDK。安装记录的 specifier 已更新，不能只用该字段认定完成。
+
+初始化现先通过官方锁文件操作解析当前 SDK，再通过官方安装同步已安装记录，复用本次 Windows 已通过的后半段迁移。新增安装记录 version 与根锁 version 的一致性断言；保留卸载后的 realpath 检查。CI=true 本机 8 项 profile 及两种实际 Host 通过，远程结果继续待验收。[Windows 失败结果](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39823710411/job/119981317649)
