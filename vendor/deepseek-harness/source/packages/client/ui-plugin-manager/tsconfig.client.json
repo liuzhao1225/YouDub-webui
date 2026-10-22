@@ -37,9 +37,6 @@
       "path": "../ui-renderer"
     },
     {
-      "path": "../ui-sidebar"
-    },
-    {
       "path": "../ui-slots"
     },
     {

@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { IconPluginPinwheelOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 
 /**
  * Render the plugin glyph at the size the sidebar asks for.

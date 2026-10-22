@@ -8946,6 +8946,24 @@
       "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
     },
     {
+      "path": "packages/client/ui-layout/README.i18n.yaml",
+      "before": {
+        "path": "packages/client/ui-layout/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1652,
+        "sha256": "53e94aea5122d543b909b5f59d379ca0e5d661cb31a1c820bd0c163b980d60b3"
+      },
+      "after": {
+        "path": "packages/client/ui-layout/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 1652,
+        "sha256": "77af1255dbab5a7d8267e191a8f8377904c6d8a1466475ec09f66a11832599e4"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
       "path": "packages/client/ui-layout/README.md",
       "before": {
         "path": "packages/client/ui-layout/README.md",
@@ -8958,10 +8976,10 @@
         "path": "packages/client/ui-layout/README.md",
         "type": "file",
         "executable": false,
-        "size": 10070,
-        "sha256": "e5031c0b6940bed3e81cecbfc5b988a60743ef23aa591d725baa744872e6055f"
+        "size": 10284,
+        "sha256": "91e000ba9d537340b69b546ce2d620c782263cf35331213fd59f45c8fcaec5c6"
       },
-      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-layout/README.zh.md",
@@ -8976,10 +8994,10 @@
         "path": "packages/client/ui-layout/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 8966,
-        "sha256": "013718b8abc659279adc4061f93c02914478202317fc330b4410005ae3fb5a7a"
+        "size": 9147,
+        "sha256": "c8f8692e9e92b9279188999815ea7ff82bb68020c1ea8cc5906d3d7f3fbe2d85"
       },
-      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources."
+      "reason": "Keep the original layout while projecting the product title without requiring chat Session sources. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-layout/package.json",
@@ -9048,10 +9066,10 @@
         "path": "packages/client/ui-layout/src/client/index.ts",
         "type": "file",
         "executable": false,
-        "size": 10760,
-        "sha256": "e15da4597f63a63ae917c30b504d78e6492cf457d0ad303fc21efac2dbebc08c"
+        "size": 11751,
+        "sha256": "3f0ef6201ca66961cad5a7cfb6bc69ae8aa5f8346bee6c53e20b957752d5cc79"
       },
-      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-layout/tests/app-frame.client.spec.tsx",
@@ -9106,6 +9124,132 @@
         "sha256": "b85410786a5f715385c2909ac314beda3eed165269deb7f3023f96eb29ee25c6"
       },
       "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/README.i18n.yaml",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2670,
+        "sha256": "9a0d931d87e34b418b362daee2113421b72faf0e04dbc7388760805fed638d11"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2670,
+        "sha256": "1297f887f5eb7a203727dc9008bc4b51720d3aabac9cca0e3fa406b27ac6db27"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/README.md",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 31081,
+        "sha256": "c1b85da98de05c49c3b47d2f852783f1dc929544f73a2e8cf60261d81c1a9321"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/README.md",
+        "type": "file",
+        "executable": false,
+        "size": 30964,
+        "sha256": "627add6811823bb0a5b1074262ea80ef063ab23f61c5a4e335db1d41221a33ba"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/README.zh.md",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 27944,
+        "sha256": "63c9d027dffccaecef05179d64dac6714a66be9b2129cfea750d456a6628d609"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/README.zh.md",
+        "type": "file",
+        "executable": false,
+        "size": 27790,
+        "sha256": "dab225e911e8570650771722ac9d940bb3ed04b19a70f4e1411445d13dbda3e2"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/package.json",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2921,
+        "sha256": "5b3068edb3927d6652bf1f6517b523f4ecba0211da472720c33272c22d5260a3"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/package.json",
+        "type": "file",
+        "executable": false,
+        "size": 2818,
+        "sha256": "bc8a141db0cfd0c6a003c584e34a2547b0d98aeed39e9818dc00c72dc438881c"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/src/client/PluginsPanelIcon.tsx",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/PluginsPanelIcon.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 718,
+        "sha256": "bbd6923ee6d3d993017ab7e1a9a08aebf7209ea76a5e8b3cdd34b19d38bb7d30"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/src/client/PluginsPanelIcon.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 717,
+        "sha256": "b9c2c76b108955337d94102bbad773466c803b004bd37a8a9e55f593d930d632"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/src/client/index.ts",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7245,
+        "sha256": "22c97f959afb7ea6043de57e03d1381902cc5709f7a8e3f0f4d59ec17f0476cf"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7215,
+        "sha256": "6b293d881272e7fec4d4747214b2755b67d7d7b0b81f06b39b86a440b7967570"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-plugin-manager/tsconfig.client.json",
+      "before": {
+        "path": "packages/client/ui-plugin-manager/tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 1067,
+        "sha256": "c26c29f3a1d8b2b0a6d7a697bd34267341374f4ba96cd083947ebb9157b30546"
+      },
+      "after": {
+        "path": "packages/client/ui-plugin-manager/tsconfig.client.json",
+        "type": "file",
+        "executable": false,
+        "size": 1024,
+        "sha256": "30255c899cf035a0a92cc2da26e873ff103756d14926e5d4ee934ac44392eecc"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-renderer/README.md",
@@ -9180,6 +9324,24 @@
       "reason": "Allow root-only products without a Session adapter; retain adapter requirements for explicit Session scopes and the original reactive scope lifecycle."
     },
     {
+      "path": "packages/client/ui-settings-general/README.i18n.yaml",
+      "before": {
+        "path": "packages/client/ui-settings-general/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2617,
+        "sha256": "ac68023f95af0afb3dde601523d433746e741e78ed417c0da37570e7fe748c79"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2617,
+        "sha256": "4262081eef65c403f06da37166398b14cc6c281acb9f22176eb3d831c1207a03"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
       "path": "packages/client/ui-settings-general/README.md",
       "before": {
         "path": "packages/client/ui-settings-general/README.md",
@@ -9192,10 +9354,10 @@
         "path": "packages/client/ui-settings-general/README.md",
         "type": "file",
         "executable": false,
-        "size": 13963,
-        "sha256": "b160915e93506bf995fbccbf21f763278f8198c5af182b2b93bd8cfc14ed37b0"
+        "size": 13914,
+        "sha256": "f795d91dfbbc7358b54a63f89be6e872f870aa9f383a529e9bcf641277571c76"
       },
-      "reason": "Document section-owned leave checks in the existing settings shell."
+      "reason": "Document section-owned leave checks in the existing settings shell. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-settings-general/README.zh.md",
@@ -9210,10 +9372,10 @@
         "path": "packages/client/ui-settings-general/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 12342,
-        "sha256": "cbd8065acdbc17f3c1483aa772d09a922b286673b7138225236811daa42465a0"
+        "size": 12280,
+        "sha256": "a8d156e8b98d8b56376c4de1dee8f49cdb3213506d5f05c3b9424b593b23b23d"
       },
-      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow."
+      "reason": "Keep the official settings shell and explicitly requested onboarding editors without depending on chat Session state; YouDub owns its first-run flow. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-settings-general/package.json",
@@ -9228,10 +9390,10 @@
         "path": "packages/client/ui-settings-general/package.json",
         "type": "file",
         "executable": false,
-        "size": 2670,
-        "sha256": "df59f3f91bcbbd02b16c027bede4220a1888c835b14f6e6e950faf1fec6ce106"
+        "size": 2613,
+        "sha256": "a291dde0069437ffb988394ce2aa726cb40b69f2eb91f40c950d3b9074ef79c4"
       },
-      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-settings-general/src/client/SettingsRoot.tsx",
@@ -9268,6 +9430,24 @@
         "sha256": "8bff01a0c860a57a2240a2d4818cca4a613562fde36d8ae3c73342a0ebb55003"
       },
       "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+    },
+    {
+      "path": "packages/client/ui-settings-general/src/client/shell-contract.ts",
+      "before": {
+        "path": "packages/client/ui-settings-general/src/client/shell-contract.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3420,
+        "sha256": "dc8d6f6decbbb285d30b3791d5889857062479faf2294286af909dd3662dcf25"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-general/src/client/shell-contract.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3149,
+        "sha256": "95ab985641726f1488936ce613e4f18ec27bcf42f9525fbe1cf4b43036c14e0c"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-settings-general/tests/apply.client.spec.ts",
@@ -9348,10 +9528,10 @@
         "path": "packages/client/ui-settings-general/tsconfig.client.json",
         "type": "file",
         "executable": false,
-        "size": 878,
-        "sha256": "86b7f8ac3d08ca8ffee19a070154699258e37878290ae0f3b59204b46fd187c9"
+        "size": 845,
+        "sha256": "7a1d6d04812900ccc542202b3b93785eddba33b3cb373405fd72a689c68683d4"
       },
-      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario."
+      "reason": "Remove obsolete Session and Harness sidebar startup ordering from product-selected framework components; exercise settings slot lifecycle through an application-owned sidebar fixture and retire the removed account scenario. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
     {
       "path": "packages/client/ui-settings-models/README.md",
@@ -9654,6 +9834,60 @@
       "reason": "Expose a section-owned leave check for unsaved YouDub model configuration."
     },
     {
+      "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
+      "before": {
+        "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
+        "type": "file",
+        "executable": false,
+        "size": 6372,
+        "sha256": "569396d1337d548ce6975c27ccc7282429c0e2ea57fdb3994ba162e013178d2d"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5067,
+        "sha256": "173d944e30a7815d43a81d3fa587b3b3101d5066e1a5e6bb161c430eb735f154"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-sidebar/src/client/index.ts",
+      "before": {
+        "path": "packages/client/ui-sidebar/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4855,
+        "sha256": "05e1c2072f6961c64d95b1d5ac775e7d6b2b9cbe52e997a34fcb4e12b24a60cf"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar/src/client/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4800,
+        "sha256": "583c8866c66964e2bd1429f312dbdd8d6cd91302f429b46b1628d22c216ec5df"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-sidebar/tests/sidebar-root.client.spec.tsx",
+      "before": {
+        "path": "packages/client/ui-sidebar/tests/sidebar-root.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 16163,
+        "sha256": "93c65dc30cbeeb9339843b280d08a3440825a306b3b37bd1a575c170d3a86d75"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar/tests/sidebar-root.client.spec.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 16224,
+        "sha256": "97b902603f6b9cf58e556a9247fe25eea491f875711294dd6902ebe1954453bf"
+      },
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
       "path": "packages/credentials/credentials/README.md",
       "before": {
         "path": "packages/credentials/credentials/README.md",
@@ -9706,6 +9940,24 @@
         "sha256": "f52aaf424fc8fad6f221d6b22ee6f066d2f1b1c55f8bb7749c677a04c6b320ee"
       },
       "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
+    },
+    {
+      "path": "packages/extensions/cordis-client-runner/src/client/slot-catalog.ts",
+      "before": {
+        "path": "packages/extensions/cordis-client-runner/src/client/slot-catalog.ts",
+        "type": "file",
+        "executable": false,
+        "size": 273692,
+        "sha256": "f8e09d2e99335793434ca39fb65beefbbecbd0573d235bafd10e81131035d330"
+      },
+      "after": {
+        "path": "packages/extensions/cordis-client-runner/src/client/slot-catalog.ts",
+        "type": "file",
+        "executable": false,
+        "size": 273335,
+        "sha256": "81fed3f875fedd0bcc641559d034a9323ec44e87469e89d3bba1e893944c0ca4"
+      },
+      "reason": "Regenerate the original slot catalog from the current reviewed source, including shared layout seats and the previously changed settings and onboarding contracts."
     },
     {
       "path": "packages/preset/agent-preset/tests/skills.spec.ts",
@@ -9924,10 +10176,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 960403,
-        "sha256": "16022ad434c19011893044a28112622e717809482c99270e70360ed51a8f0810"
+        "size": 960181,
+        "sha256": "00e94f3d933a8e80833ff27854194aaab177ed810b40ec06c35a7f54d940d35e"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded."
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded. Remove the obsolete settings-to-chat-sidebar workspace link without upgrading dependencies; earlier product composition dependency removals remain recorded."
     },
     {
       "path": "pnpm-workspace.yaml",

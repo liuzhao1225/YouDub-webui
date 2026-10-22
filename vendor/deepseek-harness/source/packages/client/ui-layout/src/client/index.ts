@@ -65,6 +65,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * and is expected to render the compact control rail while collapsed.
      */
     'sidebar': { kind: 'single'; scope: 'root'; owner: SidebarOwnerProps }
+    /** Settings seat declared and rendered by the selected application's sidebar. */
+    'sidebar.settings': { kind: 'single'; scope: 'root'; owner: SidebarSettingsOwnerProps }
+    /** Optional notification seat declared by a sidebar with a collapsed toggle. */
+    'sidebar.toggle.badge': { kind: 'single'; scope: 'root'; owner: Record<never, never> }
+    /** Global panel icons declared by an application's sidebar navigation. */
+    'sidebar.panellist': { kind: 'list'; scope: 'root'; owner: SidebarPanelIconOwnerProps }
     /**
      * Central panel selected by sidebar entry id. The reserved `conversation`
      * key hosts the Conversation; other keys receive no Session binding.
@@ -130,6 +136,20 @@ export interface SidebarOwnerProps {
   collapsed: boolean
   /** Rendered column width in px (SIDEBAR_COLLAPSED when collapsed). */
   width: number
+}
+
+/** Column state passed by the application's sidebar to its settings trigger. */
+export interface SidebarSettingsOwnerProps {
+  /** Whether to render a full row or a compact icon. */
+  wide: boolean
+}
+
+/** Icon presentation supplied by an application sidebar's global panel row. */
+export interface SidebarPanelIconOwnerProps {
+  /** Requested square edge in pixels. */
+  size: number
+  /** Whether this panel is selected in the main column. */
+  active: boolean
 }
 
 /** Right column owner share: resolved normal geometry and opening eligibility. */

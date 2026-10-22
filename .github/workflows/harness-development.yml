@@ -66,7 +66,7 @@ jobs:
         run: |
           node ../../../apps/harness/test/prepare-framework-client.mjs
           node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-closure.ts --manifest ../framework-client-project/package.json
-          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/api/settings-controller/tests/credentials-controller.host.spec.ts apps/desktop/tests packages/api/remotes packages/client/ui-settings-models packages/client/ui-settings-general packages/client/ui-renderer packages/client/ui-layout packages/test-support/client-runtime apps/desktop-host/tests/quit-inspection.spec.ts
+          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/api/settings-controller/tests/credentials-controller.host.spec.ts apps/desktop/tests packages/api/remotes packages/client/ui-settings-models packages/client/ui-settings-general packages/client/ui-renderer packages/client/ui-layout packages/client/ui-sidebar packages/client/ui-plugin-manager packages/test-support/client-runtime scripts/gen-client-catalog.spec.ts apps/desktop-host/tests/quit-inspection.spec.ts
       - name: 检查 profile 与插件生命周期
         working-directory: .cache/harness/source-build
         run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-product-use.spec.ts scripts/verify-default-product-isolation.spec.ts scripts/verify-runtime-closure.spec.ts packages/bundle/web-app
