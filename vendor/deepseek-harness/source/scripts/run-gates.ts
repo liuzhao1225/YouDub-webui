@@ -234,7 +234,6 @@ export function ciWorkerEnvironment(
   setDefault('DSH_PUBLINT_CONCURRENCY', shared)
   setDefault('DSH_SNAPSHOT_MAX_WORKERS', 1)
   setDefault('DSH_SNAPSHOT_MAX_CONCURRENCY', shared)
-  setDefault('DSH_WEB_SNAPSHOT_WORKERS', env.DSH_GATE_CONCURRENCY === '1' ? 1 : budget)
   setDefault('DSH_COVERAGE_MAX_WORKERS', testBudget)
   const coverageBudget = env.DSH_COVERAGE_MAX_WORKERS || String(testBudget)
   const total = Number(coverageBudget)
@@ -294,7 +293,7 @@ export function gatesForMode(selected: Mode): Gate[] {
     case 'ci-primary':
       return ciPrimaryGates()
     case 'ci-linux-primary':
-      return [...ciPrimaryGates(), webSnapshotGate(['build'])]
+      return ciPrimaryGates()
     case 'ci-static':
       return ciStaticGates({ ownsBuild: false })
     case 'ci-lint-contracts-ready':
@@ -514,18 +513,6 @@ function ciArtifactGates(): Gate[] {
 
 function ciConsumerGates(): Gate[] {
   const builtTree = ['build']
-  // The HMR web test starts `dev:web`, which rewrites the shared `lib/` and
-  // `apps/web/dist/` trees. Let every build-artifact reader settle before that
-  // writer starts; `after` preserves the web diagnostic even if a reader fails.
-  const buildArtifactReaders = [
-    'publint',
-    'lint-and-duplication',
-    'snapshot',
-    'expected-output',
-    'doc-typecheck',
-    'node-next-types',
-    'built-bin-smoke',
-  ]
   return [
     ciBuildGate(),
     pnpmScript('node-compat', 'check:node-compat', {
@@ -539,7 +526,6 @@ function ciConsumerGates(): Gate[] {
     }),
     snapshotGate(builtTree),
     expectedOutputGate(builtTree),
-    webSnapshotGate(builtTree, buildArtifactReaders),
     pnpmScript('doc-typecheck', 'doc-typecheck:contracts-ready', {
       needs: builtTree,
       env: { DSH_DOC_TYPECHECK_USE_BUILD_OUTPUT: '1' },
@@ -550,30 +536,6 @@ function ciConsumerGates(): Gate[] {
     }),
     builtBinSmokeGate(builtTree),
   ]
-}
-
-function webSnapshotGate(needs: string[], after?: string[]): Gate {
-  const order = after === undefined ? { needs } : { needs, after }
-  const workerRaw = process.env.DSH_WEB_SNAPSHOT_WORKERS
-  if (workerRaw !== undefined && workerRaw !== '') {
-    const workers = Number.parseInt(workerRaw, 10)
-    if (!Number.isSafeInteger(workers) || workers < 1 || String(workers) !== workerRaw) {
-      throw new Error(`run-gates: DSH_WEB_SNAPSHOT_WORKERS must be a positive integer, got ${JSON.stringify(workerRaw)}.`)
-    }
-    return pnpmScript('web-snapshot', 'test:web:ci', {
-      label: 'web browser snapshot',
-      displayCommand: `DSH_SNAPSHOT=replay DSH_WEB_SNAPSHOT_WORKERS=${workers} pnpm run test:web:ci`,
-      env: { DSH_SNAPSHOT: 'replay' },
-      ...order,
-      streamOutput: true,
-    })
-  }
-  return pnpmScript('web-snapshot', 'test:web:built', {
-    label: 'web browser snapshot',
-    displayCommand: 'DSH_SNAPSHOT=replay pnpm run test:web:built',
-    env: { DSH_SNAPSHOT: 'replay' },
-    ...order,
-  })
 }
 
 function ciWindowsBlockingGates(): Gate[] {

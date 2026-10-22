@@ -46,11 +46,6 @@ interface ServiceRole {
   note: string
 }
 
-interface ExamplePlugin {
-  id: string
-  name: string
-}
-
 interface EventRelation {
   dispatchers: Map<string, Set<string>>
   listeners: Set<string>
@@ -946,74 +941,6 @@ function renderCapabilitySeams(pkgs: Pkg[], services: readonly ServiceEntry[]): 
   return lines.join('\n')
 }
 
-function parseExampleCordis(rel: string): ExamplePlugin[] {
-  const text = readFileSync(resolve(root, rel), 'utf8')
-  const plugins: ExamplePlugin[] = []
-  let current: { id: string; name?: string } | null = null
-  const flush = (): void => {
-    if (current?.name) plugins.push({ id: current.id, name: current.name })
-  }
-  for (const line of text.split('\n')) {
-    // Top-level rows (`- id:`) and bundle-patch insert rows (`    - id:`).
-    const id = /^\s*-\s+id:\s+(.+?)\s*$/.exec(line)
-    if (id?.[1] !== undefined) {
-      flush()
-      current = { id: stripYamlScalar(id[1]) }
-      continue
-    }
-    const name = /^\s+name:\s+(.+?)\s*$/.exec(line)
-    if (name?.[1] !== undefined && current) current.name = stripYamlScalar(name[1])
-  }
-  flush()
-  return plugins
-}
-
-function stripYamlScalar(value: string): string {
-  return value.trim().replace(/^['"]|['"]$/g, '')
-}
-
-const APP_EXAMPLES = [
-  {
-    id: 'dsh_base',
-    rel: 'apps/cli/composition.md',
-    title: 'DSH Base Composition',
-    label: 'packages/bundle/base/cordis.patch.yml',
-    config: 'packages/bundle/base/cordis.patch.yml',
-    summary: 'The dsh-base bundle patch shared by the web, headless, sdk, and acp profiles; their mode bundles and user layers patch over it, while sdk-minimal owns a separate standalone tree.',
-  },
-]
-
-type AppExample = typeof APP_EXAMPLES[number]
-
-function renderAppComposition(example: AppExample): string {
-  const plugins = parseExampleCordis(example.config)
-  const maintenance = 'hybrid: the patch row list is parsed from its `cordis.yml`; app package expansion is curated from package source'
-  const lines = generatedHeader(example.title)
-  lines.push(
-    example.summary,
-    '',
-    '```mermaid',
-    'flowchart LR',
-    `  cfg["${escLabel(example.label)}<br/>cordis.yml"]`,
-  )
-  for (const plugin of plugins) {
-    const pluginNode = nodeId(`plugin_${example.id}`, plugin.id)
-    lines.push(`  ${pluginNode}["${escLabel(plugin.id)}<br/>${escLabel(plugin.name)}"]`)
-    lines.push(`  cfg --> ${pluginNode}`)
-  }
-  lines.push(
-    '```',
-    '',
-    '| Plugin id | Package / module |',
-    '| --- | --- |',
-    ...plugins.map(plugin => `| \`${plugin.id}\` | \`${plugin.name}\` |`),
-    '',
-    `Source config: [\`${example.config}\`](${linkFromDoc(example.rel, example.config)}).`,
-  )
-  lines.push('', ...maintenanceFooter(maintenance))
-  return lines.join('\n')
-}
-
 type CallSiteIndex = Map<ts.SignatureDeclaration | ts.JSDocSignature, ts.CallExpression[]>
 
 /**
@@ -1635,7 +1562,6 @@ function renderDocs(): GraphDoc[] {
   const { model } = projectCordisCatalog(root, CORDIS_CATALOG_POLICY)
   const docs: GraphDoc[] = [
     { rel: 'docs/capability-seams.md', content: renderCapabilitySeams(pkgs, model.services) },
-    ...APP_EXAMPLES.map(example => ({ rel: example.rel, content: renderAppComposition(example) })),
     { rel: 'docs/event-producer-consumer.md', content: renderEventRelations(pkgs, model.events) },
     { rel: 'docs/agent-lifecycle.md', content: renderLifecycle() },
     { rel: 'docs/tool-execution-pipeline.md', content: renderToolPipeline() },

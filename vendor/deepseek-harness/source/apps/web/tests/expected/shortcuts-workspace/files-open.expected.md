@@ -1,6 +1,0 @@
-- text: {{cwd}}/keyboard-project
-- button "Reload"
-- button "Open in Finder"
-- button "More ways to open"
-- list:
-  - listitem: Empty directory

@@ -46,7 +46,35 @@
   ],
   "limitations": [
     "No runtime behavior change or media acceptance claim.",
-    "The new candidate still requires clean remote CI.",
-    "No packaging, release, main/atomgit merge, or final Feishu updates."
-  ]
+    "No packaging, release, main/atomgit merge, or final Feishu updates.",
+    "This confirmed CI covers ce02e6a4 only; later UI/resource and Windows changes require their own runs."
+  ],
+  "confirmedCI": {
+    "commit": "ce02e6a48c54f417fe4fb7d199224c5f967ffd67",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39811725433",
+    "status": "completed",
+    "conclusion": "success",
+    "completedAt": "2026-10-22T16:29:14Z",
+    "gui": {
+      "filesPassed": 552,
+      "testsPassed": 8744,
+      "expectedFailures": 1,
+      "skips": 2
+    },
+    "profileAndPlugins": {
+      "filesPassed": 54,
+      "testsPassed": 6732,
+      "skips": 1
+    },
+    "python": {
+      "testsPassed": 525
+    },
+    "web": {
+      "filesPassed": 37,
+      "testsPassed": 256
+    },
+    "harness": {
+      "testsPassed": 69
+    }
+  }
 }

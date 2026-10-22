@@ -15,12 +15,10 @@ import {
   type GateResult,
 } from './run-gates.ts'
 
-// Graph fixtures select their own browser pool instead of inheriting the CI
-// host's pool, and coverage gates take their shape from the values each case
-// sets, not from the lane that runs this file (a partitioned lane exports
-// DSH_COVERAGE_PARTITIONS to every child).
+// Coverage graph fixtures use the values each case sets instead of inheriting
+// the lane configuration (a partitioned lane exports DSH_COVERAGE_PARTITIONS
+// to every child).
 beforeEach(() => {
-  vi.stubEnv('DSH_WEB_SNAPSHOT_WORKERS', undefined)
   vi.stubEnv('DSH_COVERAGE_MAX_WORKERS', undefined)
   vi.stubEnv('DSH_COVERAGE_PARTITIONS', undefined)
 })
@@ -174,14 +172,13 @@ describe('CI worker allocation', () => {
     if (cpus <= 2) expect(env.DSH_COVERAGE_PARTITIONS).toBeUndefined()
   })
 
-  it('bounds overlapping readers and lets the isolated browser pool use the runner', () => {
+  it('bounds overlapping readers within the runner budget', () => {
     const env = ciWorkerEnvironment('ci-consumers', { CI: 'true' }, 16)
     expect(env).toMatchObject({
       DSH_OXLINT_THREADS: '8',
       DSH_PUBLINT_CONCURRENCY: '8',
       DSH_SNAPSHOT_MAX_WORKERS: '1',
       DSH_SNAPSHOT_MAX_CONCURRENCY: '8',
-      DSH_WEB_SNAPSHOT_WORKERS: '16',
     })
   })
 
@@ -190,7 +187,6 @@ describe('CI worker allocation', () => {
       DSH_OXLINT_THREADS: '6',
       DSH_COVERAGE_MAX_WORKERS: '48',
       DSH_COVERAGE_PARTITIONS: '32',
-      DSH_WEB_SNAPSHOT_WORKERS: '12',
     })
     expect(defaultConcurrency('ci-static', 60, 256, {})).toEqual({
       workers: 12,
@@ -206,7 +202,6 @@ describe('CI worker allocation', () => {
       DSH_OXLINT_THREADS: '1',
       DSH_PUBLINT_CONCURRENCY: '1',
       DSH_SNAPSHOT_MAX_CONCURRENCY: '1',
-      DSH_WEB_SNAPSHOT_WORKERS: '1',
     }
     const additions = ciWorkerEnvironment('ci-primary', inherited, 64)
     expect(additions).toEqual({ DSH_SNAPSHOT_MAX_WORKERS: '1' })
@@ -932,7 +927,6 @@ describe('Node 24 lane ownership', () => {
       'lint-and-duplication',
       'snapshot',
       'expected-output',
-      'web-snapshot',
       'doc-typecheck',
       'node-next-types',
       'built-bin-smoke',
@@ -948,7 +942,6 @@ describe('Node 24 lane ownership', () => {
     for (const id of [
       'snapshot',
       'expected-output',
-      'web-snapshot',
       'doc-typecheck',
       'node-next-types',
       'built-bin-smoke',
@@ -968,34 +961,9 @@ describe('Node 24 lane ownership', () => {
         'packages/subprocess/subprocess-local/tests/spawn-runner-built.e2e.ts',
       ]),
     )
-    expect(subject.find(item => item.id === 'web-snapshot')).toMatchObject({
-      displayCommand: 'DSH_SNAPSHOT=replay pnpm run test:web:built',
-      env: { DSH_SNAPSHOT: 'replay' },
-      after: [
-        'publint',
-        'lint-and-duplication',
-        'snapshot',
-        'expected-output',
-        'doc-typecheck',
-        'node-next-types',
-        'built-bin-smoke',
-      ],
-    })
   })
 })
 
-describe('Linux primary graph', () => {
-  it('adds the same compare-only web gate after built client artifacts', () => {
-    const subject = withPnpmEntrypoint(() => gatesForMode('ci-linux-primary'))
-    const web = subject.find(item => item.id === 'web-snapshot')
-
-    expect(web).toMatchObject({
-      displayCommand: 'DSH_SNAPSHOT=replay pnpm run test:web:built',
-      env: { DSH_SNAPSHOT: 'replay' },
-      needs: ['build'],
-    })
-  })
-})
 
 describe('gate process outcomes', () => {
   it('streams selected gate output without retaining it', async () => {

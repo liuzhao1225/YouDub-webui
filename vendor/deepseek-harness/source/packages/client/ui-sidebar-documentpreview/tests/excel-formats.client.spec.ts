@@ -39,7 +39,7 @@ it.each([false, true])('reads BIFF values, formulas, merges, layout, and dates w
 })
 
 it('reads an independently generated Office XLS fixture', async () => {
-  const bytes = readFileSync(new URL('../../../../apps/web/tests/fixtures/office/preview.xls', import.meta.url))
+  const bytes = readFileSync(new URL('./fixtures/preview.xls', import.meta.url))
   const result = await convertExcel(new Uint8Array(bytes), 'xls', limits)
   expect(result.sheets.flatMap(sheet => sheet.celldata).some(cell => String(cell?.v?.v).includes('Office preview'))).toBe(true)
 })

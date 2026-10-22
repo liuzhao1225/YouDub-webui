@@ -16,32 +16,6 @@
   "apps/desktop/tests/preload-windows.client.spec.ts": {
     "fdbd843bccc38b95f572f49587aacc29b9b0c67390d922ab5404a5935c747487": 1
   },
-  "apps/web/tests/assembled-boot.ts": {
-    "203f87d9e4f18ce1f00bf575fe96f724975341cbb67b8c51ea45d4cbb8e60005": 1,
-    "56cede35ce34488cdae4b19aec217c9c939377eb891fe68827fbd64cd019170c": 1,
-    "fda84896a47e7f9d046fcd7e10e9096c8b002bc5f1ea0c7753e57abe87528dea": 1
-  },
-  "apps/web/tests/onboarding-deepseek-config.e2e.ts": {
-    "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 2
-  },
-  "apps/web/tests/scaffold.ts": {
-    "3d845108a2e6928c911c093813f3d6a1cdd510ef148f3515cb852a254a7aa14d": 1
-  },
-  "apps/web/tests/seeded-history.e2e.ts": {
-    "2d8f91f0911c1e1d0eea3f4989732ff7ef21c62a6635269a8e45e7275daa6673": 1,
-    "4611e600a6d670bb7bcaa2a3a35df64dc75d92a200118a8d14224fcff2204bf3": 1,
-    "5a8270cf9b1e554ae0cff6eaf7086e44c22f61a08e5f91dc7e1397eccaa726a5": 1,
-    "d0d869812e25f9b60a88de7207566804dc7d1f38c74e0c1d67a7b25fee5af3e9": 1
-  },
-  "apps/web/tests/smoke-real.e2e.ts": {
-    "621628e4e895b24171e82d1b3fa3ecb12970e8eb0dfccab8bacc8c5784188a28": 1
-  },
-  "apps/web/tests/startup-auto-selection.e2e.ts": {
-    "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 4
-  },
-  "apps/web/tests/workspace-management.e2e.ts": {
-    "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 2
-  },
   "benchmarks/conversation-fold/conversation-fold.worker.client.ts": {
     "1bce926682b8c613226bdbcf2bc75b369dcb9b9e94172f1e1a5a48f72736095a": 1
   },
@@ -238,37 +212,6 @@
   "packages/boot/plugin-manager/tests/tools.spec.ts": {
     "29e5ec01ee79a9c66e7c5755f8c629c193db226dc08b29f16b5967957ad8602c": 1,
     "4dd1f265ec710503bb27f057a582099a1e9d8b5db80fb45f148e32fd2afb5325": 2
-  },
-  "packages/bundle/headless/src/index.ts": {
-    "971ec45a1146ab52f2fb13f75b782d5d35c0fb2ddba1fb9ccab14cc54f7291d5": 1
-  },
-  "packages/bundle/headless/tests/headless.spec.ts": {
-    "e1afcf3bd21c4348c25c31b75c3d96e12710fc3bb3165da6a77a48731cb7e737": 1
-  },
-  "packages/bundle/headless/tests/json-stream.spec.ts": {
-    "43241b95fdf279db25d6285b371f6b8764ea429ed32385899957ffb13f71ead0": 1,
-    "43cfd42d416753e4f45d9fd572019b4e8e2526f7dc6255beed9b0f70b36a639f": 2,
-    "457f293a812c58df6e60d643422ee7f8015acc8e32b6de0b5818339d0875b238": 1,
-    "5f4eb3f0026a671d11a9a8395ef5b54ad8022ef7e149625e769b34b73895cca0": 1,
-    "62af001697c21e6720342486789548f188ada5b61fcb1c098857f6c53c160ba3": 2,
-    "6beda1c02e29b3d2fa073c0465ca0863b27e7a1f3cc2724fe946c3c20b1338cf": 1,
-    "6cd4af46b6e1154cd552f634c1151746c319f065aed61e87ffb8d80a2a46f304": 1,
-    "71ad896bf0527bf1d34ea5f17545a218634e27dbb9e153137690487b91cfaed4": 1,
-    "74c81c0131c53e29a2075c584db8c0c1c6b4044ecad591a97b90e9d382c09fd4": 1,
-    "7fa91de40ad41c25629eeb2e6cbe47f8f10cab8abad67646003925212bcf055d": 1,
-    "84c72cc464a3669c6e29ed77b236d914e5ee4ee408968c04d539421edcd98c99": 1,
-    "87fc4d438cbf6a51a4cc6d3926e6ccb119b4ab10198140bf02a1ceb293e41584": 1,
-    "920939f8fc21745e9299820696f267c0bc61bb36b7cd8aceb874e3c1cd0665eb": 1,
-    "a2dcbc6f2f1e278f6c36efd131f8bcbc0f6ec82ddb4807b840d8e4b03e3f26e6": 1,
-    "ac97cded408642073f139993e46c9f6e623cd5e8fafb29328d198021178df412": 1,
-    "ca82665734ead2dc92140f8e2f04a686295e22f52a33bf1e5911d4004b66a815": 1,
-    "cd44bbef29e1085673712dfa0b9650b421e6a843441ef6b02820925bd6bed779": 1,
-    "df9591b571ac9ad402bb79bac149da1173a8e178a2f006948c6995fd72375515": 1,
-    "e11af8f82d67df04b1ed39c36f4248ed2e561830f49f0b82a86327a7112e4b91": 1,
-    "f47eed958425592fcf7343fd0adc448adfaa04ee86e5b2a7a948f9d7703135ad": 1
-  },
-  "packages/bundle/headless/tests/startup.spec.ts": {
-    "2e78263d16d54ccfd8d322bcdf1bf738bd8134e15c24063ece9a1d1b52f4ebd9": 1
   },
   "packages/bundle/web-app/tests/browser-open.spec.ts": {
     "2e78263d16d54ccfd8d322bcdf1bf738bd8134e15c24063ece9a1d1b52f4ebd9": 1
