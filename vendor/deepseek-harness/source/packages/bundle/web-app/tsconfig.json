@@ -36,9 +36,6 @@
       "path": "../../util/launch-environment"
     },
     {
-      "path": "../../shell/shell-env"
-    },
-    {
       "path": "../../subprocess/subprocess"
     }
   ]

@@ -1,14 +1,7 @@
 /**
- * @deepseek-ai/dsh-web-app — the browser-surface bundle's runtime glue plugin
- * plus the bundle patch (`cordis.patch.yml`, declared by the `dsh.bundle.patch`
- * manifest field). The plugin owns the browser-surface glue: it resolves
- * the built frontend dist (workspace knowledge of this bundle, never user
- * config), mounts the `frontend-static` fallback owner over it, registers the
- * bash-visible web runtime variable, the process-token URL line, and the
- * default-browser handoff, and provides the `webApp` service. An advertised
- * `publicUrl` replaces the published bind-address URL. Non-loopback
- * HTTP binds trigger an exposure warning. App command-line values arrive
- * through the `webStartup` service expressions in the bundle patch.
+ * Browser-surface runtime: frontend static serving, advertised URL,
+ * authenticated startup announcement and default-browser handoff.
+ * The application supplies its own plugin composition.
  * @module @deepseek-ai/dsh-web-app
  */
 
@@ -24,13 +17,12 @@ import { bindUrlHost, isLoopbackHost } from '@deepseek-ai/dsh-host-webserver'
 import { launchedThroughSsh, launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
-import type {} from '@deepseek-ai/dsh-shell-env'
 import { parsePublicUrl } from './public-url.ts'
 
 /** The Web GUI this process serves, provided by the `web-runtime` row. */
 export interface WebApp {
   /**
-   * The URL this GUI advertises, also used for `DSH_WEB_URL` and the startup URL line.
+   * The URL this GUI advertises and uses for the startup URL line.
    * @returns the configured `publicUrl`, otherwise the listener origin.
    */
   getAdvertisedUrl(): string
@@ -58,15 +50,10 @@ export interface Config {
   /** Print the URL line on activation; a non-interactive layer can turn it off. */
   printUrl: boolean
   /**
-   * Register the `DSH_WEB_URL` bash variable naming this GUI. A one-shot
-   * non-interactive layer can turn it off when its user is not in the GUI.
-   */
-  surfaceContext: boolean
-  /**
    * Canonical HTTP(S) root to advertise in the printed and opened URL,
-   * `DSH_WEB_URL`, and `webApp.getAdvertisedUrl()`, which supplies the Web GUI
-   * URL in agent runtime context, e.g. `https://app.example/ui/`, normalized to end in `/`. Configures no routing
-   * or authentication; see [public deployments](../README.md#public-deployments).
+   * and `webApp.getAdvertisedUrl()`, e.g. `https://app.example/ui/`,
+   * normalized to end in `/`. Configures no routing
+   * or authentication; see [configuration](../README.md#configuration).
    * Absent or YAML `null` advertises the bind-address URL.
    */
   publicUrl?: string
@@ -75,12 +62,8 @@ export interface Config {
 export const Config: z<Config> = z.object({
   openBrowser: z.boolean().default(true),
   printUrl: z.boolean().default(true),
-  surfaceContext: z.boolean().default(true),
   publicUrl: z.transform(z.string(), value => parsePublicUrl(value).href),
 })
-
-/** Environment variable naming the advertised URL of this Web GUI. */
-const DSH_WEB_URL = 'DSH_WEB_URL' as const
 
 const BROWSER_OPENER_MODULE = import.meta.resolve('open')
 
@@ -178,8 +161,7 @@ export const internals: {
 } = { resolveDistIndex, openBrowser }
 
 /**
- * Mount the Web runtime: dist serving, the bash runtime variable, the URL
- * line, and the default-browser handoff.
+ * Mount the Web runtime: dist serving, the URL line, and browser handoff.
  * @param ctx - plugin context carrying the webServer service.
  * @param config - validated {@link Config}.
  */
@@ -204,17 +186,6 @@ export function apply(ctx: Context, config: Config): void {
   const appRootUrl = (): string => publicUrl ?? ctx.webServer.getOrigin()
   ctx.provide('webApp', { getAdvertisedUrl: appRootUrl } satisfies WebApp)
   ctx.plugin(FrontendStatic, { distIndex: internals.resolveDistIndex() })
-  if (config.surfaceContext) {
-    ctx.inject(['shellEnv'], (runtimeCtx) => {
-      runtimeCtx.shellEnv.register({
-        name: 'web-runtime',
-        variables: {
-          [DSH_WEB_URL]: { description: 'Advertised URL of the DeepSeek Harness Web GUI serving this session.' },
-        },
-        resolve: () => ({ [DSH_WEB_URL]: appRootUrl() }),
-      })
-    })
-  }
   if (config.printUrl || handoffBrowser) {
     ctx.inject(['connection'], (connectionCtx) => {
       // The URL line and browser handoff are readiness signals: supervisors RPC

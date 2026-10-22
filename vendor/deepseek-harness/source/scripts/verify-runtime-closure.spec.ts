@@ -49,6 +49,16 @@ describe('verifyRuntimeClosure', () => {
     expect(await verifyRuntimeClosure(root, manifestPath, false)).toMatchObject({ failures: [], presetCount: 0 })
   })
 
+  it('checks an application runtime with pinned dependencies without legacy SDK presets', async () => {
+    const manifestPath = 'application/package.json'
+    const root = fixture({ [manifestPath]: { name: 'application', dependencies: { '@scope/worker': '1.0.0', '@scope/peer': '1.0.0' } } })
+    workspace(root, '@scope/worker', { peerDependencies: { '@scope/peer': 'workspace:^' } })
+    workspace(root, '@scope/peer', {})
+    expect(await verifyRuntimeClosure(root, manifestPath)).toMatchObject({ failures: [], presetCount: 0 })
+    writeFileSync(join(root, manifestPath), JSON.stringify({ name: 'application', dependencies: { '@scope/worker': '1.0.0' } }))
+    expect((await verifyRuntimeClosure(root, manifestPath)).failures).toEqual(['application -> @scope/worker -> @scope/peer'])
+  })
+
   it('requires only plugins active for each published target', async () => {
     const root = fixture({
       'python/sdk-runtime/package.json': { name: 'runtime', dependencies: { '@scope/shared': 'workspace:^' } },
@@ -72,7 +82,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.presetCount).toBe(1)
     expect(result.failures).toEqual([
@@ -93,7 +103,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.failures).toEqual([
       'standard preset -> @scope/conditional (linux-arm64, linux-x64, macos-arm64, macos-x64, win-x64)',
@@ -112,7 +122,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.failures).toEqual([])
   })
@@ -127,7 +137,7 @@ describe('verifyRuntimeClosure', () => {
 `,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.failures).toEqual([
       'standard preset -> @scope/plugin [runtime dependency is "1.2.3"; expected workspace:] (linux-arm64, linux-x64, macos-arm64, macos-x64, win-x64)',
@@ -140,7 +150,7 @@ describe('verifyRuntimeClosure', () => {
       'python/sdk-runtime/platforms.json': platforms,
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.presetCount).toBe(0)
     expect(result.failures).toEqual([
@@ -155,7 +165,7 @@ describe('verifyRuntimeClosure', () => {
       'preset:standard': '[]\n',
     })
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.failures).toEqual([
       'python/sdk-runtime/platforms.json defines no runtime targets',
@@ -175,7 +185,7 @@ describe('verifyRuntimeClosure', () => {
     workspace(root, '@scope/required', {})
     workspace(root, '@scope/optional', {})
 
-    const result = await verifyRuntimeClosure(root)
+    const result = await verifyRuntimeClosure(root, 'python/sdk-runtime/package.json', true)
 
     expect(result.workspacePackageCount).toBe(1)
     expect(result.failures).toEqual(['runtime -> @scope/root -> @scope/required'])

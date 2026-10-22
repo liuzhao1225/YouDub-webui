@@ -34,13 +34,11 @@ async function temporaryProfile(t) {
   const directory = await mkdtemp(join(tmpdir(), 'youdub-profile-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   // The desktop launcher replaces its runtime project. Give the real parser
-  // a private application anchor and unchanged source bundle files instead.
+  // a private application anchor and the current YouDub bundle instead.
   const runtime = join(directory, 'application'), plugin = join(runtime, 'youdub-plugin');
   await copyBundle(here, plugin);
   await saveManifest(runtime, { name: 'youdub-profile-test', private: true, type: 'module' });
-  for (const [name, path] of [['@deepseek-ai/dsh-base', 'packages/bundle/base'], ['@deepseek-ai/dsh-web-app', 'packages/bundle/web-app']]) {
-    await copyBundle(join(source, path), join(runtime, 'node_modules', name));
-  }
+  await mkdir(join(runtime, 'node_modules/@deepseek-ai'), { recursive: true });
   await symlink(join(source, 'packages/client/ui-layout'), join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout'), 'dir');
   await symlink(join(sourceBuild, 'packages/boot/app-boot'), join(runtime, 'node_modules/@deepseek-ai/dsh-app-boot'), 'dir');
   await symlink(join(sourceBuild, 'packages/boot/plugin-manager'), join(runtime, 'node_modules/@deepseek-ai/dsh-plugin-manager'), 'dir');
@@ -107,7 +105,7 @@ test('positive product composition contains framework services without retired p
     assert.notEqual(rows.get(id).disabled, true, `${id} is a required YouDub dependency`);
   }
   assert.deepEqual(parsed.layers.map(layer => layer.packageName), required);
-  assert.equal(rows.get('web-runtime').config.surfaceContext, false);
+  assert.equal(rows.get('web-runtime').name, '@deepseek-ai/dsh-web-app');
 });
 
 test('legacy product prefix migrates once while extensions, settings and dependency metadata survive', async t => {

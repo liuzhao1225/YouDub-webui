@@ -8664,6 +8664,24 @@
       "reason": "Keep generic installer coverage using test-owned catalog fixtures after removing old product bundle defaults."
     },
     {
+      "path": "packages/bundle/web-app/README.i18n.yaml",
+      "before": {
+        "path": "packages/bundle/web-app/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2742,
+        "sha256": "ef48e0ee5707f3f95774d9c8e3525d63283996c57948add76675555c1a968ef7"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 649,
+        "sha256": "bd5a6a0f352021aad1a33420eccf28948a43abf7aa8762f8ed1e40006534b125"
+      },
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
       "path": "packages/bundle/web-app/README.md",
       "before": {
         "path": "packages/bundle/web-app/README.md",
@@ -8676,10 +8694,10 @@
         "path": "packages/bundle/web-app/README.md",
         "type": "file",
         "executable": false,
-        "size": 17552,
-        "sha256": "94461fb612613653dc4aac2d98a3ca33a4f1021a42392d3d9fa1ea2a1e098a58"
+        "size": 1341,
+        "sha256": "103cf106770f2cf44e59e589a992194dd5e4f6221af8dbead1e46dd59cc06522"
       },
-      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。"
+      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。 Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
     },
     {
       "path": "packages/bundle/web-app/README.zh.md",
@@ -8694,10 +8712,22 @@
         "path": "packages/bundle/web-app/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 16339,
-        "sha256": "55d51620c27d91f4b52dfe6fb7edb131a8ec6561722df7ece1a3fee5b17a87dc"
+        "size": 1214,
+        "sha256": "93bd8339f9c9a162dd661ef6f0689750756c7929acea0462bce0edfbd516f074"
       },
-      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。"
+      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。 Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/cordis.patch.yml",
+      "before": {
+        "path": "packages/bundle/web-app/cordis.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 22796,
+        "sha256": "3e1f923309612ed8551141127409d662e78758e2d0d125218a3f70514417e472"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
     },
     {
       "path": "packages/bundle/web-app/package.json",
@@ -8712,10 +8742,208 @@
         "path": "packages/bundle/web-app/package.json",
         "type": "file",
         "executable": false,
-        "size": 10152,
-        "sha256": "c2ae7ed8880f32a2f8efdf76870974a2a98db5869c96a1f61b87bc54aeccc3be"
+        "size": 1965,
+        "sha256": "b679252ecb2fbf131de9630897d8504084f4820fa16121eeac271c813165ac13"
       },
-      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。"
+      "reason": "Web runtime 的代码依赖与旧 Web profile 测试夹具依赖分开，YouDub 使用自己的正向组合。 Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/presets/cordis.patch.yml",
+      "before": {
+        "path": "packages/bundle/web-app/presets/cordis.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 7406,
+        "sha256": "01b0fc94fd49136b332254a7ae5658e43ffe646f7248047dba65d499cfc74596"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/presets/minimal.patch.yml",
+      "before": {
+        "path": "packages/bundle/web-app/presets/minimal.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 3724,
+        "sha256": "a2a9ba1c9c392a45466708f18bc0aefbf300577f9b544dc06049f73a8a5b3267"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/presets/ptc.patch.yml",
+      "before": {
+        "path": "packages/bundle/web-app/presets/ptc.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 6985,
+        "sha256": "9e355c947bf61c3d2fe9bf3214b386f83c0d99d37579ce22576d4b82cb6e1a2c"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/presets/standard.patch.yml",
+      "before": {
+        "path": "packages/bundle/web-app/presets/standard.patch.yml",
+        "type": "file",
+        "executable": false,
+        "size": 6799,
+        "sha256": "0d398d2a6872a73a106cb3bd19303ecccf1637e1fcad4d0bf9d8a72d2c2c68f5"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/src/index.ts",
+      "before": {
+        "path": "packages/bundle/web-app/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 11300,
+        "sha256": "3f0afba1922c1dc25fbb5528a29e83639956846f8b9f054b90fd4f7a6b37ab51"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/src/index.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9830,
+        "sha256": "7ed06c31ccf7a370ce42439ed181f93d35a74cdf97f1c3354775a5f53aa9c05e"
+      },
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/src/startup.ts",
+      "before": {
+        "path": "packages/bundle/web-app/src/startup.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5650,
+        "sha256": "dd04c1ef79fbc5e465f0a2124d20db639d8f249067edcc258a45c7cac5755ed8"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/src/startup.ts",
+        "type": "file",
+        "executable": false,
+        "size": 5617,
+        "sha256": "546fbccf80bed4efcab5eba2eeec6b7d22ebb8ea40d17557f7583abbb449c7e8"
+      },
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/browser-defaults.spec.ts",
+      "before": {
+        "path": "packages/bundle/web-app/tests/browser-defaults.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 2284,
+        "sha256": "b87a3d1c47a745f73be3ceed2f764c528c32abd234d6b57961f3e4ae195e4017"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/browser-open.spec.ts",
+      "before": {
+        "path": "packages/bundle/web-app/tests/browser-open.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4423,
+        "sha256": "c057aa60d114415044b1cc3f7124c9765c2ae11ceb1f96aea3c0cea8bd72876d"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/tests/browser-open.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4388,
+        "sha256": "c2d1c1b4573096066cce67f97b66a860f8eb3b67f7cf99bd213f04d641bf33a8"
+      },
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/document-conversion.e2e.ts",
+      "before": {
+        "path": "packages/bundle/web-app/tests/document-conversion.e2e.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3897,
+        "sha256": "906782280fe06738dce20641eb01a5f4cef0b4d1f30ade8e5d17b80cdcf1e4ff"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/document-preview.spec.ts",
+      "before": {
+        "path": "packages/bundle/web-app/tests/document-preview.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7986,
+        "sha256": "09aa3802d1895ec2247a7a68fe94714bbabbb6b1a5c885104cc60d0ea7e43d59"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/fixtures/document-conversion.docx",
+      "before": {
+        "path": "packages/bundle/web-app/tests/fixtures/document-conversion.docx",
+        "type": "file",
+        "executable": false,
+        "size": 869,
+        "sha256": "d43fc609d1bec1d4b3b66e3907651550dbe76e516ae77163712ab8d5a643b682"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/product-analytics.spec.ts",
+      "before": {
+        "path": "packages/bundle/web-app/tests/product-analytics.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 4637,
+        "sha256": "e0f850b6cb4fe36b69dd9eefe01c66ffd28d1cc474cf7f0a05dbb433e1342bfe"
+      },
+      "after": null,
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tests/web-app.spec.ts",
+      "before": {
+        "path": "packages/bundle/web-app/tests/web-app.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 24334,
+        "sha256": "528e886c7e9c35231041d98cd0a54c25e731c459acad65e3c238bd9c7ac2914b"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/tests/web-app.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 22311,
+        "sha256": "8c69aa75cac0d01f8ba706ee72b8e98db55c52e3612ce3c02710c76036f6c420"
+      },
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
+    },
+    {
+      "path": "packages/bundle/web-app/tsconfig.json",
+      "before": {
+        "path": "packages/bundle/web-app/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 778,
+        "sha256": "e4cb6bd55eebcc223d0e2f99ce2bda4600904f5e9ac532407d2ff3d93d176d7b"
+      },
+      "after": {
+        "path": "packages/bundle/web-app/tsconfig.json",
+        "type": "file",
+        "executable": false,
+        "size": 727,
+        "sha256": "2db5ebea9eaa43b2d76052a2d0ab12d828fa347268586d0c17af16aecbb9fe0d"
+      },
+      "reason": "Keep the shared Web runtime and its readiness, URL and browser-handoff checks; remove the retired Harness chat/Agent/Office composition, preset files, product-only scenarios and shell context, along with their unused development dependencies."
     },
     {
       "path": "packages/client/ui-layout/README.md",
@@ -9480,6 +9708,42 @@
       "reason": "Credentials describe 按需返回固定长度掩码；默认元数据合同保持不变，完整密钥只留在 Host。"
     },
     {
+      "path": "packages/preset/agent-preset/tests/skills.spec.ts",
+      "before": {
+        "path": "packages/preset/agent-preset/tests/skills.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7498,
+        "sha256": "add6cabd877cb0550c05365dbc44848b662a5942ef3075fbae87abb4a728baf7"
+      },
+      "after": {
+        "path": "packages/preset/agent-preset/tests/skills.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7472,
+        "sha256": "0893687a9f8044dfa23d2fb0913f07fe7d7cb891f4c84ab8a9630bd22f985f57"
+      },
+      "reason": "Keep the skill-size regression threshold while identifying its preset as archived rather than linking to a deleted active product file."
+    },
+    {
+      "path": "packages/test-support/client-runtime/README.i18n.yaml",
+      "before": {
+        "path": "packages/test-support/client-runtime/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2699,
+        "sha256": "14f9a047e26bd0e2c005a3ab1fd5b39088bd05453a1250427a54b1b54d166e66"
+      },
+      "after": {
+        "path": "packages/test-support/client-runtime/README.i18n.yaml",
+        "type": "file",
+        "executable": false,
+        "size": 2699,
+        "sha256": "c67c8b9094896a9a5e5da9146bf481552002bf72978a26dc192849f14080f05f"
+      },
+      "reason": "Document the explicitly prepared YouDub test product, preserve generic client lifecycle checks, and refresh the bilingual records and source links for the retained test guide."
+    },
+    {
       "path": "packages/test-support/client-runtime/README.md",
       "before": {
         "path": "packages/test-support/client-runtime/README.md",
@@ -9492,10 +9756,10 @@
         "path": "packages/test-support/client-runtime/README.md",
         "type": "file",
         "executable": false,
-        "size": 18849,
-        "sha256": "459319180e777dd4ae1f8eb65d04b8c9302a5fb5aa61e13d5227400f804d07d6"
+        "size": 18970,
+        "sha256": "58e990fa0222b3810a79a68bbce9ed34c33944f10dd64f17e7c2f0ee4becde6f"
       },
-      "reason": "Document package self-reference resolution for linked bundle assembly tests. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+      "reason": "Document package self-reference resolution for linked bundle assembly tests. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks. Document the explicitly prepared YouDub test product, preserve generic client lifecycle checks, and refresh the bilingual records and source links for the retained test guide."
     },
     {
       "path": "packages/test-support/client-runtime/README.zh.md",
@@ -9510,10 +9774,10 @@
         "path": "packages/test-support/client-runtime/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 17596,
-        "sha256": "c5ec74ee05e970d1613ed078e719fadcc626b769e645c8a1e86570b856acdd19"
+        "size": 17705,
+        "sha256": "0f620f95b3ede0b03b7cbf01ef7c49fc454bbb5147397a703108f26c0c00e71e"
       },
-      "reason": "Document package self-reference resolution for linked bundle assembly tests. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks."
+      "reason": "Document package self-reference resolution for linked bundle assembly tests. Use the prepared YouDub product bundle for whole-client framework tests instead of implicitly loading the retired Harness web composition; preserve generic roster and injection checks. Document the explicitly prepared YouDub test product, preserve generic client lifecycle checks, and refresh the bilingual records and source links for the retained test guide."
     },
     {
       "path": "packages/test-support/client-runtime/package.json",
@@ -9660,10 +9924,10 @@
         "path": "pnpm-lock.yaml",
         "type": "file",
         "executable": false,
-        "size": 977065,
-        "sha256": "0e616eb9dcaedf19e57e3b33cb61ad7e4b818293b9a96e44e3dd17a238c0fa14"
+        "size": 960403,
+        "sha256": "16022ad434c19011893044a28112622e717809482c99270e70360ed51a8f0810"
       },
-      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies."
+      "reason": "同步 YouDub CLI、Web runtime 与 Desktop Host 的生产/开发依赖边界。 移除旧 Desktop 开发入口及欢迎页前端编译面，按实际 Electron 框架依赖更新锁文件。 删除退休 Desktop 发行工具的依赖及专属补丁，并以锁定解析离线更新依赖图；不升级保留包。 Remove retired CLI dependencies using the locked offline package manager without upgrading retained dependencies. Remove the retired web/base bundle and obsolete Session dependency links from the selected framework test and UI packages without upgrading retained dependencies. Remove obsolete Web composition workspace dependency links without upgrading retained dependencies; previous profile and client-test dependency removals remain recorded."
     },
     {
       "path": "pnpm-workspace.yaml",
@@ -9898,6 +10162,42 @@
         "sha256": "30c1c3095761214896ed3160e37e6515a4b554775a8919445419fa58b91073b6"
       },
       "reason": "Desktop 已为框架库，来源使用检查追踪保留的应用 preload；实际 YouDub 主入口由产品构建收据校验。 Retire old CLI entry points and product defaults; retain the upstream build and catalog generators, including support for an empty YouDub catalog. Read explicit application compositions and source entries with the existing product-use analyzer; retire mandatory legacy Harness profile names and retain missing-source and effective-patch checks."
+    },
+    {
+      "path": "scripts/verify-runtime-closure.spec.ts",
+      "before": {
+        "path": "scripts/verify-runtime-closure.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 7265,
+        "sha256": "ca98e6dd5ed6e6ef6a8bb1cd9892740fc8505b9bf2a34f1f96a4fb170ac0b6b3"
+      },
+      "after": {
+        "path": "scripts/verify-runtime-closure.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 8347,
+        "sha256": "40ac523986ab01158501bad138ea08f3880772a47f6e7754f263cb218879d891"
+      },
+      "reason": "Check the explicitly selected runtime manifest and declared peers, including source-built pinned dependencies; legacy Agent preset validation becomes explicit rather than mandatory for every product."
+    },
+    {
+      "path": "scripts/verify-runtime-closure.ts",
+      "before": {
+        "path": "scripts/verify-runtime-closure.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9466,
+        "sha256": "458a859872153087e25a941b90158281865c3b60f8787daa47ef2ecf294f26c3"
+      },
+      "after": {
+        "path": "scripts/verify-runtime-closure.ts",
+        "type": "file",
+        "executable": false,
+        "size": 9637,
+        "sha256": "147554deb82261a8f07267e72fe4cbb288c32235a8642d286ed3550769b77059"
+      },
+      "reason": "Check the explicitly selected runtime manifest and declared peers, including source-built pinned dependencies; legacy Agent preset validation becomes explicit rather than mandatory for every product."
     },
     {
       "path": "tsconfig.base.json",

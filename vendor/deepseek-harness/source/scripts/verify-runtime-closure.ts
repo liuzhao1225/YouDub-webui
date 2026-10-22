@@ -48,7 +48,7 @@ export interface RuntimeClosureResult {
 export async function verifyRuntimeClosure(
   root: string,
   manifestPath = 'python/sdk-runtime/package.json',
-  includePresets = true,
+  includePresets = false,
 ): Promise<RuntimeClosureResult> {
   const runtimeManifest = await loadManifest(resolve(root, manifestPath))
   const runtimeName = runtimeManifest.name ?? manifestPath
@@ -79,7 +79,7 @@ export async function verifyRuntimeClosure(
     const peerMeta = current.manifest.peerDependenciesMeta ?? {}
     for (const peer of Object.keys(peers).sort()) {
       if (!workspace.has(peer) || peerMeta[peer]?.optional === true) continue
-      if (runtimeDependencies[peer]?.startsWith('workspace:') === true) continue
+      if (Object.hasOwn(runtimeDependencies, peer)) continue
       failures.push(`${formatChain(runtimeName, packageName, parents)} -> ${peer}`)
     }
     const dependencies = {
@@ -101,14 +101,14 @@ export async function verifyRuntimeClosure(
 }
 
 if (import.meta.main) {
-  const root = resolve(import.meta.dirname, '..')
   const { values } = parseArgs({
     args: process.argv.slice(2),
-    options: { manifest: { type: 'string' } },
+    options: { manifest: { type: 'string' }, root: { type: 'string' }, presets: { type: 'boolean', default: false } },
   })
-  const result = await verifyRuntimeClosure(root, values.manifest)
+  const root = values.root === undefined ? resolve(import.meta.dirname, '..') : resolve(values.root)
+  const result = await verifyRuntimeClosure(root, values.manifest === undefined ? undefined : resolve(values.manifest), values.presets)
   if (result.failures.length > 0) {
-    console.error('verify-runtime-closure: preset plugins or required workspace peers are missing from python/sdk-runtime dependencies:')
+    console.error('verify-runtime-closure: selected preset plugins or required workspace peers are missing from the runtime manifest:')
     for (const failure of result.failures) console.error(`  ${failure}`)
     process.exitCode = 1
   } else {

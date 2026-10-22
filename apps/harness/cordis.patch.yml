@@ -64,7 +64,6 @@
         openBrowser: !!js ctx.webStartup.openBrowser
         printUrl: true
         publicUrl: !!js ctx.webStartup.publicUrl
-        surfaceContext: false
     - id: client-hmr
       name: '@deepseek-ai/dsh-client-hmr'
     - id: modules
