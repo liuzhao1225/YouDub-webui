@@ -311,3 +311,5 @@ Electron 使用的 `apps/web/src/main.ts` 与原 Web 客户端运行时继续保
 Web 输入隔离、浏览器第三方依赖与产品隔离共 225 项回归通过。额外执行构建环境原测试时，发现它仍读取已退休的上游发布 workflow；改为由现有产品测试预加载器提供实际 YouDub 开发 CI 路径，缺配置仍失败，保留环境与产物收据断言。修正后该文件 8 项通过，产品集成 72 项通过。产品构建、组合、75 包运行闭包、隔离与来源收据通过。
 
 开发版已重新启动，私有 profile 的 Host 在系统分配的本机端口监听，启动日志无错误。当前 Mac 锁屏继续阻止原生交互，本轮不把启动日志作为界面通过证据。
+
+第十批 `358c082c` 的 [CI 失败](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39738449265)：Vitest 将 `packages/client/ui-sidebar` 按子串匹配，同时选入未修改的文档预览等同名前缀模块；PDF 许可归档测试在干净 runner 中执行全局 `pnpm`，报 `spawnSync pnpm ENOENT`。文档预览模块未引用本批迁移的类型，已将 CI 筛选精确到 `packages/client/ui-sidebar/`。原侧栏测试全部保留，完整目标测试组重新通过 101 个文件、1,521 项，既有预期失败和平台跳过各 1 项。该修正及第十一批仍须在新 CI 候选验证。
