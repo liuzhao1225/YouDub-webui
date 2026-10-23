@@ -37,3 +37,15 @@ tag 工作流核对版本、提交与 main 来源，等待同一 SHA 的 main �
 两个平台通过后创建 GitHub 草稿 Release。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256，成功后公开 Release 并设为 latest。官网在发布成功后刷新与客户端共用的版本列表，并回读确认部署内容。
 
 安装包检查与完整模型准备、真实媒体任务验收分别记录。签名、公证、打包或启动失败时停止发布，保留原始诊断。
+
+## 从已有 tag 继续发布
+
+发布工作流修正后，可以从 main 对尚未发布的现有 tag 发起运行：
+
+```sh
+gh workflow run release.yml --ref main -f tag=v0.0.9
+```
+
+工作流仍检出该 tag 的代码、核对版本和 main 来源，并复用该提交的已验收候选包；不会移动 tag 或改用当前 main 的应用包。已公开版本不覆盖。
+
+GitHub 托管 macOS runner 的 HTTP/3 连接可能在下载公证票据时中断，表现为公证已 Accepted，随后 stapler 返回 Error 68 / NSURLErrorDomain -1005。发布 runner 按 [GitHub 官方已复现的问题及处理方法](https://github.com/actions/runner-images/issues/14924#issuecomment-6188826956) 限制 UDP 443，让请求使用 TCP HTTPS；该规则仅作用于临时 runner，签名、公证、票据验证和 Gatekeeper 检查均保留。失败时保存 DMG 与公证报告为 `macos-notary-failure`，不公开失败产物。
