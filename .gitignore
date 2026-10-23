@@ -197,3 +197,6 @@ examples/
 backup/
 # Generated from the shared website demo assets at build time.
 apps/web/public/examples/
+
+# Local review captures and historical migration evidence
+output/

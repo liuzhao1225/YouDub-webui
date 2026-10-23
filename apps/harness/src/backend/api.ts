@@ -198,7 +198,7 @@ async function upload(ctx: any, request: HttpRequest) {
   const jobs: Promise<void>[] = []
   const slots = new Set<string>()
   let parser: ReturnType<typeof Busboy>
-  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } }) }
+  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { fields: 1, fieldSize: Infinity } }) }
   catch (error) { throw new AppError('INVALID_MULTIPART', (error as Error).message, 400) }
   parser.on('field', (name, value, info) => {
     if (info.valueTruncated) { failure = new AppError('FILE_TOO_LARGE', 'Metadata too large.', 413); return }
@@ -224,15 +224,13 @@ async function upload(ctx: any, request: HttpRequest) {
       const graph = 'graph' in workflow ? parseWorkflowDocument(metadata.graphDocument) : undefined
       const descriptor = graph ? graph.inputs.find(item => item.id === slot) : workflow.describe().inputs.find(item => item.name === slot)
       if (!descriptor) throw new AppError('INVALID_INPUT', `Unknown workflow input: ${slot}`, 422)
-      stream.once('limit', () => { failure = new AppError('FILE_TOO_LARGE', 'Input exceeds upload limit.', 413) })
       if (graph && !descriptor.acceptedMimeTypes.some(mime => mime === info.mimeType || (mime.endsWith('/*') && info.mimeType.startsWith(mime.slice(0, -1))))) throw new AppError('INVALID_INPUT', `Unsupported MIME type for ${slot}: ${info.mimeType}`, 422)
-      const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream, descriptor.maxBytes)
+      const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream)
       if (graph) artifact.schemaId = graph.inputs.find(item => item.id === slot)!.schemaId
       artifacts[artifact.id] = artifact; inputs[slot] = { id: artifact.id, schemaId: artifact.schemaId }
     })().catch(error => { failure ??= error; parser.destroy(error); stream.resume() })
     jobs.push(job)
   })
-  parser.on('filesLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many input files.', 413) })
   parser.on('fieldsLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many metadata fields.', 413) })
   try {
     await new Promise<void>((resolve, reject) => {

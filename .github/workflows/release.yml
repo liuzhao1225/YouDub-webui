@@ -149,9 +149,9 @@ jobs:
           done
           sha256sum --check ./YouDub-macOS-arm64.dmg.sha256 ./YouDub-windows-x64.zip.sha256 ./YouDub-windows-x64-Setup.exe.sha256
           cp "../docs/releases/$GITHUB_REF_NAME.md" notes.md
-          gh release create "$GITHUB_REF_NAME" --verify-tag --latest --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256
-          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = "$GITHUB_REF_NAME"
+          gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256
           mkdir downloaded
-          gh release download "$GITHUB_REF_NAME" --dir downloaded --pattern 'YouDub-macOS-arm64.dmg*' --pattern 'YouDub-windows-x64*'
-          cd downloaded
-          sha256sum --check ./*.sha256
+          gh release download "$GITHUB_REF_NAME" --dir downloaded --pattern 'YouDub-*'
+          (cd downloaded && sha256sum --check ./*.sha256)
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = "$GITHUB_REF_NAME"

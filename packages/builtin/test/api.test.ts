@@ -132,17 +132,13 @@ test('multipart preserves Chinese filenames and spaces across the API boundary',
   assert.equal((Object.values(created[0].artifacts)[0] as any).name, filename)
 })
 
-test('malformed or oversized uploads fail promptly without creating a task', async t => {
-  const { created, post, form } = await setup(t)
+test('malformed uploads fail promptly without creating a task', async t => {
+  const { created, post } = await setup(t)
   const malformed = await post('broken', { 'Content-Type': 'multipart/form-data' })
   assert.equal(malformed.status, 400)
   const metadata = JSON.stringify({ id: randomUUID(), workflowId: 'test.upload', config: {} })
   const truncated = await post(`--test\r\nContent-Disposition: form-data; name="request"\r\n\r\n${metadata}\r\n--test\r\nContent-Disposition: form-data; name="input.document"; filename="test.txt"\r\n\r\npartial`, { 'Content-Type': 'multipart/form-data; boundary=test' })
   assert.equal(truncated.status, 400)
-  const oversized = form(); oversized.append('input.document', new Blob(['x'.repeat(128 * 1024)]), 'large.txt')
-  const rejected = await post(oversized)
-  assert.equal(rejected.status, 413)
-  assert.equal((await rejected.json() as any).error.code, 'FILE_TOO_LARGE')
   assert.equal(created.length, 0)
 })
 

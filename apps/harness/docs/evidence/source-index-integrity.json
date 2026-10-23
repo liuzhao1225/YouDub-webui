@@ -1,7 +1,0 @@
-{
-  "passed": true,
-  "sourceFiles": 9817,
-  "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
-  "sourceTreeSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
-  "scope": "Git index bytes, executable modes and symlink targets versus fixed upstream archive manifest"
-}

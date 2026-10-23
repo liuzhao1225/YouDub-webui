@@ -3,11 +3,10 @@ import { lstatSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Context, FiberState, type Plugin } from '@deepseek-ai/cordis'
+import { Context, type Plugin } from '@deepseek-ai/cordis'
 import { PluginPackages, readPluginMeta, type RuntimeResolution } from '@deepseek-ai/dsh-app-boot'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
-import type { AgentPresetRegistry } from '@deepseek-ai/dsh-agent-preset-registry'
 import PluginInventoryGateway from '../src/index.ts'
 
 const contexts: Context[] = []
@@ -92,52 +91,6 @@ describe('PluginInventoryGateway', () => {
     }
   })
 
-  it.each(['native', 'runtime'] as const)('resolves preset row metadata from the profile base without loading the plugins with %s resolution', async (mode) => {
-    const { dir, baseUrl, resolution, expectUnlinked } = metadataFixture(mode)
-    mkdirSync(join(dir, 'locale'), { recursive: true })
-    writeFileSync(join(dir, 'package.json'), JSON.stringify({
-      name: 'local-plugin', exports: { './feature': './index.js', './feature/locale/*.json': './locale/*.json' },
-    }))
-    writeFileSync(join(dir, 'index.js'), 'throw new Error("metadata must not execute the plugin")\n')
-    writeFileSync(join(dir, 'locale', 'en.json'), '{"meta":{"title":"Preset plugin","description":"Preset description"}}')
-    writeFileSync(join(dir, 'locale', 'zh.json'), '{"meta":{"title":"预设插件"}}')
-    if (mode === 'runtime') {
-      expectUnlinked()
-      expect(readPluginMeta('local-plugin/feature', baseUrl)).toBeUndefined()
-    }
-    const { ctx, inventory } = await harness(baseUrl)
-    await ctx.plugin(PluginPackages, mode === 'runtime' ? { resolution } : {})
-    ctx.provide('agentPresets', {
-      compositionInventory: async () => [{
-        id: 'local', isDefault: true,
-        rows: [
-          { entryId: 'feature', moduleName: 'local-plugin/feature', enabled: false },
-          { entryId: null, moduleName: 'local-plugin/private', enabled: false },
-        ],
-      }],
-    } as Partial<AgentPresetRegistry> as never)
-
-    expect(await inventory.list()).toEqual({
-      entries: [],
-      agentPresets: [{
-        id: 'local', isDefault: true,
-        rows: [
-          {
-            entryId: 'feature', moduleName: 'local-plugin/feature', enabled: false, fiberPhase: null,
-            meta: { title: { en: 'Preset plugin', zh: '预设插件' }, description: { en: 'Preset description' } },
-          },
-          { entryId: null, moduleName: 'local-plugin/private', enabled: false, fiberPhase: null },
-        ],
-      }],
-    })
-    if (mode === 'runtime') {
-      expectUnlinked()
-      await ctx.fiber.dispose()
-      expect(readPluginMeta('local-plugin/feature', baseUrl)).toBeUndefined()
-      expectUnlinked()
-    }
-  })
-
   it('publishes one direct list method under the pluginInventory namespace', async () => {
     const { inventory } = await harness()
     expect(inventory.typertRemote).toMatchObject({
@@ -160,8 +113,6 @@ describe('PluginInventoryGateway', () => {
     await ctx.loader.create({ name: 'cordis:active', group: true })
 
     const snapshot = await inventory.list()
-    // No agent-preset roster is composed, so the snapshot carries no presets.
-    expect(snapshot.agentPresets).toBeUndefined()
     expect(snapshot.entries).toHaveLength(3)
     expect(snapshot.entries).toEqual(expect.arrayContaining([
       {
@@ -194,37 +145,5 @@ describe('PluginInventoryGateway', () => {
 
     ctx.loader.remove(pendingId)
     expect((await inventory.list()).entries.some(entry => entry.entryId === pendingId)).toBe(false)
-  })
-
-  it('carries each composed preset with root-fiber states mapped to phases', async () => {
-    const { ctx, inventory } = await harness()
-    ctx.provide('agentPresets', {
-      compositionInventory: async () => [
-        {
-          id: 'standard',
-          name: '标准模式',
-          isDefault: true,
-          rows: [
-            { entryId: 'alpha', moduleName: 'pkg-alpha', enabled: true, fiberState: FiberState.ACTIVE },
-            { entryId: null, moduleName: 'pkg-file', enabled: 'conditional', condition: 'x' },
-          ],
-        },
-        { id: 'damaged', isDefault: false, broken: 'the composition file is missing', rows: [] },
-      ],
-    } as Partial<AgentPresetRegistry> as never)
-
-    const snapshot = await inventory.list()
-    expect(snapshot.agentPresets).toEqual([
-      {
-        id: 'standard',
-        name: '标准模式',
-        isDefault: true,
-        rows: [
-          { entryId: 'alpha', moduleName: 'pkg-alpha', enabled: true, fiberPhase: 'active' },
-          { entryId: null, moduleName: 'pkg-file', enabled: 'conditional', condition: 'x', fiberPhase: null },
-        ],
-      },
-      { id: 'damaged', isDefault: false, broken: 'the composition file is missing', rows: [] },
-    ])
   })
 })

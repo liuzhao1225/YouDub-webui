@@ -10,10 +10,9 @@ import { parseWorkflowDocument } from './workflow-document.js'
 import { workflowTemplates } from './workflow-templates.js'
 import { migrateLegacyDefaults, readDefaultsMigration, type DefaultsMigration } from './legacy-defaults-migration.js'
 import './auth.js'
-import './extensions.js'
 
 export const name = 'youdub-api'
-export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 'store', 'extensions']
+export const inject = ['http', 'auth', 'tasks', 'catalog', 'files', 'settings', 'store']
 export function apply(ctx: Context, config: { version: string }) {
   if (!config?.version) throw new Error('The API requires the application version from its composition.')
   const currentVersion = config.version
@@ -186,7 +185,6 @@ export function apply(ctx: Context, config: { version: string }) {
     const log = await ctx.files.readLog(request.params.id!, lines)
     request.response.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); request.response.end(log)
   })
-  route('GET', '/api/v2/extensions', request => ctx.http.json(request, 200, ctx.extensions.list()))
   route('DELETE', '/api/v2/imports/:id', async request => {
     const id = request.params.id!, release = await ctx.files.reserve(id)
     try {
@@ -196,14 +194,7 @@ export function apply(ctx: Context, config: { version: string }) {
       ctx.http.json(request, 204)
     } finally { await release() }
   })
-  route('POST', '/api/v2/extensions/install', async request => ctx.http.json(request, 201, await ctx.extensions.install(await readJson(request))))
-  route('PATCH', '/api/v2/extensions/:id', async request => ctx.http.json(request, 200, await ctx.extensions.setEnabled(request.params.id!, (await readJson(request)).enabled)))
-  route('DELETE', '/api/v2/extensions/:id', async request => { await ctx.extensions.remove(request.params.id!); ctx.http.json(request, 204) })
-  route('GET', '/api/v2/client-manifest', request => ctx.http.json(request, 200, ctx.extensions.clientManifest(Boolean(request.state.session))))
-  route('GET', '/api/plugins/:packageId/:version/:asset*', async request => {
-    const asset = await ctx.extensions.asset(request.params.packageId!, request.params.version!, request.params.asset!, Boolean(request.state.session))
-    await ctx.http.file(request, asset.path, { mime: asset.mime })
-  })
+
 }
 
 async function upload(ctx: Context, request: HttpRequest) {
@@ -212,7 +203,7 @@ async function upload(ctx: Context, request: HttpRequest) {
   const jobs: Promise<void>[] = []
   const slots = new Set<string>()
   let parser: ReturnType<typeof Busboy>
-  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } }) }
+  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { fields: 1, fieldSize: Infinity } }) }
   catch (error) { throw new AppError('INVALID_MULTIPART', (error as Error).message, 400) }
   parser.on('field', (name, value, info) => {
     if (info.valueTruncated) { failure = new AppError('FILE_TOO_LARGE', 'Metadata too large.', 413); return }
@@ -238,15 +229,13 @@ async function upload(ctx: Context, request: HttpRequest) {
       const graph = 'graph' in workflow ? parseWorkflowDocument(metadata.graphDocument) : undefined
       const descriptor = graph ? graph.inputs.find(item => item.id === slot) : workflow.describe().inputs.find(item => item.name === slot)
       if (!descriptor) throw new AppError('INVALID_INPUT', `Unknown workflow input: ${slot}`, 422)
-      stream.once('limit', () => { failure = new AppError('FILE_TOO_LARGE', 'Input exceeds upload limit.', 413) })
       if (graph && !descriptor.acceptedMimeTypes.some(mime => mime === info.mimeType || (mime.endsWith('/*') && info.mimeType.startsWith(mime.slice(0, -1))))) throw new AppError('INVALID_INPUT', `Unsupported MIME type for ${slot}: ${info.mimeType}`, 422)
-      const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream, descriptor.maxBytes)
+      const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream)
       if (graph) artifact.schemaId = graph.inputs.find(item => item.id === slot)!.schemaId
       artifacts[artifact.id] = artifact; inputs[slot] = { id: artifact.id, schemaId: artifact.schemaId }
     })().catch(error => { failure ??= error; parser.destroy(error); stream.resume() })
     jobs.push(job)
   })
-  parser.on('filesLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many input files.', 413) })
   parser.on('fieldsLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many metadata fields.', 413) })
   try {
     await new Promise<void>((resolve, reject) => {

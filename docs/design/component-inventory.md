@@ -9,13 +9,6 @@
 | [apps/web/src/components/inline-alert.tsx](../../apps/web/src/components/inline-alert.tsx) | InlineAlert |
 | [apps/web/src/components/language-switcher.tsx](../../apps/web/src/components/language-switcher.tsx) | LanguageSwitcher |
 | [apps/web/src/components/localize-task-config.tsx](../../apps/web/src/components/localize-task-config.tsx) | TaskOptions, TaskConfigForm |
-| [apps/web/src/components/models-settings/CustomProviderCard.tsx](../../apps/web/src/components/models-settings/CustomProviderCard.tsx) | CustomProviderCard |
-| [apps/web/src/components/models-settings/DeepSeekModelsEditor.tsx](../../apps/web/src/components/models-settings/DeepSeekModelsEditor.tsx) | parseCapacity, formatCapacity, modelDrafts, validateDeepSeekModels, DeepSeekModelsEditor |
-| [apps/web/src/components/models-settings/EditorFooter.tsx](../../apps/web/src/components/models-settings/EditorFooter.tsx) | EditorFooter |
-| [apps/web/src/components/models-settings/ModelListEditor.tsx](../../apps/web/src/components/models-settings/ModelListEditor.tsx) | ModelListEditor |
-| [apps/web/src/components/models-settings/ModelsSection.tsx](../../apps/web/src/components/models-settings/ModelsSection.tsx) | needsSetup, providerTargetLabel, providerCopy, ModelsSection |
-| [apps/web/src/components/models-settings/ProviderEditor.tsx](../../apps/web/src/components/models-settings/ProviderEditor.tsx) | pathOps, ProviderEditor |
-| [apps/web/src/components/models-settings/index.tsx](../../apps/web/src/components/models-settings/index.tsx) | ModelsSettings |
 | [apps/web/src/components/page-layout.tsx](../../apps/web/src/components/page-layout.tsx) | PageContainer, Page, PageHeader, PageTitle |
 | [apps/web/src/components/resource-row.tsx](../../apps/web/src/components/resource-row.tsx) | ResourceRow |
 | [apps/web/src/components/section-card.tsx](../../apps/web/src/components/section-card.tsx) | SectionCard |
@@ -29,8 +22,6 @@
 | [apps/web/src/components/task-cover.tsx](../../apps/web/src/components/task-cover.tsx) | TaskCover |
 | [apps/web/src/components/theme-toggle.tsx](../../apps/web/src/components/theme-toggle.tsx) | ThemeToggle |
 | [apps/web/src/components/translation-setup-view.tsx](../../apps/web/src/components/translation-setup-view.tsx) | TranslationSetupView |
-| [apps/web/src/components/translation-setup.tsx](../../apps/web/src/components/translation-setup.tsx) | TranslationSetup |
-| [apps/web/src/components/models-settings/primitives.tsx](../../apps/web/src/components/models-settings/primitives.tsx) | 直接复用 Harness Modal；仅保留删除后的焦点目标适配 |
 | [apps/web/src/components/ui/disclosure.tsx](../../apps/web/src/components/ui/disclosure.tsx) | Disclosure |
 | [apps/web/src/components/ui/input.tsx](../../apps/web/src/components/ui/input.tsx) | Input |
 | [apps/web/src/components/ui/native-select.tsx](../../apps/web/src/components/ui/native-select.tsx) | NativeSelect, Choice |
@@ -44,8 +35,6 @@
 | [apps/web/src/plugin/builtin/localize-editor.tsx](../../apps/web/src/plugin/builtin/localize-editor.tsx) | LocalizeEditor, name, inject, apply |
 | [apps/web/src/plugin/builtin/media-upload.tsx](../../apps/web/src/plugin/builtin/media-upload.tsx) | UploadSlot, LaunchCard |
 | [apps/web/src/plugin/builtin/schema-form.tsx](../../apps/web/src/plugin/builtin/schema-form.tsx) | schemaProblems, defaultConfig, validateConfig, ConfigEditor, useEditorSupported |
-| [apps/web/src/plugin/builtin/settings.tsx](../../apps/web/src/plugin/builtin/settings.tsx) | name, inject, apply |
-| [apps/web/src/plugin/builtin/shell.tsx](../../apps/web/src/plugin/builtin/shell.tsx) | name, inject, apply |
 | [apps/web/src/plugin/builtin/studio.tsx](../../apps/web/src/plugin/builtin/studio.tsx) | Studio, name, inject, apply |
 | [apps/web/src/plugin/builtin/task-status.tsx](../../apps/web/src/plugin/builtin/task-status.tsx) | ACTIVE_STATUSES, STATUS_LABELS, taskDisplayName, TaskState, TaskProgress |
 | [apps/web/src/plugin/builtin/workflow-canvas.tsx](../../apps/web/src/plugin/builtin/workflow-canvas.tsx) | WorkflowCanvas, createNode |

@@ -6,7 +6,6 @@ import focus from '../styles/focus.css?inline'
 import onboarding from '../styles/onboarding.css?inline'
 import scrollbar from '../styles/scrollbar.css?inline'
 import gradientShadowText from '../styles/gradient-shadow-text.css?inline'
-import shiki from '../styles/shiki.css?inline'
 
 const PLUGIN_ID = '@deepseek-ai/dsh-client-ui-theme'
 
@@ -18,7 +17,6 @@ const STYLES = [
   ['onboarding.css', onboarding],
   ['scrollbar.css', scrollbar],
   ['gradient-shadow-text.css', gradientShadowText],
-  ['shiki.css', shiki],
 ] as const
 
 /**

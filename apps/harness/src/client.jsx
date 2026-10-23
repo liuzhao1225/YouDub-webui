@@ -14,7 +14,7 @@ import { CurrentVersionRow } from '../../../vendor/deepseek-harness/source/packa
 import { SidebarRoot } from '../../../vendor/deepseek-harness/source/packages/client/ui-sidebar/src/client/SidebarRoot'
 import { HeaderLeadingControls } from '../../../vendor/deepseek-harness/source/packages/client/ui-sidebar/src/client/HeaderLeadingControls'
 import buttonCss from '../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Button.module.css'
-import shellCss from '../../../vendor/deepseek-harness/source/packages/client/ui-conversation/src/client/skeleton/ConversationRoot.module.css'
+import shellCss from '../../../vendor/deepseek-harness/source/packages/client/ui-layout/src/client/ConversationRoot.module.css'
 import logo from 'youdub:logo'
 import { resolveRoute } from '../../web/src/plugin/domain-helpers'
 import { StudioPage } from './frontend/studio-page'
@@ -51,13 +51,24 @@ function SettingsLauncher({ openSettings, registerSettingsLauncher }) {
   useEffect(() => registerSettingsLauncher(openSettings),[openSettings,registerSettingsLauncher])
   return <IconButton label={tx("client.settings")} onClick={() => openSettings()}><IconSettings size={16} aria-hidden="true" /></IconButton>
 }
+function UpdateVersionView(props) {
+  const tx=useText(),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const updates=globalThis.dshDesktop?.updates
+  const check=async () => {
+    setBusy(true);setError('')
+    try { await updates.open() } catch(error) { setError(error.message) } finally { setBusy(false) }
+  }
+  return <><div className="yd-version-row"><CurrentVersionRow {...props} />{updates && <Button disabled={busy} onClick={check}>{tx('app.updates.check.for.updates')}</Button>}</div>{error && <div role="alert">{error}</div>}</>
+}
+function UpdateVersionRow(props) { return <LanguageProvider source={props.localeSource}><UpdateVersionView {...props} /></LanguageProvider> }
 // Harness owns all sidebar geometry and controls; this adapter supplies product routes.
 function SidebarView(props) {
   const {t}=useI18n()
   const translate=key => ({'session.new':t.nav.newTask,'session.new.label':t.nav.newTask,'toggle.open':t.nav.expandSidebar,'toggle.collapse':t.nav.collapseSidebar,'panels.label':t.nav.primary})[key]
   const renderSlot=(name,owner,options) => {
+    if(name==='sidebar.toggle.badge') return props.renderFactorySlot('youdub.update-badge',{})
     if(name==='sidebar.brand.mark') return props.renderSlot(name,{...owner,wide:!props.collapsed},options)
-    if(name==='sidebar.settings') return <SidebarTools {...props} wide={owner.wide} settings={props.renderSlot(name,{wide:false},options)} />
+    if(name==='sidebar.settings') return <SidebarTools {...props} wide={owner.wide} settings={props.renderSlot(name,{wide:owner.wide},options)} />
     return props.renderSlot(name,owner,options)
   }
   return <SidebarRoot {...props} renderSlot={renderSlot} t={translate} selectPanel={id => props.navigate(id==='plugins'?'/extensions':id)} startSession={() => props.navigate('/')} />
@@ -65,7 +76,7 @@ function SidebarView(props) {
 function Sidebar(props) { return <LanguageProvider source={props.localeSource}><SidebarView {...props} /></LanguageProvider> }
 function LeadingView(props) {
   const {t}=useI18n()
-  return <HeaderLeadingControls {...props} t={key => key==='toggle.open'?t.nav.expandSidebar:t.nav.newTask} startSession={() => props.navigate('/')} />
+  return <HeaderLeadingControls {...props} toggleBadge={props.renderFactorySlot('youdub.update-badge',{})} t={key => key==='toggle.open'?t.nav.expandSidebar:t.nav.newTask} startSession={() => props.navigate('/')} />
 }
 function Leading(props) { return <LanguageProvider source={props.localeSource}><LeadingView {...props} /></LanguageProvider> }
 function SidebarBrand({wide}) { return <span className="yd yd-sidebar-mark" data-wide={wide}><BrandMark animated wordmark={wide} wordmarkSrc={logo} className={wide ? "h-8 w-auto" : "w-full h-auto"} /></span> }
@@ -154,13 +165,14 @@ export function apply(ctx) {
   })
   ctx.effect(() => { const previous=document.title;document.title='YouDub';return () => {document.title=previous} })
   ctx.effect(() => { const style=document.createElement('style');style.dataset.pluginCss='@youdub/harness-subtitles';style.textContent=themeCss+domainCss+css;document.head.append(style);return () => style.remove() })
-  ctx.slots.inject('sidebar',() => ctx.slots.register({name:'sidebar',store,inject:injected,children:{'sidebar.brand.mark':{kind:'single',scope:'root'},'sidebar.brand.name':{kind:'single',scope:'root'},'sidebar.toggle.badge':{kind:'single',scope:'root'},'sidebar.panellist':{kind:'list',scope:'root'},'sidebar.workspaces':{kind:'single',scope:'root'},'sidebar.settings':{kind:'single',scope:'root'},'sidebar.footer.action':{kind:'list',scope:'root'}}},Sidebar))
+  ctx.effect(() => ctx.slots.registerFactory({name:'youdub.update-badge',scope:'root',children:{'sidebar.toggle.badge':{kind:'single',scope:'root'}}},({renderSlot}) => renderSlot('sidebar.toggle.badge',{})))
+  ctx.slots.inject('sidebar',() => ctx.slots.register({name:'sidebar',store,inject:injected,children:{'sidebar.brand.mark':{kind:'single',scope:'root'},'sidebar.brand.name':{kind:'single',scope:'root'},'sidebar.panellist':{kind:'list',scope:'root'},'sidebar.workspaces':{kind:'single',scope:'root'},'sidebar.settings':{kind:'single',scope:'root'},'sidebar.footer.action':{kind:'list',scope:'root'}}},Sidebar))
   ctx.slots.inject('shell.leading',() => ctx.slots.register({name:'shell.leading',inject:injected},Leading))
   ctx.slots.inject('sidebar.brand.mark',() => ctx.slots.register({name:'sidebar.brand.mark'},SidebarBrand))
   ctx.slots.inject('sidebar.brand.name',() => ctx.slots.register({name:'sidebar.brand.name'},SidebarName))
   for(const [id,Icon] of [['/',Sparkles],['/tasks',History],['/workflows',Branch],['/resources',Folder],['plugins',Plugin]]) ctx.slots.inject('sidebar.panellist',() => ctx.slots.register({name:'sidebar.panellist',id},({size}) => <Icon size={size} />))
   ctx.slots.inject('sidebar.workspaces',() => ctx.slots.register({name:'sidebar.workspaces',store,inject:injected,children:{'youdub.navigation':{kind:'list',scope:'root'}}},SidebarExtensions))
-  ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id:'current-version',priority:-10,order:100,locale:'settings'},CurrentVersionRow))
+  ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id:'current-version',priority:-10,order:100,locale:'settings',inject:() => ({localeSource})},UpdateVersionRow))
   for(const id of ['developer-tools','font-size']) ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id,priority:-10},() => null))
   ctx.slots.inject('settings.launcher',() => ctx.slots.register({name:'settings.launcher',inject:() => ({registerSettingsLauncher})},SettingsLauncher))
   const children = {'youdub.page':{kind:'keyed',scope:'root'},...Object.fromEntries(domainSlots.map(slot => [`youdub.${slot}`,{kind:'list',scope:'root'}]))}

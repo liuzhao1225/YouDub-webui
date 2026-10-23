@@ -21,13 +21,18 @@ const base = { absWorkingDir: here, bundle: true, platform: 'node', format: 'esm
   packages: 'external', nodePaths: [modules], logLevel: 'info', metafile: true };
 const records = {};
 records.product = (await build({ ...base, entryPoints: [join(here, 'src/desktop-product.ts')],
+  plugins: [{ name: 'youdub-sdk', setup(build) {
+    build.onResolve({ filter: /^@youdub\/sdk$/ }, () => ({ path: join(root, 'packages/sdk/src/index.ts') }));
+  } }],
   outfile: join(output, 'lib/youdub-main.js'),
 })).metafile;
 for (const entry of ['preload-app']) {
   await cp(join(compiled, 'apps/desktop/lib', entry + '.cjs'), join(output, 'lib', entry + '.cjs'));
 }
 await rm(join(output, 'renderer'), { recursive: true, force: true });
-for (const folder of ['resources', 'scripts/node-bin']) {
+await rm(join(output, 'resources'), { recursive: true, force: true });
+await mkdir(join(output, 'resources'), { recursive: true });
+for (const folder of ['scripts/node-bin']) {
   await rm(join(output, folder), { recursive: true, force: true });
   await cp(join(upstream, folder), join(output, folder), { recursive: true });
 }

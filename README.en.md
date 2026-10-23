@@ -128,7 +128,7 @@ npm start
 
 On first launch, select the interface language and data directory, prepare runtime resources and configure a translation model through the UI. The application uses its own Python environment, models and configuration. Translation models must accept at least **65,535** output tokens; incompatible endpoints report an error. Base environment readiness and workflow resource readiness are shown separately.
 
-The previous runtime, Swift/C# shells and release process remain available in the [pre-refactor instructions](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/README.en.md#running-the-main-branch-from-source). The initial YouDub snapshot and original Harness archives are preserved in the [source baselines](apps/harness/baselines/README.md).
+The previous runtime, Swift/C# shells and release process remain available in the [pre-refactor instructions](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/README.en.md#running-the-main-branch-from-source). Harness provenance and the retained subset are documented in the [source notes](vendor/deepseek-harness/README.md).
 
 ## Everything is a plugin
 
@@ -159,7 +159,7 @@ Manage plugins in the application's Extensions page. Harness PluginManager handl
 - Local workflow, Client and Python plugins have been validated. Installation from remote GitHub/npm sources has not yet been validated.
 - Current product APIs use `/api/v2` and support rerunning from a selected step. The old FastAPI/v1 HTTP entry points have been removed. Video URL downloads use `media.download/v1` and support single-video YouTube, Shorts, Bilibili and b23.tv links through yt-dlp, Node.js and FFmpeg, with the same duration and file-size limits.
 
-Read the [runtime guide](docs/design/cordis-plugin-runtime.md#1-安装与配置) before upgrading an older installation or migrating data. Real-task validation and unverified areas are recorded in the [migration report](docs/design/cordis-plugin-migration.md), [sentence segmentation results](docs/validation/asr-punkt-sentences-2026-10-09.json) and [subtitle display results](docs/validation/subtitle-display-2026-10-09.json).
+Read the [runtime guide](docs/design/cordis-plugin-runtime.md#1-安装与配置) before upgrading an older installation or migrating data. Real-task validation and unverified areas are recorded in the [migration report](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md), [sentence segmentation results](docs/validation/asr-punkt-sentences-2026-10-09.json) and [subtitle display results](docs/validation/subtitle-display-2026-10-09.json).
 
 ## Development and Tests
 

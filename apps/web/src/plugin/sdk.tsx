@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
-import type { Fiber } from 'cordis'
-import type { ClientManifest, Diagnostic, GraphNode, JsonObject, JsonSchema, LocalizedText, NodeTypeDefinition, TaskNodeDetail, TaskView } from './contracts'
+import type { Diagnostic, GraphNode, JsonObject, JsonSchema, LocalizedText, NodeTypeDefinition, TaskNodeDetail, TaskView } from './contracts'
 export type * from './contracts'
 
 export const SDK_VERSION = '1.1.0'
@@ -39,18 +38,3 @@ declare module 'cordis' {
 export { PluginContextProvider, useClient, useObservable, useSlot, usePathname, Link } from './legacy'
 
 export {text,matchRoute} from './domain-helpers'
-export function parseManifest(value: unknown): ClientManifest {
-  const manifest = value as ClientManifest
-  if (!manifest || manifest.version !== 1 || manifest.sdkVersion !== SDK_VERSION || manifest.platformVersion !== '1' || !Array.isArray(manifest.modules)) throw new Error('Client manifest version is unsupported')
-  const ids = new Set<string>()
-  for (const entry of manifest.modules) {
-    if (!entry.id || ids.has(entry.id) || !entry.version || !['public', 'authenticated'].includes(entry.access) || !entry.url?.startsWith('/') || entry.url.startsWith('//')) throw new Error(`Invalid Client module: ${entry.id}`)
-    if (entry.css?.some((url) => !url.startsWith('/') || url.startsWith('//'))) throw new Error(`Invalid CSS URL: ${entry.id}`)
-    ids.add(entry.id)
-  }
-  return manifest
-}
-export async function requireActive(fiber: Fiber, name: string) {
-  await fiber
-  if (fiber.state !== 2) throw new Error(`Plugin ${name} failed to activate (state ${fiber.state})`)
-}

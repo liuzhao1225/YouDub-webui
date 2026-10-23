@@ -37,7 +37,7 @@ function graph(review = true): WorkflowDocument {
       { id: 'context-read', source: { nodeId: '$inputs', portId: 'context_file' }, target: { nodeId: 'read', portId: 'context' } },
       { id: 'read-finish', source: { nodeId: 'read', portId: 'document' }, target: { nodeId: 'finish', portId: 'document' } },
     ],
-    inputs: ['custom_source', 'context_file'].map(id => ({ id, label: id, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: ['text/plain'], maxBytes: 1024 })),
+    inputs: ['custom_source', 'context_file'].map(id => ({ id, label: id, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: ['text/plain'] })),
     outputs: [{ id: 'result', label: '结果', kind: 'artifact', schemaId: 'file/v1', required: true, source: { nodeId: 'finish', portId: 'file' } }],
     presentation: { positions: { read: { x: 20, y: 20 }, finish: { x: 400, y: 20 } }, viewport: { x: 0, y: 0, zoom: 1 } },
   }

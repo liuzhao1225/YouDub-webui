@@ -2,10 +2,8 @@ import { Context } from '@deepseek-ai/cordis'
 import type { Fiber } from '@deepseek-ai/cordis'
 import type {
   RemoteEventHostInfo,
-  TypertRemoteEventInvocation,
   TypertRemoteEventSource,
 } from '@deepseek-ai/dsh-api-gateway'
-import { scopeTarget } from '@deepseek-ai/dsh-scope'
 import { describe, expect, it } from 'vitest'
 import { apply, inject } from '../src/index.ts'
 
@@ -56,28 +54,6 @@ function emitRaw(ctx: Context, event: string, args: readonly unknown[]): void {
   emit(event, ...args)
 }
 
-function waterfallRaw(
-  ctx: Context,
-  target: object,
-  event: string,
-  args: readonly unknown[],
-  next: () => Promise<unknown>,
-): Promise<unknown> {
-  const waterfall = ctx.waterfall.bind(ctx) as (
-    receiver: object,
-    name: string,
-    ...values: readonly unknown[]
-  ) => Promise<unknown>
-  return waterfall(target, event, ...args, next)
-}
-
-function invocationOf(value: unknown): TypertRemoteEventInvocation {
-  if (typeof value !== 'object' || value === null || !Object.hasOwn(value, 'context')) {
-    throw new Error('fixture did not receive a scoped Remote Event invocation')
-  }
-  return value as TypertRemoteEventInvocation
-}
-
 describe('Remote event Host source', () => {
   it('registers the Host home used by Client connection generations', async () => {
     const { gateway, fiber } = await setup()
@@ -104,42 +80,42 @@ describe('Remote event Host source', () => {
       value: { event: 'settings/document-updated', args: ['ui-theme', 1] },
     })
 
-    emitRaw(ctx, 'goal/activation-changed', [{
+    emitRaw(ctx, 'credentials/record-updated', [{
       sessionId: 'session-1',
       goal: { id: 'goal-1', revision: 1, activation: 'disarmed' },
     }])
     await expect(first.next()).resolves.toEqual({
       done: false,
       value: {
-        event: 'goal/activation-changed',
+        event: 'credentials/record-updated',
         args: [{ sessionId: 'session-1', goal: { id: 'goal-1', revision: 1, activation: 'disarmed' } }],
       },
     })
     await expect(second.next()).resolves.toEqual({
       done: false,
       value: {
-        event: 'goal/activation-changed',
+        event: 'credentials/record-updated',
         args: [{ sessionId: 'session-1', goal: { id: 'goal-1', revision: 1, activation: 'disarmed' } }],
       },
     })
 
-    emitRaw(ctx, 'schedule/changed', [])
+    emitRaw(ctx, 'plugin-manager/changed', [])
     await expect(first.next()).resolves.toEqual({
       done: false,
-      value: { event: 'schedule/changed', args: [] },
+      value: { event: 'plugin-manager/changed', args: [] },
     })
     await expect(second.next()).resolves.toEqual({
       done: false,
-      value: { event: 'schedule/changed', args: [] },
+      value: { event: 'plugin-manager/changed', args: [] },
     })
 
     const firstDone = first.next()
     firstAbort.abort(new Error('first Client disconnected'))
-    emitRaw(ctx, 'commands/change', [])
+    emitRaw(ctx, 'llm/adapters-updated', [])
     await expect(firstDone).resolves.toEqual({ done: true, value: undefined })
     await expect(second.next()).resolves.toEqual({
       done: false,
-      value: { event: 'commands/change', args: [] },
+      value: { event: 'llm/adapters-updated', args: [] },
     })
 
     const secondDone = second.next()
@@ -149,33 +125,6 @@ describe('Remote event Host source', () => {
     await fiber.dispose()
     expect(gateway.source).toBeUndefined()
     expect(gateway.removals).toBe(1)
-    await ctx.fiber.dispose()
-  })
-
-  it('attaches each declared resource reader to its forwarded notification', async () => {
-    const { ctx, gateway, fiber } = await setup()
-    const abort = new AbortController()
-    const stream = sourceOf(gateway)(abort.signal)[Symbol.asyncIterator]()
-    const cases: readonly (readonly [string, readonly unknown[], string])[] = [
-      ['api-session/activity', ['s-activity', 1], 's-activity'],
-      ['api-session/added', [{ sessionId: 's-added' }], 's-added'],
-      ['api-session/error', ['s-error', 'boom'], 's-error'],
-      ['api-session/removed', ['s-removed'], 's-removed'],
-      ['api-session/status', ['s-status', true], 's-status'],
-    ]
-    for (const [event, args, sessionId] of cases) {
-      emitRaw(ctx, event, args)
-      const next = await stream.next()
-      if (next.done === true || 'context' in next.value) throw new Error(`${event} was not forwarded as a notification`)
-      const frame = next.value
-      expect(frame).toMatchObject({ event, args })
-      expect(frame.resources?.['session']?.(...frame.args)).toBe(sessionId)
-    }
-    // An event that declares no resources carries no readers, so access control sees the global resource.
-    emitRaw(ctx, 'commands/change', [])
-    await expect(stream.next()).resolves.toEqual({ done: false, value: { event: 'commands/change', args: [] } })
-    abort.abort(new Error('Client disconnected'))
-    await fiber.dispose()
     await ctx.fiber.dispose()
   })
 
@@ -202,95 +151,6 @@ describe('Remote event Host source', () => {
     alreadyAborted.abort()
     await expect(sourceOf(gateway)(alreadyAborted.signal)[Symbol.asyncIterator]().next())
       .resolves.toEqual({ done: true, value: undefined })
-    await ctx.fiber.dispose()
-  })
-
-  it('bridges scoped waterfall result, next delegation, and rejection', async () => {
-    const { ctx, gateway } = await setup()
-    const abort = new AbortController()
-    const iterator = sourceOf(gateway)(abort.signal)[Symbol.asyncIterator]()
-    const agentCtx = ctx.extend()
-    const agent = { id: 'agent-1', ctx: agentCtx }
-    const target = scopeTarget(ctx, agent)
-    const request = { questions: [], agent }
-
-    await expect(async () => waterfallRaw(
-      ctx,
-      target,
-      'user-questions/request',
-      [{ questions: [], agent: { id: 'agent-2', ctx: ctx.extend() } }],
-      () => Promise.resolve('host fallback'),
-    )).rejects.toThrow('must carry its Agent directly')
-
-    const claimed = waterfallRaw(
-      ctx,
-      target,
-      'user-questions/request',
-      [request],
-      () => Promise.resolve('host fallback'),
-    )
-    const claimedDispatch = invocationOf((await iterator.next()).value)
-    expect(claimedDispatch).toMatchObject({
-      event: 'user-questions/request',
-      request,
-      context: { value: agentCtx, subject: agent, agentId: 'agent-1' },
-    })
-    claimedDispatch.resolve({ kind: 'result', value: 'client answer' })
-    await expect(claimed).resolves.toBe('client answer')
-
-    const delegated = waterfallRaw(
-      ctx,
-      target,
-      'user-questions/request',
-      [request],
-      () => Promise.resolve('host fallback'),
-    )
-    const delegatedDispatch = invocationOf((await iterator.next()).value)
-    delegatedDispatch.resolve({ kind: 'next' })
-    await expect(delegated).resolves.toBe('host fallback')
-
-    const rejection = Object.assign(new Error('the user cancelled ask_user_question'), {
-      code: 'ASK_CANCELLED',
-    })
-    const rejected = waterfallRaw(
-      ctx,
-      target,
-      'user-questions/request',
-      [request],
-      () => Promise.resolve('host fallback'),
-    )
-    const rejectedAssertion = expect(rejected).rejects.toBe(rejection)
-    const rejectedDispatch = invocationOf((await iterator.next()).value)
-    rejectedDispatch.reject(rejection)
-    await rejectedAssertion
-
-    const done = iterator.next()
-    abort.abort()
-    await expect(done).resolves.toEqual({ done: true, value: undefined })
-    await ctx.fiber.dispose()
-  })
-
-  it('rejects a queued scoped waterfall when its source is withdrawn', async () => {
-    const { ctx, gateway, fiber } = await setup()
-    const abort = new AbortController()
-    const iterator = sourceOf(gateway)(abort.signal)[Symbol.asyncIterator]()
-    const delivery = iterator.next()
-    const agent = { id: 'agent-1', ctx: ctx.extend() }
-    const reason = new Error('forwarded event source removed')
-    const pending = waterfallRaw(
-      ctx,
-      scopeTarget(ctx, agent),
-      'user-questions/request',
-      [{ questions: [], agent }],
-      () => Promise.resolve('host fallback'),
-    )
-    const rejected = expect(pending).rejects.toBe(reason)
-
-    abort.abort(reason)
-
-    await rejected
-    await expect(delivery).resolves.toEqual({ done: true, value: undefined })
-    await fiber.dispose()
     await ctx.fiber.dispose()
   })
 })

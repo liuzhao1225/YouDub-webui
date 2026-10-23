@@ -141,7 +141,7 @@ type WorkflowDocument = {
   inputs: {
     id: string; label: string; required: boolean
     kind: 'artifact'; schemaId: string
-    acceptedMimeTypes: string[]; maxBytes: number
+    acceptedMimeTypes: string[]
   }[]
   outputs: {
     id: string; label: string; kind: 'artifact'

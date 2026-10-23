@@ -24,9 +24,6 @@
       "path": "../../attachment/attachment"
     },
     {
-      "path": "../../util/timeout"
-    },
-    {
       "path": "../../util/crypto"
     },
     {
@@ -34,6 +31,9 @@
     },
     {
       "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../util/timeout"
     }
   ]
 }

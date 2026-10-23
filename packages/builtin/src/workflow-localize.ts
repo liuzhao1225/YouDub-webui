@@ -18,7 +18,7 @@ export const localizeSchema: JsonObject = {
     source_proxy_port: nodeDescriptors.download.configSchema.properties!.proxyPort,
     source_language: { type: 'string', minLength: 2 }, target_language: { type: 'string', minLength: 2 },
     output_mode: { enum: ['subtitles', 'dubbing', 'both'] }, keep_background: { type: 'boolean' },
-    asr: selection({ initial_prompt: { type: ['string', 'null'], maxLength: 500 } }), translation: selection(),
+    asr: selection({ initial_prompt: { type: ['string', 'null'] } }), translation: selection(),
     tts: nullable(selection({ voice: { oneOf: [
       { type: 'object', additionalProperties: false, required: ['mode'], properties: { mode: { const: 'source_clone' } } },
       { type: 'object', additionalProperties: false, required: ['mode', 'id'], properties: { mode: { const: 'preset' }, id: { type: 'string', minLength: 1 } } },
@@ -39,7 +39,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
   const pick = (kind: string, config: JsonObject, catalog: CatalogService) => catalog.listProviders().find(item => item.capability === kind && (item.adapter ?? item.id) === config[kind]?.adapter)
   const workflow: WorkflowDefinition = {
     id: 'youdub.localize', version, pluginId, pluginVersion: version, integrity: plugin.integrity, compatibleIntegrities: plugin.compatibleIntegrities,
-    describe: () => ({ id: 'youdub.localize', version, label: '视频翻译与配音', inputs: [{ name: 'video', label: '视频', required: false, acceptedMimeTypes: ['video/*'], maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296) }], configSchema: localizeSchema, defaults: structuredClone(defaults()), ui: { editor: 'youdub.localize', sourceUrlInput: 'video' } }),
+    describe: () => ({ id: 'youdub.localize', version, label: '视频翻译与配音', inputs: [{ name: 'video', label: '视频', required: false, acceptedMimeTypes: ['video/*'] }], configSchema: localizeSchema, defaults: structuredClone(defaults()), ui: { editor: 'youdub.localize', sourceUrlInput: 'video' } }),
     validate: async (inputs, config, catalog) => {
       const errors: Diagnostic[] = []
       const fail = (message: string, field?: string) => errors.push({ code: 'INVALID_CONFIG', message, field })
@@ -82,7 +82,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
       binding('media', 'youdub.media')
       if (config.source_url) {
         binding('download', 'youdub.download')
-        plan.bindings.download.options = { maxBytes: Number(process.env.LOCAL_UPLOAD_MAX_BYTES ?? 4294967296), proxyPort: config.source_proxy_port ?? 0 }
+        plan.bindings.download.options = { proxyPort: config.source_proxy_port ?? 0 }
         plan.config.source_url = videoSource(config.source_url).url
       }
       for (const kind of ['asr', 'translation', 'tts', 'separation', 'subtitle_alignment']) if (config[kind]) binding(kind, pick(kind, config, catalog)!.id, config[kind])

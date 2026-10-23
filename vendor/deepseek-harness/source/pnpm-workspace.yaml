@@ -1,17 +1,8 @@
 packages:
   - vendor/*
   - packages/*/*
-  # The Landlock launcher is developed with its harness consumers but keeps
-  # its native build and publication scripts under native/system.
-  - native/system
-  - native/system/packages/*
   # Product assemblies over the package tier; apps/cli owns the `dsh` bin.
   - apps/*
-  # Private package owning repository-level benchmark dependencies.
-  - benchmarks
-  - website
-  # Deploy root of the single-exe build: a pure dependency manifest whose
-  # closure is what the exe bundles and what the Python runtime distributes.
 
 overrides:
   'extract-zip>yauzl': '3.4.0'
@@ -29,7 +20,6 @@ peerDependencyRules:
 # (git hooks) genuinely need theirs.
 allowBuilds:
   esbuild: true
-  lefthook: true
   # Cross-platform boundary for the persistent PTY backend, including ConPTY on Windows.
   node-pty: true
   # Pulled in by @earendil-works/pi-ai (optional LLM API backend). pnpm lists
@@ -55,12 +45,6 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   # Office engines and their API are qualified and released together by the kit repository.
-  - '@deepseek-ai/libreoffice-kit@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-darwin-arm64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-darwin-x64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-win32-x64@0.1.5'
-  - '@deepseek-ai/libreoffice-kit-wasm@0.1.5'
   # Fresh pi-ai releases carry the model catalog updates that are the whole
   # point of bumping it; waiting out the release age would defeat that.
   - '@earendil-works/pi-ai@1.1.0'
@@ -78,13 +62,6 @@ minimumReleaseAgeExclude:
   - node-addon-require-builtin-win32-x64-msvc@0.1.9
   - node-addon-require-builtin@0.1.9
   # The native computer-use provider pins this reviewed upstream runtime closure.
-  - '@trycua/cua-driver-darwin-arm64@0.28.0'
-  - '@trycua/cua-driver-darwin-x64@0.28.0'
-  - '@trycua/cua-driver-linux-arm64-gnu@0.28.0'
-  - '@trycua/cua-driver-linux-x64-gnu@0.28.0'
-  - '@trycua/cua-driver-win32-arm64-msvc@0.28.0'
-  - '@trycua/cua-driver-win32-x64-msvc@0.28.0'
-  - '@trycua/cua-driver@0.28.0'
   # The package manager is a workspace devDependency, so its own exact pin
   # must be exempt from the release-age window that guards other packages.
   - pnpm@11.28.5
@@ -92,8 +69,4 @@ minimumReleaseAgeExclude:
   - electron@44.7.0
 patchedDependencies:
   '@earendil-works/pi-ai@1.1.0': patches/@earendil-works__pi-ai@1.1.0.patch
-  '@fortune-sheet/core@1.0.4': patches/@fortune-sheet__core@1.0.4.patch
-  '@fortune-sheet/react@1.0.4': patches/@fortune-sheet__react@1.0.4.patch
-  '@yao-pkg/pkg@6.21.0': patches/@yao-pkg__pkg@6.21.0.patch
-  exceljs@4.4.0: patches/exceljs@4.4.0.patch
   node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch

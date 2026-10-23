@@ -4,37 +4,19 @@ YouDub includes the following source adaptations in addition to its separately
 licensed dependencies. These notices do not replace the YouDub project license
 or the licenses distributed with dependencies.
 
-## DeepSeek Harness — model provider management
+## DeepSeek Harness — desktop, host and shared UI
 
-Source snapshot: [DeepSeek Harness, commit
-99f6f02fecdb7dff40c3fbc9470f5907c29f74ca](https://github.com/liuzhao1225/deepseek-harness/tree/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca),
-as checked out in the source repository used for this adaptation.
+The maintained source subset is under `vendor/deepseek-harness/source/`.
+Its origin is recorded in [upstream.json](vendor/deepseek-harness/upstream.json):
+DeepSeek Harness `dsh-v0.2.1-rc.2`, commit
+`687f282e8625c6b8d11ff58211a90524be2e4317`.
 
-The following copied or adapted portions are covered by the MIT notice below:
-
-- Frontend components, editors, styles, store, API-key validation and locale
-  dictionaries in `apps/web/src/components/models-settings/`, from
-  `packages/client/ui-settings-models/src/client/`.
-- The frontend schema interpreter, from
-  `packages/client/schema-form/src/model.ts`, and snapshot-store adaptation,
-  from `packages/client/runtime/src/client/contract/store.ts`.
-- Backend `catalog.ts`, `provider.ts`, `discovery.ts` and `config.ts` in
-  `packages/builtin/src/harness-llm/`, from `packages/llm/llm-pi-ai/src/`.
-- The backend support functions and contracts derived from
-  `packages/llm/llm/src/api-key.ts`, `types.ts`, `attribution.ts` and
-  `packages/credentials/credentials/src/index.ts`.
-
-Adaptation details are recorded in the frontend `SOURCE.md` and backend
-`README.md` in those directories. YouDub supplies its own HTTP/storage/credential
-integration, theme and localization adapters, task execution rules, and the
-supplier/custom-API tab arrangement. The source snapshot's whole agent runtime,
-account onboarding and retry system are not included.
-
-The desktop runtime copies this notice with the compiled frontend. The backend
-source directory also retains its original `LICENSE`. The pinned
-`@earendil-works/pi-ai` dependency is version `0.82.1`; its license and the
-licenses of installed runtime dependencies remain in their `node_modules`
-packages. Those dependencies retain their respective licenses.
+YouDub reuses its desktop shell, shared UI, plugin lifecycle, model settings,
+credentials and LLM services. The earlier standalone model-provider copy has
+been removed. The retained source [license](vendor/deepseek-harness/source/LICENSE)
+and [third-party notices](vendor/deepseek-harness/source/THIRD_PARTY_NOTICES.md)
+are included in desktop distributions. Runtime dependencies retain their own
+licenses in their installed packages.
 
 ### Original MIT notice
 

@@ -24,10 +24,10 @@
       "path": "../../core/scope"
     },
     {
-      "path": "../../util/timeout"
+      "path": "../jobs"
     },
     {
-      "path": "../jobs"
+      "path": "../../util/timeout"
     }
   ]
 }

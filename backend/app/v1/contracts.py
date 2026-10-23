@@ -47,7 +47,7 @@ class ModelSelection(Contract):
 
 
 class AsrSelection(ModelSelection):
-    initial_prompt: Annotated[str, Field(max_length=500)] | None = None
+    initial_prompt: str | None = None
 
 
 class PresetVoice(Contract):

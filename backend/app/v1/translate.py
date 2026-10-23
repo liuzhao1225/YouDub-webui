@@ -25,9 +25,6 @@ class BatchTranslation(Contract):
 def batches(transcript: Transcript) -> Iterator[list[Segment]]:
     batch, length = [], 0
     for segment in transcript.segments:
-        if len(segment.text) > MAX_TEXT_CHARS:
-            raise ApiError(422, "INVALID_CONFIG", "A source segment exceeds the translation text limit.",
-                           stage="translate", action="adjust_settings")
         if batch and (len(batch) == MAX_SEGMENTS or length + len(segment.text) > MAX_TEXT_CHARS):
             yield batch
             batch, length = [], 0

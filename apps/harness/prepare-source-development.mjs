@@ -4,7 +4,7 @@ import { createRequire, isBuiltin } from 'node:module';
 import { access, cp, lstat, mkdir, readFile, realpath, symlink, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { readFrameworkSource } from './baselines/framework-source.mjs';
+import { readFrameworkSource } from './framework-source.mjs';
 import { desktopNodeEnvironment } from '../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));

@@ -89,10 +89,6 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
           <div className="my-2 text-center text-xs text-muted-foreground">{tx("studio.or.upload.a.video")}</div>
         </div>}
         <div className="grid gap-3">{workflow.inputs.map((slot) => <UploadSlot key={slot.name} slot={slot} alternative={slot.name === linkSlot} file={files[slot.name]} disabled={busy || !!pendingId} onChange={(file) => {
-          if (file && slot.maxBytes && file.size > slot.maxBytes) {
-            setError(`${text(slot.label, language)} ${tx("studio.exceeds.the.file.size.limit")}`)
-            setFiles((current) => { const next = { ...current }; delete next[slot.name]; return next }); return
-          }
           if (file && slot.name === linkSlot) { setSourceUrl(''); setLinkTouched(false) }
           setError(''); setFiles((current) => { const next = { ...current }; if (file) next[slot.name] = file; else delete next[slot.name]; return next })
         }} />)}</div>

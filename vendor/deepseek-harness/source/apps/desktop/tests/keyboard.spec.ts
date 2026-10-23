@@ -10,7 +10,6 @@ import type { DesktopShortcutInput, ShortcutBinding, ShortcutCommandId, Shortcut
 import { ShortcutRegistry } from '@deepseek-ai/dsh-client-shortcuts/src/client/registry.ts'
 import { installKeyboard } from '@deepseek-ai/dsh-client-shortcuts/src/client/dom.ts'
 import { installNativeKeyboard } from '@deepseek-ai/dsh-client-shortcuts/src/client/native.ts'
-import type { DesktopBrowserLeaseId, DesktopBrowserReservation } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { DESKTOP_IPC } from '../src/ipc.ts'
 
 const ipc = vi.hoisted(() => ({ handle: vi.fn(), removeHandler: vi.fn() }))
@@ -33,8 +32,6 @@ vi.mock('electron', () => ({ ipcMain: ipc, BrowserWindow: overlays.Window, app: 
   setDisplayMediaRequestHandler: vi.fn(), on: vi.fn(), webRequest: { onBeforeRequest: vi.fn() },
 }) } }))
 const { installDesktopShortcuts } = await import('../src/keyboard.ts')
-const { DesktopBrowserGuests } = await import('../src/browser-guests.ts')
-const { DesktopUpdateOverlays } = await import('../src/update-overlay.ts')
 afterEach(() => { vi.clearAllMocks() })
 
 type FrameFixture = { url: WebFrameMain['url']; name: WebFrameMain['name']; parent: FrameFixture | null }
@@ -47,34 +44,17 @@ type WindowFixture = EventEmitter & Pick<BrowserWindow, 'isDestroyed' | 'isFocus
   webContents: ContentsFixture
 }
 type InvokeFixture = { sender: object; senderFrame: object | null }
-type KeyboardFixture = Omit<ReturnType<typeof installDesktopShortcuts>, 'attach' | 'attachGuest'> & {
+type KeyboardFixture = Omit<ReturnType<typeof installDesktopShortcuts>, 'attach'> & {
   attach(window: WindowFixture): void
-  attachGuest(window: WindowFixture, guest: ContentsFixture, name: DesktopBrowserLeaseId): () => void
 }
 // Electron is substituted at module load; fixtures implement the native members exercised by this installer.
 const installFixture = installDesktopShortcuts as (
   getWindow: () => WindowFixture | undefined, userData: string,
   platform: Parameters<typeof installDesktopShortcuts>[2], updateMenu: () => void,
-  overlayInput: (window: WindowFixture) => { readonly revision: number; readonly blocked: boolean },
 ) => KeyboardFixture
-type GuestsFixture = {
-  acquire(owner: ContentsFixture, workspace: unknown): DesktopBrowserReservation
-  release(owner: ContentsFixture, id: unknown): Promise<void>
-  bind(window: WindowFixture, attachInput: (guest: ContentsFixture, name: DesktopBrowserLeaseId) => () => void): void
-}
 
 function desktopDefaults(binding: ShortcutBinding): ShortcutDefinition['defaults'] {
   return { 'desktop:macos': binding, 'desktop:windows': binding, 'desktop:linux': binding }
-}
-
-function browserGuest(reservation: DesktopBrowserReservation) {
-  const frame: FrameFixture = { url: `about:blank#${reservation.lease}`, name: '', parent: null }
-  const guest = Object.assign(new EventEmitter(), { mainFrame: frame, focusedFrame: frame,
-    getURL: () => frame.url, isDestroyed: () => false, isFocused: vi.fn(() => true),
-    setWindowOpenHandler: vi.fn(), setIgnoreMenuShortcuts: vi.fn(), send: vi.fn(), close: vi.fn(),
-    focus: vi.fn(), sendInputEvent: vi.fn() })
-  onTestFinished(() => { guest.emit('destroyed') })
-  return { frame, guest }
 }
 
 async function fixture(platform: 'macos' | 'windows' | 'linux' = 'macos') {
@@ -88,8 +68,7 @@ async function fixture(platform: 'macos' | 'windows' | 'linux' = 'macos') {
     isFocused: vi.fn(() => true), isEnabled: vi.fn(() => true), close: vi.fn() })
   let current: WindowFixture | undefined = window
   const updateMenu = vi.fn()
-  const updateOverlays = new DesktopUpdateOverlays()
-  const keyboard = installFixture(() => current, root, platform, updateMenu, window => updateOverlays.input(window as BrowserWindow))
+  const keyboard = installFixture(() => current, root, platform, updateMenu)
   keyboard.attach(current)
   onTestFinished(() => { keyboard.dispose() })
   const handlers = new Map<string, (event: InvokeFixture, ...args: unknown[]) => unknown>(
@@ -99,23 +78,8 @@ async function fixture(platform: 'macos' | 'windows' | 'linux' = 'macos') {
   const definitions: readonly ShortcutDefinition[] = [
     { id: 'sidebar.left.toggle' as ShortcutCommandId, defaults: desktopDefaults({ code: 'KeyB', modifiers: ['primary'] }) },
   ]
-  return { keyboard, window, updateOverlays, contents, frame, event, handlers, call, definitions, updateMenu,
+  return { keyboard, window, contents, frame, event, handlers, call, definitions, updateMenu,
     detach: () => { current = undefined } }
-}
-
-function updateOverlayFixture(f: Awaited<ReturnType<typeof fixture>>) {
-  const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
-  onTestFinished(() => { platform.mockRestore() })
-  const parent: WindowFixture & Pick<BrowserWindow, 'getContentBounds'> = Object.assign(f.window, {
-    getContentBounds: () => ({ x: 0, y: 0, width: 900, height: 650 }),
-  })
-  Object.assign(f.contents, { insertCSS: vi.fn(async () => 'blur'), removeInsertedCSS: vi.fn(async () => {}) })
-  return () => {
-    const overlay = f.updateOverlays.create(parent as BrowserWindow, 'test-overlay-preload', 'Update', false)
-    onTestFinished(() => { if (!overlay.isDestroyed()) overlay.destroy() })
-    expect(vi.spyOn(overlay, 'show')).not.toHaveBeenCalled()
-    return overlay
-  }
 }
 
 it('mirrors only successful bindings, suppresses recording menus, and invalidates pre-navigation drafts', async () => {
@@ -138,115 +102,6 @@ it('mirrors only successful bindings, suppresses recording menus, and invalidate
   expect((await f.call<ShortcutSaveResult>(DESKTOP_IPC.shortcutsEdit, { type: 'reset-all' }, saved.snapshot.revision)).status).toBe('not-ready')
   await f.call(DESKTOP_IPC.shortcutsGet, f.definitions)
   expect((await f.call<ShortcutSaveResult>(DESKTOP_IPC.shortcutsEdit, { type: 'reset-all' }, saved.snapshot.revision)).status).toBe('stale')
-})
-
-it('blocks macOS shortcuts while an update overlay loads and clears held and consumed keys before dismissal', async () => {
-  const f = await fixture()
-  const open = updateOverlayFixture(f)
-  const snapshot = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet, [
-    { id: 'page.close', defaults: { 'desktop:macos': { code: 'KeyA', secondCode: 'KeyB', modifiers: [] } } },
-    { id: 'sidebar.left.toggle', defaults: desktopDefaults({ code: 'KeyK', modifiers: ['primary'] }) },
-  ])
-  const menu = f.keyboard.fileMenu({ fileMenu: 'File', closePage: 'Close' }).submenu as Electron.MenuItemConstructorOptions[]
-  const closeMenu = menu[0]!.click as () => void
-  const press = (code: string, type = 'keyDown', meta = false) => {
-    const event = { defaultPrevented: false, preventDefault() { this.defaultPrevented = true } }
-    f.contents.emit('before-input-event', event, { type, code, key: code.slice(3), modifiers: meta ? ['meta'] : [],
-      meta, control: false, alt: false, shift: false, isAutoRepeat: false, isComposing: false })
-    return event.defaultPrevented
-  }
-  f.contents.send.mockClear()
-  expect(press('KeyA')).toBe(false)
-  const first = open()
-  expect(press('KeyB')).toBe(true)
-  expect(press('KeyK', 'keyDown', true)).toBe(true)
-  closeMenu()
-  await f.call(DESKTOP_IPC.shortcutsCloseWindow, snapshot.revision)
-  f.keyboard.sendEditingKey('C', ['control'])
-  expect(f.window.close).not.toHaveBeenCalled()
-  expect(f.contents.sendInputEvent).not.toHaveBeenCalled()
-  expect(f.contents.send).not.toHaveBeenCalled()
-  first.destroy()
-  expect(press('KeyB')).toBe(false)
-  expect(press('KeyB', 'keyUp')).toBe(false)
-  expect(f.contents.send).not.toHaveBeenCalled()
-  expect(press('KeyA')).toBe(false)
-  expect(press('KeyB')).toBe(true)
-  expect(f.contents.send).toHaveBeenCalledOnce()
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
-    expect.objectContaining({ code: 'KeyA', secondCode: 'KeyB' }))
-  const second = open()
-  expect(press('KeyB', 'keyUp')).toBe(true)
-  second.destroy()
-  expect(press('KeyB', 'keyUp')).toBe(false)
-  expect(press('KeyK', 'keyDown', true)).toBe(true)
-  expect(f.contents.send).toHaveBeenCalledTimes(2)
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
-    expect.objectContaining({ code: 'KeyK', meta: true }))
-  closeMenu()
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput, expect.objectContaining({ kind: 'menu' }))
-  await f.call(DESKTOP_IPC.shortcutsCloseWindow, snapshot.revision)
-  expect(f.window.close).toHaveBeenCalledOnce()
-  f.keyboard.sendEditingKey('C', ['control'])
-  expect(f.contents.sendInputEvent).toHaveBeenCalledTimes(2)
-})
-
-it.each([false, true])('blocks approved browser guest input across update overlays, including guests attached while blocked: %s', async (attachWhileBlocked) => {
-  const f = await fixture()
-  const open = updateOverlayFixture(f)
-  await f.call(DESKTOP_IPC.shortcutsGet, [
-    { id: 'page.close', defaults: { 'desktop:macos': { code: 'KeyA', secondCode: 'KeyB', modifiers: [] } } },
-    { id: 'sidebar.left.toggle', defaults: desktopDefaults({ code: 'KeyK', modifiers: ['primary'] }) },
-  ])
-  const guests = new DesktopBrowserGuests(() => undefined) as GuestsFixture
-  guests.bind(f.window, (guest, name) => f.keyboard.attachGuest(f.window, guest, name))
-  const reservation = guests.acquire(f.contents, 'session:test')
-  const { frame, guest } = browserGuest(reservation)
-  const attach = () => {
-    const event = { preventDefault: vi.fn() }
-    f.contents.emit('will-attach-webview', event, {}, { src: frame.url, partition: reservation.partition })
-    expect(event.preventDefault).not.toHaveBeenCalled()
-    f.contents.emit('did-attach-webview', {}, guest)
-    guest.emit('dom-ready')
-  }
-  if (!attachWhileBlocked) attach()
-  const first = open()
-  if (attachWhileBlocked) attach()
-  const press = (code: string, type = 'keyDown', meta = false) => {
-    const event = { defaultPrevented: false, preventDefault() { this.defaultPrevented = true } }
-    guest.emit('before-input-event', event, { type, code, key: code.slice(3), modifiers: meta ? ['meta'] : [],
-      meta, control: false, alt: false, shift: false, isAutoRepeat: false, isComposing: false })
-    return event.defaultPrevented
-  }
-  f.contents.send.mockClear()
-  expect(press('KeyK', 'keyDown', true)).toBe(true)
-  f.keyboard.sendEditingKey('C', ['control'])
-  expect(guest.sendInputEvent).not.toHaveBeenCalled()
-  expect(f.contents.send).not.toHaveBeenCalled()
-  const second = open()
-  first.destroy()
-  expect(press('KeyA')).toBe(true)
-  expect(press('KeyB')).toBe(true)
-  expect(f.contents.send).not.toHaveBeenCalled()
-  second.destroy()
-  expect(press('KeyB')).toBe(false)
-  expect(press('KeyB', 'keyUp')).toBe(false)
-  expect(press('KeyA')).toBe(false)
-  open().destroy()
-  expect(press('KeyB')).toBe(false)
-  expect(press('KeyB', 'keyUp')).toBe(false)
-  expect(f.contents.send).not.toHaveBeenCalled()
-  expect(press('KeyA')).toBe(false)
-  expect(press('KeyB')).toBe(true)
-  expect(f.contents.send).toHaveBeenCalledOnce()
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
-    expect.objectContaining({ kind: 'webview', frameName: reservation.lease, code: 'KeyA', secondCode: 'KeyB' }))
-  open().destroy()
-  expect(press('KeyB', 'keyUp')).toBe(false)
-  expect(press('KeyK', 'keyDown', true)).toBe(true)
-  expect(f.contents.send).toHaveBeenCalledTimes(2)
-  f.keyboard.sendEditingKey('C', ['control'])
-  expect(guest.sendInputEvent).toHaveBeenCalledTimes(2)
 })
 
 it('rejects other windows, subframes, remote/shell pages, and malformed edits', async () => {
@@ -705,122 +560,4 @@ it.each(['macos', 'windows'] as const)('requires fresh %s chord presses when Ele
     expect(press('KeyK')).toBe(true)
     expect(f.contents.send).toHaveBeenCalledTimes(5)
   }
-})
-
-it.each(['macos', 'windows', 'linux'] as const)('routes approved %s browser guest input to its owner and stops delivery before guest destruction', async (platform) => {
-  const f = await fixture(platform)
-  const snapshot = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet,
-    [{ id: 'browser.new', defaults: desktopDefaults({ code: 'KeyT', modifiers: ['primary'] }) }])
-  const guests = new DesktopBrowserGuests(() => undefined) as GuestsFixture
-  const attach = vi.fn((guest: ContentsFixture, name: DesktopBrowserLeaseId) => f.keyboard.attachGuest(f.window, guest, name))
-  guests.bind(f.window, attach)
-  const reservation = guests.acquire(f.contents, 'session:test')
-  const { frame, guest } = browserGuest(reservation)
-  const rejected = { preventDefault: vi.fn() }
-  f.contents.emit('will-attach-webview', rejected, {}, { src: 'about:blank#unknown', partition: reservation.partition })
-  expect(rejected.preventDefault).toHaveBeenCalledOnce()
-  const invalid = Object.assign(new EventEmitter(), { getURL: () => 'about:blank#unknown', setWindowOpenHandler: vi.fn(), close: vi.fn() })
-  f.contents.emit('did-attach-webview', {}, invalid)
-  invalid.emit('dom-ready')
-  expect(invalid.close).toHaveBeenCalledExactlyOnceWith({ waitForBeforeUnload: false })
-  expect(attach).not.toHaveBeenCalled()
-
-  const approved = { preventDefault: vi.fn() }
-  f.contents.emit('will-attach-webview', approved, {}, { src: frame.url, partition: reservation.partition })
-  expect(approved.preventDefault).not.toHaveBeenCalled()
-  f.contents.emit('did-attach-webview', {}, guest)
-  guest.emit('dom-ready')
-  expect(attach).toHaveBeenCalledExactlyOnceWith(guest, reservation.lease)
-  const input = { modifiers: [], type: 'keyDown', code: 'KeyT', key: 't', meta: platform === 'macos',
-    control: platform !== 'macos', alt: false, shift: false, isAutoRepeat: false, isComposing: false }
-  const preventDefault = vi.fn()
-  f.contents.send.mockClear()
-  guest.emit('before-input-event', { preventDefault }, input)
-  expect(preventDefault).toHaveBeenCalledOnce()
-  expect(guest.send).not.toHaveBeenCalled()
-  expect(f.contents.send).toHaveBeenCalledExactlyOnceWith(DESKTOP_IPC.shortcutsInput, {
-    kind: 'webview', frameName: reservation.lease, revision: snapshot.revision, code: 'KeyT',
-    meta: platform === 'macos', control: platform !== 'macos', alt: false, shift: false, repeat: false,
-  })
-  guest.isFocused.mockReturnValue(false)
-  guest.emit('before-input-event', { preventDefault }, input)
-  expect(f.contents.send).toHaveBeenCalledOnce()
-  guest.isFocused.mockReturnValue(true)
-  const release = guests.release(f.contents, reservation.lease)
-  expect(guest.close).toHaveBeenCalledExactlyOnceWith({ waitForBeforeUnload: false })
-  expect(guest.listenerCount('before-input-event')).toBe(0)
-  guest.emit('before-input-event', { preventDefault }, input)
-  expect(f.contents.send).toHaveBeenCalledOnce()
-  guest.emit('destroyed')
-  await release
-})
-
-it('keeps browser guest chord state local and leaves accepted bindings active through guest navigation', async () => {
-  const f = await fixture('macos')
-  const initial = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet, f.definitions)
-  await f.call(DESKTOP_IPC.shortcutsEdit, { type: 'set', id: 'sidebar.left.toggle',
-    binding: { code: 'KeyF', secondCode: 'KeyG', modifiers: [] } }, initial.revision)
-  const frame: FrameFixture = { url: 'https://example.test/', name: '', parent: null }
-  const guest = Object.assign(new EventEmitter(), { mainFrame: frame, focusedFrame: frame,
-    isDestroyed: () => false, isFocused: () => true, setIgnoreMenuShortcuts: vi.fn(),
-    send: vi.fn(), focus: vi.fn(), sendInputEvent: vi.fn() })
-  const blurListeners = f.window.listenerCount('blur')
-  const closedListeners = f.window.listenerCount('closed')
-  const dispose = f.keyboard.attachGuest(f.window, guest, 'guest' as DesktopBrowserLeaseId)
-  onTestFinished(dispose)
-  expect(f.window.listenerCount('blur')).toBe(blurListeners)
-  expect(f.window.listenerCount('closed')).toBe(closedListeners)
-  const press = (contents: EventEmitter, code: string): void => {
-    contents.emit('before-input-event', { preventDefault: vi.fn() }, { modifiers: [], type: 'keyDown', code, key: code,
-      meta: false, control: false, alt: false, shift: false, isAutoRepeat: false, isComposing: false })
-  }
-  f.contents.send.mockClear()
-  press(guest, 'KeyF')
-  guest.emit('blur')
-  press(guest, 'KeyG')
-  expect(f.contents.send).not.toHaveBeenCalled()
-  f.window.emit('blur')
-  press(guest, 'KeyF')
-  expect(f.contents.send).not.toHaveBeenCalled()
-  guest.emit('did-start-navigation', { isMainFrame: true, isSameDocument: false })
-  press(guest, 'KeyF')
-  press(f.contents, 'KeyG')
-  expect(f.contents.send).not.toHaveBeenCalled()
-  press(guest, 'KeyG')
-  expect(f.contents.send).toHaveBeenCalledExactlyOnceWith(DESKTOP_IPC.shortcutsInput,
-    expect.objectContaining({ kind: 'webview', frameName: 'guest', code: 'KeyF', secondCode: 'KeyG' }))
-  guest.emit('destroyed')
-  press(f.contents, 'KeyF')
-  expect(f.contents.send).toHaveBeenCalledTimes(2)
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
-    expect.objectContaining({ kind: 'keyboard', code: 'KeyF', secondCode: 'KeyG' }))
-})
-
-it('delivers Windows Edit actions to the focused browser guest without invoking its custom shortcut', async () => {
-  const f = await fixture('windows')
-  const initial = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet, f.definitions)
-  await f.call(DESKTOP_IPC.shortcutsEdit, { type: 'set', id: 'sidebar.left.toggle',
-    binding: { code: 'KeyC', modifiers: ['control'] } }, initial.revision)
-  const frame: FrameFixture = { url: 'https://example.test/', name: '', parent: null }
-  const guest = Object.assign(new EventEmitter(), { mainFrame: frame, focusedFrame: frame,
-    isDestroyed: () => false, isFocused: () => true, setIgnoreMenuShortcuts: vi.fn(),
-    send: vi.fn(), focus: vi.fn(), sendInputEvent: vi.fn() })
-  const dispose = f.keyboard.attachGuest(f.window, guest, 'guest' as DesktopBrowserLeaseId)
-  onTestFinished(dispose)
-  const events: string[] = []
-  guest.sendInputEvent.mockImplementation((input: { type: 'keyDown' | 'keyUp' }) => {
-    const preventDefault = vi.fn()
-    guest.emit('before-input-event', { preventDefault }, { ...input, code: 'KeyC', key: 'c', modifiers: ['control'],
-      control: true, meta: false, alt: false, shift: false, isAutoRepeat: false, isComposing: false })
-    if (!preventDefault.mock.calls.length) events.push(input.type)
-  })
-  f.contents.send.mockClear()
-  f.keyboard.sendEditingKey('C', ['control'])
-  expect(guest.focus).toHaveBeenCalledOnce()
-  expect(events).toEqual(['keyDown', 'keyUp'])
-  expect(f.contents.send).not.toHaveBeenCalled()
-  expect(f.contents.sendInputEvent).not.toHaveBeenCalled()
-  dispose()
-  f.keyboard.sendEditingKey('C', ['control'])
-  expect(f.contents.sendInputEvent).toHaveBeenCalledTimes(2)
 })

@@ -42,9 +42,6 @@
       "path": "../../typert/protocol"
     },
     {
-      "path": "../../core/tools"
-    },
-    {
       "path": "../../util/values"
     },
     {
@@ -57,13 +54,7 @@
       "path": "../../util/brand"
     },
     {
-      "path": "../../sandbox/sandbox-policy"
-    },
-    {
       "path": "../../sandbox/sandbox"
-    },
-    {
-      "path": "../../interaction/user-approval"
     }
   ]
 }

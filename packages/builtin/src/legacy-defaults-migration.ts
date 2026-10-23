@@ -29,7 +29,7 @@ export async function legacyDefaultsDocument(defaults: JsonObject, catalog: Cata
   const plan = await workflow.plan({}, defaults, catalog)
   const document: WorkflowDocument = {
     format: 'youdub.workflow', formatVersion: 1, id: legacyDefaultsWorkflowId, title: '原默认处理配置', nodes: [], edges: [],
-    inputs: workflow.describe().inputs.map(input => ({ id: input.name, label: input.label, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: [...input.acceptedMimeTypes], maxBytes: input.maxBytes })),
+    inputs: workflow.describe().inputs.map(input => ({ id: input.name, label: input.label, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: [...input.acceptedMimeTypes] })),
     outputs: [], presentation: { positions: { $inputs: { x: 0, y: 120 } }, viewport: { x: 40, y: 40, zoom: 0.6 } },
   }
   for (const [index, step] of plan.steps.entries()) {

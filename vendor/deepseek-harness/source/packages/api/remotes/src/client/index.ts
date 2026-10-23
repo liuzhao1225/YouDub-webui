@@ -18,54 +18,16 @@ export type {
 } from '@deepseek-ai/dsh-plugin-manager/types'
 export type {} from '@deepseek-ai/dsh-plugin-manager/remote'
 export type {} from '@deepseek-ai/dsh-client-ui-plugin-manager/remote'
-export type {} from '@deepseek-ai/dsh-plugin-market/remote'
-export type {
-  MarketCompatibility, MarketIndexSummary, MarketInstallation, MarketInstallationStatus, MarketListingEntry, MarketListingVersion,
-  MarketQuery, MarketSearchResult, MarketSort,
-} from '@deepseek-ai/dsh-plugin-market/types'
 export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inventory/types'
-export type {} from '@deepseek-ai/dsh-agent-preset-registry/remote'
-export type {} from '@deepseek-ai/dsh-user-questions/remote'
-export type {} from '@deepseek-ai/dsh-commands/remote'
 export type {} from '@deepseek-ai/dsh-api-settings-controller/remote'
-export type {} from '@deepseek-ai/dsh-goal/remote'
-export type {} from '@deepseek-ai/dsh-schedule/remote'
-export type {} from '@deepseek-ai/dsh-office-to-pdf/remote'
 export type {} from '@deepseek-ai/dsh-llm/remote'
 export type {} from '@deepseek-ai/dsh-host-plugin-inventory/remote'
-export type {} from '@deepseek-ai/dsh-message-feedback/remote'
-export type {} from '@deepseek-ai/dsh-permission-presets/remote'
-export type {} from '@deepseek-ai/dsh-command-feedback/remote'
-export type {} from '@deepseek-ai/dsh-client-file-upload/remote'
-export type {} from '@deepseek-ai/dsh-session-reference/remote'
-export type {} from '@deepseek-ai/dsh-subagent/remote'
-export type * from '@deepseek-ai/dsh-subagent/client'
-export type {} from '@deepseek-ai/dsh-api-session-controller/remote'
-export type * from '@deepseek-ai/dsh-api-session-controller/types'
-export type {} from '@deepseek-ai/dsh-api-job-controller/remote'
-export type * from '@deepseek-ai/dsh-api-job-controller/types'
-export type {} from '@deepseek-ai/dsh-api-workspace-controller/remote'
-export type * from '@deepseek-ai/dsh-api-workspace-controller/types'
-export type {} from '@deepseek-ai/dsh-api-workspace-files/remote'
-export type * from '@deepseek-ai/dsh-api-workspace-files/types'
-export type {} from '@deepseek-ai/dsh-api-terminal-controller/remote'
-export type * from '@deepseek-ai/dsh-api-terminal-controller/types'
 // The forwarded-event allowlist's selection seat: without it in the consumer's
 // compilation face `TypertRemoteEvent` is `never` and every `$on` call fails.
 export type { ApiRemoteForwardedEvent } from '../types.ts'
-// The owner packages' client-safe `./types` exports supply the `Events`
-// signatures `$on` hands to a listener, so a consumer reads the very
-// declaration the Host emits rather than a flattened restatement of it.
-export type {} from '@deepseek-ai/dsh-commands/types'
-export type {} from '@deepseek-ai/dsh-cordis-host-runner/types'
 export type {} from '@deepseek-ai/dsh-credentials/types'
 export type {} from '@deepseek-ai/dsh-llm/types'
-export type {} from '@deepseek-ai/dsh-agent-preset-registry/types'
-export type {} from '@deepseek-ai/dsh-permission-presets/types'
 export type {} from '@deepseek-ai/dsh-settings/types'
-export type {} from '@deepseek-ai/dsh-user-approval/types'
-export type {} from '@deepseek-ai/dsh-user-questions/types'
-export type {} from '@deepseek-ai/dsh-api-session-controller/types'
 
 /**
  * The carrier's Client-facing types, re-exported so a business package names one
@@ -79,45 +41,6 @@ export type {
   StreamChunk,
 } from '@deepseek-ai/dsh-client-connection/client'
 export type {} from '@deepseek-ai/dsh-api-gateway/client'
-export type {} from '@deepseek-ai/dsh-cordis-host-runner/remote'
-
-// The payload vocabulary of the selected namespaces, re-exported so a Client
-// contribution can name what it sends and receives without importing a Host
-// package: this assembly is the one place both planes legitimately meet.
-export type {
-  ApprovalRequestId,
-  CordisHalfState,
-  CordisDynamicPackageId,
-  CordisDynamicPluginId,
-  CordisDynamicPluginRunId,
-  CordisDynamicRunMode,
-  CordisInspectMethodManifest,
-  CordisInspectPlatform,
-  CordisInspectProviderManifest,
-  CordisInspectProviderView,
-  CordisInspectQueryRequest,
-  CordisInspectQueryResolution,
-  CordisInspectQueryResolved,
-  CordisInspectRequestId,
-  CordisInspectResolveAck,
-  CordisRunDiagnostic,
-  CordisRunStatus,
-  DynamicCordisClientSource,
-  DynamicCordisHostHalfResult,
-  DynamicCordisInventoryRow,
-  DynamicCordisInvokeResult,
-  DynamicCordisPackage,
-  DynamicCordisRequestResolved,
-  DynamicCordisResolveAck,
-  DynamicCordisRetracted,
-  DynamicCordisRunRequest,
-  DynamicCordisRunResolution,
-  DynamicCordisRunAttempt,
-  DynamicCordisRunResponse,
-  DynamicCordisStopResponse,
-  DynamicCordisUndefineReceipt,
-  RequestRunOutcome,
-} from '@deepseek-ai/dsh-cordis-host-runner/types'
 // Credential state vocabulary for the credentials namespace (values never ride it).
 export type { CredentialInfo } from '@deepseek-ai/dsh-credentials/types'
 // Redacted namespace vocabulary for the settings namespace (secrets never ride
@@ -130,10 +53,6 @@ export type {
   LlmConfigurableProvider, LlmDiscoveredModel,
   LlmModelDiscoveryRequest, LlmNativeAuth, LlmProviderInfo,
 } from '@deepseek-ai/dsh-llm/types'
-// Reference-discovery result vocabulary for the fileReferences and
-// sessionReferenceResolver namespaces.
-export type { FileReferenceCandidate } from '@deepseek-ai/dsh-file-reference/types'
-export type { SessionReferenceMentionCandidate } from '@deepseek-ai/dsh-session-reference/types'
 
 // The Remote failure vocabulary, re-exported so business packages keep naming
 // this assembly alone. Types only: a value export would make spec imports load

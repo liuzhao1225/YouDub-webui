@@ -3,7 +3,7 @@ name: GitHub Pages 官网
 on:
   push:
     branches: [main]
-    paths: ['site/**', 'scripts/download-releases.mjs', '.github/workflows/pages.yml']
+    paths: ['site/**', 'scripts/download-releases.mjs', 'scripts/verify-update-feed.mjs', '.github/workflows/pages.yml']
   workflow_run:
     workflows: [桌面版本发布]
     types: [completed]
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name != 'workflow_run' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -51,3 +51,7 @@ jobs:
       - name: 发布官网
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: 回读官网与客户端共用的更新列表
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/verify-update-feed.mjs "$PAGE_URL"

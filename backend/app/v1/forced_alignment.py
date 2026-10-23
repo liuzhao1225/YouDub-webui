@@ -15,7 +15,6 @@ from .steps import StageContext
 from ..paths import data_directory
 
 MODEL_NAME = "Qwen3-ForcedAligner-0.6B-hf"
-MAX_AUDIO_DURATION_MS = 300_000
 TIMESTAMP_GRID_MS = 80  # The pinned Qwen model processor's timestamp class width.
 
 
@@ -105,8 +104,6 @@ def align(
         path = audio_paths[index - 1]
         if not path.is_file():
             raise ApiError(500, "INPUT_MISSING", "The complete adjusted speech clip is missing.", stage="export")
-        if segment.end_ms - segment.start_ms > MAX_AUDIO_DURATION_MS:
-            raise ApiError(422, "UNSUPPORTED_MEDIA", "One Qwen alignment input must not exceed five minutes.", stage="export")
         clips.append({"segment_id": segment.id, "audio_path": str(path.resolve()), "text": text})
     folder = context.work_dir / "subtitle_alignment"
     folder.mkdir(exist_ok=True)

@@ -47,7 +47,7 @@ try {
       }
       if (platform.id === 'windows-x64') {
         const note = document.createElement('p')
-        note.textContent = `${platform.installer ? '双击安装' : '完整解压后运行'} · 需 WebView2 · 暂未签名`
+        note.textContent = `${platform.installer ? '双击安装' : '完整解压后运行'} · 暂未签名`
         card.append(note)
       }
       list.append(card)

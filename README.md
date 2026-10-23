@@ -128,7 +128,7 @@ npm start
 
 首次启动选择界面语言和数据安装目录，在页面准备运行资源、配置翻译模型。应用使用自己的 Python 环境、模型和配置；翻译模型须接受至少 **65,535** 个输出 token，不兼容时会明确报错。基础环境和各工作流所需资源的准备状态分别展示。
 
-已发布版本的源码运行、Swift/C# 桌面壳及发行流程见[改造前说明](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/README.md#main-版本源码运行)。原 YouDub 快照和 Harness 原始归档保存在[来源基线](apps/harness/baselines/README.md)中。
+已发布版本的源码运行、Swift/C# 桌面壳及发行流程见[改造前说明](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/README.md#main-版本源码运行)。Harness 来源与保留范围见[源码说明](vendor/deepseek-harness/README.md)中。
 
 ## Everything is a plugin
 
@@ -153,13 +153,13 @@ YouDub Electron → Harness Desktop Host ← 官方 Connection ← YouDub 页面
 ## 当前范围
 
 - **英文分句。** Whisper 识别后使用 NLTK Punkt 整理完整句子，并用词级时间戳确定原声范围；原始识别结果保留。
-- 默认流程接收本地 `mp4`、`mov`、`mkv`、`webm` 视频；默认限制 4 GiB、10 分钟、宽高各不超过 1920、60 fps。
+- 默认流程接收本地视频，由 FFmpeg 检查和处理实际音视频流；不设置视频时长、文件大小、分辨率或帧率上限。
 - 当前语言目录包含英文、中文、日文，具体能力取决于提供者；可选 Qwen 对齐支持英文、中文。
 - 节点工作流支持分叉、汇合与人工订正，按单槽串行执行；等待人工确认会释放执行槽。插件启停在重启后生效。热替换、插件市场、循环和分布式 worker 留待后续需求。
 - 本地 workflow、Client 与 Python 插件已有验证；GitHub/npm 远端插件实装尚未验收。
-- 当前 HTTP 接口为 `/api/v2`，支持从指定步骤重新生成任务。旧 FastAPI / v1 HTTP 入口已移除。链接下载通过 `media.download/v1` 接入现有任务流程，支持 YouTube、Shorts、B 站及 b23.tv 单视频链接；使用 yt-dlp、Node.js 与 FFmpeg，沿用 10 分钟和文件大小限制。
+- 当前 HTTP 接口为 `/api/v2`，支持从指定步骤重新生成任务。旧 FastAPI / v1 HTTP 入口已移除。链接下载通过 `media.download/v1` 接入现有任务流程，支持 YouTube、Shorts、B 站及 b23.tv 单视频链接；使用 yt-dlp、Node.js 与 FFmpeg，保留源视频质量，不设置时长和文件大小上限。
 
-旧版本升级和数据迁移请先阅读[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。真实任务、迁移与未验证范围记录在[迁移验收](docs/design/cordis-plugin-migration.md)、[逐句分句验收](docs/validation/asr-punkt-sentences-2026-10-09.json)及[字幕显示验收](docs/validation/subtitle-display-2026-10-09.json)。
+旧版本升级和数据迁移请先阅读[运行指南](docs/design/cordis-plugin-runtime.md#1-安装与配置)。真实任务、迁移与未验证范围记录在[迁移验收](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md)、[逐句分句验收](docs/validation/asr-punkt-sentences-2026-10-09.json)及[字幕显示验收](docs/validation/subtitle-display-2026-10-09.json)。
 
 ## 开发与测试
 

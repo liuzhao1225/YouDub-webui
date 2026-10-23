@@ -2,7 +2,7 @@
 
 > 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
 
-本页保留 `codex/mvp-mainline` 阶段的实现与验收记录，其中 v1 API、FastAPI 和 Next 代理描述属于历史实现。该阶段启动方式见下文及 [Cordis 运行指南](cordis-plugin-runtime.md)，前端实现见 [React/Vite 迁移说明](harness-frontend-migration.md)。历史总体接口见[主干设计](youdub-desktop-v0.1.md)，实施顺序见[开发计划](mvp-development-plan.md)。
+本页保留 `codex/mvp-mainline` 阶段的实现与验收记录，其中 v1 API、FastAPI 和 Next 代理描述属于历史实现。该阶段启动方式见下文及 [Cordis 运行指南](cordis-plugin-runtime.md)，前端实现见 [React/Vite 迁移说明](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/harness-frontend-migration.md)。历史总体接口见[主干设计](youdub-desktop-v0.1.md)，实施顺序见[开发计划](mvp-development-plan.md)。
 
 ## 历史实现
 

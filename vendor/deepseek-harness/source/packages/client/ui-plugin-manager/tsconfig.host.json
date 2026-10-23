@@ -16,10 +16,10 @@
       "path": "../../../vendor/schemastery"
     },
     {
-      "path": "../../util/timeout"
+      "path": "../../typert/protocol"
     },
     {
-      "path": "../../typert/protocol"
+      "path": "../../util/timeout"
     }
   ]
 }

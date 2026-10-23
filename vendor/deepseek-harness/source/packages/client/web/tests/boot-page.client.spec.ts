@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { BootPage } from '../src/boot-page.ts'
 
-afterEach(() => { document.body.innerHTML = '' })
+afterEach(() => { document.body.innerHTML = ''; document.title = '' })
 
 function mount() {
   const el = document.createElement('div')
@@ -12,9 +12,11 @@ function mount() {
 
 describe('BootPage', () => {
   it('draws the loading skeleton before any plugin state arrives', () => {
+    document.title = 'YouDub'
     const { el } = mount()
     expect(el.firstElementChild?.getAttribute('data-dsh-boot')).toBe('')
-    expect(el.textContent).toContain('HARNESS')
+    expect(el.textContent).toContain('YouDub')
+    expect(el.textContent).not.toContain('HARNESS')
     expect(el.textContent).toContain('Loading plugins…')
   })
 

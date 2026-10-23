@@ -23,7 +23,7 @@ flowchart TB
 
 | 层 | 源码入口 | 负责的行为 |
 | --- | --- | --- |
-| 活动框架 fork | [`vendor/deepseek-harness/source`](../../../vendor/deepseek-harness/source) | 保留的 Host、Web、Desktop、服务与前端实现；精确差异见 [`fork.json`](../../../vendor/deepseek-harness/fork.json)，原件见[来源基线](../baselines/README.md) |
+| 活动框架 fork | [`vendor/deepseek-harness/source`](../../../vendor/deepseek-harness/source) | 保留的 Host、Web、Desktop、服务与前端实现；来源见 [upstream.json](../../../vendor/deepseek-harness/upstream.json) |
 | 产品启动与装配 | [`desktop.mjs`](../desktop.mjs)、[`desktop-product.ts`](../src/desktop-product.ts) | YouDub 名称、独立路径、profile、窗口与官方桌面能力的组合 |
 | bundle 声明 | [`package.json`](../package.json)、[`cordis.patch.yml`](../cordis.patch.yml) | Host/Client 入口、模块依赖、官方条目的启停和 YouDub 插件配置 |
 | Host 业务接入 | [`host.mjs`](../src/host.mjs)、[`backend/`](../src/backend) | 依赖官方服务，装配 YouDub 领域服务与 API |
@@ -34,9 +34,8 @@ flowchart TB
 
 ### 版本与来源
 
-活动 fork 的上游基准固定为 `dsh-v0.2.1-rc.2`，提交 `687f282e8625c6b8d11ff58211a90524be2e4317`，见[源码清单](../../../vendor/deepseek-harness/source-manifest.json)。YouDub 产品版本来自[根 package.json](../../../package.json)，当前为 `0.0.7`；业务 bundle 名为 `@youdub/harness-subtitles`，当前为 `0.1.0`。这个包名沿用最初接入名称，现已包含工作流、字幕、配音、资源与扩展功能。
+活动 fork 的上游基准固定为 `dsh-v0.2.1-rc.2`，提交 `687f282e8625c6b8d11ff58211a90524be2e4317`，见[来源信息](../../../vendor/deepseek-harness/upstream.json)。YouDub 产品版本来自[根 package.json](../../../package.json)；业务 bundle 名为 `@youdub/harness-subtitles`，当前为 `0.1.0`。这个包名沿用最初接入名称，现已包含工作流、字幕、配音、资源与扩展功能。
 
-原 YouDub 冻结快照为 `f6f927903581b165f2bf6c840ea65b896d319524`。公开源码 tag、原安装应用与 npm 包分别留有[来源记录](../baselines/sources.json)，不能用一个来源的哈希代表其他来源。
 
 ## 从源码到运行进程
 
@@ -61,7 +60,7 @@ flowchart TB
 
 YouDub 的 patch 正向声明所需框架服务与业务插件。DeepSeek 账号、聊天、编码 Agent、终端工作区和计划任务等产品入口不参与装配。用户的本地配置继续使用官方 profile/home patch 规则，实际结果以官方配置解析器为准。
 
-模型设置已解除 `remote.session` 依赖，产品不挂载 session、agent registry、attachments 或 `agent-loop`。部分类型和框架测试仍引用这些上游合同；源码保留范围与产品加载范围分别记录。实际服务以[当前 patch](../cordis.patch.yml)、[profile 检查](../check-profile.mjs)和[裁剪证据](evidence/refactor-remaining-products-prune.json)为准。
+模型设置和插件管理通过产品选择的 Remote 命名空间装配。聊天、会话控制、Agent 执行循环、浏览器、文档预览、定时任务及其专用类型与测试已删除。实际服务以[当前 patch](../cordis.patch.yml)和[保留范围](FRAMEWORK-SCOPE.md)为准。
 
 插件入口使用 `inject` 声明服务依赖，由 Loader 安排激活和销毁。监听、插槽、路由和进程资源通过官方 context 生命周期释放。必需条目出现 pending/failed 时需要修复依赖与配置，启动诊断保留具体原因。
 
@@ -110,6 +109,6 @@ sequenceDiagram
 
 桌面默认配置 home 为 `.cache/harness/desktop`，首次启动先选择语言和独立安装目录。业务数据、Python/venv、媒体工具、缓存和模型使用该保存的目录；既有明确配置的旧目录继续读取。Electron 用户数据位于相邻的 `desktop-user-data`。显式 `DSH_HOME` 可隔离首启实验；浏览器入口默认使用另一个 home。详见[路径表](DEVELOPMENT.md#数据与配置)。
 
-上游原件与 YouDub 适配代码分开保存。上游未导出的窗口与 Windows 菜单片段在产品入口中逐字复制，由[桌面来源检查](../baselines/desktop-build.mjs)校验。新增适配优先使用官方导出、组件属性、服务或插槽；需要引入上游源码片段时保留来源和逐字检查。
+保留的 Harness 源码直接复用其组件与服务；产品差异在 Git 中维护。框架来源见[源码说明](../../../vendor/deepseek-harness/README.md)。
 
-[`check-composition.mjs`](../check-composition.mjs) 检查活动构建输入，阻止旧 HTTP/Auth、旧前端根、旧 Loader、旧模型设置和第二份框架实例进入融合 bundle。源码完整性、构建来源、进程健康与真实视频验收分别记录，最新范围见[代码复核](CODE-AUDIT.md)。
+[`check-composition.mjs`](../check-composition.mjs) 检查活动构建输入，阻止旧 HTTP/Auth、旧前端根、旧 Loader、旧模型设置和第二份框架实例进入融合 bundle。源码完整性、构建来源、进程健康与真实视频验收分别记录，保留范围见[包清单](FRAMEWORK-SCOPE.md)。

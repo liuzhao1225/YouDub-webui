@@ -63,7 +63,7 @@ export const inject = [
 
 ## 增加或调整一个节点
 
-优先检查原[媒体操作](../../../packages/builtin/src/media-contracts.ts)和[冻结功能清单](../baselines/youdub-source-inventory.json)。已有算法或组件直接复用源码。
+优先检查原[媒体操作](../../../packages/builtin/src/media-contracts.ts)。已有算法或组件直接复用源码。
 
 1. **明确端口和结果。** 在对应操作合同中声明输入、输出、配置和可编辑结果；检查 schema 与前后端类型一致。
 2. **注册提供商。** 内置媒体提供商在 `host.mjs` 的 `activateDomain` 中接入；可独立安装的能力使用 DSH bundle，在自己的 context 内注册领域插件。
@@ -113,4 +113,4 @@ export async function apply(ctx) {
 - Python 操作改动：使用项目 `.venv/bin/pytest` 执行相关 `backend/tests`；再按实际模型能力验收媒体任务。
 - 外部插件改动：隔离 profile 中安装、执行、停用和卸载，确认界面及服务同时释放。
 
-具体命令见[本地开发](DEVELOPMENT.md#验证选择)。测试通过、资源 ready 和真实媒体输出分别记录，成功范围以[当前验证记录](validation.md)为准。
+具体命令见[本地开发](DEVELOPMENT.md#验证选择)。测试通过、资源 ready 和真实媒体输出分别记录。

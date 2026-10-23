@@ -2,7 +2,7 @@
 
 > 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
 
-本文记录旧独立产品的 Cordis Host、React/Vite Client 与 Python 执行桥。前端分层与参考来源见[前端实现说明](harness-frontend-migration.md)。历史媒体流程测试、浏览器和切换记录见[迁移与验收记录](cordis-plugin-migration.md)，各记录中的日期、环境与验证范围保留原义。
+本文记录旧独立产品的 Cordis Host、React/Vite Client 与 Python 执行桥。前端分层与参考来源见[前端实现说明](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/harness-frontend-migration.md)。历史媒体流程测试、浏览器和切换记录见[迁移与验收记录](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md)，各记录中的日期、环境与验证范围保留原义。
 
 节点工作流和按图准备资源见[使用指南](../workflows.md)及 [2026-10-20 验收记录](../validation/workflow-nodes-2026-10-20.md)。旧版首次启动流程保留在 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。
 
@@ -58,7 +58,6 @@ test .env -ef env.txt
 | `YOUDUB_API_URL` | Vite 开发/预览代理目标，默认 `http://127.0.0.1:8000`；生产同源服务无需配置 |
 | `YOUDUB_WEB_ROOT` | 可选静态构建目录；生产前端启动脚本与桌面启动器设置为 `apps/web/dist` 的绝对路径 |
 | `YOUDUB_AUTH_*` | 会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
-| `LOCAL_UPLOAD_MAX_BYTES` | 默认 4 GiB；具名输入还受 workflow 的 `maxBytes` 限制 |
 
 新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v3，新增工作流文档、节点结果版本与人工确认记录，保留 v2 任务。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。仓库 `data/youdub.sqlite` 只在首次迁移复制旧登录会话时只读打开；旧 URL 下载任务不进入新任务列表，也没有运行入口。数据库文件保留原位。
 
@@ -218,4 +217,4 @@ npm run lint:web
 npm run build:web
 ```
 
-历史真实字幕、配音、字幕加配音任务、独立 Python 提供者、外部 workflow/Client 页面与数据迁移的证据见[迁移记录](cordis-plugin-migration.md)。当前节点工作流支持分叉、汇合与逐节点人工确认，按单执行槽运行，等待确认的节点释放执行槽。扩展启停在重启后生效；热替换、插件市场、权限沙箱、循环和分布式 worker 尚未实现。前端迁移的验证范围见[实现说明](harness-frontend-migration.md#验证范围)，历史验收不代表本次迁移已通过。
+历史真实字幕、配音、字幕加配音任务、独立 Python 提供者、外部 workflow/Client 页面与数据迁移的证据见[迁移记录](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md)。当前节点工作流支持分叉、汇合与逐节点人工确认，按单执行槽运行，等待确认的节点释放执行槽。扩展启停在重启后生效；热替换、插件市场、权限沙箱、循环和分布式 worker 尚未实现。前端迁移的验证范围见[实现说明](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/harness-frontend-migration.md#验证范围)，历史验收不代表本次迁移已通过。

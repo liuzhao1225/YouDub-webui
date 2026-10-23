@@ -1,7 +1,12 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2024", "ESNext.Disposable"],
-    "types": ["node"]
+    "lib": [
+      "ES2024",
+      "ESNext.Disposable"
+    ],
+    "types": [
+      "node"
+    ]
   }
 }

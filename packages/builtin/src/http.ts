@@ -53,8 +53,7 @@ export default class HttpService extends Service {
       }).finally(() => { this.requests.delete(request) })
       this.requests.add(request)
     })
-    // Large media uploads are bounded by the upload handler's size limit;
-    // their duration must not inherit Node's five-minute request deadline.
+    // Streaming media uploads must not inherit Node's five-minute request deadline.
     server.requestTimeout = 0
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject)
@@ -151,11 +150,9 @@ export default class HttpService extends Service {
   }
 }
 
-export async function readJson(request: HttpRequest, limit = 1024 * 1024): Promise<any> {
-  const buffers: Buffer[] = []; let bytes = 0
+export async function readJson(request: HttpRequest): Promise<any> {
+  const buffers: Buffer[] = []
   for await (const chunk of request.raw) {
-    bytes += chunk.length
-    if (bytes > limit) throw new AppError('FILE_TOO_LARGE', 'Request body is too large.', 413)
     buffers.push(Buffer.from(chunk))
   }
   try {

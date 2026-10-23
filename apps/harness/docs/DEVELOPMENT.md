@@ -31,12 +31,12 @@ npm run build:youdub
 | 安装根依赖 | 原 YouDub 领域源码和开发工具依赖 |
 | 安装 Web 依赖 | 复用业务组件、React Flow、Tailwind 与测试所需依赖 |
 | 安装 Harness 接入依赖 | 产品构建工具、本仓库 Electron；不安装第二套 Harness 发布包 |
-| `build:framework` | 校验上游，构建到 `.cache/harness/source-build`；内部使用官方 `scripts/build.ts --scope artifacts` |
+| `build:framework` | 读取当前源码，构建到 `.cache/harness/source-build`；内部使用官方 `scripts/build.ts --scope artifacts` |
 | `build:youdub` | 生成 `apps/harness/dist/host.mjs`、`client.js` 和桌面产品入口 |
 
-`vendor/deepseek-harness/source` 是活动产品 fork；原始归档和固定清单保持不变，修改逐项登记在 `fork.json`。生成目录位于 `.cache` 和 `dist`。当前开发壳使用源码构建的 preload，按源构建路径加载 profile runner、Host、Web 和服务。替换框架产物前停止使用它的开发实例，避免逐文件更新触发不完整的 HMR 状态。
+`vendor/deepseek-harness/source` 只保留产品需要的框架子集，变更由 Git 记录。构建在 `.cache/harness/source-build` 进行。修改框架后统一构建，随后重启开发客户端。
 
-运行目录从产品 patch 和 Host 构建外部导入选取根包，再沿声明的 workspace 依赖链接。当前运行隔离检查遍历 87 个包；完整源码保留 209 个包，覆盖类型、测试和原生构建消费者。[范围与保留原因](evidence/refactor-unused-vendor-prune.json)
+运行目录由产品 patch 和实际依赖组成；编入前端和桌面产物的源码另行列出。详见[保留范围](FRAMEWORK-SCOPE.md)。
 
 ### 准备开发 profile
 
@@ -123,7 +123,7 @@ test .env -ef env.txt
 
 源码测试使用项目 `.venv`；应用首启创建的私有 venv 服务于实际媒体运行。二者路径和用途分别记录。
 
-集成测试通过 `test/source-framework.mjs` 将业务测试导入指向当前源码构建。`npm --prefix apps/harness test` 先校验 fork 与构建收据；缺失产物或源码变更应先重建，不会改用 npm 发布包。
+集成测试通过 `test/source-framework.mjs` 将业务测试导入指向当前源码构建。`npm --prefix apps/harness test` 先检查当前源码与构建收据；缺失产物或源码变更应先重建，不会改用 npm 发布包。
 
 ## 验证选择
 
@@ -137,20 +137,16 @@ test .env -ef env.txt
 | 原页面组件 | `npm --prefix apps/web test -- src/<相关测试>.test.tsx`，相关类型检查与实际 Harness 页面 |
 | 语言 | `npm --prefix apps/harness run check:locales`，实际设置页面切换与重启读回 |
 | Python 操作 | `.venv/bin/pytest backend/tests/<相关文件>.py`，受影响的真实媒体任务 |
-| 官方源码与来源 | `node apps/harness/baselines/vendor.mjs --verify`；完整检查见下方 |
+| 框架输入与产物 | `npm run build:framework` |
 | 框架 TypeScript、测试夹具或构建脚本 | 先构建框架，再在 `.cache/harness/source-build` 运行 `node node_modules/tsx/dist/cli.mjs scripts/build.ts --scope check`，并运行受影响的原测试 |
 
 项目 `.venv` 不存在时用 `python3 -m venv .venv` 创建，依赖优先从阿里 PyPI 安装。测试具体依赖以对应 requirements 为准，不把模型大文件安装到源码测试环境来代替应用资源准备。
 
 完整来源核对命令：
 
-```sh
-node apps/harness/baselines/verify.mjs --report /tmp/youdub-harness-integrity.json
-```
 
-完整检查还需要[基线说明](../baselines/README.md)中的原应用/npm/初始源码归档和本地构建产物。归档缺失应报告为检查条件不足；不要修改保存的清单让校验通过。`--scope sources|desktop|npm|vendor|build` 可分别检查相应范围。默认 `npm` 检查保存的 360 份原始 tarball；需要检查历史安装目录时显式传 `--npm-root <目录>`。
 
-验收记录区分源码完整性、构建、插件 active、首启资源 ready、实际任务和最终媒体产物。后续实验默认使用“字幕＋配音”完整流程覆盖 Demucs、Whisper、翻译与 TTS；涉及对齐和混音时一并检查相应节点及输出。对照样本与已知缺口见[验证记录](validation.md)。
+验收记录区分源码完整性、构建、插件 active、首启资源 ready、实际任务和最终媒体产物。后续实验默认使用“字幕＋配音”完整流程覆盖 Demucs、Whisper、翻译与 TTS；涉及对齐和混音时一并检查相应节点及输出。
 
 ## 常见问题定位
 

@@ -1,3 +1,4 @@
+import { requireActive } from './test-bindings'
 import { resourceEntries } from '@/runtime/setup-contracts'
 import { Context } from 'cordis'
 import type { ReactNode } from 'react'
@@ -5,7 +6,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, requireActive, type NodeTypeDefinition, type WorkflowDocument } from './sdk'
+import { PluginContextProvider, type NodeTypeDefinition, type WorkflowDocument } from './sdk'
 import { WorkflowRun as WorkflowRunView } from './builtin/workflow-run'
 import { WorkflowRerun as WorkflowRerunView } from './builtin/workflow-rerun'
 import { WorkflowResources, type ResourceState } from './builtin/workflow-resources'
@@ -269,24 +270,6 @@ it('rechecks a changed model and ignores the old ready result during the check',
   await screen.findByRole('button', { name: '准备所需资源' })
   expect(request.mock.calls[1][0]).toBe(`${base}check`)
   expect(JSON.parse(request.mock.calls[1][1].body).document.nodes[0].provider.model).toBe('large')
-})
-it('clears a previous file when its replacement exceeds the limit and submits only the next valid file', async () => {
-  const request = vi.fn<(path: string, init?: RequestInit) => Promise<unknown>>(async (path) => path.startsWith(base) ? ready : path.endsWith('/validate') ? { valid: true, diagnostics: [] } : { id: 'created' })
-  const view = mount(<WorkflowRun document={graph()} types={types} />, request)
-  const user = userEvent.setup(), input = screen.getByLabelText('视频 *')
-  await screen.findByText('所需资源可用')
-  await user.upload(input, new File(['first'], 'first.mp4', { type: 'video/mp4' }))
-  expect(screen.getByRole('button', { name: '开始运行' })).toBeEnabled()
-  await user.upload(input, new File(['too many bytes'], 'large.mp4', { type: 'video/mp4' }))
-  expect(screen.getByRole('alert')).toHaveTextContent('large.mp4 超过大小上限 10 B。')
-  expect(input).toHaveValue('')
-  expect(screen.getByRole('button', { name: '开始运行' })).toBeDisabled()
-  await user.upload(input, new File(['third'], 'third.mp4', { type: 'video/mp4' }))
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: '开始运行' }))
-  await waitFor(() => expect(view.push).toHaveBeenCalledWith('/tasks/created'))
-  const submitted = request.mock.calls.find(([path]) => path === '/api/v2/tasks')![1]!.body as FormData
-  expect((submitted.get('input.source') as File).name).toBe('third.mp4')
 })
 it('keeps parent and file editing locked after an uncertain submission until cleanup succeeds', async () => {
   const onLockChange = vi.fn()

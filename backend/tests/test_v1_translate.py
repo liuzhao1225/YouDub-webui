@@ -169,15 +169,6 @@ def test_plugin_output_limit_is_validated_before_constructing_provider(context, 
     assert not provider.calls and not provider.options
 
 
-def test_oversized_later_segment_rejected_before_any_request(context, provider):
-    value = json.loads(context.input_files["transcript"].read_bytes())
-    value["segments"][-1]["text"] = "x" * 6001
-    context.input_files["transcript"].write_text(json.dumps(value))
-    with pytest.raises(ApiError):
-        translate.run(context, lambda *args: None)
-    assert not provider.calls
-
-
 @pytest.fixture
 def real_provider(monkeypatch):
     """Use the installed SDK through an in-memory transport, never a provider."""

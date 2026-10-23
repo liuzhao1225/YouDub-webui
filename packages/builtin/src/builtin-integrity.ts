@@ -15,8 +15,8 @@ const worker = ['backend/workers/operation.py', 'backend/workers/operations.py',
 const media = ['media.py']
 const python = (...names: string[]) => names.map(name => 'backend/app/v1/' + name)
 export const executionFiles: Record<string, string[]> = {
-  'youdub.download': [...worker, 'backend/workers/download.py', 'packages/sdk/src/video-source.ts', ...python('runtime_limits.py'), 'backend/requirements/download.txt'],
-  'youdub.media': [...worker, ...python(...media, 'runtime_limits.py', 'mix.py', 'export.py', 'sentence_split.py', 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
+  'youdub.download': [...worker, 'backend/workers/download.py', 'packages/sdk/src/video-source.ts', 'backend/requirements/download.txt'],
+  'youdub.media': [...worker, ...python(...media, 'mix.py', 'export.py', 'sentence_split.py', 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
   whisper: [...worker, ...python(...media, 'asr.py', 'asr_process.py'), 'backend/requirements/whisper.txt'],
   openai: [...worker, ...python('translate.py'), 'backend/requirements/openai.txt'],
   voxcpm: [...worker, ...python(...media, 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],

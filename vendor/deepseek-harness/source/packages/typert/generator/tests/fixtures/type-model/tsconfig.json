@@ -1,4 +1,6 @@
 {
   "extends": "./tsconfig.base.json",
-  "files": ["cordis.d.ts"]
+  "files": [
+    "cordis.d.ts"
+  ]
 }

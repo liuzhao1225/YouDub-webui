@@ -77,34 +77,6 @@ describe('product icon set', () => {
     expect(medium.container.querySelector('svg')?.getAttribute('stroke-width')).toBe('1.3')
   })
 
-  it('exports regular and medium permission glyphs', () => {
-    const pairs = [
-      [primitives.PermissionIconReadOnlyRegular, primitives.PermissionIconReadOnlyMedium],
-      [primitives.PermissionIconWorkspaceWriteRegular, primitives.PermissionIconWorkspaceWriteMedium],
-      [primitives.PermissionIconFullAccessRegular, primitives.PermissionIconFullAccessMedium],
-      [primitives.PermissionIconAutoReviewRegular, primitives.PermissionIconAutoReviewMedium],
-    ] as const
-    for (const [Regular, Medium] of pairs) {
-      const regular = render(<Regular />)
-      expect(regular.container.querySelector('svg')?.getAttribute('stroke-width')).toBe('1')
-      regular.unmount()
-      const medium = render(<Medium />)
-      expect(medium.container.querySelector('svg')?.getAttribute('stroke-width')).toBe('1.3')
-      medium.unmount()
-    }
-  })
-
-  it('exports both weights for every reference kind', () => {
-    for (const kind of ['session', 'file', 'folder'] as const) {
-      const regular = render(<primitives.ReferenceIconRegular kind={kind} />)
-      expect(regular.container.querySelector('svg')?.getAttribute('stroke-width')).toBe('1')
-      regular.unmount()
-      const medium = render(<primitives.ReferenceIconMedium kind={kind} />)
-      expect(medium.container.querySelector('svg')?.getAttribute('stroke-width')).toBe('1.3')
-      medium.unmount()
-    }
-  })
-
   it('each glyph defaults to its own drawn size, not one set-wide default', () => {
     const api = render(<IconApiOutlineRegular />)
     expect(api.container.querySelector('svg')!.getAttribute('width')).toBe('14')
@@ -120,31 +92,5 @@ describe('product icon set', () => {
     const { container } = render(<><IconGoalOutlineRegular /><IconGoalOutlineRegular /></>)
     expect(container.querySelector('[id]')).toBeNull()
     expect(container.querySelector('[clip-path]')).toBeNull()
-  })
-})
-
-describe('FishLogo', () => {
-  it('renders the fish path in currentColor at the native ratio', () => {
-    const { container } = render(<primitives.FishLogo />)
-    const svg = container.querySelector('svg')!
-    expect(svg.getAttribute('width')).toBe('24')
-    expect(Number(svg.getAttribute('height'))).toBeCloseTo(17.66, 1)
-    expect(svg.getAttribute('viewBox')).toBe('0 0 23.16 17.04')
-    expect(container.querySelectorAll('path')).toHaveLength(1)
-    expect(container.innerHTML).toContain('currentColor')
-    expect(container.innerHTML).not.toContain('M0 0L23.16')
-  })
-})
-
-describe('BrandWordmark', () => {
-  it('can render the name artwork with or without its leading mark', () => {
-    const view = render(<primitives.BrandWordmark />)
-    const svg = view.container.querySelector('svg')!
-    expect(svg.getAttribute('width')).toBe('182')
-    expect(svg.getAttribute('viewBox')).toBe('0 0 182 24')
-
-    view.rerender(<primitives.BrandWordmark includeMark={false} />)
-    expect(svg.getAttribute('width')).toBe('156')
-    expect(svg.getAttribute('viewBox')).toBe('26 0 156 24')
   })
 })

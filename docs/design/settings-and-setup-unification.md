@@ -1,8 +1,6 @@
 # 设置与首次准备流程统一设计
 
-当前阶段为开发。按用户要求，本对话只做必要的定向测试和页面检查，不执行构建、打包或发布验收。文中涉及安装包和发布的检查留待明确进入发布阶段后执行。
-
-状态：设置与资源共用、设置弹窗已在 `codex/harness-frontend` 实施；本轮模型供应商管理接入正在开发验证，见 12.2。核对日期：2026-10-21。首期设计审查基线为 `b490320`，参考首次引导、工作流资源准备和 deepseek-harness 固定版本源码。未执行生产构建、打包或发布。
+本文保留 2026-10-21 的设计决定与阶段记录。2026-10-23 已统一使用 Harness 外壳、设置和模型服务，旧独立实现已删除；涉及旧文件的引用链接到历史提交。当前源码与验证范围见 [Harness 保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)，界面约定见 [视觉与组件规范](harness-visual-spec.md)。
 
 ## 1. 产品决定
 
@@ -22,11 +20,11 @@
 
 | 实施前事实 | 影响 | 实施目标 |
 | --- | --- | --- |
-| [设置页](../../apps/web/src/plugin/builtin/settings.tsx)把外观、插件设置、运行环境、连接、更新和扩展放在一张长页面 | 设置入口同级混杂；远端 provider 同时出现在运行环境和连接区域 | 设置弹窗，按用户操作分区 |
-| [主外壳](../../apps/web/src/plugin/builtin/shell.tsx)从同一 `shell.navigation` 列表渲染主导航；设置按 order 30 排在普通入口中 | 设置没有独立的底部位置 | 主导航底部固定设置入口 |
+| [设置页](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/apps/web/src/plugin/builtin/settings.tsx)把外观、插件设置、运行环境、连接、更新和扩展放在一张长页面 | 设置入口同级混杂；远端 provider 同时出现在运行环境和连接区域 | 设置弹窗，按用户操作分区 |
+| [主外壳](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/apps/web/src/plugin/builtin/shell.tsx)从同一 `shell.navigation` 列表渲染主导航；设置按 order 30 排在普通入口中 | 设置没有独立的底部位置 | 主导航底部固定设置入口 |
 | [localize-editor](../../apps/web/src/plugin/builtin/localize-editor.tsx)向 `settings.sections` 注册“默认处理配置”，保存完整旧 `TaskConfig` | 用户在全局页面修改下一次任务的语言、模型、配音等；与工作流参数重复 | 新任务参数只落在图节点；旧编辑器保留在需要兼容的旧任务路径 |
 | [模板工厂](../../packages/builtin/src/workflow-templates.ts)每次读取官方模板时，将 `settings.defaults` 的语言和模型应用到图 | 仅删除设置 UI 后，隐藏旧默认值仍会改变模板 | 显式迁移，停止新图的持续全局覆盖 |
-| [ConnectionForm](../../apps/web/src/plugin/builtin/settings.tsx)和 [TranslationSetupController](../../apps/web/src/runtime/onboarding.ts)分别实现连接测试与保存，保存连接后再写 `defaults.translation`；首次引导还组合 ASR 等任务参数 | 两套行为可能漂移；保存连接可能成功而模型保存失败 | 一套连接行为；连接保存不重写任务参数 |
+| [ConnectionForm](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/apps/web/src/plugin/builtin/settings.tsx)和 [TranslationSetupController](../../apps/web/src/runtime/onboarding.ts)分别实现连接测试与保存，保存连接后再写 `defaults.translation`；首次引导还组合 ASR 等任务参数 | 两套行为可能漂移；保存连接可能成功而模型保存失败 | 一套连接行为；连接保存不重写任务参数 |
 | [Python bridge](../../backend/workers/bridge.py)的远端探测读取 `defaults.translation.model`；[runtime](../../backend/app/v1/runtime.py)返回的是配置的模型候选，未请求远端验证 | 删除 defaults 读取会使原自定义模型从 catalog 消失；“已配置”不能代表“测试成功” | 模型候选归连接配置；运行绑定归图节点；状态分别展示 |
 | [SetupService](../../packages/builtin/src/setup.ts)先准备 Python 和基础依赖，再加载应用；应用加载后按工作流准备依赖与模型 | 首次准备发生在 store、catalog、登录会话可用之前 | 保留启动前通道，复用其服务能力，不强行依赖登录后的 API |
 | [SetupController](../../apps/web/src/runtime/onboarding.ts)和[工作流资源控制器](../../apps/web/src/plugin/runtime/workflow-resources.ts)各有轮询；[准备日志](../../apps/web/src/lib/setup-diagnostics.ts)只读取顶层 environment/models/error | 设置资源页若再实现一套状态将继续分叉；工作流资源错误不能直接完整进入现有报告 | 共用资源快照/行为与诊断投影，保留启动阶段差异 |
@@ -46,7 +44,7 @@
 | [模型设置插件装配](https://github.com/liuzhao1225/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-models/src/client/index.ts) | 同一套模型设置进入日常设置和首次引导 | 直接复用 `ModelsSection`、供应商/模型编辑器、store 与 schema 解释；适配 YouDub HTTP、订阅、主题和离开保护 |
 | [ModelsSettingsStore](https://github.com/deepseek-ai/deepseek-harness/blob/99f6f02fecdb7dff40c3fbc9470f5907c29f74ca/packages/client/ui-settings-models/src/client/store.ts) | Host 是配置事实来源，客户端通过快照订阅与明确动作操作 | 沿用 YouDub React-free runtime、Zustand vanilla、`bindComponent`，写入失败原样可见 |
 
-模型管理保留上游 `llm-pi-ai` namespace、profile、path-op 更新、revision 冲突与独立凭据写入契约，由 YouDub 既有 store、secrets、会话和 CSRF 实现。后端直接复用 `catalog`、`provider`、`discovery` 和配置解析，使用固定版本 `pi-ai@0.82.1`；没有引入 Harness agent loop、账号欢迎流程、自动重试或整个 onboarding runtime。来源和 MIT 声明见[第三方声明](../../THIRD_PARTY_NOTICES.md)、[前端适配清单](../../apps/web/src/components/models-settings/SOURCE.md)、[后端适配清单](../../packages/builtin/src/harness-llm/README.md)。现有技术分层见[前端迁移说明](harness-frontend-migration.md)。
+模型管理直接使用保留的 Harness `llm-pi-ai`、Settings 和 Credentials 服务，包括 profile、revision 与独立凭据更新。[翻译服务接入](../../apps/harness/src/backend/llm.mjs)把已配置模型注册到 YouDub 工作流；旧平台复制的模型管理与 LLM 请求实现已移除。
 
 ## 4. 导航与界面结构
 
@@ -125,14 +123,14 @@
 2. 工作流遍历真实节点实例，按 `quickFields` 提取 schema；正常选项逐字段生成胶囊，触发器显示字段标签与当前值，展开原 `SelectContent` / `SelectItem` 选项列表。原样复用 [13943b0 的 TaskOptions](https://github.com/liuzhao1225/YouDub-webui/blob/13943b01eadc65108b5c641ea9133f7aa83d7ba2/apps/web/src/components/localize-task-config.tsx) 的视觉和交互。重复字段在必要时用所属节点名称/实例序号区分，各字段独立写回对应节点。
 3. 修改写入本次运行的图副本，未暴露的 config 字段、边、provider 和 autoContinue 原样保留。点击工作流编辑页的保存动作才修改持久工作流。
 4. 每条翻译分支拥有自己的目标语言，配音/对齐/导出沿其 translation 端口读取语言，不重复要求填写。两个翻译节点可以使用不同目标语言；不能按字段同名把全图统一赋值。具体职责、当前重复字段和旧图迁移见[节点配置设计审查](node-configuration-review.md)。首期不添加参数联动 DSL。
-5. 工作台不硬编码 ASR/TTS 控件，不为无 TTS 的图显示声音设置。下载节点的技术限制如 `maxBytes` 不进入快捷设置。快捷设置不得自动改变节点数量、连接关系或人工确认点。
+5. 工作台不硬编码 ASR/TTS 控件，不为无 TTS 的图显示声音设置。下载节点不设置文件大小配额。快捷设置不得自动改变节点数量、连接关系或人工确认点。
 6. 缺少插件类型、配置校验失败等问题要定位到节点与字段；不能因没有可渲染控件就把无效配置作为默认成功提交。
 
 [WorkflowOptions](../../apps/web/src/plugin/builtin/workflow-options.tsx)只承担从节点 schema 汇总字段和写回本次图的职责。展示使用原版逐字段 Select，不增加每节点一张大 Popover 表单或新的快捷设置框架；复杂参数继续放在已有节点设置页。此次设计不另设“工作台默认参数”。字幕、配音、字幕加配音继续是不同工作流；工作台 Logo、badge、渐变 hero 标题和全页布局保持上述原版基准。
 
 ### 5.2 模型供应商与节点绑定
 
-[Models 服务](../../packages/builtin/src/llm-models.ts)保存每个 route 的 profile、模型候选与凭据引用，按 `llm.<route>` 注册翻译 provider。内置目录来自固定版本 pi-ai；自定义供应商需要明确地址、协议和至少一个模型。可手工补充模型，已知目录模型保留原有元数据；不把所有供应商强制转换为 OpenAI Chat Completions。
+[Harness 模型服务接入](../../apps/harness/src/backend/llm.mjs)按 `llm.<route>` 注册翻译 provider，读取框架中的 profile、模型候选与凭据。模型目录和协议由保留的 Harness `llm-pi-ai` 提供。
 
 模型页直接复用 Harness 的供应商目录、编辑器、模型候选选择与 schema 表单规则。预置供应商使用其目录协议与认证方式；手工指定协议可选 OpenAI Chat Completions、OpenAI Responses 和 Anthropic Messages。需要独立 OAuth/账号流程的供应商不因此自动获得登录能力；配置和本机认证条件不满足时必须显示不可用。
 
@@ -142,7 +140,7 @@
 
 原 `openai` connection 及 Python adapter 保留给历史任务。首次初始化模型设置时，可将旧地址、候选模型和已有凭据引用导入 `openai-compatible` route；`YOUDUB_TRANSLATION_MODELS` 只参与旧配置导入及历史路径，不持续覆盖新 profile。新设置不再写旧 connection 或 `defaults.translation`。已经运行的任务和原始响应文件保持原样。
 
-状态须分别表达配置存在、凭据已配置、模型能力满足和实际调用结果。目录条目、已存密钥、provider probe 均不等同于网络测试成功。新翻译执行通过 [llm-translation](../../packages/builtin/src/llm-translation.ts)，发送前同时检查模型声明能力与实际请求最大输出参数至少为 65,535；无法满足的模型或协议停止调用，保留具体原因。没有静默降低上限或自动换模型。
+状态须分别表达配置存在、凭据已配置、模型能力满足和实际调用结果。目录条目、已存密钥、provider probe 均不等同于网络测试成功。新翻译执行通过 [Harness 翻译接入](../../apps/harness/src/backend/llm.mjs)，发送前同时检查模型声明能力与实际请求最大输出参数至少为 65,535；无法满足的模型或协议停止调用，保留具体原因。没有静默降低上限或自动换模型。
 
 密钥由现有 secrets 持有，接口只返回前缀加 `****`；短密钥全部隐藏。空输入保留原密钥，输入新值替换，环境变量提供的凭据保持只读。供应商配置和凭据按上游明确的两步操作保存；若 profile 已保存而凭据失败，显示失败并保留仅重试凭据的状态，不重新覆盖 profile，不显示整体成功。删除供应商保留历史任务所需的快照和旧 secret 引用。保存进行中阻止离开；完成后重新读取实际状态。
 
@@ -301,10 +299,10 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 | Client slots、`builtin/shell.tsx`、`builtin/navigation.ts` | placement/layout、紧凑设置入口、背景页面与 dialog 并存；分类 replace、按 scope 保护与关闭历史恢复 |
 | `apps/web/src/plugin/builtin/settings.tsx` 与必要的 settings 子组件 | Base UI Dialog、五个分区与 SectionCard；一次只渲染当前分区；桌面分类列表和窄屏图标栏 |
 | `builtin/localize-editor.tsx`、`workflow-templates.ts` | 取消全局默认处理面板注册，停止图模板逐次应用全局 defaults；保留旧任务编辑组件 |
-| `runtime/onboarding.ts`、`translation-setup.tsx`、`components/models-settings` | 引导只协调继续/稍后配置；与日常设置使用同一个 ModelsSettings、编辑器和 store；移除前一版 ConnectionController/ConnectionForm |
+| `runtime/onboarding.ts`、`apps/harness/src/frontend/translation-setup.tsx` | 引导只协调继续/稍后配置；与日常设置直接使用 Harness 模型设置页面；移除前一版 ConnectionController/ConnectionForm |
 | `runtime/workflow-resources.ts`、`setup-screen.tsx`、`setup-diagnostics.ts` | 共用资源契约、模型行、环境步骤和诊断投影；应用内控制器支持 selections 与已知资源动作 |
 | `packages/builtin/src/setup.ts` | action 方法抽取、应用内资源薄接口；继续调用现有准备和下载服务 |
-| `packages/builtin/src/llm-models.ts`、`llm-models-api.ts`、`llm-translation.ts`、`harness-llm/` | 已有 store/secrets 上实现上游模型配置契约，注册翻译 provider、冻结任务配置、校验实际 wire 输出上限；旧 Python openai 仅历史兼容 |
+| `apps/harness/src/backend/llm.mjs` | 对接 Harness 模型和凭据服务、冻结任务配置、检查请求输出上限；旧平台模型副本已删除 |
 | 现有 workflow 文档存储与迁移路径 | 幂等导入旧 defaults；保留旧值和历史任务；不新增配置数据库 |
 
 ### 10.2 发布阶段另行执行
@@ -348,7 +346,7 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 
 `layout: 'dialog'` 保留背景页面；设置分类使用 replace。`dismissDialog()`、page/dialog 导航保护统一处理关闭、Escape、遮罩及浏览器后退，保留原页面位置和草稿。直接打开 `/settings[/section]` 仍可使用，关闭回工作台。
 
-[桌面 ready-smoke](../../apps/desktop/ready-smoke.js)已改为定位可见设置按钮、弹窗分类按钮和弹窗内标题/表单，并检查分类历史长度和关闭后的背景页面实例。脚本通过 `node --check`；本轮未运行原生打包或 ready-smoke，不据此宣称桌面弹窗已通过打包验收。开发浏览器与导航测试结果由本轮实施记录单独报告。
+[桌面 ready-smoke](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/apps/desktop/ready-smoke.js)已改为定位可见设置按钮、弹窗分类按钮和弹窗内标题/表单，并检查分类历史长度和关闭后的背景页面实例。脚本通过 `node --check`；本轮未运行原生打包或 ready-smoke，不据此宣称桌面弹窗已通过打包验收。开发浏览器与导航测试结果由本轮实施记录单独报告。
 
 ### 12.2 Harness 模型供应商管理接入
 

@@ -9,7 +9,7 @@ export function compatibleInputFiles(previous: InputFile[], inputs: GraphInput[]
   const available = [...previous], result: Record<string, File> = {}
   for (const exact of [true, false]) {
     for (const input of inputs.filter((item) => !result[item.id])) {
-      const index = available.findIndex((entry) => (!exact || entry.input.id === input.id) && entry.input.schemaId === input.schemaId && entry.file.size <= input.maxBytes && acceptsInputMime(input, entry.file))
+      const index = available.findIndex((entry) => (!exact || entry.input.id === input.id) && entry.input.schemaId === input.schemaId && acceptsInputMime(input, entry.file))
       if (index >= 0) result[input.id] = available.splice(index, 1)[0].file
     }
   }

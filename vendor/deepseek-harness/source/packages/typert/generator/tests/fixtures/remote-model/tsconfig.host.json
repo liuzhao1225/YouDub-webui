@@ -2,7 +2,11 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    { "path": "./packages/domain" },
-    { "path": "./packages/remote" }
+    {
+      "path": "./packages/domain"
+    },
+    {
+      "path": "./packages/remote"
+    }
   ]
 }

@@ -60,12 +60,10 @@ def _probe(path: Path, check_cancel: Callable[[], None] | None = None) -> dict[s
     try:
         result = _run_media(
             [ffprobe_binary(), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path.resolve())],
-            check_cancel=check_cancel, timeout=30,
+            check_cancel=check_cancel,
         )
     except FileNotFoundError as exc:
         raise ApiError(503, "RUNTIME_UNAVAILABLE", "ffprobe is unavailable.", stage="prepare") from exc
-    except subprocess.TimeoutExpired as exc:
-        raise _invalid("Media inspection timed out.") from exc
     if result.returncode != 0:
         raise _invalid("ffprobe could not read the input media.")
     try:
@@ -110,7 +108,7 @@ def _stream_start_ms(stream: dict[str, Any]) -> int:
 
 
 def inspect_video(
-    path: Path, limits: dict[str, Any], check_cancel: Callable[[], None] | None = None,
+    path: Path, check_cancel: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """Inspect the exact first video/audio streams later used by ffmpeg.
 
@@ -138,12 +136,4 @@ def inspect_video(
     duration_ms = _duration_ms(data, video)
     info = {"duration_ms": duration_ms, "width": width, "height": height, "frame_rate": frame_rate,
             "video_codec": video.get("codec_name"), "audio_codec": audio.get("codec_name")}
-    for field, limit in (("duration_ms", "max_video_duration_ms"), ("width", "max_video_width"),
-                         ("height", "max_video_height"), ("frame_rate", "max_frame_rate")):
-        if info[field] > limits[limit]:
-            raise ApiError(415, "UNSUPPORTED_MEDIA", f"The video {field} exceeds {limits[limit]}.",
-                           field="file", stage="prepare", action="none")
-    if info["video_codec"] not in limits["video_codecs"] or info["audio_codec"] not in limits["audio_codecs"]:
-        raise ApiError(415, "UNSUPPORTED_MEDIA", "The first video or audio codec is unsupported.",
-                       field="file", stage="prepare", action="none")
     return info

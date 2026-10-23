@@ -2,7 +2,7 @@ import { createContext, useContext, type HTMLAttributes, type ReactNode } from '
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import styles from './page-layout.module.css'
-import nativeHeader from '../../../../vendor/deepseek-harness/source/packages/client/ui-conversation/src/client/skeleton/ConversationRoot.module.css'
+import nativeHeader from '../../../../vendor/deepseek-harness/source/packages/client/ui-layout/src/client/ConversationRoot.module.css'
 
 type PageProps = HTMLAttributes<HTMLElement> & { as?: 'main' | 'div' | 'section' | 'header' }
 const WindowHeaderContext = createContext<HTMLElement | null | undefined>(undefined)

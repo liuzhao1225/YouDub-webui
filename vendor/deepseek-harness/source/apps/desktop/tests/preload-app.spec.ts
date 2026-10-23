@@ -39,7 +39,6 @@ it.each(['dsh-app://shell/plugin-manager.html', 'dsh-app://other/index.html', 'h
   vi.stubGlobal('location', new URL(url))
   await import('../src/preload-app.ts')
   expect(electron.contextBridge.exposeInMainWorld).toHaveBeenCalledWith('dshDesktop', { protocolVersion: 1 })
-  expect(electron.ipcRenderer.on.mock.calls.some(([channel]) => channel === DESKTOP_IPC.browserOpenRequested)).toBe(false)
 })
 
 it('reads the local machine description only from the application main frame', async () => {
@@ -169,36 +168,4 @@ it('forwards only the focused product iframe and releases native input subscript
   expect(listener).toHaveBeenLastCalledWith(menu)
   off()
   expect(electron.ipcRenderer.off).toHaveBeenCalledWith(DESKTOP_IPC.shortcutsInput, handler)
-})
-
-it('forwards browser guest input only for the focused live webview lease', async () => {
-  vi.stubGlobal('location', new URL('dsh-app://app/'))
-  await import('../src/preload-app.ts')
-  const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
-  const listener = vi.fn()
-  const off = api.keyboard.subscribe(listener)
-  const handler = electron.ipcRenderer.on.mock.calls.find(([name]) => name === DESKTOP_IPC.shortcutsInput)![1] as
-    (event: unknown, state: unknown) => void
-  const input = { kind: 'webview', frameName: 'guest', revision: 'current' }
-  const frame = document.createElement('webview')
-  frame.tabIndex = 0
-  frame.setAttribute('name', 'guest')
-  document.body.append(frame)
-  frame.focus()
-  handler({}, input)
-  expect(listener).not.toHaveBeenCalled()
-  frame.setAttribute('data-sidebar-browser-frame', 'webview')
-  handler({}, { ...input, frameName: '' })
-  handler({}, { ...input, frameName: 'old' })
-  expect(listener).not.toHaveBeenCalled()
-  handler({}, input)
-  expect(listener).toHaveBeenCalledExactlyOnceWith(input)
-  const other = document.createElement('input')
-  document.body.append(other)
-  other.focus()
-  handler({}, input)
-  frame.remove()
-  handler({}, input)
-  expect(listener).toHaveBeenCalledOnce()
-  off()
 })

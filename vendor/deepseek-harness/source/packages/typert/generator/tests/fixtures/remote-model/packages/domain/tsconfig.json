@@ -7,5 +7,7 @@
     "declaration": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }
