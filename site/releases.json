@@ -1,5 +1,166 @@
 [
   {
+    "version": "v0.0.8",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.8",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.8-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.8/YouDub-0.0.8-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.8/YouDub-0.0.8-macOS-arm64.dmg.sha256",
+        "latest": {
+          "url": "https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg",
+          "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-macOS-arm64.dmg.sha256"
+        }
+      },
+      {
+        "id": "windows-x64",
+        "name": "Windows",
+        "requirements": "Windows 10 22H2 / 11 · x64",
+        "file": "YouDub-0.0.8-windows-x64.zip",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.8/YouDub-0.0.8-windows-x64.zip",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.8/YouDub-0.0.8-windows-x64.zip.sha256",
+        "installer": {
+          "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.8/YouDub-0.0.8-windows-x64-Setup.exe",
+          "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.8/YouDub-0.0.8-windows-x64-Setup.exe.sha256"
+        },
+        "latest": {
+          "url": "https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip",
+          "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64.zip.sha256",
+          "installer": {
+            "url": "https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe",
+            "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/latest/download/YouDub-windows-x64-Setup.exe.sha256"
+          }
+        }
+      }
+    ],
+    "isLatest": true
+  },
+  {
+    "version": "v0.0.7",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.7",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.7-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.7/YouDub-0.0.7-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.7/YouDub-0.0.7-macOS-arm64.dmg.sha256"
+      },
+      {
+        "id": "windows-x64",
+        "name": "Windows",
+        "requirements": "Windows 10 22H2 / 11 · x64",
+        "file": "YouDub-0.0.7-windows-x64.zip",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.7/YouDub-0.0.7-windows-x64.zip",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.7/YouDub-0.0.7-windows-x64.zip.sha256",
+        "installer": {
+          "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.7/YouDub-0.0.7-windows-x64-Setup.exe",
+          "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.7/YouDub-0.0.7-windows-x64-Setup.exe.sha256"
+        }
+      }
+    ]
+  },
+  {
+    "version": "v0.0.6",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.6",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.6-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.6/YouDub-0.0.6-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.6/YouDub-0.0.6-macOS-arm64.dmg.sha256"
+      },
+      {
+        "id": "windows-x64",
+        "name": "Windows",
+        "requirements": "Windows 10 22H2 / 11 · x64",
+        "file": "YouDub-0.0.6-windows-x64.zip",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.6/YouDub-0.0.6-windows-x64.zip",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.6/YouDub-0.0.6-windows-x64.zip.sha256",
+        "installer": {
+          "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.6/YouDub-0.0.6-windows-x64-Setup.exe",
+          "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.6/YouDub-0.0.6-windows-x64-Setup.exe.sha256"
+        }
+      }
+    ]
+  },
+  {
+    "version": "v0.0.5",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.5",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.5-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.5/YouDub-0.0.5-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.5/YouDub-0.0.5-macOS-arm64.dmg.sha256"
+      },
+      {
+        "id": "windows-x64",
+        "name": "Windows",
+        "requirements": "Windows 10 22H2 / 11 · x64",
+        "file": "YouDub-0.0.5-windows-x64.zip",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.5/YouDub-0.0.5-windows-x64.zip",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.5/YouDub-0.0.5-windows-x64.zip.sha256",
+        "installer": {
+          "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.5/YouDub-0.0.5-windows-x64-Setup.exe",
+          "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.5/YouDub-0.0.5-windows-x64-Setup.exe.sha256"
+        }
+      }
+    ]
+  },
+  {
+    "version": "v0.0.4",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.4",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.4-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.4/YouDub-0.0.4-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.4/YouDub-0.0.4-macOS-arm64.dmg.sha256"
+      },
+      {
+        "id": "windows-x64",
+        "name": "Windows",
+        "requirements": "Windows 10 22H2 / 11 · x64",
+        "file": "YouDub-0.0.4-windows-x64.zip",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.4/YouDub-0.0.4-windows-x64.zip",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.4/YouDub-0.0.4-windows-x64.zip.sha256"
+      }
+    ]
+  },
+  {
+    "version": "v0.0.3",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.3",
+    "platforms": [
+      {
+        "id": "macos-arm64",
+        "name": "macOS",
+        "requirements": "macOS 14+ · Apple 芯片",
+        "file": "YouDub-0.0.3-macOS-arm64.dmg",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.3/YouDub-0.0.3-macOS-arm64.dmg",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.3/YouDub-0.0.3-macOS-arm64.dmg.sha256"
+      },
+      {
+        "id": "windows-x64",
+        "name": "Windows",
+        "requirements": "Windows 10 22H2 / 11 · x64",
+        "file": "YouDub-0.0.3-windows-x64.zip",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.3/YouDub-0.0.3-windows-x64.zip",
+        "checksum": "https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.3/YouDub-0.0.3-windows-x64.zip.sha256"
+      }
+    ]
+  },
+  {
     "version": "v0.0.2",
     "url": "https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.2",
     "platforms": [

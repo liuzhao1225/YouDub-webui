@@ -6,7 +6,9 @@
 
 下载列表中的 `isLatest:true` 表示 GitHub 选定的 Latest，列表首项保留相同身份以兼容旧 feed 读取方式。官网和应用更新器不以历史最大版本替代该选择。版本化 ZIP/安装包字段继续保留，供历史下载和旧客户端使用。
 
-官网保留应用的品牌主张，首屏标题及介绍逐字复用 `apps/web/src/lib/i18n.tsx` 的中文 studio 文案。首屏居中展示品牌，后续分别呈现真实试听、现有能力、工作台流程与下载，不以压缩到一屏为目标。Logo 的八根声波复用 `brand-mark.tsx` 的 1.1 秒动画和各自延迟，并响应 `prefers-reduced-motion`。
+官网保留应用的品牌标题、红色主操作和粉蓝渐变，依次呈现真实试听、工作台、导入至校对导出的流程和下载。首屏版本提示与下载区共用 `releases.json`，只展示实际公开的最新版；切换历史下载版本不改变首屏最新版提示。功能介绍以已发布版本为准。
+
+Logo 与 `apps/web/public/` 使用相同的光学居中坐标和完整气泡尾尖。八根声波复用 `brand-mark.tsx` 的 1.1 秒动画和各自延迟，并响应 `prefers-reduced-motion`；动画施加于外层分组，保留路径本身的垂直对齐变换。
 
 本地预览（先确认端口空闲）：
 
@@ -22,8 +24,8 @@
 
 ## 素材来源
 
-- `youdub-logo.svg`、`youdub-icon.svg`：复用 `apps/web/public/`。
-- `workbench.jpg`：复用 `docs/images/workbench.jpg`。
+- `youdub-logo.svg`、`youdub-icon.svg`：复用 `apps/web/public/` 的图形，完整 Logo 保留官网声波动效。
+- `workbench.webp`：v0.0.8 macOS 安装包的真实工作台截图，来自 `dist/package-smoke-mac-workbench/first-launch.png`（同目录 `result.json` 记录版本）。按 WebP 编码，保留原始 2560×1640 尺寸，未修改界面内容。点击可查看原图。
 - `jensen-en.mp4`：README 黄仁勋原片；[原始附件](https://github.com/user-attachments/assets/befd11ca-e720-4faa-b4e0-d89bfe73df87)。原片为 AV1 / Opus，官网转为 H.264 / AAC 以兼容浏览器，保留原有画面和时间线。
 - `jensen-zh.mp4`：README 2026-10-09 中文成片；[原始附件](https://github.com/user-attachments/assets/60d5dbb0-f346-4c14-adad-2d0c481ac4fb)。
 - `creator-en.mp4` / `creator-zh.mp4`：README 历史样例的 40 秒切片；[原片附件](https://github.com/user-attachments/assets/bd02936f-cf3c-4e4b-85b5-0410d38f69f5)、[配音附件](https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6)。

@@ -9,6 +9,9 @@ try {
   const marked = releases.filter(release => release.isLatest === true)
   if (releases.some(release => release.isLatest !== undefined && typeof release.isLatest !== 'boolean') || marked.length > 1 || (!marked.length && releases.some(release => release.isLatest !== undefined))) throw new Error('最新版标记无效')
   const latestRelease = marked[0] ?? releases[0]
+  const releaseLink = document.querySelector('#latest-release')
+  releaseLink.querySelector('span').textContent = `${latestRelease.version} 已发布 · 查看更新`
+  releaseLink.hidden = false
   for (const [index, release] of releases.entries()) {
     const option = document.createElement('option')
     option.value = String(index)
@@ -32,7 +35,7 @@ try {
       const download = document.createElement('a')
       download.className = 'button primary'
       download.href = selected?.url || releaseUrl
-      download.textContent = `下载 ${platform.name} ${platform.id === 'macos-arm64' ? 'DMG' : platform.installer ? '安装包 EXE' : 'ZIP'} ↓`
+      download.textContent = `下载 ${platform.id === 'macos-arm64' ? 'DMG' : platform.installer ? '安装包 EXE' : 'ZIP'} ↓`
       const checksum = document.createElement('a')
       checksum.className = 'text-link'
       checksum.href = selected?.checksum || releaseUrl
