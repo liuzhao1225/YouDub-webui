@@ -1,18 +1,18 @@
 # Harness 版本地开发
 
-以下命令在 `codex/harness-youdub-integration` 分支的仓库根目录执行。当前流程面向源码开发，不生成安装包。已记录的原生开发验证以 macOS ARM64 为主，其他平台的当前边界见[代码复核](CODE-AUDIT.md)。
+以下命令在 `main` 或从 main 创建的功能分支执行。源码启动与正式安装包共用同一产品组合；安装包、签名和发布见[发行流程](../../../docs/releasing.md)。
 
 ## 准备工作区
 
 新工作区可以按指定分支检出：
 
 ```sh
-git clone --branch codex/harness-youdub-integration --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
+git clone --branch main --recurse-submodules https://github.com/liuzhao1225/YouDub-webui.git
 cd YouDub-webui
 git status --short --branch
 ```
 
-已有工作区先确认分支及未提交内容，不覆盖本地改动。默认开发保留 `main`、`atomgit` 和融合分支；本功能在融合分支继续维护。
+已有工作区先确认分支及未提交内容，不覆盖本地改动。功能改动从 `main` 创建分支，检查通过后合并。
 
 本文命令使用 Node.js `^22.19.0 || >=24.0.0`、npm、Git 和平台构建工具。根 package.json 与[框架 engines](../../../vendor/deepseek-harness/source/package.json) 保持一致。macOS 使用 Xcode Command Line Tools。
 
@@ -48,7 +48,7 @@ npm run build:youdub
 node apps/harness/desktop.mjs --prepare-only
 ```
 
-`npm start` 也会完成同一准备步骤。当前启动无需复制 `primary-runtime` 或 `office-skills`，默认运行不调用已安装 Harness 应用或共享 `~/.dsh`。旧开发 App 组装脚本已移除；其历史源码可从改造基线恢复。当前仅使用源码开发入口，不组装或签名 App。
+`npm start` 也会完成同一准备步骤。当前启动无需复制 `primary-runtime` 或 `office-skills`，默认运行不调用已安装 Harness 应用或共享 `~/.dsh`。正式安装包使用 `npm run package:desktop -- --dir` 生成独立 App；发行流程对候选包做首启检查、签名和公证。
 
 ## 日常修改与启动
 
@@ -84,7 +84,7 @@ npm --prefix apps/harness start
 | `apps/web/src` | 直接复用的业务组件和领域测试，无独立 Web 启动入口 |
 | `packages/builtin/test/helpers` | 领域回归使用的隔离组合夹具，不进入产品构建 |
 
-旧 Swift/C# 桌面壳、`build:mac`、`build:windows`、专属安装测试和发行 CI 已从本分支移除。`apps/desktop/icon.svg` 由 Electron 产品继续复用。历史源码见[裁剪前提交](https://github.com/liuzhao1225/YouDub-webui/tree/711e40e8e69d2c6f2065f15aecc90550dcbf695d/apps/desktop)；`main`、`atomgit` 与官网发布链保持不变。
+旧 Swift/C# 桌面壳与 `build:mac`、`build:windows` 已由当前 Electron 构建与打包入口替代。`apps/desktop/icon.svg` 由 Electron 产品继续复用。历史源码见[裁剪前提交](https://github.com/liuzhao1225/YouDub-webui/tree/711e40e8e69d2c6f2065f15aecc90550dcbf695d/apps/desktop)。
 
 ## 数据与配置
 
