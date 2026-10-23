@@ -4,8 +4,6 @@
 
 # YouDub Desktop
 
-> YouDub 使用 DeepSeek Harness 前后端框架与 Electron，保留视频工作流和业务界面。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。
-
 开源视频本地化工作台：导入视频，识别、翻译并逐句克隆原声，生成字幕和配音成片。
 
 [English](README.en.md) · [官网与试听](https://liuzhao1225.github.io/YouDub-webui/) · [下载最新版](https://github.com/liuzhao1225/YouDub-webui/releases/latest) · [安装与升级](docs/upgrade.md) · [社区交流](#社区交流)
@@ -112,6 +110,8 @@ QQ 交流群：`618246010`
 </p>
 
 ## 从源码运行 YouDub Desktop
+
+YouDub 使用 DeepSeek Harness 前后端框架与 Electron，保留视频工作流和业务界面。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。
 
 使用 Node.js `^22.19.0 || >=24.0.0`、npm、Git 和平台构建工具，首次检出时初始化子模块。在仓库根目录执行：
 

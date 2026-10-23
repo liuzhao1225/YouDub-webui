@@ -4,8 +4,6 @@
 
 # YouDub Desktop
 
-> YouDub uses the DeepSeek Harness backend and frontend framework with Electron, retaining its video workflows and business UI. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese).
-
 An open-source video localization workspace: import a video, transcribe and translate its speech, clone each sentence from its source audio, and produce subtitles and dubbed video.
 
 [中文](README.md) · [Website and demos](https://liuzhao1225.github.io/YouDub-webui/) · [Download latest](https://github.com/liuzhao1225/YouDub-webui/releases/latest) · [Installation and upgrade](docs/upgrade.md) · [Community](#community)
@@ -112,6 +110,8 @@ QQ group: `618246010`
 </p>
 
 ## Run YouDub Desktop from source
+
+YouDub uses the DeepSeek Harness backend and frontend framework with Electron, retaining its video workflows and business UI. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese).
 
 Use Node.js `^22.19.0 || >=24.0.0`, npm, Git and your platform's build tools. Initialize submodules when cloning, then run these commands from the repository root:
 

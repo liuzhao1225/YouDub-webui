@@ -25,14 +25,25 @@ it('does not expose retired account or onboarding bridges', async () => {
   expect(electron.ipcRenderer.invoke).not.toHaveBeenCalled()
 })
 
-it('does not expose update installation or backend management operations', async () => {
+it('exposes update status and download prompts without installation or backend management', async () => {
   vi.stubGlobal('location', new URL('dsh-app://app/index.html'))
   await import('../src/preload-app.ts')
   const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
-  expect(api).not.toHaveProperty('updates')
+  expect(Object.keys(api.updates).sort()).toEqual(['open', 'status', 'subscribe'])
   expect(api).not.toHaveProperty('plugins')
   expect(api).not.toHaveProperty('backend')
   expect(electron.ipcRenderer.invoke).not.toHaveBeenCalled()
+  await api.updates.status()
+  await api.updates.open()
+  expect(electron.ipcRenderer.invoke.mock.calls).toEqual([[DESKTOP_IPC.updatesStatus], [DESKTOP_IPC.updatesOpen]])
+  const listener = vi.fn()
+  const unsubscribe = api.updates.subscribe(listener)
+  const handler = electron.ipcRenderer.on.mock.calls.find(([name]) => name === DESKTOP_IPC.updatesChanged)![1]
+  const state = { status: 'available', version: '0.0.9' }
+  handler({}, state)
+  expect(listener).toHaveBeenCalledWith(state)
+  unsubscribe()
+  expect(electron.ipcRenderer.off).toHaveBeenCalledWith(DESKTOP_IPC.updatesChanged, handler)
 })
 
 it.each(['dsh-app://shell/plugin-manager.html', 'dsh-app://other/index.html', 'https://shell/startup.html', 'http://example.com/'])('exposes only the carrier marker to %s', async (url) => {
