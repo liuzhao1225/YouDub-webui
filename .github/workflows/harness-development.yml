@@ -261,7 +261,10 @@ jobs:
           npm run package:desktop -- --installers-only
           node apps/harness/test/installer-smoke.mjs
           cd dist
-          sha256sum YouDub-*.exe YouDub-*.zip | while read -r digest filename; do printf '%s  %s\n' "$digest" "$filename" > "$filename.sha256"; done
+          for file in YouDub-*.exe YouDub-*.zip; do
+            sha256sum "$file" > "$file.sha256"
+            sha256sum --check "$file.sha256"
+          done
       - name: 保存 Windows 安装包与首启证据
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
