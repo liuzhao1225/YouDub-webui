@@ -1,6 +1,6 @@
 # YouDub Desktop 代码复核
 
-更新：2026-10-23。第 27 批 aed6099c 与最终框架范围候选 079141fb 的双平台 CI 均已通过。随后实际 Host 完成 zoo 自动配音及人工订正、重启、确认、Qwen 对齐的九节点流程；修复验收发现的任务、产物和节点进度本地化缺口。源码候选 fa02da7d 的中英日页面回读通过，macOS、Windows 双平台 CI 已全部通过，结果见[本轮证据](evidence/refactor-final-media-localization.json)。最终原生交互和音画质量仍待验收。
+更新：2026-10-23。第 27 批 aed6099c 与最终框架范围候选 079141fb 的双平台 CI 均已通过。随后实际 Host 完成 zoo 自动配音及人工订正、重启、确认、Qwen 对齐的九节点流程；修复验收发现的任务、产物和节点进度本地化缺口。源码候选 fa02da7d 的中英日页面回读通过，macOS、Windows 双平台 CI 已全部通过，结果见[本轮证据](evidence/refactor-final-media-localization.json)。本轮 fa02da7d 已补齐 macOS 原生首启、目录选择、模型验证、草稿退出、人工校对重启、播放与保存；中文页面输入 YouTube zoo/7897 后十节点成功。Windows 原生、剩余交互分支与听感仍待验收。[原生证据](evidence/refactor-final-native-acceptance.json)
 
 YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行时，原业务通过同一个容器与官方服务运行。原生人工校对、九节点媒体流程、字幕保存及三类扩展有实际证据。完整产品验收仍未完成，剩余范围见下表。[改造计划](YOUDUB-DESKTOP-REFACTOR-PLAN.md)、[分批调研记录](REFACTOR-RESEARCH.md)
 
@@ -26,26 +26,26 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 
 | 计划项 | 已有证据 | 剩余验收 |
 | --- | --- | --- |
-| A1 独立启动与来源 | 官方源码构建、独立 Host/profile、原件和 fork 来源核验通过。[来源](evidence/refactor-pruned-notices.json) | 全部改造后的固定候选重新启动；Windows |
-| A2 首启语言与目录 | 日语原生目录选择、确认前不下载、退出与重启读回通过。[记录](REFACTOR-RESEARCH.md#p3p4-首启目录选择与密钥展示2026-10-22) | e0f899a1 浏览器选择中文及含空格、中文路径，完整安装后 Host 重启读回通过；最终原生候选仍待验收。[全新安装](evidence/refactor-fresh-installation.json) |
-| A3 环境与四模型 | 四模型/依赖门控、私有安装、旧 Whisper-only 标记重新检查通过；暂停恢复已有历史实测。[门控测试](../test/setup-onboarding.test.mjs)、[暂停恢复](evidence/model-pause-resume.json) | e0f899a1 实际 Host 浏览器完成损坏文件拒绝、显式重试、真实下载、资源页暂停/续传和重启；两次 Whisper 下载哈希符合清单，其余资源复用既有私有目录。e0f899a1 的全新私有安装与同配置重启另已通过；原生退出仍待验收。[全新安装](evidence/refactor-fresh-installation.json)[下载记录](evidence/refactor-resource-download-browser.json) |
-| A4 模型与凭据 | 页面保存、自定义 URL、重启、API 字段内掩码；原生草稿退出保护通过。[记录](REFACTOR-RESEARCH.md#p4-模型草稿保护2026-10-22) | e0f899a1 隔离页面新增、掩码复制、删除与重载读回通过；第 26 批编辑器浏览器检查通过，最终原生回归保持开放。[凭据删除](evidence/refactor-credential-lifecycle.json)、[引导清理](evidence/refactor-onboarding-prune.json) |
-| A5 翻译上限与错误 | 原生外部调用和协议测试验证 65,535；低上限拒绝，错误不降额重试。[媒体记录](evidence/refactor-native-zoo-review.json)、[合同](evidence/refactor-experimental-contracts-prune.json) | 本轮实际 Host 的两次翻译请求均保留 maxTokens=65,535，原始响应未改写。[当前媒体证据](evidence/refactor-final-media-localization.json) |
-| A6 首屏与窗口 | 原 Hero、主题、侧栏、设置和原生导出已有截图与操作证据。[前端映射](../FRONTEND-MAPPING.md) | e0f899a1 的中英日设置、深浅主题、首屏、侧栏开合、工作流和扩展浏览器回归通过；原生缩放与动效待验收。[页面记录](evidence/refactor-page-matrix.json) |
-| A7 语言 | 中英日、日语原生设置、工作流本地化及导入导出通过。[语言规则](LOCALIZATION.md)、[原生记录](REFACTOR-RESEARCH.md#p4p7内置工作流多语言与原生文件往返2026-10-22) | 55621d17 的临时第四语言注册、菜单、刷新/Host 重启及卸载回退通过；最终原生布局检查仍待验收。[语言扩展](evidence/refactor-fourth-locale.json) |
-| A8 本地完整媒体 | zoo 的 Demucs、Whisper、翻译、VoxCPM2、Qwen、混音/导出九节点成功；原生播放 18.9 秒。[证据](evidence/refactor-native-zoo-review.json) | 97686f13 的隔离实际 Host 九节点成功；fa02da7d 页面回读通过。听感和音画同步质量、最终原生播放待验收。[当前媒体证据](evidence/refactor-final-media-localization.json) |
-| A9 YouTube 下载与代理 | 原生填写 zoo URL/7897，十节点完成并导出。[历史任务](evidence/source-native-youtube-download.json) | 本次最终候选网络与下载回归，历史结果不重复计为新通过 |
+| A1 独立启动与来源 | 官方源码构建、独立 Host/profile、原件和 fork 来源核验通过；fa02da7d 从仓库开发产物启动两个独立原生 profile。[来源](evidence/refactor-pruned-notices.json)、[原生记录](evidence/refactor-final-native-acceptance.json) | Windows 原生启动 |
+| A2 首启语言与目录 | fa02da7d 原生选择日语、通过系统文件夹框选含中文和空格的私有目录；进入工作台后切换中文，退出重启及配置读回均保持。[记录](evidence/refactor-final-native-acceptance.json) | Windows 原生路径交互 |
+| A3 环境与四模型 | e0f899a1 实际 Host 的完整新安装、损坏文件拒绝、显式重试和暂停续传通过；fa02da7d 原生新 profile 复用独立资源副本，缺少 tiny 时阻止完成，下载 75,572,083 字节后校验并显示四模型可用；校验期间退出提示、取消和重启通过。[本轮](evidence/refactor-final-native-acceptance.json)、[完整安装](evidence/refactor-fresh-installation.json)、[下载恢复](evidence/refactor-resource-download-browser.json) | 本次原生下载在暂停操作到达前已结束，未记作原生暂停通过；Windows |
+| A4 模型与凭据 | 页面输入提供商、URL、Key 和模型后重启读回、实际调用通过；fa02da7d 原生只显示用户提供商，新 profile 为空；编辑草稿退出警告、取消保持草稿和放弃恢复通过。[原生记录](evidence/refactor-final-native-acceptance.json)、[掩码和删除](evidence/refactor-credential-lifecycle.json) | 保留凭据边界合同；Windows |
+| A5 翻译上限与错误 | 原生外部调用和协议测试验证 65,535；低上限拒绝，错误不降额重试。fa02da7d 两个完整原生任务的请求均显式 maxTokens=65,535，原始响应保留。[原生记录](evidence/refactor-final-native-acceptance.json)、[错误合同](evidence/refactor-experimental-contracts-prune.json) | 远端异常组合继续按 A14 验收 |
+| A6 首屏与窗口 | fa02da7d 原生保留动态 Hero/Logo 组件，首屏、深浅主题、侧栏开合、窗口缩放恢复、播放器全屏/Escape 通过；默认与缩放截图分别为 2560×1640、2992×1876。[原生记录](evidence/refactor-final-native-acceptance.json)、[元素映射](../FRONTEND-MAPPING.md) | 最小窗口、画布及键盘菜单剩余分支；截图不证明动效节奏 |
+| A7 语言 | fa02da7d 原生日语设置和审核重启保持；用户要求后切回中文，中文首启重启、代理下载、校对和保存完成。第四语言注册、菜单、重启及卸载回退沿用 55621d17 实测。[原生记录](evidence/refactor-final-native-acceptance.json)、[语言扩展](evidence/refactor-fourth-locale.json) | 其余语言布局按必要改动补验；后续主流程默认中文 |
+| A8 本地完整媒体 | fa02da7d 原生选择 zoo 视频，Demucs、Whisper、翻译、VoxCPM2、Qwen、混音/导出九节点成功；原文和译文修订 2 经确认后使用，原生 SRT 字节一致，媒体探测 18.933 秒。[本轮](evidence/refactor-final-native-acceptance.json) | 主观听感和音画同步质量 |
+| A9 YouTube 下载与代理 | fa02da7d 中文原生页面输入 zoo URL 与代理 7897，真实下载及十节点完成；人工修正 trunks/鼻子，原生保存 SRT 与生成文件字节一致；音频/视频分别播放至 18.933/18.9 秒。[当前证据](evidence/refactor-final-native-acceptance.json) | 主观质量按 A8；此前网络失败作为历史事实保留 |
 | A10 B 站下载 | 当前源码经实际 Host 验证直连完整链接、b23 短链和显式代理端口 7897，三次各自两个节点完成；视频、音频、媒体信息和 Range 读回通过。[本次证据](evidence/refactor-bilibili-download.json)、[代理合同](evidence/download-node-proxy-contract.json) | 原生页面输入、保存和播放 |
-| A11 人工审核与汇合 | 两输入校对、保存后保持等待、确认再导出及原生文件保存通过。[扩展证据](evidence/refactor-extension-lifecycle.json) | 本轮 recognize revision 2、translate revision 3 保存后均保持等待，确认后下游继续；多输入审核保留既有证据。[当前媒体证据](evidence/refactor-final-media-localization.json) |
-| A12 自动继续与持久化 | 默认模板去重；节点 autoContinue 控制审核；暂停退出、重启、确认通过。[九节点](evidence/refactor-native-zoo-review.json)、[模板去重](evidence/refactor-extension-lifecycle.json) | 本轮译文订正保存后干净关闭 Host，重启仍为同一 revision 3 和等待确认状态；确认后九节点完成。[当前媒体证据](evidence/refactor-final-media-localization.json) |
+| A11 人工审核与汇合 | 两输入校对与原生文件保存已有证据；fa02da7d 两个原生任务均验证原文/译文保存后保持待确认，点击确认后下游继续。[本轮](evidence/refactor-final-native-acceptance.json)、[双输入扩展](evidence/refactor-extension-lifecycle.json) | 多输入审核保留既有实际 Host/原生证据 |
+| A12 自动继续与持久化 | 默认模板以节点 autoContinue 控制审核；fa02da7d 原生保存译文修订 2 后正常退出，重启仍为相同订正和待确认状态；确认后九节点完成。[本轮](evidence/refactor-final-native-acceptance.json) | Windows 生命周期 |
 | A13 重跑与冲突 | 修订冲突、结果复用及必要审核保留；4313ec5e 的隔离副本重启后，6 个历史任务、7 个工作流和 12 个产物读回一致。[业务映射](FUSION-COVERAGE.md)、[历史数据](evidence/refactor-history-readback.json) | 8fea16f1 的实际 Host 修订、取消/重试、重跑复用及删除独立性通过；最终原生交互仍待验收。[边界证据](evidence/refactor-host-api-boundaries.json) |
-| A14 取消、远端与退出 | 运行中原生退出取消保留任务，持久审核可退出；排队/远端未知状态合同及原错误传播已有回归。[活动测试](../test/desktop-activity.test.mjs)、[退出测试](../test/desktop-unload.test.mjs) | 资源下载、远端等待、排队组合的最终原生退出验收 |
+| A14 取消、远端与退出 | fa02da7d 原生运行任务、翻译任务和模型校验阶段退出均弹警告，取消后继续；已保存待审核任务可正常退出并恢复。排队/远端未知状态和错误传播有合同测试。[本轮](evidence/refactor-final-native-acceptance.json)、[活动合同](../test/desktop-activity.test.mjs) | 终止退出、排队/远端组合以及资源下载暂停的原生分支；Windows |
 | A15 工作流与任务管理 | 创建/修改、模板副本、原生导入导出、重启及模板去重通过。[前端映射](../FRONTEND-MAPPING.md) | E19 已验证实际 Host 分页、状态/活动筛选和删除保护；原生列表及节点编辑分支仍待验收 |
-| A16 字幕与播放 | 原生字幕导出字节一致；播放器完整播放、产物 Range 和媒体探测有证据。[原生任务](evidence/refactor-native-zoo-review.json) | 本轮浏览器完整播放 18.9 秒、拖动至 8.5 秒并显示订正字幕，下载 SRT 与生成文件字节一致。原文 6 段、译文 5 段时间有序且不超出视频；音画同步听感和最终原生保存仍待验收。[当前媒体证据](evidence/refactor-final-media-localization.json)、[倍速记录](evidence/refactor-page-matrix.json) |
+| A16 字幕与播放 | fa02da7d 原生 SRT 保存三次字节一致，播放器全程、9.5 秒跳转、全屏/Escape 通过。两个新任务原文 6 段、译文 5 段，时间有序且不越界；YouTube 音频/视频完整播放。[本轮](evidence/refactor-final-native-acceptance.json) | 音画同步听感；其余导入/导出分支保留既有证据 |
 | A17 提供商与音色 | 原提供商合同及本地克隆配音路径保留，VoxCPM2 实际执行通过。[媒体证据](evidence/refactor-native-zoo-review.json) | 原分支与当前 VoxCPM2 均只声明 source_clone，预设音色被明确拒绝；两项能力/拒绝合同通过。其他支持的设备和输入组合仍待验收。[边界核对](evidence/refactor-voxcpm-voice-scope.json) |
 | A18 扩展生命周期 | JS/Python/审核插件安装、运行、启停、卸载、重装、产物保留、原生保存；错误路径与核心保护通过。[完整记录](evidence/refactor-extension-lifecycle.json)、[重装修复](evidence/refactor-plugin-reinstall.json) | 最终候选必要回归；在线市场不在本轮范围 |
-| A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；profile 迁移有测试。4313ec5e 通过历史数据副本重启、产物摘要及 Range 读回，原数据库未变。[profile 测试](../test/profile.test.mjs)、[历史数据](evidence/refactor-history-readback.json) | 全新私有目录与最终原生验收；历史读回复用已有私有运行资源 |
-| A20 构建与平台 | a6c4d1a 的 macOS 与 Windows 干净 CI 全部通过。[CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39866708470) 第 27 批本地七项构建、两项类型门、647 项定向、7,927 项 GUI、11 项实际 Host/profile 回归通过。[记录](evidence/refactor-account-prune.json) | aed6099c 与 079141fb 双平台 CI 均通过；fa02da7d 的结果见[本轮证据](evidence/refactor-final-media-localization.json)。最终原生交互、下载/退出组合、媒体质量和启动测量保持开放 |
+| A19 安全与数据兼容 | 官方 IPC、Connection、凭据及文件授权继续使用；历史副本读回原件未变；fa02da7d 新 profile 原生选择独立路径，未复制原账号、数据库和任务，LLM 提供商配置为空。[本轮](evidence/refactor-final-native-acceptance.json)、[历史数据](evidence/refactor-history-readback.json) | Windows 路径与边界实机验证 |
+| A20 构建与平台 | fa02da7d 的 macOS/Windows 干净 CI 均通过；本轮原生验收始终运行该候选的已构建产物，其他会话的工作区修改未计入这些结果。[CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39875654191)、[本轮](evidence/refactor-final-native-acceptance.json) | Windows 原生、剩余交互、听感及同条件启动测量；Windows Codex 已连接，正在指定项目会话同步开发进度 |
 
 ## P4 基础控件统一（2026-10-23）
 
@@ -58,7 +58,7 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 ## 尚需实施的收尾
 
 1. 最终框架范围已复核：保留的源码/类型、测试、根生成器和原生 addon 都有消费者；079141fb 的双平台源码 CI 已通过。[范围证据](evidence/refactor-final-framework-scope.json) 第 23 批已移除闭包外的 Office、搜索与旧 Agent 工具，保留通用实现和许可。Windows SDK 回退根因已定位为短路径重复 importer；8fea16f1 的实际 Windows CI 已通过三种旧锁迁移及卸载后 SDK 链接检查。第 24 批已收拢旧 Host/Web 活动入口，保留领域测试夹具与直接复用的业务组件。[入口收拢证据](evidence/refactor-legacy-entries-prune.json)
-2. 源码固定于 fa02da7d；本轮没有修改框架源码，新增修复仅涉及已观察到的业务本地化缺口。继续完成上表未通过的原生操作、网络输入和媒体质量验收。
+2. 源码固定于 fa02da7d；本轮没有修改框架源码，新增修复仅涉及已观察到的业务本地化缺口。已补齐原生首启、九节点本地媒体和中文十节点 YouTube；继续完成上表其余交互、Windows 和媒体质量验收。
 3. 独立实际 Host 的日语设置、工作流与任务视频播放已通过浏览器验收，静态首屏截图与限制见[记录](evidence/refactor-browser-ui.json)。原生窗口、文件框、动效与最终媒体质量保持开放。已补齐当前目录体积及历史数据副本记录；当前私有路径已由实际 Host/Python 读回验证；全新私有安装、下载暂停/续传和重启已有当前证据，继续测量原生冷/热启动及完成 Windows 原生验收。[路径证据](evidence/refactor-runtime-isolation.json)、[体积条件](evidence/refactor-current-footprint.json)、[数据读回](evidence/refactor-history-readback.json)
 4. 全部通过后更新两份既有飞书文档。保留未完成状态，不提前签署完整功能覆盖。
 
@@ -93,3 +93,9 @@ YouDub 已使用仓库内的 Harness fork 启动 Electron、Host 和前端运行
 真实英语页面暴露的任务模板标题、文件标签和步骤中文名称已复用现有 workflowTemplateTitle、workflowPortLabel、插件描述符及语言服务修复；已知内置进度显示按界面语言转换。自定义名称、数据库原文、请求和响应保持不变。fa02da7d 的中英日回读和当前 Host 控制台检查通过。浏览器音频原生控件跟随浏览器系统语言，用户自定义工作流/端口文字保留原名。
 
 本轮原生工具仍返回 Mac 锁屏，浏览器证据没有记作原生保存或窗口动效通过。当前 YouTube 网络下载和主观听感仍开放；两份飞书文档遵循全部验收结束后统一更新的约定。
+
+## P7 最终候选的原生中文主流程（2026-10-23）
+
+前述锁屏限制已解除。固定源码 fa02da7d 在开发 Electron 中完成独立首启、四模型就绪门控、正常退出与重启、设置草稿保护、本地 zoo 九节点，以及中文 YouTube zoo/7897 十节点。原生保存的字幕与任务产物一致，播放、跳转与全屏均有实测。[原生验收记录](evidence/refactor-final-native-acceptance.json)
+
+暂停操作到达时下载已完成，本次未计为原生暂停通过；音频未加载时 AX 曾显示无法播放，点击后成功加载并播放至结尾，已保留观察经过。UU 能连接 Windows 桌面，但键鼠交付不可靠；用户随后完成 Codex 配对，工具已读取 DESKTOP-F94RIVK 上的会话。按用户指定，已向 Windows YouDub-webui 项目会话同步当前架构、候选和验收状态，要求先安全获取开发分支，保留原数据且不打包。Windows、主观听感、启动测量和其余原生交互仍开放，两份飞书文档继续留到整体验收结束。
