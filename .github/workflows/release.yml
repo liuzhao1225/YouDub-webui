@@ -113,7 +113,7 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
-          node scripts/prepare-ci-signing.mjs
+          env GITHUB_SHA="$RELEASE_SHA" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" node scripts/prepare-ci-signing.mjs
           env GITHUB_SHA="$RELEASE_SHA" GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" node scripts/sign-mac.mjs dist/YouDub.app --sign-only
       - name: 验证桌面服务与运行后签名
         run: |
