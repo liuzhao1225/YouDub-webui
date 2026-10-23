@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -31,7 +32,28 @@ jobs:
 
   quality:
     needs: validate
-    uses: ./.github/workflows/harness-development.yml
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    outputs:
+      run-id: ${{ steps.accepted.outputs.run-id }}
+    steps:
+      - name: 等待同一 main 提交的候选包验收
+        id: accepted
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Only artifacts from the exact tagged commit's main push are accepted.
+          run_id="$(gh api "repos/$GH_REPO/actions/workflows/harness-development.yml/runs?head_sha=$GITHUB_SHA&event=push&branch=main" --jq '.workflow_runs[0].id // empty')"
+          if [ -z "$run_id" ]; then
+            echo "::error::此 tag 提交没有 main 源码验收运行；请先完成 main 检查。"
+            exit 1
+          fi
+          gh run watch "$run_id" --exit-status --interval 15
+          gh api "repos/$GH_REPO/actions/runs/$run_id" --jq '{head_sha,event,head_branch,conclusion}' > accepted.json
+          jq -e --arg sha "$GITHUB_SHA" '.head_sha == $sha and .event == "push" and .head_branch == "main" and .conclusion == "success"' accepted.json
+          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "复用 main 提交 $GITHUB_SHA 的候选包：https://github.com/$GH_REPO/actions/runs/$run_id" >> "$GITHUB_STEP_SUMMARY"
 
   sign:
     needs: quality
@@ -52,6 +74,8 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: youdub-macos-unsigned
+          run-id: ${{ needs.quality.outputs.run-id }}
+          github-token: ${{ github.token }}
           path: ${{ runner.temp }}/unsigned
       - name: 解包已构建应用
         run: |
@@ -96,6 +120,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -107,6 +132,8 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: youdub-windows-release
+          run-id: ${{ needs.quality.outputs.run-id }}
+          github-token: ${{ github.token }}
           path: release
       - name: 校验并发布 GitHub Release
         env:

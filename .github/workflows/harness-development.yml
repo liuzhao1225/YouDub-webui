@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-  workflow_call:
 
 permissions:
   contents: read
@@ -70,10 +69,10 @@ jobs:
           node --input-type=module <<'NODE'
           import { execFileSync } from 'node:child_process';
           import { appendFileSync } from 'node:fs';
-          // Tag builds use code already accepted on main; manual runs audit the whole fork.
+          // Manual runs audit the whole fork; product-only changes keep the core checks.
           const base = process.env.DIFF_BASE;
           let full = process.env.GITHUB_EVENT_NAME === 'workflow_dispatch';
-          if (!full && process.env.GITHUB_REF_TYPE !== 'tag') {
+          if (!full) {
             if (!base || /^0+$/.test(base)) full = true;
             else {
               const files = execFileSync('git', ['diff', '--name-only', base, 'HEAD'], { encoding: 'utf8' }).split('\n');
