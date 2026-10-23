@@ -49,7 +49,7 @@ v0.0.5–v0.0.7 的 Windows 本机验收覆盖打包、原生窗口、首次翻�
 - `desktop.sqlite` 会迁移到 schema 3，保留 schema 2 的线性任务。MVP schema 1 旧任务保留原始快照；存在进行中的 schema 1 任务时迁移会报 `MIGRATION_ACTIVE_TASKS`。先在旧版完成或停止任务，再升级。MVP 历史任务不能直接按旧流程重试，重新生成会创建新任务。
 - 旧 main 的 `data/youdub.sqlite` 保留原位，其 URL 下载任务不进入新版任务列表。已有成片仍在原任务目录，需要在旧版本中查看历史时，使用保留的旧源码和升级前的数据副本；新版不能直接继续这些旧任务。
 
-迁移后的数据库不要交给旧程序继续写入。需要返回旧版时，停止新版服务，并使用升级前对应版本的数据副本。详细数据契约见 [迁移说明](design/cordis-plugin-migration.md#5-数据和凭据迁移)。
+迁移后的数据库不要交给旧程序继续写入。需要返回旧版时，停止新版服务，并使用升级前对应版本的数据副本。详细数据契约见 [迁移说明](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md#5-数据和凭据迁移)。
 
 ### 节点任务的执行兼容性
 

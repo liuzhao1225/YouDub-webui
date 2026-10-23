@@ -40,7 +40,8 @@ if (workbench) {
 const application = await electron.launch({ executablePath: executable,
   args: [`--user-data-dir=${join(temporary, 'user data')}`], cwd: temporary, env: environment, timeout: 90_000 });
 const child = application.process();
-const exited = once(child, 'exit');
+// Windows keeps executable handles until child streams close after process exit.
+const closed = once(child, 'close');
 let output = '', complete = false;
 child.stdout.on('data', value => { output += value; });
 child.stderr.on('data', value => { output += value; });
@@ -80,7 +81,7 @@ try {
   await writeFile(join(evidence, 'result.json'), JSON.stringify({ version: appManifest.version, platform: process.platform,
     arch: process.arch, relocated: true, setupPhase: setup.phase, demoRange: sample, renderedText: text }, null, 2) + '\n');
   await Promise.race([application.close(), delay(20_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application quit timed out'); })]);
-  const [code, signal] = await Promise.race([exited, delay(15_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application did not exit cleanly'); })]);
+  const [code, signal] = await Promise.race([closed, delay(15_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application did not close cleanly'); })]);
   assert.equal(signal, null);
   assert.equal(code, 0);
   if (process.platform === 'darwin') execFileSync('codesign', ['--verify', '--deep', '--strict', installed], { stdio: 'pipe' });
@@ -89,6 +90,6 @@ try {
 } finally {
   if (!complete && child.exitCode === null) child.kill('SIGKILL');
   // Preserve diagnostic evidence privately. Local launch tokens are redacted before persistence.
-  if (complete) await rm(temporary, { recursive: true });
   await writeFile(join(evidence, 'launch.log'), output.replace(/(token[=:]\s*)[^\s&"']+/gi, '$1[redacted]'), { mode: 0o600 });
+  if (complete) await rm(temporary, { recursive: true });
 }

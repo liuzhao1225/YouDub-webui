@@ -121,8 +121,6 @@ describe('translucent menu surfaces pair fill and filter', () => {
   it('keeps backdrop filtering on background layers when descendants use fixed positioning', () => {
     const surfaces = [
       ['packages/client/ui-primitives/src/MenuSurface.module.css', '.surface', '.material'],
-      ['packages/client/ui-goal/src/client/GoalBar.module.css', '.bar', '.bar::before'],
-      ['packages/client/ui-conversation/src/client/queue/QueueDock.module.css', '.panel', '.panel::before'],
     ] as const
     const files = packageStylesheets()
     for (const [suffix, container, background] of surfaces) {

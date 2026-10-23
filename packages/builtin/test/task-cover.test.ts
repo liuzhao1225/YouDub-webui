@@ -9,20 +9,17 @@ import { type Artifact, type StepState, type TaskRecord } from '@youdub/sdk'
 import Processes from '../src/process.js'
 import Files from '../src/files.js'
 import Tasks from '../src/tasks.js'
-import Http from '../src/http.js'
-import Auth from '../src/auth.js'
-import * as Api from '../src/api.js'
+import { taskApi } from './helpers/task-api.js'
 import { taskCover } from '../src/task-cover.js'
 
 async function setup(t: any) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-cover-')), ctx = new Context()
+  let api!: ReturnType<typeof taskApi>
   const task = { id: randomUUID(), status: 'running', artifacts: {}, inputs: {}, outputs: [], steps: [], plan: { steps: [], outputs: [] }, externalRequests: {} } as unknown as TaskRecord
   const app = await ctx.plugin(async context => {
     context.reflect.provide('store', { async call(method: string) {
       if (method === 'store.get') return task
       if (method === 'store.list') return { items: [task], limit: 20, offset: 0, hasMore: false }
-      if (method === 'auth.validate') return { cookieName: 'cover_test', sessionTtlSeconds: 300, cookieSecure: false, cookieSameSite: 'lax', credentialVersion: 'v1' }
-      if (method === 'auth.get_session') return { expires_at: '2100-01-01T00:00:00+00:00', credential_version: 'v1' }
       throw new Error(`Unexpected method: ${method}`)
     } })
     context.reflect.provide('catalog', {})
@@ -31,13 +28,10 @@ async function setup(t: any) {
     await context.plugin(Processes)
     await context.plugin(Files, { root })
     await context.plugin(Tasks)
-    await context.plugin(Http, { host: '127.0.0.1', port: 0 })
-    await context.plugin(Auth)
-    await context.plugin(Api, { version: '1.2.3' })
+    await context.plugin({ inject: ['tasks', 'catalog', 'files', 'settings', 'store'], apply(scope) { api = taskApi(scope) } })
   })
   t.after(async () => { await app.dispose(); await rm(root, { recursive: true }) })
   // Cover requests are read-only; no workflow loop or real model is started.
-  ctx.http.ready = true
   const release = await ctx.files.reserve(task.id, true); await release()
   async function artifact(name: string, mimeType: string, bytes: Uint8Array = Buffer.from('image')) {
     const file = join(ctx.files.taskRoot(task.id), name)
@@ -57,8 +51,8 @@ async function setup(t: any) {
     task.steps.push(step)
     return step
   }
-  const get = (suffix = '/cover', authenticated = true) => fetch(`${ctx.http.address}/api/v2/tasks/${task.id}${suffix}`, { headers: authenticated ? { Cookie: 'cover_test=test' } : {}, signal: AbortSignal.timeout(5000) })
-  return { ctx, task, root, artifact, video, nodeOutput, get }
+  const get = (suffix = '/cover') => api.request(`/api/v2/tasks/${task.id}${suffix}`)
+  return { ctx, transport: api.transport, request: api.request, task, root, artifact, video, nodeOutput, get }
 }
 
 test('cover selection prioritizes declared pictures, then source video, then video output', async t => {
@@ -83,7 +77,7 @@ test('legacy video inputs remain preferred over outputs without advertising audi
   assert.equal(taskCover(task), source)
   const response = await get(''), body = await response.json() as any
   assert.equal(response.status, 200, JSON.stringify(body))
-  assert.deepEqual(body.cover, { url: `/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(source.id)}` })
+  assert.deepEqual(body.cover, { url: `/api/youdub/file?path=${encodeURIComponent(`/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(source.id)}`)}` })
   assert.equal(body.allowedActions.includes('approve'), false)
   assert.equal(body.allowedActions.includes('correct'), false)
   source.name = 'speech.mp3'
@@ -93,16 +87,16 @@ test('legacy video inputs remain preferred over outputs without advertising audi
 })
 
 test('downloaded node videos expose a first frame before downstream nodes finish', async t => {
-  const { ctx, task, video, nodeOutput, get } = await setup(t)
+  const { task, request, video, nodeOutput, get } = await setup(t)
   assert.equal('cover' in await (await get('')).json(), false)
   const source = await video()
   nodeOutput('download', 'video', source)
   assert.equal(task.status, 'running')
   assert.deepEqual(task.outputs, [])
   const body = await (await get('')).json() as any
-  const expected = { url: `/api/v2/tasks/${task.id}/cover?artifact=${source.id}` }
+  const expected = { url: `/api/youdub/file?path=${encodeURIComponent(`/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(source.id)}`)}` }
   assert.deepEqual(body.cover, expected)
-  const list = await fetch(`${ctx.http.address}/api/v2/tasks`, { headers: { Cookie: 'cover_test=test' } })
+  const list = await request('/api/v2/tasks')
   assert.deepEqual((await list.json() as any).items[0].cover, expected)
   const response = await get(`/cover?artifact=${source.id}`)
   assert.equal(response.status, 200)
@@ -123,7 +117,7 @@ test('current node covers and workflow cover declarations update URLs without se
   step.outputs.thumbnail = { id: second.id, schemaId: second.schemaId }
   const corrected = await (await get('')).json() as any
   assert.notEqual(corrected.cover.url, initial.cover.url)
-  assert.equal(corrected.cover.url, `/api/v2/tasks/${task.id}/cover?artifact=${second.id}`)
+  assert.equal(corrected.cover.url, `/api/youdub/file?path=${encodeURIComponent(`/api/v2/tasks/${task.id}/cover?artifact=${second.id}`)}`)
   assert.equal(await (await get(`/cover?artifact=${second.id}`)).text(), 'second')
 
   // An output can be declared as the workflow cover under a different node port.
@@ -152,12 +146,11 @@ test('an unavailable node cover reports its error without using an available vid
   assert.equal(generation.mock.calls.length, 0)
 })
 
-test('registered cover images are served byte-for-byte and require authentication', async t => {
+test('registered cover images are served byte-for-byte through Harness', async t => {
   const { ctx, task, artifact, get } = await setup(t)
   const image = await artifact('cover.png', 'image/png', Buffer.from([137, 80, 78, 71]))
   task.inputs.cover = image
   t.mock.method(ctx.youdubWorker, 'run', () => { throw new Error('An image must not invoke FFmpeg') })
-  assert.equal((await get('/cover', false)).status, 401)
   const response = await get()
   assert.equal(response.status, 200); assert.equal(response.headers.get('content-type'), 'image/png')
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), Buffer.from([137, 80, 78, 71]))
@@ -178,19 +171,19 @@ test('source first frame is decoded once for concurrent requests and reused from
   assert.ok(pixel[0]! > 200 && pixel[1]! < 40 && pixel[2]! < 40, 'Cover must show the first red frame, not the later blue frame')
 })
 
-test('cover requests hold a read lock during generation and HTTP file transfer', async t => {
-  const { ctx, task, video, get } = await setup(t)
+test('cover requests hold a read lock during generation and file transfer', async t => {
+  const { ctx, transport, task, video, get } = await setup(t)
   task.inputs.video = await video()
   let generationEntered!: () => void, releaseGeneration!: () => void, transferEntered!: () => void, releaseTransfer!: () => void
   const generation = new Promise<void>(resolve => { generationEntered = resolve }), generationGate = new Promise<void>(resolve => { releaseGeneration = resolve })
   const transfer = new Promise<void>(resolve => { transferEntered = resolve }), transferGate = new Promise<void>(resolve => { releaseTransfer = resolve })
-  const run = ctx.youdubWorker.run.bind(ctx.youdubWorker), file = ctx.http.file.bind(ctx.http)
+  const run = ctx.youdubWorker.run.bind(ctx.youdubWorker), file = transport.file.bind(transport)
   const readLock = ctx.files.readLock.bind(ctx.files)
   let unlocked!: () => void
   const lockReleased = new Promise<void>(resolve => { unlocked = resolve })
   t.mock.method(ctx.files, 'readLock', (id: string) => { const release = readLock(id); return async () => { await release(); unlocked() } })
   t.mock.method(ctx.youdubWorker, 'run', async (request: Parameters<typeof run>[0]) => { generationEntered(); await generationGate; return run(request) })
-  t.mock.method(ctx.http, 'file', async (...args: Parameters<typeof file>) => { transferEntered(); await transferGate; return file(...args) })
+  t.mock.method(transport, 'file', async (...args: Parameters<typeof file>) => { transferEntered(); await transferGate; return file(...args) })
   const response = get()
   await generation
   await assert.rejects(ctx.files.reserve(task.id), { code: 'TASK_BUSY' })

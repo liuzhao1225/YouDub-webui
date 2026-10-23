@@ -3,7 +3,6 @@ import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction
 import { ArrowRight, Link2, Loader2, X } from '@/lib/icons'
 import { Link, text, type Diagnostic, type GraphInput, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
-import { formatBytes } from '@/lib/format'
 import { videoSource } from '@youdub/sdk/video-source'
 import { Input } from '@/components/ui/input'
 import { LaunchCard, UploadSlot } from './media-upload'
@@ -85,11 +84,6 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     if (file && !acceptsInputMime(input, file)) {
       setFiles(next)
       setError(tx("workflow.run.value.is.not.a.supported.file.type", { value1: file.name }))
-      return
-    }
-    if (file && file.size > input.maxBytes) {
-      setFiles(next)
-      setError(tx("workflow.run.value.exceeds.the.value.limit", { value1: file.name, value2: formatBytes(input.maxBytes) }))
       return
     }
     if (file) next.push({ input, file })

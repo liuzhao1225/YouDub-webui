@@ -36,10 +36,9 @@ export async function translateWithHarness(llm, forms, route, request, context) 
   if (!Number.isInteger(policy.maxTokens) || policy.maxTokens < maximum) throw fail('OUTPUT_LIMIT_UNSUPPORTED', `请在 Harness 模型设置中配置至少 ${maximum} 的模型输出容量。`);
   const transcript = request.inputs.transcript, target = request.binding.options.targetLanguage ?? request.config.target_language;
   check(transcriptSchema, transcript);
-  if (!['en', 'zh', 'ja'].includes(transcript.detected_language) || !['en', 'zh', 'ja'].includes(target) || target === transcript.detected_language) throw fail('INVALID_CONFIG', '请选择与原文不同的目标语言。');
+  if (!['en', 'zh', 'ja'].includes(transcript.detected_language) || !['en', 'zh', 'ja'].includes(target)) throw fail('INVALID_CONFIG', '请选择支持的原文与目标语言。');
   const batches = []; let batch = [], length = 0;
   for (const segment of transcript.segments) {
-    if (segment.text.length > 6000) throw fail('INVALID_CONFIG', `Segment ${segment.id} exceeds 6000 characters.`);
     if (batch.length && (batch.length === 20 || length + segment.text.length > 6000)) { batches.push(batch); batch = []; length = 0; }
     batch.push(segment); length += segment.text.length;
   }
@@ -117,7 +116,7 @@ export async function registerModels(ctx, forms) {
             let unavailableReason;
             try { const policy = modelPolicy(ctx.llm, forms, item.id, model.id); if (policy.maxTokens < MIN_OUTPUT_TOKENS || !Number.isInteger(policy.maxTokens)) unavailableReason = `输出容量必须至少为 ${MIN_OUTPUT_TOKENS}。`; }
             catch (cause) { unavailableReason = cause.message; }
-            return { id: model.id, label: model.name, name: model.name, devices: ['remote'], source_languages: ['en', 'zh', 'ja'], target_languages: ['en', 'zh', 'ja'], max_text_chars: 6000, available: !unavailableReason, unavailableReason };
+            return { id: model.id, label: model.name, name: model.name, devices: ['remote'], source_languages: ['en', 'zh', 'ja'], target_languages: ['en', 'zh', 'ja'], available: !unavailableReason, unavailableReason };
           });
           const missingCredential = profile?.apiKeyEnv && !(await ctx.credentials.describe(credentialRef(profile.apiKeyEnv))).configured;
           description.available = !missingCredential && description.models.some(model => model.available);

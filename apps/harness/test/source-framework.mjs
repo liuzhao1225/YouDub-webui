@@ -7,10 +7,7 @@ import { join, sep } from 'node:path'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 const stage = join(root, '.cache/harness/source-build')
-// Whole-client framework tests use prepare-framework-client.mjs and the same composer as Desktop.
-process.env.DSH_TEST_PRODUCT_BUNDLE = join(root, '.cache/harness/framework-client-project/youdub-plugin/package.json')
-process.env.DSH_TEST_PRODUCT_WORKFLOW = join(root, '.github/workflows/harness-development.yml')
-// npm pretest verifies the fork and staged bytes once before test workers start.
+// npm pretest verifies staged source bytes once before test workers start.
 const framework = JSON.parse(readFileSync(join(stage, 'youdub-source-inputs.json'), 'utf8'))
 const receipt = JSON.parse(readFileSync(join(stage, 'youdub-source-build.json'), 'utf8'))
 if (receipt.sourceTreeSha256 !== framework.sha256) throw new Error('Tests require the current framework source build; run npm run build:framework.')

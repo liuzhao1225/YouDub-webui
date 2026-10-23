@@ -1,5 +1,4 @@
 import { Service, type Context } from 'cordis'
-import './llm-models.js'
 import { AppError, type SettingsService, type TaskRecord, type JsonObject } from '@youdub/sdk'
 
 const pluginPrefix = 'plugin:'
@@ -22,10 +21,9 @@ export default class Settings extends Service implements SettingsService {
     // Plugin settings are public JSON. Credentials stay in secrets and the
     // public connection projection must never be replaced by settings.raw.
     const plugins = Object.fromEntries(Object.entries(raw).filter(([key]) => key.startsWith(pluginPrefix)).map(([key, value]) => [key.slice(pluginPrefix.length), value]))
-    return { ...settings, ...(this.ctx.get('models') ? { connections: settings.connections.filter((item: any) => item.adapter !== 'openai') } : {}), plugins }
+    return { ...settings, plugins }
   }
   patch(patch: JsonObject) { return this.locked(async () => {
-    if (this.ctx.get('models') && patch?.connection?.adapter === 'openai') throw new AppError('LEGACY_CONNECTION_READ_ONLY', 'Manage translation providers on the Models page.', 409)
     if (!object(patch)) throw new AppError('INVALID_CONFIG', 'Settings patch must be an object.', 422)
     if (Object.hasOwn(patch, 'plugin')) {
       const plugin = patch.plugin
@@ -61,8 +59,7 @@ export default class Settings extends Service implements SettingsService {
       if (connection.credential_ref) credentialRefs[connection.adapter] = connection.credential_ref
       return { adapter: connection.adapter, base_url: connection.base_url }
     })
-    const models = this.ctx.get('models')?.snapshot()
-    return { connections: [...connections, ...models?.connections ?? []], credentialRefs: { ...credentialRefs, ...models?.credentialRefs } }
+    return { connections, credentialRefs }
   }
   async credentials(task: TaskRecord) {
     const result: import('@youdub/sdk').InvocationContext['credentials'] = {}

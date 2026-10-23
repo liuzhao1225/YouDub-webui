@@ -21,9 +21,6 @@
       "path": "../../../vendor/loader"
     },
     {
-      "path": "../../preset/agent-preset-registry"
-    },
-    {
       "path": "../../util/brand"
     },
     {

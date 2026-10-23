@@ -7,8 +7,12 @@
     "declaration": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
-    { "path": "../domain" }
+    {
+      "path": "../domain"
+    }
   ]
 }

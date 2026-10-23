@@ -17,7 +17,7 @@ const speechAudio = mediaSchemas['speech-audio/v1']
 const dubbedTimeline = mediaSchemas['dubbed-timeline/v1']
 
 export const operations: Record<string, ProviderDescription['operations'][number]> = {
-  download: { id: 'media.download/v1', inputSchema: input({ url: { type: 'string', minLength: 1, maxLength: 2048 } }), outputs: [artifact('video', 'video/mp4/v1')] },
+  download: { id: 'media.download/v1', inputSchema: input({ url: { type: 'string', minLength: 1 } }), outputs: [artifact('video', 'video/mp4/v1')] },
   prepare: { id: 'media.prepare/v1', inputSchema: input({ video }), outputs: [artifact('sourceAudio', 'audio/wav/v1'), json('mediaInfo', 'media-info/v1')] },
   separate: { id: 'audio.separate/v1', inputSchema: input({ sourceAudio: audio }), outputs: [artifact('vocals', 'audio/wav/v1'), artifact('background', 'audio/wav/v1')] },
   recognize: { id: 'speech.transcribe/v1', inputSchema: input({ audio, mediaInfo }), outputs: [json('transcript', 'transcript/v1'), artifact('raw', 'diagnostic/json/v1', false)] },

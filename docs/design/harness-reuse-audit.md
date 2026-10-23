@@ -1,11 +1,12 @@
 # Harness 复用审计
 
-日期：2026-10-23。活动产品为 `apps/harness`，框架权威源为 `vendor/deepseek-harness/source`；来源哈希和必要差异登记于 `vendor/deepseek-harness/fork.json`。
+日期：2026-10-23。活动产品为 `apps/harness`，框架权威源为 `vendor/deepseek-harness/source`；来源记录于 `vendor/deepseek-harness/upstream.json`，必要差异由 Git 维护。
 
 ## 已检查并清理的重复实现
 
 | 区域 | 直接复用的 Harness 源码 | 清理与适配边界 |
 | --- | --- | --- |
+| 桌面更新 | `apps/desktop/src/update-schedule.ts`、`ui-settings-general/DesktopUpdateIndicator.tsx` | 复用自动检查调度、侧栏状态与折叠徽标；产品检查现有 GitHub 发布列表，并在用户确认后打开 DMG / EXE 下载。详见 [更新链路](../../apps/harness/docs/UPDATES.md)。 |
 | 窗口分区、侧栏宽度和拖拽 | `ui-layout/src/client/AppFrame.tsx` / `.module.css` | 移除 icon rail、贯通全宽的自制顶栏及配套状态。展开侧栏贯穿全高，macOS 收起后宽度为零。AppFrame 源码恢复原实现。 |
 | 侧栏与收起后入口 | `ui-sidebar/src/client/SidebarRoot.tsx`、`HeaderLeadingControls.tsx` | 保留原平台安全区、折叠动效、按钮布局；产品只提供导航、标签、品牌和底部工具。选中状态读取真实 layout panelInfo，不再制造路由版 hook。 |
 | 页面窗口栏 | `ui-conversation/src/client/skeleton/ConversationRoot.module.css` | 删除固定 52px 的 yd-windowbar、重复窗口标题 CSS 和手工折叠偏移。直接引用 header/titleRow/titleCluster/crumbs/headerActions；业务 PageHeader 通过 portal 提交标题与操作。 |

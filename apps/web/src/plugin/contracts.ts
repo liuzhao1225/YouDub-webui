@@ -61,7 +61,7 @@ export type GraphNode = {
   id: string; type: string; typeVersion: string; label?: string
   provider: { id: string; model?: string; device?: string }; config: JsonObject; autoContinue: boolean
 }
-export type GraphInput = { id: string; label: string; required: boolean; kind: 'artifact'; schemaId: string; acceptedMimeTypes: string[]; maxBytes: number }
+export type GraphInput = { id: string; label: string; required: boolean; kind: 'artifact'; schemaId: string; acceptedMimeTypes: string[]; maxBytes?: number }
 export type WorkflowDocument = {
   format: 'youdub.workflow'; formatVersion: 1; id: string; title: string
   nodes: GraphNode[]

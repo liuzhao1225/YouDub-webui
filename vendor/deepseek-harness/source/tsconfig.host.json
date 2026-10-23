@@ -1,7 +1,4 @@
 {
-  // Host aggregate (one of the two check units; see tsconfig.json). packages/client
-  // type-checks in tsconfig.client.json: the two sides merge cordis Context under
-  // the same keys, one program cannot see both.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
@@ -14,17 +11,10 @@
     "apps/desktop/scripts/**/*.ts",
     "apps/desktop/tests/**/*.ts",
     "apps/desktop-host/tests/**/*.ts",
-    "benchmarks/**/*.ts",
     "packages/*/*/tests/**/*.ts",
     "packages/llm/llm-pi-ai/scripts/**/*.ts",
-    "scripts/**/*.ts",
-    "website/**/*.ts",
-    "website/.vitepress/**/*.ts"
+    "scripts/**/*.ts"
   ],
-  // Under packages/client and benchmarks, a test file names the face it covers:
-  // `*.client.*` belongs to the Client aggregate, `*.host.spec.ts` to this one. The two
-  // suffixes are mutually exclusive, so each aggregate excludes the other's
-  // and the package test glob above needs no per-file entry.
   "exclude": [
     "apps/desktop/tests/keyboard.spec.ts",
     "packages/client/*/src/**",
@@ -41,180 +31,209 @@
     "scripts/client-bundle-purity.spec.ts"
   ],
   "references": [
-    { "path": "./packages/client/locale/tsconfig.host.json" },
-    { "path": "./packages/client/ui-theme/tsconfig.host.json" },
-    { "path": "./packages/client/ui-chat/tsconfig.host.json" },
-    { "path": "./packages/client/ui-conversation/tsconfig.host.json" },
-    { "path": "./packages/client/ui-settings/tsconfig.host.json" },
-    { "path": "./packages/client/ui-settings-general/tsconfig.host.json" },
-
-    { "path": "./packages/boot/config-editor" },
-    { "path": "./packages/client/connection/tsconfig.host.json" },
-    { "path": "./packages/api/terminal-controller/tsconfig.host.json" },
-    { "path": "./packages/client/ui-sidebar-documentpreview/tsconfig.host.json" },
-    { "path": "./packages/client/ui-sidebar-browser/tsconfig.host.json" },
-    { "path": "./packages/client/ui-settings-general/tsconfig.host.json" },
-    { "path": "./packages/document/office-to-pdf" },
-
-    { "path": "./vendor/cosmokit" },
-    { "path": "./vendor/schemastery" },
-    { "path": "./vendor/cordis" },
-    { "path": "./vendor/loader" },
-    { "path": "./vendor/include" },
-    { "path": "./vendor/group" },
-    { "path": "./vendor/timer" },
-    { "path": "./packages/boot/hmr" },
-    { "path": "./packages/util/brand" },
-    { "path": "./packages/util/package-manifest" },
-    { "path": "./packages/util/plugin-market-index" },
-    { "path": "./packages/util/http-proxy" },
-    { "path": "./packages/util/launch-environment" },
-    { "path": "./packages/util/lazy-require" },
-    { "path": "./packages/util/native-command" },
-    { "path": "./packages/util/home-paths" },
-    { "path": "./packages/client/ui-plugin-manager/tsconfig.host.json" },
-    { "path": "./packages/util/time" },
-    { "path": "./packages/util/timeout" },
-    { "path": "./packages/util/crypto" },
-    { "path": "./packages/util/deque" },
-    { "path": "./packages/util/chunked-list" },
-    { "path": "./packages/util/values" },
-    { "path": "./packages/util/workspace-path" },
-    { "path": "./packages/util/code-language" },
-    { "path": "./packages/util/output-retention" },
-    { "path": "./packages/util/atomic-write" },
-    { "path": "./packages/attachment/attachment" },
-    { "path": "./packages/attachment/attachment-local" },
-    { "path": "./packages/client/file-upload/tsconfig.host.json" },
-    { "path": "./packages/llm/llm" },
-    { "path": "./packages/llm/deepseek-llm-api-extensions" },
-    { "path": "./packages/llm/token-meter" },
-    { "path": "./packages/core/session" },
-    { "path": "./packages/core/scope" },
-    { "path": "./packages/typert/protocol" },
-    { "path": "./packages/typert/registry" },
-    { "path": "./packages/api/gateway/tsconfig.host.json" },
-    { "path": "./packages/api/remotes/tsconfig.host.json" },
-    { "path": "./packages/api/job-controller/tsconfig.host.json" },
-    { "path": "./packages/api/session-controller/tsconfig.host.json" },
-    { "path": "./packages/api/workspace-files/tsconfig.host.json" },
-    { "path": "./packages/api/settings-controller" },
-    { "path": "./packages/api/remote-access/tsconfig.host.json" },
-    { "path": "./packages/api/workspace-controller/tsconfig.host.json" },
-    { "path": "./packages/typert/loader" },
-    { "path": "./packages/session/session-persistence" },
-    { "path": "./packages/session/session-format" },
-    { "path": "./packages/session/session-format-v0-to-v1" },
-    { "path": "./packages/session/session-format-v1-to-v2" },
-    { "path": "./packages/session/session-format-v2-to-v3" },
-    { "path": "./packages/session/session-format-v3-to-v4" },
-    { "path": "./packages/session/session-format-catalog" },
-    { "path": "./packages/session/session-log-deepseek" },
-    { "path": "./packages/session/session-persistence-jsonl" },
-    { "path": "./packages/session/session-projection" },
-    { "path": "./packages/session/session-projection-cache" },
-    { "path": "./packages/session/session-stats" },
-    { "path": "./packages/session-query/session-query" },
-    { "path": "./packages/session-query/session-query-sqlite" },
-    { "path": "./packages/settings/settings" },
-    { "path": "./packages/credentials/credentials" },
-    { "path": "./packages/credentials/credentials-local" },
-    { "path": "./packages/credentials/authorization" },
-    { "path": "./packages/experimental/tool-session-query" },
-    { "path": "./packages/storage/storage" },
-    { "path": "./packages/storage/storage-json" },
-    { "path": "./packages/storage/storage-domain" },
-    { "path": "./packages/feedback/message-feedback" },
-    { "path": "./packages/workspace/workspace" },
-    { "path": "./packages/session/session-title" },
-    { "path": "./packages/session/working-directory" },
-    { "path": "./packages/session/tool-working-directory" },
-    { "path": "./packages/session/session-turn-outline" },
-    { "path": "./packages/identity/anonymous-user-id" },
-    { "path": "./packages/core/system-prompt" },
-    { "path": "./packages/core/agent" },
-    { "path": "./packages/core/agent-default-model" },
-    { "path": "./packages/interaction/commands" },
-    { "path": "./packages/goal/goal" },
-    { "path": "./packages/feedback/command-feedback" },
-    { "path": "./packages/schedule/schedule" },
-    { "path": "./packages/schedule/tool-schedule" },
-    { "path": "./packages/context/file-reference" },
-    { "path": "./packages/context/file-reference-local" },
-    { "path": "./packages/context/session-reference" },
-    { "path": "./packages/interaction/user-questions" },
-    { "path": "./packages/interaction/user-approval" },
-    { "path": "./packages/interaction/permission-presets" },
-    { "path": "./packages/core/tools" },
-    { "path": "./packages/skill/skill" },
-    { "path": "./packages/skill/skill-filesystem" },
-    { "path": "./packages/core/agent-loop" },
-    { "path": "./packages/llm/llm-retry" },
-    { "path": "./packages/subprocess/subprocess" },
-    { "path": "./packages/subprocess/subprocess-local" },
-    { "path": "./packages/subprocess/win32-process" },
-    { "path": "./packages/shell/shell" },
-    { "path": "./packages/terminal/terminal" },
-    { "path": "./packages/terminal/terminal-bash" },
-    { "path": "./packages/experimental/tool-terminal" },
-    { "path": "./packages/ptc-runtime/ptc-runtime" },
-    { "path": "./packages/ptc-runtime/ptc-runtime-node" },
-    { "path": "./packages/llm/llm-deepseek" },
-    { "path": "./packages/llm/llm-deepseek-api-key" },
-    { "path": "./packages/llm/llm-pi-ai" },
-    { "path": "./packages/shell/bash-local" },
-    { "path": "./packages/shell/shell-env" },
-    { "path": "./packages/shell/pwsh-local" },
-    { "path": "./native/system/packages/entry" },
-    { "path": "./packages/sandbox/sandbox" },
-    { "path": "./packages/sandbox/sandbox-local" },
-    { "path": "./packages/sandbox/sandbox-policy" },
-    { "path": "./packages/sandbox/sandbox-windows-acl" },
-    { "path": "./packages/shell/tool-bash" },
-    { "path": "./packages/fs/fs" },
-    { "path": "./packages/fs/fs-local" },
-    { "path": "./packages/fs/fs-observation-policy" },
-    { "path": "./packages/fs/fs-sandbox" },
-    { "path": "./packages/fs/tool-fs" },
-    { "path": "./packages/compaction/compaction" },
-    { "path": "./packages/compaction/compaction-basic" },
-    { "path": "./packages/compaction/compaction-tool-result-pruner" },
-    { "path": "./packages/compaction/compaction-image-offload" },
-    { "path": "./packages/spill/spill" },
-    { "path": "./packages/spill/spill-local" },
-    { "path": "./packages/spill/spill-policy" },
-    { "path": "./packages/guard/timeout-policy" },
-    { "path": "./packages/test-support/agent-loop-testkit" },
-    { "path": "./packages/bundle/web-app" },
-    { "path": "./packages/boot/app-boot" },
-    { "path": "./packages/boot/cmdline" },
-    { "path": "./packages/typert/generator" },
-    { "path": "./packages/test-support/loader-smoke" },
-    { "path": "./packages/test-support/llm-mock-server" },
-    { "path": "./packages/subagent/subagent" },
-    { "path": "./packages/subagent/tool-subagent" },
-    { "path": "./packages/subagent/tool-subagent-control" },
-    { "path": "./packages/subagent/subagent-spawn-in-process" },
-    { "path": "./packages/subagent/subagent-fork-in-process" },
-    { "path": "./packages/jobs/jobs" },
-    { "path": "./packages/jobs/jobs-local" },
-    { "path": "./packages/jobs/tool-jobs" },
-    { "path": "./packages/todo/tool-todo" },
-    { "path": "./packages/plan/plan-mode" },
-    { "path": "./packages/preset/agent-preset-registry" },
-    { "path": "./packages/preset/agent-preset" },
-    { "path": "./packages/extensions/cordis-host-runner" },
-    { "path": "./packages/mcp/mcp-client" },
-    { "path": "./packages/mcp/mcp-resources" },
-    { "path": "./packages/host/directory-picker" },
-    { "path": "./packages/host/frontend-static" },
-    { "path": "./packages/host/plugin-inventory" },
-    { "path": "./packages/boot/plugin-manager" },
-    { "path": "./packages/boot/plugin-market" },
-    { "path": "./packages/llm/plugin-package-inventory-deepseek" },
-    { "path": "./packages/host/webserver" },
-    { "path": "./apps/cli" },
-    { "path": "./apps/desktop-host" },
-    { "path": "./apps/desktop/tsconfig.host.json" }
+    {
+      "path": "./packages/client/locale/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/client/ui-theme/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/client/ui-settings/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/client/ui-settings-general/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/boot/config-editor"
+    },
+    {
+      "path": "./packages/client/connection/tsconfig.host.json"
+    },
+    {
+      "path": "./vendor/cosmokit"
+    },
+    {
+      "path": "./vendor/schemastery"
+    },
+    {
+      "path": "./vendor/cordis"
+    },
+    {
+      "path": "./vendor/loader"
+    },
+    {
+      "path": "./vendor/include"
+    },
+    {
+      "path": "./vendor/group"
+    },
+    {
+      "path": "./vendor/timer"
+    },
+    {
+      "path": "./packages/boot/hmr"
+    },
+    {
+      "path": "./packages/util/brand"
+    },
+    {
+      "path": "./packages/util/package-manifest"
+    },
+    {
+      "path": "./packages/util/http-proxy"
+    },
+    {
+      "path": "./packages/util/launch-environment"
+    },
+    {
+      "path": "./packages/util/lazy-require"
+    },
+    {
+      "path": "./packages/util/native-command"
+    },
+    {
+      "path": "./packages/util/home-paths"
+    },
+    {
+      "path": "./packages/client/ui-plugin-manager/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/util/crypto"
+    },
+    {
+      "path": "./packages/util/deque"
+    },
+    {
+      "path": "./packages/util/values"
+    },
+    {
+      "path": "./packages/util/atomic-write"
+    },
+    {
+      "path": "./packages/attachment/attachment"
+    },
+    {
+      "path": "./packages/llm/llm"
+    },
+    {
+      "path": "./packages/core/session"
+    },
+    {
+      "path": "./packages/core/scope"
+    },
+    {
+      "path": "./packages/typert/protocol"
+    },
+    {
+      "path": "./packages/typert/registry"
+    },
+    {
+      "path": "./packages/api/gateway/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/api/remotes/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/api/settings-controller"
+    },
+    {
+      "path": "./packages/api/remote-access/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/typert/loader"
+    },
+    {
+      "path": "./packages/session/session-persistence"
+    },
+    {
+      "path": "./packages/session/session-projection"
+    },
+    {
+      "path": "./packages/settings/settings"
+    },
+    {
+      "path": "./packages/credentials/credentials"
+    },
+    {
+      "path": "./packages/credentials/credentials-local"
+    },
+    {
+      "path": "./packages/credentials/authorization"
+    },
+    {
+      "path": "./packages/storage/storage"
+    },
+    {
+      "path": "./packages/storage/storage-domain"
+    },
+    {
+      "path": "./packages/workspace/workspace"
+    },
+    {
+      "path": "./packages/core/system-prompt"
+    },
+    {
+      "path": "./packages/core/agent"
+    },
+    {
+      "path": "./packages/subprocess/subprocess"
+    },
+    {
+      "path": "./packages/subprocess/subprocess-local"
+    },
+    {
+      "path": "./packages/subprocess/win32-process"
+    },
+    {
+      "path": "./packages/llm/llm-pi-ai"
+    },
+    {
+      "path": "./packages/sandbox/sandbox"
+    },
+    {
+      "path": "./packages/fs/fs"
+    },
+    {
+      "path": "./packages/bundle/web-app"
+    },
+    {
+      "path": "./packages/boot/app-boot"
+    },
+    {
+      "path": "./packages/boot/cmdline"
+    },
+    {
+      "path": "./packages/typert/generator"
+    },
+    {
+      "path": "./packages/jobs/jobs"
+    },
+    {
+      "path": "./packages/jobs/jobs-local"
+    },
+    {
+      "path": "./packages/host/frontend-static"
+    },
+    {
+      "path": "./packages/host/plugin-inventory"
+    },
+    {
+      "path": "./packages/boot/plugin-manager"
+    },
+    {
+      "path": "./packages/host/webserver"
+    },
+    {
+      "path": "./apps/cli"
+    },
+    {
+      "path": "./apps/desktop-host"
+    },
+    {
+      "path": "./apps/desktop/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/util/timeout"
+    }
   ]
 }

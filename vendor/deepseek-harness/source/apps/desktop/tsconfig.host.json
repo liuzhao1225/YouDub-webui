@@ -15,9 +15,6 @@
       "path": "../../packages/util/home-paths"
     },
     {
-      "path": "../../packages/client/ui-sidebar-browser/tsconfig.host.json"
-    },
-    {
       "path": "../../packages/client/shortcuts/tsconfig.host.json"
     },
     {

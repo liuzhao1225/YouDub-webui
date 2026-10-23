@@ -15,7 +15,6 @@ def config():
 @pytest.mark.parametrize(
     "change",
     [
-        {"source_language": "zh"},
         {"target_language": "auto"},
         {"keep_background": True},
         {"output_mode": "dubbing"},

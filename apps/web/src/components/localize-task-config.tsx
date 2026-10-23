@@ -88,7 +88,7 @@ function languageChoices(config: TaskConfig, runtime: Runtime) {
   const tts = selectedModel(runtime, "tts", config.tts)
   return {
     sources: asr?.source_languages.filter((item) => item === "auto" || translation?.source_languages.includes(item)) ?? [],
-    targets: translation?.target_languages.filter((item) => item !== config.source_language && (!config.tts || tts?.target_languages.includes(item))) ?? [],
+    targets: translation?.target_languages.filter((item) => !config.tts || tts?.target_languages.includes(item)) ?? [],
   }
 }
 
@@ -284,13 +284,10 @@ export function TaskConfigForm({ value, runtime, onChange, showTranslation = tru
       description={text("localize.task.config.turns.speech.into.text.name.hints.help.with.people.and.brands")}>
       <ModelField kind="asr" id="model-asr" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.speech.recognition.2")} value={value.asr} runtime={runtime} onChange={(asr) => change({ asr: { ...value.asr, ...asr } })} />
       <Field id="asr-initial-prompt" caption={text("localize.task.config.proper.name.hint.optional")}>
-        <div className="relative">
-          <Input id="asr-initial-prompt" maxLength={500} value={value.asr.initial_prompt ?? ""} aria-describedby="asr-initial-prompt-help" className="pr-16"
-            placeholder={text("localize.task.config.e.g.youdub.jensen.huang")}
-            onChange={(event) => change({ asr: { ...value.asr, initial_prompt: event.target.value || null } })} />
-          <span aria-hidden="true" className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs tabular-nums text-subtle-foreground">{value.asr.initial_prompt?.length ?? 0}/500</span>
-        </div>
-        <p id="asr-initial-prompt-help" className="sr-only">{text("localize.task.config.add.people.or.brand.names.to.help.speech.recognition.up.to.500.ch")}</p>
+        <Input id="asr-initial-prompt" value={value.asr.initial_prompt ?? ""} aria-describedby="asr-initial-prompt-help"
+          placeholder={text("localize.task.config.e.g.youdub.jensen.huang")}
+          onChange={(event) => change({ asr: { ...value.asr, initial_prompt: event.target.value || null } })} />
+        <p id="asr-initial-prompt-help" className="sr-only">{text("localize.task.config.add.people.or.brand.names.to.help.speech.recognition")}</p>
       </Field>
     </ConfigRow>
 

@@ -47,5 +47,4 @@ it('preserves each compatible file once and reserves exact input matches before 
   const a = new File(['a'], 'a.mp4', { type: 'video/mp4' }), b = new File(['b'], 'b.mp4', { type: 'video/mp4' })
   expect(compatibleInputFiles([{ input: first, file: a }, { input: second, file: b }], [{ ...first, id: 'renamed' }, first])).toEqual({ video: a, renamed: b })
   expect(compatibleInputFiles([{ input: first, file: a }], [{ ...first, schemaId: 'text/v1' }])).toEqual({})
-  expect(compatibleInputFiles([{ input: first, file: a }], [{ ...first, maxBytes: 0 }])).toEqual({})
 })

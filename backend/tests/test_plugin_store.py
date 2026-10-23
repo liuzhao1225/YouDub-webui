@@ -231,27 +231,6 @@ def test_rotated_connection_keeps_credentials_pinned_by_plugin_task(tmp_path):
     assert "first-key" not in json.dumps(result) and "second-key" not in json.dumps(result)
 
 
-def test_auth_records_migrate_once_and_login_reservation_is_atomic(tmp_path):
-    old = tmp_path / "old.sqlite"
-    with sqlite3.connect(old) as conn:
-        conn.execute("CREATE TABLE auth_sessions(token_hash TEXT PRIMARY KEY,credential_version TEXT,created_at TEXT,expires_at TEXT)")
-        conn.execute("INSERT INTO auth_sessions VALUES('token','credential',?,?)", (NOW, LATER))
-        conn.execute("INSERT INTO auth_sessions VALUES('second','credential-2',?,?)", (NOW, LATER))
-    original_bytes = old.read_bytes()
-    store = SqliteStore(tmp_path / "data", old)
-    assert store.auth("get_session", {"token_hash": "token"})["credential_version"] == "credential"
-    assert store.auth("get_session", {"token_hash": "second"})["credential_version"] == "credential-2"
-    store.auth("delete_session", {"token_hash": "token"})
-    reopened = SqliteStore(store.root, old)
-    assert reopened.auth("get_session", {"token_hash": "token"}) is None
-    assert reopened.auth("get_session", {"token_hash": "second"})["credential_version"] == "credential-2"
-    assert old.read_bytes() == original_bytes
-    params = {"client_hash": "client", "now": NOW, "stale_before": "2026-10-08T07:59:00.000Z", "max_attempts": 2}
-    assert store.auth("reserve_login_attempt", params)["allowed"] is True
-    assert store.auth("reserve_login_attempt", params)["allowed"] is True
-    assert store.auth("reserve_login_attempt", params) == {"allowed": False, "window_started_at": NOW}
-
-
 def test_local_runtime_probe_does_not_read_credentials(tmp_path, monkeypatch):
     from backend.app.v1 import runtime
     bridge = Bridge(tmp_path, credentials=Credentials())

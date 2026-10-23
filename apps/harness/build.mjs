@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import { readFrameworkSource } from './baselines/framework-source.mjs';
+import { readFrameworkSource } from './framework-source.mjs';
 await checkLocales();
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -12,7 +12,7 @@ const web = resolve(root, 'apps/web');
 const frontend = resolve(here, 'src/frontend');
 const webRequire = createRequire(resolve(web, 'package.json'));
 const product = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
-// Reuse the unchanged upstream preset from the complete source build.
+// Reuse the framework preset from the current source subset build.
 const framework = resolve(root, '.cache/harness/source-build');
 const presetPath = resolve(framework, 'packages/client/tsdown.client.ts');
 const officialManifest = await readFrameworkSource(root);

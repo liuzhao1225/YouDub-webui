@@ -28,12 +28,12 @@ npm run package:desktop -- --installers-only
 
 每次 PR 与 main 提交保留双平台构建、桌面核心行为、产品运行依赖、YouDub 业务与界面测试，以及真实安装包首启、Python worker 和 Windows 安装/卸载验证。
 
-Harness 全量 GUI、插件解析组合、框架类型、文档目录和开发工具规则，仅在 `vendor/deepseek-harness/`、`apps/harness/baselines/`、框架构建脚本或测试源码加载器变化时运行。手动运行源码检查工作流会执行完整框架检查。tag 的来源须已合入 main；发行阶段复用该提交在 main 检查中生成并验收通过的候选包，不再次构建。
+源码检查验证保留的桌面、UI、Host 与业务合同；不执行上游发布、文档、全仓规则或每文件 100% 覆盖率门禁。tag 的来源须已合入 main；发行阶段复用 main 已验收的同提交候选包。
 
 ## 正式发行
 
 tag 工作流核对版本、提交与 main 来源，等待同一 SHA 的 main 检查成功，再按运行 ID 下载候选包。缺少该运行、验收失败或产物已过期时停止发布。Windows 从已验证的 `win-unpacked` 制作 ZIP，并复用原 Inno Setup 脚本和 AppId 制作 EXE。macOS 将候选 App 交给受保护的 `macos-release` 环境，使用现有 Apple 证书与 API 凭据；通过 `@electron/osx-sign` 签名后重新检查首启，再制作 DMG、公证、装订票据并执行 Gatekeeper 校验。签名材料只在临时目录生成，结束时清除。
 
-两个平台通过后发布 GitHub Release 并设为 latest。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256。官网在发布成功后刷新版本列表。
+两个平台通过后创建 GitHub 草稿 Release。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256，成功后公开 Release 并设为 latest。官网在发布成功后刷新与客户端共用的版本列表，并回读确认部署内容。
 
 安装包检查与完整模型准备、真实媒体任务验收分别记录。签名、公证、打包或启动失败时停止发布，保留原始诊断。

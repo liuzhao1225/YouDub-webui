@@ -3,7 +3,6 @@ import { StringDecoder } from 'node:string_decoder';
 // The YouDub worker owns this JSONL protocol. Harness owns process creation,
 // environment filtering, cancellation and the lifetime of its process range.
 const WORKER_PROTOCOL = 'youdub-worker/v1';
-const MAX_MESSAGE_BYTES = 32 * 1024 * 1024;
 const errorWithCode = (code, message, details) => Object.assign(new Error(message), { code, ...(Number.isInteger(details?.status) && details.status >= 400 && details.status <= 599 ? { status: details.status } : {}), ...(details ? { details } : {}) });
 
 async function usingProcess(subprocess, request, stdio, consume) {
@@ -38,7 +37,7 @@ function assertExit(handle, request, exit, code, stderrText) {
 }
 
 export async function runProcess(subprocess, request) {
-  if (request.onOutput) return usingProcess(subprocess, request, {
+  return usingProcess(subprocess, request, {
     stdin: request.input === undefined ? 'ignore' : { data: request.input }, stdout: 'pipe', stderr: 'pipe',
   }, async handle => {
     const output = { stdout: '', stderr: '' }; let stderrLossy = false;
@@ -46,9 +45,8 @@ export async function runProcess(subprocess, request) {
       const decoder = new StringDecoder('utf8');
       const consume = text => {
         output[name] += text;
-        if (name === 'stdout' && Buffer.byteLength(output.stdout) > 1024 * 1024) throw errorWithCode('PROCESS_OUTPUT_TOO_LARGE', `${request.command} produced more than 1 MiB of stdout`);
         if (name === 'stderr' && output.stderr.length > 1024 * 1024) { output.stderr = output.stderr.slice(-1024 * 1024); stderrLossy = true; }
-        if (text) request.onOutput(text, name);
+        if (text) request.onOutput?.(text, name);
       };
       for await (const chunk of handle[name]) consume(decoder.write(chunk));
       consume(decoder.end());
@@ -59,16 +57,6 @@ export async function runProcess(subprocess, request) {
     if (stderrLossy) output.stderr = '[earlier stderr omitted]\n' + output.stderr;
     assertExit(handle, request, exit, 'PROCESS_EXITED', output.stderr);
     return output;
-  });
-  return usingProcess(subprocess, request, {
-    stdin: request.input === undefined ? 'ignore' : { data: request.input },
-    stdout: { maxBytes: 1024 * 1024 }, stderr: { maxBytes: 1024 * 1024 },
-  }, async handle => {
-    const exit = await handle.done;
-    assertExit(handle, request, exit, 'PROCESS_EXITED');
-    const stdout = handle.collected.stdout.readFrom(0), stderr = handle.collected.stderr.readFrom(0);
-    if (stdout.lossy) throw errorWithCode('PROCESS_OUTPUT_TOO_LARGE', `${request.command} produced more than 1 MiB of stdout`);
-    return { stdout: stdout.text, stderr: `${stderr.lossy ? '[earlier stderr omitted]\n' : ''}${stderr.text}` };
   });
 }
 
@@ -125,10 +113,8 @@ export async function runWorker(subprocess, request, invocation, context) {
         let end;
         while ((end = buffer.indexOf('\n')) >= 0) {
           const line = buffer.slice(0, end); buffer = buffer.slice(end + 1);
-          if (Buffer.byteLength(line) > MAX_MESSAGE_BYTES) throw errorWithCode('PROTOCOL_ERROR', 'Worker message exceeds 32 MiB.');
           await consumeMessage(line);
         }
-        if (Buffer.byteLength(buffer) > MAX_MESSAGE_BYTES) throw errorWithCode('PROTOCOL_ERROR', 'Worker message exceeds 32 MiB.');
       }
       buffer += decoder.end();
       if (buffer.trim()) throw errorWithCode('PROTOCOL_ERROR', 'Worker exited with an incomplete message.');

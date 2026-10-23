@@ -41,8 +41,6 @@ const DRAG_MARK_PATTERN = /data-window-drag(?![\w-])/
 const PACKAGES_DIR = fileURLToPath(new URL('../../../', import.meta.url))
 
 const SIDEBAR = 'client/ui-sidebar/src/client/SidebarRoot.module.css'
-const CONVERSATION = 'client/ui-conversation/src/client/skeleton/ConversationRoot.module.css'
-const DOCKKIT = 'client/ui-dockkit/src/components/dockkit.module.css'
 const PLUGIN_MANAGER = 'client/ui-plugin-manager/src/client/PluginManagerPage.module.css'
 
 /**
@@ -76,19 +74,6 @@ const CHROME_ROWS: readonly ChromeRow[] = [
     selector: '.logoRow',
     markup: 'client/ui-sidebar/src/client/SidebarRoot.tsx',
     height: ['height', '60px'],
-  },
-  {
-    file: CONVERSATION,
-    selector: '.header',
-    markup: 'client/ui-conversation/src/client/skeleton/ConversationHeader.tsx',
-    height: ['min-height', '76px'],
-  },
-  {
-    file: DOCKKIT,
-    selector: '.tabStrip',
-    markup: 'client/ui-dockkit/src/components/TabPanel.tsx',
-    height: ['height', '28px'],
-    inset: ['padding', '10px 6px 0 var(--dsh-dockkit-strip-inline-start, 10px)'],
   },
   {
     file: PLUGIN_MANAGER,

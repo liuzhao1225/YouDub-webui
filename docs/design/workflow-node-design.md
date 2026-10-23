@@ -36,7 +36,7 @@
 | 重新生成 | 已有新任务和线性前缀复用 | 增加按实际依赖关系判断复用 |
 | 中间结果 | 服务端保存步骤输出；下载 API 面向最终产物 | 增加受任务归属校验的中间结果读取 |
 
-依据：[SDK](../../packages/sdk/src/index.ts)、[任务执行器](../../packages/builtin/src/tasks.ts)、[Client SDK](../../apps/web/src/plugin/sdk.tsx)、[文件访问 API](../../packages/builtin/src/api.ts)、[外部页面示例](../../fixtures/plugins/file-transform/README.md)。
+依据：[SDK](../../packages/sdk/src/index.ts)、[任务执行器](../../packages/builtin/src/tasks.ts)、[Client SDK](../../apps/web/src/plugin/sdk.tsx)、[文件访问 API](../../apps/harness/src/backend/api.ts)、[外部页面示例](../../fixtures/plugins/file-transform/README.md)。
 
 ## 3. 产品结构
 

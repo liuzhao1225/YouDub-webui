@@ -120,16 +120,14 @@ class Operation:
     def download(self):
         from .download import download_video
         path, metadata = download_video(self.inputs["url"], self.work, self.wire,
-                                        int(self.option("maxBytes", default=4 * 1024 ** 3)),
                                         proxy_port=self.option("proxyPort", default=0))
         return {"video": self.artifact("video", path, "video/mp4/v1", "video/mp4", metadata)}
 
     def prepare(self):
         from backend.app.config import ffmpeg_binary
         from backend.app.v1 import media
-        from backend.app.v1.runtime_limits import RUNTIME_LIMITS
         source = self.path(self.inputs["video"])
-        info = media.inspect_video(source, RUNTIME_LIMITS, self.wire.check_cancel)
+        info = media.inspect_video(source, self.wire.check_cancel)
         audio = self.work / "source.wav"
         self.wire.progress(None, "Extracting source audio")
         result = media._run_media([ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-xerror",

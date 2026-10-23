@@ -21,10 +21,10 @@
       "path": "../win32-process"
     },
     {
-      "path": "../../util/timeout"
+      "path": "../../util/lazy-require"
     },
     {
-      "path": "../../util/lazy-require"
+      "path": "../../util/timeout"
     }
   ]
 }

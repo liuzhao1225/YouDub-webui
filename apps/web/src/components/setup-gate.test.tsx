@@ -162,7 +162,7 @@ describe('first-run setup', () => {
   })
   it('does not show unverified model placeholders as missing downloads during startup', () => {
     render(<SetupScreen state={{ ...modelChoices, phase: 'starting', resourceSelection: undefined }} onAction={vi.fn()} />)
-    expect(screen.getByRole('status')).toHaveTextContent('校验并启动工作台')
+    expect(screen.getByRole('log', { name: '实时日志' })).toBeVisible()
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
     expect(screen.queryByText('待下载')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '准备全部模型' })).not.toBeInTheDocument()
@@ -285,7 +285,7 @@ describe('first-run setup', () => {
   })
 })
 
-it('shows live environment progress and keeps technical activity in expandable diagnostics', () => {
+it('shows live installer output immediately and follows new output without disturbing scrollback', () => {
   const start = Date.now() - 10_000
   const environment: SetupState['environment'] = [
     { id: 'python', name: 'Python 3.12', status: 'ready' },
@@ -295,7 +295,11 @@ it('shows live environment progress and keeps technical activity in expandable d
   const view = render(<SetupScreen state={{ ...state, phase: 'environment', environment }} onAction={vi.fn()} />)
   expect(screen.getByRole('progressbar', { name: '环境准备进度' })).toHaveAttribute('aria-valuenow', '33')
   expect(screen.getByRole('progressbar', { name: /推理运行库 下载进度|当前文件下载进度/ })).toHaveAttribute('aria-valuenow', '40')
-  expect(screen.queryByText('Downloading torch-2.8.0.whl')).not.toBeInTheDocument()
+  const liveLog = screen.getByRole('log', { name: '实时日志' })
+  expect(liveLog).toHaveTextContent('Downloading torch-2.8.0.whl')
+  Object.defineProperties(liveLog, { scrollHeight: { value: 1000, configurable: true }, clientHeight: { value: 200 } })
+  liveLog.scrollTop = 100
+  fireEvent.scroll(liveLog)
   expect(screen.queryByText('PyPI')).not.toBeInTheDocument()
   expect(screen.getByRole('heading', { name: '环境准备' }).querySelector('.animate-spin')).not.toBeNull()
   expect(screen.getByText(/已用时 1[01] 秒/)).toBeVisible()
@@ -307,4 +311,8 @@ it('shows live environment progress and keeps technical activity in expandable d
   view.rerender(<SetupScreen state={{ ...state, phase: 'environment', environment: environment.map(step => step.id === 'acceleration' ? { ...step, progress: { received: 80e6, total: 100e6, speed: 2e6 }, log: step.log + '\nProgress 80000000 of 100000000' } : step) }} onAction={vi.fn()} />)
   expect(screen.getByRole('progressbar', { name: /推理运行库 下载进度|当前文件下载进度/ })).toHaveAttribute('aria-valuenow', '80')
   expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('Progress 80000000 of 100000000')
+  expect(liveLog).toHaveTextContent('Progress 80000000 of 100000000')
+  expect(liveLog.scrollTop).toBe(100)
+  fireEvent.click(screen.getByRole('button', { name: '回到最新日志' }))
+  expect(liveLog.scrollTop).toBe(1000)
 })

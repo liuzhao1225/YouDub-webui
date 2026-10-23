@@ -41,7 +41,7 @@ flowchart LR
 | [部分重跑](../../packages/builtin/src/tasks.ts) | 当前要求相同配置并复用线性前缀，需另增依赖图复用 |
 | [媒体 schema](../../packages/builtin/src/media-schemas.ts) | JSON Schema 之外还需要分段 ID、时间范围等语义校验 |
 | [Client SDK](../../apps/web/src/plugin/sdk.tsx) | 已有路由和插槽，缺少统一节点上下文 |
-| [当前 artifact API](../../packages/builtin/src/api.ts) | 仅发布最终输出，需要增加中间结果读取 |
+| [当前 artifact API](../../apps/harness/src/backend/api.ts) | 仅发布最终输出，需要增加中间结果读取 |
 
 以上是源码核对，不等同于本设计功能已经通过运行验收。
 
@@ -141,7 +141,7 @@ type WorkflowDocument = {
   inputs: {
     id: string; label: string; required: boolean
     kind: 'artifact'; schemaId: string
-    acceptedMimeTypes: string[]; maxBytes: number
+    acceptedMimeTypes: string[]
   }[]
   outputs: {
     id: string; label: string; kind: 'artifact'
@@ -426,7 +426,7 @@ SDK 新增能力需在实现时确定兼容版本：provider.node 为可选扩�
 - `backend/workers/store.py`：schema v3、用户文档 CAS、状态集合、任务命令提交。
 - `packages/builtin/src/files.ts` / `api.ts`：中间结果访问与修订文件。
 - `packages/builtin/src/media-contracts.ts`：官方 node 元数据与订正语义；Python provider 保留计算职责。
-- `packages/builtin/src/setup.ts` / `setup-environment.ts` / `setup-models.json`、`backend/workers/setup_probe.py` 及 Python 依赖分组：基础宿主准备与按图选择包、模型和检查项，复用原下载校验。
+- `apps/harness/src/backend/resources.ts` / `setup-environment.ts` / `setup-models.json`、`backend/workers/setup_probe.py` 及 Python 依赖分组：基础宿主准备与按图选择包、模型和检查项，复用原下载校验。
 - `apps/web/src/plugin/contracts.ts` / `sdk.tsx`：节点上下文和插槽。
 - 新 `apps/web/src/plugin/builtin/workflows/`：库、画布、节点卡片与详情壳。
 - 新 `apps/web/src/plugin/builtin/node-editors/`：原文与译文订正页。

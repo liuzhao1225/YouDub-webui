@@ -46,7 +46,7 @@ interface WorkflowDefinition {
 }
 ```
 
-`describe()` 提供 `label`、`inputs`、`configSchema`、`defaults` 和可选 UI 提示。输入槽有 `name/label/required/acceptedMimeTypes/maxBytes`；每槽一份文件，可以有多个槽。Host 的 label 当前是字符串，Client 兼容带翻译映射的显示文本。
+`describe()` 提供 `label`、`inputs`、`configSchema`、`defaults` 和可选 UI 提示。输入槽有 `name/label/required/acceptedMimeTypes`；每槽一份文件，可以有多个槽。Host 的 label 当前是字符串，Client 兼容带翻译映射的显示文本。
 
 计划包含：
 
@@ -143,7 +143,7 @@ TTS 按一次调用处理多段完整 utterance，一次模型加载可生成多
 | align | text.align/v1 | both 且选择模型对齐 |
 | export | media.export/v1 | 所有模式 |
 
-subtitles 发布视频和原文/译文字幕；dubbing 发布视频和配音音频；both 发布上述全部产物。计划和分支已实现，真实三模式结果另见[验收记录](cordis-plugin-migration.md#7-最终验收矩阵)。
+subtitles 发布视频和原文/译文字幕；dubbing 发布视频和配音音频；both 发布上述全部产物。计划和分支已实现，真实三模式结果另见[验收记录](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md#7-最终验收矩阵)。
 
 独立示例 [file-transform](../../fixtures/plugins/file-transform/README.md)声明 document 输入，实现 `example.uppercase` workflow 和真实 UTF-8 文件转换 provider，同时贡献 Client 路由、导航和任务面板。[python-text](../../fixtures/plugins/python-text/README.md)只用 Python 和 manifest 提供同类 operation，用于验证独立依赖与执行桥。导入成对字幕的媒体 operation 已存在；不要据此宣称一个独立字幕 workflow 包已交付。
 

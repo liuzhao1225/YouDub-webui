@@ -23,7 +23,7 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
       dragActive ? 'border-brand-blue bg-secondary' : file ? 'border-input bg-card' : 'border-input bg-card hover:border-subtle-foreground/40 hover:bg-surface',
       disabled && 'opacity-60',
     )}>
-      <input ref={input} id={inputId} type="file" disabled={disabled} required={slot.required && !file} accept={slot.acceptedMimeTypes.join(',')} className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed" onChange={(event) => { setDragActive(false); const file = event.target.files?.[0]; if (file && slot.maxBytes && file.size > slot.maxBytes) event.target.value = ''; onChange(file) }} />
+      <input ref={input} id={inputId} type="file" disabled={disabled} required={slot.required && !file} accept={slot.acceptedMimeTypes.join(',')} className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed" onChange={(event) => { setDragActive(false); const file = event.target.files?.[0]; onChange(file) }} />
       {file ? <div className="flex w-full items-center gap-4">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgb(251_114_153/0.25),rgb(0_174_236/0.25))] text-foreground ring-1 ring-border ring-inset"><Icon className="size-5" /></span>
         <div className="min-w-0 flex-1"><p className="truncate text-[15px] font-medium">{file.name}</p><p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)} · {tx("media.upload.click.or.drop.to.replace")}</p></div>
@@ -31,7 +31,7 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
       </div> : <div className="flex flex-col items-center gap-2.5 text-center">
         <span className="flex size-11 items-center justify-center rounded-lg bg-card"><Upload className="size-5 text-link" /></span>
         <p className="text-[15px] font-medium">{video ? tx("media.upload.drop.a.video.here.or.click.to.choose") : tx("media.upload.drop.a.file.here.or.click.to.choose")}</p>
-        <p className="text-xs text-muted-foreground">{[!alternative && text(slot.label, language), !slot.required && !alternative && tx("media.upload.optional"), slot.maxBytes && `${tx("media.upload.up.to")} ${formatBytes(slot.maxBytes)}`].filter(Boolean).join(' · ')}</p>
+        <p className="text-xs text-muted-foreground">{[!alternative && text(slot.label, language), !slot.required && !alternative && tx("media.upload.optional")].filter(Boolean).join(' · ')}</p>
       </div>}
     </div>
   </div>

@@ -1,42 +1,13 @@
-# YouDub 使用的 Harness 源码
+# YouDub 的 Harness 子集
 
-`source/` 是 YouDub 维护的活动 fork，来源为 `deepseek-ai/deepseek-harness` 公开 tag `dsh-v0.2.1-rc.2`（commit `687f282e8625c6b8d11ff58211a90524be2e4317`）。`source-manifest.json` 固定记录最初复制的文件；`fork.json` 单独记录活动源码相对原件的精确差异与原因。许可证保存在 `source/LICENSE`，第三方声明保存在 `source/THIRD_PARTY_NOTICES.md`。
+来源为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的公开 tag `dsh-v0.2.1-rc.2`，提交 `687f282e8625c6b8d11ff58211a90524be2e4317`。机器可读信息见 [upstream.json](upstream.json)，许可证见 [source/LICENSE](source/LICENSE)，声明见 [source/THIRD_PARTY_NOTICES.md](source/THIRD_PARTY_NOTICES.md)。
 
-## 包含范围
+这里只维护 YouDub 使用的源码、共享组件、构建工具和相关测试。完整上游仓库、逐文件上游快照和差异清单不随产品同步；本地生成目录和迁移截图不进入 Git。变更历史由 Git 记录。
 
-原始选入范围共 362 个源码包、9,817 个文件，包含完整 apps、packages、vendor 以及根构建支持、scripts、native/system、python 和 patches。保持上游目录结构与成熟实现。当前范围由活动源码和差异账本共同决定，裁剪须同步处理依赖、生成工具与测试。
+当前保留 80 个源码包：72 个链接到桌面运行项目；另有 6 个共享前端包直接编入 Web/业务 bundle、1 个桌面源码包提供窗口与 preload、1 个 Typert 生成器负责构建。准确包表与使用方式见 [保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)。
 
-完整公开 tag 另有 Git bundle 与 tar.gz 基线，路径和哈希见 `apps/harness/baselines/sources.json`。从仓库根运行 `npm run build:framework`；安装与编译在 `.cache/harness/source-build` 中进行，不向活动源码写入依赖和产物。
+构建：从仓库根运行 `npm run build:framework`。源码复制到忽略的 `.cache/harness/source-build`，依赖安装和产物生成均在该目录。构建收据只记录当前输入，防止运行陈旧产物，不再要求保存全部上游原件或更新重复的文件哈希账本。
 
-| 用途 | 原始入口 |
-| --- | --- |
-| Electron 产品参考入口 | `source/apps/desktop/src/main.ts`；YouDub 从同目录 helper 组合自身入口 |
-| Electron preload | `source/apps/desktop/src/preload-app.ts` 及同目录其他 `preload-*.ts` |
-| Electron Host 子进程 | `source/apps/desktop-host/src/index.ts` |
-| 官方 Desktop 构建配置 | `source/apps/desktop/tsdown.config.ts` |
-| 官方 Web 应用入口与 Vite 配置 | `source/apps/web/` |
-| Web 客户端启动、插件装载 | `source/packages/client/web/`、`source/packages/client/modules/` |
-| UI primitives / layout / theme / slots / store | `source/packages/client/ui-primitives/`、`ui-layout/`、`ui-theme/`、`ui-slots/`、`store/` |
-| Cordis 与官方服务 | `source/vendor/`、`source/packages/`；具体包路径见清单 |
+保留框架的窗口、布局、主题、组件、Loader、插件管理、鉴权、设置和模型服务；YouDub 自己提供媒体、任务与工作流。聊天、会话浏览、Agent 执行循环、目标、计划、定时任务、终端面板、内嵌浏览器、文档预览、插件市场和历史会话迁移已移除。上游发布、文档、覆盖率及全仓规则检查也已移除。
 
-## 原件与活动 fork
-
-2026-10-22 起允许按 [改造计划](../../apps/harness/docs/YOUDUB-DESKTOP-REFACTOR-PLAN.md) 修改活动源码。优先复用现有服务和组件，修改对应明确产品需求。原始归档和 `source-manifest.json` 保持不变；不能通过重写原件哈希接受修改。
-
-```sh
-node apps/harness/baselines/framework-source.mjs
-node apps/harness/baselines/verify.mjs --scope vendor
-node apps/harness/baselines/vendor.mjs --verify-archive
-```
-
-活动源码检查要求每个新增、删除、字节、执行位或链接变化与 `fork.json` 完全一致，并附上原因。归档检查校验保存的 tar.gz，再恢复到临时目录逐项验证原始选入文件。两者分别报告。`vendor.mjs --verify` 仍可检查活动目录是否与原件完全相同，发生合法 fork 改动后此项预期失败；产品构建使用活动 fork 检查。
-
-改造前产品标签为 `youdub-desktop-refactor-base-20261022`，提交 `4b9dc0a7168135f191dd4050a6d1d9a32d9e14b9`。恢复到单独目录，不覆盖活动 fork。初次复制/补齐命令在存在 `fork.json` 时拒绝执行。
-
-YouDub 的全局 `.gitignore` 会忽略部分上游 fixture 和资源路径。新增此类文件时精确使用 `git add -f <文件>`，检查提交输入与 fork 账本一致。
-
-## 来源差异
-
-保存的已安装官方 Desktop `0.2.1-rc.2` 内嵌构建 commit 是 `332895e0f7c9d4dbfb29729f5eb367fa263ff986`。该 commit 无法从官方远程获取，与公开 tag 不同。本目录只声明来自上述公开 tag，不声明能够逐字节重建已安装 Desktop。
-
-`@deepseek-ai/libreoffice-kit` 和 `@deepseek-ai/libreoffice-kit-darwin-arm64` 在已保存发布依赖中，但不在该 Harness 公开仓库。清单将它们明确列为外部发布包，保留原始 tarball 来源、SRI 和 SHA-256；不将发布二进制描述为源码。所有 npm 原包的独立基线仍由 `apps/harness/baselines/npm-packages.json` 校验。
+新增代码优先复用保留的组件和服务。引入新依赖时说明当前产品用途，并一起更新包声明和实际产品验收。

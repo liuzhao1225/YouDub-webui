@@ -24,7 +24,7 @@
 | 色彩、品牌动效 | [`globals.css`](../../web/src/app/globals.css)、[`build.mjs`](../build.mjs) | 提取原主题变量和动效，映射到官方 theme tokens |
 | 模型与扩展页面 | [`translation-setup.tsx`](../src/frontend/translation-setup.tsx)、[`plugins.tsx`](../src/frontend/plugins.tsx) | 使用官方 ModelsSection、PluginManagerPage 和对应控制器 |
 
-完整元素对应见[前端映射](../FRONTEND-MAPPING.md)。修改已有能力时直接进入原文件，避免复制第二份相同行为。
+共享组件见[保留范围](FRAMEWORK-SCOPE.md)。修改已有能力时直接进入原文件，避免复制第二份相同行为。
 
 ## 页面与插槽
 
@@ -64,9 +64,9 @@
 
 在 Harness 专属组件中可以直接导入 `@deepseek-ai/dsh-client-ui-primitives`。原 YouDub 的通用控件属性差异在原 `components/ui/*` 统一处理；焦点、键盘、Portal、弹层和滚动条遵循官方实现。业务画布、视频播放器与逐句编辑继续使用现有领域组件。
 
-菜单测试通过可见菜单项选择，保留原业务结果、字段类型、禁用与草稿断言。`controls.test.tsx` 检查键盘选项跳转、关闭和焦点返回；实际 Host 页面证据见[统一控件验证](evidence/refactor-unified-controls.json)。
+菜单测试通过可见菜单项选择，保留原业务结果、字段类型、禁用与草稿断言。`controls.test.tsx` 检查键盘选项跳转、关闭和焦点返回。
 
-`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；原 Web 的 localStorage 实现仅由历史组件测试使用，不进入产品。`sdk`、文件 URL、剪贴板、播放器和图标的边界仍服务于官方导航、Connection 文件授权、官方剪贴板、播放器倍速菜单及官方图标来源，继续通过构建清单核对。[本轮绑定审计](evidence/refactor-shared-modal-store.json)
+`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；原 Web 的 localStorage 实现仅由历史组件测试使用，不进入产品。`sdk`、文件 URL、剪贴板、播放器和图标的边界仍服务于官方导航、Connection 文件授权、官方剪贴板、播放器倍速菜单及官方图标来源，继续通过构建清单核对。
 
 不要为新页面创建额外 React root、Cordis 根、路由容器或模型配置表单。构建脚本仅对明确的导入边界进行替换；新增依赖后运行活动模块检查，确认没有带入旧平台实现或第二份 React。
 

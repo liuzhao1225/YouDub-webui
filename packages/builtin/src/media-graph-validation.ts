@@ -21,7 +21,7 @@ export function validateMediaNodeConfig(node: GraphNode, type: NodeTypeDefinitio
     if (config.voice && model.voice_modes && !model.voice_modes.includes(config.voice.mode)) fail('Voice mode is unsupported.', { nodeId: node.id, field: 'voice' })
     if (config.voice?.mode === 'preset' && !model.voices?.some((voice: any) => voice.id === config.voice.id && voice.languages.includes(config.targetLanguage))) fail('Selected voice is unavailable.', { nodeId: node.id, field: 'voice' })
   }
-  if (config.targetLanguage === 'auto' || (config.sourceLanguage && config.sourceLanguage === config.targetLanguage)) fail('Select different source and target languages.', { nodeId: node.id, field: 'targetLanguage' })
+  if (config.targetLanguage === 'auto') fail('Select a target language.', { nodeId: node.id, field: 'targetLanguage' })
 }
 export function validateMediaGraph(document: WorkflowDocument, types: Map<string, NodeTypeDefinition>, options: Map<string, JsonObject>, connected: (id: string, port: string) => boolean, fail: Fail) {
   const upstreamConfig = (nodeId: string, portId: string) => options.get(document.edges.find(edge => edge.target.nodeId === nodeId && edge.target.portId === portId)?.source.nodeId ?? '')

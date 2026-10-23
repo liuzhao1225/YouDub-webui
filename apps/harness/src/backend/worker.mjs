@@ -30,7 +30,6 @@ export default class YouDubWorker extends Service {
       const decoder = new StringDecoder('utf8'); let buffer = '';
       for await (const chunk of handle.stdout) {
         buffer += decoder.write(chunk);
-        if (Buffer.byteLength(buffer) > 32 * 1024 * 1024) throw fail('PROTOCOL_ERROR', 'Storage bridge message exceeds 32 MiB.');
         let end;
         while ((end = buffer.indexOf('\n')) >= 0) {
           const message = JSON.parse(buffer.slice(0, end)); buffer = buffer.slice(end + 1);

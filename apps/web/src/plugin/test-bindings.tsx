@@ -8,3 +8,8 @@ export function bindTestComponent<P extends object, K extends keyof ClientBindin
     return <Bound {...props} />
   }
 }
+
+export async function requireActive(fiber: import('cordis').Fiber, name: string) {
+  await fiber
+  if (fiber.state !== 2) throw new Error(`Plugin ${name} failed to activate (state ${fiber.state})`)
+}

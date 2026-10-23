@@ -108,9 +108,6 @@ def test_real_catalogue_reads_local_metadata_and_remote_config_without_model_or_
     assert whisper["models"][0]["source_languages"] == ["auto", "en", "zh", "ja"]
     assert whisper["models"][1]["source_languages"] == ["auto", "en"]
     assert all(model["devices"] == ["cpu", "cuda:0"] for model in whisper["models"])
-    assert all(model["input_limits"] == {"max_audio_duration_ms": 600000,
-                                         "max_text_chars": None, "max_reference_duration_ms": None}
-               for model in whisper["models"])
     assert whisper["data_sent"] == [] and whisper["remote_operations"] is None
     assert translation["available"] and translation["unavailable_reason"] is None
     assert [model["id"] for model in translation["models"]] == ["gpt-4.1-mini"]
@@ -232,12 +229,12 @@ def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(a
     assert tts_capability["models"] == [{
         "id": "VoxCPM2", "devices": ["cpu", "cuda:0"], "source_languages": ["en", "zh", "ja"],
         "target_languages": ["en", "zh", "ja"], "voice_modes": ["source_clone"], "voices": [],
-        "input_limits": {"max_audio_duration_ms": None, "max_text_chars": None, "max_reference_duration_ms": 10000},
+        "input_limits": {"max_reference_duration_ms": 10000},
     }]
     assert separation["models"] == [{
         "id": "htdemucs", "devices": ["cpu", "cuda:0"], "source_languages": [], "target_languages": [],
         "voice_modes": [], "voices": [],
-        "input_limits": {"max_audio_duration_ms": 600000, "max_text_chars": None, "max_reference_duration_ms": None},
+        "input_limits": {"max_reference_duration_ms": None},
     }]
     assert all(item["data_sent"] == [] and item["remote_operations"] is None and not item["requires_api_key"]
                for item in (tts_capability, separation))
@@ -312,25 +309,13 @@ def test_incomplete_local_assets_are_not_selectable(all_model_assets, tmp_path, 
     assert not capability["available"] and capability["unavailable_reason"] and capability["models"] == []
 
 
-def test_runtime_limits_are_independent_and_invalid_configuration_is_visible(monkeypatch):
-    monkeypatch.setattr(runtime, "_detect_devices", lambda: [])
-    monkeypatch.setenv("LOCAL_UPLOAD_MAX_BYTES", "123456")
-    result = probe_all()
-    assert result["limits"]["max_file_bytes"] == 123456
-    result["limits"]["video_suffixes"].clear()
-    assert probe_all()["limits"]["video_suffixes"]
-    monkeypatch.setenv("LOCAL_UPLOAD_MAX_BYTES", "0")
-    with pytest.raises(ValueError, match="positive integer"):
-        probe_all()
-
-
 def test_optional_qwen_missing_is_reported_by_its_own_probe(all_model_assets):
     result = probe_all(connections=all_model_assets)
     qwen = result["capabilities"][-1]
     assert qwen["capability"] == "subtitle_alignment" and not qwen["available"]
 
 
-def test_qwen_catalogue_uses_metadata_only_and_limits_each_dubbed_clip(all_model_assets, monkeypatch, tmp_path):
+def test_qwen_catalogue_uses_metadata_only(all_model_assets, monkeypatch, tmp_path):
     from backend.app.v1 import forced_alignment
 
     monkeypatch.setattr(runtime.importlib.metadata, "version", lambda name: "5.17.0" if name == "transformers" else "2.0.3")
@@ -346,7 +331,7 @@ def test_qwen_catalogue_uses_metadata_only_and_limits_each_dubbed_clip(all_model
     assert qwen["models"] == [{
         "id": "Qwen3-ForcedAligner-0.6B-hf", "devices": ["cpu", "cuda:0"], "source_languages": [],
         "target_languages": ["en", "zh"], "voice_modes": [], "voices": [],
-        "input_limits": {"max_audio_duration_ms": 300000, "max_text_chars": None, "max_reference_duration_ms": None},
+        "input_limits": {"max_reference_duration_ms": None},
     }]
     (root / "model.safetensors").write_bytes(b"")
     result = probe_all(connections=all_model_assets)
@@ -386,4 +371,4 @@ def test_environment_info_does_not_probe_models(monkeypatch):
     monkeypatch.setattr(runtime, "_detect_devices", lambda: [{"id": "cpu", "available": True}])
     for name in ("_whisper_models", "_translation_models", "_voxcpm_models", "_demucs_models", "_subtitle_alignment_models"):
         monkeypatch.setattr(runtime, name, lambda *args: pytest.fail("environment info must not probe models"))
-    assert set(runtime.runtime_info()) == {"instance_id", "platform", "arch", "devices", "limits"}
+    assert set(runtime.runtime_info()) == {"instance_id", "platform", "arch", "devices"}

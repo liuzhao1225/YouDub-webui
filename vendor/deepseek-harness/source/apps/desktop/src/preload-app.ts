@@ -6,12 +6,19 @@ import { DESKTOP_IPC, SCHEME, type DshDesktopProductApi } from './ipc.ts'
 import { markDocumentPlatform, syncWindowFullscreen } from './preload-platform.ts'
 import { syncNativeTheme } from './preload-theme.ts'
 import { syncWindowsAppearance } from './preload-windows.ts'
-import { createDesktopBrowserBridge } from './preload-browser.ts'
 
 function createProductApi(): DshDesktopProductApi {
   return {
     protocolVersion: 1,
-    browser: createDesktopBrowserBridge(),
+    updates: {
+      status: () => ipcRenderer.invoke(DESKTOP_IPC.updatesStatus),
+      open: () => ipcRenderer.invoke(DESKTOP_IPC.updatesOpen),
+      subscribe(listener) {
+        const handle = (_event: Electron.IpcRendererEvent, state: import('./ipc.ts').DesktopUpdateState): void => { listener(state) }
+        ipcRenderer.on(DESKTOP_IPC.updatesChanged, handle)
+        return () => { ipcRenderer.off(DESKTOP_IPC.updatesChanged, handle) }
+      },
+    },
     deviceInfo: () => ipcRenderer.invoke(DESKTOP_IPC.deviceInfo) as Promise<string>,
     keyboard: {
       closeWindow: revision => ipcRenderer.invoke(DESKTOP_IPC.shortcutsCloseWindow, revision) as Promise<void>,
@@ -22,11 +29,6 @@ function createProductApi(): DshDesktopProductApi {
             if (!(element instanceof HTMLIFrameElement) || !element.isConnected
               || !element.matches('iframe[data-sidebar-browser-frame], iframe[data-html-preview]')) return
             if (input.frameName === '' || element.name !== input.frameName) return
-          }
-          if (input.kind === 'webview') {
-            const element = document.activeElement
-            if (element?.matches('webview[data-sidebar-browser-frame]') !== true || !element.isConnected
-              || input.frameName === '' || element.getAttribute('name') !== input.frameName) return
           }
           listener(input)
         }

@@ -45,7 +45,7 @@ export function availableUpdate(value: unknown, current: string, platform: Platf
 export async function checkForUpdates(current: string, platform: Platform | null = updatePlatform, request = fetch) {
   if (!platform) throw new AppError('UPDATE_UNSUPPORTED', 'No desktop release is available for this platform.', 422)
   try {
-    const response = await request(releasesURL, { signal: AbortSignal.timeout(15_000), redirect: 'error', headers: { Accept: 'application/json' } })
+    const response = await request(releasesURL, { signal: AbortSignal.timeout(15_000), redirect: 'error', cache: 'no-store', credentials: 'omit', headers: { Accept: 'application/json' } })
     if (!response.ok) throw new Error(`Release server returned HTTP ${response.status}.`)
     const available = availableUpdate(await response.json(), current, platform)
     return { currentVersion: current, available, checkedAt: new Date().toISOString() }

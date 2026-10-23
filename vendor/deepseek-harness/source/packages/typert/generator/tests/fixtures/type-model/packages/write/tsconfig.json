@@ -4,5 +4,7 @@
     "rootDir": "src",
     "outDir": "lib/types"
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

@@ -17,10 +17,6 @@
     "src",
     "tests"
   ],
-  // The web e2e lane (scaffold + replay specs) boots the host spine and reads
-  // its Context merges — host-plane programs, checked in tsconfig.host.json;
-  // this client-registered project must not also hold them (one program
-  // cannot see both sides of the cordis Context merges).
   "exclude": [
     "tests/collapse-timing.e2e.ts",
     "tests/notice-wake-tail.e2e.ts",
@@ -215,12 +211,6 @@
     },
     {
       "path": "../../packages/client/modules"
-    },
-    {
-      "path": "../../packages/test-support/client-runtime"
-    },
-    {
-      "path": "../../packages/test-support/remote-mock"
     }
   ]
 }

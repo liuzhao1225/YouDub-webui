@@ -174,7 +174,6 @@ export default class Tasks extends Service implements TasksService {
         const input = request.inputs[slot.name], artifact = input && artifacts[input.id]
         if (!input && !slot.required) continue
         if (!artifact || artifact.invocationId !== 'input') throw new AppError('INPUT_MISSING', `Input ${slot.name} is required.`, 422)
-        if (artifact.size > slot.maxBytes) throw new AppError('FILE_TOO_LARGE', `Input ${slot.name} exceeds its limit.`, 413)
         await this.ctx.files.resolve(request.id, artifact)
       }
       if (Object.keys(request.inputs).some(key => !slots.some(slot => slot.name === key))) throw new AppError('INVALID_CONFIG', 'Unknown workflow input slot.', 422)

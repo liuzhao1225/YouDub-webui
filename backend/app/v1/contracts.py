@@ -47,7 +47,7 @@ class ModelSelection(Contract):
 
 
 class AsrSelection(ModelSelection):
-    initial_prompt: Annotated[str, Field(max_length=500)] | None = None
+    initial_prompt: str | None = None
 
 
 class PresetVoice(Contract):
@@ -81,8 +81,6 @@ class TaskConfig(Contract):
     def validate_pipeline(self) -> Self:
         if self.target_language == "auto":
             raise ValueError("target_language cannot be auto")
-        if self.source_language.casefold() == self.target_language.casefold():
-            raise ValueError("source_language and target_language must differ")
         if self.subtitle_alignment is not None and self.output_mode != "both":
             raise ValueError("subtitle_alignment requires both mode")
         if self.output_mode == "subtitles":

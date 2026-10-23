@@ -7,7 +7,7 @@ test('execution identities ignore settings and templates but change for the affe
   const read = async (path: string) => { reads.add(path); return Buffer.from(edits.get(path) ?? path) }
   const before = await builtinIntegrities('/app', read)
   edits.set('/app/packages/builtin/src/settings.ts', 'unrelated settings change')
-  edits.set('/app/packages/builtin/src/setup.ts', 'unrelated setup change')
+  edits.set('/app/apps/harness/src/backend/setup.mjs', 'unrelated setup change')
   edits.set('/app/packages/builtin/src/workflow-templates/reviewed-subtitles.json', 'new template')
   assert.deepEqual(await builtinIntegrities('/app', read), before)
   assert.ok(!reads.has('/app/packages/builtin/src/settings.ts'))

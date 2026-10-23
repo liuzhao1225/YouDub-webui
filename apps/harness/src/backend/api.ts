@@ -1,5 +1,4 @@
-// YouDub business routes retained from the frozen source branch; transport is Harness Connection.
-import { type Context } from 'cordis'
+// YouDub business routes use Harness Connection.
 import Busboy from 'busboy'
 import type { Artifact, CreateTask, TaskView, TaskSummary } from '@youdub/sdk'
 import { AppError, requireId } from '@youdub/sdk'
@@ -11,9 +10,7 @@ import { parseWorkflowDocument } from '../../../../packages/builtin/src/workflow
 import { workflowTemplates } from '../../../../packages/builtin/src/workflow-templates.ts'
 import { migrateLegacyDefaults, readDefaultsMigration, type DefaultsMigration } from '../../../../packages/builtin/src/legacy-defaults-migration.ts'
 
-export function registerTaskRoutes(ctx: any, http: any, config: { version: string }) {
-  if (!config?.version) throw new Error('The API requires the application version from its composition.')
-  const currentVersion = config.version
+export function registerTaskRoutes(ctx: any, http: any) {
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => http.register(method, path, handler))
   const view = <T extends TaskView | TaskSummary>(task: T) => ({ ...task, ...(task.cover ? { cover: { url: fileURL(`/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(task.cover.artifactId!)}`) } } : {}), outputs: task.outputs.map(output => ({ ...output, url: fileURL(`/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}`) })) })
   route('GET', '/api/health', request => {
@@ -178,7 +175,7 @@ export function registerTaskRoutes(ctx: any, http: any, config: { version: strin
     if (!Number.isInteger(lines) || lines < 1 || lines > 1000) throw new AppError('INVALID_CONFIG', 'Invalid log line count.', 422)
     await ctx.tasks.get(request.params.id!)
     const log = await ctx.files.readLog(request.params.id!, lines)
-    request.response.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); request.response.end(log)
+    request.result = new Response(log, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } })
   })
   route('DELETE', '/api/v2/imports/:id', async request => {
     const id = request.params.id!, release = await ctx.files.reserve(id)
@@ -198,10 +195,9 @@ async function upload(ctx: any, request: HttpRequest) {
   const jobs: Promise<void>[] = []
   const slots = new Set<string>()
   let parser: ReturnType<typeof Busboy>
-  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { files: 16, fields: 8, fieldSize: 1024 * 1024, fileSize: 4 * 1024 * 1024 * 1024 } }) }
+  try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { fields: 1, fieldSize: Infinity } }) }
   catch (error) { throw new AppError('INVALID_MULTIPART', (error as Error).message, 400) }
-  parser.on('field', (name, value, info) => {
-    if (info.valueTruncated) { failure = new AppError('FILE_TOO_LARGE', 'Metadata too large.', 413); return }
+  parser.on('field', (name, value) => {
     if (name !== 'request' || metadata) { failure = new AppError('INVALID_INPUT', 'Expected one request metadata field.', 422); return }
     try { metadata = JSON.parse(value) } catch { failure = new AppError('INVALID_JSON', 'Invalid request metadata.', 400) }
   })
@@ -224,15 +220,13 @@ async function upload(ctx: any, request: HttpRequest) {
       const graph = 'graph' in workflow ? parseWorkflowDocument(metadata.graphDocument) : undefined
       const descriptor = graph ? graph.inputs.find(item => item.id === slot) : workflow.describe().inputs.find(item => item.name === slot)
       if (!descriptor) throw new AppError('INVALID_INPUT', `Unknown workflow input: ${slot}`, 422)
-      stream.once('limit', () => { failure = new AppError('FILE_TOO_LARGE', 'Input exceeds upload limit.', 413) })
       if (graph && !descriptor.acceptedMimeTypes.some(mime => mime === info.mimeType || (mime.endsWith('/*') && info.mimeType.startsWith(mime.slice(0, -1))))) throw new AppError('INVALID_INPUT', `Unsupported MIME type for ${slot}: ${info.mimeType}`, 422)
-      const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream, descriptor.maxBytes)
+      const artifact = await ctx.files.upload(id, slot, info.filename, info.mimeType, stream)
       if (graph) artifact.schemaId = graph.inputs.find(item => item.id === slot)!.schemaId
       artifacts[artifact.id] = artifact; inputs[slot] = { id: artifact.id, schemaId: artifact.schemaId }
     })().catch(error => { failure ??= error; parser.destroy(error); stream.resume() })
     jobs.push(job)
   })
-  parser.on('filesLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many input files.', 413) })
   parser.on('fieldsLimit', () => { failure = new AppError('FILE_TOO_LARGE', 'Too many metadata fields.', 413) })
   try {
     await new Promise<void>((resolve, reject) => {

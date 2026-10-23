@@ -14,14 +14,14 @@ from backend.app.v1.contracts import AsrSelection
 from backend.tests.test_v1_asr import child_arguments, context, raw_result
 
 
-@pytest.mark.parametrize("hint", [None, "YouDub.", "词" * 500])
+@pytest.mark.parametrize("hint", [None, "YouDub."])
 def test_asr_hint_is_optional_and_kept_in_model_snapshot(hint):
     value = AsrSelection(adapter="whisper", model="tiny", device="cpu", initial_prompt=hint)
     assert AsrSelection.model_validate_json(value.model_dump_json()).initial_prompt == hint
 
 
-@pytest.mark.parametrize("hint", ["词" * 501, 5, ["YouDub"]])
-def test_asr_hint_rejects_oversized_or_nontext_values(hint):
+@pytest.mark.parametrize("hint", [5, ["YouDub"]])
+def test_asr_hint_rejects_nontext_values(hint):
     with pytest.raises(ValidationError):
         AsrSelection(adapter="whisper", model="tiny", device="cpu", initial_prompt=hint)
 

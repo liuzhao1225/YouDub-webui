@@ -16,7 +16,7 @@ export interface ArtifactDescriptor { path: string; mimeType: string; schemaId: 
 export interface Artifact extends ArtifactRef {
   path: string; mimeType: string; name: string; size: number; metadata: JsonObject; invocationId: string
 }
-export interface InputSlot { name: string; label: string; required: boolean; acceptedMimeTypes: string[]; maxBytes: number }
+export interface InputSlot { name: string; label: string; required: boolean; acceptedMimeTypes: string[]; maxBytes?: number }
 export type InputRef = { from: 'task'; name: string } | { from: 'step'; stepId: string; output: string }
 export interface OutputPort { label?: LocalizedText; name: string; kind: 'artifact' | 'json'; schemaId: string; required: boolean; schema?: JsonObject }
 export interface ExactProviderBinding {
@@ -56,7 +56,7 @@ export interface GraphNode { id: string; type: string; typeVersion: string; labe
 export interface WorkflowDocument {
   format: 'youdub.workflow'; formatVersion: 1; id: string; title: string;
   nodes: GraphNode[]; edges: { id: string; source: GraphEndpoint; target: GraphEndpoint }[];
-  inputs: { id: string; label: string; required: boolean; kind: 'artifact'; schemaId: string; acceptedMimeTypes: string[]; maxBytes: number }[];
+  inputs: { id: string; label: string; required: boolean; kind: 'artifact'; schemaId: string; acceptedMimeTypes: string[]; maxBytes?: number }[];
   outputs: { id: string; label: string; kind: 'artifact'; schemaId: string; required: boolean; source: GraphEndpoint }[];
   presentation: { positions: Record<string, { x: number; y: number }>; viewport: { x: number; y: number; zoom: number } }
 }
@@ -168,7 +168,7 @@ export interface SettingsService {
 export interface FilesService {
   root: string; taskRoot(id: string): string;
   reserve(id: string, fresh?: boolean): Promise<Disposer>; readLock(id: string): Disposer;
-  upload(id: string, slot: string, filename: string, mime: string, input: Readable, maxBytes: number): Promise<Artifact>;
+  upload(id: string, slot: string, filename: string, mime: string, input: Readable, maxBytes?: number): Promise<Artifact>;
   register(id: string, invocationId: string, workDir: string, descriptor: ArtifactDescriptor): Promise<Artifact>;
   resolve(id: string, artifact: Artifact): Promise<string>; workDir(id: string, attempt: number, invocationId: string): Promise<string>;
   cover(id: string, artifact: Artifact): Promise<{ path: string; mimeType: string }>;

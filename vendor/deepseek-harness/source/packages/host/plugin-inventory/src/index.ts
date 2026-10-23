@@ -2,14 +2,11 @@
 
 import type { Context, FiberState } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
-// Type-only: the optional agent-preset roster resolved through `ctx.get`.
-import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type {} from '@deepseek-ai/dsh-app-boot'
 import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 // Typert-generated ./typert and ./remote artifacts import Zod at runtime.
 import type {} from 'zod'
 import type {
-  AgentPresetPluginGroup,
   PluginEntryId,
   PluginFiberPhase,
   PluginInventoryEntry,
@@ -60,12 +57,7 @@ export class PluginInventoryGateway extends TypertRemoteService {
    * events already maintain Entry.fiber and Fiber.state, so a second cache
    * would only add another lifecycle truth to keep synchronized.
    *
-   * When an agent-preset roster is composed, the snapshot also carries each
-   * preset's composition rows, because those rows — not the Loader's own
-   * entries — are where a deployment that mounts the roster runs its
-   * model-facing plugins.
-   * @returns Current non-group Loader entries in Loader order, with optional display metadata
-   * and per-preset compositions when a roster is composed.
+   * @returns Current Loader entries with their display metadata.
    */
   @Remote('list')
   async list(): Promise<PluginInventorySnapshot> {
@@ -75,7 +67,7 @@ export class PluginInventoryGateway extends TypertRemoteService {
 
 export default PluginInventoryGateway
 
-/** Read current Loader entries and optional preset compositions.
+/** Read current Loader entries.
  * @param ctx Context with the Loader service.
  * @returns Current inventory with optional display metadata and no separate runtime cache.
  */
@@ -94,21 +86,5 @@ export async function readPluginInventory(ctx: Context): Promise<PluginInventory
       ...meta === undefined ? {} : { meta },
     })
   }
-  const presets = ctx.get('agentPresets')
-  const management = ctx.get('pluginManager') === undefined ? {} : { managementAvailable: true }
-  if (presets === undefined) return { entries, ...management }
-  const agentPresets: AgentPresetPluginGroup[] = (await presets.compositionInventory()).map(
-    composition => ({
-      ...composition,
-      rows: composition.rows.map(({ fiberState, ...row }) => {
-        const meta = ctx.baseUrl === undefined ? undefined : packages?.metaOf(row.moduleName, ctx.baseUrl)
-        return {
-          ...row,
-          fiberPhase: fiberState === undefined ? null : FIBER_PHASE[fiberState],
-          ...meta === undefined ? {} : { meta },
-        }
-      }),
-    }),
-  )
-  return { entries, agentPresets, ...management }
+  return { entries, ...(ctx.get('pluginManager') === undefined ? {} : { managementAvailable: true }) }
 }

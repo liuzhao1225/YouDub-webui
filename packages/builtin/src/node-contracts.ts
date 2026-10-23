@@ -2,7 +2,7 @@ import { AppError, type JsonObject, type NodeDescriptor, type OperationProvider 
 import { isDeepStrictEqual } from 'node:util'
 
 const object = (properties: JsonObject = {}, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties, required })
-const language = { type: 'string', minLength: 2, maxLength: 24 }
+const language = { type: 'string', minLength: 2 }
 const languageOptions = [
   { value: 'auto', label: { default: 'Auto detect', translations: { zh: '自动识别', ja: '自動検出' } } },
   { value: 'en', label: 'English' }, { value: 'zh', label: '中文' }, { value: 'ja', label: '日本語' },
@@ -20,11 +20,11 @@ const make = (type: string, zh: string, en: string, ja: string, category: string
   ui: { quickFields: Object.keys(properties).slice(0, 3) },
 })
 export const nodeDescriptors: Record<string, NodeDescriptor> = {
-  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { maxBytes: { type: 'integer', minimum: 1, maximum: 4294967296 }, proxyPort: { type: 'integer', minimum: 0, maximum: 65535 } }, { maxBytes: 4294967296, proxyPort: 0 }), ui: { quickFields: ['proxyPort'] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1, maxLength: 2048 } }, ['url']) },
+  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { proxyPort: { type: 'integer', minimum: 0, maximum: 65535 } }, { proxyPort: 0 }), ui: { quickFields: ['proxyPort'] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1 } }, ['url']) },
   prepare: make('prepare', '准备媒体', 'Prepare media', 'メディアを準備', 'media', [video()]),
   separate: make('separate', '分离人声', 'Separate vocals', '音声を分離', 'audio', [audio('sourceAudio', '原始音频')]),
-  recognize: { ...make('transcribe', '语音识别', 'Transcribe', '文字起こし', 'text', [audio('audio', '音频'), media()], { ...source, initialPrompt: { type: ['string', 'null'], maxLength: 500 } }, { sourceLanguage: 'auto', initialPrompt: null }), corrections: { outputPorts: ['transcript'], schemaIds: ['transcript/v1'] }, ui: { quickFields: ['sourceLanguage'], detailId: 'youdub.transcript' } },
-  translate: { ...make('translate', '翻译', 'Translate', '翻訳', 'text', [transcript()], { ...source, ...target, maxCompletionTokens: { type: 'integer', minimum: 65535, maximum: 1048576 } }, { sourceLanguage: 'auto', targetLanguage: 'zh', maxCompletionTokens: 65535 }), corrections: { outputPorts: ['translation'], schemaIds: ['translation/v1'] }, ui: { quickFields: ['targetLanguage'], detailId: 'youdub.translation' } },
+  recognize: { ...make('transcribe', '语音识别', 'Transcribe', '文字起こし', 'text', [audio('audio', '音频'), media()], { ...source, initialPrompt: { type: ['string', 'null'] } }, { sourceLanguage: 'auto', initialPrompt: null }), corrections: { outputPorts: ['transcript'], schemaIds: ['transcript/v1'] }, ui: { quickFields: ['sourceLanguage'], detailId: 'youdub.transcript' } },
+  translate: { ...make('translate', '翻译', 'Translate', '翻訳', 'text', [transcript()], { ...source, ...target, maxCompletionTokens: { type: 'integer', minimum: 65535 } }, { sourceLanguage: 'auto', targetLanguage: 'zh', maxCompletionTokens: 65535 }), corrections: { outputPorts: ['translation'], schemaIds: ['translation/v1'] }, ui: { quickFields: ['targetLanguage'], detailId: 'youdub.translation' } },
   reference: make('reference', '准备参考音频', 'Voice reference', '参照音声', 'audio', [transcript(), audio('audio', '人声')]),
   synthesize: make('synthesize', '生成配音', 'Synthesize speech', '吹き替え生成', 'audio', [transcript(), translation(), port('references', '参考音频', 'voice-references/v1', 'json', false)], { ...target, voice: { oneOf: [object({ mode: { const: 'source_clone' } }, ['mode']), object({ mode: { const: 'preset' }, id: { type: 'string', minLength: 1 } }, ['mode', 'id'])] } }, { targetLanguage: 'zh', voice: { mode: 'source_clone' } }),
   mix: make('mix', '混音', 'Mix audio', 'ミックス', 'audio', [transcript(), port('speechAudio', '分段配音', 'speech-audio/v1'), media(), audio('background', '背景音', false)], { keepBackground: { type: 'boolean' } }, { keepBackground: false }),
@@ -55,7 +55,6 @@ for (const descriptor of Object.values(nodeDescriptors)) for (const input of des
 const fieldTitles: Record<string, [string, string, string]> = {
   sourceLanguage: ['原文语言', 'Source language', '元の言語'], targetLanguage: ['目标语言', 'Target language', '翻訳先の言語'],
   initialPrompt: ['识别提示词', 'Recognition prompt', '認識プロンプト'], maxCompletionTokens: ['最大输出 Token', 'Maximum output tokens', '最大出力トークン'],
-  maxBytes: ['最大文件大小（字节）', 'Maximum file size (bytes)', '最大ファイルサイズ（バイト）'],
   proxyPort: ['本机 HTTP 代理端口（0 为直连）', 'Local HTTP proxy port (0 for direct)', 'ローカル HTTP プロキシポート（0 は直接接続）'],
   voice: ['声音', 'Voice', '音声'], keepBackground: ['保留背景音', 'Keep background audio', '背景音を保持'],
   renderSubtitles: ['烧录字幕', 'Burn subtitles', '字幕を焼き込む'], url: ['视频链接', 'Video URL', '動画リンク'],

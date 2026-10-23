@@ -14,7 +14,7 @@ from .protocol import WorkerError
 
 
 def video_url(value: str) -> str:
-    if not isinstance(value, str) or len(value) > 2048:
+    if not isinstance(value, str):
         raise WorkerError("INVALID_VIDEO_URL", "请输入有效的视频链接。")
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password or parsed.port:
@@ -52,12 +52,11 @@ class DownloadLog:
     error = debug
 
 
-def download_video(url: str, work: Path, wire, max_bytes: int, *, proxy_port: int | None = 0) -> tuple[Path, dict]:
+def download_video(url: str, work: Path, wire, *, proxy_port: int | None = 0) -> tuple[Path, dict]:
     from yt_dlp import YoutubeDL
     from yt_dlp.utils.networking import std_headers
     from backend.app.config import ffmpeg_binary
     from backend.app.v1.media import inspect_video
-    from backend.app.v1.runtime_limits import RUNTIME_LIMITS
 
     if proxy_port is None or proxy_port == "":
         proxy_port = 0
@@ -74,24 +73,16 @@ def download_video(url: str, work: Path, wire, max_bytes: int, *, proxy_port: in
         if urlparse(url).hostname == "b23.tv":
             raise WorkerError("INVALID_VIDEO_URL", "B 站短链接没有指向视频。")
     last_update = 0.0
-    downloaded: dict[str, int] = {}
 
     def admission(info, *, incomplete=False):
         wire.check_cancel()
         if info.get("is_live") or info.get("live_status") == "is_upcoming":
             raise WorkerError("UNSUPPORTED_MEDIA", "暂不支持直播或尚未发布的视频。")
-        if (info.get("duration") or 0) * 1000 > RUNTIME_LIMITS["max_video_duration_ms"]:
-            raise WorkerError("MEDIA_LIMIT_EXCEEDED", "视频超过 10 分钟。")
-        if (info.get("filesize") or 0) > max_bytes:
-            raise WorkerError("FILE_TOO_LARGE", "视频超过文件大小限制。")
 
     def progress(event):
         nonlocal last_update
         wire.check_cancel()
         count = event.get("downloaded_bytes", 0)
-        downloaded[event.get("filename", "video")] = count
-        if sum(downloaded.values()) > max_bytes:
-            raise WorkerError("FILE_TOO_LARGE", "视频超过文件大小限制。")
         total = event.get("total_bytes") or event.get("total_bytes_estimate")
         stamp = time.monotonic()
         if stamp - last_update >= 0.4 or event.get("status") == "finished":
@@ -116,13 +107,13 @@ def download_video(url: str, work: Path, wire, max_bytes: int, *, proxy_port: in
         "proxy": proxy,
         "outtmpl": str(work / "source.%(ext)s"), "noplaylist": True,
         "allowed_extractors": ["youtube$", "bilibili$"],
-        "format": "bv[ext=mp4][height<=1080]+ba[ext=m4a]/b[ext=mp4][height<=1080]",
+        "format": "bv[ext=mp4]+ba[ext=m4a]/b[ext=mp4]",
         "merge_output_format": "mp4", "ffmpeg_location": ffmpeg,
         "js_runtimes": {"node": {"path": node}},
         "retries": 0, "fragment_retries": 0, "extractor_retries": 0,
         "file_access_retries": 0, "socket_timeout": 20,
         "skip_unavailable_fragments": False, "ignoreerrors": False,
-        "continuedl": False, "overwrites": False, "max_filesize": max_bytes,
+        "continuedl": False, "overwrites": False,
         "match_filter": admission, "progress_hooks": [progress], "logger": DownloadLog(),
         "quiet": True, "noprogress": True,
     }
@@ -134,8 +125,6 @@ def download_video(url: str, work: Path, wire, max_bytes: int, *, proxy_port: in
         path = Path(downloader.prepare_filename(info)).resolve()
     if not path.is_relative_to(work.resolve()) or not path.is_file() or not path.stat().st_size:
         raise WorkerError("DOWNLOAD_MISSING", "下载没有生成完整视频文件。")
-    if path.stat().st_size > max_bytes:
-        raise WorkerError("FILE_TOO_LARGE", "视频超过文件大小限制。")
-    media = inspect_video(path, RUNTIME_LIMITS, wire.check_cancel)
+    media = inspect_video(path, wire.check_cancel)
     wire.progress(1, "视频下载完成")
     return path, {"sourceUrl": url, "title": info.get("title"), "durationMs": media["duration_ms"]}

@@ -138,15 +138,6 @@ class Bridge:
             else:
                 self.credentials.delete(params["reference"])
             return None
-        if method.startswith("auth."):
-            from backend.app import auth
-            operation = method.removeprefix("auth.")
-            if operation == "validate":
-                settings = auth.load_auth_settings()
-                return {"cookieName": auth.session_cookie_name(), "sessionTtlSeconds": settings.session_ttl_seconds,
-                        "cookieSecure": settings.cookie_secure, "cookieSameSite": settings.cookie_samesite,
-                        "credentialVersion": "passwordless-v1"}
-            return self.store.auth(operation, params)
         raise WorkerError("UNKNOWN_METHOD", f"Unknown bridge method: {method}")
 
 

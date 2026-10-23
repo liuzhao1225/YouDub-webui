@@ -21,7 +21,6 @@ from .segments import LANGUAGES
 
 INSTANCE_ID = str(uuid4())
 
-from .runtime_limits import RUNTIME_LIMITS
 
 
 def _detect_devices() -> list[dict[str, Any]]:
@@ -30,14 +29,12 @@ def _detect_devices() -> list[dict[str, Any]]:
 
 def _model(
     model_id: str, devices: list[str], source_languages: list[str], target_languages: list[str],
-    *, max_audio_duration_ms: int | None = None, max_text_chars: int | None = None,
-    max_reference_duration_ms: int | None = None,
+    *, max_reference_duration_ms: int | None = None,
 ) -> dict[str, Any]:
     return {
         "id": model_id, "devices": devices, "source_languages": source_languages,
         "target_languages": target_languages, "voice_modes": [], "voices": [],
-        "input_limits": {"max_audio_duration_ms": max_audio_duration_ms,
-                         "max_text_chars": max_text_chars, "max_reference_duration_ms": max_reference_duration_ms},
+        "input_limits": {"max_reference_duration_ms": max_reference_duration_ms},
     }
 
 
@@ -72,7 +69,6 @@ def _whisper_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
         return [], "没有可执行 Whisper 的 CPU/CUDA/ROCm 设备。"
     models = [_model(
         name, available_devices.copy(), ["auto", "en"] if name.endswith(".en") else ["auto", *LANGUAGES], [],
-        max_audio_duration_ms=RUNTIME_LIMITS["max_video_duration_ms"],
     ) for name in available_models()]
     return models, None if models else "未找到非空的本地 Whisper .pt 权重；请安装到 Whisper 模型目录。"
 
@@ -102,8 +98,7 @@ def _translation_models(
     elif translation_model and translation_model.strip():
         # Compatibility for direct callers predating connection.model.
         candidates.append(translation_model.strip())
-    from .translate import MAX_TEXT_CHARS
-    models = [_model(name, ["remote"], list(LANGUAGES), list(LANGUAGES), max_text_chars=MAX_TEXT_CHARS)
+    models = [_model(name, ["remote"], list(LANGUAGES), list(LANGUAGES))
               for name in dict.fromkeys(candidates)]
     return models, None if models else "未配置翻译模型；请设置 YOUDUB_TRANSLATION_MODELS。"
 
@@ -145,8 +140,7 @@ def _demucs_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     available_devices = [device["id"] for device in devices if device["available"]]
     if not available_devices:
         return [], "没有可执行 Demucs 的 CPU/CUDA/ROCm/MPS 设备。"
-    models = [_model(name, available_devices.copy(), [], [],
-                     max_audio_duration_ms=RUNTIME_LIMITS["max_video_duration_ms"])
+    models = [_model(name, available_devices.copy(), [], [])
               for name in available_models()]
     return models, None if models else "未找到非空的本地 htdemucs 权重。"
 
@@ -162,23 +156,19 @@ def _subtitle_alignment_models(devices: list[dict[str, Any]]) -> tuple[list[dict
     available_devices = [device["id"] for device in devices if device["available"]]
     if not available_devices:
         return [], "没有可执行 Qwen 字幕对齐的 CPU/CUDA/ROCm/MPS 设备。"
-    models = [_model(name, available_devices.copy(), [], ["en", "zh"], max_audio_duration_ms=300_000)
+    models = [_model(name, available_devices.copy(), [], ["en", "zh"])
               for name in available_models()]
     return models, None if models else "本地 Qwen3-ForcedAligner-0.6B-hf 权重或 tokenizer 资产不完整。"
 
 
 def runtime_info() -> dict[str, Any]:
     """Environment metadata without probing model assets or credentials."""
-    limits = deepcopy(RUNTIME_LIMITS)
-    limits["max_file_bytes"] = int(os.getenv("LOCAL_UPLOAD_MAX_BYTES", str(limits["max_file_bytes"])))
-    if limits["max_file_bytes"] <= 0:
-        raise ValueError("LOCAL_UPLOAD_MAX_BYTES must be a positive integer.")
     system = platform.system()
     platforms = {"Darwin": "macos", "Windows": "windows", "Linux": "linux"}
     if system not in platforms:
         raise RuntimeError(f"Unsupported operating system: {system}")
     return {"instance_id": INSTANCE_ID, "platform": platforms[system], "arch": platform.machine(),
-            "devices": _detect_devices(), "limits": limits}
+            "devices": _detect_devices()}
 
 
 def probe_capability(adapter: str, *, connections: Sequence[Mapping[str, Any]] = (),

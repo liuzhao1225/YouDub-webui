@@ -142,7 +142,7 @@ async function activateDomain(domain, { config, root, data, forms, modelRoots, v
   await domain.plugin(Resources, { root: data, repoRoot: root, python: config.python, modelRoots, version, privateEnvironment: true });
   let services;
   await domain.plugin({ name: 'youdub-domain-api', inject: ['connection', 'catalog', 'store', 'files', 'tasks', 'settings', 'youdubResources', 'pluginManager'], apply(child) {
-    registerTaskRoutes(child, transport, { version });
+    registerTaskRoutes(child, transport);
     registerResourceRoutes(child, transport);
     registerExtensionRoutes(child, transport);
     // These domain lifecycle events start and stop only the existing graph queue;

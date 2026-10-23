@@ -31,7 +31,7 @@ def test_short_link_redirect_is_checked_before_fetching():
 def test_invalid_proxy_port_fails_before_network_access(tmp_path, monkeypatch, port):
     monkeypatch.setattr(yt_dlp, 'YoutubeDL', lambda *_: pytest.fail('Invalid port reached the downloader'))
     with pytest.raises(WorkerError) as error:
-        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Wire(), 100, proxy_port=port)
+        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Wire(), proxy_port=port)
     assert error.value.code == 'INVALID_CONFIG'
 
 
@@ -66,7 +66,7 @@ def test_node_proxy_reaches_original_downloader_and_short_link_resolver(tmp_path
         return SimpleNamespace(open=lambda *_args, **_kwargs: Response())
     monkeypatch.setattr(download, 'build_opener', opener)
     class Downloader:
-        def __init__(self, options): received['options'] = options
+        def __init__(self, options): self.options = received['options'] = options
         def __enter__(self): return self
         def __exit__(self, *_): pass
         def extract_info(self, url, download):
@@ -97,11 +97,11 @@ def test_harness_download_never_uses_global_node_when_private_runtime_is_missing
     monkeypatch.setenv('YOUDUB_NODE_PATH', node)
     monkeypatch.setattr(yt_dlp, 'YoutubeDL', lambda *_: pytest.fail('Missing private Node reached the downloader'))
     with pytest.raises(WorkerError) as error:
-        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Wire(), 100)
+        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Wire())
     assert error.value.code == 'RUNTIME_UNAVAILABLE'
 
 
-@pytest.mark.parametrize('mode', ['network', 'duration', 'size', 'cancel'])
+@pytest.mark.parametrize('mode', ['network', 'live', 'cancel'])
 def test_download_failure_never_returns_an_artifact(tmp_path, monkeypatch, mode):
     original = RuntimeError('download network failure')
     class Downloader:
@@ -110,14 +110,13 @@ def test_download_failure_never_returns_an_artifact(tmp_path, monkeypatch, mode)
         def __exit__(self, *_): pass
         def extract_info(self, *_args, **_kwargs):
             if mode == 'network': raise original
-            if mode == 'duration': self.options['match_filter']({'duration': 601})
-            if mode == 'size': self.options['progress_hooks'][0]({'downloaded_bytes': 101})
+            if mode == 'live': self.options['match_filter']({'is_live': True})
             pytest.fail('Rejected download continued')
     class Cancelled(Wire):
         def check_cancel(self): raise WorkerError('CANCELLED', 'cancelled')
     monkeypatch.setattr(yt_dlp, 'YoutubeDL', Downloader)
     with pytest.raises((RuntimeError, WorkerError)) as error:
-        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Cancelled() if mode == 'cancel' else Wire(), 100)
+        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Cancelled() if mode == 'cancel' else Wire())
     if mode == 'network': assert error.value is original
-    else: assert error.value.code == {'duration': 'MEDIA_LIMIT_EXCEEDED', 'size': 'FILE_TOO_LARGE', 'cancel': 'CANCELLED'}[mode]
+    else: assert error.value.code == {'live': 'UNSUPPORTED_MEDIA', 'cancel': 'CANCELLED'}[mode]
     assert not list(tmp_path.iterdir())

@@ -8,7 +8,7 @@
 
 所有内置节点需要按同一套职责重新审核；修改集中在参数归属、模型能力表达、上下游语言传递和配置界面。现有图文档、类型端口、依赖调度、结果版本、订正与逐节点人工确认继续使用。当前问题可以通过收敛节点契约解决，保持现有图引擎。
 
-“中文 · 不可用”不能直接证明模型不支持中文。本次问题的原判定路径是：字段声明 `x-optionsFrom`、provider 有 capability、但所选 model 未出现在 catalog 时，候选被置为空，当前值随后被插为禁用的“不可用”项。连接缺失、模型文件未准备、探测失败及模型确实不支持某语言，都因此可能落到同一结果。本次工作区已修复这个误判：[WorkflowOptions](../../apps/web/src/plugin/builtin/workflow-options.tsx) 使用 `knownSupport`，仅在明确模型能力存在时筛选候选；[资源检查](../../packages/builtin/src/setup.ts)也已补齐远端连接与所选模型的就绪检查。这些局部修复尚未发布，后续完整节点契约重构仍待实施。
+“中文 · 不可用”不能直接证明模型不支持中文。本次问题的原判定路径是：字段声明 `x-optionsFrom`、provider 有 capability、但所选 model 未出现在 catalog 时，候选被置为空，当前值随后被插为禁用的“不可用”项。连接缺失、模型文件未准备、探测失败及模型确实不支持某语言，都因此可能落到同一结果。本次工作区已修复这个误判：[WorkflowOptions](../../apps/web/src/plugin/builtin/workflow-options.tsx) 使用 `knownSupport`，仅在明确模型能力存在时筛选候选；[资源检查](../../apps/harness/src/backend/resources.ts)也已补齐远端连接与所选模型的就绪检查。这些局部修复尚未发布，后续完整节点契约重构仍待实施。
 
 相关现状证据：
 
@@ -68,7 +68,7 @@ provider 的 `available/unavailableReason` 只表示当前执行就绪。远端�
 
 | 节点 | 当前输入 → 输出 | 目标：用户负责的配置 | 从端口推导的事实 | 目标快捷设置与主要约束 |
 | --- | --- | --- | --- | --- |
-| 下载视频 `download` | 本次 `url` → `video` | 链接属于 `runtimeInputSchema`；maxBytes 保留高级限制 | 下载结果媒体信息交给 prepare | 无快捷字段；技术字节限制不进入工作台；支持平台/地址校验仍由下载入口承担 |
+| 下载视频 `download` | 本次 `url` → `video` | 链接属于 `runtimeInputSchema`；下载不设置文件大小上限 | 下载结果媒体信息交给 prepare | 无快捷字段；不暴露文件大小配额；支持平台/地址校验仍由下载入口承担 |
 | 准备媒体 `prepare` | `video` → `sourceAudio, mediaInfo` | 无业务配置 | 时长、画面、音频轨等来自媒体探测 | 无快捷字段；无语言或模型选项 |
 | 分离人声 `separate` | `sourceAudio` → `vocals, background` | 模型/设备在 provider 绑定 | 输入音频身份与分离产物 | 无语言快捷字段；保留背景音是 mix 的选择 |
 | 语音识别 `transcribe` | `audio, mediaInfo` → `transcript, raw?` | `sourceLanguage=auto/en/zh/ja`；高级 initialPrompt；模型/设备 | 结果写入真实 `detected_language`、片段与时间轴 | 快捷：原文语言；模型能力限制识别输入，`auto` 是识别策略，不作为最终语言 |

@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "tag": "dsh-v0.2.1-rc.2",
+  "commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "license": "MIT",
+  "scope": "YouDub runtime, reused UI components and required build tooling; maintained as a product fork."
+}

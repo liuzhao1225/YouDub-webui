@@ -25,9 +25,6 @@ class BatchTranslation(Contract):
 def batches(transcript: Transcript) -> Iterator[list[Segment]]:
     batch, length = [], 0
     for segment in transcript.segments:
-        if len(segment.text) > MAX_TEXT_CHARS:
-            raise ApiError(422, "INVALID_CONFIG", "A source segment exceeds the translation text limit.",
-                           stage="translate", action="adjust_settings")
         if batch and (len(batch) == MAX_SEGMENTS or length + len(segment.text) > MAX_TEXT_CHARS):
             yield batch
             batch, length = [], 0
@@ -165,9 +162,6 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     transcript = read_transcript(path, stage="translate")
     if transcript.detected_language not in LANGUAGES or context.config.target_language not in LANGUAGES:
         raise ApiError(422, "UNSUPPORTED_LANGUAGE", "The detected source or target language is unsupported.",
-                       stage="translate", action="adjust_settings")
-    if transcript.detected_language == context.config.target_language:
-        raise ApiError(422, "INVALID_CONFIG", "Detected source and target languages must differ.",
                        stage="translate", action="adjust_settings")
     translation = asyncio.run(_translate(context, transcript, progress))
     context.check_cancel()

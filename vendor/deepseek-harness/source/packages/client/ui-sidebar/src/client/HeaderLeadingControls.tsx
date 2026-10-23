@@ -6,6 +6,7 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 // Type-only: pulls the frame's shell.leading slot declaration.
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { SidebarRootInjected } from './contract/slots.ts'
+import type { ReactNode } from 'react'
 import css from './HeaderLeadingControls.module.css'
 
 /** Full props of the shell.leading occupant. */
@@ -13,6 +14,7 @@ export type HeaderLeadingControlsProps =
   PropsRuntime<'shell.leading'>
   & InjectFace<SidebarRootInjected>
   & PropsLocale<'sidebar'>
+  & { toggleBadge?: ReactNode }
 
 /**
  * Sidebar-open and New Session controls in the frame's window-chrome seat.
@@ -23,7 +25,7 @@ export type HeaderLeadingControlsProps =
  * @param props - Injected sidebar actions plus the sidebar locale seat.
  * @returns the two window-chrome controls.
  */
-export function HeaderLeadingControls({ toggleSidebar, startSession, useShortcuts, t }: HeaderLeadingControlsProps) {
+export function HeaderLeadingControls({ toggleSidebar, startSession, useShortcuts, t, toggleBadge }: HeaderLeadingControlsProps) {
   const shortcut = useShortcuts(rows => rows.find(row => row.id === 'sidebar.left.toggle'))
   const newShortcut = useShortcuts(rows => rows.find(row => row.id === 'session.new'))
   return (
@@ -37,6 +39,7 @@ export function HeaderLeadingControls({ toggleSidebar, startSession, useShortcut
           onClick={() => { toggleSidebar() }}
         >
           <IconPanelLeftOutlineRegular size={16} />
+          {toggleBadge}
         </button>
       </Tooltip>
       <Tooltip label={t('session.new.label')} shortcutKeys={newShortcut?.keys} delayMs={500}>

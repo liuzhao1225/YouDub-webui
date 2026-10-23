@@ -14,10 +14,8 @@ import Catalog from '../src/catalog.js'
 import Secrets from '../src/secrets.js'
 import Settings from '../src/settings.js'
 import Tasks from '../src/tasks.js'
-import Http from '../src/http.js'
-import Auth from '../src/auth.js'
 import * as Graph from '../src/workflow-graph.js'
-import * as Api from '../src/api.js'
+import { taskApi } from './helpers/task-api.js'
 
 const documentSchema = { type: 'object', properties: { text: { type: 'string', minLength: 1 } }, required: ['text'], additionalProperties: false }
 const artifactSchema = { type: 'object', properties: { id: { type: 'string' }, schemaId: { const: 'file/v1' } }, required: ['id', 'schemaId'], additionalProperties: false }
@@ -37,15 +35,16 @@ function graph(review = true): WorkflowDocument {
       { id: 'context-read', source: { nodeId: '$inputs', portId: 'context_file' }, target: { nodeId: 'read', portId: 'context' } },
       { id: 'read-finish', source: { nodeId: 'read', portId: 'document' }, target: { nodeId: 'finish', portId: 'document' } },
     ],
-    inputs: ['custom_source', 'context_file'].map(id => ({ id, label: id, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: ['text/plain'], maxBytes: 1024 })),
+    inputs: ['custom_source', 'context_file'].map(id => ({ id, label: id, required: true, kind: 'artifact', schemaId: 'file/v1', acceptedMimeTypes: ['text/plain'] })),
     outputs: [{ id: 'result', label: '结果', kind: 'artifact', schemaId: 'file/v1', required: true, source: { nodeId: 'finish', portId: 'file' } }],
     presentation: { positions: { read: { x: 20, y: 20 }, finish: { x: 400, y: 20 } }, viewport: { x: 0, y: 0, zoom: 1 } },
   }
 }
 
-/** Real HTTP, passwordless auth, graph compiler, SQLite and files; only computation is a local text provider. */
+/** Product transport, graph compiler, SQLite and files; computation uses a local text provider. */
 async function setup(t: any, execution: 'local' | 'remote' = 'local') {
   const root = await mkdtemp(join(tmpdir(), 'youdub-graph-api-')), ctx = new Context()
+  let nativeRequest!: ReturnType<typeof taskApi>['request']
   const executions: { taskId: string; stepId: string; text: string }[] = []
   const provider: OperationProvider = {
     id: 'test.documents',
@@ -99,24 +98,16 @@ async function setup(t: any, execution: 'local' | 'remote' = 'local') {
     await context.plugin(Graph, { integrity: 'graph-api-fixed' })
     await context.plugin(Tasks, { pollMs: 5 })
     await context.plugin(scope => { scope.reflect.provide('extensions', {}) })
-    // Port zero asks the OS for an unused ephemeral port; existing development services stay untouched.
-    await context.plugin(Http, { host: '127.0.0.1', port: 0 })
-    await context.plugin(Auth)
-    await context.plugin(Api, { version: '0.0.7' })
+    await context.plugin({ inject: ['tasks', 'catalog', 'files', 'settings', 'store'], apply(scope) { nativeRequest = taskApi(scope).request } })
   })
   t.after(async () => {
     try { await ctx.parallel('app/stopping') }
     finally { await app.dispose(); await rm(root, { recursive: true }) }
   })
   ctx.emit('app/ready')
-  const address = ctx.http.address!
-  const login = await fetch(address + '/api/auth/session')
-  assert.equal(login.status, 200)
-  const session = await login.json() as any
-  const headers = { Cookie: login.headers.get('set-cookie')!.split(';')[0], 'X-CSRF-Token': session.csrf_token }
-  const request = (path: string, method = 'GET', body?: unknown, additionalHeaders?: Record<string, string>) => fetch(address + '/api/v2' + path, {
-    method, headers: { ...headers, ...(body !== undefined && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}), ...additionalHeaders },
-    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body), signal: AbortSignal.timeout(5000),
+  const request = (path: string, method = 'GET', body?: unknown) => nativeRequest(path.startsWith('/api/') ? path : '/api/v2' + path, {
+    method, headers: body !== undefined && !(body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined,
+    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
   })
   const json = async (response: Response, status = 200): Promise<any> => {
     const text = await response.text()
@@ -137,10 +128,10 @@ async function setup(t: any, execution: 'local' | 'remote' = 'local') {
     throw new Error(`Task ${id} never reached ${status}`)
   }
   const command = (node: NodeResultView) => ({ actionId: randomUUID(), expectedAttempt: node.attempt, expectedTaskRevision: node.taskRevision, expectedOutputRevision: node.outputRevision })
-  return { ctx, address, headers, request, json, form, create, until, command, executions }
+  return { ctx, request, json, form, create, until, command, executions }
 }
 
-test('workflow documents round-trip through authenticated HTTP and SQLite CAS without overwriting another window', async t => {
+test('workflow documents round-trip through Harness routes and SQLite CAS without overwriting another window', async t => {
   const { request, json } = await setup(t)
   const document = graph()
   const first = await json(await request('/workflow-documents', 'POST', { document }), 201)
@@ -195,7 +186,7 @@ test('remote nodes follow provider readiness without imposing a shared API key c
   assert.ok(failed.error.details.some((item: any) => item.code === 'PROVIDER_UNAVAILABLE'))
 })
 
-test('dynamic multipart graph inputs, review history, artifact ownership and final approval work across the HTTP boundary', async t => {
+test('dynamic multipart graph inputs, review history, artifact ownership and final approval work across the Harness boundary', async t => {
   const { request, json, create, until, command, executions } = await setup(t)
   const task = await create(), paused = await until(task.id, 'paused')
   assert.deepEqual(Object.keys(paused.inputs).sort(), ['context_file', 'custom_source'])
@@ -237,12 +228,8 @@ test('dynamic multipart graph inputs, review history, artifact ownership and fin
   assert.deepEqual(executions.filter(item => item.taskId === task.id).map(item => item.stepId), ['read', 'finish'])
 })
 
-test('graph mutations require CSRF and reject forged JSON inputs or undeclared multipart slots', async t => {
-  const { address, headers, request, json, form } = await setup(t)
-  assert.equal((await fetch(address + '/api/v2/workflow-documents')).status, 401)
-  const blocked = await fetch(address + '/api/v2/workflow-documents', { method: 'POST', headers: { Cookie: headers.Cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ document: graph() }) })
-  assert.equal(blocked.status, 403)
-  await json(await request('/workflow-documents', 'POST', { document: graph() }, { Origin: 'https://untrusted.example' }), 403)
+test('graph mutations reject forged JSON inputs or undeclared multipart slots', async t => {
+  const { request, json, form } = await setup(t)
   const forged = { id: randomUUID(), workflowId: 'youdub.graph', config: {}, graphDocument: graph(), inputs: { custom_source: { id: randomUUID(), schemaId: 'file/v1' } } }
   assert.equal((await json(await request('/tasks', 'POST', forged), 422)).error.code, 'INVALID_INPUT')
   const input = form()

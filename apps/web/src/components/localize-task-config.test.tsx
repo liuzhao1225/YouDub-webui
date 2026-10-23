@@ -143,8 +143,7 @@ describe("本地化任务配置", () => {
     const user = userEvent.setup()
     const hint = screen.getByLabelText("专名提示（可选）")
     expect(hint).toHaveValue("")
-    expect(hint).toHaveAttribute("maxlength", "500")
-    expect(hint).toHaveAccessibleDescription("填写人名、品牌名，帮助语音识别。最多 500 字。")
+    expect(hint).toHaveAccessibleDescription("填写人名、品牌名，帮助语音识别。")
     await user.type(hint, "YouDub, 张三")
     await choose(user, "语音识别模型", "second-asr test_asr · CPU")
     await choose(user, "输出内容", "配音与字幕")
@@ -152,15 +151,6 @@ describe("本地化任务配置", () => {
     expect(hint).toHaveValue("YouDub, 张三")
     await user.clear(hint)
     expect(onChange.mock.calls.at(-1)![0].asr.initial_prompt).toBeNull()
-  })
-
-  it("提示达到 500 字时不接受更多输入", async () => {
-    mount(testRuntime(), { ...testConfig, asr: { ...testConfig.asr, initial_prompt: "名".repeat(500) } })
-    const user = userEvent.setup()
-    const hint = screen.getByLabelText("专名提示（可选）")
-    await user.type(hint, "字")
-    expect(hint).toHaveValue("名".repeat(500))
-    expect(screen.getByText("500/500")).toBeInTheDocument()
   })
 
   it("首次启用配音优先可用 VoxCPM2 源音色克隆", async () => {

@@ -1,7 +1,8 @@
+import { requireActive } from './test-bindings'
 import { Context, type Fiber } from 'cordis'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { PluginContextProvider, requireActive, bindComponent, type Bindings } from './sdk'
+import { PluginContextProvider, bindComponent, type Bindings } from './sdk'
 import * as apiPlugin from './builtin/api'
 
 const fibers: Fiber[] = []

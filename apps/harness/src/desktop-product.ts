@@ -20,12 +20,14 @@ import { DesktopFatalRecovery } from '../../../vendor/deepseek-harness/source/ap
 import { pruneCrashReports, RendererConsoleTail, writeCrashReport, type CrashReportSource } from '../../../vendor/deepseek-harness/source/apps/desktop/src/crash-report.ts'
 import { connectDesktopSettings, type DesktopSettingsBackend } from '../../../vendor/deepseek-harness/source/apps/desktop/src/desktop-settings.ts'
 import { readDesktopLoginShellEnvironment, resolveDesktopLoginShellConfig } from '../../../vendor/deepseek-harness/source/apps/desktop/src/login-shell-environment.ts'
-import { DesktopBrowserGuests } from '../../../vendor/deepseek-harness/source/apps/desktop/src/browser-guests.ts'
 import { installDesktopShortcuts } from '../../../vendor/deepseek-harness/source/apps/desktop/src/keyboard.ts'
 import { DesktopQuitConfirmation } from '../../../vendor/deepseek-harness/source/apps/desktop/src/quit-confirmation.ts'
 import { closeRendererBeforeQuit } from './desktop-unload.ts'
 import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts'
 import { WINDOWS_TITLEBAR_HEIGHT } from '../../../vendor/deepseek-harness/source/apps/desktop/src/windows-layout.ts'
+import { DesktopUpdateSchedule, resolveDesktopUpdateScheduleConfig } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-schedule.ts'
+import { checkForUpdates } from '../../../packages/builtin/src/updates.ts'
+import { DesktopUpdates } from './desktop-updates.ts'
 
 let focusPrimaryWindow = (): void => {}
 let stopForRecovery = async (): Promise<void> => {}
@@ -208,6 +210,19 @@ async function main(): Promise<void> {
   let closingRenderer = false
   let sessionEnding = false
   let mainWindow: BrowserWindow | undefined
+  const updates = new DesktopUpdates({
+    version: manifest.version,
+    check: () => checkForUpdates(manifest.version, undefined, (input, init) => net.fetch(input, init)),
+    locale: currentDesktopLocale,
+    show: options => mainWindow && !mainWindow.isDestroyed() ? dialog.showMessageBox(mainWindow, options) : dialog.showMessageBox(options),
+    openExternal: url => shell.openExternal(url),
+    publish: state => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(DESKTOP_IPC.updatesChanged, state) },
+  })
+  const updateSchedule = app.isPackaged ? new DesktopUpdateSchedule(updates, resolveDesktopUpdateScheduleConfig(process.env)) : undefined
+  const checkUpdates = () => updates.open(() => updateSchedule ? updateSchedule.check(true) : updates.check())
+  const autoCheckUpdates = () => { if (updateSchedule) void updateSchedule.check().catch(console.error) }
+  powerMonitor.on('resume', autoCheckUpdates)
+  app.on('will-quit', () => { updateSchedule?.dispose(); powerMonitor.off('resume', autoCheckUpdates) })
   let hostUrl: string | undefined
   let hostCookie: string | undefined
   let injections: readonly unknown[] = []
@@ -216,7 +231,6 @@ async function main(): Promise<void> {
   let locale = resolveDesktopStartupLocale(null, systemLanguages)
   windowsLanguage = locale.id
   const applicationUrl = `${SCHEME}://app/`
-  const browserGuests = new DesktopBrowserGuests(() => hostUrl)
   const assertProductSender = (event: IpcMainInvokeEvent): void => {
     assertDesktopSender(event, ['app'])
     if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents
@@ -277,6 +291,7 @@ async function main(): Promise<void> {
   }
   const applicationItems = (): MenuItemConstructorOptions[] => [
     { role: 'about', label: locale.id === 'ja' ? 'YouDub について' : locale.id === 'zh-CN' ? '关于 YouDub' : 'About YouDub' },
+    { label: currentDesktopLocale().messages.updateCheckTitle, click: () => { void checkUpdates().catch(console.error) } },
     { type: 'separator' }, { role: 'reload' }, { role: 'toggleDevTools', visible: false },
     ...(process.platform === 'darwin' ? [{ role: 'hide' as const }, { role: 'hideOthers' as const }, { role: 'unhide' as const }, { type: 'separator' as const }] : []),
     { role: 'quit' },
@@ -286,7 +301,7 @@ async function main(): Promise<void> {
   installMicrophonePermissions(session.defaultSession, () => mainWindow?.webContents)
   const shortcuts = installDesktopShortcuts(() => mainWindow, app.getPath('userData'),
     process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : 'linux',
-    refreshApplicationMenu, () => ({ revision: 0, blocked: false }))
+    refreshApplicationMenu)
   app.on('will-quit', () => shortcuts.dispose())
   app.setAboutPanelOptions({ applicationName: 'YouDub', applicationVersion: manifest.version, version: '', copyright: '' })
   const startup = backend.start(async () => {
@@ -311,8 +326,6 @@ async function main(): Promise<void> {
     if (typeof message !== 'string') throw new Error('Desktop startup failure must be text')
     reportFatal(new Error(message), 'web-boot')
   })
-  ipcMain.handle(DESKTOP_IPC.browserAcquire, (event, workspace: unknown) => { assertProductSender(event); return browserGuests.acquire(event.sender, workspace) })
-  ipcMain.handle(DESKTOP_IPC.browserRelease, (event, lease: unknown) => { assertProductSender(event); return browserGuests.release(event.sender, lease) })
   ipcMain.on(DESKTOP_IPC.nativeThemeSet, (event, source: unknown) => {
     assertProductSender(event)
     if (source !== 'light' && source !== 'dark' && source !== 'system') throw new Error('Invalid native theme')
@@ -330,6 +343,8 @@ async function main(): Promise<void> {
     refreshApplicationMenu()
   })
   ipcMain.handle(DESKTOP_IPC.deviceInfo, event => { assertProductSender(event); return readDeviceInfo() })
+  ipcMain.handle(DESKTOP_IPC.updatesStatus, event => { assertProductSender(event); return updates.state })
+  ipcMain.handle(DESKTOP_IPC.updatesOpen, event => { assertProductSender(event); return checkUpdates() })
 
   // Copied verbatim from upstream apps/desktop/src/main.ts.
   if (process.platform === 'win32') {
@@ -420,7 +435,6 @@ async function main(): Promise<void> {
   const createMainWindow = (): BrowserWindow => {
     const window = createWindow(join(app.getAppPath(), 'lib/preload-app.cjs'), false, true)
     mainWindow = window
-    browserGuests.bind(window, (guest, name) => shortcuts.attachGuest(window, guest, name))
     shortcuts.attach(window)
     window.on('close', event => {
       if (quitting || sessionEnding || closingRenderer) return
@@ -433,6 +447,7 @@ async function main(): Promise<void> {
     })
     window.on('session-end', () => { sessionEnding = true })
     window.on('focus', () => { sessionEnding = false })
+    window.on('focus', autoCheckUpdates)
     window.on('show', () => { sessionEnding = false })
     window.on('closed', () => { if (mainWindow === window) mainWindow = undefined })
     window.webContents.on('console-message', details => {
@@ -458,6 +473,7 @@ async function main(): Promise<void> {
   app.on('window-all-closed', () => { if (process.platform !== 'darwin' && !closingRenderer && !quitting) app.quit() })
   // Product startup is independent of account/key state. YouDub SetupGate owns its first run.
   const window = createMainWindow()
+  autoCheckUpdates()
   const navigation = window.loadURL(applicationUrl)
   await Promise.all([startup, navigation])
   refreshApplicationMenu()

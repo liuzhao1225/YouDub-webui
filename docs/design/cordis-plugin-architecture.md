@@ -6,7 +6,7 @@
 
 本方案将 Cordis 作为服务端和浏览器端的插件底座。任务、存储、凭据、进程执行、模型、处理流程、认证、API 和产品页面全部通过插件装配。官方功能与外部插件使用同一套公开契约。MVP 保留单机、单活跃任务、现有三种输出和三页界面，减少实现数量，同时建立完整的替换边界。
 
-本文件记录已实施的架构边界；准确启动与扩展命令见[Cordis 运行指南](cordis-plugin-runtime.md)，实际验证与待验收事项见[迁移记录](cordis-plugin-migration.md)。现有源码和锁文件是接口依据，设计约束不等同于全部场景已验收。
+本文件记录已实施的架构边界；准确启动与扩展命令见[Cordis 运行指南](cordis-plugin-runtime.md)，实际验证与待验收事项见[迁移记录](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md)。现有源码和锁文件是接口依据，设计约束不等同于全部场景已验收。
 
 ## Python 主体与 Cordis 的适配判断
 

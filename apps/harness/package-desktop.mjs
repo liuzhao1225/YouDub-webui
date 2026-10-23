@@ -5,6 +5,7 @@ import { createRequire, isBuiltin } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { prepareSourceDevelopment } from './prepare-source-development.mjs';
+import { desktopFiles, productResources } from './package-files.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const here = import.meta.dirname;
@@ -87,10 +88,7 @@ if (process.argv.includes('--installers-only')) {
   await writeFile(metadata, JSON.stringify({ version: manifest.version,
     baseCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     harnessVersion: manifest.harnessRuntimeVersion }, null, 2) + '\n');
-  const payload = ['package.json', 'backend/__init__.py', 'backend/app/**/*', 'backend/workers/**/*', 'backend/requirements*.txt', 'backend/requirements/**/*',
-    'packages/builtin/src/**/*', 'packages/sdk/src/**/*', 'submodule/**/*',
-    'apps/web/templates/examples.html', 'site/style.css', 'site/player.js', 'site/demos.js', 'site/assets/**/*',
-    '!**/__pycache__/**', '!**/.git{,/**}', '!**/node_modules/**', '!**/.env', '!**/env.txt'];
+
   const platform = process.platform === 'darwin' ? Platform.MAC : process.platform === 'win32' ? Platform.WINDOWS : undefined;
   if (!platform) throw new Error('Desktop installers are supported on macOS and Windows.');
   const arch = process.arch === 'arm64' ? Arch.arm64 : Arch.x64;
@@ -98,8 +96,8 @@ if (process.argv.includes('--installers-only')) {
       appId: 'com.youdub.desktop', productName: 'YouDub',
       directories: { app: project, output }, electronVersion: ownRequire('electron/package.json').version,
       asar: false, npmRebuild: false,
-      files: ['main.mjs', 'lib/**/*', 'resources/**/*', 'scripts/**/*', 'desktop-runtime.json', 'package.json'],
-      extraResources: [{ from: root, to: 'youdub', filter: payload }, { from: metadata, to: 'build.json' },
+      files: desktopFiles,
+      extraResources: [{ from: root, to: 'youdub', filter: productResources }, { from: metadata, to: 'build.json' },
         { from: join(root, 'LICENSE'), to: 'LICENSE-YouDub.txt' },
         { from: join(root, 'vendor/deepseek-harness/source/LICENSE'), to: 'LICENSE-Harness.txt' },
         { from: join(root, 'vendor/deepseek-harness/source/THIRD_PARTY_NOTICES.md'), to: 'THIRD_PARTY_NOTICES-Harness.md' }],

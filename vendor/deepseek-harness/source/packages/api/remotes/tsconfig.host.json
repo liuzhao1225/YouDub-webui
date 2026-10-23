@@ -24,25 +24,7 @@
       "path": "../../credentials/credentials"
     },
     {
-      "path": "../../interaction/commands"
-    },
-    {
-      "path": "../../interaction/permission-presets"
-    },
-    {
       "path": "../../llm/llm"
-    },
-    {
-      "path": "../../goal/goal"
-    },
-    {
-      "path": "../../schedule/schedule"
-    },
-    {
-      "path": "../../preset/agent-preset-registry"
-    },
-    {
-      "path": "../../extensions/cordis-host-runner"
     },
     {
       "path": "../../settings/settings"
@@ -57,31 +39,10 @@
       "path": "../../util/values"
     },
     {
-      "path": "../../interaction/user-approval"
-    },
-    {
-      "path": "../../interaction/user-questions"
-    },
-    {
-      "path": "../session-controller/tsconfig.host.json"
-    },
-    {
-      "path": "../workspace-files/tsconfig.host.json"
-    },
-    {
-      "path": "../workspace-controller/tsconfig.host.json"
-    },
-    {
       "path": "../../typert/protocol"
     },
     {
-      "path": "../terminal-controller/tsconfig.host.json"
-    },
-    {
       "path": "../../boot/plugin-manager"
-    },
-    {
-      "path": "../../boot/plugin-market"
     },
     {
       "path": "../../host/plugin-inventory"

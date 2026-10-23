@@ -9,9 +9,6 @@
   ],
   "references": [
     {
-      "path": "../../api/workspace-controller/tsconfig.client.json"
-    },
-    {
       "path": "../../../vendor/cordis"
     },
     {
@@ -24,13 +21,7 @@
       "path": "../ui-primitives"
     },
     {
-      "path": "../ui-conversation/tsconfig.client.json"
-    },
-    {
       "path": "../ui-renderer"
-    },
-    {
-      "path": "../ui-session"
     },
     {
       "path": "../ui-layout"
@@ -40,6 +31,9 @@
     },
     {
       "path": "../shortcuts/tsconfig.client.json"
+    },
+    {
+      "path": "../../workspace/workspace"
     }
   ]
 }

@@ -73,7 +73,7 @@ const protectedModules = new Set([
   '@deepseek-ai/dsh-host-plugin-inventory', '@deepseek-ai/dsh-typert-registry',
   '@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-api-remote-access',
   '@deepseek-ai/cordis-plugin-timer', '@deepseek-ai/dsh-client-connection',
-  '@deepseek-ai/dsh-host-frontend-static', '@deepseek-ai/dsh-tools',
+  '@deepseek-ai/dsh-host-frontend-static',
   '@deepseek-ai/dsh-hmr',
 ])
 

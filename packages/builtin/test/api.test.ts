@@ -7,22 +7,20 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setImmediate as nextTurn } from 'node:timers/promises'
 import { AppError } from '@youdub/sdk'
-import Http from '../src/http.js'
 import Files from '../src/files.js'
-import * as Api from '../src/api.js'
+import { taskApi } from './helpers/task-api.js'
 
-// Authentication has separate HTTP tests; these exercise the API boundary and
-// actual multipart/file streams without loading any models.
+// Actual Harness routes and multipart/file streams, without loading models.
 async function setup(t: any, fileService = Files) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-api-')), ctx = new Context()
   const created: any[] = [], reruns: any[] = []
   let unavailable = false
+  let request!: ReturnType<typeof taskApi>['request']
   const app = await ctx.plugin(async context => {
     // Dependencies must be ACTIVE before awaiting their consumers. Providing
     // them on this still-loading parent leaves child plugins PENDING.
     await context.plugin(services => {
       services.reflect.provide('youdubWorker', {})
-      services.reflect.provide('auth', {})
       services.reflect.provide('settings', { locked: async (action: () => Promise<any>) => action(), read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
       services.reflect.provide('store', { call: async (method: string) => { if (method === 'settings.raw') return {}; throw new Error(`Unexpected store call: ${method}`) } })
       services.reflect.provide('extensions', {})
@@ -35,18 +33,17 @@ async function setup(t: any, fileService = Files) {
       })
     })
     await context.plugin(fileService, { root })
-    await context.plugin(Http, { host: '127.0.0.1', port: 0 })
-    await context.plugin(Api, { version: '1.2.3' })
+    await context.plugin({ inject: ['tasks', 'catalog', 'files', 'settings', 'store'], apply(scope) { request = taskApi(scope).request } })
   })
   t.after(async () => { await app.dispose(); await rm(root, { recursive: true }) })
   ctx.emit('app/ready')
-  const post = (body: BodyInit, headers?: Record<string, string>) => fetch(ctx.http.address + '/api/v2/tasks', { method: 'POST', body, headers, signal: AbortSignal.timeout(3000) })
+  const post = (body: BodyInit, headers?: Record<string, string>) => request('/api/v2/tasks', { method: 'POST', body, headers, signal: AbortSignal.timeout(3000) })
   const form = () => {
     const data = new FormData()
     data.append('request', JSON.stringify({ id: randomUUID(), workflowId: 'test.upload', config: {} }))
     return data
   }
-  return { ctx, created, reruns, post, form, failRuntime: () => { unavailable = true } }
+  return { ctx, request, created, reruns, post, form, failRuntime: () => { unavailable = true } }
 }
 
 test('API fixture waits for asynchronous dependency initialization before advertising readiness', async t => {
@@ -67,27 +64,18 @@ test('API fixture waits for asynchronous dependency initialization before advert
 })
 
 test('health reports a stopped task runtime as unavailable', async t => {
-  const { ctx, failRuntime } = await setup(t)
-  assert.equal((await fetch(ctx.http.address + '/api/health')).status, 200)
+  const { request, failRuntime } = await setup(t)
+  assert.equal((await request('/api/health')).status, 200)
   failRuntime()
-  const response = await fetch(ctx.http.address + '/api/health')
+  const response = await request('/api/health')
   assert.equal(response.status, 503)
   assert.equal((await response.json() as any).error.code, 'TASK_RUNTIME_UNAVAILABLE')
 })
 
-test('update metadata uses the composition version and the persisted preference', async t => {
-  const { ctx } = await setup(t)
-  const response = await fetch(ctx.http.address + '/api/v2/updates')
-  assert.equal(response.status, 200)
-  const result = await response.json() as any
-  assert.equal(result.currentVersion, '1.2.3')
-  assert.equal(result.automatic, false)
-})
-
 test('rerun API forwards an explicit step boundary', async t => {
-  const { ctx, reruns } = await setup(t)
+  const { request, reruns } = await setup(t)
   const id = randomUUID(), next = randomUUID()
-  const response = await fetch(`${ctx.http.address}/api/v2/tasks/${id}/rerun`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: next, config: {}, fromStep: 'reference' }) })
+  const response = await request(`/api/v2/tasks/${id}/rerun`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: next, config: {}, fromStep: 'reference' }) })
   assert.equal(response.status, 201)
   assert.equal((await response.json() as any).id, next)
   assert.equal(reruns[0].id, id)
@@ -132,17 +120,13 @@ test('multipart preserves Chinese filenames and spaces across the API boundary',
   assert.equal((Object.values(created[0].artifacts)[0] as any).name, filename)
 })
 
-test('malformed or oversized uploads fail promptly without creating a task', async t => {
-  const { created, post, form } = await setup(t)
+test('malformed uploads fail promptly without creating a task', async t => {
+  const { created, post } = await setup(t)
   const malformed = await post('broken', { 'Content-Type': 'multipart/form-data' })
   assert.equal(malformed.status, 400)
   const metadata = JSON.stringify({ id: randomUUID(), workflowId: 'test.upload', config: {} })
   const truncated = await post(`--test\r\nContent-Disposition: form-data; name="request"\r\n\r\n${metadata}\r\n--test\r\nContent-Disposition: form-data; name="input.document"; filename="test.txt"\r\n\r\npartial`, { 'Content-Type': 'multipart/form-data; boundary=test' })
   assert.equal(truncated.status, 400)
-  const oversized = form(); oversized.append('input.document', new Blob(['x'.repeat(128 * 1024)]), 'large.txt')
-  const rejected = await post(oversized)
-  assert.equal(rejected.status, 413)
-  assert.equal((await rejected.json() as any).error.code, 'FILE_TOO_LARGE')
   assert.equal(created.length, 0)
 })
 
@@ -158,7 +142,7 @@ test('multipart accepts URL metadata without a file and preserves the source nam
 })
 
 test('workflow reads never run migrations and remain available after an explicit migration failure', async t => {
-  const { ctx } = await setup(t)
+  const { ctx, request } = await setup(t)
   await nextTurn()
   const calls: string[] = []
   ctx.store.call = async (method: string) => {
@@ -168,14 +152,14 @@ test('workflow reads never run migrations and remain available after an explicit
     if (method === 'settings.validate_defaults') throw new AppError('SQLITE_ERROR', 'disk full during migration', 500)
     throw new Error(`Unexpected call: ${method}`)
   }
-  const url = ctx.http.address + '/api/v2/workflow-documents'
-  assert.equal((await fetch(url)).status, 200)
-  assert.equal((await fetch(url + '/youdub.subtitles')).status, 200)
+  const url = '/api/v2/workflow-documents'
+  assert.equal((await request(url)).status, 200)
+  assert.equal((await request(url + '/youdub.subtitles')).status, 200)
   assert.ok(calls.every(method => ['settings.raw', 'store.workflow_list'].includes(method)))
-  const failed = await fetch(url + '/migrate-defaults', { method: 'POST' })
+  const failed = await request(url + '/migrate-defaults', { method: 'POST' })
   assert.equal(failed.status, 500)
   assert.equal((await failed.json() as any).error.code, 'SQLITE_ERROR')
-  const readable = await fetch(url)
+  const readable = await request(url)
   assert.equal(readable.status, 200)
   const body = await readable.json() as any
   assert.equal(body.legacyDefaultsMigration.status, 'blocked')

@@ -42,7 +42,7 @@ html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
 
 /* Only product occupants are styled here; SidebarRoot owns layout and navigation. */
 .yd-sidebar-mark { display:inline-flex; align-items:center; justify-content:center; }
-.yd-sidebar-tools { display:flex; align-items:center; gap:4px; }
+.yd-sidebar-tools { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
 .yd-sidebar-tools[data-wide=false] { flex-direction:column; }
 .yd-extension-navigation { display:flex; flex-direction:column; gap:2px; }
 
@@ -52,6 +52,9 @@ html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
 
 
 /* The custom settings launcher shares the same button spacing as its peer tools. */
-.yd-sidebar-tools div:has(> [data-slot="settings.launcher"]) { width:auto; margin:0; }
+.yd-sidebar-tools div:has(> [data-slot="settings.launcher"]) { display:contents; }
+/* Framework update/connection indicators follow the four product tool buttons. */
+.yd-sidebar-tools div:has(> [data-slot="settings.launcher"]) > button { order:1; }
+.yd-version-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }
 
 .yd-sidebar-mark[data-wide=false] { width:32px; height:32px; }
