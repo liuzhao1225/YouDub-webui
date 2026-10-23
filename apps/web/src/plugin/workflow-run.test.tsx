@@ -42,13 +42,18 @@ const missing: ResourceState = { status: 'missing', requirements: [{ providerId:
 const base = '/api/v2/workflow-documents/resources/'
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.useRealTimers(); vi.unstubAllGlobals() })
 
-it('keeps workbench resource requirements collapsed and preserves visible failure causes', () => {
+it('keeps workbench resource requirements collapsed and preserves visible failure causes', async () => {
   const state: ResourceState = { ...missing, status: 'failed', error: 'Download denied', environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }] }
   render(<LanguageProvider><WorkflowResources resources={{ result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }} types={types} hideReady /></LanguageProvider>)
   expect(screen.getByText('Download denied')).toBeVisible()
   expect(screen.getByRole('button', { name: '重试' })).toBeVisible()
-  expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
-  expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
+  const details = screen.getByRole('button', { name: '资源详情' })
+  expect(details).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.queryByText('模型文件尚未安装。')).not.toBeInTheDocument()
+  await userEvent.setup().click(details)
+  expect(details).toHaveAttribute('aria-expanded', 'true')
+  expect(screen.getByText('模型文件尚未安装。')).toBeVisible()
+  expect(screen.getByText('Download denied')).toBeVisible()
 })
 
 it('shows both missing configuration and runtime resources without bypassing configuration', () => {
@@ -400,8 +405,16 @@ it('keeps missing resources compact while retaining expandable diagnostics and p
   await screen.findByRole('button', { name: '准备所需资源' })
   expect(screen.queryByText('Whisper tiny · 等待中')).not.toBeInTheDocument()
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
-  expect(screen.getByText('模型文件尚未安装。').closest('details')).not.toHaveAttribute('open')
-  expect(screen.getByText('/runtime/python -m pip install ...').closest('details')).not.toHaveAttribute('open')
+  expect(screen.queryByText('模型文件尚未安装。')).not.toBeInTheDocument()
+  expect(screen.queryByText('/runtime/python -m pip install ...')).not.toBeInTheDocument()
+  const user = userEvent.setup()
+  for (const details of screen.getAllByRole('button', { name: '诊断详情' })) {
+    expect(details).toHaveAttribute('aria-expanded', 'false')
+    await user.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
+  }
+  expect(screen.getByText('模型文件尚未安装。')).toBeVisible()
+  expect(screen.getByText('/runtime/python -m pip install ...')).toBeVisible()
 })
 
 it('leads with node names and actions for configuration errors while keeping original diagnostics', async () => {
@@ -414,14 +427,20 @@ it('leads with node names and actions for configuration errors while keeping ori
   expect(screen.getByText('识别字幕: 请在设置中填写服务地址和 API Key。')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/models')
   expect(screen.getByText('成片导出: 请为此节点选择模型和运行设备。')).toBeInTheDocument()
-  expect(screen.getByText('Select a model and device.').closest('details')).not.toHaveAttribute('open')
-  expect(screen.getByText('Provider connection is not configured.').closest('details')).not.toHaveAttribute('open')
-  await userEvent.setup().click(screen.getByRole('button', { name: '打开节点设置' }))
+  for (const item of diagnostics) expect(screen.queryByText(item.message)).not.toBeInTheDocument()
+  const user = userEvent.setup()
+  for (const details of screen.getAllByRole('button', { name: '诊断详情' })) {
+    expect(details).toHaveAttribute('aria-expanded', 'false')
+    await user.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
+  }
+  for (const item of diagnostics) expect(screen.getByText(item.message)).toBeVisible()
+  await user.click(screen.getByRole('button', { name: '打开节点设置' }))
   expect(onSelect).toHaveBeenCalledWith(diagnostics[1])
 })
 
 
-it('localizes graph validation actions and retains the original errors for diagnosis', () => {
+it('localizes graph validation actions and retains the original errors for diagnosis', async () => {
   const document = graph()
   const diagnostics = [
     { code: 'INVALID_GRAPH', message: 'Select at least one output.' },
@@ -432,7 +451,12 @@ it('localizes graph validation actions and retains the original errors for diagn
   expect(screen.getByText('请在“输出”中选择至少一个结果。')).toBeVisible()
   expect(screen.getByText('识别字幕: 请将此节点连接到工作流输出。')).toBeVisible()
   expect(screen.getByText('A specific plugin failure must stay visible.')).toBeVisible()
-  for (const item of diagnostics.slice(0, 2)) {
-    expect(screen.getByText(item.message).closest('details')).not.toHaveAttribute('open')
+  for (const item of diagnostics.slice(0, 2)) expect(screen.queryByText(item.message)).not.toBeInTheDocument()
+  const user = userEvent.setup()
+  for (const details of screen.getAllByRole('button', { name: '诊断详情' })) {
+    expect(details).toHaveAttribute('aria-expanded', 'false')
+    await user.click(details)
+    expect(details).toHaveAttribute('aria-expanded', 'true')
   }
+  for (const item of diagnostics) expect(screen.getByText(item.message)).toBeVisible()
 })
