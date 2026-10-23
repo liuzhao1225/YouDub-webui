@@ -24,6 +24,12 @@ npm run package:desktop -- --installers-only
 
 验证证据包含首启截图与 JSON 结果。PR 的原有必需检查同时覆盖这两种平台的候选包，任一打包或启动失败都会阻止合并。
 
+## 检查范围
+
+每次 PR 与 main 提交保留双平台构建、桌面核心行为、产品运行依赖、YouDub 业务与界面测试，以及真实安装包首启、Python worker 和 Windows 安装/卸载验证。
+
+Harness 全量 GUI、插件解析组合、框架类型、文档目录和开发工具规则，仅在 `vendor/deepseek-harness/`、`apps/harness/baselines/`、框架构建脚本或测试源码加载器变化时运行。手动运行源码检查工作流会执行完整框架检查。tag 的来源须已合入 main，发行阶段不重复这些未变化的框架维护检查，仍重新构建并验收最终安装包。
+
 ## 正式发行
 
 tag 工作流核对版本、提交与 main 来源，复用源码检查生成一次候选包。Windows 从已验证的 `win-unpacked` 制作 ZIP，并复用原 Inno Setup 脚本和 AppId 制作 EXE。macOS 将候选 App 交给受保护的 `macos-release` 环境，使用现有 Apple 证书与 API 凭据；通过 `@electron/osx-sign` 签名后重新检查首启，再制作 DMG、公证、装订票据并执行 Gatekeeper 校验。签名材料只在临时目录生成，结束时清除。
