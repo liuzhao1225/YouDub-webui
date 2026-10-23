@@ -1,0 +1,61 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-settings-models/README.md
+/:
+  en: d1bc4d9ef67bfb19
+  zh: d095e4dc76f1c5e0
+/deepseek-ai-dsh-client-ui-settings-models:
+  en: 0db6fa836e1ff511
+  zh: 0e2968763e1fb7a5
+/deepseek-ai-dsh-client-ui-settings-models/summary:
+  en: 51252c1e9fa6da0a
+  zh: 227b54d7898417fa
+/deepseek-ai-dsh-client-ui-settings-models/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-client-ui-settings-models/use-this-package:
+  en: db5aaf7f702e1f0c
+  zh: 409a78c14fb2b6e3
+/deepseek-ai-dsh-client-ui-settings-models/use-this-package/api-keys:
+  en: f4817eb2e3537ed9
+  zh: e589c193fa85473f
+/deepseek-ai-dsh-client-ui-settings-models/use-this-package/editing-a-provider:
+  en: 3af73644655c8b7b
+  zh: d689eba772100c63
+/deepseek-ai-dsh-client-ui-settings-models/use-this-package/adding-and-deleting-providers:
+  en: 9d533c65c82cd4a4
+  zh: 0a5da334e127c035
+/deepseek-ai-dsh-client-ui-settings-models/use-this-package/first-run-dialogs:
+  en: 589397a35f82244e
+  zh: 342fbceee2c173a2
+/deepseek-ai-dsh-client-ui-settings-models/use-this-package/extension-slots:
+  en: 79f8f80bdaba73cd
+  zh: f4d7496b293fbf81
+/deepseek-ai-dsh-client-ui-settings-models/understand-the-implementation:
+  en: a87afbec5e339b36
+  zh: 6348c81af7e650e1
+/deepseek-ai-dsh-client-ui-settings-models/understand-the-implementation/validation:
+  en: 74948a88fe1f9aac
+  zh: 8ad2200fa74c12c9
+/deepseek-ai-dsh-client-ui-settings-models/understand-the-implementation/concurrency-and-credentials:
+  en: 6e04c00818f014cd
+  zh: 2d57f8d8944e67ed
+/deepseek-ai-dsh-client-ui-settings-models/understand-the-implementation/onboarding-coordinator:
+  en: dc515a31212e477a
+  zh: 770ba77cd9a69f73
+/deepseek-ai-dsh-client-ui-settings-models/further-exploration:
+  en: 20abd8b98b6c20e2
+  zh: 6dfda7955ce5f33f
+/deepseek-ai-dsh-client-ui-settings-models/model-experience:
+  en: 3120df665299c634
+  zh: 1d9f365d091d0d2a
+/deepseek-ai-dsh-client-ui-settings-models/model-experience/kv-cache-effect:
+  en: ca75c51c89c2c9b0
+  zh: 9779c98fff4c949a
+/deepseek-ai-dsh-client-ui-settings-models/known-limitations-and-deferred-work:
+  en: cc69c9934bf22302
+  zh: 4ea896f4b54aa203
+/deepseek-ai-dsh-client-ui-settings-models/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

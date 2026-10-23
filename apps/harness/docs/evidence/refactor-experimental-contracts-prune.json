@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T15:55:32.102Z",
+  "baseCommit": "46abd115944784eef25588026f4472c3385ac30c",
+  "scope": "Remove two unreferenced Harness experimental contracts; preserve YouDub Whisper worker, sentence splitting and Harness LLM translation.",
+  "removedPackages": [
+    {
+      "name": "@deepseek-ai/dsh-experimental-speech-to-text",
+      "path": "packages/experimental/speech-to-text"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-translator",
+      "path": "packages/experimental/translator"
+    }
+  ],
+  "source": {
+    "files": 6731,
+    "sha256": "00034c23e21465572aaa1ac372172bc818be1eba176a066a5b59ba085f9aa544",
+    "packages": 270,
+    "reviewed": 49,
+    "deletedFiles": 37,
+    "clientArtifacts": 253,
+    "originalManifestSha256": "b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c"
+  },
+  "closure": {
+    "roots": 79,
+    "runtimeAndTypes": 141,
+    "includingPackageTests": 213,
+    "remainingCandidates": 57,
+    "incomingImportsFromRetainedPackages": 0
+  },
+  "lockfile": {
+    "removedImporters": [
+      "packages/experimental/speech-to-text",
+      "packages/experimental/translator"
+    ],
+    "updatedImporter": "apps/web: removed unused experimental speech-to-text devDependency",
+    "otherImportersUnchanged": true,
+    "externalPackagesAndSnapshotsUnchanged": true
+  },
+  "validation": {
+    "framework": {
+      "gatesPassed": 7,
+      "verifyOnly": true,
+      "retiredOutputDirectories": 0,
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-final-build.log",
+        "sha256": "dcb2eed8d3727f62984a6539e697005d4acdd569103b3daa521807e3eb04ccf8"
+      }
+    },
+    "policyRegression": {
+      "filesPassed": 5,
+      "testsPassed": 308,
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-regression.log",
+        "sha256": "2be65346ee35c6ff92896141b13264f125315c5c8d8118c6641b74e66baf397f"
+      }
+    },
+    "readmePair": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-pairing.log",
+        "sha256": "f648fd21b531eda386e17f4ce365d5cff34872447cccc4aa4cb2b2e905022290"
+      }
+    },
+    "actualDesktopHost": {
+      "testsPassed": 2,
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-host.log",
+        "sha256": "4529f1fd3a774ae0f6749778343f538e400b52633f6b03a8ee7d0fee385ba341"
+      },
+      "businessBundle": ".cache/harness/native-review-isolated-20261022/desktop-sdk-prune/runtime-project/youdub-plugin"
+    },
+    "subprocess": {
+      "testsPassed": 7,
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-media-contracts.log",
+        "sha256": "2386ea12aeaf3c5727e239e55461d73b9bc2b2a6abe0d9962b0ef6116c9c9554"
+      },
+      "scope": "Only the subprocess suite passed in this invocation; separate initial LLM harness import failed."
+    },
+    "llm": {
+      "testsPassed": 5,
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-llm-bundle.log",
+        "sha256": "9fc7189f216055d1b8f1a807898eb7e8859e78167d78fcd4f5c8b9e96f11b874"
+      },
+      "input": "Existing llm-native.test.mjs assertions with the prior verified business bundle and current framework stage; local fixture endpoint only.",
+      "assertions": [
+        "Actual official adapter sends max_tokens 65535",
+        "Lower configured or provider cap prevents dispatch",
+        "Provider rejection remains visible without lower-cap retry",
+        "Original Chinese punctuation/segment IDs and Japanese language rules remain"
+      ]
+    }
+  },
+  "failureHistory": [
+    {
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-media-contracts.log",
+        "sha256": "2386ea12aeaf3c5727e239e55461d73b9bc2b2a6abe0d9962b0ef6116c9c9554"
+      },
+      "cause": "Temporary test hook allowed /tmp but macOS canonicalized the entry to /private/tmp; framework test import could not resolve. Subprocess suite passed."
+    },
+    {
+      "log": {
+        "path": "/tmp/youdub-experimental-contracts-llm-final.log",
+        "sha256": "c087f0a0d247da0ab8f0fae566b4bb8f142ebd5bfe2633d3a2d81e853b52dfb5"
+      },
+      "cause": "Direct TypeScript business-source import bypassed the bundler and could not resolve .js source specifiers. Used the unchanged assertions with the prior verified compiled bundle, as in the actual Host check."
+    }
+  ],
+  "limitations": [
+    "Current uncommitted UI/resource changes from another session were not included in the prior business bundle.",
+    "No media inference rerun or external translation quality claim.",
+    "Remaining legacy products, dynamic generators, Windows and full P0-P7 acceptance stay open.",
+    "No installer or release; Feishu update remains after full acceptance."
+  ],
+  "ci": {
+    "nextRun": "pending push"
+  }
+}

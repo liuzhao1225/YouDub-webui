@@ -1,42 +1,46 @@
 import { cn } from "@/lib/utils"
+import type { CSSProperties } from "react"
 
 // 形状取自 public/youdub-icon.svg：左侧粉色声波、中间红色播放气泡、右侧蓝色声波。
 const PINK_BARS = [
-  { x: 0, y: 144, height: 64, delay: -0.62 },
-  { x: 42, y: 110, height: 130, delay: -0.21 },
-  { x: 84, y: 63, height: 223, delay: -0.84 },
-  { x: 126, y: 123, height: 109, delay: -0.43 },
+  { x: 0, height: 64, delay: -0.62 },
+  { x: 42, height: 130, delay: -0.21 },
+  { x: 84, height: 223, delay: -0.84 },
+  { x: 126, height: 109, delay: -0.43 },
 ]
 
 const BLUE_BARS = [
-  { x: 564, y: 123, height: 109, delay: -0.33 },
-  { x: 606, y: 63, height: 223, delay: -0.74 },
-  { x: 648, y: 112, height: 130, delay: -0.12 },
-  { x: 690, y: 145, height: 64, delay: -0.53 },
+  { x: 564, height: 109, delay: -0.33 },
+  { x: 606, height: 223, delay: -0.74 },
+  { x: 648, height: 130, delay: -0.12 },
+  { x: 690, height: 64, delay: -0.53 },
 ]
 
 export function BrandMark({
   animated = false,
   wordmark = false,
+  wordmarkSrc = "/youdub-logo.svg",
   className,
 }: {
   animated?: boolean
   wordmark?: boolean
+  wordmarkSrc?: string
   className?: string
 }) {
-  const barClass = animated ? "animate-eq origin-center [transform-box:fill-box]" : undefined
+  // Keep the stagger in the utility layer: the desktop build makes animation utilities important.
+  const barClass = animated ? "animate-eq origin-center [transform-box:fill-box] [animation-delay:var(--eq-delay)]" : undefined
   return (
-    <svg viewBox={wordmark ? "0 0 1660 355" : "0 0 717 356"} aria-hidden="true" className={cn("h-10 w-auto", className)}>
+    <svg viewBox={wordmark ? "0 -56 1660 412" : "0 -56 717 412"} aria-hidden="true" className={cn("h-10 w-auto", className)}>
       {PINK_BARS.map((bar) => (
         <rect
           key={bar.x}
           x={bar.x}
-          y={bar.y}
+          y={150 - bar.height / 2}
           width="27"
           height={bar.height}
           rx="13.5"
           className={cn("fill-brand-pink", barClass)}
-          style={animated ? { animationDelay: `${bar.delay}s` } : undefined}
+          style={animated ? { '--eq-delay': `${bar.delay}s` } as CSSProperties : undefined}
         />
       ))}
       <rect x="174" width="369" height="300" rx="70" className="fill-brand-red" />
@@ -52,18 +56,18 @@ export function BrandMark({
         <rect
           key={bar.x}
           x={bar.x}
-          y={bar.y}
+          y={150 - bar.height / 2}
           width="27"
           height={bar.height}
           rx="13.5"
           className={cn("fill-brand-blue", barClass)}
-          style={animated ? { animationDelay: `${bar.delay}s` } : undefined}
+          style={animated ? { '--eq-delay': `${bar.delay}s` } as CSSProperties : undefined}
         />
       ))}
       {wordmark && (
-        // Crop the original asset to its wordmark, preserving the lettering and gradient.
-        <svg x="717" width="943" height="355" viewBox="717 0 943 355" overflow="hidden">
-          <image href="/youdub-logo.svg" width="1660" height="355" />
+        // Both assets center the body, waves and lettering at y=150; the tail has matching top clearance.
+        <svg x="717" y="-56" width="943" height="412" viewBox="717 -56 943 412" overflow="hidden">
+          <image href={wordmarkSrc} y="-56" width="1660" height="412" />
         </svg>
       )}
     </svg>

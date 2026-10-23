@@ -9,7 +9,7 @@ from contextlib import suppress
 
 from pydantic import ValidationError
 
-from .contracts import Contract
+from .data_contracts import Contract
 from .errors import ApiError
 from .segments import LANGUAGES, Segment, Transcript, TranslatedSegment, Translation, read_transcript
 from .steps import Completed, StageContext

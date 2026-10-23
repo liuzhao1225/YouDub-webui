@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-21T13:54:26.830Z",
+  "runtime": "source development Electron / official PluginManager and client modules",
+  "externalLlmCalled": false,
+  "fixtures": [
+    {
+      "bundle": "@youdub/harness-example-file-transform",
+      "source": "apps/harness/test/fixtures/file-transform",
+      "installApplication": "applied",
+      "taskId": "8f20dc03-20e9-4a55-8137-ddc73d2e754e",
+      "workflowId": "example.uppercase",
+      "status": "succeeded",
+      "sourceSdk": "apps/harness/dist/desktop/runtime-project/youdub-plugin",
+      "clientUi": {
+        "nativePageOpened": true,
+        "counterBefore": 0,
+        "counterAfter": 1
+      },
+      "cleanup": {
+        "application": "applied",
+        "bundleAbsent": true,
+        "providerAbsent": true,
+        "workflowAbsent": true,
+        "sourceSdkPreserved": true,
+        "restartRequired": false
+      },
+      "result": "YOUDUB PLUGIN\n中文保留"
+    },
+    {
+      "bundle": "@youdub/harness-example-graph-text-review",
+      "source": "apps/harness/test/fixtures/graph-text-review",
+      "installApplication": "applied",
+      "taskId": "8b88138a-58f8-4f5a-acda-e5d8161353e7",
+      "workflowId": "example.text-review",
+      "status": "succeeded",
+      "sourceSdk": "apps/harness/dist/desktop/runtime-project/youdub-plugin",
+      "clientUi": {
+        "nativeCustomReviewOpened": true,
+        "savedRevision": 2,
+        "saveRemainedPaused": true,
+        "nativeApproval": true,
+        "screenshot": "apps/harness/docs/evidence/source-native-plugin-review.png"
+      },
+      "cleanup": {
+        "application": "applied",
+        "bundleAbsent": true,
+        "providerAbsent": true,
+        "workflowAbsent": true,
+        "sourceSdkPreserved": true,
+        "restartRequired": false
+      },
+      "node": "review",
+      "nodeStatus": "completed",
+      "revision": 2,
+      "approvedRevision": 2,
+      "output": {
+        "size": 83,
+        "sha256": "c0480f414e071cefa7c9de32aa583738752247f75fd9ee963d17ae196a26c898",
+        "path": ".cache/harness/native-client-acceptance/graph-ui-reviewed.txt"
+      }
+    }
+  ],
+  "evidenceDirectory": ".cache/harness/native-client-acceptance",
+  "cleanupVerifiedAt": "2026-10-21T13:54:26.830Z"
+}

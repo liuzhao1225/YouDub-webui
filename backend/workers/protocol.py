@@ -23,8 +23,8 @@ def error_payload(exc: BaseException) -> dict:
     if hasattr(exc, "content"):
         return {**exc.content["error"], "type": type(exc).__name__, "status": exc.status_code}
     code = getattr(exc, "code", "PYTHON_ERROR")
-    status = 404 if code in {"TASK_NOT_FOUND", "LEGACY_NOT_FOUND"} else (
-        409 if code in {"REVISION_CONFLICT", "TASK_EXISTS", "TASK_BUSY", "LEGACY_READ_ONLY", "IMMUTABLE_SNAPSHOT", "MIGRATION_ACTIVE_TASKS"} else
+    status = 404 if code in {"TASK_NOT_FOUND", "LEGACY_NOT_FOUND", "WORKFLOW_DOCUMENT_NOT_FOUND"} else (
+        409 if code in {"REVISION_CONFLICT", "TASK_EXISTS", "WORKFLOW_DOCUMENT_EXISTS", "TASK_BUSY", "LEGACY_READ_ONLY", "IMMUTABLE_SNAPSHOT", "MIGRATION_ACTIVE_TASKS"} else
         422 if code in {"INVALID_TASK", "INVALID_QUERY", "INVALID_CONFIG", "INVALID_INPUT", "INVALID_SUBTITLES"} else 500)
     return {"code": code, "message": str(exc), "status": status,
             "type": type(exc).__name__, "details": getattr(exc, "details", None)}

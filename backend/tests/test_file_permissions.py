@@ -112,6 +112,24 @@ def test_desktop_config_uses_private_data_without_mutating_installed_code(monkey
         config._load_runtime_environment(repo, data_root=applications / "unsafe-data")
 
 
+def test_harness_workers_use_resolved_environment_without_loading_another_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("YOUDUB_HARNESS_RUNTIME", "1")
+    calls = []
+    monkeypatch.setattr(config, "load_dotenv", lambda path: calls.append(path))
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", lambda: calls.append("ffmpeg"))
+    repo = tmp_path / "immutable-code"
+    data = tmp_path / "profile-data"
+    executable = tmp_path / "ffmpeg.exe"
+    monkeypatch.setenv("FFMPEG_PATH", str(executable))
+    config._load_runtime_environment(repo, data_root=data)
+    assert calls == []
+    executable.write_bytes(b"fixture")
+    config._load_runtime_environment(repo, data_root=data)
+    assert calls == ["ffmpeg"]
+    assert not repo.exists()
+    assert not data.exists()
+
+
 @POSIX_ONLY
 def test_only_the_known_env_alias_pair_is_allowed(monkeypatch, tmp_path):
     repo = _make_safe_directory(tmp_path / "repo-alias")

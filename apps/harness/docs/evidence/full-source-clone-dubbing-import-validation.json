@@ -1,0 +1,23 @@
+{
+  "scope": "Original document schema, secret/path exclusion, original node configuration and port types, acyclic topology, all required inputs and outputs; static only, provider readiness is checked by the native product before launch.",
+  "valid": true,
+  "nodeOrder": [
+    "prepare",
+    "separate",
+    "recognize",
+    "translate",
+    "reference",
+    "synthesize",
+    "mix",
+    "align",
+    "export"
+  ],
+  "sourceTemplate": "packages/builtin/src/workflow-templates/source-clone-dubbing.json",
+  "workflow": "apps/harness/docs/evidence/full-source-clone-dubbing.workflow.json",
+  "bytes": 10320,
+  "sha256": "a1078983e7beb527ab15b51d5cd6f29ed27867d3d9378de27a5fb449dd4c532f",
+  "llmOutputLimit": 65535,
+  "containsCredentials": false,
+  "containsRuntimeVideoPath": false,
+  "taskCreated": false
+}

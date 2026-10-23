@@ -3,7 +3,12 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { PluginContextProvider } from '@/plugin/sdk'
 import { LanguageProvider } from '@/lib/i18n'
-import { UpdateNotice, UpdateProvider, UpdateSettings } from './app-updates'
+import { UpdateNotice as UpdateNoticeView, UpdateProvider as UpdateProviderView, UpdateSettings as UpdateSettingsView } from './app-updates'
+
+import { bindTestComponent } from '@/plugin/test-bindings'
+const UpdateNotice = bindTestComponent(UpdateNoticeView, ['useUpdates'])
+const UpdateSettings = bindTestComponent(UpdateSettingsView, ['useUpdates'])
+const UpdateProvider = bindTestComponent(UpdateProviderView, ['request'])
 
 afterEach(() => { cleanup(); vi.useRealTimers(); window.localStorage.clear() })
 const available = { version: '0.0.5', url: 'https://github.com/liuzhao1225/YouDub-webui/releases/tag/v0.0.5',
@@ -42,7 +47,7 @@ it('respects the persisted opt-out and still allows a manual check', async () =>
   fixture.available = available
   await act(async () => fireEvent.click(screen.getByRole('button', { name: '检查更新' })))
   expect(checks()).toHaveLength(1)
-  expect(screen.getByRole('button', { name: '下载 0.0.5' })).toHaveAttribute('href', available.download)
+  expect(screen.getByRole('link', { name: '下载 0.0.5' })).toHaveAttribute('href', available.download)
   await act(() => vi.advanceTimersByTimeAsync(60 * 60 * 1000))
   expect(checks()).toHaveLength(1)
 })

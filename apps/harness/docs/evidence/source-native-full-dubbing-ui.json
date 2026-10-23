@@ -1,0 +1,22 @@
+{
+  "taskId": "0d77dbf3-a39c-4713-b91c-ecacbe777014",
+  "videoPlaybackObservedSeconds": 11.9,
+  "savedThroughNativeDialog": true,
+  "defaultNamesPreserved": true,
+  "files": [
+    {
+      "name": "source.srt",
+      "bytes": 281,
+      "sha256": "5ec1a4ef6f26236558714a45d6657b050c04455ab93b54fb2e891abb2db32ab6"
+    },
+    {
+      "name": "translated.srt",
+      "bytes": 260,
+      "sha256": "f1e9d10740cc1a6e2de6bd6982f394fbf63f26b255dc862a8e3297d3d58cf9f4"
+    }
+  ],
+  "playbackScreenshot": "source-native-full-dubbing-playback.png",
+  "renderedSubtitleClippingObserved": true,
+  "renderedSubtitleFixAcceptance": "Passed in separate task 6d898822-3e81-4df2-8e38-1979a05a7efe; see source-native-cjk-subtitle-fix.json. First-run artifacts preserved.",
+  "currentImplementationNote": "The separate display-wrap experiment remains historical evidence. Its patch was withdrawn to restore verbatim original YouDub sentence splitting; final sentence-splitting acceptance is recorded separately."
+}

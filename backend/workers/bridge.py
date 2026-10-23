@@ -17,6 +17,7 @@ class Bridge:
         from backend.app.v1.credentials import SystemCredentials
         self.store = SqliteStore(root, legacy_db)
         self.credentials = credentials if credentials is not None else SystemCredentials()
+        self.store.migrate_connection_model()
 
     def settings(self):
         values = self.store.settings_values()
@@ -25,7 +26,8 @@ class Bridge:
             key = self.credentials.get(item["credential_ref"]) if item.get("credential_ref") else None
             hint = (key[:6] + "****" if len(key) > 10 else "****") if key else None
             connections.append({"adapter": item["adapter"], "base_url": item["base_url"],
-                                "has_api_key": bool(key), "api_key_hint": hint})
+                                "has_api_key": bool(key), "api_key_hint": hint,
+                                **({"model": item["model"]} if "model" in item else {})})
         return {"defaults": values.get("defaults"), "connections": connections,
                 "ui_language": values.get("ui_language", "en")}
 
@@ -50,6 +52,7 @@ class Bridge:
                 raise WorkerError("INVALID_CONFIG", "A new connection requires a base URL.")
             previous = (old or {}).get("credential_ref")
             reference = previous if old and old["base_url"] == base else None
+            model = update.model.strip() if "model" in update.model_fields_set else (old or {}).get("model")
             changed = False
             cleared = None
             try:
@@ -67,7 +70,8 @@ class Bridge:
                     self.credentials.delete(previous)
                     changed = True
                 connections = [item for item in connections if item["adapter"] != update.adapter]
-                connections.append({"adapter": update.adapter, "base_url": base, "credential_ref": reference})
+                connections.append({"adapter": update.adapter, "base_url": base, "credential_ref": reference,
+                                    **({"model": model} if model is not None else {})})
                 self.store.write_setting("connections", connections)
             except Exception as exc:
                 if changed:
@@ -83,7 +87,11 @@ class Bridge:
         if method.startswith("store."):
             operation = method.removeprefix("store.")
             functions = {"create": self.store.create, "get": self.store.get, "list": self.store.list,
-                         "cas": self.store.cas, "claim": self.store.claim, "delete": self.store.delete}
+                         "cas": self.store.cas, "claim": self.store.claim, "delete": self.store.delete,
+                         "workflow_list": self.store.workflow_list, "workflow_get": self.store.workflow_get,
+                         "workflow_create": self.store.workflow_create, "workflow_update": self.store.workflow_update,
+                         "workflow_delete": self.store.workflow_delete,
+                         "workflow_migrate_defaults": self.store.workflow_migrate_defaults}
             if operation not in functions:
                 raise WorkerError("UNKNOWN_METHOD", f"Unknown storage operation: {operation}")
             return functions[operation](**params)
@@ -93,6 +101,14 @@ class Bridge:
             return {"defaults": None, "connections": [], "ui_language": "en", **self.store.settings_values()}
         if method == "settings.patch":
             return self.patch_settings(params["patch"])
+        if method == "settings.validate_defaults":
+            from pydantic import ValidationError
+            from backend.app.v1.contracts import TaskConfig
+            try:
+                return TaskConfig.model_validate(params["defaults"]).model_dump(mode="json")
+            except ValidationError as exc:
+                raise WorkerError("INVALID_CONFIG", "Saved processing preferences do not match the required format.",
+                                  exc.errors(include_input=False, include_context=False, include_url=False)) from exc
         if method == "settings.write":
             # Namespaced plugin settings are opaque JSON; public schema
             # validation belongs to their Cordis settings provider.
@@ -101,15 +117,18 @@ class Bridge:
             self.store.write_setting(params["key"], params["value"])
             return None
         if method == "runtime.info":
+            from backend.app.accelerators import detect_devices
             from backend.app.v1.runtime import runtime_info
+            detect_devices.cache_clear()
             return runtime_info()
         if method == "runtime.probe":
+            from backend.app.accelerators import detect_devices
             from backend.app.v1.runtime import probe_capability
+            detect_devices.cache_clear()
             adapter = params["adapter"]
             if adapter == "openai":
                 settings = self.settings()
-                model = ((settings.get("defaults") or {}).get("translation") or {}).get("model")
-                return probe_capability(adapter, connections=settings["connections"], translation_model=model)
+                return probe_capability(adapter, connections=settings["connections"])
             return probe_capability(adapter)
         if method in {"secrets.get", "secrets.set", "secrets.delete"}:
             if method == "secrets.get":

@@ -1,0 +1,72 @@
+/* Shared by Web and Harness Desktop. Harness owns both theme palettes.
+   Product semantics consume native tokens; the primary action retains YouDub brand red. */
+body {
+  --app-font-sans: var(--dsw-font-family);
+  --app-font-mono: var(--ds-font-family-code);
+  --brand-red: #ff0033;
+  --brand-pink: #fb7299;
+  --brand-blue: #00aeec;
+  --background: var(--dsw-alias-bg-base);
+  --surface: var(--dsw-specific-sidebar-fill);
+  --card: var(--dsw-alias-bg-layer-1);
+  --elevated: var(--dsw-alias-bg-layer-2);
+  --input-bg: var(--dsw-specific-input-major);
+  --foreground: var(--dsw-alias-label-primary);
+  --card-foreground: var(--dsw-alias-label-primary);
+  --popover: var(--dsw-alias-bg-layer-2);
+  --popover-foreground: var(--dsw-alias-label-primary);
+  --primary: var(--dsw-alias-button-primary-fill);
+  --primary-hover: var(--dsw-alias-button-primary-hover);
+  --primary-foreground: var(--dsw-alias-label-primary-foreground);
+  --secondary: var(--dsw-alias-state-business-tertiary);
+  --secondary-foreground: var(--dsw-alias-state-business-primary);
+  --muted: var(--dsw-alias-bg-module-platform);
+  --muted-foreground: var(--dsw-alias-label-secondary);
+  --subtle-foreground: var(--dsw-alias-label-tertiary);
+  --accent: var(--dsw-alias-interactive-bg-hover);
+  --accent-foreground: var(--dsw-alias-label-primary);
+  --destructive: var(--dsw-alias-state-error-primary);
+  --border: var(--dsw-alias-border-l2);
+  --input: var(--dsw-alias-border-l4);
+  --ring: var(--dsw-alias-state-business-primary);
+  --link: var(--dsw-alias-link);
+  --status-success: var(--dsw-alias-state-success-primary);
+  --status-success-fg: var(--dsw-alias-state-success-primary);
+  --status-running: var(--dsw-alias-state-business-primary);
+  --status-running-fg: var(--dsw-alias-state-business-primary);
+  --status-danger: var(--dsw-alias-state-error-primary);
+  --status-danger-fg: var(--dsw-alias-state-error-primary);
+  --status-warning: var(--dsw-alias-state-warn-primary);
+  --status-warning-fg: var(--dsw-alias-state-warn-label);
+  --status-neutral: var(--dsw-alias-state-idle-primary);
+  --status-neutral-fg: var(--dsw-alias-label-secondary);
+  --scrollbar: var(--dsw-alias-scrollbar-bg-l2);
+  --sidebar: var(--dsw-specific-sidebar-fill);
+  --sidebar-foreground: var(--dsw-alias-label-primary);
+  --sidebar-primary: var(--dsw-alias-button-primary-fill);
+  --sidebar-primary-foreground: var(--dsw-alias-label-primary-foreground);
+  --sidebar-accent: var(--dsw-specific-sidebar-nav-item-active);
+  --sidebar-accent-foreground: var(--dsw-alias-label-primary);
+  --sidebar-border: var(--dsw-alias-border-l2);
+  --sidebar-ring: var(--dsw-alias-state-business-primary);
+  --chart-1: var(--dsw-alias-state-business-primary);
+  --chart-2: var(--dsw-alias-state-success-primary);
+  --chart-3: var(--dsw-alias-state-warn-primary);
+  --chart-4: var(--dsw-alias-state-error-primary);
+  --chart-5: var(--dsw-alias-label-secondary);
+  --radius: var(--dsw-radius-md);
+  --primary-glow: none;
+  --card-shadow: var(--dsw-elevation-panel);
+  --float-shadow: var(--dsw-elevation-prominent);
+  --glass: var(--dsw-menu-surface-fill);
+  --grid-dot: var(--dsw-alias-border-l1);
+  --aurora-opacity: 0.55;
+}
+body[data-ds-dark-theme] { --aurora-opacity: 1; }
+
+/* Product brand exception: keep the original Harness component and state rules. */
+body, body[data-ds-dark-theme] {
+  --dsw-alias-button-primary-fill: #e6002e;
+  --dsw-alias-button-primary-hover: #cc0029;
+  --dsw-alias-label-primary-foreground: #ffffff;
+}

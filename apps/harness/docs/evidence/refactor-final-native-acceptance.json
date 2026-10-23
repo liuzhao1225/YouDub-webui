@@ -1,0 +1,547 @@
+{
+  "date": "2026-10-23",
+  "sourceCandidate": "fa02da7d68abc12f94c01dfa6a28a5fc5f108f81",
+  "documentationHeadAtStart": "8458f2f89fc0e3f0fe1d4bb3c020ae3b1d8507b1",
+  "sourceChangedThisAcceptance": false,
+  "sourceScope": "This acceptance used the compiled fa02da7d candidate throughout. Concurrent edits by another session in apps/web and docs/design are preserved but are not covered by these runtime results.",
+  "platform": "macOS arm64",
+  "electron": "44.7.0",
+  "productVersion": "0.0.7",
+  "mode": "Repository-built development Electron; independent private profiles; no packaging/signing/release",
+  "tasks": [
+    {
+      "id": "c99613b3-ebf9-481a-9e69-5c20963b42e0",
+      "status": "succeeded",
+      "workflowId": "youdub.graph",
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "separate",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "recognize",
+          "status": "completed",
+          "outputRevision": 2,
+          "approvedRevision": 2
+        },
+        {
+          "id": "translate",
+          "status": "completed",
+          "outputRevision": 2,
+          "approvedRevision": 2
+        },
+        {
+          "id": "reference",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "synthesize",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "mix",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "957c93d9-4aa0-4bd8-b06f-f442c69d104f",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "export",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        }
+      ],
+      "requests": [
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/895a54e3-a48b-4353-b16b-292c9dd24734/translation_raw/0001.request.json",
+          "bytes": 1234,
+          "sha256": "3a83b26d267801ac11400c23ad2495780f967bbf93ac95af544f19bb41ae5d5f",
+          "model": "doubao-seed-evolving",
+          "maxTokens": 65535,
+          "response": {
+            "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/895a54e3-a48b-4353-b16b-292c9dd24734/translation_raw/0001.response.json",
+            "bytes": 400,
+            "sha256": "aad49756ad6a8b6aed6aea58af5c4f11b378e0cea9575f10a8a7ac9193749ddf"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/a6c80847-8e65-4fea-b887-1e7ccbd0500e/output/video.mp4",
+          "bytes": 735013,
+          "sha256": "7ac2cc70e850574eed065efa9fca73705d459f3e03d074b2dc64ea609a2ee523"
+        },
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/a6c80847-8e65-4fea-b887-1e7ccbd0500e/output/audio.wav",
+          "bytes": 3635180,
+          "sha256": "91f988c929b6a97928c695da9feff3312d4f63e2440de89d3dbcffedb305c491"
+        },
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/a6c80847-8e65-4fea-b887-1e7ccbd0500e/output/source.srt",
+          "bytes": 383,
+          "sha256": "16fdcd93756008b001a17f3116b3f9a161ba6d6df9ebb8892358fbd6c3e7863b"
+        },
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/a6c80847-8e65-4fea-b887-1e7ccbd0500e/output/translated.srt",
+          "bytes": 313,
+          "sha256": "156ea75a36247cf4c62d17712083e8f9999d716586643a74344ea489c9b54c96"
+        }
+      ],
+      "probe": {
+        "video.mp4": {
+          "programs": [],
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 320,
+              "height": 240,
+              "duration": "18.933333"
+            },
+            {
+              "index": 1,
+              "codec_name": "aac",
+              "codec_type": "audio",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "18.933000"
+            }
+          ],
+          "format": {
+            "duration": "18.933333",
+            "size": "735013"
+          }
+        },
+        "audio.wav": {
+          "programs": [],
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "pcm_s16le",
+              "codec_type": "audio",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "18.933000"
+            }
+          ],
+          "format": {
+            "duration": "18.933000",
+            "size": "3635180"
+          }
+        }
+      },
+      "subtitles": {
+        "source.srt": {
+          "count": 6,
+          "firstStartMs": 1100,
+          "lastEndMs": 18480,
+          "orderedNonOverlappingWithinVideo": true
+        },
+        "translated.srt": {
+          "count": 5,
+          "firstStartMs": 2140,
+          "lastEndMs": 18460,
+          "orderedNonOverlappingWithinVideo": true
+        }
+      },
+      "alignment": {
+        "model": "Qwen3-ForcedAligner-0.6B-hf",
+        "clips": 3,
+        "words": 47,
+        "source": {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/c99613b3-ebf9-481a-9e69-5c20963b42e0/attempts/1/4ec04d46-3bd2-4ebf-b156-58900a43ff54/subtitle_alignment/words.json",
+          "bytes": 5109,
+          "sha256": "add98c6d58e924898bfc8e141790ff6be6ea35ac1a3f36ae786781ec6fcb272a"
+        }
+      },
+      "nativeSavedSubtitle": {
+        "path": "/Users/liuzhao/Downloads/youdub-native-final-20261023.srt",
+        "bytes": 313,
+        "sha256": "156ea75a36247cf4c62d17712083e8f9999d716586643a74344ea489c9b54c96"
+      },
+      "savedBytesMatchArtifact": true,
+      "input": {
+        "sourceVideo": {
+          "path": "site/assets/zoo-en.mp4",
+          "bytes": 1022876,
+          "sha256": "ad1b9836ea34d72812d5dc9d134d46807635d699ed51bada00916c8d1dd76e10"
+        },
+        "selectedThroughMacOpenPanel": true,
+        "uiLanguage": "ja"
+      },
+      "reviewRestart": {
+        "recognizeRevision": 2,
+        "translateRevision": 2,
+        "savedStateBeforeQuit": "awaiting_review",
+        "stateAfterCleanNativeRestart": "awaiting_review",
+        "savedTextUnchanged": true,
+        "approveStartedDownstream": true
+      }
+    },
+    {
+      "id": "0136ee33-6085-4ab3-9caf-2475098dc2e7",
+      "status": "succeeded",
+      "workflowId": "youdub.graph",
+      "steps": [
+        {
+          "id": "source-download",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "prepare",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "separate",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "recognize",
+          "status": "completed",
+          "outputRevision": 2,
+          "approvedRevision": 2
+        },
+        {
+          "id": "translate",
+          "status": "completed",
+          "outputRevision": 2,
+          "approvedRevision": 2
+        },
+        {
+          "id": "reference",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "synthesize",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "mix",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "957c93d9-4aa0-4bd8-b06f-f442c69d104f",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        },
+        {
+          "id": "export",
+          "status": "completed",
+          "outputRevision": 1,
+          "approvedRevision": 1
+        }
+      ],
+      "requests": [
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/ead30923-4c40-459f-81c7-d898e0de7e73/translation_raw/0001.request.json",
+          "bytes": 1234,
+          "sha256": "3a83b26d267801ac11400c23ad2495780f967bbf93ac95af544f19bb41ae5d5f",
+          "model": "doubao-seed-evolving",
+          "maxTokens": 65535,
+          "response": {
+            "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/ead30923-4c40-459f-81c7-d898e0de7e73/translation_raw/0001.response.json",
+            "bytes": 388,
+            "sha256": "7f4b48521d8e6dd55b78efa7fea30d43eb1e8a650cfea56d232702f0dba37345"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/85cb285c-9479-4f7e-b4b5-f5782f1e6a4d/output/video.mp4",
+          "bytes": 742555,
+          "sha256": "91f1237e886a853b27c6ca234bf9c94dc84d118ffa8bea3e5a31ec21722ffada"
+        },
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/85cb285c-9479-4f7e-b4b5-f5782f1e6a4d/output/audio.wav",
+          "bytes": 3635180,
+          "sha256": "a4fc146670fa64d04417fd5eb21440fc46b92c4b3ff00be4ad9bd282f4fa4b7e"
+        },
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/85cb285c-9479-4f7e-b4b5-f5782f1e6a4d/output/source.srt",
+          "bytes": 383,
+          "sha256": "e1b0230e9f669654a26b2873cc7010db84f7577bf844bdc7b75707632d24ff2d"
+        },
+        {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/85cb285c-9479-4f7e-b4b5-f5782f1e6a4d/output/translated.srt",
+          "bytes": 319,
+          "sha256": "5795a59506f6e8ad2f4b1ae1ad44504aa670e45a2b7cbcfd0a22d810e0b42c9b"
+        }
+      ],
+      "probe": {
+        "video.mp4": {
+          "programs": [],
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 320,
+              "height": 240,
+              "duration": "18.933333"
+            },
+            {
+              "index": 1,
+              "codec_name": "aac",
+              "codec_type": "audio",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "18.933000"
+            }
+          ],
+          "format": {
+            "duration": "18.933333",
+            "size": "742555"
+          }
+        },
+        "audio.wav": {
+          "programs": [],
+          "streams": [
+            {
+              "index": 0,
+              "codec_name": "pcm_s16le",
+              "codec_type": "audio",
+              "sample_rate": "48000",
+              "channels": 2,
+              "duration": "18.933000"
+            }
+          ],
+          "format": {
+            "duration": "18.933000",
+            "size": "3635180"
+          }
+        }
+      },
+      "subtitles": {
+        "source.srt": {
+          "count": 6,
+          "firstStartMs": 1060,
+          "lastEndMs": 18440,
+          "orderedNonOverlappingWithinVideo": true
+        },
+        "translated.srt": {
+          "count": 5,
+          "firstStartMs": 1700,
+          "lastEndMs": 18420,
+          "orderedNonOverlappingWithinVideo": true
+        }
+      },
+      "alignment": {
+        "model": "Qwen3-ForcedAligner-0.6B-hf",
+        "clips": 3,
+        "words": 49,
+        "source": {
+          "path": ".cache/harness/original-runtime-compat-orzmb8pc/private YouDub/tasks/0136ee33-6085-4ab3-9caf-2475098dc2e7/attempts/1/a0405794-b038-4f34-8a7e-e5e6584e725d/subtitle_alignment/words.json",
+          "bytes": 5319,
+          "sha256": "99b0e619dadddbe9982f78f89e0ea28940e3bf18a6d2add152e92ff708fcb552"
+        }
+      },
+      "nativeSavedSubtitle": {
+        "path": "/Users/liuzhao/Downloads/youdub-youtube-中文验收-20261023.srt",
+        "bytes": 319,
+        "sha256": "5795a59506f6e8ad2f4b1ae1ad44504aa670e45a2b7cbcfd0a22d810e0b42c9b"
+      },
+      "savedBytesMatchArtifact": true,
+      "input": {
+        "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+        "httpProxyPort": 7897,
+        "enteredThroughNativePage": true,
+        "downloadNode": "source-download",
+        "downloadSucceeded": true,
+        "uiLanguage": "zh",
+        "audioPlayerReachedSeconds": 18.933,
+        "videoPlayerReachedSeconds": 18.9
+      },
+      "downloadMetadataFiles": []
+    }
+  ],
+  "nativeUi": {
+    "heroAndLogoVisible": true,
+    "sidebarCollapsedAndExpanded": true,
+    "windowZoomAndRestore": true,
+    "defaultScreenshotPixels": [
+      2560,
+      1640
+    ],
+    "zoomedScreenshotPixels": [
+      2992,
+      1876
+    ],
+    "videoSeekSeconds": 9.5,
+    "fullscreenAndEscape": true,
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "languages": [
+      "en",
+      "ja",
+      "zh"
+    ],
+    "primaryLanguageAfterUserRequest": "zh",
+    "providerListOnlyUserProvider": true,
+    "providerDraftQuitWarningCancelPreservedDraft": true,
+    "discardDraftRestoredProviderName": true,
+    "activeTaskQuitWarningCancelKeptTaskRunning": true,
+    "translationTaskQuitWarningChinese": true,
+    "screenshotsContainNoCredentialField": true
+  },
+  "firstRun": {
+    "profile": ".cache/harness/native-first-run-xtj6thrt",
+    "resourceReuse": "APFS-cloned private runtime, models and sentence resources; tiny moved outside selected model root for real native download verification; no credentials, database or tasks copied.",
+    "chosenPath": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-first-run-xtj6thrt/YouDub 数据",
+    "chosenThroughMacFolderPicker": true,
+    "languageChosenInitially": "ja",
+    "finalLanguage": "zh",
+    "privatePathAndChineseReadbackAfterRestart": true,
+    "missingTinyBlockedCompletion": true,
+    "whisperDownload": {
+      "path": ".cache/harness/native-first-run-xtj6thrt/YouDub 数据/models/whisper/tiny.pt",
+      "bytes": 75572083,
+      "sha256": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9"
+    },
+    "allFourModelsAndToolsReadyInChinesePage": true,
+    "resourceSelections": [
+      {
+        "providerId": "demucs",
+        "model": "htdemucs"
+      },
+      {
+        "providerId": "qwen_forced_aligner",
+        "model": "Qwen3-ForcedAligner-0.6B-hf"
+      },
+      {
+        "providerId": "voxcpm",
+        "model": "VoxCPM2"
+      },
+      {
+        "providerId": "whisper",
+        "model": "tiny"
+      },
+      {
+        "providerId": "youdub.download"
+      },
+      {
+        "providerId": "youdub.media"
+      }
+    ],
+    "quitDuringModelValidationWarned": true,
+    "cancelQuitPreservedPreparation": true,
+    "translationSetupInitiallyEmpty": true,
+    "translationSetupLaterChoice": true,
+    "translationStillUnconfiguredAfterRestart": true,
+    "downloadPauseNativeVerified": false,
+    "downloadPauseNote": "Download completed before the pause action reached the button. This attempt is not claimed as a successful pause; existing actual-Host browser pause/resume evidence remains separate."
+  },
+  "ci": {
+    "runId": 39875654191,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39875654191",
+    "status": "completed",
+    "conclusion": "success",
+    "platforms": [
+      "macOS",
+      "Windows"
+    ]
+  },
+  "screenshots": [
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-home.jpg",
+      "bytes": 266333,
+      "sha256": "1f832e1f588f33d74fa9b5ccae2129d3ceee2838b6a2bcb1095353e9d57c6fe0"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-window-zoom.jpg",
+      "bytes": 386534,
+      "sha256": "97cd2248f49182dc49bb20c9b0821bdcdd826ea732e472816ce9fdc958822c37"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-fullscreen.jpg",
+      "bytes": 457208,
+      "sha256": "fdb312f203f434a8697d026f7a2e8627bf1e5aae4fef868578a1c6a543816e09"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-settings-ja.jpg",
+      "bytes": 213160,
+      "sha256": "5abac1453d13119853b1ef841bca0e132662c011050c1d19147f120b764f6781"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-restart-review-ja.jpg",
+      "bytes": 236912,
+      "sha256": "67b480e3f81e84e2f8d051cad3705b0b78bfc81e38f63bf08ce9688adb6ae883"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-install-path-ja.jpg",
+      "bytes": 142908,
+      "sha256": "77c79423ecab1068ee9aadf7be0044ea1b88ac4a5c60418683034d156bb8c585"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-resources-zh.jpg",
+      "bytes": 206995,
+      "sha256": "774671c16cbaa448fc9087b68eb3d9fe9dde6be6d033528a9f6847c7be087353"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-restart-zh.jpg",
+      "bytes": 251916,
+      "sha256": "4e7e365ec985751bee1aeb0636265f8229d3806c4f0bd0e1e9bea99ab2ea5008"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-youtube-proxy-zh.jpg",
+      "bytes": 276063,
+      "sha256": "a87d691ba816ce98f5cd530f1735dfc1872ebb79994cd74723d51d631eff49c6"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-youtube-review-zh.jpg",
+      "bytes": 237693,
+      "sha256": "89deaf3a8b7f93d424efcf681bbfacafe3755fd064f2ddece1be68b7359cadd8"
+    },
+    {
+      "path": "apps/harness/docs/evidence/refactor-final-native-youtube-completed-zh.jpg",
+      "bytes": 315581,
+      "sha256": "20c3eb19ad00187fb4caa66fbde530b69e261b5f8c797296cef4cd5d47b7c7cb"
+    }
+  ],
+  "observedLimitations": [
+    "Audio accessibility container initially said unable to play while unloaded; clicking Play loaded it successfully and playback reached 18.933 s. No silent source workaround was added.",
+    "Earlier lsof output did not establish proxy unavailability. Current Clash page showed 7897, TCP connected, and native YouTube download succeeded through that port.",
+    "UU connected to Windows desktop; pointer/keyboard delivery was unreliable. User paired DESKTOP-F94RIVK via Codex and remote thread reads succeeded. Development progress has been sent to the user-designated Windows YouDub-webui thread; source synchronization is in progress and native execution remains pending.",
+    "Native download pause was not reached before completion; no successful native pause is claimed."
+  ],
+  "remaining": [
+    "Windows native current-candidate execution after source synchronization through the now-connected Codex host",
+    "Comparative native cold/warm startup measurements under matched conditions",
+    "Subjective voice quality and audiovisual synchronization listening",
+    "Remaining native task editing/cancellation branches and Bilibili input/save/playback",
+    "Both Feishu documents deferred until acceptance is complete"
+  ]
+}

@@ -1,0 +1,109 @@
+# YouDub product composition over the original Harness Loader.
+# Entries and configuration are copied from the archived base/web bundles.
+# Stable ids keep existing model, theme, language and product settings addressable.
+# User patches and third-party bundles are still applied by the official profile runner.
+- insert:
+    - id: plugin-manager
+      name: '@deepseek-ai/dsh-plugin-manager'
+      disabled: !!js '!ctx.get(''profileContext'')'
+    - id: timer
+      name: '@deepseek-ai/cordis-plugin-timer'
+    - id: hmr
+      name: '@deepseek-ai/dsh-hmr'
+      disabled: !!js '!ctx.get(''profileContext'')'
+      config:
+        root: []
+    - id: llm
+      name: '@deepseek-ai/dsh-llm'
+    - id: typert
+      name: '@deepseek-ai/dsh-typert-registry'
+    - id: typert-loader
+      name: '@deepseek-ai/dsh-typert-loader'
+    - id: typert-gateway
+      name: '@deepseek-ai/dsh-api-gateway'
+    - id: remote-access
+      name: '@deepseek-ai/dsh-api-remote-access'
+    - id: jobs
+      name: '@deepseek-ai/dsh-jobs-local'
+    - id: config-editor
+      name: '@deepseek-ai/dsh-config-editor'
+      disabled: !!js '!ctx.get(''profileContext'')'
+    - id: settings
+      name: '@deepseek-ai/dsh-settings'
+      disabled: !!js '!ctx.get(''profileContext'')'
+    - id: authorization
+      name: '@deepseek-ai/dsh-authorization'
+    - id: credentials
+      name: '@deepseek-ai/dsh-credentials-local'
+    - id: llm-pi-ai
+      name: '@deepseek-ai/dsh-llm-pi-ai'
+    - id: subprocess
+      name: '@deepseek-ai/dsh-subprocess-local'
+    - id: plugin-inventory
+      name: '@deepseek-ai/dsh-host-plugin-inventory'
+    - id: settings-controller
+      name: '@deepseek-ai/dsh-api-settings-controller'
+    - id: web-startup
+      name: '@deepseek-ai/dsh-web-app/startup'
+    - id: webserver
+      name: '@deepseek-ai/dsh-host-webserver'
+      inject:
+        - webStartup
+      config:
+        host: !!js ctx.webStartup.host ?? '127.0.0.1'
+        port: !!js ctx.webStartup.port ?? 3080
+        tls: !!js ctx.webStartup.tls
+        compression: gzip
+        compressionLevel: 1
+        compressionThresholdBytes: 1024
+    - id: web-runtime
+      name: '@deepseek-ai/dsh-web-app'
+      inject:
+        - webStartup
+      config:
+        openBrowser: !!js ctx.webStartup.openBrowser
+        printUrl: true
+        publicUrl: !!js ctx.webStartup.publicUrl
+    - id: client-hmr
+      name: '@deepseek-ai/dsh-client-hmr'
+    - id: modules
+      name: '@deepseek-ai/dsh-client-modules'
+    - id: connection
+      name: '@deepseek-ai/dsh-client-connection'
+      inject:
+        - webStartup
+      config:
+        trustedHosts: !!js ctx.webStartup.trustedHosts
+    - id: api-remotes
+      name: '@deepseek-ai/dsh-api-remotes'
+    - id: ui-theme
+      name: '@deepseek-ai/dsh-client-ui-theme'
+      disabled: false
+      config:
+        preference: light
+    - id: locale
+      name: '@deepseek-ai/dsh-client-locale'
+    - id: shortcuts
+      name: '@deepseek-ai/dsh-client-shortcuts'
+    - id: ui-layout
+      name: '@deepseek-ai/dsh-client-ui-layout'
+      disabled: false
+    - id: ui-renderer
+      name: '@deepseek-ai/dsh-client-ui-renderer'
+    - id: ui-settings
+      name: '@deepseek-ai/dsh-client-ui-settings'
+      disabled: false
+    - id: ui-settings-general
+      name: '@deepseek-ai/dsh-client-ui-settings-general'
+      disabled: false
+    - id: ui-settings-models
+      name: '@deepseek-ai/dsh-client-ui-settings-models'
+      disabled: false
+    - id: youdub-subtitles
+      name: '@youdub/harness-subtitles'
+      config:
+        python: !!js >-
+          dshHomePath(process.platform === 'win32' ? 'youdub/runtime/venv/Scripts/python.exe' :
+          'youdub/runtime/venv/bin/python')
+        modelsDir: !!js dshHomePath('youdub/models/whisper')
+        dataDir: !!js dshHomePath('youdub')

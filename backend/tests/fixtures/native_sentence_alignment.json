@@ -1,0 +1,304 @@
+[
+  {
+    "taskId": "0d77dbf3-a39c-4713-b91c-ecacbe777014",
+    "segmentId": "segment-000002",
+    "text": "这些家伙最让人期待的就是它们有着非常非常长的手臂，这很酷。",
+    "startMs": 4780,
+    "endMs": 13215,
+    "words": [
+      {
+        "text": "这",
+        "start_time": 0.96,
+        "end_time": 1.12
+      },
+      {
+        "text": "些",
+        "start_time": 1.12,
+        "end_time": 1.28
+      },
+      {
+        "text": "家",
+        "start_time": 1.28,
+        "end_time": 1.52
+      },
+      {
+        "text": "伙",
+        "start_time": 1.52,
+        "end_time": 1.92
+      },
+      {
+        "text": "最",
+        "start_time": 2.08,
+        "end_time": 2.24
+      },
+      {
+        "text": "让",
+        "start_time": 2.24,
+        "end_time": 2.4
+      },
+      {
+        "text": "人",
+        "start_time": 2.4,
+        "end_time": 2.56
+      },
+      {
+        "text": "期",
+        "start_time": 2.56,
+        "end_time": 2.8
+      },
+      {
+        "text": "待",
+        "start_time": 2.8,
+        "end_time": 3.04
+      },
+      {
+        "text": "的",
+        "start_time": 3.04,
+        "end_time": 3.2
+      },
+      {
+        "text": "就",
+        "start_time": 3.2,
+        "end_time": 3.44
+      },
+      {
+        "text": "是",
+        "start_time": 3.44,
+        "end_time": 3.84
+      },
+      {
+        "text": "它",
+        "start_time": 4.08,
+        "end_time": 4.16
+      },
+      {
+        "text": "们",
+        "start_time": 4.16,
+        "end_time": 4.32
+      },
+      {
+        "text": "有",
+        "start_time": 4.32,
+        "end_time": 4.56
+      },
+      {
+        "text": "着",
+        "start_time": 4.56,
+        "end_time": 4.96
+      },
+      {
+        "text": "非",
+        "start_time": 5.6,
+        "end_time": 5.76
+      },
+      {
+        "text": "常",
+        "start_time": 5.76,
+        "end_time": 6.0
+      },
+      {
+        "text": "非",
+        "start_time": 6.0,
+        "end_time": 6.08
+      },
+      {
+        "text": "常",
+        "start_time": 6.16,
+        "end_time": 6.32
+      },
+      {
+        "text": "长",
+        "start_time": 6.32,
+        "end_time": 6.56
+      },
+      {
+        "text": "的",
+        "start_time": 6.56,
+        "end_time": 6.64
+      },
+      {
+        "text": "手",
+        "start_time": 6.64,
+        "end_time": 6.88
+      },
+      {
+        "text": "臂",
+        "start_time": 6.96,
+        "end_time": 7.04
+      },
+      {
+        "text": "这",
+        "start_time": 7.28,
+        "end_time": 7.36
+      },
+      {
+        "text": "很",
+        "start_time": 7.36,
+        "end_time": 7.6
+      },
+      {
+        "text": "酷",
+        "start_time": 7.6,
+        "end_time": 7.84
+      }
+    ],
+    "expectedCues": [
+      [
+        5740,
+        11820,
+        "这些家伙最让人期待的就是它们有着非常非常长的手臂，"
+      ],
+      [
+        12060,
+        12620,
+        "这很酷。"
+      ]
+    ]
+  },
+  {
+    "taskId": "6d898822-3e81-4df2-8e38-1979a05a7efe",
+    "segmentId": "segment-000002",
+    "text": "这些家伙所期待的，就是它们有非常非常长的手臂，这很酷。",
+    "startMs": 4760,
+    "endMs": 13841,
+    "words": [
+      {
+        "text": "这",
+        "start_time": 0.96,
+        "end_time": 1.04
+      },
+      {
+        "text": "些",
+        "start_time": 1.04,
+        "end_time": 1.2
+      },
+      {
+        "text": "家",
+        "start_time": 1.2,
+        "end_time": 1.44
+      },
+      {
+        "text": "伙",
+        "start_time": 1.44,
+        "end_time": 1.6
+      },
+      {
+        "text": "所",
+        "start_time": 1.6,
+        "end_time": 1.84
+      },
+      {
+        "text": "期",
+        "start_time": 1.92,
+        "end_time": 2.16
+      },
+      {
+        "text": "待",
+        "start_time": 2.16,
+        "end_time": 2.4
+      },
+      {
+        "text": "的",
+        "start_time": 2.4,
+        "end_time": 2.64
+      },
+      {
+        "text": "就",
+        "start_time": 3.76,
+        "end_time": 3.92
+      },
+      {
+        "text": "是",
+        "start_time": 3.92,
+        "end_time": 4.08
+      },
+      {
+        "text": "它",
+        "start_time": 4.08,
+        "end_time": 4.24
+      },
+      {
+        "text": "们",
+        "start_time": 4.24,
+        "end_time": 4.4
+      },
+      {
+        "text": "有",
+        "start_time": 4.4,
+        "end_time": 4.64
+      },
+      {
+        "text": "非",
+        "start_time": 4.8,
+        "end_time": 5.12
+      },
+      {
+        "text": "常",
+        "start_time": 5.12,
+        "end_time": 5.36
+      },
+      {
+        "text": "非",
+        "start_time": 5.44,
+        "end_time": 5.6
+      },
+      {
+        "text": "常",
+        "start_time": 5.6,
+        "end_time": 5.84
+      },
+      {
+        "text": "长",
+        "start_time": 5.84,
+        "end_time": 6.16
+      },
+      {
+        "text": "的",
+        "start_time": 6.16,
+        "end_time": 6.24
+      },
+      {
+        "text": "手",
+        "start_time": 6.24,
+        "end_time": 6.56
+      },
+      {
+        "text": "臂",
+        "start_time": 6.64,
+        "end_time": 6.8
+      },
+      {
+        "text": "这",
+        "start_time": 7.92,
+        "end_time": 8.0
+      },
+      {
+        "text": "很",
+        "start_time": 8.08,
+        "end_time": 8.24
+      },
+      {
+        "text": "酷",
+        "start_time": 8.32,
+        "end_time": 8.48
+      }
+    ],
+    "expectedCues": [
+      [
+        5720,
+        7400,
+        "这些家伙所期待的，"
+      ],
+      [
+        8520,
+        11560,
+        "就是它们有非常非常长的手臂，"
+      ],
+      [
+        12680,
+        13240,
+        "这很酷。"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,89 @@
+{
+  "taskId": "01bbba6b-c230-436f-b0e0-ad7fe7890fc7",
+  "status": "succeeded",
+  "sourceTranslationUnits": 3,
+  "subtitleCueCount": 6,
+  "sameOriginalSplitterAndWordTimesReproduceFinalCues": true,
+  "translationAndPunctuationPreserved": true,
+  "displayWrappingAdded": false,
+  "nativePlaybackObservedSeconds": 17,
+  "nativeUiScreenshot": "source-native-full-dubbing-sentences-ui.png",
+  "actualFrames": [
+    {
+      "second": 8.5,
+      "file": "source-native-full-dubbing-sentences-frame.png",
+      "observed": "Complete long phrase, no horizontal crop."
+    },
+    {
+      "second": 11.5,
+      "file": "source-native-full-dubbing-sentences-tail.png",
+      "observed": "Separate later short cue."
+    }
+  ],
+  "segments": [
+    {
+      "segmentId": "segment-000001",
+      "translation": "好啦，我们到了，这就是其中一头大象。",
+      "parts": [
+        "好啦，我们到了，",
+        "这就是其中一头大象。"
+      ],
+      "cues": [
+        [
+          1820,
+          2620,
+          "好啦，我们到了，"
+        ],
+        [
+          2940,
+          3820,
+          "这就是其中一头大象。"
+        ]
+      ]
+    },
+    {
+      "segmentId": "segment-000002",
+      "translation": "这些家伙满心期待的，就是自己能有非常非常长的胳膊，这可太酷了。",
+      "parts": [
+        "这些家伙满心期待的，",
+        "就是自己能有非常非常长的胳膊，",
+        "这可太酷了。"
+      ],
+      "cues": [
+        [
+          5420,
+          7260,
+          "这些家伙满心期待的，"
+        ],
+        [
+          7340,
+          10940,
+          "就是自己能有非常非常长的胳膊，"
+        ],
+        [
+          11180,
+          12140,
+          "这可太酷了。"
+        ]
+      ]
+    },
+    {
+      "segmentId": "segment-000003",
+      "translation": "我要说的差不多就是这些了。",
+      "parts": [
+        "我要说的差不多就是这些了。"
+      ],
+      "cues": [
+        [
+          17180,
+          18460,
+          "我要说的差不多就是这些了。"
+        ]
+      ]
+    }
+  ],
+  "limitations": [
+    "Whisper tiny transcription still says arms rather than trunks; restored segmentation does not correct recognition semantics.",
+    "Original splitter uses punctuation and has no maximum character length."
+  ]
+}

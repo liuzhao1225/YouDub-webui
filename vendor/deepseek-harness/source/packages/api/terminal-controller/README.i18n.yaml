@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/api/terminal-controller/README.md
+/:
+  en: 6a19f6d3fdfe0db2
+  zh: a361afe6b8cd3010
+/deepseek-ai-dsh-api-terminal-controller:
+  en: d5eb7912c65b4e26
+  zh: 7deb2a8167a82c90
+/deepseek-ai-dsh-api-terminal-controller/summary:
+  en: afcf6f0d2f899ecc
+  zh: e38e2c0830e42ac9
+/deepseek-ai-dsh-api-terminal-controller/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 1fa9a72d1ee045cc
+/deepseek-ai-dsh-api-terminal-controller/use-this-package:
+  en: 056c8b23819be51f
+  zh: d4525149ad4c32ce
+/deepseek-ai-dsh-api-terminal-controller/understand-the-implementation:
+  en: a3216b572cb70a6b
+  zh: 3adb2a394488b026
+/deepseek-ai-dsh-api-terminal-controller/further-exploration:
+  en: b1b5d2a2bfb8cc6a
+  zh: aa0ea568aa63fda5
+/deepseek-ai-dsh-api-terminal-controller/model-experience:
+  en: 283529571e8cf73f
+  zh: 23336ccfbe65d315
+/deepseek-ai-dsh-api-terminal-controller/model-experience/kv-cache-effect:
+  en: be6f8e99d307c7ac
+  zh: 7dd4dcc0429e766c
+/deepseek-ai-dsh-api-terminal-controller/known-limitations-and-deferred-work:
+  en: 6af6663b852441db
+  zh: 244ed7729cae8d81
+/deepseek-ai-dsh-api-terminal-controller/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 7aeea62eda52b83b

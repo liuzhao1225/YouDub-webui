@@ -1,0 +1,116 @@
+{
+  "status": "passed",
+  "date": "2026-10-22T19:16:13.276Z",
+  "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+  "target": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK",
+  "sourceSha256": "861aad977d13985df8c3175545a0b3db5bacd977e405db751e16588f39c6a7e4",
+  "observed": {
+    "node": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/apps/harness/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+    "nodeVersion": "24.21.0",
+    "cwd": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/home/profiles/desktop",
+    "dshHome": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/home",
+    "domain": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub",
+    "worker": {
+      "executable": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/venv/bin/python",
+      "prefix": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/venv",
+      "basePrefix": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/refactor-first-run-20261022/youdub/runtime/python/python",
+      "userSite": false,
+      "environment": {
+        "YOUDUB_DESKTOP_DATA_DIR": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub",
+        "YOUDUB_NODE_PATH": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/apps/harness/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron",
+        "PYTHONPATH": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui",
+        "PYTHONHOME": "",
+        "PYTHONNOUSERSITE": "1",
+        "FFMPEG_PATH": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/ffmpeg/ffmpeg",
+        "FFPROBE_PATH": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/ffmpeg/ffprobe",
+        "NLTK_DATA": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/nltk_data",
+        "HF_HOME": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/huggingface",
+        "HF_HUB_CACHE": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/huggingface/hub",
+        "HF_ASSETS_CACHE": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/huggingface/assets",
+        "HUGGINGFACE_HUB_CACHE": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/huggingface/hub",
+        "PIP_CACHE_DIR": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/cache/pip",
+        "MODELSCOPE_CACHE": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/modelscope",
+        "TORCH_HOME": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/torch",
+        "XDG_CACHE_HOME": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/runtime/cache",
+        "YOUDUB_WHISPER_MODELS_DIR": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/models/whisper",
+        "YOUDUB_VOXCPM_MODEL_DIR": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/models/voxcpm/VoxCPM2",
+        "YOUDUB_DEMUCS_MODELS_DIR": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/models/demucs",
+        "YOUDUB_FORCED_ALIGNER_MODEL_DIR": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/runtime-isolation-20261023-4th9bK/private YouDub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf"
+      }
+    },
+    "managedCredentialWins": true
+  },
+  "realPaths": {
+    "FFMPEG_PATH": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/youdub/runtime/ffmpeg/ffmpeg",
+    "FFPROBE_PATH": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/youdub/runtime/ffmpeg/ffprobe",
+    "NLTK_DATA": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/youdub/nltk_data"
+  },
+  "models": [
+    {
+      "id": "whisper",
+      "status": "ready"
+    },
+    {
+      "id": "voxcpm",
+      "status": "ready"
+    },
+    {
+      "id": "demucs",
+      "status": "ready"
+    },
+    {
+      "id": "qwen",
+      "status": "ready"
+    }
+  ],
+  "setupPhase": "ready",
+  "explicitSelectionSubmitted": true,
+  "pnpm": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/apps/harness/node_modules/pnpm/bin/pnpm.mjs",
+  "sharedResources": "Runtime, models and NLTK explicitly reuse a previous private YouDub installation through links. This validates path isolation and availability, not downloading into a fresh folder.",
+  "nativeUI": false,
+  "externalLlmCalls": 0,
+  "cleanShutdown": true,
+  "validation": {
+    "command": "node /tmp/youdub-runtime-path-probe.mjs",
+    "script": {
+      "path": "/tmp/youdub-runtime-path-probe.mjs",
+      "sha256": "20e53f9f369d5375cf6d2ad8451d6e20f9920d008921ace6597110da579ad00f"
+    },
+    "log": {
+      "path": "/tmp/youdub-runtime-path-probe-complete.log",
+      "sha256": "64de61baf978fe47ffae08d95e0fa0dad4f71f041d3ebbee15fbcba30e061bd9"
+    },
+    "earlierAttempts": [
+      {
+        "result": "failed fixture startup",
+        "cause": "A user config patch replaces the entry config; the initial probe supplied installation alone and omitted required python/modelsDir/dataDir. No product source change was required.",
+        "logs": [
+          {
+            "path": "/tmp/youdub-runtime-path-probe-initial.log",
+            "sha256": "4e542b329e684ab1d8d8fa1ec37dbf6e8fc899e77379ae63abbdd2a94b0cfe51"
+          },
+          {
+            "path": "/tmp/youdub-runtime-path-probe-second.log",
+            "sha256": "c2f34d7b870e11c3d7cb3df7806967da489cdc0cd6b6beb07e015731b625458e"
+          }
+        ]
+      },
+      {
+        "result": "ready assertion failed",
+        "cause": "A fresh profile correctly waited for explicit four-model selection despite existing files. The final run performs the prepare action before asserting readiness.",
+        "log": {
+          "path": "/tmp/youdub-runtime-path-probe-selection-missing.log",
+          "sha256": "2052529687550d48a6bd82172b7a28838856e2c3337ce8c043ee7fcf3f1fc8f9"
+        }
+      }
+    ]
+  },
+  "configurationPolicy": {
+    "credentials": "Application-owned Harness home credentials override inherited environment and profile/home .env; synthetic values only were used.",
+    "runtime": "Configured private paths override inherited Python and model-cache paths; user Python site packages are disabled.",
+    "limits": [
+      "Explicitly reused existing private YouDub runtime and model files; no fresh download claim.",
+      "Only the actual Desktop Host and Connection were exercised; no native Electron interaction or Windows private-runtime claim."
+    ]
+  }
+}

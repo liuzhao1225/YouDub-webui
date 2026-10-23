@@ -1,0 +1,6 @@
+# Desktop profile-specific paths; shared composition lives in the YouDub bundle.
+- id: youdub-subtitles
+  config:
+    python: __PYTHON__
+    modelsDir: __MODELS__
+    dataDir: !!js dshHomePath('youdub')

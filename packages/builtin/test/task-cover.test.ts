@@ -5,7 +5,7 @@ import { mkdtemp, writeFile, readFile, stat, rm, mkdir, symlink, readdir } from 
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { randomUUID, createHash } from 'node:crypto'
-import { type Artifact, type TaskRecord } from '@youdub/sdk'
+import { type Artifact, type StepState, type TaskRecord } from '@youdub/sdk'
 import Processes from '../src/process.js'
 import Files from '../src/files.js'
 import Tasks from '../src/tasks.js'
@@ -16,7 +16,7 @@ import { taskCover } from '../src/task-cover.js'
 
 async function setup(t: any) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-cover-')), ctx = new Context()
-  const task = { id: randomUUID(), status: 'running', artifacts: {}, inputs: {}, outputs: [], externalRequests: {} } as unknown as TaskRecord
+  const task = { id: randomUUID(), status: 'running', artifacts: {}, inputs: {}, outputs: [], steps: [], plan: { steps: [], outputs: [] }, externalRequests: {} } as unknown as TaskRecord
   const app = await ctx.plugin(async context => {
     context.reflect.provide('store', { async call(method: string) {
       if (method === 'store.get') return task
@@ -48,11 +48,17 @@ async function setup(t: any) {
   }
   async function video() {
     const file = join(ctx.files.taskRoot(task.id), 'source.mp4')
-    await ctx.process.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:r=1:d=1', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:r=1:d=1', '-filter_complex', '[0:v][1:v]concat=n=2:v=1:a=0', '-c:v', 'mpeg4', '-threads', '1', '-n', file] })
+    await ctx.youdubWorker.run({ command: process.env.FFMPEG_PATH || 'ffmpeg', args: ['-nostdin', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=red:s=64x48:r=1:d=1', '-f', 'lavfi', '-i', 'color=c=blue:s=64x48:r=1:d=1', '-filter_complex', '[0:v][1:v]concat=n=2:v=1:a=0', '-c:v', 'mpeg4', '-threads', '1', '-n', file] })
     return artifact('video.mp4', 'video/mp4', await readFile(file))
   }
+  function nodeOutput(id: string, name: string, file: Artifact, status: StepState['status'] = 'completed') {
+    task.plan.steps.push({ id, label: id, bindingKey: id, operation: 'test/v1', input: {}, outputs: [{ name, kind: 'artifact', schemaId: file.schemaId, required: true }] })
+    const step: StepState = { id, label: id, status, invocationId: randomUUID(), progress: 1, message: null, startedAt: null, finishedAt: null, outputs: { [name]: { id: file.id, schemaId: file.schemaId } }, error: null }
+    task.steps.push(step)
+    return step
+  }
   const get = (suffix = '/cover', authenticated = true) => fetch(`${ctx.http.address}/api/v2/tasks/${task.id}${suffix}`, { headers: authenticated ? { Cookie: 'cover_test=test' } : {}, signal: AbortSignal.timeout(5000) })
-  return { ctx, task, root, artifact, video, get }
+  return { ctx, task, root, artifact, video, nodeOutput, get }
 }
 
 test('cover selection prioritizes declared pictures, then source video, then video output', async t => {
@@ -75,18 +81,82 @@ test('legacy video inputs remain preferred over outputs without advertising audi
   source.id = `legacy:${task.id}:input`; task.artifacts[source.id] = source
   task.inputs.video = source
   assert.equal(taskCover(task), source)
-  assert.deepEqual((await (await get('')).json() as any).cover, { url: `/api/v2/tasks/${task.id}/cover` })
+  const response = await get(''), body = await response.json() as any
+  assert.equal(response.status, 200, JSON.stringify(body))
+  assert.deepEqual(body.cover, { url: `/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(source.id)}` })
+  assert.equal(body.allowedActions.includes('approve'), false)
+  assert.equal(body.allowedActions.includes('correct'), false)
   source.name = 'speech.mp3'
   assert.equal(taskCover(task), undefined)
   assert.equal('cover' in await (await get('')).json(), false)
   assert.equal((await get()).status, 404)
 })
 
+test('downloaded node videos expose a first frame before downstream nodes finish', async t => {
+  const { ctx, task, video, nodeOutput, get } = await setup(t)
+  assert.equal('cover' in await (await get('')).json(), false)
+  const source = await video()
+  nodeOutput('download', 'video', source)
+  assert.equal(task.status, 'running')
+  assert.deepEqual(task.outputs, [])
+  const body = await (await get('')).json() as any
+  const expected = { url: `/api/v2/tasks/${task.id}/cover?artifact=${source.id}` }
+  assert.deepEqual(body.cover, expected)
+  const list = await fetch(`${ctx.http.address}/api/v2/tasks`, { headers: { Cookie: 'cover_test=test' } })
+  assert.deepEqual((await list.json() as any).items[0].cover, expected)
+  const response = await get(`/cover?artifact=${source.id}`)
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('content-type'), 'image/jpeg')
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  assert.deepEqual([...bytes.slice(0, 2)], [0xff, 0xd8])
+})
+
+test('current node covers and workflow cover declarations update URLs without selecting historical artifacts', async t => {
+  const { task, artifact, nodeOutput, get } = await setup(t)
+  const source = await artifact('source.mp4', 'video/mp4')
+  task.inputs.video = source
+  const first = await artifact('first.png', 'image/png', Buffer.from('first'))
+  const second = await artifact('second.png', 'image/png', Buffer.from('second'))
+  const step = nodeOutput('preview', 'thumbnail', first, 'awaiting_review')
+  const initial = await (await get('')).json() as any
+  assert.equal(taskCover(task), first)
+  step.outputs.thumbnail = { id: second.id, schemaId: second.schemaId }
+  const corrected = await (await get('')).json() as any
+  assert.notEqual(corrected.cover.url, initial.cover.url)
+  assert.equal(corrected.cover.url, `/api/v2/tasks/${task.id}/cover?artifact=${second.id}`)
+  assert.equal(await (await get(`/cover?artifact=${second.id}`)).text(), 'second')
+
+  // An output can be declared as the workflow cover under a different node port.
+  step.outputs = { image: { id: second.id, schemaId: second.schemaId } }
+  task.plan.steps[0]!.outputs[0]!.name = 'image'
+  task.plan.outputs = [{ id: 'cover', label: 'Cover', role: 'cover', source: { stepId: step.id, output: 'image' }, required: true }]
+  assert.equal(taskCover(task), second)
+  // Invalidating a node clears its current outputs but retains its files/history.
+  step.outputs = {}; step.status = 'pending'
+  step.resultRevisions = [{ revision: 1, parentRevision: null, source: 'computed', actionId: null, outputs: { image: { id: first.id, schemaId: first.schemaId } }, createdAt: new Date().toISOString() }]
+  assert.equal(taskCover(task), source)
+  task.inputs = {}
+  assert.equal(taskCover(task), undefined)
+  assert.equal('cover' in await (await get('')).json(), false)
+})
+
+test('an unavailable node cover reports its error without using an available video instead', async t => {
+  const { ctx, task, artifact, nodeOutput, get } = await setup(t)
+  const image = await artifact('cover.png', 'image/png')
+  task.inputs.video = await artifact('source.mp4', 'video/mp4')
+  nodeOutput('preview', 'cover', image)
+  await rm(join(ctx.files.taskRoot(task.id), image.path))
+  const generation = t.mock.method(ctx.youdubWorker, 'run', () => { throw new Error('The declared cover must remain selected') })
+  const response = await get()
+  assert.equal(response.status, 500)
+  assert.equal(generation.mock.calls.length, 0)
+})
+
 test('registered cover images are served byte-for-byte and require authentication', async t => {
   const { ctx, task, artifact, get } = await setup(t)
   const image = await artifact('cover.png', 'image/png', Buffer.from([137, 80, 78, 71]))
   task.inputs.cover = image
-  t.mock.method(ctx.process, 'run', () => { throw new Error('An image must not invoke FFmpeg') })
+  t.mock.method(ctx.youdubWorker, 'run', () => { throw new Error('An image must not invoke FFmpeg') })
   assert.equal((await get('/cover', false)).status, 401)
   const response = await get()
   assert.equal(response.status, 200); assert.equal(response.headers.get('content-type'), 'image/png')
@@ -95,8 +165,8 @@ test('registered cover images are served byte-for-byte and require authenticatio
 
 test('source first frame is decoded once for concurrent requests and reused from disk', async t => {
   const { ctx, task, video } = await setup(t)
-  const source = await video(), run = ctx.process.run.bind(ctx.process)
-  const calls = t.mock.method(ctx.process, 'run', run)
+  const source = await video(), run = ctx.youdubWorker.run.bind(ctx.youdubWorker)
+  const calls = t.mock.method(ctx.youdubWorker, 'run', run)
   const covers = await Promise.all(Array.from({ length: 4 }, () => ctx.files.cover(task.id, source)))
   assert.equal(calls.mock.calls.length, 1)
   assert.ok(covers.every(value => value.path === covers[0]!.path && value.mimeType === 'image/jpeg'))
@@ -114,12 +184,12 @@ test('cover requests hold a read lock during generation and HTTP file transfer',
   let generationEntered!: () => void, releaseGeneration!: () => void, transferEntered!: () => void, releaseTransfer!: () => void
   const generation = new Promise<void>(resolve => { generationEntered = resolve }), generationGate = new Promise<void>(resolve => { releaseGeneration = resolve })
   const transfer = new Promise<void>(resolve => { transferEntered = resolve }), transferGate = new Promise<void>(resolve => { releaseTransfer = resolve })
-  const run = ctx.process.run.bind(ctx.process), file = ctx.http.file.bind(ctx.http)
+  const run = ctx.youdubWorker.run.bind(ctx.youdubWorker), file = ctx.http.file.bind(ctx.http)
   const readLock = ctx.files.readLock.bind(ctx.files)
   let unlocked!: () => void
   const lockReleased = new Promise<void>(resolve => { unlocked = resolve })
   t.mock.method(ctx.files, 'readLock', (id: string) => { const release = readLock(id); return async () => { await release(); unlocked() } })
-  t.mock.method(ctx.process, 'run', async (request: Parameters<typeof run>[0]) => { generationEntered(); await generationGate; return run(request) })
+  t.mock.method(ctx.youdubWorker, 'run', async (request: Parameters<typeof run>[0]) => { generationEntered(); await generationGate; return run(request) })
   t.mock.method(ctx.http, 'file', async (...args: Parameters<typeof file>) => { transferEntered(); await transferGate; return file(...args) })
   const response = get()
   await generation

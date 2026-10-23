@@ -54,7 +54,7 @@ def test_schema_migration_preserves_all_historical_values(tmp_path):
     created = store.create(task())
     assert created["plan"]["steps"][0]["id"] == "third-party-step"
     with store.connect() as conn:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 3
         assert conn.execute("SELECT current_stage FROM tasks WHERE id=?", (created["id"],)).fetchone()[0] is None
 
 
@@ -100,6 +100,79 @@ def test_cas_rejects_late_writes_and_mutated_execution_snapshot(tmp_path):
         store.cas(updated["id"], updated["revision"], {**updated, "plan": {"steps": []}})
     assert error.value.code == "IMMUTABLE_SNAPSHOT"
     assert store.get(updated["id"])["message"] == "first"
+
+
+def test_v2_migration_is_transactional_and_preserves_terminal_tasks(tmp_path):
+    root = tmp_path / "data"
+    previous = SqliteStore(root)
+    record = previous.create(task(status="succeeded", finishedAt=NOW))
+    with previous.connect() as conn:
+        conn.execute("DROP TABLE workflow_documents")
+        conn.execute("PRAGMA user_version=2")
+    reopened = SqliteStore(root)
+    assert reopened.get(record["id"]) == record
+    assert reopened.workflow_list()["items"] == []
+    active = reopened.create(task())
+    with reopened.connect() as conn:
+        conn.execute("DROP TABLE workflow_documents")
+        conn.execute("PRAGMA user_version=2")
+    with pytest.raises(WorkerError) as error:
+        SqliteStore(root)
+    assert error.value.code == "MIGRATION_ACTIVE_TASKS"
+    with sqlite3.connect(root / "desktop.sqlite") as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert conn.execute("SELECT status FROM tasks WHERE id=?", (active["id"],)).fetchone()[0] == "queued"
+        assert not conn.execute("SELECT name FROM sqlite_master WHERE name='workflow_documents'").fetchone()
+
+
+def test_paused_task_is_active_but_releases_execution_slot_and_survives_restart(tmp_path):
+    store = SqliteStore(tmp_path)
+    paused = store.create(task(status="paused", graphSnapshot={"id": "review"},
+                               steps=[{"id": "recognize", "status": "awaiting_review"}]))
+    queued = store.create(task())
+    assert len(store.list(active=True)["items"]) == 2
+    claimed = store.claim(NOW)
+    assert claimed["id"] == queued["id"]
+    reopened = SqliteStore(tmp_path)
+    assert reopened.get(paused["id"]) == paused
+    for name in ("graphSnapshot", "workflowSource", "nodeRuntimeInputs"):
+        with pytest.raises(WorkerError) as error:
+            reopened.cas(paused["id"], paused["revision"], {**paused, name: {"changed": True}})
+        assert error.value.code == "IMMUTABLE_SNAPSHOT"
+
+
+def test_multiple_review_nodes_persist_without_claiming_the_execution_slot(tmp_path):
+    store = SqliteStore(tmp_path)
+    paused = store.create(task(status="paused", graphSnapshot={"id": "branches"}, steps=[
+        {"id": "left", "status": "awaiting_review"},
+        {"id": "right", "status": "awaiting_review"},
+        {"id": "join", "status": "pending"},
+    ]))
+    assert store.claim(NOW) is None
+    assert SqliteStore(tmp_path).get(paused["id"]) == paused
+    with pytest.raises(WorkerError) as error:
+        store.create(task(status="paused", steps=[]))
+    assert error.value.code == "INVALID_TASK"
+
+
+def test_workflow_crud_roundtrip_and_concurrent_saves_keep_winning_document(tmp_path):
+    bridge = Bridge(tmp_path, credentials=Credentials())
+    document = {"id": "user-subtitles", "title": "字幕", "nodes": [{"id": "recognize"}], "edges": []}
+    saved = bridge.call("store.workflow_create", {"document": document})
+    assert saved["document"] == document and saved["revision"] == 1
+    changed = {**document, "title": "配音"}
+    updated = bridge.call("store.workflow_update", {"id": document["id"], "expectedRevision": 1, "document": changed})
+    assert updated["revision"] == 2
+    with pytest.raises(WorkerError) as error:
+        bridge.call("store.workflow_update", {"id": document["id"], "expectedRevision": 1, "document": document})
+    assert error.value.code == "REVISION_CONFLICT"
+    assert bridge.call("store.workflow_get", {"id": document["id"]})["document"] == changed
+    assert bridge.call("store.workflow_list", {})["items"] == [updated]
+    with pytest.raises(WorkerError) as error:
+        bridge.call("store.workflow_delete", {"id": document["id"], "expectedRevision": 1})
+    assert error.value.code == "REVISION_CONFLICT"
+    bridge.call("store.workflow_delete", {"id": document["id"], "expectedRevision": 2})
+    assert bridge.call("store.workflow_list", {})["items"] == []
 
 
 def test_legacy_input_is_registered_only_within_its_own_task_directory(tmp_path):

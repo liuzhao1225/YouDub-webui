@@ -39,6 +39,8 @@ export function downloadReleases(releases, latestTag) {
   if (latestIndex > 0) downloads.unshift(...downloads.splice(latestIndex, 1))
   const latest = downloads[0]
   if (latest) {
+    // Keep the array and versioned asset fields for already installed clients.
+    latest.isLatest = true
     const assets = published.find(item => item.tag_name === latest.version).assets
     const alias = name => {
       const files = [name, name + '.sha256'].map(file => assets.find(asset => asset.name === file && asset.state === 'uploaded' && asset.size > 0))

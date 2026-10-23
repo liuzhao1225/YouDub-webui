@@ -1,7 +1,8 @@
+import type { MessageKey } from '@/locales'
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { ArrowRightLeft, AudioWaveform, Captions, Clapperboard, Languages, Mic, Speech, type LucideIcon } from "lucide-react"
+import { ArrowRightLeft, AudioWaveform, Captions, Clapperboard, Languages, Mic, Speech, type LucideIcon } from "@/lib/icons"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Segmented } from "@/components/ui/segmented"
@@ -11,22 +12,22 @@ import { cn } from "@/lib/utils"
 import type { Capability, ModelCapability, ModelSelection, Runtime, TaskConfig, TtsSelection } from "@/plugin/builtin/localize-contracts"
 import { useText, type Text } from "@/lib/i18n"
 
-const OUTPUT_LABELS: Record<TaskConfig["output_mode"], [string, string, string]> = {
-  subtitles: ["Subtitles · original audio", "字幕 · 保留原声", "字幕 · 元の音声"],
-  dubbing: ["Dubbing", "配音", "吹き替え"],
-  both: ["Dubbing and subtitles", "配音与字幕", "吹き替えと字幕"],
+const OUTPUT_LABELS: Record<TaskConfig["output_mode"], MessageKey> = {
+  "subtitles": "output_labels.subtitles",
+  "dubbing": "output_labels.dubbing",
+  "both": "output_labels.both"
 }
 
 const LANGUAGE_NAMES: Record<string, string> = { en: "English", zh: "中文", ja: "日本語" }
 
 function languageName(code: string, text: Text) {
-  if (code === "auto") return text("Auto detect", "自动识别", "自動検出")
+  if (code === "auto") return text("localize.task.config.auto.detect")
   return LANGUAGE_NAMES[code] ?? code
 }
 
 function deviceName(device: string, text: Text, runtime: Runtime) {
   if (device === "cpu") return "CPU"
-  if (device === "remote") return text("Remote", "远端", "リモート")
+  if (device === "remote") return text("localize.task.config.remote")
   if (device === "mps") return "Apple MPS"
   const entry = runtime.devices.find(item => item.id === device)
   if (entry?.backend === "rocm") return `AMD ROCm ${device.split(":")[1]}`
@@ -38,7 +39,7 @@ type Choice = { value: ModelSelection; model: ModelCapability }
 
 function choices(runtime: Runtime, kind: Kind): Choice[] {
   return runtime.capabilities.filter((item) => item.capability === kind && item.available).flatMap((item) => (
-    item.models.flatMap((model) => model.devices.filter((device) => (
+    item.models.filter(model => model.available !== false).flatMap((model) => model.devices.filter((device) => (
       item.execution === "remote" ? device === "remote" : runtime.devices.some((entry) => entry.id === device && entry.available)
     )).map((device) => ({ value: { adapter: item.adapter, model: model.id, device: device as ModelSelection["device"] }, model })))
   ))
@@ -95,16 +96,6 @@ function updateConfig(config: TaskConfig, patch: Partial<TaskConfig>, runtime: R
   return normalize({ ...config, ...patch }, runtime)
 }
 
-export function initialTaskConfig(runtime: Runtime, defaults?: Partial<TaskConfig> | null): TaskConfig {
-  return {
-    source_language: "auto", target_language: "zh", output_mode: "subtitles", keep_background: false,
-    tts: null, separation: null, subtitle_alignment: null,
-    ...defaults,
-    asr: defaults?.asr ?? firstSelection(runtime, "asr"),
-    translation: defaults?.translation ?? firstSelection(runtime, "translation"),
-  }
-}
-
 export function TaskOptions({ value, runtime, onChange }: {
   value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void
 }) {
@@ -123,19 +114,19 @@ export function TaskOptions({ value, runtime, onChange }: {
     onChange(normalize(next, runtime))
   }
   const fields = [
-    { id: "output-mode", label: text("Output", "输出", "出力"), aria: text("Output content", "输出内容", "出力内容"), value: value.output_mode,
-      display: text(...OUTPUT_LABELS[value.output_mode]), options: Object.entries(OUTPUT_LABELS).map(([mode, label]) => ({ value: mode, label: text(...label) })),
+    { id: "output-mode", label: text("localize.task.config.output"), aria: text("localize.task.config.output.content"), value: value.output_mode,
+      display: text(OUTPUT_LABELS[value.output_mode]), options: Object.entries(OUTPUT_LABELS).map(([mode, label]) => ({ value: mode, label: text(label) })),
       change: (mode: string) => change({ output_mode: mode as TaskConfig["output_mode"] }) },
-    { id: "source-language", label: text("From", "原文", "入力"), aria: text("Source language", "原文语言", "入力言語"), value: value.source_language,
+    { id: "source-language", label: text("localize.task.config.from"), aria: text("localize.task.config.source.language"), value: value.source_language,
       display: languageName(value.source_language, text), options: sources.map((code) => ({ value: code, label: languageName(code, text) })),
       change: (source_language: string) => change({ source_language }) },
-    { id: "target-language", label: text("To", "目标", "出力先"), aria: text("Target language", "目标语言", "出力言語"), value: value.target_language,
+    { id: "target-language", label: text("localize.task.config.to"), aria: text("localize.task.config.target.language"), value: value.target_language,
       display: languageName(value.target_language, text), options: targets.map((code) => ({ value: code, label: languageName(code, text) })),
       change: (target_language: string) => change({ target_language }) },
   ]
   return <div className="flex flex-wrap items-center gap-2">{fields.map((field) => (
     <Select key={field.id} value={field.value} onValueChange={(next) => { if (typeof next === "string") field.change(next) }}>
-      <SelectTrigger id={field.id} aria-label={field.aria} className="inline-flex h-8 w-auto max-w-full gap-1.5 rounded-full border-border bg-muted px-3 text-[13px] shadow-none hover:bg-accent">
+      <SelectTrigger id={field.id} aria-label={field.aria} className="inline-flex w-auto max-w-full gap-1.5">
         <span className="text-subtle-foreground">{field.label}</span><span className="min-w-0 truncate font-medium">{field.display}</span>
       </SelectTrigger>
       <SelectContent>{field.options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
@@ -143,17 +134,17 @@ export function TaskOptions({ value, runtime, onChange }: {
   ))}</div>
 }
 
-const ADAPTER_NAMES: Record<string, [string, string, string]> = {
-  whisper: ["Whisper", "Whisper", "Whisper"],
-  openai: ["OpenAI-compatible", "OpenAI 兼容", "OpenAI 互換"],
-  voxcpm: ["VoxCPM", "VoxCPM", "VoxCPM"],
-  demucs: ["Demucs", "Demucs", "Demucs"],
-  qwen_forced_aligner: ["Qwen", "Qwen", "Qwen"],
+const ADAPTER_NAMES: Record<string, MessageKey> = {
+  "whisper": "adapter_names.whisper",
+  "openai": "adapter_names.openai",
+  "voxcpm": "adapter_names.voxcpm",
+  "demucs": "adapter_names.demucs",
+  "qwen_forced_aligner": "adapter_names.qwen_forced_aligner"
 }
 
 function adapterName(adapter: string, text: Text) {
   const name = ADAPTER_NAMES[adapter]
-  return name ? text(...name) : adapter
+  return name ? text(name) : adapter
 }
 
 // 模型名为主，适配器与设备作为次要信息。
@@ -161,7 +152,7 @@ function ModelLabel({ value, text, runtime }: { value: ModelSelection; text: Tex
   return <span className="min-w-0 truncate">
     <span className="font-medium text-foreground">{value.model}</span>{" "}
     <span className="text-subtle-foreground">{value.device === "remote"
-      ? text("Remote API", "远端接口", "リモート API")
+      ? text("localize.task.config.remote.api")
       : `${adapterName(value.adapter, text)} · ${deviceName(value.device, text, runtime)}`}</span>
   </span>
 }
@@ -183,7 +174,7 @@ type Option = { value: string; label: ReactNode; disabled?: boolean }
 function ConfigRow({ icon: Icon, tint, title, description, children }: {
   icon: LucideIcon; tint: keyof typeof TINTS; title: string; description: string; children: ReactNode
 }) {
-  return <div className="grid gap-3 py-5 @2xl:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] @2xl:gap-6">
+  return <div className="grid gap-3 py-4 @2xl:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] @2xl:gap-6">
     <div className="flex items-start gap-3">
       <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TINTS[tint])}><Icon className="size-4" /></span>
       <div className="min-w-0">
@@ -231,13 +222,13 @@ function ModelField({ kind, id, caption, srPrefix, value, runtime, onChange }: {
     <FieldSelect id={id} value={selected}
       display={value?.model ? <>
         <ModelLabel value={value} text={text} runtime={runtime} />
-        {known ? null : <span className="ml-1.5 shrink-0 text-status-warning-fg">· {text("Unavailable", "不可用", "利用不可")}</span>}
+        {known ? null : <span className="ml-1.5 shrink-0 text-status-warning-fg">· {text("localize.task.config.unavailable")}</span>}
       </> : null}
-      placeholder={text("Select a model", "选择模型", "モデルを選択")}
+      placeholder={text("localize.task.config.select.a.model")}
       options={[
         ...options.map((item) => ({ value: selectionKey(item.value), label: <ModelLabel value={item.value} text={text} runtime={runtime} /> })),
         ...runtime.capabilities.filter((item) => item.capability === kind && !item.available).map((item) => ({
-          value: `unavailable-${item.adapter}`, label: `${item.adapter} — ${item.unavailable_reason ?? text("Unavailable", "不可用", "利用不可")}`, disabled: true,
+          value: `unavailable-${item.adapter}`, label: `${item.adapter} — ${item.unavailable_reason ?? text("localize.task.config.unavailable")}`, disabled: true,
         })),
       ]}
       onChange={(next) => {
@@ -253,7 +244,7 @@ function LanguageField({ id, caption, value, options, onChange }: {
   const text = useText()
   return <Field id={id} caption={caption}>
     <FieldSelect id={id} value={value} display={value ? languageName(value, text) : null}
-      placeholder={text("Select a language", "选择语言", "言語を選択")}
+      placeholder={text("localize.task.config.select.a.language")}
       options={options.map((item) => ({ value: item, label: languageName(item, text) }))} onChange={onChange} />
   </Field>
 }
@@ -271,95 +262,92 @@ export function TaskConfigForm({ value, runtime, onChange, showTranslation = tru
   const presetVoices = tts?.voices.filter((voice) => voice.languages.includes(value.target_language)) ?? []
   const voice = value.tts?.voice
   const voiceModes = tts?.voice_modes ?? []
-  const voiceModeLabel = (mode: string) => mode === "preset" ? text("Preset voice", "预设声音", "プリセット音声") : text("Clone source voice", "克隆源音色", "元の声を複製")
+  const voiceModeLabel = (mode: string) => mode === "preset" ? text("localize.task.config.preset.voice") : text("localize.task.config.clone.source.voice")
   const dubbing = value.output_mode !== "subtitles"
 
   return <div className="@container divide-y divide-border">
-      <ConfigRow icon={Clapperboard} tint="neutral" title={text("Output", "输出", "出力")}
-        description={text("Subtitles, a dubbed cut, or both.", "生成字幕、配音成片，或两者都要。", "字幕、吹き替え、またはその両方。")}>
-        <Field id="output-mode" caption={text("Content", "内容", "内容")} srPrefix={text("Output ", "输出", "出力")}>
-          <FieldSelect id="output-mode" value={value.output_mode} display={text(...OUTPUT_LABELS[value.output_mode])} placeholder=""
-            options={Object.entries(OUTPUT_LABELS).map(([mode, label]) => ({ value: mode, label: text(...label) }))}
+      <ConfigRow icon={Clapperboard} tint="neutral" title={text("localize.task.config.output")}
+        description={text("localize.task.config.subtitles.a.dubbed.cut.or.both")}>
+        <Field id="output-mode" caption={text("localize.task.config.content")} srPrefix={text("localize.task.config.output.2")}>
+          <FieldSelect id="output-mode" value={value.output_mode} display={text(OUTPUT_LABELS[value.output_mode])} placeholder=""
+            options={Object.entries(OUTPUT_LABELS).map(([mode, label]) => ({ value: mode, label: text(label) }))}
             onChange={(next) => change({ output_mode: next as TaskConfig["output_mode"] })} />
         </Field>
       </ConfigRow>
-      <ConfigRow icon={ArrowRightLeft} tint="violet" title={text("Languages", "语言", "言語")}
-        description={text("The spoken language and the one to translate into.", "视频原本的语言，以及要翻译成的语言。", "動画の言語と翻訳先の言語。")}>
-        <LanguageField id="source-language" caption={text("Source language", "原文语言", "入力言語")} value={value.source_language} options={sources} onChange={(source_language) => change({ source_language })} />
-        <LanguageField id="target-language" caption={text("Target language", "目标语言", "出力言語")} value={value.target_language} options={targets} onChange={(target_language) => change({ target_language })} />
+      <ConfigRow icon={ArrowRightLeft} tint="violet" title={text("localize.task.config.languages")}
+        description={text("localize.task.config.the.spoken.language.and.the.one.to.translate.into")}>
+        <LanguageField id="source-language" caption={text("localize.task.config.source.language")} value={value.source_language} options={sources} onChange={(source_language) => change({ source_language })} />
+        <LanguageField id="target-language" caption={text("localize.task.config.target.language")} value={value.target_language} options={targets} onChange={(target_language) => change({ target_language })} />
       </ConfigRow>
 
-    <ConfigRow icon={Mic} tint="blue" title={text("Speech recognition", "语音识别", "音声認識")}
-      description={text("Turns speech into text. Name hints help with people and brands.", "把语音转成文字，专名提示能让人名、品牌名更准确。", "音声を文字に変換します。固有名詞のヒントで人名やブランド名の精度が上がります。")}>
-      <ModelField kind="asr" id="model-asr" caption={text("Model", "模型", "モデル")} srPrefix={text("Speech recognition ", "语音识别", "音声認識")} value={value.asr} runtime={runtime} onChange={(asr) => change({ asr: { ...value.asr, ...asr } })} />
-      <Field id="asr-initial-prompt" caption={text("Proper-name hint (optional)", "专名提示（可选）", "固有名詞のヒント（任意）")}>
+    <ConfigRow icon={Mic} tint="blue" title={text("localize.task.config.speech.recognition")}
+      description={text("localize.task.config.turns.speech.into.text.name.hints.help.with.people.and.brands")}>
+      <ModelField kind="asr" id="model-asr" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.speech.recognition.2")} value={value.asr} runtime={runtime} onChange={(asr) => change({ asr: { ...value.asr, ...asr } })} />
+      <Field id="asr-initial-prompt" caption={text("localize.task.config.proper.name.hint.optional")}>
         <div className="relative">
           <Input id="asr-initial-prompt" maxLength={500} value={value.asr.initial_prompt ?? ""} aria-describedby="asr-initial-prompt-help" className="pr-16"
-            placeholder={text("e.g. YouDub, Jensen Huang", "例如：YouDub、黄仁勋", "例：YouDub、ジェンスン・フアン")}
+            placeholder={text("localize.task.config.e.g.youdub.jensen.huang")}
             onChange={(event) => change({ asr: { ...value.asr, initial_prompt: event.target.value || null } })} />
           <span aria-hidden="true" className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs tabular-nums text-subtle-foreground">{value.asr.initial_prompt?.length ?? 0}/500</span>
         </div>
-        <p id="asr-initial-prompt-help" className="sr-only">{text("Add people or brand names to help speech recognition. Up to 500 characters.", "填写人名、品牌名，帮助语音识别。最多 500 字。", "人名やブランド名を入力すると音声認識の参考になります。500文字まで。")}</p>
+        <p id="asr-initial-prompt-help" className="sr-only">{text("localize.task.config.add.people.or.brand.names.to.help.speech.recognition.up.to.500.ch")}</p>
       </Field>
     </ConfigRow>
 
-    {showTranslation && <ConfigRow icon={Languages} tint="violet" title={text("Translation", "翻译", "翻訳")}
-      description={text("Translates the transcript sentence by sentence.", "逐句翻译识别出的原文。", "文字起こしを一文ずつ翻訳します。")}>
-      <ModelField kind="translation" id="model-translation" caption={text("Model", "模型", "モデル")} srPrefix={text("Translation ", "翻译", "翻訳")} value={value.translation} runtime={runtime} onChange={(translation) => change({ translation })} />
+    {showTranslation && <ConfigRow icon={Languages} tint="violet" title={text("localize.task.config.translation")}
+      description={text("localize.task.config.translates.the.transcript.sentence.by.sentence")}>
+      <ModelField kind="translation" id="model-translation" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.translation.2")} value={value.translation} runtime={runtime} onChange={(translation) => change({ translation })} />
     </ConfigRow>}
 
-    {value.output_mode === "both" ? <ConfigRow icon={Captions} tint="teal" title={text("Subtitles", "字幕", "字幕")}
-      description={text("Qwen can align subtitles to the generated speech, keeping full-sentence dubbing.", "Qwen 可以按生成的配音对齐字幕，仍保持整句配音。", "Qwen は文全体の吹き替えを保ちながら、生成された音声に字幕を合わせます。")}>
-      <Field id="subtitle-alignment" caption={text("Timing", "时间", "タイミング")} srPrefix={text("Subtitle ", "字幕", "字幕の")}>
+    {value.output_mode === "both" ? <ConfigRow icon={Captions} tint="teal" title={text("localize.task.config.subtitles")}
+      description={text("localize.task.config.qwen.can.align.subtitles.to.the.generated.speech.keeping.full.sen")}>
+      <Field id="subtitle-alignment" caption={text("localize.task.config.timing")} srPrefix={text("localize.task.config.subtitle")}>
         <FieldSelect id="subtitle-alignment" value={value.subtitle_alignment ? alignmentKey : ESTIMATE_TIMING}
           display={value.subtitle_alignment
-            ? `${value.subtitle_alignment.model} · ${alignmentKnown ? deviceName(value.subtitle_alignment.device, text, runtime) : text("Unavailable", "不可用", "利用不可")}`
-            : text("Estimate by text length", "按字数估算", "文字数から推定")}
+            ? `${value.subtitle_alignment.model} · ${alignmentKnown ? deviceName(value.subtitle_alignment.device, text, runtime) : text("localize.task.config.unavailable")}`
+            : text("localize.task.config.estimate.by.text.length")}
           placeholder=""
           options={[
-            { value: ESTIMATE_TIMING, label: text("Estimate by text length", "按字数估算", "文字数から推定") },
+            { value: ESTIMATE_TIMING, label: text("localize.task.config.estimate.by.text.length") },
             ...alignmentOptions.map((item) => ({ value: selectionKey(item.value), label: `${item.value.model} · ${deviceName(item.value.device, text, runtime)}` })),
             ...runtime.capabilities.filter((item) => item.capability === "subtitle_alignment" && !item.available).map((item) => ({
-              value: `unavailable-${item.adapter}`, label: `Qwen — ${item.unavailable_reason ?? text("Unavailable", "不可用", "利用不可")}`, disabled: true,
+              value: `unavailable-${item.adapter}`, label: `Qwen — ${item.unavailable_reason ?? text("localize.task.config.unavailable")}`, disabled: true,
             })),
           ]}
           onChange={(next) => change({ subtitle_alignment: alignmentOptions.find((item) => selectionKey(item.value) === next)?.value ?? null })} />
       </Field>
     </ConfigRow> : null}
 
-    {dubbing ? <ConfigRow icon={Speech} tint="red" title={text("Dubbing", "配音", "吹き替え")}
-      description={text("Speaks the translation in the target language.", "用目标语言为译文配音。", "訳文を翻訳先の言語で読み上げます。")}>
-      <ModelField kind="tts" id="model-tts" caption={text("Model", "模型", "モデル")} srPrefix={text("Voice ", "配音", "音声合成")} value={value.tts} runtime={runtime} onChange={(selection) => change({ tts: selectTts(runtime, selection, value.target_language) })} />
-      {value.tts && voice ? <Field caption={text("Voice source", "声音方式", "声の選択方法")}>
+    {dubbing ? <ConfigRow icon={Speech} tint="red" title={text("localize.task.config.dubbing")}
+      description={text("localize.task.config.speaks.the.translation.in.the.target.language")}>
+      <ModelField kind="tts" id="model-tts" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.voice")} value={value.tts} runtime={runtime} onChange={(selection) => change({ tts: selectTts(runtime, selection, value.target_language) })} />
+      {value.tts && voice ? <Field caption={text("localize.task.config.voice.source")}>
         {voiceModes.length > 1 ? (
-          <Segmented ariaLabel={text("Voice source", "声音方式", "声の選択方法")} value={voice.mode} className="flex h-10 w-full"
+          <Segmented ariaLabel={text("localize.task.config.voice.source")} value={voice.mode} className="flex w-full"
             options={voiceModes.map((mode) => ({ value: mode, label: voiceModeLabel(mode) }))}
             onChange={(mode) => change({ tts: { ...value.tts!, voice: mode === "source_clone"
               ? { mode: "source_clone" } : { mode: "preset", id: presetVoices[0]?.id ?? "" } } })} />
         ) : (
-          <div role="group" aria-label={text("Voice source", "声音方式", "声の選択方法")}
-            className={cn("flex h-10 items-center rounded-lg border border-input bg-input-bg px-3 text-sm", !voiceModes.includes(voice.mode) && "text-status-warning-fg")}>
-            {voiceModes.includes(voice.mode) ? voiceModeLabel(voice.mode) : text("Unavailable", "不可用", "利用不可")}
-          </div>
+          <Input readOnly aria-label={text("localize.task.config.voice.source")} value={voiceModes.includes(voice.mode) ? voiceModeLabel(voice.mode) : text("localize.task.config.unavailable")} />
         )}
       </Field> : null}
-      {value.tts && voice?.mode === "preset" ? <Field id="voice-id" caption={text("Voice", "声音", "音声")}>
+      {value.tts && voice?.mode === "preset" ? <Field id="voice-id" caption={text("localize.task.config.voice.2")}>
         <FieldSelect id="voice-id" value={voice.id} display={presetVoices.find((item) => item.id === voice.id)?.name ?? null}
-          placeholder={text("Select a voice", "选择声音", "音声を選択")}
+          placeholder={text("localize.task.config.select.a.voice")}
           options={presetVoices.map((item) => ({ value: item.id, label: item.name }))}
           onChange={(id) => change({ tts: { ...value.tts!, voice: { mode: "preset", id } } })} />
       </Field> : null}
     </ConfigRow> : null}
 
-    {dubbing ? <ConfigRow icon={AudioWaveform} tint="pink" title={text("Vocal separation", "人声分离", "音声分離")}
-      description={text("Separates the voice from music and ambience, for voice cloning and keeping the background.", "把人声和背景声分开，用于克隆音色和保留背景音。", "声と背景音を分け、声の複製や背景音の保持に使います。")}>
-      <Field caption={text("Background audio", "背景音", "背景音")}>
+    {dubbing ? <ConfigRow icon={AudioWaveform} tint="pink" title={text("localize.task.config.vocal.separation")}
+      description={text("localize.task.config.separates.the.voice.from.music.and.ambience.for.voice.cloning.and")}>
+      <Field caption={text("localize.task.config.background.audio")}>
         <label className="flex h-10 cursor-pointer items-center justify-between gap-3 rounded-lg border border-input bg-input-bg px-3 text-sm">
-          <span id="keep-background-label">{text("Keep background audio", "保留背景音", "背景音を残す")}</span>
-          <Switch aria-labelledby="keep-background-label" checked={value.keep_background} onCheckedChange={(checked) => change({ keep_background: checked })} />
+          <span id="keep-background-label">{text("localize.task.config.keep.background.audio")}</span>
+          <Switch aria-label={text("localize.task.config.keep.background.audio")} aria-labelledby="keep-background-label" checked={value.keep_background} onCheckedChange={(checked) => change({ keep_background: checked })} />
         </label>
       </Field>
-      {value.separation ? <ModelField kind="separation" id="model-separation" caption={text("Model", "模型", "モデル")} srPrefix={text("Audio separation ", "音源分离", "音源分離")} value={value.separation} runtime={runtime} onChange={(separation) => change({ separation })} /> : null}
+      {value.separation ? <ModelField kind="separation" id="model-separation" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.audio.separation")} value={value.separation} runtime={runtime} onChange={(separation) => change({ separation })} /> : null}
     </ConfigRow> : null}
   </div>
 }

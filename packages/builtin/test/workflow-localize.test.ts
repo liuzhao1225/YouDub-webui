@@ -30,6 +30,7 @@ test('localize requires available media tools before accepting any output mode',
   for (const output_mode of ['subtitles', 'dubbing', 'both']) {
     const config = { source_language: 'en', target_language: 'zh', output_mode, keep_background: false, asr: select('asr'), translation: select('translation'), tts: output_mode === 'subtitles' ? null : { ...select('tts'), voice: { mode: 'source_clone' } }, separation: output_mode === 'subtitles' ? null : select('separation') }
     const workflow = ctx.catalog.workflow('youdub.localize')
+    assert.ok('plan' in workflow)
     available = false
     assert.deepEqual(await workflow.validate({ video: { id: "input-video", schemaId: "video/mp4/v1" } }, config, ctx.catalog), [{ code: 'INVALID_CONFIG', message: 'ffmpeg unavailable', field: 'video' }])
     available = true
@@ -40,6 +41,9 @@ test('localize requires available media tools before accepting any output mode',
     const plan = await workflow.plan({}, linked, ctx.catalog)
     assert.equal(plan.steps[0].operation, 'media.download/v1')
     assert.deepEqual(plan.steps[0].input, { url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' })
+    assert.equal(plan.bindings.download.options.proxyPort, 0)
+    const proxied = await workflow.plan({}, { ...linked, source_proxy_port: 7897 }, ctx.catalog)
+    assert.equal(proxied.bindings.download.options.proxyPort, 7897)
     for (const id of ['prepare', 'export']) assert.deepEqual(plan.steps.find(step => step.id === id)?.input.video, { from: 'step', stepId: 'download', output: 'video' })
     const uploaded = await workflow.plan({ video: { id: 'input-video', schemaId: 'video/mp4/v1' } }, config, ctx.catalog)
     assert.equal(uploaded.steps[0].id, 'prepare')

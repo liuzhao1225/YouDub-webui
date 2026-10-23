@@ -1,0 +1,209 @@
+name: YouDub Desktop 源码开发检查
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-development-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: 前端质量与安全
+    needs: source-development
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 确认框架、界面和业务回归通过
+        env:
+          MACOS_RESULT: ${{ needs.source-development.result }}
+        run: test "$MACOS_RESULT" = success
+
+  backend:
+    name: Host 与 Python 测试
+    needs: [source-development, source-development-windows]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 确认双平台 Host 与 Python 回归通过
+        env:
+          MACOS_RESULT: ${{ needs.source-development.result }}
+          WINDOWS_RESULT: ${{ needs.source-development-windows.result }}
+        run: |
+          test "$MACOS_RESULT" = success
+          test "$WINDOWS_RESULT" = success
+
+  source-development:
+    name: macOS 源码、框架与业务回归
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      LEFTHOOK: "0"
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/harness/package-lock.json
+            apps/web/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: 校验固定来源与活动 fork
+        run: |
+          node apps/harness/baselines/framework-source.mjs
+          node apps/harness/baselines/inventory.mjs
+          node --test apps/harness/test/framework-source.test.mjs
+      - name: 安装源码开发依赖
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/harness ci --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          python -m venv .venv
+          .venv/bin/python -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements/base.txt -r backend/requirements-test.txt
+          .venv/bin/python -m nltk.downloader -e -d "$GITHUB_WORKSPACE/.cache/nltk_data" punkt_tab
+          echo "NLTK_DATA=$GITHUB_WORKSPACE/.cache/nltk_data" >> "$GITHUB_ENV"
+          brew install ffmpeg-full
+          echo "$(brew --prefix ffmpeg-full)/bin" >> "$GITHUB_PATH"
+      - name: 从仓库源码构建框架与 YouDub
+        run: |
+          npm run build:framework
+          node apps/harness/build-framework.mjs --verify-only
+          npm run build:youdub
+          npm --prefix apps/harness run check:composition
+          npm run check:framework-isolation
+      - name: 检查框架前后端聚合类型
+        working-directory: .cache/harness/source-build
+        run: node node_modules/tsx/dist/cli.mjs scripts/build.ts --scope check
+      - name: 检查裁剪后的第三方声明
+        working-directory: .cache/harness/source-build
+        run: node node_modules/vitest/vitest.mjs run scripts/gen-third-party-notices.spec.ts
+      - name: 检查保留的框架 GUI、设置和桌面生命周期
+        working-directory: .cache/harness/source-build
+        env:
+          npm_execpath: ${{ github.workspace }}/apps/harness/node_modules/pnpm/bin/pnpm.mjs
+        run: |
+          node ../../../apps/harness/test/prepare-framework-client.mjs
+          node node_modules/tsx/dist/cli.mjs scripts/verify-runtime-closure.ts --manifest ../framework-client-project/package.json
+          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/api/settings-controller/tests/credentials-controller.host.spec.ts apps/desktop/tests packages/api/remotes packages/client packages/host packages/test-support/client-runtime scripts/gen-client-catalog.spec.ts scripts/client-build-environment.client.spec.ts apps/desktop-host/tests/quit-inspection.spec.ts
+      - name: 检查 profile 与插件生命周期
+        working-directory: .cache/harness/source-build
+        run: node node_modules/vitest/vitest.mjs run apps/cli/tests packages/boot/app-boot/tests packages/boot/plugin-manager/tests scripts/gen-official-bundle-catalog.spec.ts scripts/verify-application-entrypoints.spec.ts scripts/verify-no-top-level-await.spec.ts scripts/coverage-partitions.spec.ts scripts/run-gates.spec.ts scripts/translation-pairing.spec.ts scripts/rescope-vendor.spec.ts scripts/verify-product-use.spec.ts scripts/verify-default-product-isolation.spec.ts scripts/verify-runtime-closure.spec.ts scripts/web-product-bundle-isolation.spec.ts scripts/browser-bundled-externals.spec.ts scripts/check-workspace-constraints.spec.ts packages/ptc-runtime/ptc-runtime-node/tests/launch.spec.ts packages/bundle/web-app
+      - name: 检查保留的 API Key 传输与模型选择
+        working-directory: .cache/harness/source-build
+        run: node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run packages/llm/llm-deepseek/tests packages/llm/llm-deepseek-api-key/tests packages/api/session-controller/tests/session-models.host.spec.ts
+      - name: 检查裁剪后的包边界和目录生成
+        run: |
+          cd .cache/harness/source-build
+          node node_modules/vitest/vitest.mjs run scripts/client-bundle-purity.spec.ts scripts/doc-typecheck-paths.spec.ts scripts/experimental-package-policy.spec.ts scripts/gen-doc-graphs.spec.ts scripts/npm-baseline-packages.spec.ts scripts/verify-package-dependencies.spec.ts scripts/oxlint-contract.spec.ts scripts/release/families.spec.ts
+          node node_modules/tsx/dist/cli.mjs scripts/verify-package-dependencies.ts
+          node node_modules/vitest/vitest.mjs run scripts/doc-standard.spec.ts -t 'keeps the audited library registry accurate'
+          node node_modules/tsx/dist/cli.mjs scripts/verify-translation-pairing.ts packages/README.md apps/cli/reference/README.md packages/bundle/README.md packages/subagent/README.md packages/experimental/README.md packages/client/README.md packages/boot/app-boot/README.md
+      - name: 检查领域、界面和语言
+        run: |
+          npm run typecheck
+          npm test
+          npm run test:downloads
+          npm --prefix apps/web test
+          apps/web/node_modules/.bin/tsc --noEmit -p apps/web/tsconfig.json
+          npm --prefix apps/harness run check:locales
+      - name: 检查 Harness 集成和媒体合同
+        run: |
+          npm --prefix apps/harness test
+          .venv/bin/python -m pytest backend/tests
+      - name: 保存源码构建证据
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: youdub-source-build-evidence
+          path: |
+            .cache/harness/source-build/youdub-source-build.json
+            apps/harness/dist/build-inputs.json
+            apps/harness/dist/desktop/build-inputs.json
+          if-no-files-found: error
+
+  source-development-windows:
+    name: Windows 源码、Host 与桌面合同
+    runs-on: windows-2025
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      LEFTHOOK: "0"
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+    steps:
+      - name: 保持源码字节与链接
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.longpaths true
+          git config --global core.symlinks true
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/harness/package-lock.json
+            apps/web/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: 校验固定来源与活动 fork
+        run: |
+          node apps/harness/baselines/framework-source.mjs
+          node apps/harness/baselines/inventory.mjs
+          node --test apps/harness/test/framework-source.test.mjs
+      - name: 安装源码与 Host 测试依赖
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/harness ci --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/web ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          python -m venv .venv
+          .venv/Scripts/python.exe -m pip install --index-url https://mirrors.aliyun.com/pypi/simple/ -r backend/requirements/base.txt
+          echo "YOUDUB_TEST_PYTHON=$GITHUB_WORKSPACE/.venv/Scripts/python.exe" >> "$GITHUB_ENV"
+      - name: 从仓库源码构建 Windows 开发版
+        run: |
+          npm run build:framework
+          node apps/harness/build-framework.mjs --verify-only
+          npm run build:youdub
+          npm --prefix apps/harness run check:composition
+          npm run check:framework-isolation
+      - name: 检查 Windows 桌面与进程生命周期
+        working-directory: .cache/harness/source-build
+        env:
+          npm_execpath: ${{ github.workspace }}/apps/harness/node_modules/pnpm/bin/pnpm.mjs
+        run: |
+          node ../../../apps/harness/test/prepare-framework-client.mjs
+          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests/quit-inspection.spec.ts packages/subprocess/subprocess-local/tests packages/boot/plugin-manager/tests/operations.spec.ts packages/boot/plugin-manager/tests/operations-process.spec.ts
+      - name: 运行实际 Electron Host 与产品合同
+        run: |
+          node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs
+          npm run typecheck
+          npm --prefix apps/harness run check:locales
+      - name: 保存 Windows 源码构建证据
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: youdub-windows-source-build-evidence
+          path: |
+            .cache/harness/source-build/youdub-source-build.json
+            apps/harness/dist/build-inputs.json
+            apps/harness/dist/desktop/build-inputs.json
+          if-no-files-found: error

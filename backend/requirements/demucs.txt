@@ -1,0 +1,5 @@
+dora-search>=0.1.12
+# htdemucs is not quantized and does not need the DiffQ compiler toolchain.
+julius>=0.2.3
+lameenc>=1.2
+openunmix

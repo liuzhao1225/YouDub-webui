@@ -4,8 +4,7 @@ import { mkdtemp, writeFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { startHost } from '../../../apps/host/src/bootstrap.js'
-import { directoryURL } from '../../../apps/host/src/paths.js'
+import { startHost, directoryURL } from './helpers/composition.js'
 
 test('composition and plugins load from native paths containing spaces, Unicode and URL characters', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub 路径 #% '))
@@ -29,7 +28,7 @@ test('composition and plugins load from native paths containing spaces, Unicode 
 test('temporary composition resolves package entries from the application dependencies', async () => {
   const host = await startHost([{ id: 'process', name: '@youdub/builtin/process' }], pathToFileURL(process.cwd() + '/').href)
   try {
-    const result = await host.ctx.process.run({ command: process.execPath, args: ['-e', 'process.stdout.write("ready")'] })
+    const result = await host.ctx.youdubWorker.run({ command: process.execPath, args: ['-e', 'process.stdout.write("ready")'] })
     assert.equal(result.stdout, 'ready')
   } finally { await host.stop() }
 })

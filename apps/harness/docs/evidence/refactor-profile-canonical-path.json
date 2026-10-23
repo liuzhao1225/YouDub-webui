@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22T18:47:21.573Z",
+  "sourceSha256": "e8a7534fee72d880639921790e143673550a1f114dfc7e53edcf4a57f99a1a16",
+  "failingCommit": "4313ec5e44d0586a6086d743b1895180580786ea",
+  "diagnosis": "Windows pnpm cwd used RUNNER~1 while workspace discovery used runneradmin. One profile was recorded twice, and an alias importer retained the previous SDK.",
+  "diagnostic": "windows-sdk-alias-diagnostic.json",
+  "changes": [
+    "Resolve only the package-manager child working directory to its physical path, for normal operations and compatibility restoration. Caller-relative package arguments, profile locks and diagnostic paths retain their contracts.",
+    "Use one official offline install to synchronize wanted and installed locks; remove the unneeded lock-only phase.",
+    "Test both shared operation entrypoints through a directory alias; assert one importer and the current SDK after plugin removal. Seed an old duplicate importer to verify existing-state migration.",
+    "Run the changed package-operation unit/process tests in the Windows job as well."
+  ],
+  "local": {
+    "beforeFix": {
+      "failed": 2,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-before.log",
+        "sha256": "0213bf98edbc8bf73ca0118cc8888c032bb8fb36dbff9abd50c622df48c45d17"
+      }
+    },
+    "packageOperations": {
+      "passed": 79,
+      "files": 2,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-operations.log",
+        "sha256": "1eb02f7abfa646697b78c3590b3614cc118f88509d47f3cd2a632fc407b437bd"
+      }
+    },
+    "profile": {
+      "passed": 9,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-final.log",
+        "sha256": "57285aa5c35448cbcd038f0a04236fd7dbf29521a96ffd85353a79de4d955533"
+      }
+    },
+    "actualHost": {
+      "passed": 2,
+      "combinedProfileAndHostPassed": 10,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-host.log",
+        "sha256": "0a3fb4d22c877718a11b712d1939d0fee396f8e6d80bf876c6e2ed7b5aa26295"
+      }
+    },
+    "framework": {
+      "gates": 7,
+      "seconds": 21.39,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-build.log",
+        "sha256": "90bbedc20ac428e426f3727a35b0fa198222327656d0f83f3a1bb8c7c13fd74d"
+      }
+    },
+    "productBuild": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-product.log",
+        "sha256": "3757522a1738854dd1ea7d3877118ab60c29fa16fa6b2092c9d5b6a06c6c4173"
+      }
+    },
+    "pairedReadme": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-pairing-check.log",
+        "sha256": "f648fd21b531eda386e17f4ce365d5cff34872447cccc4aa4cb2b2e905022290"
+      }
+    },
+    "sourceLedger": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-canonical-profile-source-final.log",
+        "sha256": "49368118c5b1014c3177dafda06f939fed7141418c79604745911e718af965d3"
+      }
+    }
+  },
+  "ci": {
+    "commit": "230bce531a6581b4b3c6d4969df83d9b43c817e7",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39834484129",
+    "windows": {
+      "status": "failed",
+      "job": 120019057430,
+      "passed": 563,
+      "failed": 4,
+      "skipped": 27,
+      "filesPassed": 42,
+      "filesFailed": 1,
+      "filesSkipped": 3,
+      "actualSdkStep": "not run",
+      "cause": "Four new cwd assertions used non-native realpathSync, preserving RUNNER~1. Actual process cwd correctly expands runneradmin; use realpathSync.native for the expected canonical path.",
+      "log": {
+        "path": "/tmp/youdub-windows-230bce53.log",
+        "sha256": "a41f1a2ac1574fe1aaca8f9298a1b1a622f293a38c10cad86229ea8108376617"
+      }
+    },
+    "macOS": {
+      "status": "passed",
+      "job": 120019057063,
+      "log": {
+        "path": "/tmp/youdub-macos-230bce53.log",
+        "sha256": "6c2a4a5113d96f242a14ed324ef66d354487f2be3b84b8cd95692e34065ba0fc"
+      }
+    }
+  },
+  "limits": [
+    "First Windows 5-second desktop filesystem timeout did not recur on the same-commit rerun; its underlying cause is not established.",
+    "Native UI remains blocked by the locked Mac; no installer or release was produced."
+  ],
+  "assertionFollowup": {
+    "sourceSha256": "861aad977d13985df8c3175545a0b3db5bacd977e405db751e16588f39c6a7e4",
+    "scope": "Tests only: use native realpath and restrict failure diagnostics to arguments/cwd, omitting process environment.",
+    "local": {
+      "packageOperations": {
+        "passed": 79,
+        "files": 2,
+        "log": {
+          "path": "/tmp/youdub-native-cwd-tests.log",
+          "sha256": "deda681cd042e3bec646df4e3fb5afd108cf73ad6bff9fcc60d1ea7e445938c5"
+        }
+      },
+      "framework": {
+        "gates": 7,
+        "seconds": 21,
+        "log": {
+          "path": "/tmp/youdub-native-cwd-build.log",
+          "sha256": "d641c63fcd0c8050ff0be962bb1be83cd9c6247073be0afa8c16a0f6988b4866"
+        }
+      }
+    },
+    "ci": {
+      "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370",
+      "windows": {
+        "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028526133",
+        "result": "passed",
+        "sourceAndProductBuildPassed": true,
+        "sourceTests": {
+          "passed": 6,
+          "skipped": 1
+        },
+        "buildGates": {
+          "passed": 7,
+          "seconds": 100.69
+        },
+        "desktopAndProcessTests": {
+          "filesPassed": 43,
+          "filesSkipped": 3,
+          "testsPassed": 567,
+          "testsSkipped": 27
+        },
+        "productContracts": {
+          "passed": 32,
+          "failed": 0,
+          "actualElectronHostModesPassed": 2
+        },
+        "actualSdkMigrations": [
+          "root-and-installed",
+          "installed-only",
+          "duplicate-profile-alias"
+        ],
+        "log": {
+          "path": "/tmp/youdub-windows-8fea16f1.log",
+          "sha256": "3c8f502dd6d83ba659c99c0659ab405d15915131191e8eeb42dc13408308114b"
+        }
+      },
+      "macOS": {
+        "status": "cancelled after observed test-runner failure",
+        "job": 120028525792,
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028525792",
+        "cause": "Node 24.20.0 rejects --no-webstorage. Vitest repeatedly attempted to start workers; the run was explicitly cancelled after inspecting live logs.",
+        "log": {
+          "path": "/tmp/youdub-macos-8fea16f1.log",
+          "sha256": "65b54d544f9053c65d7d0f20c10a2c4b8e67d72132ae17a8b548931cb9584df6"
+        }
+      }
+    }
+  }
+}

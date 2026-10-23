@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22T19:05:08.885Z",
+  "inputCommit": "9209f86159c3a1616695b77e777d1f9bfa8a4c03",
+  "sourceSha256": "861aad977d13985df8c3175545a0b3db5bacd977e405db751e16588f39c6a7e4",
+  "scope": "Retire the standalone YouDub Host/Vite entries; keep the Electron product, shared business code and historical domain tests.",
+  "removed": [
+    "apps/host/package.json",
+    "apps/host/src/bootstrap.ts",
+    "apps/host/src/main.ts",
+    "apps/host/src/paths.ts",
+    "apps/host/src/plugins.ts",
+    "apps/web/index.html",
+    "apps/web/scripts/build-plugins.mjs",
+    "apps/web/scripts/dev-plugins.ts",
+    "apps/web/scripts/start.mjs",
+    "apps/web/src/main.tsx",
+    "apps/web/src/plugin/bootstrap.tsx",
+    "apps/web/src/plugin/platform.ts",
+    "apps/web/src/preview/model-setup.tsx",
+    "apps/web/vite.config.ts",
+    "youdub.config.ts"
+  ],
+  "movedFixture": {
+    "from": "apps/host/src/bootstrap.ts",
+    "to": "packages/builtin/test/helpers/composition.ts",
+    "startHostImplementationUnchanged": true
+  },
+  "entries": {
+    "desktop": "npm start",
+    "browser": "npm run dev:web",
+    "browserImplementation": "apps/harness/launch.mjs",
+    "build": "npm run build:youdub"
+  },
+  "locks": {
+    "removed": [
+      "node_modules/@babel/plugin-transform-react-jsx-self",
+      "node_modules/@babel/plugin-transform-react-jsx-source",
+      "node_modules/@types/babel__core",
+      "node_modules/@types/babel__generator",
+      "node_modules/@types/babel__template",
+      "node_modules/@types/babel__traverse",
+      "node_modules/@vitejs/plugin-react",
+      "node_modules/@vitejs/plugin-react/node_modules/@rolldown/pluginutils",
+      "node_modules/react-refresh"
+    ],
+    "added": [
+      "node_modules/@tailwindcss/oxide-wasm32-wasi/node_modules/@emnapi/core",
+      "node_modules/@tailwindcss/oxide-wasm32-wasi/node_modules/@emnapi/runtime",
+      "node_modules/@tailwindcss/oxide-wasm32-wasi/node_modules/@emnapi/wasi-threads",
+      "node_modules/@tailwindcss/oxide-wasm32-wasi/node_modules/@napi-rs/wasm-runtime",
+      "node_modules/@tailwindcss/oxide-wasm32-wasi/node_modules/@tybys/wasm-util",
+      "node_modules/@tailwindcss/oxide-wasm32-wasi/node_modules/tslib"
+    ],
+    "existingDependencyVersionsAndIntegrityUnchanged": true
+  },
+  "verification": {
+    "domain": {
+      "passed": 187,
+      "skipped": 1,
+      "log": {
+        "path": "/tmp/youdub-legacy-domain.log",
+        "sha256": "ccdeca546c3249d48a153b075c82addf8f6f92765ae65d34b703524d567e041d"
+      }
+    },
+    "webNode24": {
+      "passed": 264,
+      "files": 38,
+      "node": "24.21.0 (app-owned Electron)",
+      "log": {
+        "path": "/tmp/youdub-legacy-web-node24.log",
+        "sha256": "05212ff37e1f43b136aeaf7b7e77bd54497db891a20890fe3461e8e8cf8e2072"
+      }
+    },
+    "webNode26": {
+      "initialFailed": 180,
+      "initialPassed": 84,
+      "initialLog": {
+        "path": "/tmp/youdub-legacy-web-tests.log",
+        "sha256": "ff11be4af1306027e49cc431f13338ccf0189105ccc262ddeaaed22a2a4cab1f"
+      },
+      "cause": "Vitest workers picked up Node 26 server Web Storage globals instead of jsdom storage. Parent execArgv alone did not propagate to the workers.",
+      "fix": "test.execArgv explicitly disables Node Web Storage; browser storage remains provided by jsdom.",
+      "passed": 264,
+      "files": 38,
+      "log": {
+        "path": "/tmp/youdub-legacy-web-final.log",
+        "sha256": "ab89e98e0706b104c3af43cde514ebc7ca792855510974e1dcf76ed14b55cd2c"
+      }
+    },
+    "productContracts": {
+      "passed": 26,
+      "includes": "two actual Desktop Host modes, profile migrations, setup resource gates",
+      "log": {
+        "path": "/tmp/youdub-legacy-product-contracts.log",
+        "sha256": "ea04ad2305e9930ce492874776244b44d71533f26601cc283cdfe05dc5c1cf16"
+      }
+    },
+    "rootBrowserLauncher": {
+      "command": "npm run dev:web -- -- --port 3094",
+      "port": 3094,
+      "isolatedHome": "/var/folders/dg/fz44cfz908jbg24j0cn9__3m0000gn/T/youdub-root-web-Gt2W5x",
+      "setupStatus": 200,
+      "phase": "skipped",
+      "explicitTestMode": true,
+      "claim": "Root browser entry starts the source-built Desktop Host; no native UI or environment-installation claim.",
+      "exitCode": 0,
+      "signal": null
+    },
+    "typecheck": {
+      "root": {
+        "path": "/tmp/youdub-legacy-typecheck.log",
+        "sha256": "a2e5a844a55a61b2ff2235a8c69bc88b0999f1d008f662d0e8fc5c58b45439f0"
+      },
+      "web": {
+        "path": "/tmp/youdub-legacy-web-typecheck.log",
+        "sha256": "de02d57b104220f1668a8d2406816731dac9f5aecfab4f95a86b9d154e65d4e2"
+      }
+    },
+    "productBuild": {
+      "path": "/tmp/youdub-legacy-product.log",
+      "sha256": "c5ebe910d667bfd08cb287f65e54391eadb587821b9f625c40abdf7a102597c0"
+    },
+    "composition": {
+      "path": "/tmp/youdub-legacy-composition.log",
+      "sha256": "082399002d149646e2873b9cdfaabc8c4994bb17aa651829102a743cb9bda462"
+    },
+    "originalSources": {
+      "path": "/tmp/youdub-legacy-originals.log",
+      "sha256": "c6c339adc0df78d0fdba4bea68650d6be580c4245da8fe460bbd630e4b2434de"
+    },
+    "sourceLedger": {
+      "path": "/tmp/youdub-legacy-ledger.log",
+      "sha256": "3875a03de96148853124d46299018038b33485a40a9fb9cd18ac8058ed8e22ab"
+    },
+    "lint": {
+      "path": "/tmp/youdub-legacy-config-lint-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "ci": {
+    "commit": "8fea16f1fa380a464b97622298e657a66871d17c",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370",
+    "windows": {
+      "status": "passed",
+      "job": 120028526133
+    },
+    "macOS": {
+      "status": "cancelled after observed test-runner failure",
+      "job": 120028525792,
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028525792",
+      "cause": "Node 24.20.0 rejects --no-webstorage. Vitest repeatedly attempted to start workers; the run was explicitly cancelled after inspecting live logs.",
+      "log": {
+        "path": "/tmp/youdub-macos-8fea16f1.log",
+        "sha256": "65b54d544f9053c65d7d0f20c10a2c4b8e67d72132ae17a8b548931cb9584df6"
+      }
+    }
+  },
+  "limitations": [
+    "No native UI acceptance while the Mac is locked.",
+    "Windows source CI passed; native Windows and final full-product acceptance remain pending.",
+    "No installer, signing, release, main/atomgit merge or Feishu update."
+  ]
+}

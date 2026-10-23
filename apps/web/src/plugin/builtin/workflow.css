@@ -1,0 +1,38 @@
+.workflow-canvas {
+  --xy-background-color: var(--background);
+  --xy-background-pattern-dots-color: var(--border);
+  --xy-edge-stroke: var(--subtle-foreground);
+  --xy-edge-stroke-selected: var(--ring);
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-border-color: var(--border);
+  --workflow-node-width: 17rem;
+  --workflow-panel-width: 21rem;
+}
+.workflow-node {
+  width: var(--workflow-node-width);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-card);
+}
+.workflow-node-selected { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 25%, transparent); }
+.workflow-node-review { border-color: var(--status-warning); box-shadow: 0 0 0 2px color-mix(in srgb, var(--status-warning) 35%, transparent), var(--shadow-card); }
+.workflow-node-missing { border-color: var(--status-danger); }
+.workflow-node .react-flow__handle { width: 10px; height: 10px; border: 2px solid var(--card); background: var(--subtle-foreground); }
+.workflow-node .react-flow__handle.connectingto { background: var(--ring); }
+.workflow-node-drag { cursor: grab; }
+.workflow-canvas .react-flow__edge-path { stroke-width: 1.5; }
+.workflow-canvas .react-flow__controls { border: 1px solid var(--border); border-radius: .75rem; overflow: hidden; box-shadow: var(--shadow-card); }
+.workflow-canvas .react-flow__attribution { background: var(--card); color: var(--muted-foreground); }
+.workflow-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr); position: relative; min-height: 0; }
+.workflow-inspector { width: min(21rem, 100%); overflow: auto; background: var(--card); border-left: 1px solid var(--border); }
+@media (min-width: 1280px) {
+  .workflow-editor-layout:has(.workflow-inspector) { grid-template-columns: minmax(0, 1fr) 21rem; }
+}
+@media (max-width: 1279px) {
+  .workflow-inspector { position: absolute; z-index: 20; top: 0; right: 0; bottom: 0; box-shadow: var(--shadow-float); }
+}
+@media (prefers-reduced-motion: reduce) { .workflow-canvas * { animation: none !important; transition: none !important; } }

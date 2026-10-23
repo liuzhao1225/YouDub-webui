@@ -1,106 +1,159 @@
 {
+  "uv": {
+    "version": "0.13.0"
+  },
   "python": {
     "darwin-arm64": {
       "path": "cpython-3.12.15+20261009-aarch64-apple-darwin-install_only_stripped.tar.gz",
-      "url": "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-aarch64-apple-darwin-install_only_stripped.tar.gz",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.12.15+20261009-aarch64-apple-darwin-install_only_stripped.tar.gz",
       "size": 25030095,
-      "sha256": "233f8e15255b3e1d1fd47ea5dd5230dfed803f371138e896e54d98c60ae19f6f"
+      "sha256": "233f8e15255b3e1d1fd47ea5dd5230dfed803f371138e896e54d98c60ae19f6f",
+      "mirrors": [
+        "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-aarch64-apple-darwin-install_only_stripped.tar.gz"
+      ]
     },
     "darwin-x64": {
       "path": "cpython-3.12.15+20261009-x86_64-apple-darwin-install_only_stripped.tar.gz",
-      "url": "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-x86_64-apple-darwin-install_only_stripped.tar.gz",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.12.15+20261009-x86_64-apple-darwin-install_only_stripped.tar.gz",
       "size": 24751118,
-      "sha256": "fb3187d95334813b88940db0f1ca57b84cedfd552739c3a5771c3ea0e49988c9"
+      "sha256": "fb3187d95334813b88940db0f1ca57b84cedfd552739c3a5771c3ea0e49988c9",
+      "mirrors": [
+        "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-x86_64-apple-darwin-install_only_stripped.tar.gz"
+      ]
     },
     "linux-arm64": {
       "path": "cpython-3.12.15+20261009-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz",
-      "url": "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.12.15+20261009-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz",
       "size": 29220608,
-      "sha256": "2e1ba0e7f22e01c534caebf7f09e7820322bc0d055271d3434af671e8400f96f"
+      "sha256": "2e1ba0e7f22e01c534caebf7f09e7820322bc0d055271d3434af671e8400f96f",
+      "mirrors": [
+        "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz"
+      ]
     },
     "linux-x64": {
       "path": "cpython-3.12.15+20261009-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
-      "url": "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.12.15+20261009-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz",
       "size": 34304557,
-      "sha256": "ffa8f85f1b56e88b687f08d743d817015524b86a9365fd921243132b80f1a36d"
+      "sha256": "ffa8f85f1b56e88b687f08d743d817015524b86a9365fd921243132b80f1a36d",
+      "mirrors": [
+        "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+      ]
     },
     "win32-x64": {
       "path": "cpython-3.12.15+20261009-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
-      "url": "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
+      "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.12.15+20261009-x86_64-pc-windows-msvc-install_only_stripped.tar.gz",
       "size": 22011208,
-      "sha256": "11ed9f8a6ac64fb1b5a55e40e305a6744a3f77a70863c8f8197a6e4349abc64a"
+      "sha256": "11ed9f8a6ac64fb1b5a55e40e305a6744a3f77a70863c8f8197a6e4349abc64a",
+      "mirrors": [
+        "https://registry.npmmirror.com/-/binary/python-build-standalone/20261009/cpython-3.12.15+20261009-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+      ]
     }
   },
   "ffmpeg": {
     "darwin-arm64": [
       {
         "path": "ffmpeg-darwin-arm64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-darwin-arm64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-darwin-arm64",
         "size": 45568216,
-        "sha256": "a90e3db6a3fd35f6074b013f948b1aa45b31c6375489d39e572bea3f18336584"
+        "sha256": "a90e3db6a3fd35f6074b013f948b1aa45b31c6375489d39e572bea3f18336584",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-darwin-arm64"
+        ]
       },
       {
         "path": "ffprobe-darwin-arm64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-darwin-arm64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffprobe-darwin-arm64",
         "size": 45528808,
-        "sha256": "bb2db6f5d8cef919da12fbf592119a987202a8c060a886f3cab091f9cab90b64"
+        "sha256": "bb2db6f5d8cef919da12fbf592119a987202a8c060a886f3cab091f9cab90b64",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-darwin-arm64"
+        ]
       }
     ],
     "darwin-x64": [
       {
         "path": "ffmpeg-darwin-x64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-darwin-x64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-darwin-x64",
         "size": 78862176,
-        "sha256": "ebdddc936f61e14049a2d4b549a412b8a40deeff6540e58a9f2a2da9e6b18894"
+        "sha256": "ebdddc936f61e14049a2d4b549a412b8a40deeff6540e58a9f2a2da9e6b18894",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-darwin-x64"
+        ]
       },
       {
         "path": "ffprobe-darwin-x64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-darwin-x64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffprobe-darwin-x64",
         "size": 78780408,
-        "sha256": "fa3add0ce901f7241abe0dfc0155d958fc834aca3f8ce61f87cc712ae669c1e0"
+        "sha256": "fa3add0ce901f7241abe0dfc0155d958fc834aca3f8ce61f87cc712ae669c1e0",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-darwin-x64"
+        ]
       }
     ],
     "linux-arm64": [
       {
         "path": "ffmpeg-linux-arm64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-linux-arm64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-linux-arm64",
         "size": 51134160,
-        "sha256": "6bb182d0d75d23028db82e9e4f723ca69b853d055698486e6984ddb2c06fb8ce"
+        "sha256": "6bb182d0d75d23028db82e9e4f723ca69b853d055698486e6984ddb2c06fb8ce",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-linux-arm64"
+        ]
       },
       {
         "path": "ffprobe-linux-arm64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-linux-arm64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffprobe-linux-arm64",
         "size": 50994160,
-        "sha256": "d17ae9b4c297d48e2521ba14e417bb0537c6ff77c584cdbcd6bb0d8d0307a2e8"
+        "sha256": "d17ae9b4c297d48e2521ba14e417bb0537c6ff77c584cdbcd6bb0d8d0307a2e8",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-linux-arm64"
+        ]
       }
     ],
     "linux-x64": [
       {
         "path": "ffmpeg-linux-x64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-linux-x64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-linux-x64",
         "size": 79826272,
-        "sha256": "e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99"
+        "sha256": "e7e7fb30477f717e6f55f9180a70386c62677ef8a4d4d1a5d948f4098aa3eb99",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffmpeg-linux-x64"
+        ]
       },
       {
         "path": "ffprobe-linux-x64",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-linux-x64",
+        "url": "https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffprobe-linux-x64",
         "size": 79665792,
-        "sha256": "4f231a1960d83e403d08f7971e271707bec278a9ae18e21b8b5b03186668450d"
+        "sha256": "4f231a1960d83e403d08f7971e271707bec278a9ae18e21b8b5b03186668450d",
+        "mirrors": [
+          "https://registry.npmmirror.com/-/binary/ffmpeg-static/b6.1.1/ffprobe-linux-x64"
+        ]
       }
     ],
     "win32-x64": [
       {
+        "path": "ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-shared-7.1.zip",
+        "directory": "ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-shared-7.1",
+        "sha256": "3e61e96b44bce30f0fad9fc31955be7fe4d6690d6a5a2b65c62494e262f8369e",
+        "size": 71578639,
+        "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-07-31-14-10/ffmpeg-n7.1.5-12-g1fdbca85aa-win64-gpl-shared-7.1.zip"
+      },
+      {
         "path": "ffmpeg-7.1.5-win32-x64-gpl-shared.tar.xz",
         "size": 51856612,
         "sha256": "51688053108c5f58768ac5d0ab13941cbf2cbce0edeeca25975012b34269651f",
-        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-builds/v7.1.5/ffmpeg-7.1.5-win32-x64-gpl-shared.tar.xz"
+        "url": "https://registry.npmmirror.com/-/binary/ffmpeg-builds/v7.1.5/ffmpeg-7.1.5-win32-x64-gpl-shared.tar.xz",
+        "directory": "ffmpeg-7.1.5-win32-x64-gpl-shared"
       }
     ]
   },
   "punkt": {
     "path": "punkt_tab-modelscope.zip",
-    "url": "https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip",
+    "url": "https://raw.githubusercontent.com/nltk/nltk_data/b20bc32b5e758fb9f553c70d49f30b26d9647af9/packages/tokenizers/punkt_tab.zip",
     "size": 4259017,
-    "sha256": "c2b16c23d738effbdc5789d7aa601397c13ba2819bf922fb904687f3f16657ed"
+    "sha256": "c2b16c23d738effbdc5789d7aa601397c13ba2819bf922fb904687f3f16657ed",
+    "mirrors": [
+      "https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip"
+    ]
   }
 }

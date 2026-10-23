@@ -1,4 +1,5 @@
 import type { OutputPort, JsonObject, ProviderDescription } from '@youdub/sdk'
+import { nodeDescriptors, outputPortLabels } from './node-contracts.js'
 import { artifactRef, mediaSchemas } from './media-schemas.js'
 
 const artifact = (name: string, schemaId: string, required = true): OutputPort => ({ name, schemaId, kind: 'artifact', required })
@@ -27,4 +28,9 @@ export const operations: Record<string, ProviderDescription['operations'][number
   align: { id: 'text.align/v1', inputSchema: input({ transcript, translation, dubbedTimeline, adjustedSpeech: speechAudio }), outputs: [json('wordAlignment', 'word-alignment/v1')] },
   export: { id: 'media.export/v1', inputSchema: input({ video, mediaInfo, transcript, translation, finalAudio: audio, dubbedTimeline, wordAlignment: mediaSchemas['word-alignment/v1'] }, ['video', 'mediaInfo', 'transcript', 'translation']), outputs: [artifact('video', 'video/mp4/v1'), artifact('audio', 'audio/wav/v1', false), artifact('sourceSubtitles', 'application/x-subrip/v1', false), artifact('translatedSubtitles', 'application/x-subrip/v1', false)] },
   importSubtitles: { id: 'subtitles.import/v1', inputSchema: input({ sourceSubtitles: subtitles, translatedSubtitles: subtitles }), outputs: [json('transcript', 'transcript/v1'), json('translation', 'translation/v1')] },
+}
+
+for (const [key, operation] of Object.entries(operations)) {
+  operation.node = nodeDescriptors[key]
+  for (const output of operation.outputs) output.label = outputPortLabels[output.name]
 }

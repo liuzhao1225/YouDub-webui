@@ -1,0 +1,260 @@
+{
+  "date": "2026-10-23",
+  "baseCommit": "a6c4d1ad3b9f6ae4bbb8244e8125441f4d40cd80",
+  "status": "passed",
+  "source": {
+    "packages": 204,
+    "treeEntries": 5151,
+    "sha256": "8d0841733ac928cf2b40a6837631ca4aec758cd69435f05ded6849054d217f21",
+    "originalArchiveSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85"
+  },
+  "removedPackages": [
+    {
+      "path": "packages/credentials/deepseek-account",
+      "name": "@deepseek-ai/dsh-deepseek-account",
+      "files": 10,
+      "consumers": [
+        {
+          "path": "packages/api/account-controller",
+          "sections": [
+            "devDependencies",
+            "peerDependencies"
+          ]
+        },
+        {
+          "path": "packages/api/remotes",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/product-analytics",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/llm/llm-deepseek",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/llm/llm-deepseek-account",
+          "sections": [
+            "devDependencies",
+            "peerDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/api/account-controller",
+      "name": "@deepseek-ai/dsh-api-account-controller",
+      "files": 11,
+      "consumers": [
+        {
+          "path": "packages/api/remotes",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/llm/llm-deepseek-account",
+      "name": "@deepseek-ai/dsh-llm-deepseek-account",
+      "files": 18,
+      "consumers": [
+        {
+          "path": "packages/llm/llm-deepseek",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/client/product-analytics",
+      "name": "@deepseek-ai/dsh-client-product-analytics",
+      "files": 22,
+      "consumers": [
+        {
+          "path": "packages/api/remotes",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-chat",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-conversation",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-plugin-manager",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-sidebar",
+          "sections": [
+            "devDependencies"
+          ]
+        },
+        {
+          "path": "packages/client/ui-workspace",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "packages/host/product-telemetry-otel",
+      "name": "@deepseek-ai/dsh-host-product-telemetry-otel",
+      "files": 14,
+      "consumers": [
+        {
+          "path": "packages/client/product-analytics",
+          "sections": [
+            "devDependencies"
+          ]
+        }
+      ]
+    }
+  ],
+  "changes": [
+    "Removed five unused account and product analytics packages (75 original package files), their manifest/TS/lock edges and obsolete Remote exports/events.",
+    "Removed account-driven default model initialization and its exclusive credential-scanning helper. Generic model catalog and explicit selection remain.",
+    "Removed optional product event calls from plugin installation, toggling, removal, conversation submission and workspace branching. Generic operations, errors and public submission contracts remain.",
+    "Retained API-key HTTP 401/403, custom endpoint/redirect, credential availability, streaming, disposal and model-selection assertions; removed only retired account/analytics behavior.",
+    "Source development runtime now declares and links its own YouDub SDK so out-of-tree source-linked plugin peers resolve through the existing Harness resolver.",
+    "Updated eleven bilingual README pairs and removed 62 links to omitted local documents; retained their labels and explanation. Third-party notices regenerated with no byte changes.",
+    "Added the retained API-key and model-selection regression to development CI.",
+    "Removed the stale catalog row for the already retired account-platform package; no remaining account package references in the active package tree."
+  ],
+  "restoredFixture": {
+    "archive": "/Users/liuzhao/code/youdub-harness-baselines/20261021/harness-source-0.2.1-rc.2.tar.gz",
+    "path": "snapshots/session/deepseek-messages-degraded-replay/session.v2.jsonl",
+    "sha256": "fa1b9bf085a420477200b28d21928e63948c721cd6e6a885f2365a61aa0d1023",
+    "method": "Exact archive bytes; no fabricated replacement or skipped assertion."
+  },
+  "validation": {
+    "sourceBuildGates": 7,
+    "aggregateTypeGates": 2,
+    "targeted": {
+      "files": 23,
+      "passed": 647
+    },
+    "gui": {
+      "files": 495,
+      "passed": 7927,
+      "expectedFailures": 1,
+      "skipped": 1
+    },
+    "actualHostAndProfile": {
+      "passed": 11
+    },
+    "initialActualHostAndLocales": {
+      "passed": 6
+    },
+    "bilingualReadmePairs": 11,
+    "composition": true,
+    "defaultProductIsolation": {
+      "packages": 87,
+      "runtimeSources": 692,
+      "webPlugins": 33
+    },
+    "languages": [
+      "zh",
+      "en",
+      "ja"
+    ],
+    "originalArchiveUnchanged": true
+  },
+  "browser": {
+    "kind": "Independent actual compiled Desktop Host with isolated profile, operated through browser",
+    "language": "ja",
+    "checks": [
+      "Original workbench hero loaded",
+      "Models empty state has no signed-in account or preconfigured provider",
+      "Provider catalog and custom API form open; cancel returns to empty list",
+      "Official PluginManager installs repository file-transform fixture from local directory",
+      "After SDK fix and Host restart the plugin page loads and counter changes from 0 to 1",
+      "Disabling removes navigation; same-process re-enable restores navigation",
+      "Confirmed uninstall removes navigation, installed card and profile dependency"
+    ],
+    "finalOrigin": "http://127.0.0.1:59360",
+    "finalOriginConsoleWarningsAndErrors": 0,
+    "cleanShutdown": true,
+    "testPluginDependencyRemoved": true
+  },
+  "failureHistory": [
+    "Initial client compiler found unused chat state after deleting analytics-only reads; removed the unused declaration.",
+    "Initial Host aggregate found an account-only test-controller import; removed that import.",
+    "Initial targeted regression had 646 passed and one missing recorded replay fixture; restored exact original archive fixture, then all 647 passed.",
+    "Initial broad GUI regression had 7915 passed and 20 failures from obsolete analytics and callback assertions; removed exclusive event tests and retained operation/error/navigation assertions, then 7927 passed.",
+    "A smoke page opened while a rebuild was underway reported root slot registration failure; shut down the Host and reran on stable artifacts, which loaded normally. No production error was swallowed.",
+    "The actual local-directory plugin installed but failed activation with ERR_MODULE_NOT_FOUND for @youdub/harness-subtitles. Exposed the application-owned SDK in the development runtime; same plugin boot, interaction, disable/enable and uninstall passed.",
+    "The new SDK source identity assertion initially compared /var with /private/var; compare both resolved realpaths, then both actual Host modes and profile tests passed.",
+    "Bilingual README gate reported references to omitted .zh.md documents; removed unavailable links in both languages and refreshed the paired records; all eleven pairs passed."
+  ],
+  "logs": {
+    "frameworkBuild": {
+      "path": "/tmp/youdub-account-prune-final-build.log",
+      "sha256": "8f78cd8b0328ac69c5e3c261c5922ad94dbfda77e1c9a268c4fb62b42ed90d82"
+    },
+    "aggregateTypes": {
+      "path": "/tmp/youdub-account-prune-types2.log",
+      "sha256": "67fdd6182c57ecb9c07c16f476ebd8b5cdd8d62c33c513dd104892379abb9ab6"
+    },
+    "targetedTests": {
+      "path": "/tmp/youdub-account-prune-targeted2.log",
+      "sha256": "2dda4ddf327157833d3412e82244d1cabc551396677366ca71b0512f8ba9bdea"
+    },
+    "gui": {
+      "path": "/tmp/youdub-account-prune-gui2.log",
+      "sha256": "3aa5228a933d3f28787af8d79e4b5d0a0bcd80a68b5f57d0e6c7a629263d6ba6"
+    },
+    "hostAndProfile": {
+      "path": "/tmp/youdub-account-prune-sdk-contracts.log",
+      "sha256": "1604e568bdcf2e13c218b8eaaf88dc9cbd3f042d7e5cba04a5abf447a06140cd"
+    },
+    "initialHostAndLocales": {
+      "path": "/tmp/youdub-account-prune-host-contracts.log",
+      "sha256": "18980fc5c941cffa2363c2a7f31c2a77e8e6ca7dd317043621867213ca5b8a4e"
+    },
+    "productBuild": {
+      "path": "/tmp/youdub-account-prune-product-build.log",
+      "sha256": "390c03b1c396cd7cd9ebc6270af8fde18d6cae4442df059bde87de73c123a172"
+    },
+    "originalArchive": {
+      "path": "/tmp/youdub-account-prune-archive.log",
+      "sha256": "f4936d0834a95f18868b17cea0cf6e5462e7d87a92afa0a8aaa917d84fded7ae"
+    }
+  },
+  "screenshots": [
+    "refactor-account-prune-models.png",
+    "refactor-account-prune-plugin.png",
+    "refactor-account-prune-uninstalled.png"
+  ],
+  "limitations": [
+    "This is source development; no installer/package/signing/release/main or atomgit merge.",
+    "Native Mac interaction remained unavailable because CUA still reported a locked desktop. Browser checks do not replace native acceptance.",
+    "Full P0-P7 acceptance remains open; both final Feishu document updates remain deferred until all work is complete."
+  ],
+  "ci": {
+    "commit": "aed6099cfb1743647197497d8af2d15252fed707",
+    "run": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39870064840",
+    "macOS": "success",
+    "windows": "success"
+  }
+}

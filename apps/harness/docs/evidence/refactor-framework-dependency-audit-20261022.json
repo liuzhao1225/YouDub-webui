@@ -1,0 +1,469 @@
+{
+  "candidate": "46abd115944784eef25588026f4472c3385ac30c",
+  "scope": "Current source import and manifest dependency closure from the actual product runtime manifest; this is a deletion-candidate audit, not full dynamic-loader proof.",
+  "runtimePackages": 78,
+  "desktopBuildRoots": 1,
+  "totalPackages": 270,
+  "runtimeAndTypeClosure": 141,
+  "includingPackageTests": 213,
+  "outsideBoth": 57,
+  "originalManifestSha256": "b9c6cf9bd5f0b69affcdf2ffc6bb45f63309efb6abdfd552031093f2dee6d42c",
+  "runtimeAndTypePackages": [
+    "@deepseek-ai/cordis",
+    "@deepseek-ai/cordis-plugin-group",
+    "@deepseek-ai/cordis-plugin-include",
+    "@deepseek-ai/cordis-plugin-loader",
+    "@deepseek-ai/cordis-plugin-timer",
+    "@deepseek-ai/cosmokit",
+    "@deepseek-ai/dsh",
+    "@deepseek-ai/dsh-agent",
+    "@deepseek-ai/dsh-agent-default-model",
+    "@deepseek-ai/dsh-agent-preset-registry",
+    "@deepseek-ai/dsh-anonymous-user-id",
+    "@deepseek-ai/dsh-api-account-controller",
+    "@deepseek-ai/dsh-api-gateway",
+    "@deepseek-ai/dsh-api-job-controller",
+    "@deepseek-ai/dsh-api-remote-access",
+    "@deepseek-ai/dsh-api-remotes",
+    "@deepseek-ai/dsh-api-session-controller",
+    "@deepseek-ai/dsh-api-settings-controller",
+    "@deepseek-ai/dsh-api-terminal-controller",
+    "@deepseek-ai/dsh-api-workspace-controller",
+    "@deepseek-ai/dsh-api-workspace-files",
+    "@deepseek-ai/dsh-app-boot",
+    "@deepseek-ai/dsh-atomic-write",
+    "@deepseek-ai/dsh-attachment",
+    "@deepseek-ai/dsh-authorization",
+    "@deepseek-ai/dsh-brand",
+    "@deepseek-ai/dsh-chunked-list",
+    "@deepseek-ai/dsh-client-connection",
+    "@deepseek-ai/dsh-client-file-upload",
+    "@deepseek-ai/dsh-client-hmr",
+    "@deepseek-ai/dsh-client-locale",
+    "@deepseek-ai/dsh-client-modules",
+    "@deepseek-ai/dsh-client-product-analytics",
+    "@deepseek-ai/dsh-client-resources",
+    "@deepseek-ai/dsh-client-shortcuts",
+    "@deepseek-ai/dsh-client-store",
+    "@deepseek-ai/dsh-client-ui-conversation",
+    "@deepseek-ai/dsh-client-ui-dockkit",
+    "@deepseek-ai/dsh-client-ui-layout",
+    "@deepseek-ai/dsh-client-ui-plugin-manager",
+    "@deepseek-ai/dsh-client-ui-primitives",
+    "@deepseek-ai/dsh-client-ui-renderer",
+    "@deepseek-ai/dsh-client-ui-session",
+    "@deepseek-ai/dsh-client-ui-settings",
+    "@deepseek-ai/dsh-client-ui-settings-general",
+    "@deepseek-ai/dsh-client-ui-settings-models",
+    "@deepseek-ai/dsh-client-ui-sidebar-browser",
+    "@deepseek-ai/dsh-client-ui-sidebar-right",
+    "@deepseek-ai/dsh-client-ui-slots",
+    "@deepseek-ai/dsh-client-ui-theme",
+    "@deepseek-ai/dsh-client-web",
+    "@deepseek-ai/dsh-cmdline",
+    "@deepseek-ai/dsh-command-feedback",
+    "@deepseek-ai/dsh-commands",
+    "@deepseek-ai/dsh-compaction",
+    "@deepseek-ai/dsh-compaction-image-offload",
+    "@deepseek-ai/dsh-config-editor",
+    "@deepseek-ai/dsh-cordis-host-runner",
+    "@deepseek-ai/dsh-credentials",
+    "@deepseek-ai/dsh-credentials-local",
+    "@deepseek-ai/dsh-deepseek-account",
+    "@deepseek-ai/dsh-deque",
+    "@deepseek-ai/dsh-desktop",
+    "@deepseek-ai/dsh-desktop-host",
+    "@deepseek-ai/dsh-file-reference",
+    "@deepseek-ai/dsh-fs",
+    "@deepseek-ai/dsh-goal",
+    "@deepseek-ai/dsh-hmr",
+    "@deepseek-ai/dsh-home-paths",
+    "@deepseek-ai/dsh-host-directory-picker",
+    "@deepseek-ai/dsh-host-frontend-static",
+    "@deepseek-ai/dsh-host-plugin-inventory",
+    "@deepseek-ai/dsh-host-product-telemetry-otel",
+    "@deepseek-ai/dsh-host-webserver",
+    "@deepseek-ai/dsh-http-proxy",
+    "@deepseek-ai/dsh-jobs",
+    "@deepseek-ai/dsh-jobs-local",
+    "@deepseek-ai/dsh-launch-environment",
+    "@deepseek-ai/dsh-lazy-require",
+    "@deepseek-ai/dsh-llm",
+    "@deepseek-ai/dsh-llm-pi-ai",
+    "@deepseek-ai/dsh-llm-retry",
+    "@deepseek-ai/dsh-message-feedback",
+    "@deepseek-ai/dsh-native-command",
+    "@deepseek-ai/dsh-office-to-pdf",
+    "@deepseek-ai/dsh-otel",
+    "@deepseek-ai/dsh-output-retention",
+    "@deepseek-ai/dsh-package-manifest",
+    "@deepseek-ai/dsh-permission-presets",
+    "@deepseek-ai/dsh-plan-mode",
+    "@deepseek-ai/dsh-plugin-manager",
+    "@deepseek-ai/dsh-plugin-market",
+    "@deepseek-ai/dsh-plugin-market-index",
+    "@deepseek-ai/dsh-ptc-runtime",
+    "@deepseek-ai/dsh-sandbox",
+    "@deepseek-ai/dsh-sandbox-policy",
+    "@deepseek-ai/dsh-schedule",
+    "@deepseek-ai/dsh-scope",
+    "@deepseek-ai/dsh-session",
+    "@deepseek-ai/dsh-session-format",
+    "@deepseek-ai/dsh-session-format-catalog",
+    "@deepseek-ai/dsh-session-format-v0-to-v1",
+    "@deepseek-ai/dsh-session-format-v1-to-v2",
+    "@deepseek-ai/dsh-session-format-v2-to-v3",
+    "@deepseek-ai/dsh-session-format-v3-to-v4",
+    "@deepseek-ai/dsh-session-persistence",
+    "@deepseek-ai/dsh-session-projection",
+    "@deepseek-ai/dsh-session-projection-cache",
+    "@deepseek-ai/dsh-session-query",
+    "@deepseek-ai/dsh-session-reference",
+    "@deepseek-ai/dsh-session-title",
+    "@deepseek-ai/dsh-settings",
+    "@deepseek-ai/dsh-shell",
+    "@deepseek-ai/dsh-skill",
+    "@deepseek-ai/dsh-spill",
+    "@deepseek-ai/dsh-storage",
+    "@deepseek-ai/dsh-storage-domain",
+    "@deepseek-ai/dsh-subagent",
+    "@deepseek-ai/dsh-subprocess",
+    "@deepseek-ai/dsh-subprocess-local",
+    "@deepseek-ai/dsh-system-prompt",
+    "@deepseek-ai/dsh-timeout",
+    "@deepseek-ai/dsh-token-meter",
+    "@deepseek-ai/dsh-tool-todo",
+    "@deepseek-ai/dsh-tools",
+    "@deepseek-ai/dsh-typert-loader",
+    "@deepseek-ai/dsh-typert-protocol",
+    "@deepseek-ai/dsh-typert-registry",
+    "@deepseek-ai/dsh-user-approval",
+    "@deepseek-ai/dsh-user-questions",
+    "@deepseek-ai/dsh-util-code-language",
+    "@deepseek-ai/dsh-util-crypto",
+    "@deepseek-ai/dsh-util-time",
+    "@deepseek-ai/dsh-util-values",
+    "@deepseek-ai/dsh-util-workspace-path",
+    "@deepseek-ai/dsh-web-app",
+    "@deepseek-ai/dsh-web-frontend",
+    "@deepseek-ai/dsh-win32-process",
+    "@deepseek-ai/dsh-working-directory",
+    "@deepseek-ai/dsh-workspace",
+    "@deepseek-ai/schemastery"
+  ],
+  "testOnlyPackages": [
+    "@deepseek-ai/dsh-agent-loop",
+    "@deepseek-ai/dsh-agent-loop-testkit",
+    "@deepseek-ai/dsh-agent-preset",
+    "@deepseek-ai/dsh-attachment-local",
+    "@deepseek-ai/dsh-bash-local",
+    "@deepseek-ai/dsh-client-test-runtime",
+    "@deepseek-ai/dsh-client-ui-approval",
+    "@deepseek-ai/dsh-client-ui-chat",
+    "@deepseek-ai/dsh-client-ui-commands",
+    "@deepseek-ai/dsh-client-ui-deliverables",
+    "@deepseek-ai/dsh-client-ui-goal",
+    "@deepseek-ai/dsh-client-ui-input-trigger",
+    "@deepseek-ai/dsh-client-ui-reference",
+    "@deepseek-ai/dsh-client-ui-sidebar",
+    "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+    "@deepseek-ai/dsh-client-ui-skill",
+    "@deepseek-ai/dsh-client-ui-tool",
+    "@deepseek-ai/dsh-client-ui-workspace",
+    "@deepseek-ai/dsh-compaction-basic",
+    "@deepseek-ai/dsh-compaction-tool-result-pruner",
+    "@deepseek-ai/dsh-deepseek-llm-api-extensions",
+    "@deepseek-ai/dsh-file-reference-local",
+    "@deepseek-ai/dsh-fs-local",
+    "@deepseek-ai/dsh-fs-observation-policy",
+    "@deepseek-ai/dsh-fs-sandbox",
+    "@deepseek-ai/dsh-llm-deepseek",
+    "@deepseek-ai/dsh-llm-deepseek-account",
+    "@deepseek-ai/dsh-llm-deepseek-api-key",
+    "@deepseek-ai/dsh-llm-mock-server",
+    "@deepseek-ai/dsh-llm-replay",
+    "@deepseek-ai/dsh-loader-smoke",
+    "@deepseek-ai/dsh-mcp-client",
+    "@deepseek-ai/dsh-mcp-resources",
+    "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
+    "@deepseek-ai/dsh-ptc-runtime-node",
+    "@deepseek-ai/dsh-pwsh-local",
+    "@deepseek-ai/dsh-remote-mock",
+    "@deepseek-ai/dsh-sandbox-local",
+    "@deepseek-ai/dsh-sandbox-windows-acl",
+    "@deepseek-ai/dsh-session-log-deepseek",
+    "@deepseek-ai/dsh-session-persistence-jsonl",
+    "@deepseek-ai/dsh-session-query-sqlite",
+    "@deepseek-ai/dsh-session-snapshot",
+    "@deepseek-ai/dsh-session-stats",
+    "@deepseek-ai/dsh-session-turn-outline",
+    "@deepseek-ai/dsh-shell-env",
+    "@deepseek-ai/dsh-skill-filesystem",
+    "@deepseek-ai/dsh-spill-local",
+    "@deepseek-ai/dsh-spill-policy",
+    "@deepseek-ai/dsh-storage-json",
+    "@deepseek-ai/dsh-subagent-fork-in-process",
+    "@deepseek-ai/dsh-subagent-spawn-in-process",
+    "@deepseek-ai/dsh-terminal",
+    "@deepseek-ai/dsh-terminal-bash",
+    "@deepseek-ai/dsh-tool-bash",
+    "@deepseek-ai/dsh-tool-call-timeout-policy",
+    "@deepseek-ai/dsh-tool-fs",
+    "@deepseek-ai/dsh-tool-jobs",
+    "@deepseek-ai/dsh-tool-present",
+    "@deepseek-ai/dsh-tool-schedule",
+    "@deepseek-ai/dsh-tool-session-query",
+    "@deepseek-ai/dsh-tool-str-replace-editor",
+    "@deepseek-ai/dsh-tool-subagent",
+    "@deepseek-ai/dsh-tool-subagent-control",
+    "@deepseek-ai/dsh-tool-terminal",
+    "@deepseek-ai/dsh-tool-web",
+    "@deepseek-ai/dsh-tool-working-directory",
+    "@deepseek-ai/dsh-web",
+    "@deepseek-ai/dsh-web-fetch-http",
+    "@deepseek-ai/dsh-web-search-exa",
+    "@deepseek-ai/dsh-workspace-changes",
+    "@deepseek-ai/node-addon-system"
+  ],
+  "candidatePackages": [
+    {
+      "name": "@deepseek-ai/cordis-plugin-hmr",
+      "path": "vendor/hmr"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-logger-console",
+      "path": "vendor/logger-console"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-instructions",
+      "path": "packages/context/agent-instructions"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-tool-presentation",
+      "path": "packages/core/agent-tool-presentation"
+    },
+    {
+      "name": "@deepseek-ai/dsh-base",
+      "path": "packages/bundle/base"
+    },
+    {
+      "name": "@deepseek-ai/dsh-bash-sandbox",
+      "path": "packages/shell/bash-sandbox"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-cordis",
+      "path": "packages/extensions/ui-cordis"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-directory-picker-browse",
+      "path": "packages/client/ui-directory-picker-browse"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-directory-picker-native",
+      "path": "packages/client/ui-directory-picker-native"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-message-feedback",
+      "path": "packages/client/ui-message-feedback"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-open-in-app",
+      "path": "packages/client/ui-open-in-app"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-files",
+      "path": "packages/client/ui-sidebar-files"
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-compact",
+      "path": "packages/compaction/command-compact"
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-goal",
+      "path": "packages/goal/command-goal"
+    },
+    {
+      "name": "@deepseek-ai/dsh-cordis-client-runner",
+      "path": "packages/extensions/cordis-client-runner"
+    },
+    {
+      "name": "@deepseek-ai/dsh-deepseek-account-platform",
+      "path": "packages/credentials/deepseek-account-platform"
+    },
+    {
+      "name": "@deepseek-ai/dsh-goal-round-driver",
+      "path": "packages/goal/goal-round-driver"
+    },
+    {
+      "name": "@deepseek-ai/dsh-harness-dev-context",
+      "path": "packages/context/harness-dev-context"
+    },
+    {
+      "name": "@deepseek-ai/dsh-headless",
+      "path": "packages/bundle/headless"
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-directory-picker-auto",
+      "path": "packages/host/directory-picker-auto"
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-directory-picker-browse",
+      "path": "packages/host/directory-picker-browse"
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-directory-picker-native",
+      "path": "packages/host/directory-picker-native"
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-open-in-app",
+      "path": "packages/host/open-in-app"
+    },
+    {
+      "name": "@deepseek-ai/dsh-persona",
+      "path": "packages/preset/persona"
+    },
+    {
+      "name": "@deepseek-ai/dsh-pwsh-sandbox",
+      "path": "packages/shell/pwsh-sandbox"
+    },
+    {
+      "name": "@deepseek-ai/dsh-repeat-tool-reminder",
+      "path": "packages/guard/repeat-tool-reminder"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-checkpoint-policy",
+      "path": "packages/session/session-checkpoint-policy"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-log-export",
+      "path": "packages/session-query/session-log-export"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-telemetry",
+      "path": "packages/session/session-telemetry"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-telemetry-otel",
+      "path": "packages/session/session-telemetry-otel"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-title-first-prompt-llm",
+      "path": "packages/session/session-title-first-prompt-llm"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-title-llm",
+      "path": "packages/session/session-title-llm"
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill-office",
+      "path": "packages/skill/skill-office"
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage-sqlite",
+      "path": "packages/storage/storage-sqlite"
+    },
+    {
+      "name": "@deepseek-ai/dsh-time-context",
+      "path": "packages/context/time-context"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tmux-context",
+      "path": "packages/context/tmux-context"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-ask-user",
+      "path": "packages/interaction/tool-ask-user"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-bash-persistent",
+      "path": "packages/shell/tool-bash-persistent"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-cordis",
+      "path": "packages/extensions/tool-cordis"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-fs-search",
+      "path": "packages/fs/tool-fs-search"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-goal",
+      "path": "packages/goal/tool-goal"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-pwsh",
+      "path": "packages/shell/tool-pwsh"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-pwsh-persistent",
+      "path": "packages/shell/tool-pwsh-persistent"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-skill",
+      "path": "packages/skill/tool-skill"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-workflow",
+      "path": "packages/workflow/tool-workflow"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-workspace-dependencies",
+      "path": "packages/skill/tool-workspace-dependencies"
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-generator",
+      "path": "packages/typert/generator"
+    },
+    {
+      "name": "@deepseek-ai/dsh-web-deepseek-api",
+      "path": "packages/web/web-deepseek-api"
+    },
+    {
+      "name": "@deepseek-ai/dsh-web-search-deepseek",
+      "path": "packages/web/web-search-deepseek"
+    },
+    {
+      "name": "@deepseek-ai/dsh-web-search-perplexity",
+      "path": "packages/web/web-search-perplexity"
+    },
+    {
+      "name": "@deepseek-ai/dsh-workflow",
+      "path": "packages/workflow/workflow"
+    },
+    {
+      "name": "@deepseek-ai/dsh-workflow-ptc",
+      "path": "packages/workflow/workflow-ptc"
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-darwin-arm64",
+      "path": "native/system/packages/darwin-arm64"
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-darwin-x64",
+      "path": "native/system/packages/darwin-x64"
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-linux-arm64",
+      "path": "native/system/packages/linux-arm64"
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-linux-x64",
+      "path": "native/system/packages/linux-x64"
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-workspace",
+      "path": "native/system"
+    }
+  ],
+  "unresolved": [
+    "51 outside-closure product/tool candidates were scanned before this batch; two experimental contracts are now removed. The remaining 49 still need dynamic-reference and generator review.",
+    "Typert generator tests import the old tool-cordis generated API catalog; migrate that consumer before removing it.",
+    "Old base/headless patches and browser test fixtures still refer to retired or candidate product packages; their fixtures and gates must be migrated together.",
+    "Office runtime preparation and third-party notices still share the old Python lock; preserve applicable licenses when removing that path.",
+    "Native addons, generator tools, Cordis HMR/logger infrastructure require build/runtime metadata review, even when lexical imports are absent.",
+    "Seventy-two packages remain reachable only through retained package tests. Preserve framework behavior assertions while decoupling obsolete product test assembly."
+  ],
+  "sourceTreeSha256": "00034c23e21465572aaa1ac372172bc818be1eba176a066a5b59ba085f9aa544",
+  "recordedAt": "2026-10-22T15:55:32.102Z",
+  "runtimeManifest": "apps/harness/dist/desktop/runtime-project/package.json"
+}

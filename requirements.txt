@@ -1,21 +1,12 @@
-python-dotenv
-pydantic
-keyring>=25.6,<26
-openai
-dora-search>=0.1.12
-# Only quantized legacy Demucs checkpoints need DiffQ; htdemucs is not quantized.
-# DiffQ has no Windows wheel and its extension requires a separate build toolchain.
+# Complete developer installation. Desktop setup installs only selected groups.
+-r backend/requirements/base.txt
+-r backend/requirements/media.txt
+-r backend/requirements/openai.txt
+-r backend/requirements/download.txt
+-r backend/requirements/whisper.txt
+-r backend/requirements/voxcpm.txt
+-r backend/requirements/demucs.txt
+-r backend/requirements/qwen_forced_aligner.txt
+# Only quantized legacy Demucs checkpoints need DiffQ.
 diffq>=0.2.1; sys_platform != "win32"
-julius>=0.2.3
-lameenc>=1.2
-openunmix
-openai-whisper
-nltk==3.10.3
-voxcpm==2.0.3
-transformers>=5.17,<6
-soundfile
-librosa
-numpy
 pytest
-httpx[socks]
-yt-dlp[default]==2026.8.19

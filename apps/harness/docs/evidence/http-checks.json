@@ -1,0 +1,9 @@
+{
+  "unauthenticated": 401,
+  "foreignOrigin": 403,
+  "exportWithoutConfirmation": 409,
+  "videoRange": 206,
+  "host": "official @deepseek-ai/dsh 0.2.1-rc.2",
+  "pluginVisibleInBoot": true,
+  "taskId": "80ab3f36-e482-459a-b63c-9bcf70c86d9b"
+}

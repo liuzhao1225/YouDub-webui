@@ -1,0 +1,2 @@
+openai
+httpx[socks]

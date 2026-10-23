@@ -1,0 +1,323 @@
+{
+  "date": "2026-10-22",
+  "source": "site/assets/zoo-en.mp4",
+  "surface": "Native macOS Electron",
+  "automaticRun": {
+    "baseCommit": "96028d9e85b23e869b7a043573249e85139a5593",
+    "frameworkSourceSha256": "f4bfb754cc98368a0550670fc22928df27f2c6c466bd36382e7e52a420a67808",
+    "sharedWorkingTree": true,
+    "taskId": "531783ef-9526-4239-969a-f06809d1d8f2",
+    "completedNodes": 8,
+    "totalNodes": 8,
+    "models": [
+      "Demucs htdemucs",
+      "Whisper tiny",
+      "doubao-seed-evolving",
+      "VoxCPM2"
+    ],
+    "translation": {
+      "configuredThrough": "Native Settings model-provider form",
+      "maxTokens": 65535,
+      "rawEvidenceRetained": true
+    },
+    "quitProtection": {
+      "promptObserved": true,
+      "cancelKeptTaskRunning": true
+    },
+    "playback": {
+      "observedSeconds": 18.9,
+      "display": "0:18 / 0:18"
+    },
+    "nativeSubtitleExport": {
+      "path": "/tmp/youdub-native-zoo-auto-20261022.srt",
+      "identicalToArtifact": true
+    },
+    "files": [
+      {
+        "name": "video.mp4",
+        "bytes": 746391,
+        "sha256": "880e8344d4a1831e279b68eb29196603035a1162c4a368a9b84c50acd640ba49"
+      },
+      {
+        "name": "audio.wav",
+        "bytes": 3635180,
+        "sha256": "f471579decae90c5f5190c7b17013b8e64a97da2bc843f9ec25c2d97a634aa4b"
+      },
+      {
+        "name": "source.srt",
+        "bytes": 286,
+        "sha256": "5502ddc3bbbc5fcba852d979b6745ffa4d03569e26c011e5e0f96cdd57b2d509"
+      },
+      {
+        "name": "translated.srt",
+        "bytes": 334,
+        "sha256": "a3514bca934621770c9f4fa4f524424614c202f92cc9df9bfad6b74016b65936"
+      }
+    ],
+    "media": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 320,
+          "height": 240
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2
+        }
+      ],
+      "format": {
+        "duration": "18.933333"
+      }
+    },
+    "sourceSubtitles": "1\n00:00:01,100 --> 00:00:03,360\nAlright so here we are one of the elephants\n\n2\n00:00:04,700 --> 00:00:14,060\nAnd the whole thing of what these guys expect is that they have really really long arms and that's cool\n\n3\n00:00:16,700 --> 00:00:18,480\nAnd that's pretty much all I was to say\n",
+    "translatedSubtitles": "1\n00:00:01,100 --> 00:00:03,941\n好了，现在我们看到的是其中一头大象\n\n2\n00:00:04,700 --> 00:00:08,097\n大家对这些家伙的最大期待\n\n3\n00:00:08,097 --> 00:00:11,495\n就是它们的手臂非常非常长\n\n4\n00:00:11,495 --> 00:00:12,344\n这很酷\n\n5\n00:00:16,700 --> 00:00:18,862\n我想说的基本上就是这些\n"
+  },
+  "manualReviewRun": {
+    "taskId": "1d068171-410f-4f4e-a222-cfc159440432",
+    "configuredThrough": "Native workflow canvas and node input controls",
+    "nodes": 9,
+    "asrAutoContinue": false,
+    "translationAutoContinue": false,
+    "addedProvider": "qwen_forced_aligner",
+    "addedModel": "Qwen3-ForcedAligner-0.6B-hf",
+    "nativeValidationPassed": true,
+    "reusedFrom": "531783ef-9526-4239-969a-f06809d1d8f2",
+    "quitExitCode": 0,
+    "afterRestart": {
+      "surface": "Authenticated API readback from the same Electron Host",
+      "status": "paused",
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed"
+        },
+        {
+          "id": "separate",
+          "status": "completed"
+        },
+        {
+          "id": "recognize",
+          "status": "awaiting_review"
+        },
+        {
+          "id": "translate",
+          "status": "pending"
+        },
+        {
+          "id": "reference",
+          "status": "completed"
+        },
+        {
+          "id": "synthesize",
+          "status": "completed"
+        },
+        {
+          "id": "mix",
+          "status": "completed"
+        },
+        {
+          "id": "80dcaec1-1276-4f08-8559-d66d1db2d0eb",
+          "status": "pending"
+        },
+        {
+          "id": "export",
+          "status": "pending"
+        }
+      ]
+    },
+    "compatibilityRecovery": {
+      "originalFailure": "PLUGIN_VERSION_UNAVAILABLE: Pinned provider youdub.media is unavailable.",
+      "reviewedFrom": "96028d9e85b23e869b7a043573249e85139a5593",
+      "reviewedChange": "d2f630b499e955978128853bfbb61bc69952a42e: backend/app/accelerators.py installation source URLs only",
+      "currentIdentitiesMatchRunningHost": true,
+      "pinnedIdentitiesMatchBaseline": true,
+      "approvedIdentities": {
+        "youdub.download": {
+          "current": "sha256:4682746c1adc492e758207ffb086b688c33cb3b0c65e493f2dd72bf597cebff4",
+          "previous": "sha256:3f8679d5f5f0f0d15396a97ed17d1d990eb62f8a62f929141e2bed4a703ddf2c"
+        },
+        "youdub.media": {
+          "current": "sha256:9cb8ef3bec691ce46209da703d2341fb627bf544f7567e3dfcb7bda4a5cdce61",
+          "previous": "sha256:ae870a4dca55be91d8c0a5e098f6b1866f81ec1d9facac0198a74023e3ba8702"
+        },
+        "whisper": {
+          "current": "sha256:902283c901285c3d421c88a66cb67964d924018b603f791b32f5cdde45e247dd",
+          "previous": "sha256:fbafe008fa3ecfa2f82cd62f07e31e686fb89efd68418e8ffcdda6b1368d5ea0"
+        },
+        "openai": {
+          "current": "sha256:45c70c9090971043f38eeabaa80ddf8c7e8bd808c1179b3362057501e31d3bce",
+          "previous": "sha256:ab1eb5a26839aa8cdc18a31ef914113fb14a558dbe6db465d360869b2a3aaccc"
+        },
+        "voxcpm": {
+          "current": "sha256:fed79be0abf8bae37993eb49e1ee72c7cdc3adb7b88e75fa793149600be8cbaf",
+          "previous": "sha256:edbbb411996227a4a0e65146aaca45991f151de2d7f97ab10139d3e7170a15df"
+        },
+        "demucs": {
+          "current": "sha256:cecd6dd19af75a26fd69430ac1f84eb9988522f6004956bd63bcdda857dc097d",
+          "previous": "sha256:0eb302a77e5b10e78cf22a50e8db261581d780da908a5b1e3f2d0c7e5fb24b33"
+        },
+        "qwen_forced_aligner": {
+          "current": "sha256:6675127c28d08d86ec5bc56cc90fc74a372b786109fe36e752286f7dc782e331",
+          "previous": "sha256:b5966ac0c57f32e843dff81b2cb244fbf2b1f5e61d151a86fa3abb40aba31600"
+        }
+      },
+      "regressionTests": 5,
+      "nativeCorrectionSaved": true,
+      "asrOutputRevision": 2,
+      "downstreamInvalidated": true
+    },
+    "isolatedContinuation": {
+      "appId": "com.youdub.review-validation",
+      "directory": ".cache/harness/native-review-isolated-20261022",
+      "copiedAtTaskRevision": 14,
+      "storeCopiedThrough": "SQLite online backup",
+      "translationCorrectionRevision": 3,
+      "translationApproved": true,
+      "originalTaskUnchangedAtRevision": 14,
+      "status": "succeeded",
+      "finalTaskRevision": 38,
+      "steps": [
+        {
+          "id": "prepare",
+          "status": "completed",
+          "outputRevision": 1
+        },
+        {
+          "id": "separate",
+          "status": "completed",
+          "outputRevision": 1
+        },
+        {
+          "id": "recognize",
+          "status": "completed",
+          "outputRevision": 2
+        },
+        {
+          "id": "translate",
+          "status": "completed",
+          "outputRevision": 3
+        },
+        {
+          "id": "reference",
+          "status": "completed",
+          "outputRevision": 2
+        },
+        {
+          "id": "synthesize",
+          "status": "completed",
+          "outputRevision": 2
+        },
+        {
+          "id": "mix",
+          "status": "completed",
+          "outputRevision": 2
+        },
+        {
+          "id": "80dcaec1-1276-4f08-8559-d66d1db2d0eb",
+          "status": "completed",
+          "outputRevision": 1
+        },
+        {
+          "id": "export",
+          "status": "completed",
+          "outputRevision": 1
+        }
+      ],
+      "artifacts": {
+        "files": [
+          {
+            "name": "audio.wav",
+            "bytes": 3635180,
+            "sha256": "a08276a7d6bfaac8613efc1f2974f1e805bee6c94239ac9e91f52d64aac7567e"
+          },
+          {
+            "name": "source.srt",
+            "bytes": 421,
+            "sha256": "effb95123ea145a8879bf5e89d474576a366865bbc8743ae82e6d8294573df09"
+          },
+          {
+            "name": "translated.srt",
+            "bytes": 353,
+            "sha256": "d2c1581332142a7b518e622260b1a863962fc1635bf8168a711b5277a9455c78"
+          },
+          {
+            "name": "video.mp4",
+            "bytes": 738184,
+            "sha256": "a92b788ae955ec2dddcdd1101a4ae91d47e5c5421263f0b36115f07b8bdda14c"
+          }
+        ],
+        "exportIdentical": true,
+        "media": {
+          "programs": [],
+          "stream_groups": [],
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 320,
+              "height": 240
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio",
+              "sample_rate": "48000",
+              "channels": 2
+            }
+          ],
+          "format": {
+            "duration": "18.933333"
+          }
+        },
+        "alignmentSummary": {
+          "model": "Qwen3-ForcedAligner-0.6B-hf",
+          "clips": 3,
+          "cues": 6,
+          "startedAt": "2026-10-22T10:24:05.304Z",
+          "finishedAt": "2026-10-22T10:24:28.516Z",
+          "timingBoundsAndOrderPassed": true
+        },
+        "translationRequest": {
+          "model": "doubao-seed-evolving",
+          "maxTokens": 65535
+        },
+        "sourceSubtitles": "1\n00:00:01,100 --> 00:00:01,506\nAlright\n\n2\n00:00:01,506 --> 00:00:03,360\nso here we are in front of the elephants\n\n3\n00:00:04,700 --> 00:00:10,082\nThe cool thing about these guys is that they have really\n\n4\n00:00:10,082 --> 00:00:10,784\nreally\n\n5\n00:00:10,784 --> 00:00:12,656\nreally long trunks\n\n6\n00:00:12,656 --> 00:00:14,060\nand that's cool\n\n7\n00:00:16,700 --> 00:00:18,480\nAnd that's pretty much all there is to say\n",
+        "translatedSubtitles": "1\n00:00:01,820 --> 00:00:03,100\n好，现在我们来到了大象面前\n\n2\n00:00:05,820 --> 00:00:07,340\n这些家伙最酷的地方\n\n3\n00:00:08,380 --> 00:00:09,980\n就是它们的鼻子特别\n\n4\n00:00:10,460 --> 00:00:11,500\n特别、特别长\n\n5\n00:00:11,980 --> 00:00:12,300\n真酷\n\n6\n00:00:16,123 --> 00:00:18,763\n我想说的差不多就是这些\n"
+      },
+      "nativeSubtitleExport": {
+        "path": "/tmp/youdub-native-zoo-reviewed-20261022.srt",
+        "identicalToArtifact": true
+      },
+      "playback": {
+        "observedSeconds": 18.9,
+        "display": "0:18 / 0:18"
+      },
+      "afterFinalRestart": {
+        "surface": "Native macOS Electron",
+        "status": "succeeded",
+        "completedNodes": 9,
+        "outputsVisible": true,
+        "quitExitCode": 0,
+        "screenshot": "/tmp/youdub-isolated-review-after-restart.png"
+      }
+    }
+  },
+  "limitations": [
+    "Automatic run retains Whisper tiny recognition errors, including arms instead of trunks.",
+    "Playback completion was observed; audio audition and timing quality have not been accepted.",
+    "Nine-node completion continued a cloned paused task; preparation and separation were reused from the earlier native run."
+  ],
+  "settingsNavigation": {
+    "surface": "Native macOS Electron",
+    "connectionLinkOpensModels": true,
+    "ordinarySettingsOpensGeneralAfterModels": true,
+    "screenshot": "/tmp/youdub-isolated-settings-model-route.png",
+    "ci": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39758629485",
+    "ciConclusion": "success"
+  }
+}

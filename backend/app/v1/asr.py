@@ -54,6 +54,9 @@ def _milliseconds(value: Any) -> int:
 def _english_sentences(transcript: Transcript) -> list[dict]:
     """Map pretrained Punkt boundaries onto whole Whisper words, without retiming."""
     try:
+        if os.getenv("YOUDUB_HARNESS_RUNTIME") == "1":
+            import nltk.data
+            nltk.data.path = [os.environ["NLTK_DATA"]]
         from nltk.tokenize.punkt import PunktTokenizer
 
         tokenizer = PunktTokenizer("english")

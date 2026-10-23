@@ -63,8 +63,8 @@ def hardware() -> dict:
 def installation_plan(host: dict) -> dict:
     """Pinned Torch/Audio/Codec ABI sets, never install or change OS drivers."""
     system = host["system"]
-    plan = {"backend": "cpu", "index": "https://mirrors.aliyun.com/pypi/simple/", "variant": "cpu",
-            "findLinks": "https://mirrors.aliyun.com/pytorch-wheels/cpu/", "version": "2.8.0",
+    plan = {"backend": "cpu", "index": "https://pypi.org/simple/", "variant": "cpu",
+            "findLinks": "https://download.pytorch.org/whl/cpu/", "version": "2.8.0",
             "codec": "0.7.0", "prerequisites": [], "packages": [], "detail": "CPU：未发现受支持的 GPU 运行环境"}
     if system == "Darwin":
         plan.update(variant="", findLinks="")
@@ -82,14 +82,14 @@ def installation_plan(host: dict) -> dict:
         minimum = (570, 65) if system == "Windows" and modern else (570, 26) if modern else (527, 41) if system == "Windows" else (525, 60)
         if capability >= 5 and driver >= minimum:
             variant = "cu128" if modern else "cu126"
-            plan.update(backend="cuda", variant=variant, findLinks=f"https://mirrors.aliyun.com/pytorch-wheels/{variant}/",
+            plan.update(backend="cuda", variant=variant, findLinks=f"https://download.pytorch.org/whl/{variant}/",
                         detail=f"{gpu['name']} · CUDA {variant[2:4]}.{variant[4:]} · 驱动 {gpu['driver']}；安装后验证运算")
             return plan
     if nvidia:
         plan["detail"] = "已发现 NVIDIA GPU，但架构或驱动不满足兼容 CUDA 包要求；使用 CPU"
     amd = [gpu for gpu in host["gpus"] if gpu["vendor"] == "amd"]
     if amd and system == "Linux" and host.get("rocm", "").startswith("6.4"):
-        plan.update(backend="rocm", variant="rocm6.4", findLinks="https://mirrors.aliyun.com/pytorch-wheels/rocm6.4/", detail="AMD ROCm 6.4：安装后验证 GPU 运算")
+        plan.update(backend="rocm", variant="rocm6.4", findLinks="https://download.pytorch.org/whl/rocm6.4/", detail="AMD ROCm 6.4：安装后验证 GPU 运算")
     elif amd and system == "Windows":
         supported = {"AMD Radeon RX 9070 XT", "AMD Radeon RX 9070", "AMD Radeon RX 9060 XT", "AMD Radeon RX 7900 XTX",
                      "AMD Radeon RX 7700", "AMD Radeon PRO W7900", "AMD Radeon PRO W7900 Dual Slot", "AMD Radeon AI PRO R9700"}

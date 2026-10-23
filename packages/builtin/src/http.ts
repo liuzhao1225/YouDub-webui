@@ -49,10 +49,13 @@ export default class HttpService extends Service {
         else this.ctx.logger.warn(error)
         if (response.headersSent) { response.destroy(error instanceof Error ? error : undefined); return }
         response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
-        response.end(JSON.stringify({ error: { code: error.code || 'INTERNAL_ERROR', message: status >= 500 ? 'Request failed. See host diagnostics.' : error.message }, detail: status >= 500 ? 'Request failed. See host diagnostics.' : error.message }))
+        response.end(JSON.stringify({ error: { code: error.code || 'INTERNAL_ERROR', message: status >= 500 ? 'Request failed. See host diagnostics.' : error.message, ...(status < 500 && error instanceof AppError && error.details !== undefined ? { details: error.details } : {}) }, detail: status >= 500 ? 'Request failed. See host diagnostics.' : error.message }))
       }).finally(() => { this.requests.delete(request) })
       this.requests.add(request)
     })
+    // Large media uploads are bounded by the upload handler's size limit;
+    // their duration must not inherit Node's five-minute request deadline.
+    server.requestTimeout = 0
     await new Promise<void>((resolve, reject) => {
       server.once('error', reject)
       server.listen(this.config.port, this.config.host, () => { server.off('error', reject); resolve() })

@@ -1,0 +1,7 @@
+.track { height: 6px; width: 100%; overflow: hidden; border-radius: 999px; corner-shape: round; background: var(--dsw-alias-interactive-bg-active); }
+.fill { display: block; height: 100%; border-radius: inherit; corner-shape: round; background: var(--dsw-alias-state-business-primary); transition: width var(--ds-transition-duration) var(--ds-ease-in-out); }
+.track[data-complete] .fill { background: var(--status-success); }
+.track[data-paused] .fill { background: var(--status-neutral); }
+.track[data-indeterminate] .fill { width: 32%; animation: travel 1.5s ease-in-out infinite alternate; }
+@keyframes travel { to { transform: translateX(210%); } }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; animation: none !important; } }

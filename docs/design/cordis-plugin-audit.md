@@ -1,5 +1,7 @@
 # Cordis 插件重构清理审计
 
+> 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
+
 日期：2026-10-09。比较基线：`a2c4250`，分支：`codex/plugin`。本轮清理在插件运行时已实现的基础上，删除失去调用入口的旧实现，收口重复逻辑，并重新验证本地应用。结构化结果见[清理验收记录](../validation/cordis-cleanup-2026-10-09.json)。启动与扩展用法以[运行指南](cordis-plugin-runtime.md)为准。
 
 ## 清理范围
@@ -25,7 +27,7 @@ HTTP 业务接口现在使用 `/api/v2`。调用 `/api/v1/...` 的外部脚本�
 
 默认工作流仍显式传递 `reference → synthesize → mix → align → export` 的输入。TTS 接收已准备的参考音频；align 接收与 transcript ID 对齐的混音后片段；export 接收明确输出目录及可选对齐结果。因此删除旧目录推断与重复内部执行路径后，默认流程仍完整。ASR 词级时间戳、词文本完整性和时间单调性校验均保留。[默认工作流](../../packages/builtin/src/workflow-localize.ts)、[片段校验](../../backend/app/v1/segments.py)
 
-保留 `installed/enabled/active`，用于区分已安装、下一次启动选中和本次运行已激活。扩展变更仍要求任务空闲并在重启后生效；CLI 的 tasks 依赖继续承担这一检查。安装失败保留错误与诊断文件，文件残留不会被标记为安装成功。[扩展服务](../../packages/builtin/src/extensions.ts)、[CLI 组合](../../apps/host/src/plugins.ts)
+保留 `installed/enabled/active`，用于区分已安装、下一次启动选中和本次运行已激活。扩展变更仍要求任务空闲并在重启后生效；CLI 的 tasks 依赖继续承担这一检查。安装失败保留错误与诊断文件，文件残留不会被标记为安装成功。[扩展服务](../../packages/builtin/src/extensions.ts)、[CLI 组合](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/apps/host/src/plugins.ts)
 
 保留 Task 原始快照、产物注册、CAS 修订检查、文件读写锁与远端结果不确定状态。历史任务不会伪造已解析的插件版本；`mayStillRun` 继续限制重试。SQLite 迁移、session/CSRF 摘要和认证记录读取没有因删除旧路由而移除。操作错误继续经 worker error envelope 返回，并保留脱敏后的异常诊断。[任务服务](../../packages/builtin/src/tasks.ts)、[worker 协议](../../backend/workers/protocol.py)
 

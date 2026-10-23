@@ -21,12 +21,12 @@ async function setup(t: any, fileService = Files) {
     // Dependencies must be ACTIVE before awaiting their consumers. Providing
     // them on this still-loading parent leaves child plugins PENDING.
     await context.plugin(services => {
-      services.reflect.provide('process', {})
+      services.reflect.provide('youdubWorker', {})
       services.reflect.provide('auth', {})
-      services.reflect.provide('settings', { read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
-      services.reflect.provide('store', {})
+      services.reflect.provide('settings', { locked: async (action: () => Promise<any>) => action(), read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
+      services.reflect.provide('store', { call: async (method: string) => { if (method === 'settings.raw') return {}; throw new Error(`Unexpected store call: ${method}`) } })
       services.reflect.provide('extensions', {})
-      services.reflect.provide('catalog', { workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
+      services.reflect.provide('catalog', { listProviders: () => [], describe: () => ({ workflows: [] }), workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
       services.reflect.provide('tasks', {
         assertReady() { if (unavailable) throw new AppError('TASK_RUNTIME_UNAVAILABLE', 'Queue stopped.', 503) },
         async create(input: any) { created.push(input); return { id: input.id, outputs: [] } },
@@ -155,4 +155,31 @@ test('multipart accepts URL metadata without a file and preserves the source nam
   assert.equal(created[0].sourceName, source)
   assert.deepEqual(created[0].inputs, {})
   assert.equal(created[0].config.source_url, source)
+})
+
+test('workflow reads never run migrations and remain available after an explicit migration failure', async t => {
+  const { ctx } = await setup(t)
+  await nextTurn()
+  const calls: string[] = []
+  ctx.store.call = async (method: string) => {
+    calls.push(method)
+    if (method === 'settings.raw') return { defaults: { source_language: 'auto' } } as any
+    if (method === 'store.workflow_list') return { items: [], total: 0 } as any
+    if (method === 'settings.validate_defaults') throw new AppError('SQLITE_ERROR', 'disk full during migration', 500)
+    throw new Error(`Unexpected call: ${method}`)
+  }
+  const url = ctx.http.address + '/api/v2/workflow-documents'
+  assert.equal((await fetch(url)).status, 200)
+  assert.equal((await fetch(url + '/youdub.subtitles')).status, 200)
+  assert.ok(calls.every(method => ['settings.raw', 'store.workflow_list'].includes(method)))
+  const failed = await fetch(url + '/migrate-defaults', { method: 'POST' })
+  assert.equal(failed.status, 500)
+  assert.equal((await failed.json() as any).error.code, 'SQLITE_ERROR')
+  const readable = await fetch(url)
+  assert.equal(readable.status, 200)
+  const body = await readable.json() as any
+  assert.equal(body.legacyDefaultsMigration.status, 'blocked')
+  assert.equal(body.legacyDefaultsMigration.diagnostics[0].code, 'SQLITE_ERROR')
+  assert.match(body.legacyDefaultsMigration.diagnostics[0].message, /disk full/)
+  assert.equal(body.items.length, 3)
 })

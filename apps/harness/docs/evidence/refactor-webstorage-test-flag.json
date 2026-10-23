@@ -1,0 +1,101 @@
+{
+  "date": "2026-10-23",
+  "failingCommit": "8fea16f1fa380a464b97622298e657a66871d17c",
+  "failure": {
+    "status": "cancelled after observed test-runner failure",
+    "job": 120028525792,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39837204370/job/120028525792",
+    "cause": "Node 24.20.0 rejects --no-webstorage. Vitest repeatedly attempted to start workers; the run was explicitly cancelled after inspecting live logs.",
+    "log": {
+      "path": "/tmp/youdub-macos-8fea16f1.log",
+      "sha256": "65b54d544f9053c65d7d0f20c10a2c4b8e67d72132ae17a8b548931cb9584df6"
+    }
+  },
+  "cause": "The short --no-webstorage alias works on Node 26 and the tested Electron Node, but regular Node 24.20 only accepts --no-experimental-webstorage.",
+  "fix": "Use the supported --no-experimental-webstorage flag for Vitest workers. Product runtime and jsdom test assertions remain unchanged.",
+  "reproduction": {
+    "archiveSha256": "b7bf7707070b950ba1ec5f1af3bb6de0f2b1962c5033973d94068ab021ef3014",
+    "node": "/var/folders/dg/fz44cfz908jbg24j0cn9__3m0000gn/T/youdub-node24-j5ozpvqw/node-v24.20.0-darwin-arm64/bin/node",
+    "results": [
+      {
+        "flag": "--no-webstorage",
+        "exitCode": 9,
+        "stdout": "",
+        "stderr": "/var/folders/dg/fz44cfz908jbg24j0cn9__3m0000gn/T/youdub-node24-j5ozpvqw/node-v24.20.0-darwin-arm64/bin/node: bad option: --no-webstorage"
+      },
+      {
+        "flag": "--no-experimental-webstorage",
+        "exitCode": 0,
+        "stdout": "{\"node\":\"v24.20.0\",\"localStorage\":\"undefined\"}",
+        "stderr": ""
+      }
+    ]
+  },
+  "local": {
+    "node24": {
+      "version": "24.20.0",
+      "files": 38,
+      "tests": 264,
+      "log": {
+        "path": "/tmp/youdub-webstorage-node24.log",
+        "sha256": "72ddf781bb3b93c319b33ff7f388c8884acca79375252d1e6563a6c49e2309c2"
+      }
+    },
+    "node26": {
+      "version": "26.7.0",
+      "files": 38,
+      "tests": 264,
+      "log": {
+        "path": "/tmp/youdub-webstorage-node26.log",
+        "sha256": "0232e95f4562e28338744107cdb8bd8a30d89f66635eba1d6694dd414ddb5125"
+      }
+    },
+    "lint": {
+      "passed": true,
+      "log": {
+        "path": "/tmp/youdub-webstorage-config-lint-final.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "remoteVerification": {
+    "commit": "d3f0d516845b29798754335d75a27ccfe9676b6b",
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705",
+    "status": "success",
+    "jobs": [
+      {
+        "name": "macOS 源码、框架与业务回归",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705/job/120045309593",
+        "conclusion": "success"
+      },
+      {
+        "name": "Windows 源码、Host 与桌面合同",
+        "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39842031705/job/120045309789",
+        "conclusion": "success"
+      }
+    ],
+    "log": {
+      "path": "/tmp/youdub-d3f0-ci.log",
+      "sha256": "5ad8284adac1205f416d4392d3be98f0d586d8f9cf37155a1339728c8571f485"
+    },
+    "macOS": {
+      "guiPassed": 8075,
+      "guiExpectedFailure": 1,
+      "guiSkipped": 1,
+      "profilePassed": 6687,
+      "profileSkipped": 1,
+      "domainPassed": 187,
+      "domainSkipped": 1,
+      "frontendPassed": 264,
+      "productPassed": 78,
+      "pythonPassed": 525
+    },
+    "windows": {
+      "desktopAndProcessesPassed": 567,
+      "skipped": 27,
+      "productContractsPassed": 32,
+      "actualHostModes": 2
+    }
+  },
+  "scope": "Test runner configuration only. No application behavior change."
+}

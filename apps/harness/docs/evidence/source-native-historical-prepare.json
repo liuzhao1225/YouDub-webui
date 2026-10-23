@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-21T13:28:42.484Z",
+  "sourceTaskId": "de9dafba-a048-4491-afc7-fb024adada5c",
+  "derivedTaskId": "8c807d62-f492-4d75-a0fa-e1154d347551",
+  "status": "succeeded",
+  "scope": "Exact original failed media.prepare/artifact-registration path using copied original input; remaining LLM path excluded",
+  "externalLlmCalled": false,
+  "sourceUnchanged": {
+    "status": "failed",
+    "revision": 5,
+    "error": {
+      "code": "WORKER_ERROR",
+      "message": "Cannot read properties of undefined (reading 'includes')",
+      "nodeId": "prepare"
+    }
+  },
+  "rootCause": {
+    "originalLog": ".cache/harness/desktop/youdub/tasks/de9dafba-a048-4491-afc7-fb024adada5c/task.log",
+    "caller": "Files.register -> YouDubWorker.run -> usingProcess",
+    "officialFailure": "targetEnvironment validates options.cwd using value.includes; omitted cwd was undefined",
+    "productFix": "apps/harness/src/process.mjs: request.cwd ?? process.cwd()",
+    "upstreamModified": false
+  },
+  "derivedOutput": {
+    "size": 3364382,
+    "sha256": "0b59bee334ed1d3956f53b8622dce020f372e475aa743ded20a6428b189b3c74",
+    "mimeType": "audio/wav",
+    "headerVerified": "RIFF/WAVE"
+  },
+  "reuse": {
+    "reusedSteps": [],
+    "originalVideoCopied": true
+  },
+  "evidenceDirectory": ".cache/harness/native-subtitle-acceptance",
+  "rawEvidence": [
+    "historical-failed-task-readback.json",
+    "historical-prepare-rerun-request-v2.json",
+    "historical-prepare-rerun-result.json"
+  ],
+  "testRequestCorrections": [
+    {
+      "file": "historical-rerun-preflight-failed.log",
+      "error": "Missing required graph presentation",
+      "createdTask": false
+    },
+    {
+      "file": "historical-rerun-config-rejected.log",
+      "error": "Stored task internal config graph:true is not a public create config; corrected to {}",
+      "originalSourceUnmodified": true
+    }
+  ]
+}

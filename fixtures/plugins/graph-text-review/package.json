@@ -1,0 +1,14 @@
+{
+  "name": "youdub-example-graph-text-review",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Independent graph plugin with typed JSON ports, review, correction and a text artifact.",
+  "exports": { ".": "./dist/host.js" },
+  "peerDependencies": { "cordis": "4.0.0-rc.10", "@youdub/sdk": "^1.0.0", "react": "^19.0.0" },
+  "youdub": {
+    "id": "example.graph-text-review",
+    "sdkVersion": "^1.1.0",
+    "host": "dist/host.js",
+    "client": { "entry": "dist/client.js", "access": "authenticated" }
+  }
+}

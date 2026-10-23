@@ -1,0 +1,91 @@
+import { Context } from '@deepseek-ai/cordis'
+import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
+import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { installDesktopQuitInspection } from '../src/quit-inspection.ts'
+
+let ctx: Context
+let inspect: ReturnType<typeof installDesktopQuitInspection>
+let productActive = false
+const jobs = new Map<SessionId | undefined, JobStatus[]>()
+/** A registry whose only served member is the per-owner roster the inspector reads. */
+class RosterOnlyJobRegistry extends JobRegistry {
+  readonly events = { subscribe: () => () => {} }
+  start(): never { throw new Error('unsupported') }
+  list(caller?: SessionId): JobView[] {
+    return (jobs.get(caller) ?? []).map((status, index) => ({
+      id: JobId(`bash-${index + 1}`),
+      kind: 'bash',
+      label: 'sleep 60',
+      ...caller === undefined ? {} : { owner: caller },
+      status,
+      startedAt: 0,
+      output: { total: 0, earliest: 0 },
+    }))
+  }
+  get(): never { throw new Error('unsupported') }
+  read(): never { throw new Error('unsupported') }
+  readAt(): never { throw new Error('unsupported') }
+  kill(): never { throw new Error('unsupported') }
+  wait(): never { throw new Error('unsupported') }
+  remove(): never { throw new Error('unsupported') }
+  attachController(): () => void { return () => {} }
+}
+
+beforeEach(() => {
+  productActive = false
+  jobs.clear()
+  ctx = new Context()
+  // Narrow service doubles exercise the inspector against a real Cordis event lifecycle.
+  new RosterOnlyJobRegistry(ctx)
+  ctx.on('desktop/active-tasks', async () => productActive)
+  inspect = installDesktopQuitInspection(ctx)
+})
+
+afterEach(async () => { await ctx.fiber.dispose() })
+
+describe('Desktop Host quit inspection', () => {
+  it('inspects an idle product without Agent or Session services', async () => {
+    expect(ctx.get('agents')).toBeUndefined()
+    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+  })
+
+  it('uses the product work state without starting or stopping tasks', async () => {
+    productActive = true
+    expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: false })
+    productActive = false
+    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+  })
+
+  it.each(['running', 'stopping'] as const)('counts %s global jobs', async (status) => {
+    jobs.set(undefined, [status])
+    expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: false })
+    jobs.set(undefined, ['completed'])
+    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+  })
+
+  it('rejects an absent or failing product inspector instead of reporting idle', async () => {
+    const empty = new Context()
+    try {
+      new RosterOnlyJobRegistry(empty)
+      const check = installDesktopQuitInspection(empty)
+      await expect(check()).rejects.toThrow('product inspector is unavailable')
+      empty.on('desktop/active-tasks', async () => { throw new Error('storage unavailable') })
+      await expect(check()).rejects.toThrow('storage unavailable')
+    } finally { await empty.fiber.dispose() }
+  })
+
+  it('does not classify unavailable task services as idle', async () => {
+    const empty = new Context()
+    try {
+      await expect(installDesktopQuitInspection(empty)()).rejects.toThrow('jobs service is unavailable')
+    } finally { await empty.fiber.dispose() }
+  })
+
+  it('refuses inspection after disposal', async () => {
+    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+    await ctx.fiber.dispose()
+    await expect(inspect()).rejects.toThrow('Host is stopping')
+  })
+})

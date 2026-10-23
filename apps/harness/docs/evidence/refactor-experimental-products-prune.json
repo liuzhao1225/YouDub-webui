@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T14:02:15.371Z",
+  "scope": "P6 batch 17 unused experimental products",
+  "baseCommit": "feb38596afb3238e772adef2121d6dc68e69fdf8",
+  "source": {
+    "before": {
+      "packages": 300,
+      "files": 7521
+    },
+    "after": {
+      "packages": 280,
+      "files": 6947,
+      "sha256": "91ace61c6de24d1e8c415405a4453f940775766dc315b8ab57f3509c228a6a47",
+      "clientArtifacts": 269
+    },
+    "removedPackages": [
+      {
+        "name": "@deepseek-ai/dsh-experimental-api-speech-to-text",
+        "path": "packages/experimental/api-speech-to-text"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-auto-review",
+        "path": "packages/experimental/auto-review"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+        "path": "packages/experimental/badge-skill-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-client-ui-cot-translation",
+        "path": "packages/experimental/client-ui-cot-translation"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-client-ui-voice-input",
+        "path": "packages/experimental/client-ui-voice-input"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+        "path": "packages/experimental/cot-translation-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-inspector",
+        "path": "packages/experimental/inspector"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-inspector-profile",
+        "path": "packages/experimental/inspector-profile"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+        "path": "packages/experimental/plugin-market-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-ptc-runtime-python",
+        "path": "packages/experimental/ptc-runtime-python"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-ralph-bundle",
+        "path": "packages/experimental/ralph-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-session-inspector",
+        "path": "packages/experimental/session-inspector"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-session-search",
+        "path": "packages/experimental/session-search"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-session-titles-bundle",
+        "path": "packages/experimental/session-titles-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-speech-to-text-sensevoice",
+        "path": "packages/experimental/speech-to-text-sensevoice"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-terminal-bundle",
+        "path": "packages/experimental/terminal-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-experimental-voice-input-bundle",
+        "path": "packages/experimental/voice-input-bundle"
+      },
+      {
+        "name": "@deepseek-ai/dsh-session-title-all-prompts-llm",
+        "path": "packages/experimental/session-title-all-prompts-llm"
+      },
+      {
+        "name": "@deepseek-ai/dsh-skill-badge",
+        "path": "packages/experimental/skill-badge"
+      },
+      {
+        "name": "@deepseek-ai/dsh-tool-ralph",
+        "path": "packages/experimental/tool-ralph"
+      }
+    ],
+    "removedFiles": 574,
+    "originalArchivesUnchanged": true,
+    "externalLockSnapshotsUnchanged": true
+  },
+  "dependencyAudit": {
+    "roots": 79,
+    "runtimeAndTypes": 141,
+    "withPackageTests": 213,
+    "remainingOutside": 67,
+    "remainingManifestConsumers": [],
+    "methods": [
+      "AST imports/exports/type imports/literal dynamic imports and requires",
+      "dependencies, optionalDependencies, peerDependencies and devDependencies",
+      "profile/configuration/dynamic-name and build/generator references",
+      "fresh staging build and actual Desktop Host composition"
+    ],
+    "retainedReferences": [
+      "PluginManagerPage ranking and preview metadata for the old optional catalog remains for the next UI composition cleanup; it does not import or install these packages in the YouDub composition.",
+      "Synthetic package-name tests remain; they construct their own fixture packages.",
+      "Standalone speech-to-text and translator declarations now lie outside the test closure and remain pending the next package audit."
+    ]
+  },
+  "validation": {
+    "build": {
+      "command": "node apps/harness/build-framework.mjs --stage .cache/harness/source-build-experimental-prune-20261022",
+      "passed": 7,
+      "log": "/tmp/youdub-experimental-final-receipt.log"
+    },
+    "targeted": {
+      "files": 12,
+      "distinctTestsPassed": 334,
+      "initial": {
+        "passed": 332,
+        "failed": 2,
+        "log": "/tmp/youdub-experimental-targeted-tests.log"
+      },
+      "correctedFixture": {
+        "passed": 46,
+        "log": "/tmp/youdub-experimental-purity-fixed.log"
+      }
+    },
+    "boundaries": {
+      "files": 8,
+      "passed": 400,
+      "log": "/tmp/youdub-experimental-boundary-tests.log"
+    },
+    "libraryRegistry": {
+      "passed": 1,
+      "unselected": 21,
+      "log": "/tmp/youdub-experimental-doc-registry.log"
+    },
+    "realHost": {
+      "passed": 2,
+      "log": "/tmp/youdub-experimental-real-host.log",
+      "checks": [
+        "default four-model setup gate",
+        "explicit UI-test setup path",
+        "401 unauthenticated requests",
+        "authenticated product API",
+        "quit inspection and clean IPC exit"
+      ],
+      "businessBundle": "Previously verified isolated desktop-sdk-prune bundle; this check changes the framework source, not the business implementation."
+    },
+    "productIsolation": {
+      "packages": 89,
+      "runtimeSources": 710,
+      "configurations": 1,
+      "webPlugins": 33,
+      "log": "/tmp/youdub-experimental-product-isolation.log"
+    },
+    "translationPair": {
+      "passed": true,
+      "log": "/tmp/youdub-experimental-pair-check.log"
+    },
+    "baselineIntegrity": {
+      "passed": true,
+      "log": "/tmp/youdub-experimental-baselines.log"
+    },
+    "webContract": {
+      "passed": true,
+      "command": "apps/web/node_modules/.bin/tsc --noEmit -p apps/web/tsconfig.json",
+      "log": "/tmp/youdub-template-contract-types-final.log"
+    },
+    "nativeFollowup": "refactor-extension-lifecycle.json#nativeFollowup"
+  },
+  "failuresPreserved": [
+    {
+      "log": "/tmp/youdub-experimental-notices.log",
+      "cause": "Retired Inspector frontend was still manually added by the notice generator; removed that product-specific registration."
+    },
+    {
+      "log": "/tmp/youdub-experimental-targeted-tests.log",
+      "cause": "Two generic input-isolation tests used the removed voice-input package manifest; they now use the existing temporary synthetic prototype manifest."
+    }
+  ],
+  "limitations": [
+    "P0-P7 is incomplete; runtime/test dependencies, catalog UI metadata and remaining modules still need audit.",
+    "Native follow-up ran the previous verified framework build. This batch additionally passes actual Host tests against its freshly compiled framework.",
+    "No packaging, release, main/atomgit merge or Feishu publication.",
+    "Media listening, full independent first installation and Windows acceptance remain separate."
+  ],
+  "ci": {
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39792373892",
+    "commit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+    "status": "completed",
+    "conclusion": "success"
+  }
+}

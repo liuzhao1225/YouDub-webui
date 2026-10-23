@@ -28,6 +28,7 @@ async function start(root: string) {
 test('plugin public settings persist independently, merge within their namespace, and emit updated snapshots', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-settings-'))
   let { ctx, app } = await start(root)
+  const refresh = t.mock.method(ctx.catalog, 'refresh', async () => {})
   t.after(async () => { await app.dispose(); await rm(root, { recursive: true }) })
   const updates: any[] = []
   ctx.on('settings/updated', value => { updates.push(value) })
@@ -42,6 +43,7 @@ test('plugin public settings persist independently, merge within their namespace
   assert.equal(language.ui_language, 'zh')
   assert.deepEqual(language.plugins, saved.plugins)
   assert.equal(updates.length, 4)
+  assert.equal(refresh.mock.callCount(), 3, 'changing the display language does not probe providers')
   await assert.rejects(ctx.settings.patch({ plugin: { id: 'connections', config: { value: 1 } }, ui_language: 'en' }), (error: any) => error.code === 'INVALID_CONFIG')
   await assert.rejects(ctx.settings.patch({ plugin: { id: '../connections', config: {} } }), (error: any) => error.code === 'INVALID_CONFIG')
   await assert.rejects(ctx.settings.patch({ plugin: { id: 'example.first', config: [] } }), (error: any) => error.code === 'INVALID_CONFIG')
@@ -92,7 +94,7 @@ test('runtime probes each provider once and reads environment information withou
         }
         throw new Error(`Unexpected bridge method: ${method}`)
       } })
-      scope.reflect.provide('process', {})
+      scope.reflect.provide('youdubWorker', {})
       scope.reflect.provide('secrets', {})
     } })
     await context.plugin(Catalog)

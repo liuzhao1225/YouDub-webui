@@ -1,0 +1,57 @@
+/* YouDub domain geometry; Harness owns frame, controls, overlays and scrollbars. */
+html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
+.yd { --yd-space:8px; box-sizing:border-box; color:var(--dsw-alias-label-primary); font:14px/20px var(--dsw-font-family); }
+.yd * { box-sizing:border-box; }
+.yd .yd-icon-button { width:36px; padding:0; flex-shrink:0; }
+.yd .fill-brand-pink { fill:var(--brand-pink); }
+.yd .fill-brand-red { fill:var(--brand-red); }
+.yd .fill-brand-blue { fill:var(--brand-blue); }
+.yd .yd-icon-link { text-decoration:none; }
+.yd .yd-icon-link:focus-visible { outline:2px solid var(--ring); outline-offset:2px; }
+.yd-main-chrome { height:var(--dsh-frame-top-clearance,0px); flex-shrink:0; }
+.yd-main { flex:1; min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; }
+.yd-feature-root { container-type:inline-size; }
+.yd-domain-alert { display:flex; align-items:flex-start; gap:8px; padding:12px; border-radius:var(--dsw-radius-md); color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-2); }
+.yd-domain-alert > div { min-width:0; overflow-wrap:anywhere; }
+.yd-select { max-width:100%; }
+.yd-select > button { width:100%; min-width:0; justify-content:space-between; }
+.yd-quick-fields { padding:12px; min-width:240px; max-width:calc(100vw - 32px); }
+/* These element defaults are scoped to domain content and remain below utilities. */
+@layer base {
+  .yd-feature-root :where(h1,h2,h3,p,ol,ul,figure,dl,dd) { margin:0; }
+  .yd-feature-root :where(fieldset) { min-width:0; margin:0; padding:0; border:0; }
+  .yd-feature-root :where(legend) { padding:0; }
+  .yd-feature-root :where(ol,ul) { list-style:none; padding:0; }
+  .yd-feature-root :where(img,video,svg) { display:block; vertical-align:middle; }
+  .yd-feature-root :where(h1,h2,h3) { font-size:inherit; font-weight:inherit; }
+  .yd-feature-root :where(a) { color:inherit; text-decoration:inherit; }
+  .yd-feature-root :where(textarea) { font:inherit; }
+}
+
+.yd-original-examples { display:block; width:100%; min-height:360px; border:0; }
+
+
+/* The original first-run screen occupies the root until setup is ready. */
+.yd-startup{height:100%;min-height:0;display:flex;flex-direction:column;background:var(--background);color:var(--foreground)}
+.yd-startup-content{flex:1;min-height:0;overflow:auto}
+
+.yd button > svg { flex-shrink:0; }
+@media(pointer:coarse) {
+  .yd .yd-icon-button { width:44px; height:44px; }
+}
+
+/* Only product occupants are styled here; SidebarRoot owns layout and navigation. */
+.yd-sidebar-mark { display:inline-flex; align-items:center; justify-content:center; }
+.yd-sidebar-tools { display:flex; align-items:center; gap:4px; }
+.yd-sidebar-tools[data-wide=false] { flex-direction:column; }
+.yd-extension-navigation { display:flex; flex-direction:column; gap:2px; }
+
+.yd-sidebar-mark[data-wide=true] { height:32px; }
+.yd-sidebar-mark[data-wide=true] > svg { height:100%; width:auto; }
+.yd-sidebar-mark[data-wide=false] > svg { width:100%; height:auto; }
+
+
+/* The custom settings launcher shares the same button spacing as its peer tools. */
+.yd-sidebar-tools div:has(> [data-slot="settings.launcher"]) { width:auto; margin:0; }
+
+.yd-sidebar-mark[data-wide=false] { width:32px; height:32px; }

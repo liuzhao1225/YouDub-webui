@@ -1,15 +1,20 @@
 import { Context, Service } from 'cordis'
 import type { ApiClient } from '../sdk'
-declare module 'cordis' { interface Events { 'client/unauthorized'(): void } }
-export class HttpError extends Error {
-  constructor(message: string, readonly status: number, readonly code?: string) { super(message); this.name = 'HttpError' }
+import { responseBody } from '@/runtime/http'
+export { HttpError } from '@/runtime/http'
+declare module 'cordis' {
+  interface Events {
+    'client/unauthorized'(): void
+    'client/mutated'(path: string, method: string, body: RequestInit['body']): void
+    'client/session-cleared'(): void
+  }
 }
 export class ApiService extends Service implements ApiClient {
   private csrf = ''
   private reads = new Set<AbortController>()
   constructor(ctx: Context) { super(ctx, 'apiClient'); ctx.effect(() => () => this.abortReads()) }
   setCsrf(token: string) { this.csrf = token }
-  clearSession() { this.csrf = ''; this.abortReads() }
+  clearSession() { this.csrf = ''; this.abortReads(); this.ctx.emit('client/session-cleared') }
   abortReads() { for (const controller of this.reads) controller.abort(); this.reads.clear() }
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (!path.startsWith('/api/') || path.startsWith('//')) throw new Error('API requests require a same-origin /api/ path')
@@ -24,16 +29,14 @@ export class ApiService extends Service implements ApiClient {
     if (['GET', 'HEAD'].includes(method)) this.reads.add(controller)
     try {
       const response = await fetch(path, { ...init, headers, signal: controller.signal, credentials: 'include', cache: 'no-store' })
-      const body = response.status === 204 ? '' : await response.text()
-      if (!response.ok) {
+      let value: T
+      try { value = await responseBody<T>(response) }
+      catch (error) {
         if (response.status === 401 && !path.startsWith('/api/auth/')) this.ctx.emit('client/unauthorized')
-        let detail: { error?: { message?: string; code?: string }; detail?: string } = {}
-        try { detail = JSON.parse(body) } catch { /* The original HTTP response remains the diagnostic. */ }
-        throw new HttpError(detail.error?.message ?? detail.detail ?? body.slice(0, 500) ?? response.statusText, response.status, detail.error?.code)
+        throw error
       }
-      if (!body) return undefined as T
-      if (response.headers.get('content-type')?.includes('application/json')) return JSON.parse(body) as T
-      return body as T
+      if (!['GET', 'HEAD'].includes(method)) this.ctx.emit('client/mutated', path, method, init.body)
+      return value
     } finally { this.reads.delete(controller); init.signal?.removeEventListener('abort', abort) }
   }
 }

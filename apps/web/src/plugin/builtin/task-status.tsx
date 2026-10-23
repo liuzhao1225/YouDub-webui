@@ -1,25 +1,73 @@
+import { Progress } from '@/components/ui/progress'
+import type { MessageKey, Text } from '@/locales'
+import { Tag } from '@/components/ui/tag'
 import { useI18n, useText } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
-import { text, type TaskStatus, type TaskView } from '../sdk'
+import { text, type TaskStatus, type TaskSummary, type TaskView } from '../sdk'
 
-export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'cancelling'])
-export const STATUS_LABELS: Record<string, [string, string, string]> = {
-  queued: ['Queued', '排队中', '順番待ち'], running: ['Running', '处理中', '処理中'],
-  waiting: ['Waiting', '等待中', '待機中'], cancelling: ['Cancelling', '正在取消', 'キャンセル中'],
-  cancelled: ['Cancelled', '已取消', 'キャンセル済み'], succeeded: ['Completed', '已完成', '完了'], failed: ['Failed', '失败', '失敗'],
-  pending: ['Pending', '未开始', '未開始'], completed: ['Completed', '已完成', '完了'],
+export const ACTIVE_STATUSES = new Set<TaskStatus>(['queued', 'running', 'waiting', 'paused', 'cancelling'])
+export const STATUS_LABELS: Record<string, MessageKey> = {
+  "queued": "status_labels.queued",
+  "running": "status_labels.running",
+  "waiting": "status_labels.waiting",
+  "cancelling": "status_labels.cancelling",
+  "cancelled": "status_labels.cancelled",
+  "succeeded": "status_labels.succeeded",
+  "failed": "status_labels.failed",
+  "pending": "status_labels.pending",
+  "completed": "status_labels.completed",
+  "paused": "status_labels.paused",
+  "awaiting_review": "status_labels.awaiting_review"
+}
+
+export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapshot'>) {
+  return task.sourceName && task.sourceName !== task.workflowId ? task.sourceName : task.workflowSource?.title || task.graphSnapshot?.title || task.sourceName
+}
+
+const progressMessages: Record<string, MessageKey> = {
+  "解析视频链接": "task.progress.download.parse",
+  "下载视频": "task.progress.download.active",
+  "合并并检查视频": "task.progress.download.check",
+  "视频下载完成": "task.progress.download.complete",
+  "Extracting source audio": "task.progress.prepare.audio",
+  "Extracting the original stereo audio for separation": "task.progress.separate.extract",
+  "Separating vocals and background with Demucs": "task.progress.separate.active",
+  "Vocals and background are ready": "task.progress.separate.complete",
+  "Transcribing source audio with Whisper": "task.progress.transcribe.active",
+  "Source transcription is ready": "task.progress.transcribe.complete",
+  "Preparing source utterance references": "task.progress.reference.prepare",
+  "Generating translated speech with VoxCPM2": "task.progress.synthesize.active",
+  "All source segments have generated speech": "task.progress.synthesize.complete",
+  "Mixed audio and dubbed timeline are ready": "task.progress.mix.complete",
+  "Aligning subtitle words to complete dubbed speech with Qwen": "task.progress.align.active",
+  "Preparing output media": "task.progress.export.prepare",
+  "Rendering output video": "task.progress.export.render",
+  "Output media is ready": "task.progress.export.complete",
+  "翻译完成": "task.progress.translation.complete",
+  "All source segments have translations": "task.progress.translation.complete",
+}
+
+// Keep persisted provider messages and raw logs unchanged; localize their display.
+export function taskProgressMessage(message: string, tx: Text): string {
+  if (progressMessages[message]) return tx(progressMessages[message])
+  const batch = /^(?:翻译|Translating batch) (\d+)\/(\d+)$/.exec(message)
+  if (batch) return tx('task.progress.translation.batch', { current: batch[1], total: batch[2] })
+  const adjusted = /^Adjusted (\d+)\/(\d+) speech clips$/.exec(message)
+  if (adjusted) return tx('task.progress.mix.adjusted', { current: adjusted[1], total: adjusted[2] })
+  const aligned = /^Mapped (\d+) final word intervals within Qwen's (\d+) ms grid to audio endpoints$/.exec(message)
+  return aligned ? tx('task.progress.align.complete', { count: aligned[1] }) : message
 }
 
 export function TaskState({ status }: { status: string }) {
   const tx = useText()
-  return <span className={cn('shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium', status === 'failed' ? 'bg-status-danger/10 text-status-danger-fg' : status === 'succeeded' || status === 'completed' ? 'bg-status-success/10 text-status-success-fg' : 'bg-accent text-muted-foreground')}>{STATUS_LABELS[status] ? tx(...STATUS_LABELS[status]) : status}</span>
+  return <Tag tone={status === 'failed' ? 'danger' : status === 'paused' || status === 'awaiting_review' ? 'warning' : status === 'succeeded' || status === 'completed' ? 'success' : 'neutral'}>{STATUS_LABELS[status] ? tx(STATUS_LABELS[status]) : status}</Tag>
 }
 
-export function TaskProgress({ task }: { task: TaskView }) {
+export function TaskProgress({ task }: { task: TaskSummary }) {
   const tx = useText()
   const { language } = useI18n()
   if (!ACTIVE_STATUSES.has(task.status)) return null
-  const step = task.status === 'queued' ? undefined : task.steps.find((item) => item.status === 'running' || item.status === 'waiting')
+  const step = task.status === 'queued' ? undefined : task.steps.find((item) => item.status === 'running' || item.status === 'waiting') ?? task.steps.find((item) => item.status === 'awaiting_review')
+  const reviews = task.steps.filter((item) => item.status === 'awaiting_review').length
   const completed = task.steps.filter((item) => item.status === 'completed').length
   const progress = task.status === 'running' && step?.status === 'running' ? step.progress : null
   const label = step ? text(step.label, language) : ''
@@ -27,8 +75,9 @@ export function TaskProgress({ task }: { task: TaskView }) {
   return <div className="space-y-2 text-xs text-muted-foreground">
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
       {step && <span className="min-w-0 break-words">{label}{progress != null ? ` · ${Math.round(progress * 100)}%` : ''}</span>}
-      {task.steps.length > 0 && <span className="whitespace-nowrap">{tx(`${completed}/${task.steps.length} steps completed`, `已完成 ${completed}/${task.steps.length} 步`, `${completed}/${task.steps.length} ステップ完了`)}</span>}
+      {task.steps.length > 0 && <span className="whitespace-nowrap">{tx("task.status.value.value.steps.completed", { value1: completed, value2: task.steps.length })}</span>}
     </div>
-    {progress != null && <progress aria-label={`${label} ${tx('progress', '进度', '進捗')}`} value={progress} max={1} className="block h-1.5 w-full accent-primary" />}
+    {reviews > 0 && <p className="text-status-warning-fg">{tx("task.status.value.nodes.awaiting.review", { value1: reviews })}</p>}
+    {progress != null && <Progress label={`${label} ${tx("task.status.progress")}`} value={progress} />}
   </div>
 }

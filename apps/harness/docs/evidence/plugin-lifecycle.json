@@ -1,0 +1,41 @@
+[
+  {
+    "fixture": "file-transform",
+    "taskId": "12d50223-b0f9-42aa-acad-06b52e964847",
+    "status": "succeeded",
+    "output": "YOUDUB PLUGIN\n中文保留",
+    "lifecycle": [
+      "official install applied",
+      "executed",
+      "disabled and catalog removed",
+      "enabled and catalog restored",
+      "uninstalled and inventory removed"
+    ]
+  },
+  {
+    "fixture": "python-text",
+    "taskId": "dbc74749-6121-44fc-930b-2ef9c28ae2ba",
+    "status": "succeeded",
+    "output": "YOUDUB PLUGIN\n中文保留",
+    "lifecycle": [
+      "official install applied",
+      "executed",
+      "disabled and catalog removed",
+      "enabled and catalog restored",
+      "uninstalled and inventory removed"
+    ]
+  },
+  {
+    "fixture": "graph-text-review",
+    "taskId": "9eaab431-51e6-425c-8812-2ccfeae1eca3",
+    "status": "succeeded",
+    "output": "已通过官方插件校对\n\n来源数量：2\n",
+    "lifecycle": [
+      "official install applied",
+      "executed",
+      "disabled and catalog removed",
+      "enabled and catalog restored",
+      "uninstalled and inventory removed"
+    ]
+  }
+]

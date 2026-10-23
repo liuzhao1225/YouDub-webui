@@ -1,0 +1,21 @@
+{
+  "name": "@deepseek-ai/dsh-desktop-host",
+  "description": "Private Node-mode host process for the Electron desktop application",
+  "version": "0.2.1-rc.2",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib/index.js"
+  ],
+  "dependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
+    "@deepseek-ai/dsh": "workspace:*",
+    "@deepseek-ai/dsh-app-boot": "workspace:*",
+    "@deepseek-ai/dsh-client-connection": "workspace:*",
+    "@deepseek-ai/dsh-host-webserver": "workspace:*",
+    "@deepseek-ai/dsh-jobs": "workspace:*"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,601 @@
+{
+  "checkedAt": "2026-10-21T15:51:59.606Z",
+  "sourceSnapshot": "f6f927903581b165f2bf6c840ea65b896d319524",
+  "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "runtime": {
+    "origin": "http://127.0.0.1:50031",
+    "enabledEntries": [
+      {
+        "entryId": "include",
+        "moduleName": "cordis:include",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:plugin-manager",
+        "moduleName": "@deepseek-ai/dsh-plugin-manager",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:timer",
+        "moduleName": "@deepseek-ai/cordis-plugin-timer",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:hmr",
+        "moduleName": "@deepseek-ai/dsh-hmr",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:llm",
+        "moduleName": "@deepseek-ai/dsh-llm",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:session",
+        "moduleName": "@deepseek-ai/dsh-session",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:typert",
+        "moduleName": "@deepseek-ai/dsh-typert-registry",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:typert-loader",
+        "moduleName": "@deepseek-ai/dsh-typert-loader",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:typert-gateway",
+        "moduleName": "@deepseek-ai/dsh-api-gateway",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:remote-access",
+        "moduleName": "@deepseek-ai/dsh-api-remote-access",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:agent",
+        "moduleName": "@deepseek-ai/dsh-agent",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:agent-default-model",
+        "moduleName": "@deepseek-ai/dsh-agent-default-model",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:jobs",
+        "moduleName": "@deepseek-ai/dsh-jobs-local",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:config-editor",
+        "moduleName": "@deepseek-ai/dsh-config-editor",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:settings",
+        "moduleName": "@deepseek-ai/dsh-settings",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:authorization",
+        "moduleName": "@deepseek-ai/dsh-authorization",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:credentials",
+        "moduleName": "@deepseek-ai/dsh-credentials-local",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:llm-pi-ai",
+        "moduleName": "@deepseek-ai/dsh-llm-pi-ai",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:session-persistence-jsonl",
+        "moduleName": "@deepseek-ai/dsh-session-persistence-jsonl",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:attachment-local",
+        "moduleName": "@deepseek-ai/dsh-attachment-local",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:session-query-sqlite",
+        "moduleName": "@deepseek-ai/dsh-session-query-sqlite",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:session-projection",
+        "moduleName": "@deepseek-ai/dsh-session-projection",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:storage",
+        "moduleName": "@deepseek-ai/dsh-storage",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:storage-json",
+        "moduleName": "@deepseek-ai/dsh-storage-json",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:storage-domain",
+        "moduleName": "@deepseek-ai/dsh-storage-domain",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:subprocess",
+        "moduleName": "@deepseek-ai/dsh-subprocess-local",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:sandbox-policy",
+        "moduleName": "@deepseek-ai/dsh-sandbox-policy",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:commands",
+        "moduleName": "@deepseek-ai/dsh-commands",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:fs-sandbox",
+        "moduleName": "@deepseek-ai/dsh-fs-sandbox",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:workspace",
+        "moduleName": "@deepseek-ai/dsh-workspace",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:plugin-inventory",
+        "moduleName": "@deepseek-ai/dsh-host-plugin-inventory",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:session-controller",
+        "moduleName": "@deepseek-ai/dsh-api-session-controller",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:job-controller",
+        "moduleName": "@deepseek-ai/dsh-api-job-controller",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:settings-controller",
+        "moduleName": "@deepseek-ai/dsh-api-settings-controller",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:web-startup",
+        "moduleName": "@deepseek-ai/dsh-web-app/startup",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:webserver",
+        "moduleName": "@deepseek-ai/dsh-host-webserver",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:web-runtime",
+        "moduleName": "@deepseek-ai/dsh-web-app",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:client-hmr",
+        "moduleName": "@deepseek-ai/dsh-client-hmr",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:modules",
+        "moduleName": "@deepseek-ai/dsh-client-modules",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:connection",
+        "moduleName": "@deepseek-ai/dsh-client-connection",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:file-upload",
+        "moduleName": "@deepseek-ai/dsh-client-file-upload",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:api-remotes",
+        "moduleName": "@deepseek-ai/dsh-api-remotes",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-theme",
+        "moduleName": "@deepseek-ai/dsh-client-ui-theme",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:locale",
+        "moduleName": "@deepseek-ai/dsh-client-locale",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:shortcuts",
+        "moduleName": "@deepseek-ai/dsh-client-shortcuts",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-layout",
+        "moduleName": "@deepseek-ai/dsh-client-ui-layout",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-renderer",
+        "moduleName": "@deepseek-ai/dsh-client-ui-renderer",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-session",
+        "moduleName": "@deepseek-ai/dsh-client-ui-session",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-settings",
+        "moduleName": "@deepseek-ai/dsh-client-ui-settings",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-settings-general",
+        "moduleName": "@deepseek-ai/dsh-client-ui-settings-general",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:ui-settings-models",
+        "moduleName": "@deepseek-ai/dsh-client-ui-settings-models",
+        "enabled": true,
+        "fiberPhase": "active"
+      },
+      {
+        "entryId": "include:youdub-subtitles",
+        "moduleName": "@youdub/harness-subtitles",
+        "enabled": true,
+        "fiberPhase": "active"
+      }
+    ],
+    "unsettled": [],
+    "setup": {
+      "phase": "ready",
+      "models": [
+        {
+          "id": "whisper",
+          "status": "ready"
+        },
+        {
+          "id": "voxcpm",
+          "status": "ready"
+        },
+        {
+          "id": "demucs",
+          "status": "ready"
+        },
+        {
+          "id": "qwen",
+          "status": "ready"
+        }
+      ]
+    },
+    "newlyDisabledEntries": [
+      "deepseek-llm-api-extensions",
+      "session-log-deepseek",
+      "plugin-package-inventory-deepseek",
+      "session-title",
+      "session-title-llm",
+      "llm-retry",
+      "agent-loop",
+      "system-prompt",
+      "tools",
+      "user-questions",
+      "goal",
+      "goal-round-driver",
+      "token-meter",
+      "subagent",
+      "subagent-spawn-in-process",
+      "subagent-fork-in-process",
+      "subagent-model-selection-settings",
+      "agent-preset-registry",
+      "preset-standard",
+      "preset-ptc",
+      "preset-minimal",
+      "preset-cordis",
+      "schedule",
+      "ptc-runtime",
+      "timeout-policy",
+      "spill-local",
+      "spill-policy",
+      "session-checkpoint-policy",
+      "image-offload",
+      "repeat-tool-reminder",
+      "working-directory",
+      "tool-working-directory",
+      "terminal-controller",
+      "workspace-files",
+      "workspace-changes",
+      "workspace-controller",
+      "bash-sandbox",
+      "pwsh-sandbox",
+      "sandbox",
+      "approval",
+      "permission",
+      "shell-env",
+      "fs-observation-policy",
+      "skill",
+      "command-feedback",
+      "message-feedback",
+      "session-log-download",
+      "session-reference",
+      "file-reference-local",
+      "session-stats",
+      "session-turn-outline",
+      "session-projection-cache",
+      "otel",
+      "session-telemetry-otel",
+      "web",
+      "web-search-deepseek",
+      "web-deepseek-api",
+      "web-fetch-http",
+      "mcp-resources",
+      "cordis-host-runner",
+      "cordis-inspect-providers",
+      "cordis-client-runner",
+      "harness-dev-context",
+      "open-in-app",
+      "resources",
+      "office-to-pdf"
+    ]
+  },
+  "regressions": {
+    "harness": {
+      "passed": 57,
+      "failed": 0,
+      "finalProfileSubsetPassed": 10
+    },
+    "domain": {
+      "passed": 172,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "Windows worker cancellation on macOS"
+    },
+    "web": {
+      "passed": 245,
+      "failed": 0,
+      "files": 36
+    },
+    "python": {
+      "passed": 525,
+      "failed": 0
+    },
+    "typechecks": [
+      "root",
+      "web"
+    ]
+  },
+  "composition": {
+    "passed": true,
+    "host": {
+      "activeModules": 42,
+      "externalImports": [
+        "@deepseek-ai/cordis",
+        "@deepseek-ai/dsh-credentials",
+        "@deepseek-ai/schemastery",
+        "ajv/dist/2020.js",
+        "busboy",
+        "node:crypto",
+        "node:fs",
+        "node:fs/promises",
+        "node:os",
+        "node:path",
+        "node:stream",
+        "node:stream/promises",
+        "node:string_decoder",
+        "node:timers/promises",
+        "node:url",
+        "node:util",
+        "undici"
+      ]
+    },
+    "client": {
+      "activeModules": 269,
+      "externalImports": [
+        "@deepseek-ai/dsh-client-store",
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "react",
+        "react-dom",
+        "react/jsx-runtime"
+      ]
+    }
+  },
+  "hostAcceptance": {
+    "at": "2026-10-21T15:46:26.372Z",
+    "origin": "http://127.0.0.1:64794",
+    "checks": [
+      "workflow create/read/update/delete; stale revision rejected",
+      "real Python subtitle import, review pause, approval and action receipt",
+      "rerun reuses intermediate results, requires fresh review and survives deleting original test task",
+      "cancelled review cannot resume",
+      "malformed subtitles fail visibly; explicit retry increments attempt and preserves failure",
+      "previous 10-node YouTube task and actual export Range downloads remain available"
+    ],
+    "tasks": [
+      "f2e304fc-cbac-4f60-a6f1-43ec742b5dac",
+      "11b5f469-6e1e-4c22-9661-707917bb5720",
+      "4efbdaca-68ce-4e2a-a143-e9eeb4763d99",
+      "aebc0816-b9ba-48d9-a1db-0f0e8ecde2ce"
+    ],
+    "testDataRemoved": true,
+    "historicalOutput": [
+      {
+        "id": "video",
+        "range": "bytes 0-63/745386",
+        "sha256First64": "1fa57ce582394e50d59a95fc404d533b45961689f1c4f0d5febc8e563e5fa14c"
+      },
+      {
+        "id": "audio",
+        "range": "bytes 0-63/3635180",
+        "sha256First64": "843feb8f1ce9c2e7e7607067dc4e008b0eed0281e2d67196da110ea2e41cedee"
+      },
+      {
+        "id": "source-subtitles",
+        "range": "bytes 0-63/285",
+        "sha256First64": "da660c3f9b5fa3500fe5292c8098c4eca757a554ee112754e70a752163f894bf"
+      },
+      {
+        "id": "translated-subtitles",
+        "range": "bytes 0-63/340",
+        "sha256First64": "2af811157d1e082f8e53b3fda8eecedcd867b458865a11355fb5a79ee739ea9b"
+      }
+    ]
+  },
+  "integrity": {
+    "checkedAt": "2026-10-21T15:52:20.956Z",
+    "scope": "all",
+    "passed": true,
+    "checks": [
+      {
+        "scope": "sources",
+        "officialSnapshots": 2,
+        "originalCheckoutUnchanged": true,
+        "youdubSnapshot": "f6f927903581b165f2bf6c840ea65b896d319524",
+        "preservedArtifacts": 10
+      },
+      {
+        "scope": "desktop",
+        "app": "/Applications/DeepSeek Harness.app",
+        "files": 6438,
+        "treeSha256": "393156801eca1e53bd5ccf5c4ede03e244785a79cf177f89be21d371162b0475",
+        "version": "0.2.1-rc.2",
+        "buildCommit": "332895e0f7c9d4dbfb29729f5eb367fa263ff986",
+        "embeddedBuildSourceAvailable": false
+      },
+      {
+        "scope": "npm",
+        "npmRoot": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/apps/harness",
+        "packages": 360,
+        "registryArtifactsVerified": true
+      },
+      {
+        "scope": "vendor",
+        "passed": true,
+        "sourcePath": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/vendor/deepseek-harness/source",
+        "commit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+        "packages": 362,
+        "files": 9817,
+        "sha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
+        "externalPublishedPackages": [
+          "@deepseek-ai/libreoffice-kit",
+          "@deepseek-ai/libreoffice-kit-darwin-arm64"
+        ],
+        "installedDesktopExactBuildSourceAvailable": false
+      },
+      {
+        "scope": "build",
+        "passed": true,
+        "recorded": false,
+        "receipt": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/apps/harness/dist/desktop/source-provenance.json",
+        "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+        "builds": {
+          "product": {
+            "sourceInputs": 28,
+            "productInputs": 3,
+            "publishedInputs": 0,
+            "externalPackages": 7
+          },
+          "developmentProject": {
+            "sourceInputs": 6,
+            "productInputs": 0,
+            "publishedInputs": 0,
+            "externalPackages": 2
+          }
+        },
+        "frameworkBuild": {
+          "sourceFiles": 9817,
+          "clientFiles": 325,
+          "runtimePackages": 362,
+          "copiedPreloads": 1
+        },
+        "copiedAssets": 22,
+        "limitations": [
+          "Only files with nonzero bytesInOutput are described as included source inputs. Unused modules are listed separately by count.",
+          "This receipt verifies official source inputs, copied full-build artifacts, and development dependency resolution. Functional coverage is recorded separately.",
+          "The executable uses the npm Electron distribution. Development runs use workspace links and do not create a distributable application."
+        ]
+      }
+    ],
+    "limitations": [
+      "Official GitHub upload-pack rejected the embedded build commit: not our ref. The public dsh-v0.2.1-rc.2 tag has a different commit; its saved source is not asserted to reproduce this binary.",
+      "This check verifies upstream and baseline integrity. Functional parity requires the separate coverage evidence and application acceptance."
+    ]
+  },
+  "limitations": [
+    "Native UI blocked by locked Mac; IAB checks are same-Host web evidence.",
+    "No new external LLM call, release build or installer validation.",
+    "Bilibili network download, preset voice and full cross-platform/input combinations remain unverified.",
+    "No YouDub desktop update feed or published online plugin marketplace."
+  ]
+}

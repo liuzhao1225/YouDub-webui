@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-23",
+  "baseCommit": "bb8ca97aa5f3f0586f8193515f7326d682fe3e6f",
+  "status": "passed",
+  "forkSourceTreeSha256": "8d55f64a7b3713133d97f8d18fcb113708b9bf262cb5a73dca722d68e976c42d",
+  "originalSourceTreeSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
+  "packages": 209,
+  "treeEntries": 5228,
+  "removed": {
+    "exclusiveFiles": 11,
+    "features": [
+      "DeepSeek onboarding modal",
+      "Harness preview welcome notice",
+      "Welcome acknowledgement state and copy",
+      "DeepSeek-only onboarding readiness projection",
+      "Unused sign-in slot",
+      "Credential-only provider-editor mode and exclusive labels/callbacks"
+    ],
+    "localeKeysPerLanguage": 10,
+    "languages": [
+      "en",
+      "zh",
+      "ja"
+    ],
+    "dependency": "ui-settings-models -> product-analytics removed from manifest, TypeScript references and lock importer"
+  },
+  "retained": [
+    "Generic provider editor",
+    "Provider availability projection and its tests",
+    "Provider discovery",
+    "Write-only credentials and masked placeholder",
+    "YouDub-owned installation and translation setup"
+  ],
+  "verification": {
+    "frameworkBuildGates": 7,
+    "aggregateTypeGates": 2,
+    "settingsAndCredentials": {
+      "files": 10,
+      "passed": 367
+    },
+    "packageAndCatalog": {
+      "files": 3,
+      "passed": 123
+    },
+    "actualHostAndLocales": {
+      "passed": 6
+    },
+    "productBuild": true,
+    "composition": true,
+    "defaultProductIsolation": {
+      "packages": 87,
+      "runtimeSources": 693,
+      "webPlugins": 33
+    },
+    "originalArchiveUnchanged": true,
+    "locales": true
+  },
+  "browser": {
+    "host": "Actual compiled Desktop Host using current source composition",
+    "language": "ja",
+    "checks": [
+      "Workbench opened without old onboarding",
+      "Models empty state contains no preconfigured provider or signed-in account",
+      "Add provider catalog and API-key editor open",
+      "OpenAI editor retains endpoint and model controls",
+      "Cancel restores empty provider list"
+    ],
+    "consoleWarningsAndErrors": 0,
+    "hostCleanShutdown": true
+  },
+  "screenshots": [
+    "refactor-onboarding-prune-model-editor.png"
+  ],
+  "limitations": [
+    "Native window acceptance remains open because desktop automation reported the Mac locked.",
+    "Account-related runtime types and exclusive service/test packages remain under separate audit; this batch does not claim all P6 cleanup complete."
+  ],
+  "ci": {
+    "originalRun": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39865511480",
+    "candidateCommit": "b6a1d9582ef32f7206e81be299046d17d444934f",
+    "windows": {
+      "status": "failed",
+      "passed": 566,
+      "failed": 1,
+      "skipped": 27,
+      "failure": "Combined Windows native missing-target/invalid-executable test exceeded the unchanged 5000ms timeout."
+    },
+    "followup": "Split relative executable, missing target, access denied, missing cwd and invalid executable into five independent cases; preserve all ten done/waitForExit assertions and the existing timeout. New candidate CI required.",
+    "followupVerified": {
+      "commit": "a6c4d1ad3b9f6ae4bbb8244e8125441f4d40cd80",
+      "run": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39866708470",
+      "macOS": "success",
+      "windows": "success"
+    }
+  },
+  "followupForkSourceTreeSha256": "ac1a11eb4c2e900d3a1ee0dfea314932d80a40a7012b8ce4874bcbda0622f28c"
+}

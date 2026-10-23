@@ -1,0 +1,42 @@
+{
+  "taskId": "874d381f-4750-459a-aa07-ebb1c435715a",
+  "nodeId": "translate",
+  "invocationId": "6cd8704f-7b8a-44ff-8899-3984fe4431d1",
+  "provider": "youdub-ark",
+  "model": "doubao-seed-evolving",
+  "maxTokens": 65535,
+  "finish": {
+    "kind": "stop"
+  },
+  "sourceSegmentIds": [
+    "segment-000001",
+    "segment-000002",
+    "segment-000003"
+  ],
+  "translation": {
+    "source_language": "en",
+    "target_language": "zh",
+    "segments": [
+      {
+        "segment_id": "segment-000001",
+        "text": "好了，我们现在看到的是其中一头大象。"
+      },
+      {
+        "segment_id": "segment-000002",
+        "text": "这些家伙令人期待的酷炫之处在于，它们的前部真的非常长，这很酷。"
+      },
+      {
+        "segment_id": "segment-000003",
+        "text": "它们差不多就是在表达这些。"
+      }
+    ]
+  },
+  "rawOriginalsPreserved": true,
+  "rawRequestSha256": "7e4e322854adf723fad034dae8fbd9696beb4e18fa1b602e50672ab4ef14f806",
+  "rawResponseSha256": "859de338360460d1c69fa1b37dfc3096122de45e7a139befae22da867414059b",
+  "requestEvidence": ".cache/harness/native-youtube-download-acceptance/real-translation-request.redacted.json",
+  "responseEvidence": ".cache/harness/native-youtube-download-acceptance/real-translation-response.redacted.json",
+  "evidenceScope": "Actual Harness prepared-call request and terminal stream response. Does not claim packet capture of the external HTTP body.",
+  "verbatimPunctuationRulesSha256": "40c70237fdf1a4961bc3df9ee6f2d5c30ba361ba17904d2c4bfc0afbef3580f0",
+  "originalPunctuationRulesActuallySent": true
+}

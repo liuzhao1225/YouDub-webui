@@ -1,0 +1,24 @@
+{
+  "groups": {
+    "acceleration": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio" } },
+    "punkt": { "modules": { "nltk": "nltk" } },
+    "base": { "modules": { "dotenv": "python-dotenv", "pydantic": "pydantic", "keyring": "keyring", "packaging": "packaging" } },
+    "media": { "modules": { "soundfile": "soundfile", "numpy": "numpy" } },
+    "openai": { "modules": { "openai": "openai", "httpx": "httpx", "socksio": "socksio" } },
+    "download": { "modules": { "yt_dlp": "yt-dlp" } },
+    "whisper": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "whisper": "openai-whisper", "nltk": "nltk" } },
+    "voxcpm": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "torchcodec": "torchcodec", "voxcpm": "voxcpm", "transformers": "transformers", "librosa": "librosa", "einops": "einops", "huggingface_hub": "huggingface-hub", "safetensors": "safetensors", "tqdm": "tqdm" } },
+    "demucs": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "julius": "julius", "dora": "dora-search", "omegaconf": "omegaconf", "einops": "einops", "openunmix": "openunmix", "tqdm": "tqdm" } },
+    "qwen_forced_aligner": { "accelerated": true, "modules": { "torch": "torch", "torchcodec": "torchcodec", "transformers": "transformers", "librosa": "librosa" } }
+  },
+  "supportedVersions": { "voxcpm": ">=2.0.3", "transformers": ">=5.17,<6", "nltk": "==3.10.3", "pydantic": ">=2", "yt-dlp": ">=2026.8.19" },
+  "providers": {
+    "youdub.media": { "dependencyGroups": ["media"] },
+    "youdub.download": { "dependencyGroups": ["download", "media"] },
+    "openai": { "dependencyGroups": ["openai"] },
+    "whisper": { "dependencyGroups": ["media", "whisper"], "model": { "id": "tiny", "downloadId": "whisper" } },
+    "voxcpm": { "dependencyGroups": ["media", "voxcpm"], "model": { "id": "VoxCPM2", "downloadId": "voxcpm" } },
+    "demucs": { "dependencyGroups": ["media", "demucs"], "model": { "id": "htdemucs", "downloadId": "demucs" } },
+    "qwen_forced_aligner": { "dependencyGroups": ["media", "qwen_forced_aligner"], "model": { "id": "Qwen3-ForcedAligner-0.6B-hf", "downloadId": "qwen" } }
+  }
+}

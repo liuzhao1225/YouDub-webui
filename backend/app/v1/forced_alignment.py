@@ -86,7 +86,7 @@ def word_cues(parts: list[str], words: object, start_ms: int, end_ms: int) -> li
 
 
 def align(
-    context: StageContext, rows: list[tuple[Segment, str]], split_text: Callable[[str], list[str]],
+    context: StageContext, rows: list[tuple[Segment, str]], split_text: Callable[[str, str], list[str]],
     progress: Callable[[float | None, str], None], *, audio_paths: list[Path],
 ) -> list[tuple[int, int, str]]:
     from .media import _run_media
@@ -127,7 +127,7 @@ def align(
             raise ValueError("Alignment IDs differ")
         cues, endpoint_intervals = [], 0
         for (segment, text), result in zip(rows, results, strict=True):
-            cues.extend(word_cues(split_text(text), result["words"], segment.start_ms, segment.end_ms))
+            cues.extend(word_cues(split_text(text, context.config.target_language), result["words"], segment.start_ms, segment.end_ms))
             endpoint_intervals += sum(round(word["end_time"] * 1000) > segment.end_ms - segment.start_ms
                                       for word in result["words"])
     except (OSError, ValueError, KeyError, TypeError) as exc:

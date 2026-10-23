@@ -1,45 +1,20 @@
-'use client'
+import type { Request } from '@/plugin/runtime/types'
 import { type ReactNode, useEffect, useState } from 'react'
+import { useText } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
-import { SetupScreen, type SetupState, type SetupAction } from './setup-screen'
+import { SetupScreen, type SetupScreenOptions } from './setup-screen'
 import { SetupDiagnostics } from './setup-diagnostics'
+import { SetupController } from '@/runtime/onboarding'
+import { useObservableSource } from '@/plugin/view-hooks'
+import { PageContainer } from './page-layout'
 
-async function request(init?: RequestInit): Promise<SetupState> {
-  const response = await fetch('/api/setup', { ...init, cache: 'no-store', credentials: 'same-origin' })
-  const body = await response.text()
-  if (!response.ok) throw new Error(`环境准备请求失败 (${response.status})：${body}`)
-  return JSON.parse(body)
-}
-export function SetupGate({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SetupState | null>(null)
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [attempt, setAttempt] = useState(0)
-  useEffect(() => {
-    let stopped = false
-    let timer: ReturnType<typeof setTimeout>
-    const controller = new AbortController()
-    async function poll() {
-      try {
-        const next = await request({ signal: controller.signal })
-        if (stopped) return
-        setState(next)
-        if (next.phase !== 'ready') timer = setTimeout(poll, 800)
-      } catch (failure) { if (!stopped) setError(failure instanceof Error ? failure.message : String(failure)) }
-    }
-    void poll()
-    return () => { stopped = true; controller.abort(); clearTimeout(timer) }
-  }, [attempt])
-  async function action(action: SetupAction, id?: string) {
-    if (!state || busy) return
-    setBusy(true)
-    try {
-      const next = await request({ method: 'POST', headers: { 'Content-Type': 'application/json', 'X-YouDub-Setup': state.token }, body: JSON.stringify({ action, id }) })
-      setState(next)
-    } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
-    finally { setBusy(false) }
-  }
-  if (error) return <main className="mx-auto max-w-3xl space-y-4 p-8"><SetupDiagnostics state={state} requestError={error} /><Button onClick={() => { setError(''); setAttempt(value => value + 1) }}>重新连接</Button></main>
+export function SetupGate({ children, request, screenProps, onReady }: { children: ReactNode; request?: Request; screenProps?: SetupScreenOptions; onReady?: () => void }) {
+  const text = useText()
+  const [controller] = useState(() => new SetupController(request))
+  const { state, error, busy } = useObservableSource(controller)
+  useEffect(() => { controller.start(); return controller.stop }, [controller])
+  useEffect(() => { if (state?.phase === 'ready') onReady?.() }, [state?.phase, onReady])
+  if (error) return <PageContainer as="main" className="max-w-3xl space-y-4 py-8 sm:py-12"><SetupDiagnostics state={state} requestError={error} /><Button onClick={controller.start}>{text('setup.reconnect')}</Button></PageContainer>
   if (state?.phase === 'ready') return children
-  return state ? <SetupScreen state={state} busy={busy} onAction={action} /> : <div role="status" className="p-8 text-sm text-muted-foreground">检测运行环境…</div>
+  return state ? <SetupScreen {...screenProps} state={state} busy={busy} onAction={controller.action} onPrepare={controller.prepare} onConfigure={controller.configure} /> : <PageContainer as="main" className="max-w-3xl py-8 sm:py-12"><p role="status" className="text-sm text-muted-foreground">{text('setup.detecting')}</p></PageContainer>
 }

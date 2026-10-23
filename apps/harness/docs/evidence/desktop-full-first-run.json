@@ -1,0 +1,547 @@
+{
+  "verifiedAt": "2026-10-21T14:02:39.519Z",
+  "status": "passed",
+  "scope": "native Electron first-run full resource preparation; media task inference acceptance is separate",
+  "dataDirectory": ".cache/harness/desktop/youdub",
+  "initialGateEvidence": "desktop-required-model-gate.json",
+  "resourceCopyEvidence": "desktop-private-resource-copy.json",
+  "trigger": "Clicked Prepare all models in native UI; monitoring used read-only API GET; no ready-state writes",
+  "phase": "ready",
+  "prepared": true,
+  "environment": [
+    {
+      "id": "python",
+      "name": "Python 3.12",
+      "status": "ready",
+      "detail": "3.12.15"
+    },
+    {
+      "id": "acceleration",
+      "name": "GPU 与推理后端",
+      "status": "ready",
+      "detail": "Apple MPS · MPS（运算检查通过）"
+    },
+    {
+      "id": "dependencies",
+      "name": "运行依赖",
+      "status": "ready",
+      "source": "阿里 PyPI"
+    },
+    {
+      "id": "ffmpeg",
+      "name": "FFmpeg",
+      "status": "ready"
+    },
+    {
+      "id": "resources",
+      "name": "分句资源",
+      "status": "ready"
+    }
+  ],
+  "models": [
+    {
+      "id": "whisper",
+      "name": "Whisper",
+      "variant": "tiny",
+      "purpose": "语音识别",
+      "status": "ready",
+      "received": 75572083,
+      "total": 75572083,
+      "speed": 0
+    },
+    {
+      "id": "voxcpm",
+      "name": "VoxCPM2",
+      "variant": "",
+      "purpose": "声音克隆",
+      "status": "ready",
+      "received": 4960722408,
+      "total": 4960722408,
+      "speed": 0
+    },
+    {
+      "id": "demucs",
+      "name": "Demucs",
+      "variant": "htdemucs",
+      "purpose": "人声分离",
+      "status": "ready",
+      "received": 84141911,
+      "total": 84141911,
+      "speed": 0
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen3 Aligner",
+      "variant": "0.6B",
+      "purpose": "字幕对齐",
+      "status": "ready",
+      "received": 1847225867,
+      "total": 1847225867,
+      "speed": 0
+    }
+  ],
+  "requirements": [
+    {
+      "providerId": "demucs",
+      "model": "htdemucs",
+      "ready": true,
+      "automatic": true,
+      "missingPackages": []
+    },
+    {
+      "providerId": "qwen_forced_aligner",
+      "model": "Qwen3-ForcedAligner-0.6B-hf",
+      "ready": true,
+      "automatic": true,
+      "missingPackages": []
+    },
+    {
+      "providerId": "voxcpm",
+      "model": "VoxCPM2",
+      "ready": true,
+      "automatic": true,
+      "missingPackages": []
+    },
+    {
+      "providerId": "whisper",
+      "model": "tiny",
+      "ready": true,
+      "automatic": true,
+      "missingPackages": []
+    },
+    {
+      "providerId": "youdub.download",
+      "ready": true,
+      "automatic": true,
+      "missingPackages": []
+    },
+    {
+      "providerId": "youdub.media",
+      "ready": true,
+      "automatic": true,
+      "missingPackages": []
+    }
+  ],
+  "originalPreparationHistory": [
+    {
+      "time": "2026-10-21T14:00:42.311Z",
+      "phase": "environment",
+      "environment": [
+        {
+          "id": "python",
+          "name": "Python 3.12",
+          "status": "ready",
+          "detail": "3.12.15"
+        },
+        {
+          "id": "acceleration",
+          "name": "GPU 与推理后端",
+          "status": "ready",
+          "detail": "Apple MPS · MPS（运算检查通过）"
+        },
+        {
+          "id": "dependencies",
+          "name": "运行依赖",
+          "status": "running",
+          "source": "阿里 PyPI"
+        },
+        {
+          "id": "ffmpeg",
+          "name": "FFmpeg",
+          "status": "pending"
+        },
+        {
+          "id": "resources",
+          "name": "分句资源",
+          "status": "pending"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "ready",
+          "received": 4960722408,
+          "total": 4960722408,
+          "speed": 0
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "ready",
+          "received": 1847225867,
+          "total": 1847225867,
+          "speed": 0
+        }
+      ],
+      "resourceStatus": "preparing"
+    },
+    {
+      "time": "2026-10-21T14:01:02.320Z",
+      "phase": "environment",
+      "environment": [
+        {
+          "id": "python",
+          "name": "Python 3.12",
+          "status": "ready",
+          "detail": "3.12.15"
+        },
+        {
+          "id": "acceleration",
+          "name": "GPU 与推理后端",
+          "status": "ready",
+          "detail": "Apple MPS · MPS（运算检查通过）"
+        },
+        {
+          "id": "dependencies",
+          "name": "运行依赖",
+          "status": "ready",
+          "source": "阿里 PyPI"
+        },
+        {
+          "id": "ffmpeg",
+          "name": "FFmpeg",
+          "status": "ready"
+        },
+        {
+          "id": "resources",
+          "name": "分句资源",
+          "status": "running"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "ready",
+          "received": 4960722408,
+          "total": 4960722408,
+          "speed": 0
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "ready",
+          "received": 1847225867,
+          "total": 1847225867,
+          "speed": 0
+        }
+      ],
+      "resourceStatus": "preparing"
+    },
+    {
+      "time": "2026-10-21T14:01:22.325Z",
+      "phase": "ready",
+      "environment": [
+        {
+          "id": "python",
+          "name": "Python 3.12",
+          "status": "ready",
+          "detail": "3.12.15"
+        },
+        {
+          "id": "acceleration",
+          "name": "GPU 与推理后端",
+          "status": "ready",
+          "detail": "Apple MPS · MPS（运算检查通过）"
+        },
+        {
+          "id": "dependencies",
+          "name": "运行依赖",
+          "status": "ready",
+          "source": "阿里 PyPI"
+        },
+        {
+          "id": "ffmpeg",
+          "name": "FFmpeg",
+          "status": "ready"
+        },
+        {
+          "id": "resources",
+          "name": "分句资源",
+          "status": "ready"
+        }
+      ],
+      "models": [
+        {
+          "id": "whisper",
+          "name": "Whisper",
+          "variant": "tiny",
+          "purpose": "语音识别",
+          "status": "ready",
+          "received": 75572083,
+          "total": 75572083,
+          "speed": 0
+        },
+        {
+          "id": "voxcpm",
+          "name": "VoxCPM2",
+          "variant": "",
+          "purpose": "声音克隆",
+          "status": "ready",
+          "received": 4960722408,
+          "total": 4960722408,
+          "speed": 0
+        },
+        {
+          "id": "demucs",
+          "name": "Demucs",
+          "variant": "htdemucs",
+          "purpose": "人声分离",
+          "status": "ready",
+          "received": 84141911,
+          "total": 84141911,
+          "speed": 0
+        },
+        {
+          "id": "qwen",
+          "name": "Qwen3 Aligner",
+          "variant": "0.6B",
+          "purpose": "字幕对齐",
+          "status": "ready",
+          "received": 1847225867,
+          "total": 1847225867,
+          "speed": 0
+        }
+      ],
+      "resourceStatus": "ready"
+    }
+  ],
+  "verifiedModelFiles": [
+    {
+      "model": "whisper",
+      "path": ".cache/harness/desktop/youdub/models/whisper/tiny.pt",
+      "size": 75572083,
+      "sha256": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9",
+      "action": "retained_matching_file",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/audiovae.pth",
+      "size": 376951122,
+      "sha256": "94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/config.json",
+      "size": 4336,
+      "sha256": "405f0dcd92f7feba6011ed4eac5c8d4f74cba9712f07fd5cfa3063bbdd95402c",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/model.safetensors",
+      "size": 4580080592,
+      "sha256": "f7f964cfa9da23653baec6e6f7750719977ad944ed9f95fe52fe3a620506891d",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/special_tokens_map.json",
+      "size": 1632,
+      "sha256": "068594063e37662c02b21acf42ebb334ef6a74fb810e68a2368f88f08351de76",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/tokenization_voxcpm2.py",
+      "size": 2895,
+      "sha256": "84489ea32b6ee0cae22ed5480cacb6df85c46624c3119be9a2021c3649a12729",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/tokenizer.json",
+      "size": 3676772,
+      "sha256": "f8984687e4a92a3503d521396d454b7d68e9fdaab2a0288eb3536c7c1aa4bc20",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "voxcpm",
+      "path": ".cache/harness/desktop/youdub/models/voxcpm/VoxCPM2/tokenizer_config.json",
+      "size": 5059,
+      "sha256": "e78a3ebb48a0b9437efd1823b6b726c823da89e49dd8bcc90c02419d9baa772b",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "demucs",
+      "path": ".cache/harness/desktop/youdub/models/demucs/955717e8-8726e21a.th",
+      "size": 84141911,
+      "sha256": "8726e21a993978c7ba086d3872e7608d7d5bfca646ca4aca459ffda844faa8b4",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "qwen",
+      "path": ".cache/harness/desktop/youdub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/chat_template.jinja",
+      "size": 551,
+      "sha256": "59b5ae119bda7c00089bba5f49af775791ea67c7aeb7d2b828cddda9463121bf",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "qwen",
+      "path": ".cache/harness/desktop/youdub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/config.json",
+      "size": 248029,
+      "sha256": "82ac390b36a8f80c5a0c4e202367debd149e5d8c30abe4cf5eed439101b1c5ce",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "qwen",
+      "path": ".cache/harness/desktop/youdub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/model.safetensors",
+      "size": 1835545960,
+      "sha256": "00568245ceca5af1991d28562a75fe1ddc9bfeb041c27fda66947ea05c47fb86",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "qwen",
+      "path": ".cache/harness/desktop/youdub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/processor_config.json",
+      "size": 487,
+      "sha256": "bc0b230081b44e629dd5b9045b78495615c1831b4b9f4cffe97bd37e82a6156a",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "qwen",
+      "path": ".cache/harness/desktop/youdub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/tokenizer.json",
+      "size": 11429842,
+      "sha256": "cadfb9cbd9ff8f4e309075ec6a71b063295ff796afb4b5dbc0fd2873fbb301f2",
+      "action": "copied",
+      "independentFile": true
+    },
+    {
+      "model": "qwen",
+      "path": ".cache/harness/desktop/youdub/models/qwen3-forced-aligner/Qwen3-ForcedAligner-0.6B-hf/tokenizer_config.json",
+      "size": 998,
+      "sha256": "945e980986de2ca7768f3326bfdbb4fbea3406f972b8ae0be233089f2b253c11",
+      "action": "copied",
+      "independentFile": true
+    }
+  ],
+  "runtime": [
+    {
+      "path": ".cache/harness/desktop/youdub/runtime/python/cpython-3.12.15+20261009-aarch64-apple-darwin-install_only_stripped.tar.gz",
+      "size": 25030095,
+      "sha256": "233f8e15255b3e1d1fd47ea5dd5230dfed803f371138e896e54d98c60ae19f6f",
+      "verified": true
+    },
+    {
+      "path": ".cache/harness/desktop/youdub/runtime/ffmpeg/ffmpeg",
+      "size": 45568216,
+      "sha256": "a90e3db6a3fd35f6074b013f948b1aa45b31c6375489d39e572bea3f18336584",
+      "verified": true
+    },
+    {
+      "path": ".cache/harness/desktop/youdub/runtime/ffmpeg/ffprobe",
+      "size": 45528808,
+      "sha256": "bb2db6f5d8cef919da12fbf592119a987202a8c060a886f3cab091f9cab90b64",
+      "verified": true
+    },
+    {
+      "path": ".cache/harness/desktop/youdub/nltk_data/tokenizers/punkt_tab-modelscope.zip",
+      "size": 4259017,
+      "sha256": "c2b16c23d738effbdc5789d7aa601397c13ba2819bf922fb904687f3f16657ed",
+      "verified": true
+    }
+  ],
+  "python": {
+    "executable": ".cache/harness/desktop/youdub/runtime/venv/bin/python",
+    "prefix": ".cache/harness/desktop/youdub/runtime/venv",
+    "basePrefix": ".cache/harness/desktop/youdub/runtime/python/python",
+    "version": "3.12.15 (main, Oct  9 2026, 15:10:57) [Clang 22.1.3 ]",
+    "userSite": false,
+    "distributions": {
+      "torch": {
+        "version": "2.8.0",
+        "path": ".cache/harness/desktop/youdub/runtime/venv/lib/python3.12/site-packages"
+      },
+      "torchaudio": {
+        "version": "2.8.0",
+        "path": ".cache/harness/desktop/youdub/runtime/venv/lib/python3.12/site-packages"
+      },
+      "openai-whisper": {
+        "version": "20250625",
+        "path": ".cache/harness/desktop/youdub/runtime/venv/lib/python3.12/site-packages"
+      },
+      "voxcpm": {
+        "version": "2.0.3",
+        "path": ".cache/harness/desktop/youdub/runtime/venv/lib/python3.12/site-packages"
+      },
+      "transformers": {
+        "version": "5.20.2",
+        "path": ".cache/harness/desktop/youdub/runtime/venv/lib/python3.12/site-packages"
+      },
+      "nltk": {
+        "version": "3.10.3",
+        "path": ".cache/harness/desktop/youdub/runtime/venv/lib/python3.12/site-packages"
+      }
+    }
+  },
+  "pipCheck": "No broken requirements found.",
+  "resources": {
+    "missing": [],
+    "media": true,
+    "punkt": true,
+    "demucsSource": true,
+    "mediaReason": null
+  }
+}

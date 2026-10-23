@@ -1,6 +1,8 @@
 # YouDub 插件与 Workflow 契约
 
-2026-10-09 · SDK 协议 `1.0.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
+2026-10-20 · SDK 协议 `1.1.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
+
+可视化节点、多 workflow 编辑和人工订正已在当前分支实现；使用方式见[节点工作流](../workflows.md)，设计依据见[产品设计](workflow-node-design.md)和[接口设计](workflow-node-implementation.md)。旧 plan-only workflow 继续兼容。
 
 ## 1. 谁拥有执行逻辑
 
@@ -54,7 +56,7 @@ interface WorkflowDefinition {
 - `outputs[]`：从步骤的 artifact 端口选择最终下载项，包含唯一 ID、label、role、source 和 required。
 - `omittedSteps[]`：可选步骤的省略原因。
 
-步骤必须有唯一 ID，引用已出现的上游输出；provider 支持指定 operation。workflow 不得删除或降级 provider 的 required 输出。所有计划数据可序列化，不携带可执行闭包。MVP 采用静态有序步骤，不提供执行中插入、循环、并行 DAG 或嵌套 workflow。
+步骤必须有唯一 ID，引用已出现的上游输出；provider 支持指定 operation。workflow 不得删除或降级 provider 的 required 输出。所有计划数据可序列化，不携带可执行闭包。图支持分叉、汇合和独立的节点确认，编译为静态计划并按单执行槽调度；没有同时执行多个节点、执行中插入、循环或嵌套 workflow。
 
 输出端口使用实际 SDK 字段：
 
@@ -72,7 +74,15 @@ interface OutputPort {
 
 `kind:'artifact'` 返回 `{id,schemaId}`，由 Host `files` 签发。提供者提交工作区内相对路径、MIME、schemaId 和可选 metadata；Host 读取实际大小、检查文件及媒体流，再登记产物。结果提交时检查登记身份、schema 和文件；JSON 中嵌套的文件引用也必须有效。最终下载项只能选择 artifact 端口；未发布的诊断产物仍留在任务目录。
 
-任务创建在 `settings.locked` 内校验配置并保存连接与凭据引用快照。设置修改使用相同锁，成功后通过 `settings/updated` 通知默认 workflow 更新默认配置；凭据值不进入公开任务响应。`describe/validate/plan` 不执行模型或供应商请求。
+任务创建在 `settings.locked` 内校验配置并保存连接与凭据引用快照。设置修改使用相同锁，成功后发出 `settings/updated` 并刷新 catalog；已有图节点绑定保持不变，旧 plan-only workflow 保留兼容读取。凭据值不进入公开任务响应。`describe/validate/plan` 不执行模型或供应商请求。
+
+### 图文档与人工确认
+
+`catalog.registerWorkflow` 同时接受 `GraphWorkflowDefinition`：`graph.compile({document, inputs, nodeRuntimeInputs}, catalog)` 返回 `{plan, graphSnapshot}`。普通节点图统一由 `youdub.graph` 编译；库中的用户 workflow 是保存的 `WorkflowDocument`。插件可在 `describe().graphTemplate` 提供只读模板，用户可另存副本。
+
+provider 的 `operations[].node` 声明节点名称、版本、显式输入端口、配置 schema、defaults 和可选 runtimeInputSchema。输出沿用 operation.outputs。节点实例各有独立 binding，`autoContinue:false` 在结果保存后持久暂停。订正增加 resultRevisions，并通过 expectedAttempt/expectedTaskRevision/expectedOutputRevision 和 actionId 实现并发检查及回执查询。`validateCorrection` 校验领域语义并返回完整输出。
+
+公共显示文本为字符串或 `{default, translations}`；JSON Schema 标准 `title` 保持字符串，多语言标题放在自定义 `x-title`，供 Client 表单读取。
 
 ## 4. Operation 提供者
 
@@ -92,6 +102,8 @@ type OperationResult =
 `ProviderDescription.operations` 各含 `id/inputSchema/outputs`。模型、语言、设备、voice modes、可用条件等由描述提供，业务 workflow 负责选择特性的语义校验。`probe` 表示依赖与配置检查，不表示真实供应商调用成功。
 
 `Invocation` 提供 invocationId、taskId、attempt、stepId、operation、固定 binding、inputs、workDir、taskDir 和 config。`InvocationContext` 提供 AbortSignal、progress、externalPrepare/externalUpdate、register/resolve 和执行端需要的连接凭据。TypeScript 实现直接使用这些接口，Python 使用相同接口的 NDJSON 编码。
+
+`ProviderDescription.resources` 可选声明 `{dependencyGroups, model?: {id, downloadId}}`，仅引用宿主已知的依赖组和下载清单；未声明的插件由自身准备资源。纯 Python manifest 可用 `python.corrections: 'schema'` 显式开启输出 schema 订正，任务服务继续校验端口与文件归属；复杂领域语义由 Host provider 的 `validateCorrection` 实现。通用 Python adapter 不默认执行内置媒体校验。
 
 provider 返回 waiting 必须实现 poll，nextPollAt 必须可解析；Host 将时间转换为 UTC 后入队，供应商可以返回带时区偏移的时间。当前纯 Python manifest 桥只实现单次 execute；远端轮询提供者使用 Host 插件实现。取消通过 context.signal 停止正在执行或轮询的本机调用；waiting 取消会结束本机步骤。当前没有自动调用供应商撤销接口；未确认远端状态保留 unknown 和 `mayStillRun`，禁止普通 retry。
 
@@ -117,7 +129,7 @@ TTS 按一次调用处理多段完整 utterance，一次模型加载可生成多
 
 ## 6. 默认 workflow 与外部示例
 
-默认 ID 为 `youdub.localize`、版本 `1.0.0`，实现位于 [workflow-localize.ts](../../packages/builtin/src/workflow-localize.ts)。配置继续使用既有 snake_case 字段；generic Task 使用 workflowId、steps、outputs。
+兼容流程 ID 为 `youdub.localize`、版本 `1.0.0`，实现位于 [workflow-localize.ts](../../packages/builtin/src/workflow-localize.ts)。配置继续使用既有 snake_case 字段；generic Task 使用 workflowId、steps、outputs。
 
 | 步骤 | operation | 条件 |
 | --- | --- | --- |
@@ -139,7 +151,7 @@ subtitles 发布视频和原文/译文字幕；dubbing 发布视频和配音音�
 
 `TasksService` 提供 create/get/record/list/cancel/retry/rerun/delete/idle。cancel、retry 和 delete 接受 expectedAttempt。rerun 请求包含新 id、config，以及可选 workflowId/acknowledgeExternalRisk；legacy 任务必须明确选择当前 workflow。
 
-Task 状态为 queued/running/waiting/cancelling/cancelled/succeeded/failed；Step 状态为 pending/running/waiting/completed/cancelled/failed。每次尝试增加 attempt，每步持有 invocationId。进度和结果写入检查当前 attempt、调用身份、状态与 revision，迟到消息不能覆盖新尝试。
+Task 状态为 queued/running/waiting/paused/cancelling/cancelled/succeeded/failed；Step 状态为 pending/running/waiting/awaiting_review/completed/cancelled/failed。人工 paused 会释放执行槽，awaiting_review 的结果需要批准后才能用于下游；远端 waiting 保持原有轮询语义。每次尝试增加 attempt，每步持有 invocationId。进度和结果写入检查当前 attempt、调用身份、状态与 revision，迟到消息不能覆盖新尝试。
 
 当前 `store.call` 使用 `store.create/get/list/cas/claim/delete` 完整事务操作。持久存储桥串行执行 SQLite 事务，只有 task-runtime 决定何时领取或推进任务。连接中断返回 `COMMIT_OUTCOME_UNKNOWN` 等错误并停止推进，不能盲目重试提交或重发模型请求。
 
@@ -179,25 +191,29 @@ API 插件提供 `/api/v2/catalog`、`workflows`、`tasks`、`settings`、`runti
 
 HTTP 统一使用 v2，旧 v1 路由与字段别名已移除。旧 desktop 记录继续通过 v2 的 legacy 数据投射读取和重新生成；旧 URL 下载库仅保留首次迁移认证会话的只读用途。
 
-Client 清单为 `{version:1,sdkVersion:'1.0.0',platformVersion:'1',modules:[...]}`，模块含 id/version/access/url 及可选 css/config。未认证只返回 public 模块；登录后返回完整已激活组合。资产位于同源 `/api/plugins/<packageId>/<version>/<asset>`，数据 API 始终执行认证。
+Client 清单为 `{version:1,sdkVersion:'1.1.0',platformVersion:'1',modules:[...]}`，模块含 id/version/access/url 及可选 css/config。未认证只返回 public 模块；登录后返回完整已激活组合。资产位于同源 `/api/plugins/<packageId>/<version>/<asset>`，数据 API 始终执行认证。
 
 ## 10. Client 装配与界面注册
 
-Next 只保留文档、平台模块桥、React 根和 catch-all 路由。官方登录、工作台、任务库、设置和基础服务均通过 Client 插件加载。Host Context 与 Client Context 独立，通信经过 HTTP。
+React 19 + Vite 提供薄壳、平台模块桥和 React 根；Cordis Host 提供 SPA 文档与静态资源。官方会话、工作台、任务库、工作流、设置和基础服务通过 Client 插件加载。Host Context 与 Client Context 独立，通信经过 HTTP。React-free runtime 负责状态和行为，`plugin/web-react.tsx` 将其绑定到页面 props。
 
 import map 固定共享 React、ReactDOM、JSX runtime、Cordis 和 `@youdub/sdk/client`。平台桥导出实际宿主实例；外部模块不打包第二份 React/Cordis。生产构建后的外部页面与 Hooks 验证另列在迁移矩阵。
 
 公共插槽：
 
 - `root`：唯一根渲染组件，缺失或重复报错。
-- `shell.routes`：id/path/component/access；支持精确路径与 `:param`。
-- `shell.navigation`：id/label/routeId/order。
+- `shell.routes`：id/path/component/access；支持精确路径与 `:param`，默认 app 布局。`layout:'dialog'` 覆盖并保留背景页面，设置使用此布局；`layout:'standalone'` 仍供独立页面使用。
+- `shell.navigation`：id/label/routeId/order，可选 `placement:'footer'`。设置以紧凑齿轮按钮显示在桌面侧栏底部和移动端顶栏，移动端底部导航只显示 main 入口。
+- `workflow.node.editors`：通过 NodeEditorProps 显示节点参数；只更新图草稿。
+- `workflow.node.details`：通过 NodeDetailProps 查看输入与结果、调用 onDraftChange 生成订正草稿；保存与批准由宿主统一执行。
 - `config.editors`：id 对应 workflow/provider，接收 value/schema/diagnostics/readOnly/onChange；可选 `mode: 'options' | 'configuration'` 区分任务基础选项与完整配置。主页传入 `options`，未指定时保留完整编辑能力。
 - `task.detail.panels` 和 `task.detail.actions`：接收 task/refresh。
-- `settings.sections`：提供扩展设置区域；组件接收自己的 `settings` 和 `save(patch)`，后者按该区域 id 保存公开 JSON 配置。
+- `settings.sections`：在设置的扩展分区提供表单，可选 label；组件接收自己的 `settings` 和 `save(patch)`，后者按该区域 id 保存公开 JSON 配置。可选 `onDirtyChange` 上报真实未保存修改，供外壳离开保护使用。
 
 通过 `ctx.effect(() => ctx.slots.register(...))` 注册与释放。标准配置渲染器只实现支持的 JSON Schema 控件；未知结构明确报不支持，复杂配置用匹配编辑器。Client 服务通过 SDK 使用公开 API，不导入其他插件的私有实现。
 
-扩展设置使用 `PATCH /api/v2/settings` 的 `{ "plugin": { "id": "example.panel", "config": { "quality": "high" } } }`，在该 id 的命名空间内浅合并。v2 读取返回 `plugins[id]`，插件设置与原有 defaults/connections/ui_language 分组分别提交。此处仅存公开配置，凭据通过 `secrets` 服务保存。
+设置支持 `/settings` 和 `/settings/:section` 深链；分类切换 replace 当前历史项。`navigation.dismissDialog()` 正常关闭时返回来源历史项，直接深链打开时返回工作台。`navigation.block(handler, scope)` 的 scope 为 page 或 dialog，缺省 page；只在对应页面或弹窗实际离开时检查未保存修改。打开设置保留背景页面实例、滚动位置及草稿，关闭、Escape、遮罩和浏览器后退共用离开保护。
 
-public 子树提供会话、登录、导航与基础渲染；会话插件管理 authenticated 子树。退出或会话失效释放已认证页面与订阅。插件启停在 Host 重启及浏览器刷新后生效，无运行时代码热替换。
+扩展设置使用 `PATCH /api/v2/settings` 的 `{ "plugin": { "id": "example.panel", "config": { "quality": "high" } } }`，在该 id 的命名空间内浅合并。v2 读取返回 `plugins[id]`，插件设置、连接和 ui_language 分别提交。connection 可保存模型候选；处理参数归工作流节点，旧 defaults 只保留兼容和迁移用途。此处仅存公开配置，凭据通过 `secrets` 服务保存。
+
+public 子树提供会话、导航与基础渲染；默认组合自动建立浏览器会话，会话插件管理 authenticated 子树。会话失效释放已认证页面与订阅。插件启停在 Host 重启及浏览器刷新后生效，无运行时代码热替换。

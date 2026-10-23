@@ -1,20 +1,89 @@
 """First-start checks. Missing packages are pending; broken installed packages fail."""
 from __future__ import annotations
+import importlib
 import importlib.metadata
 import importlib.util
 import json
+import os
+import re
+import shutil
+import subprocess
 import sys
 
-DISTRIBUTIONS = {
-    "dotenv": "python-dotenv", "pydantic": "pydantic", "keyring": "keyring", "openai": "openai",
-    "torch": "torch", "torchaudio": "torchaudio", "torchcodec": "torchcodec", "whisper": "openai-whisper", "nltk": "nltk",
-    "voxcpm": "voxcpm", "transformers": "transformers", "soundfile": "soundfile", "librosa": "librosa",
-    "numpy": "numpy", "julius": "julius", "dora": "dora-search", "omegaconf": "omegaconf",
-    "einops": "einops", "openunmix": "openunmix", "tqdm": "tqdm", "yt_dlp": "yt-dlp", "packaging": "packaging",
-}
+from backend.app.resources import GROUPS, distributions, missing_dependencies
+
+
+def verify(groups):
+    """Import only the selected providers. Model checks are handled separately."""
+    missing = missing_dependencies(groups)
+    if missing:
+        raise RuntimeError(f"Missing dependencies: {', '.join(missing)}")
+    selected = distributions(groups)
+    if "torchcodec" in selected:
+        from packaging.version import Version
+        # VoxCPM 1.x uses torchaudio.load; that API requires TorchCodec since 2.9.
+        # TorchAudio 2.8 uses SoundFile, and our aligner receives decoded arrays.
+        # Do not require FFmpeg shared libraries for those execution paths.
+        if "voxcpm" not in groups or Version(importlib.metadata.version("torchaudio")) < Version("2.9"):
+            selected.pop("torchcodec")
+    for module in selected:
+        importlib.import_module(module)
+    return {"ready": True}
+
+
+def resources(groups):
+    from pathlib import Path
+    result = {"missing": missing_dependencies(groups), "media": True, "punkt": True, "demucsSource": True}
+    if "media" in groups:
+        result["mediaReason"] = media_error()
+        result["media"] = result["mediaReason"] is None
+    if "whisper" in groups or "punkt" in groups:
+        result["punkt"] = False
+        if importlib.util.find_spec("nltk") is not None:
+            result["punkt"] = punkt()["ready"]
+    if "demucs" in groups:
+        result["demucsSource"] = (Path(__file__).resolve().parents[2] / "submodule/demucs/demucs/__init__.py").is_file()
+    return result
+
+
+def media_error():
+    """Match the installer capability checks without downloading anything."""
+    from pathlib import Path
+    from backend.app.config import ffmpeg_binary, ffprobe_binary
+    for name, command in (("ffmpeg", ffmpeg_binary()), ("ffprobe", ffprobe_binary())):
+        path = shutil.which(command)
+        if not path:
+            return f"缺少可执行的 {name}：{command}"
+        args = [path, "-hide_banner", "-filters"] if name == "ffmpeg" else [path, "-version"]
+        try:
+            result = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                    timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            return f"{command}: {type(error).__name__}: {error}"
+        if result.returncode != 0:
+            return f"{command} exited ({result.returncode}).\n{result.stderr}"
+        if name == "ffmpeg" and not re.search(r"\bsubtitles\b", result.stdout):
+            return f"FFmpeg 缺少 subtitles 滤镜：{path}"
+        if os.name == "nt" and not any(Path(path).parent.glob("av*.dll")):
+            return f"{name} 缺少共享 av*.dll：{path}"
+    return None
+
+
+def punkt():
+    from nltk.data import find
+    from pathlib import Path
+    try:
+        paths = [os.environ["NLTK_DATA"]] if os.getenv("YOUDUB_HARNESS_RUNTIME") == "1" else None
+        directory = Path(str(find("tokenizers/punkt_tab/english/", paths=paths)))
+    except LookupError:
+        return {"ready": False}
+    return {"ready": all((directory / name).is_file() and (directory / name).stat().st_size > 0
+                        for name in ("collocations.tab", "sent_starters.txt", "abbrev_types.txt", "ortho_context.tab"))}
+
 
 def main():
     action = sys.argv[1]
+    groups = json.loads(sys.argv[2]) if len(sys.argv) > 2 else ["base"]
     if action == "acceleration-plan":
         from backend.app.accelerators import hardware, installation_plan
         plan = installation_plan(hardware())
@@ -46,30 +115,16 @@ def main():
         from backend.app.accelerators import accelerator_status
         print(json.dumps(accelerator_status()))
     elif action == "dependencies":
-        missing = [dist for module, dist in DISTRIBUTIONS.items() if importlib.util.find_spec(module) is None]
-        if not missing:
-            from packaging.version import Version
-            codec_version = {"2.8": "0.7.0", "2.9": "0.8.1"}.get('.'.join(importlib.metadata.version('torch').split('.')[:2]))
-            checks = {"voxcpm": lambda v: v >= Version("2.0.3"), "transformers": lambda v: Version("5.17") <= v < Version("6"), "nltk": lambda v: v == Version("3.10.3"), "torchcodec": lambda v: codec_version is None or v == Version(codec_version)}
-            missing = [dist for dist, valid in checks.items() if not valid(Version(importlib.metadata.version(dist)))]
-        print(json.dumps({"missing": missing}))
+        print(json.dumps({"missing": missing_dependencies(groups)}))
     elif action == "punkt":
-        from nltk.data import find
-        from pathlib import Path
-        try:
-            directory = Path(str(find("tokenizers/punkt_tab/english/")))
-        except LookupError:
-            print(json.dumps({"ready": False})); return
-        print(json.dumps({"ready": all((directory / name).is_file() and (directory / name).stat().st_size > 0 for name in ("collocations.tab", "sent_starters.txt", "abbrev_types.txt", "ortho_context.tab"))}))
-    elif action == "verify":
-        # Exercise imports needed by inference, as well as metadata-only model probes.
-        import torch, torchaudio, whisper, voxcpm, transformers, soundfile, librosa
+        print(json.dumps(punkt()))
+    elif action == "resources":
+        print(json.dumps(resources(groups)))
+    elif action == "models":
         from backend.app.v1.runtime import probe_capability
-        result = {adapter: probe_capability(adapter) for adapter in ("whisper", "voxcpm", "demucs", "qwen_forced_aligner")}
-        unavailable = {key: item["unavailable_reason"] for key, item in result.items() if not item["available"]}
-        if unavailable:
-            raise RuntimeError(json.dumps(unavailable, ensure_ascii=False))
-        print(json.dumps({"ready": True}))
+        print(json.dumps({provider: probe_capability(provider) for provider in groups}, ensure_ascii=False))
+    elif action == "verify":
+        print(json.dumps(verify(groups)))
     else:
         raise ValueError(f"Unknown setup check: {action}")
 

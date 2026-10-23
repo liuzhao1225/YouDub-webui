@@ -1,0 +1,138 @@
+{
+  "format": "youdub.workflow",
+  "formatVersion": 1,
+  "id": "example.reviewed-subtitles",
+  "title": "字幕翻译 · 人工校对",
+  "nodes": [
+    {
+      "id": "prepare",
+      "type": "youdub.prepare",
+      "typeVersion": "1.0.0",
+      "provider": { "id": "youdub.media" },
+      "config": {},
+      "autoContinue": true
+    },
+    {
+      "id": "recognize",
+      "type": "youdub.transcribe",
+      "typeVersion": "1.0.0",
+      "provider": { "id": "whisper", "model": "tiny", "device": "cpu" },
+      "config": { "sourceLanguage": "en" },
+      "autoContinue": false
+    },
+    {
+      "id": "translate",
+      "type": "youdub.translate",
+      "typeVersion": "1.0.0",
+      "provider": { "id": "openai" },
+      "config": {
+        "sourceLanguage": "en",
+        "targetLanguage": "zh",
+        "maxCompletionTokens": 65535
+      },
+      "autoContinue": false
+    },
+    {
+      "id": "export",
+      "type": "youdub.export",
+      "typeVersion": "1.0.0",
+      "provider": { "id": "youdub.media" },
+      "config": {
+        "sourceLanguage": "en",
+        "targetLanguage": "zh",
+        "renderSubtitles": true
+      },
+      "autoContinue": true
+    }
+  ],
+  "edges": [
+    {
+      "id": "input-prepare",
+      "source": { "nodeId": "$inputs", "portId": "video" },
+      "target": { "nodeId": "prepare", "portId": "video" }
+    },
+    {
+      "id": "prepare-recognize-audio",
+      "source": { "nodeId": "prepare", "portId": "sourceAudio" },
+      "target": { "nodeId": "recognize", "portId": "audio" }
+    },
+    {
+      "id": "prepare-recognize-info",
+      "source": { "nodeId": "prepare", "portId": "mediaInfo" },
+      "target": { "nodeId": "recognize", "portId": "mediaInfo" }
+    },
+    {
+      "id": "recognize-translate",
+      "source": { "nodeId": "recognize", "portId": "transcript" },
+      "target": { "nodeId": "translate", "portId": "transcript" }
+    },
+    {
+      "id": "input-export",
+      "source": { "nodeId": "$inputs", "portId": "video" },
+      "target": { "nodeId": "export", "portId": "video" }
+    },
+    {
+      "id": "prepare-export",
+      "source": { "nodeId": "prepare", "portId": "mediaInfo" },
+      "target": { "nodeId": "export", "portId": "mediaInfo" }
+    },
+    {
+      "id": "recognize-export",
+      "source": { "nodeId": "recognize", "portId": "transcript" },
+      "target": { "nodeId": "export", "portId": "transcript" }
+    },
+    {
+      "id": "translate-export",
+      "source": { "nodeId": "translate", "portId": "translation" },
+      "target": { "nodeId": "export", "portId": "translation" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "video",
+      "label": "视频",
+      "required": true,
+      "kind": "artifact",
+      "schemaId": "file/v1",
+      "acceptedMimeTypes": ["video/*"],
+      "maxBytes": 4294967296
+    }
+  ],
+  "outputs": [
+    {
+      "id": "video",
+      "label": "视频",
+      "kind": "artifact",
+      "schemaId": "video/mp4/v1",
+      "required": true,
+      "source": { "nodeId": "export", "portId": "video" }
+    },
+    {
+      "id": "source-subtitles",
+      "label": "原文字幕",
+      "kind": "artifact",
+      "schemaId": "application/x-subrip/v1",
+      "required": true,
+      "source": { "nodeId": "export", "portId": "sourceSubtitles" }
+    },
+    {
+      "id": "translated-subtitles",
+      "label": "译文字幕",
+      "kind": "artifact",
+      "schemaId": "application/x-subrip/v1",
+      "required": true,
+      "source": { "nodeId": "export", "portId": "translatedSubtitles" }
+    }
+  ],
+  "presentation": {
+    "positions": {
+      "$inputs": { "x": 0, "y": 120 },
+      "prepare": { "x": 320, "y": 120 },
+      "recognize": { "x": 640, "y": 120 },
+      "translate": { "x": 960, "y": 120 },
+      "export": { "x": 1280, "y": 120 },
+      "$outputs": { "x": 1600, "y": 120 }
+    },
+    "viewport": { "x": 40, "y": 40, "zoom": 0.75 }
+  }
+}

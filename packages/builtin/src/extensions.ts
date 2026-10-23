@@ -7,16 +7,16 @@ import { createRequire } from 'node:module'
 import { AppError } from '@youdub/sdk'
 
 interface ClientModule { id: string; version: string; access: 'public' | 'authenticated'; url: string; css?: string[]; config?: object }
-interface PythonEntry { entry: string; requirements?: string; provider: Record<string, any>; options?: object; runtimeAdapter?: string }
+interface PythonEntry { entry: string; requirements?: string; provider: Record<string, any>; options?: object; runtimeAdapter?: string; corrections?: 'schema' }
 interface Installed { id: string; version: string; integrity: string; source: string; commit?: string; directory: string; host?: string; python?: PythonEntry; client?: { entry: string; css?: string[]; access?: 'public' | 'authenticated' }; enabled: boolean; config: object }
 export interface ExtensionsConfig { root: string; repoRoot: string; python?: string; builtinClientManifest?: string; managementOnly?: boolean }
 export interface InstallRequest { source: string; ref?: string; enabled?: boolean; config?: object }
 declare module 'cordis' { interface Context { extensions: ExtensionsService } }
-const compatible = (value: unknown) => ['1.0.0', '^1.0.0', '~1.0.0', '1', '1.x'].includes(String(value))
+const compatible = (value: unknown) => ['1.0.0', '^1.0.0', '~1.0.0', '1.1.0', '^1.1.0', '~1.1.0', '1', '1.x'].includes(String(value))
 const cleanId = (id: unknown): id is string => typeof id === 'string' && /^[a-z][a-z0-9.-]{1,100}$/.test(id)
 const mime: Record<string, string> = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' }
 export default class ExtensionsService extends Service {
-  static inject = ['process', 'tasks']
+  static inject = ['youdubWorker', 'tasks']
   private installed: Installed[] = []
   private active = new Set<string>()
   private bootEnabled = new Set<string>()
@@ -39,7 +39,7 @@ export default class ExtensionsService extends Service {
       if (item.python) return {
         id: item.id, name: pathToFileURL(resolve(this.config.repoRoot, 'packages/builtin/src/python-provider.ts')).href,
         inject: item.python.runtimeAdapter ? ['store'] : undefined,
-        config: { ...item.config, descriptor: { ...item.python.provider, pluginId: item.id, pluginVersion: item.version, integrity: item.integrity }, command: join(item.directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python'), args: ['-B', resolve(item.directory, item.python.entry)], cwd: item.directory, options: item.python.options || {}, runtimeAdapter: item.python.runtimeAdapter, $plugin: identity },
+        config: { ...item.config, descriptor: { ...item.python.provider, pluginId: item.id, pluginVersion: item.version, integrity: item.integrity }, command: join(item.directory, process.platform === 'win32' ? '.venv/Scripts/python.exe' : '.venv/bin/python'), args: ['-B', resolve(item.directory, item.python.entry)], cwd: item.directory, options: item.python.options || {}, runtimeAdapter: item.python.runtimeAdapter, corrections: item.python.corrections, $plugin: identity },
       }
       return { id: item.id, name: pathToFileURL(resolve(item.directory, item.host!)).href, config: { ...item.config, $plugin: identity } }
     })
@@ -91,7 +91,7 @@ export default class ExtensionsService extends Service {
       try {
         const npm = command === 'npm'
           ? process.env.npm_execpath || (process.platform === 'win32' ? join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js') : undefined) : undefined
-        const result = await this.ctx.process.run({ command: npm ? process.execPath : command, args: npm ? [npm, ...args] : args, cwd })
+        const result = await this.ctx.youdubWorker.run({ command: npm ? process.execPath : command, args: npm ? [npm, ...args] : args, cwd })
         log.push(result.stdout, result.stderr); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); return result.stdout
       } catch (error) { log.push(String(error)); await writeFile(join(staging, 'install.log'), log.join('\n'), { mode: 0o600 }); throw error }
     }
@@ -135,6 +135,7 @@ export default class ExtensionsService extends Service {
       if (meta.build) await run('npm', ['run', 'build'], directory)
       await verifySharedModules(directory, shared)
       if (meta.python) {
+        if (meta.python.corrections !== undefined && meta.python.corrections !== 'schema') throw new AppError('INVALID_CONFIG', 'Python corrections must explicitly use schema validation.', 422)
         if (meta.host) throw new AppError('INVALID_CONFIG', 'Choose a Host entry or the standard Python bridge.', 422)
         await confined(directory, meta.python.entry)
         if (!meta.python.provider?.id || !Array.isArray(meta.python.provider.operations) || !meta.python.provider.operations.length) throw new AppError('INVALID_CONFIG', 'Python plugins require a provider descriptor with operations.', 422)
@@ -166,10 +167,10 @@ export default class ExtensionsService extends Service {
   }
   clientManifest(authenticated: boolean) {
     const external: ClientModule[] = this.installed.filter(item => this.bootEnabled.has(item.id) && item.client && (!(item.host || item.python) || this.active.has(item.id))).map(item => ({ id: item.id, version: item.version, access: item.client!.access || 'authenticated', url: `/api/plugins/${item.id}/${item.version}/${item.client!.entry}`, css: item.client!.css?.map(path => `/api/plugins/${item.id}/${item.version}/${path}`), config: item.config }))
-    return { version: 1, sdkVersion: '1.0.0', platformVersion: '1', modules: [...this.builtin.modules, ...external].filter(item => authenticated || item.access === 'public') }
+    return { version: 1, sdkVersion: '1.1.0', platformVersion: '1', modules: [...this.builtin.modules, ...external].filter(item => authenticated || item.access === 'public') }
   }
   async asset(packageId: string, version: string, asset: string, authenticated: boolean) {
-    if (packageId === 'youdub-client' && version === '1.0.0' && this.config.builtinClientManifest) {
+    if (packageId === 'youdub-client' && version === '1.1.0' && this.config.builtinClientManifest) {
       const prefix = `/api/plugins/${packageId}/${version}/`
       const publicAssets = this.builtin.modules.filter(item => item.access === 'public').flatMap(item => [item.url, ...(item.css || [])]).concat((this.builtin.publicAssets || []).map(path => prefix + path))
       if (!authenticated && !publicAssets.includes(prefix + asset)) throw new AppError('UNAUTHORIZED', 'Authentication required.', 401)

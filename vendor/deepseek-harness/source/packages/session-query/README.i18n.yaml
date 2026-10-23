@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/session-query/README.md
+/:
+  en: 1c2a80e7d681f77a
+  zh: 441f4b6a8c420f13
+/session-query-session-retrieval-capability-family:
+  en: 65758f8a3a8d5406
+  zh: e6f4d737bf11851a
+/session-query-session-retrieval-capability-family/summary:
+  en: 78c0e8314f513f39
+  zh: 305ead1a8e0e7276
+/session-query-session-retrieval-capability-family/table-of-contents:
+  en: 1eb35b015a6c423f
+  zh: a8a3dceee2c9e943
+/session-query-session-retrieval-capability-family/packages:
+  en: c7c6458f23dfe047
+  zh: 33bf64a538fc76de
+/session-query-session-retrieval-capability-family/related-documentation:
+  en: dfe02312a59febeb
+  zh: 302725775203aa9c
+/session-query-session-retrieval-capability-family/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

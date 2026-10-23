@@ -1,0 +1,27 @@
+{
+  "name": "@deepseek-ai/dsh-desktop",
+  "description": "Electron framework services and sandboxed preload for YouDub Desktop",
+  "version": "0.2.1-rc.2",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && pnpm run bundle",
+    "bundle": "tsdown --config-loader native"
+  },
+  "dependencies": {
+    "semver": "^7.8.5",
+    "@deepseek-ai/dsh-app-boot": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
+    "@deepseek-ai/dsh-atomic-write": "workspace:*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-client-ui-sidebar-browser": "workspace:*",
+    "@types/node": "^22.20.1",
+    "@types/semver": "^7.8.0",
+    "electron": "^44.7.0",
+    "typescript": "^6.0.3",
+    "@deepseek-ai/cordis": "workspace:~"
+  }
+}

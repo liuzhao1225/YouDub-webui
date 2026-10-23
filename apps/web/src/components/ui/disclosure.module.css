@@ -1,0 +1,5 @@
+.contained { padding: 12px 16px; }
+.content { margin-top: 12px; min-width: 0; }
+/* Resource details expand into the next row of the surrounding status group. */
+.inline { display: contents; }
+.inline > .content { flex-basis: 100%; width: 100%; }

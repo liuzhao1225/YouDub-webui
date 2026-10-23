@@ -1,5 +1,7 @@
 # YouDub Cordis 插件化迁移与验收记录
 
+> 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
+
 > 本文记录首次迁移候选 `cf9f92f` 的验收。后续冗余清理、v1 HTTP 移除和当前测试数量见[清理审计](cordis-plugin-audit.md)；历史验证数据保留。
 
 2026-10-09 · 分支 `codex/plugin` · 基线 `e0dcb58` · 实施提交 `171cc37`。Cordis Host、Client、Python bridge 和外部插件已落地，真实三模式任务与实际数据目录切换已完成。最终代码候选 `cf9f92f90d67400c43c5886e68640d77f97e880b` 已完成生产构建与本地回读，重新生成和工作台模型表单正常显示。
@@ -43,15 +45,15 @@ Windows/Linux 实机、GitHub/npm 远端真实下载安装尚未验收。运行�
 
 | 职责 | 当前实现 |
 | --- | --- |
-| 无业务 Host 引导 | [bootstrap.ts](../../apps/host/src/bootstrap.ts)、[main.ts](../../apps/host/src/main.ts) |
-| 默认产品组合 | [youdub.config.ts](../../youdub.config.ts) |
+| 无业务 Host 引导 | [bootstrap.ts](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/apps/host/src/bootstrap.ts)、[main.ts](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/apps/host/src/main.ts) |
+| 默认产品组合 | [youdub.config.ts](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/youdub.config.ts) |
 | 服务/operation/Task 契约 | [SDK](../../packages/sdk/src/index.ts) |
 | 任务引擎与状态机 | [tasks.ts](../../packages/builtin/src/tasks.ts) |
 | 默认本地化 workflow | [workflow-localize.ts](../../packages/builtin/src/workflow-localize.ts) |
 | 受管文件和进程 | [files.ts](../../packages/builtin/src/files.ts)、[process.ts](../../packages/builtin/src/process.ts) |
 | Python 存储与计算桥 | [bridge.py](../../backend/workers/bridge.py)、[store.py](../../backend/workers/store.py)、[operation.py](../../backend/workers/operation.py) |
 | HTTP、认证与 API | [http.ts](../../packages/builtin/src/http.ts)、[auth.ts](../../packages/builtin/src/auth.ts)、[api.ts](../../packages/builtin/src/api.ts) |
-| 扩展安装和装配 | [extensions.ts](../../packages/builtin/src/extensions.ts)、[extensions-loader.ts](../../packages/builtin/src/extensions-loader.ts)、[CLI](../../apps/host/src/plugins.ts) |
+| 扩展安装和装配 | [extensions.ts](../../packages/builtin/src/extensions.ts)、[extensions-loader.ts](../../packages/builtin/src/extensions-loader.ts)、[CLI](https://github.com/liuzhao1225/YouDub-webui/blob/230bce531a6581b4b3c6d4969df83d9b43c817e7/apps/host/src/plugins.ts) |
 | Client 引导与服务/页面 | [plugin 目录](../../apps/web/src/plugin) |
 
 旧 `backend/app` 中的模型、媒体和纯认证/凭据函数继续复用。新 Host 不启动旧 FastAPI lifespan 或旧任务循环。Python store bridge 只处理窄事务/系统调用，模型 worker 不持有数据库或调度权。

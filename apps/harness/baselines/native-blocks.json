@@ -1,0 +1,28 @@
+{
+  "upstreamCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "source": "apps/desktop/src/main.ts",
+  "sourceSha256": "e345eda0425f2df795d20413bb87bb9a3ddc46e71ceb1cec0755ad1cca3fb847",
+  "blocks": [
+    {
+      "name": "chromeFallbackFill",
+      "start": "function chromeFallbackFill()",
+      "characters": 108,
+      "bytes": 108,
+      "sha256": "d3ff09de79f76705d15796885084ef786a212a73488a401d01bf55d3ab2c532b"
+    },
+    {
+      "name": "createWindow",
+      "start": "function createWindow(",
+      "characters": 4633,
+      "bytes": 4633,
+      "sha256": "a2b094123b2ac057d55fc76fb823142f943971be088dd260941bb5243a7e6c67"
+    },
+    {
+      "name": "windowsMenuAndAppearance",
+      "start": "  if (process.platform === 'win32') {\n    ipcMain.handle(DESKTOP_IPC.windowsMenu",
+      "characters": 2925,
+      "bytes": 2925,
+      "sha256": "b4b8c01e5df129996efe2fc295de3c68d0ce83e5598ff72b1d5f2e8b3491d3c0"
+    }
+  ]
+}

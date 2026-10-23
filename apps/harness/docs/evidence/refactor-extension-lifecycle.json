@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-22T13:13:09.113Z",
+  "scope": "P5 isolated Desktop Host browser extension acceptance",
+  "baseCommit": "034eb0dc0682c778045b2aec7561ba0c1314d160",
+  "application": "com.youdub.review-validation",
+  "originalApplicationUntouched": true,
+  "validation": {
+    "python": {
+      "evidence": "refactor-plugin-reinstall.json",
+      "uninstalled": true,
+      "taskRetained": true,
+      "environment": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/youdub/runtime/venv",
+      "baseInterpreter": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/refactor-first-run-20261022/youdub/runtime/python/python/bin/python3.12"
+    },
+    "javascript": {
+      "install": "file:",
+      "enabled": true,
+      "sidebarAdded": true,
+      "counter": 1,
+      "taskId": "196e16b0-ee6e-40fe-934b-912a66f72155",
+      "taskStatus": "succeeded",
+      "taskRevision": 5,
+      "disabled": true,
+      "sidebarRemoved": true,
+      "uninstalled": true
+    },
+    "graph": {
+      "install": "file:",
+      "enabled": true,
+      "taskId": "bd8376b0-1f42-4be5-92b1-315fe3b57d50",
+      "review": {
+        "taskRevision": 11,
+        "status": "paused",
+        "outputRevision": 2,
+        "exportStatus": "pending",
+        "sources": 2
+      },
+      "confirmed": {
+        "taskRevision": 15,
+        "status": "succeeded",
+        "completedSteps": 4
+      },
+      "disabled": true,
+      "uninstalled": true
+    },
+    "retainedArtifacts": [
+      {
+        "id": "196e16b0-ee6e-40fe-934b-912a66f72155",
+        "artifact": "uppercase.txt",
+        "bytes": 62,
+        "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d",
+        "afterUninstall": true,
+        "exactMatch": true
+      },
+      {
+        "id": "bd8376b0-1f42-4be5-92b1-315fe3b57d50",
+        "artifact": "reviewed.txt",
+        "bytes": 77,
+        "sha256": "80243b5e90b5f2ed17191738f323b912a76b4e83f77f607cc7c8394280a0228a",
+        "afterUninstall": true,
+        "exactMatch": true
+      }
+    ],
+    "builtinProtection": "Built-in details stay running and expose no disable/uninstall control",
+    "menu": {
+      "cause": "Graph-template workflow was also listed as a legacy form workflow",
+      "fix": "Only workflows without graphTemplate enter the additional form list",
+      "beforeCount": 2,
+      "afterCount": 1,
+      "testsPassed": 15,
+      "testLog": "/tmp/youdub-template-duplicate-after-electron.log",
+      "buildLog": "/tmp/youdub-template-duplicate-build.log",
+      "sourceIsolation": {
+        "head": "034eb0dc0682c778045b2aec7561ba0c1314d160",
+        "change": "apps/web/src/plugin/builtin/studio.tsx",
+        "otherWorkingChangesReadFromHead": [
+          "apps/harness/build-desktop.mjs",
+          "apps/harness/src/backend/resources.ts",
+          "apps/harness/src/backend/setup.mjs",
+          "apps/harness/src/desktop-main.mjs",
+          "apps/harness/src/frontend/runtime.tsx",
+          "apps/web/src/components/settings-resources.test.tsx",
+          "apps/web/src/components/settings-resources.tsx",
+          "apps/web/src/components/setup-gate.test.tsx",
+          "apps/web/src/components/setup-screen.tsx",
+          "apps/web/src/lib/setup-diagnostics.ts",
+          "apps/web/src/locales/en.json",
+          "apps/web/src/locales/ja.json",
+          "apps/web/src/locales/zh.json",
+          "apps/web/src/plugin/builtin/workflow-resources.tsx",
+          "apps/web/src/plugin/runtime/resources.test.ts",
+          "apps/web/src/plugin/runtime/workflow-resources.ts",
+          "apps/web/src/plugin/web-react.tsx",
+          "apps/web/src/plugin/workflow-run.test.tsx",
+          "apps/web/src/runtime/setup-contracts.ts",
+          "backend/requirements/resources.json",
+          "packages/builtin/src/setup-environment.ts"
+        ],
+        "output": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/desktop-plugin-reinstall/ui-fix"
+      }
+    },
+    "screens": [
+      {
+        "file": "refactor-extension-client.png",
+        "sha256": "5d77b03f3a5e4b80673a82282961bc0e09b1f03463b9eeea1d91097f691b3d88"
+      },
+      {
+        "file": "refactor-extension-correction.png",
+        "sha256": "026beb3d89f552c31ab25a7cbfd50dbc6bda7703866fc3653737f8e2948daf2e"
+      },
+      {
+        "file": "refactor-extension-complete.png",
+        "sha256": "934da2dff4b95b2d3d10a81832b043f013a7c5786eb3d7ecc04105c5b621ca18"
+      },
+      {
+        "file": "refactor-extension-menu.png",
+        "sha256": "2a45d425d029c87db06aab57d65dd94c30768bd537db11de9b720624f84cde02"
+      }
+    ]
+  },
+  "failuresPreserved": [
+    {
+      "log": "/tmp/youdub-template-duplicate-before.log",
+      "cause": "Node 26.7 test environment has no window.localStorage; rerun using application Electron Node 24.21.0"
+    },
+    {
+      "log": "/tmp/youdub-template-duplicate-before-electron.log",
+      "cause": "New regression correctly finds two options instead of one before the fix"
+    }
+  ],
+  "limits": [
+    "Initial extension lifecycle actions used the isolated Desktop Host browser while macOS was locked. The later native follow-up verifies restart readback and all three artifact exports through macOS save dialogs.",
+    "The validation clone has its own venv and task data but its copied venv points to the earlier YouDub first-run fixture base interpreter. This is not proof of a freshly independent installation.",
+    "Initial browser download events timed out. Native export subsequently passed; initial failures remain recorded.",
+    "Graph fixture was reinstalled after lifecycle checks solely to verify the fixed menu; remains enabled in isolated validation profile.",
+    "Media listening, remaining architecture audit and overall P0-P7 are still open. No packaging/release."
+  ],
+  "ci": {
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39785054855",
+    "commit": "feb38596afb3238e772adef2121d6dc68e69fdf8",
+    "conclusion": "failure",
+    "cause": "Web typecheck: WorkflowDescription omitted graphTemplate. Domain and UI tests passed.",
+    "fix": "Added the existing backend graphTemplate field to the frontend contract. Local Web typecheck and follow-up macOS CI passed.",
+    "followup": {
+      "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39792373892",
+      "commit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  },
+  "nativeFollowup": {
+    "recordedAt": "2026-10-22T13:57:20.833778+00:00",
+    "application": "com.youdub.review-validation",
+    "home": "isolated validation home and user-data",
+    "restartReadback": true,
+    "nativeSaveDialog": true,
+    "outputs": [
+      {
+        "kind": "graph",
+        "path": "/tmp/youdub-native-extension-reviewed-20261022.txt",
+        "bytes": 77,
+        "sha256": "80243b5e90b5f2ed17191738f323b912a76b4e83f77f607cc7c8394280a0228a"
+      },
+      {
+        "kind": "javascript",
+        "path": "/tmp/youdub-native-js-extension-20261022.txt",
+        "bytes": 62,
+        "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d"
+      },
+      {
+        "kind": "python",
+        "path": "/tmp/youdub-native-python-extension-20261022.txt",
+        "bytes": 62,
+        "sha256": "f5f237bb5256561d6b686f4846565dec8bb047ae9863a43c882df8903491fc4d"
+      },
+      {
+        "kind": "zoo-subtitles",
+        "path": "/tmp/youdub-native-resume-zoo-20261022.srt",
+        "bytes": 353,
+        "sha256": "d2c1581332142a7b518e622260b1a863962fc1635bf8168a711b5277a9455c78"
+      }
+    ],
+    "zooPlayback": {
+      "taskId": "1d068171-410f-4f4e-a222-cfc159440432",
+      "completedNodes": 9,
+      "observedTimeSeconds": 18.9,
+      "listeningAndTimingQuality": "not accepted"
+    },
+    "screens": [
+      {
+        "file": "refactor-extension-native-export.png",
+        "sha256": "b7829bbbf11231534a86ddfdc7a3a222c9cd5e7bf415701d785487f4e46992b0"
+      },
+      {
+        "file": "refactor-extension-native-zoo.png",
+        "sha256": "29247a11e78c24ece36b3300f46f97c7c27614cfd4d95640cb3eaf0d9745eba1"
+      }
+    ]
+  },
+  "nativeFailurePaths": {
+    "recordedAt": "2026-10-22T14:23:20.313Z",
+    "application": "com.youdub.review-validation",
+    "baseCommit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+    "fixtureScope": "Self-authored fixtures, isolated validation profile only",
+    "fixtures": {
+      "missing-service": {
+        "package.json": "{\n  \"name\": \"@youdub/harness-validation-missing-service\",\n  \"version\": \"1.0.0\",\n  \"type\": \"module\",\n  \"main\": \"index.mjs\",\n  \"exports\": {\n    \".\": \"./index.mjs\",\n    \"./package.json\": \"./package.json\"\n  },\n  \"dsh\": {\n    \"bundle\": {\n      \"patch\": \"./cordis.patch.yml\"\n    }\n  }\n}\n",
+        "index.mjs": "export const name = 'youdub-validation-missing-service';\nexport const inject = ['youdubValidationMissingService'];\nexport function apply() { throw new Error('Missing-service fixture must never activate'); }\n",
+        "cordis.patch.yml": "- insert:\n    - id: youdub-validation-missing-service\n      name: '@youdub/harness-validation-missing-service'\n"
+      },
+      "incompatible-version": {
+        "package.json": "{\n  \"name\": \"@youdub/harness-validation-incompatible-version\",\n  \"version\": \"1.0.0\",\n  \"type\": \"module\",\n  \"main\": \"index.mjs\",\n  \"exports\": {\n    \".\": \"./index.mjs\",\n    \"./package.json\": \"./package.json\"\n  },\n  \"engines\": {\n    \"dsh\": \">=999.0.0\"\n  },\n  \"dsh\": {\n    \"bundle\": {\n      \"patch\": \"./cordis.patch.yml\"\n    }\n  }\n}\n",
+        "index.mjs": "export const name = 'youdub-validation-incompatible-version';\nexport function apply() { throw new Error('Incompatible-version fixture must never activate'); }\n",
+        "cordis.patch.yml": "- insert:\n    - id: youdub-validation-incompatible-version\n      name: '@youdub/harness-validation-incompatible-version'\n"
+      }
+    },
+    "missingPath": {
+      "message": "该路径不存在或不是有效的插件包",
+      "installed": false
+    },
+    "missingService": {
+      "installed": true,
+      "activation": "rejected",
+      "message": "pending (waiting for service: youdubValidationMissingService)",
+      "toggle": "off",
+      "uninstalled": true
+    },
+    "incompatibleVersion": {
+      "required": "engines.dsh >=999.0.0",
+      "frameworkVersion": "0.2.1-rc.2",
+      "installed": false,
+      "exemptionGranted": false,
+      "activation": false
+    },
+    "builtinProtection": "Native details contain running core and product/bundle versions, with no disable or uninstall action",
+    "finalInventory": {
+      "graphTextReview": "enabled",
+      "missingService": "absent",
+      "incompatibleVersion": "absent"
+    },
+    "copyCorrection": {
+      "cause": "The product branding adapter labeled the framework compatibility version as the application version.",
+      "file": "apps/harness/src/frontend/plugins.tsx",
+      "fix": "Chinese and English now explicitly identify the bundled framework; Japanese already did so.",
+      "nativeReadback": "YouDub 内置框架 0.2.1-rc.2",
+      "sourceIsolation": {
+        "baseCommit": "bdceb158a3ae67c3fd956aec7cf2fa250b20b4dc",
+        "overlay": "apps/harness/src/frontend/plugins.tsx",
+        "frozen": [
+          "apps/harness/build-desktop.mjs",
+          "apps/harness/build.mjs",
+          "apps/harness/src/backend/resources.ts",
+          "apps/harness/src/backend/setup.mjs",
+          "apps/harness/src/client.jsx",
+          "apps/harness/src/desktop-main.mjs",
+          "apps/harness/src/frontend/controls.tsx",
+          "apps/harness/src/frontend/examples-page.tsx",
+          "apps/harness/src/frontend/icons.tsx",
+          "apps/harness/src/frontend/plugins.tsx",
+          "apps/harness/src/frontend/runtime.tsx",
+          "apps/harness/src/frontend/video-player.tsx",
+          "apps/harness/src/style.css",
+          "apps/web/package-lock.json",
+          "apps/web/package.json",
+          "apps/web/src/app/globals.css",
+          "apps/web/src/components/app-updates.tsx",
+          "apps/web/src/components/inline-alert.tsx",
+          "apps/web/src/components/localize-task-config.tsx",
+          "apps/web/src/components/models-settings/ModelsSection.module.css",
+          "apps/web/src/components/models-settings/primitives.tsx",
+          "apps/web/src/components/page-layout.tsx",
+          "apps/web/src/components/section-card.tsx",
+          "apps/web/src/components/settings-resources.test.tsx",
+          "apps/web/src/components/settings-resources.tsx",
+          "apps/web/src/components/setup-diagnostics.tsx",
+          "apps/web/src/components/setup-gate.test.tsx",
+          "apps/web/src/components/setup-installation.tsx",
+          "apps/web/src/components/setup-resources.tsx",
+          "apps/web/src/components/setup-screen.tsx",
+          "apps/web/src/components/task-cover.tsx",
+          "apps/web/src/components/theme-toggle.tsx",
+          "apps/web/src/components/ui/button-styles.ts",
+          "apps/web/src/components/ui/input-styles.ts",
+          "apps/web/src/components/ui/native-select.tsx",
+          "apps/web/src/components/ui/select.tsx",
+          "apps/web/src/components/video-player.tsx",
+          "apps/web/src/lib/setup-diagnostics.ts",
+          "apps/web/src/lib/theme.tsx",
+          "apps/web/src/locales/en.json",
+          "apps/web/src/locales/ja.json",
+          "apps/web/src/locales/zh.json",
+          "apps/web/src/plugin/builtin/library.tsx",
+          "apps/web/src/plugin/builtin/media-upload.tsx",
+          "apps/web/src/plugin/builtin/schema-form.tsx",
+          "apps/web/src/plugin/builtin/settings.tsx",
+          "apps/web/src/plugin/builtin/shell.tsx",
+          "apps/web/src/plugin/builtin/studio.tsx",
+          "apps/web/src/plugin/builtin/workflow-canvas.tsx",
+          "apps/web/src/plugin/builtin/workflow-guard.tsx",
+          "apps/web/src/plugin/builtin/workflow-options.tsx",
+          "apps/web/src/plugin/builtin/workflow-rerun.tsx",
+          "apps/web/src/plugin/builtin/workflow-resources.tsx",
+          "apps/web/src/plugin/builtin/workflow-run.tsx",
+          "apps/web/src/plugin/builtin/workflow-settings.tsx",
+          "apps/web/src/plugin/builtin/workflow-task.tsx",
+          "apps/web/src/plugin/builtin/workflows.tsx",
+          "apps/web/src/plugin/runtime/resources.test.ts",
+          "apps/web/src/plugin/runtime/workflow-resources.ts",
+          "apps/web/src/plugin/web-react.tsx",
+          "apps/web/src/plugin/workflow-run.test.tsx",
+          "apps/web/src/runtime/setup-contracts.ts",
+          "apps/web/templates/examples.html",
+          "packages/builtin/src/setup-environment.ts"
+        ],
+        "framework": ".cache/harness/source-build-experimental-prune-20261022",
+        "output": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/native-review-isolated-20261022/desktop-plugin-reinstall/ui-version"
+      },
+      "build": "/tmp/youdub-plugin-version-build.log",
+      "languageValidation": {
+        "passed": true,
+        "languages": [
+          "zh",
+          "en",
+          "ja"
+        ],
+        "businessKeys": 680,
+        "frameworkNamespaces": 7
+      },
+      "limits": "Runtime remains the prior verified isolated Host. The replacement client was rebuilt from bdceb158 plus only the compatibility labels; concurrent source changes were read from HEAD."
+    },
+    "screenshots": [
+      {
+        "file": "refactor-plugin-native-missing-path.png",
+        "sha256": "90d3363e5a46867b26662b42fcfdc1dd97f9c9a2c872498bec4fc114e987ccc6"
+      },
+      {
+        "file": "refactor-plugin-native-missing-service.png",
+        "sha256": "6f6cfbcce01d54873d132f6b780bb65580780c282efdf20aa365f24cecc288f3"
+      },
+      {
+        "file": "refactor-plugin-native-framework-version.png",
+        "sha256": "fe79e40c0bcf255df19820f6142289d2a06813957ddf6f18ecad14224100fbba"
+      }
+    ]
+  }
+}

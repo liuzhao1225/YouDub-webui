@@ -1,5 +1,10 @@
 @import "tailwindcss";
-@import "shadcn/tailwind.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/design-platform.css";
+@import "./harness-palette.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/base.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/corner-shape.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/gradient-shadow-text.css";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/focus.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -57,13 +62,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: var(--dsw-radius-sm);
+  --radius-md: var(--dsw-radius-md);
+  --radius-lg: var(--dsw-radius-md);
+  --radius-xl: var(--dsw-radius-lg);
+  --radius-2xl: var(--dsw-radius-xl);
+  --radius-3xl: var(--dsw-radius-panel);
+  --radius-4xl: var(--dsw-radius-panel);
   --shadow-card: var(--card-shadow);
   --shadow-float: var(--float-shadow);
   --shadow-glow: var(--primary-glow);
@@ -90,126 +95,9 @@
   }
 }
 
-/* 浅色主题 */
-:root {
-  /* 界面字体跟随各平台的系统字体。 */
-  --app-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-    "Noto Sans SC", "Source Han Sans SC", system-ui, sans-serif;
-  --app-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-
-  /* Logo 原色 */
-  --brand-red: #ff0033;
-  --brand-pink: #fb7299;
-  --brand-blue: #00aeec;
-
-  --background: #f6f6f8;
-  --surface: #fbfbfc;
-  --card: #ffffff;
-  --elevated: #ffffff;
-  --input-bg: #ffffff;
-  --foreground: #0b0b0f;
-  --card-foreground: #0b0b0f;
-  --popover: #ffffff;
-  --popover-foreground: #0b0b0f;
-  /* 比 logo 红略深一档，白字对比度达到 WCAG AA。 */
-  --primary: #e6002e;
-  --primary-hover: #cc0029;
-  --primary-foreground: #ffffff;
-  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 6px 18px -6px rgb(230 0 46 / 0.55);
-  --secondary: rgb(0 174 236 / 0.1);
-  --secondary-foreground: #00739f;
-  --muted: rgb(9 9 11 / 0.04);
-  --muted-foreground: #5f5f6b;
-  --subtle-foreground: #8b8b96;
-  --accent: rgb(9 9 11 / 0.05);
-  --accent-foreground: #0b0b0f;
-  --destructive: #c8002a;
-  --border: rgb(9 9 11 / 0.08);
-  --input: rgb(9 9 11 / 0.13);
-  --ring: #00aeec;
-  --link: #00739f;
-  --status-success: #00aeec;
-  --status-success-fg: #00739f;
-  --status-running: #fb7299;
-  --status-running-fg: #c2185b;
-  --status-danger: #ff0033;
-  --status-danger-fg: #c8002a;
-  --status-warning: #f5a524;
-  --status-warning-fg: #9a5b00;
-  --status-neutral: #71717a;
-  --status-neutral-fg: #52525b;
-  --card-shadow: 0 1px 2px rgb(9 9 11 / 0.04), 0 2px 10px -4px rgb(9 9 11 / 0.08);
-  --float-shadow: 0 20px 48px -16px rgb(9 9 11 / 0.25), 0 4px 12px -6px rgb(9 9 11 / 0.1);
-  --glass: rgb(255 255 255 / 0.75);
-  --grid-dot: rgb(9 9 11 / 0.07);
-  --aurora-opacity: 0.55;
-  --scrollbar: rgb(9 9 11 / 0.18);
-  --chart-1: #ff0033;
-  --chart-2: #00aeec;
-  --chart-3: #fb7299;
-  --chart-4: #006f99;
-  --chart-5: #a90038;
-  --radius: 0.75rem;
-  --sidebar: #fbfbfc;
-  --sidebar-foreground: #0b0b0f;
-  --sidebar-primary: #e6002e;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgb(9 9 11 / 0.05);
-  --sidebar-accent-foreground: #0b0b0f;
-  --sidebar-border: rgb(9 9 11 / 0.08);
-  --sidebar-ring: #00aeec;
-}
-
-/* 深色主题（默认） */
-.dark {
-  --background: #0a0a0e;
-  --surface: #0e0e13;
-  --card: #121218;
-  --elevated: #18181f;
-  --input-bg: rgb(255 255 255 / 0.03);
-  --foreground: #ededf0;
-  --card-foreground: #ededf0;
-  --popover: #18181f;
-  --popover-foreground: #ededf0;
-  --primary: #e6002e;
-  --primary-hover: #ec0030;
-  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.45),
-    0 10px 30px -8px rgb(255 0 51 / 0.6);
-  --secondary: rgb(0 174 236 / 0.14);
-  --secondary-foreground: #5fd0f5;
-  --muted: rgb(255 255 255 / 0.04);
-  --muted-foreground: #a0a0ab;
-  --subtle-foreground: #7a7a86;
-  --accent: rgb(255 255 255 / 0.065);
-  --accent-foreground: #ededf0;
-  --destructive: #ff6b81;
-  --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.12);
-  --ring: #00aeec;
-  --link: #3cc4f5;
-  --status-success-fg: #5fd0f5;
-  --status-running-fg: #ff9ab8;
-  --status-danger-fg: #ff6b81;
-  --status-warning-fg: #f7c26b;
-  --status-neutral: #a1a1aa;
-  --status-neutral-fg: #b4b4bd;
-  --card-shadow: 0 1px 0 rgb(255 255 255 / 0.035) inset, 0 1px 2px rgb(0 0 0 / 0.5);
-  --float-shadow: 0 28px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
-  --glass: rgb(16 16 22 / 0.72);
-  --grid-dot: rgb(255 255 255 / 0.055);
-  --aurora-opacity: 1;
-  --scrollbar: rgb(255 255 255 / 0.16);
-  --sidebar: #0e0e13;
-  --sidebar-foreground: #ededf0;
-  --sidebar-accent: rgb(255 255 255 / 0.065);
-  --sidebar-accent-foreground: #ededf0;
-  --sidebar-border: rgb(255 255 255 / 0.08);
-  color-scheme: dark;
-}
-
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     @apply font-sans;
@@ -293,13 +181,17 @@
   background-size: 160px 160px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* Important declarations in components outrank the desktop's important utilities.
+   Keep this outside base: the Harness build replaces the product's base layer. */
+@layer components {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 

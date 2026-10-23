@@ -2,7 +2,7 @@ import { useState } from "react"
 import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { initialTaskConfig, TaskConfigForm, TaskOptions } from "@/components/localize-task-config"
+import { TaskConfigForm, TaskOptions } from "@/components/localize-task-config"
 import { LanguageProvider } from "@/lib/i18n"
 import type { Runtime, TaskConfig } from "@/plugin/builtin/localize-contracts"
 const testConfig: TaskConfig = {
@@ -56,20 +56,10 @@ function mount(runtime: Runtime, initial: TaskConfig = testConfig) {
 
 async function choose(user: ReturnType<typeof userEvent.setup>, label: string, option: string) {
   await user.click(screen.getByLabelText(label))
-  await user.click(await screen.findByRole("option", { name: option }))
+  await user.click(await screen.findByRole("menuitem", { name: option }))
 }
 
 afterEach(() => { cleanup(); window.localStorage.clear() })
-
-it('chooses the available accelerated device before CPU and preserves saved selections', () => {
-  const runtime = testRuntime()
-  runtime.devices.unshift({ id: 'mps', backend: 'mps', available: true })
-  runtime.capabilities[0].models[0].devices = ['mps', 'cpu']
-  expect(initialTaskConfig(runtime).asr.device).toBe('mps')
-  expect(initialTaskConfig(runtime, testConfig).asr.device).toBe('cpu')
-  runtime.devices[0].available = false
-  expect(initialTaskConfig(runtime).asr.device).toBe('cpu')
-})
 
 it('labels an AMD device with its actual ROCm backend', () => {
   const runtime = testRuntime()
@@ -94,7 +84,7 @@ it("主页只显示三个基础选项，切换输出后保留设置中的模型�
     return <TaskOptions value={value} runtime={runtime} onChange={(next) => { setValue(next); changed(next) }} />
   }
   render(<LanguageProvider><Options /></LanguageProvider>)
-  expect(screen.getAllByRole('combobox')).toHaveLength(3)
+  expect(document.querySelectorAll('[aria-haspopup="menu"]')).toHaveLength(3)
   expect(screen.queryByLabelText('配音模型')).not.toBeInTheDocument()
   expect(screen.queryByLabelText('专名提示（可选）')).not.toBeInTheDocument()
   const user = userEvent.setup()
@@ -104,12 +94,6 @@ it("主页只显示三个基础选项，切换输出后保留设置中的模型�
   expect(changed.mock.calls.at(-1)![0]).toMatchObject({ tts: defaults.tts, separation: defaults.separation, subtitle_alignment: null, keep_background: true })
   await choose(user, '输出内容', '配音与字幕')
   expect(changed.mock.calls.at(-1)![0]).toEqual(defaults)
-})
-
-it("首次配置允许空模型目录，已有模型选择不会被替换", () => {
-  const runtime = testRuntime()
-  expect(initialTaskConfig(runtime, testConfig)).toEqual({ subtitle_alignment: null, ...testConfig })
-  expect(initialTaskConfig({ devices: [], capabilities: [] })).toMatchObject({ asr: { adapter: '', model: '', device: 'cpu' }, translation: { adapter: '', model: '', device: 'cpu' } })
 })
 
 describe("本地化任务配置", () => {
@@ -149,7 +133,7 @@ describe("本地化任务配置", () => {
     mount(runtime, defaults)
     expect(screen.getByLabelText("字幕时间")).toHaveTextContent("Qwen3-ForcedAligner-0.6B-hf · 不可用")
     await userEvent.setup().click(screen.getByLabelText("字幕时间"))
-    expect(await screen.findByRole("option", { name: "Qwen — 未安装模型" })).toHaveAttribute("aria-disabled", "true")
+    expect(await screen.findByRole("menuitem", { name: "Qwen — 未安装模型" })).toBeDisabled()
   })
 
   it("专名提示默认留空，切换识别模型和输出后保留，允许清空", async () => {
@@ -187,7 +171,7 @@ describe("本地化任务配置", () => {
       tts: { adapter: "voxcpm", model: "VoxCPM2", device: "cpu", voice: { mode: "source_clone" } },
       separation: { adapter: "test_separation", model: "separation", device: "cpu" },
     })
-    expect(within(screen.getByRole("group", { name: "声音方式" })).getByRole("button", { name: "克隆源音色" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(screen.getByRole("tablist", { name: "声音方式" })).getByRole("tab", { name: "克隆源音色" })).toHaveAttribute("aria-selected", "true")
   })
 
   it.each(["unavailable", "no-clone", "unsupported-language", "unavailable-device"])("VoxCPM2 %s 时保留现有可用模型选择", async (reason) => {
@@ -211,7 +195,7 @@ describe("本地化任务配置", () => {
     const onChange = mount(runtime, defaults)
     const user = userEvent.setup()
     expect(screen.getByLabelText("专名提示（可选）")).toHaveValue("Saved name")
-    expect(within(screen.getByRole("group", { name: "声音方式" })).getByRole("button", { name: "预设声音" })).toHaveAttribute("aria-pressed", "true")
+    expect(within(screen.getByRole("tablist", { name: "声音方式" })).getByRole("tab", { name: "预设声音" })).toHaveAttribute("aria-selected", "true")
     expect(screen.getByLabelText("声音")).toHaveTextContent("测试声音")
     await choose(user, "目标语言", "日本語")
     expect(onChange.mock.calls.at(-1)![0].tts).toEqual(defaults.tts)

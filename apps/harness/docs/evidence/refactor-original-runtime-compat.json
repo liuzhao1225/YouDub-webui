@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22T23:34:52.056Z",
+  "status": "passed",
+  "commit": "079141fbed36fff07af6e6862dea3613eb484852",
+  "sourceSha256": "36bc087c0d57da4e3969fe81f31bab127e198b3ebf5cf2d8314e3eaf5fb21e08",
+  "scope": "Actual source Desktop Host using an isolated APFS clone of the original YouDub private runtime/models, followed by restart of the same profile.",
+  "input": {
+    "target": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/original-runtime-compat-orzmb8pc",
+    "data": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/original-runtime-compat-orzmb8pc/private YouDub",
+    "original": "/Users/liuzhao/Library/Application Support/YouDub",
+    "originalEntries": 74932,
+    "rebasedSnapshotInterpreterPaths": [
+      "runtime/bin/python3.12",
+      "runtime/python/cpython-3.12-macos-aarch64-none",
+      "runtime/venv/bin/python",
+      "runtime/venv/pyvenv.cfg"
+    ],
+    "note": "APFS clone of original runtime/models only. Rebased interpreter references inside the snapshot to keep test writes isolated. User tasks/database/credentials were not copied or modified."
+  },
+  "firstRun": {
+    "models": [
+      {
+        "id": "whisper",
+        "status": "ready"
+      },
+      {
+        "id": "voxcpm",
+        "status": "ready"
+      },
+      {
+        "id": "demucs",
+        "status": "ready"
+      },
+      {
+        "id": "qwen",
+        "status": "ready"
+      }
+    ],
+    "phase": "ready",
+    "explicitPrepareRequired": true,
+    "missingResource": "Private NLTK sentence resources were absent in the original directory; the product prepared them before reporting ready.",
+    "privatePython": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/original-runtime-compat-orzmb8pc/private YouDub/runtime/venv/bin/python",
+    "userSite": false,
+    "applicationCredentialPriority": true,
+    "cleanShutdown": true
+  },
+  "restart": {
+    "status": "passed",
+    "date": "2026-10-22T23:34:52.056Z",
+    "target": "/Users/liuzhao/.codex/worktrees/harness-youdub-integration/YouDub-webui/.cache/harness/original-runtime-compat-orzmb8pc",
+    "setupPhase": "ready",
+    "models": [
+      {
+        "id": "whisper",
+        "status": "ready"
+      },
+      {
+        "id": "voxcpm",
+        "status": "ready"
+      },
+      {
+        "id": "demucs",
+        "status": "ready"
+      },
+      {
+        "id": "qwen",
+        "status": "ready"
+      }
+    ],
+    "environment": [
+      {
+        "id": "python",
+        "status": "ready"
+      },
+      {
+        "id": "acceleration",
+        "status": "ready"
+      },
+      {
+        "id": "dependencies",
+        "status": "ready"
+      },
+      {
+        "id": "ffmpeg",
+        "status": "ready"
+      },
+      {
+        "id": "resources",
+        "status": "ready"
+      }
+    ],
+    "selectionRequired": false,
+    "prepareActionSubmitted": false,
+    "externalLlmCalls": 0,
+    "nativeUI": false,
+    "cleanShutdown": true
+  },
+  "originalPreservation": {
+    "originalUnchanged": true,
+    "comparedEntries": 74932,
+    "comparison": [
+      "mode",
+      "size",
+      "mtime_ns",
+      "symlink target"
+    ],
+    "clonedModelSymlinks": [],
+    "tasksDatabaseCredentialsTouched": false
+  },
+  "externalLlmCalls": 0,
+  "nativeUI": false,
+  "limitations": [
+    "Original runtime/model folder compatibility only; this record does not migrate the original desktop database, credentials or task files.",
+    "Absolute interpreter paths were rebased inside the copied test snapshot to preserve isolation; this does not claim automatic relocation of a user installation.",
+    "Model availability checks passed; this record does not run a new full media workflow."
+  ],
+  "logs": {
+    "firstRun": {
+      "path": "/tmp/youdub-original-runtime-compat.log",
+      "sha256": "601736a0a0e01edeb67bbc3e385276db863a23c34e8f90548132b2ecafc1386b"
+    },
+    "restart": {
+      "path": "/tmp/youdub-original-runtime-compat-restart.log",
+      "sha256": "455b9c67877ecd89aa6e0e5e4e63c70fbbc5b8c77740e1a407a2ffeed8640072"
+    },
+    "script": {
+      "path": "/tmp/youdub-original-runtime-compat.mjs",
+      "sha256": "7521cd11835cc59335b8ae5af952e91645d22644218e6c2aacf1d6a135ca4217"
+    },
+    "restartScript": {
+      "path": "/tmp/youdub-original-runtime-compat-restart.mjs",
+      "sha256": "1294778b2c8c63b326087edda6003f3cc84f3fab0d4167d1a12f6837bb8eb0a9"
+    }
+  }
+}

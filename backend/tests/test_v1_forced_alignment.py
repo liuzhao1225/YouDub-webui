@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import ast
+import hashlib
+import inspect
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from backend.app.v1 import export, forced_alignment, media
+from backend.app.v1 import export, forced_alignment, media, sentence_split
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.segments import Segment
@@ -15,6 +18,34 @@ from backend.app.v1.steps import StageContext
 
 def word(text, start, end):
     return {"text": text, "start_time": start, "end_time": end}
+
+
+def test_original_sentence_split_function_is_copied_verbatim():
+    source = inspect.getsource(sentence_split)
+    node = next(item for item in ast.parse(source).body if isinstance(item, ast.FunctionDef))
+    original = ast.get_source_segment(source, node)
+    assert hashlib.sha256(original.encode()).hexdigest() == "30a3ce6efac89f855c05041eee2422c6a00364713c1d89e6561f00159fadd4bf"
+
+
+@pytest.mark.parametrize("sample", json.loads((Path(__file__).parent / "fixtures" / "native_sentence_alignment.json").read_text()))
+def test_real_native_sentences_keep_short_tail_at_original_qwen_word_boundaries(sample, tmp_path):
+    words = json.dumps(sample["words"], ensure_ascii=False)
+    parts = export._display_parts(sample["text"], "zh")
+    cues = forced_alignment.word_cues(parts, sample["words"], sample["startMs"], sample["endMs"])
+    assert cues == [tuple(cue) for cue in sample["expectedCues"]]
+    assert cues[-1][2] == "这很酷。"
+    assert "".join(part for _, _, part in cues) == sample["text"]
+    assert json.dumps(sample["words"], ensure_ascii=False) == words
+    starts = {sample["startMs"] + round(word["start_time"] * 1000) for word in sample["words"]}
+    ends = {sample["startMs"] + round(word["end_time"] * 1000) for word in sample["words"]}
+    assert all(start in starts and end in ends for start, end, _ in cues)
+    segment = Segment(id=sample["segmentId"], start_ms=sample["startMs"], end_ms=sample["endMs"], text=sample["text"])
+    export._validate_prepared_cues(cues, [(segment, sample["text"])], sample["endMs"])
+    path = tmp_path / "translated.srt"
+    export._write_srt(path, [], translated=True, language="zh", aligned_cues=cues)
+    assert [block.splitlines()[2] for block in path.read_text().strip().split("\n\n")] == [
+        part.rstrip(export.SUBTITLE_BREAK_PUNCTUATION) for part in parts
+    ]
 
 
 def test_measured_words_control_cues_with_global_offset_and_silent_gaps():

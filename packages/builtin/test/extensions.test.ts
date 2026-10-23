@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { SDK_VERSION } from '@youdub/sdk'
 import { Context, Service } from 'cordis'
 import { mkdtemp, mkdir, readFile, writeFile, rm, cp, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -9,7 +10,27 @@ import Extensions from '../src/extensions.js'
 import Catalog from '../src/catalog.js'
 import Processes from '../src/process.js'
 import * as PythonProvider from '../src/python-provider.js'
-import { startHost } from '../../../apps/host/src/bootstrap.js'
+import { startHost } from './helpers/composition.js'
+
+test('Python correction validation is opt-in and supports non-media output schemas', async t => {
+  const ctx = new Context()
+  const support = await ctx.plugin({ apply(scope) { scope.reflect.provide('youdubWorker', {}) } })
+  const catalog = await ctx.plugin(Catalog)
+  const config: PythonProvider.PythonProviderConfig = {
+    descriptor: { id: 'example.dictionary', label: 'Dictionary', pluginId: 'example.dictionary', pluginVersion: '1.0.0', integrity: 'test', operations: [{ id: 'lookup/v1', inputSchema: {}, outputs: [{ name: 'entry', schemaId: 'dictionary/v1', kind: 'json', required: true }] }] },
+    command: 'python3', args: ['unused.py'], cwd: process.cwd(),
+  }
+  let plugin = await ctx.plugin(PythonProvider, config)
+  t.after(async () => { await plugin.dispose(); await catalog.dispose(); await support.dispose() })
+  assert.equal(ctx.catalog.provider(config.descriptor.id).validateCorrection, undefined)
+  await plugin.dispose()
+  plugin = await ctx.plugin(PythonProvider, { ...config, corrections: 'schema' })
+  const baselineOutputs = { entry: { meaning: 'before' }, source: 'dictionary' }, patch = { entry: { meaning: 'after' } }
+  const corrected = await ctx.catalog.provider(config.descriptor.id).validateCorrection!({ operation: 'lookup/v1', inputs: {}, baselineOutputs, patch })
+  assert.deepEqual(corrected, { entry: { meaning: 'after' }, source: 'dictionary' })
+  assert.deepEqual(baselineOutputs.entry, { meaning: 'before' })
+  assert.notEqual(corrected.entry, patch.entry, 'corrections do not retain mutable request references')
+})
 
 test('independent local package installs, activates after restart, converts a real file, and unregisters', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-extension-'))
@@ -95,7 +116,7 @@ export function apply(ctx, config) { ctx.effect(() => ctx.catalog.registerProvid
   extensions = await ctx.plugin(Extensions, { root: installedRoot, repoRoot: process.cwd() })
   const entry = ctx.extensions.hostEntries()[0]!, module = await import(entry.name)
   assert.equal(module.sharedService, Service)
-  assert.equal(module.sdkVersion, '1.0.0')
+  assert.equal(module.sdkVersion, SDK_VERSION)
   const plugin = await ctx.plugin(module, entry.config)
   assert.equal(ctx.catalog.provider('example.build').id, 'example.build')
   await plugin.dispose()
@@ -224,7 +245,7 @@ test('official media readiness checks both configured executables and exposes fa
   assert.match(provider.describe().unavailableReason!, /missing-ffmpeg.*ENOENT/)
   process.env.FFMPEG_PATH = join(root, 'ffmpeg')
   let brokenProbe = false
-  t.mock.method(ctx.process, 'run', async (request: { command: string; args: string[] }) => {
+  t.mock.method(ctx.youdubWorker, 'run', async (request: { command: string; args: string[] }) => {
     assert.deepEqual(request.args, ['-version'])
     assert.ok([process.env.FFMPEG_PATH, process.env.FFPROBE_PATH].includes(request.command))
     if (brokenProbe && request.command === process.env.FFPROBE_PATH) throw new Error('broken ffprobe executable')

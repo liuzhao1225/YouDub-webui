@@ -80,11 +80,21 @@ def test_subtitle_alignment_requires_complete_dubbed_audio_and_subtitle_output(c
         {"connection": {"adapter": "demo"}},
         {"connection": {"adapter": "demo", "base_url": None}},
         {"connection": {"adapter": "demo", "api_key": ""}},
+        {"connection": {"adapter": "demo", "model": ""}},
+        {"connection": {"adapter": "demo", "model": "   "}},
+        {"connection": {"adapter": "demo", "model": None}},
     ],
 )
 def test_settings_patch_requires_one_non_null_group(payload):
     with pytest.raises(ValidationError):
         SettingsPatch.model_validate(payload)
+
+
+def test_connection_model_can_be_updated_independently():
+    patch = ConnectionPatch.model_validate({"adapter": "openai", "model": "qwen3-max"})
+    assert patch.model == "qwen3-max"
+    assert "base_url" not in patch.model_fields_set
+    assert "api_key" not in patch.model_fields_set
 
 
 def test_api_key_preserve_replace_clear_are_distinct():

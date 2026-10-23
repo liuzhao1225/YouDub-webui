@@ -1,0 +1,32 @@
+@layer theme, base, components, utilities;
+@layer components {
+/* Content geometry follows Harness PluginManagerPage: 28px top, 960px content,
+   clamp(24px, 4vw, 48px) horizontal inset. Canvas keeps its own full-width body. */
+.container {
+  --page-gutter: clamp(24px, 4vw, 48px);
+  --page-top: 28px;
+  --page-gap: 32px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: calc(960px + var(--page-gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+}
+/* Slot anchors use display:contents, so spacing belongs to the layout boxes. */
+.page { display: flex; flex-direction: column; gap: var(--page-gap); padding-block: var(--page-top) 48px; }
+.header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; min-height: 36px; }
+.identity { display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1 1 240px; }
+.leading { display: flex; align-items: center; justify-content: center; min-height: 36px; flex-shrink: 0; }
+.heading { min-width: 0; flex: 1; }
+.titleRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 36px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 36px; }
+.workspace { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.workspaceHeader { padding: 28px clamp(24px, 4vw, 48px) 12px; }
+.nodeHeader { padding: 0 0 12px; }
+
+
+}
+
+/* Keep heading typography above the host's element reset, as Harness primitives do. */
+.title { min-width: 0; overflow-wrap: anywhere; font-size: 20px; line-height: 28px; font-weight: 500; }

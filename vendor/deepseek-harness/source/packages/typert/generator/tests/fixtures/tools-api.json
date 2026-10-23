@@ -1,0 +1,192 @@
+{
+  "SERVICE_API": [
+    {
+      "key": "tools",
+      "summary": "Tool registry and execution pipeline.",
+      "description": "Tool registry and execution pipeline. Scoped registrations shadow globals; one visibility resolver feeds presentation, lookup, and dispatch.",
+      "methods": [
+        {
+          "signature": "presentAs(mode: ToolPresentationMode): () => void",
+          "description": "Present the calling scope's tools in `mode` instead of the deployment default. Nearest scope on the chain wins, so a preset's standing declaration covers every agent joined under it.\n\nScoped only, and one declaration per scope: this is how an agent preset composes PTC mode agents beside native ones in the same process, and a process-global override would be the `mode` config field instead.",
+          "parameters": [
+            {
+              "name": "mode",
+              "description": "the presentation the covered agents' models see."
+            }
+          ],
+          "returns": "the exact disposer that restores the deployment default."
+        },
+        {
+          "signature": "register(definition: ToolDefinition): () => void",
+          "description": "Register globally or in the calling agent scope. Scoped tools shadow globals; duplicates within one layer and the reserved `run_code` name fail.",
+          "parameters": [
+            {
+              "name": "definition",
+              "description": "tool schema, execution, and optional finalization/presentation callbacks."
+            }
+          ],
+          "returns": "the exact disposer that unregisters the tool."
+        },
+        {
+          "signature": "restrict(filter: ToolRestriction): () => void",
+          "description": "Restrict global tools for the calling agent scope. Empty filters, unknown names, scope-local names, and reserved transport names fail. Restrictions intersect; scoped registrations remain visible.",
+          "parameters": [
+            {
+              "name": "filter",
+              "description": "global-tool mask: `allow` (keep only) and/or `deny` (remove)."
+            }
+          ],
+          "returns": "the exact disposer that lifts this restriction."
+        },
+        {
+          "signature": "guard(guard: ToolGuard): () => void",
+          "description": "Register a monotonic guard after the extensible `tools/pre-execute` waterfall. A plain-context guard applies globally; one registered through `agent.ctx` applies only to that agent. Any matching guard may deny by returning a reason, while no guard can force-allow a call another guard denied. The exact effect disposer is returned for ordered ownership and HMR cleanup.",
+          "parameters": [
+            {
+              "name": "guard",
+              "description": "synchronous check; a returned string denies the execution."
+            }
+          ],
+          "returns": "the exact disposer that unregisters the guard."
+        },
+        {
+          "signature": "get(name: string, scope?: ScopeKey): ToolDefinition | undefined",
+          "description": "Look up a tool as one scope sees it (scoped shadows global; a restricted-away global reads as absent). Presenters pass the calling agent so the rendered card matches the definition that actually executed.",
+          "parameters": [
+            {
+              "name": "name",
+              "description": "the tool name as registered."
+            },
+            {
+              "name": "scope",
+              "description": "the viewing scope (the agent); omitted = the global view."
+            }
+          ],
+          "returns": "the definition the scope resolves, or undefined when none is visible."
+        },
+        {
+          "signature": "schemas(scope?: ScopeKey): ToolSchema[]",
+          "description": "Project visible definitions onto the allowlisted model-facing schema fields, excluding execution and presentation callbacks.",
+          "parameters": [
+            {
+              "name": "scope",
+              "description": "the viewing scope (the agent); omitted = the global view."
+            }
+          ],
+          "returns": "one deep-cloned schema per visible tool."
+        },
+        {
+          "signature": "executionMode(exec: ToolExecutionInput): ToolExecutionMode",
+          "description": "Classify a pending call through the caller's visible tool definition. Only an exact `true` is parallel; unknown, hidden, undeclared, invalid, or throwing classifiers are exclusive.",
+          "parameters": [
+            {
+              "name": "exec",
+              "description": "call name, parsed arguments, and optional agent scope."
+            }
+          ],
+          "returns": "the fail-closed scheduling mode."
+        },
+        {
+          "signature": "async execute(exec: ToolExecutionInput): Promise<ToolExecutionResult>",
+          "description": "Execute through pre-policy, guards, around-dispatch, post-policy, definition-owned content finalization, and final notification. Tool and listener failures resolve as materialized error results; an invisible tool reports `UNKNOWN_TOOL`. The returned outcome is the same lossless, frozen snapshot final observers receive. Cancellation arriving after entry and before final result materialization skips a not-yet-started body with `ABORTED_BEFORE_DISPATCH` or replaces a successful started outcome with `ABORTED`; already-started work is still drained and may retain a tool-owned structured error.",
+          "parameters": [
+            {
+              "name": "exec",
+              "description": "the typed same-process call input. The registry assigns its correlation token before policy begins."
+            }
+          ],
+          "returns": "the materialized final result."
+        }
+      ]
+    }
+  ],
+  "EVENT_API": [
+    {
+      "name": "tools/change",
+      "mode": "emit",
+      "signature": "'tools/change'(): void",
+      "summary": "A tool was registered or unregistered, or a scoped restriction changed (the available tool set changed — possibly for one scope only).",
+      "description": "A tool was registered or unregistered, or a scoped restriction changed (the available tool set changed — possibly for one scope only). An UNFILTERED registry-subject notification, deliberately not scope-filtered dispatch: a global change concerns every agent's next assembly, so a scoped listener subscribing here sees every change, not just its own scope's.",
+      "parameters": []
+    },
+    {
+      "name": "tools/execute",
+      "mode": "waterfall",
+      "signature": "'tools/execute'(this: Scoped<ToolRuntime>, exec: ToolDispatchExecution, next: () => Promise<ToolExecutionResult>): Promise<ToolExecutionResult>",
+      "summary": "Around-dispatch waterfall for timeout, retry, or metrics.",
+      "description": "Around-dispatch waterfall for timeout, retry, or metrics. `next()` returns a normalized result; wrappers may change only `exec.signal`, while call identity remains immutable. The registry re-fuses the original caller signal before the body, so replacement cannot detach caller cancellation; wrappers must still restore their signal and reach quiescence. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent's calls.",
+      "parameters": [
+        {
+          "name": "exec",
+          "description": "the allowed call about to dispatch (name, parsed arguments, caller agent, signal)."
+        }
+      ]
+    },
+    {
+      "name": "tools/post-execute",
+      "mode": "waterfall",
+      "signature": "'tools/post-execute'(this: Scoped<ToolRuntime>, exec: ToolExecution, result: Readonly<ToolExecutionResult>, next: () => Promise<PostToolDecision>): Promise<PostToolDecision>",
+      "summary": "Accept, replace, enrich, or block a normalized dispatch result.",
+      "description": "Accept, replace, enrich, or block a normalized dispatch result. `next()` accepts it unchanged; thrown tools still reach this waterfall as errors. Async listeners must observe `exec.signal`; after they settle, caller cancellation replaces only a successful accepted outcome with the code selected by whether the tool body was invoked. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent's calls.",
+      "parameters": [
+        {
+          "name": "exec",
+          "description": "the call that just ran (name, parsed arguments, caller agent)."
+        },
+        {
+          "name": "result",
+          "description": "the dispatch outcome a listener may accept, replace, or block."
+        }
+      ]
+    },
+    {
+      "name": "tools/pre-execute",
+      "mode": "waterfall",
+      "signature": "'tools/pre-execute'(this: Scoped<ToolRuntime>, exec: ToolExecution, next: () => Promise<PreToolDecision>): Promise<PreToolDecision>",
+      "summary": "Allow, deny, cancel, or ask before dispatch.",
+      "description": "Allow, deny, cancel, or ask before dispatch. `next()` delegates to allow; `cancel` selects the canonical pre-dispatch cancellation result, and missing approval support turns `ask` into denial. Async gates must observe `exec.signal`; the registry rechecks cancellation after they settle but never abandons their promise. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent's calls.",
+      "parameters": [
+        {
+          "name": "exec",
+          "description": "the pending call (name, parsed arguments, caller agent)."
+        }
+      ]
+    },
+    {
+      "name": "tools/ptc-dispatch-log",
+      "mode": "waterfall",
+      "signature": "'tools/ptc-dispatch-log'(this: Scoped<ToolRuntime>, dispatch: PtcDispatchLog, next: () => Promise<ContentBlock[]>): Promise<ContentBlock[]>",
+      "summary": "Allow a listener to replace content in the DURABLE LOG COPY of one `run_code` sub-dispatch outcome before the bridge appends its `tool/ptc-dispatch` event.",
+      "description": "Allow a listener to replace content in the DURABLE LOG COPY of one `run_code` sub-dispatch outcome before the bridge appends its `tool/ptc-dispatch` event. `next()` keeps the content unchanged; a listener may return replacement blocks (e.g. the spill policy's preview + locator for an oversized text result). Only the logged copy is affected — the program already received the complete value, and the model sees neither. A throwing listener is contained: the bridge falls back to logging the original settled content. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): agent-scoped listeners receive only that agent's dispatches.",
+      "parameters": [
+        {
+          "name": "dispatch",
+          "description": "the parent execution, sub-call identity, and the settled content to log."
+        }
+      ]
+    },
+    {
+      "name": "tools/result",
+      "mode": "emit",
+      "signature": "'tools/result'(this: Scoped<ToolRuntime>, exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): undefined",
+      "summary": "Observe the frozen, lossless-JSON final outcome.",
+      "description": "Observe the frozen, lossless-JSON final outcome. Listener failures are contained. Scope-filtered dispatch (`@deepseek-ai/dsh-scope`): keyed by `exec.agent`.",
+      "parameters": [
+        {
+          "name": "exec",
+          "description": "the execution object that traversed the pipeline."
+        },
+        {
+          "name": "result",
+          "description": "a deep-frozen snapshot of the final returned result."
+        }
+      ]
+    }
+  ],
+  "TYPE_API": [
+    {
+      "name": "ToolDefinition",
+      "declaration": "export interface ToolDefinition extends ToolSchema {\n    readonly output: ToolOutputDefinition;\n    execute(args: unknown, exec: ToolRunContext): Promise<unknown>;\n    projectContent?(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): ContentBlock[] | undefined;\n    finalizeContent?(exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): ContentBlock[] | undefined;\n    timeoutMs?: number;\n    isConcurrencySafe?(args: unknown): boolean;\n    presentCall?(args: unknown): ToolCallView | undefined;\n    presentResult?(args: unknown, result: ToolResult): ToolResultView | undefined;\n}"
+    }
+  ]
+}

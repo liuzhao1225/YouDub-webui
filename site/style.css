@@ -82,14 +82,14 @@ h1 .gradient-text { display: inline-block; margin-left: .2em; }
 .time { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
 .seek { flex: 1; min-width: 0; }
 input[type=range] { appearance: none; height: 18px; margin: 0; background: transparent; cursor: pointer; }
-input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: linear-gradient(90deg,var(--pink),var(--blue)) 0 / var(--progress,0%) 100% no-repeat, rgb(255 255 255 / .17); }
-input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: rgb(255 255 255 / .17); }
+input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: linear-gradient(90deg,var(--pink),var(--blue)) 0 / var(--progress,0%) 100% no-repeat, var(--muted); }
+input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: var(--muted); }
 input[type=range]::-moz-range-progress { background: var(--pink); height: 3px; }
-input[type=range]::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; margin-top: -3.5px; background: white; border-radius: 50%; }
-input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border: 0; background: white; border-radius: 50%; }
+input[type=range]::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; margin-top: -3.5px; background: var(--foreground); border-radius: 50%; }
+input[type=range]::-moz-range-thumb { width: 10px; height: 10px; border: 0; background: var(--foreground); border-radius: 50%; }
 .volume { width: 45px; }
 .demo-caption { display: flex; justify-content: center; gap: 1.5rem; font-size: 12px; color: var(--muted); padding: 1rem .25rem 0; }
-.player:fullscreen { display: flex; flex-direction: column; max-width: none; border: none; border-radius: 0; background: #060609; }
+.player:fullscreen { --foreground:#ededf0; --muted:#a0a0ab; --elevated:#18181f; --border:rgb(255 255 255 / .08); color:var(--foreground); display: flex; flex-direction: column; max-width: none; border: none; border-radius: 0; background: #060609; }
 .player:fullscreen .video-stage { height: auto; aspect-ratio: auto; flex: 1; }
 .player:fullscreen .player-toolbar { align-self: center; width: min(100%,440px); }
 .player:fullscreen .controls { width: min(100%,1000px); align-self: center; }

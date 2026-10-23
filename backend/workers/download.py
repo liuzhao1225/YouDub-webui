@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 import re
+import os
 import shutil
 import sys
 import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from .protocol import WorkerError
 
@@ -51,18 +52,24 @@ class DownloadLog:
     error = debug
 
 
-def download_video(url: str, work: Path, wire, max_bytes: int) -> tuple[Path, dict]:
+def download_video(url: str, work: Path, wire, max_bytes: int, *, proxy_port: int | None = 0) -> tuple[Path, dict]:
     from yt_dlp import YoutubeDL
     from yt_dlp.utils.networking import std_headers
     from backend.app.config import ffmpeg_binary
     from backend.app.v1.media import inspect_video
-    from backend.app.v1.runtime import RUNTIME_LIMITS
+    from backend.app.v1.runtime_limits import RUNTIME_LIMITS
 
+    if proxy_port is None or proxy_port == "":
+        proxy_port = 0
+    if type(proxy_port) is not int or not 0 <= proxy_port <= 65535:
+        raise WorkerError("INVALID_CONFIG", "本机 HTTP 代理端口须为 1–65535，0 或留空表示直连。")
+    proxy = f"http://127.0.0.1:{proxy_port}" if proxy_port else ""
     url = video_url(url)
     wire.check_cancel()
     wire.progress(None, "解析视频链接")
     if urlparse(url).hostname == "b23.tv":
-        with build_opener(VideoRedirect()).open(Request(url, headers=std_headers), timeout=20) as response:
+        proxies = {"http": proxy, "https": proxy} if proxy else {}
+        with build_opener(ProxyHandler(proxies), VideoRedirect()).open(Request(url, headers=std_headers), timeout=20) as response:
             url = video_url(response.url)
         if urlparse(url).hostname == "b23.tv":
             raise WorkerError("INVALID_VIDEO_URL", "B 站短链接没有指向视频。")
@@ -95,12 +102,23 @@ def download_video(url: str, work: Path, wire, max_bytes: int) -> tuple[Path, di
     ffmpeg = shutil.which(ffmpeg_binary())
     if not ffmpeg:
         raise WorkerError("MEDIA_TOOLS_UNAVAILABLE", "找不到 FFmpeg，无法合并下载的视频。")
+    node = os.getenv("YOUDUB_NODE_PATH", "").strip()
+    if node:
+        if not Path(node).is_absolute() or not Path(node).is_file() or not os.access(node, os.X_OK):
+            raise WorkerError("RUNTIME_UNAVAILABLE", "YouDub 私有 Node.js 路径无效或不可执行。")
+    elif os.getenv("YOUDUB_HARNESS_RUNTIME") == "1":
+        raise WorkerError("RUNTIME_UNAVAILABLE", "YouDub 私有 Node.js 路径未配置。")
+    else:
+        node = shutil.which("node") or "node"
     options = {
+        # Original youdub/downloader.py also passes an explicit yt-dlp proxy URL.
+        # The node owns this value; an empty string explicitly selects direct access.
+        "proxy": proxy,
         "outtmpl": str(work / "source.%(ext)s"), "noplaylist": True,
         "allowed_extractors": ["youtube$", "bilibili$"],
         "format": "bv[ext=mp4][height<=1080]+ba[ext=m4a]/b[ext=mp4][height<=1080]",
         "merge_output_format": "mp4", "ffmpeg_location": ffmpeg,
-        "js_runtimes": {"node": {"path": shutil.which("node") or "node"}},
+        "js_runtimes": {"node": {"path": node}},
         "retries": 0, "fragment_retries": 0, "extractor_retries": 0,
         "file_access_retries": 0, "socket_timeout": 20,
         "skip_unavailable_fragments": False, "ignoreerrors": False,

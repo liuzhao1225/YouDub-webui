@@ -1,4 +1,5 @@
 import { Service, type Context } from 'cordis'
+import './llm-models.js'
 import { AppError, type SettingsService, type TaskRecord, type JsonObject } from '@youdub/sdk'
 
 const pluginPrefix = 'plugin:'
@@ -21,9 +22,10 @@ export default class Settings extends Service implements SettingsService {
     // Plugin settings are public JSON. Credentials stay in secrets and the
     // public connection projection must never be replaced by settings.raw.
     const plugins = Object.fromEntries(Object.entries(raw).filter(([key]) => key.startsWith(pluginPrefix)).map(([key, value]) => [key.slice(pluginPrefix.length), value]))
-    return { ...settings, plugins }
+    return { ...settings, ...(this.ctx.get('models') ? { connections: settings.connections.filter((item: any) => item.adapter !== 'openai') } : {}), plugins }
   }
   patch(patch: JsonObject) { return this.locked(async () => {
+    if (this.ctx.get('models') && patch?.connection?.adapter === 'openai') throw new AppError('LEGACY_CONNECTION_READ_ONLY', 'Manage translation providers on the Models page.', 409)
     if (!object(patch)) throw new AppError('INVALID_CONFIG', 'Settings patch must be an object.', 422)
     if (Object.hasOwn(patch, 'plugin')) {
       const plugin = patch.plugin
@@ -36,17 +38,17 @@ export default class Settings extends Service implements SettingsService {
     } else await this.ctx.store.call('settings.patch', { patch })
     const saved = await this.read()
     this.ctx.emit('settings/updated', saved)
-    await this.ctx.catalog.refresh()
+    if (!Object.hasOwn(patch, 'ui_language')) await this.ctx.catalog.refresh()
     return saved
   }) }
   async runtime() {
     await this.ctx.catalog.refresh()
     const runtime = await this.ctx.store.call('runtime.info')
-    const providers = this.ctx.catalog.describe().providers.filter(item => item.capability)
+    const providers = this.ctx.catalog.describe().providers.filter(item => item.capability && !item.legacy)
     runtime.capabilities = providers.map(provider => ({
       adapter: provider.adapter ?? provider.id, capability: provider.capability, execution: provider.execution,
       available: provider.available ?? false, unavailable_reason: provider.unavailableReason ?? null,
-      requires_api_key: provider.execution === 'remote', models: provider.models ?? [],
+      requires_api_key: provider.requiresApiKey ?? provider.execution === 'remote', models: provider.models ?? [],
       data_sent: provider.dataSent ?? [], remote_operations: provider.remoteOperations ?? null,
     }))
     runtime.status = runtime.capabilities.filter((item: any) => item.capability !== 'subtitle_alignment').every((item: any) => item.available) ? 'ready' : 'degraded'
@@ -59,15 +61,16 @@ export default class Settings extends Service implements SettingsService {
       if (connection.credential_ref) credentialRefs[connection.adapter] = connection.credential_ref
       return { adapter: connection.adapter, base_url: connection.base_url }
     })
-    return { connections, credentialRefs }
+    const models = this.ctx.get('models')?.snapshot()
+    return { connections: [...connections, ...models?.connections ?? []], credentialRefs: { ...credentialRefs, ...models?.credentialRefs } }
   }
   async credentials(task: TaskRecord) {
-    const result: Record<string, { base_url: string; api_key?: string | null }> = {}
+    const result: import('@youdub/sdk').InvocationContext['credentials'] = {}
     for (const connection of task.connections) {
       const ref = task.credentialRefs[connection.adapter]
-      const api_key = ref ? await this.ctx.secrets.get(ref) : null
+      const api_key = ref?.startsWith('env:') ? process.env[ref.slice(4)] ?? null : ref ? await this.ctx.secrets.get(ref) : null
       if (ref && !api_key) throw new AppError('MODEL_NOT_READY', `Credential for ${connection.adapter} is unavailable.`, 503)
-      result[connection.adapter] = { base_url: connection.base_url, api_key }
+      result[connection.adapter] = { base_url: connection.base_url, api_key, ...(connection.profile ? { profile: structuredClone(connection.profile) } : {}) }
     }
     return result
   }

@@ -1,0 +1,5165 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-22T23:22:57.779Z",
+  "baseCommit": "aed6099cfb1743647197497d8af2d15252fed707",
+  "status": "passed",
+  "source": {
+    "sha256": "36bc087c0d57da4e3969fe81f31bab127e198b3ebf5cf2d8314e3eaf5fb21e08",
+    "originalSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
+    "packages": 203,
+    "entries": 5133,
+    "clientArtifacts": 233
+  },
+  "closure": {
+    "roots": 79,
+    "runtimeAndTypes": 136,
+    "withFrameworkTests": 197,
+    "rootBuildOrPlatform": [
+      {
+        "name": "@deepseek-ai/dsh-typert-generator",
+        "path": "packages/typert/generator"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-darwin-arm64",
+        "path": "native/system/packages/darwin-arm64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-darwin-x64",
+        "path": "native/system/packages/darwin-x64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-linux-arm64",
+        "path": "native/system/packages/linux-arm64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-linux-x64",
+        "path": "native/system/packages/linux-x64"
+      },
+      {
+        "name": "@deepseek-ai/node-addon-system-workspace",
+        "path": "native/system"
+      }
+    ],
+    "scope": "Literal source imports, manifest dependencies and package test imports from a freshly prepared product runtime. Dynamic and root script consumers are recorded separately.",
+    "dynamicConsumers": [
+      {
+        "name": "@deepseek-ai/dsh-typert-generator",
+        "files": [
+          "scripts/gen-cordis-catalog.ts",
+          "scripts/gen-doc-graphs.ts"
+        ]
+      },
+      {
+        "name": "native/system workspace and four platform addons",
+        "files": [
+          "native/system/package.json",
+          "native/system/packages/entry/package.json",
+          "native/system/scripts/build.ts"
+        ]
+      }
+    ]
+  },
+  "retainedPackages": [
+    {
+      "name": "@deepseek-ai/cordis",
+      "path": "vendor/cordis",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-include",
+          "file": "vendor/include/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-loader",
+          "file": "vendor/loader/src/config/diff.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-loader",
+          "file": "vendor/loader/src/config/entry.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-group",
+      "path": "vendor/group",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset-registry",
+          "file": "packages/preset/agent-preset-registry/tests/harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset-registry",
+          "file": "packages/preset/agent-preset-registry/tests/mount.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-app-boot",
+          "file": "packages/boot/app-boot/src/config-schema/collect.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "path": "vendor/include",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/src/profile-boot.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset",
+          "file": "packages/preset/agent-preset/tests/skills.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-loader",
+      "path": "vendor/loader",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/cordis",
+          "file": "vendor/cordis/bin.js",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-group",
+          "file": "vendor/group/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-include",
+          "file": "vendor/include/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-timer",
+      "path": "vendor/timer",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-cordis-host-runner",
+          "file": "packages/extensions/cordis-host-runner/tests/helpers.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-hmr",
+          "file": "packages/boot/hmr/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-hmr",
+          "file": "packages/boot/hmr/tests/coordination.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/cosmokit",
+      "path": "vendor/cosmokit",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/cordis",
+          "file": "vendor/cordis/src/context.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis",
+          "file": "vendor/cordis/src/events.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis",
+          "file": "vendor/cordis/src/events.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh",
+      "path": "apps/cli",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-desktop-host",
+          "file": "apps/desktop-host/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-desktop-host",
+          "file": "apps/desktop-host/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent",
+      "path": "packages/core/agent",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/agent.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/agent.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-default-model",
+      "path": "packages/core/agent-default-model",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/agent.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-settings",
+          "file": "packages/settings/settings/tests/configuration-fixture.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-loop",
+      "path": "packages/core/agent-loop",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset-registry",
+          "file": "packages/preset/agent-preset-registry/tests/harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-fork.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-presets.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-loop-testkit",
+      "path": "packages/test-support/agent-loop-testkit",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/request-freeze.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/serial-listener-review.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "path": "packages/preset/agent-preset",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset-registry",
+          "file": "packages/preset/agent-preset-registry/tests/registry.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset-registry",
+      "path": "packages/preset/agent-preset-registry",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset",
+          "file": "packages/preset/agent-preset/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset",
+          "file": "packages/preset/agent-preset/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-anonymous-user-id",
+      "path": "packages/identity/anonymous-user-id",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-command-feedback",
+          "file": "packages/feedback/command-feedback/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-command-feedback",
+          "file": "packages/feedback/command-feedback/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/src/host.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-gateway",
+      "path": "packages/api/gateway",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/src/client/service.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/tests/client-apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remote-access",
+          "file": "packages/api/remote-access/src/client/mount.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-job-controller",
+      "path": "packages/api/job-controller",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-remote-access",
+      "path": "packages/api/remote-access",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/echo-stream.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/gateway-access.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-remotes",
+      "path": "packages/api/remotes",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/control-retry.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/lineage.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/manager.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-session-controller",
+      "path": "packages/api/session-controller",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-settings-controller",
+      "path": "packages/api/settings-controller",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-remote-mock",
+          "file": "packages/test-support/remote-mock/tests/proxy-types.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-terminal-controller",
+      "path": "packages/api/terminal-controller",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-workspace-controller",
+      "path": "packages/api/workspace-controller",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/tests/language-row.client.spec.tsx",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-workspace-files",
+      "path": "packages/api/workspace-files",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+          "file": "packages/client/ui-sidebar-documentpreview/src/client/document/resource-group.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-app-boot",
+      "path": "packages/boot/app-boot",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/src/profile-boot.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/tests/resolved-profile-boot.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/tests/resolved-profile-boot.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-atomic-write",
+      "path": "packages/util/atomic-write",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-app-boot",
+          "file": "packages/boot/app-boot/src/profile-compatibility.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-app-boot",
+          "file": "packages/boot/app-boot/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-config-editor",
+          "file": "packages/boot/config-editor/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment",
+      "path": "packages/attachment/attachment",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/contract/session.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/contract/snapshot.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/sessions/session.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment-local",
+      "path": "packages/attachment/attachment-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/runtime.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-authorization",
+      "path": "packages/credentials/authorization",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-llm-pi-ai",
+          "file": "packages/llm/llm-pi-ai/src/login.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-pi-ai",
+          "file": "packages/llm/llm-pi-ai/tests/dynamic-config.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-pi-ai",
+          "file": "packages/llm/llm-pi-ai/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-bash-local",
+      "path": "packages/shell/bash-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent-spawn-in-process",
+          "file": "packages/subagent/subagent-spawn-in-process/tests/harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-bash",
+          "file": "packages/shell/tool-bash/tests/background.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-bash",
+          "file": "packages/shell/tool-bash/tests/integration.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-brand",
+      "path": "packages/util/brand",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-anonymous-user-id",
+          "file": "packages/identity/anonymous-user-id/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-chunked-list",
+      "path": "packages/util/chunked-list",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/src/catalog.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/src/catalog.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-connection",
+      "path": "packages/client/connection",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/client/remote-events.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/client/remote-stream.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-file-upload",
+      "path": "packages/client/file-upload",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/commands.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-hmr",
+      "path": "packages/client/hmr",
+      "category": "runtime-or-desktop-root",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-locale",
+      "path": "packages/client/locale",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-shortcuts",
+          "file": "packages/client/shortcuts/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-shortcuts",
+          "file": "packages/client/shortcuts/tests/fixed-input.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-shortcuts",
+          "file": "packages/client/shortcuts/tests/service.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-modules",
+      "path": "packages/client/modules",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-hmr",
+          "file": "packages/client/hmr/src/events.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-hmr",
+          "file": "packages/client/hmr/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-hmr",
+          "file": "packages/client/hmr/tests/node-half.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-resources",
+      "path": "packages/client/resources",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-files",
+          "file": "packages/api/workspace-files/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-files",
+          "file": "packages/api/workspace-files/src/client/provider.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-files",
+          "file": "packages/api/workspace-files/src/client/types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-shortcuts",
+      "path": "packages/client/shortcuts",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-approval",
+          "file": "packages/client/ui-approval/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/src/client/apply.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/src/client/stop-shortcut.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-store",
+      "path": "packages/client/store",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/src/client/model.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/contract/events.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/contract/session.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-test-runtime",
+      "path": "packages/test-support/client-runtime",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/client-apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/inbox-projection.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/manager.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-approval",
+      "path": "packages/client/ui-approval",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-chat",
+      "path": "packages/client/ui-chat",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/tests/helpers.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-goal",
+          "file": "packages/client/ui-goal/tests/goal-command-input.client.spec.tsx",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-goal",
+          "file": "packages/client/ui-goal/tests/goal-command-input.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-commands",
+      "path": "packages/client/ui-commands",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/apply-inject.client.spec.tsx",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "path": "packages/client/ui-conversation",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/fixtures.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/tests/helpers.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-approval",
+          "file": "packages/client/ui-approval/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-dockkit",
+      "path": "packages/client/ui-dockkit",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-browser",
+          "file": "packages/client/ui-sidebar-browser/src/client/browser/BrowserController.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-browser",
+          "file": "packages/client/ui-sidebar-browser/src/client/browser/store.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-browser",
+          "file": "packages/client/ui-sidebar-browser/tests/apply.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-goal",
+      "path": "packages/client/ui-goal",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/user-text-component-fixture.client.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/user-text-component-fixture.client.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/user-text-reference-composition.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-input-trigger",
+      "path": "packages/client/ui-input-trigger",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-commands",
+          "file": "packages/client/ui-commands/tests/browser-plugin.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-commands",
+          "file": "packages/client/ui-commands/tests/service.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/input-scenarios.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "path": "packages/client/ui-layout",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/tests/helpers.client.spec.tsx",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/apply.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-plugin-manager",
+      "path": "packages/client/ui-plugin-manager",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-primitives",
+      "path": "packages/client/ui-primitives",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/src/client/LanguageRow.tsx",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-shortcuts",
+          "file": "packages/client/shortcuts/src/client/dom.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-shortcuts",
+          "file": "packages/client/shortcuts/src/client/native.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-reference",
+      "path": "packages/client/ui-reference",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/tests/user-content.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/tests/user-content.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/tests/user-content.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-renderer",
+      "path": "packages/client/ui-renderer",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remote-access",
+          "file": "packages/api/remote-access/src/client/mount.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/tests/apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-session",
+      "path": "packages/client/ui-session",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/access.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings",
+      "path": "packages/client/ui-settings",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/src/client/LanguageRow.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-locale",
+          "file": "packages/client/locale/tests/apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-general",
+      "path": "packages/client/ui-settings-general",
+      "category": "runtime-or-desktop-root",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings-models",
+      "path": "packages/client/ui-settings-models",
+      "category": "runtime-or-desktop-root",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "path": "packages/client/ui-sidebar",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-browser",
+      "path": "packages/client/ui-sidebar-browser",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/apply.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-desktop",
+          "file": "apps/desktop/src/browser-guests.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-desktop",
+          "file": "apps/desktop/src/ipc.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+      "path": "packages/client/ui-sidebar-documentpreview",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-right",
+      "path": "packages/client/ui-sidebar-right",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/apply.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-reference",
+          "file": "packages/client/ui-reference/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-browser",
+          "file": "packages/client/ui-sidebar-browser/src/client/definition.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-skill",
+      "path": "packages/client/ui-skill",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/tests/user-content.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/tests/user-content.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/user-text-component-fixture.client.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-slots",
+      "path": "packages/client/ui-slots",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remote-access",
+          "file": "packages/api/remote-access/src/client/mount.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remote-access",
+          "file": "packages/api/remote-access/src/client/state.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remote-access",
+          "file": "packages/api/remote-access/tests/client-access.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-theme",
+      "path": "packages/client/ui-theme",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-layout",
+          "file": "packages/client/ui-layout/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-layout",
+          "file": "packages/client/ui-layout/src/client/theme-presenter.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-layout",
+          "file": "packages/client/ui-layout/tests/apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-tool",
+      "path": "packages/client/ui-tool",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-skill",
+          "file": "packages/client/ui-skill/tests/skill-row.client.spec.tsx",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-workspace",
+      "path": "packages/client/ui-workspace",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-web",
+      "path": "packages/client/web",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/assembly/roster.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/assembly/test-client.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-test-runtime",
+          "file": "packages/test-support/client-runtime/src/assembly/test-client.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-cmdline",
+      "path": "packages/boot/cmdline",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/src/profile-boot.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-command-feedback",
+      "path": "packages/feedback/command-feedback",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-message-feedback",
+          "file": "packages/feedback/message-feedback/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-message-feedback",
+          "file": "packages/feedback/message-feedback/src/types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-commands",
+      "path": "packages/interaction/commands",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-compaction",
+      "path": "packages/compaction/compaction",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/command.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/command.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/compaction.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-compaction-basic",
+      "path": "packages/compaction/compaction-basic",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-fork.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-image-offload",
+          "file": "packages/compaction/compaction-image-offload/tests/image-offload.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-compaction-image-offload",
+      "path": "packages/compaction/compaction-image-offload",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-basic",
+          "file": "packages/compaction/compaction-basic/tests/manual-compaction.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-tool-result-pruner",
+          "file": "packages/compaction/compaction-tool-result-pruner/tests/tool-result-pruner.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/message-projections.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-compaction-tool-result-pruner",
+      "path": "packages/compaction/compaction-tool-result-pruner",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset",
+          "file": "packages/preset/agent-preset/tests/skills.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-basic",
+          "file": "packages/compaction/compaction-basic/tests/compaction-basic.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-basic",
+          "file": "packages/compaction/compaction-basic/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-config-editor",
+      "path": "packages/boot/config-editor",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-plugin-market",
+          "file": "packages/boot/plugin-market/tests/configuration.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-cordis-host-runner",
+      "path": "packages/extensions/cordis-host-runner",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-credentials",
+      "path": "packages/credentials/credentials",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-credentials-local",
+      "path": "packages/credentials/credentials-local",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/operator-connect.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-host-frontend-static",
+          "file": "packages/host/frontend-static/tests/frontend-static.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-deepseek-llm-api-extensions",
+      "path": "packages/llm/deepseek-llm-api-extensions",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/egress.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/extensions.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-deque",
+      "path": "packages/util/deque",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/client/stream-client.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/stream-server.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-desktop",
+      "path": "apps/desktop",
+      "category": "runtime-or-desktop-root",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-desktop-host",
+      "path": "apps/desktop-host",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-desktop",
+          "file": "apps/desktop/tests/host-update-tasks.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-file-reference",
+      "path": "packages/context/file-reference",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/file-references.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/file-references.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-file-reference-local",
+      "path": "packages/context/file-reference-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/serial-listener-review.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs",
+      "path": "packages/fs/fs",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/media-references.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/media-references.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs-local",
+      "path": "packages/fs/fs-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop-testkit",
+          "file": "packages/test-support/agent-loop-testkit/tests/agent-loop-testkit.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/media-references.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-open-workspace-path.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs-observation-policy",
+      "path": "packages/fs/fs-observation-policy",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-tool-fs",
+          "file": "packages/fs/tool-fs/tests/harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-fs",
+          "file": "packages/fs/tool-fs/tests/integration.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-fs",
+          "file": "packages/fs/tool-fs/tests/read-image.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs-sandbox",
+      "path": "packages/fs/fs-sandbox",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/activation-policy.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-goal",
+      "path": "packages/goal/goal",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/src/client/skeleton/InputBar.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-hmr",
+      "path": "packages/boot/hmr",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-config-editor",
+          "file": "packages/boot/config-editor/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-desktop-host",
+          "file": "apps/desktop-host/tests/office-engine.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-plugin-manager",
+          "file": "packages/boot/plugin-manager/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-home-paths",
+      "path": "packages/util/home-paths",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/src/profile-boot.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-anonymous-user-id",
+          "file": "packages/identity/anonymous-user-id/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-directory-picker",
+      "path": "packages/host/directory-picker",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-controller",
+          "file": "packages/api/workspace-controller/src/directory-picker.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-controller",
+          "file": "packages/api/workspace-controller/src/directory-picker.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-controller",
+          "file": "packages/api/workspace-controller/src/directory-picker.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-frontend-static",
+      "path": "packages/host/frontend-static",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/operator-connect.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-web-app",
+          "file": "packages/bundle/web-app/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-web-app",
+          "file": "packages/bundle/web-app/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-plugin-inventory",
+      "path": "packages/host/plugin-inventory",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-webserver",
+      "path": "packages/host/webserver",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/echo-stream.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/gateway-stream.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-http-proxy",
+      "path": "packages/util/http-proxy",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/src/profile-boot.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/tests/resolved-profile-boot.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-jobs",
+      "path": "packages/jobs/jobs",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/src/client/model.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/src/client/model.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/src/client/service.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-jobs-local",
+      "path": "packages/jobs/jobs-local",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/tests/host-harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-job-controller",
+          "file": "packages/api/job-controller/tests/kill.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-launch-environment",
+      "path": "packages/util/launch-environment",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/src/profile-boot.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/tests/resolved-profile-boot.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh",
+          "file": "apps/cli/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-lazy-require",
+      "path": "packages/util/lazy-require",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/src/terminal.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-attachment-local",
+          "file": "packages/attachment/attachment-local/src/sharp.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm",
+      "path": "packages/llm/llm",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/model-selection.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/model-selection.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/runtime-types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm-deepseek",
+      "path": "packages/llm/llm-deepseek",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-image-offload",
+          "file": "packages/compaction/compaction-image-offload/tests/image-offload.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-compaction-image-offload",
+          "file": "packages/compaction/compaction-image-offload/tests/image-offload.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/multimodal-recovery.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm-deepseek-api-key",
+      "path": "packages/llm/llm-deepseek-api-key",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/request-cache.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm-mock-server",
+      "path": "packages/test-support/llm-mock-server",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-llm-retry",
+          "file": "packages/llm/llm-retry/tests/transport-recovery.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-retry",
+          "file": "packages/llm/llm-retry/tests/transport-recovery.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-log-deepseek",
+          "file": "packages/session/session-log-deepseek/tests/feedback-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm-pi-ai",
+      "path": "packages/llm/llm-pi-ai",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/system-prompt-admission.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm-retry",
+      "path": "packages/llm/llm-retry",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/assistant.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/retry.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/turn-process.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-loader-smoke",
+      "path": "packages/test-support/loader-smoke",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-goal",
+          "file": "packages/goal/goal/tests/goal.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subprocess-local",
+          "file": "packages/subprocess/subprocess-local/tests/process-exit.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-mcp-client",
+      "path": "packages/mcp/mcp-client",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/multimodal-recovery.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/multimodal.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-mcp-resources",
+      "path": "packages/mcp/mcp-resources",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-mcp-client",
+          "file": "packages/mcp/mcp-client/tests/protocol.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-mcp-client",
+          "file": "packages/mcp/mcp-client/tests/reconnect.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-mcp-client",
+          "file": "packages/mcp/mcp-client/tests/server-context.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-message-feedback",
+      "path": "packages/feedback/message-feedback",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-log-deepseek",
+          "file": "packages/session/session-log-deepseek/tests/feedback-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-native-command",
+      "path": "packages/util/native-command",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-open-workspace-path.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-office-to-pdf",
+      "path": "packages/document/office-to-pdf",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+          "file": "packages/client/ui-sidebar-documentpreview/src/client/office/cache.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-sidebar-documentpreview",
+          "file": "packages/client/ui-sidebar-documentpreview/src/client/office/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-output-retention",
+      "path": "packages/util/output-retention",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-reference",
+          "file": "packages/context/session-reference/src/projection.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/src/notice.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-jobs",
+          "file": "packages/jobs/tool-jobs/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-package-manifest",
+      "path": "packages/util/package-manifest",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-app-boot",
+          "file": "packages/boot/app-boot/src/official-bundles.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-app-boot",
+          "file": "packages/boot/app-boot/src/package-meta.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-app-boot",
+          "file": "packages/boot/app-boot/src/profile-resolution/service.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-permission-presets",
+      "path": "packages/interaction/permission-presets",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-plan-mode",
+      "path": "packages/plan/plan-mode",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/src/client/skeleton/InputBar.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-plugin-manager",
+      "path": "packages/boot/plugin-manager",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-plugin-market",
+      "path": "packages/boot/plugin-market",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/remote-events.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-plugin-market-index",
+      "path": "packages/util/plugin-market-index",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-plugin-market",
+          "file": "packages/boot/plugin-market/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-plugin-market",
+          "file": "packages/boot/plugin-market/src/parse.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-plugin-market",
+          "file": "packages/boot/plugin-market/src/search.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-plugin-package-inventory-deepseek",
+      "path": "packages/llm/plugin-package-inventory-deepseek",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/runtime.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-ptc-runtime",
+      "path": "packages/ptc-runtime/ptc-runtime",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/tool-calls.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/tool-calls.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/tool-calls.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-ptc-runtime-node",
+      "path": "packages/ptc-runtime/ptc-runtime-node",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/multimodal-recovery.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/spill-policy.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-pwsh-local",
+      "path": "packages/shell/pwsh-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-windows-acl",
+          "file": "packages/sandbox/sandbox-windows-acl/tests/runner.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-terminal-bash",
+          "file": "packages/terminal/terminal-bash/tests/index.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-terminal-bash",
+          "file": "packages/terminal/terminal-bash/tests/local.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-remote-mock",
+      "path": "packages/test-support/remote-mock",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/gateway.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/client-apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/inbox-projection.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox",
+      "path": "packages/sandbox/sandbox",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/tests/controller.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-fs",
+          "file": "packages/fs/fs/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-fs-sandbox",
+          "file": "packages/fs/fs-sandbox/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox-local",
+      "path": "packages/sandbox/sandbox-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-ptc-runtime-node",
+          "file": "packages/ptc-runtime/ptc-runtime-node/tests/runtime.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-ptc-runtime-node",
+          "file": "packages/ptc-runtime/ptc-runtime-node/tests/setup.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-windows-acl",
+          "file": "packages/sandbox/sandbox-windows-acl/tests/provider-chain.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox-policy",
+      "path": "packages/sandbox/sandbox-policy",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-list-blank.host.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-files",
+          "file": "packages/api/workspace-files/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox-windows-acl",
+      "path": "packages/sandbox/sandbox-windows-acl",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-schedule",
+      "path": "packages/schedule/schedule",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/remote-events.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-workspace",
+          "file": "packages/client/ui-workspace/src/client/session-actions/ArchiveSession.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-scope",
+      "path": "packages/core/scope",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/dispatch.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/dispatch.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session",
+      "path": "packages/core/session",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/archive-admission.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/consumed-work.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-format",
+      "path": "packages/session/session-format",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/children.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/children.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/current.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-format-catalog",
+      "path": "packages/session/session-format-catalog",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-v3-to-v4",
+          "file": "packages/session/session-format-v3-to-v4/tests/canonical.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-v3-to-v4",
+          "file": "packages/session/session-format-v3-to-v4/tests/codec.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-v3-to-v4",
+          "file": "packages/session/session-format-v3-to-v4/tests/corpus.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-format-v0-to-v1",
+      "path": "packages/session/session-format-v0-to-v1",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/generated.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/historical.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-format-v1-to-v2",
+      "path": "packages/session/session-format-v1-to-v2",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/generated.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/historical.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-format-v2-to-v3",
+      "path": "packages/session/session-format-v2-to-v3",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/generated.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/historical.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-format-v3-to-v4",
+      "path": "packages/session/session-format-v3-to-v4",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/children.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/generated.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-format-catalog",
+          "file": "packages/session/session-format-catalog/src/historical.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-log-deepseek",
+      "path": "packages/session/session-log-deepseek",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/adapter.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-llm-deepseek",
+          "file": "packages/llm/llm-deepseek/tests/runtime.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-persistence",
+      "path": "packages/session/session-persistence",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/config-session-id.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-persistence-jsonl",
+      "path": "packages/session/session-persistence-jsonl",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/config-session-id.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resume.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-projection",
+      "path": "packages/session/session-projection",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/projection.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/agent.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/inbox.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-projection-cache",
+      "path": "packages/session/session-projection-cache",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/list.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/projection-discovery.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-query",
+      "path": "packages/session-query/session-query",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/agent.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/commands.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/history.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-query-sqlite",
+      "path": "packages/session-query/session-query-sqlite",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-reference",
+          "file": "packages/context/session-reference/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-session-query",
+          "file": "packages/experimental/tool-session-query/tests/sqlite-integration.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-reference",
+      "path": "packages/context/session-reference",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-reference",
+          "file": "packages/client/ui-reference/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-stats",
+      "path": "packages/session/session-stats",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-title",
+      "path": "packages/session/session-title",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/sessions/manager.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/commands.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/manager.client.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-turn-outline",
+      "path": "packages/session/session-turn-outline",
+      "category": "framework-test",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-settings",
+      "path": "packages/settings/settings",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/tests/agent-default-model.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/tests/agent-default-model.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell",
+      "path": "packages/shell/shell",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-bash-local",
+          "file": "packages/shell/bash-local/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-bash-local",
+          "file": "packages/shell/bash-local/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-bash-local",
+          "file": "packages/shell/bash-local/tests/executor.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell-env",
+      "path": "packages/shell/shell-env",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent-spawn-in-process",
+          "file": "packages/subagent/subagent-spawn-in-process/tests/harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-bash",
+          "file": "packages/shell/tool-bash/tests/background.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-bash",
+          "file": "packages/shell/tool-bash/tests/integration.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill",
+      "path": "packages/skill/skill",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset",
+          "file": "packages/preset/agent-preset/tests/skills.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/skill-catalog.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-skills.host.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill-filesystem",
+      "path": "packages/skill/skill-filesystem",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset",
+          "file": "packages/preset/agent-preset/tests/skills.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-spill",
+      "path": "packages/spill/spill",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/details-models.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/spill-policy-terminal.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-reference",
+          "file": "packages/context/session-reference/src/spill.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-spill-local",
+      "path": "packages/spill/spill-local",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-reference",
+          "file": "packages/context/session-reference/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-reference",
+          "file": "packages/context/session-reference/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/multimodal-recovery.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-spill-policy",
+      "path": "packages/spill/spill-policy",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/details-models.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/spill-policy-terminal.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/spill-policy-terminal.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage",
+      "path": "packages/storage/storage",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/projection-discovery.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-projections.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-controller",
+          "file": "packages/api/workspace-controller/tests/workspace-controller.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage-domain",
+      "path": "packages/storage/storage-domain",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/projection-discovery.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-projections.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-controller",
+          "file": "packages/api/workspace-controller/src/feed.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage-json",
+      "path": "packages/storage/storage-json",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/projection-discovery.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-projections.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-schedule",
+          "file": "packages/schedule/schedule/tests/domain-restart.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-subagent",
+      "path": "packages/subagent/subagent",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/serial-listener-review.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-subagent-fork-in-process",
+      "path": "packages/subagent/subagent-fork-in-process",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/continuation-inheritance.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/continuation-presets.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/continuation.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-subagent-spawn-in-process",
+      "path": "packages/subagent/subagent-spawn-in-process",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/serial-listener-review.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/continuation-inheritance.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess",
+      "path": "packages/subprocess/subprocess",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/src/retention.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/src/shells.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/src/terminal.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess-local",
+      "path": "packages/subprocess/subprocess-local",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/tests/controller.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-bash-local",
+          "file": "packages/shell/bash-local/tests/executor.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-bash-local",
+          "file": "packages/shell/bash-local/tests/settings.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-system-prompt",
+      "path": "packages/core/system-prompt",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/dispatch.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/runtime-types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/tests/model-selection.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-terminal",
+      "path": "packages/terminal/terminal",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-terminal-bash",
+          "file": "packages/terminal/terminal-bash/tests/index.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-terminal-bash",
+          "file": "packages/terminal/terminal-bash/tests/index.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-terminal-bash",
+          "file": "packages/terminal/terminal-bash/tests/local.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-terminal-bash",
+      "path": "packages/terminal/terminal-bash",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-tool-terminal",
+          "file": "packages/experimental/tool-terminal/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-timeout",
+      "path": "packages/util/timeout",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/gateway-stream.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-token-meter",
+      "path": "packages/llm/token-meter",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/tests/session-fork.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/chat/StatsPills.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-chat",
+          "file": "packages/client/ui-chat/src/client/conversation-nodes/turn-tail.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-bash",
+      "path": "packages/shell/tool-bash",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent-spawn-in-process",
+          "file": "packages/subagent/subagent-spawn-in-process/tests/harness.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-call-timeout-policy",
+      "path": "packages/guard/timeout-policy",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-tool-session-query",
+          "file": "packages/experimental/tool-session-query/tests/tool-session-query.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-fs",
+      "path": "packages/fs/tool-fs",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-session-reference",
+          "file": "packages/context/session-reference/tests/loader-composition.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-spill-policy",
+          "file": "packages/spill/spill-policy/tests/multimodal-recovery.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/activation-policy.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-jobs",
+      "path": "packages/jobs/tool-jobs",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/details-models.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-bash",
+          "file": "packages/shell/tool-bash/tests/background.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-tool-bash",
+          "file": "packages/shell/tool-bash/tests/integration.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-schedule",
+      "path": "packages/schedule/tool-schedule",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/schedule-tools.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-session-query",
+      "path": "packages/experimental/tool-session-query",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/details-models.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-subagent",
+      "path": "packages/subagent/tool-subagent",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/serial-listener-review.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/serial-listener-review.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-subagent-control",
+      "path": "packages/subagent/tool-subagent-control",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/continuation.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/tests/parent-result.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-terminal",
+      "path": "packages/experimental/tool-terminal",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-tool",
+          "file": "packages/client/ui-tool/tests/details-models.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-todo",
+      "path": "packages/todo/tool-todo",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/src/client/contract/records.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/src/client/skeleton/TodoPanel.tsx",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-conversation",
+          "file": "packages/client/ui-conversation/tests/todo-panel.client.spec.tsx",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-working-directory",
+      "path": "packages/session/tool-working-directory",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-working-directory",
+          "file": "packages/session/working-directory/tests/working-directory.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-tools",
+      "path": "packages/core/tools",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/tool-calls.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/tests/agent-initiator.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-generator",
+      "path": "packages/typert/generator",
+      "category": "root-build-or-platform",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-loader",
+      "path": "packages/typert/loader",
+      "category": "runtime-or-desktop-root",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-protocol",
+      "path": "packages/typert/protocol",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-preset-registry",
+          "file": "packages/preset/agent-preset-registry/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/access.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-registry",
+      "path": "packages/typert/registry",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/tests/agent.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/authenticated-node.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/tests/echo-stream.host.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-user-approval",
+      "path": "packages/interaction/user-approval",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-permission-presets",
+          "file": "packages/interaction/permission-presets/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-user-questions",
+      "path": "packages/interaction/user-questions",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/client/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-remotes",
+          "file": "packages/api/remotes/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-code-language",
+      "path": "packages/util/code-language",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-primitives",
+          "file": "packages/client/ui-primitives/src/code-highlighting.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-primitives",
+          "file": "packages/client/ui-primitives/tests/code-block.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-client-ui-primitives",
+          "file": "packages/client/ui-primitives/tests/code-highlighting.client.spec.tsx",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-crypto",
+      "path": "packages/util/crypto",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/client/remote-events.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-gateway",
+          "file": "packages/api/gateway/src/client/stream-client.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/sessions/session.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-time",
+      "path": "packages/util/time",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-subagent",
+          "file": "packages/subagent/subagent/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-values",
+      "path": "packages/util/values",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/agent.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop",
+          "file": "packages/core/agent-loop/src/tool-calls.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-workspace-path",
+      "path": "packages/util/workspace-path",
+      "category": "source-runtime-or-type",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/client/sessions/service.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-files",
+          "file": "packages/api/workspace-files/src/client/provider.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-workspace-files",
+          "file": "packages/api/workspace-files/tests/apply.client.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-web-app",
+      "path": "packages/bundle/web-app",
+      "category": "runtime-or-desktop-root",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/dsh-web-frontend",
+      "path": "apps/web",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-web-app",
+          "file": "packages/bundle/web-app/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-win32-process",
+      "path": "packages/subprocess/win32-process",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-windows-acl",
+          "file": "packages/sandbox/sandbox-windows-acl/src/ffi.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-windows-acl",
+          "file": "packages/sandbox/sandbox-windows-acl/src/ffi.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-windows-acl",
+          "file": "packages/sandbox/sandbox-windows-acl/src/ffi.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-working-directory",
+      "path": "packages/session/working-directory",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent-loop-testkit",
+          "file": "packages/test-support/agent-loop-testkit/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-session-controller",
+          "file": "packages/api/session-controller/src/skill-catalog.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-api-terminal-controller",
+          "file": "packages/api/terminal-controller/src/index.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/dsh-workspace",
+      "path": "packages/workspace/workspace",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/archive-admission.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/src/types.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent",
+          "file": "packages/core/agent/tests/archive-admission.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system",
+      "path": "native/system/packages/entry",
+      "category": "framework-test",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-local",
+          "file": "packages/sandbox/sandbox-local/tests/landlock.e2e.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-sandbox-local",
+          "file": "packages/sandbox/sandbox-local/tests/local.spec.ts",
+          "typeOnly": false,
+          "test": true,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-session-persistence-jsonl",
+          "file": "packages/session/session-persistence-jsonl/tests/lease.spec.ts",
+          "typeOnly": true,
+          "test": true,
+          "declared": false
+        }
+      ]
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-darwin-arm64",
+      "path": "native/system/packages/darwin-arm64",
+      "category": "root-build-or-platform",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-darwin-x64",
+      "path": "native/system/packages/darwin-x64",
+      "category": "root-build-or-platform",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-linux-arm64",
+      "path": "native/system/packages/linux-arm64",
+      "category": "root-build-or-platform",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-linux-x64",
+      "path": "native/system/packages/linux-x64",
+      "category": "root-build-or-platform",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/node-addon-system-workspace",
+      "path": "native/system",
+      "category": "root-build-or-platform",
+      "examples": []
+    },
+    {
+      "name": "@deepseek-ai/schemastery",
+      "path": "vendor/schemastery",
+      "category": "runtime-or-desktop-root",
+      "examples": [
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-loader",
+          "file": "vendor/loader/src/config/diff.ts",
+          "typeOnly": true,
+          "test": false,
+          "declared": false
+        },
+        {
+          "consumer": "@deepseek-ai/cordis-plugin-loader",
+          "file": "vendor/loader/package.json",
+          "typeOnly": false,
+          "test": false,
+          "declared": true
+        },
+        {
+          "consumer": "@deepseek-ai/dsh-agent-default-model",
+          "file": "packages/core/agent-default-model/src/index.ts",
+          "typeOnly": false,
+          "test": false,
+          "declared": false
+        }
+      ]
+    }
+  ],
+  "removed": {
+    "package": "@deepseek-ai/dsh-otel",
+    "files": [
+      "packages/telemetry/README.zh.md",
+      "packages/telemetry/README.md",
+      "packages/telemetry/README.i18n.yaml",
+      "packages/telemetry/otel/README.zh.md",
+      "packages/telemetry/otel/README.md",
+      "packages/telemetry/otel/package.json",
+      "packages/telemetry/otel/tsconfig.json",
+      "packages/telemetry/otel/README.i18n.yaml",
+      "packages/telemetry/otel/locale/zh.json",
+      "packages/telemetry/otel/locale/en.json",
+      "packages/telemetry/otel/tests/session-log.spec.ts",
+      "packages/telemetry/otel/tests/event-log.spec.ts",
+      "packages/telemetry/otel/src/event-transport.ts",
+      "packages/telemetry/otel/src/event-log.ts",
+      "packages/telemetry/otel/src/session-log.ts",
+      "packages/telemetry/otel/src/transport.ts",
+      "packages/telemetry/otel/src/index.ts"
+    ],
+    "reason": "The account and product statistics removal eliminated the last source and test consumers. No dynamic Loader entry or root script invokes this transport.",
+    "additionalFiles": [
+      "packages/client/ui-settings-models/src/onboarding-config.ts"
+    ]
+  },
+  "additionalChanges": [
+    "Removed the retired telemetry directory and catalog mappings, root package README rows for omitted groups, and refreshed its bilingual record.",
+    "Regenerated third-party notices from current manifests; seven OpenTelemetry declarations and got leave the direct runtime list. Transitive lock snapshots used by tooling remain unchanged.",
+    "Removed three stale dependency-export policy entries identified by the actual source verifier; public exports remain unchanged.",
+    "Added actual package dependency verification and the root README pair to development CI.",
+    "Removed unreferenced onboarding config source plus its Schema and Host webserver manifest, TS reference and lock-importer edges."
+  ],
+  "measurements": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "os": "25.6.0",
+    "directories": [
+      {
+        "path": "vendor/deepseek-harness/source",
+        "files": 5131,
+        "bytes": 43431045,
+        "symlinks": 2,
+        "followSymlinks": false,
+        "excluded": [
+          "node_modules",
+          ".git"
+        ]
+      },
+      {
+        "path": ".cache/harness/source-build",
+        "files": 12250,
+        "bytes": 155972147,
+        "symlinks": 2,
+        "followSymlinks": false,
+        "excluded": [
+          "node_modules",
+          ".git"
+        ]
+      },
+      {
+        "path": "apps/harness/dist",
+        "files": 55,
+        "bytes": 21503848,
+        "symlinks": 0,
+        "followSymlinks": false,
+        "excluded": [
+          "node_modules",
+          ".git"
+        ]
+      },
+      {
+        "path": "apps/harness/node_modules/electron/dist",
+        "files": 259,
+        "bytes": 321398601,
+        "symlinks": 14,
+        "followSymlinks": false,
+        "excluded": [
+          "node_modules",
+          ".git"
+        ]
+      },
+      {
+        "path": "apps/harness/node_modules/pnpm",
+        "files": 19,
+        "bytes": 17479084,
+        "symlinks": 0,
+        "followSymlinks": false,
+        "excluded": [
+          "node_modules",
+          ".git"
+        ]
+      }
+    ],
+    "frameworkBuildSeconds": 16.47,
+    "conditions": "Local reused staging/dependencies. Directory totals overlap, symlinks are not followed, and this is not installer size or cold startup."
+  },
+  "verification": {
+    "frameworkBuildGates": 7,
+    "aggregateTypeGates": 2,
+    "targeted": {
+      "files": 13,
+      "passed": 451
+    },
+    "actualHostBootModes": 2,
+    "rootReadmePair": true,
+    "noticesFresh": true,
+    "actualDependencyGate": {
+      "passed": true,
+      "scopedPackages": 43,
+      "clientOnly": 5,
+      "clientAndHost": 36,
+      "configuredHost": 2
+    },
+    "composition": {
+      "passed": true,
+      "hostModules": 44,
+      "clientModules": 317
+    },
+    "ci": "passed"
+  },
+  "failureHistory": [
+    "The actual dependency verifier reported three unused export exceptions: SESSION_FORMAT_VERSION, SessionPersistenceNotFoundError and sessionFormatLogFilename. Removed the obsolete exceptions; the final rerun is recorded separately.",
+    "After removing stale export exceptions, the actual verifier exposed an orphan onboarding schema dependency in ui-settings-models. Removed the unreferenced source and exclusive edges; all 43 policy-scoped packages now pass."
+  ],
+  "limits": [
+    "No native UI acceptance in this record. CUA reported the Mac locked.",
+    "No new complete media execution or subjective audio/video-quality acceptance.",
+    "No packaging, signing, release or branch merge.",
+    "Native startup measurements and final macOS/Windows interactions remain open; both Feishu documents are deferred until completion."
+  ],
+  "logs": {
+    "build": {
+      "path": "/tmp/youdub-final-scope-build.log",
+      "sha256": "11ee6e38b25d5750157071182236377f122b939d1b201d340a1ba435337ae87b"
+    },
+    "types": {
+      "path": "/tmp/youdub-final-scope-types.log",
+      "sha256": "8e32423c6f9cf449a97f7f02836f19811d65d6eee891becb4dcbbf40b9a64aa2"
+    },
+    "targeted": {
+      "path": "/tmp/youdub-final-scope-targeted.log",
+      "sha256": "abc6ef26f3c6aefb9e8afd8c55b40b0633cf21e52d89c03f009edd1a68cc6746"
+    },
+    "actualHost": {
+      "path": "/tmp/youdub-final-scope-host.log",
+      "sha256": "5d980b493df58540917edc30f869e4e2ac4b05c40eeddfee5e6e3293e4f2c401"
+    },
+    "dependencies": {
+      "path": "/tmp/youdub-final-dependency-gate2.log",
+      "sha256": "c63128f7b22025912e089bd0206221d4b5b93ac05ef84a7d430a56b5dd80229c"
+    },
+    "composition": {
+      "path": "/tmp/youdub-final-scope-composition.log",
+      "sha256": "aa90046740240a8f15e0d93f78e9f483ffabc922e45c6cd054771dbb5bdcd95a"
+    }
+  },
+  "ci": {
+    "commit": "079141fbed36fff07af6e6862dea3613eb484852",
+    "runId": 39872095114,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39872095114",
+    "macOS": "success",
+    "windows": "success"
+  }
+}

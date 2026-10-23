@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -13,24 +17,45 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
+      ],
+      "clsx": [
+        "./node_modules/clsx"
+      ],
+      "react-dom": [
+        "./node_modules/@types/react-dom"
+      ],
+      "zustand": [
+        "./node_modules/zustand"
+      ],
+      "zustand/*": [
+        "./node_modules/zustand/*"
+      ],
+      "immer": [
+        "./node_modules/immer"
+      ]
+    },
+    "types": [
+      "vite/client",
+      "vitest/globals"
+    ],
+    "allowImportingTsExtensions": true
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts",
-    ".next-desktop/types/**/*.ts",
-    ".next-desktop/dev/types/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "*.ts",
+    "*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,8 +1,10 @@
-# MVP 开发分支运行说明
+# MVP 实现与验收记录
 
-本页记录 `codex/mvp-mainline` 当前已实现的行为。本轮 macOS CPU 主干交付已完成，Windows/CUDA 实机验收列入后续范围。总体接口见[主干设计](youdub-desktop-v0.1.md)，实施顺序见[开发计划](mvp-development-plan.md)。
+> 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
 
-## 当前实现
+本页保留 `codex/mvp-mainline` 阶段的实现与验收记录，其中 v1 API、FastAPI 和 Next 代理描述属于历史实现。该阶段启动方式见下文及 [Cordis 运行指南](cordis-plugin-runtime.md)，前端实现见 [React/Vite 迁移说明](harness-frontend-migration.md)。历史总体接口见[主干设计](youdub-desktop-v0.1.md)，实施顺序见[开发计划](mvp-development-plan.md)。
+
+## 历史实现
 
 - `/api/health` 返回 `status` 和本次进程的 `instance_id`。它表示后端可响应请求；模型能力查看 `/api/v1/runtime`。
 - `/api/v1/runtime` 返回 CPU/CUDA 设备、能力目录和输入限制。Whisper、VoxCPM2、Demucs 在依赖及本地权重就绪后可选；OpenAI 兼容翻译在 SDK 与连接配置就绪后可选。四种基础能力均就绪时状态为 ready，其余为 degraded。可选的 `subtitle_alignment` 单独报告可用性，缺失该模型不会改变基础能力的就绪状态。
@@ -16,13 +18,17 @@
 - 首页、设置及任务详情已切换到 v1：按 Runtime 选择配置，导入本地视频，查看阶段、错误、固定配置和产物。任务详情按 allowed_actions 提供取消、重试、重新生成和删除，以及日志展开/下载；模型不可用时禁用创建和重新生成提交。
 - 界面分为工作台、任务库、设置三页。工作台导入视频，并按 Runtime 显示各阶段模型是否就绪及不可用原因；任务库按状态筛选、分页，可跨页批量删除，进行中的任务不可选；设置页集中界面语言、翻译连接与 Runtime 详情，中、英、日三种界面语言均完整翻译。详情页打开删除确认时先卸载播放器，释放对产物文件的读取，避免删除被拒。
 
-## 本地运行
+## 当前本地运行
 
-沿用仓库 [README](../../README.md) 的环境配置，在仓库根目录运行 `.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000`。应用读取 `.env`；新增 `keyring>=25.6,<26` 依赖，用于[系统凭据存储](https://keyring.readthedocs.io/en/latest/)。
+按仓库 [README](../../README.md) 安装根目录和 `apps/web` 依赖。开发时先执行 `npm run build:plugins`，运行 `npm start` 启动 Cordis Host（默认 `127.0.0.1:8000`），再在另一终端运行 `npm --prefix apps/web run dev -- --host 127.0.0.1 --port 3000`。启动前确认对应端口空闲。
 
-`.env` 是配置来源，`env.txt` 为同一文件的硬链接；两者均被 Git 忽略。新 worktree 通过 `.worktreeinclude` 复制 `.env` 后，执行 `ln .env env.txt` 和 `test .env -ef env.txt` 重建并核对链接。配置复制到另一台机器后仍需按运行环境选择设备及模型目录；v1 翻译连接通过 Settings 保存到系统凭据库。
+生产运行先停止开发服务，执行 `npm run build:web` 和 `npm --prefix apps/web start`。页面与 `/api/v2` 由同一 Host 提供，默认监听 `127.0.0.1:3000`，可通过 `YOUDUB_HOST`、`YOUDUB_PORT` 环境变量修改。Vite 开发代理通过 `YOUDUB_API_URL` 指定 API 地址；生产构建无需代理配置，旧 `NEXT_SERVER_API_BASE_URL` 已移除。
 
-Web 开发和检查使用与 CI 一致的 Node.js 22。视频准备依赖 FFmpeg/FFprobe；当前 Runtime 不会把仅安装 Python 包视为完整模型能力。生产构建会固定 API 代理地址：使用非默认端口时，在 `npm run build` 前设置 `NEXT_SERVER_API_BASE_URL`，后端启动端口应与其一致。常规后端测试使用 `PYTHON_DOTENV_DISABLED=1 .venv/bin/pytest backend/tests`，避免本机真实配置影响隔离测试。
+应用读取 `.env`；`env.txt` 是同一文件的硬链接，两者均被 Git 忽略。新 worktree 复制 `.env` 后，执行 `ln .env env.txt` 和 `test .env -ef env.txt`。开发和检查使用 Node.js 22（最低 22.13.0）；环境准备与所选工作流分别检查 Python、媒体工具和模型。当前测试入口见 [README 的开发与测试](../../README.md#开发与测试)。
+
+## 历史模型配置与验收
+
+以下保留当时的接口、参数、测试结果和限制，不作为当前启动命令。
 
 ### 字幕链模型配置
 

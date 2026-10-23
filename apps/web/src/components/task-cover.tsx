@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Film, Loader2 } from "lucide-react"
+import { Film, Loader2 } from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
 import { useText } from "@/lib/i18n"
@@ -72,7 +72,6 @@ export function TaskCover({
       )}
       {src && !failed && (
         // Authenticated local thumbnails already have a bounded size; load directly.
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" loading="lazy" decoding="async" onLoad={() => setLoadedSrc(src)} onError={() => setFailedSrc(src)}
           className="absolute inset-0 size-full object-contain" />
       )}
@@ -94,8 +93,8 @@ export function TaskCover({
           ))}
         </div>
       ) : null}
-      {loading && <Loader2 aria-label={tx('Loading cover', '正在加载封面', 'カバーを読み込み中')} className="absolute top-2 right-2 size-4 animate-spin text-white" />}
-      {failed && <p role="status" className="absolute inset-x-2 bottom-2 rounded-md bg-black/70 px-2 py-1 text-center text-xs text-white">{tx('Cover failed to load', '封面加载失败', 'カバーを読み込めませんでした')}</p>}
+      {loading && <Loader2 aria-label={tx("task.cover.loading.cover")} className="absolute top-2 right-2 size-4 animate-spin text-white" />}
+      {failed && <p role="status" className="absolute inset-x-2 bottom-2 rounded-md bg-black/70 px-2 py-1 text-center text-xs text-white">{tx("task.cover.cover.failed.to.load")}</p>}
       {size !== "sm" ? (
         <span aria-hidden="true" className="absolute top-2 left-2 flex items-center justify-center rounded-md bg-black/35 p-1 text-white backdrop-blur-sm">
           <Film className={glyphClass} />

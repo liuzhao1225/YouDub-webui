@@ -31,7 +31,7 @@ function lines(child: Managed, consume: (message: any) => Promise<void> | void, 
 export default class Processes extends Service implements ProcessService {
   private children = new Set<Managed>()
   constructor(ctx: Context) {
-    super(ctx, 'process')
+    super(ctx, 'youdubWorker')
     ctx.effect(() => async () => { await Promise.all([...this.children].map(child => child.stop())) })
   }
   private launch(request: ProcessRequest): Managed {
@@ -63,21 +63,31 @@ export default class Processes extends Service implements ProcessService {
           throw error
         }
       }
-      if (managed.ended && !groupAlive()) return
-      const kill = (signal: NodeJS.Signals) => {
-        try {
-          if (process.platform === 'win32') child.kill(signal)
-          else if (child.pid) process.kill(-child.pid, signal)
-        } catch (error: any) { if (error.code !== 'ESRCH') throw error }
-      }
-      kill('SIGTERM')
       const waitGroup = async (deadline: number) => {
         while (groupAlive() && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 25))
         return !groupAlive()
       }
+      if (managed.ended && !groupAlive()) return
+      const kill = async (signal: NodeJS.Signals) => {
+        try {
+          if (process.platform === 'win32') child.kill(signal)
+          else if (child.pid) process.kill(-child.pid, signal)
+        } catch (error: any) {
+          if (error.code === 'ESRCH') return
+          // Darwin killpg excludes zombies, and returns EPERM if no live member
+          // remains. Confirm the entire group disappears within the existing
+          // shutdown grace period; a live/inaccessible group still fails.
+          if (process.platform === 'darwin' && error.code === 'EPERM' && await waitGroup(Date.now() + 5000)) {
+            this.ctx.logger.warn(`Process group ${child.pid}: ${signal} returned EPERM during exit; confirmed the group no longer exists.`)
+            return
+          }
+          throw error
+        }
+      }
+      await kill('SIGTERM')
       if (!await waitGroup(Date.now() + 5000)) {
         this.ctx.logger.warn(`Process ${child.pid} ignored SIGTERM; terminating its execution group.`)
-        kill('SIGKILL')
+        await kill('SIGKILL')
         if (!await waitGroup(Date.now() + 5000)) throw new AppError('CANCEL_TIMEOUT', `Process group ${child.pid} did not exit.`, 503)
       }
       await managed.done
@@ -85,18 +95,25 @@ export default class Processes extends Service implements ProcessService {
     this.children.add(managed)
     return managed
   }
-  async run(request: ProcessRequest & { input?: string }) {
+  async run(request: Parameters<ProcessService['run']>[0]) {
     request.signal?.throwIfAborted()
     const child = this.launch(request)
-    let stdout = '', stopError: unknown, inputError: Error | undefined
+    let stdout = '', stopError: unknown, outputError: unknown, inputError: Error | undefined
+    const observe = (chunk: string, stream: 'stdout' | 'stderr') => {
+      if (outputError) return
+      try { request.onOutput?.(chunk, stream) }
+      catch (error) { outputError = error; void child.stop().catch(failure => { stopError = failure }) }
+    }
     child.child.stdout.setEncoding('utf8')
-    child.child.stdout.on('data', chunk => { stdout += chunk })
+    child.child.stdout.on('data', chunk => { stdout += chunk; observe(chunk, 'stdout') })
+    child.child.stderr.on('data', chunk => observe(chunk, 'stderr'))
     const abort = () => { void child.stop().catch(error => { stopError = error }) }
     request.signal?.addEventListener('abort', abort, { once: true })
     child.child.stdin.on('error', error => { inputError = error })
     child.child.stdin.end(request.input)
     try {
       const exit = await child.done
+      if (outputError) throw outputError
       if (stopError) throw stopError
       request.signal?.throwIfAborted()
       if (inputError) throw inputError
@@ -115,8 +132,23 @@ export default class Processes extends Service implements ProcessService {
       if (child.ended || child.child.stdin.destroyed) throw new AppError('WORKER_EXITED', 'Worker input is closed.', 500)
       child.child.stdin.write(JSON.stringify({ version: WORKER_PROTOCOL, invocationId: invocation.invocationId, seq: ++inputSeq, type, payload }) + '\n')
     }
-    const fail = (error: Error) => { failure ??= error; void child.stop().catch(error => { failure = new AggregateError([failure, error]) }) }
+    // stop() is awaited again below so cleanup failures are reported together
+    // with the original worker failure, after both pipes have drained.
+    const fail = (error: Error) => { failure ??= error; void child.stop().catch(error => { failure ??= error }) }
     child.child.stdin.on('error', fail)
+    let stderrBuffer = '', stderrWrites = Promise.resolve()
+    const logLine = (line: string) => {
+      stderrWrites = stderrWrites.then(() => context.log!(line)).catch(fail)
+    }
+    if (context.log) child.child.stderr.on('data', (chunk: string) => {
+      // Keep complete lines so credentials split between stream chunks are
+      // redacted together by the task owner. The bounded tail stays on errors.
+      stderrBuffer += chunk
+      let end: number
+      while ((end = stderrBuffer.indexOf('\n')) >= 0) {
+        logLine(stderrBuffer.slice(0, end)); stderrBuffer = stderrBuffer.slice(end + 1)
+      }
+    })
     const flush = lines(child, async message => {
       if (message.version !== WORKER_PROTOCOL || message.invocationId !== invocation.invocationId || message.seq !== ++outputSeq) throw new AppError('PROTOCOL_ERROR', 'Worker version, invocation or sequence mismatch.', 500)
       const payload = message.payload
@@ -126,13 +158,13 @@ export default class Processes extends Service implements ProcessService {
         case 'external.prepare': await context.externalPrepare(payload); send('external.accepted', { externalRequestId: payload.externalRequestId }); break
         case 'external.update': await context.externalUpdate(payload); send('external.recorded', { externalRequestId: payload.externalRequestId }); break
         case 'result': result = payload; break
-        case 'error': throw new AppError(payload.code ?? 'WORKER_ERROR', payload.message ?? 'Worker failed.', 500, payload)
+        case 'error': throw new AppError(payload.code ?? 'WORKER_ERROR', payload.message ?? 'Worker failed.', Number.isInteger(payload.status) && payload.status >= 400 && payload.status <= 599 ? payload.status : 500, payload)
         default: throw new AppError('PROTOCOL_ERROR', `Unknown worker message: ${message.type}`, 500)
       }
     }, fail)
     const abort = () => {
       try { send('cancel', {}) } catch (error) { failure ??= error as Error }
-      void child.stop().catch(error => { failure = error })
+      void child.stop().catch(error => { failure ??= error })
     }
     context.signal.addEventListener('abort', abort, { once: true })
     const resolveInputs = async (value: any): Promise<any> => {
@@ -146,6 +178,8 @@ export default class Processes extends Service implements ProcessService {
     try {
       send('execute', { ...invocation, inputs: await resolveInputs(invocation.inputs), options: invocation.binding.options, credentials: context.credentials })
       const exit = await child.done
+      if (context.log && stderrBuffer) logLine(stderrBuffer)
+      await stderrWrites
       await flush()
       if (failure) throw failure
       context.signal.throwIfAborted()
@@ -167,11 +201,21 @@ export default class Processes extends Service implements ProcessService {
         return value
       }
       return { state: 'completed', outputs: resolveOutput(result.outputs) }
+    } catch (error) {
+      // Structured worker errors travel over stdout; their Python traceback is
+      // on stderr. Preserve both before the owned process is disposed.
+      failure ??= error as Error
+      if (error instanceof Error && child.stderr && !context.log) error.stack = `${error.stack ?? error.message}\nWorker stderr:\n${child.stderr}`
+      throw error
     } finally {
       context.signal.removeEventListener('abort', abort)
       // Check the owned process group even if a third-party worker exited
       // before its descendants; no computation survives an invocation.
-      await child.stop()
+      try { await child.stop() }
+      catch (error) {
+        if (failure && failure !== error) throw new AggregateError([failure, error], 'Worker execution and process cleanup both failed.', { cause: failure })
+        throw error
+      }
     }
   }
   async rpc(request: ProcessRequest) {

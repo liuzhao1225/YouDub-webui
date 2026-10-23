@@ -1,0 +1,40 @@
+{
+  "taskId": "6d898822-3e81-4df2-8e38-1979a05a7efe",
+  "nodeId": "translate",
+  "invocationId": "0800433e-daa0-4d52-9e1d-825517cd1632",
+  "provider": "youdub-ark",
+  "model": "doubao-seed-evolving",
+  "maxTokens": 65535,
+  "finish": {
+    "kind": "stop"
+  },
+  "sourceSegmentIds": [
+    "segment-000001",
+    "segment-000002",
+    "segment-000003"
+  ],
+  "translation": {
+    "source_language": "en",
+    "target_language": "zh",
+    "segments": [
+      {
+        "segment_id": "segment-000001",
+        "text": "好了，我们现在来到了一头大象面前。"
+      },
+      {
+        "segment_id": "segment-000002",
+        "text": "这些家伙所期待的，就是它们有非常非常长的手臂，这很酷。"
+      },
+      {
+        "segment_id": "segment-000003",
+        "text": "差不多就是这些了。"
+      }
+    ]
+  },
+  "rawOriginalsPreserved": true,
+  "rawRequestSha256": "050f1c4fc5021e9a967d1fae3e6e0ac8e6088ba56a7fe7c0ae7833922c7b917d",
+  "rawResponseSha256": "936b1ff4a86d73e03f199d57e0453417ca2457ea01a25a4779e7e21ee54a51e6",
+  "requestEvidence": "apps/harness/docs/evidence/source-native-real-translation-cjk-request.json",
+  "responseEvidence": "apps/harness/docs/evidence/source-native-real-translation-cjk-response.json",
+  "evidenceScope": "Actual Harness prepared-call request and terminal stream response. Does not claim packet capture of the external HTTP body."
+}

@@ -1,0 +1,34 @@
+{
+  "sourceCommit": "d3f0d516845b29798754335d75a27ccfe9676b6b",
+  "date": "2026-10-23",
+  "surface": "In-app browser connected to the actual independent Desktop Host",
+  "profile": ".cache/harness/host-boundary-20261023-ow8kph/home/profiles/desktop",
+  "observations": {
+    "firstRun": "Models page had no default provider or DeepSeek account. Configure later opened the workbench.",
+    "settings": "Language choices were Chinese, English and Japanese; appearance choices were light, dark and system; product version was 0.0.7.",
+    "japanese": "General and Models settings, sidebar, home, workflow editor and task controls displayed Japanese. Language persisted after reload.",
+    "workflows": "Three built-in templates; two separately grouped user workflows; one separately grouped test-plugin workflow. Subtitle translation editor had four nodes and per-node autoContinue controls.",
+    "task": "1d49bbce-8512-4c31-843c-66a99d84eff9 was completed and exposed two subtitle artifacts plus video. Raw custom graph labels were retained.",
+    "playback": {
+      "durationSeconds": 19.072,
+      "firstTimeSeconds": 0.175223,
+      "secondTimeSeconds": 6.024776,
+      "paused": false,
+      "readyState": 4,
+      "error": null
+    },
+    "shutdown": "Temporary browser tabs closed; SIGTERM to the owned runner triggered Host shutdown IPC; runner reported shutdown:true and exited 0."
+  },
+  "screenshots": [
+    "refactor-browser-ja-settings.png",
+    "refactor-browser-ja-workflow.png",
+    "refactor-browser-ja-playback.png",
+    "refactor-browser-ja-home.png"
+  ],
+  "limitations": [
+    "Browser interaction does not establish native Electron window, folder picker or save-dialog acceptance. Native inventory still reported the Mac locked.",
+    "Static home screenshot does not establish animation timing. The browser read-only DOM scope did not expose document.getAnimations.",
+    "No new ASR, LLM or TTS request was made; this session played the earlier actual subtitle-import/export result.",
+    "The initial stdin stop attempt failed because the runner stdin was closed; the supported SIGTERM handler completed clean shutdown."
+  ]
+}
