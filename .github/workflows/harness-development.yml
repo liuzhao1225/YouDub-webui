@@ -2,9 +2,9 @@ name: YouDub Desktop 源码开发检查
 
 on:
   push:
-    branches: [codex/harness-youdub-integration]
+    branches: [main]
   pull_request:
-    branches: [codex/harness-youdub-integration]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    name: 前端质量与安全
+    needs: source-development
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 确认框架、界面和业务回归通过
+        env:
+          MACOS_RESULT: ${{ needs.source-development.result }}
+        run: test "$MACOS_RESULT" = success
+
+  backend:
+    name: Host 与 Python 测试
+    needs: [source-development, source-development-windows]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 确认双平台 Host 与 Python 回归通过
+        env:
+          MACOS_RESULT: ${{ needs.source-development.result }}
+          WINDOWS_RESULT: ${{ needs.source-development-windows.result }}
+        run: |
+          test "$MACOS_RESULT" = success
+          test "$WINDOWS_RESULT" = success
+
   source-development:
     name: macOS 源码、框架与业务回归
     runs-on: macos-15
