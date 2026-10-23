@@ -14,7 +14,7 @@ from .protocol import WorkerError
 
 
 def video_url(value: str) -> str:
-    if not isinstance(value, str) or len(value) > 2048:
+    if not isinstance(value, str):
         raise WorkerError("INVALID_VIDEO_URL", "请输入有效的视频链接。")
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password or parsed.port:

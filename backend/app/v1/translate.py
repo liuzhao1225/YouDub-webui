@@ -163,9 +163,6 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     if transcript.detected_language not in LANGUAGES or context.config.target_language not in LANGUAGES:
         raise ApiError(422, "UNSUPPORTED_LANGUAGE", "The detected source or target language is unsupported.",
                        stage="translate", action="adjust_settings")
-    if transcript.detected_language == context.config.target_language:
-        raise ApiError(422, "INVALID_CONFIG", "Detected source and target languages must differ.",
-                       stage="translate", action="adjust_settings")
     translation = asyncio.run(_translate(context, transcript, progress))
     context.check_cancel()
     translation.match(transcript)

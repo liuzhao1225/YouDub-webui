@@ -14,7 +14,7 @@ export const localizeSchema: JsonObject = {
   type: 'object', additionalProperties: false,
   required: ['source_language', 'target_language', 'output_mode', 'keep_background', 'asr', 'translation', 'tts', 'separation'],
   properties: {
-    source_url: { type: 'string', minLength: 1, maxLength: 2048 },
+    source_url: { type: 'string', minLength: 1 },
     source_proxy_port: nodeDescriptors.download.configSchema.properties!.proxyPort,
     source_language: { type: 'string', minLength: 2 }, target_language: { type: 'string', minLength: 2 },
     output_mode: { enum: ['subtitles', 'dubbing', 'both'] }, keep_background: { type: 'boolean' },
@@ -51,7 +51,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
       }
       const media = catalog.listProviders().find(provider => provider.id === 'youdub.media')
       if (!media?.available) fail(media?.unavailableReason || 'FFmpeg / Media is unavailable.', 'video')
-      if (config.source_language.toLowerCase() === config.target_language.toLowerCase() || config.target_language === 'auto') fail('Source and target languages must differ.', 'target_language')
+      if (config.target_language === 'auto') fail('Select a target language.', 'target_language')
       if (config.output_mode === 'subtitles' && (config.tts || config.separation || config.keep_background)) fail('Subtitles mode requires no TTS, separation, or background mix.')
       if (config.output_mode !== 'subtitles' && (!config.tts || !config.tts.voice)) fail('Dubbing requires a TTS provider and voice.')
       if (config.subtitle_alignment && config.output_mode !== 'both') fail('Subtitle alignment requires both mode.')

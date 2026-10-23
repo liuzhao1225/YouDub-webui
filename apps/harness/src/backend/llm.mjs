@@ -36,7 +36,7 @@ export async function translateWithHarness(llm, forms, route, request, context) 
   if (!Number.isInteger(policy.maxTokens) || policy.maxTokens < maximum) throw fail('OUTPUT_LIMIT_UNSUPPORTED', `请在 Harness 模型设置中配置至少 ${maximum} 的模型输出容量。`);
   const transcript = request.inputs.transcript, target = request.binding.options.targetLanguage ?? request.config.target_language;
   check(transcriptSchema, transcript);
-  if (!['en', 'zh', 'ja'].includes(transcript.detected_language) || !['en', 'zh', 'ja'].includes(target) || target === transcript.detected_language) throw fail('INVALID_CONFIG', '请选择与原文不同的目标语言。');
+  if (!['en', 'zh', 'ja'].includes(transcript.detected_language) || !['en', 'zh', 'ja'].includes(target)) throw fail('INVALID_CONFIG', '请选择支持的原文与目标语言。');
   const batches = []; let batch = [], length = 0;
   for (const segment of transcript.segments) {
     if (batch.length && (batch.length === 20 || length + segment.text.length > 6000)) { batches.push(batch); batch = []; length = 0; }

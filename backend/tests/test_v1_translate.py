@@ -115,10 +115,9 @@ def test_invalid_response_does_not_produce_file_or_retry(context, provider, muta
     assert len(provider.calls) == 1
 
 
-@pytest.mark.parametrize("language", ["de", "zh"])
-def test_auto_detected_language_rechecked_before_sending(context, provider, language):
+def test_unsupported_detected_language_rechecked_before_sending(context, provider):
     value = json.loads(context.input_files["transcript"].read_bytes())
-    value["detected_language"] = language
+    value["detected_language"] = "de"
     context.input_files["transcript"].write_text(json.dumps(value))
     with pytest.raises(ApiError):
         translate.run(context, lambda *args: None)

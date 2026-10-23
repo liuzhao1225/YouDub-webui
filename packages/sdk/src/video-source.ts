@@ -1,7 +1,7 @@
 /** Accept one public video, preserving only its identity and Bilibili part. */
 export function videoSource(value: string): { url: string; platform: 'YouTube' | 'Bilibili' } {
   const match = value.match(/https?:\/\/[^\s<>]+/)
-  if (!match || match[0].length > 2048) throw new Error('请输入有效的视频链接。')
+  if (!match) throw new Error('请输入有效的视频链接。')
   const url = new URL(match[0].replace(/[，。；！、）)]+$/, ''))
   if (url.username || url.password || url.port) throw new Error('视频链接不能包含账号或端口。')
   const host = url.hostname.toLowerCase(), path = url.pathname

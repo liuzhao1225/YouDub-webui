@@ -2,7 +2,7 @@ import { AppError, type JsonObject, type NodeDescriptor, type OperationProvider 
 import { isDeepStrictEqual } from 'node:util'
 
 const object = (properties: JsonObject = {}, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties, required })
-const language = { type: 'string', minLength: 2, maxLength: 24 }
+const language = { type: 'string', minLength: 2 }
 const languageOptions = [
   { value: 'auto', label: { default: 'Auto detect', translations: { zh: '自动识别', ja: '自動検出' } } },
   { value: 'en', label: 'English' }, { value: 'zh', label: '中文' }, { value: 'ja', label: '日本語' },
@@ -20,7 +20,7 @@ const make = (type: string, zh: string, en: string, ja: string, category: string
   ui: { quickFields: Object.keys(properties).slice(0, 3) },
 })
 export const nodeDescriptors: Record<string, NodeDescriptor> = {
-  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { proxyPort: { type: 'integer', minimum: 0, maximum: 65535 } }, { proxyPort: 0 }), ui: { quickFields: ['proxyPort'] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1, maxLength: 2048 } }, ['url']) },
+  download: { ...make('download', '下载视频', 'Download video', '動画をダウンロード', 'input', [], { proxyPort: { type: 'integer', minimum: 0, maximum: 65535 } }, { proxyPort: 0 }), ui: { quickFields: ['proxyPort'] }, runtimeInputSchema: object({ url: { type: 'string', minLength: 1 } }, ['url']) },
   prepare: make('prepare', '准备媒体', 'Prepare media', 'メディアを準備', 'media', [video()]),
   separate: make('separate', '分离人声', 'Separate vocals', '音声を分離', 'audio', [audio('sourceAudio', '原始音频')]),
   recognize: { ...make('transcribe', '语音识别', 'Transcribe', '文字起こし', 'text', [audio('audio', '音频'), media()], { ...source, initialPrompt: { type: ['string', 'null'] } }, { sourceLanguage: 'auto', initialPrompt: null }), corrections: { outputPorts: ['transcript'], schemaIds: ['transcript/v1'] }, ui: { quickFields: ['sourceLanguage'], detailId: 'youdub.transcript' } },

@@ -5,7 +5,7 @@ import { AppError } from '@youdub/harness-subtitles'
 export const name = 'example-graph-text-review'
 export const inject = ['catalog']
 const providerId = 'example.graph-text'
-const textSchema = { type: 'object', required: ['text'], properties: { text: { type: 'string', minLength: 1, maxLength: 10000 } }, additionalProperties: false }
+const textSchema = { type: 'object', required: ['text'], properties: { text: { type: 'string', minLength: 1 } }, additionalProperties: false }
 const metadataSchema = { type: 'object', required: ['sources'], properties: { sources: { type: 'integer', minimum: 1 } }, additionalProperties: false }
 const emptySchema = { type: 'object', properties: {}, additionalProperties: false }
 const textPort = { name: 'text', label: '文本', kind: 'json', schemaId: 'example/text/v1', required: true, schema: textSchema }

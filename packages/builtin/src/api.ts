@@ -205,8 +205,7 @@ async function upload(ctx: Context, request: HttpRequest) {
   let parser: ReturnType<typeof Busboy>
   try { parser = Busboy({ headers: request.raw.headers, defParamCharset: 'utf8', limits: { fields: 1, fieldSize: Infinity } }) }
   catch (error) { throw new AppError('INVALID_MULTIPART', (error as Error).message, 400) }
-  parser.on('field', (name, value, info) => {
-    if (info.valueTruncated) { failure = new AppError('FILE_TOO_LARGE', 'Metadata too large.', 413); return }
+  parser.on('field', (name, value) => {
     if (name !== 'request' || metadata) { failure = new AppError('INVALID_INPUT', 'Expected one request metadata field.', 422); return }
     try { metadata = JSON.parse(value) } catch { failure = new AppError('INVALID_JSON', 'Invalid request metadata.', 400) }
   })

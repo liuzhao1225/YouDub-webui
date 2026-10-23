@@ -29,14 +29,12 @@ def _detect_devices() -> list[dict[str, Any]]:
 
 def _model(
     model_id: str, devices: list[str], source_languages: list[str], target_languages: list[str],
-    *, max_audio_duration_ms: int | None = None, max_text_chars: int | None = None,
-    max_reference_duration_ms: int | None = None,
+    *, max_reference_duration_ms: int | None = None,
 ) -> dict[str, Any]:
     return {
         "id": model_id, "devices": devices, "source_languages": source_languages,
         "target_languages": target_languages, "voice_modes": [], "voices": [],
-        "input_limits": {"max_audio_duration_ms": max_audio_duration_ms,
-                         "max_text_chars": max_text_chars, "max_reference_duration_ms": max_reference_duration_ms},
+        "input_limits": {"max_reference_duration_ms": max_reference_duration_ms},
     }
 
 

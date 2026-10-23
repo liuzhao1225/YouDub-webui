@@ -14,7 +14,6 @@ function lines(child: Managed, consume: (message: any) => Promise<void> | void, 
   child.child.stdout.on('data', (chunk: string) => {
     if (failed) return
     buffer += chunk
-    if (buffer.length > 32 * 1024 * 1024) { reject(new AppError('PROTOCOL_ERROR', 'Worker message exceeds 32 MiB.')); return }
     let end: number
     while ((end = buffer.indexOf('\n')) >= 0) {
       const line = buffer.slice(0, end); buffer = buffer.slice(end + 1)
