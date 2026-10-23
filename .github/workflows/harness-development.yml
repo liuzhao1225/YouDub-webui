@@ -162,6 +162,9 @@ jobs:
           npm --prefix apps/harness test
           .venv/bin/python -m pytest backend/tests
       - name: 打包并验证独立 macOS 应用
+        env:
+          # The candidate uses identity "-" (ad-hoc); Apple credentials only exist in the release job.
+          CSC_FOR_PULL_REQUEST: "true"
         run: |
           npm run package:desktop -- --dir
           node apps/harness/test/package-smoke.mjs dist/mac-arm64/YouDub.app dist/package-smoke-mac
