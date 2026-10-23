@@ -99,12 +99,15 @@ if (process.argv.includes('--installers-only')) {
       directories: { app: project, output }, electronVersion: ownRequire('electron/package.json').version,
       asar: false, npmRebuild: false,
       files: ['main.mjs', 'lib/**/*', 'resources/**/*', 'scripts/**/*', 'desktop-runtime.json', 'package.json'],
-      extraResources: [{ from: root, to: 'youdub', filter: payload }, { from: metadata, to: 'build.json' }],
+      extraResources: [{ from: root, to: 'youdub', filter: payload }, { from: metadata, to: 'build.json' },
+        { from: join(root, 'LICENSE'), to: 'LICENSE-YouDub.txt' },
+        { from: join(root, 'vendor/deepseek-harness/source/LICENSE'), to: 'LICENSE-Harness.txt' },
+        { from: join(root, 'vendor/deepseek-harness/source/THIRD_PARTY_NOTICES.md'), to: 'THIRD_PARTY_NOTICES-Harness.md' }],
       mac: { category: 'public.app-category.video', minimumSystemVersion: '14.0', identity: '-',
         icon: join(desktop, 'resources/youdub-icon.png'), artifactName: 'YouDub-${version}-macOS-${arch}.${ext}' },
       win: { icon: join(desktop, 'resources/youdub-icon.png'),
         artifactName: 'YouDub-${version}-windows-${arch}.${ext}' },
-        publish: null,
+      publish: null,
     };
   await writeFile(join(root, '.cache/package/builder.json'), JSON.stringify(config, null, 2) + '\n');
   await build({ projectDir: here, targets: platform.createTarget(['dir'], arch), config });
