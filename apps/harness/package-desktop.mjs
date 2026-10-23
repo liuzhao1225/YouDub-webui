@@ -13,8 +13,28 @@ const output = join(root, 'dist');
 if (process.argv.includes('--installers-only')) {
   if (process.platform !== 'win32') throw new Error('macOS distribution uses the signed and notarized release step.');
   await build({ projectDir: here, prepackaged: join(output, 'win-unpacked'),
-    targets: Platform.WINDOWS.createTarget(['nsis', 'zip'], Arch.x64),
+    targets: Platform.WINDOWS.createTarget(['zip'], Arch.x64),
     config: JSON.parse(await readFile(join(root, '.cache/package/builder.json'), 'utf8')) });
+  // Preserve the existing Inno Setup AppId, upgrade path and uninstall registration.
+  const sharp = createRequire(join(root, 'apps/web/package.json'))('sharp');
+  const sizes = [16, 32, 48, 64, 128, 256];
+  const images = await Promise.all(sizes.map(size => sharp(join(root, 'apps/desktop/icon.svg')).resize(size, size).png().toBuffer()));
+  const header = Buffer.alloc(6 + images.length * 16);
+  header.writeUInt16LE(1, 2); header.writeUInt16LE(images.length, 4);
+  let offset = header.length;
+  for (const [index, png] of images.entries()) {
+    const at = 6 + index * 16, size = sizes[index];
+    header[at] = header[at + 1] = size === 256 ? 0 : size;
+    header.writeUInt16LE(1, at + 4); header.writeUInt16LE(32, at + 6);
+    header.writeUInt32LE(png.length, at + 8); header.writeUInt32LE(offset, at + 12);
+    offset += png.length;
+  }
+  await mkdir(join(root, '.cache/windows'), { recursive: true });
+  await writeFile(join(root, '.cache/windows/YouDub.ico'), Buffer.concat([header, ...images]));
+  const version = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')).version;
+  const compiler = process.env.YOUDUB_ISCC || join(process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', 'Inno Setup 6/ISCC.exe');
+  await access(compiler);
+  execFileSync(compiler, [`/DAppVersion=${version}`, `/DRepoRoot=${root}`, join(root, 'apps/desktop/windows/installer.iss')], { stdio: 'inherit' });
 } else {
   const { project } = await prepareSourceDevelopment({ projectDirectory: stage });
   const desktop = join(here, 'dist/desktop');
@@ -67,7 +87,7 @@ if (process.argv.includes('--installers-only')) {
   await writeFile(metadata, JSON.stringify({ version: manifest.version,
     baseCommit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     harnessVersion: manifest.harnessRuntimeVersion }, null, 2) + '\n');
-  const payload = ['package.json', 'backend/**/*.py', 'backend/requirements*.txt', 'backend/requirements/**/*.txt',
+  const payload = ['package.json', 'backend/__init__.py', 'backend/app/**/*', 'backend/workers/**/*', 'backend/requirements*.txt', 'backend/requirements/**/*',
     'packages/builtin/src/**/*', 'packages/sdk/src/**/*', 'submodule/**/*',
     'apps/web/templates/examples.html', 'site/style.css', 'site/player.js', 'site/demos.js', 'site/assets/**/*',
     '!**/__pycache__/**', '!**/.git{,/**}', '!**/node_modules/**', '!**/.env', '!**/env.txt'];
@@ -84,9 +104,8 @@ if (process.argv.includes('--installers-only')) {
         icon: join(desktop, 'resources/youdub-icon.png'), artifactName: 'YouDub-${version}-macOS-${arch}.${ext}' },
       win: { icon: join(desktop, 'resources/youdub-icon.png'),
         artifactName: 'YouDub-${version}-windows-${arch}.${ext}' },
-      nsis: { oneClick: false, allowToChangeInstallationDirectory: true, artifactName: 'YouDub-${version}-windows-${arch}-Setup.${ext}' },
-      publish: null,
+        publish: null,
     };
   await writeFile(join(root, '.cache/package/builder.json'), JSON.stringify(config, null, 2) + '\n');
-  await build({ projectDir: here, targets: platform.createTarget(process.argv.includes('--dir') ? ['dir'] : process.platform === 'darwin' ? ['dmg'] : ['nsis', 'zip'], arch), config });
+  await build({ projectDir: here, targets: platform.createTarget(['dir'], arch), config });
 }

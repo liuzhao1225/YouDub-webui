@@ -26,7 +26,7 @@ npm run package:desktop -- --installers-only
 
 ## 正式发行
 
-tag 工作流核对版本、提交与 main 来源，复用源码检查生成一次候选包。Windows 从已验证的 `win-unpacked` 制作 NSIS EXE 和 ZIP。macOS 将候选 App 交给受保护的 `macos-release` 环境，使用现有 Apple 证书与 API 凭据；通过 `@electron/osx-sign` 签名后重新检查首启，再制作 DMG、公证、装订票据并执行 Gatekeeper 校验。签名材料只在临时目录生成，结束时清除。
+tag 工作流核对版本、提交与 main 来源，复用源码检查生成一次候选包。Windows 从已验证的 `win-unpacked` 制作 ZIP，并复用原 Inno Setup 脚本和 AppId 制作 EXE。macOS 将候选 App 交给受保护的 `macos-release` 环境，使用现有 Apple 证书与 API 凭据；通过 `@electron/osx-sign` 签名后重新检查首启，再制作 DMG、公证、装订票据并执行 Gatekeeper 校验。签名材料只在临时目录生成，结束时清除。
 
 两个平台通过后发布 GitHub Release 并设为 latest。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256。官网在发布成功后刷新版本列表。
 

@@ -11,13 +11,13 @@ const version = JSON.parse(await readFile(new URL('../../../package.json', impor
 const installer = resolve(process.argv[2] || `dist/YouDub-${version}-windows-x64-Setup.exe`);
 const directory = await mkdtemp(join(tmpdir(), 'YouDub installed '));
 const application = join(directory, 'YouDub');
-execFileSync(installer, ['/S', `/D=${application}`], { timeout: 120_000, stdio: 'inherit' });
+execFileSync(installer, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', `/DIR=${application}`], { timeout: 120_000, stdio: 'inherit' });
 await access(join(application, 'YouDub.exe'));
 execFileSync(process.execPath, [join(import.meta.dirname, 'package-smoke.mjs'), application,
   resolve('dist/package-smoke-windows-installed')], { timeout: 180_000, stdio: 'inherit' });
-const uninstaller = (await readdir(application)).find(name => /^Uninstall.*\.exe$/i.test(name));
-assert(uninstaller, 'NSIS uninstaller missing');
-execFileSync(join(application, uninstaller), ['/S'], { timeout: 120_000, stdio: 'inherit' });
+const uninstaller = (await readdir(application)).find(name => /^unins\d+\.exe$/i.test(name));
+assert(uninstaller, 'Inno Setup uninstaller missing');
+execFileSync(join(application, uninstaller), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'], { timeout: 120_000, stdio: 'inherit' });
 const deadline = Date.now() + 30_000;
 while (true) {
   try { await access(join(application, 'YouDub.exe')); }

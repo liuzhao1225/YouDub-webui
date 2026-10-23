@@ -12,6 +12,8 @@ if (app.isPackaged) {
   process.env.YOUDUB_HARNESS_PLUGIN_ROOT = join(runtime, 'node_modules/@youdub/harness-subtitles');
   process.env.YOUDUB_MEDIA_ROOT = join(process.resourcesPath, 'youdub');
   process.env.YOUDUB_NODE_PATH = process.execPath;
+  // Python imports must not write bytecode into the signed application bundle.
+  process.env.PYTHONDONTWRITEBYTECODE = '1';
 }
 const iconPath = join(app.getAppPath(), 'resources/youdub-icon.png');
 const icon = nativeImage.createFromPath(iconPath);
