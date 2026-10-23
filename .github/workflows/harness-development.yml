@@ -184,6 +184,7 @@ jobs:
           node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests/quit-inspection.spec.ts packages/subprocess/subprocess-local/tests packages/boot/plugin-manager/tests/operations.spec.ts packages/boot/plugin-manager/tests/operations-process.spec.ts
       - name: 运行实际 Electron Host 与产品合同
         run: |
+          node -e "require('./apps/harness/node_modules/electron')"
           node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs
           npm run typecheck
           npm --prefix apps/harness run check:locales

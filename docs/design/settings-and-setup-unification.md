@@ -26,7 +26,7 @@
 | [模板工厂](../../packages/builtin/src/workflow-templates.ts)每次读取官方模板时，将 `settings.defaults` 的语言和模型应用到图 | 仅删除设置 UI 后，隐藏旧默认值仍会改变模板 | 显式迁移，停止新图的持续全局覆盖 |
 | [ConnectionForm](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/apps/web/src/plugin/builtin/settings.tsx)和 [TranslationSetupController](../../apps/web/src/runtime/onboarding.ts)分别实现连接测试与保存，保存连接后再写 `defaults.translation`；首次引导还组合 ASR 等任务参数 | 两套行为可能漂移；保存连接可能成功而模型保存失败 | 一套连接行为；连接保存不重写任务参数 |
 | [Python bridge](../../backend/workers/bridge.py)的远端探测读取 `defaults.translation.model`；[runtime](../../backend/app/v1/runtime.py)返回的是配置的模型候选，未请求远端验证 | 删除 defaults 读取会使原自定义模型从 catalog 消失；“已配置”不能代表“测试成功” | 模型候选归连接配置；运行绑定归图节点；状态分别展示 |
-| [SetupService](../../packages/builtin/src/setup.ts)先准备 Python 和基础依赖，再加载应用；应用加载后按工作流准备依赖与模型 | 首次准备发生在 store、catalog、登录会话可用之前 | 保留启动前通道，复用其服务能力，不强行依赖登录后的 API |
+| [SetupService](../../apps/harness/src/backend/resources.ts)先准备 Python 和基础依赖，再加载应用；应用加载后按工作流准备依赖与模型 | 首次准备发生在 store、catalog、登录会话可用之前 | 保留启动前通道，复用其服务能力，不强行依赖登录后的 API |
 | [SetupController](../../apps/web/src/runtime/onboarding.ts)和[工作流资源控制器](../../apps/web/src/plugin/runtime/workflow-resources.ts)各有轮询；[准备日志](../../apps/web/src/lib/setup-diagnostics.ts)只读取顶层 environment/models/error | 设置资源页若再实现一套状态将继续分叉；工作流资源错误不能直接完整进入现有报告 | 共用资源快照/行为与诊断投影，保留启动阶段差异 |
 | [WorkflowOptions](../../apps/web/src/plugin/builtin/workflow-options.tsx)已从 `configSchema` 按 `ui.quickFields` 提取字段，按节点实例显示 | 已有合适的工作台基础设置来源 | 直接复用此能力，不再维护全局 TaskOptions 的平行副本 |
 
@@ -182,7 +182,7 @@ flowchart TB
 
 ### 6.1 Service：实际工作与事实来源
 
-[SetupService](../../packages/builtin/src/setup.ts)继续拥有基础准备、工作流资源选择、下载状态和实际任务。复用 `checkResources(selections)` / `prepareResources(selections)`、[EnvironmentSetup](../../packages/builtin/src/setup-environment.ts)与[下载器](../../packages/builtin/src/setup-download.ts)。只在确有共用需要的地方提取函数和类型，不增加第二套资源管理服务。
+[SetupService](../../apps/harness/src/backend/resources.ts)继续拥有基础准备、工作流资源选择、下载状态和实际任务。复用 `checkResources(selections)` / `prepareResources(selections)`、[EnvironmentSetup](../../packages/builtin/src/setup-environment.ts)与[下载器](../../packages/builtin/src/setup-download.ts)。只在确有共用需要的地方提取函数和类型，不增加第二套资源管理服务。
 
 启动前仍使用 `/api/setup`，保留 loopback、Host/Origin 与 setup token 检查。Python 不可用时，页面、日志和重试入口必须可用。应用加载后，设置和工作流通过受认证保护的 API 使用相同服务方法。工作流现有 `/api/v2/workflow-documents/resources/check|prepare` 继续负责从图解析 selections。
 
@@ -301,7 +301,7 @@ Issue 继续使用[现有模板](../../.github/ISSUE_TEMPLATE/setup-problem.md)�
 | `builtin/localize-editor.tsx`、`workflow-templates.ts` | 取消全局默认处理面板注册，停止图模板逐次应用全局 defaults；保留旧任务编辑组件 |
 | `runtime/onboarding.ts`、`apps/harness/src/frontend/translation-setup.tsx` | 引导只协调继续/稍后配置；与日常设置直接使用 Harness 模型设置页面；移除前一版 ConnectionController/ConnectionForm |
 | `runtime/workflow-resources.ts`、`setup-screen.tsx`、`setup-diagnostics.ts` | 共用资源契约、模型行、环境步骤和诊断投影；应用内控制器支持 selections 与已知资源动作 |
-| `packages/builtin/src/setup.ts` | action 方法抽取、应用内资源薄接口；继续调用现有准备和下载服务 |
+| `apps/harness/src/backend/resources.ts` | action 方法抽取、应用内资源薄接口；继续调用现有准备和下载服务 |
 | `apps/harness/src/backend/llm.mjs` | 对接 Harness 模型和凭据服务、冻结任务配置、检查请求输出上限；旧平台模型副本已删除 |
 | 现有 workflow 文档存储与迁移路径 | 幂等导入旧 defaults；保留旧值和历史任务；不新增配置数据库 |
 

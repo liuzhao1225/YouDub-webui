@@ -31,7 +31,7 @@
     "build": "node build.mjs",
     "start": "node launch.mjs",
     "desktop": "node desktop.mjs",
-    "pretest": "node build-framework.mjs --verify-only",
+    "pretest": "node -e \"require('electron')\" && node build-framework.mjs --verify-only",
     "test": "node --import ./test/source-framework.mjs --test test/*.test.mjs",
     "check:composition": "node check-composition.mjs",
     "check:framework": "node framework-source.mjs",

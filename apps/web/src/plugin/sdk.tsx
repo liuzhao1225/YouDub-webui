@@ -5,7 +5,7 @@ export type * from './contracts'
 export const SDK_VERSION = '1.1.0'
 import type { Observable, Navigation, ApiClient, Session } from './runtime/types'
 export type { Observable, Navigation, ApiClient, Session, SessionSnapshot, Request } from './runtime/types'
-export { bindComponent, UpdateProvider } from './web-react'
+export { bindComponent } from './web-react'
 export type { ClientBindings, Bindings, UseQuery } from './web-react'
 export type RouteProps = { params: Record<string, string>; returnTo?: string }
 export type RouteEntry = { id: string; path: string; component: ComponentType<RouteProps>; access: 'public' | 'authenticated'; layout?: 'app' | 'standalone' | 'dialog' }

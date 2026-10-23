@@ -85,16 +85,6 @@ class SqliteStore:
                 conn.execute("CREATE TABLE settings (key TEXT PRIMARY KEY NOT NULL,value_json TEXT NOT NULL CHECK(json_valid(value_json)),updated_at TEXT NOT NULL)")
             conn.execute("CREATE INDEX idx_tasks_queue ON tasks(status,queued_at,id)")
             conn.execute("CREATE INDEX idx_tasks_created ON tasks(created_at DESC,id DESC)")
-            conn.execute("CREATE TABLE auth_sessions (token_hash TEXT PRIMARY KEY,credential_version TEXT NOT NULL,created_at TEXT NOT NULL,expires_at TEXT NOT NULL)")
-            conn.execute("CREATE TABLE auth_login_attempts (client_hash TEXT PRIMARY KEY,window_started_at TEXT NOT NULL,attempt_count INTEGER NOT NULL)")
-            if self.legacy_db is not None and self.legacy_db.is_file():
-                with self.legacy_connection() as old:
-                    old_tables = {row[0] for row in old.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-                    for table, fields in (("auth_sessions", "token_hash,credential_version,created_at,expires_at"),
-                                          ("auth_login_attempts", "client_hash,window_started_at,attempt_count")):
-                        if table in old_tables:
-                            rows = list(old.execute(f"SELECT {fields} FROM {table}"))
-                            conn.executemany(f"INSERT INTO {table} ({fields}) VALUES ({','.join('?' for _ in fields.split(','))})", rows)
             self._create_workflows(conn)
             conn.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
 
@@ -405,30 +395,3 @@ class SqliteStore:
                 EXISTS(SELECT 1 FROM json_each(tasks.stage_context_json,'$.credential_refs') WHERE value=?)
                 OR EXISTS(SELECT 1 FROM json_each(tasks.plugin_json,'$.credentialRefs') WHERE value=?) LIMIT 1""",
                                      (reference, reference)).fetchone())
-
-    def auth(self, operation, parameters):
-        with self.connect() as conn:
-            if operation == "create_session":
-                conn.execute("INSERT INTO auth_sessions VALUES(:token_hash,:credential_version,:created_at,:expires_at)", parameters)
-                return None
-            if operation == "get_session":
-                row = conn.execute("SELECT * FROM auth_sessions WHERE token_hash=:token_hash", parameters).fetchone()
-                return dict(row) if row else None
-            if operation == "delete_session":
-                return conn.execute("DELETE FROM auth_sessions WHERE token_hash=:token_hash", parameters).rowcount > 0
-            if operation == "delete_expired_sessions":
-                return conn.execute("DELETE FROM auth_sessions WHERE expires_at<=:expires_before", parameters).rowcount
-            if operation == "delete_login_attempt":
-                return conn.execute("DELETE FROM auth_login_attempts WHERE client_hash=:client_hash", parameters).rowcount > 0
-            if operation == "reserve_login_attempt":
-                conn.execute("BEGIN IMMEDIATE")
-                conn.execute("DELETE FROM auth_login_attempts WHERE window_started_at<=:stale_before", parameters)
-                row = conn.execute("SELECT * FROM auth_login_attempts WHERE client_hash=:client_hash", parameters).fetchone()
-                if row and row["attempt_count"] >= parameters["max_attempts"]:
-                    return {"allowed": False, "window_started_at": row["window_started_at"]}
-                if row:
-                    conn.execute("UPDATE auth_login_attempts SET attempt_count=attempt_count+1 WHERE client_hash=:client_hash", parameters)
-                else:
-                    conn.execute("INSERT INTO auth_login_attempts VALUES(:client_hash,:now,1)", parameters)
-                return {"allowed": True, "window_started_at": row["window_started_at"] if row else parameters["now"]}
-        raise WorkerError("UNKNOWN_METHOD", f"Unknown auth operation: {operation}")

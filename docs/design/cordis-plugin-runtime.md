@@ -47,7 +47,7 @@ test .env -ef env.txt
 
 应用读取 `.env`；代理和排障工具读取同 inode 的 `env.txt`。两者及 `.venv/` 都忽略提交。复制工作树配置后，需要在新工作树重新建立硬链接。
 
-默认组合无需访问密码，打开工作台即可使用。浏览器自动建立 HttpOnly Cookie 会话，写请求仍校验 CSRF token 和请求来源；原有 `YOUDUB_AUTH_PASSWORD_HASH` 不再使用。翻译连接在设置页配置，密钥继续通过系统 keyring 的 `YouDub` 命名空间保存。默认翻译调用显式使用至少 65,535 的最大输出 token 数，供应商拒绝时报告错误。
+当前桌面版本由 Harness Connection 管理访问权限，翻译连接与密钥使用 Harness Settings / Credentials。旧 Cookie 会话、登录计数及 `YOUDUB_AUTH_*` 配置已移除。默认翻译调用显式使用至少 65,535 的最大输出 token 数，供应商拒绝时报告错误。
 
 | 配置 | 默认值 / 用途 |
 | --- | --- |
@@ -57,7 +57,6 @@ test .env -ef env.txt
 | `YOUDUB_DESKTOP_DATA_DIR` | macOS 为 `~/Library/Application Support/YouDub`；可改为隔离验证目录 |
 | `YOUDUB_API_URL` | Vite 开发/预览代理目标，默认 `http://127.0.0.1:8000`；生产同源服务无需配置 |
 | `YOUDUB_WEB_ROOT` | 可选静态构建目录；生产前端启动脚本与桌面启动器设置为 `apps/web/dist` 的绝对路径 |
-| `YOUDUB_AUTH_*` | 会话 TTL、Cookie 名称、Secure 和 SameSite；见 `.env.example` |
 
 新宿主启动会迁移数据目录的 `desktop.sqlite` 到 schema v3，新增工作流文档、节点结果版本与人工确认记录，保留 v2 任务。旧 v1 活动任务必须先完成或明确停止；先在数据副本预演，不能让新旧调度器同时操作同一数据目录。仓库 `data/youdub.sqlite` 只在首次迁移复制旧登录会话时只读打开；旧 URL 下载任务不进入新任务列表，也没有运行入口。数据库文件保留原位。
 

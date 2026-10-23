@@ -1,5 +1,4 @@
-// YouDub business routes retained from the frozen source branch; transport is Harness Connection.
-import { type Context } from 'cordis'
+// YouDub business routes use Harness Connection.
 import Busboy from 'busboy'
 import type { Artifact, CreateTask, TaskView, TaskSummary } from '@youdub/sdk'
 import { AppError, requireId } from '@youdub/sdk'
@@ -11,9 +10,7 @@ import { parseWorkflowDocument } from '../../../../packages/builtin/src/workflow
 import { workflowTemplates } from '../../../../packages/builtin/src/workflow-templates.ts'
 import { migrateLegacyDefaults, readDefaultsMigration, type DefaultsMigration } from '../../../../packages/builtin/src/legacy-defaults-migration.ts'
 
-export function registerTaskRoutes(ctx: any, http: any, config: { version: string }) {
-  if (!config?.version) throw new Error('The API requires the application version from its composition.')
-  const currentVersion = config.version
+export function registerTaskRoutes(ctx: any, http: any) {
   const route = (method: string, path: string, handler: (request: HttpRequest) => Promise<void> | void) => ctx.effect(() => http.register(method, path, handler))
   const view = <T extends TaskView | TaskSummary>(task: T) => ({ ...task, ...(task.cover ? { cover: { url: fileURL(`/api/v2/tasks/${task.id}/cover?artifact=${encodeURIComponent(task.cover.artifactId!)}`) } } : {}), outputs: task.outputs.map(output => ({ ...output, url: fileURL(`/api/v2/tasks/${task.id}/files/${encodeURIComponent(output.id)}`) })) })
   route('GET', '/api/health', request => {
@@ -178,7 +175,7 @@ export function registerTaskRoutes(ctx: any, http: any, config: { version: strin
     if (!Number.isInteger(lines) || lines < 1 || lines > 1000) throw new AppError('INVALID_CONFIG', 'Invalid log line count.', 422)
     await ctx.tasks.get(request.params.id!)
     const log = await ctx.files.readLog(request.params.id!, lines)
-    request.response.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); request.response.end(log)
+    request.result = new Response(log, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } })
   })
   route('DELETE', '/api/v2/imports/:id', async request => {
     const id = request.params.id!, release = await ctx.files.reserve(id)

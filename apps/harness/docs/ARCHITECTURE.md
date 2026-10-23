@@ -2,6 +2,8 @@
 
 YouDub Desktop 使用 DeepSeek Harness 的 Electron 桌面能力、Host 插件运行时和前端插件框架。视频处理、图工作流、人工订正和文件产物属于 YouDub 业务层，通过一个 DSH bundle 接入。
 
+业务 API 统一由 `src/backend/api.ts` 注册，通过 Harness Connection 传输；访问权限由 Connection 管理。旧独立 HTTP 服务、Cookie 会话、Loader 装配和网页更新轮询已移除。接口测试直接调用这套业务路由，桌面 Host 测试覆盖实际权限与启动边界。
+
 ## 分层与源码位置
 
 ```mermaid

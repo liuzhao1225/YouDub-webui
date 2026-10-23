@@ -1,11 +1,10 @@
 /** Framework-only binding between client services and props-based React features. */
-import { createContext, useContext, useEffect, useMemo, type ReactNode, type ComponentType } from 'react'
+import { useEffect, useMemo, type ComponentType } from 'react'
 import type { Context } from 'cordis'
 import type { SlotMap, WorkflowDocument } from './sdk'
 import type { Observable, Request, SessionSnapshot } from './runtime/types'
 import { QueryClient, type QueryResult, type WorkflowDocuments } from './runtime/query'
 import { WorkflowResourceChecks, changesResources, resourceKey, type WorkflowResourcesResult } from './runtime/workflow-resources'
-import { UpdatesController, type Updates } from './runtime/updates'
 
 import { useObservableSource } from './view-hooks'
 export { useObservableSource, useActiveView, usePendingUnload, protectPendingSubmissions } from './view-hooks'
@@ -22,13 +21,6 @@ export function createQueryHook(client: QueryClient, subscribeChanges?: (refresh
     return { ...useObservableSource(source), refresh: source.refresh }
   }
 }
-const UpdateContext = createContext<Updates | null>(null)
-export function UpdateProvider({ request, children }: { request: Request; children: ReactNode }) {
-  const source = useMemo(() => new UpdatesController(request), [request])
-  const snapshot = useObservableSource(source)
-  return <UpdateContext.Provider value={{ ...snapshot, check: source.check, setAutomatic: source.setAutomatic }}>{children}</UpdateContext.Provider>
-}
-
 export interface ClientBindings {
   request: Request
   navigate(path: string): void
@@ -41,7 +33,6 @@ export interface ClientBindings {
   useSlot<K extends keyof SlotMap>(slot: K): SlotMap[K][]
   usePathname(): string
   useSession(): SessionSnapshot
-  useUpdates(): Updates | null
   useWorkflowResources(document: WorkflowDocument): WorkflowResourcesResult
 }
 export type Bindings<K extends keyof ClientBindings> = Pick<ClientBindings, K>
@@ -93,7 +84,6 @@ export function bindComponent<P extends object, K extends keyof ClientBindings>(
     if (has('blockNavigation')) injected.blockNavigation = (handler, scope) => navigation.block?.(handler, scope) ?? (() => {})
     if (has('usePathname')) injected.usePathname = function usePathname() { return useObservableSource(navigation).split('?')[0] }
   }
-  if (has('useUpdates')) injected.useUpdates = function useUpdates() { return useContext(UpdateContext) }
   if (has('useSession')) injected.useSession = bindObservable(ctx.session)
   if (has('useSlot')) {
     const slots = ctx.slots

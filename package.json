@@ -27,8 +27,6 @@
     "package:desktop": "node apps/harness/package-desktop.mjs"
   },
   "dependencies": {
-    "@cordisjs/plugin-include": "1.1.0",
-    "@cordisjs/plugin-loader": "1.0.0-rc.7",
     "@deepseek-ai/schemastery": "3.18.1",
     "ajv": "8.17.1",
     "busboy": "1.6.0",

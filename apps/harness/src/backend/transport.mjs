@@ -21,7 +21,7 @@ export class YouDubTransport {
   json(request, status, value) { request.result = status === 204 ? new Response(null, { status }) : Response.json(value, { status }); }
   async file(request, path, options = {}) {
     const { size } = await stat(path), range = request.physical.headers.get('range'); let start = 0, end = size - 1;
-    const headers = new Headers({ 'content-type': options.mime || 'application/octet-stream', 'cache-control': 'no-store', 'accept-ranges': 'bytes' });
+    const headers = new Headers({ 'content-type': options.mime || 'application/octet-stream', 'cache-control': 'no-store', 'accept-ranges': 'bytes', 'x-content-type-options': 'nosniff' });
     if (options.name || options.download) {
       const name = options.name || 'download';
       const asciiName = name.replace(/[^\x20-\x7e]|["\\/]/g, '_');
@@ -54,9 +54,7 @@ export class YouDubTransport {
       const match = route.pattern.exec(url.pathname);
       const raw = upload && physical.body ? Readable.fromWeb(physical.body) : Readable.from([]);
       raw.headers = Object.fromEntries(physical.headers); raw.method = method;
-      const request = { url, body, raw, physical, params: Object.fromEntries(route.names.map((name, index) => [name, decodeURIComponent(match[index + 1])])), state: { session: true } };
-      // Only the legacy task-log handler uses this tiny response shape.
-      request.response = { writeHead(status, headers) { request.responseStatus = status; request.responseHeaders = headers; }, end(value) { request.result = new Response(value, { status: request.responseStatus ?? 200, headers: request.responseHeaders }); } };
+      const request = { url, body, raw, physical, params: Object.fromEntries(route.names.map((name, index) => [name, decodeURIComponent(match[index + 1])])) };
       await route.handler(request);
       if (!request.result) throw error('RESPONSE_MISSING', `YouDub route produced no response: ${method} ${url.pathname}`, 500);
       return request.result;

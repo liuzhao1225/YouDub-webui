@@ -4,7 +4,6 @@
 
 | 源文件 | 导出组件/入口 |
 | --- | --- |
-| [apps/web/src/components/app-updates.tsx](../../apps/web/src/components/app-updates.tsx) | UpdateNotice, UpdateSettings |
 | [apps/web/src/components/brand/brand-mark.tsx](../../apps/web/src/components/brand/brand-mark.tsx) | BrandMark |
 | [apps/web/src/components/inline-alert.tsx](../../apps/web/src/components/inline-alert.tsx) | InlineAlert |
 | [apps/web/src/components/language-switcher.tsx](../../apps/web/src/components/language-switcher.tsx) | LanguageSwitcher |

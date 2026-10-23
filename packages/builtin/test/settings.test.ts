@@ -4,14 +4,13 @@ import { Context } from 'cordis'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { Readable } from 'node:stream'
 import Processes from '../src/process.js'
 import Store from '../src/store.js'
 import Catalog from '../src/catalog.js'
 import Secrets from '../src/secrets.js'
 import Settings from '../src/settings.js'
 import * as PythonProvider from '../src/python-provider.js'
-import * as Api from '../src/api.js'
+import { taskApi } from './helpers/task-api.js'
 
 async function start(root: string) {
   const ctx = new Context()
@@ -55,20 +54,12 @@ test('plugin public settings persist independently, merge within their namespace
 
 test('settings API persists public plugin configuration alongside built-in settings', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-settings-api-')), { ctx, app } = await start(root)
-  const handlers = new Map<string, (request: any) => Promise<void>>()
-  const support = await ctx.plugin(function support(context) {
-    context.reflect.provide('http', {
-      register(method: string, path: string, handler: any) { const key = method + ' ' + path; handlers.set(key, handler); return () => { handlers.delete(key) } },
-      json(request: any, status: number, body: any) { request.result = { status, body } },
-    })
-    for (const name of ['auth', 'tasks', 'files', 'extensions']) context.reflect.provide(name, {})
-  })
-  const api = await ctx.plugin(Api, { version: '1.2.3' })
-  t.after(async () => { await api.dispose(); await support.dispose(); await app.dispose(); await rm(root, { recursive: true }) })
-  const request = async (method: string, body?: any) => {
-    const input = { raw: Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))]), result: undefined as any }
-    await handlers.get(`${method} /api/v2/settings`)!(input)
-    return input.result
+  let api!: ReturnType<typeof taskApi>
+  const scope = await ctx.plugin({ inject: ['settings', 'catalog', 'store'], apply(context) { api = taskApi(context) } })
+  t.after(async () => { await scope.dispose(); await app.dispose(); await rm(root, { recursive: true }) })
+  const request = async (method: string, body?: unknown) => {
+    const response = await api.request('/api/v2/settings', { method, headers: { 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    return { status: response.status, body: await response.json() as any }
   }
   const patch = { plugin: { id: 'example.panel', config: { caption: 'Saved' } } }
   const saved = await request('PATCH', patch)
