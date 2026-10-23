@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "date": "2026-10-22T23:22:57.779Z",
   "baseCommit": "aed6099cfb1743647197497d8af2d15252fed707",
-  "status": "local-passed-ci-pending",
+  "status": "passed",
   "source": {
     "sha256": "36bc087c0d57da4e3969fe81f31bab127e198b3ebf5cf2d8314e3eaf5fb21e08",
     "originalSha256": "3ea8bedf096c4fff74379dce01d95b48b27b2a05f9c0ae7431f3e9ba6fa80c85",
@@ -5117,7 +5117,7 @@
       "hostModules": 44,
       "clientModules": 317
     },
-    "ci": "pending"
+    "ci": "passed"
   },
   "failureHistory": [
     "The actual dependency verifier reported three unused export exceptions: SESSION_FORMAT_VERSION, SessionPersistenceNotFoundError and sessionFormatLogFilename. Removed the obsolete exceptions; the final rerun is recorded separately.",
@@ -5154,5 +5154,12 @@
       "path": "/tmp/youdub-final-scope-composition.log",
       "sha256": "aa90046740240a8f15e0d93f78e9f483ffabc922e45c6cd054771dbb5bdcd95a"
     }
+  },
+  "ci": {
+    "commit": "079141fbed36fff07af6e6862dea3613eb484852",
+    "runId": 39872095114,
+    "url": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39872095114",
+    "macOS": "success",
+    "windows": "success"
   }
 }

@@ -694,3 +694,26 @@ AST 导入与包依赖追踪得到 79 个根包、141 个运行/类型依赖、2
 清理前发现 `dsh-otel` 已失去旧统计链这一最后消费者，删除包与组说明共 17 文件，并同步聚合类型、目录生成器、锁 importer 和顶层双语目录。第三方声明按实际 manifest 重新生成，移除七个 OpenTelemetry 直接运行声明及 got；测试工具的传递锁快照保留。运行实际依赖检查还发现三条历史导出例外已无人使用，删除例外并将实际源码依赖检查加入 CI；通用导出未删改。
 
 最终七项源码构建、两项聚合类型、13 个文件/451 项设置与目录回归、两种实际 Host 启动及产物组合检查通过。实际依赖检查覆盖的 43 包全部符合策略；检查中还发现无引用的旧 onboarding-config.ts，连同 Schema/Host 专属依赖已移除。双平台 CI 继续单列结果，原生与媒体质量验收保持开放。
+
+### P3 原版 YouDub 私有目录兼容性
+
+固定候选 079141fb 对 `/Users/liuzhao/Library/Application Support/YouDub` 的 runtime/models 制作 APFS 隔离副本，仅在副本内重定向 Python 链接和 pyvenv.cfg，避免测试写入原目录。实际 Host 首轮识别 Whisper、Demucs、VoxCPM2、Qwen 已有模型；分句资源仍 pending，明确提交 prepare 后才补齐并进入 ready。重启同一 profile 后直接恢复 ready，没有再次提交 prepare。两次 Host 均干净退出，没有外部 LLM 调用。
+
+原目录 74,932 项元数据比较一致，克隆模型目录没有指向其他缓存的符号链接；原任务、数据库与凭据未复制或修改。该记录验证已有私有环境结构的兼容性；用户安装目录的自动搬迁不在本次声明内。[证据](evidence/refactor-original-runtime-compat.json)
+
+
+### P6 最终框架候选双平台 CI 读回
+
+第 27 批 aed6099c 的[macOS/Windows CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39870064840) 通过。最终范围候选 079141fb 的[双平台 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39872095114) 也通过，203 包的消费者、源码收据及原件完整性记录已更新。此后本轮媒体与语言修复没有修改 vendor 框架源码。
+
+### P7 zoo 自动、人工订正与语言显示（2026-10-23）
+
+独立 profile 通过页面配置原有提供商、URL、密钥和模型，真实翻译请求 maxTokens=65,535。仓库 zoo 视频的自动八节点任务成功；Whisper tiny 将 trunks 识别为 arms，自动结果保留为实验记录。通过编辑工作流副本关闭识别和翻译的自动继续，并接入 Qwen 对齐；在页面订正英文和中文，保存分别形成 revision 2 与 revision 3。译文等待确认期间干净关闭并重启 Host，订正和等待状态均保留，确认后九节点完成。
+
+视频为 H.264 320×240、AAC 48 kHz 双声道、18.933 秒；原文 6 段、译文 5 段 SRT 全部有序且位于媒体长度内。Qwen 生成 47 个词级时间点。浏览器完整播放至末尾、拖动至 8.5 秒并显示订正后的中文，下载字幕与生成文件字节相同；主观听感及原生保存仍单列待验收。
+
+英语页面发现内置模板和产物标题、任务步骤标签、翻译/媒体进度存在中文残留。复用现有模板/端口标签函数、插件多语言描述符和词典，在视图层修复；持久化步骤、原始请求与响应不改写。自定义工作流和端口名字继续原样展示。TaskView 明确步骤类型，64 项领域回归通过；前端先后 56 项、15 项定向检查，类型、lint、702 键三语言门及产品构建通过。最新候选 fa02da7d 的中英日实际页面回读通过，当前 Host 无控制台警告/错误。[完整证据](evidence/refactor-final-media-localization.json)
+
+测试运行时重建移除了临时 path-probe 文件，首轮 Host 报告对应测试插件缺失；关闭 Host 后删除隔离 profile 中该测试条目，后续重启健康，失败日志保留。初始 lint 的未使用导入、TaskView 索引签名导致的类型错误分别修复后重检通过。Mac 原生工具仍返回锁屏；不将浏览器检查视作原生验收，不打包或发布，两份飞书文档继续按用户要求最后统一更新。
+
+fa02da7d 的[macOS/Windows 干净 CI](https://github.com/liuzhao1225/YouDub-webui/actions/runs/39875654191) 全部通过；后续本次提交只保存文档和证据，不改运行源码。CI 不替代仍缺少的原生窗口及主观媒体质量验收。

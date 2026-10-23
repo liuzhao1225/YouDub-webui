@@ -1,7 +1,7 @@
 {
   "date": "2026-10-23",
   "baseCommit": "a6c4d1ad3b9f6ae4bbb8244e8125441f4d40cd80",
-  "status": "local-passed-ci-pending",
+  "status": "passed",
   "source": {
     "packages": 204,
     "treeEntries": 5151,
@@ -250,5 +250,11 @@
     "This is source development; no installer/package/signing/release/main or atomgit merge.",
     "Native Mac interaction remained unavailable because CUA still reported a locked desktop. Browser checks do not replace native acceptance.",
     "Full P0-P7 acceptance remains open; both final Feishu document updates remain deferred until all work is complete."
-  ]
+  ],
+  "ci": {
+    "commit": "aed6099cfb1743647197497d8af2d15252fed707",
+    "run": "https://github.com/liuzhao1225/YouDub-webui/actions/runs/39870064840",
+    "macOS": "success",
+    "windows": "success"
+  }
 }
