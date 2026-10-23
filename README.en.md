@@ -4,7 +4,7 @@
 
 # YouDub Desktop
 
-> This is the `codex/harness-youdub-integration` development branch. It uses the DeepSeek Harness backend and frontend framework with Electron, retaining YouDub's business UI and workflows. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese). Download links below refer to published releases; this branch uses the Electron source development flow below.
+> YouDub uses the DeepSeek Harness backend and frontend framework with Electron, retaining its video workflows and business UI. Start with the [developer documentation](apps/harness/docs/README.md), [architecture](apps/harness/docs/ARCHITECTURE.md), and [local development guide](apps/harness/docs/DEVELOPMENT.md) (in Chinese).
 
 An open-source video localization workspace: import a video, transcribe and translate its speech, clone each sentence from its source audio, and produce subtitles and dubbed video.
 
@@ -124,7 +124,7 @@ npm run build:youdub
 npm start
 ```
 
-`npm start` and `npm run dev` launch the same Electron product. `npm run build:desktop` aliases `build:youdub` and generates development artifacts. This branch has no packaging, signing or release commands. See [local development](apps/harness/docs/DEVELOPMENT.md) for browser debugging, isolated data directories and rebuilding after edits.
+`npm run package:desktop -- --dir` creates the standalone Electron app. See [release packaging](docs/releasing.md) for signing, notarization and installers.
 
 On first launch, select the interface language and data directory, prepare runtime resources and configure a translation model through the UI. The application uses its own Python environment, models and configuration. Translation models must accept at least **65,535** output tokens; incompatible endpoints report an error. Base environment readiness and workflow resource readiness are shown separately.
 

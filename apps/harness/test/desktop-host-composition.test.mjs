@@ -56,14 +56,14 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
     });
   let stderr = '';
   child.stderr.on('data', data => { stderr = (stderr + data).slice(-16_384); });
-  child.stdout.resume(); // Launch URLs contain a process token; never print them in test output.
+  child.stdout.on('data', data => { stderr = (stderr + data.toString().replace(/https?:\/\/[^\s"']+/g, '[local URL]')).slice(-16_384); });
   exited = once(child, 'exit');
   const messages = [], pending = new Set();
-  const waitFor = predicate => {
+  const waitFor = (phase, predicate) => {
     const existing = messages.find(predicate);
     if (existing) return Promise.resolve(existing);
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => { pending.delete(listener); reject(new Error(`Host IPC timed out: ${stderr}`)); }, 30_000);
+      const timer = setTimeout(() => { pending.delete(listener); reject(new Error(`Host IPC timed out waiting for ${phase}; received ${messages.map(message => message.type).join(', ')}: ${stderr}`)); }, 30_000);
       const listener = message => {
         if (message.type !== 'fatal' && !predicate(message)) return;
         clearTimeout(timer); pending.delete(listener);
@@ -74,7 +74,7 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   };
   child.on('message', message => { messages.push(message); for (const listener of pending) listener(message); });
 
-  const ready = await waitFor(message => message.type === 'ready');
+  const ready = await waitFor('ready', message => message.type === 'ready');
   const graph = ready.injections.find(row => row.kind === 'global' && row.name === '__DSH_BOOT__').value;
   const ids = graph.entries.map(entry => entry.id);
   const appInfo = ready.injections.find(row => row.kind === 'global' && row.name === '__YOUDUB_APP_INFO__').value;
@@ -115,12 +115,12 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   }
 
   child.send({ type: 'quit-inspection', requestId: 1 });
-  const inspection = await waitFor(message => message.type === 'quit-inspection' && message.requestId === 1);
+  const inspection = await waitFor('quit-inspection', message => message.type === 'quit-inspection' && message.requestId === 1);
   assert.equal(inspection.error, undefined);
   assert.equal(typeof inspection.activeTasks, 'boolean');
   assert.equal(inspection.scheduledTasks, false);
   child.send({ type: 'update-tasks', requestId: 2, action: 'inspect' });
-  const update = await waitFor(message => message.type === 'update-tasks' && message.requestId === 2);
+  const update = await waitFor('update-tasks', message => message.type === 'update-tasks' && message.requestId === 2);
   assert.equal(update.error, undefined);
   assert.equal(typeof update.active, 'boolean');
 });

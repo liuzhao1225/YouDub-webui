@@ -1,6 +1,6 @@
 {
   "name": "youdub-webui-fullstack",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -26,7 +26,8 @@
     "dev": "npm --prefix apps/harness run desktop",
     "check:framework-use": "node .cache/harness/source-build/node_modules/tsx/dist/cli.mjs --tsconfig .cache/harness/source-build/tsconfig.base.json .cache/harness/source-build/scripts/verify-product-use.ts --root vendor/deepseek-harness/source --patch apps/harness/cordis.patch.yml --entry apps/harness/src/host.mjs --entry apps/harness/src/client.jsx --entry apps/harness/src/desktop-product.ts",
     "check:framework-isolation": "node .cache/harness/source-build/node_modules/tsx/dist/cli.mjs --tsconfig .cache/harness/source-build/tsconfig.base.json .cache/harness/source-build/scripts/verify-default-product-isolation.ts --root vendor/deepseek-harness/source --patch apps/harness/cordis.patch.yml --entry apps/harness/src/host.mjs --entry apps/harness/src/client.jsx --entry apps/harness/src/desktop-product.ts",
-    "check:framework-runtime": "node apps/harness/test/prepare-framework-client.mjs && node .cache/harness/source-build/node_modules/tsx/dist/cli.mjs --tsconfig .cache/harness/source-build/tsconfig.base.json .cache/harness/source-build/scripts/verify-runtime-closure.ts --root vendor/deepseek-harness/source --manifest .cache/harness/framework-client-project/package.json"
+    "check:framework-runtime": "node apps/harness/test/prepare-framework-client.mjs && node .cache/harness/source-build/node_modules/tsx/dist/cli.mjs --tsconfig .cache/harness/source-build/tsconfig.base.json .cache/harness/source-build/scripts/verify-runtime-closure.ts --root vendor/deepseek-harness/source --manifest .cache/harness/framework-client-project/package.json",
+    "package:desktop": "node apps/harness/package-desktop.mjs"
   },
   "dependencies": {
     "@cordisjs/plugin-include": "1.1.0",

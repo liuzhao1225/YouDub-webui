@@ -1,0 +1,157 @@
+name: 桌面版本发布
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.repository == 'liuzhao1225/YouDub-webui' && github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: 校验 tag、版本和 main 来源
+        run: |
+          node --input-type=module -e 'import { appVersion, validateReleaseVersion } from "./scripts/release-version.mjs"; validateReleaseVersion(appVersion, process.env.GITHUB_REF_NAME)'
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+  quality:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    outputs:
+      run-id: ${{ steps.accepted.outputs.run-id }}
+    steps:
+      - name: 等待同一 main 提交的候选包验收
+        id: accepted
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Only artifacts from the exact tagged commit's main push are accepted.
+          run_id="$(gh api "repos/$GH_REPO/actions/workflows/harness-development.yml/runs?head_sha=$GITHUB_SHA&event=push&branch=main" --jq '.workflow_runs[0].id // empty')"
+          if [ -z "$run_id" ]; then
+            echo "::error::此 tag 提交没有 main 源码验收运行；请先完成 main 检查。"
+            exit 1
+          fi
+          gh run watch "$run_id" --exit-status --interval 15
+          gh api "repos/$GH_REPO/actions/runs/$run_id" --jq '{head_sha,event,head_branch,conclusion}' > accepted.json
+          jq -e --arg sha "$GITHUB_SHA" '.head_sha == $sha and .event == "push" and .head_branch == "main" and .conclusion == "success"' accepted.json
+          echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "复用 main 提交 $GITHUB_SHA 的候选包：https://github.com/$GH_REPO/actions/runs/$run_id" >> "$GITHUB_STEP_SUMMARY"
+
+  sign:
+    needs: quality
+    runs-on: macos-15
+    timeout-minutes: 60
+    environment: macos-release
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: 安装签名脚本依赖
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npm --prefix apps/harness ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: youdub-macos-unsigned
+          run-id: ${{ needs.quality.outputs.run-id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/unsigned
+      - name: 解包已构建应用
+        run: |
+          mkdir -p dist
+          tar -xzf "$RUNNER_TEMP/unsigned/youdub-macos-unsigned.tar.gz" -C dist
+      - name: 签名应用
+        env:
+          YOUDUB_APPLE_CREDENTIALS_DIR: ${{ runner.temp }}/apple-signing
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          node scripts/prepare-ci-signing.mjs
+          node scripts/sign-mac.mjs dist/YouDub.app --sign-only
+      - name: 验证桌面服务与运行后签名
+        run: |
+          node apps/harness/test/package-smoke.mjs dist/YouDub.app dist/package-smoke-signed
+          codesign --verify --deep --strict --verbose=2 dist/YouDub.app
+      - name: 打包与 Apple 公证
+        env:
+          YOUDUB_APPLE_CREDENTIALS_DIR: ${{ runner.temp }}/apple-signing
+        run: node scripts/sign-mac.mjs dist/YouDub.app --package-signed
+      - name: 清除签名材料
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/apple-signing"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-release
+          path: |
+            dist/YouDub-*.dmg
+            dist/YouDub-*.dmg.sha256
+            dist/dmg-notary.json
+            dist/package-smoke-signed/
+          retention-days: 7
+          if-no-files-found: error
+
+  publish:
+    needs: [quality, sign]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: macos-release
+          path: release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: youdub-windows-release
+          run-id: ${{ needs.quality.outputs.run-id }}
+          github-token: ${{ github.token }}
+          path: release
+      - name: 校验并发布 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        working-directory: release
+        run: |
+          sha256sum --check ./*.sha256
+          version="${GITHUB_REF_NAME#v}"
+          for suffix in macOS-arm64.dmg windows-x64.zip windows-x64-Setup.exe; do
+            cp "YouDub-$version-$suffix" "YouDub-$suffix"
+            sha256sum "YouDub-$suffix" > "YouDub-$suffix.sha256"
+          done
+          sha256sum --check ./YouDub-macOS-arm64.dmg.sha256 ./YouDub-windows-x64.zip.sha256 ./YouDub-windows-x64-Setup.exe.sha256
+          cp "../docs/releases/$GITHUB_REF_NAME.md" notes.md
+          gh release create "$GITHUB_REF_NAME" --verify-tag --latest --title "YouDub $GITHUB_REF_NAME" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = "$GITHUB_REF_NAME"
+          mkdir downloaded
+          gh release download "$GITHUB_REF_NAME" --dir downloaded --pattern 'YouDub-macOS-arm64.dmg*' --pattern 'YouDub-windows-x64*'
+          cd downloaded
+          sha256sum --check ./*.sha256

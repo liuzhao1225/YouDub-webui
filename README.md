@@ -4,7 +4,7 @@
 
 # YouDub Desktop
 
-> 当前为 `codex/harness-youdub-integration` 开发分支：使用 DeepSeek Harness 的前后端框架与 Electron，保留 YouDub 业务界面和工作流。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。下方下载链接指向已发布版本；本分支使用下述 Electron 源码开发流程。
+> YouDub 使用 DeepSeek Harness 前后端框架与 Electron，保留视频工作流和业务界面。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。
 
 开源视频本地化工作台：导入视频，识别、翻译并逐句克隆原声，生成字幕和配音成片。
 
@@ -124,7 +124,7 @@ npm run build:youdub
 npm start
 ```
 
-`npm start` 与 `npm run dev` 启动同一 Electron 产品；`npm run build:desktop` 是 `build:youdub` 的别名，生成开发产物。当前分支没有安装包制作、签名或发行命令。浏览器调试、独立数据目录和修改后重建见[本地开发](apps/harness/docs/DEVELOPMENT.md)。
+`npm start` 与 `npm run dev` 启动同一 Electron 产品；`npm run build:desktop` 是 `build:youdub` 的别名，生成开发产物。`npm run package:desktop -- --dir` 生成独立应用；正式安装包、签名与发布见[发行流程](docs/releasing.md)。浏览器调试、独立数据目录和修改后重建见[本地开发](apps/harness/docs/DEVELOPMENT.md)。
 
 首次启动选择界面语言和数据安装目录，在页面准备运行资源、配置翻译模型。应用使用自己的 Python 环境、模型和配置；翻译模型须接受至少 **65,535** 个输出 token，不兼容时会明确报错。基础环境和各工作流所需资源的准备状态分别展示。
 
