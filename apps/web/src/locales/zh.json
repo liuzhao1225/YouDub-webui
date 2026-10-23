@@ -685,6 +685,26 @@
     "workflows.output.sourceSubtitles": "原文字幕",
     "workflows.output.translatedSubtitles": "译文字幕",
     "task.progress.translation.complete": "翻译完成",
-    "task.progress.translation.batch": "翻译 {current}/{total}"
+    "task.progress.translation.batch": "翻译 {current}/{total}",
+    "task.progress.download.parse": "正在解析视频链接",
+    "task.progress.download.active": "正在下载视频",
+    "task.progress.download.check": "正在合并并检查视频",
+    "task.progress.download.complete": "视频下载完成",
+    "task.progress.prepare.audio": "正在提取原始音频",
+    "task.progress.separate.extract": "正在提取用于分离的原始音频",
+    "task.progress.separate.active": "正在使用 Demucs 分离人声和背景音",
+    "task.progress.separate.complete": "人声和背景音已就绪",
+    "task.progress.transcribe.active": "正在使用 Whisper 识别语音",
+    "task.progress.transcribe.complete": "语音识别完成",
+    "task.progress.reference.prepare": "正在准备参考音频",
+    "task.progress.synthesize.active": "正在使用 VoxCPM2 生成配音",
+    "task.progress.synthesize.complete": "配音生成完成",
+    "task.progress.mix.complete": "混音和配音时间轴已就绪",
+    "task.progress.align.active": "正在使用 Qwen 对齐字幕与配音",
+    "task.progress.export.prepare": "正在准备导出文件",
+    "task.progress.export.render": "正在生成输出视频",
+    "task.progress.export.complete": "输出文件已就绪",
+    "task.progress.mix.adjusted": "已调整 {current}/{total} 段配音",
+    "task.progress.align.complete": "已校准 {count} 个字词边界"
   }
 }

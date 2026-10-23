@@ -685,6 +685,26 @@
     "workflows.output.sourceSubtitles": "原文字幕",
     "workflows.output.translatedSubtitles": "翻訳字幕",
     "task.progress.translation.complete": "翻訳完了",
-    "task.progress.translation.batch": "翻訳 {current}/{total}"
+    "task.progress.translation.batch": "翻訳 {current}/{total}",
+    "task.progress.download.parse": "動画リンクを確認中",
+    "task.progress.download.active": "動画をダウンロード中",
+    "task.progress.download.check": "動画を結合して確認中",
+    "task.progress.download.complete": "動画のダウンロード完了",
+    "task.progress.prepare.audio": "元の音声を抽出中",
+    "task.progress.separate.extract": "分離用の音声を抽出中",
+    "task.progress.separate.active": "Demucs で音声と背景音を分離中",
+    "task.progress.separate.complete": "音声と背景音の準備完了",
+    "task.progress.transcribe.active": "Whisper で文字起こし中",
+    "task.progress.transcribe.complete": "文字起こし完了",
+    "task.progress.reference.prepare": "参照音声を準備中",
+    "task.progress.synthesize.active": "VoxCPM2 で吹き替え音声を生成中",
+    "task.progress.synthesize.complete": "吹き替え音声の生成完了",
+    "task.progress.mix.complete": "ミックス音声とタイムラインの準備完了",
+    "task.progress.align.active": "Qwen で字幕と音声を同期中",
+    "task.progress.export.prepare": "出力ファイルを準備中",
+    "task.progress.export.render": "出力動画を生成中",
+    "task.progress.export.complete": "出力ファイルの準備完了",
+    "task.progress.mix.adjusted": "音声クリップを調整済み {current}/{total}",
+    "task.progress.align.complete": "{count} 個の単語境界を調整済み"
   }
 }

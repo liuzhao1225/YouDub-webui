@@ -684,6 +684,26 @@
     "workflows.output.sourceSubtitles": "Original subtitles",
     "workflows.output.translatedSubtitles": "Translated subtitles",
     "task.progress.translation.complete": "Translation complete",
-    "task.progress.translation.batch": "Translating {current}/{total}"
+    "task.progress.translation.batch": "Translating {current}/{total}",
+    "task.progress.download.parse": "Reading video link",
+    "task.progress.download.active": "Downloading video",
+    "task.progress.download.check": "Merging and checking video",
+    "task.progress.download.complete": "Video downloaded",
+    "task.progress.prepare.audio": "Extracting source audio",
+    "task.progress.separate.extract": "Extracting audio for separation",
+    "task.progress.separate.active": "Separating vocals and background with Demucs",
+    "task.progress.separate.complete": "Vocals and background are ready",
+    "task.progress.transcribe.active": "Transcribing source audio with Whisper",
+    "task.progress.transcribe.complete": "Source transcription is ready",
+    "task.progress.reference.prepare": "Preparing voice references",
+    "task.progress.synthesize.active": "Generating translated speech with VoxCPM2",
+    "task.progress.synthesize.complete": "Speech generation complete",
+    "task.progress.mix.complete": "Mixed audio and dubbed timeline are ready",
+    "task.progress.align.active": "Aligning subtitles to speech with Qwen",
+    "task.progress.export.prepare": "Preparing output media",
+    "task.progress.export.render": "Rendering output video",
+    "task.progress.export.complete": "Output media is ready",
+    "task.progress.mix.adjusted": "Adjusted {current}/{total} speech clips",
+    "task.progress.align.complete": "Aligned {count} word boundaries"
   }
 }

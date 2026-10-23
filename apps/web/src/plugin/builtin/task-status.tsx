@@ -23,11 +23,38 @@ export function taskDisplayName(task: TaskSummary & Pick<TaskView, 'graphSnapsho
   return task.sourceName && task.sourceName !== task.workflowId ? task.sourceName : task.workflowSource?.title || task.graphSnapshot?.title || task.sourceName
 }
 
+const progressMessages: Record<string, MessageKey> = {
+  "解析视频链接": "task.progress.download.parse",
+  "下载视频": "task.progress.download.active",
+  "合并并检查视频": "task.progress.download.check",
+  "视频下载完成": "task.progress.download.complete",
+  "Extracting source audio": "task.progress.prepare.audio",
+  "Extracting the original stereo audio for separation": "task.progress.separate.extract",
+  "Separating vocals and background with Demucs": "task.progress.separate.active",
+  "Vocals and background are ready": "task.progress.separate.complete",
+  "Transcribing source audio with Whisper": "task.progress.transcribe.active",
+  "Source transcription is ready": "task.progress.transcribe.complete",
+  "Preparing source utterance references": "task.progress.reference.prepare",
+  "Generating translated speech with VoxCPM2": "task.progress.synthesize.active",
+  "All source segments have generated speech": "task.progress.synthesize.complete",
+  "Mixed audio and dubbed timeline are ready": "task.progress.mix.complete",
+  "Aligning subtitle words to complete dubbed speech with Qwen": "task.progress.align.active",
+  "Preparing output media": "task.progress.export.prepare",
+  "Rendering output video": "task.progress.export.render",
+  "Output media is ready": "task.progress.export.complete",
+  "翻译完成": "task.progress.translation.complete",
+  "All source segments have translations": "task.progress.translation.complete",
+}
+
 // Keep persisted provider messages and raw logs unchanged; localize their display.
 export function taskProgressMessage(message: string, tx: Text): string {
-  if (message === '翻译完成') return tx('task.progress.translation.complete')
-  const batch = /^翻译 (\d+)\/(\d+)$/.exec(message)
-  return batch ? tx('task.progress.translation.batch', { current: batch[1], total: batch[2] }) : message
+  if (progressMessages[message]) return tx(progressMessages[message])
+  const batch = /^(?:翻译|Translating batch) (\d+)\/(\d+)$/.exec(message)
+  if (batch) return tx('task.progress.translation.batch', { current: batch[1], total: batch[2] })
+  const adjusted = /^Adjusted (\d+)\/(\d+) speech clips$/.exec(message)
+  if (adjusted) return tx('task.progress.mix.adjusted', { current: adjusted[1], total: adjusted[2] })
+  const aligned = /^Mapped (\d+) final word intervals within Qwen's (\d+) ms grid to audio endpoints$/.exec(message)
+  return aligned ? tx('task.progress.align.complete', { count: aligned[1] }) : message
 }
 
 export function TaskState({ status }: { status: string }) {
