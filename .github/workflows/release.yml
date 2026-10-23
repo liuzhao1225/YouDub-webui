@@ -141,9 +141,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         working-directory: release
         run: |
-          sha256sum --check ./*.sha256
           version="${GITHUB_REF_NAME#v}"
           for suffix in macOS-arm64.dmg windows-x64.zip windows-x64-Setup.exe; do
+            sha256sum --check "YouDub-$version-$suffix.sha256"
             cp "YouDub-$version-$suffix" "YouDub-$suffix"
             sha256sum "YouDub-$suffix" > "YouDub-$suffix.sha256"
           done
