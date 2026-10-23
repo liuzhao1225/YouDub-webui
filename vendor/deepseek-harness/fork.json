@@ -26476,8 +26476,8 @@
         "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 121079,
-        "sha256": "74a218a1ca7b9282a990979536ad77bfa9e7138152391441921626c26861560a"
+        "size": 121139,
+        "sha256": "4c45fd15dd8bf8b50d20c350cf6ffde377d29f544ba243b97f45cbadfa07281d"
       },
       "reason": "Require explicit draft discard in the original refresh and editor-close regression cases. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. YouDub model setup waits for an explicit provider selection, preserving drafts across refreshes and mode switches. Preserve the model discovery trigger focus during asynchronous loading so the existing Harness Modal restores it on cancel or Escape; prevent duplicate requests and verify the behavior."
     },
