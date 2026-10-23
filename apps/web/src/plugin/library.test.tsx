@@ -128,6 +128,17 @@ it('shows graph results before a collapsed step list and uses the workflow title
 })
 
 
+it('previews subtitle cues in a dialog instead of opening the raw file', async () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,500\n你好\n\n2\n00:00:03,000 --> 00:00:04,000\n再见\n'
+  const request = vi.fn(async (path: string) => path.endsWith('/files/subtitle') ? srt : { ...task, outputs: [{ id: 'subtitle', label: '中文字幕', mimeType: 'application/x-subrip', size: 2048, url: '/subtitle.srt' }] })
+  mount(request)
+  await userEvent.setup().click(await screen.findByRole('button', { name: '预览文本' }))
+  const dialog = await screen.findByRole('dialog', { name: '中文字幕' })
+  expect(await screen.findByText('你好')).toBeVisible()
+  expect(screen.getByText('00:00:01,000 → 00:00:02,500')).toBeVisible()
+  expect(dialog.querySelector('a[download]')).toHaveAttribute('href', '/subtitle.srt')
+  expect(request.mock.calls.some(([path]) => path === '/api/v2/tasks/original/files/subtitle')).toBe(true)
+})
 it('restores an unresolved rerun on return and does not navigate after its source view closes', async () => {
   let complete!: (value: TaskView) => void
   const request = vi.fn(async (path: string) => {

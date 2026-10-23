@@ -145,7 +145,8 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
       await instance.fitView({ padding: 0.12, minZoom: 0.75, maxZoom: 1 })
       const width = container.current?.clientWidth
       if (!width) return
-      const bounds = instance.getNodesBounds(nodes), viewport = instance.getViewport(), padding = width * 0.12
+      // Graphs wider than the readable zoom start near the left edge so the next nodes stay in view.
+      const bounds = instance.getNodesBounds(nodes), viewport = instance.getViewport(), padding = Math.min(width * 0.12, 32)
       if (bounds.width * viewport.zoom > width - 2 * padding) await instance.setViewport({ ...viewport, x: padding - bounds.x * viewport.zoom })
     }} minZoom={0.15} maxZoom={2} defaultViewport={document.presentation.viewport} onlyRenderVisibleElements={false}
       nodesDraggable={!disabled} nodesConnectable={!readOnly && !disabled} edgesReconnectable={false} deleteKeyCode={readOnly || disabled ? null : ['Backspace', 'Delete']} panOnScroll panOnDrag zoomOnDoubleClick={false}

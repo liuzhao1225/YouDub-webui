@@ -5,7 +5,7 @@ import { NativeSelect, Choice } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowLeft, Check, Download, FileText, ListVideo, Loader2, RotateCw, Square, Trash2 } from '@/lib/icons'
+import { ArrowLeft, AudioLines, Captions, Check, Download, FileText, Film, ListVideo, Loader2, RotateCw, Square, Trash2 } from '@/lib/icons'
 import { Link, text, type Catalog, type JsonObject, type PanelProps, type RouteProps, type TaskAction, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
 import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
@@ -16,7 +16,9 @@ import { formatBytes, formatDateTime } from '@/lib/format'
 import { TaskCover } from '@/components/task-cover'
 import { VideoPlayer } from '@/components/video-player'
 import { InlineAlert } from '@/components/inline-alert'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Modal } from '@/components/ui/harness-primitives'
+import { cn } from '@/lib/utils'
 import { Page, PageHeader } from '@/components/page-layout'
 import { ConfigEditor, defaultConfig, useEditorSupported } from './schema-form'
 import { workflowTemplateTitle, workflowPortLabel } from './workflow-utils'
@@ -124,23 +126,54 @@ export function TaskDetail({ submissionStore, params, request, navigate, useQuer
     {loadError}{task.error && <InlineAlert>{task.error.message}</InlineAlert>}
     {actions.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
     {video && !mediaReleased && <div className="overflow-hidden rounded-xl border border-border bg-black"><VideoPlayer src={video.url} /></div>}
-    {!!task.outputs.length && <section className="space-y-4"><h2 className="font-semibold">{tx("library.generated.files")}</h2><div className="grid gap-3 sm:grid-cols-2">{task.outputs.map((output) => {
+    {!!task.outputs.length && <section className="space-y-4"><h2 className="font-semibold">{tx("library.generated.files")}</h2><Surface as="ol" className="m-0 list-none divide-y divide-border overflow-hidden p-0">{task.outputs.map((output) => {
       const label = output.label || output.name || output.id
       const displayLabel = task.graphSnapshot ? workflowPortLabel(task.graphSnapshot, { id: output.id, label }, tx) : label
-      return <Surface as="div" key={output.id} className="space-y-2 p-4">
-      <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{displayLabel}</p>{output.size !== undefined && <p className="mt-1 text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div><a href={output.url} download className="rounded-lg p-2 hover:bg-accent" aria-label={`${tx("library.download")} ${displayLabel}`}><Download className="size-4" /></a></div>
-      {!mediaReleased && output.mimeType?.startsWith('audio/') && <AudioOutput src={output.url} />}
-      {(output.mimeType?.startsWith('text/') || output.mimeType === 'application/x-subrip') && <a href={output.url} target="_blank" rel="noreferrer" className="text-xs text-link">{tx("library.preview.text")}</a>}
-    </Surface>})}</div></section>}
+      const audio = output.mimeType?.startsWith('audio/'), textual = output.mimeType?.startsWith('text/') || output.mimeType === 'application/x-subrip'
+      const Icon = output.mimeType?.startsWith('video/') ? Film : audio ? AudioLines : textual ? Captions : FileText
+      return <li key={output.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+        <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-muted-foreground"><Icon className="size-4" /></span>
+        <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{displayLabel}</p>{output.size !== undefined && <p className="text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div>
+        {!mediaReleased && audio && <AudioOutput src={output.url} className="order-last basis-full @2xl/page:order-none @2xl/page:basis-auto @2xl/page:w-80" />}
+        {textual && <TextPreview path={`/api/v2/tasks/${encodeURIComponent(task.id)}/files/${encodeURIComponent(output.id)}`} url={output.url} title={displayLabel} useQuery={useQuery} />}
+        <a href={output.url} download className="rounded-lg p-2 hover:bg-accent" aria-label={`${tx("library.download")} ${displayLabel}`}><Download className="size-4" /></a>
+      </li>
+    })}</Surface></section>}
     {panels.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
     {task.graphSnapshot ? <Disclosure  contained={true} title={`${tx("library.step.list")} · ${completed}/${task.steps.length}`}><div className="mt-4">{stepList}</div></Disclosure> : <Surface as="section" className="p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</Surface>}
     <Disclosure onOpenChange={setShowLog} contained={true} title={tx("library.task.log")}>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</Disclosure>
   </Page>
 }
-function AudioOutput({ src }: { src: string }) {
+function AudioOutput({ src, className }: { src: string; className?: string }) {
   const ref = useRef<HTMLAudioElement>(null)
   useReleaseMediaOnUnmount(ref, src)
-  return <audio ref={ref} controls src={src} className="h-10 w-full" />
+  return <audio ref={ref} controls src={src} className={cn('h-10 w-full', className)} />
+}
+/** Subtitle files are served as downloads, so preview their text in place instead of opening the raw file. */
+function TextPreview({ path, url, title, useQuery }: { path: string; url: string; title: string } & Bindings<'useQuery'>) {
+  const tx = useText()
+  const [open, setOpen] = useState(false)
+  return <>
+    <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>{tx("library.preview.text")}</Button>
+    {open && <Modal open onClose={() => setOpen(false)} title={title} closeLabel={tx("library.close")} className="w-[min(40rem,100%)]"
+      footer={<><a href={url} download className={cn(buttonVariants({ variant: 'outline' }), 'no-underline')}><Download />{tx("library.download")}</a><Button variant="outline" onClick={() => setOpen(false)}>{tx("library.close")}</Button></>}>
+      <TextPreviewBody path={path} useQuery={useQuery} />
+    </Modal>}
+  </>
+}
+function TextPreviewBody({ path, useQuery }: { path: string } & Bindings<'useQuery'>) {
+  const tx = useText()
+  const { data, error, refresh } = useQuery<string>(path)
+  if (error) return <div className="space-y-2"><InlineAlert>{error}</InlineAlert><Button size="sm" variant="outline" onClick={refresh}>{tx("library.reload.preview")}</Button></div>
+  return <div className="max-h-[60dvh] min-h-24 overflow-auto rounded-lg bg-muted p-4 text-sm">{data == null ? <p role="status" className="text-muted-foreground">{tx("library.loading")}</p> : <SubtitleText content={data} />}</div>
+}
+function SubtitleText({ content }: { content: string }) {
+  const cues = content.trim().split(/\r?\n\s*\r?\n/).flatMap((block) => {
+    const lines = block.split(/\r?\n/), timing = lines.findIndex((line) => line.includes('-->'))
+    return timing === -1 || timing > 1 ? [] : [{ time: lines[timing].replace('-->', '→'), text: lines.slice(timing + 1).join('\n') }]
+  })
+  if (!cues.length) return <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap break-words">{content}</pre>
+  return <ol className="m-0 list-none space-y-3 p-0">{cues.map((cue, index) => <li key={index} className="grid gap-0.5"><span className="font-mono text-xs text-muted-foreground tabular-nums">{cue.time}</span><span className="break-words whitespace-pre-line">{cue.text}</span></li>)}</ol>
 }
 function TaskLog({ id, active, useQuery }: { id: string; active: boolean } & Bindings<'useQuery'>) {
   const tx = useText()
