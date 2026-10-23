@@ -41,11 +41,12 @@ function Fields({ schema, value, onChange, readOnly, prefix = '', model }: Edito
   })}</div>
 }
 export function ConfigEditor({ ownerId, useSlot, ...props }: EditorProps & { ownerId: string; model?: Record<string, unknown> } & Bindings<'useSlot'>) {
+  const tx = useText()
   const editors = useSlot('config.editors')
   const Custom = editors.find((entry) => entry.id === ownerId)?.component
   if (Custom) return <Custom {...props} />
   const unsupported = schemaProblems(props.schema)
-  if (unsupported.length) return <p role="alert" className="text-sm text-status-danger-fg">配置需要插件编辑器：{unsupported.join(', ')}</p>
+  if (unsupported.length) return <p role="alert" className="text-sm text-status-danger-fg">{tx('schema.form.plugin.editor.required', { fields: unsupported.join(', ') })}</p>
   return <Fields {...props} />
 }
 export function useEditorSupported(useSlot: Bindings<'useSlot'>['useSlot'], ownerId: string, schema: JsonSchema) {

@@ -238,6 +238,7 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
   }
 
   const fetchModels = async (): Promise<void> => {
+    if (busy) return
     setBusy(true)
     setFailure(undefined)
     try {
@@ -349,7 +350,9 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
         <button
           type="button"
           className={styles['linkButton']}
-          disabled={disabled || busy || !askable || props.probeBlocked !== undefined}
+          // Keep focus during discovery so Modal can return to this trigger.
+          disabled={disabled || !askable || props.probeBlocked !== undefined}
+          aria-disabled={busy || undefined}
           title={props.probeBlocked !== undefined
             ? t(props.probeBlocked)
             : askable ? undefined : t('fetchNeedsBaseUrl')}

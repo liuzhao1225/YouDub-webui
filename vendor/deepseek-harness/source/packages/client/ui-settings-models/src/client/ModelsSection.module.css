@@ -212,6 +212,7 @@
 .dangerButton:disabled,
 .addButton:disabled,
 .linkButton:disabled,
+.linkButton[aria-disabled='true'],
 .addModelButton:disabled {
   opacity: 0.4;
   cursor: default;
@@ -313,7 +314,7 @@
   cursor: pointer;
 }
 
-.linkButton:hover:not(:disabled) {
+.linkButton:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--dsw-alias-interactive-bg-hover);
   color: var(--dsw-alias-label-secondary);
 }

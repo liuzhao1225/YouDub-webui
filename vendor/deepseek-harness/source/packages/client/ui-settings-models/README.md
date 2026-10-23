@@ -27,7 +27,7 @@ English | [中文](README.zh.md)
 
 Saving credentials or a custom provider preserves the selected model. YouDub selects its translation model in its workflow configuration.
 
-Providers retain their declared directory order, followed by additional live routes. No provider is preferred or added by this page.
+Providers retain their declared directory order, followed by additional live routes. No provider is preferred or added by this page. The add card starts with an unselected provider. Its credential fields and provider-specific hints appear only after selection; directory refreshes preserve an existing selection and draft while its settings namespace remains available.
 
 Open the Models page from the Settings navigation to see every configured provider as a row. A whole-section provider whose key is not configured anywhere renders as its open setup card instead, but only in the first-run posture and only until the user closes that card. Each card kind owns its own open state, so closing one never discards a draft in another.
 
@@ -38,6 +38,8 @@ Unsaved model fields and API-key inputs are checked before closing Settings, cha
 After Apply closes an editor, its saved status appears when the current provider, settings, and credential snapshot is ready. Opening any row's editor, adding a provider, and opening a removal confirmation wait for that refresh. A newly opened Models section, or one retrying after a page-load failure, waits for a ready snapshot before mounting editors. A background refresh preserves an open draft while its editor remains mounted; a failed page load or provider removal can close it.
 
 The plugin uses LLM, settings and credential services. It does not require a conversation session, account service or onboarding bootstrap payload.
+
+Model discovery keeps keyboard focus on its trigger while loading and returns focus there when the picker closes. Repeated activation while loading does not send another request.
 
 ### API keys
 

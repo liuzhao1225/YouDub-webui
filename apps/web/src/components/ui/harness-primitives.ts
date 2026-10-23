@@ -9,3 +9,4 @@ export { Switch } from '../../../../../vendor/deepseek-harness/source/packages/c
 export { SegmentedControl } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/SegmentedControl'
 export { Tooltip } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tooltip'
 export { Tag } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tag'
+export { DisclosureRow } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/DisclosureRow'

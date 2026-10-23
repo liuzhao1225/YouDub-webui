@@ -73,7 +73,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
     if (task) openTask(task)
   }
   return <div className="relative">
-    <form onSubmit={(event) => void submit(event)} className="relative rounded-2xl border border-border bg-card">
+    <form onSubmit={(event) => void submit(event)} className="@container/launch relative rounded-2xl border border-border bg-card">
       <div className="relative rounded-2xl p-4 sm:p-6">
         {linkSlot && <div className="pb-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -86,7 +86,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
           </div>
           {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
           {source && workflow.configSchema.properties?.source_proxy_port && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { source_proxy_port: workflow.configSchema.properties.source_proxy_port } }} value={{ source_proxy_port: config.source_proxy_port ?? 0 }} diagnostics={[]} readOnly={busy || !!pendingId} onChange={(value) => setConfig({ ...config, source_proxy_port: value.source_proxy_port })} /></div>}
-          <div className="my-2 text-center text-xs text-subtle-foreground">{tx("studio.or.upload.a.video")}</div>
+          <div className="my-2 text-center text-xs text-muted-foreground">{tx("studio.or.upload.a.video")}</div>
         </div>}
         <div className="grid gap-3">{workflow.inputs.map((slot) => <UploadSlot key={slot.name} slot={slot} alternative={slot.name === linkSlot} file={files[slot.name]} disabled={busy || !!pendingId} onChange={(file) => {
           if (file && slot.maxBytes && file.size > slot.maxBytes) {
@@ -98,8 +98,8 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
         }} />)}</div>
         {afterInputs && <div className="pt-4">{afterInputs}</div>}
         <div className={cn('flex flex-wrap items-center gap-3 pt-4', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
-          <div className="min-w-0 flex-1"><ConfigEditor useSlot={useSlot} mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
-          <Button type="submit" size="xl" className="w-full shrink-0 sm:ml-auto sm:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx("studio.submit.with.the.same.id") : source ? tx("studio.download.and.process") : tx("studio.start.processing")}</Button>
+          <div className="min-w-0 flex-[1_1_36rem]"><ConfigEditor useSlot={useSlot} mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
+          <Button type="submit" size="xl" className="ml-auto w-full shrink-0 @min-[36rem]/launch:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx("studio.submit.with.the.same.id") : source ? tx("studio.download.and.process") : tx("studio.start.processing")}</Button>
         </div>
       </div>
     </form>
@@ -136,9 +136,10 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
       <div aria-hidden="true" className="aurora -z-10" />
       <div aria-hidden="true" className="bg-dot-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
       <PageContainer className="pt-[var(--page-top)] pb-12">
-        <header className="flex animate-rise flex-col items-center text-center">
-          <BrandMark animated className="h-10 sm:h-11 [@media(max-height:820px)]:h-9" />
-          <h1 className="mt-6 text-[clamp(28px,4vw,48px)] leading-[1.2] font-bold tracking-tight text-balance">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
+        <header className="flex animate-rise flex-col items-center text-center [--hero-title-size:clamp(28px,4vw,48px)]">
+          {/* The 300-unit mark body matches the title size; the 412-unit viewBox includes optical clearance. */}
+          <BrandMark animated className="h-[calc(var(--hero-title-size)*412/300)]" />
+          <h1 className="mt-6 text-[length:var(--hero-title-size)] leading-[1.2] font-bold tracking-tight text-balance">{t.studio.heroTitleLead}{language === 'en' ? ' ' : ''}<span className="text-brand-gradient">{t.studio.heroTitleAccent}</span></h1>
         </header>
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
           {error && <div className="mb-4 space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx("studio.reload")}</Button></div>}

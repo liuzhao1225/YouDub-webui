@@ -27,21 +27,21 @@ export function Library({ useQuery, navigate }: Bindings<'useQuery' | 'navigate'
   const [status, setStatus] = useState(''), [offset, setOffset] = useState(0)
   const { data, error, refresh } = useQuery<TaskPage>(`/api/v2/tasks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`, 3000)
   return <Page>
-    <PageHeader title={tx("library.library")} actions={<Button onClick={() => navigate('/')}>{tx("library.new.task")}</Button>} />
+    <PageHeader title={tx("library.library")} actions={<Button size="sm" onClick={() => navigate('/')}>{tx("library.new.task")}</Button>} />
     <div className="flex flex-wrap items-center gap-2"><NativeSelect aria-label={tx("library.task.status")} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} ><option value="">{tx("library.all.statuses")}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(STATUS_LABELS[item])}</option>)}</NativeSelect><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx("library.refresh")}</Button></div>
     {error && <InlineAlert>{error}</InlineAlert>}
     {!data && !error && <p role="status" className="py-12 text-center text-sm text-muted-foreground">{tx("library.loading")}</p>}
-    {data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{status ? tx("library.no.tasks.with.this.status") : tx("library.no.tasks.yet")}</div>}
+    {data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{offset > 0 ? tx("library.no.tasks.on.this.page") : status ? tx("library.no.tasks.with.this.status") : tx("library.no.tasks.yet")}</div>}
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data?.items.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40">
       <TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="lg" className="rounded-none" />
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3"><h2 title={taskDisplayName(task)} className="line-clamp-2 min-w-0 break-words font-medium">{taskDisplayName(task)}</h2><TaskState status={task.status} /></div>
         <TaskProgress task={task} />
         {task.error && <p className="line-clamp-2 break-words text-xs text-status-danger-fg">{task.error.message}</p>}
-        <time dateTime={task.createdAt} className="mt-auto text-xs text-subtle-foreground">{formatDateTime(task.createdAt)}</time>
+        <time dateTime={task.createdAt} className="mt-auto text-xs text-muted-foreground">{formatDateTime(task.createdAt)}</time>
       </div>
     </Link>)}</div>
-    <div className="flex justify-end gap-2"><Button variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>{tx("library.previous")}</Button><Button variant="outline" disabled={!data?.hasMore} onClick={() => setOffset(offset + 20)}>{tx("library.next")}</Button></div>
+    {(offset > 0 || data?.hasMore) && <div className="flex justify-end gap-2"><Button variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}>{tx("library.previous")}</Button><Button variant="outline" disabled={!data?.hasMore} onClick={() => setOffset(offset + 20)}>{tx("library.next")}</Button></div>}
   </Page>
 }
 function RerunEditor({ submissionStore, task, close, locked, onLockChange, request, navigate, useQuery, useSlot }: { submissionStore: StudioDraftStore; task: TaskView; close(): void; locked: boolean; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
@@ -99,7 +99,7 @@ function Actions({ heading, submissionStore, task, refresh, prepareDelete, reque
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)) }
     finally { setBusy(false) }
   }
-  return <div className="space-y-4">{heading(<>{task.allowedActions.includes('cancel') && <Button variant="outline" disabled={busy || rerunLocked} onClick={() => void act('cancel')}><Square />{tx("library.cancel.task")}</Button>}{task.allowedActions.includes('retry') && <Button disabled={busy || rerunLocked} onClick={() => void act('retry')}><RotateCw />{tx("library.retry.from.start")}</Button>}{!task.graphSnapshot && task.allowedActions.includes('rerun') && <Button variant="outline" disabled={busy || rerunLocked} onClick={() => setRerun(!rerun)}>{tx("library.generate.again")}</Button>}{task.allowedActions.includes('delete') && <Button variant={confirmDelete ? 'destructive' : 'ghost'} disabled={busy || rerunLocked} onClick={() => { if (confirmDelete) void act('delete'); else { setConfirmDelete(true); prepareDelete(true) } }}><Trash2 />{confirmDelete ? tx("library.delete.task.and.files") : tx("library.delete.task")}</Button>}{confirmDelete && <Button variant="ghost" onClick={() => { setConfirmDelete(false); prepareDelete(false) }}>{tx("library.keep.task")}</Button>}</>)}{task.mayStillRun && <InlineAlert tone="warning">{tx("library.the.remote.request.may.still.be.running")}</InlineAlert>}{error && <InlineAlert>{error}</InlineAlert>}{rerun && <RerunEditor submissionStore={submissionStore} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} task={task} close={() => setRerun(false)} locked={rerunLocked} onLockChange={setRerunLocked} />}</div>
+  return <div className="space-y-4">{heading(<>{task.allowedActions.includes('cancel') && <Button size="sm" variant="outline" disabled={busy || rerunLocked} onClick={() => void act('cancel')}><Square />{tx("library.cancel.task")}</Button>}{task.allowedActions.includes('retry') && <Button size="sm" disabled={busy || rerunLocked} onClick={() => void act('retry')}><RotateCw />{tx("library.retry.from.start")}</Button>}{!task.graphSnapshot && task.allowedActions.includes('rerun') && <Button size="sm" variant="outline" disabled={busy || rerunLocked} onClick={() => setRerun(!rerun)}>{tx("library.generate.again")}</Button>}{task.allowedActions.includes('delete') && <Button size="sm" variant={confirmDelete ? 'destructive' : 'ghost'} disabled={busy || rerunLocked} onClick={() => { if (confirmDelete) void act('delete'); else { setConfirmDelete(true); prepareDelete(true) } }}><Trash2 />{confirmDelete ? tx("library.delete.task.and.files") : tx("library.delete.task")}</Button>}{confirmDelete && <Button size="sm" variant="ghost" onClick={() => { setConfirmDelete(false); prepareDelete(false) }}>{tx("library.keep.task")}</Button>}</>)}{task.mayStillRun && <InlineAlert tone="warning">{tx("library.the.remote.request.may.still.be.running")}</InlineAlert>}{error && <InlineAlert>{error}</InlineAlert>}{rerun && <RerunEditor submissionStore={submissionStore} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} task={task} close={() => setRerun(false)} locked={rerunLocked} onLockChange={setRerunLocked} />}</div>
 }
 export function TaskDetail({ submissionStore, params, request, navigate, useQuery, useSlot }: RouteProps & { submissionStore: StudioDraftStore } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot'>) {
   const tx = useText(), { language } = useI18n()
@@ -133,8 +133,8 @@ export function TaskDetail({ submissionStore, params, request, navigate, useQuer
       {(output.mimeType?.startsWith('text/') || output.mimeType === 'application/x-subrip') && <a href={output.url} target="_blank" rel="noreferrer" className="text-xs text-link">{tx("library.preview.text")}</a>}
     </Surface>})}</div></section>}
     {panels.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
-    {task.graphSnapshot ? <Disclosure  contained={true} title={<>{tx("library.step.list")} · {completed}/{task.steps.length}</>}><div className="mt-4">{stepList}</div></Disclosure> : <Surface as="section" className="p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</Surface>}
-    <Disclosure onToggle={(event) => setShowLog(event.currentTarget.open)} contained={true} title={<>{tx("library.task.log")}</>}>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</Disclosure>
+    {task.graphSnapshot ? <Disclosure  contained={true} title={`${tx("library.step.list")} · ${completed}/${task.steps.length}`}><div className="mt-4">{stepList}</div></Disclosure> : <Surface as="section" className="p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</Surface>}
+    <Disclosure onOpenChange={setShowLog} contained={true} title={tx("library.task.log")}>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</Disclosure>
   </Page>
 }
 function AudioOutput({ src }: { src: string }) {

@@ -1,5 +1,5 @@
 /** YouDub first-run layout with the unchanged Harness provider editor and services. */
-import React, { useEffect, useState, useSyncExternalStore } from 'react'
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { TranslationSetupController } from '../../../web/src/runtime/onboarding'
 import { TranslationSetupView } from '../../../web/src/components/translation-setup-view'
@@ -53,10 +53,20 @@ export function TranslationSetup({ request, onReady, wordmarkSrc, renderSlot, tr
   request: Request
   onReady(): void
   wordmarkSrc: string
-  renderSlot: (name: string) => React.ReactNode
+  renderSlot: (name: string, props?: Record<string, unknown>) => React.ReactNode
   translationModels: ReturnType<typeof applyTranslationSetup>
 }) {
   const [controller] = useState(() => new TranslationSetupController(request))
+  const leaveGuard = useRef<(() => boolean | Promise<boolean>) | undefined>(undefined)
+  const registerLeaveGuard = useCallback((guard: () => boolean | Promise<boolean>) => {
+    leaveGuard.current = guard
+    return () => { if (leaveGuard.current === guard) leaveGuard.current = undefined }
+  }, [])
+  const requestLeave = (action: () => void) => {
+    const allowed = leaveGuard.current?.() ?? true
+    if (typeof allowed === 'boolean') { if (allowed) action() }
+    else void allowed.then(value => { if (value) action() })
+  }
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   const models = useSyncExternalStore(translationModels.models.subscribe, translationModels.models.getSnapshot)
   const activity = useSyncExternalStore(translationModels.activity.subscribe, translationModels.activity.getSnapshot)
@@ -65,7 +75,7 @@ export function TranslationSetup({ request, onReady, wordmarkSrc, renderSlot, tr
   useEffect(() => { if (models.status === 'ready') void controller.refreshConfigured() }, [controller, models])
   // onReady releases this root registration; stop rendering its outlets before that effect runs.
   if (state.ready) return null
-  return <TranslationSetupView controller={controller} wordmarkSrc={wordmarkSrc} renderModels={props => <ModelsSurface busy={activity.pending > 0} onBusyChange={props.onBusyChange}>{renderSlot('youdub.setup.models')}</ModelsSurface>} />
+  return <TranslationSetupView controller={controller} wordmarkSrc={wordmarkSrc} onLeave={requestLeave} renderModels={props => <ModelsSurface busy={activity.pending > 0} onBusyChange={props.onBusyChange}>{renderSlot('youdub.setup.models', { registerLeaveGuard })}</ModelsSurface>} />
 }
 
 function ModelsSurface({ busy, onBusyChange, children }: { busy: boolean; onBusyChange(busy: boolean): void; children: React.ReactNode }) {

@@ -24,7 +24,7 @@ it('renders accessible language choices from node metadata without restricting t
   const descriptor = nodeDescriptors.recognize
   const changed = mount({ ...type, configSchema: descriptor.configSchema, ui: descriptor.ui }, [{ sourceLanguage: 'auto', initialPrompt: 'keep' }])
   const trigger = screen.getByLabelText('原文语言')
-  expect(trigger).toHaveTextContent('原文自动识别')
+  expect(trigger).toHaveTextContent('原文语言自动识别')
   expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
   expect(trigger).toHaveAttribute('aria-expanded', 'false')
   expect(descriptor.configSchema.properties.sourceLanguage.enum).toBeUndefined()
@@ -95,8 +95,8 @@ it.each([
   const descriptor = nodeDescriptors.translate
   const provider = { id: 'test', operations: [], capability: 'translation', ...state } as NodeTypeDefinition['provider']
   const changed = mount({ ...type, provider, configSchema: descriptor.configSchema, ui: descriptor.ui }, [{ targetLanguage: 'zh' }])
-  const trigger = screen.getByLabelText('目标语言')
-  expect(trigger).toHaveTextContent('目标中文')
+  const trigger = screen.getByLabelText('译文语言')
+  expect(trigger).toHaveTextContent('译文语言中文')
   expect(trigger).not.toHaveTextContent('不可用')
   const user = userEvent.setup()
   await user.click(trigger)
@@ -111,7 +111,7 @@ it('honors an explicitly empty model language list', async () => {
   const provider = { id: 'test', operations: [], capability: 'translation', models: [{ id: 'no-languages', target_languages: [] }] } as unknown as NodeTypeDefinition['provider']
   mount({ ...type, provider, configSchema: descriptor.configSchema, ui: descriptor.ui }, [{ targetLanguage: 'zh' }])
   const user = userEvent.setup()
-  await user.click(screen.getByLabelText('目标语言'))
+  await user.click(screen.getByLabelText('译文语言'))
   expect(await screen.findByRole('menuitem', { name: '中文 · 不可用' })).toBeDisabled()
   expect(screen.queryByRole('menuitem', { name: '日本語' })).not.toBeInTheDocument()
 })

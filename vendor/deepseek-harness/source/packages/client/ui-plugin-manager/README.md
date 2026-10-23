@@ -5,6 +5,8 @@ kind: "package-reference"
 
 # @deepseek-ai/dsh-client-ui-plugin-manager
 
+The page keeps its help action beside the title and omits the introduction row when the product supplies no introduction. Opening installation from the menu preserves its trigger for focus return after the dialog closes.
+
 English | [中文](README.zh.md)
 
 

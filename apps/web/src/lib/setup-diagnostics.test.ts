@@ -50,6 +50,12 @@ describe('setup diagnostic reports', () => {
     expect(report.indexOf('模型准备:')).toBeLessThan(report.indexOf('错误日志:'))
     for (const error of [state.error!, state.environment[0].detail!, state.models[0].error!]) expect(report.indexOf(error)).toBeGreaterThan(report.indexOf('错误日志:'))
   })
+  it('preserves current installation activity when the log has no matching line and redacts it', () => {
+    const report = setupReport({ ...state, environment: [{ id: 'python', name: 'Python', status: 'running', activity: 'Downloading https://example.com/python.tar.gz?token=private-value', log: 'Connecting' }] })
+    expect(report).toContain('Downloading https://example.com/python.tar.gz?[REDACTED]')
+    expect(report).toContain('Connecting')
+    expect(report).not.toContain('private-value')
+  })
   it('selects the environment template before the setup service connects', () => {
     const url = new URL(setupIssue(setupReport(null, 'Failed to fetch')).url)
     expect(url.searchParams.get('template')).toBe('setup-problem.md')

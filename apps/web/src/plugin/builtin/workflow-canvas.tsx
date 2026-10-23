@@ -62,7 +62,7 @@ function NodeCard({ data, selected }: NodeProps<FlowNode>) {
       </div>
     </>}
     {data.virtual && !data.readOnly && <div className="nodrag flex justify-end border-t border-border px-4 py-2.5 text-xs"><Button variant="link" size="sm" disabled={data.disabled} onClick={data.open}>{tx("workflow.canvas.full.settings")}<ExternalLink className="size-3" /></Button></div>}
-    {data.status?.message && <p className="truncate px-4 pb-3 text-xs text-muted-foreground">{taskProgressMessage(data.status.message, tx)}</p>}
+    {data.status?.status !== 'completed' && data.status?.status !== 'awaiting_review' && data.status?.message && <p className="truncate px-4 pb-3 text-xs text-muted-foreground">{taskProgressMessage(data.status.message, tx)}</p>}
     {data.status?.error && <p className="px-4 pb-3 text-xs text-status-danger-fg">{data.status.error.message}</p>}
     {data.status?.status === 'running' && data.status.progress != null && <Progress value={data.status.progress} label={data.label} />}
   </div>
@@ -84,15 +84,15 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
   const [measurements, setMeasurements] = useState<Record<string, { width: number; height: number }>>({})
   const nodes: FlowNode[] = useMemo(() => {
     const execution = document.nodes.map((node, index) => {
-      const definition = nodeDefinition(node, types)
+      const definition = nodeDefinition(node, types), status = steps.find((step) => step.id === node.id)
       return {
         id: node.id, type: 'workflow' as const, dragHandle: '.workflow-node-drag', selected: node.id === selected,
         position: viewPositions[node.id] ?? document.presentation.positions[node.id] ?? { x: (index + 1) * NODE_COLUMN_SPACING, y: 60 },
         data: {
-          label: node.label || text(definition?.label, language) || node.type, node, definition,
-          status: steps.find((step) => step.id === node.id), readOnly, disabled, missing: !definition,
+          label: node.label || text(definition?.label, language) || text(status?.label, language) || node.type, node, definition,
+          status, readOnly, disabled, missing: !definition,
           inputs: definition?.inputs.map((port) => ({ id: port.id, label: text(port.label, language), required: port.required, connected: document.edges.some((edge) => edge.target.nodeId === node.id && edge.target.portId === port.id) })) ?? document.edges.filter((edge) => edge.target.nodeId === node.id).map((edge) => ({ id: edge.target.portId, label: edge.target.portId, required: false, connected: true })),
-          outputs: definition?.outputs.map((port) => ({ id: port.name, label: text(port.label, language) || port.name })) ?? document.edges.filter((edge) => edge.source.nodeId === node.id).map((edge) => ({ id: edge.source.portId, label: edge.source.portId })),
+          outputs: definition?.outputs.map((port) => ({ id: port.name, label: text(port.label, language) || port.name })) ?? [...new Set(document.edges.filter((edge) => edge.source.nodeId === node.id).map((edge) => edge.source.portId))].map((id) => ({ id, label: id })),
           change: (next: GraphNode) => onChange?.({ ...document, nodes: document.nodes.map((item) => item.id === next.id ? next : item) }),
           open: () => onOpen(node.id),
         },

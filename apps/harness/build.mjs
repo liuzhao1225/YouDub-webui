@@ -59,7 +59,7 @@ const host = await build({ ...common, entryPoints: ['src/host.mjs'], outfile: 'd
 });
 const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile: 'dist/client.js', platform: 'browser', format: 'cjs', jsx: 'automatic', metafile: true,
   external: ['react', 'react/jsx-runtime', 'react-dom', '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-store'], loader: { '.css': 'text' }, nodePaths: [resolve(here, 'node_modules'), resolve(web, 'node_modules')],
-  define: { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(product.version), 'process.env.DSH_CLIENT_TITLE': JSON.stringify('YouDub') },
+  define: { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(product.version), 'process.env.DSH_CLIENT_TITLE': JSON.stringify('YouDub'), 'process.env.DSH_CLIENT_COMMIT_HASH': 'undefined', 'process.env.DSH_CLIENT_GIT_DIRTY': 'undefined' },
   alias: { '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@/components/video-player': resolve(frontend, 'video-player.tsx'), '@': resolve(web, 'src') },
   plugins: [sourceBuiltImports, officialAssets, { name: 'youdub-component-boundaries', setup(builder) {
     builder.onResolve({ filter: /^cordis$/ }, () => ({ path: '@deepseek-ai/cordis', external: true }));
@@ -100,7 +100,7 @@ const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile
       const flow = await readFile(webRequire.resolve('@xyflow/react/dist/style.css'), 'utf8');
       return { contents: 'export default ' + JSON.stringify(result.css + '\n' + flow + '\n' + workflow), loader: 'js' };
     });
-  } }, { name: 'original-youdub-theme', setup(builder) {
+  } }, { name: 'harness-youdub-theme', setup(builder) {
     builder.onResolve({ filter: /^youdub:theme$/ }, () => ({ path: 'theme', namespace: 'youdub-theme' }));
     builder.onLoad({ filter: /.*/, namespace: 'youdub-theme' }, async () => {
       const css = await readFile(resolve(root, 'apps/web/src/app/globals.css'), 'utf8');
@@ -112,17 +112,9 @@ const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile
         if (depth) throw new Error(`Unclosed original theme block: ${selector}`);
         return css.slice(open, end);
       }
-      const variables = selector => Object.fromEntries([...block(selector).matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)].map(([, name, value]) => [name, value.trim()]));
-      const light = variables(':root'), dark = { ...light, ...variables('.dark') };
-      const tokens = Object.fromEntries(Object.entries(light).map(([name, value]) => [name, { light: value, dark: dark[name] }]));
-      // Resolve the alias declarations from globals.css; Web and Desktop share one palette bridge.
-      for (const [name, value] of Object.entries(light)) {
-        const reference = /^var\((--[\w-]+)\)$/.exec(value)?.[1];
-        if (name.startsWith('--dsw-alias-') && reference && tokens[reference]) tokens[name] = tokens[reference];
-      }
-      tokens['--dsw-specific-sidebar-fill'] = tokens['--surface'];
+      const palette = await readFile(resolve(web, 'src/app/harness-palette.css'), 'utf8');
       const theme = ['eq', 'shimmer', 'rise', 'drift'].map(name => '@keyframes yd-' + name + block('@keyframes ' + name)).join('\n');
-      return { contents: 'export const tokens = ' + JSON.stringify(tokens) + ';export default ' + JSON.stringify(theme), loader: 'js' };
+      return { contents: 'export default ' + JSON.stringify(palette + '\n' + theme), loader: 'js' };
     });
   } }],
   banner: { js: 'window.__ModuleLoader__.load({id:"@youdub/harness-subtitles",factory:(require)=>{const module={exports:{}};const exports=module.exports;' },

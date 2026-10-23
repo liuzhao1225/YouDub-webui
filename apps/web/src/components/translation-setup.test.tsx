@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { TranslationSetup } from './translation-setup'
+import { TranslationSetupView } from './translation-setup-view'
+import { TranslationSetupController } from '@/runtime/onboarding'
+import { LanguageProvider } from '@/lib/i18n'
 
 // The shared provider editor has its own source-derived editor/discovery tests.
 vi.mock('./models-settings', () => ({ ModelsSettings: ({ onReadyChange, onDirtyChange, onBusyChange }: { onReadyChange(ready: boolean): void; onDirtyChange(dirty: boolean): void; onBusyChange(busy: boolean): void }) => <div><h1>模型</h1><button onClick={() => onReadyChange(true)}>保存供应商</button><button onClick={() => onDirtyChange(true)}>编辑供应商</button><button onClick={() => onBusyChange(true)}>正在保存</button></div> }))
@@ -62,4 +65,23 @@ it.each(['编辑供应商', '正在保存'])('keeps first-run setup open while %
   fireEvent.click(screen.getByRole('button', { name: action }))
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
   expect(screen.getByRole('button', { name: '稍后配置' })).toBeDisabled()
+})
+
+
+it.each(['稍后配置', '继续'])('waits for the embedding editor leave guard before %s', async (action) => {
+  const fetch = server()
+  const controller = new TranslationSetupController()
+  let approvedAction: (() => void) | undefined
+  const guard = vi.fn((next: () => void) => { approvedAction = next })
+  controller.start()
+  const view = render(<LanguageProvider><TranslationSetupView controller={controller} onLeave={guard} renderModels={({ onReadyChange }) => <button onClick={() => onReadyChange(true)}>已配置服务</button>} /></LanguageProvider>)
+  fireEvent.click(await screen.findByRole('button', { name: '已配置服务' }))
+  fireEvent.click(screen.getByRole('button', { name: action }))
+  expect(guard).toHaveBeenCalledOnce()
+  expect(controller.getSnapshot().ready).toBe(false)
+  expect(fetch.mock.calls.some(([, init]) => init?.method === 'PATCH')).toBe(false)
+  await approvedAction!()
+  expect(controller.getSnapshot().ready).toBe(true)
+  expect(fetch.mock.calls.some(([, init]) => init?.method === 'PATCH')).toBe(action === '稍后配置')
+  view.unmount(); controller.stop()
 })

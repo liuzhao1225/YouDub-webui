@@ -45,11 +45,26 @@ it('filters cancelling tasks and distinguishes an empty filter from an empty lib
   const request = vi.fn(async () => ({ items: [], hasMore: false, limit: 20, offset: 0 }))
   mount(request, 'library')
   await screen.findByText('还没有任务')
+  expect(screen.queryByRole('button', { name: '上一页' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '下一页' })).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getByLabelText('任务状态'))
   await userEvent.setup().click(screen.getByRole('menuitem', { name: '正在取消' }))
   await screen.findByText('没有符合此状态的任务')
   expect(screen.queryByText('还没有任务')).not.toBeInTheDocument()
   expect(request).toHaveBeenCalledWith('/api/v2/tasks?limit=20&offset=0&status=cancelling', expect.objectContaining({ signal: expect.any(AbortSignal) }))
+})
+
+it('keeps a way back when the last page becomes empty', async () => {
+  const request = vi.fn(async (path: string) => ({ items: path.includes('offset=20') ? [] : [task], hasMore: !path.includes('offset=20'), limit: 20, offset: path.includes('offset=20') ? 20 : 0 }))
+  mount(request, 'library')
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: '下一页' }))
+  await screen.findByText('本页没有任务')
+  expect(screen.queryByText('还没有任务')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: '上一页' }))
+  await screen.findByRole('heading', { name: 'document.txt' })
+  expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled()
 })
 
 it('keeps rerun state until the user checks or clears the failed import, then allows changed configuration', async () => {
@@ -104,11 +119,11 @@ it('shows graph results before a collapsed step list and uses the workflow title
   await screen.findByRole('heading', { name: '字幕校对', level: 1 })
   expect(screen.queryByText(/youdub.graph/)).not.toBeInTheDocument()
   const results = screen.getByRole('heading', { name: '生成文件' })
-  const steps = screen.getByText(/步骤列表/).closest('details')!
-  expect(steps.open).toBe(false)
+  const steps = screen.getByRole('button', { name: /步骤列表/ })
+  expect(steps).toHaveAttribute('aria-expanded', 'false')
   expect(results.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   await userEvent.setup().click(screen.getByText(/步骤列表/))
-  expect(steps.open).toBe(true)
+  expect(steps).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByRole('link', { name: '翻译' })).toHaveAttribute('href', '/tasks/original/nodes/translate')
 })
 

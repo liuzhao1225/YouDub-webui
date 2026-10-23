@@ -1,9 +1,20 @@
-import type { DetailsHTMLAttributes, ReactNode } from 'react'
-import styles from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/DisclosureRow.module.css'
+import { useEffect, useState, type ReactNode } from 'react'
+import { DisclosureRow } from './harness-primitives'
 import local from './disclosure.module.css'
 import surface from './surfaces.module.css'
 import { ChevronRight } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-export function Disclosure({ title, children, className, contained = true, inline = false, ...props }: Omit<DetailsHTMLAttributes<HTMLDetailsElement>, 'title'> & { title: ReactNode; contained?: boolean; inline?: boolean }) {
-  return <details {...props} className={cn(local.root, inline && local.inline, contained && [surface.surface, local.contained], className)}><summary className={cn(styles.row, local.summary)}><span className={styles.leading}><ChevronRight aria-hidden="true" /></span><span className={cn(styles.title, local.title)}>{title}</span></summary><div className={local.content}>{children}</div></details>
+
+/** Harness owns disclosure keyboard handling, chevrons, type and states. */
+export function Disclosure({ title, children, className, contained = true, inline = false, open = false, onOpenChange }: {
+  title: string; children: ReactNode; className?: string; contained?: boolean; inline?: boolean
+  open?: boolean; onOpenChange?: (open: boolean) => void
+}) {
+  const [expanded, setExpanded] = useState(open)
+  useEffect(() => setExpanded(open), [open])
+  return <DisclosureRow title={title} icon={<ChevronRight aria-hidden="true" />} open={expanded} expandable expandOnRowClick
+    onToggle={() => { const next = !expanded; setExpanded(next); onOpenChange?.(next) }}
+    className={cn(inline && local.inline, contained && [surface.surface, local.contained], className)}>
+    <div className={local.content}>{children}</div>
+  </DisclosureRow>
 }

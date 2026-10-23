@@ -88,7 +88,7 @@ it('restores history only on the results tab and never pairs old translation wit
   await userEvent.click(screen.getByRole('tab', { name: '配置' }))
   expect(screen.queryByRole('button', { name: '将此版本恢复为订正' })).not.toBeInTheDocument()
   expect(screen.getByText('测试服务')).toBeInTheDocument()
-  expect(screen.getByText('原始配置').closest('details')).not.toHaveAttribute('open')
+  expect(screen.getByRole('button', { name: '原始配置' })).toHaveAttribute('aria-expanded', 'false')
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 })
 
@@ -191,7 +191,9 @@ it('pairs synthesized audio with translation by segment ID, with downloads and c
   expect(within(first).getByRole('link', { name: '下载音频 1' })).toHaveAttribute('download')
   expect(within(second).getByText('第二句配音。')).toBeInTheDocument()
   expect(within(second).getByLabelText('配音 2')).toHaveAttribute('src', '/api/v2/tasks/task/artifacts/audio-two')
-  expect(screen.getByText('原始数据').closest('details')).not.toHaveAttribute('open')
+  expect(screen.getByRole('button', { name: '原始数据' })).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.queryByRole('button', { name: '保存订正' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: '确认并继续' })).toBeEnabled()
 })
 
 it('keeps audio available without guessing missing or ambiguous translation matches', async () => {

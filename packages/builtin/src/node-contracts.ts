@@ -7,8 +7,8 @@ const languageOptions = [
   { value: 'auto', label: { default: 'Auto detect', translations: { zh: '自动识别', ja: '自動検出' } } },
   { value: 'en', label: 'English' }, { value: 'zh', label: '中文' }, { value: 'ja', label: '日本語' },
 ]
-const source = { sourceLanguage: { ...language, 'x-options': languageOptions, 'x-optionsFrom': 'source_languages', 'x-short-title': { default: 'From', translations: { zh: '原文', ja: '入力' } } } }
-const target = { targetLanguage: { ...language, 'x-options': languageOptions.filter((item) => item.value !== 'auto'), 'x-optionsFrom': 'target_languages', 'x-short-title': { default: 'To', translations: { zh: '目标', ja: '出力先' } } } }
+const source = { sourceLanguage: { ...language, 'x-options': languageOptions, 'x-optionsFrom': 'source_languages', 'x-short-title': { default: 'Source language', translations: { zh: '原文语言', ja: '元の言語' } } } }
+const target = { targetLanguage: { ...language, 'x-options': languageOptions.filter((item) => item.value !== 'auto'), 'x-optionsFrom': 'target_languages', 'x-short-title': { default: 'Translation language', translations: { zh: '译文语言', ja: '翻訳先の言語' } } } }
 const port = (id: string, label: string, schema: string | string[], kind: 'json' | 'artifact' = 'json', required = true) => ({ id, label, kind, acceptedSchemaIds: typeof schema === 'string' ? [schema] : schema, required })
 const audio = (id: string, label: string, required = true) => port(id, label, 'audio/wav/v1', 'artifact', required)
 const transcript = () => port('transcript', '原文', 'transcript/v1')
@@ -36,7 +36,7 @@ export const nodeDescriptors: Record<string, NodeDescriptor> = {
 
 nodeDescriptors.synthesize.ui = { quickFields: ['targetLanguage'], editorId: 'youdub.synthesize' }
 nodeDescriptors.export.ui = { quickFields: ['targetLanguage'] }
-for (const [operation, title] of Object.entries({ synthesize: ['Dubbing language', '配音目标', '吹き替えの言語'], align: ['Alignment language', '对齐目标', '整列の言語'], export: ['Export language', '导出目标', '書き出しの言語'] })) {
+for (const [operation, title] of Object.entries({ synthesize: ['Dubbing language', '配音语言', '吹き替えの言語'], align: ['Alignment language', '对齐语言', '整列の言語'], export: ['Export language', '导出语言', '書き出しの言語'] })) {
   const properties = nodeDescriptors[operation].configSchema.properties
   properties.targetLanguage = { ...properties.targetLanguage, 'x-short-title': { default: title[0], translations: { zh: title[1], ja: title[2] } } }
 }

@@ -40,7 +40,7 @@ it('exposes actual progress and no percentage for an unknown total', () => {
 it('opens diagnostic details without losing their content', async () => {
   const user = userEvent.setup(); render(<Disclosure title="任务日志"><p>下载完成</p></Disclosure>)
   await user.click(screen.getByText('任务日志'))
-  expect(screen.getByText('任务日志').closest('details')).toHaveAttribute('open')
+  expect(screen.getByRole('button', { name: '任务日志' })).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByText('下载完成')).toBeVisible()
 })
 

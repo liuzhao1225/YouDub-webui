@@ -31,7 +31,7 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
       </div> : <div className="flex flex-col items-center gap-2.5 text-center">
         <span className="flex size-11 items-center justify-center rounded-lg bg-card"><Upload className="size-5 text-link" /></span>
         <p className="text-[15px] font-medium">{video ? tx("media.upload.drop.a.video.here.or.click.to.choose") : tx("media.upload.drop.a.file.here.or.click.to.choose")}</p>
-        <p className="text-xs text-subtle-foreground">{text(slot.label, language)}{slot.required || alternative ? '' : ` · ${tx("media.upload.optional")}`}{slot.maxBytes ? ` · ${tx("media.upload.up.to")} ${formatBytes(slot.maxBytes)}` : ''}</p>
+        <p className="text-xs text-muted-foreground">{[!alternative && text(slot.label, language), !slot.required && !alternative && tx("media.upload.optional"), slot.maxBytes && `${tx("media.upload.up.to")} ${formatBytes(slot.maxBytes)}`].filter(Boolean).join(' · ')}</p>
       </div>}
     </div>
   </div>
@@ -40,7 +40,7 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
 export function LaunchCard({ children }: { children: ReactNode }) {
   return <div className="relative">
     <div aria-hidden="true" className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 bg-[radial-gradient(55%_60%_at_30%_45%,rgb(251_114_153/0.16),transparent_70%),radial-gradient(50%_60%_at_75%_55%,rgb(0_174_236/0.16),transparent_70%)] opacity-70 blur-2xl dark:opacity-100" />
-    <div className="relative rounded-2xl border border-border bg-card">
+    <div className="@container/launch relative rounded-2xl border border-border bg-card">
       <div className="relative rounded-2xl p-4 sm:p-6">{children}</div>
     </div>
   </div>

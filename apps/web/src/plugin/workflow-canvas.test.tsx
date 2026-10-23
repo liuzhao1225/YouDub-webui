@@ -63,13 +63,14 @@ it('places clicked nodes using the current viewport and preserves the graph', as
 })
 
 it('shows a review action on every waiting node and read-only result actions elsewhere', async () => {
-  const open = vi.fn(), steps: TaskStep[] = [{ id: 'a', label: 'A', status: 'awaiting_review', progress: 1 }, { id: 'b', label: 'B', status: 'awaiting_review', progress: 1 }, { id: 'c', label: 'C', status: 'completed', progress: 1 }]
+  const open = vi.fn(), steps: TaskStep[] = [{ id: 'a', label: 'A', status: 'awaiting_review', progress: 1, message: '正在提取原始音频' }, { id: 'b', label: 'B', status: 'awaiting_review', progress: 1 }, { id: 'c', label: 'C', status: 'completed', progress: 1 }]
   const { container } = render(<LanguageProvider><WorkflowCanvas document={graph()} types={[type]} steps={steps} readOnly onOpen={open} /></LanguageProvider>)
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   expect(document.querySelector('[aria-haspopup="menu"]')).not.toBeInTheDocument()
   expect(screen.getAllByRole('button', { name: '确认结果' })).toHaveLength(2)
   expect(screen.getAllByRole('button', { name: '查看结果' })).toHaveLength(1)
   expect(container.querySelectorAll('.workflow-node-review')).toHaveLength(2)
+  expect(screen.queryByText('正在提取原始音频')).not.toBeInTheDocument()
   expect(screen.getAllByText('人工确认')).toHaveLength(2)
   expect(screen.queryByText('需确认结果')).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getAllByRole('button', { name: '确认结果' })[1])
@@ -135,4 +136,23 @@ it('uses typed numeric enums and model language options for canvas quick fields'
   await user.click(screen.getByLabelText('语言'))
   expect(screen.getByRole('menuitem', { name: 'zh · 不可用' })).toBeDisabled()
   expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument()
+})
+
+
+it('keeps saved task labels and unique output ports when a node plugin is unavailable', () => {
+  const document = graph()
+  document.edges = [
+    { id: 'ab', source: { nodeId: 'a', portId: 'translation' }, target: { nodeId: 'b', portId: 'text' } },
+    { id: 'ac', source: { nodeId: 'a', portId: 'translation' }, target: { nodeId: 'c', portId: 'text' } },
+  ]
+  const steps: TaskStep[] = [
+    { id: 'a', label: { default: 'Translate', translations: { zh: '翻译' } }, status: 'completed', progress: 1, message: '正在翻译' },
+    { id: 'b', label: '处理', status: 'waiting', progress: 0, message: '等待服务响应' },
+  ]
+  render(<LanguageProvider><WorkflowCanvas document={document} types={[]} steps={steps} readOnly onOpen={() => {}} /></LanguageProvider>)
+  expect(screen.getByText('翻译')).toBeInTheDocument()
+  expect(screen.getAllByText('缺少节点插件')).toHaveLength(3)
+  expect(screen.getAllByText('translation')).toHaveLength(1)
+  expect(screen.queryByText('正在翻译')).not.toBeInTheDocument()
+  expect(screen.getByText('等待服务响应')).toBeInTheDocument()
 })

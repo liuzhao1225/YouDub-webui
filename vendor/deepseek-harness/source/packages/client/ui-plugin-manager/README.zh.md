@@ -5,6 +5,8 @@ kind: "package-reference"
 
 # @deepseek-ai/dsh-client-ui-plugin-manager
 
+页面说明按钮与标题同排；产品未提供简介时，省略简介行。从菜单打开安装弹窗后，关闭弹窗会将焦点返回仍存在的菜单触发按钮。
+
 [English](README.md) | 中文
 
 

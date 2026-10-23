@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/design-platform.css";
+@import "./harness-palette.css";
 @import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/base.css";
 @import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/corner-shape.css";
 @import "../../../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/gradient-shadow-text.css";
@@ -93,165 +95,6 @@
   }
 }
 
-/* 浅色主题 */
-:root {
-  /* Single color bridge: the native build reads these same aliases. */
-  --dsw-alias-bg-base: var(--background);
-  --dsw-alias-bg-layer-1: var(--card);
-  --dsw-alias-bg-layer-2: var(--elevated);
-  --dsw-alias-bg-layer-3: var(--elevated);
-  --dsw-alias-bg-overlay: var(--popover);
-  --dsw-alias-bg-module-platform: var(--muted);
-  --dsw-alias-label-primary: var(--foreground);
-  --dsw-alias-label-secondary: var(--muted-foreground);
-  --dsw-alias-label-tertiary: var(--muted-foreground);
-  --dsw-alias-label-caption: var(--subtle-foreground);
-  --dsw-alias-label-dimmed: var(--subtle-foreground);
-  --dsw-alias-label-primary-foreground: var(--primary-foreground);
-  --dsw-alias-label-error: var(--status-danger-fg);
-  --dsw-alias-border-l1: var(--border);
-  --dsw-alias-border-l2: var(--border);
-  --dsw-alias-border-l3: var(--border);
-  --dsw-alias-border-l4: var(--input);
-  --dsw-alias-brand-primary: var(--primary);
-  --dsw-alias-button-primary-fill: var(--primary);
-  --dsw-alias-button-primary-hover: var(--primary-hover);
-  --dsw-alias-button-tool-bar-fill: var(--muted);
-  --dsw-alias-button-tool-bar-hover: var(--accent);
-  --dsw-alias-interactive-bg-hover: var(--accent);
-  --dsw-alias-interactive-bg-active: var(--muted);
-  --dsw-alias-state-business-primary: var(--link);
-  --dsw-alias-state-success-primary: var(--status-success-fg);
-  --dsw-alias-state-error-primary: var(--status-danger-fg);
-  --dsw-alias-state-warn-primary: var(--status-warning-fg);
-  --dsw-alias-state-idle-primary: var(--status-neutral-fg);
-  --dsw-alias-switch-thumb: var(--foreground);
-  --dsw-alias-state-warn-label: var(--status-warning-fg);
-  --dsw-alias-settings-card-fill: var(--card);
-  --dsw-alias-settings-card-stroke: var(--input);
-  --dsw-alias-interactive-bg-hover-solid: var(--accent);
-  --dsw-alias-interactive-bg-hover-danger: color-mix(in srgb, var(--status-danger) 10%, transparent);
-  --dsw-alias-scrollbar-bg-l2: var(--scrollbar);
-  --dsw-alias-scrollbar-hover-l2: var(--muted-foreground);
-  --dsw-alias-tooltip-bg: #25252d;
-  --dsw-static-neutral-bluish-00: #ffffff;
-  --dsw-alias-bg-mask-1: rgb(0 0 0 / 0.4);
-  --dsw-menu-surface-fill: color-mix(in srgb, var(--elevated) 75%, transparent);
-  --dsw-font-xs-13: 13px/20px var(--dsw-font-family);
-  /* 界面字体跟随各平台的系统字体。 */
-  --app-font-sans: var(--dsw-font-family);
-  --app-font-mono: var(--ds-font-family-code);
-
-  /* Logo 原色 */
-  --brand-red: #ff0033;
-  --brand-pink: #fb7299;
-  --brand-blue: #00aeec;
-
-  --background: #f6f6f8;
-  --surface: #fbfbfc;
-  --card: #ffffff;
-  --elevated: #ffffff;
-  --input-bg: #ffffff;
-  --foreground: #0b0b0f;
-  --card-foreground: #0b0b0f;
-  --popover: #ffffff;
-  --popover-foreground: #0b0b0f;
-  /* 功能红保留品牌色相，确保白色小字对比度。 */
-  --primary: #e6002e;
-  --primary-hover: #cc0029;
-  --primary-foreground: #ffffff;
-  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 4px 12px -6px rgb(255 0 51 / 0.2);
-  --secondary: rgb(0 174 236 / 0.1);
-  --secondary-foreground: #00739f;
-  --muted: rgb(9 9 11 / 0.04);
-  --muted-foreground: #5f5f6b;
-  --subtle-foreground: #5f5f6b;
-  --accent: rgb(9 9 11 / 0.05);
-  --accent-foreground: #0b0b0f;
-  --destructive: #c8002a;
-  --border: rgb(9 9 11 / 0.08);
-  --input: #dedee3;
-  --ring: #00739f;
-  --link: #00739f;
-  --status-success: #00aeec;
-  --status-success-fg: #00739f;
-  --status-running: #fb7299;
-  --status-running-fg: #c2185b;
-  --status-danger: #ff0033;
-  --status-danger-fg: #c8002a;
-  --status-warning: #f5a524;
-  --status-warning-fg: #9a5b00;
-  --status-neutral: #71717a;
-  --status-neutral-fg: #52525b;
-  --card-shadow: 0 1px 2px rgb(9 9 11 / 0.04), 0 2px 10px -4px rgb(9 9 11 / 0.08);
-  --float-shadow: 0 20px 48px -16px rgb(9 9 11 / 0.25), 0 4px 12px -6px rgb(9 9 11 / 0.1);
-  --glass: rgb(255 255 255 / 0.75);
-  --grid-dot: rgb(9 9 11 / 0.07);
-  --aurora-opacity: 0.55;
-  --scrollbar: rgb(9 9 11 / 0.18);
-  --chart-1: #ff0033;
-  --chart-2: #00aeec;
-  --chart-3: #fb7299;
-  --chart-4: #006f99;
-  --chart-5: #a90038;
-  --radius: var(--dsw-radius-md);
-  --sidebar: #fbfbfc;
-  --sidebar-foreground: #0b0b0f;
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgb(9 9 11 / 0.05);
-  --sidebar-accent-foreground: #0b0b0f;
-  --sidebar-border: rgb(9 9 11 / 0.08);
-  --sidebar-ring: var(--ring);
-}
-
-/* 深色主题；首次启动默认为浅色。 */
-.dark {
-  --ring: #3cc4f5;
-  --background: #0a0a0e;
-  --surface: #0e0e13;
-  --card: #121218;
-  --elevated: #18181f;
-  --input-bg: rgb(255 255 255 / 0.03);
-  --foreground: #ededf0;
-  --card-foreground: #ededf0;
-  --popover: #18181f;
-  --popover-foreground: #ededf0;
-  --primary: #e6002e;
-  --primary-hover: #cc0029;
-  --primary-glow: 0 1px 0 rgb(255 255 255 / 0.16) inset, 0 0 0 1px rgb(255 0 51 / 0.2),
-    0 6px 18px -8px rgb(255 0 51 / 0.24);
-  --secondary: rgb(0 174 236 / 0.14);
-  --secondary-foreground: #5fd0f5;
-  --muted: rgb(255 255 255 / 0.04);
-  --muted-foreground: #a0a0ab;
-  --subtle-foreground: #a0a0ab;
-  --accent: rgb(255 255 255 / 0.065);
-  --accent-foreground: #ededf0;
-  --destructive: #ff6b81;
-  --border: rgb(255 255 255 / 0.08);
-  --input: #383840;
-  --link: #3cc4f5;
-  --status-success-fg: #5fd0f5;
-  --status-running-fg: #ff9ab8;
-  --status-danger-fg: #ff6b81;
-  --status-warning-fg: #f7c26b;
-  --status-neutral: #a1a1aa;
-  --status-neutral-fg: #b4b4bd;
-  --card-shadow: 0 1px 0 rgb(255 255 255 / 0.035) inset, 0 1px 2px rgb(0 0 0 / 0.5);
-  --float-shadow: 0 28px 64px -16px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
-  --glass: rgb(16 16 22 / 0.72);
-  --grid-dot: rgb(255 255 255 / 0.055);
-  --aurora-opacity: 1;
-  --scrollbar: rgb(255 255 255 / 0.16);
-  --sidebar: #0e0e13;
-  --sidebar-foreground: #ededf0;
-  --sidebar-accent: rgb(255 255 255 / 0.065);
-  --sidebar-accent-foreground: #ededf0;
-  --sidebar-border: rgb(255 255 255 / 0.08);
-  color-scheme: dark;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring;
@@ -338,13 +181,17 @@
   background-size: 160px 160px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* Important declarations in components outrank the desktop's important utilities.
+   Keep this outside base: the Harness build replaces the product's base layer. */
+@layer components {
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 

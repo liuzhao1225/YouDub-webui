@@ -45,6 +45,12 @@
   max-width: 100%;
 }
 
+.pageTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .pageTitle {
   margin: 0;
   font-size: 20px;
@@ -53,9 +59,6 @@
 }
 
 .pageIntro {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 20px;

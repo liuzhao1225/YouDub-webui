@@ -107,3 +107,5 @@ Windows Electron 的 `data-windows-titlebar` 标记在所有列上方预留顶�
 无。
 
 </details>
+
+macOS 桌面侧栏完全收起，展开与新建入口保留在主区顶部；展开时侧栏从窗口顶部纵向贯穿到底。

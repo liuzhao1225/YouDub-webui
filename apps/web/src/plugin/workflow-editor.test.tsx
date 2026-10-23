@@ -72,6 +72,18 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
 }
 afterEach(() => { cleanup(); workflowDrafts.clear(); workflowViews.clear(); window.localStorage.clear(); window.history.replaceState(null, '', '/'); vi.restoreAllMocks() })
 
+it('rejects an unsupported import with recovery guidance and preserves the original diagnostic', async () => {
+  const { request } = mount('/workflows')
+  await screen.findByRole('button', { name: '导入' })
+  const file = new File(['{}'], 'invalid.workflow.json', { type: 'application/json' })
+  Object.defineProperty(file, 'text', { value: async () => '{}' })
+  fireEvent.change(window.document.querySelector('input[type="file"]')!, { target: { files: [file] } })
+  expect(await screen.findByRole('alert')).toHaveTextContent('文件格式不受支持，请选择从 YouDub 导出的工作流 JSON 文件。')
+  expect(request.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false)
+  await userEvent.click(screen.getByRole('button', { name: '诊断详情' }))
+  expect(screen.getByText('Unsupported workflow file. Expected youdub.workflow version 1.')).toBeVisible()
+})
+
 it('shows built-in names in Japanese and saves a copy with the displayed names and custom port edits', async () => {
   window.localStorage.setItem('youdub-ui-language', 'ja')
   const template = { ...structuredClone(dubbingTemplate), id: 'youdub.dubbing', title: '视频配音' } as WorkflowDocument
@@ -118,6 +130,24 @@ it('offers use and edit separately and opens use directly in the run panel', asy
   expect(screen.getByText('模板')).toBeInTheDocument()
   expect(screen.getAllByRole('button', { name: '保存副本' })).toHaveLength(1)
   expect(screen.queryByRole('button', { name: '另存为' })).not.toBeInTheDocument()
+})
+
+it.each(['添加节点', '输入', '输出', '运行'])('returns focus to %s after closing its panel with the button or Escape', async (name) => {
+  mount()
+  const user = userEvent.setup()
+  const trigger = await screen.findByRole('button', { name })
+  await user.click(trigger)
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  expect(window.document.getElementById(trigger.getAttribute('aria-controls')!)).toContainElement(screen.getByRole('button', { name: '关闭面板' }))
+  await user.click(screen.getByRole('button', { name: '关闭面板' }))
+  expect(trigger).toHaveFocus()
+  expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  await user.keyboard('{Enter}')
+  const close = screen.getByRole('button', { name: '关闭面板' })
+  close.focus()
+  await user.keyboard('{Escape}')
+  expect(screen.queryByRole('button', { name: '关闭面板' })).not.toBeInTheDocument()
+  expect(trigger).toHaveFocus()
 })
 
 it('starts a new workflow as a draft with the node library open', async () => {

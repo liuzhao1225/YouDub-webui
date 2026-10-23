@@ -114,3 +114,5 @@ These limits define what the shell owns versus what its occupants own; they are 
 None.
 
 </details>
+
+On macOS, the brand sits below the window strip with 16px vertical padding. The brand identity grows with supplied artwork so speech tails remain visible.

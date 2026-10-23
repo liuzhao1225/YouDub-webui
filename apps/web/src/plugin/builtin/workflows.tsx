@@ -5,15 +5,16 @@ import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
 import { protectPendingSubmissions, useObservableSource } from '../view-hooks'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, FileInput, FileOutput, Trash2, Undo2, Upload, X } from '@/lib/icons'
 import { Link, text, type Diagnostic, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import type { Text } from '@/locales'
 import { Button } from '@/components/ui/button'
-import { Page, PageHeader, pageLayoutStyles } from '@/components/page-layout'
+import { Page, PageHeader, pageLayoutStyles, useWindowHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
+import { Disclosure } from '@/components/ui/disclosure'
 import { WorkflowCanvas } from './workflow-canvas'
 import { GraphPorts, NodeSettings, SynthesizeNodeEditor } from './workflow-settings'
 import { INPUTS_ID, OUTPUTS_ID, blankWorkflow, copyWorkflowLabels, parseWorkflow, serializeWorkflowEdits, workflowDrafts, workflowViews, workflowTemplateTitle } from './workflow-utils'
@@ -33,6 +34,7 @@ export function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bin
   const tx = useText()
   const { data, error, refresh } = useWorkflowDocuments()
   const [failure, setFailure] = useState(''), [busy, setBusy] = useState(false), [deleting, setDeleting] = useState('')
+  const invalidFile = failure === 'Unsupported workflow file. Expected youdub.workflow version 1.'
   const input = useRef<HTMLInputElement>(null)
   async function importFile(file: File) {
     setBusy(true); setFailure('')
@@ -45,8 +47,9 @@ export function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bin
     finally { setBusy(false); if (input.current) input.current.value = '' }
   }
   return <Page>
-    <PageHeader title={tx("workflows.workflows")} actions={<><Button variant="outline" disabled={busy} onClick={() => input.current?.click()}><Upload />{tx("workflows.import")}</Button><Button onClick={() => navigate('/workflows/new')}><Plus />{tx("workflows.new.workflow")}</Button><input ref={input} type="file" accept=".json,.workflow.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file) }} /></>} />
-    {(error || failure) && <InlineAlert>{error || failure}</InlineAlert>}
+    <PageHeader title={tx("workflows.workflows")} actions={<><Button size="sm" variant="outline" disabled={busy} onClick={() => input.current?.click()}><Upload />{tx("workflows.import")}</Button><Button size="sm" onClick={() => navigate('/workflows/new')}><Plus />{tx("workflows.new.workflow")}</Button><input ref={input} type="file" accept=".json,.workflow.json" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file) }} /></>} />
+    {error && <InlineAlert>{error}</InlineAlert>}
+    {failure && <InlineAlert>{invalidFile ? <div className="space-y-1.5"><p>{tx('workflows.invalid.import')}</p><Disclosure contained={false} title={tx('workflow.errors.diagnostics')}>{failure}</Disclosure></div> : failure}</InlineAlert>}
     {data?.legacyDefaultsMigration?.status === 'blocked' && <InlineAlert><p>{tx("workflows.previous.processing.preferences.could.not.be.migrated.the.origina")}</p><ul className="mt-2 list-inside list-disc">{data.legacyDefaultsMigration.diagnostics.map((item, index) => <li key={index}>{item.nodeId ? `${item.nodeId}: ` : ''}{item.message}</li>)}</ul><Button className="mt-3" variant="outline" size="sm" disabled={busy} onClick={() => { setBusy(true); setFailure(''); void request('/api/v2/workflow-documents/migrate-defaults', { method: 'POST' }).then(refresh).catch((failure: Error) => setFailure(failure.message)).finally(() => setBusy(false)) }}>{tx("workflows.retry.migration")}</Button></InlineAlert>}
     {error && <Button variant="outline" onClick={refresh}>{tx("workflows.retry")}</Button>}
     {!data && !error && <Loader2 className="size-5 animate-spin" />}
@@ -90,6 +93,7 @@ function SavedEditor({ query, id, nodeId, types, request, navigate, replace, blo
 
 function Editor({ query, initial, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; initial: WorkflowDocumentRecord; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
+  const windowHeader = useWindowHeader()
   const [renaming, setRenaming] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [initialDraft] = useState(() => workflowDrafts.get(initial.id))
@@ -100,6 +104,12 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
   const [saved, setSaved] = useState(initialDraft?.saved ?? serializeWorkflowEdits(initial.document))
   const [revision, setRevision] = useState(initialDraft?.revision ?? initial.revision)
   const [selected, setSelected] = useState<string | undefined>(nodeId), [panel, setPanel] = useState<'nodes' | 'inputs' | 'outputs' | 'run' | null>(() => new URLSearchParams(query ?? window.location.search).get('run') === '1' ? 'run' : initial.id === 'new' && !initialDraft?.document.nodes.length ? 'nodes' : null)
+  const panelId = useId()
+  const panelButtons = useRef<Partial<Record<NonNullable<typeof panel>, HTMLButtonElement | null>>>({})
+  function closePanel() {
+    if (panel) panelButtons.current[panel]?.focus()
+    setPanel(null); setSelected(undefined)
+  }
   const [freshInputs, setFreshInputs] = useState(false)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [search, setSearch] = useState('')
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([])
@@ -188,7 +198,7 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
   const Layout = nodeId ? Page : 'main'
   return <Layout className={nodeId ? undefined : pageLayoutStyles.workspace}>
     {guard.dialog}
-    <div data-window-drag className={`border-b border-border ${nodeId ? pageLayoutStyles.nodeHeader : pageLayoutStyles.workspaceHeader}`}>
+    <div data-window-drag className={windowHeader ? 'contents' : `border-b border-border ${nodeId ? pageLayoutStyles.nodeHeader : pageLayoutStyles.workspaceHeader}`}>
       <PageHeader title={initial.origin === 'builtin' ? workflowTemplateTitle(document, tx) : document.title}
         leading={<Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx("workflows.back")} onClick={() => navigate(nodeId ? `/workflows/${initial.id}${sourceQuery}` : '/workflows')}><ArrowLeft /></Button>}
         titleControl={renaming ? <Input autoFocus aria-label={tx("workflows.workflow.name")} disabled={editingLocked} className="w-full max-w-xs" value={nameDraft}
@@ -198,7 +208,7 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
         badge={<>{!renaming && <Button size="icon-sm" variant="ghost" aria-label={tx("workflows.workflow.name")} title={tx("workflows.workflow.name")} disabled={editingLocked} onClick={() => { setNameDraft(initial.origin === 'builtin' ? workflowTemplateTitle(document, tx) : document.title); setRenaming(true) }}><Pencil /></Button>}<Tag tone="neutral">{dirty ? tx("workflows.unsaved") : initial.origin !== 'user' ? tx("workflows.template") : revision ? tx("workflows.saved") : tx("workflows.draft")}</Tag></>}
         actions={<><Button size="icon-sm" variant="ghost" disabled={editingLocked || !undo.length} aria-label={tx("workflows.undo")} onClick={undoChange}><Undo2 /></Button><Button size="icon-sm" variant="ghost" disabled={editingLocked || !redo.length} aria-label={tx("workflows.redo")} onClick={redoChange}><Redo2 /></Button>
       <Button size="sm" variant="outline" disabled={editingLocked || (initial.origin === 'user' && revision > 0 && !dirty)} onClick={() => void save().catch(() => undefined)}><Save />{initial.origin !== 'user' ? tx("workflows.save.copy") : tx("workflows.save")}</Button>
-      {!nodeId && <Button size="sm" disabled={editingLocked || !document.nodes.length} onClick={() => { setSelected(undefined); setPanel('run') }}><Play />{tx("workflows.run")}</Button>}</>} />
+      {!nodeId && <Button ref={node => { panelButtons.current.run = node }} aria-expanded={panel === 'run'} aria-controls={panel === 'run' ? panelId : undefined} size="sm" disabled={editingLocked || !document.nodes.length} onClick={() => { setSelected(undefined); setPanel('run') }}><Play />{tx("workflows.run")}</Button>}</>} />
     </div>
     {error && <div className="px-4 py-2"><InlineAlert>{error}</InlineAlert></div>}
     {dirty && initial.revision > revision && <div className="px-4 py-2"><InlineAlert>{tx("workflows.this.draft.is.based.on.an.older.workflow.revision.save.a.copy.to.")}</InlineAlert></div>}
@@ -206,17 +216,17 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
     {validated && <p role="status" className="border-b border-border px-4 py-2 text-xs text-status-success-fg">{tx("workflows.workflow.valid")}</p>}
     {nodeId ? active ? <Surface as="section" className=""><NodeSettings useSlot={useSlot} document={document} node={active} types={types} readOnly={editingLocked} onChange={change} onDelete={() => { workflowDrafts.set(initial.id, { document: current.current, saved, revision, origin: initial.origin, ...history.current, canvasViewed: canvasViewed.current }); navigate(`/workflows/${initial.id}${sourceQuery}`) }} /></Surface> : <InlineAlert>{tx("workflows.node.not.found")}</InlineAlert> : <>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
-        <Button size="sm" disabled={editingLocked} variant={panel === 'nodes' ? 'secondary' : 'ghost'} onClick={() => { setPanel(panel === 'nodes' ? null : 'nodes'); setSelected(undefined) }}><Plus />{tx("workflows.add.node")}</Button>
-        <Button size="sm" disabled={editingLocked} variant={panel === 'inputs' ? 'secondary' : 'ghost'} onClick={() => { setPanel(panel === 'inputs' ? null : 'inputs'); setSelected(panel === 'inputs' ? undefined : INPUTS_ID) }}><FileInput />{tx("workflow.canvas.inputs")}</Button>
-        <Button size="sm" disabled={editingLocked} variant={panel === 'outputs' ? 'secondary' : 'ghost'} onClick={() => { setPanel(panel === 'outputs' ? null : 'outputs'); setSelected(panel === 'outputs' ? undefined : OUTPUTS_ID) }}><FileOutput />{tx("workflow.canvas.outputs")}</Button>
+        <Button ref={node => { panelButtons.current.nodes = node }} aria-expanded={panel === 'nodes'} aria-controls={panel === 'nodes' ? panelId : undefined} size="sm" disabled={editingLocked} variant={panel === 'nodes' ? 'secondary' : 'ghost'} onClick={() => { setPanel(panel === 'nodes' ? null : 'nodes'); setSelected(undefined) }}><Plus />{tx("workflows.add.node")}</Button>
+        <Button ref={node => { panelButtons.current.inputs = node }} aria-expanded={panel === 'inputs'} aria-controls={panel === 'inputs' ? panelId : undefined} size="sm" disabled={editingLocked} variant={panel === 'inputs' ? 'secondary' : 'ghost'} onClick={() => { setPanel(panel === 'inputs' ? null : 'inputs'); setSelected(panel === 'inputs' ? undefined : INPUTS_ID) }}><FileInput />{tx("workflow.canvas.inputs")}</Button>
+        <Button ref={node => { panelButtons.current.outputs = node }} aria-expanded={panel === 'outputs'} aria-controls={panel === 'outputs' ? panelId : undefined} size="sm" disabled={editingLocked} variant={panel === 'outputs' ? 'secondary' : 'ghost'} onClick={() => { setPanel(panel === 'outputs' ? null : 'outputs'); setSelected(panel === 'outputs' ? undefined : OUTPUTS_ID) }}><FileOutput />{tx("workflow.canvas.outputs")}</Button>
         <Button size="sm" variant="ghost" disabled={editingLocked} onClick={() => void validate()}>{tx("workflows.validate")}</Button>
         <div className="ml-auto flex gap-1">{initial.origin === 'user' && revision > 0 && <Button size="icon-sm" variant="ghost" aria-label={tx("workflows.save.as")} disabled={editingLocked} onClick={() => void save(true).catch(() => undefined)}><Copy /></Button>}<Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx("workflows.export.workflow")} onClick={exportFile}><Download /></Button></div>
       </div>
       <div className="workflow-editor-layout flex-1">
         <WorkflowCanvas document={document} types={types} selected={selected} disabled={editingLocked} fitOnLoad={fitOnLoad} addNodeRef={addAtCenter} onReady={() => { canvasViewed.current = true; const draft = workflowDrafts.get(initial.id); if (draft) draft.canvasViewed = true; workflowViews.set(initial.id, { revision, viewport: current.current.presentation.viewport, canvasViewed: true }) }} onSelect={(id) => { if (!runLock.current) { setSelected(id); setPanel(id === INPUTS_ID ? 'inputs' : id === OUTPUTS_ID ? 'outputs' : null) } }} onChange={change} onCheckpoint={() => { if (!runLock.current) { const nextUndo = [...history.current.undo.slice(-99), current.current]; history.current = { undo: nextUndo, redo: [] }; setUndo(nextUndo); setRedo([]) } }} onOpen={openNode} />
-        {(panel || active) && <aside className="workflow-inspector">
+        {(panel || active) && <aside id={panelId} className="workflow-inspector" onKeyDown={event => { if (panel && event.key === 'Escape' && !event.defaultPrevented && !editingLocked) { event.preventDefault(); event.stopPropagation(); closePanel() } }}>
           {active && !panel ? <NodeSettings useSlot={useSlot} document={document} node={active} types={types} readOnly={editingLocked} onChange={change} onClose={() => setSelected(undefined)} onOpen={() => openNode(active.id)} /> : <>
-            <div className="flex items-center justify-between border-b border-border p-4"><h2 className="font-semibold">{panel === 'nodes' ? tx("workflows.nodes") : panel === 'run' ? tx("workflows.run.workflow") : panel === 'inputs' ? tx("workflow.canvas.inputs") : tx("workflow.canvas.outputs")}</h2><Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx("workflows.close.panel")} onClick={() => { setPanel(null); setSelected(undefined) }}><X /></Button></div>
+            <div className="flex items-center justify-between border-b border-border p-4"><h2 className="font-semibold">{panel === 'nodes' ? tx("workflows.nodes") : panel === 'run' ? tx("workflows.run.workflow") : panel === 'inputs' ? tx("workflow.canvas.inputs") : tx("workflow.canvas.outputs")}</h2><Button size="icon-sm" variant="ghost" disabled={editingLocked} aria-label={tx("workflows.close.panel")} onClick={closePanel}><X /></Button></div>
             {panel === 'nodes' && <div className="flex flex-col gap-3 p-4"><div className="relative"><Input icon={<Search className="size-4" />} aria-label={tx("workflows.search.nodes")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>{!visibleTypes.length && <p className="text-sm text-muted-foreground">{tx("workflows.no.nodes.found")}</p>}{visibleTypes.map((type) => <Button variant="outline" type="button" draggable key={`${type.providerId}:${type.type}`} onDragStart={(event) => event.dataTransfer.setData('application/youdub-node', `${type.providerId}:${type.type}`)} className="flex h-auto w-full items-center justify-start gap-3 py-3 text-left whitespace-normal" disabled={editingLocked} onClick={() => { if (addAtCenter.current) addAtCenter.current(type); else setError(tx("workflows.the.canvas.is.still.loading")) }}><Plus className="size-4 shrink-0 text-link" /><span className="min-w-0"><span className="block text-sm font-medium">{text(type.label, language)}</span><span className="block truncate text-xs text-muted-foreground">{text(type.provider.label, language) || type.providerId}</span></span></Button>)}</div>}
             {(panel === 'inputs' || panel === 'outputs') && <GraphPorts direction={panel} disabled={editingLocked} document={document} types={types} onChange={change} />}
             {panel === 'run' && <div className="space-y-4 p-4">{sourceTask && <label className="grid gap-2 text-sm">{tx("workflows.media.source")}<NativeSelect disabled={editingLocked}  value={freshInputs ? 'new' : 'existing'} onChange={(event) => setFreshInputs(event.target.value === 'new')}><option value="existing">{tx("workflows.reuse.original.media")}</option><option value="new">{tx("workflows.choose.new.media")}</option></NativeSelect></label>}{sourceTask && !freshInputs ? <WorkflowRerun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} taskId={sourceTask} document={document} types={types} onStarted={onStarted} onLockChange={onRunLockChange} /> : <WorkflowRun useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types} revision={dirty ? null : revision} onStarted={onStarted} onLockChange={onRunLockChange} />}</div>}

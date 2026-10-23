@@ -350,7 +350,7 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
     return (
       <div className={styles['section']}>
         <h2 className={styles['title']}>{t('title')}</h2>
-        <p className={styles['intro']}>{t('intro')}</p>
+        <p className={styles['intro']} role="status">{t('loading')}</p>
       </div>
     )
   }
@@ -397,15 +397,13 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
   const switchLocked = catalogBusy || customBusy
   // The catalog draft: the row the user chose, kept through a refresh that
   // adopts or withdraws it elsewhere so a typed key is never discarded, for as
-  // long as its namespace can still take the write; else the first row still
-  // addable, since the mode can be entered by a refresh as well as by the
-  // switch and the button only picks a target when it opens the card.
+  // long as its namespace can still take the write. Opening the card or
+  // refreshing the directory never chooses a provider on the user's behalf.
   const draft = ((): CatalogDraft | undefined => {
     if (!addOpen || !catalogOffered) return undefined
     const kept = editing === undefined ? undefined : state.namespaces.get(editing.settingsNs)
     if (editing !== undefined && kept !== undefined) return { target: editing, namespace: kept }
-    const first = addable[0]
-    return first === undefined ? undefined : { target: targetOf(first.row), namespace: first.namespace }
+    return undefined
   })()
   // The draft's directory row, for the card extension seat. A refresh can drop
   // the row mid-draft (the route was adopted or withdrawn elsewhere); the
@@ -417,7 +415,6 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
   return (
     <div className={styles['section']}>
       <h2 className={styles['title']}>{t('title')}</h2>
-      <p className={styles['intro']}>{t('intro')}</p>
       {!state.writable && state.status === 'ready' ? <p className={styles['notice']}>{t('readOnly')}</p> : null}
       {savedIdentity === undefined
         ? null
@@ -602,7 +599,7 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
                   {t(mode === 'catalog' ? 'addCatalogHint' : 'addCustomHint')}
                 </p>
               </div>
-              {mounted('catalog') && draft !== undefined
+              {mounted('catalog') && catalogOffered
                 ? (
                   <div
                     id={`${addId}-catalog-panel`}
@@ -614,7 +611,7 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
                       <span className={styles['fieldLabel']}>{t('provider')}</span>
                       <select
                         className={`${styles['input']} ${styles['selectInput']}`}
-                        value={draft.target.provider}
+                        value={draft?.target.provider ?? ''}
                         aria-label={t('provider')}
                         disabled={catalogBusy}
                         onChange={(event) => {
@@ -624,31 +621,45 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
                           leave(() => { setEditing(targetOf(picked.row)) })
                         }}
                       >
+                        <option value="" disabled>{t('chooseProvider')}</option>
+                        {draft !== undefined && !addable.some(({ row }) => row.entry.provider === draft.target.provider)
+                          ? <option value={draft.target.provider}>{draft.target.displayName}</option>
+                          : null}
                         {addable.map(({ row }) => (
                           <option key={row.entry.provider} value={row.entry.provider}>{row.entry.displayName}</option>
                         ))}
                       </select>
                     </div>
-                    <ProviderEditor
-                      key={draft.target.provider}
-                      provider={draft.target.provider}
-                      displayName={draft.target.displayName}
-                      hideTitle
-                      namespace={draft.namespace}
-                      schema={schema}
-                      settingsPath={draft.target.settingsPath}
-                      operations={operations}
-                      {...draft.target.defaultBaseURL === undefined ? {} : { defaultBaseURL: draft.target.defaultBaseURL }}
-                      {...draft.target.baseURLEnv === undefined ? {} : { baseURLEnv: draft.target.baseURLEnv }}
-                      {...draft.target.nativeAuth === undefined ? {} : { nativeAuth: draft.target.nativeAuth }}
-                      {...addRow?.credentialChecks === undefined ? {} : { credentialChecks: addRow.credentialChecks }}
-                      t={t}
-                      readOnly={!state.writable}
-                      onClose={(changed) => { closeEditor(changed, draft.target) }}
-                      onBusyChange={setCatalogBusy}
-                      registerDraft={registerDraft}
-                      leave={leave}
-                    />
+                    {draft === undefined
+                      ? (
+                        <div className={styles['editorActions']}>
+                          <button type="button" className={styles['secondaryButton']} onClick={() => { leave(closeAdd) }}>
+                            {t('cancel')}
+                          </button>
+                        </div>
+                      )
+                      : (
+                        <ProviderEditor
+                          key={draft.target.provider}
+                          provider={draft.target.provider}
+                          displayName={draft.target.displayName}
+                          hideTitle
+                          namespace={draft.namespace}
+                          schema={schema}
+                          settingsPath={draft.target.settingsPath}
+                          operations={operations}
+                          {...draft.target.defaultBaseURL === undefined ? {} : { defaultBaseURL: draft.target.defaultBaseURL }}
+                          {...draft.target.baseURLEnv === undefined ? {} : { baseURLEnv: draft.target.baseURLEnv }}
+                          {...draft.target.nativeAuth === undefined ? {} : { nativeAuth: draft.target.nativeAuth }}
+                          {...addRow?.credentialChecks === undefined ? {} : { credentialChecks: addRow.credentialChecks }}
+                          t={t}
+                          readOnly={!state.writable}
+                          onClose={(changed) => { closeEditor(changed, draft.target) }}
+                          onBusyChange={setCatalogBusy}
+                          registerDraft={registerDraft}
+                          leave={leave}
+                        />
+                      )}
                     {addRow === undefined
                       ? null
                       : renderSlot(
@@ -700,10 +711,9 @@ function Loaded({ injected, renderSlot, registerLeaveGuard }: {
                   onClick={() => {
                     if (controller.store.getSnapshot().status !== 'ready') return
                     leave(() => {
-                      const first = addable[0]
                       const initial: AddMode = catalogEnabled ? 'catalog' : 'custom'
                       setSavedTarget(undefined)
-                      setEditing(first === undefined ? undefined : targetOf(first.row))
+                      setEditing(undefined)
                       setAddMode(initial)
                       setVisited(new Set([initial]))
                       setAddOpen(true)

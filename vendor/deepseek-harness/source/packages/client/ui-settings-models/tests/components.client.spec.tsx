@@ -530,6 +530,7 @@ describe('ModelsSection', () => {
       })
     }
     fireEvent.click(add)
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     const key = await screen.findByLabelText<HTMLInputElement>(en.keyInput)
     fireEvent.change(key, { target: { value: 'sk-unsaved-add-draft' } })
     act(() => { controller.store.update((state) => { state.status = 'loading' }) })
@@ -666,6 +667,7 @@ describe('ModelsSection', () => {
     const { renderSlot } = await mountSection()
     renderSlot.mockClear()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     expect(cardSeatCalls(renderSlot)).toContainEqual(['anthropic', false, false, 'llm-pi-ai'])
   })
 
@@ -680,6 +682,7 @@ describe('ModelsSection', () => {
     const { renderSlot } = await mountFace(scripted)
     renderSlot.mockClear()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     // The dormant row names no reference yet; the seat still reports the
     // derived ANTHROPIC_API_KEY the editor itself displays as configured.
     expect(cardSeatCalls(renderSlot)).toContainEqual(['anthropic', false, true, 'llm-pi-ai'])
@@ -688,6 +691,7 @@ describe('ModelsSection', () => {
   it('skips the draft seat when a refresh drops the dormant row', async () => {
     const { renderSlot, face, controller } = await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     const directory = [
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
       { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], active: true },
@@ -1397,8 +1401,10 @@ describe('ModelsSection', () => {
     const { mutate, set } = await mountSection()
     fireEvent.click(screen.getByText(en.add))
     const pick = await screen.findByLabelText<HTMLSelectElement>(en.provider)
-    expect([...pick.options].map(option => option.value)).toEqual(['anthropic', 'broken', 'plain'])
-    expect(pick.value).toBe('anthropic')
+    expect([...pick.options].map(option => option.value)).toEqual(['', 'anthropic', 'broken', 'plain'])
+    expect(pick.value).toBe('')
+    expect(screen.queryByLabelText(en.keyInput)).toBeNull()
+    fireEvent.change(pick, { target: { value: 'anthropic' } })
     // A dormant route shows its catalog endpoint and the first variable its
     // provider reads; a typed key still stores under the derived reference.
     fireEvent.click(screen.getByText(en.customized))
@@ -1419,6 +1425,7 @@ describe('ModelsSection', () => {
   it('keeps pi-ai provider-native authentication when no key is entered', async () => {
     const { mutate, set } = await mountSection()
     fireEvent.click(screen.getByText(en.add))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     await screen.findByLabelText(en.provider)
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
@@ -1450,6 +1457,7 @@ describe('ModelsSection', () => {
       .mockResolvedValueOnce(remoteOk(undefined))
     const { face, controller, mirror } = await mountSection({ mutate, set })
     fireEvent.click(screen.getByText(en.add))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     await screen.findByLabelText(en.provider)
     fireEvent.change(screen.getByLabelText<HTMLInputElement>(en.keyInput), { target: { value: 'sk-ant' } })
     fireEvent.click(screen.getByText(en.apply))
@@ -1493,6 +1501,7 @@ describe('ModelsSection', () => {
       mutate: vi.fn(() => Promise.resolve(remoteFail('llm-pi-ai: unknown pi-ai provider "bogus"', 'settings/rejected'))),
     })
     fireEvent.click(screen.getByText(en.add))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     await screen.findByLabelText(en.provider)
     fireEvent.change(screen.getByLabelText<HTMLInputElement>(en.keyInput), { target: { value: 'sk-x' } })
     fireEvent.click(screen.getByText(en.apply))
@@ -1678,22 +1687,30 @@ describe('ModelsSection', () => {
     expect(mutate).not.toHaveBeenCalled()
   })
 
-  it('opens the add card on the catalog mode with both modes offered', async () => {
-    await mountSection()
+  it('opens the add card without choosing a provider or exposing its credentials', async () => {
+    const { controller, mutate, set } = await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
     const modes = screen.getByRole('tablist', { name: en.addMode })
     expect(within(modes).getByRole('tab', { name: en.addCatalog }).getAttribute('aria-selected')).toBe('true')
     expect(within(modes).getByRole('tab', { name: en.addCustom }).getAttribute('aria-selected')).toBe('false')
     expect(screen.getByText(en.addCatalogHint)).toBeTruthy()
     expect(screen.queryByText(en.addCustomHint)).toBeNull()
-    expect(screen.getByRole('combobox', { name: en.provider })).toBeTruthy()
-    // The custom panel is mounted but hidden, so its fields are not reachable.
+    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('')
+    expect(screen.getByRole('option', { name: en.chooseProvider })).toBeTruthy()
+    expect(screen.queryByLabelText(en.keyInput)).toBeNull()
+    expect(screen.queryByRole('button', { name: en.apply })).toBeNull()
+    await act(async () => { await controller.load() })
+    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('')
+    expect(mutate).not.toHaveBeenCalled()
+    expect(set).not.toHaveBeenCalled()
+    // The unvisited custom panel has no reachable fields.
     expect(screen.queryByRole('textbox', { name: en.customRoute })).toBeNull()
   })
 
   it('switches between the modes without losing either draft', async () => {
     await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-catalog' } })
 
     fireEvent.click(screen.getByRole('tab', { name: en.addCustom }))
@@ -1777,7 +1794,7 @@ describe('ModelsSection', () => {
     expect(screen.getByRole('textbox', { name: en.customRoute })).toBeTruthy()
   })
 
-  it('picks a catalog target when the catalog becomes addable after the card opened', async () => {
+  it('waits for a selection when the catalog becomes addable after the card opened', async () => {
     const scripted = scriptedFace()
     const exhausted = [
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
@@ -1796,7 +1813,9 @@ describe('ModelsSection', () => {
     const catalog = screen.getByRole<HTMLButtonElement>('tab', { name: en.addCatalog })
     expect(catalog.disabled).toBe(false)
     fireEvent.click(catalog)
-    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('anthropic')
+    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('')
+    expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).queryByLabelText(en.keyInput)).toBeNull()
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     expect(within(screen.getByRole('tabpanel', { name: en.addCatalog })).getByLabelText(en.keyInput)).toBeTruthy()
   })
 
@@ -1824,6 +1843,7 @@ describe('ModelsSection', () => {
   it('forgets the catalog target when the custom form closes, so a later refresh opens no row editor', async () => {
     const { face, controller, mirror } = await mountSection()
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     expect(screen.getByRole<HTMLSelectElement>('combobox', { name: en.provider }).value).toBe('anthropic')
     fireEvent.click(screen.getByRole('tab', { name: en.addCustom }))
     fireEvent.click(within(screen.getByRole('tabpanel', { name: en.addCustom })).getByText(en.cancel))
@@ -1853,6 +1873,7 @@ describe('ModelsSection', () => {
     const mutate = vi.fn(() => pending.then(() => remoteOk(providerNamespace)))
     await mountSection({ mutate })
     fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-slow' } })
     fireEvent.click(screen.getByText(en.apply))
     await waitFor(() => { expect(screen.getByRole<HTMLButtonElement>('tab', { name: en.addCustom }).disabled).toBe(true) })
@@ -1877,6 +1898,33 @@ describe('ModelsSection', () => {
     await waitFor(() => { expect(screen.getByRole<HTMLButtonElement>('tab', { name: en.addCatalog }).disabled).toBe(true) })
     await act(async () => { settle!(); await pending })
     await waitFor(() => { expect(screen.getByRole<HTMLButtonElement>('tab', { name: en.addCatalog }).disabled).toBe(false) })
+  })
+
+  it.each(['cancel', 'escape'] as const)('returns focus to model discovery after %s', async (close) => {
+    const scripted = scriptedFace()
+    let settle: (() => void) | undefined
+    const pending = new Promise<void>((resolve) => { settle = resolve })
+    scripted.face.llm.discoverModels.mockImplementation(() => pending.then(() => remoteOk([{ id: 'review-model' }])))
+    await mountFace(scripted)
+    fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.click(screen.getByRole('tab', { name: en.addCustom }))
+    const custom = within(screen.getByRole('tabpanel', { name: en.addCustom }))
+    fireEvent.change(custom.getByRole('textbox', { name: en.baseUrl }), { target: { value: 'https://acme.test/v1' } })
+    const trigger = custom.getByRole<HTMLButtonElement>('button', { name: en.fetchModels })
+    trigger.focus()
+    fireEvent.click(trigger)
+    expect(trigger.disabled).toBe(false)
+    expect(trigger.getAttribute('aria-disabled')).toBe('true')
+    expect(document.activeElement).toBe(trigger)
+    fireEvent.click(trigger)
+    expect(scripted.face.llm.discoverModels).toHaveBeenCalledOnce()
+    await act(async () => { settle!(); await pending })
+    const picker = await screen.findByRole('dialog', { name: en.fetchTitle })
+    if (close === 'cancel') fireEvent.click(within(picker).getByRole('button', { name: en.cancel }))
+    else fireEvent.keyDown(picker, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: en.fetchTitle })).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+    expect(trigger.getAttribute('aria-disabled')).toBeNull()
   })
 
   it('pairs each tab with its panel through ids', async () => {
@@ -1954,6 +2002,7 @@ describe('ModelsSection', () => {
     await mountFirstRun()
     expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(1)
     fireEvent.click(screen.getByText(en.add))
+    fireEvent.change(screen.getByRole('combobox', { name: en.provider }), { target: { value: 'anthropic' } })
     await screen.findByLabelText(en.provider)
     expect(screen.getAllByLabelText(en.keyInput)).toHaveLength(2)
 

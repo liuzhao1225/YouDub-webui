@@ -20212,8 +20212,8 @@
         "path": "packages/client/ui-layout/README.md",
         "type": "file",
         "executable": false,
-        "size": 10284,
-        "sha256": "91e000ba9d537340b69b546ce2d620c782263cf35331213fd59f45c8fcaec5c6"
+        "size": 10474,
+        "sha256": "38846f1f7f02076ad4bb5dd310ca9428b49b1de1212bde59ca0aa4d59ae350c4"
       },
       "reason": "Keep the original layout while projecting the product title without requiring chat Session sources. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
@@ -20230,8 +20230,8 @@
         "path": "packages/client/ui-layout/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 9147,
-        "sha256": "c8f8692e9e92b9279188999815ea7ff82bb68020c1ea8cc5906d3d7f3fbe2d85"
+        "size": 9278,
+        "sha256": "809622b5d71e5886b4abd9bd28e60ed679c8dd6df61f59af1eb847b3c5a032e2"
       },
       "reason": "Keep the original layout while projecting the product title without requiring chat Session sources. Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
     },
@@ -21949,7 +21949,7 @@
         "size": 2670,
         "sha256": "d28832d91a3fbfd9504c0aeb100707012796ab524e8a95c3ad10461bf94d6c14"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/README.md",
@@ -21964,10 +21964,10 @@
         "path": "packages/client/ui-plugin-manager/README.md",
         "type": "file",
         "executable": false,
-        "size": 27941,
-        "sha256": "adc6c01ccc7646d21bbc45c2bec0dec541b603fa0ace686567369068172be8d9"
+        "size": 28163,
+        "sha256": "71005bda8ae00f9fcb306c754cabf9aff53696b2dea33e9bd03f6a1a803bd59d"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/README.zh.md",
@@ -21982,10 +21982,10 @@
         "path": "packages/client/ui-plugin-manager/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 25097,
-        "sha256": "9e37f5572a0a8f8af19e6e74574ab17040910e301f10124782ee132198f968b9"
+        "size": 25276,
+        "sha256": "f0c6a995223918c790188f397679bf29196dc3cf4e185d5106d722e3138b2652"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Retire eight unused legacy plugin-market, Agent-preset, settings-tab, shortcut-reference and terminal-sidebar product modules after checking actual YouDub runtime/type/test consumers. Preserve the shared plugin manager, settings forms and keyboard service; update dependency/build catalogs, exact theme inventories, generated slots and bilingual references. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/package.json",
@@ -22003,7 +22003,7 @@
         "size": 2754,
         "sha256": "06a59c599d6f5518b04db6f157b5b7ddc20dee03e43f4a9e699fc6ec065dd91e"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css",
@@ -22018,10 +22018,10 @@
         "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css",
         "type": "file",
         "executable": false,
-        "size": 32026,
-        "sha256": "c97df56212f350c733869458536bc268146d2539d883da574509fbab4bd149d9"
+        "size": 32045,
+        "sha256": "3b92319bfbce38cf7e7c8d02e4b0252f777106d680e6344c36e2b309c982f639"
       },
-      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx",
@@ -22036,10 +22036,10 @@
         "path": "packages/client/ui-plugin-manager/src/client/PluginManagerPage.tsx",
         "type": "file",
         "executable": false,
-        "size": 81763,
-        "sha256": "0407ec3aace03280fc5407ab136f9e010179a38c573337d0f1d25df4cea15989"
+        "size": 81892,
+        "sha256": "98c4f442bc59bd728d2cdb1b6747df370a02593d71e02f7f5cd37b6c38e49ea2"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/PluginsPanelIcon.tsx",
@@ -22057,7 +22057,7 @@
         "size": 717,
         "sha256": "b9c2c76b108955337d94102bbad773466c803b004bd37a8a9e55f593d930d632"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/assets/badge-skill-preview.svg",
@@ -22069,7 +22069,7 @@
         "sha256": "e9d85b848936cb813d262d9d9ab13fcf2e66783b9fb74944d495408f38d41a23"
       },
       "after": null,
-      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/assets/badge-skill-preview.zh.svg",
@@ -22081,7 +22081,7 @@
         "sha256": "1a3cceed4c77632e5b0291a9a4dc14fbbfcc8efc36f201b6f56b2641045fd2a0"
       },
       "after": null,
-      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/assets/voice-input-preview.svg",
@@ -22093,7 +22093,7 @@
         "sha256": "b7e6438814ad882fcc2cdfffea574f641dfa06d2a91bf1c2436e5984d92dbbb3"
       },
       "after": null,
-      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/assets/voice-input-preview.zh.svg",
@@ -22105,7 +22105,7 @@
         "sha256": "b51a608680750939dabfecc37233df024df7042f08f65475cc2f2b8b9f5ddc25"
       },
       "after": null,
-      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/index.ts",
@@ -22123,7 +22123,7 @@
         "size": 7144,
         "sha256": "f8429937c58209d043263b53e004c55e37cba2eef033583d3146f8dac0c53bb7"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/locales.ts",
@@ -22141,7 +22141,7 @@
         "size": 27602,
         "sha256": "caa3deee767a3e93a47d87ab222886901c25cda3db8b6d945a92381ad4fc9dc8"
       },
-      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/manager-store.ts",
@@ -22159,7 +22159,7 @@
         "size": 59793,
         "sha256": "4db2377cd9012476661d5784768dc1980f29c00a8abf3291749b7c83a3bed91c"
       },
-      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/src/client/sanitize-install-input.ts",
@@ -22171,7 +22171,7 @@
         "sha256": "99af7f620375757d01c28807a6ffead17a33c1412b0bb5c915072e48b35579fd"
       },
       "after": null,
-      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/tests/components.client.spec.tsx",
@@ -22186,10 +22186,10 @@
         "path": "packages/client/ui-plugin-manager/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 153606,
-        "sha256": "cb71e878ecb8a066e030c012fc14982704ddc216fa7e5e78492ab1ad8ce1f949"
+        "size": 153903,
+        "sha256": "aab2b8ba42733fb9189e33273f3ee9693b0238176aa25fbb9a2e0bd68ef4b01a"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation."
+      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove retired code-assistant/browser integration entries from workspace, compiler, catalogs and source-policy inventories; retain generic plugin, dependency, schema-harvest and bilingual-document checks using existing remaining packages. Remove retired Harness product catalog rankings, feature previews and product-specific artwork from the retained plugin manager. Keep Host-owned inventory order, generic plugin metadata and official management lifecycle; update component checks and bilingual documentation. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/tests/manager-store.client.spec.ts",
@@ -22207,7 +22207,7 @@
         "size": 106948,
         "sha256": "64ef0699e0296193ebd33f55c423f38407190943bdd35a7e2d726ae6c6b46358"
       },
-      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Remove retired SDK/provider entries from package, compiler, plugin and documentation inventories; preserve generic dependency, plugin-management, license and fixture checks without SDK-specific defaults or exemptions. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/tests/sanitize-install-input.client.spec.ts",
@@ -22219,7 +22219,7 @@
         "sha256": "753260b36093c2fb6b1961d4b925ce31044316993883d0d08298e503c5865e88"
       },
       "after": null,
-      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-manager/tsconfig.client.json",
@@ -22237,7 +22237,7 @@
         "size": 953,
         "sha256": "7c7cf2ed0f5c2ac8e510295e95f24595c1dcd580b9f08fe1b6661c7c10366a55"
       },
-      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+      "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Align plugin help with the heading; preserve menu-trigger focus when the installation dialog closes."
     },
     {
       "path": "packages/client/ui-plugin-market/README.i18n.yaml",
@@ -22538,6 +22538,24 @@
         "sha256": "7fafdee6051518d1f0ea72ec33478add3c98d5dd84fc50a73eaaa717bf7940ce"
       },
       "reason": "YouDub quick-field menus reuse the retained Menu; defer autofocus until portal placement and support enabled form fields, preserving focus on reposition and return on Escape. Include focused regression and consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-primitives/src/TextShimmer.tsx",
+      "before": {
+        "path": "packages/client/ui-primitives/src/TextShimmer.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2741,
+        "sha256": "ffd8cc02a2f76b73c5f1f7a4338fb5df8985a1abe3473eea974a900236b48b50"
+      },
+      "after": {
+        "path": "packages/client/ui-primitives/src/TextShimmer.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 2791,
+        "sha256": "13cb4bd668b58ae3ed3166881cb4b39ada90572685c5839fe18d7b2d4ee1e390"
+      },
+      "reason": "Preserve inert decoration when sharing the original primitive between React 18 Desktop and React 19 Web."
     },
     {
       "path": "packages/client/ui-primitives/tests/atoms.client.spec.tsx",
@@ -26050,10 +26068,10 @@
         "path": "packages/client/ui-settings-models/README.md",
         "type": "file",
         "executable": false,
-        "size": 21723,
-        "sha256": "816e75184417e5193d4ca00022d0ebf32f32d56b62912f18f298a2ada3a57ffe"
+        "size": 22140,
+        "sha256": "74a04114d8b8ebac1756ee38cda014c079ea2e3ceb53e128463e18fa6252a77a"
       },
-      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+      "reason": "Document the YouDub model settings composition and unsaved draft lifecycle. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. YouDub model setup waits for an explicit provider selection, preserving drafts across refreshes and mode switches. Preserve the model discovery trigger focus during asynchronous loading so the existing Harness Modal restores it on cancel or Escape; prevent duplicate requests and verify the behavior."
     },
     {
       "path": "packages/client/ui-settings-models/README.zh.md",
@@ -26068,10 +26086,10 @@
         "path": "packages/client/ui-settings-models/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 19716,
-        "sha256": "3f03a07f2a1057fd12c07b37076c47ebe0a507a14a3211eeca8b71017d5c23d0"
+        "size": 20054,
+        "sha256": "f47720c51db29c6a980aec8d822de21cf7940ca298392eba9191c5f3dc344138"
       },
-      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+      "reason": "Keep the original provider editors and settings/credential contracts; remove DeepSeek account, session and onboarding coupling for YouDub. Update module tests and documentation for that boundary. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. YouDub model setup waits for an explicit provider selection, preserving drafts across refreshes and mode switches. Preserve the model discovery trigger focus during asynchronous loading so the existing Harness Modal restores it on cancel or Escape; prevent duplicate requests and verify the behavior."
     },
     {
       "path": "packages/client/ui-settings-models/package.json",
@@ -26170,6 +26188,42 @@
       "reason": "Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
     },
     {
+      "path": "packages/client/ui-settings-models/src/client/ModelListEditor.tsx",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/ModelListEditor.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 19855,
+        "sha256": "5b23caca35fae79177ac427d511be037145c7ab78672fed0d205770a803505df"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/ModelListEditor.tsx",
+        "type": "file",
+        "executable": false,
+        "size": 19990,
+        "sha256": "f25b0c442622502b74b9e6e238873cdd7570d5bba46e671ee4d2013b5a4790dc"
+      },
+      "reason": "Preserve the model discovery trigger focus during asynchronous loading so the existing Harness Modal restores it on cancel or Escape; prevent duplicate requests and verify the behavior."
+    },
+    {
+      "path": "packages/client/ui-settings-models/src/client/ModelsSection.module.css",
+      "before": {
+        "path": "packages/client/ui-settings-models/src/client/ModelsSection.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 17728,
+        "sha256": "1b178d900cb96da046bef7b573019622267c650e0e2ae9a840204f164cefe636"
+      },
+      "after": {
+        "path": "packages/client/ui-settings-models/src/client/ModelsSection.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 17791,
+        "sha256": "271ce36dd46e4c983d33f5e76f3cc8ca203f3c9736c0af54289a80922115c4b1"
+      },
+      "reason": "Preserve the model discovery trigger focus during asynchronous loading so the existing Harness Modal restores it on cancel or Escape; prevent duplicate requests and verify the behavior."
+    },
+    {
       "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
       "before": {
         "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
@@ -26182,10 +26236,10 @@
         "path": "packages/client/ui-settings-models/src/client/ModelsSection.tsx",
         "type": "file",
         "executable": false,
-        "size": 34772,
-        "sha256": "9a97b076a76dd7f867879d20c1cb1b2b7c04d6526957169deb166f18d8d3ac3b"
+        "size": 35316,
+        "sha256": "8ab269792fd4e1191180835e4b0e513be3a8edc4b21e9216b7f8a00e7176d5a4"
       },
-      "reason": "Keep the original provider section and protect unsaved cards when navigating or closing."
+      "reason": "Keep the original provider section and protect unsaved cards when navigating or closing. YouDub model setup waits for an explicit provider selection, preserving drafts across refreshes and mode switches."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/OnboardingModal.module.css",
@@ -26296,10 +26350,10 @@
         "path": "packages/client/ui-settings-models/src/client/locales.ts",
         "type": "file",
         "executable": false,
-        "size": 14241,
-        "sha256": "40f2d6c1e13ff7bcf97175886b9d99b2f1d928e286bb14b588a3fd1549583a60"
+        "size": 14246,
+        "sha256": "8fde119ccdf859dee8a0969d2f60d4ab827581338ff3e67479416c20b8b00b92"
       },
-      "reason": "Localize the model draft discard confirmation. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+      "reason": "Localize the model draft discard confirmation. Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. YouDub model setup waits for an explicit provider selection, preserving drafts across refreshes and mode switches."
     },
     {
       "path": "packages/client/ui-settings-models/src/client/slot-contract.ts",
@@ -26422,10 +26476,10 @@
         "path": "packages/client/ui-settings-models/tests/components.client.spec.tsx",
         "type": "file",
         "executable": false,
-        "size": 117431,
-        "sha256": "45df58e2d5f209dc800da1debab836d085d7aaa66ada3ec93575e3aa6f8b0213"
+        "size": 121079,
+        "sha256": "74a218a1ca7b9282a990979536ad77bfa9e7138152391441921626c26861560a"
       },
-      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub."
+      "reason": "Require explicit draft discard in the original refresh and editor-close regression cases. 模型编辑器使用 Credentials Remote 返回的前六位掩码，保存在占位文本中，完整密钥不回填；取消独立摘要行。 Remove retired DeepSeek onboarding and preview-notice UI, its private state/copy, unused credential-only editor branches and exclusive tests; retain generic provider editing, model discovery and write-only credential management for YouDub. YouDub model setup waits for an explicit provider selection, preserving drafts across refreshes and mode switches. Preserve the model discovery trigger focus during asynchronous loading so the existing Harness Modal restores it on cancel or Escape; prevent duplicate requests and verify the behavior."
     },
     {
       "path": "packages/client/ui-settings-models/tests/onboarding-dialog.client.spec.tsx",
@@ -29116,8 +29170,8 @@
         "path": "packages/client/ui-sidebar/README.md",
         "type": "file",
         "executable": false,
-        "size": 9344,
-        "sha256": "6a5380d91d0f740d02323616b54f091fe1e62acf38cbcaebcdd4f77bf6aa0e1d"
+        "size": 9500,
+        "sha256": "b1bebdd89f4f876446195f6f27b03db7e586132bfa0576e533ce7cd2b98d2008"
       },
       "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
@@ -29134,8 +29188,8 @@
         "path": "packages/client/ui-sidebar/README.zh.md",
         "type": "file",
         "executable": false,
-        "size": 8605,
-        "sha256": "7883647ef08955219a508ac6a3a7a605aa3bf0d4ce3f072a1554683eaa90737c"
+        "size": 8738,
+        "sha256": "a91435679a84ddee8ad6516d0e031b3d234bbfaeff7f542e7589243b68e909b3"
       },
       "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub. Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
     },
@@ -29156,6 +29210,24 @@
         "sha256": "f5d8e30eed99987f2e7e6ef571d814de0e8f416e10a57aa3c71acd01c1acbe3b"
       },
       "reason": "Remove unused account login and product analytics services and their exclusive consumers; retain generic API-key, model-selection, plugin lifecycle and framework contracts for YouDub."
+    },
+    {
+      "path": "packages/client/ui-sidebar/src/client/SidebarRoot.module.css",
+      "before": {
+        "path": "packages/client/ui-sidebar/src/client/SidebarRoot.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 16390,
+        "sha256": "6eaadd716ab135e0d08696f11e979449c14734b38b94ae65408601bdf5ff8393"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar/src/client/SidebarRoot.module.css",
+        "type": "file",
+        "executable": false,
+        "size": 16667,
+        "sha256": "ce7298ce3f114bbcded8a61e98731d5f3d84daf6e853b48057f012ce721ee787"
+      },
+      "reason": "Support an opt-in macOS sidebar icon rail through the original Harness frame and sidebar, with documented behavior and regression coverage."
     },
     {
       "path": "packages/client/ui-sidebar/src/client/contract/slots.ts",
@@ -29210,6 +29282,24 @@
         "sha256": "97b902603f6b9cf58e556a9247fe25eea491f875711294dd6902ebe1954453bf"
       },
       "reason": "Move shared sidebar settings, badge and panel navigation slot types into layout, keep declaration and rendering in the selected product sidebar, and remove the old chat sidebar type dependency from the generic settings shell and plugin navigation; retain sidebar and settings lifecycle tests and paired consumer documentation."
+    },
+    {
+      "path": "packages/client/ui-sidebar/tests/sidebar-styles.client.spec.ts",
+      "before": {
+        "path": "packages/client/ui-sidebar/tests/sidebar-styles.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3546,
+        "sha256": "d725e1f63cb0fee82d70de3c82962ea524a0a94af5f90f297c2a331796b49d55"
+      },
+      "after": {
+        "path": "packages/client/ui-sidebar/tests/sidebar-styles.client.spec.ts",
+        "type": "file",
+        "executable": false,
+        "size": 3624,
+        "sha256": "1f9fc6dd3a09cf5d8ae0d4562cbb1c7e9f1ddc9a1c99816b3b85adeaeca93634"
+      },
+      "reason": "Allow slotted brand artwork to determine row height so larger product assets remain uncropped."
     },
     {
       "path": "packages/client/ui-sidebar/tsconfig.json",

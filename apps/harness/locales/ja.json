@@ -118,7 +118,8 @@
   "settings.models": {
     "nav": "モデル",
     "title": "モデル",
-    "intro": "プロバイダーの API キーを設定します。",
+    "loading": "プロバイダーを読み込み中…",
+    "chooseProvider": "プロバイダーを選択",
     "edit": "編集",
     "editProvider": "{provider} を編集",
     "remove": "削除",
@@ -247,7 +248,7 @@
   },
   "pluginManager": {
     "panel": "プラグイン",
-    "title": "YouDub プラグイン",
+    "title": "プラグイン",
     "intro": "",
     "infoLabel": "プラグインについて",
     "infoDescription": "YouDub のプラグインをインストールして管理します。",
@@ -310,7 +311,7 @@
     "uninstall": "アンインストール",
     "uninstallLabel": "{name} をアンインストール",
     "installTitle": "プラグインを追加",
-    "installDescription": "パッケージ名、GitHub リポジトリの URL、またはローカルディレクトリを入力してください。",
+    "installDescription": "",
     "installSpecLabel": "パッケージ名または URL",
     "installSpecPlaceholder": "パッケージ名、Git リポジトリ、ローカルディレクトリ",
     "installGuideToggle": "インストール方法と例",

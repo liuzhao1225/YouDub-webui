@@ -13,8 +13,8 @@
   margin-inline: auto;
   padding-inline: var(--page-gutter);
 }
-.page { padding-block: var(--page-top) 48px; }
-.page > * + * { margin-top: var(--page-gap); }
+/* Slot anchors use display:contents, so spacing belongs to the layout boxes. */
+.page { display: flex; flex-direction: column; gap: var(--page-gap); padding-block: var(--page-top) 48px; }
 .header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; min-height: 36px; }
 .identity { display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1 1 240px; }
 .leading { display: flex; align-items: center; justify-content: center; min-height: 36px; flex-shrink: 0; }

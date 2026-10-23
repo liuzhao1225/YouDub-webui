@@ -348,7 +348,7 @@ describe('PluginManagerPage', () => {
     expect(actions.openInstall).not.toHaveBeenCalled()
   })
 
-  it('opens the existing install dialog from the menu and keeps focus on its input', async () => {
+  it('opens the install dialog from the menu and restores its surviving trigger on close', async () => {
     const b = renderTab()
     b.actions.openInstall.mockImplementation(() => {
       b.set({ install: { ...IDLE_INSTALL, open: true } })
@@ -357,12 +357,16 @@ describe('PluginManagerPage', () => {
     add.focus()
     fireEvent.click(add)
     expect(b.actions.openInstall).not.toHaveBeenCalled()
-    await act(async () => {
-      fireEvent.click(screen.getByRole('menuitem', { name: new RegExp(en.installExisting) }))
-    })
+    const install = screen.getByRole('menuitem', { name: new RegExp(en.installExisting) })
+    install.focus()
+    await act(async () => { fireEvent.click(install) })
     expect(b.actions.openInstall).toHaveBeenCalledOnce()
     expect(screen.queryByRole('menu')).toBeNull()
     expect(document.activeElement).toBe(screen.getByRole('textbox', { name: en.installSpecLabel }))
+    b.actions.closeInstall.mockImplementation(() => { b.set({ install: IDLE_INSTALL }) })
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.activeElement).toBe(add)
   })
 
   it('keeps primary installation and mouse-selected creation on separate buttons', () => {

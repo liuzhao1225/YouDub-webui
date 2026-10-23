@@ -1,6 +1,6 @@
 # YouDub组件源码索引
 
-2026-10-22 · 按实际TSX导出盘点。平台适配与业务组件分别保留职责；具体契约见[视觉与组件规范](harness-visual-spec.md)。
+2026-10-23 · 按实际组件导出盘点。平台适配与业务组件分别保留职责；具体契约见[视觉与组件规范](harness-visual-spec.md)。
 
 | 源文件 | 导出组件/入口 |
 | --- | --- |
@@ -16,7 +16,6 @@
 | [apps/web/src/components/models-settings/ModelsSection.tsx](../../apps/web/src/components/models-settings/ModelsSection.tsx) | needsSetup, providerTargetLabel, providerCopy, ModelsSection |
 | [apps/web/src/components/models-settings/ProviderEditor.tsx](../../apps/web/src/components/models-settings/ProviderEditor.tsx) | pathOps, ProviderEditor |
 | [apps/web/src/components/models-settings/index.tsx](../../apps/web/src/components/models-settings/index.tsx) | ModelsSettings |
-| [apps/web/src/components/models-settings/primitives.tsx](../../apps/web/src/components/models-settings/primitives.tsx) | Modal |
 | [apps/web/src/components/page-layout.tsx](../../apps/web/src/components/page-layout.tsx) | PageContainer, Page, PageHeader, PageTitle |
 | [apps/web/src/components/resource-row.tsx](../../apps/web/src/components/resource-row.tsx) | ResourceRow |
 | [apps/web/src/components/section-card.tsx](../../apps/web/src/components/section-card.tsx) | SectionCard |
@@ -31,7 +30,7 @@
 | [apps/web/src/components/theme-toggle.tsx](../../apps/web/src/components/theme-toggle.tsx) | ThemeToggle |
 | [apps/web/src/components/translation-setup-view.tsx](../../apps/web/src/components/translation-setup-view.tsx) | TranslationSetupView |
 | [apps/web/src/components/translation-setup.tsx](../../apps/web/src/components/translation-setup.tsx) | TranslationSetup |
-| [apps/web/src/components/ui/dialog.tsx](../../apps/web/src/components/ui/dialog.tsx) | Dialog |
+| [apps/web/src/components/models-settings/primitives.tsx](../../apps/web/src/components/models-settings/primitives.tsx) | 直接复用 Harness Modal；仅保留删除后的焦点目标适配 |
 | [apps/web/src/components/ui/disclosure.tsx](../../apps/web/src/components/ui/disclosure.tsx) | Disclosure |
 | [apps/web/src/components/ui/input.tsx](../../apps/web/src/components/ui/input.tsx) | Input |
 | [apps/web/src/components/ui/native-select.tsx](../../apps/web/src/components/ui/native-select.tsx) | NativeSelect, Choice |
@@ -60,12 +59,9 @@
 | [apps/web/src/plugin/builtin/workflow-task.tsx](../../apps/web/src/plugin/builtin/workflow-task.tsx) | TaskWorkflowPanel, TaskNodePage, TranscriptNodeDetails, TranslationNodeDetails |
 | [apps/web/src/plugin/builtin/workflows.tsx](../../apps/web/src/plugin/builtin/workflows.tsx) | WorkflowLibrary, WorkflowRoute, GraphStudio, name, inject, apply |
 | [apps/harness/src/frontend/alerts.tsx](../../apps/harness/src/frontend/alerts.tsx) | InlineAlert |
-| [apps/harness/src/frontend/controls.tsx](../../apps/harness/src/frontend/controls.tsx) | Button, Input, Label, Tooltip, NativeSelect, Select, SelectTrigger, SelectContent, SelectItem, Choice, Switch, Segmented |
-| [apps/harness/src/frontend/dialog.tsx](../../apps/harness/src/frontend/dialog.tsx) | Dialog |
 | [apps/harness/src/frontend/examples-page.tsx](../../apps/harness/src/frontend/examples-page.tsx) | ExamplesPage |
 | [apps/harness/src/frontend/i18n.tsx](../../apps/harness/src/frontend/i18n.tsx) | LanguageProvider, useI18n, useText |
 | [apps/harness/src/frontend/plugins.tsx](../../apps/harness/src/frontend/plugins.tsx) | applyPlugins |
-| [apps/harness/src/frontend/popover.tsx](../../apps/harness/src/frontend/popover.tsx) | Popover |
 | [apps/harness/src/frontend/resource-pages.tsx](../../apps/harness/src/frontend/resource-pages.tsx) | ResourcesPage |
 | [apps/harness/src/frontend/runtime.tsx](../../apps/harness/src/frontend/runtime.tsx) | FeatureProvider, useFeatures, domainSlots, createFeatures |
 | [apps/harness/src/frontend/sdk.tsx](../../apps/harness/src/frontend/sdk.tsx) | bindComponent, NavigationContext, Link |
@@ -75,3 +71,5 @@
 | [apps/harness/src/frontend/translation-setup.tsx](../../apps/harness/src/frontend/translation-setup.tsx) | applyTranslationSetup, TranslationSetup |
 | [apps/harness/src/frontend/video-player.tsx](../../apps/harness/src/frontend/video-player.tsx) | VideoPlayer |
 | [apps/harness/src/frontend/workflow-pages.tsx](../../apps/harness/src/frontend/workflow-pages.tsx) | WorkflowsPage, WorkflowPage |
+
+共享控件由 `apps/web/src/components/ui/` 提供业务属性适配；`harness-primitives.ts` 是框架依赖入口，桌面构建映射到当前 Harness 客户端加载器持有的官方模块。原 `apps/harness/src/frontend/controls.tsx`、`dialog.tsx`、`popover.tsx` 已移除。

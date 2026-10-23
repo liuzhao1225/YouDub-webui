@@ -107,3 +107,5 @@ These limits define the current layout behavior. They are current package constr
 None.
 
 </details>
+
+The macOS desktop sidebar collapses completely. Its reopen and New Session controls remain in the top window row, within the main column; the expanded sidebar spans the full window height.

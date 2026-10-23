@@ -31,14 +31,13 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
     const duplicates = sameLabels.filter((item) => (item.node.label || text(item.definition?.label, language) || item.node.type) === rawNodeTitle)
     const nodeTitle = `${rawNodeTitle}${duplicates.length > 1 ? ` · ${duplicates.findIndex((item) => item.node.id === node.id && item.key === key) + 1}` : ''}`
     const title = sameLabels.length > 1 ? `${nodeTitle} · ${shortLabel}` : shortLabel
-    const ariaLabel = fields.filter((item) => (text(item.field['x-title'] ?? item.field.title, language) || item.key) === label).length > 1 ? `${nodeTitle} · ${label}` : label
     const declared = field['x-options'] ?? []
     const { options, constrained } = fieldOptions(field, nodeModel(node, definition))
     const value = node.config[key], freeform = !constrained && fieldType(field) !== 'boolean'
     if (freeform) {
       const type = fieldType(field), numeric = type === 'number' || type === 'integer'
       const simple = numeric || type === 'string'
-      return <FieldPopover key={`${document.id}:${node.id}:${key}`} disabled={disabled} label={ariaLabel} className={`border items-center outline-none focus-visible:outline-none disabled:opacity-50 ${optionPillClassName}`} trigger={<><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx("workflow.options.configure")}</span><ChevronDown className="size-4 shrink-0 text-subtle-foreground" /></>}>
+      return <FieldPopover key={`${document.id}:${node.id}:${key}`} disabled={disabled} label={title} className={`border items-center outline-none focus-visible:outline-none disabled:opacity-50 ${optionPillClassName}`} trigger={<><span className="text-muted-foreground">{title}</span><span className="min-w-0 truncate font-medium">{simple ? String(value ?? '—') : tx("workflow.options.configure")}</span><ChevronDown className="size-4 shrink-0 text-muted-foreground" /></>}>
           {simple ? <Input aria-label={label} disabled={disabled} type={numeric ? 'number' : 'text'} min={field.minimum} max={field.maximum} step={type === 'integer' ? 1 : 'any'} minLength={field.minLength} maxLength={field.maxLength} value={value === undefined || value === null ? '' : String(value)} onChange={(event) => onChange(node.id, { ...node.config, [key]: fieldValue(field, event.target.value) })} /> : <ConfigEditor useSlot={useSlot} ownerId={`quick:${node.type}`} mode="options" schema={{ type: 'object', properties: { [key]: field } }} value={node.config} readOnly={disabled} diagnostics={[]} onChange={(config) => onChange(node.id, { ...node.config, [key]: config[key] })} />}
       </FieldPopover>
     }
@@ -49,7 +48,7 @@ export function WorkflowOptions({ document, types, disabled, onChange, useSlot }
       const option = options.find((item) => JSON.stringify(item.value) === next)
       if (option && !option.disabled) onChange(node.id, { ...node.config, [key]: option.value })
     }}>
-      <SelectTrigger aria-label={ariaLabel} disabled={disabled} className={optionPillClassName}><span className="text-subtle-foreground">{title}</span><span className="min-w-0 truncate font-medium">{display ? text(display.label, language) : '—'}</span></SelectTrigger>
+      <SelectTrigger aria-label={title} disabled={disabled} className={optionPillClassName}><span className="text-muted-foreground">{title}</span><span className="min-w-0 truncate font-medium">{display ? text(display.label, language) : '—'}</span></SelectTrigger>
       <SelectContent>{options.map((option) => <SelectItem key={JSON.stringify(option.value)} value={JSON.stringify(option.value)} disabled={option.disabled}>{text(option.label, language)}</SelectItem>)}</SelectContent>
     </Select>
   })}</>

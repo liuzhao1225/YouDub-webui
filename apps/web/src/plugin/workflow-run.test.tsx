@@ -51,6 +51,21 @@ it('keeps workbench resource requirements collapsed and preserves visible failur
   expect(screen.getByText('资源详情').closest('details')).not.toHaveAttribute('open')
 })
 
+it('shows both missing configuration and runtime resources without bypassing configuration', () => {
+  const state: ResourceState = { status: 'missing', requirements: [
+    { providerId: 'test', ready: false, automatic: false, configurationRequired: true },
+    { providerId: 'media', ready: false, automatic: true, resourceId: 'ffmpeg' },
+  ] }
+  const resources = { result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }
+  const { rerender } = mount(<WorkflowResources resources={resources} types={types} hideReady />, vi.fn())
+  expect(screen.getByRole('status')).toHaveTextContent('语音识别未配置；运行资源未就绪')
+  expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/models')
+  expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
+  rerender(<WorkflowResources resources={{ ...resources, result: { ...state, requirements: state.requirements!.slice(0, 1) } }} types={types} hideReady />)
+  expect(screen.getByRole('status')).toHaveTextContent('语音识别未配置')
+  expect(screen.getByRole('status')).not.toHaveTextContent('运行资源未就绪')
+})
+
 it('rejects an unsupported dropped file with a visible error', async () => {
   mount(<WorkflowRun document={graph()} types={types} />, vi.fn(async () => ready))
   await screen.findByText('所需资源可用')
@@ -58,6 +73,28 @@ it('rejects an unsupported dropped file with a visible error', async () => {
   fireEvent.drop(input.parentElement!, { dataTransfer: { files: [new File(['no'], 'notes.txt', { type: 'text/plain' })] } })
   expect(screen.getByText('notes.txt 的文件类型不支持。')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '开始运行' })).toBeDisabled()
+})
+
+it.each(['', 'application/octet-stream'])('submits an SRT selected with unspecified MIME %j as a subtitle file', async (type) => {
+  const document = graph()
+  document.inputs = [{ ...document.inputs[0], label: '原文字幕', schemaId: 'application/x-subrip/v1', acceptedMimeTypes: ['application/x-subrip', 'text/plain'], maxBytes: 1024 }]
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.includes('/validate')) return { valid: true, diagnostics: [] }
+    if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
+    return ready
+  })
+  const { push } = mount(<WorkflowRun document={document} types={types} />, request)
+  const content = '1\n00:00:00,000 --> 00:00:01,000\nHello\n'
+  fireEvent.change(screen.getByLabelText('原文字幕 *'), { target: { files: [new File([content], 'captions.SRT', { type, lastModified: 1234 })] } })
+  await waitFor(() => expect(screen.getByRole('button', { name: '开始运行' })).toBeEnabled())
+  await userEvent.setup().click(screen.getByRole('button', { name: '开始运行' }))
+  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/created'))
+  const body = request.mock.calls.find(([path]) => path === '/api/v2/tasks')![1]!.body as FormData
+  const uploaded = body.get('input.source') as File
+  expect(uploaded.type).toBe('application/x-subrip')
+  expect(uploaded.name).toBe('captions.SRT')
+  expect(uploaded.lastModified).toBe(1234)
+  expect(await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsText(uploaded) })).toBe(content)
 })
 
 it('keeps the original link-above-upload layout and submits URL input through a download node', async () => {
@@ -381,4 +418,21 @@ it('leads with node names and actions for configuration errors while keeping ori
   expect(screen.getByText('Provider connection is not configured.').closest('details')).not.toHaveAttribute('open')
   await userEvent.setup().click(screen.getByRole('button', { name: '打开节点设置' }))
   expect(onSelect).toHaveBeenCalledWith(diagnostics[1])
+})
+
+
+it('localizes graph validation actions and retains the original errors for diagnosis', () => {
+  const document = graph()
+  const diagnostics = [
+    { code: 'INVALID_GRAPH', message: 'Select at least one output.' },
+    { code: 'INVALID_GRAPH', nodeId: 'node-9fa8', message: 'Connect this node to a final output.' },
+    { code: 'PLUGIN_ERROR', message: 'A specific plugin failure must stay visible.' },
+  ]
+  mount(<WorkflowDiagnostics diagnostics={diagnostics} document={document} types={types} />, vi.fn())
+  expect(screen.getByText('请在“输出”中选择至少一个结果。')).toBeVisible()
+  expect(screen.getByText('识别字幕: 请将此节点连接到工作流输出。')).toBeVisible()
+  expect(screen.getByText('A specific plugin failure must stay visible.')).toBeVisible()
+  for (const item of diagnostics.slice(0, 2)) {
+    expect(screen.getByText(item.message).closest('details')).not.toHaveAttribute('open')
+  }
 })

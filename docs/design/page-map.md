@@ -1,6 +1,8 @@
 # YouDub 页面清单与关系图
 
-2026-10-22 · 按当前 Harness 桌面版源码盘点。路径是应用内部导航标识；扩展页使用 Harness 面板，设置使用全局弹窗。按页面形态列举，新建与编辑工作流共享实现。动态安装插件可以追加页面，本表列出产品内置页面。
+2026-10-23 · 按当前 Harness 桌面版源码盘点。路径是应用内部导航标识；扩展页使用 Harness 面板，设置使用全局弹窗。按页面形态列举，新建与编辑工作流共享实现。动态安装插件可以追加页面，本表列出产品内置页面。
+
+本轮原生状态、覆盖证据与限制见 [全产品 UI 验收](impeccable-ui-review.md)。
 
 ## 主页面清单
 
@@ -16,7 +18,7 @@
 | P08 | 工作流节点完整设置 | `/workflows/:id/nodes/:nodeId` | 节点配置、执行方式、相关服务/模型；返回所属画布 |
 | P09 | 资源 | `/resources` | 环境与模型资源、准备/下载/校验状态、诊断详情 |
 | P10 | 内置示例 | `/examples` | 示例媒体与语言切换；启动引导和工作台均可进入 |
-| P11 | 扩展 / YouDub 插件 | `/extensions` → Harness `plugins` 面板 | 内置功能、已安装插件、插件详情、添加插件 |
+| P11 | 插件 | `/extensions` → Harness `plugins` 面板 | 内置功能、已安装插件、插件详情、添加插件 |
 
 来源：[桌面路由及导航](../../apps/harness/src/client.jsx)、[任务库与详情](../../apps/web/src/plugin/builtin/library.tsx)、[任务步骤详情](../../apps/web/src/plugin/builtin/workflow-task.tsx)、[工作流](../../apps/web/src/plugin/builtin/workflows.tsx)、[资源页](../../apps/harness/src/frontend/resource-pages.tsx)、[示例页](../../apps/harness/src/frontend/examples-page.tsx)、[插件页装配](../../apps/harness/src/frontend/plugins.tsx)。
 
@@ -32,18 +34,18 @@
 
 来源：[启动组合](../../apps/harness/src/client.jsx)、[安装设置](../../apps/web/src/components/setup-installation.tsx)、[环境准备](../../apps/web/src/components/setup-screen.tsx)、[启动状态控制](../../apps/web/src/components/setup-gate.tsx)、[翻译配置](../../apps/web/src/components/translation-setup-view.tsx)。
 
-## 设置、扩展内部视图与弹窗
+## 设置、插件内部视图与弹窗
 
 | 所属区域 | 子视图 | 展示方式 |
 | --- | --- | --- |
 | 设置 | 通用 | 全局设置弹窗分区；语言、主题等通用项与当前版本 |
 | 设置 | 模型 | 全局设置弹窗分区；服务商列表、新建/编辑服务商、预设/自定义、模型列表 |
-| 扩展 | 内置功能详情 | `item` 内部视图，含 YouDub 内置功能与状态 |
-| 扩展 | 更多插件列表 | `more` 内部视图，内容足够多时出现 |
-| 扩展 | 插件包详情 | `package` 内部视图 |
-| 扩展 | 插件组成项详情 | `row` 内部视图，由包详情进入 |
-| 扩展 | 添加插件与安装进度 | 安装弹窗，包含来源/连接配置及过程状态 |
-| 扩展 | 卸载确认 | 操作确认弹窗 |
+| 插件 | 内置功能详情 | `item` 内部视图，含 YouDub 内置功能与状态 |
+| 插件 | 更多插件列表 | `more` 内部视图，内容足够多时出现 |
+| 插件 | 插件包详情 | `package` 内部视图 |
+| 插件 | 插件组成项详情 | `row` 内部视图，由包详情进入 |
+| 插件 | 添加插件与安装进度 | 安装弹窗，包含来源/连接配置及过程状态 |
+| 插件 | 卸载确认 | 操作确认弹窗 |
 | 模型设置 | 获取模型、删除服务商确认 | 模型配置相关弹窗 |
 | 任务 / 工作流 / 设置 | 未保存修改保护 | 离开编辑区域时触发的共享弹窗 |
 | 全局 | 主题选择、语言选择、参数选择 | 菜单控件 |
@@ -55,7 +57,7 @@
 
 ## 页面关系图
 
-实线表示可进入的页面或流程；虚线表示跨页面配置入口。图中的全局导航覆盖工作台、任务库、工作流、资源、扩展与设置。
+实线表示可进入的页面或流程；虚线表示跨页面配置入口。图中的全局导航覆盖工作台、任务库、工作流、资源、插件与设置。
 
 ```mermaid
 flowchart TD
@@ -73,7 +75,7 @@ flowchart TD
     Nav --> Tasks[任务库]
     Nav --> Flows[工作流库]
     Nav --> Resources[资源]
-    Nav --> Plugins[扩展]
+    Nav --> Plugins[插件]
     Nav --> Settings[设置弹窗]
 
     Home -->|提交任务 / 最近任务| Task[任务详情]

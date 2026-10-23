@@ -34,6 +34,7 @@ export function setupReport(state?: SetupState | null, requestError = '') {
     for (const step of state.environment) lines.push(
       `[${statuses[step.status]}] ${step.name}${step.source ? ` | ${step.source}` : ''}`,
       ...(step.detail && step.status !== 'failed' && step.detail !== state.error ? [step.detail] : []),
+      ...(step.activity && step.activity !== step.detail && !step.log?.includes(step.activity) ? [step.activity] : []),
     )
     lines.push('', '模型准备:')
     for (const model of state.models) lines.push(

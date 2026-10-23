@@ -60,6 +60,7 @@ function AddPluginMenu({ t, disabled, openInstall, renderSlot }: {
   readonly renderSlot: RenderConfig
 }): ReactNode {
   const [open, setOpen] = useState(false)
+  const addMore = useRef<HTMLButtonElement>(null)
   const onDismiss = (): void => { setOpen(false) }
   return (
     <span className={css.addGroup} role="group" aria-label={t('addPlugin')}>
@@ -69,7 +70,7 @@ function AddPluginMenu({ t, disabled, openInstall, renderSlot }: {
       </Button>
       <Menu open={open} onClose={onDismiss} align="end" portal autoFocus listClassName={css.addMenu}
         anchor={(
-          <Button variant="primary" size="sm" className={css.addMore}
+          <Button ref={addMore} variant="primary" size="sm" className={css.addMore}
             disabled={disabled} aria-label={t('chooseAddMethod')} aria-haspopup="menu" aria-expanded={open}
             onClick={() => { setOpen(value => !value) }}
             onKeyDown={(event) => {
@@ -78,7 +79,7 @@ function AddPluginMenu({ t, disabled, openInstall, renderSlot }: {
             <IconChevronDownOutlineRegular size={12} aria-hidden="true" />
           </Button>
         )}>
-        <MenuItemButton icon={<IconDownloadOutlineRegular size={14} />} onSelect={() => { onDismiss(); openInstall() }}>
+        <MenuItemButton icon={<IconDownloadOutlineRegular size={14} />} onSelect={() => { onDismiss(); addMore.current?.focus(); openInstall() }}>
           <span className={css.addMenuItem}>
             <span>{t('installExisting')}</span>
             <span className={css.addMenuDescription}>{t('installExistingDescription')}</span>
@@ -1519,15 +1520,15 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
         ? (
           <header className={css.pageHead} data-window-drag>
             <div className={css.pageHeading}>
-              <h1 className={css.pageTitle}>{t('title')}</h1>
-              <div className={css.pageIntro}>
-                <span>{t('intro')}</span>
+              <div className={css.pageTitleRow}>
+                <h1 className={css.pageTitle}>{t('title')}</h1>
                 <Tooltip label={t('infoDescription')} side="bottom" delayMs={300} maxWidth={300} portal openOnClick>
                   <Button variant="ghost" size="sm" className={css.infoButton} aria-label={t('infoLabel')}>
                     <IconInfoOutlineRegular size={11} aria-hidden="true" />
                   </Button>
                 </Tooltip>
               </div>
+              {t('intro') && <p className={css.pageIntro}>{t('intro')}</p>}
             </div>
             <div className={css.toolbar} hidden={!onInstalled}>
               <Tooltip label={t('refresh')} delayMs={500} focusDelayMs={500} side="bottom" portal disabled={!loaded || refreshing}>

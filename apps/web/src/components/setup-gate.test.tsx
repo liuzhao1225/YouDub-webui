@@ -4,6 +4,7 @@ import { LanguageProvider } from '@/lib/i18n'
 import { SetupGate } from './setup-gate'
 import { SetupScreen, sizeLabel, type SetupState } from './setup-screen'
 import { SetupDiagnostics } from './setup-diagnostics'
+import { ResourceRow } from './resource-row'
 import modelManifest from '../../../../packages/builtin/src/setup-models.json'
 import requirements from '../../../../backend/requirements/resources.json'
 
@@ -23,6 +24,55 @@ const modelChoices: SetupState = {
   resourceSelection: { required: true, prepared: false, items: modelItems, selections: modelItems.map(({ providerId, model }) => ({ providerId, model })) },
 }
 describe('first-run setup', () => {
+  it('keeps the failure cause visible and exposes the complete resource error on demand', () => {
+    const error = '/isolated/runtime/venv/bin/python exited (1).\nerror: externally-managed-environment\n\nOriginal diagnostic and recovery instructions.\n最后一行也必须保留。'
+    const entry = { id: 'python', name: 'Python', group: 'environment' as const, status: 'failed' as const, actions: ['retry' as const], dependencies: [], error, detail: error }
+    const onAction = vi.fn()
+    render(<ResourceRow entry={entry} onAction={onAction} />)
+    expect(screen.getByText('error: externally-managed-environment')).toBeVisible()
+    expect(screen.queryByLabelText('诊断详情 Python')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '诊断详情' }))
+    expect(screen.getByLabelText('诊断详情 Python').textContent).toBe(error)
+    fireEvent.click(screen.getByRole('button', { name: '重试 Python' }))
+    expect(onAction).toHaveBeenCalledWith('retry', entry)
+  })
+  it('keeps a rejected installation directory editable and submits its correction', async () => {
+    let current: SetupState = { ...state, phase: 'installation', installation: { required: true, path: '/default/YouDub' } }
+    const request = vi.fn(async (_path: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        const body = JSON.parse(init.body as string)
+        if (body.path === 'relative/path') throw new Error('请选择绝对路径的安装目录。')
+        current = state
+      }
+      return current
+    })
+    render(<SetupGate request={request as never}><div>实际工作台</div></SetupGate>)
+    const field = await screen.findByLabelText('安装目录')
+    fireEvent.change(field, { target: { value: 'relative/path' } })
+    fireEvent.click(screen.getByRole('button', { name: '确认并准备环境' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('请选择绝对路径的安装目录。')
+    expect(field).toHaveValue('relative/path')
+    expect(field).toHaveFocus()
+    expect(screen.queryByRole('button', { name: '重新连接' })).not.toBeInTheDocument()
+    fireEvent.change(field, { target: { value: '/valid/YouDub' } })
+    fireEvent.click(screen.getByRole('button', { name: '确认并准备环境' }))
+    await waitFor(() => expect(screen.queryByLabelText('安装目录')).not.toBeInTheDocument())
+    expect(request).toHaveBeenLastCalledWith('/api/setup', expect.objectContaining({ body: JSON.stringify({ action: 'configure', path: '/valid/YouDub' }) }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+  it('keeps download progress indeterminate when any model total is unknown', () => {
+    render(<SetupScreen state={{ ...state, models: [
+      { ...state.models[0], received: 1024, total: 0 },
+      { ...state.models[0], id: 'whisper', name: 'Whisper', received: 50, total: 100 },
+    ] }} onAction={vi.fn()} />)
+    const unknown = screen.getByRole('progressbar', { name: 'Qwen3 Aligner 下载进度' })
+    expect(unknown).not.toHaveAttribute('aria-valuenow')
+    expect(unknown).toHaveAttribute('data-indeterminate', 'true')
+    expect(screen.getAllByRole('progressbar').filter(bar => !bar.hasAttribute('aria-valuenow'))).toHaveLength(2)
+    expect(screen.getByRole('progressbar', { name: 'Whisper 下载进度' })).toHaveAttribute('aria-valuenow', '50')
+    expect(screen.queryByText(/\/ 0 B/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/1074%/)).not.toBeInTheDocument()
+  })
   it.each([
     ['en', 'Prepare all models', 'Speech recognition', 'Subtitle alignment', 'Diagnostic logs', 'Pause VoxCPM2', 'VoxCPM2 download progress'],
     ['ja', 'すべてのモデルを準備', '音声認識', '字幕のタイミング調整', '診断ログ', '一時停止 VoxCPM2', 'VoxCPM2 のダウンロード進捗'],
@@ -58,6 +108,13 @@ describe('first-run setup', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
     expect(onPrepare).not.toHaveBeenCalled()
     view.unmount()
+  })
+  it('shows no busy environment indicator while waiting for the user to prepare dependencies', () => {
+    render(<SetupScreen state={{ ...modelChoices, environment: [
+      ...modelChoices.environment, { id: 'dependencies', name: '运行依赖', status: 'pending' },
+    ] }} onAction={vi.fn()} onPrepare={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '准备全部模型' })).toBeEnabled()
+    expect(screen.getByRole('heading').querySelector('.animate-spin')).toBeNull()
   })
   it('requires all models after a prior Whisper-only setup and preserves the original progress controls', async () => {
     const selections = modelItems.map(({ providerId, model }) => ({ providerId, model }))
@@ -228,7 +285,7 @@ describe('first-run setup', () => {
   })
 })
 
-it('shows live environment bytes, elapsed time, source and expandable installation output', () => {
+it('shows live environment progress and keeps technical activity in expandable diagnostics', () => {
   const start = Date.now() - 10_000
   const environment: SetupState['environment'] = [
     { id: 'python', name: 'Python 3.12', status: 'ready' },
@@ -238,11 +295,14 @@ it('shows live environment bytes, elapsed time, source and expandable installati
   const view = render(<SetupScreen state={{ ...state, phase: 'environment', environment }} onAction={vi.fn()} />)
   expect(screen.getByRole('progressbar', { name: '环境准备进度' })).toHaveAttribute('aria-valuenow', '33')
   expect(screen.getByRole('progressbar', { name: /推理运行库 下载进度|当前文件下载进度/ })).toHaveAttribute('aria-valuenow', '40')
-  expect(screen.getByText('Downloading torch-2.8.0.whl')).toBeVisible()
+  expect(screen.queryByText('Downloading torch-2.8.0.whl')).not.toBeInTheDocument()
+  expect(screen.queryByText('PyPI')).not.toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: '环境准备' }).querySelector('.animate-spin')).not.toBeNull()
   expect(screen.getByText(/已用时 1[01] 秒/)).toBeVisible()
-  const toggle = screen.getByText('下载与安装日志')
+  const toggle = screen.getByRole('button', { name: '下载与安装日志' })
   fireEvent.click(toggle)
-  expect(toggle.closest('details')).toHaveAttribute('open')
+  expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('Downloading torch-2.8.0.whl')
   expect((screen.getByRole('textbox', { name: '诊断日志内容' }) as HTMLTextAreaElement).value).toContain('Progress 40000000 of 100000000')
   view.rerender(<SetupScreen state={{ ...state, phase: 'environment', environment: environment.map(step => step.id === 'acceleration' ? { ...step, progress: { received: 80e6, total: 100e6, speed: 2e6 }, log: step.log + '\nProgress 80000000 of 100000000' } : step) }} onAction={vi.fn()} />)
   expect(screen.getByRole('progressbar', { name: /推理运行库 下载进度|当前文件下载进度/ })).toHaveAttribute('aria-valuenow', '80')

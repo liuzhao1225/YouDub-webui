@@ -16,7 +16,7 @@ import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
 import { Button } from '@/components/ui/button'
-import { Page, PageHeader } from '@/components/page-layout'
+import { Page, PageHeader, useWindowHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { WorkflowCanvas } from './workflow-canvas'
@@ -103,7 +103,7 @@ export function TaskNodePage({ submissionStore, params, request, navigate, block
   return <NodeDetail submissionStore={store} useQuery={useQuery} request={request} navigate={navigate} blockNavigation={blockNavigation} useSlot={useSlot} task={task.data} detail={detail.data} types={types.data.items} error={failure} refresh={refresh} />
 }
 function NodeDetail({ submissionStore, task, detail, types, error, refresh, request, navigate, blockNavigation, useSlot, useQuery }: { submissionStore: StudioDraftStore; task: TaskView; detail: TaskNodeDetail; types: NodeTypeDefinition[]; error: string; refresh(): void } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useSlot' | 'useQuery'>) {
-  const tx = useText(), { language } = useI18n()
+  const tx = useText(), { language } = useI18n(), windowHeader = useWindowHeader()
   const node = task.graphSnapshot?.nodes.find((item) => item.id === detail.nodeId)
   const definition = node && nodeDefinition(node, types)
   const details = useSlot('workflow.node.details')
@@ -189,9 +189,13 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
     (definition?.corrections?.outputPorts.includes('transcript') && !!displayed.transcript)
     || (definition?.corrections?.outputPorts.includes('translation') && !!displayed.translation)
   ))
+  const reviewActions = canReview ? <>
+      {!!definition?.corrections && (hasEditor || dirty) && <Button size={windowHeader ? "sm" : "default"} variant="outline" disabled={!dirty || busy || !!pending} onClick={() => void submit(false).catch(() => undefined)}><Save />{tx("workflow.task.save.correction")}</Button>}
+      <Button size={windowHeader ? "sm" : "default"} disabled={busy || !!pending} onClick={() => void submit(true).catch(() => undefined)}>{busy ? <Loader2 className="animate-spin" /> : <Check />}{finishesTask ? dirty ? tx("workflow.task.save.and.complete") : tx("workflow.task.approve.and.complete") : dirty ? tx("workflow.task.save.and.continue") : tx("workflow.task.approve.and.continue")}</Button>
+  </> : undefined
   return <Page>
     {guard.dialog}
-    <PageHeader leading={<Link href={`/tasks/${task.id}`} aria-label={tx("workflow.task.back.to.task")} title={tx("workflow.task.back.to.task")} className="inline-flex items-center text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /></Link>} title={node?.label || text(definition?.label, language) || text(detail.step.label, language)} badge={<TaskState status={detail.step.status} />} />
+    <PageHeader leading={<Link href={`/tasks/${task.id}`} aria-label={tx("workflow.task.back.to.task")} title={tx("workflow.task.back.to.task")} className="inline-flex items-center text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /></Link>} title={node?.label || text(definition?.label, language) || text(detail.step.label, language)} badge={<TaskState status={detail.step.status} />} actions={windowHeader ? reviewActions : undefined} />
     {(error || failure) && <div className="space-y-2"><InlineAlert>{error || failure}</InlineAlert>{error && <Button variant="outline" size="sm" onClick={refresh}><RotateCw />{tx("workflow.task.reload")}</Button>}</div>}
     {detail.step.error && <InlineAlert>{detail.step.error.message}</InlineAlert>}
     {['running', 'waiting'].includes(detail.step.status) && <div className="space-y-2 text-sm text-muted-foreground" role="status">{detail.step.message && <p>{taskProgressMessage(detail.step.message, tx)}</p>}{detail.step.status === 'running' && detail.step.progress != null && <Progress label={tx("workflow.task.node.progress")} value={detail.step.progress} />}</div>}
@@ -209,18 +213,15 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setViewRevision(null); setPreview(null)
     }}>{tx("workflow.task.restore.this.version.as.a.correction")}</Button>}
     {dirty && <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-muted-foreground">{tx("workflow.task.unsaved.correction")}</span><Button variant="ghost" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={discardDraft}>{tx("workflow.task.discard.correction.and.reload")}</Button></div>}
-    {tab === 'result' && <section className="space-y-4">
+    {tab === 'result' && <section className="flex flex-col gap-4">
       {!Object.keys(outputs).length && <p className="text-sm text-muted-foreground">{tx("workflow.task.no.result.yet")}</p>}
       {Custom ? <NodePluginBoundary key={definition!.ui!.detailId} fallback={generic}><Custom detail={displayedDetail} outputs={dirty ? baseline.current.outputs : outputs} draft={patch} readOnly={!editable} onDraftChange={changeDraft} /></NodePluginBoundary> : definition?.ui?.detailId ? <><InlineAlert>{tx("workflow.task.the.node.detail.plugin.is.unavailable")}</InlineAlert>{generic}</> : definition?.corrections?.outputPorts.includes('transcript') && displayed.transcript ? <TranscriptEditor value={displayed.transcript as Transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, transcript: value })} /> : definition?.corrections?.outputPorts.includes('translation') && displayed.translation ? <TranslationEditor value={displayed.translation as Translation} transcript={transcript} readOnly={!editable} onChange={(value) => changeDraft({ ...patch, translation: value })} /> : generic}
-      {hasEditor && Object.entries(displayed).filter(([name]) => name !== 'transcript' && name !== 'translation').map(([name, value]) => <Disclosure key={name} contained={true} title={<>{text(definition?.outputs.find((port) => port.name === name)?.label, language) || (name === 'raw' ? tx("workflow.task.original.response") : name)}</>}><div className="mt-2"><ResultViewer taskId={task.id} value={value} /></div></Disclosure>)}
+      {hasEditor && Object.entries(displayed).filter(([name]) => name !== 'transcript' && name !== 'translation').map(([name, value]) => <Disclosure key={name} contained={true} title={text(definition?.outputs.find((port) => port.name === name)?.label, language) || (name === 'raw' ? tx("workflow.task.original.response") : name)}><div className="mt-2"><ResultViewer taskId={task.id} value={value} /></div></Disclosure>)}
     </section>}
     {tab === 'inputs' && <ResultViewer taskId={task.id} value={detail.inputs} labels={Object.fromEntries((definition?.inputs ?? []).map(port => [port.id, text(port.label, language)]))} />}
     {tab === 'config' && <NodeConfiguration node={node} definition={definition} raw={node ?? detail.spec} />}
     {tab === 'log' && <NodeLog useQuery={useQuery} active={taskNeedsPolling(task)} taskId={task.id} />}
-    {canReview && <div className="sticky bottom-20 z-20 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background/95 py-3 backdrop-blur-sm lg:bottom-0">
-      <Button variant="outline" disabled={!dirty || busy || !!pending} onClick={() => void submit(false).catch(() => undefined)}><Save />{tx("workflow.task.save.correction")}</Button>
-      <Button disabled={busy || !!pending} onClick={() => void submit(true).catch(() => undefined)}>{busy ? <Loader2 className="animate-spin" /> : <Check />}{finishesTask ? dirty ? tx("workflow.task.save.and.complete") : tx("workflow.task.approve.and.complete") : dirty ? tx("workflow.task.save.and.continue") : tx("workflow.task.approve.and.continue")}</Button>
-    </div>}
+    {canReview && !windowHeader && <div className="sticky bottom-20 z-20 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background/95 py-3 backdrop-blur-sm lg:bottom-0">{reviewActions}</div>}
     {((canDerive && dirty) || newTaskId) && <Surface as="section" className="space-y-4 p-4">
       <h2 className="font-semibold">{tx("workflow.task.generate.again.with.corrections")}</h2>
       {!preview && <Button disabled={busy || !!newTaskId} variant="outline" onClick={() => void rerunPreview()}><GitBranch />{tx("workflow.task.review.affected.steps")}</Button>}
@@ -241,7 +242,7 @@ function NodeConfiguration({ node, definition, raw }: { node?: GraphNode; defini
       <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.after.completion")}</dt><dd className="text-sm">{node.autoContinue ? tx("workflow.task.continue.automatically") : tx("workflow.task.wait.for.approval")}</dd></div>
     </Surface>}
     {node && Object.keys(node.config).length > 0 && <ConfigurationValues value={node.config} schema={definition?.configSchema} />}
-    <Disclosure  contained={true} title={<>{tx("workflow.task.raw.configuration")}</>}><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></Disclosure>
+    <Disclosure  contained={true} title={tx("workflow.task.raw.configuration")}><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></Disclosure>
   </section>
 }
 function ConfigurationValues({ value, schema, nested = false }: { value: JsonObject; schema?: JsonSchema; nested?: boolean }) {
@@ -336,7 +337,7 @@ function Media({ url, video, label }: { url: string; video: boolean; label?: str
 }
 function RawResult({ value }: { value: unknown }) {
   const tx = useText()
-  return <Disclosure  contained={true} title={<>{tx("workflow.task.raw.data")}</>}><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></Disclosure>
+  return <Disclosure  contained={true} title={tx("workflow.task.raw.data")}><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></Disclosure>
 }
 function ResultViewer({ taskId, value, labels = {} }: { taskId: string; value: unknown; labels?: Record<string, string> }) {
   const tx = useText()

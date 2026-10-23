@@ -4,11 +4,26 @@
 
 ## 1. 来源与职责
 
-Harness 负责控件几何、字阶、布局关系、层级、材质、交互状态和键盘行为。YouDub 保留 Logo、红色主操作、粉蓝渐变、蓝色完成态、粉色运行态以及浅深主题的中性色体系。
+Harness 负责控件几何、字阶、布局关系、层级、材质、交互状态和键盘行为。Harness 同时拥有浅色与深色的底色、功能色、文字与状态色。YouDub 保留 Logo、字标、声波动效、红色主操作按钮，以及叠加在 Harness 底色上的品牌背景渐变。
 
 实现优先级：直接复用 Harness 组件 → 复用原始 CSS 与轻量属性适配 → 用 Harness token 组合业务组件。组件内部样式不在页面重新定义。颜色在主题层映射，组件和页面只消费语义 token。
 
 上游组件的局部尺寸是具体控件的规范，不应把所有控件强行设为同一种高度或圆角。下文精确值来自源码；内容区域宽度、字幕列布局和播放器比例属于 YouDub 业务规则。
+
+### 1.1 桌面区域职责（2026-10-23）
+
+| 区域 | 承载内容 | 实现归属 |
+| --- | --- | --- |
+| 窗口顶部左区 | macOS 系统按钮、侧栏展开/收起开关 | Harness AppFrame、SidebarRoot、HeaderLeadingControls 原组件 |
+| 侧栏主体 | YouDub 动态品牌、新建任务、工作台/任务库/工作流/资源/插件导航 | SidebarRoot 原几何和选中态；YouDub 只适配路由与文案 |
+| 侧栏底部 | 主题、反馈、GitHub 和设置 | sidebar.settings 插槽中统一工具组；展开时同一行，macOS 收起时随侧栏隐藏 |
+| 主区顶部 | 当前页面或对象名称、返回、必要状态、该页面操作 | 共享 PageHeader 挂载到窗口标题栏；标题 14/20px，操作靠右 |
+| 内容工具区 | 标签页、列表筛选、搜索、画布工具 | 各业务页面拥有；位于窗口栏下方 |
+| 内容主体 | 视频、字幕、工作流、资源列表和结果 | YouDub 业务组件；元信息紧邻对应对象 |
+
+沿用 Harness 原生纵向分区：展开时侧栏从窗口顶部贯穿到底，包含系统窗口控制区、品牌、导航和底部工具；右侧窗口标题栏仅属于主内容列，侧栏与主区的分界线贯穿全高。标题栏直接使用 ConversationRoot 的 header/titleRow 样式，由原组件的 padding、行高和边线决定高度，禁止另设固定高度，禁止叠加横跨左右两列的背景或横线。侧栏开关不随内容滚动；YouDub 沿用 Harness macOS 的完全收起行为，隐藏整列侧栏；展开和新建任务入口固定在顶部系统窗口按钮右侧。折叠后的安全区直接消费 AppFrame 的 leading-clearance。页面仅声明一次标题与操作，桌面通过 portal 放入窗口栏，独立 Web 仍在页面原位呈现。导入、保存、运行等页面操作进入顶栏；行级动作和编辑器局部工具留在内容区域。原生插件管理页保持其原组件及标题区域布局，不再套入 YouDub 自制窗口栏。
+
+YouDub 不再自绘侧栏导航按钮、折叠动画或渐变选中竖条。原生侧栏的会话动作映射到新建任务；不引入聊天工作区数据。既有 youdub.navigation 扩展保留在 sidebar.workspaces 区域，供插件追加业务入口。
 
 ## 2. 基础几何
 
@@ -48,11 +63,11 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 
 ## 4. 层级与材质
 
-- `bg-base`：页面；`bg-layer-1`：内容和输入；`bg-layer-2/3`：浮层、选中面；颜色由 YouDub 映射。
+- `bg-base`：页面；`bg-layer-1`：内容和输入；`bg-layer-2/3`：浮层、选中面；颜色沿用 Harness 原生主题。
 - `elevation-panel`：0.5px描边 + 0 3px 8px / 3% + 0 0 16px / 2%。
 - `elevation-prominent`：0.5px描边 + 0 3px 8px / 4% + 0 0 20px / 5%，用于菜单、弹窗。
 - `elevation-soft`：0.5px描边 + 0 4px 16px / 3% + 0 0 24px / 3%。
-- 菜单背景 blur(40px) saturate(150%)；遮罩 blur none。菜单透明度沿用 Harness，颜色基底使用 YouDub。
+- 菜单背景 blur(40px) saturate(150%)；遮罩 blur none。菜单透明度沿用 Harness，颜色基底沿用 Harness。
 - 菜单内联层级100，Modal1000，portal菜单/Tooltip1100。关闭后恢复焦点，嵌套菜单位于弹窗上方。
 - 普通业务列表用表面和分隔线，不叠加浮层阴影。遮罩必须阻挡背景交互。
 
@@ -64,7 +79,7 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 
 减少动态效果时停止位移和旋转，保留静态状态与文本。真实任务状态驱动进度；没有总量时不制造百分比。
 
-**Logo 动效为必备品牌规范。** Web 与桌面端的侧栏 Logo（展开与收起）、工作台主 Logo、首次准备与翻译服务配置页的品牌 Logo，均必须使用共享 `BrandMark animated`。默认展示时持续播放，不能仅在 hover 或任务运行时启用；Harness 组件迁移、样式收敛和页面重构必须保留此要求。静态文档、导出资产和系统应用图标使用原始静态 Logo。
+**Logo 动效为必备品牌规范。** Web 与桌面端的侧栏 Logo（显示时）、工作台主 Logo、首次准备与翻译服务配置页的品牌 Logo，均必须使用共享 `BrandMark animated`。默认展示时持续播放，不能仅在 hover 或任务运行时启用；Harness 组件迁移、样式收敛和页面重构必须保留此要求。静态文档、导出资产和系统应用图标使用原始静态 Logo。
 
 - 动效仅作用于左右粉色、蓝色声波条；中央红色播放气泡、白色播放符号和 YouDub 字标保持稳定，品牌原色及粉蓝渐变保持不变。
 - 沿用既有 `animate-eq`：周期 1.1 秒、`ease-in-out`、无限循环；每根声波以自身中心沿 Y 轴缩放，起止为 0.38，中点为 1。错峰延迟读取 `BrandMark` 的既有定义，页面不另写一套关键帧或时序。
@@ -99,7 +114,7 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 
 | 类别 | 既有/统一组件 | 组成与专属职责 |
 | --- | --- | --- |
-| 外壳 | Shell、SidebarLink、ThemeToggle、LanguageSwitcher | Harness框架/按钮/菜单；YouDub Logo和导航渐变标记 |
+| 外壳 | AppFrame、SidebarRoot、HeaderLeadingControls | 直接复用 Harness 布局、侧栏、窗口控制；品牌、路由和底部工具通过属性与插槽接入 |
 | 页面 | Page、PageContainer、PageHeader、PageTitle | 共同内容边界；画布保留全宽；标题与操作对齐 |
 | 工作台 | Studio、LaunchCard、MediaUpload、WorkflowRun、WorkflowOptions | 同宽输入与上传；共享Input/Button/Select；只保留一个内容主操作 |
 | 任务库 | Library、TaskCover、StatusBadge、TaskProgress | 同一Tag/Progress；缩略图、标题、元信息、动作层级 |
@@ -116,29 +131,11 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 
 组件盘点表见 [组件源码索引](component-inventory.md)。业务组件单独拥有业务布局；只有重复的视觉/交互结构进入共享组件，避免为每个静态标签创建新抽象。
 
-## 8. YouDub 颜色映射
+## 8. Harness 配色与 YouDub 渐变
 
-品牌原色：红 `#FF0033`、粉 `#FB7299`、蓝 `#00AEEC`；主操作 `#E6002E`，hover `#CC0029`。品牌渐变保持粉→蓝。
+浅色与深色均直接使用 [Harness 原生配色](../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/design-platform.css)。[共享桥接](../../apps/web/src/app/harness-palette.css) 将 YouDub 的 background、foreground、状态等语义单向映射到 Harness token；主按钮按用户要求保留品牌例外：fill #e6002e、hover #cc0029、白字。窗口背景、侧栏背景及其他中性色使用原主题。Web 切换同步 `body[data-ds-dark-theme]`。
 
-| Harness语义 | YouDub token | 浅色 / 深色 |
-| --- | --- | --- |
-| brand-primary、button-primary-fill | primary | #E6002E / #E6002E |
-| button-primary-hover | primary-hover | #CC0029 / #CC0029 |
-| bg-base | background | #F6F6F8 / #0A0A0E |
-| bg-layer-1 | card | #FFFFFF / #121218 |
-| bg-layer-2、bg-layer-3、bg-overlay | elevated | #FFFFFF / #18181F |
-| label-primary | foreground | #0B0B0F / #EDEDF0 |
-| label-secondary、tertiary、dimmed | muted-foreground | #5F5F6B / #A0A0AB |
-| border-l1/l2/l3 | border | 黑8% / 白8% |
-| border-l4 | input | #DEDEE3 / #383840 |
-| state-business-primary | link | #00739F / #3CC4F5 |
-| state-success-primary | status-success-fg | #00739F / #5FD0F5 |
-| state-error-primary、label-error | status-danger-fg | #C8002A / #FF6B81 |
-| state-warn-primary | status-warning-fg | #9A5B00 / #F7C26B |
-| state-idle-primary | status-neutral-fg | #52525B / #B4B4BD |
-| 运行态业务语义 | status-running-fg | #C2185B / #FF9AB8 |
-
-同一映射同时供Web CSS与Harness构建读取，禁止在两个入口维护不同映射。颜色值集中在globals.css。Tag沿用Harness10%着色（warning12%），不另外硬编码背景色。
+Logo 保留红 `#FF0033`、粉 `#FB7299`、蓝 `#00AEEC` 和字标渐变。工作台既有背景渐变保留，以当前 `bg-base` 为底，红粉蓝半透明光晕向透明淡出。浅色与深色分别验证；菜单、次要控件、正文和选中态继续使用 Harness 颜色；主按钮保留红底白字。详情见 [UI 设计规范颜色与语义](ui-design-system.md#3-颜色与语义)。
 
 ## 9. 状态与交互验收矩阵
 
@@ -150,7 +147,7 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 | 弹窗 | 遮罩、焦点进入/限制/返回、Escape、关闭按钮、长内容滚动、窄屏边距 |
 | 折叠 | 鼠标与键盘切换；标题可读；展开后内容不溢出；日志更新不强制滚动用户正在读的内容 |
 | 任务进度 | 0、处理中、1、暂停、未知总量；从真实值派生，错误原样可见 |
-| 主题 | light/dark/system；默认light；Logo/渐变/主操作保持YouDub颜色 |
+| 主题 | light/dark/system；默认light；Logo、渐变与主按钮保留品牌色，背景和其他控件使用 Harness 主题 |
 | Logo 动效 | Web/原生桌面、侧栏展开/收起、工作台、首次准备与翻译配置；默认持续错峰声波，无布局抖动；浅深色一致；减少动态效果时静态展示 |
 | 响应式 | 桌面、窄容器、375px；字段同宽、操作换行、菜单不裁剪 |
 | 媒体 | 播放/暂停、进度、倍速、音量、全屏；图标与真实播放状态一致 |

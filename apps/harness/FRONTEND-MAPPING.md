@@ -14,14 +14,20 @@
 | 首次环境准备 | `components/setup-gate.tsx`、`setup-screen.tsx`、`runtime/onboarding.ts` | 注入固定 `/api/setup` 请求；官方 `root` priority shadow 承载原页面，ready 后释放并展示原 AppFrame；注入品牌资源、官方主题控件、原示例导航 |
 | 首次完整模型准备 | 原 `SetupScreen`、`ModelDownloadRow`、`SetupController` | 四项清单与大小来自原 manifest / resource inventory；四模型均必需，无可取消勾选；官方 Button 显式提交全部模型，复用原暂停、继续、重试与错误行 |
 | 示例与同步播放器 | 原 `templates/examples.html` 与 `site/player.js`、`style.css`、`demos.js` | iframe 加载固定官方连接文件端点；只接回应用内返回导航 |
-| 语言、主题、设置 | `frontend/theme.tsx` 与官方 `LanguageRow` | 官方 `locale` / `theme` / `sidebar.settings`；主题菜单依次为浅色、深色、跟随系统，新配置默认浅色，跟随系统显示日月图标；侧栏底部从左排列设置、主题、问题反馈、GitHub，四个入口共用前景色；侧栏反馈使用 `bug-report.md`，自动填写版本、系统、架构、页面、语言、主题与客户端信息；环境配置页反馈使用 `setup-problem.md`，填写版本、系统和准备阶段，并复制完整诊断日志 |
+| 语言、主题、设置 | `frontend/theme.tsx` 与官方 `LanguageRow` | 官方 `locale` / `theme` / `sidebar.settings`；主题菜单依次为浅色、深色、跟随系统，新配置默认浅色，跟随系统显示日月图标；侧栏底部通过 SidebarRoot 的 settings 插槽合并设置、主题、问题反馈、GitHub：展开时水平排列，macOS 收起时随侧栏隐藏，入口共用前景色；侧栏反馈使用 `bug-report.md`，自动填写版本、系统、架构、页面、语言、主题与客户端信息；环境配置页反馈使用 `setup-problem.md`，填写版本、系统和准备阶段，并复制完整诊断日志 |
 | 模型服务与凭据 | 官方 `ui-settings-models` | 官方 settings / credentials / llm 服务，无旧模型设置运行时 |
 | 首次翻译服务配置 | 原 `TranslationSetupView`、`TranslationSetupController` | 环境与四模型依赖全部就绪→翻译配置→工作台顺序；配置区使用原官方 ModelsSection，配置完成或用户“稍后配置”后释放 root |
 | 插件安装、启停、卸载、日志 | vendor 原 `PluginManagerPage`、`PluginManagerController`、stores、Toast | 官方 PluginManager Remote；仅过滤展示的产品目录与覆盖产品文案 |
 
+## 原生布局接入（2026-10-23）
+
+`SidebarRoot` 与 `HeaderLeadingControls` 直接引用 vendored 源码，包含官方 CSS、折叠动效、macOS 顶部控制和选中态。产品适配层仅映射新建任务、YouDub 路由和多语言标签；品牌及底部动作注册到原生插槽。AppFrame 继续拥有宽度、拖拽和平台安全区；macOS 沿用原生完全收起方式，由 HeaderLeadingControls 提供顶栏展开和新建入口。品牌完整图形和字标使用同一 SVG 中线与顶部补白，声波继续播放。`youdub.navigation` 保留在侧栏扩展区域。`PageHeader` 在桌面挂载到共享窗口栏，内容区保留元信息与局部工具；插件管理页沿用原生完整页面。窗口栏直接引用 ConversationRoot.module.css 的原生布局和安全区，不再维护独立固定高度。
+
+构建显式替换侧栏读取的 `DSH_CLIENT_VERSION`、`DSH_CLIENT_COMMIT_HASH` 和 `DSH_CLIENT_GIT_DIRTY`。未提供提交元信息时编译成 undefined；浏览器不会访问 Node 的 process 对象。
+
 ## 公共元素
 
-`apps/web/src/components/ui/*` 直接复用 Harness `Button`、`Input`、`Menu`、`Checkbox`、`Switch`、`SegmentedControl`、`Tooltip`、`Tag`，在原组件中转换 YouDub 的尺寸、变体和字段回调。桌面与业务测试使用同一份组件源码，已删除桌面专用 `frontend/controls.tsx` 及八类控件的构建替换。`harness-primitives.ts` 是统一框架依赖入口：测试读取保留的框架源文件，Desktop 解析到 ModuleLoader 已加载的官方模块，避免第二份菜单/弹层状态。菜单焦点、键盘和 Portal 继续由官方组件负责；快捷字段浮层也使用共享 `ui/popover.tsx`，已删除桌面专用 Popover 与对应构建替换；工作流离开保护直接使用官方 Modal，桌面 Dialog 适配和两条构建替换已删除。业务查询、资源、首启和草稿控制器共用 `lib/store.ts` 与 Harness Store，测试与桌面不再使用不同的存储实现。[本次验证](docs/evidence/refactor-unified-controls.json)
+`apps/web/src/components/ui/*` 直接复用 Harness `Button`、`Input`、`Menu`、`Checkbox`、`Switch`、`SegmentedControl`、`Tooltip`、`Tag`、`Modal`、`DisclosureRow`，在原组件中转换 YouDub 的尺寸、变体和字段回调。桌面与业务测试使用同一份组件源码，已删除桌面专用 `frontend/controls.tsx` 及八类控件的构建替换。`harness-primitives.ts` 是统一框架依赖入口：测试读取保留的框架源文件，Desktop 解析到 ModuleLoader 已加载的官方模块，避免第二份菜单/弹层状态。菜单焦点、键盘和 Portal 继续由官方组件负责；快捷字段浮层也使用共享 `ui/popover.tsx`，已删除桌面专用 Popover 与对应构建替换；工作流离开保护直接使用官方 Modal，桌面 Dialog 适配和两条构建替换已删除。业务查询、资源、首启和草稿控制器共用 `lib/store.ts` 与 Harness Store，测试与桌面不再使用不同的存储实现。[本次验证](docs/evidence/refactor-unified-controls.json)
 
 `frontend/sdk.tsx` 只提供导航链接和原 `domain-helpers` 的纯函数。原 `bootstrap`、Cordis 前端容器、legacy context、router、Base UI 组件和自建模型设置不进入活跃 Harness 客户端。页面按完整路径 key 保留原组件生命周期；静态路由优先级复用原 `resolveRoute`。
 
@@ -95,3 +101,9 @@
 最新默认模板与下载节点：默认列表合并为字幕翻译、视频配音、字幕＋配音3项；识别和翻译是否暂停由各节点原“自动下一步”设置决定，用户副本与历史任务快照保持。15项模板/图回归见 `/tmp/youdub-merged-workflow-tests.log`，真实默认ID与历史任务核对见 [模板与下载读回](docs/evidence/source-native-youtube-download-node.json)。
 
 原有 `youdub.download` 节点新增 `proxyPort`（0–65535，0直连），原 ConfigEditor 与 Harness 官方 Input 同时用于手动节点设置、工作流运行链接及首页共用入口；`withVideoLink` 将端口写入节点配置，URL只写每次运行输入。旧Composer的 `source_proxy_port` 同样进入原下载 binding。前端51项、localize兼容1项及Web/根类型检查通过，日志 `/tmp/youdub-download-proxy-frontend-tests.log`、`/tmp/youdub-download-proxy-localize-tests.log`、`/tmp/youdub-download-proxy-web-tsc.log`、`/tmp/youdub-download-proxy-root-tsc.log`。原生运行面板粘贴原YouTube zoo链接并填写7897，任务 `874d381f-4750-459a-aa07-ebb1c435715a` 完成下载→准备→原完整配音导出的10节点，实际播放14秒；见 [原生代理输入](docs/evidence/source-native-youtube-proxy-input.png)、[任务及产物](docs/evidence/source-native-youtube-download.json)、[原生回看](docs/evidence/source-native-youtube-download-ui.png)。手动加节点/端口保存由针对性UI测试覆盖；B站公网下载、其他网络条件和全部拖拽连线操作未做原生验收。当前在线素材的实际ASR为long fronts，保持原始响应，流程成功不代表识别准确率通过。
+
+### 原生主题颜色（2026-10-23）
+
+Web 与桌面共用 `apps/web/src/app/harness-palette.css`，业务颜色单向引用 Harness 原生主题；桌面移除旧调色板的 overrideTokens。Logo、字标和背景渐变保留品牌色，渐变叠加在 Harness 当前主题底色上，向透明淡出。
+
+品牌边界：窗口、侧栏、内容表面及中性色直接使用 Harness；主按钮保留 YouDub 红色 #e6002e、悬停 #cc0029 与白字，通过共享 token 接入原组件。

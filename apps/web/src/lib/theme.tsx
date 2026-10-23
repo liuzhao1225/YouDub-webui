@@ -14,6 +14,7 @@ function savedTheme(): Theme {
 function applyTheme(theme: Theme) {
   const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', dark)
+  document.body.toggleAttribute('data-ds-dark-theme', dark)
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
 }
 export function restoreTheme() { applyTheme(savedTheme()) }

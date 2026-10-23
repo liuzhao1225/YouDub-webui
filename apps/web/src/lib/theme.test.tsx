@@ -6,13 +6,14 @@ function Controls() {
   const { theme, setTheme } = useTheme()
   return <><output>{theme}</output>{(['light', 'dark', 'system'] as const).map(value => <button key={value} onClick={() => setTheme(value)}>{value}</button>)}</>
 }
-afterEach(() => { cleanup(); localStorage.clear(); document.documentElement.classList.remove('dark'); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); localStorage.clear(); document.documentElement.classList.remove('dark'); document.body.removeAttribute('data-ds-dark-theme'); vi.unstubAllGlobals() })
 it('defaults to light and restores the explicitly selected theme', () => {
   render(<ThemeProvider><Controls /></ThemeProvider>)
   expect(screen.getByRole('status')).toHaveTextContent('light')
   fireEvent.click(screen.getByRole('button', { name: 'dark' }))
   expect(localStorage.getItem('youdub-theme')).toBe('dark')
   expect(document.documentElement).toHaveClass('dark')
+  expect(document.body).toHaveAttribute('data-ds-dark-theme')
   cleanup()
   restoreTheme()
   render(<ThemeProvider><Controls /></ThemeProvider>)
@@ -25,9 +26,12 @@ it('follows system changes only while system is selected', () => {
   render(<ThemeProvider><Controls /></ThemeProvider>)
   fireEvent.click(screen.getByRole('button', { name: 'system' }))
   expect(document.documentElement).toHaveClass('dark')
+  expect(document.body).toHaveAttribute('data-ds-dark-theme')
   act(() => { query.matches = false; query.dispatchEvent(new Event('change')) })
   expect(document.documentElement).not.toHaveClass('dark')
+  expect(document.body).not.toHaveAttribute('data-ds-dark-theme')
   fireEvent.click(screen.getByRole('button', { name: 'light' }))
   act(() => { query.matches = true; query.dispatchEvent(new Event('change')) })
   expect(document.documentElement).not.toHaveClass('dark')
+  expect(document.body).not.toHaveAttribute('data-ds-dark-theme')
 })

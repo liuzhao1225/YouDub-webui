@@ -268,7 +268,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 24px;
+  min-height: 24px;
   min-width: 0;
 }
 
@@ -610,4 +610,12 @@
     transition: none;
     animation: none;
   }
+}
+
+/* The native window strip sits above the brand. Its 32px artwork gets
+   equal 16px breathing room above and below, including the speech tail. */
+:global([data-platform='darwin']) .root:not(.collapsed) .logoRow {
+  height: auto;
+  margin-top: 0;
+  padding-block: 16px;
 }

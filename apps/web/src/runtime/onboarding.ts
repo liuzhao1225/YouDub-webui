@@ -65,6 +65,8 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
       if (this.current(controller)) { this.mutationRevision++; this.update({ state: next }) }
     } catch (failure) {
       if (this.current(controller)) {
+        // Directory submission errors belong to the form that can correct them.
+        if (body.action === 'configure') throw failure
         clearTimeout(this.timer)
         this.update({ error: failure instanceof Error ? failure.message : String(failure) })
       }

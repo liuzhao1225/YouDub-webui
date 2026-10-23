@@ -77,6 +77,10 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
     } finally { if (activeView.current) setValidating(false) }
   }
   function changeFile(input: GraphInput, file?: File) {
+    // macOS may omit SRT's MIME type; multipart would otherwise send octet-stream.
+    if (file && input.schemaId === 'application/x-subrip/v1' && /\.srt$/i.test(file.name) && (!file.type || file.type === 'application/octet-stream')) {
+      file = new File([file], file.name, { type: 'application/x-subrip', lastModified: file.lastModified })
+    }
     const next = document.inputs.filter((item) => item.id !== input.id && files[item.id]).map((item) => ({ input: item, file: files[item.id] }))
     if (file && !acceptsInputMime(input, file)) {
       setFiles(next)
@@ -104,7 +108,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
       </div>
       {linkTouched && linkError && <div className="mt-2"><InlineAlert>{linkError}</InlineAlert></div>}
       {proxyField && <div className="mt-3"><ConfigEditor useSlot={useSlot} ownerId="video-link.download" schema={{ type: 'object', properties: { proxyPort: proxyField } }} value={{ proxyPort }} diagnostics={[]} readOnly={locked} onChange={(config) => setDraft((current) => ({ ...current, proxyPort: config.proxyPort as number | undefined }))} /></div>}
-      <div className="my-2 text-center text-xs text-subtle-foreground">{tx("workflow.run.or.upload.a.video")}</div>
+      <div className="my-2 text-center text-xs text-muted-foreground">{tx("workflow.run.or.upload.a.video")}</div>
     </div>}
     <div className="grid gap-3">{document.inputs.map((input) => <UploadSlot key={input.id} slot={{ ...input, name: input.id, label: workflowPortLabel(document, input, tx) }} file={files[input.id]} disabled={locked} alternative={input.id === linkInput?.id} onChange={(file) => changeFile(input, file)} />)}</div>
     </div>
@@ -123,7 +127,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   </div>
   const quietResources = resources.ready && resources.result?.status === 'ready' && !resources.checking && !resources.error && !resources.result.error && !resources.result.activePreparation
   const showStatus = !quietResources || error || diagnostics.length > 0 || (pending && !busy) || document.nodes.some((node) => nodeDefinition(node, types)?.runtimeInputSchema)
-  const submit = <Button size={prominent ? "xl" : "default"} className={prominent ? "w-full shrink-0 sm:ml-auto sm:w-auto" : undefined} disabled={locked || !complete || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{prominent ? source ? tx("workflow.run.download.and.process") : tx("workflow.run.start.processing") : tx("workflow.run.start.workflow")}</Button>
-  if (prominent) return <div className="space-y-4"><LaunchCard>{material}<div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-2 pt-2.5 pb-1"><div className="min-w-0 flex-1">{afterInputs}</div>{submit}</div></LaunchCard>{showStatus ? status : null}</div>
+  const submit = <Button size={prominent ? "xl" : "default"} className={prominent ? "ml-auto w-full shrink-0 @min-[36rem]/launch:w-auto" : undefined} disabled={locked || !complete || !resources.ready} onClick={() => void run()}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{prominent ? source ? tx("workflow.run.download.and.process") : tx("workflow.run.start.processing") : tx("workflow.run.start.workflow")}</Button>
+  if (prominent) return <div className="space-y-4"><LaunchCard>{material}<div className="mt-2 flex flex-wrap items-center gap-3 border-t border-border px-2 pt-2.5 pb-1"><div className="min-w-0 flex-[1_1_36rem]">{afterInputs}</div>{submit}</div></LaunchCard>{showStatus ? status : null}</div>
   return <section className="space-y-4">{material}{afterInputs}{status}<div className="flex flex-wrap items-center justify-between gap-3">{!locked && <Link href="/settings/models" className="text-xs text-muted-foreground hover:text-foreground">{tx("workflow.run.connection.settings")}</Link>}{submit}</div></section>
 }
