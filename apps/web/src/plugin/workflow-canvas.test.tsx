@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
 import { LanguageProvider, useI18n } from '@/lib/i18n'
 import type { NodeTypeDefinition, TaskStep, WorkflowDocument } from './contracts'
-import { WorkflowCanvas } from './builtin/workflow-canvas'
+import { createNode, WorkflowCanvas } from './builtin/workflow-canvas'
 import subtitlesTemplate from '../../../../packages/builtin/src/workflow-templates/reviewed-subtitles.json'
 
 const flow = vi.hoisted(() => ({
@@ -25,6 +25,14 @@ vi.mock('@xyflow/react', () => ({
 const type: NodeTypeDefinition = { type: 'test.node', version: '1', providerId: 'test', operation: 'test', label: '测试节点', category: 'test', provider: { id: 'test', operations: [] }, inputs: [], outputs: [], configSchema: { type: 'object', properties: { language: { type: 'string', title: '语言', enum: ['zh', 'en'] } } }, defaults: { language: 'zh' }, ui: { quickFields: ['language'] } }
 function graph(): WorkflowDocument { return { format: 'youdub.workflow', formatVersion: 1, id: 'graph', title: 'Graph', nodes: ['a', 'b', 'c'].map((id) => ({ id, type: type.type, typeVersion: '1', provider: { id: 'test' }, config: { language: 'zh' }, autoContinue: id === 'c' })), inputs: [], outputs: [], edges: [], presentation: { positions: {}, viewport: { x: -600, y: 50, zoom: 0.5 } } } }
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); window.localStorage.clear() })
+
+it('new local nodes use automatic devices and remote nodes retain remote execution', () => {
+  for (const devices of [['cpu'], ['cpu', 'cuda:0'], ['mps', 'cpu']]) {
+    const definition = { ...type, provider: { ...type.provider, execution: 'local' as const, models: [{ id: 'model', devices }] } }
+    expect(createNode(definition).provider).toEqual({ id: type.providerId, model: 'model', device: 'auto' })
+    expect(createNode({ ...definition, provider: { ...definition.provider, execution: 'remote' } }).provider.device).toBe('remote')
+  }
+})
 
 it('updates built-in canvas ports when switching languages without rewriting the workflow', async () => {
   const document = { ...structuredClone(subtitlesTemplate), id: 'youdub.subtitles', title: '字幕翻译', nodes: [], edges: [] } as WorkflowDocument
