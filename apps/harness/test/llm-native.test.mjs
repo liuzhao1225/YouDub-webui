@@ -27,16 +27,18 @@ test('official LLM adapter serializes the required output cap and surfaces provi
   const ctx = new Context(), runtime = ctx.plugin(LlmRuntime); await runtime;
   const profile = { api: 'openai-completions', baseURL: `http://127.0.0.1:${server.address().port}/v1`, apiKeyEnv: 'YOUDUB_TEST_LOCAL_FIXTURE',
     models: [{ id: 'fixture-model', name: 'Fixture', contextWindow: 131072, maxTokens: 65535, input: ['text'] }], compat: { maxTokensField: 'max_tokens' } };
-  const settings = { describe: () => [{ ns: 'llm-pi-ai', value: { providers: { fixture: profile } } }], configure: () => () => {} };
+  const catalogProfile = { apiKeyEnv: profile.apiKeyEnv, baseURL: profile.baseURL };
+  const providers = { fixture: profile, deepseek: catalogProfile };
+  const settings = { describe: () => [{ ns: 'llm-pi-ai', value: { providers } }], configure: () => () => {} };
   const services = ctx.plugin({ name: 'fixture-official-config', apply(child) {
     child.reflect.provide('settings', settings); child.reflect.provide('credentials', { resolve: async ref => ref === 'YOUDUB_TEST_LOCAL_FIXTURE' ? { value: 'test-fixture-only', source: 'process' } : undefined });
   } }); await services;
-  const adapter = ctx.plugin(PiAi, { providers: { fixture: profile } }); await adapter;
+  const adapter = ctx.plugin(PiAi, { providers }); await adapter;
   const dirs = [];
-  const execute = async options => {
+  const execute = async (options, route = 'fixture', model = 'fixture-model') => {
     const dir = await mkdtemp(join(tmpdir(), 'youdub-llm-fixture-')); dirs.push(dir);
     const receipts = [];
-    const result = translateWithHarness(ctx.llm, settings, 'fixture', { invocationId: 'fixture-' + dirs.length, workDir: dir, inputs: { transcript: { detected_language: 'en', segments: [{ id: 's1', start_ms: 0, end_ms: 1000, text: 'hello' }] } }, binding: { model: 'fixture-model', options: { targetLanguage: 'zh', ...options } }, config: {} }, {
+    const result = translateWithHarness(ctx.llm, settings, route, { invocationId: 'fixture-' + dirs.length, workDir: dir, inputs: { transcript: { detected_language: 'en', segments: [{ id: 's1', start_ms: 0, end_ms: 1000, text: 'hello' }] } }, binding: { model, options: { targetLanguage: 'zh', ...options } }, config: {} }, {
       signal: new AbortController().signal, progress: async () => {}, externalPrepare: async receipt => receipts.push(receipt), externalUpdate: async receipt => receipts.push(receipt),
     });
     return { result, dir, receipts };
@@ -80,6 +82,14 @@ test('official LLM adapter serializes the required output cap and surfaces provi
       const system = calls.at(-1).body.messages.find(message => message.role === 'system').content;
       assert.doesNotMatch(system, /对于长句，使用逗号进行更详细的分句。/);
       assert.match(system, /Translate from en to ja/);
+    });
+    await t.test('built-in catalog defaults reach the endpoint without manual protocol or capacity fields', async () => {
+      const [model] = await ctx.llm.listModels('deepseek');
+      const run = await execute({}, 'deepseek', model.id);
+      assert.equal((await run.result).outputs.translation.segments[0].text, '你好');
+      assert.equal(calls.at(-1).body.model, model.id);
+      assert.equal(calls.at(-1).body.max_tokens, 65535);
+      assert.deepEqual(catalogProfile, { apiKeyEnv: profile.apiKeyEnv, baseURL: profile.baseURL });
     });
   } finally { await adapter.dispose(); await services.dispose(); await runtime.dispose(); await new Promise(resolve => server.close(resolve)); await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true }))); }
 });

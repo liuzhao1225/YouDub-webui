@@ -468,6 +468,7 @@
     "workflow.settings.unavailable": " · 利用不可",
     "workflow.settings.add.model.provider": "モデルプロバイダーを追加",
     "workflow.settings.device": "デバイス",
+    "workflow.settings.auto.device": "自動（GPU 優先）",
     "workflow.settings.node.editor.plugin.is.unavailable": "ノードエディターがありません。",
     "workflow.settings.auto.continue": "自動で次へ",
     "workflow.settings.pause.after.this.node.until.its.result.is.approved": "このノードの結果を確認するまで一時停止します。",

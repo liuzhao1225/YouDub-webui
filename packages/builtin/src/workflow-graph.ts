@@ -46,6 +46,9 @@ export function inspectGraph(value: unknown, catalog: CatalogService, runtime: R
       else runtime = normalizeMediaRuntime(node, type, runtime, fail)
     } else if (Object.keys(runtime[node.id] ?? {}).length) fail('This node has no runtime inputs.', { nodeId: node.id })
     const model = type.provider.models?.find(model => model.id === node.provider.model)
+    // Resolve only the detached run snapshot. Reusable workflows keep "auto",
+    // while the plan and task details record the exact supported device.
+    if (ready && node.provider.device === 'auto') node.provider.device = model?.devices?.find((device: string) => device !== 'cpu') ?? model?.devices?.[0]
     if (type.provider.capability && (!node.provider.model || !node.provider.device)) fail('Select a model and device.', { nodeId: node.id, field: 'provider' })
     else if (ready && type.provider.models?.length && (!model || model.available === false || !model.devices?.includes(node.provider.device))) fail(model?.unavailableReason || 'Selected model or device is unavailable.', { nodeId: node.id, field: 'provider' })
     validateMediaNodeConfig(node, type, config, model, fail)

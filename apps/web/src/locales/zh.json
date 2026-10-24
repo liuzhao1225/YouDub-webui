@@ -468,6 +468,7 @@
     "workflow.settings.unavailable": " · 不可用",
     "workflow.settings.add.model.provider": "添加模型供应商",
     "workflow.settings.device": "设备",
+    "workflow.settings.auto.device": "自动（优先 GPU）",
     "workflow.settings.node.editor.plugin.is.unavailable": "节点配置编辑器不可用。",
     "workflow.settings.auto.continue": "自动下一步",
     "workflow.settings.pause.after.this.node.until.its.result.is.approved": "此节点完成后暂停，确认结果后继续。",
