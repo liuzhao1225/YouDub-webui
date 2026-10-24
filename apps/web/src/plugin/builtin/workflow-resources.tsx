@@ -1,6 +1,6 @@
 import { Disclosure } from '@/components/ui/disclosure'
 import { Check, Download, Loader2, RotateCcw, TriangleAlert } from '@/lib/icons'
-import { Tag } from '@/components/ui/tag'
+import { Tag } from '../../components/ui/tag'
 import { Link, text, type NodeTypeDefinition } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { ResourceRow } from '@/components/resource-row'
