@@ -708,6 +708,7 @@
     "task.progress.export.complete": "输出文件已就绪",
     "task.progress.mix.adjusted": "已调整 {current}/{total} 段配音",
     "task.progress.align.complete": "已校准 {count} 个字词边界",
-    "media.upload.use.sample": "使用黄仁勋采访视频"
+    "media.upload.use.sample": "使用黄仁勋采访视频",
+    "workflow.resources.not.configured": "未配置"
   }
 }

@@ -140,7 +140,7 @@ export function TaskDetail({ submissionStore, params, request, navigate, useQuer
       </li>
     })}</Surface></section>}
     {panels.map(({ id, component: Component }) => <Component key={id} task={task} refresh={refresh} />)}
-    {task.graphSnapshot ? <Disclosure  contained={true} title={`${tx("library.step.list")} · ${completed}/${task.steps.length}`}><div className="mt-4">{stepList}</div></Disclosure> : <Surface as="section" className="p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</Surface>}
+    {task.graphSnapshot ? <Disclosure contained={true} title={`${tx("library.step.list")} · ${completed}/${task.steps.length}`}><div className="mt-4">{stepList}</div></Disclosure> : <Surface as="section" className="p-4"><h2 className="mb-4 font-semibold">{tx("library.steps")} · {completed}/{task.steps.length}</h2>{stepList}</Surface>}
     <Disclosure onOpenChange={setShowLog} contained={true} title={tx("library.task.log")}>{showLog && <TaskLog useQuery={useQuery} active={taskNeedsPolling(task)} id={task.id} />}</Disclosure>
   </Page>
 }

@@ -708,6 +708,7 @@
     "task.progress.export.complete": "出力ファイルの準備完了",
     "task.progress.mix.adjusted": "音声クリップを調整済み {current}/{total}",
     "task.progress.align.complete": "{count} 個の単語境界を調整済み",
-    "media.upload.use.sample": "ジェンスン・フアンの動画を使う"
+    "media.upload.use.sample": "ジェンスン・フアンの動画を使う",
+    "workflow.resources.not.configured": "未設定"
   }
 }

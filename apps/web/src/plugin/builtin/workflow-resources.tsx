@@ -1,5 +1,6 @@
 import { Disclosure } from '@/components/ui/disclosure'
 import { Check, Download, Loader2, RotateCcw, TriangleAlert } from '@/lib/icons'
+import { Tag } from '@/components/ui/tag'
 import { Link, text, type NodeTypeDefinition } from '../sdk'
 import { useI18n, useText } from '@/lib/i18n'
 import { ResourceRow } from '@/components/resource-row'
@@ -59,6 +60,14 @@ export function WorkflowResources({ resources, types, disabled = false, hideRead
     {state?.activePreparation?.status === 'failed' && state.activePreparation.error && <InlineAlert>{state.activePreparation.error}</InlineAlert>}
     {resources.error && <InlineAlert>{resources.error}</InlineAlert>}
 
-    {!hideReady && details}
+    {!hideReady && state?.status !== 'ready' && (missing.filter(item => item.configurationRequired || !state?.entries?.some(entry => entry.id === item.resourceId)).length > 0) && <Surface as="ol" className="m-0 list-none divide-y divide-border overflow-hidden p-0 text-sm">
+      {missing.filter(item => item.configurationRequired || !state?.entries?.some(entry => entry.id === item.resourceId)).map((item) => {
+        const provider = types.find((type) => type.providerId === item.providerId)?.provider
+        const label = text(provider?.label, language) || item.providerId
+        const reason = item.reason === 'Provider connection is not configured.' ? tx("workflow.resources.configure.the.service.url.api.key.and.model") : item.reason
+        return <li key={`${item.providerId}:${item.model}`} className="flex items-start justify-between gap-3 px-4 py-3"><div className="min-w-0 flex-1"><p className="font-medium">{label}{item.model ? ` · ${item.model}` : ''}</p>{reason && <p className="mt-0.5 break-words text-xs text-muted-foreground">{subtitle(reason)}</p>}</div><Tag tone={item.automatic ? 'neutral' : 'warning'}>{item.configurationRequired ? tx("workflow.resources.not.configured") : item.automatic ? tx("setup.pending") : tx("settings.resources.manual.setup.required")}</Tag></li>
+      })}
+    </Surface>}
+    {!hideReady && state?.entries && <div className="space-y-2">{state.entries.map(entry => <ResourceRow key={entry.id} entry={entry} busy={disabled || resources.checking || Boolean(otherPreparing) && !entry.actions.some(action => action === 'pause' || action === 'resume')} onAction={resources.action ? (action, entry) => action === 'prepare' ? resources.prepare() : resources.action!(action, entry.downloadId) : undefined} />)}</div>}
   </section>
 }

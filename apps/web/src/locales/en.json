@@ -707,6 +707,7 @@
     "task.progress.export.complete": "Output media is ready",
     "task.progress.mix.adjusted": "Adjusted {current}/{total} speech clips",
     "task.progress.align.complete": "Aligned {count} word boundaries",
-    "media.upload.use.sample": "Use Jensen Huang interview"
+    "media.upload.use.sample": "Use Jensen Huang interview",
+    "workflow.resources.not.configured": "Not configured"
   }
 }
