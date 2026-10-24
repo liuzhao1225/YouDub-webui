@@ -92,7 +92,7 @@ def prepare_reference_audio(context: StageContext, transcript: Transcript, progr
         try:
             result = _run_media(
                 [ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-xerror",
-                 "-i", str(vocals.resolve()), "-ss", f"{start_ms / 1000:.3f}",
+                 "-ss", f"{start_ms / 1000:.3f}", "-i", str(vocals.resolve()),
                  "-t", f"{duration_ms / 1000:.3f}", "-map", "0:a:0", "-vn", "-ac", "1",
                  "-ar", "16000", "-c:a", "pcm_s16le", str(path.resolve())],
                 check_cancel=context.check_cancel,
@@ -105,6 +105,7 @@ def prepare_reference_audio(context: StageContext, transcript: Transcript, progr
         if round(info.frames * 1000 / info.samplerate) != duration_ms:
             raise ApiError(422, "INVALID_MEDIA", "The source reference does not cover the selected utterance interval.", stage="tts")
         prepared[reference.id] = {"path": path, "text": reference.text}
+        progress(index / len(references), f"Prepared source reference {index}/{len(references)}")
     return prepared
 
 

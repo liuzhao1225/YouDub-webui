@@ -152,12 +152,13 @@ test('download URL is validated as per-run input and never saved in exported gra
   assert.throws(() => parseWorkflowDocument(doc), /apiKey/)
 })
 
-test('correction semantics preserve segment identity and normalize changed word timings', () => {
-  const original = { detected_language: 'en', segments: [{ id: 'a', text: 'Hello', start_ms: 0, end_ms: 100, words: [{ text: 'Hello', start_ms: 0, end_ms: 100 }] }] }
+for (const end_ms of [100, 1018]) test(`correction semantics preserve source timing at ${end_ms} ms and normalize changed word timings`, () => {
+  const original = { detected_language: 'en', segments: [{ id: 'a', text: 'Hello', start_ms: 0, end_ms, words: [{ text: 'Hello', start_ms: 0, end_ms }] }] }
   const request = { operation: 'speech.transcribe/v1', inputs: { mediaInfo: { duration_ms: 1000 } }, baselineOutputs: { transcript: original, raw: { id: 'raw', schemaId: 'diagnostic/json/v1' } }, patch: { transcript: { ...structuredClone(original), segments: [{ ...original.segments[0], text: 'Hello there' }] } } }
   const output = validateMediaCorrection(request) as any
   assert.equal(output.transcript.segments[0].words, null)
   assert.deepEqual(output.raw, request.baselineOutputs.raw)
+  assert.equal(output.transcript.segments[0].end_ms, end_ms)
   assert.notEqual(output.transcript, original)
   request.patch.transcript.segments[0].id = 'other'
   assert.throws(() => validateMediaCorrection(request), /IDs/)

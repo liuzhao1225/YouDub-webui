@@ -122,9 +122,14 @@ def test_real_mix_fails_on_speech_overflow_without_trimming(context):
     assert not (context.work_dir / "alignment.json").exists()
 
 
-def test_real_mix_borrows_earlier_silence_to_keep_the_complete_tail(context):
+@pytest.mark.parametrize("source_end_ms", [1700, 1718])
+def test_real_mix_borrows_earlier_silence_to_keep_the_complete_tail(context, source_end_ms):
     require_ffmpeg()
     context.input_files["media_info"].write_text(json.dumps({"duration_ms": 1700, "width": 320, "height": 180}))
+    transcript_path = context.input_files["transcript"]
+    transcript = json.loads(transcript_path.read_text())
+    transcript["segments"][-1]["end_ms"] = source_end_ms
+    transcript_path.write_text(json.dumps(transcript))
     write_tone(context.work_dir / "tts/000001.wav", 1000, 440)
     write_tone(context.work_dir / "tts/000002.wav", 1400, 660)
     write_manifest(context)
@@ -152,7 +157,7 @@ def test_real_mix_borrows_earlier_silence_to_keep_the_complete_tail(context):
     assert timeline.segments[0].dubbed_start_ms < 500
     assert timeline.segments[1].dubbed_start_ms < 1100
     assert timeline.segments[-1].dubbed_end_ms == 1700
-    assert [(item.source_start_ms, item.source_end_ms) for item in timeline.segments] == [(500, 1000), (1100, 1700)]
+    assert [(item.source_start_ms, item.source_end_ms) for item in timeline.segments] == [(500, 1000), (1100, source_end_ms)]
     assert context.input_files["transcript"].read_bytes() == original_transcript
     assert [(context.work_dir / f"tts/{index:06d}.wav").read_bytes() for index in (1, 2)] == original_clips
 

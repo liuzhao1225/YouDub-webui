@@ -64,7 +64,14 @@ export default class Files extends Service implements FilesService {
     if (!info.isFile() || info.size <= 0) throw new AppError('STAGE_OUTPUT_MISSING', 'Artifact is empty or missing.', 500)
     const metadata = { ...descriptor.metadata }
     if (descriptor.mimeType === 'application/json') JSON.parse(await readFile(file, 'utf8'))
-    if (/^(audio|video)\//.test(descriptor.mimeType)) {
+    const measuredWav = descriptor.mimeType === 'audio/wav' && descriptor.schemaId === 'audio/wav/v1'
+      && Number.isSafeInteger(metadata.sampleRate) && metadata.sampleRate > 0
+      && Number.isSafeInteger(metadata.sampleCount) && metadata.sampleCount > 0
+      && (metadata.channels === 1 || metadata.channels === 2)
+    if (measuredWav) {
+      // WAV providers already measure the actual file before returning these fields.
+      metadata.durationMs = Math.round(metadata.sampleCount / metadata.sampleRate * 1000)
+    } else if (/^(audio|video)\//.test(descriptor.mimeType)) {
       const result = await this.ctx.youdubWorker.run({ command: process.env.FFPROBE_PATH || 'ffprobe', args: ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file] })
       const probe = JSON.parse(result.stdout)
       if (!probe.streams?.some((stream: any) => stream.codec_type === descriptor.mimeType.split('/')[0])) throw new AppError('INVALID_PROVIDER_RESULT', 'Artifact has no declared media stream.', 500)

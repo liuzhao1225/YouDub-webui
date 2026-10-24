@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import wave
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -33,7 +34,9 @@ def context(tmp_path, monkeypatch):
     (models / "small.pt").write_bytes(b"test-checkpoint")
     monkeypatch.setenv("YOUDUB_WHISPER_MODELS_DIR", str(models))
     source = tmp_path / "source.wav"
-    source.write_bytes(b"test-audio")
+    with wave.open(str(source), "wb") as wav:
+        wav.setparams((1, 2, 16000, 0, "NONE", "not compressed"))
+        wav.writeframes(b"\0" * 16000 * 2 * 3)
     info = tmp_path / "media.json"
     info.write_text(json.dumps({"duration_ms": 3000}), encoding="utf-8")
     config = TaskConfig.model_validate({
@@ -273,7 +276,7 @@ def test_invalid_results_are_explicit_errors_without_retiming(raw_result, change
 
 def test_run_passes_config_checkpoint_and_vocals_and_keeps_full_raw_result(context, raw_result, monkeypatch):
     vocals = context.work_dir.parent / "vocals.wav"
-    vocals.write_bytes(b"separated-audio")
+    vocals.write_bytes(context.input_files["source_audio"].read_bytes())
     context = replace(context, input_files={**context.input_files, "vocals": vocals})
     commands = []
 
@@ -299,7 +302,32 @@ def test_run_passes_config_checkpoint_and_vocals_and_keeps_full_raw_result(conte
     assert progress[-1][0] == 1
 
 
-@pytest.mark.parametrize("missing", ["checkpoint", "source_audio", "media_info"])
+@pytest.mark.parametrize("video_duration_ms,end_seconds,accepted", [
+    (2944, 2.962, True),  # The final word is 18 ms beyond video, still inside the audio.
+    (10000, 3.1, False),  # A longer video must not hide timestamps outside the audio.
+])
+def test_run_uses_actual_audio_duration(context, monkeypatch, video_duration_ms, end_seconds, accepted):
+    context.input_files["media_info"].write_text(json.dumps({"duration_ms": video_duration_ms}))
+    raw = word_result([(2, end_seconds, " Last.")])
+
+    def invoke(command, **kwargs):
+        Path(command[command.index("--output-path") + 1]).write_text(json.dumps(raw))
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(media, "_run_media", invoke)
+    if accepted:
+        result = asr.run(context, lambda *_: None)
+        transcript = json.loads(result.output_files["transcript"].read_text())
+        assert transcript["segments"][-1]["end_ms"] == round(end_seconds * 1000)
+        assert transcript["segments"][-1]["words"][-1]["end_ms"] == round(end_seconds * 1000)
+        assert json.loads(result.output_files["asr_raw"].read_text()) == raw
+    else:
+        with pytest.raises(ApiError, match="input audio timeline"):
+            asr.run(context, lambda *_: None)
+        assert not (context.work_dir / "transcript.json").exists()
+
+
+@pytest.mark.parametrize("missing", ["checkpoint", "source_audio"])
 def test_run_rejects_missing_inputs_before_starting_model(context, monkeypatch, missing):
     path = asr.model_directory() / "small.pt" if missing == "checkpoint" else context.input_files[missing]
     path.unlink()

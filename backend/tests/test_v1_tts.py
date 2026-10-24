@@ -115,7 +115,15 @@ def test_model_inventory_requires_local_nonempty_asset_groups_only(context, monk
 
 def test_tts_preserves_source_and_translation_and_clones_each_corresponding_utterance(context, model_process):
     before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
-    result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
+    progress = []
+    prepared = tts.prepare_reference_audio(
+        context, Transcript.model_validate_json(before["transcript"]),
+        lambda value, message: progress.append((value, message, len(list((context.work_dir / "tts/references").glob("*.wav"))))),
+    )
+    assert [value for value, _, _ in progress] == [0, 1 / 3, 2 / 3, 1]
+    assert [count for _, _, count in progress] == [0, 1, 2, 3]
+    assert progress[-1][1] == "Prepared source reference 3/3"
+    result = tts.run(context, lambda *args: None, prepared_references=prepared)
     assert {name: context.input_files[name].read_bytes() for name in before} == before
     clips = model_process.clips
     assert [clip["segment_id"] for clip in clips] == ["one", "two", "three"]
