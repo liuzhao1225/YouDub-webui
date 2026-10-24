@@ -50,6 +50,10 @@
   gap: 8px;
 }
 
+.rows:empty {
+  display: none;
+}
+
 /* Provider cards share the settings material; editors use the inset module fill. */
 .rowCard {
   border: 0.5px solid var(--dsw-alias-settings-card-stroke);

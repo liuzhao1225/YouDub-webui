@@ -15,7 +15,7 @@ import { useActiveView, useObservableSource, usePendingUnload } from '../view-ho
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Page, PageHeader, useWindowHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
@@ -324,7 +324,7 @@ function SpeechResult({ taskId, value, translation, historical, raw }: { taskId:
       return <li key={`${segment.id}-${index}`} aria-label={label} className="grid grid-cols-[2ch_minmax(0,1fr)] items-center gap-3 p-3 @min-[640px]/page:grid-cols-[2ch_minmax(0,1fr)_minmax(16rem,1fr)]">
         <span className="text-right text-xs tabular-nums text-muted-foreground" title={segment.id}>{index + 1}</span>
         <div className="min-w-0">{sentence ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{sentence}</p> : !historical && <p className="text-sm text-muted-foreground">{tx("workflow.task.no.unique.matching.translation")}</p>}</div>
-        <div className="col-start-2 flex min-w-0 items-center gap-2 @min-[640px]/page:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className="shrink-0 rounded-md p-2 text-link hover:bg-muted"><Download className="size-4" /></a></div>
+        <div className="col-start-2 flex min-w-0 items-center gap-2 @min-[640px]/page:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className={buttonVariants({ variant: 'link', size: 'icon', className: 'shrink-0' })}><Download className="size-4" /></a></div>
       </li>
     })}</Surface>
     <RawResult value={raw} />
@@ -357,7 +357,7 @@ function ResultViewer({ taskId, value, labels = {} }: { taskId: string; value: u
     seen.set(artifact.label, (seen.get(artifact.label) ?? 0) + 1)
     const label = artifact.label + ((counts.get(artifact.label) ?? 0) > 1 ? ` ${seen.get(artifact.label)}` : '')
     return <Surface as="div" key={artifact.id} className="space-y-3 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">{artifact.label && <span className="text-sm font-medium">{label}</span>}<a href={url} target="_blank" rel="noreferrer" className="ml-auto inline-flex shrink-0 items-center gap-2 text-xs text-link"><Download className="size-4" />{audio ? tx("workflow.task.open.audio") : video ? tx("workflow.task.open.video") : tx("workflow.task.open.file")}{!artifact.label && artifacts.size > 1 ? ` ${index + 1}` : ''}</a></div>
+      <div className="flex flex-wrap items-center justify-between gap-2">{artifact.label && <span className="text-sm font-medium">{label}</span>}<a href={url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'link', size: 'sm', className: 'ml-auto shrink-0' })}><Download className="size-4" />{audio ? tx("workflow.task.open.audio") : video ? tx("workflow.task.open.video") : tx("workflow.task.open.file")}{!artifact.label && artifacts.size > 1 ? ` ${index + 1}` : ''}</a></div>
       {(audio || video) && <div className="min-w-0 flex-1"><Media url={url} video={video} /></div>}
     </Surface>
   })}<RawResult value={value} /></div>

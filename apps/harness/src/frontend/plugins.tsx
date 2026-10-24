@@ -1,3 +1,4 @@
+import { InlineAlert } from '../../../web/src/components/inline-alert'
 /** YouDub composes the unchanged Harness plugin manager and its product-specific catalog. */
 import React from 'react'
 import { StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -23,7 +24,7 @@ function BuiltinYouDub({view,usePluginManager,t,resolveText}:any) {
   if(view==='summary')return <>YouDub {process.env.DSH_CLIENT_VERSION} · {t('partsCountTotal',{count:String(rows.length)})}</>
   return <div className="space-y-4 text-sm">
     <dl className={pluginCss.facts}><div><dt>{t('youdub.applicationVersion')}</dt><dd>{process.env.DSH_CLIENT_VERSION}</dd></div><div><dt>{t('youdub.packageVersion')}</dt><dd>{bundle.version??'—'}</dd></div><div><dt>{t('sourceTitle')}</dt><dd>{t('youdub.bundled')}</dd></div></dl>
-    {bundle.error&&<p role="alert" className="text-status-danger-fg">{bundle.error.diagnostic??bundle.error.code}</p>}
+    {bundle.error&&<InlineAlert>{bundle.error.diagnostic??bundle.error.code}</InlineAlert>}
     <div className="divide-y divide-border">{rows.map((row:any) => <div key={row.rowId} className="flex items-center gap-3 py-3"><StateDot state={row.phase==='active'?'done':row.phase==='failed'?'error':row.enabled?'ongoing':'idle'} /><div className="min-w-0 flex-1"><div>{rowText(row,resolveText).title}</div><div className="text-xs text-muted-foreground">{row.rowId}</div></div><Tag tone={row.phase==='active'?'success':row.phase==='failed'?'danger':'neutral'}>{t(row.phase==='active'?'rowPhaseActive':row.phase==='failed'?'rowPhaseFailed':row.enabled?'rowPhaseLoading':'partOff')}</Tag></div>)}</div>
   </div>
 }

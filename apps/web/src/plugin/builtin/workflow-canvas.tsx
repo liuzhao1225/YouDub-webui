@@ -1,3 +1,4 @@
+import { Surface } from '@/components/ui/surface'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, Choice } from '@/components/ui/native-select'
@@ -170,7 +171,7 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
       ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': tx("workflow.canvas.zoom.in"), 'controls.zoomOut.ariaLabel': tx("workflow.canvas.zoom.out"), 'controls.fitView.ariaLabel': tx("workflow.canvas.fit.view") }}>
       <Background gap={24} size={1} /><Controls showInteractive={false} fitViewOptions={{ padding: 0.12, maxZoom: 1 }} />
     </ReactFlow>
-    {selectedEdge && !readOnly && !disabled && <div className="absolute top-3 left-1/2 z-10 flex max-w-[90%] -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-2"><span className="truncate text-xs">{edges.find((edge) => edge.id === selectedEdge)?.sourceHandle} → {edges.find((edge) => edge.id === selectedEdge)?.targetHandle}</span><Button variant="ghost" size="icon-xs" type="button" aria-label={tx("workflow.canvas.delete.connection")} onClick={() => { onChange?.({ ...document, edges: document.edges.filter((edge) => edge.id !== selectedEdge), outputs: document.outputs.filter((port) => `output:${port.id}` !== selectedEdge) }); setSelectedEdge(undefined) }}><X className="size-4" /></Button></div>}
+    {selectedEdge && !readOnly && !disabled && <Surface as="div" className="absolute top-3 left-1/2 z-10 flex max-w-[90%] -translate-x-1/2 items-center gap-3 px-4 py-2"><span className="truncate text-xs">{edges.find((edge) => edge.id === selectedEdge)?.sourceHandle} → {edges.find((edge) => edge.id === selectedEdge)?.targetHandle}</span><Button variant="ghost" size="icon-xs" type="button" aria-label={tx("workflow.canvas.delete.connection")} onClick={() => { onChange?.({ ...document, edges: document.edges.filter((edge) => edge.id !== selectedEdge), outputs: document.outputs.filter((port) => `output:${port.id}` !== selectedEdge) }); setSelectedEdge(undefined) }}><X className="size-4" /></Button></Surface>}
   </div>
 }
 export function createNode(definition: NodeTypeDefinition): GraphNode {

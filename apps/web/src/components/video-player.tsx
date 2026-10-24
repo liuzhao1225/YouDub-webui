@@ -1,10 +1,11 @@
-import { Button } from '@/components/ui/button'
 "use client"
+
+import { Button } from '@/components/ui/button'
+import { Menu } from './ui/harness-primitives'
 
 import { CSSProperties, KeyboardEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 // Official filled media glyphs keep play/pause silhouettes clear on video.
 import {
-  Check,
   Maximize,
   Minimize,
   PauseIcon,
@@ -59,12 +60,10 @@ function ControlButton({
   )
 }
 
-export type SpeedControlProps = { rate:number; options:number[]; label:string; onChange(value:number):void }
-export function VideoPlayer({ src, className, onError, renderSpeedControl }: { src: string; className?: string; onError?: () => void; renderSpeedControl?:(props:SpeedControlProps) => ReactNode }) {
+export function VideoPlayer({ src, className, onError }: { src: string; className?: string; onError?: () => void }) {
   const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<VideoElement>(null)
-  const speedMenuRef = useRef<HTMLDivElement>(null)
   const hideTimerRef = useRef<number | null>(null)
   const touchRevealRef = useRef(false)
   const [playing, setPlaying] = useState(false)
@@ -90,15 +89,6 @@ export function VideoPlayer({ src, className, onError, renderSpeedControl }: { s
       if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current)
     }
   }, [])
-
-  useEffect(() => {
-    if (!speedOpen) return
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!speedMenuRef.current?.contains(event.target as Node)) setSpeedOpen(false)
-    }
-    document.addEventListener("pointerdown", handlePointerDown)
-    return () => document.removeEventListener("pointerdown", handlePointerDown)
-  }, [speedOpen])
 
   const revealControls = useCallback(() => {
     setControlsVisible(true)
@@ -167,7 +157,7 @@ export function VideoPlayer({ src, className, onError, renderSpeedControl }: { s
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const video = videoRef.current
-    if (!video || event.metaKey || event.ctrlKey || event.altKey) return
+    if (!video || event.metaKey || event.ctrlKey || event.altKey || (event.target as HTMLElement).closest('[role="menu"]')) return
     // 焦点在进度条/音量滑块上时，方向键交给滑块本身。
     const onSlider = event.target instanceof HTMLInputElement
     switch (event.key) {
@@ -336,43 +326,18 @@ export function VideoPlayer({ src, className, onError, renderSpeedControl }: { s
             {formatClock(currentTime)} / {formatClock(duration)}
           </span>
           <div className="ml-auto flex items-center gap-0.5">
-            {renderSpeedControl ? renderSpeedControl({rate,options:SPEEDS,label:t.player.speed,onChange:changeRate}) : <div ref={speedMenuRef} className="relative">
-              <Button variant="ghost"
-                type="button"
-                onClick={() => setSpeedOpen((open) => !open)}
-                aria-label={t.player.speed}
-                aria-haspopup="menu"
-                aria-expanded={speedOpen}
-                title={t.player.speed}
-                className="flex h-8 min-w-11 items-center justify-center rounded-md px-2 font-mono text-xs font-semibold tabular-nums text-white/90 transition-colors outline-none hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 aria-expanded:bg-white/15"
-              >
+            {/* Portal avoids clipping in small players; fullscreen keeps the menu in its top layer. */}
+            <Menu open={speedOpen} portal={!fullscreen} autoFocus side="top" align="end"
+              selectedId={String(rate)} items={SPEEDS.map(value => ({ id: String(value), label: `${value}x` }))}
+              onClose={() => setSpeedOpen(false)} onSelect={value => changeRate(Number(value))}
+              anchor={<Button variant="ghost" type="button" aria-label={t.player.speed} title={t.player.speed}
+                aria-haspopup="menu" aria-expanded={speedOpen}
+                onClick={() => setSpeedOpen(open => !open)}
+                onKeyDown={event => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); event.stopPropagation(); setSpeedOpen(true) } }}
+                className="text-white/90 hover:bg-white/15 hover:text-white focus-visible:ring-white/60">
                 {rate}x
-              </Button>
-              {speedOpen ? (
-                <div
-                  role="menu"
-                  aria-label={t.player.speed}
-                  className="absolute right-0 bottom-10 min-w-28 rounded-xl border border-white/10 bg-black/85 p-1 shadow-[0_12px_32px_rgb(0_0_0/0.5)] backdrop-blur-md"
-                >
-                  {SPEEDS.map((value) => (
-                    <Button variant="ghost"
-                      key={value}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={rate === value}
-                      onClick={() => changeRate(value)}
-                      className={cn(
-                        "flex h-auto w-full items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-left font-mono text-xs transition-colors outline-none hover:bg-white/15 focus-visible:bg-white/15",
-                        rate === value ? "text-[#5fd0f5]" : "text-white/90",
-                      )}
-                    >
-                      {value}x
-                      {rate === value ? <Check className="size-3.5" /> : null}
-                    </Button>
-                  ))}
-                </div>
-              ) : null}
-            </div>}
+              </Button>}
+            />
             {pipSupported ? (
               <ControlButton label={t.player.pip} onClick={togglePictureInPicture}>
                 <PictureInPicture2 />

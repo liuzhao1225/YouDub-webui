@@ -66,7 +66,7 @@
 
 菜单测试通过可见菜单项选择，保留原业务结果、字段类型、禁用与草稿断言。`controls.test.tsx` 检查键盘选项跳转、关闭和焦点返回。
 
-`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；原 Web 的 localStorage 实现仅由历史组件测试使用，不进入产品。`sdk`、文件 URL、剪贴板、播放器和图标的边界仍服务于官方导航、Connection 文件授权、官方剪贴板、播放器倍速菜单及官方图标来源，继续通过构建清单核对。
+`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；原 Web 的 localStorage 实现仅由历史组件测试使用，不进入产品。`sdk`、文件 URL、剪贴板和图标的边界仍服务于官方导航、Connection 文件授权、官方剪贴板及官方图标来源。播放器直接复用业务 `VideoPlayer`，其倍速菜单通过同一 `harness-primitives` 入口使用 Harness `Menu`，不再保留第二套播放器适配。继续通过构建清单核对。
 
 不要为新页面创建额外 React root、Cordis 根、路由容器或模型配置表单。构建脚本仅对明确的导入边界进行替换；新增依赖后运行活动模块检查，确认没有带入旧平台实现或第二份 React。
 

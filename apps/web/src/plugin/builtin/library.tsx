@@ -1,4 +1,4 @@
-import { Surface } from '@/components/ui/surface'
+import { Surface, surfaceVariants } from '@/components/ui/surface'
 import { Progress } from '@/components/ui/progress'
 import { Disclosure } from '@/components/ui/disclosure'
 import { NativeSelect, Choice } from '@/components/ui/native-select'
@@ -13,10 +13,11 @@ import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
 import { formatBytes, formatDateTime } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { TaskCover } from '@/components/task-cover'
 import { VideoPlayer } from '@/components/video-player'
 import { InlineAlert } from '@/components/inline-alert'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Page, PageHeader } from '@/components/page-layout'
 import { ConfigEditor, defaultConfig, useEditorSupported } from './schema-form'
 import { workflowTemplateTitle, workflowPortLabel } from './workflow-utils'
@@ -31,8 +32,8 @@ export function Library({ useQuery, navigate }: Bindings<'useQuery' | 'navigate'
     <div className="flex flex-wrap items-center gap-2"><NativeSelect aria-label={tx("library.task.status")} value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0) }} ><option value="">{tx("library.all.statuses")}</option>{['queued', 'running', 'waiting', 'paused', 'cancelling', 'succeeded', 'failed', 'cancelled'].map((item) => <option key={item} value={item}>{tx(STATUS_LABELS[item])}</option>)}</NativeSelect><Button variant="ghost" size="sm" onClick={refresh}><RotateCw />{tx("library.refresh")}</Button></div>
     {error && <InlineAlert>{error}</InlineAlert>}
     {!data && !error && <p role="status" className="py-12 text-center text-sm text-muted-foreground">{tx("library.loading")}</p>}
-    {data && !data.items.length && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">{offset > 0 ? tx("library.no.tasks.on.this.page") : status ? tx("library.no.tasks.with.this.status") : tx("library.no.tasks.yet")}</div>}
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data?.items.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40">
+    {data && !data.items.length && <Surface as="div" className="border-dashed p-12 text-center text-muted-foreground">{offset > 0 ? tx("library.no.tasks.on.this.page") : status ? tx("library.no.tasks.with.this.status") : tx("library.no.tasks.yet")}</Surface>}
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{data?.items.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className={cn(surfaceVariants({ interactive: true }), "group flex flex-col overflow-hidden")}>
       <TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="lg" className="rounded-none" />
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3"><h2 title={taskDisplayName(task)} className="line-clamp-2 min-w-0 break-words font-medium">{taskDisplayName(task)}</h2><TaskState status={task.status} /></div>
@@ -128,7 +129,7 @@ export function TaskDetail({ submissionStore, params, request, navigate, useQuer
       const label = output.label || output.name || output.id
       const displayLabel = task.graphSnapshot ? workflowPortLabel(task.graphSnapshot, { id: output.id, label }, tx) : label
       return <Surface as="div" key={output.id} className="space-y-2 p-4">
-      <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{displayLabel}</p>{output.size !== undefined && <p className="mt-1 text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div><a href={output.url} download className="rounded-lg p-2 hover:bg-accent" aria-label={`${tx("library.download")} ${displayLabel}`}><Download className="size-4" /></a></div>
+      <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{displayLabel}</p>{output.size !== undefined && <p className="mt-1 text-xs text-muted-foreground">{formatBytes(output.size)}</p>}</div><a href={output.url} download className={buttonVariants({ variant: 'ghost', size: 'icon' })} title={`${tx("library.download")} ${displayLabel}`} aria-label={`${tx("library.download")} ${displayLabel}`}><Download className="size-4" /></a></div>
       {!mediaReleased && output.mimeType?.startsWith('audio/') && <AudioOutput src={output.url} />}
       {(output.mimeType?.startsWith('text/') || output.mimeType === 'application/x-subrip') && <a href={output.url} target="_blank" rel="noreferrer" className="text-xs text-link">{tx("library.preview.text")}</a>}
     </Surface>})}</div></section>}

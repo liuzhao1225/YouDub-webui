@@ -1,10 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { BrandMark } from './brand/brand-mark'
 import { Button } from './ui/button'
 import { TranslationSetupController } from '@/runtime/onboarding'
 import { useObservableSource, usePendingUnload } from '@/plugin/view-hooks'
 import { useText } from '@/lib/i18n'
-import { PageContainer } from './page-layout'
+import { SetupPage } from './setup-page'
 import { InlineAlert } from './inline-alert'
 
 export interface TranslationModelsProps {
@@ -26,14 +25,13 @@ export function TranslationSetupView({ controller, renderModels, wordmarkSrc, on
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   usePendingUnload(dirty || saving)
-  if (!loaded) return <PageContainer as="main" className="max-w-3xl space-y-6 pt-[var(--page-top)] pb-12">{error ? <><p role="alert">{error}</p><Button onClick={controller.start}>{tx("translation.setup.view.reconnect")}</Button></> : <p role="status">{tx("translation.setup.view.checking.translation.settings")}</p>}</PageContainer>
-  return <PageContainer as="main" className="max-w-3xl space-y-6 pt-[var(--page-top)] pb-12">
-    <BrandMark animated wordmark wordmarkSrc={wordmarkSrc} className="h-7" />
+  if (!loaded) return <SetupPage wordmarkSrc={wordmarkSrc}>{error ? <><InlineAlert>{error}</InlineAlert><div><Button onClick={controller.start}>{tx("translation.setup.view.reconnect")}</Button></div></> : <p role="status">{tx("translation.setup.view.checking.translation.settings")}</p>}</SetupPage>
+  return <SetupPage wordmarkSrc={wordmarkSrc}>
     {renderModels({ request: controller.request, onReadyChange: controller.setConfigured, onDirtyChange: setDirty, onBusyChange: setSaving })}
     {error && <InlineAlert>{error}</InlineAlert>}
-    <div className="flex justify-end gap-3">
+    <div className="flex flex-wrap justify-end gap-2">
       <Button variant="ghost" disabled={busy || dirty || saving} onClick={() => onLeave ? onLeave(controller.skip) : controller.skip()}>{tx("translation.setup.view.configure.later")}</Button>
       <Button disabled={busy || dirty || saving || !configured} onClick={() => onLeave ? onLeave(controller.continue) : controller.continue()}>{tx("translation.setup.view.continue")}</Button>
     </div>
-  </PageContainer>
+  </SetupPage>
 }

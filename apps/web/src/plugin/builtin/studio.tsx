@@ -1,4 +1,4 @@
-import { Surface } from '@/components/ui/surface'
+import { Surface, surfaceVariants } from '@/components/ui/surface'
 import { NativeSelect } from '@/components/ui/native-select'
 import { bindComponent, type Bindings } from '../sdk'
 import { Context } from 'cordis'
@@ -72,7 +72,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
     if (task) openTask(task)
   }
   return <div className="relative">
-    <form onSubmit={(event) => void submit(event)} className="@container/launch relative rounded-2xl border border-border bg-card">
+    <Surface as="form" onSubmit={(event) => void submit(event)} className="@container/launch relative">
       <div className="relative rounded-2xl p-4 sm:p-6">
         {linkSlot && <div className="pb-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -97,7 +97,7 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
           <Button type="submit" size="xl" className="ml-auto w-full shrink-0 @min-[36rem]/launch:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx("studio.submit.with.the.same.id") : source ? tx("studio.download.and.process") : tx("studio.start.processing")}</Button>
         </div>
       </div>
-    </form>
+    </Surface>
     {translationMissing && <div className="mt-4"><InlineAlert>{tx("studio.configure.a.translation.connection.and.model.before.starting.a.ta")} <Link href="/settings/models" className="underline underline-offset-4">{tx("studio.open.settings")}</Link></InlineAlert></div>}
     {(error || (pendingId && !busy)) && <div className="mt-4 space-y-3">
       {error && <InlineAlert>{error}</InlineAlert>}
@@ -154,11 +154,11 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
     </section>
     <PageContainer className="space-y-8 py-8">
       {taskError && <div className="space-y-2"><InlineAlert>{taskError}</InlineAlert><Button variant="outline" onClick={refreshTasks}>{tx("studio.reload.tasks")}</Button></div>}
-      {active.length > 0 && <TaskSection id="studio-active" title={tx("studio.in.progress")}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex items-center gap-4 rounded-xl border border-border bg-card p-3 pr-4 transition-[border-color,transform] outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
+      {active.length > 0 && <TaskSection id="studio-active" title={tx("studio.in.progress")}><div className="grid gap-3 lg:grid-cols-2">{active.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className={cn(surfaceVariants({ interactive: true }), "group flex items-center gap-4 p-3 pr-4")}><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="sm" className="w-24 sm:w-28" /><div className="min-w-0 flex-1 space-y-2"><div className="flex items-start justify-between gap-3"><p title={taskDisplayName(task)} className="line-clamp-2 min-w-0 text-sm font-medium break-words">{taskDisplayName(task)}</p><TaskState status={task.status} /></div><TaskProgress task={task} /></div></Link>)}</div></TaskSection>}
       <TaskSection id="studio-recent" title={tx("studio.recent.tasks")}>
         {!tasks && !taskError ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">{[0, 1, 2].map((item) => <Surface as="div" key={item} className="overflow-hidden"><div className="aspect-video animate-pulse bg-accent" /><div className="space-y-2.5 p-4"><div className="h-4 w-4/5 animate-pulse rounded-md bg-accent" /><div className="h-3 w-2/5 animate-pulse rounded-md bg-accent" /></div></Surface>)}</div>
-          : tasks && recent.length === 0 ? <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-4 text-sm font-medium">{tx("studio.no.finished.tasks.yet")}</p></div>
-          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-[border-color,box-shadow,transform] outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
+          : tasks && recent.length === 0 ? <Surface as="div" className="flex flex-col items-center border-dashed bg-muted px-6 py-14 text-center"><BrandMark className="h-8 opacity-60 grayscale" /><p className="mt-4 text-sm font-medium">{tx("studio.no.finished.tasks.yet")}</p></Surface>
+          : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{recent.map((task) => <Link key={task.id} href={`/tasks/${task.id}`} className={cn(surfaceVariants({ interactive: true }), "group flex flex-col overflow-hidden")}><TaskCover id={task.id} src={task.cover?.url} processing={task.status === 'running'} size="md" className="rounded-none ring-0" /><div className="flex flex-1 flex-col gap-3 p-4"><p title={taskDisplayName(task)} className="line-clamp-2 text-sm leading-snug font-medium break-words">{taskDisplayName(task)}</p><div className="mt-auto flex items-center justify-between gap-3"><TaskState status={task.status} /><time className="text-xs text-muted-foreground" dateTime={task.createdAt}>{formatDateTime(task.createdAt)}</time></div></div></Link>)}</div>}
       </TaskSection>
     </PageContainer>
   </main>

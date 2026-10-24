@@ -1,3 +1,5 @@
+import { Surface } from '@/components/ui/surface'
+import { InlineAlert } from '@/components/inline-alert'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { FileText, Film, Upload, X } from '@/lib/icons'
 import { text, type InputSlot } from '../sdk'
@@ -47,15 +49,15 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
       </div>}
     </div>
     {video && !file && <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => void loadSample()} className="mt-2">{tx('media.upload.use.sample')}</Button>}
-    {sampleError && <p role="alert" className="mt-2 text-sm text-status-danger-fg">{sampleError}</p>}
+    {sampleError && <InlineAlert className="mt-2">{sampleError}</InlineAlert>}
   </div>
 }
 
 export function LaunchCard({ children }: { children: ReactNode }) {
   return <div className="relative">
     <div aria-hidden="true" className="pointer-events-none absolute -inset-x-12 -inset-y-10 -z-10 bg-[radial-gradient(55%_60%_at_30%_45%,rgb(251_114_153/0.16),transparent_70%),radial-gradient(50%_60%_at_75%_55%,rgb(0_174_236/0.16),transparent_70%)] opacity-70 blur-2xl dark:opacity-100" />
-    <div className="@container/launch relative rounded-2xl border border-border bg-card">
+    <Surface as="div" className="@container/launch relative">
       <div className="relative rounded-2xl p-4 sm:p-6">{children}</div>
-    </div>
+    </Surface>
   </div>
 }

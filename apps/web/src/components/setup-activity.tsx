@@ -7,7 +7,8 @@ import { redactDiagnostics } from '@/lib/setup-diagnostics'
 import type { SetupState } from '@/runtime/setup-contracts'
 import { Button } from './ui/button'
 import { Surface } from './ui/surface'
-import { sizeLabel } from './setup-resources'
+import { sizeLabel } from '@/lib/format'
+import styles from './setup-activity.module.css'
 
 /** The same installer output as the diagnostic report, visible without opening it. */
 export function SetupActivity({ state, stage }: { state: SetupState; stage: 'environment' | 'models' }) {
@@ -34,12 +35,18 @@ export function SetupActivity({ state, stage }: { state: SetupState; stage: 'env
     return () => window.clearInterval(timer)
   }, [running, current?.startedAt])
   useLayoutEffect(() => {
-    if (following && viewport.current) viewport.current.scrollTop = viewport.current.scrollHeight
-  }, [log, following])
+    const node = viewport.current
+    if (!following || !node) return
+    const follow = () => { node.scrollTop = node.scrollHeight }
+    follow()
+    const observer = new ResizeObserver(follow)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [log, following, running])
   if (state.resourceSelection?.required || !log && !running) return null
   const activity = failed ? text('setup.preparationFailed') : current?.activity || current?.name || (downloads.length ? text('setup.downloading', { count: downloads.length }) : state.phase === 'starting' ? text('setup.verifying') : '')
-  return <Surface aria-label={text('setup.liveLogs')} className="mb-4 overflow-hidden">
-    <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+  return <Surface aria-label={text('setup.liveLogs')} className="overflow-hidden">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
       <h2 className="shrink-0 text-sm font-medium">{text('setup.liveLogs')}</h2>
       <Button variant="ghost" size="sm" className={following ? 'invisible' : undefined} aria-hidden={following} disabled={following} onClick={() => setFollowing(true)}><ArrowDownToLine />{text('setup.followLogs')}</Button>
     </div>
@@ -49,7 +56,7 @@ export function SetupActivity({ state, stage }: { state: SetupState; stage: 'env
     </p>}
     <pre ref={viewport} role="log" aria-label={text('setup.liveLogs')} aria-live="off" tabIndex={0}
       onScroll={event => { const node = event.currentTarget; setFollowing(node.scrollHeight - node.scrollTop - node.clientHeight <= 1) }}
-      className="m-0 h-48 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 sm:h-56">{log || text('setup.waitingForOutput')}</pre>
+      className={`${styles.viewport} m-0 overflow-auto whitespace-pre-wrap break-words px-4 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2`}>{log || text('setup.waitingForOutput')}</pre>
     {(running && current?.startedAt || downloads.length > 0) && <div className="flex flex-wrap justify-between gap-2 border-t border-border px-4 py-2 text-xs tabular-nums text-muted-foreground">
       {running && current?.startedAt && <><span>{text('setup.elapsed', { seconds: Math.max(0, Math.floor((now - current.startedAt) / 1000)) })}</span>{current.updatedAt && <span>{text('setup.lastOutput', { seconds: Math.max(0, Math.floor((now - current.updatedAt) / 1000)) })}</span>}</>}
       {downloads.map(model => <span key={model.id}>{model.name} · {sizeLabel(model.received)}{model.total > 0 && ` / ${sizeLabel(model.total)}`}{model.speed > 0 && ` · ${sizeLabel(model.speed)}/s`}</span>)}

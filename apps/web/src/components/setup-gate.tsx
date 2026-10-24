@@ -6,7 +6,7 @@ import { SetupScreen, type SetupScreenOptions } from './setup-screen'
 import { SetupDiagnostics } from './setup-diagnostics'
 import { SetupController } from '@/runtime/onboarding'
 import { useObservableSource } from '@/plugin/view-hooks'
-import { PageContainer } from './page-layout'
+import { SetupPage } from './setup-page'
 
 export function SetupGate({ children, request, screenProps, onReady }: { children: ReactNode; request?: Request; screenProps?: SetupScreenOptions; onReady?: () => void }) {
   const text = useText()
@@ -14,7 +14,7 @@ export function SetupGate({ children, request, screenProps, onReady }: { childre
   const { state, error, busy } = useObservableSource(controller)
   useEffect(() => { controller.start(); return controller.stop }, [controller])
   useEffect(() => { if (state?.phase === 'ready') onReady?.() }, [state?.phase, onReady])
-  if (error) return <PageContainer as="main" className="max-w-3xl space-y-4 py-8 sm:py-12"><SetupDiagnostics state={state} requestError={error} /><Button onClick={controller.start}>{text('setup.reconnect')}</Button></PageContainer>
+  if (error) return <SetupPage wordmarkSrc={screenProps?.wordmarkSrc} actions={screenProps?.themeControl}><SetupDiagnostics state={state} requestError={error} /><div><Button onClick={controller.start}>{text('setup.reconnect')}</Button></div></SetupPage>
   if (state?.phase === 'ready') return children
-  return state ? <SetupScreen {...screenProps} state={state} busy={busy} onAction={controller.action} onPrepare={controller.prepare} onConfigure={controller.configure} /> : <PageContainer as="main" className="max-w-3xl py-8 sm:py-12"><p role="status" className="text-sm text-muted-foreground">{text('setup.detecting')}</p></PageContainer>
+  return state ? <SetupScreen {...screenProps} state={state} busy={busy} onAction={controller.action} onPrepare={controller.prepare} onConfigure={controller.configure} /> : <SetupPage wordmarkSrc={screenProps?.wordmarkSrc} actions={screenProps?.themeControl}><p role="status" className="text-sm text-muted-foreground">{text('setup.detecting')}</p></SetupPage>
 }
