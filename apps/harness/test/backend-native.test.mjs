@@ -109,13 +109,9 @@ test('official Host scope preserves root services and requires all first-run mod
       }
       assert.equal(preferences.ui_language, 'zh'); assert.equal(revision, 0);
     });
-    await t.test('original examples HTML, script and video bytes are served unchanged', async () => {
-      for (const [path, source] of [['index.html', 'apps/web/templates/examples.html'], ['player.js', 'site/player.js']]) {
-        const response = await handlers.get(`/api/youdub/examples/${path}`).fetch(new Request(`http://localhost/api/youdub/examples/${path}?v=0.0.2`));
-        assert.equal(await response.text(), await readFile(join(repo, source), 'utf8'));
-      }
-      const video = await handlers.get('/api/youdub/examples/assets/zoo-en.mp4').fetch(new Request('http://localhost/api/youdub/examples/assets/zoo-en.mp4', { headers: { range: 'bytes=0-63' } }));
-      assert.equal(video.status, 206); assert.deepEqual(Buffer.from(await video.arrayBuffer()), (await readFile(join(repo, 'site/assets/zoo-en.mp4'))).subarray(0, 64));
+    await t.test('local workflow sample supports partial reads', async () => {
+      const video = await handlers.get('/api/youdub/examples/assets/jensen-en.mp4').fetch(new Request('http://localhost/api/youdub/examples/assets/jensen-en.mp4', { headers: { range: 'bytes=0-63' } }));
+      assert.equal(video.status, 206); assert.deepEqual(Buffer.from(await video.arrayBuffer()), (await readFile(join(repo, 'site/assets/jensen-en.mp4'))).subarray(0, 64));
     });
     await t.test('unsupported routes and malformed envelopes fail explicitly', async () => {
       assert.equal((await call('GET', '/api/v2/missing')).body.error.code, 'ENVIRONMENT_NOT_READY');

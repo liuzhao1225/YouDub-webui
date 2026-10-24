@@ -17,10 +17,10 @@
 | P07 | 工作流编辑器 | `/workflows/:id` | 画布、添加节点、输入/输出、校验结果、运行面板、节点简要设置 |
 | P08 | 工作流节点完整设置 | `/workflows/:id/nodes/:nodeId` | 节点配置、执行方式、相关服务/模型；返回所属画布 |
 | P09 | 资源 | `/resources` | 环境与模型资源、准备/下载/校验状态、诊断详情 |
-| P10 | 内置示例 | `/examples` | 示例媒体与语言切换；启动引导和工作台均可进入 |
+| P10 | 官网示例 | 官网 `#demo` | 启动引导和工作台均通过外部浏览器打开；本地只保留黄仁勋采访工作流输入 |
 | P11 | 插件 | `/extensions` → Harness `plugins` 面板 | 内置功能、已安装插件、插件详情、添加插件 |
 
-来源：[桌面路由及导航](../../apps/harness/src/client.jsx)、[任务库与详情](../../apps/web/src/plugin/builtin/library.tsx)、[任务步骤详情](../../apps/web/src/plugin/builtin/workflow-task.tsx)、[工作流](../../apps/web/src/plugin/builtin/workflows.tsx)、[资源页](../../apps/harness/src/frontend/resource-pages.tsx)、[示例页](../../apps/harness/src/frontend/examples-page.tsx)、[插件页装配](../../apps/harness/src/frontend/plugins.tsx)。
+来源：[桌面路由及导航](../../apps/harness/src/client.jsx)、[任务库与详情](../../apps/web/src/plugin/builtin/library.tsx)、[任务步骤详情](../../apps/web/src/plugin/builtin/workflow-task.tsx)、[工作流](../../apps/web/src/plugin/builtin/workflows.tsx)、[资源页](../../apps/harness/src/frontend/resource-pages.tsx)、[插件页装配](../../apps/harness/src/frontend/plugins.tsx)。
 
 ## 首次启动界面
 
@@ -67,7 +67,7 @@ flowchart TD
     Install --> Prepare[环境与模型准备]
     Prepare --> Translation[翻译服务配置]
     Translation -->|继续或稍后配置| Home
-    Prepare --> Examples[内置示例]
+    Prepare --> Examples[官网示例]
     Home --> Examples
     Examples -->|返回原入口| Return[启动引导或工作台]
 

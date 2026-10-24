@@ -37,8 +37,6 @@
     "auth.signIn": "登录",
     "auth.sessionLoading": "正在检查登录状态...",
     "auth.logout": "退出登录",
-    "examples.page.built.in.examples": "内置示例",
-    "examples.page.back.to.setup": "返回准备",
     "localize.task.config.auto.detect": "自动识别",
     "localize.task.config.remote": "远端",
     "localize.task.config.output": "输出",
@@ -360,7 +358,7 @@
     "studio.loading": "正在加载…",
     "studio.no.workflows.are.available": "当前没有可用流程。",
     "studio.workflow": "工作流",
-    "studio.view.built.in.examples": "查看内置示例",
+    "studio.view.built.in.examples": "查看官网示例",
     "studio.value.nodes.need.your.review": "{value1} 个节点待确认",
     "studio.value.tasks.in.progress": "{value1} 个任务正在处理",
     "studio.reload.tasks": "重新加载任务",
@@ -453,7 +451,6 @@
     "workflow.canvas.zoom.out": "缩小",
     "workflow.canvas.fit.view": "适应画布",
     "workflow.canvas.delete.connection": "删除连线",
-    "studio.page.view.built.in.examples": "查看内置示例",
     "workflow.settings.open.read.only.view": "打开通用只读视图",
     "workflow.settings.voice.mode": "声音模式",
     "workflow.settings.source.voice.clone": "原声克隆",
@@ -646,7 +643,7 @@
     "setup.pause": "暂停",
     "setup.retry": "重试",
     "setup.resume": "继续",
-    "setup.examples": "查看内置示例",
+    "setup.examples": "查看官网示例",
     "setup.opening": "启动工作台",
     "setup.prepareAll": "准备全部模型",
     "setup.openWorkbench": "进入工作台",
@@ -710,6 +707,7 @@
     "task.progress.export.render": "正在生成输出视频",
     "task.progress.export.complete": "输出文件已就绪",
     "task.progress.mix.adjusted": "已调整 {current}/{total} 段配音",
-    "task.progress.align.complete": "已校准 {count} 个字词边界"
+    "task.progress.align.complete": "已校准 {count} 个字词边界",
+    "media.upload.use.sample": "使用黄仁勋采访视频"
   }
 }

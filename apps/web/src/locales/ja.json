@@ -37,8 +37,6 @@
     "auth.signIn": "ログイン",
     "auth.sessionLoading": "ログイン状態を確認中...",
     "auth.logout": "ログアウト",
-    "examples.page.built.in.examples": "内蔵サンプル",
-    "examples.page.back.to.setup": "準備に戻る",
     "localize.task.config.auto.detect": "自動検出",
     "localize.task.config.remote": "リモート",
     "localize.task.config.output": "出力",
@@ -360,7 +358,7 @@
     "studio.loading": "読み込み中…",
     "studio.no.workflows.are.available": "利用可能なワークフローがありません。",
     "studio.workflow": "ワークフロー",
-    "studio.view.built.in.examples": "内蔵サンプルを見る",
+    "studio.view.built.in.examples": "公式サイトのサンプル",
     "studio.value.nodes.need.your.review": "{value1} 件のノードが確認待ち",
     "studio.value.tasks.in.progress": "{value1} 件のタスクが処理中",
     "studio.reload.tasks": "タスクを再読み込み",
@@ -453,7 +451,6 @@
     "workflow.canvas.zoom.out": "縮小",
     "workflow.canvas.fit.view": "全体を表示",
     "workflow.canvas.delete.connection": "接続を削除",
-    "studio.page.view.built.in.examples": "内蔵サンプルを見る",
     "workflow.settings.open.read.only.view": "読み取り専用表示を開く",
     "workflow.settings.voice.mode": "音声モード",
     "workflow.settings.source.voice.clone": "元の声を複製",
@@ -646,7 +643,7 @@
     "setup.pause": "一時停止",
     "setup.retry": "再試行",
     "setup.resume": "再開",
-    "setup.examples": "サンプルを表示",
+    "setup.examples": "公式サイトのサンプル",
     "setup.opening": "ワークスペースを起動中",
     "setup.prepareAll": "すべてのモデルを準備",
     "setup.openWorkbench": "ワークスペースを開く",
@@ -710,6 +707,7 @@
     "task.progress.export.render": "出力動画を生成中",
     "task.progress.export.complete": "出力ファイルの準備完了",
     "task.progress.mix.adjusted": "音声クリップを調整済み {current}/{total}",
-    "task.progress.align.complete": "{count} 個の単語境界を調整済み"
+    "task.progress.align.complete": "{count} 個の単語境界を調整済み",
+    "media.upload.use.sample": "ジェンスン・フアンの動画を使う"
   }
 }

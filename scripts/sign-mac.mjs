@@ -81,7 +81,7 @@ try {
     run('ditto', [app, join(stage, 'YouDub.app')])
     await symlink('/Applications', join(stage, 'Applications'))
     const dmg = join(root, `dist/YouDub-${appVersion}-macOS-arm64.dmg`)
-    run('hdiutil', ['create', '-volname', 'YouDub', '-srcfolder', stage, '-ov', '-format', 'UDZO', dmg])
+    run('hdiutil', ['create', '-volname', 'YouDub', '-srcfolder', stage, '-ov', '-fs', 'HFS+', '-format', 'ULMO', dmg])
     sign(dmg)
     console.log('Submitting installer to Apple notarization…')
     await notarize(dmg, 'dmg')

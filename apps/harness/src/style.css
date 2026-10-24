@@ -28,7 +28,6 @@ html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
   .yd-feature-root :where(textarea) { font:inherit; }
 }
 
-.yd-original-examples { display:block; width:100%; min-height:360px; border:0; }
 
 
 /* The original first-run screen occupies the root until setup is ready. */
