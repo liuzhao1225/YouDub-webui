@@ -25,7 +25,7 @@
 | [apps/web/src/components/ui/segmented.tsx](../../apps/web/src/components/ui/segmented.tsx) | Segmented |
 | [apps/web/src/components/ui/surface.tsx](../../apps/web/src/components/ui/surface.tsx) | Surface, surfaceVariants |
 | [apps/web/src/components/ui/switch.tsx](../../apps/web/src/components/ui/switch.tsx) | Switch |
-| [apps/web/src/components/ui/textarea.tsx](../../apps/web/src/components/ui/textarea.tsx) | Textarea |
+| [共享 Textarea](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Textarea.tsx) | YouDub 多行表单适配，复用 Harness InlineEditor 样式；[Web 入口](../../apps/web/src/components/ui/textarea.tsx)直接转导出，外部插件通过 `@deepseek-ai/dsh-client-ui-primitives` 复用 |
 | [apps/web/src/components/video-player.tsx](../../apps/web/src/components/video-player.tsx) | VideoPlayer |
 | [apps/web/src/plugin/builtin/library.tsx](../../apps/web/src/plugin/builtin/library.tsx) | Library, TaskDetail, name, inject, apply |
 | [apps/web/src/plugin/builtin/localize-editor.tsx](../../apps/web/src/plugin/builtin/localize-editor.tsx) | LocalizeEditor, name, inject, apply |
