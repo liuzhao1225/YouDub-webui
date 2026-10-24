@@ -343,22 +343,30 @@ export default class Resources extends Service {
     const controller = new AbortController()
     const signal = AbortSignal.any([this.stopping.signal, controller.signal])
     model.status = 'downloading'; model.error = undefined; model.source = undefined; model.log = ''
+    const log = (text: string) => {
+      const line = `${new Date().toISOString()} ${text}\n`
+      const output = (model.log || '').replace(/^\[较早日志已省略\]\n/, '') + line
+      model.log = output.length > 64 * 1024 ? '[较早日志已省略]\n' + output.slice(-64 * 1024) : output
+      this.ctx.logger.info(line.trim())
+    }
     const promise = this.runJob(`下载 ${model.name}`, controller, async () => {
       let completed = 0, previousBytes = 0, previousTime = Date.now()
       for (const file of definition.files) {
-        let firstProgress = true
+        let firstProgress = true, loggedAt = 0
         await this.client.download({ ...file, sourceGroup: id }, join(this.root(id), file.path), signal, bytes => {
           model.received = completed + bytes
           if (firstProgress) { previousBytes = model.received; previousTime = Date.now(); firstProgress = false }
           const elapsed = (Date.now() - previousTime) / 1000
           if (elapsed >= 0.5) { model.speed = Math.max(0, (model.received - previousBytes) / elapsed); previousBytes = model.received; previousTime = Date.now() }
+          if (bytes > 0 && (Date.now() - loggedAt >= 1000 || bytes === file.size)) {
+            log(`${file.path}: ${(bytes / 1e6).toFixed(1)} / ${(file.size / 1e6).toFixed(1)} MB (${Math.floor(bytes / file.size * 100)}%)`)
+            loggedAt = Date.now()
+          }
         }, event => {
           model.source = sourceName(event.url)
-          const line = `${new Date().toISOString()} ${event.status === 'failed' ? event.error : `${event.status === 'checking' ? '测试下载源' : '下载'}：${model.source} · ${file.path}`}\n`
-          const log = (model.log || '').replace(/^\[较早日志已省略\]\n/, '') + line
-          model.log = log.length > 64 * 1024 ? '[较早日志已省略]\n' + log.slice(-64 * 1024) : log
-          this.ctx.logger.info(line.trim())
+          log(event.status === 'failed' ? event.error! : `${event.status === 'checking' ? '测试下载源' : '下载'}：${model.source} · ${file.path}`)
         })
+        log(`下载及校验完成：${file.path}`)
         completed += file.size
         previousBytes = completed; previousTime = Date.now()
       }

@@ -646,6 +646,7 @@
     "setup.examples": "公式サイトのサンプル",
     "setup.opening": "ワークスペースを起動中",
     "setup.prepareAll": "すべてのモデルを準備",
+    "setup.startPreparation": "準備を開始",
     "setup.openWorkbench": "ワークスペースを開く",
     "setup.prepareAgain": "準備を再試行",
     "setup.pauseAll": "すべて一時停止",

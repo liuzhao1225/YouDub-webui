@@ -645,6 +645,7 @@
     "setup.examples": "View website examples",
     "setup.opening": "Opening workspace",
     "setup.prepareAll": "Prepare all models",
+    "setup.startPreparation": "Start setup",
     "setup.openWorkbench": "Open workspace",
     "setup.prepareAgain": "Retry setup",
     "setup.pauseAll": "Pause all",
