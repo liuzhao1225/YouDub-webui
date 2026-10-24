@@ -14,14 +14,13 @@ import type { PeerId, PeerScope, Principal } from '@deepseek-ai/dsh-typert-proto
 export interface PeerOptions {
   /** Caller identity every call through this Peer speaks for. */
   readonly principal: Principal
-  /** Omission permits an event stream; non-owner Peers still cannot answer waterfalls. */
+  /** Whether to receive forwarded Remote events; omission permits an event stream. */
   readonly interactions?: 'answer' | 'none'
 }
 
 /**
- * One Peer's scope. The instance is its own scope key, so `scopeOf(peer.ctx)`
- * returns it and events dispatched with `scopeTarget(subject, peer)` reach
- * listeners registered through `peer.ctx` and nobody else.
+ * One Peer's lifetime scope. Disposing it aborts the Peer and releases
+ * registrations owned by `peer.ctx`.
  */
 export class Peer implements PeerScope {
   readonly id: PeerId = randomUUID() as PeerId
@@ -38,7 +37,7 @@ export class Peer implements PeerScope {
   constructor(owner: Context, options: PeerOptions) {
     this.principal = options.principal
     this.interactions = options.interactions ?? 'answer'
-    this.scope = createScope(owner, this)
+    this.scope = createScope(owner)
     this.ctx = this.scope.ctx
     const lifetime = new AbortController()
     this.signal = lifetime.signal

@@ -35,9 +35,6 @@
       "path": "../../core/scope"
     },
     {
-      "path": "../../core/session"
-    },
-    {
       "path": "../../credentials/credentials"
     },
     {

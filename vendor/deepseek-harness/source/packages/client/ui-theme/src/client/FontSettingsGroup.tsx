@@ -1,7 +1,7 @@
 /**
  * Font settings registered into the General section item slot: the text
  * font-size row, whose disclosure button expands a region holding the font
- * row for each role and the code and terminal size rows. The region starts
+ * row for each role and the code size row. The region starts
  * collapsed on every mount.
  */
 import { useId, useState } from 'react'
@@ -48,8 +48,6 @@ export function FontSettingsGroup({ setFontFamily, setFontSize, ...shared }: Fon
           {family('text')}
           {family('code')}
           {size('code')}
-          {family('terminal')}
-          {size('terminal')}
         </div>
       )}
     </div>

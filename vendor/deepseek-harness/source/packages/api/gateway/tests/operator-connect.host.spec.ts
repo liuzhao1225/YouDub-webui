@@ -38,9 +38,6 @@ const roots: string[] = []
 const hosts: Host[] = []
 const clients: SocketClient[] = []
 const readySchema = z.object({ type: z.literal('ready'), clientId: z.string(), host: z.object({ home: z.string() }) })
-const deliverySchema = z.object({
-  type: z.literal('waterfall'), eventId: z.string(), request: z.object({ prompt: z.string() }),
-})
 
 afterEach(async () => {
   for (const host of hosts) {
@@ -173,7 +170,7 @@ describe('operator connect through Loader composition', () => {
     expect(call(host, 'inflight').signal.aborted).toBe(false)
   })
 
-  it('forbids passive subscription and results, enforces stream ownership, and accepts an answering page', async () => {
+  it('forbids passive subscription and delivers notifications to an answering page', async () => {
     const host = await boot()
     const passiveCookie = await exchange(host, 'none')
     const passive = await mux(host, passiveCookie)
@@ -181,22 +178,16 @@ describe('operator connect through Loader composition', () => {
     const page = await mux(host, pageCookie)
     await success(host, pageCookie, 'fixture/identity', { label: 'browser' })
     expect(call(host, 'browser').peer === host.ctx.connection.browserPeer).toBe(true)
-    const ready = await events(page)
-    const otherCookie = await exchange(host, 'answer')
-    const other = await mux(host, otherCookie)
-    await events(other)
+    await events(page)
     open(passive, 'forbidden', '$events', {})
     expect(await frame(passive, 'forbidden', 'error')).toMatchObject({ error: { code: 'gateway/interactions-forbidden' } })
-    const pending = host.fixture.pending('approval')
-    const delivery = await invocation(page, 'approval')
-    const args = { clientId: ready.clientId, eventId: delivery.eventId, outcome: { kind: 'result', value: 'allowed' } }
-    for (const cookie of [passiveCookie, otherCookie]) {
-      expect(await rpc(host, cookie, '$events/result', args)).toMatchObject({
-        body: { result: { ok: false, error: { code: 'gateway/interactions-forbidden' } } },
+    host.fixture.notify('ready')
+    await vi.waitFor(() => {
+      expect(page.frames).toContainEqual({
+        type: 'item', streamId: 'events',
+        value: { type: 'emit', event: 'fixture/notice', args: ['ready'] },
       })
-    }
-    await success(host, pageCookie, '$events/result', args)
-    await expect(pending).resolves.toEqual({ kind: 'result', value: 'allowed' })
+    })
     expect(passive.frames.filter(item => item.type === 'item')).toEqual([])
   })
 
@@ -314,19 +305,6 @@ async function events(client: SocketClient): Promise<z.infer<typeof readySchema>
   const ready = await frame(client, 'events', 'item')
   if (ready.type !== 'item') throw new Error('event stream failed to open')
   return readySchema.parse(ready.value)
-}
-
-async function invocation(client: SocketClient, label: string): Promise<z.infer<typeof deliverySchema>> {
-  let delivery: z.infer<typeof deliverySchema> | undefined
-  await vi.waitFor(() => {
-    for (const frame of client.frames) {
-      if (frame.type !== 'item') continue
-      const parsed = deliverySchema.safeParse(frame.value)
-      if (parsed.success && parsed.data.request.prompt === label) delivery = parsed.data
-    }
-    expect(delivery).toBeDefined()
-  })
-  return delivery!
 }
 
 async function rpc(

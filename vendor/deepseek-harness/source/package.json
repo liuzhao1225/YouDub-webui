@@ -21,7 +21,6 @@
     "test:gui": "vitest run packages/client packages/host"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-agent": "workspace:*",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@types/js-yaml": "^4.0.9",

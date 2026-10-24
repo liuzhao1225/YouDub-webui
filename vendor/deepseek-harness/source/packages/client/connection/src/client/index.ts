@@ -34,7 +34,7 @@ export type {
   MessageId,
   RpcRequest, RpcResponse, RpcResult,
   ClientRequest, ServerResponse, RpcMessage,
-  SessionId, SessionEvent, ContentBlock, StreamChunk,
+  ContentBlock, StreamChunk,
 } from './api.ts'
 export {
   RpcId,

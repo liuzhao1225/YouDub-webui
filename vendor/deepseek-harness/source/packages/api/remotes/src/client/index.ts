@@ -37,7 +37,7 @@ export type {} from '@deepseek-ai/dsh-settings/types'
 export type {
   ConnectionHandle, ConnectionSinks, ContentBlock,
   MessageId,
-  RpcId, RpcRequest, RpcResponse, RpcResult, SessionId,
+  RpcId, RpcRequest, RpcResponse, RpcResult,
   StreamChunk,
 } from '@deepseek-ai/dsh-client-connection/client'
 export type {} from '@deepseek-ai/dsh-api-gateway/client'

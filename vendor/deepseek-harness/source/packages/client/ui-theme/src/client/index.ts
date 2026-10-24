@@ -6,7 +6,7 @@
  * settings scope loads and stores the preference in the user-settings
  * document. The plugin also registers the Appearance and font settings rows
  * into the settings General section — the theme feature owns its own settings
- * surface. Desktop shortcuts adjust text, code, and terminal font sizes together.
+ * surface. Desktop shortcuts adjust text and code font sizes together.
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { BoundActions } from '@deepseek-ai/dsh-client-ui-slots'
@@ -84,7 +84,7 @@ export interface ThemeDefinition {
 export interface ThemeSnapshot {
   /** The persisted preference (may be `system`). */
   preference: ThemePreference
-  /** Integer px font sizes by role, each within its `FONT_SIZE_SPECS` range (`text` is the conversation content size). */
+  /** Integer px font sizes by role, each within its `FONT_SIZE_SPECS` range (`text` is the content size). */
   fontSizes: FontSizes
   /** Normalized user font lists by role; `''` selects the role's built-in stack. */
   fontFamilies: FontFamilies
@@ -434,18 +434,17 @@ function bootstrapFontSizes(): FontSizes {
     const parsed = Number.parseInt(document.body.style.getPropertyValue(FONT_SIZE_SPECS[role].variable), 10)
     return isFontSize(role, parsed) ? parsed : FONT_SIZE_SPECS[role].default
   }
-  return Object.freeze({ text: read('text'), code: read('code'), terminal: read('terminal') })
+  return Object.freeze({ text: read('text'), code: read('code') })
 }
 
 /** Font lists the Host boot script wrote on `body`, read for the same first-paint reason as {@link bootstrapFontSizes}. */
 function bootstrapFontFamilies(): FontFamilies {
   /* v8 ignore next -- needs a documentless run (node e2e booting the client tree), not constructible under jsdom */
-  if (typeof document === 'undefined') return Object.freeze({ text: '', code: '', terminal: '' })
+  if (typeof document === 'undefined') return Object.freeze({ text: '', code: '' })
   const style = document.body.style
   return Object.freeze({
     text: normalizeFontFamily(style.getPropertyValue(fontFamilyVariable('text'))),
     code: normalizeFontFamily(style.getPropertyValue(fontFamilyVariable('code'))),
-    terminal: normalizeFontFamily(style.getPropertyValue(fontFamilyVariable('terminal'))),
   })
 }
 
@@ -454,7 +453,6 @@ function durableFontFamilies(section: ThemeSettings): FontFamilies {
   return Object.freeze({
     text: normalizeFontFamily(section.textFontFamily),
     code: normalizeFontFamily(section.codeFontFamily),
-    terminal: normalizeFontFamily(section.terminalFontFamily),
   })
 }
 
@@ -517,8 +515,8 @@ function installFontSizeShortcuts(ctx: ClientContext, adjust: (delta: 1 | -1) =>
     }
     scope.effect(() => scope.shortcuts.observeFixedInput((input) => {
       if (input.type === 'reset') return
-      const { gesture, context } = input
-      if (gesture.composing || gesture.defaultPrevented || gesture.repeat || context.region === 'terminal') return
+      const { gesture } = input
+      if (gesture.composing || gesture.defaultPrevented || gesture.repeat) return
       const matched = combinations.find(({ binding }) => binding.code === gesture.code
         && (['control', 'alt', 'shift', 'meta'] as const).every(modifier => gesture[modifier] === binding.modifiers.includes(modifier)))
       if (matched === undefined) return

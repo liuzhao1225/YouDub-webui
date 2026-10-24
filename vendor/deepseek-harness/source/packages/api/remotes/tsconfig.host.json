@@ -18,9 +18,6 @@
       "path": "../gateway/tsconfig.host.json"
     },
     {
-      "path": "../../core/session"
-    },
-    {
       "path": "../../credentials/credentials"
     },
     {
@@ -28,9 +25,6 @@
     },
     {
       "path": "../../settings/settings"
-    },
-    {
-      "path": "../../core/scope"
     },
     {
       "path": "../../util/deque"

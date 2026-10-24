@@ -51,7 +51,7 @@ export * from './assistant-stream.ts'
 export * from './message.ts'
 export * from './retry-policy.ts'
 export { BlockAssembler } from './assembler.ts'
-export { callConfigEquals, isAgentLoopRequest, markAgentLoopRequest } from './call-config.ts'
+export { callConfigEquals } from './call-config.ts'
 export type { ConfigureCall, LlmCallConfig, LlmCallConfigAdapterDefaults, LlmCallControls } from './call-config.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -64,12 +64,8 @@ declare module '@deepseek-ai/cordis' {
      * Waterfall around every streaming model call (retry, replay, routing).
      * Bound to the {@link LlmRuntime}; call `next()` to reach the resolved
      * adapter's stream, or yield your own chunks to short-circuit.
-     * @param options - the full request. A LOOP-built request carries the
-     *   process-local {@link markAgentLoopRequest} identity and arrives deep-frozen
-     *   (mutation throws): its content is a pure function of the session log (the
-     *   reconstructability Agent Note), so listeners read it, never rewrite it.
-     *   Hand-built calls do not carry that marker; callers own their request
-     *   inputs and must keep them unchanged until the stream settles.
+     * @param options - the full request. Callers own their request inputs and
+     *   keep them unchanged until the stream settles.
      * @mode waterfall
      */
     'llm/stream'(this: LlmRuntime, options: GenerateOptions, next: () => AsyncIterable<StreamChunk>): AsyncIterable<StreamChunk>
@@ -700,7 +696,7 @@ export class LlmRuntime extends TypertRemoteService {
    * @returns the same deterministic handle text used at adapter dispatch.
    */
   fileRequestText(ref: FileAttachmentRef): string {
-    return fileHandleText(ref, this.fileReadPath(ref))
+    return fileHandleText(ref, undefined)
   }
 
   /** Detach typed adapter-owned modality metadata. */
@@ -1037,26 +1033,6 @@ export class LlmRuntime extends TypertRemoteService {
   }
 
   /**
-   * Resolve the current execution-world read path of one durable file
-   * reference through the mounted attachment and filesystem providers.
-   */
-  private fileReadPath(ref: FileAttachmentRef): string | undefined {
-    let hostPath: string | undefined
-    try {
-      hostPath = this.ctx.get('attachments')?.fileHostPath(ref)
-    } catch {
-      // A malformed durable reference degrades this occurrence to the no-path
-      // handle instead of failing every later request over the same log.
-      return undefined
-    }
-    if (hostPath === undefined) return undefined
-    // Structural face: dsh-llm cannot depend on the filesystem package, and
-    // only this one mapping method is consumed.
-    const fs = this.ctx.get('fs') as { processPathFromHostPath(hostPath: string): string | undefined } | undefined
-    return fs?.processPathFromHostPath(hostPath)
-  }
-
-  /**
    * Final adapter boundary. Adapter selection, dispatch, iterator construction,
    * and iteration failures become one terminal failure chunk. Middleware and
    * downstream consumer failures remain thrown plugin or consumer errors.
@@ -1096,7 +1072,7 @@ export class LlmRuntime extends TypertRemoteService {
       // Files are never dispatched natively: every route receives handle text.
       let projectedMessages: readonly RequestMessage[] = resolvedOptions.messages
       if (projectedMessages.some(message => contentHasFile(message.content))) {
-        projectedMessages = projectFilesToText(projectedMessages, ref => this.fileReadPath(ref))
+        projectedMessages = projectFilesToText(projectedMessages, () => undefined)
       }
       if (modelInfo.inputModalities !== undefined
         && !modelInfo.inputModalities.includes('image')

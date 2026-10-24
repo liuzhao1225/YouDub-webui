@@ -8,24 +8,17 @@ import type {
 } from '@deepseek-ai/dsh-client-connection/client'
 import type {
   TypertClientEventListener,
-  TypertOwnedValue,
   TypertRemoteEvent,
 } from '@deepseek-ai/dsh-typert-protocol'
-import { isRemoteJsonValue, isTypertOwnedValue } from '@deepseek-ai/dsh-typert-protocol'
+import { isRemoteJsonValue } from '@deepseek-ai/dsh-typert-protocol'
 import { randomUUID } from '@deepseek-ai/dsh-util-crypto'
 import {
-  REMOTE_EVENT_RESULT_ENDPOINT,
   REMOTE_EVENT_STREAM_ENDPOINT,
   REMOTE_EVENT_STREAM_PAYLOAD,
-  isRemoteEventAgentId,
   isRemoteEventClientId,
-  isRemoteEventId,
-  projectRemoteEventRejection,
   type RemoteEventClientId,
   type RemoteEventDownlinkFrame,
   type RemoteEventEmitFrame,
-  type RemoteEventInvocationFrame,
-  type RemoteEventResult,
 } from '../stream-protocol.ts'
 
 /** Open the Gateway-internal forwarded-event stream on the selected carrier. */
@@ -42,37 +35,22 @@ type RemoteEventListener = (this: Context, ...args: unknown[]) => unknown
 interface PrivateEventContext {
   on(name: string, listener: RemoteEventListener): () => boolean
   parallel(name: string, ...args: unknown[]): Promise<void>
-  waterfall(
-    thisArg: Context,
-    name: string,
-    request: Readonly<Record<string, unknown>>,
-    next: () => Promise<symbol>,
-  ): unknown
 }
 
-/** Transport outcome after one Client listener chain either claims or delegates. */
-type RemoteEventReplyOutcome =
-  | { readonly kind: 'result'; readonly value: unknown }
-  | { readonly kind: 'next' }
-  | { readonly kind: 'rejected'; readonly error: ReturnType<typeof projectRemoteEventRejection> }
-
-/** Private end-of-chain marker that cannot collide with a JSON listener result. */
-const REMOTE_EVENT_NEXT = Symbol('api-gateway.remote-event.next')
-
-/** Own Cordis registrations, generation pumping, waterfall dispatch, and HTTP replies. */
+/** Own Cordis notification registrations and generation pumping. */
 export class ClientRemoteEvents {
   private readonly eventPrefix = `internal/api-gateway/remote-event/${randomUUID()}/`
   private readonly unregisterGeneration: () => void
   private activeGeneration: Promise<void> | undefined
 
   /**
-   * @param ownerCtx - Client Gateway root used for Agent Context resolution.
-   * @param connection - Connection carrier used for HTTP result calls.
+   * @param ownerCtx - Client Gateway root used for event delivery.
+   * @param connection - Connection carrier used for generation registration.
    * @param openStream - selected in-process or WebSocket stream opener.
    */
   constructor(
     private readonly ownerCtx: Context,
-    private readonly connection: ConnectionHandle,
+    connection: ConnectionHandle,
     private readonly openStream: RemoteEventStreamOpener,
   ) {
     this.unregisterGeneration = connection.registerGenerationSource(this.runGeneration)
@@ -125,131 +103,22 @@ export class ClientRemoteEvents {
     ready: (host: ConnectionHostInfo) => void,
   ): Promise<void> {
     let clientId: RemoteEventClientId | undefined
-    const failed = new AbortController()
-    const generationSignal = AbortSignal.any([signal, failed.signal])
-    const active = new Map<string, AbortController>()
-    const tasks = new Set<Promise<void>>()
     const source = this.openStream(
       REMOTE_EVENT_STREAM_ENDPOINT,
       REMOTE_EVENT_STREAM_PAYLOAD,
-      generationSignal,
-    )
-    let streamFailed = false
-    let streamError: unknown
-    try {
-      for await (const value of source) {
-        if (clientId === undefined) {
-          const opening = parseRemoteEventReady(value)
-          clientId = opening.clientId
-          ready(opening.host)
-          continue
-        }
-        const frame = parseRemoteEventFrame(value)
-        if (frame.type === 'cancel') {
-          active.get(frame.eventId)?.abort(new Error('client api: Remote event was cancelled by the Host'))
-          continue
-        }
-        if (frame.type === 'emit') {
-          this.deliver(frame)
-          continue
-        }
-        const controller = new AbortController()
-        active.set(frame.eventId, controller)
-        const deliverySignal = AbortSignal.any([generationSignal, controller.signal])
-        const task = this.answer(frame, clientId, deliverySignal)
-          .catch((error: unknown) => {
-            if (!deliverySignal.aborted) failed.abort(error)
-          })
-          .finally(() => {
-            active.delete(frame.eventId)
-            tasks.delete(task)
-          })
-        tasks.add(task)
-      }
-    } catch (error) {
-      streamFailed = true
-      streamError = error
-    } finally {
-      for (const controller of active.values()) {
-        controller.abort(new Error('client api: Remote event generation ended'))
-      }
-      await Promise.allSettled(tasks)
-    }
-    if (failed.signal.aborted) {
-      throw toError(failed.signal.reason, 'client api: Remote event result delivery failed')
-    }
-    if (signal.aborted) return
-    if (streamFailed) throw streamError
-    throw new Error('client api: forwarded Remote event stream ended unexpectedly')
-  }
-
-  private async answer(
-    frame: RemoteEventInvocationFrame,
-    clientId: RemoteEventClientId,
-    signal: AbortSignal,
-  ): Promise<void> {
-    const adapter = this.ownerCtx.typert.contexts.getClient('agent')
-    let resolved: Context | TypertOwnedValue<Context> | undefined
-    try {
-      resolved = adapter?.resolve(frame.agentId)
-    } catch (error) {
-      this.reportError(frame.event, error)
-    }
-    const owned = isTypertOwnedValue(resolved) ? resolved : undefined
-    try {
-      const target = isTypertOwnedValue(resolved) ? resolved.value : resolved
-      let outcome: RemoteEventReplyOutcome = { kind: 'next' }
-      if (target !== undefined) {
-        try {
-          outcome = await this.dispatchWaterfall(target, frame, signal)
-        } catch (error) {
-          if (signal.aborted) return
-          outcome = { kind: 'rejected', error: projectRemoteEventRejection(error) }
-        }
-      }
-      if (signal.aborted) return
-      const result: RemoteEventResult = {
-        clientId,
-        eventId: frame.eventId,
-        outcome: outcome.kind === 'result' && outcome.value === undefined
-          ? { kind: 'result' }
-          : outcome,
-      }
-      const response = await this.connection.rpc.call(
-        '/api',
-        REMOTE_EVENT_RESULT_ENDPOINT,
-        { args: result },
-        signal,
-      )
-      if (!response.ok) throw new Error(response.error.message)
-    } finally {
-      owned?.[Symbol.dispose]()
-    }
-  }
-
-  private async dispatchWaterfall(
-    target: Context,
-    frame: RemoteEventInvocationFrame,
-    signal: AbortSignal,
-  ): Promise<RemoteEventReplyOutcome> {
-    const request = {
-      ...frame.request,
-      agent: target,
       signal,
-    }
-    // Cancellation reaches the handler, whose Context remains owned until it settles.
-    const value = await privateEvents(target).waterfall(
-      target,
-      this.eventKey(frame.event),
-      request,
-      () => Promise.resolve(REMOTE_EVENT_NEXT),
     )
-    if (value !== REMOTE_EVENT_NEXT && value !== undefined && !isRemoteJsonValue(value)) {
-      throw new TypeError('Remote event listener result is not lossless JSON data')
+    for await (const value of source) {
+      if (signal.aborted) return
+      if (clientId === undefined) {
+        const opening = parseRemoteEventReady(value)
+        clientId = opening.clientId
+        ready(opening.host)
+      } else {
+        this.deliver(parseRemoteEventFrame(value))
+      }
     }
-    return value === REMOTE_EVENT_NEXT
-      ? { kind: 'next' }
-      : { kind: 'result', value }
+    if (!signal.aborted) throw new Error('client api: forwarded Remote event stream ended unexpectedly')
   }
 
   private eventKey(event: string): string {
@@ -281,34 +150,12 @@ function parseRemoteEventReady(value: unknown): {
 /** Validate one untrusted value from the Gateway-internal forwarded-event stream. */
 function parseRemoteEventFrame(value: unknown): Exclude<RemoteEventDownlinkFrame, { type: 'ready' }> {
   if (!isRemoteEventRecord(value)) invalidRemoteEventFrame()
-  if (value.type === 'cancel'
-    && hasExactRemoteEventKeys(value, ['type', 'eventId'])
-    && isRemoteEventId(value.eventId)) {
-    return { type: 'cancel', eventId: value.eventId }
-  }
   if (value.type === 'emit'
     && hasExactRemoteEventKeys(value, ['type', 'event', 'args'])
     && validRemoteEventName(value.event)
     && Array.isArray(value.args)
     && isRemoteJsonValue(value.args)) {
     return { type: 'emit', event: value.event, args: value.args }
-  }
-  if (value.type === 'waterfall'
-    && hasExactRemoteEventKeys(value, ['type', 'event', 'eventId', 'agentId', 'request'])
-    && validRemoteEventName(value.event)
-    && isRemoteEventId(value.eventId)
-    && isRemoteEventAgentId(value.agentId)
-    && isRemoteEventRecord(value.request)
-    && !Object.hasOwn(value.request, 'agent')
-    && !Object.hasOwn(value.request, 'signal')
-    && isRemoteJsonValue(value.request)) {
-    return {
-      type: 'waterfall',
-      event: value.event,
-      eventId: value.eventId,
-      agentId: value.agentId,
-      request: value.request,
-    }
   }
   invalidRemoteEventFrame()
 }
@@ -334,8 +181,4 @@ function invalidRemoteEventFrame(): never {
 
 function privateEvents(ctx: Context): PrivateEventContext {
   return ctx
-}
-
-function toError(reason: unknown, message: string): Error {
-  return reason instanceof Error ? reason : new Error(message, { cause: reason })
 }

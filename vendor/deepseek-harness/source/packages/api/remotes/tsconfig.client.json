@@ -24,9 +24,6 @@
       "path": "../../credentials/credentials"
     },
     {
-      "path": "../../core/session"
-    },
-    {
       "path": "../../host/plugin-inventory"
     },
     {

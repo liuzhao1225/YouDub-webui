@@ -29,9 +29,6 @@
       "path": "../../attachment/attachment"
     },
     {
-      "path": "../../core/session"
-    },
-    {
       "path": "../../credentials/credentials"
     },
     {

@@ -1,14 +1,11 @@
 /**
- * call-config unit tests: field-wise LlmCallConfig equality (the real-change
- * detector behind logged changed headers) and the deepFreeze ownership helper
- * the loop applies to every built request.
+ * Call configuration equality and immutable request snapshots.
  */
 
 import { describe, expect, it } from 'vitest'
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
-import { callConfigEquals, isAgentLoopRequest, markAgentLoopRequest } from '../src/call-config.ts'
+import { callConfigEquals } from '../src/call-config.ts'
 import { ReasoningEffortId } from '../src/brand.ts'
-import type { GenerateOptions } from '../src/types.ts'
 
 describe('callConfigEquals', () => {
   it('compares every field, including the stop list element-wise', () => {
@@ -82,21 +79,5 @@ describe('deepFreeze', () => {
       cursor = cursor[0] as unknown[]
     }
     expect(Object.isFrozen(cursor)).toBe(true)
-  })
-})
-
-describe('agent-loop request identity', () => {
-  it('marks only the exact request object and preserves its identity', () => {
-    const request: GenerateOptions = {
-      provider: 'mock',
-      model: 'model',
-      messages: [],
-    }
-    const copy = { ...request }
-
-    expect(isAgentLoopRequest(request)).toBe(false)
-    expect(markAgentLoopRequest(request)).toBe(request)
-    expect(isAgentLoopRequest(request)).toBe(true)
-    expect(isAgentLoopRequest(copy)).toBe(false)
   })
 })

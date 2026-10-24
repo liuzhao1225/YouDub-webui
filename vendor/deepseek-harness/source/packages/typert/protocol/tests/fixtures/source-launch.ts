@@ -4,7 +4,14 @@ import {
   Remote,
   RemoteScope,
   remoteMethods,
+  type TypertContext,
 } from '@deepseek-ai/dsh-typert-protocol'
+
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface TypertContextMap {
+    metaFixture: TypertContext<string>
+  }
+}
 
 class Goals extends TypertRemoteService {
   constructor(ctx: Context) {
@@ -16,7 +23,7 @@ class Goals extends TypertRemoteService {
     return value
   }
 
-  @RemoteScope('agent')
+  @RemoteScope('metaFixture')
   scoped(value: string): string {
     return value
   }
@@ -26,7 +33,7 @@ const methods = remoteMethods(new Goals(new Context()))
 const actual = JSON.stringify(methods)
 const expected = JSON.stringify([
   { method: 'create', invocation: { kind: 'direct' } },
-  { method: 'scoped', invocation: { kind: 'context', context: 'agent' } },
+  { method: 'scoped', invocation: { kind: 'context', context: 'metaFixture' } },
 ])
 if (actual !== expected) throw new Error(`unexpected Remote declarations: ${actual}`)
 process.stdout.write(actual)

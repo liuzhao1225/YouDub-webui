@@ -2,7 +2,7 @@
  * Font-size preference row: title + role description + stepper pill (centered value; hover
  * reveals the up/down arrow column anchored to the pill's right edge) + a px
  * unit label after the pill. The text row is registered into the General
- * section item slot; the code and terminal rows render inside the font
+ * section item slot; the code row renders inside the font
  * settings group. The displayed value follows the persisted setting, never the
  * click echo.
  */

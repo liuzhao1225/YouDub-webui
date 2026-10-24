@@ -186,41 +186,14 @@ type TypertEventParameters<Event extends keyof Events> =
 type TypertEventResult<Event extends keyof Events> =
   Events[Event] extends (...args: never[]) => infer Result ? Result : never
 
-type TypertProjectedContextKey = Extract<keyof TypertLookupMap, keyof TypertContextMap>
-
-type TypertProjectedContextSubject = {
-  [Key in TypertProjectedContextKey]: TypertLookupHost<TypertLookupMap[Key]>
-}[TypertProjectedContextKey]
-
-type TypertAgentScopedRequest<Request> = Request extends object
-  ? 'agent' extends keyof Request
-    ? Exclude<Request['agent'], undefined> extends TypertProjectedContextSubject ? Request : never
-    : never
-  : never
-
-type TypertWaterfallEvent<Event extends keyof Events> =
-  unknown extends ThisParameterType<Events[Event]>
-    ? never
-    : TypertEventParameters<Event> extends [infer Request, infer Next]
-      ? Next extends () => TypertEventResult<Event>
-        ? TypertEventResult<Event> extends Promise<unknown>
-          ? TypertAgentScopedRequest<Request> extends never ? never : Event
-          : never
-        : never
-      : never
-
-type TypertForwardingMode<Event extends keyof Events> =
-  unknown extends ThisParameterType<Events[Event]>
-    ? TypertEventResult<Event> extends void ? 'emit' : never
-    : TypertWaterfallEvent<Event> extends never ? never : 'waterfall'
-
 /**
  * Cordis event names the Remote Event carrier can preserve without a second
- * signature declaration: unscoped `void` notifications and scoped async
- * waterfalls whose final parameter is their same-result `next()` callback.
+ * signature declaration: unscoped `void` notifications.
  */
 export type TypertForwardableEvent = {
-  [Event in keyof Events]: TypertForwardingMode<Event> extends never ? never : Event
+  [Event in keyof Events]: unknown extends ThisParameterType<Events[Event]>
+    ? TypertEventResult<Event> extends void ? Event : never
+    : never
 }[keyof Events]
 
 /**
@@ -228,21 +201,15 @@ export type TypertForwardableEvent = {
  * may declare readers of the resources its payload carries; an
  * entry without `resources` touches the built-in `global` resource. A
  * non-owner Peer receives an `emit` notification only after an access
- * decision and never receives a `waterfall`.
+ * decision.
  */
 export type TypertForwardableEventEntry = {
-  [Event in keyof Events]: TypertForwardingMode<Event> extends infer Mode
-    ? Mode extends 'emit'
-      ? {
-        readonly event: Event
-        readonly mode: Mode
-        readonly resources?: TypertResourceReaders<TypertEventParameters<Event>>
-      }
-      : Mode extends 'waterfall'
-        ? { readonly event: Event; readonly mode: Mode }
-        : never
-    : never
-}[keyof Events]
+  [Event in TypertForwardableEvent]: {
+    readonly event: Event
+    readonly mode: 'emit'
+    readonly resources?: TypertResourceReaders<TypertEventParameters<Event>>
+  }
+}[TypertForwardableEvent]
 
 /** Merge-extensible forwarding selection declared once by the Host assembly. */
 export interface TypertRemoteEventSelection {}
@@ -250,34 +217,11 @@ export interface TypertRemoteEventSelection {}
 /** Legal `$on` keys selected from the carrier-compatible Cordis event declarations. */
 export type TypertRemoteEvent = Extract<TypertForwardableEvent, keyof TypertRemoteEventSelection>
 
-type TypertClientAgent<Value> =
-  Exclude<Value, undefined> extends TypertProjectedContextSubject
-    ? Context | Extract<Value, undefined>
-    : Value
-
-type TypertClientEventRequest<Request> = Request extends object
-  ? { [Key in keyof Request]: Key extends 'agent' ? TypertClientAgent<Request[Key]> : Request[Key] }
-  : never
-
-type TypertScopedClientEventListener<Event extends TypertRemoteEvent> =
-  Events[Event] extends (request: infer Request, next: infer Next) => infer Result
-    ? (
-      this: Context,
-      request: TypertClientEventRequest<Request>,
-      next: Next,
-    ) => Result
-    : never
-
 /**
- * Listener derived from one selected Cordis event declaration. Scoped Host
- * subjects become the resolved Client `Context`; one-way notifications retain
- * their declaration unchanged.
+ * Listener retaining the selected Cordis notification declaration unchanged.
  * @template Event - selected Remote Event name.
  */
-export type TypertClientEventListener<Event extends TypertRemoteEvent> =
-  unknown extends ThisParameterType<Events[Event]>
-    ? Events[Event]
-    : TypertScopedClientEventListener<Event>
+export type TypertClientEventListener<Event extends TypertRemoteEvent> = Events[Event]
 
 /**
  * Resolve one direct Remote namespace from the generated flat endpoint map.
@@ -450,7 +394,7 @@ export type PeerId = Branded<'PeerId'>
 /**
  * Merge-extensible caller identities. Each driver declares its own entry.
  * Every entry is a JSON value with a unique literal `kind`, carries no
- * credential, and is safe to persist in a Session log.
+ * credential, and is safe to persist in an application log.
  */
 export interface PrincipalMap {
   /** The local user who owns this Host. */
@@ -626,8 +570,7 @@ export interface TypertClientRemote extends TypertRemoteNamespaceMap {
   $mount(contribution: TypertRemoteContribution): Promise<TypertDisposer>
   /**
    * Subscribe to one forwarded Host event. Notifications run in registration
-   * order and isolate failures; scoped waterfalls return, delegate through
-   * `next()`, or reject the Host dispatch.
+   * order and isolate failures.
    * @template Event - forwarded event name selected by the Host assembly.
    * @param event - forwarded Host event name, unchanged on the wire.
    * @param listener - receives the Client projection of the Cordis `Events` declaration.

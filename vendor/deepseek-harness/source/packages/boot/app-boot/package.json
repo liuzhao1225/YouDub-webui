@@ -57,7 +57,6 @@
     "@deepseek-ai/cordis-plugin-timer": "workspace:~",
     "@deepseek-ai/dsh-launch-environment": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "workspace:*",
-    "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@types/js-yaml": "^4.0.9",
     "@types/semver": "^7.8.0",
     "@deepseek-ai/cordis": "workspace:~"

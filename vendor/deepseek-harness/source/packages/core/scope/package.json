@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-scope",
-  "description": "Scoped-context registration primitive (scope tags, scope-filtered event dispatch) for the DeepSeek Harness",
+  "description": "Cordis child-context lifecycle for Harness connection peers",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"

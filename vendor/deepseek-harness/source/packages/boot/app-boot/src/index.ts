@@ -17,7 +17,7 @@ import Include, { applyEntryPatches, entryListSchema, type PatchOptions } from '
 import Group from '@deepseek-ai/cordis-plugin-group'
 import { dshHomePath, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { createLaunchEnvironmentSnapshot, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
-export { readBundlePatches, readProfilePatches, resolveTelemetryPatch, type ProfileContext, type ProfilePnpmInvocation } from './profile-context.ts'
+export { readBundlePatches, readProfilePatches, type ProfileContext, type ProfilePnpmInvocation } from './profile-context.ts'
 export { sanitizeProfile } from './profile-sanitize.ts'
 export { getDshRuntimeVersion, evaluatePluginCompatibility, pluginCompatibilityWarning, type PluginCompatibility } from './plugin-compatibility.ts'
 export {
@@ -761,7 +761,7 @@ export async function mountRootInclude(
       }
     }
   // `cordis:group` alongside it: a group row is how a composition gives one
-  // `isolate` realm to a provider and its consumers together, and an agent
+  // `isolate` realm to a provider and its consumers together, and a plugin
   // preset living outside this workspace cannot resolve `@deepseek-ai/cordis-plugin-group`
   // by name. Both builtins load through the ambient module pipeline, so neither
   // depends on the included tree's own specifier resolution.
@@ -946,17 +946,13 @@ const FIBER_DISPOSED = 4 as FiberState.DISPOSED
  *
  * The list is global rather than profile metadata. Missing or disabled ids do
  * not affect startup; an enabled listed entry must activate. The list covers
- * shared Agent execution, application endpoints, and Web bootstrap/transport.
+ * application endpoints and Web bootstrap/transport.
  */
 const requiredStartupEntryIds = new Set<string>([
-  'agent-loop',
   'webserver',
   'web-runtime',
   'modules',
   'connection',
-  'headless-runner',
-  'acp',
-  'sdk-jsonrpc-server',
 ])
 
 /** Render plugin stacks, nested causes, and aggregate member failures once per error. */
@@ -1098,7 +1094,7 @@ function activationDiagnostic(
   return `${binName}: warning: ${String(failures.length)} ${noun} did not activate\n${failures.map(failure => inactiveDiagnostic(failure, stacks)).join('\n')}\n`
 }
 
-/** Per-entry reload text, which people read through the Web UI and agents, so it carries error messages without stack frames. */
+/** Per-entry reload text shown in the Web UI, carrying error messages without stack frames. */
 function reloadDiagnostic(failure: InactiveEntry): string {
   return inactiveDiagnostic(failure, false)
 }

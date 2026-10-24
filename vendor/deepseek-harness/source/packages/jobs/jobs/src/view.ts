@@ -6,9 +6,6 @@
  * @module @deepseek-ai/dsh-jobs/view
  */
 
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
-// Type-only: the Workspace registry's archive-admission family map this seam merges `job` into.
-import type {} from '@deepseek-ai/dsh-workspace/types'
 import type { JobId } from './brand.ts'
 
 /**
@@ -17,13 +14,6 @@ import type { JobId } from './brand.ts'
  * {@link JobView.detail}.
  */
 export type JobStatus = 'running' | 'stopping' | 'completed' | 'killed' | 'failed'
-
-declare module '@deepseek-ai/dsh-workspace/types' {
-  interface SessionActivityKindMap {
-    /** A background job owned by this session is running or stopping. */
-    job: true
-  }
-}
 
 /**
  * Producer-defined job kinds. Plugins extend this map by declaration merging;
@@ -37,7 +27,7 @@ export interface JobKindMap {
 export type JobKind = JobKindMap[keyof JobKindMap]
 
 /**
- * Stream label of one output chunk. `stdout` and `stderr` reach the model's
+ * Stream label of one output chunk. `stdout` and `stderr` reach the consuming reader’s
  * consuming read; `log` marks producer narration (a workflow's phase lines)
  * that only observers see. Consumers treat an unrecognized label like an
  * absent one.
@@ -58,7 +48,7 @@ export interface JobChunk {
 
 /**
  * Read-only projection of one job — a fresh object per call, never live
- * registry state. The model tools, the browser roster, and the observation
+ * registry state. The job controls, the browser roster, and the observation
  * stream all consume this one shape.
  */
 export interface JobView {
@@ -72,10 +62,6 @@ export interface JobView {
   readonly kind: string
   /** The producer-supplied one-line label. */
   readonly label: string
-  /** Owning session; absent for an unowned job, which every caller can see. */
-  readonly owner?: SessionId
-  /** Producer-owned cap for complete model-facing notices and reads, in UTF-8 bytes. */
-  readonly outputLimitBytes?: number
   /** Current lifecycle state. */
   readonly status: JobStatus
   /** The producer's live progress line (`3/10`, the current phase); cleared at settlement. */

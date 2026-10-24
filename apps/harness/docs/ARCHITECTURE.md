@@ -1,6 +1,6 @@
 # 基于 DSH 的 YouDub Desktop 架构
 
-YouDub Desktop 使用 DeepSeek Harness 的 Electron 桌面能力、Host 插件运行时和前端插件框架。视频处理、图工作流、人工订正和文件产物属于 YouDub 业务层，通过一个 DSH bundle 接入。
+YouDub Desktop 保留 DeepSeek Harness 的 Electron 桌面能力、UI、Host 插件运行时、LLM、RPC 和生命周期管理。Agent 执行、聊天与会话产品逻辑已移除。视频处理、图工作流、人工订正和文件产物属于 YouDub 业务层，通过一个 DSH bundle 接入。
 
 业务 API 统一由 `src/backend/api.ts` 注册，通过 Harness Connection 传输；访问权限由 Connection 管理。旧独立 HTTP 服务、Cookie 会话、Loader 装配和网页更新轮询已移除。接口测试直接调用这套业务路由，桌面 Host 测试覆盖实际权限与启动边界。
 
@@ -62,7 +62,7 @@ flowchart TB
 
 YouDub 的 patch 正向声明所需框架服务与业务插件。DeepSeek 账号、聊天、编码 Agent、终端工作区和计划任务等产品入口不参与装配。用户的本地配置继续使用官方 profile/home patch 规则，实际结果以官方配置解析器为准。
 
-模型设置和插件管理通过产品选择的 Remote 命名空间装配。聊天、会话控制、Agent 执行循环、浏览器、文档预览、定时任务及其专用类型与测试已删除。实际服务以[当前 patch](../cordis.patch.yml)和[保留范围](FRAMEWORK-SCOPE.md)为准。
+模型设置和插件管理通过产品选择的 Remote 命名空间装配。聊天、会话控制、Agent 执行循环、浏览器、文档预览、定时任务及其专用类型与测试已删除。Jobs 内的 Agent/会话归属、会话遥测和远端 Agent waterfall 也已移除。通用 RPC、双向流、Context 映射及资源权限继续保留。实际服务以[当前 patch](../cordis.patch.yml)和[保留范围](FRAMEWORK-SCOPE.md)为准。
 
 插件入口使用 `inject` 声明服务依赖，由 Loader 安排激活和销毁。监听、插槽、路由和进程资源通过官方 context 生命周期释放。必需条目出现 pending/failed 时需要修复依赖与配置，启动诊断保留具体原因。
 
@@ -77,6 +77,8 @@ YouDub 的 patch 正向声明所需框架服务与业务插件。DeepSeek 账号
 | 数据 | 提供进程和生命周期基础 | SQLite 事务、任务修订、工作流文档、产物和历史结果 |
 | 前端基础 | Renderer、ModuleLoader、Slots、Layout、Store、theme、locale、primitives | 页面内容、业务控制器、画布、字幕与音频编辑 |
 | 扩展 | PluginManager 的检查、安装、启停、卸载与运行状态 | YouDub 节点/提供商/页面合同，以及扩展目录的产品展示 |
+
+插件扩展沿用 Harness 的安装、装配与销毁机制；YouDub 定义节点、输入输出、产物和专用界面合同。工作流调度能力由 YouDub 领域代码实现，不引入第二套插件加载器或运行框架。
 
 具体调用见[后端说明](BACKEND-DEVELOPMENT.md)。前端保留原控制器的业务 API，通过构建边界接入官方 Store 和控件，见[前端说明](FRONTEND-DEVELOPMENT.md)。
 

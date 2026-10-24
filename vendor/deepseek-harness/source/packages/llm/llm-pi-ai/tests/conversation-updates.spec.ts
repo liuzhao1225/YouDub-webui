@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, { createAssistantMessage, createDeveloperMessage, createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { GenerateOptions, ToolSchema, ToolUpdate } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed, GenerateOptions, ToolSchema, ToolUpdate } from '@deepseek-ai/dsh-llm'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import type { Api, Model } from '@earendil-works/pi-ai'
 import { resolveProfiles } from '../src/config.ts'
@@ -10,6 +10,12 @@ import { memoryAuth } from './auth-double.ts'
 import { conversationUpdates } from '../src/models.ts'
 import { assemble } from './assemble.ts'
 import { closeMockServers, mockServer } from './mock-server.ts'
+
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'test': { kind: 'test' } & ContextFormed
+  }
+}
 
 const baseline: ToolSchema = { name: 'read', description: 'Read a file', parameters: { type: 'object', properties: {} } }
 const added: ToolSchema = { name: 'search', description: 'Search files', parameters: { type: 'object', properties: {} } }
@@ -73,7 +79,7 @@ async function send(provider: string, modelId: string, options: Omit<GenerateOpt
   } finally { await runtime.dispose() }
 }
 
-const addition = () => createDeveloperMessage({ source: { kind: 'tool-registry' }, content: [
+const addition = () => createDeveloperMessage({ source: { kind: 'test' }, content: [
   { type: 'text', text: 'Instruction one.' }, { type: 'text', text: 'Instruction two.' },
   { type: 'tool-addition', toolName: added.name },
 ] })
@@ -220,8 +226,8 @@ describe('historical tool availability on the wire', () => {
   })
 
   it('retains removed declarations and reactivates them through Anthropic history', async () => {
-    const remove = createDeveloperMessage({ source: { kind: 'tool-registry' }, content: [{ type: 'tool-removal', toolName: 'search' }] })
-    const restore = createDeveloperMessage({ source: { kind: 'tool-registry' }, content: [{ type: 'tool-addition', toolName: 'search' }] })
+    const remove = createDeveloperMessage({ source: { kind: 'test' }, content: [{ type: 'tool-removal', toolName: 'search' }] })
+    const restore = createDeveloperMessage({ source: { kind: 'test' }, content: [{ type: 'tool-addition', toolName: 'search' }] })
     const { requests } = await send('anthropic', 'claude-opus-4-8', {
       messages: [user('first'), remove, user('restore'), restore], tools: [baseline, added],
       toolHistory: { tools: [baseline, added], updates: [
@@ -238,7 +244,7 @@ describe('historical tool availability on the wire', () => {
 
   it('anchors additions in Responses without emitting removal updates', async () => {
     const update = addition()
-    const remove = createDeveloperMessage({ source: { kind: 'tool-registry' }, content: [{ type: 'tool-removal', toolName: 'read' }] })
+    const remove = createDeveloperMessage({ source: { kind: 'test' }, content: [{ type: 'tool-removal', toolName: 'read' }] })
     const { requests } = await send('openai', 'gpt-5.4', {
       messages: [user('first'), update, remove], tools: [added],
       toolHistory: { tools: [baseline], updates: [
