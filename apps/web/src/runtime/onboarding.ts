@@ -78,6 +78,14 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
 
 interface TranslationSnapshot { loaded: boolean; configured: boolean; ready: boolean; busy: boolean; error: string }
 
+function translationAvailability(catalog: Catalog) {
+  const providers = catalog.providers.filter(provider => !provider.legacy && provider.capability === 'translation')
+  const configured = providers.some(provider => provider.available)
+  const error = configured ? '' : providers.filter(provider => provider.unavailableReason)
+    .map(provider => `${provider.label}: ${provider.unavailableReason}`).join('\n')
+  return { configured, error }
+}
+
 /** First run shares the same provider editor and availability rules as Settings. */
 export class TranslationSetupController extends SnapshotStore<TranslationSnapshot> {
   private csrf = ''
@@ -100,7 +108,7 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
     if (!controller) return
     try {
       const catalog = await this.api<Catalog>(controller, '/api/v2/catalog')
-      if (this.current(controller)) this.update({ configured: catalog.providers.some(provider => !provider.legacy && provider.available && provider.capability === 'translation'), error: '' })
+      if (this.current(controller)) this.update(translationAvailability(catalog))
     } catch (failure) {
       if (this.current(controller)) this.update({ configured: false, error: failure instanceof Error ? failure.message : String(failure) })
     }
@@ -131,8 +139,8 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
         this.api<Catalog>(controller, '/api/v2/catalog'),
       ])
       if (!this.current(controller)) return
-      const configured = catalog.providers.some(provider => !provider.legacy && provider.available && provider.capability === 'translation')
-      this.update({ loaded: true, configured, ready: configured || settings.plugins?.['youdub.onboarding']?.translationDeferred === true })
+      const availability = translationAvailability(catalog)
+      this.update({ loaded: true, ...availability, ready: availability.configured || settings.plugins?.['youdub.onboarding']?.translationDeferred === true })
     } catch (failure) {
       if (this.current(controller)) this.update({ error: failure instanceof Error ? failure.message : String(failure) })
     }

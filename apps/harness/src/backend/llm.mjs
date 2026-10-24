@@ -7,6 +7,7 @@ import { transcriptSchema, translationSchema } from '../../../../packages/builti
 import { validateMediaCorrection } from '../../../../packages/builtin/src/node-contracts.ts';
 import { CHINESE_SUBTITLE_PUNCTUATION_RULES } from '../../../../packages/builtin/src/translation-punctuation.ts';
 import { credentialRef } from '@deepseek-ai/dsh-credentials';
+import { resolveProfiles } from '@deepseek-ai/dsh-llm-pi-ai';
 export const MIN_OUTPUT_TOKENS = 65_535;
 const fail = (code, message) => Object.assign(new Error(message), { code, status: 422 });
 const validator = new Ajv({ strict: false, allErrors: true });
@@ -21,12 +22,15 @@ export function modelPolicy(llm, forms, provider, model) {
   if (!profile) throw fail('MODEL_NOT_READY', 'Harness 模型配置不存在。');
   const configured = profile.models?.find(item => item.id === model) ?? profile.modelOverrides?.[model];
   if (directory.settingsNs.startsWith('llm-deepseek')) return { maxTokens: configured?.maxTokens ?? profile.maxTokens, profile };
-  // pi-ai can clamp output to its context budget, and some protocols omit the
-  // output cap altogether. Refuse those configurations before calling Harness.
-  if (!protocols.has(profile.api)) throw fail('OUTPUT_LIMIT_UNSUPPORTED', '请在 Harness 模型设置中显式选择支持输出上限的 API 协议。');
-  const compat = { ...profile.compat, ...configured?.compat };
+  // Use the adapter's own catalog/default/override resolution. Built-in routes
+  // need only a credential; their saved profile need not repeat model metadata.
+  const resolved = resolveProfiles({ [provider]: profile }, 'deferred').get(provider);
+  const entry = resolved.piProvider?.getModels().find(item => item.id === model);
+  if (!entry) throw fail('MODEL_NOT_READY', resolved.modelErrors.get(model) ?? resolved.catalogError ?? '模型不在当前供应商目录中。');
+  if (!protocols.has(entry.api)) throw fail('OUTPUT_LIMIT_UNSUPPORTED', '该模型的 API 协议不支持验证输出上限。');
+  const compat = entry.compat ?? {};
   if (compat.supportsMaxOutputTokens === false || compat.maxTokensField === 'omit') throw fail('OUTPUT_LIMIT_UNSUPPORTED', '该供应商配置会省略输出上限，已停止调用。');
-  return { maxTokens: configured?.maxTokens ?? profile.defaultMaxTokens, profile };
+  return { maxTokens: entry.maxTokens, profile };
 }
 
 export async function translateWithHarness(llm, forms, route, request, context) {
