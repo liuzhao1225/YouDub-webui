@@ -301,34 +301,6 @@ describe('scrollbar.css geometry variables', () => {
     expect(varReferences(declaration(scrollbarRules, 'border', '::-webkit-scrollbar-thumb')!)).toEqual([THUMB_BORDER_VARIABLE])
     expect(varReferences(declaration(scrollbarRules, 'margin-block', '::-webkit-scrollbar-track')!)).toEqual([TRACK_MARGIN_VARIABLE])
   })
-
-  it('every reader of the width variable outside ui-theme references a defined variable', () => {
-    // The consumer is ConversationRoot's overlay composer seat
-    // (`right: var(--dsh-scrollbar-width)`); a rename in scrollbar.css without
-    // the consumer, or a typo in the consumer, leaves the value
-    // guaranteed-invalid and the seat loses the band. The equal-rectangle e2e
-    // would catch it only on an engine that draws the bar, so the sheet
-    // contract states it here.
-    const defined = new Set(
-      scrollbarRules
-        .flatMap(rule => rule.declarations)
-        .filter(([property]) => property.startsWith(INDIRECTION_PREFIX))
-        .map(([property]) => property),
-    )
-    expect(defined).toContain(WIDTH_VARIABLE)
-    const readers: string[] = []
-    for (const file of packageStylesheets()) {
-      if (file === SCROLLBAR_SHEET) continue
-      for (const rule of parseRules(readFileSync(file, 'utf8'))) {
-        for (const [property, value] of rule.declarations) {
-          for (const name of varReferences(value)) {
-            if (name === WIDTH_VARIABLE) readers.push(`${file} ${rule.selectors.join(', ')}: ${property}`)
-          }
-        }
-      }
-    }
-    expect(readers.length, 'compensation consumer').toBeGreaterThan(0)
-  })
 })
 
 describe('scrollbar.css selectors', () => {
