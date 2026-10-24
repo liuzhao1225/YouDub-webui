@@ -229,7 +229,7 @@ def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(a
     assert tts_capability["models"] == [{
         "id": "VoxCPM2", "devices": ["cpu", "cuda:0"], "source_languages": ["en", "zh", "ja"],
         "target_languages": ["en", "zh", "ja"], "voice_modes": ["source_clone"], "voices": [],
-        "input_limits": {"max_reference_duration_ms": 10000},
+        "input_limits": {"max_reference_duration_ms": None},
     }]
     assert separation["models"] == [{
         "id": "htdemucs", "devices": ["cpu", "cuda:0"], "source_languages": [], "target_languages": [],

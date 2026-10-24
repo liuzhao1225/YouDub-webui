@@ -5,19 +5,15 @@ from __future__ import annotations
 import json
 import os
 import sys
-from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 
 from .audio_segments import SpeechClip, SpeechClips
 from .audio import audio_info
 from .errors import ApiError
-from .segments import LANGUAGES, Segment, Transcript, read_transcript, read_translation
+from .segments import LANGUAGES, Transcript, read_transcript, read_translation
 from .steps import Completed, StageContext
 from ..paths import data_directory
-
-MAX_REFERENCE_DURATION_MS = 10_000
-
 
 def model_directory() -> Path:
     configured = os.getenv("YOUDUB_VOXCPM_MODEL_DIR", "").strip()
@@ -41,32 +37,6 @@ def _reference_error(message: str) -> ApiError:
     return ApiError(422, "INVALID_MEDIA", message, field="tts.voice.mode", stage="tts")
 
 
-def _word_reference(segment: Segment) -> Segment:
-    """Select a complete timed-word window from the validated shared transcript."""
-    if not segment.words:
-        raise _reference_error("A source utterance over 10 seconds needs complete ASR word timestamps for cloning.")
-    words = [(word.start_ms, word.end_ms, word.text) for word in segment.words]
-    window: deque[tuple[int, int, str]] = deque()
-    best: list[tuple[int, int, str]] = []
-    speech_duration = best_duration = 0
-    for word in words:
-        window.append(word)
-        speech_duration += word[1] - word[0]
-        while window and word[1] - window[0][0] > MAX_REFERENCE_DURATION_MS:
-            removed = window.popleft()
-            speech_duration -= removed[1] - removed[0]
-        # Preserve a zero-duration closing token at the same measured boundary.
-        if speech_duration > best_duration or (
-            best and window and speech_duration == best_duration and
-            window[0][0] == best[0][0] and word[1] == best[-1][1]
-        ):
-            best, best_duration = list(window), speech_duration
-    if not best or best_duration <= 0:
-        raise _reference_error("No complete ASR word reference window fits within 10 seconds.")
-    return Segment(id=segment.id, start_ms=best[0][0], end_ms=best[-1][1],
-                   text="".join(word[2] for word in best))
-
-
 def prepare_reference_audio(context: StageContext, transcript: Transcript, progress: Callable) -> dict:
     """Prepare cloning inputs independently of a speech model invocation."""
     from ..config import ffmpeg_binary
@@ -77,8 +47,9 @@ def prepare_reference_audio(context: StageContext, transcript: Transcript, progr
     source_duration_ms = round(source_info.frames * 1000 / source_info.samplerate)
     if any(segment.end_ms > source_duration_ms for segment in transcript.segments):
         raise ApiError(422, "INVALID_MEDIA", "A source utterance lies outside the separated vocals.", stage="tts")
-    references = [segment if segment.end_ms - segment.start_ms <= MAX_REFERENCE_DURATION_MS
-                  else _word_reference(segment) for segment in transcript.segments]
+    # Keep each utterance's complete audio and matching text, including imported
+    # subtitles that have sentence timings without ASR word timings.
+    references = transcript.segments
     output_dir = context.work_dir / "tts"
     reference_dir = output_dir / "references"
     reference_dir.mkdir(parents=True, exist_ok=True)
