@@ -36,13 +36,11 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-brand": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "@deepseek-ai/cordis-plugin-timer": "workspace:~",
     "@deepseek-ai/dsh-app-boot": "workspace:*",

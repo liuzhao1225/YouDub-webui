@@ -29,12 +29,11 @@ def _detect_devices() -> list[dict[str, Any]]:
 
 def _model(
     model_id: str, devices: list[str], source_languages: list[str], target_languages: list[str],
-    *, max_reference_duration_ms: int | None = None,
 ) -> dict[str, Any]:
     return {
         "id": model_id, "devices": devices, "source_languages": source_languages,
         "target_languages": target_languages, "voice_modes": [], "voices": [],
-        "input_limits": {"max_reference_duration_ms": max_reference_duration_ms},
+        "input_limits": {"max_reference_duration_ms": None},
     }
 
 
@@ -112,13 +111,12 @@ def _voxcpm_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
         return [], f"本地 VoxCPM2 需要 voxcpm{version_requirement('voxcpm')}，以支持明确的 CPU/CUDA/ROCm/MPS 设备选择。"
     if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
         return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
-    from .tts import MAX_REFERENCE_DURATION_MS, available_models
+    from .tts import available_models
 
     available_devices = [device["id"] for device in devices if device["available"]]
     if not available_devices:
         return [], "没有可执行 VoxCPM2 的 CPU/CUDA/ROCm/MPS 设备。"
-    models = [_model(name, available_devices.copy(), list(LANGUAGES), list(LANGUAGES),
-                     max_reference_duration_ms=MAX_REFERENCE_DURATION_MS)
+    models = [_model(name, available_devices.copy(), list(LANGUAGES), list(LANGUAGES))
               for name in available_models()]
     for model in models:
         model["voice_modes"] = ["source_clone"]

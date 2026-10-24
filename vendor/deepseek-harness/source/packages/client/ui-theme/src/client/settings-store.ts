@@ -57,7 +57,7 @@ type FontRowActions = {
  */
 export function createFontRowStore(): EngineStoreHandle<FontRowState, FontRowActions> {
   return defineStore({
-    init: (): FontRowState => ({ fontSizes: DEFAULT_FONT_SIZES, fontFamilies: { text: '', code: '', terminal: '' }, revision: -1 }),
+    init: (): FontRowState => ({ fontSizes: DEFAULT_FONT_SIZES, fontFamilies: { text: '', code: '' }, revision: -1 }),
     actions: {
       sync: (d, fontSizes: FontSizes, fontFamilies: FontFamilies, revision: number) => {
         if (revision <= d.revision) return

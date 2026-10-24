@@ -48,11 +48,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       scope: 'root'
       props: { renderFactorySlot: string }
     }
-    'chain.factory.local-overlap': {
-      scope: 'root'
-      inject: { sessionId: string }
-      slots: { views: { scope: 'session' } }
-    }
     'chain.factory.bad-child': {
       scope: 'root'
       children: { 'chain.conv': { kind: 'single'; scope: 'root' } }
@@ -141,7 +136,6 @@ declare function NarrowFactoryViews(
   props: FactoryLocalComponentPropsOf<'chain.factory', 'views'> & { missing: boolean },
 ): ReactNode
 declare function OverlappingFactory(props: FactoryComponentPropsOf<'chain.factory.overlap'>): ReactNode
-declare function LocalOverlappingFactory(props: FactoryComponentPropsOf<'chain.factory.local-overlap'>): ReactNode
 declare function BadChildFactory(props: FactoryComponentPropsOf<'chain.factory.bad-child'>): ReactNode
 declare function FactoryStoreBody(props: FactoryComponentPropsOf<'chain.factory.factory-store'>): ReactNode
 
@@ -378,13 +372,6 @@ describe('terminal-design type chain', () => {
       }, FactoryBody)
       // @ts-expect-error Factory input may not replace a framework-provided prop
       core.registerFactory({ name: 'chain.factory.overlap', scope: 'root' }, OverlappingFactory)
-      // @ts-expect-error Factory registration props may not replace a local slot's scope props
-      core.registerFactory({
-        name: 'chain.factory.local-overlap',
-        scope: 'root',
-        inject: () => ({ sessionId: 'wrong owner' }),
-        slots: { views: { scope: 'session' } },
-      }, LocalOverlappingFactory)
       // @ts-expect-error Factory children must match their SlotMap declarations
       core.registerFactory({
         name: 'chain.factory.bad-child',

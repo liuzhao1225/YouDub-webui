@@ -116,9 +116,6 @@
       "path": "./packages/llm/llm"
     },
     {
-      "path": "./packages/core/session"
-    },
-    {
       "path": "./packages/core/scope"
     },
     {
@@ -143,12 +140,6 @@
       "path": "./packages/typert/loader"
     },
     {
-      "path": "./packages/session/session-persistence"
-    },
-    {
-      "path": "./packages/session/session-projection"
-    },
-    {
       "path": "./packages/settings/settings"
     },
     {
@@ -161,21 +152,6 @@
       "path": "./packages/credentials/authorization"
     },
     {
-      "path": "./packages/storage/storage"
-    },
-    {
-      "path": "./packages/storage/storage-domain"
-    },
-    {
-      "path": "./packages/workspace/workspace"
-    },
-    {
-      "path": "./packages/core/system-prompt"
-    },
-    {
-      "path": "./packages/core/agent"
-    },
-    {
       "path": "./packages/subprocess/subprocess"
     },
     {
@@ -186,12 +162,6 @@
     },
     {
       "path": "./packages/llm/llm-pi-ai"
-    },
-    {
-      "path": "./packages/sandbox/sandbox"
-    },
-    {
-      "path": "./packages/fs/fs"
     },
     {
       "path": "./packages/bundle/web-app"

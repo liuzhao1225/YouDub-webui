@@ -1,0 +1,13 @@
+.textarea {
+  width: 100%;
+  max-height: none;
+  resize: vertical;
+}
+
+.textarea[aria-invalid='true'] {
+  border-color: var(--dsw-alias-state-error-primary);
+}
+
+.textarea:disabled {
+  opacity: .5;
+}

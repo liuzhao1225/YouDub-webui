@@ -60,9 +60,8 @@ import type {} from '@deepseek-ai/cordis-plugin-loader'
 
 import type { Context } from '@deepseek-ai/cordis'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-import { assertUsableApiKey, LlmError, resolveImageAttachmentAccess } from '@deepseek-ai/dsh-llm'
+import { assertUsableApiKey, LlmError } from '@deepseek-ai/dsh-llm'
 import type { AdapterRegistrationHandle, DirectoryRegistrationHandle, LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'
-import type {} from '@deepseek-ai/dsh-fs'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 import { PiAiAdapter } from './adapter.ts'
 import { authContextFrom, credentialStoreFrom } from './auth.ts'
@@ -219,11 +218,6 @@ export function apply(ctx: Context, config: Config): void {
     resolveApiKey,
     auth,
     resolveAttachments: () => ctx.get('attachments'),
-    resolveImageAccess: (attachments, ref) => resolveImageAttachmentAccess(
-      attachments,
-      hostPath => ctx.get('fs')?.processPathFromHostPath(hostPath),
-      ref,
-    ),
     onReplayDegrade: ({ provider, model, reason }) => {
       ctx.logger.warn(
         `llm-pi-ai: unusable replay state on assistant history for route "${provider}/${model}";`

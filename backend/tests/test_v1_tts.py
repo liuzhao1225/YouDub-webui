@@ -115,7 +115,15 @@ def test_model_inventory_requires_local_nonempty_asset_groups_only(context, monk
 
 def test_tts_preserves_source_and_translation_and_clones_each_corresponding_utterance(context, model_process):
     before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
-    result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
+    progress = []
+    prepared = tts.prepare_reference_audio(
+        context, Transcript.model_validate_json(before["transcript"]),
+        lambda value, message: progress.append((value, message, len(list((context.work_dir / "tts/references").glob("*.wav"))))),
+    )
+    assert [value for value, _, _ in progress] == [0, 1 / 3, 2 / 3, 1]
+    assert [count for _, _, count in progress] == [0, 1, 2, 3]
+    assert progress[-1][1] == "Prepared source reference 3/3"
+    result = tts.run(context, lambda *args: None, prepared_references=prepared)
     assert {name: context.input_files[name].read_bytes() for name in before} == before
     clips = model_process.clips
     assert [clip["segment_id"] for clip in clips] == ["one", "two", "three"]
@@ -158,8 +166,8 @@ def test_unknown_or_identical_speakers_still_use_each_utterances_own_audio_and_t
         assert np.array_equal(reference, source[segment["start_ms"] * rate // 1000:segment["end_ms"] * rate // 1000])
 
 
-@pytest.mark.parametrize("duration_ms", [1000, 10_000])
-def test_reference_uses_the_complete_corresponding_utterance_within_ten_seconds(context, model_process, duration_ms):
+@pytest.mark.parametrize("duration_ms", [1000, 10_000, 13_040])
+def test_reference_uses_the_complete_corresponding_utterance_without_word_timestamps(context, model_process, duration_ms):
     payload = json.loads(context.input_files["transcript"].read_text())
     payload["segments"][2].update(start_ms=2000, end_ms=2000 + duration_ms)
     context.input_files["transcript"].write_text(json.dumps(payload))
@@ -167,20 +175,6 @@ def test_reference_uses_the_complete_corresponding_utterance_within_ten_seconds(
     tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert sf.info(model_process.clips[2]["reference_path"]).duration == duration_ms / 1000
     assert model_process.clips[2]["reference_text"] == "Original A2"
-
-
-def test_long_utterance_without_word_timestamps_fails_without_reusing_another_utterance(context, model_process):
-    payload = json.loads(context.input_files["transcript"].read_text())
-    payload["segments"][1].update(start_ms=1000, end_ms=11_001, speaker_id="speaker-a")
-    payload["segments"][2].update(start_ms=11_001, end_ms=12_501)
-    context.input_files["transcript"].write_text(json.dumps(payload))
-    sf.write(context.input_files["vocals"], np.full(16000 * 13, 0.1), 16000, subtype="PCM_16")
-    with pytest.raises(ApiError) as error:
-        tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
-    assert error.value.content["error"]["code"] == "INVALID_MEDIA"
-    assert "complete" in error.value.content["error"]["message"]
-    assert not model_process.commands
-    assert not (context.work_dir / "tts").exists()
 
 
 @pytest.mark.parametrize("invalid", ["missing", "extra", "speaker-keys"])
@@ -220,7 +214,7 @@ def long_utterance_context(context):
     return context
 
 
-def test_long_utterance_is_one_tts_call_with_an_exact_timed_word_reference(long_utterance_context, model_process):
+def test_long_utterance_keeps_its_complete_reference_even_with_word_timestamps(long_utterance_context, model_process):
     context = long_utterance_context
     before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
     result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
@@ -229,43 +223,30 @@ def test_long_utterance_is_one_tts_call_with_an_exact_timed_word_reference(long_
     clip = model_process.clips[0]
     assert clip["segment_id"] == "whole"
     assert clip["text"] == "整句生成，连续表达，保留完整语气。"
-    assert clip["reference_text"] == " First, second, third, fourth, fifth,"
+    assert clip["reference_text"] == " First, second, third, fourth, fifth, sixth."
     reference, rate = sf.read(clip["reference_path"])
     source, _ = sf.read(context.input_files["vocals"])
-    assert len(reference) == 10 * rate
-    assert np.array_equal(reference, source[2 * rate:12 * rate])
+    assert len(reference) == 12 * rate
+    assert np.array_equal(reference, source[2 * rate:14 * rate])
     transcript = Transcript.model_validate_json(before["transcript"])
     assert [item.segment_id for item in read_speech_clips(result.output_files["speech_clips"], transcript).clips] == ["whole"]
 
 
-@pytest.mark.parametrize("invalid", ["missing-words", "word-text", "word-overlap"])
-def test_long_reference_requires_matching_complete_word_metadata(long_utterance_context, model_process, invalid):
+@pytest.mark.parametrize("invalid", ["word-text", "word-overlap"])
+def test_reference_rejects_inconsistent_word_metadata_when_present(long_utterance_context, model_process, invalid):
     from pydantic import ValidationError
     context = long_utterance_context
     raw = json.loads(context.input_files["transcript"].read_text())
     segment = raw["segments"][0]
-    if invalid == "missing-words":
-        segment.pop("words")
-    elif invalid == "word-text":
+    if invalid == "word-text":
         segment["words"][0]["text"] = " Unrelated,"
     else:
         segment["words"][1]["start_ms"] = 3000
     context.input_files["transcript"].write_text(json.dumps(raw))
-    with pytest.raises(ApiError if invalid == "missing-words" else ValidationError):
+    with pytest.raises(ValidationError):
         prepare_references(context)
     assert not model_process.commands
     assert not (context.work_dir / "tts").exists()
-
-
-def test_word_reference_preserves_a_zero_duration_closing_token(long_utterance_context, model_process):
-    context = long_utterance_context
-    raw = json.loads(context.input_files["transcript"].read_text())
-    raw["segments"][0]["words"][4]["text"] = " fifth"
-    raw["segments"][0]["words"].insert(5, {"start_ms": 12000, "end_ms": 12000, "text": ","})
-    context.input_files["transcript"].write_text(json.dumps(raw))
-    tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
-    assert model_process.clips[0]["reference_text"] == " First, second, third, fourth, fifth,"
-    assert sf.info(model_process.clips[0]["reference_path"]).duration == 10
 
 
 @pytest.mark.parametrize("invalid", ["preset", "missing-vocals", "wrong-target", "missing-translation-id"])

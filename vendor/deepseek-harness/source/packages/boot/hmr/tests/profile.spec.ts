@@ -30,7 +30,7 @@ async function fixture(beforeWatch?: (profile: ProfileContext) => void) {
   writeFileSync(join(dir, 'cordis.yml'), '[]\n')
   const profile: ProfileContext = {
     name: 'test', dir, patchPath: join(dir, 'cordis.patch.yml'), home, cwd: home,
-    installAnchor: join(home, 'package.json'), startedBundles: [], overlays: [], telemetryDisabledEnv: undefined,
+    installAnchor: join(home, 'package.json'), startedBundles: [], overlays: [],
   }
   const rows = [{ insert: [
     { id: 'timer', name: 'cordis:timer' },

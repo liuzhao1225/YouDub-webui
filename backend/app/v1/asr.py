@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from .audio import audio_info
 from .errors import ApiError
 from .segments import Transcript
 from .steps import Completed, StageContext
@@ -126,7 +127,8 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
             raise _invalid("Whisper returned an empty or invalid speech segment.")
         start_ms, end_ms = _milliseconds(raw.get("start")), _milliseconds(raw.get("end"))
         if end_ms <= start_ms or end_ms > duration_ms:
-            raise _invalid("Whisper returned a segment outside the source media timeline.")
+            raise _invalid(f"Whisper segment {start_ms}–{end_ms} ms is outside the "
+                           f"input audio timeline (0–{duration_ms} ms).")
         speaker = raw.get("speaker_id", raw.get("speaker"))
         if speaker is not None:
             if not isinstance(speaker, str) or not speaker.strip():
@@ -173,17 +175,12 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         raise ApiError(422, "UNSUPPORTED_LANGUAGE", "This Whisper checkpoint only supports English.",
                        field="source_language", stage="asr")
     audio = context.input_files.get("vocals", context.input_files.get("source_audio"))
-    info_path = context.input_files.get("media_info")
     if audio is None or not audio.is_file() or audio.stat().st_size == 0:
         raise ApiError(500, "INPUT_MISSING", "The ASR input audio is missing or empty.", stage="asr")
-    if info_path is None or not info_path.is_file():
-        raise ApiError(500, "INPUT_MISSING", "Source media metadata is missing.", stage="asr")
-    try:
-        duration_ms = json.loads(info_path.read_text(encoding="utf-8"))["duration_ms"]
-        if type(duration_ms) is not int or duration_ms <= 0:
-            raise ValueError("invalid duration")
-    except (ValueError, KeyError, TypeError) as exc:
-        raise ApiError(500, "INVALID_MEDIA", "Source media duration is invalid.", stage="asr") from exc
+    # Whisper timestamps belong to the selected WAV, whose tail can extend
+    # beyond the video stream because the audio and video end independently.
+    info = audio_info(audio, stage="asr")
+    duration_ms = round(info.frames * 1000 / info.samplerate)
 
     context.work_dir.mkdir(parents=True, exist_ok=True)
     raw_path = context.work_dir / "asr_raw.json"

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { SessionId } from '@deepseek-ai/dsh-session'
 import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type {
-  JobEvent, JobEventFilter, JobEventListener, JobHooks, JobOutputSource, JobOutputRead, JobRead, JobSpec, JobView,
+  JobEvent, JobEventListener, JobHooks, JobOutputSource, JobOutputRead, JobRead, JobSpec, JobView,
 } from '@deepseek-ai/dsh-jobs'
 
 /** Compile-time probe: does `Shape` carry a `Key` member? */
@@ -11,27 +10,25 @@ type HasKey<Shape, Key extends string> = Key extends keyof Shape ? true : false
 
 /**
  * Minimal concrete registry: one canned row. The Service Definition owns the
- * contract only (ids, caller-scoped operations, the event stream); the registry
+ * contract only (ids, operations, the event stream); the registry
  * behavior suite lives with `@deepseek-ai/dsh-jobs-local`.
  */
 class StubJobRegistry extends JobRegistry {
-  readonly subscriptions: { filter: JobEventFilter; listener: JobEventListener }[] = []
+  readonly subscriptions: JobEventListener[] = []
   readonly started: JobSpec[] = []
 
   readonly events = {
-    subscribe: (filter: JobEventFilter, listener: JobEventListener): (() => void) => {
-      const entry = { filter, listener }
-      this.subscriptions.push(entry)
-      return () => { this.subscriptions.splice(this.subscriptions.indexOf(entry), 1) }
+    subscribe: (listener: JobEventListener): (() => void) => {
+      this.subscriptions.push(listener)
+      return () => { this.subscriptions.splice(this.subscriptions.indexOf(listener), 1) }
     },
   }
 
-  private view(id: JobId, owner: SessionId | undefined): JobView {
+  private view(id: JobId): JobView {
     return {
       id,
       kind: 'bash',
       label: 'sleep 60',
-      ...owner !== undefined ? { owner } : {},
       status: 'running',
       startedAt: 0,
       output: { total: 0, earliest: 0 },
@@ -45,16 +42,16 @@ class StubJobRegistry extends JobRegistry {
     return id
   }
 
-  list(caller?: SessionId): JobView[] {
-    return [this.view(JobId('bash-1'), caller)]
+  list(): JobView[] {
+    return [this.view(JobId('bash-1'))]
   }
 
-  get(id: JobId, caller?: SessionId): JobView {
-    return this.view(id, caller)
+  get(id: JobId): JobView {
+    return this.view(id)
   }
 
-  read(id: JobId, caller?: SessionId): JobRead {
-    return { chunks: [], lossy: false, job: this.view(id, caller) }
+  read(id: JobId): JobRead {
+    return { chunks: [], lossy: false, job: this.view(id) }
   }
 
   readAt(_id: JobId, from: number): JobOutputRead {
@@ -65,11 +62,11 @@ class StubJobRegistry extends JobRegistry {
     return 'requested'
   }
 
-  wait(id: JobId, _timeoutMs: number, caller?: SessionId): Promise<JobView> {
-    return Promise.resolve(this.view(id, caller))
+  wait(id: JobId, _timeoutMs: number): Promise<JobView> {
+    return Promise.resolve(this.view(id))
   }
 
-  remove(_id: JobId, _caller?: SessionId): void {}
+  remove(_id: JobId): void {}
 
   attachController(_name: string): () => void {
     return () => {}
@@ -80,26 +77,22 @@ describe('JobRegistry seam', () => {
   it('a concrete subclass registers as ctx.jobs and serves the abstract API', async () => {
     const ctx = new Context()
     await ctx.plugin(StubJobRegistry)
-    const caller = SessionId('session-1')
     const hooks: JobHooks = { cancel() {}, done: new Promise(() => {}) }
 
     const detachController = ctx.jobs.attachController('seam-test')
-    const id = ctx.jobs.start({ kind: 'bash', label: 'sleep 60', owner: caller, run: () => hooks })
+    const id = ctx.jobs.start({ kind: 'bash', label: 'sleep 60', run: () => hooks })
     expect(id).toBe('bash-1')
 
     const jobs = ctx.jobs
-    expect(jobs.list(caller)).toHaveLength(1)
-    expect(jobs.get(id, caller).status).toBe('running')
-    expect(jobs.get(id, caller).owner).toBe(caller)
-    expect(jobs.read(id, caller)).toMatchObject({ chunks: [], lossy: false, job: { id } })
-    expect(jobs.readAt(id, 7, caller)).toEqual({ chunks: [], next: 7, lossy: false })
-    expect(jobs.kill(id, caller, 'seam test')).toBe('requested')
-    await expect(jobs.wait(id, 5, caller)).resolves.toMatchObject({ id })
-    // Omission selects unowned jobs.
-    expect(ctx.jobs.get(id).owner).toBeUndefined()
+    expect(jobs.list()).toHaveLength(1)
+    expect(jobs.get(id).status).toBe('running')
+    expect(jobs.read(id)).toMatchObject({ chunks: [], lossy: false, job: { id } })
+    expect(jobs.readAt(id, 7)).toEqual({ chunks: [], next: 7, lossy: false })
+    expect(jobs.kill(id, 'seam test')).toBe('requested')
+    await expect(jobs.wait(id, 5)).resolves.toMatchObject({ id })
 
     const events: JobEvent[] = []
-    const unsubscribe = ctx.jobs.events.subscribe({ owners: 'all' }, (event) => { events.push(event) })
+    const unsubscribe = ctx.jobs.events.subscribe((event) => { events.push(event) })
     unsubscribe()
     detachController()
   })

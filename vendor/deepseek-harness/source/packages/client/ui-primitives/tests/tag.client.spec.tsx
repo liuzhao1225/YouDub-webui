@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'react'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { TagTone } from '@deepseek-ai/dsh-client-ui-primitives'
 
 afterEach(cleanup)
 
@@ -35,7 +35,7 @@ describe('Tag', () => {
   })
 
   it('rejects unknown tones at the type level', () => {
-    const bad = (tone: TagTone) => tone
+    const bad = (tone: NonNullable<ComponentProps<typeof Tag>['tone']>) => tone
     // @ts-expect-error 'muted' is not one of the eight tones
     expect(bad('muted')).toBe('muted')
   })

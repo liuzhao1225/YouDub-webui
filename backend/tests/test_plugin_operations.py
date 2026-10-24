@@ -17,8 +17,7 @@ import numpy as np
 import pytest
 import soundfile as sf
 
-from backend.app.v1 import asr, tts
-from backend.app.v1.segments import Transcript
+from backend.app.v1 import tts
 from backend.workers.operations import Operation
 from backend.workers.protocol import VERSION, WorkerError
 
@@ -41,14 +40,27 @@ def invoke(root, name, inputs, config=None, binding=None):
                       "binding": binding or {}}, Wire())
 
 
-def test_standard_word_timing_supports_reference_without_provider_raw_file():
-    words = [{"word": f" word{i}", "start": i * 2, "end": i * 2 + 2} for i in range(7)]
-    raw = {"language": "en", "segments": [{"start": 0, "end": 14, "text": "".join(w["word"] for w in words), "words": words}]}
-    normalized = asr.normalize_result(raw, duration_ms=14000)
-    assert normalized["segments"][0]["words"][1] == {"text": " word1", "start_ms": 2000, "end_ms": 4000}
-    reference = tts._word_reference(Transcript.model_validate(normalized).segments[0])
-    assert reference.end_ms - reference.start_ms <= 10000
-    assert reference.text == " word0 word1 word2 word3 word4"
+def test_imported_long_subtitle_prepares_its_complete_reference_without_asr_words(tmp_path):
+    source, translated = tmp_path / "source.srt", tmp_path / "translated.srt"
+    source.write_text("1\n00:00:01,000 --> 00:00:14,040\nA complete imported source sentence.\n")
+    translated.write_text("1\n00:00:01,000 --> 00:00:14,040\n完整的译文。\n")
+    imported = invoke(tmp_path, "subtitles.import/v1", {
+        "sourceSubtitles": {"path": str(source)}, "translatedSubtitles": {"path": str(translated)},
+    }).execute()["outputs"]
+    transcript = imported["transcript"]
+    segment = transcript["segments"][0]
+    assert not segment.get("words")
+    audio = tmp_path / "vocals.wav"
+    sf.write(audio, np.full(16000 * 15, .1), 16000, subtype="PCM_16")
+    operation = invoke(tmp_path, "voice.reference/v1", {"transcript": transcript, "audio": {"path": str(audio)}})
+    result = operation.execute()
+    reference, = result["outputs"]["references"]
+    assert reference["segmentId"] == segment["id"]
+    assert reference["transcript"] == segment["text"] == "A complete imported source sentence."
+    artifact = result["artifacts"][reference["audio"]["$artifact"]]
+    assert sf.info(operation.work / artifact["path"]).duration == 13.04
+    assert artifact["metadata"]["sampleCount"] == 208640
+    assert imported["translation"]["segments"][0]["text"] == "完整的译文。"
 
 
 def test_reference_worker_and_tts_bridge_preserve_each_utterance_id(tmp_path, monkeypatch):

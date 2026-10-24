@@ -16,15 +16,6 @@
     },
     {
       "path": "../../util/brand"
-    },
-    {
-      "path": "../../core/agent"
-    },
-    {
-      "path": "../../core/session"
-    },
-    {
-      "path": "../../workspace/workspace"
     }
   ]
 }

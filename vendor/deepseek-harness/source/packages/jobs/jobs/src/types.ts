@@ -5,65 +5,11 @@
  * @module @deepseek-ai/dsh-jobs/types
  */
 
-import type { SessionEventMap, SessionId } from '@deepseek-ai/dsh-session'
 import type { JobId } from './brand.ts'
 import type { JobChannel, JobChunk, JobKind, JobView } from './view.ts'
 
 export { JobId } from './brand.ts'
 export type { JobChannel, JobChunk, JobKind, JobKindMap, JobStatus, JobView } from './view.ts'
-
-/** Tool dispatch that created a job; nested calls retain their root invocation. */
-export interface JobToolCall {
-  /** Exact invocation, including a PTC sub-call when applicable. */
-  readonly callId: SessionEventMap['tool/call']['callId']
-  /** Root model-requested invocation owning this execution. */
-  readonly rootCallId: SessionEventMap['tool/call']['callId']
-}
-
-/** Durable identity and registration time of one owned job execution. */
-export interface JobRegisteredData {
-  /** Unique execution id accepted by job controls and retained in Session history. */
-  readonly jobId: JobId
-  /** Original owner; copied history does not transfer execution ownership. */
-  readonly owner: SessionId
-  /** Producer kind. */
-  readonly kind: string
-  /** Producer-supplied label. */
-  readonly label: string
-  /** Unix epoch milliseconds when registration committed. */
-  readonly startedAt: number
-  /** Creating tool invocation, when the producer was called through a tool. */
-  readonly toolCall?: JobToolCall
-}
-
-/** Registry settlement, including whether the producer reported a terminal outcome. */
-export interface JobSettledData extends JobRegisteredData {
-  /** Unix epoch milliseconds when the registry committed the terminal record. */
-  readonly finishedAt: number
-  /** Recorded terminal outcome. */
-  readonly status: JobOutcome['status']
-  /** Source of the termination request, or producer completion. */
-  readonly cause: JobSettleCause
-  /** True when done fulfilled; false for rejection or forced failure. Does not certify resource release. */
-  readonly producerReported: boolean
-  /** Terminal reason, including a recorded kill reason when applicable. */
-  readonly detail?: string
-}
-
-declare module '@deepseek-ai/dsh-session/types' {
-  interface SessionEventMap {
-    /**
-     * Log-only job registration; model output collection is not required.
-     * @param data - Execution identity, original owner, registration time, and creating tool call.
-     */
-    'job/registered': JobRegisteredData
-    /**
-     * Log-only terminal record, paired by the same unique jobId used for live control.
-     * @param data - Registration facts plus settlement time, outcome, and producer acknowledgement.
-     */
-    'job/settled': JobSettledData
-  }
-}
 
 /** Terminal result supplied by a producer through {@link JobHooks.done}. */
 export interface JobOutcome {
@@ -77,8 +23,8 @@ export interface JobOutcome {
   detail?: string
   /**
    * Return value for jobs whose result is a value rather than a stream (a
-   * workflow's rendered result, a subagent's report). The output ring carries
-   * the stream; this is handed out once by the model's next {@link JobRegistry.read}.
+   * workflow's rendered result, an exported artifact). The output ring carries
+   * the stream; this is handed out once by the next {@link JobRegistry.read}.
    */
   result?: string
 }
@@ -172,30 +118,15 @@ export interface JobHooks {
 
 /**
  * Producer declaration passed to {@link JobRegistry.start}. The runtime
- * preflights access and cleanup before invoking {@link run}; the producer owns
+ * preflights validation and controller availability before invoking {@link run}; the producer owns
  * execution resources while the runtime owns identity, lifecycle state, and
  * the output ring.
  */
 export interface JobSpec {
   /** Producer kind — also the id prefix (`bash`, …). */
   kind: JobKind
-  /** One-line model-facing label (the command; the delegation description). */
+  /** One-line label describing the operation. */
   label: string
-  /**
-   * Owning session. Access is fenced by it, and the owner's live Agent must be
-   * the one currently registered under that id: its disposal cancels and
-   * awaits the job. Omitting the owner creates an unowned job, open to any
-   * caller until service disposal.
-   */
-  owner?: SessionId
-  /** Creating tool invocation, retained in the durable lifecycle records. */
-  toolCall?: JobToolCall
-  /**
-   * Optional UTF-8 byte cap for each complete model-facing completion notice or
-   * output read, including controller status metadata. Independent of ring
-   * retention: it bounds the consuming model surface, never observers.
-   */
-  outputLimitBytes?: number
   /**
    * Pull sources the registry pumps into the ring at its own cadence.
    * Producers that narrate their own progress use {@link JobHandle.append}
@@ -214,7 +145,7 @@ export interface JobSpec {
 
 /** Output and post-read state returned by the consuming {@link JobRegistry.read}. */
 export interface JobRead {
-  /** Ring chunks appended since the model cursor, in offset order; every channel included. */
+  /** Ring chunks appended since the consuming cursor, in offset order; every channel included. */
   chunks: readonly JobChunk[]
   /** True when the cursor fell below the oldest retained byte, so bytes are missing before `chunks`. */
   lossy: boolean
@@ -241,8 +172,8 @@ export interface JobOutputRead {
 
 /**
  * Why a job settled: its producer finished (`producer`), a
- * {@link JobRegistry.kill} ran first (`kill`), or owner or service teardown
- * cancelled it (`teardown`) — a settlement whose owner has no reader left.
+ * {@link JobRegistry.kill} ran first (`kill`), or service teardown
+ * cancelled it (`teardown`).
  */
 export type JobSettleCause = 'producer' | 'kill' | 'teardown'
 
@@ -274,22 +205,9 @@ export type JobEvent =
   | {
     readonly type: 'output'
     readonly id: JobId
-    /** Owning session, absent for an unowned job. */
-    readonly owner?: SessionId
     /** The ring's total after the append (or at settlement, which ends the stream). */
     readonly total: number
   }
-
-/**
- * Who a subscription hears about. `{ owner }` delivers that session's jobs
- * plus every unowned job (the set that session can see). `{ owners: 'scope' }`
- * delivers the owners composed under the subscribing context — one registry
- * serves every composition in the process, and a mount under one preset must
- * not hear another preset's agents. `{ owners: 'all' }` delivers everything.
- */
-export type JobEventFilter =
-  | { readonly owner: SessionId }
-  | { readonly owners: 'all' | 'scope' }
 
 /** Event callback; contained by the registry, never awaited. */
 export type JobEventListener = (event: JobEvent) => void
@@ -301,9 +219,8 @@ export interface JobEvents {
    * after the commit they announce; a job's first event is `registered`, and
    * a `settled` event follows the release of every waiter. No listener runs
    * after service disposal.
-   * @param filter - which owners' events to deliver.
    * @param listener - receives each matching event.
    * @returns disposer that unregisters the listener.
    */
-  subscribe(filter: JobEventFilter, listener: JobEventListener): () => void
+  subscribe(listener: JobEventListener): () => void
 }

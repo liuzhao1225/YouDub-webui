@@ -3,7 +3,6 @@
  * @module @deepseek-ai/dsh-api-gateway/types
  */
 
-import type { Context } from '@deepseek-ai/cordis'
 import type { PeerScope, RemoteUplinkWindow, TypertResourceReader } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteEventHostInfo } from './stream-protocol.ts'
 
@@ -42,51 +41,16 @@ export interface TypertRemoteEventFrame {
   readonly resources?: Readonly<Record<string, TypertResourceReader>>
 }
 
-/** Live Host values used to project one scoped Remote Event. */
-export interface TypertRemoteEventContext {
-  /** Live Agent Context that owns cancellation of the forwarded waterfall. */
-  readonly value: Context
-  /** Agent object carried directly by the waterfall request. */
-  readonly subject: object
-  /** Agent identity read directly from the scoped event subject. */
-  readonly agentId: string
-}
-
-/** Result returned from a Client waterfall, or delegation back to the Host chain. */
-export type TypertRemoteEventOutcome =
-  | { readonly kind: 'result'; readonly value: unknown }
-  | { readonly kind: 'next' }
-
-/**
- * One scoped waterfall invocation yielded by the application event source.
- * The Gateway alone assigns transport ids and resolves the continuation after
- * a Client result or explicit delegation.
- */
-export interface TypertRemoteEventInvocation {
-  /** Original Host Cordis event name. */
-  readonly event: string
-  /** Sole request argument before the waterfall's `next()` callback. */
-  readonly request: object
-  readonly context: TypertRemoteEventContext
-  /** Resume the source's Cordis listener with a Client result or `next()`. */
-  readonly resolve: (outcome: TypertRemoteEventOutcome) => void
-  /** Reject the source's Cordis listener after cancellation, transport failure, or Client rejection. */
-  readonly reject: (reason: unknown) => void
-}
-
-/** Notification or scoped waterfall accepted from the sole Remote Event source. */
-export type TypertRemoteEventDispatch = TypertRemoteEventFrame | TypertRemoteEventInvocation
-
 /**
  * Open the application-selected event stream for one Client carrier. The
  * factory must attach all incremental Host listeners before it returns; the
  * Gateway publishes its readiness item immediately afterward.
  * @param signal - cancellation shared with the Client stream and registration.
- * @returns the long-lived stream of notifications and scoped waterfall invocations.
+ * @returns the long-lived stream of notifications.
  */
 export type TypertRemoteEventSource = (
   signal: AbortSignal,
-) => AsyncIterable<TypertRemoteEventDispatch>
+) => AsyncIterable<TypertRemoteEventFrame>
 
 /** Carrier-facing access to decoded Remote streams and their stable failures. */
 export interface TypertGatewayWireStream {
@@ -148,12 +112,6 @@ export type TypertGatewayErrorCode =
 export interface TypertGateway {
   /** Carrier adapter shared by WebSocket and in-process transports. */
   readonly wireStream: TypertGatewayWireStream
-
-  /**
-   * Check for an active owner Client event stream, the only kind that can answer forwarded waterfalls.
-   * @returns whether an owner stream is open and has not been cancelled.
-   */
-  hasLiveClient(): boolean
 
   /**
    * Register the application-selected forwarded-event source.

@@ -78,7 +78,7 @@ export const validateMediaCorrection: NonNullable<OperationProvider['validateCor
     for (let index = 0; index < after.segments.length; index++) {
       const original = before.segments[index], segment = after.segments[index]
       if (segment.id !== original.id) fail('Segment IDs and order must stay unchanged.')
-      if (segment.start_ms < lastEnd || segment.start_ms >= segment.end_ms || segment.end_ms > inputs.mediaInfo.duration_ms) fail(`Invalid timing for segment ${segment.id}.`)
+      if (segment.start_ms < lastEnd || segment.start_ms >= segment.end_ms) fail(`Invalid timing for segment ${segment.id}.`)
       if (segment.speaker_id !== original.speaker_id) fail('Speaker identity must stay unchanged.')
       if (segment.text !== original.text || segment.start_ms !== original.start_ms || segment.end_ms !== original.end_ms) segment.words = null
       else if (!isDeepStrictEqual(segment.words, original.words)) fail('Word timings cannot be edited separately.')

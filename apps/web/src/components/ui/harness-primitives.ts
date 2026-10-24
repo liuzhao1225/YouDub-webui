@@ -1,6 +1,7 @@
 /** Tests load the retained Harness source; Desktop resolves this entry to its shared runtime module. */
 export { Button } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Button'
 export { Input } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Input'
+export { Textarea } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Textarea'
 export { Menu } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Menu'
 export { Modal } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Modal'
 export type { MenuItem } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Menu'

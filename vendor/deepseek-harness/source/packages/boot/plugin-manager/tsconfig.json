@@ -27,13 +27,7 @@
       "path": "../../util/atomic-write"
     },
     {
-      "path": "../../core/agent"
-    },
-    {
       "path": "../../host/plugin-inventory"
-    },
-    {
-      "path": "../../llm/llm"
     },
     {
       "path": "../../subprocess/subprocess"
@@ -52,9 +46,6 @@
     },
     {
       "path": "../../util/brand"
-    },
-    {
-      "path": "../../sandbox/sandbox"
     }
   ]
 }

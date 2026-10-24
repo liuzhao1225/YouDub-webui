@@ -94,7 +94,7 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 | --- | --- | --- | --- |
 | Button / buttonVariants | Button | md36px /12px角；sm28px /8px角；水平14/10px；disabled40% | primary/outline/ghost/toolbar；布局可调整宽度，颜色仅语义变体 |
 | Input | Input | 高32px，横8px，gap6px，12px角，0.5px边线 | URL/搜索/密码/数字共用；icon槽16px；禁用/无效状态保留 |
-| Textarea | InlineEditor样式 | 最小28px，3px 8px内距，8px角，0.5px边线 | 保留显式保存、换行和表单语义；不引入聊天编辑器Enter提交行为 |
+| Textarea | [共享 Textarea](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Textarea.tsx)，复用 InlineEditor 样式 | 最小28px，3px 8px内距，8px角，0.5px边线 | Web 和外部插件共用；样式随组件加载，不依赖业务 Tailwind；保留显式保存、换行和表单语义 |
 | NativeSelect / Select | 桌面Button+Menu，Web同源外观适配 | 触发器36px/12px角；菜单16px角 | 单选；当前项有勾选；关闭后焦点可回到触发器 |
 | Choice | Checkbox | 原生16px复选框，标签gap6px，disabled50% | 受控布尔值；可见或可访问标签必填 |
 | Switch | Switch | 36×20px，thumb16px，padding2px，位移16px | 即时二选一；不是执行按钮；checked与aria-checked一致 |
@@ -167,6 +167,7 @@ Logo 保留红 `#FF0033`、粉 `#FB7299`、蓝 `#00AEEC` 和字标渐变。工�
 - [Button](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Button.module.css)
 - [Input](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Input.module.css)
 - [InlineEditor](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/InlineEditor.module.css)
+- [Textarea](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Textarea.tsx)
 - [Switch](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Switch.module.css)
 - [Checkbox](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Checkbox.module.css)
 - [SegmentedTabs](../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/SegmentedTabs.module.css)

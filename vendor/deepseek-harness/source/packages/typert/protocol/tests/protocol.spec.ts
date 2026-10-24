@@ -23,13 +23,6 @@ interface MetaFixtureSubject {
   readonly subjectId: string
 }
 
-interface MetaFixtureRequest {
-  readonly agent: MetaFixtureSubject
-  readonly signal?: AbortSignal
-  readonly nested: readonly [{ readonly owner?: MetaFixtureSubject }]
-  readonly transform: (subject: MetaFixtureSubject) => Promise<MetaFixtureSubject | undefined>
-}
-
 declare module '@deepseek-ai/cordis' {
   interface Events {
     /**
@@ -42,17 +35,6 @@ declare module '@deepseek-ai/cordis' {
      * @param value - marker payload.
      */
     'meta-fixture/scoped'(this: Context, value: string): void
-    /**
-     * Test-only scoped waterfall whose result can make the return trip.
-     * @param value - marker payload.
-     * @param next - delegates to the next listener.
-     * @returns the claimed or delegated value.
-     */
-    'meta-fixture/waterfall'(
-      this: Context,
-      request: MetaFixtureRequest,
-      next: () => Promise<string>,
-    ): Promise<string>
     /**
      * Test-only answered event, whose result no one-way delivery can return.
      * @param value - marker payload.
@@ -78,7 +60,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 
   interface TypertRemoteEventSelection extends
-    Record<'meta-fixture/forwardable' | 'meta-fixture/waterfall' | 'meta-fixture/absent', true> {}
+    Record<'meta-fixture/forwardable' | 'meta-fixture/absent', true> {}
 }
 
 describe('typert-protocol Remote declarations', () => {
@@ -132,7 +114,7 @@ describe('typert-protocol Remote declarations', () => {
     const output = execFileSync(process.execPath, ['--import', 'tsx/esm', fixture], { encoding: 'utf8' })
     expect(JSON.parse(output)).toEqual([
       { method: 'create', invocation: { kind: 'direct' } },
-      { method: 'scoped', invocation: { kind: 'context', context: 'agent' } },
+      { method: 'scoped', invocation: { kind: 'context', context: 'metaFixture' } },
     ])
   })
 
@@ -424,23 +406,17 @@ describe('typert-protocol Remote declarations', () => {
     expect(() => bindTypertRemote({}, 'goals', { namespace: 'api goals' })).toThrow('namespace')
   })
 
-  it('admits notifications and same-result scoped waterfalls selected from Cordis Events', () => {
+  it('admits unscoped notifications selected from Cordis Events', () => {
     expectTypeOf<'meta-fixture/forwardable'>().toExtend<TypertForwardableEvent>()
-    expectTypeOf<'meta-fixture/waterfall'>().toExtend<TypertForwardableEvent>()
     expectTypeOf<'meta-fixture/scoped'>().not.toExtend<TypertForwardableEvent>()
     expectTypeOf<'meta-fixture/answered'>().not.toExtend<TypertForwardableEvent>()
 
     expectTypeOf<'meta-fixture/forwardable'>().toExtend<TypertRemoteEvent>()
-    expectTypeOf<'meta-fixture/waterfall'>().toExtend<TypertRemoteEvent>()
     expectTypeOf<'meta-fixture/scoped'>().not.toExtend<TypertRemoteEvent>()
     expectTypeOf<'meta-fixture/absent'>().not.toExtend<TypertRemoteEvent>()
 
     expectTypeOf<{ event: 'meta-fixture/forwardable'; mode: 'emit' }>()
       .toExtend<TypertForwardableEventEntry>()
-    expectTypeOf<{ event: 'meta-fixture/waterfall'; mode: 'waterfall' }>()
-      .toExtend<TypertForwardableEventEntry>()
-    expectTypeOf<{ event: 'meta-fixture/waterfall'; mode: 'emit' }>()
-      .not.toExtend<TypertForwardableEventEntry>()
   })
 
   it('types the resource readers of an emit entry by its own event parameters', () => {
@@ -450,7 +426,6 @@ describe('typert-protocol Remote declarations', () => {
         mode: 'emit',
         resources: { 'meta-fixture-id': (value) => { expectTypeOf(value).toEqualTypeOf<string>(); return value } },
       },
-      { event: 'meta-fixture/waterfall', mode: 'waterfall' },
     ] as const satisfies readonly TypertForwardableEventEntry[]
     const wrong = [{
       event: 'meta-fixture/forwardable',
@@ -462,20 +437,7 @@ describe('typert-protocol Remote declarations', () => {
     expect(wrong).toHaveLength(1)
   })
 
-  it('derives Client Context arguments from the selected Cordis waterfall declaration', () => {
-    type ExpectedListener = (
-      this: Context,
-      request: {
-        readonly agent: Context
-        readonly signal?: AbortSignal
-        readonly nested: readonly [{ readonly owner?: MetaFixtureSubject }]
-        readonly transform: (subject: MetaFixtureSubject) => Promise<MetaFixtureSubject | undefined>
-      },
-      next: () => Promise<string>,
-    ) => Promise<string>
-
-    expectTypeOf<TypertClientEventListener<'meta-fixture/waterfall'>>()
-      .toEqualTypeOf<ExpectedListener>()
+  it('preserves Client listener arguments from the selected Cordis notification declaration', () => {
     expectTypeOf<TypertClientEventListener<'meta-fixture/forwardable'>>()
       .toEqualTypeOf<(value: string) => void>()
   })

@@ -3,8 +3,8 @@
  * document — `html { color-scheme }` for native UA chrome (scrollbars, form
  * controls), `body[data-ds-dark-theme]` for the token palette, the active
  * theme's alias-token overrides as inline CSS variables on body, the content
- * font-size axis (`--dsh-content-font-size`), the code and terminal sizes
- * (`--dsh-code-font-size`, `--dsh-terminal-font-size`), the user font lists
+ * font-size axis (`--dsh-content-font-size`), the code size
+ * (`--dsh-code-font-size`), the user font lists
  * (`--dsh-font-family-<role>`), `html[data-ds-theme-source]`
  * for native-chrome mirroring, and one presenter-owned
  * `meta[name="theme-color"]` for surrounding browser UI. Pure DOM writes, no
@@ -34,14 +34,12 @@ export const CONTENT_FONT_SIZE_VARIABLE = '--dsh-content-font-size'
 const FONT_SIZE_VARIABLES = {
   text: CONTENT_FONT_SIZE_VARIABLE,
   code: '--dsh-code-font-size',
-  terminal: '--dsh-terminal-font-size',
 } as const satisfies Record<FontRole, string>
 
 /** Body variables carrying the user's normalized font lists; absent selects the built-in stack. */
 const FONT_FAMILY_VARIABLES = {
   text: '--dsh-font-family-text',
   code: '--dsh-font-family-code',
-  terminal: '--dsh-font-family-terminal',
 } as const satisfies Record<FontRole, string>
 
 /** Applies theme snapshots to the document; one instance per plugin fiber. */

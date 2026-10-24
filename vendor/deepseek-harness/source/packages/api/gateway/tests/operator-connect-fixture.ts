@@ -1,7 +1,7 @@
-/** Loader-mounted Remote methods and interactions for authenticated transport tests. */
+/** Loader-mounted Remote methods and events for authenticated transport tests. */
 import { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService, type PeerScope } from '@deepseek-ai/dsh-typert-protocol'
-import type { TypertRemoteEventDispatch, TypertRemoteEventOutcome } from '@deepseek-ai/dsh-api-gateway'
+import type { TypertRemoteEventFrame } from '@deepseek-ai/dsh-api-gateway'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-typert-registry'
 
@@ -25,7 +25,7 @@ export default class OperatorConnectFixture extends TypertRemoteService {
   readonly holds = new Map<string, () => void>()
   readonly streamCleanup = Promise.withResolvers<undefined>()
   delayStreamCleanup = false
-  private readonly dispatches: TypertRemoteEventDispatch[] = []
+  private readonly dispatches: TypertRemoteEventFrame[] = []
   private wake: (() => void) | undefined
 
   constructor(ctx: Context) {
@@ -75,23 +75,11 @@ export default class OperatorConnectFixture extends TypertRemoteService {
     }
   }
 
-  /**
-   * Enqueue an interaction without introducing Agent or model dependencies.
-   * @param label - prompt observed by the answering Client.
-   * @returns producer settlement, left pending while no Client answers.
-   */
-  pending(label: string): Promise<TypertRemoteEventOutcome> {
-    const settled = Promise.withResolvers<TypertRemoteEventOutcome>()
-    void settled.promise.catch(() => {})
-    const subject = { ctx: this.ctx }
-    this.dispatches.push({
-      event: 'fixture/approval', request: { agent: subject, prompt: label },
-      context: { value: this.ctx, subject, agentId: `agent-${label}` },
-      resolve: settled.resolve, reject: settled.reject,
-    })
+  /** Publish a Host notification through the real event transport. */
+  notify(label: string): void {
+    this.dispatches.push({ event: 'fixture/notice', args: [label] })
     this.wake?.()
     this.wake = undefined
-    return settled.promise
   }
 
   private observe(label: string, signal: AbortSignal): CallObservation {
@@ -106,7 +94,7 @@ export default class OperatorConnectFixture extends TypertRemoteService {
     return call
   }
 
-  private async *events(signal: AbortSignal): AsyncIterable<TypertRemoteEventDispatch> {
+  private async *events(signal: AbortSignal): AsyncIterable<TypertRemoteEventFrame> {
     const wake = (): void => { this.wake?.(); this.wake = undefined }
     signal.addEventListener('abort', wake, { once: true })
     try {

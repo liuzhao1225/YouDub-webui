@@ -79,10 +79,8 @@ def _read_json(context: StageContext, name: str) -> dict[str, Any]:
     return result
 
 
-def _subtitle_rows(transcript: Transcript, translation: Translation, duration_ms: int) -> list[tuple[Segment, str]]:
+def _subtitle_rows(transcript: Transcript, translation: Translation) -> list[tuple[Segment, str]]:
     translations = translation.match(transcript)
-    if any(item.end_ms > duration_ms for item in transcript.segments):
-        raise _invalid("Transcript timestamps extend beyond the source video.")
     return [(item, translations[item.id]) for item in transcript.segments]
 
 
@@ -232,7 +230,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None], *,
     for key in ("duration_ms", "width", "height"):
         if type(info.get(key)) is not int or info[key] <= 0:
             raise _invalid(f"Source media {key} is invalid.")
-    rows = _subtitle_rows(transcript, translation, info["duration_ms"])
+    rows = _subtitle_rows(transcript, translation)
     output = output_dir
     output.mkdir(parents=True, exist_ok=True)
     source_srt, translated_srt = output / "source.srt", output / "translated.srt"

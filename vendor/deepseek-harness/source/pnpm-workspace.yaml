@@ -40,8 +40,6 @@ allowBuilds:
   # install script only selects its bundled 7-Zip executable. Desktop ships
   # Windows through NSIS, so that mutation is not part of our build.
   electron-winstaller: false
-  # Store-index rewriting only needs msgpackr's portable JavaScript codec.
-  msgpackr-extract: false
 
 minimumReleaseAgeExclude:
   # Office engines and their API are qualified and released together by the kit repository.

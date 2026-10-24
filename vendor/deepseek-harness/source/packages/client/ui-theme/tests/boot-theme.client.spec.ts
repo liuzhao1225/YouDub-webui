@@ -22,8 +22,8 @@ afterEach(() => {
   vi.unstubAllGlobals()
   delete document.documentElement.dataset.dsThemeSource
   document.body.removeAttribute(DARK_ATTRIBUTE)
-  for (const name of ['--dsh-content-font-size', '--dsh-code-font-size', '--dsh-terminal-font-size']) document.body.style.removeProperty(name)
-  for (const kind of ['text', 'code', 'terminal']) document.body.style.removeProperty(`--dsh-font-family-${kind}`)
+  for (const name of ['--dsh-content-font-size', '--dsh-code-font-size']) document.body.style.removeProperty(name)
+  for (const kind of ['text', 'code']) document.body.style.removeProperty(`--dsh-font-family-${kind}`)
 })
 
 describe('theme bootstrap row', () => {
@@ -78,24 +78,21 @@ describe('theme bootstrap row', () => {
 
   it('writes the durable font sizes and their defaults', () => {
     mockSystemDark(false)
-    executeBootstrap('light', { text: 22, code: 15, terminal: 18 })
+    executeBootstrap('light', { text: 22, code: 15 })
     expect(document.body.style.getPropertyValue('--dsh-content-font-size')).toBe('22px')
     expect(document.body.style.getPropertyValue('--dsh-code-font-size')).toBe('15px')
-    expect(document.body.style.getPropertyValue('--dsh-terminal-font-size')).toBe('18px')
     executeBootstrap('light')
     expect(document.body.style.getPropertyValue('--dsh-content-font-size')).toBe('14px')
     expect(document.body.style.getPropertyValue('--dsh-code-font-size')).toBe('11px')
-    expect(document.body.style.getPropertyValue('--dsh-terminal-font-size')).toBe('13px')
   })
 
   it('writes normalized durable font lists and leaves empty lists unset', () => {
     mockSystemDark(false)
-    const [, body] = bootThemeInjections('light', undefined, { text: 'Inter', code: '', terminal: 'MesloLGS NF</script>, monospace' })
+    const [, body] = bootThemeInjections('light', undefined, { text: 'Inter</script>, sans-serif', code: '' })
     if (body?.kind !== 'script') throw new Error('theme body bootstrap row is not a script')
     expect(body.text).not.toContain('<')
     runInNewContext(body.text, { document, matchMedia: globalThis.matchMedia })
-    expect(document.body.style.getPropertyValue('--dsh-font-family-text')).toBe('"Inter"')
+    expect(document.body.style.getPropertyValue('--dsh-font-family-text')).toBe('"Inter/script", sans-serif')
     expect(document.body.style.getPropertyValue('--dsh-font-family-code')).toBe('')
-    expect(document.body.style.getPropertyValue('--dsh-font-family-terminal')).toBe('"MesloLGS NF/script", monospace')
   })
 })

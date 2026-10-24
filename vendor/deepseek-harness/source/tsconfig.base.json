@@ -111,24 +111,6 @@
       "@deepseek-ai/dsh-attachment/types": [
         "./packages/attachment/attachment/src/types.ts"
       ],
-      "@deepseek-ai/dsh-session/types": [
-        "./packages/core/session/src/types.ts"
-      ],
-      "@deepseek-ai/dsh-session/chunk-rows": [
-        "./packages/core/session/src/chunk-rows.ts"
-      ],
-      "@deepseek-ai/dsh-session/surface": [
-        "./packages/core/session/src/surface.ts"
-      ],
-      "@deepseek-ai/dsh-session/fork": [
-        "./packages/core/session/src/fork.ts"
-      ],
-      "@deepseek-ai/dsh-session-projection/types": [
-        "./packages/session/session-projection/src/types.ts"
-      ],
-      "@deepseek-ai/dsh-workspace/types": [
-        "./packages/workspace/workspace/src/types.ts"
-      ],
       "@deepseek-ai/dsh-llm/types": [
         "./packages/llm/llm/src/types.ts"
       ],
@@ -158,12 +140,6 @@
       ],
       "@deepseek-ai/dsh-api-remotes/types": [
         "./packages/api/remotes/src/types.ts"
-      ],
-      "@deepseek-ai/dsh-agent/types": [
-        "./packages/core/agent/src/types.ts"
-      ],
-      "@deepseek-ai/dsh-agent/brand": [
-        "./packages/core/agent/src/brand.ts"
       ],
       "@deepseek-ai/dsh-web-app/startup": [
         "./packages/bundle/web-app/src/startup.ts"
@@ -276,9 +252,6 @@
       "@deepseek-ai/dsh-native-command/types": [
         "./packages/util/native-command/src/types.ts"
       ],
-      "@deepseek-ai/dsh-agent": [
-        "./packages/core/agent/src"
-      ],
       "@deepseek-ai/dsh-app-boot": [
         "./packages/boot/app-boot/src"
       ],
@@ -308,9 +281,6 @@
       ],
       "@deepseek-ai/dsh-deque": [
         "./packages/util/deque/src"
-      ],
-      "@deepseek-ai/dsh-fs": [
-        "./packages/fs/fs/src"
       ],
       "@deepseek-ai/dsh-home-paths": [
         "./packages/util/home-paths/src"
@@ -342,38 +312,17 @@
       "@deepseek-ai/dsh-package-manifest": [
         "./packages/util/package-manifest/src"
       ],
-      "@deepseek-ai/dsh-sandbox": [
-        "./packages/sandbox/sandbox/src"
-      ],
       "@deepseek-ai/dsh-scope": [
         "./packages/core/scope/src"
       ],
-      "@deepseek-ai/dsh-session": [
-        "./packages/core/session/src"
-      ],
-      "@deepseek-ai/dsh-session-persistence": [
-        "./packages/session/session-persistence/src"
-      ],
-      "@deepseek-ai/dsh-session-projection": [
-        "./packages/session/session-projection/src"
-      ],
       "@deepseek-ai/dsh-settings": [
         "./packages/settings/settings/src"
-      ],
-      "@deepseek-ai/dsh-storage": [
-        "./packages/storage/storage/src"
-      ],
-      "@deepseek-ai/dsh-storage-domain": [
-        "./packages/storage/storage-domain/src"
       ],
       "@deepseek-ai/dsh-subprocess": [
         "./packages/subprocess/subprocess/src"
       ],
       "@deepseek-ai/dsh-subprocess-local": [
         "./packages/subprocess/subprocess-local/src"
-      ],
-      "@deepseek-ai/dsh-system-prompt": [
-        "./packages/core/system-prompt/src"
       ],
       "@deepseek-ai/dsh-timeout": [
         "./packages/util/timeout/src"
@@ -383,9 +332,6 @@
       ],
       "@deepseek-ai/dsh-win32-process": [
         "./packages/subprocess/win32-process/src"
-      ],
-      "@deepseek-ai/dsh-workspace": [
-        "./packages/workspace/workspace/src"
       ]
     }
   }

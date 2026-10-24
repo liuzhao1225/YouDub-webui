@@ -69,3 +69,12 @@ test('media validator registration follows plugin lifecycle', async () => {
     assert.doesNotThrow(() => ctx.catalog.validateOutput('translation/v1', cases[6].value, context))
   } finally { await catalog.dispose() }
 })
+
+test('source audio timestamps may extend beyond video while dubbed audio remains inside it', () => {
+  const source = { detected_language: 'en', segments: [{ id: 'tail', start_ms: 2443000, end_ms: 2443560, text: 'Last word.' }] }
+  const tail = { segments: [{ segment_id: 'tail', source_start_ms: 2443000, source_end_ms: 2443560, dubbed_start_ms: 2443000, dubbed_end_ms: 2443542 }] }
+  const tailContext = { inputs: { transcript: source, mediaInfo: { duration_ms: 2443542 } }, outputs: {} }
+  assert.doesNotThrow(() => MediaValidation.mediaOutputValidators['dubbed-timeline/v1'](tail, tailContext))
+  tail.segments[0].dubbed_end_ms++
+  assert.throws(() => MediaValidation.mediaOutputValidators['dubbed-timeline/v1'](tail, tailContext), /fit the video/)
+})

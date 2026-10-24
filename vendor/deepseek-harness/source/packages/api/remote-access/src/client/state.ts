@@ -108,7 +108,9 @@ export class ClientAccessState {
     let global: ReadonlySet<string> = new Set()
     const resources = new Map<string, Map<string, ReadonlySet<string>>>()
     // The baseline is unpublished, so its maps are filled in place.
-    for (const { resource, actions } of frame.grants) {
+    for (const { resource: grantedResource, actions } of frame.grants) {
+      // Resource kinds are declared by plugins; this package also compiles with an empty kind map.
+      const resource: { readonly kind: string; readonly id?: string } = grantedResource
       if (resource.kind === 'global') {
         global = new Set(actions)
         continue
@@ -118,7 +120,7 @@ export class ClientAccessState {
         grants = new Map()
         resources.set(resource.kind, grants)
       }
-      grants.set(resource.id, new Set(actions))
+      grants.set(resource.id!, new Set(actions))
     }
     this.publish({ kind: 'granted', global, resources })
   }
@@ -192,12 +194,12 @@ function answer(snapshot: AccessSnapshot, kind: string, id: string, action: stri
 }
 
 function withGrant(snapshot: GrantedSnapshot, grant: RemoteAccessGrant, remove = false): GrantedSnapshot {
-  const resource = grant.resource
+  const resource: { readonly kind: string; readonly id?: string } = grant.resource
   if (resource.kind === 'global') return { ...snapshot, global: new Set(grant.actions) }
   const resources = new Map(snapshot.resources)
   const grants = new Map(resources.get(resource.kind))
-  if (remove) grants.delete(resource.id)
-  else grants.set(resource.id, new Set(grant.actions))
+  if (remove) grants.delete(resource.id!)
+  else grants.set(resource.id!, new Set(grant.actions))
   resources.set(resource.kind, grants)
   return { ...snapshot, resources }
 }

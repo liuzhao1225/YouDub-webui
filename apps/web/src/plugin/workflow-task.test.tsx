@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { StudioDraftStore } from '@/runtime/studio-draft'
 import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type NodeTypeDefinition, type TaskNodeDetail, type TaskStatus, type TaskView } from './sdk'
+import { PluginContextProvider, type NodeTypeDefinition, type SlotMap, type TaskNodeDetail, type TaskStatus, type TaskView } from './sdk'
 import { TaskNodePage as TaskNodePageView, TaskWorkflowPanel as TaskWorkflowPanelView, TranscriptNodeDetails, TranslationNodeDetails } from './builtin/workflow-task'
 
 import { bindTestComponent } from './test-bindings'
@@ -25,7 +25,7 @@ function fixture(kind: 'transcript' | 'translation' = 'transcript') {
   return { task, detail, definition }
 }
 type Fixture = ReturnType<typeof fixture>
-function mount(data: Fixture, handler?: (path: string, init?: RequestInit) => Promise<unknown> | undefined, graph = false) {
+function mount(data: Fixture, handler?: (path: string, init?: RequestInit) => Promise<unknown> | undefined, graph = false, details: SlotMap['workflow.node.details'][] = [{ id: 'transcript', component: TranscriptNodeDetails }, { id: 'translation', component: TranslationNodeDetails }]) {
   const request = vi.fn(async (path: string, init?: RequestInit) => {
     const result = handler?.(path, init)
     if (result) return result
@@ -34,7 +34,7 @@ function mount(data: Fixture, handler?: (path: string, init?: RequestInit) => Pr
     if (path === '/api/v2/tasks/task/nodes/node-primary') return structuredClone(data.detail)
     throw new Error(`Unexpected request: ${path}`)
   })
-  const context = { apiClient: { request }, navigation: { push: vi.fn(), block: () => () => {} }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: (slot: string) => slot === 'workflow.node.details' ? [{ id: 'transcript', component: TranscriptNodeDetails }, { id: 'translation', component: TranslationNodeDetails }] : [] } } as unknown as Context
+  const context = { apiClient: { request }, navigation: { push: vi.fn(), block: () => () => {} }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: (slot: string) => slot === 'workflow.node.details' ? details : [] } } as unknown as Context
   const store = new StudioDraftStore()
   const show = () => render(<PluginContextProvider context={context}><LanguageProvider>{graph ? <TaskWorkflowPanel task={data.task} refresh={() => {}} /> : <TaskNodePage submissionStore={store} params={{ id: data.task.id, nodeId: data.detail.nodeId }} />}</LanguageProvider></PluginContextProvider>)
   const view = show()
@@ -47,6 +47,49 @@ function addHistory(data: Fixture, port: 'transcript' | 'translation' = 'transcr
   data.detail.resultRevisions.push({ revision: 2, source: 'correction', outputs, createdAt: '2026-10-21T00:01:00Z' })
   data.detail.outputRevision = 2; data.detail.step.outputs = outputs
 }
+
+function externalTextFixture() {
+  const data = fixture()
+  const outputs = { text: { text: 'External review text' }, metadata: { sources: 2 }, raw: { provider: 'external-review' } }
+  data.definition.ui = { detailId: 'external.text-review' }
+  data.definition.corrections = { outputPorts: ['text'], schemaIds: ['text/v1'] }
+  data.definition.outputs = data.detail.spec.outputs = [
+    { name: 'text', label: '文本', kind: 'json', schemaId: 'text/v1', required: true },
+    { name: 'metadata', label: '来源数量', kind: 'json', schemaId: 'metadata/v1', required: true },
+    { name: 'raw', kind: 'json', schemaId: 'raw/v1', required: true },
+  ]
+  data.detail.step.outputs = outputs
+  data.detail.resultRevisions[0].outputs = outputs
+  return data
+}
+
+it('shows a custom text correction once while preserving metadata and raw outputs', async () => {
+  mount(externalTextFixture(), undefined, false, [{ id: 'external.text-review', component: ({ outputs }) => <p>{(outputs.text as { text: string }).text}</p> }])
+  expect(await screen.findByText('External review text')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '文本' })).not.toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: '来源数量' })).toHaveLength(1)
+  expect(screen.getAllByRole('button', { name: '原始响应' })).toHaveLength(1)
+  await userEvent.click(screen.getByRole('button', { name: '来源数量' }))
+  await userEvent.click(screen.getByRole('button', { name: '原始数据' }))
+  expect(JSON.parse(screen.getByText(/"sources": 2/).textContent!)).toEqual({ sources: 2 })
+  await userEvent.click(screen.getByRole('button', { name: '来源数量' }))
+  await userEvent.click(screen.getByRole('button', { name: '原始响应' }))
+  await userEvent.click(screen.getByRole('button', { name: '原始数据' }))
+  expect(JSON.parse(screen.getByText(/"provider": "external-review"/).textContent!)).toEqual({ provider: 'external-review' })
+})
+
+it('shows a custom detail failure and opens one complete read-only result without duplicate metadata', async () => {
+  const data = externalTextFixture()
+  mount(data, undefined, false, [{ id: 'external.text-review', component: () => { throw new Error('External editor failed') } }])
+  expect(await screen.findByText('External editor failed')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '来源数量' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: '打开通用只读视图' }))
+  expect(screen.getAllByRole('button', { name: '原始数据' })).toHaveLength(1)
+  expect(screen.queryByRole('button', { name: '来源数量' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '原始响应' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: '原始数据' }))
+  expect(JSON.parse(screen.getByText(/"sources": 2/).textContent!)).toEqual(data.detail.resultRevisions[0].outputs)
+})
 
 it.each(['queued', 'running', 'waiting', 'paused'] as TaskStatus[])('reviews the current node while the task is %s', async (status) => {
   const data = fixture(); data.task.status = data.detail.status = status

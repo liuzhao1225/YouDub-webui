@@ -58,7 +58,7 @@ export const mediaOutputValidators: Record<string, OutputValidator> = {
       if (segment.source_end_ms <= segment.source_start_ms || segment.dubbed_end_ms <= segment.dubbed_start_ms) fail('Source and dubbed intervals must have positive duration.')
       const source = transcript?.segments[index]
       if (source && (segment.segment_id !== source.id || segment.source_start_ms !== source.start_ms || segment.source_end_ms !== source.end_ms)) fail('Dubbed timeline must preserve original segment order and timestamps.')
-      if (segment.dubbed_start_ms < previousEnd || duration !== undefined && (segment.source_end_ms > duration || segment.dubbed_end_ms > duration)) fail('Dubbed segments must fit the video without overlap.')
+      if (segment.dubbed_start_ms < previousEnd || duration !== undefined && segment.dubbed_end_ms > duration) fail('Dubbed segments must fit the video without overlap.')
       previousEnd = segment.dubbed_end_ms
     }
   },

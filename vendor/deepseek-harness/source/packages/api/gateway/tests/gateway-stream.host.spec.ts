@@ -16,8 +16,6 @@ import {
   type PeerScope,
   type RemoteInvocation,
   type RemoteStream,
-  type TypertContextMap,
-  type TypertContextWire,
   RemoteError,
 } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
@@ -33,14 +31,11 @@ import { browserCookie, provideBrowserCredentials } from './browser-credentials.
 import TypertGatewayService, {
   TypertGatewayError,
   type Config as GatewayConfig,
-  type TypertRemoteEventDispatch,
-  type TypertRemoteEventInvocation,
-  type TypertRemoteEventOutcome,
+  type TypertRemoteEventFrame,
 } from '@deepseek-ai/dsh-api-gateway'
 import { z } from 'zod'
 import type {
   RemoteEventClientId,
-  RemoteEventInvocationFrame,
 } from '../src/stream-protocol.ts'
 import { ownerPeer, peerFor } from './peer.ts'
 
@@ -51,8 +46,6 @@ vi.mock('node:crypto', async (importOriginal) => {
 
 const randomUuid = vi.mocked(randomUUID)
 const REMOTE_HOST = { home: '/home/fixture' } as const
-type AgentWireId = TypertContextWire<TypertContextMap['agent']>
-const agentId = (value: string): AgentWireId => value as AgentWireId
 
 class FeedService extends TypertRemoteService {
   readonly signals: AbortSignal[] = []
@@ -266,22 +259,22 @@ class StartupProbe implements AppReady {
 }
 
 class RemoteEventSourceProbe {
-  readonly source = (signal: AbortSignal): AsyncIterable<TypertRemoteEventDispatch> => {
+  readonly source = (signal: AbortSignal): AsyncIterable<TypertRemoteEventFrame> => {
     this.signal = signal
     return this.iterate(signal)
   }
 
   signal: AbortSignal | undefined
-  private readonly dispatches: TypertRemoteEventDispatch[] = []
+  private readonly dispatches: TypertRemoteEventFrame[] = []
   private wake: (() => void) | undefined
 
-  push(dispatch: TypertRemoteEventDispatch): void {
+  push(dispatch: TypertRemoteEventFrame): void {
     this.dispatches.push(dispatch)
     this.wake?.()
     this.wake = undefined
   }
 
-  private async *iterate(signal: AbortSignal): AsyncGenerator<TypertRemoteEventDispatch> {
+  private async *iterate(signal: AbortSignal): AsyncGenerator<TypertRemoteEventFrame> {
     const aborted = (): void => {
       this.wake?.()
       this.wake = undefined
@@ -290,7 +283,7 @@ class RemoteEventSourceProbe {
     try {
       while (!signal.aborted) {
         while (this.dispatches.length > 0) {
-          yield this.dispatches.shift() as TypertRemoteEventDispatch
+          yield this.dispatches.shift() as TypertRemoteEventFrame
         }
         if (signal.aborted) return
         await new Promise<void>((resolve) => { this.wake = resolve })
@@ -302,95 +295,12 @@ class RemoteEventSourceProbe {
   }
 }
 
-interface PendingInvocationProbe {
-  readonly dispatch: TypertRemoteEventInvocation
-  readonly outcome: Promise<TypertRemoteEventOutcome>
-  readonly resolve: (outcome: TypertRemoteEventOutcome) => void
-  readonly reject: (reason: unknown) => void
-}
-
-function pendingInvocation(
-  context: Context,
-  signal?: AbortSignal,
-  prompt = 'ship',
-  identity: unknown = agentId('agent-1'),
-): PendingInvocationProbe {
-  const subject = { ctx: context }
-  const settled = Promise.withResolvers<TypertRemoteEventOutcome>()
-  const resolve = vi.fn((outcome: TypertRemoteEventOutcome) => {
-    settled.resolve(outcome)
-  })
-  const reject = vi.fn((reason: unknown) => {
-    settled.reject(reason)
-  })
-  return {
-    dispatch: {
-      event: 'fixture/approval',
-      request: { prompt, agent: subject, ...(signal === undefined ? {} : { signal }) },
-      context: { value: context, subject, agentId: identity as string },
-      resolve,
-      reject,
-    },
-    outcome: settled.promise,
-    resolve,
-    reject,
-  }
-}
-
 afterEach(async () => {
   randomUuid.mockClear()
   await Promise.all(roots.splice(0).map(ctx => ctx.fiber.dispose()))
 })
 
 describe('Typert Remote streams', () => {
-  it('reports Client event streams without counting a bare WebSocket', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.effect(() => ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST))
-    expect(ctx.typertGateway.hasLiveClient()).toBe(false)
-    expect(await acceptsSocket(ctx)).toBe(true)
-    expect(ctx.typertGateway.hasLiveClient()).toBe(false)
-    const first = await openEventClient(ctx, 'first-live')
-    const second = await openEventClient(ctx, 'second-live')
-    expect(ctx.typertGateway.hasLiveClient()).toBe(true)
-    const firstClosed = once(first.socket, 'close')
-    first.socket.close()
-    await firstClosed
-    expect(ctx.typertGateway.hasLiveClient()).toBe(true)
-    const secondClosed = once(second.socket, 'close')
-    second.socket.close()
-    await secondClosed
-    await vi.waitFor(() => { expect(ctx.typertGateway.hasLiveClient()).toBe(false) })
-    await unregister()
-  })
-
-  it('ignores cancelled event streams before their paused consumers finish cleanup', async () => {
-    const { ctx } = await setup(false)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.effect(() => ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST))
-    const abort = new AbortController()
-    const empty = (async function* () {})()
-    const events = await ctx.typertGateway.wireStream.open('$events', { args: {} }, empty, ownerPeer(ctx), abort.signal)
-    const first = events[Symbol.asyncIterator]()
-    await first.next()
-    expect(ctx.typertGateway.hasLiveClient()).toBe(true)
-    abort.abort()
-    expect(ctx.typertGateway.hasLiveClient()).toBe(false)
-    const replacement = await ctx.typertGateway.wireStream.open('$events', { args: {} }, empty, ownerPeer(ctx), new AbortController().signal)
-    const second = replacement[Symbol.asyncIterator]()
-    try {
-      await second.next()
-      expect(ctx.typertGateway.hasLiveClient()).toBe(true)
-      await first.return?.()
-      expect(ctx.typertGateway.hasLiveClient()).toBe(true)
-      await unregister()
-      expect(ctx.typertGateway.hasLiveClient()).toBe(false)
-    } finally {
-      await unregister()
-      await first.return?.()
-      await second.return?.()
-    }
-  })
 
   it.each([false, true])('accepts WebSockets only after application readiness (already ready: %s)', async (alreadyReady) => {
     const startup = new StartupProbe()
@@ -1137,114 +1047,6 @@ describe('Typert Remote streams', () => {
     socket.close()
   })
 
-  it('rejects a scoped dispatch yielded after its Remote event source is withdrawn', async () => {
-    const { ctx } = await setup(false)
-    const publish = Promise.withResolvers<undefined>()
-    const agent = ctx.extend()
-    const pending = pendingInvocation(agent)
-    const source = (): AsyncIterable<TypertRemoteEventDispatch> => (async function* () {
-      await publish.promise
-      yield pending.dispatch
-    })()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source, REMOTE_HOST)
-    const rejected = expect(pending.outcome).rejects.toThrow(
-      'forwarded Remote event source was removed',
-    )
-
-    publish.resolve(undefined)
-    await unregister()
-
-    await rejected
-    expect(pending.reject).toHaveBeenCalledTimes(1)
-    expect(pending.resolve).not.toHaveBeenCalled()
-  })
-
-  it('cancels a pending waterfall when its source rejects during removal', async () => {
-    const { ctx } = await setup(true)
-    const agent = ctx.extend()
-    const pending = pendingInvocation(agent, undefined, 'ship', agentId('agent-removal'))
-    const rejected = expect(pending.outcome).rejects.toThrow(
-      'forwarded Remote event source was removed',
-    )
-    const unregister = ctx.typertGateway.registerRemoteEvents(signal => (async function* () {
-      yield pending.dispatch
-      await new Promise<void>((resolve) => {
-        if (signal.aborted) resolve()
-        else signal.addEventListener('abort', () => { resolve() }, { once: true })
-      })
-      throw new Error('fixture source rejected during removal')
-    })(), REMOTE_HOST)
-    const client = await openEventClient(ctx, 'events-removal')
-    await vi.waitFor(() => { expect(deliveredInvocation(client)).toBeDefined() })
-
-    await unregister()
-    await rejected
-    expect(pending.reject).toHaveBeenCalledTimes(1)
-    expect(pending.resolve).not.toHaveBeenCalled()
-    await vi.waitFor(() => {
-      expect(client.frames).toContainEqual({ type: 'end', streamId: client.streamId })
-    })
-    client.socket.close()
-  })
-
-  it('rejects malformed scoped invocations and delegates a released Context', async () => {
-    const { ctx } = await setup(false)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-
-    for (const event of [42, ''] as const) {
-      const invalidName = pendingInvocation(ctx)
-      const rejected = expect(invalidName.outcome).rejects.toThrow(
-        'Remote event name must be a nonempty string',
-      )
-      source.push({
-        ...invalidName.dispatch,
-        event: event as unknown as string,
-      })
-      await rejected
-    }
-
-    let selected = ctx.extend()
-    const nonJsonIdentity = pendingInvocation(selected, undefined, 'ship', 1n)
-    const nonJsonRejected = expect(nonJsonIdentity.outcome).rejects.toThrow(
-      'require a non-empty Agent identity',
-    )
-    source.push(nonJsonIdentity.dispatch)
-    await nonJsonRejected
-
-    const invalidRequest = pendingInvocation(selected, undefined, 'ship', agentId('agent-invalid-request'))
-    const invalidRequestRejected = expect(invalidRequest.outcome).rejects.toThrow(
-      'must carry its scoped Agent directly',
-    )
-    source.push({
-      ...invalidRequest.dispatch,
-      request: {},
-    })
-    await invalidRequestRejected
-
-    const staleFiber = ctx.plugin(() => {})
-    await staleFiber
-    selected = staleFiber.ctx
-    await staleFiber.dispose()
-    const stale = pendingInvocation(selected, undefined, 'ship', agentId('agent-stale'))
-    source.push(stale.dispatch)
-    await expect(stale.outcome).resolves.toEqual({ kind: 'next' })
-    expect(stale.reject).not.toHaveBeenCalled()
-
-    selected = ctx.extend()
-    const abort = new AbortController()
-    abort.abort('fixture non-error cancellation')
-    const cancelled = pendingInvocation(selected, abort.signal, 'ship', agentId('agent-cancelled'))
-    const cancelledOutcome = expect(cancelled.outcome).rejects.toMatchObject({
-      message: 'typert gateway: Remote event was cancelled',
-      cause: 'fixture non-error cancellation',
-    })
-    source.push(cancelled.dispatch)
-    await cancelledOutcome
-
-    await unregister()
-  })
-
   it('rejects notification arguments that are not lossless JSON arrays', async () => {
     const { ctx } = await setup(false)
     const frames = [
@@ -1256,7 +1058,7 @@ describe('Typert Remote streams', () => {
       const unregister = ctx.typertGateway.registerRemoteEvents((signal) => {
         sourceSignal = signal
         return (async function* () {
-          yield frame as unknown as TypertRemoteEventDispatch
+          yield frame as unknown as TypertRemoteEventFrame
         })()
       }, REMOTE_HOST)
       await vi.waitFor(() => { expect(sourceSignal?.aborted).toBe(true) })
@@ -1265,35 +1067,6 @@ describe('Typert Remote streams', () => {
       expect(reason.message).toContain('arguments are not lossless JSON data')
       await unregister()
     }
-  })
-
-  it('retries a colliding Remote event id before publishing the second waterfall', async () => {
-    const { ctx } = await setup(false)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const agent = ctx.extend()
-    const firstId = '00000000-0000-4000-8000-000000000001' as ReturnType<typeof randomUUID>
-    const secondId = '00000000-0000-4000-8000-000000000002' as ReturnType<typeof randomUUID>
-    randomUuid.mockReturnValueOnce(firstId).mockReturnValueOnce(firstId).mockReturnValueOnce(secondId)
-    const firstAbort = new AbortController()
-    const secondAbort = new AbortController()
-    const first = pendingInvocation(agent, firstAbort.signal, 'first', agentId('agent-collision'))
-    const second = pendingInvocation(agent, secondAbort.signal, 'second', agentId('agent-collision'))
-
-    source.push(first.dispatch)
-    await vi.waitFor(() => { expect(randomUuid).toHaveBeenCalledTimes(1) })
-    source.push(second.dispatch)
-    await vi.waitFor(() => { expect(randomUuid).toHaveBeenCalledTimes(3) })
-
-    const firstReason = new Error('cancel first collision fixture')
-    const secondReason = new Error('cancel second collision fixture')
-    const firstRejected = expect(first.outcome).rejects.toBe(firstReason)
-    const secondRejected = expect(second.outcome).rejects.toBe(secondReason)
-    firstAbort.abort(firstReason)
-    secondAbort.abort(secondReason)
-    await firstRejected
-    await secondRejected
-    await unregister()
   })
 
   it('retries a colliding Remote event Client id before opening the second generation', async () => {
@@ -1314,230 +1087,6 @@ describe('Typert Remote streams', () => {
     expect(randomUuid).toHaveBeenCalledTimes(3)
     first.socket.close()
     second.socket.close()
-    await unregister()
-  })
-
-  it('fans one scoped waterfall out and accepts the first Client result', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const agent = ctx.extend()
-    const first = await openEventClient(ctx, 'events-a')
-    const second = await openEventClient(ctx, 'events-b')
-    const pending = pendingInvocation(agent)
-    source.push(pending.dispatch)
-
-    await vi.waitFor(() => {
-      expect(deliveredInvocation(first)).toBeDefined()
-      expect(deliveredInvocation(second)).toBeDefined()
-    })
-    const firstFrame = deliveredInvocation(first)!
-    const secondFrame = deliveredInvocation(second)!
-    expect(firstFrame.eventId).toBe(secondFrame.eventId)
-    expect(firstFrame).toMatchObject({
-      type: 'waterfall',
-      event: 'fixture/approval',
-      agentId: 'agent-1',
-      request: { prompt: 'ship' },
-    })
-    expect(firstFrame).not.toHaveProperty('deliveryId')
-    expect(secondFrame).not.toHaveProperty('deliveryId')
-
-    await sendEventResult(second, secondFrame, {
-      kind: 'result', value: 'allowed',
-    })
-    await expect(pending.outcome).resolves.toEqual({ kind: 'result', value: 'allowed' })
-    await vi.waitFor(() => {
-      expect(first.frames).toContainEqual({
-        type: 'item',
-        streamId: first.streamId,
-        value: { type: 'cancel', eventId: firstFrame.eventId },
-      })
-    })
-
-    await sendEventResult(first, firstFrame, {
-      kind: 'result', value: 'rejected',
-    })
-    expect(pending.resolve).toHaveBeenCalledTimes(1)
-    expect(pending.reject).not.toHaveBeenCalled()
-    first.socket.close()
-    second.socket.close()
-    await unregister()
-  })
-
-  it('rejects the Host waterfall with the first Client listener rejection', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const agent = ctx.extend()
-    const client = await openEventClient(ctx, 'events-rejected')
-    const pending = pendingInvocation(agent, undefined, 'ship', agentId('agent-rejected'))
-    source.push(pending.dispatch)
-    await vi.waitFor(() => { expect(deliveredInvocation(client)).toBeDefined() })
-    const frame = deliveredInvocation(client)!
-    const rejected = expect(pending.outcome).rejects.toMatchObject({
-      name: 'UserQuestionError',
-      message: 'the user cancelled ask_user_question',
-      code: 'ASK_CANCELLED',
-      details: { questionId: 'question-1' },
-    })
-
-    await sendEventResult(client, frame, {
-      kind: 'rejected',
-      error: {
-        name: 'UserQuestionError',
-        message: 'the user cancelled ask_user_question',
-        code: 'ASK_CANCELLED',
-        details: { questionId: 'question-1' },
-      },
-    })
-    await rejected
-    expect(pending.reject).toHaveBeenCalledTimes(1)
-    expect(pending.resolve).not.toHaveBeenCalled()
-
-    client.socket.close()
-    await unregister()
-  })
-
-  it('delegates to the Host only after every active Client returns next', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const agent = ctx.extend()
-    const first = await openEventClient(ctx, 'events-next-a')
-    const second = await openEventClient(ctx, 'events-next-b')
-    const pending = pendingInvocation(agent)
-    source.push(pending.dispatch)
-    await vi.waitFor(() => {
-      expect(deliveredInvocation(first)).toBeDefined()
-      expect(deliveredInvocation(second)).toBeDefined()
-    })
-    const firstFrame = deliveredInvocation(first)!
-    const secondFrame = deliveredInvocation(second)!
-
-    await sendEventResult(first, firstFrame, { kind: 'next' })
-    expect(pending.resolve).not.toHaveBeenCalled()
-    await sendEventResult(second, secondFrame, { kind: 'next' })
-    await expect(pending.outcome).resolves.toEqual({ kind: 'next' })
-    expect(pending.resolve).toHaveBeenCalledTimes(1)
-    expect(pending.reject).not.toHaveBeenCalled()
-    first.socket.close()
-    second.socket.close()
-    await unregister()
-  })
-
-  it('delivers a pending waterfall to the first Client that connects', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const agent = ctx.extend()
-    const pending = pendingInvocation(agent, undefined, 'before-connect', agentId('agent-late-client'))
-
-    source.push(pending.dispatch)
-    await vi.waitFor(() => { expect(randomUuid).toHaveBeenCalledTimes(1) })
-
-    const client = await openEventClient(ctx, 'events-first-client')
-    await vi.waitFor(() => { expect(deliveredInvocation(client)).toBeDefined() })
-    const frame = deliveredInvocation(client)!
-    expect(frame).toMatchObject({
-      type: 'waterfall',
-      event: 'fixture/approval',
-      agentId: 'agent-late-client',
-      request: { prompt: 'before-connect' },
-    })
-
-    await sendEventResult(client, frame, { kind: 'result', value: 'allowed' })
-    await expect(pending.outcome).resolves.toEqual({ kind: 'result', value: 'allowed' })
-
-    client.socket.close()
-    await unregister()
-  })
-
-  it('replays a pending event id to a replacement Client generation', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const agent = ctx.extend()
-    const original = await openEventClient(ctx, 'events-original')
-    const pending = pendingInvocation(agent)
-    source.push(pending.dispatch)
-    await vi.waitFor(() => { expect(deliveredInvocation(original)).toBeDefined() })
-    const originalFrame = deliveredInvocation(original)!
-    const closed = once(original.socket, 'close')
-    original.socket.close()
-    await closed
-
-    const replacement = await openEventClient(ctx, 'events-replacement')
-    await vi.waitFor(() => { expect(deliveredInvocation(replacement)).toBeDefined() })
-    const replayed = deliveredInvocation(replacement)!
-    expect(replayed.eventId).toBe(originalFrame.eventId)
-    expect(replayed).not.toHaveProperty('deliveryId')
-    await sendEventResult(replacement, replayed, {
-      kind: 'result', value: 'allowed',
-    })
-    await expect(pending.outcome).resolves.toEqual({ kind: 'result', value: 'allowed' })
-
-    replacement.socket.close()
-    await unregister()
-  })
-
-  it('cancels pending deliveries when the Host signal or Context ends', async () => {
-    const { ctx } = await setup(true)
-    const source = new RemoteEventSourceProbe()
-    const unregister = ctx.typertGateway.registerRemoteEvents(source.source, REMOTE_HOST)
-    const signalAgent = ctx.extend()
-    const contextFiber = ctx.plugin(() => {})
-    await contextFiber
-    const contextAgent = contextFiber.ctx
-    const client = await openEventClient(ctx, 'events-cancel')
-
-    const abort = new AbortController()
-    const signalPending = pendingInvocation(signalAgent, abort.signal, 'signal', agentId('agent-signal'))
-    source.push(signalPending.dispatch)
-    await vi.waitFor(() => { expect(deliveredInvocation(client)).toBeDefined() })
-    const signalFrame = deliveredInvocation(client)!
-    expect(signalFrame).toMatchObject({
-      type: 'waterfall',
-      agentId: 'agent-signal',
-      request: { prompt: 'signal' },
-    })
-    const signalReason = new Error('Host caller cancelled')
-    const signalOutcome = expect(signalPending.outcome).rejects.toBe(signalReason)
-    abort.abort(signalReason)
-    await signalOutcome
-    await vi.waitFor(() => {
-      expect(client.frames).toContainEqual({
-        type: 'item',
-        streamId: client.streamId,
-        value: { type: 'cancel', eventId: signalFrame.eventId },
-      })
-    })
-
-    const contextPending = pendingInvocation(contextAgent, undefined, 'context', agentId('agent-context'))
-    source.push(contextPending.dispatch)
-    let contextFrame: RemoteEventInvocationFrame | undefined
-    await vi.waitFor(() => {
-      contextFrame = client.frames
-        .filter(frame => frame.type === 'item' && frame.streamId === client.streamId)
-        .map(frame => frame.value)
-        .find(value => typeof value === 'object'
-          && value !== null
-          && Reflect.get(value, 'event') === 'fixture/approval'
-          && Reflect.get(value, 'eventId') !== signalFrame.eventId) as RemoteEventInvocationFrame | undefined
-      expect(contextFrame).toBeDefined()
-    })
-    const contextOutcome = expect(contextPending.outcome).rejects.toThrow('Agent Context was released')
-    await contextFiber.dispose()
-    await contextOutcome
-    await vi.waitFor(() => {
-      expect(client.frames).toContainEqual({
-        type: 'item',
-        streamId: client.streamId,
-        value: { type: 'cancel', eventId: contextFrame!.eventId },
-      })
-    })
-
-    client.socket.close()
     await unregister()
   })
 
@@ -1754,52 +1303,6 @@ async function openEventClient(ctx: Context, streamId: string): Promise<RemoteEv
   })
   if (clientId === undefined) throw new Error('Remote event stream omitted its Client id')
   return { socket, frames, streamId, clientId, origin, cookie }
-}
-
-function deliveredInvocation(client: RemoteEventTestClient): RemoteEventInvocationFrame | undefined {
-  for (const frame of client.frames) {
-    if (frame.type !== 'item' || frame.streamId !== client.streamId) continue
-    const value = frame.value
-    if (typeof value !== 'object' || value === null || !Object.hasOwn(value, 'eventId')) continue
-    return value as RemoteEventInvocationFrame
-  }
-  return undefined
-}
-
-async function sendEventResult(
-  client: RemoteEventTestClient,
-  frame: RemoteEventInvocationFrame,
-  outcome:
-    | { readonly kind: 'next' }
-    | { readonly kind: 'result'; readonly value?: unknown }
-    | {
-      readonly kind: 'rejected'
-      readonly error: {
-        readonly name: string
-        readonly message: string
-        readonly code?: string
-        readonly details?: unknown
-      }
-    },
-): Promise<void> {
-  const rpcId = `remote-event-result-${client.streamId}`
-  const response = await fetch(`${client.origin}/api/$events/result`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', cookie: client.cookie },
-    body: JSON.stringify({
-      type: 'client-request',
-      rpcId,
-      method: '$events/result',
-      payload: {
-        args: { clientId: client.clientId, eventId: frame.eventId, outcome },
-      },
-    }),
-  })
-  expect(response.status).toBe(200)
-  const body = await response.json() as { readonly result?: { readonly ok?: boolean; readonly error?: { message?: string } } }
-  if (body.result?.ok !== true) {
-    throw new Error(body.result?.error?.message ?? 'Remote event result failed')
-  }
 }
 
 function sendOpen(socket: WebSocket, streamId: string, endpoint: string, args: object): void {

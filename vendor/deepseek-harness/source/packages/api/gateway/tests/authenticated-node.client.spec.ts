@@ -12,6 +12,12 @@ import { z } from 'zod'
 import { apply, inject } from '../src/client/index.ts'
 import { parseRemoteStreamClientMessage } from '../src/stream-protocol.ts'
 
+declare module '@deepseek-ai/cordis' {
+  interface Events {
+    'nodeProbe/changed': () => void
+  }
+}
+
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteMap {
     'nodeProbe/read': () => Promise<RemoteResult<string>>
@@ -19,6 +25,9 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
   interface TypertRemoteNamespaceMap {
     nodeProbe: TypertRemoteNamespace<'nodeProbe'>
+  }
+  interface TypertRemoteEventSelection {
+    'nodeProbe/changed': true
   }
 }
 
@@ -38,7 +47,7 @@ describe('authenticated Node Client', () => {
         expect(fixture.endpoints).toEqual(['$events'])
       } else {
         expect(fixture.connection.generation.getSnapshot()).toBeUndefined()
-        expect(() => fixture.ctx.remote.$on('fixture/approval' as never, () => {})).toThrow('interactions=answer')
+        expect(() => fixture.ctx.remote.$on('nodeProbe/changed', () => {})).toThrow('interactions=answer')
         const open = vi.fn(() => fixture.ctx.remote.nodeProbe.watch())
         expect(() => fixture.ctx.remote.$stream({ name: 'passive', open, ended: () => new Error('ended') }))
           .toThrow('$stream requires interactions=answer')

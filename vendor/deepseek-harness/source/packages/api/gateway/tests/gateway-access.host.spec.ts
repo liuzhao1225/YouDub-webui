@@ -24,7 +24,7 @@ import {
 } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import { z } from 'zod'
-import TypertGatewayService, { type TypertRemoteEventDispatch } from '@deepseek-ai/dsh-api-gateway'
+import TypertGatewayService, { type TypertRemoteEventFrame } from '@deepseek-ai/dsh-api-gateway'
 import { callResources, eventResources } from '../src/access.ts'
 import { provideBrowserCredentials } from './browser-credentials.ts'
 import { ownerPeer, peerFor } from './peer.ts'
@@ -584,14 +584,14 @@ describe('Gateway Peer lifetime', () => {
       .rejects.toMatchObject({ code: 'gateway/peer-disposed' })
     await expect(ctx.typertGateway.wireStream.open('$events', { args: {} }, (async function* () {})(), peer, new AbortController().signal))
       .rejects.toMatchObject({ code: 'gateway/peer-disposed' })
-    const result = await ctx.connection.createSharedFetchHandler('/api').fetch(new Request('http://host/api/$events/result', {
+    const result = await ctx.connection.createSharedFetchHandler('/api').fetch(new Request('http://host/api/accessFixture/open', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         type: 'client-request',
         rpcId: 'rpc-disposed',
-        method: '$events/result',
-        payload: { args: { clientId: 'any', eventId: 'any', outcome: { kind: 'next' } } },
+        method: 'accessFixture/open',
+        payload: { args: {} },
       }),
     }), peer)
     expect(await result.json()).toMatchObject({ result: { ok: false, error: { code: 'gateway/peer-disposed' } } })
@@ -643,12 +643,12 @@ describe('Gateway Peer lifetime', () => {
 })
 
 /** Install a pushable event source; `push` yields one dispatch to every open `$events` stream. */
-function eventSource(ctx: Context): (dispatch: TypertRemoteEventDispatch) => void {
-  const queue: TypertRemoteEventDispatch[] = []
+function eventSource(ctx: Context): (dispatch: TypertRemoteEventFrame) => void {
+  const queue: TypertRemoteEventFrame[] = []
   let wake: (() => void) | undefined
   ctx.effect(() => ctx.typertGateway.registerRemoteEvents(async function* (signal) {
     while (!signal.aborted) {
-      while (queue.length > 0) yield queue.shift() as TypertRemoteEventDispatch
+      while (queue.length > 0) yield queue.shift() as TypertRemoteEventFrame
       await new Promise<void>((resolve) => {
         wake = resolve
         signal.addEventListener('abort', () => { resolve() }, { once: true })
@@ -662,7 +662,7 @@ function eventSource(ctx: Context): (dispatch: TypertRemoteEventDispatch) => voi
 }
 
 describe('Gateway forwarded events for non-owner Peers', () => {
-  it('denies event streams and results for passive owner and guest Peers', async () => {
+  it('denies event streams for passive owner and guest Peers', async () => {
     const { ctx } = await setup({ connection: true })
     const passive = [
       ctx.connection.createPeer({ principal: OWNER, interactions: 'none' }),
@@ -673,21 +673,11 @@ describe('Gateway forwarded events for non-owner Peers', () => {
       await expect(ctx.typertGateway.wireStream.open(
         '$events', { args: {} }, (async function* () {})(), peer, new AbortController().signal,
       )).rejects.toMatchObject({ code: 'gateway/interactions-forbidden' })
-      const result = await ctx.connection.createSharedFetchHandler('/api').fetch(new Request('http://host/api/$events/result', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          type: 'client-request', rpcId: 'rpc-passive', method: '$events/result',
-          payload: { args: { clientId: 'absent', eventId: 'absent', outcome: { kind: 'next' } } },
-        }),
-      }), peer)
-      expect(await result.json()).toMatchObject({ result: { ok: false, error: { code: 'gateway/interactions-forbidden' } } })
     }
     push({ event: 'fixture/notice', args: ['ignored'] })
-    expect(ctx.typertGateway.hasLiveClient()).toBe(false)
   })
 
-  it('delivers only allowed broadcasts and no answerable waterfall to a non-owner, and refuses its results', async () => {
+  it('delivers only allowed broadcasts to a non-owner', async () => {
     const { ctx, hold } = await setup({ connection: true })
     hold(shelf('s1'))
     const decide = vi.spyOn(RemoteAccessService.prototype, 'decide')
@@ -696,28 +686,15 @@ describe('Gateway forwarded events for non-owner Peers', () => {
     const abort = new AbortController()
     const guestEvents = (await ctx.typertGateway.wireStream.open('$events', { args: {} }, (async function* () {})(), guest, abort.signal))[Symbol.asyncIterator]()
     const guestReady = await guestEvents.next()
-    // A non-owner stream receives the same Host facts but cannot answer, so it does not count as a live Client.
+    // A non-owner stream receives the same Host facts.
     expect(guestReady.value).toMatchObject({ type: 'ready', host: { home: '/fixture' } })
-    expect(ctx.typertGateway.hasLiveClient()).toBe(false)
     const ownerEvents = (await ctx.typertGateway.wireStream.open('$events', { args: {} }, (async function* () {})(), ctx.connection.browserPeer, abort.signal))[Symbol.asyncIterator]()
     await expect(ownerEvents.next()).resolves.toMatchObject({ value: { type: 'ready', host: { home: '/fixture' } } })
-    expect(ctx.typertGateway.hasLiveClient()).toBe(true)
 
-    const agentCtx = ctx.extend({})
-    const subject = {}
-    const settled = vi.fn()
-    push({
-      event: 'fixture/ask',
-      request: { question: 'q', agent: subject },
-      context: { value: agentCtx, subject, agentId: 'agent-1' },
-      resolve: settled,
-      reject: settled,
-    })
     const resources = { 'test-shelf': (shelfId: unknown) => shelfId }
     push({ event: 'fixture/notice', args: ['hello'] })
     push({ event: 'fixture/shelf', args: ['s2'], resources })
     push({ event: 'fixture/shelf', args: ['s1'], resources })
-    await expect(ownerEvents.next()).resolves.toMatchObject({ value: { type: 'waterfall', event: 'fixture/ask' } })
     await expect(ownerEvents.next()).resolves.toMatchObject({ value: { type: 'emit', event: 'fixture/notice' } })
     await expect(ownerEvents.next()).resolves.toMatchObject({ value: { type: 'emit', event: 'fixture/shelf', args: ['s2'] } })
     await expect(ownerEvents.next()).resolves.toMatchObject({ value: { type: 'emit', event: 'fixture/shelf', args: ['s1'] } })
@@ -729,21 +706,6 @@ describe('Gateway forwarded events for non-owner Peers', () => {
       { principal: GUEST, action: 'event:fixture/shelf', resources: [shelf('s1')] },
     ])
 
-    const clientId: unknown = Reflect.get(guestReady.value as object, 'clientId')
-    const shared = ctx.connection.createSharedFetchHandler('/api')
-    const refused = await shared.fetch(new Request('http://host/api/$events/result', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-request',
-        rpcId: 'rpc-result',
-        method: '$events/result',
-        payload: { args: { clientId, eventId: 'any', outcome: { kind: 'next' } } },
-      }),
-    }), guest)
-    expect(await refused.json()).toMatchObject({
-      result: { ok: false, error: { code: 'gateway/invocation-unavailable', details: { endpoint: '$events/result' } } },
-    })
     abort.abort()
     await guestEvents.return?.()
     await ownerEvents.return?.()

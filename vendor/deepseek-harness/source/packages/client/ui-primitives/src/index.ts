@@ -9,6 +9,7 @@ export { Switch } from './Switch.tsx';
 export { SegmentedControl } from './SegmentedControl.tsx';
 export { Checkbox } from './Checkbox.tsx';
 export { Input } from './Input.tsx';
+export { Textarea } from './Textarea.tsx';
 export { Menu, MenuItemButton } from './Menu.tsx';
 export type { MenuItem } from './Menu.tsx';
 export { useAnchoredPosition } from './useAnchoredPosition.ts';

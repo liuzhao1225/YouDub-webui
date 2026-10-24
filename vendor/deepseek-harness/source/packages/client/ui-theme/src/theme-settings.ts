@@ -11,7 +11,7 @@ export const THEME_SETTINGS_NAMESPACE = 'ui-theme'
 /** Field carrying the selected built-in theme preference. */
 export const THEME_PREFERENCE_FIELD = 'preference'
 
-/** Field carrying the conversation content font size. */
+/** Field carrying the content font size. */
 export const FONT_SIZE_FIELD = 'fontSize'
 
 /** Theme preference persisted by the product Appearance row. */
@@ -30,9 +30,9 @@ export const FONT_SIZE_MAX = 22
 export const DEFAULT_FONT_SIZE = 14
 
 /** Independently configurable font roles. */
-export const FONT_ROLES = ['text', 'code', 'terminal'] as const
+export const FONT_ROLES = ['text', 'code'] as const
 
-/** One configurable font role: interface text, code, or the sidebar terminal. */
+/** One configurable font role: interface text or code. */
 export type FontRole = typeof FONT_ROLES[number]
 
 /** Settings field, body variable, and accepted integer px range of one role's font size. */
@@ -49,15 +49,10 @@ export interface FontSizeSpec {
   default: number
 }
 
-/**
- * Font sizes by role. `text` is the conversation content size; `code` is the
- * code-block size (inline code stays 1px larger); `terminal` is the sidebar
- * terminal cell font size.
- */
+/** Font sizes for interface content and code. */
 export const FONT_SIZE_SPECS = {
   text: { field: FONT_SIZE_FIELD, variable: '--dsh-content-font-size', min: FONT_SIZE_MIN, max: FONT_SIZE_MAX, default: DEFAULT_FONT_SIZE },
   code: { field: 'codeFontSize', variable: '--dsh-code-font-size', min: 10, max: 16, default: 11 },
-  terminal: { field: 'terminalFontSize', variable: '--dsh-terminal-font-size', min: 10, max: 20, default: 13 },
 } as const satisfies Record<FontRole, FontSizeSpec>
 
 /** Integer px font sizes by role. */
@@ -65,14 +60,13 @@ export type FontSizes = Readonly<Record<FontRole, number>>
 
 /** Default font sizes by role. */
 export const DEFAULT_FONT_SIZES: FontSizes = Object.freeze({
-  text: FONT_SIZE_SPECS.text.default, code: FONT_SIZE_SPECS.code.default, terminal: FONT_SIZE_SPECS.terminal.default,
+  text: FONT_SIZE_SPECS.text.default, code: FONT_SIZE_SPECS.code.default,
 })
 
 /** Settings field carrying each role's font-family list. */
 export const FONT_FAMILY_FIELDS = {
   text: 'textFontFamily',
   code: 'codeFontFamily',
-  terminal: 'terminalFontFamily',
 } as const satisfies Record<FontRole, string>
 
 /**
@@ -96,14 +90,10 @@ export interface ThemeSettings {
   fontSize: number
   /** Code-block font size in px (integer within the {@link FONT_SIZE_SPECS} `code` range). */
   codeFontSize: number
-  /** Sidebar terminal font size in px (integer within the {@link FONT_SIZE_SPECS} `terminal` range). */
-  terminalFontSize: number
   /** Interface and body text fonts placed before the built-in stack; `''` keeps the built-in stack. */
   textFontFamily: string
   /** Code fonts placed before the built-in code stack; `''` keeps the built-in stack. */
   codeFontFamily: string
-  /** Sidebar terminal fonts placed before the built-in terminal stack; `''` keeps the built-in stack. */
-  terminalFontFamily: string
 }
 
 /**
@@ -121,7 +111,7 @@ export function fontSizeSchema(spec: FontSizeSpec): z<number> {
  * @returns integer px sizes by role.
  */
 export function sectionFontSizes(section: ThemeSettings): FontSizes {
-  return Object.freeze({ text: section.fontSize, code: section.codeFontSize, terminal: section.terminalFontSize })
+  return Object.freeze({ text: section.fontSize, code: section.codeFontSize })
 }
 
 /**
@@ -140,10 +130,8 @@ export const ThemeSettingsSchema: z<ThemeSettings> = z.object({
   [THEME_PREFERENCE_FIELD]: z.union([...THEME_PREFERENCES]).default(DEFAULT_PREFERENCE),
   [FONT_SIZE_FIELD]: fontSizeSchema(FONT_SIZE_SPECS.text),
   [FONT_SIZE_SPECS.code.field]: fontSizeSchema(FONT_SIZE_SPECS.code),
-  [FONT_SIZE_SPECS.terminal.field]: fontSizeSchema(FONT_SIZE_SPECS.terminal),
   [FONT_FAMILY_FIELDS.text]: z.string().default(''),
   [FONT_FAMILY_FIELDS.code]: z.string().default(''),
-  [FONT_FAMILY_FIELDS.terminal]: z.string().default(''),
 })
 
 /** CSS Fonts generic and system family keywords, which must stay unquoted. */

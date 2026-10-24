@@ -93,15 +93,6 @@ def test_invalid_translation_is_rejected_before_rendering(monkeypatch, context, 
     assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
 
 
-def test_cue_past_video_end_fails_instead_of_silently_truncating_tail(context):
-    path = context.input_files["transcript"]
-    data = json.loads(path.read_text())
-    data["segments"][-1]["end_ms"] = 1500
-    path.write_text(json.dumps(data))
-    with pytest.raises(ApiError, match="extend beyond"):
-        export.run(context, lambda value, message: None, output_dir=context.work_dir / "output")
-
-
 @pytest.mark.parametrize("mode", ["dubbing", "both"])
 def test_dubbing_requires_mix_artifacts(context, mode):
     context = replace(context, config=context.config.model_copy(update={"output_mode": mode}))
@@ -174,8 +165,14 @@ def add_dubbing(context: StageContext, mode: str) -> StageContext:
 
 
 @pytest.mark.parametrize("mode", ["dubbing", "both"])
-def test_dubbing_outputs_use_the_final_wav_and_separate_subtitle_timelines(monkeypatch, context, mode):
+@pytest.mark.parametrize("source_end_ms", [1000, 1018])
+def test_dubbing_outputs_use_the_final_wav_and_separate_subtitle_timelines(monkeypatch, context, mode, source_end_ms):
     context = add_dubbing(context, mode)
+    for name, field in (("transcript", "end_ms"), ("alignment", "source_end_ms")):
+        path = context.input_files[name]
+        payload = json.loads(path.read_text())
+        payload["segments"][-1][field] = source_end_ms
+        path.write_text(json.dumps(payload))
     commands = []
 
     def render(command, **kwargs):
@@ -192,7 +189,7 @@ def test_dubbing_outputs_use_the_final_wav_and_separate_subtitle_timelines(monke
     assert [command[index + 1] for index, value in enumerate(command) if value == "-map"] == ["0:v:0", "1:a:0"]
     assert str(result.output_files["audio"].resolve()) in command
     if mode == "both":
-        assert "00:00:00,650 --> 00:00:01,000" in result.output_files["source_subtitles"].read_text()
+        assert f"00:00:00,650 --> {export._srt_time(source_end_ms)}" in result.output_files["source_subtitles"].read_text()
         translated = result.output_files["translated_subtitles"].read_text()
         assert "00:00:00,000 --> 00:00:00,320\n你好，世界" in translated
         assert "00:00:00,720 --> 00:00:00,980\n结束了" in translated
@@ -402,20 +399,27 @@ def test_real_dubbing_export_uses_downloadable_final_wav_as_video_audio(context,
         assert sum(frame) == 0
 
 
-def test_real_export_preserves_video_tail_and_first_audio_and_burns_tail_subtitle(context):
+@pytest.mark.parametrize("source_end_ms", [1000, 1018])
+def test_real_export_preserves_video_tail_and_first_audio_and_burns_tail_subtitle(context, source_end_ms):
     if not shutil.which(ffmpeg_binary()) or not shutil.which(media.ffprobe_binary()):
         pytest.skip("Local ffmpeg and ffprobe are required for the real export check")
     source = context.input_files["video"]
+    transcript_path = context.input_files["transcript"]
+    transcript = json.loads(transcript_path.read_text())
+    transcript["segments"][-1]["end_ms"] = source_end_ms
+    transcript_path.write_text(json.dumps(transcript))
     subprocess.run([
         ffmpeg_binary(), "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-        "-f", "lavfi", "-i", "color=c=black:s=320x180:r=25",
-        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000",
-        "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000",
-        "-map", "0:v:0", "-map", "1:a:0", "-map", "2:a:0", "-t", "1",
+        "-f", "lavfi", "-i", "color=c=black:s=320x180:r=25:d=1",
+        "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=1.056",
+        "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000:duration=1.056",
+        "-map", "0:v:0", "-map", "1:a:0", "-map", "2:a:0",
         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(source),
     ], check=True, capture_output=True)
     digest = hashlib.sha256(source.read_bytes()).digest()
     result = export.run(context, lambda value, message: None, output_dir=context.work_dir / "output")
+    assert f"00:00:00,650 --> {export._srt_time(source_end_ms)}" in result.output_files["source_subtitles"].read_text()
+    assert f"00:00:00,650 --> {export._srt_time(source_end_ms)}" in result.output_files["translated_subtitles"].read_text()
     video = result.output_files["video"]
     output_info = json.loads(subprocess.run([
         media.ffprobe_binary(), "-v", "error", "-show_streams", "-show_format", "-of", "json", str(video),
@@ -448,7 +452,7 @@ def test_real_export_preserves_video_tail_and_first_audio_and_burns_tail_subtitl
     # A nonempty last frame with changed pixels proves the last cue was burned
     # through the end of the clip, beyond merely writing a valid SRT file.
     assert sum(output_frame) > sum(source_frame) + 200
-    assert "00:00:01,000\n结束了" in result.output_files["translated_subtitles"].read_text()
+    assert f"{export._srt_time(source_end_ms)}\n结束了" in result.output_files["translated_subtitles"].read_text()
 
 
 @pytest.mark.parametrize("cues", [

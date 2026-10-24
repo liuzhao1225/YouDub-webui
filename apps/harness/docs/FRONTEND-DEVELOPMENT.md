@@ -49,13 +49,15 @@
 
 节点详情插槽的完整实例在[graph-text-review 客户端](../test/fixtures/graph-text-review/src/client.jsx)：它接收 `detail`、`outputs`、`draft`、`readOnly`、`onDraftChange`、`navigate`，将订正交还原任务页面保存。外部插件通过自己的 context 注册插槽，卸载时由官方生命周期释放。
 
+校对编辑器展示节点声明的 `corrections.outputPorts`，其余输出由宿主统一呈现，避免重复。返回、版本、保存和确认也由宿主提供。多行文本从 `@deepseek-ai/dsh-client-ui-primitives` 导入共享 `Textarea`；历史结果使用 `readOnly`，保留选择与复制。外部插件只负责自己的内容布局，不依赖宿主 Tailwind 扫描生成样式。
+
 ## 控件复用与框架入口
 
 已有业务组件继续导入 `@/components/ui/*`。基础控件在源码中直接复用 Harness，测试和桌面使用同一份属性转换。构建仍保留下列明确边界：
 
 | 原组件依赖 | Harness 接入 |
 | --- | --- |
-| Button、Input、Select、Tooltip、Switch、Tag、Segmented 等 | `components/ui/*` → `harness-primitives.ts`；测试载入官方源码，Desktop 连接官方共享运行时 |
+| Button、Input、Textarea、Select、Tooltip、Switch、Tag、Segmented 等 | `components/ui/*` → `harness-primitives.ts`；测试载入框架源码，Desktop 连接同一共享运行时 |
 | 工作流离开保护、快捷字段浮层 | `workflow-guard.tsx` 直接使用官方 Modal；`ui/popover.tsx` 使用官方 Menu；已移除两类桌面适配与构建替换 |
 | 原 `plugin/sdk` 的导航与辅助接口 | `frontend/sdk.tsx` → 注入的页面导航与原领域纯函数 |
 | 查询、资源、首启和草稿状态 | `lib/store.ts` 保留原控制器的局部更新 API；`lib/harness-store.ts` 统一接到官方 `createSnapshotStore`，已移除桌面专用 Store 及 Zustand 构建替换 |

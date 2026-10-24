@@ -2,15 +2,15 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useSyncExternalStore } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
-import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
+import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 import { DesktopUpdateIndicator } from '../src/client/DesktopUpdateIndicator.tsx'
 import type { DesktopUpdateBridge, DesktopUpdatePresentation } from '../src/types.ts'
 import { DesktopUpdateSource } from '../src/client/desktop-update-source.ts'
-import { en, zh } from '../src/client/locales.ts'
+import { en, zh, type SettingsKey } from '../src/client/locales.ts'
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-type SettingsTranslate = PropsLocale<'settings'>['t']
+type SettingsTranslate = Translate<SettingsKey>
 
 function translate(dictionary: typeof zh | typeof en): SettingsTranslate {
   const messages: Readonly<Record<string, string>> = dictionary

@@ -18,9 +18,6 @@
       "path": "../../credentials/credentials"
     },
     {
-      "path": "../../core/session"
-    },
-    {
       "path": "../../util/native-command"
     },
     {

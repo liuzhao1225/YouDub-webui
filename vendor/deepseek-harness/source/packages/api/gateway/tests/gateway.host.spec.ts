@@ -1259,62 +1259,6 @@ describe('TypertGatewayService', () => {
     }
   })
 
-  it('claims and validates in-process Remote event results for the active Client generation', async () => {
-    const ctx = new Context()
-    await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
-    await ctx.plugin(FakeConnectionService)
-    await ctx.plugin(TypertGatewayService)
-    const connection = rawConnection(ctx)
-    const handler = connection.handler
-    if (handler === undefined) throw new Error('fixture Connection did not retain the /api interceptor')
-    expect(connection.matches?.('$events/result')).toBe(true)
-
-    const result = {
-      args: { clientId: 'missing-client', eventId: 'missing', outcome: { kind: 'next' } },
-    }
-    const inactive = await handler('$events/result', result, new AbortController().signal)
-    expect(inactive).toMatchObject({ ok: false, error: { code: 'gateway/internal' } })
-    if (inactive.ok) throw new Error('inactive Remote event result unexpectedly succeeded')
-    expect(inactive.error.message).toContain('identifies no active event stream')
-
-    const unregister = ctx.typertGateway.registerRemoteEvents(signal => (async function* () {
-      await new Promise<void>((resolve) => {
-        if (signal.aborted) resolve()
-        else signal.addEventListener('abort', () => { resolve() }, { once: true })
-      })
-    })(), { home: '/home/fixture' })
-    const carrier = new AbortController()
-    const events = (await ctx.typertGateway.wireStream.open(
-      '$events', { args: {} }, (async function* () {})(), connection.browserPeer, carrier.signal,
-    ))[Symbol.asyncIterator]()
-    const opening = await events.next()
-    expect(opening).toMatchObject({
-      done: false,
-      value: { type: 'ready', host: { home: '/home/fixture' } },
-    })
-    if (opening.done) throw new Error('Remote event stream ended before ready')
-    const clientId: unknown = Reflect.get(opening.value as object, 'clientId')
-    if (typeof clientId !== 'string') throw new Error('Remote event stream omitted its Client id')
-
-    for (const payload of [null, [], {}, { other: {} }]) {
-      const invalid = await handler('$events/result', payload, carrier.signal)
-      expect(invalid).toMatchObject({ ok: false, error: { code: 'gateway/internal' } })
-      if (invalid.ok) throw new Error('invalid Remote event result payload unexpectedly succeeded')
-      expect(invalid.error.message).toContain('requires exactly one plain-object args field')
-    }
-    await expect(handler('$events/result', {
-      args: { clientId, eventId: 'missing', outcome: { kind: 'next' } },
-    }, carrier.signal)).resolves.toEqual({
-      ok: true,
-      value: undefined,
-    })
-
-    await events.return?.(undefined)
-    await unregister()
-    await ctx.fiber.dispose()
-  })
-
   it('preserves a lookup policy rejection through the Connection RPC result', async () => {
     const ctx = new Context()
     await ctx.plugin(TypertRegistry)

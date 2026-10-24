@@ -55,7 +55,7 @@ function bootThemeBodyScript(preference: ThemePreference, fontSizes: FontSizes, 
 export function bootThemeInjections(
   preference: ThemePreference = DEFAULT_PREFERENCE,
   fontSizes: FontSizes = DEFAULT_FONT_SIZES,
-  fontFamilies: FontFamilies = { text: '', code: '', terminal: '' },
+  fontFamilies: FontFamilies = { text: '', code: '' },
 ): IndexInjection[] {
   return [
     { kind: 'style', text: bootThemeStyle(preference) },

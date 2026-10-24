@@ -97,8 +97,6 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         if segment.start_ms < previous_source_end:
             raise ApiError(422, "UNSUPPORTED_OVERLAPPING_SPEECH", "Source speech segments overlap.",
                            stage="mix", action="none")
-        if segment.end_ms > duration:
-            raise _invalid("Source speech extends beyond the video.")
         previous_source_end = segment.end_ms
         inputs[segment.id] = _clip_input(context, clips[segment.id])
     background = _input_file(context, "background") if context.config.keep_background else None
