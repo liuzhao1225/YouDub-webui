@@ -9,7 +9,7 @@ import { validateMediaCorrection } from '../src/node-contracts.js'
 import { parseWorkflowDocument } from '../src/workflow-document.js'
 import { workflowTemplates } from '../src/workflow-templates.js'
 
-async function setup(t: any) {
+async function setup(t: any, devices: Record<string, string[]> = {}) {
   const ctx = new Context()
   const app = await ctx.plugin(async context => {
     await context.plugin(scope => scope.reflect.provide('settings', { read: async () => ({ connections: [{ adapter: 'openai', base_url: 'https://example.invalid/v1', has_api_key: true }] }) }))
@@ -17,7 +17,7 @@ async function setup(t: any) {
     await context.plugin({ inject: ['catalog'], apply(scope) {
       for (const [id, kinds, capability] of [['youdub.media', ['prepare', 'reference', 'mix', 'export', 'importSubtitles']], ['youdub.download', ['download']], ['whisper', ['recognize'], 'asr'], ['openai', ['translate'], 'translation'], ['voxcpm', ['synthesize'], 'tts'], ['demucs', ['separate'], 'separation']] as const) {
         scope.effect(() => scope.catalog.registerProvider({
-          id, describe: () => ({ id, label: id, pluginId: id, pluginVersion: '1', integrity: 'sha256:test', operations: kinds.map(key => operations[key]), available: true, capability, execution: id === 'openai' ? 'remote' : 'local', models: capability ? [{ id: ({ whisper: 'tiny', demucs: 'htdemucs', voxcpm: 'VoxCPM2' } as Record<string, string>)[id] ?? 'test', devices: ['cpu'], source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'], voice_modes: ['source_clone', 'preset'], voices: [{ id: 'v1', languages: ['zh', 'ja'] }] }] : undefined }),
+          id, describe: () => ({ id, label: id, pluginId: id, pluginVersion: '1', integrity: 'sha256:test', operations: kinds.map(key => operations[key]), available: true, capability, execution: id === 'openai' ? 'remote' : 'local', models: capability ? [{ id: ({ whisper: 'tiny', demucs: 'htdemucs', voxcpm: 'VoxCPM2' } as Record<string, string>)[id] ?? 'test', devices: devices[id] ?? [id === 'openai' ? 'remote' : 'cpu'], source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'], voice_modes: ['source_clone', 'preset'], voices: [{ id: 'v1', languages: ['zh', 'ja'] }] }] : undefined }),
           validateCorrection: validateMediaCorrection, probe: async () => ({}), execute: async () => { throw new Error('Compilation must not execute providers') },
         }))
       }
@@ -53,6 +53,50 @@ test('independent templates compile without mutating graph and only freeze selec
   assert.equal(reviewedPlan.steps.find(step => step.id === 'recognize')?.autoContinue, false)
   assert.equal(reviewedPlan.steps.find(step => step.id === 'translate')?.autoContinue, false)
   assert.equal(plans[0].steps.find(step => step.id === 'recognize')?.autoContinue, true)
+})
+
+test('automatic devices follow each model capability and freeze into the task snapshot', async t => {
+  for (const [name, devices, expected] of [
+    ['CUDA/ROCm', { whisper: ['cpu', 'cuda:0'], demucs: ['cpu', 'cuda:1'], voxcpm: ['cuda:1', 'cpu'] }, { recognize: 'cuda:0', separate: 'cuda:1', synthesize: 'cuda:1' }],
+    ['Apple MPS', { whisper: ['cpu'], demucs: ['mps', 'cpu'], voxcpm: ['cpu', 'mps'] }, { recognize: 'cpu', separate: 'mps', synthesize: 'mps' }],
+    ['CPU only', { whisper: ['cpu'], demucs: ['cpu'], voxcpm: ['cpu'] }, { recognize: 'cpu', separate: 'cpu', synthesize: 'cpu' }],
+  ] as const) await t.test(name, async t => {
+    const { compile, templates } = await setup(t, structuredClone(devices) as unknown as Record<string, string[]>)
+    for (const { document } of templates) {
+      const { plan, graphSnapshot } = await compile(document)
+      for (const [id, device] of Object.entries(expected)) {
+        const node = document.nodes.find(node => node.id === id)
+        if (!node) continue
+        assert.equal(node.provider.device, 'auto')
+        assert.equal(plan.bindings[id].device, device)
+        assert.equal(graphSnapshot.nodes.find(node => node.id === id)?.provider.device, device)
+      }
+      assert.equal(plan.bindings.translate.device, 'remote')
+    }
+  })
+})
+
+test('auto is resolved at submission, while explicit devices remain pinned or fail visibly', async t => {
+  const devices = { whisper: ['cpu'], demucs: ['cpu'], voxcpm: ['cpu'] }
+  const { ctx, compile, templates } = await setup(t, devices)
+  const document = templates[1].document
+  const first = await compile(document)
+  assert.equal(first.plan.bindings.separate.device, 'cpu')
+  devices.demucs = ['cpu', 'cuda:0', 'cuda:1']
+  assert.equal((await compile(document)).plan.bindings.separate.device, 'cuda:0')
+  assert.equal(first.graphSnapshot.nodes.find(node => node.id === 'separate')?.provider.device, 'cpu')
+  const separate = document.nodes.find(node => node.id === 'separate')!
+  for (const device of ['cpu', 'cuda:1']) {
+    separate.provider.device = device
+    assert.equal((await compile(document)).plan.bindings.separate.device, device)
+  }
+  separate.provider.device = 'cuda:9'
+  await assert.rejects(compile(document), { code: 'INVALID_GRAPH' })
+  separate.provider.device = 'auto'
+  devices.demucs = []
+  await assert.rejects(compile(document), { code: 'INVALID_GRAPH' })
+  assert.equal(separate.provider.device, 'auto')
+  assert.deepEqual(Graph.inspectGraph(document, ctx.catalog, {}, false).diagnostics, [])
 })
 
 test('new templates use a configured model provider and reject a model with insufficient output capacity', async t => {

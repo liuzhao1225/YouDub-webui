@@ -466,6 +466,7 @@
     "workflow.settings.unavailable": " · unavailable",
     "workflow.settings.add.model.provider": "Add model provider",
     "workflow.settings.device": "Device",
+    "workflow.settings.auto.device": "Automatic (prefer GPU)",
     "workflow.settings.node.editor.plugin.is.unavailable": "Node editor plugin is unavailable.",
     "workflow.settings.auto.continue": "Auto continue",
     "workflow.settings.pause.after.this.node.until.its.result.is.approved": "Pause after this node until its result is approved.",

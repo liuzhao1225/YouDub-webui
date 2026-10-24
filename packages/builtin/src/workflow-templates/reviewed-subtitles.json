@@ -16,7 +16,7 @@
       "id": "recognize",
       "type": "youdub.transcribe",
       "typeVersion": "1.0.0",
-      "provider": { "id": "whisper", "model": "tiny", "device": "cpu" },
+      "provider": { "id": "whisper", "model": "tiny", "device": "auto" },
       "config": { "sourceLanguage": "auto" },
       "autoContinue": false
     },

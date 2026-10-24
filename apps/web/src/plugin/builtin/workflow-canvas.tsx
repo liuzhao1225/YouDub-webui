@@ -177,5 +177,5 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
 }
 export function createNode(definition: NodeTypeDefinition): GraphNode {
   const model = definition.provider.models?.find(item => typeof item === 'string' || item.available !== false)
-  return { id: crypto.randomUUID(), type: definition.type, typeVersion: definition.version, provider: { id: definition.providerId, ...(model ? { model: typeof model === 'string' ? model : model.id, device: typeof model === 'string' ? 'cpu' : model.devices?.[0] ?? 'cpu' } : {}) }, config: structuredClone(definition.defaults), autoContinue: true }
+  return { id: crypto.randomUUID(), type: definition.type, typeVersion: definition.version, provider: { id: definition.providerId, ...(model ? { model: typeof model === 'string' ? model : model.id, device: definition.provider.execution === 'remote' ? 'remote' : 'auto' } : {}) }, config: structuredClone(definition.defaults), autoContinue: true }
 }
