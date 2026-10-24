@@ -1,4 +1,9 @@
-.surface { min-width: 0; border: .5px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-1); }
+@layer components {
+  .surface { min-width: 0; border: .5px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-lg); background: var(--dsw-alias-bg-layer-1); }
+  .interactive { outline: none; transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out); }
+  .interactive:hover { border-color: var(--dsw-alias-border-l4); }
+  .interactive:focus-visible { outline: 2px solid var(--dsw-alias-link); outline-offset: 2px; }
+}
 .sectionTitle { margin: 0; padding: 16px; border-bottom: .5px solid var(--dsw-alias-border-l2); font-size: 16px; line-height: 24px; font-weight: 500; }
 .alert { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); font-size: 14px; line-height: 22px; }
 .alert > svg { flex: none; width: 16px; height: 16px; margin-top: 3px; }

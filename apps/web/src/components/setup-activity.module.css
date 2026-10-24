@@ -1,0 +1,7 @@
+.viewport {
+  /* Target a quarter-window text area, bounded to 6–12 lines, plus padding.
+     Content length and the follow button never change the scroll area's size. */
+  --log-inset-block: calc(var(--spacing) * 3);
+  block-size: calc(clamp(6lh, 25dvh, 12lh) + var(--log-inset-block) * 2);
+  padding-block: var(--log-inset-block);
+}

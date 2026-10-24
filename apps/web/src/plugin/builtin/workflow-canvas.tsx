@@ -1,3 +1,4 @@
+import { Surface } from '@/components/ui/surface'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, Choice } from '@/components/ui/native-select'
@@ -145,7 +146,8 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
       await instance.fitView({ padding: 0.12, minZoom: 0.75, maxZoom: 1 })
       const width = container.current?.clientWidth
       if (!width) return
-      const bounds = instance.getNodesBounds(nodes), viewport = instance.getViewport(), padding = width * 0.12
+      // Graphs wider than the readable zoom start near the left edge so the next nodes stay in view.
+      const bounds = instance.getNodesBounds(nodes), viewport = instance.getViewport(), padding = Math.min(width * 0.12, 32)
       if (bounds.width * viewport.zoom > width - 2 * padding) await instance.setViewport({ ...viewport, x: padding - bounds.x * viewport.zoom })
     }} minZoom={0.15} maxZoom={2} defaultViewport={document.presentation.viewport} onlyRenderVisibleElements={false}
       nodesDraggable={!disabled} nodesConnectable={!readOnly && !disabled} edgesReconnectable={false} deleteKeyCode={readOnly || disabled ? null : ['Backspace', 'Delete']} panOnScroll panOnDrag zoomOnDoubleClick={false}
@@ -170,7 +172,7 @@ export function WorkflowCanvas({ document, types, readOnly = false, disabled = f
       ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': tx("workflow.canvas.zoom.in"), 'controls.zoomOut.ariaLabel': tx("workflow.canvas.zoom.out"), 'controls.fitView.ariaLabel': tx("workflow.canvas.fit.view") }}>
       <Background gap={24} size={1} /><Controls showInteractive={false} fitViewOptions={{ padding: 0.12, maxZoom: 1 }} />
     </ReactFlow>
-    {selectedEdge && !readOnly && !disabled && <div className="absolute top-3 left-1/2 z-10 flex max-w-[90%] -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-2"><span className="truncate text-xs">{edges.find((edge) => edge.id === selectedEdge)?.sourceHandle} → {edges.find((edge) => edge.id === selectedEdge)?.targetHandle}</span><Button variant="ghost" size="icon-xs" type="button" aria-label={tx("workflow.canvas.delete.connection")} onClick={() => { onChange?.({ ...document, edges: document.edges.filter((edge) => edge.id !== selectedEdge), outputs: document.outputs.filter((port) => `output:${port.id}` !== selectedEdge) }); setSelectedEdge(undefined) }}><X className="size-4" /></Button></div>}
+    {selectedEdge && !readOnly && !disabled && <Surface as="div" className="absolute top-3 left-1/2 z-10 flex max-w-[90%] -translate-x-1/2 items-center gap-3 px-4 py-2"><span className="truncate text-xs">{edges.find((edge) => edge.id === selectedEdge)?.sourceHandle} → {edges.find((edge) => edge.id === selectedEdge)?.targetHandle}</span><Button variant="ghost" size="icon-xs" type="button" aria-label={tx("workflow.canvas.delete.connection")} onClick={() => { onChange?.({ ...document, edges: document.edges.filter((edge) => edge.id !== selectedEdge), outputs: document.outputs.filter((port) => `output:${port.id}` !== selectedEdge) }); setSelectedEdge(undefined) }}><X className="size-4" /></Button></Surface>}
   </div>
 }
 export function createNode(definition: NodeTypeDefinition): GraphNode {

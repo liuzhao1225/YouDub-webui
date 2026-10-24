@@ -16,3 +16,8 @@ export function formatBytes(bytes: number) {
   }
   return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[unit]}`
 }
+
+/** Decimal byte units used by installer download manifests. */
+export function sizeLabel(bytes: number) {
+  return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(2)} GB` : bytes >= 1e6 ? `${(bytes / 1e6).toFixed(1)} MB` : bytes >= 1000 ? `${Math.round(bytes / 1000)} KB` : `${Math.round(bytes)} B`
+}

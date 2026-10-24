@@ -4,14 +4,14 @@ import { cn } from '@/lib/utils'
 import styles from './page-layout.module.css'
 import nativeHeader from '../../../../vendor/deepseek-harness/source/packages/client/ui-layout/src/client/ConversationRoot.module.css'
 
-type PageProps = HTMLAttributes<HTMLElement> & { as?: 'main' | 'div' | 'section' | 'header' }
+type PageProps = HTMLAttributes<HTMLElement> & { as?: 'main' | 'div' | 'section' | 'header'; width?: 'default' | 'form' }
 const WindowHeaderContext = createContext<HTMLElement | null | undefined>(undefined)
 export const WindowHeaderProvider = WindowHeaderContext.Provider
 export function useWindowHeader() { return useContext(WindowHeaderContext) !== undefined }
 
 /** Shared content boundary; canvas workspaces keep their full-width body. */
-export function PageContainer({ as: Component = 'div', className, ...props }: PageProps) {
-  return <Component className={cn(styles.container, "@container/page", className)} {...props} />
+export function PageContainer({ as: Component = 'div', width = 'default', className, ...props }: PageProps) {
+  return <Component className={cn(styles.container, width === 'form' && styles.form, "@container/page", className)} {...props} />
 }
 export function Page({ as = 'main', className, ...props }: PageProps) {
   return <PageContainer as={as} className={cn(styles.page, className)} {...props} />

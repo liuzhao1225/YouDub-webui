@@ -113,7 +113,7 @@ it('opens unfinished nodes without promising results', async () => {
 it('keeps the initial long graph readable at its start while manual fit can show all nodes', async () => {
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(1000)
   render(<LanguageProvider><WorkflowCanvas document={graph()} types={[type]} fitOnLoad onOpen={() => {}} /></LanguageProvider>)
-  await waitFor(() => expect(flow.setViewport).toHaveBeenCalledWith({ x: 360, y: 30, zoom: 0.75 }))
+  await waitFor(() => expect(flow.setViewport).toHaveBeenCalledWith({ x: 272, y: 30, zoom: 0.75 }))
   expect(flow.fitView).toHaveBeenCalledOnce()
   await userEvent.setup().click(screen.getByRole('button', { name: '适应画布' }))
   expect(flow.fitView).toHaveBeenLastCalledWith({ padding: 0.12, maxZoom: 1 })

@@ -249,6 +249,7 @@
     "library.steps": "处理步骤",
     "library.task.log": "任务日志",
     "library.reload.log": "重新加载日志",
+    "library.reload.preview": "重新加载",
     "translation.setup.view.reconnect": "重新连接",
     "translation.setup.view.checking.translation.settings": "检查翻译服务配置…",
     "translation.setup.view.configure.later": "稍后配置",
@@ -389,7 +390,6 @@
     "workflow.resources.configuration.and.resources.missing": "{value1}；运行资源未就绪",
     "workflow.resources.required.resources.are.missing": "缺少运行所需资源",
     "workflow.resources.configure.the.service.url.api.key.and.model": "请配置服务地址、API Key 和模型。",
-    "workflow.resources.diagnostics": "诊断详情",
     "workflow.resources.details": "准备详情",
     "workflow.resources.check.again": "重新检查",
     "workflow.resources.configure.service.connection": "配置服务连接",
@@ -709,6 +709,7 @@
     "task.progress.export.complete": "输出文件已就绪",
     "task.progress.mix.adjusted": "已调整 {current}/{total} 段配音",
     "task.progress.align.complete": "已校准 {count} 个字词边界",
-    "media.upload.use.sample": "使用黄仁勋采访视频"
+    "media.upload.use.sample": "使用黄仁勋采访视频",
+    "workflow.resources.not.configured": "未配置"
   }
 }

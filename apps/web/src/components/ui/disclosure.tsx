@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { DisclosureRow } from './harness-primitives'
 import local from './disclosure.module.css'
 import surface from './surfaces.module.css'
@@ -10,10 +10,11 @@ export function Disclosure({ title, children, className, contained = true, inlin
   title: string; children: ReactNode; className?: string; contained?: boolean; inline?: boolean
   open?: boolean; onOpenChange?: (open: boolean) => void
 }) {
-  const [expanded, setExpanded] = useState(open)
-  useEffect(() => setExpanded(open), [open])
+  const [state, setState] = useState({ source: open, expanded: open })
+  if (state.source !== open) setState({ source: open, expanded: open })
+  const { expanded } = state
   return <DisclosureRow title={title} icon={<ChevronRight aria-hidden="true" />} open={expanded} expandable expandOnRowClick
-    onToggle={() => { const next = !expanded; setExpanded(next); onOpenChange?.(next) }}
+    onToggle={() => { const next = !expanded; setState({ source: open, expanded: next }); onOpenChange?.(next) }}
     className={cn(inline && local.inline, contained && [surface.surface, local.contained], className)}>
     <div className={local.content}>{children}</div>
   </DisclosureRow>

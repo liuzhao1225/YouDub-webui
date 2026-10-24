@@ -11,8 +11,6 @@ html { --yd-window-top-clearance:var(--dsh-frame-top-clearance,0px); }
 .yd-main-chrome { height:var(--dsh-frame-top-clearance,0px); flex-shrink:0; }
 .yd-main { flex:1; min-height:0; min-width:0; overflow:auto; overscroll-behavior:contain; }
 .yd-feature-root { container-type:inline-size; }
-.yd-domain-alert { display:flex; align-items:flex-start; gap:8px; padding:12px; border-radius:var(--dsw-radius-md); color:var(--dsw-alias-label-primary); background:var(--dsw-alias-bg-layer-2); }
-.yd-domain-alert > div { min-width:0; overflow-wrap:anywhere; }
 .yd-select { max-width:100%; }
 .yd-select > button { width:100%; min-width:0; justify-content:space-between; }
 .yd-quick-fields { padding:12px; min-width:240px; max-width:calc(100vw - 32px); }

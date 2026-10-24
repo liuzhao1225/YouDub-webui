@@ -98,7 +98,7 @@ Harness 未发布统一 spacing token 枚举。已存在的组件间距直接使
 | NativeSelect / Select | 桌面Button+Menu，Web同源外观适配 | 触发器36px/12px角；菜单16px角 | 单选；当前项有勾选；关闭后焦点可回到触发器 |
 | Choice | Checkbox | 原生16px复选框，标签gap6px，disabled50% | 受控布尔值；可见或可访问标签必填 |
 | Switch | Switch | 36×20px，thumb16px，padding2px，位移16px | 即时二选一；不是执行按钮；checked与aria-checked一致 |
-| Segmented | SegmentedControl | 容器padding4px/12px角；项28px/8px角；总高36px | 互斥面板；方向键/Home/End；选中项唯一tab stop；关联panel |
+| Segmented | SegmentedControl | 容器padding4px/12px角；项最小28px/8px角；单行总高36px | 等宽项受容器约束，长标签换行并共享行高；方向键/Home/End；选中项唯一tab stop；关联panel |
 | Tag | Tag | 1px 8px，11/17px，胶囊 | 只读标签；outline/solid/neutral/quiet/success/info/warning/danger |
 | Tooltip | Tooltip | 3px 7px，8px角，最大50vw，gap8px | 提供短提示；纯图标仍需aria-label；不承载必要错误 |
 | Dialog / Modal | Modal | 默认宽380px，28px角，内容侧距24px | 宽业务编辑器可调整尺寸；复用遮罩、焦点管理和关闭逻辑 |
@@ -194,7 +194,7 @@ Logo 保留红 `#FF0033`、粉 `#FB7299`、蓝 `#00AEEC` 和字标渐变。工�
 
 详情与编辑页复用同一页头结构：返回按钮、标题、状态标签、右侧操作。次要日期置于标题下方；工作流名称默认展示为标题，点击编辑按钮才进入输入状态。页头空白区域声明 `data-window-drag`，交互控件沿用 Harness 的 `no-drag` 规则，画布保持自身拖动行为。
 
-工作台沿用同一内容宽度与横向内距，保留品牌标题区域。工作流画布保留全宽、填满工作区，页头顶部仍为28px；节点设置用普通页面边界。首次准备保留品牌页头与较窄的表单容器，品牌页头上边距28px。设置和扩展详情保留 Harness 原生结构。
+工作台沿用同一内容宽度与横向内距，保留品牌标题区域。工作流画布保留全宽、填满工作区，页头顶部仍为28px；节点设置用普通页面边界。首次准备统一使用 `SetupPage`：品牌、正文、底部动作共用 `Page width="form"` 的720px内容上限（来自 Harness ModelsSection），上边距28px，横向仍使用共享内距。加载和错误页沿用同一布局。设置和扩展详情保留 Harness 原生结构。
 
 工作流输入、输出各自拥有独立配置面板；选择输入节点仅显示输入字段，选择输出节点仅显示输出映射。使用同一层级的面板标题和共享表单控件，取消“输入 / 输出”合并分组及嵌套边框。节点点击、双击和“完整设置”均指向对应配置。
 

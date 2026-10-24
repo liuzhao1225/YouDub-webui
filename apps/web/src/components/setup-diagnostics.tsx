@@ -1,7 +1,9 @@
-import { Disclosure } from '@/components/ui/disclosure'
-import { Textarea } from '@/components/ui/textarea'
 'use client'
 
+import { Surface } from '@/components/ui/surface'
+import { InlineAlert } from '@/components/inline-alert'
+import { Disclosure } from '@/components/ui/disclosure'
+import { Textarea } from '@/components/ui/textarea'
 import { copyText } from '@/lib/clipboard'
 import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, ExternalLink } from '@/lib/icons'
@@ -26,7 +28,7 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
     try { await copyText(report); setCopied(report) }
     catch (error) { setCopied(''); setCopyError(text('setup.copyFailed', { error: error instanceof Error ? error.message : String(error) })) }
   }
-  return <section aria-label={text('setup.logs')} className={cn('mt-4 rounded-xl border border-border bg-card p-4', failed && 'border-status-danger/25 bg-status-danger/10')}>
+  return <Surface aria-label={text('setup.logs')} className={cn('p-4', failed && 'border-status-danger/25 bg-status-danger/10')}>
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
       <span className="text-sm font-medium">{text('setup.logs')}</span>
       <div className="flex flex-wrap gap-2">
@@ -34,7 +36,7 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
         <a href={issue.url} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'outline', size: 'sm' })} onClick={() => { void copy() }}><ExternalLink />{text('setup.issue')}</a>
       </div>
     </div>
-    {copyError && <p role="alert" className="mb-3 text-xs text-status-danger-fg">{copyError}</p>}
+    {copyError && <InlineAlert className="mb-3">{copyError}</InlineAlert>}
     <p className="mb-3 text-xs text-muted-foreground">{text('setup.issueHint')}</p>
     <Disclosure open={failed || Boolean(copyError)} contained={false} title={text('setup.viewLogs')}>
 
@@ -42,5 +44,5 @@ export function SetupDiagnostics({ state, requestError = '' }: { state?: SetupSt
         <Textarea ref={log} aria-label={text('setup.logContent')} readOnly value={report} rows={10} onScroll={event => { const node = event.currentTarget; follow.current = node.scrollTop + node.clientHeight >= node.scrollHeight - 1 }} className="p-3 font-mono text-xs leading-relaxed" />
       </div>
     </Disclosure>
-  </section>
+  </Surface>
 }

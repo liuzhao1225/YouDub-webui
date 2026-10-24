@@ -15,7 +15,7 @@ import { useActiveView, useObservableSource, usePendingUnload } from '../view-ho
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Page, PageHeader, useWindowHeader } from '@/components/page-layout'
 import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
@@ -203,7 +203,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx("workflow.task.check.submission")}</Button></div>}
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3"><Segmented id={tabsId} value={tab} onChange={setTab} ariaLabel={node?.label || text(definition?.label, language) || text(detail.step.label, language)} options={(['result', 'inputs', 'config', 'log'] as const).map(value => ({ value, label: value === 'result' ? tx("workflow.task.results") : value === 'inputs' ? tx("workflow.task.inputs") : value === 'config' ? tx("workflow.task.configuration") : tx("workflow.task.task.log") }))} />
-      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect  disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
+      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
     </div>
     <div role="tabpanel" id={`${tabsId}-${tab}-panel`} aria-labelledby={`${tabsId}-${tab}`} className="space-y-4">
     {tab === 'result' && historical && !!definition?.corrections && (awaitingReview || terminal) && <Button variant="outline" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={() => {
@@ -242,7 +242,7 @@ function NodeConfiguration({ node, definition, raw }: { node?: GraphNode; defini
       <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.after.completion")}</dt><dd className="text-sm">{node.autoContinue ? tx("workflow.task.continue.automatically") : tx("workflow.task.wait.for.approval")}</dd></div>
     </Surface>}
     {node && Object.keys(node.config).length > 0 && <ConfigurationValues value={node.config} schema={definition?.configSchema} />}
-    <Disclosure  contained={true} title={tx("workflow.task.raw.configuration")}><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></Disclosure>
+    <Disclosure contained={true} title={tx("workflow.task.raw.configuration")}><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></Disclosure>
   </section>
 }
 function ConfigurationValues({ value, schema, nested = false }: { value: JsonObject; schema?: JsonSchema; nested?: boolean }) {
@@ -324,7 +324,7 @@ function SpeechResult({ taskId, value, translation, historical, raw }: { taskId:
       return <li key={`${segment.id}-${index}`} aria-label={label} className="grid grid-cols-[2ch_minmax(0,1fr)] items-center gap-3 p-3 @min-[640px]/page:grid-cols-[2ch_minmax(0,1fr)_minmax(16rem,1fr)]">
         <span className="text-right text-xs tabular-nums text-muted-foreground" title={segment.id}>{index + 1}</span>
         <div className="min-w-0">{sentence ? <p className="whitespace-pre-wrap break-words text-sm leading-5">{sentence}</p> : !historical && <p className="text-sm text-muted-foreground">{tx("workflow.task.no.unique.matching.translation")}</p>}</div>
-        <div className="col-start-2 flex min-w-0 items-center gap-2 @min-[640px]/page:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className="shrink-0 rounded-md p-2 text-link hover:bg-muted"><Download className="size-4" /></a></div>
+        <div className="col-start-2 flex min-w-0 items-center gap-2 @min-[640px]/page:col-start-auto"><div className="min-w-0 flex-1"><Media url={url} video={false} label={label} /></div><a href={url} download aria-label={`${tx("workflow.task.download.audio")} ${index + 1}`} title={tx("workflow.task.download.audio")} className={buttonVariants({ variant: 'link', size: 'icon', className: 'shrink-0' })}><Download className="size-4" /></a></div>
       </li>
     })}</Surface>
     <RawResult value={raw} />
@@ -337,7 +337,7 @@ function Media({ url, video, label }: { url: string; video: boolean; label?: str
 }
 function RawResult({ value }: { value: unknown }) {
   const tx = useText()
-  return <Disclosure  contained={true} title={tx("workflow.task.raw.data")}><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></Disclosure>
+  return <Disclosure contained={true} title={tx("workflow.task.raw.data")}><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></Disclosure>
 }
 function ResultViewer({ taskId, value, labels = {} }: { taskId: string; value: unknown; labels?: Record<string, string> }) {
   const tx = useText()
@@ -357,7 +357,7 @@ function ResultViewer({ taskId, value, labels = {} }: { taskId: string; value: u
     seen.set(artifact.label, (seen.get(artifact.label) ?? 0) + 1)
     const label = artifact.label + ((counts.get(artifact.label) ?? 0) > 1 ? ` ${seen.get(artifact.label)}` : '')
     return <Surface as="div" key={artifact.id} className="space-y-3 p-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">{artifact.label && <span className="text-sm font-medium">{label}</span>}<a href={url} target="_blank" rel="noreferrer" className="ml-auto inline-flex shrink-0 items-center gap-2 text-xs text-link"><Download className="size-4" />{audio ? tx("workflow.task.open.audio") : video ? tx("workflow.task.open.video") : tx("workflow.task.open.file")}{!artifact.label && artifacts.size > 1 ? ` ${index + 1}` : ''}</a></div>
+      <div className="flex flex-wrap items-center justify-between gap-2">{artifact.label && <span className="text-sm font-medium">{label}</span>}<a href={url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'link', size: 'sm', className: 'ml-auto shrink-0' })}><Download className="size-4" />{audio ? tx("workflow.task.open.audio") : video ? tx("workflow.task.open.video") : tx("workflow.task.open.file")}{!artifact.label && artifacts.size > 1 ? ` ${index + 1}` : ''}</a></div>
       {(audio || video) && <div className="min-w-0 flex-1"><Media url={url} video={video} /></div>}
     </Surface>
   })}<RawResult value={value} /></div>

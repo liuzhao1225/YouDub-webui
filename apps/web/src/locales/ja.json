@@ -249,6 +249,7 @@
     "library.steps": "処理ステップ",
     "library.task.log": "タスクログ",
     "library.reload.log": "ログを再読み込み",
+    "library.reload.preview": "再読み込み",
     "translation.setup.view.reconnect": "再接続",
     "translation.setup.view.checking.translation.settings": "翻訳サービスの設定を確認中…",
     "translation.setup.view.configure.later": "後で設定",
@@ -389,7 +390,6 @@
     "workflow.resources.configuration.and.resources.missing": "{value1}。必要なリソースが未準備です",
     "workflow.resources.required.resources.are.missing": "必要なリソースが不足しています",
     "workflow.resources.configure.the.service.url.api.key.and.model": "サービスURL、APIキー、モデルを設定してください。",
-    "workflow.resources.diagnostics": "診断の詳細",
     "workflow.resources.details": "準備の詳細",
     "workflow.resources.check.again": "再確認",
     "workflow.resources.configure.service.connection": "サービス接続を設定",
@@ -709,6 +709,7 @@
     "task.progress.export.complete": "出力ファイルの準備完了",
     "task.progress.mix.adjusted": "音声クリップを調整済み {current}/{total}",
     "task.progress.align.complete": "{count} 個の単語境界を調整済み",
-    "media.upload.use.sample": "ジェンスン・フアンの動画を使う"
+    "media.upload.use.sample": "ジェンスン・フアンの動画を使う",
+    "workflow.resources.not.configured": "未設定"
   }
 }

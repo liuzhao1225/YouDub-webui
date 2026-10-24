@@ -21,6 +21,7 @@ afterEach(() => {
   window.localStorage.clear()
   vi.restoreAllMocks()
   Reflect.deleteProperty(HTMLElement.prototype, "requestFullscreen")
+  Reflect.deleteProperty(document, "fullscreenElement")
 })
 
 function renderPlayer() {
@@ -46,8 +47,9 @@ describe("成品视频播放器", () => {
     expect(video).toHaveAttribute("src", "/api/tasks/task-a/artifact/final-video")
 
     await user.click(within(player).getByRole("button", { name: "倍速" }))
-    const menu = within(player).getByRole("menu", { name: "倍速" })
-    expect(within(menu).getAllByRole("menuitemradio").map((item) => item.textContent)).toEqual([
+    const menu = screen.getByRole("menu")
+    expect(player.contains(menu)).toBe(false)
+    expect(within(menu).getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
       "0.5x",
       "0.75x",
       "1x",
@@ -55,11 +57,12 @@ describe("成品视频播放器", () => {
       "1.5x",
       "2x",
     ])
-    await user.click(within(menu).getByRole("menuitemradio", { name: "1.5x" }))
+    await user.click(within(menu).getByRole("menuitem", { name: "1.5x" }))
     fireEvent.rateChange(video)
     expect(video.playbackRate).toBe(1.5)
     expect(within(player).getByRole("button", { name: "倍速" })).toHaveTextContent("1.5x")
-    expect(within(player).queryByRole("menu")).not.toBeInTheDocument()
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    expect(within(player).getByRole("button", { name: "倍速" })).toHaveFocus()
 
     await user.click(within(player).getByRole("button", { name: "静音" }))
     fireEvent.volumeChange(video)
@@ -71,6 +74,13 @@ describe("成品视频播放器", () => {
     await user.click(within(player).getByRole("button", { name: "全屏" }))
     expect(requestFullscreen).toHaveBeenCalledTimes(1)
     expect(requestFullscreen.mock.contexts[0]).toBe(player)
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, value: player })
+    fireEvent(document, new Event("fullscreenchange"))
+    await user.click(within(player).getByRole("button", { name: "倍速" }))
+    expect(player.contains(screen.getByRole("menu"))).toBe(true)
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    expect(within(player).getByRole("button", { name: "倍速" })).toHaveFocus()
   })
 
   it("播放器聚焦时支持键盘快捷键", async () => {

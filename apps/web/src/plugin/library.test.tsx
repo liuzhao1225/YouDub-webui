@@ -128,6 +128,36 @@ it('shows graph results before a collapsed step list and uses the workflow title
 })
 
 
+it('previews subtitle cues in a dialog instead of opening the raw file', async () => {
+  const srt = '1\n00:00:01,000 --> 00:00:02,500\n你好\n\n2\n00:00:03,000 --> 00:00:04,000\n再见\n'
+  const request = vi.fn(async (path: string) => path.endsWith('/files/subtitle') ? srt : { ...task, outputs: [{ id: 'subtitle', label: '中文字幕', mimeType: 'application/x-subrip', size: 2048, url: '/subtitle.srt' }] })
+  mount(request)
+  await userEvent.setup().click(await screen.findByRole('button', { name: '预览文本' }))
+  const dialog = await screen.findByRole('dialog', { name: '中文字幕' })
+  expect(await screen.findByText('你好')).toBeVisible()
+  expect(screen.getByText('00:00:01,000 → 00:00:02,500')).toBeVisible()
+  expect(dialog.querySelector('a[download]')).toHaveAttribute('href', '/subtitle.srt')
+  expect(request.mock.calls.some(([path]) => path === '/api/v2/tasks/original/files/subtitle')).toBe(true)
+})
+it('keeps ordinary text complete even when it contains arrows and subtitle timestamps', async () => {
+  const content = '说明\n需要保留的开头\n\nA --> B\n执行步骤\n\n00:00:01,000 --> 00:00:02,500\n时间示例\n\n结论\n需要保留的结尾'
+  const request = vi.fn(async (path: string) => path.endsWith('/files/text') ? content : { ...task, outputs: [{ id: 'text', name: 'notes.txt', mimeType: 'text/plain', url: '/notes.txt' }] })
+  mount(request)
+  await userEvent.setup().click(await screen.findByRole('button', { name: '预览文本' }))
+  const dialog = await screen.findByRole('dialog', { name: 'notes.txt' })
+  await waitFor(() => expect(dialog.querySelector('pre')?.textContent).toBe(content))
+})
+it('retains unrecognized subtitle blocks alongside formatted cues', async () => {
+  const content = '说明\n需要保留的开头\n\n1\n00:00:01,000 --> 00:00:02,500\n你好\n\n2\n损坏的时间轴\n这段文字不能消失'
+  const request = vi.fn(async (path: string) => path.endsWith('/files/subtitle') ? content : { ...task, outputs: [{ id: 'subtitle', name: 'subtitles.srt', mimeType: 'text/plain', url: '/subtitles.srt' }] })
+  mount(request)
+  await userEvent.setup().click(await screen.findByRole('button', { name: '预览文本' }))
+  const dialog = await screen.findByRole('dialog', { name: 'subtitles.srt' })
+  expect(await screen.findByText('00:00:01,000 → 00:00:02,500')).toBeVisible()
+  expect(dialog).toHaveTextContent('需要保留的开头')
+  expect(dialog).toHaveTextContent('损坏的时间轴')
+  expect(dialog).toHaveTextContent('这段文字不能消失')
+})
 it('restores an unresolved rerun on return and does not navigate after its source view closes', async () => {
   let complete!: (value: TaskView) => void
   const request = vi.fn(async (path: string) => {
