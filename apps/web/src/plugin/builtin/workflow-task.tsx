@@ -203,7 +203,7 @@ function NodeDetail({ submissionStore, task, detail, types, error, refresh, requ
       setBusy(true); void request(`/api/v2/tasks/${task.id}/actions/${pending}`).then(() => { setPending(''); setPatch({}); setFailure(''); refresh() }).catch((error: Error & { status?: number }) => { setFailure(error.message); if (error.status === 404) setPending('') }).finally(() => setBusy(false))
     }}>{tx("workflow.task.check.submission")}</Button></div>}
     <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3"><Segmented id={tabsId} value={tab} onChange={setTab} ariaLabel={node?.label || text(definition?.label, language) || text(detail.step.label, language)} options={(['result', 'inputs', 'config', 'log'] as const).map(value => ({ value, label: value === 'result' ? tx("workflow.task.results") : value === 'inputs' ? tx("workflow.task.inputs") : value === 'config' ? tx("workflow.task.configuration") : tx("workflow.task.task.log") }))} />
-      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect  disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
+      {tab === 'result' && !!detail.resultRevisions.length && <label className="ml-auto flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">{tx("workflow.task.version")}<NativeSelect disabled={dirty || busy || !!pending} value={revision} onChange={(event) => setViewRevision(Number(event.target.value))}>{detail.resultRevisions.map((item) => <option key={item.revision} value={item.revision}>{item.revision} · {item.source === 'computed' ? tx("workflow.task.original") : tx("workflow.task.correction")}{detail.approvedRevision === item.revision ? ` · ${tx("workflow.task.approved")}` : ''}</option>)}</NativeSelect></label>}
     </div>
     <div role="tabpanel" id={`${tabsId}-${tab}-panel`} aria-labelledby={`${tabsId}-${tab}`} className="space-y-4">
     {tab === 'result' && historical && !!definition?.corrections && (awaitingReview || terminal) && <Button variant="outline" size="sm" disabled={busy || !!pending || !!newTaskId} onClick={() => {
@@ -242,7 +242,7 @@ function NodeConfiguration({ node, definition, raw }: { node?: GraphNode; defini
       <div><dt className="text-xs text-muted-foreground">{tx("workflow.task.after.completion")}</dt><dd className="text-sm">{node.autoContinue ? tx("workflow.task.continue.automatically") : tx("workflow.task.wait.for.approval")}</dd></div>
     </Surface>}
     {node && Object.keys(node.config).length > 0 && <ConfigurationValues value={node.config} schema={definition?.configSchema} />}
-    <Disclosure  contained={true} title={tx("workflow.task.raw.configuration")}><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></Disclosure>
+    <Disclosure contained={true} title={tx("workflow.task.raw.configuration")}><pre className="mt-3 overflow-auto whitespace-pre-wrap break-words text-xs">{JSON.stringify(raw, null, 2)}</pre></Disclosure>
   </section>
 }
 function ConfigurationValues({ value, schema, nested = false }: { value: JsonObject; schema?: JsonSchema; nested?: boolean }) {
@@ -337,7 +337,7 @@ function Media({ url, video, label }: { url: string; video: boolean; label?: str
 }
 function RawResult({ value }: { value: unknown }) {
   const tx = useText()
-  return <Disclosure  contained={true} title={tx("workflow.task.raw.data")}><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></Disclosure>
+  return <Disclosure contained={true} title={tx("workflow.task.raw.data")}><pre className="mt-3 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-xs leading-relaxed">{JSON.stringify(value, null, 2)}</pre></Disclosure>
 }
 function ResultViewer({ taskId, value, labels = {} }: { taskId: string; value: unknown; labels?: Record<string, string> }) {
   const tx = useText()

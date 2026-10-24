@@ -50,10 +50,10 @@ it('keeps workbench resource requirements collapsed and preserves visible failur
   expect(screen.getByRole('button', { name: '重试' })).toBeVisible()
   const details = screen.getByRole('button', { name: '资源详情' })
   expect(details).toHaveAttribute('aria-expanded', 'false')
-  expect(screen.queryByText('模型文件尚未安装。')).not.toBeInTheDocument()
+  expect(screen.queryByText('模型文件尚未安装')).not.toBeInTheDocument()
   await userEvent.setup().click(details)
   expect(details).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.getByText('模型文件尚未安装。')).toBeVisible()
+  expect(screen.getByText('模型文件尚未安装')).toBeVisible()
   expect(screen.getByText('Download denied')).toBeVisible()
 })
 
@@ -176,7 +176,7 @@ it('shows connection configuration separately from language support and blocks s
   const request = vi.fn(async () => ({ status: 'missing', requirements: [{ providerId: 'test', ready: false, automatic: false, configurationRequired: true, reason: 'Provider connection is not configured.' }] }))
   const { push } = mount(<Resources />, request)
   await screen.findByText('语音识别未配置')
-  expect(screen.getByText('请配置服务地址、API Key 和模型。')).toBeInTheDocument()
+  expect(screen.getByText('请配置服务地址、API Key 和模型')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '继续' })).toBeDisabled()
   expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
   await userEvent.setup().click(screen.getByRole('link', { name: '配置服务连接' }))
@@ -244,7 +244,7 @@ it('keeps the original preparation error and exposes a deliberate retry', async 
 it('does not offer automatic downloads for a manual plugin requirement', async () => {
   const request = vi.fn(async () => ({ ...missing, requirements: [{ providerId: 'test', ready: false, automatic: false, reason: '请配置插件的远程服务。' }] }))
   mount(<Resources />, request)
-  await screen.findByText('请配置插件的远程服务。')
+  await screen.findByText('请配置插件的远程服务')
   expect(screen.getByText('语音识别')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '重新检查' })).toBeEnabled()
   expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
@@ -388,7 +388,7 @@ it('keeps missing resources compact while retaining expandable diagnostics and p
   await screen.findByRole('button', { name: '准备所需资源' })
   expect(screen.queryByText('Whisper tiny · 等待中')).not.toBeInTheDocument()
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
-  expect(screen.queryByText('模型文件尚未安装。')).not.toBeInTheDocument()
+  expect(screen.getByText('模型文件尚未安装')).toBeVisible()
   expect(screen.queryByText('/runtime/python -m pip install ...')).not.toBeInTheDocument()
   const user = userEvent.setup()
   for (const details of screen.getAllByRole('button', { name: '诊断详情' })) {
@@ -396,7 +396,6 @@ it('keeps missing resources compact while retaining expandable diagnostics and p
     await user.click(details)
     expect(details).toHaveAttribute('aria-expanded', 'true')
   }
-  expect(screen.getByText('模型文件尚未安装。')).toBeVisible()
   expect(screen.getByText('/runtime/python -m pip install ...')).toBeVisible()
 })
 

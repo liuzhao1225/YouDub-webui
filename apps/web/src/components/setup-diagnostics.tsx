@@ -1,9 +1,9 @@
+'use client'
+
 import { Surface } from '@/components/ui/surface'
 import { InlineAlert } from '@/components/inline-alert'
 import { Disclosure } from '@/components/ui/disclosure'
 import { Textarea } from '@/components/ui/textarea'
-'use client'
-
 import { copyText } from '@/lib/clipboard'
 import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, ExternalLink } from '@/lib/icons'

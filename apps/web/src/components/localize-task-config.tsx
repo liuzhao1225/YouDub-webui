@@ -1,6 +1,6 @@
-import type { MessageKey } from '@/locales'
 "use client"
 
+import type { MessageKey } from '@/locales'
 import { useState, type ReactNode } from "react"
 import { ArrowRightLeft, AudioWaveform, Captions, Clapperboard, Languages, Mic, Speech, type LucideIcon } from "@/lib/icons"
 import { Input } from "@/components/ui/input"

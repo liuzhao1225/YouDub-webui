@@ -44,6 +44,20 @@ it('opens diagnostic details without losing their content', async () => {
   expect(screen.getByText('下载完成')).toBeVisible()
 })
 
+it('updates disclosure from its source while preserving manual collapse', async () => {
+  const user = userEvent.setup()
+  const view = render(<Disclosure title="任务日志" open={false}>日志</Disclosure>)
+  const toggle = screen.getByRole('button', { name: '任务日志' })
+  view.rerender(<Disclosure title="任务日志" open>日志</Disclosure>)
+  expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await user.click(toggle)
+  view.rerender(<Disclosure title="任务日志" open>新日志</Disclosure>)
+  expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  view.rerender(<Disclosure title="任务日志" open={false}>新日志</Disclosure>)
+  view.rerender(<Disclosure title="任务日志" open>新日志</Disclosure>)
+  expect(toggle).toHaveAttribute('aria-expanded', 'true')
+})
+
 
 it.each(['field', 'compound'])('uses the Harness menu keyboard, disabled and focus contract for %s selection', async kind => {
   function Example() {
