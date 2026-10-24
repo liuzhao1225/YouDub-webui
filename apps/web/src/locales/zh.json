@@ -646,6 +646,7 @@
     "setup.examples": "查看官网示例",
     "setup.opening": "启动工作台",
     "setup.prepareAll": "准备全部模型",
+    "setup.startPreparation": "开始准备",
     "setup.openWorkbench": "进入工作台",
     "setup.prepareAgain": "重新准备",
     "setup.pauseAll": "暂停全部",

@@ -59,17 +59,21 @@ export class EnvironmentSetup {
   private async download(id: string, asset: DownloadFile, path: string) {
     const step = this.steps.find(step => step.id === id)!
     step.phase = 'downloading'
-    let previousBytes = 0, previousTime = Date.now()
+    let previousBytes = 0, previousTime = Date.now(), loggedAt = 0
     await this.client.download({ ...asset, sourceGroup: id }, path, this.signal, received => {
       const now = Date.now(), elapsed = (now - previousTime) / 1000
       step.progress = { received, total: asset.size, speed: elapsed >= 0.5 ? (received - previousBytes) / elapsed : step.progress?.speed }
       step.updatedAt = now
       if (elapsed >= 0.5) { previousBytes = received; previousTime = now }
+      if (received > 0 && (now - loggedAt >= 1000 || received === asset.size)) {
+        this.line(step, `${asset.path}: ${(received / 1e6).toFixed(1)} / ${(asset.size / 1e6).toFixed(1)} MB (${Math.floor(received / asset.size * 100)}%)`)
+        loggedAt = now
+      }
     }, event => {
       step.source = sourceName(event.url)
       this.line(step, event.status === 'failed' ? event.error! : `${event.status === 'checking' ? '测试下载源' : '下载'}：${step.source} · ${asset.path}`)
     })
-    this.line(step, `下载完成，校验 ${asset.path}`)
+    this.line(step, `下载及校验完成：${asset.path}`)
     step.phase = 'verifying'; delete step.progress
   }
   private async installer(args: string[], source: string) {
@@ -313,7 +317,7 @@ export class EnvironmentSetup {
       const step = this.steps[index]!
       step.status = 'running'; step.phase = 'installing'; step.startedAt = Date.now(); delete step.detail
       this.line(step, `开始：${step.name}`)
-      try { const detail = await action.run(); if (detail) step.detail = detail; step.status = 'ready'; delete step.phase; delete step.progress }
+      try { const detail = await action.run(); if (detail) step.detail = detail; this.line(step, `完成：${step.name}${detail ? ` · ${detail}` : ''}`); step.status = 'ready'; delete step.phase; delete step.progress }
       catch (error) { step.status = 'failed'; step.detail = error instanceof Error ? error.message : String(error); this.line(step, step.detail); throw error }
     }
   }

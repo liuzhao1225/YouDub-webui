@@ -113,8 +113,10 @@ describe('first-run setup', () => {
     render(<SetupScreen state={{ ...modelChoices, environment: [
       ...modelChoices.environment, { id: 'dependencies', name: '运行依赖', status: 'pending' },
     ] }} onAction={vi.fn()} onPrepare={vi.fn()} />)
-    expect(screen.getByRole('button', { name: '准备全部模型' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '开始准备' })).toBeEnabled()
     expect(screen.getByRole('heading').querySelector('.animate-spin')).toBeNull()
+    expect(screen.queryByRole('region', { name: '模型准备' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('log', { name: '实时日志' })).not.toBeInTheDocument()
   })
   it('requires all models after a prior Whisper-only setup and preserves the original progress controls', async () => {
     const selections = modelItems.map(({ providerId, model }) => ({ providerId, model }))
@@ -188,7 +190,7 @@ describe('first-run setup', () => {
     await screen.findByRole('button', { name: '继续 Qwen3 Aligner' })
     expect(screen.queryByText('翻译服务配置')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '继续' }))
-    await screen.findAllByText(/准备中.*安装/)
+    expect((await screen.findByRole('heading', { name: '环境准备' })).querySelector('.animate-spin')).not.toBeNull()
     expect(screen.queryByText('翻译服务配置')).not.toBeInTheDocument()
     await screen.findByText('翻译服务配置', {}, { timeout: 2000 })
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
@@ -314,4 +316,23 @@ it('shows live installer output immediately and follows new output without distu
   expect(liveLog.scrollTop).toBe(100)
   fireEvent.click(screen.getByRole('button', { name: '回到最新日志' }))
   expect(liveLog.scrollTop).toBe(1000)
+})
+
+it('orders active installation logs by time and switches to a separate model stage', () => {
+  const environment: SetupState['environment'] = [
+    { id: 'python', name: 'Python', status: 'ready', log: '2026-10-24T03:11:00.000Z 完成：Python' },
+    { id: 'acceleration', name: 'Torch', status: 'running', log: '2026-10-24T03:12:00.000Z Downloading torch\n2026-10-24T03:12:01.000Z Downloaded torch' },
+    { id: 'dependencies', name: '运行依赖', status: 'pending', log: '2026-10-24T03:11:01.000Z 完成：基础运行依赖' },
+  ]
+  const view = render(<SetupScreen state={{ ...state, environment }} onAction={vi.fn()} />)
+  expect(screen.getByRole('heading', { name: '环境准备' })).toBeVisible()
+  expect(screen.queryByRole('heading', { name: '模型准备' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Qwen3 Aligner')).not.toBeInTheDocument()
+  expect(screen.getByRole('log').textContent).toMatch(/完成：基础运行依赖[\s\S]*Downloading torch[\s\S]*Downloaded torch$/)
+  view.rerender(<SetupScreen state={{ ...state, environment: environment.map(step => ({ ...step, status: 'ready' })), models: [{ ...state.models[0], log: '2026-10-24T03:13:00.000Z model.safetensors: 50 / 100 MB (50%)' }] }} onAction={vi.fn()} />)
+  expect(screen.getByRole('heading', { name: '模型准备' })).toBeVisible()
+  expect(screen.queryByRole('heading', { name: '环境准备' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('progressbar', { name: '环境准备进度' })).not.toBeInTheDocument()
+  expect(screen.getByRole('log')).toHaveTextContent('model.safetensors: 50 / 100 MB (50%)')
+  expect(screen.getByRole('log')).not.toHaveTextContent('Downloading torch')
 })

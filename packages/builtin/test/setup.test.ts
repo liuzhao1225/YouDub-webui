@@ -255,6 +255,8 @@ test('uv bootstrap and dependency installation expose live output and select the
   assert.equal(uv.env.UV_CACHE_DIR, join(root, 'runtime', 'uv-cache'))
   assert.deepEqual(indexes.slice(0, 2), ['https://pypi.org/simple/uv/', 'https://mirrors.aliyun.com/pypi/simple/uv/'])
   assert.match(step.log!, /Installed 3 packages/)
+  assert.match(step.log!, /完成：基础运行依赖/)
+  assert.match(setup.steps[0]!.log!, /完成：Python 3.12/)
 })
 
 for (const failure of ['probe', 'download', 'resolver']) test(`Torch ${failure} keeps official-first selection and visible failures`, async t => {
