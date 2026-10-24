@@ -12,6 +12,18 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
   const input = useRef<HTMLInputElement>(null)
   const inputId = useId()
   const [dragActive, setDragActive] = useState(false)
+  const [loadingSample, setLoadingSample] = useState(false)
+  const [sampleError, setSampleError] = useState('')
+  disabled ||= loadingSample
+  async function loadSample() {
+    setLoadingSample(true); setSampleError('')
+    try {
+      const response = await fetch('/api/youdub/examples/assets/jensen-en.mp4')
+      if (!response.ok) throw new Error(`jensen-en.mp4: HTTP ${response.status}`)
+      onChange(new File([await response.blob()], 'jensen-en.mp4', { type: 'video/mp4' }))
+    } catch (error) { setSampleError(error instanceof Error ? error.message : String(error)) }
+    finally { setLoadingSample(false) }
+  }
   useEffect(() => { if (!file && input.current) input.current.value = '' }, [file])
   const video = slot.acceptedMimeTypes.some((mime) => mime.startsWith('video/'))
   const Icon = video ? Film : FileText
@@ -34,6 +46,8 @@ export function UploadSlot({ slot, file, disabled, alternative = false, onChange
         <p className="text-xs text-muted-foreground">{[!alternative && text(slot.label, language), !slot.required && !alternative && tx("media.upload.optional")].filter(Boolean).join(' · ')}</p>
       </div>}
     </div>
+    {video && !file && <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => void loadSample()} className="mt-2">{tx('media.upload.use.sample')}</Button>}
+    {sampleError && <p role="alert" className="mt-2 text-sm text-status-danger-fg">{sampleError}</p>}
   </div>
 }
 

@@ -70,9 +70,12 @@ try {
       return {status:response.status, body:await response.text()};
     })()`);
     assert.equal(tasks.status, 200, tasks.body);
+    await page.getByRole('button', { name: /使用黄仁勋采访视频|Use Jensen Huang interview/ }).click();
+    await page.getByText('jensen-en.mp4', { exact: true }).waitFor();
+    assert.equal(await page.getByRole('link', { name: /查看官网示例|View website examples/ }).getAttribute('href'), 'https://liuzhao1225.github.io/YouDub-webui/#demo');
   }
   const sample = await evaluate(`(async () => {
-    const response = await fetch('/api/youdub/examples/assets/zoo-en.mp4', {headers:{Range:'bytes=0-1023'}});
+    const response = await fetch('/api/youdub/examples/assets/jensen-en.mp4', {headers:{Range:'bytes=0-1023'}});
     return {status:response.status, bytes:(await response.arrayBuffer()).byteLength};
   })()`);
   assert.equal(sample.status, 206);
@@ -86,7 +89,7 @@ try {
   assert.equal(code, 0);
   if (process.platform === 'darwin') execFileSync('codesign', ['--verify', '--deep', '--strict', installed], { stdio: 'pipe' });
   complete = true;
-  console.log(`Packaged YouDub ${appManifest.version}: relocated ${workbench ? 'workbench and Python worker' : 'first setup'}, embedded demo and clean exit passed.`);
+  console.log(`Packaged YouDub ${appManifest.version}: relocated ${workbench ? 'workbench and Python worker' : 'first setup'}, local workflow sample and clean exit passed.`);
 } finally {
   if (!complete && child.exitCode === null) child.kill('SIGKILL');
   // Preserve diagnostic evidence privately. Local launch tokens are redacted before persistence.

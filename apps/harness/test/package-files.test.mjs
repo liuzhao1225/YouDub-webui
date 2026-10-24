@@ -22,6 +22,10 @@ test('desktop dependency selection keeps executable modules and assets without f
     '@deepseek-ai/dsh-web-frontend/index.html',
     '@deepseek-ai/dsh-client-ui-theme/lib/client.js.map',
     'react-dom/cjs/react-dom.development.js.map',
+    'openai/src/index.ts',
+    'zod/src/v4/core/tests/index.test.ts',
+    '@anthropic-ai/sdk/src/index.ts',
+    'gaxios/build/esm/test/test.index.js',
   ]) assert.equal(includes(path, path.endsWith('/src')), false, path);
   for (const path of [
     '@deepseek-ai/dsh/package.json',
@@ -34,6 +38,10 @@ test('desktop dependency selection keeps executable modules and assets without f
     '@deepseek-ai/dsh-web-frontend/dist/assets/app.js',
     '@deepseek-ai/dsh/NOTICE',
     'third-party/src/index.js',
+    'openai/index.mjs',
+    'zod/v4/core/index.js',
+    '@anthropic-ai/sdk/index.js',
+    'gaxios/build/esm/src/index.js',
     '@koromix/koffi-darwin-arm64/koffi.node',
   ]) assert.equal(includes(path), true, path);
 });

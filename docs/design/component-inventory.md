@@ -47,7 +47,6 @@
 | [apps/web/src/plugin/builtin/workflow-task.tsx](../../apps/web/src/plugin/builtin/workflow-task.tsx) | TaskWorkflowPanel, TaskNodePage, TranscriptNodeDetails, TranslationNodeDetails |
 | [apps/web/src/plugin/builtin/workflows.tsx](../../apps/web/src/plugin/builtin/workflows.tsx) | WorkflowLibrary, WorkflowRoute, GraphStudio, name, inject, apply |
 | [apps/harness/src/frontend/alerts.tsx](../../apps/harness/src/frontend/alerts.tsx) | InlineAlert |
-| [apps/harness/src/frontend/examples-page.tsx](../../apps/harness/src/frontend/examples-page.tsx) | ExamplesPage |
 | [apps/harness/src/frontend/i18n.tsx](../../apps/harness/src/frontend/i18n.tsx) | LanguageProvider, useI18n, useText |
 | [apps/harness/src/frontend/plugins.tsx](../../apps/harness/src/frontend/plugins.tsx) | applyPlugins |
 | [apps/harness/src/frontend/resource-pages.tsx](../../apps/harness/src/frontend/resource-pages.tsx) | ResourcesPage |

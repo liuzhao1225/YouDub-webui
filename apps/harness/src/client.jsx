@@ -21,7 +21,6 @@ import { StudioPage } from './frontend/studio-page'
 import { TasksPage, TaskPage, NodePage } from './frontend/task-pages'
 import { WorkflowsPage, WorkflowPage } from './frontend/workflow-pages'
 import { ResourcesPage } from './frontend/resource-pages'
-import { ExamplesPage } from './frontend/examples-page'
 import { createFeatures, domainSlots, FeatureProvider, useFeatures } from './frontend/runtime'
 import { LanguageProvider, useText, useI18n } from './frontend/i18n'
 import { applyLocales } from './frontend/locales'
@@ -42,7 +41,6 @@ const routes = [
   { path:'/workflows/:id', key:'workflow', component:WorkflowPage },
   { path:'/workflows/:id/nodes/:nodeId', key:'workflow-node', component:WorkflowPage },
   { path:'/resources', key:'resources', component:ResourcesPage },
-  { path:'/examples', key:'examples', component:ExamplesPage },
 ]
 function IconButton({ label, children, ...props }) { return <Tooltip label={label} portal><Button aria-label={label} className="yd-icon-button" {...props}>{children}</Button></Tooltip> }
 function IconLink({ label, href, children }) { return <Tooltip label={label} portal><a className={`${buttonCss.button} ${buttonCss.md} ${buttonCss.ghost} yd-icon-button yd-icon-link`} aria-label={label} href={href} target="_blank" rel="noopener noreferrer">{children}</a></Tooltip> }
@@ -89,11 +87,9 @@ function SidebarToolsView({wide,useStore,settings}) {
 }
 function SidebarTools(props) { return <LanguageProvider source={props.localeSource}><ThemeProvider source={props.themeSource}><SidebarToolsView {...props} /></ThemeProvider></LanguageProvider> }
 function Startup({ features, localeSource, themeSource, onReady, renderSlot, translationModels, pickDirectory }) {
-  const [examples,setExamples]=useState(false)
-  const bindings=useMemo(() => ({...features,navigate:() => setExamples(false)}),[features])
-  return <LanguageProvider source={localeSource}><ThemeProvider source={themeSource}><FeatureProvider value={bindings}>
+  return <LanguageProvider source={localeSource}><ThemeProvider source={themeSource}><FeatureProvider value={features}>
     <div className="yd yd-feature-root yd-startup"><div className="yd-main-chrome" data-window-drag aria-hidden="true" /><div className="yd-startup-content">
-      {examples ? <ExamplesPage params={{}} fromSetup /> : <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />,examplesHref:'/api/youdub/examples/index.html',onOpenExamples:() => setExamples(true),className:'min-h-full'}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>}
+      <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />,className:'min-h-full'}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>
     </div></div>
   </FeatureProvider></ThemeProvider></LanguageProvider>
 }

@@ -56,7 +56,7 @@ https://github.com/user-attachments/assets/158de60a-7de4-4ddf-b3d8-478d0423aee6
 
 [原视频](https://www.youtube.com/watch?v=jNQXAC9IVRw) · 英文 → 中文 · 19 秒
 
-[在官网切换中英文试听](https://liuzhao1225.github.io/YouDub-webui/?demo=zoo#demo)。v0.0.2 起，安装包包含这三个示例，可从工作台或环境准备页的“查看内置示例”离线播放。
+[在官网切换中英文试听](https://liuzhao1225.github.io/YouDub-webui/?demo=zoo#demo)。工作台和环境准备页的“查看官网示例”打开官网试听。安装包只保留黄仁勋采访原视频，可直接用作本地工作流输入。
 
 ## 能做什么
 

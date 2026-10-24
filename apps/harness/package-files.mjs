@@ -2,6 +2,8 @@
 export const desktopFiles = [
   'main.mjs', 'lib/**/*', 'resources/**/*', 'scripts/**/*', 'desktop-runtime.json', 'package.json',
   '!**/*.map',
+  '!node_modules/{openai,zod,@anthropic-ai/sdk}/src{,/**}',
+  '!node_modules/gaxios/build/{cjs,esm}/test{,/**}',
   '!node_modules/@deepseek-ai/*/{src,tests,test,__tests__}{,/**}',
   '!node_modules/@deepseek-ai/*/{tsconfig*.json,*.ts,*.tsx,README*,AGENTS.md}',
   '!node_modules/@deepseek-ai/dsh-web-frontend/{public,lib,index.html}{,/**}',
@@ -18,7 +20,6 @@ export const productResources = [
   'packages/builtin/src/workflow-document.ts',
   'packages/builtin/src/media-graph-validation.ts',
   'packages/builtin/src/media-output-validation.ts',
-  'submodule/**/*', 'apps/web/templates/examples.html',
-  'site/style.css', 'site/player.js', 'site/demos.js', 'site/assets/**/*',
+  'submodule/**/*', 'site/assets/jensen-en.mp4',
   '!**/__pycache__/**', '!**/.git{,/**}', '!**/node_modules/**', '!**/.env', '!**/env.txt',
 ];

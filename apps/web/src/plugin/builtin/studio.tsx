@@ -26,7 +26,6 @@ import { UploadSlot } from './media-upload'
 
 function Composer({ workflow, draftStore, afterInputs, onLockChange, request, navigate, useSlot }: { workflow: WorkflowDescription; draftStore: StudioDraftStore; afterInputs?: ReactNode; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot'>) {
   const tx = useText()
-  const { language } = useI18n()
   const draftKey = `${workflow.id}:${workflow.version}`
   const { composers, submissions } = useObservableSource(draftStore)
   const submissionKey = `composer:${draftKey}`
@@ -114,7 +113,7 @@ function TaskSection({ id, title, children }: { id: string; title: string; child
   const tx = useText()
   return <section aria-labelledby={id}><div className="mb-4 flex items-center justify-between gap-4"><h2 id={id} className="text-base font-semibold tracking-tight">{title}</h2><Link href="/tasks" className="inline-flex items-center gap-1 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground">{tx("studio.view.all")}<ChevronRight className="size-4" /></Link></div>{children}</section>
 }
-export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources, examplesLink }: { draftStore: StudioDraftStore; examplesLink?: ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
+export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore: StudioDraftStore } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
   const tx = useText()
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
@@ -146,7 +145,7 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
             renderWorkflow={(item, selector, lockChanged) => <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${item.id}:${item.version}`} workflow={item} afterInputs={selector} onLockChange={lockChanged} />}
           /> : <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} afterInputs={catalog!.workflows.length > 1 ? <div className="flex items-center gap-3"><Label htmlFor="workflow">{tx("studio.workflow")}</Label><NativeSelect id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="min-w-0 flex-1">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></div> : undefined} />)}
         </div>
-        <div className="mt-4 flex justify-center">{examplesLink ?? <a href="/examples/index.html" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx("studio.view.built.in.examples")}</a>}</div>
+        <div className="mt-4 flex justify-center"><a href="https://liuzhao1225.github.io/YouDub-webui/#demo" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx("studio.view.built.in.examples")}</a></div>
         {!!active.length && <div className="mt-6 flex flex-wrap justify-center gap-3">
           {!!awaitingReview.length && <Link href={awaitingReview.length === 1 ? `/tasks/${awaitingReview[0].task.id}/nodes/${awaitingReview[0].step.id}` : '/tasks'} className="inline-flex items-center gap-2 rounded-full border border-status-warning/25 bg-status-warning/10 px-3.5 py-1.5 text-[13px] font-medium text-status-warning-fg">{tx("studio.value.nodes.need.your.review", { value1: awaitingReview.length })}<ArrowRight className="size-3.5" /></Link>}
           {!!processing.length && <Link href="/tasks" className="inline-flex items-center gap-2 rounded-full border border-status-running/25 bg-status-running/10 px-3.5 py-1.5 text-[13px] font-medium text-status-running-fg">{tx("studio.value.tasks.in.progress", { value1: processing.length })}<ArrowRight className="size-3.5" /></Link>}

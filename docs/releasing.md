@@ -10,9 +10,9 @@
 npm run package:desktop -- --dir
 ```
 
-`prepareSourceDevelopment` 选取产品实际使用的 Harness 包，electron-builder 收集生产依赖并生成独立应用。安装包使用相同 Electron、preload、Host 和前端产物。媒体源码、Demucs 与示例作为资源随包分发，Python 和模型按首启选择准备；环境文件、用户数据与开发缓存不进入包。
+`prepareSourceDevelopment` 选取产品实际使用的 Harness 包，electron-builder 收集生产依赖并生成独立应用。安装包使用相同 Electron、preload、Host 和前端产物。媒体源码、Demucs 与一段黄仁勋采访原视频作为资源随包分发，Python 和模型按首启选择准备；环境文件、用户数据与开发缓存不进入包。
 
-在带空格的临时目录复制应用，以空 profile 启动实际 Electron，验证无外部符号链接、首启安装阶段、页面渲染、示例 Range 请求及退出：
+在带空格的临时目录复制应用，以空 profile 启动实际 Electron，验证无外部符号链接、首启安装阶段、页面渲染、本地工作流示例 Range 请求及退出：
 
 ```sh
 # macOS
@@ -29,6 +29,8 @@ npm run package:desktop -- --installers-only
 每次 PR 与 main 提交保留双平台构建、桌面核心行为、产品运行依赖、YouDub 业务与界面测试，以及真实安装包首启、Python worker 和 Windows 安装/卸载验证。
 
 源码检查验证保留的桌面、UI、Host 与业务合同；不执行上游发布、文档、全仓规则或每文件 100% 覆盖率门禁。tag 的来源须已合入 main；发行阶段复用 main 已验收的同提交候选包。
+
+Electron 语言资源仅保留产品支持的中、英、日；第三方 SDK 的源码与测试不进入运行包。官网演示播放器及其余示例媒体留在 GitHub Pages。macOS 镜像使用与 Harness 相同的 HFS+ / ULMO（LZMA），避免默认 APFS / zlib 造成的压缩开销。
 
 ## 正式发行
 

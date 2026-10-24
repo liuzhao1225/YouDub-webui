@@ -21,13 +21,11 @@ import { Surface } from './ui/surface'
 export interface SetupScreenOptions {
   wordmarkSrc?: string
   themeControl?: ReactNode
-  examplesHref?: string
-  onOpenExamples?: () => void
   pickDirectory?: () => Promise<string | null>
   className?: string
 }
 
-export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfigure, pickDirectory, onReset, wordmarkSrc, themeControl, examplesHref = '/examples/index.html', onOpenExamples, className = 'min-h-screen' }: {
+export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfigure, pickDirectory, onReset, wordmarkSrc, themeControl, className = 'min-h-screen' }: {
   state: SetupState; busy?: boolean; onConfigure?: (path: string) => Promise<void>; onAction: (action: SetupAction, id?: string) => void; onReset?: () => void; onPrepare?: (selections: ResourceSelection[]) => void
 } & SetupScreenOptions) {
   const text = useText()
@@ -96,7 +94,7 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfig
         </div>
       </Surface>}
       </>}
-      <div className="mt-4"><a href={examplesHref} onClick={onOpenExamples ? (event) => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) { event.preventDefault(); onOpenExamples() } } : undefined} className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{text('setup.examples')}</a></div>
+      <div className="mt-4"><a href="https://liuzhao1225.github.io/YouDub-webui/#demo" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{text('setup.examples')}</a></div>
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="text-xs tabular-nums text-muted-foreground">{awaitingPreparation || state.phase === 'starting' || !showDownloadProgress ? null : state.models.length ? <>{sizeLabel(received)}{totalKnown && <> / {sizeLabel(total)}</>}{speed > 0 && <span className="ml-3 text-subtle-foreground">{sizeLabel(speed)}/s</span>}</> : ''}</span>
         {verifying ? <Loader2 aria-label={text('setup.verifying')} className="size-5 animate-spin text-status-running-fg" /> : awaitingPreparation ? null : state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />{text('resource.action.retry')}</Button> : state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy || (!active && !failed && !entries.some(entry => entry.status === 'paused'))} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? text('setup.pauseAll') : failed ? text('resource.action.retry') : text('resource.action.resume')}</Button> : state.phase === 'starting' && <Loader2 aria-label={text('setup.starting')} className="size-5 animate-spin text-status-running-fg" />}
