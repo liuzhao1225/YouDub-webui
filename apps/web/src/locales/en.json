@@ -36,6 +36,7 @@
     "auth.signIn": "Sign in",
     "auth.sessionLoading": "Checking your session...",
     "auth.logout": "Sign out",
+    "app.updates.check.for.updates": "Check for updates",
     "localize.task.config.auto.detect": "Auto detect",
     "localize.task.config.remote": "Remote",
     "localize.task.config.output": "Output",

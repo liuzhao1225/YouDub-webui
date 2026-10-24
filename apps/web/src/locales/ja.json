@@ -37,6 +37,7 @@
     "auth.signIn": "ログイン",
     "auth.sessionLoading": "ログイン状態を確認中...",
     "auth.logout": "ログアウト",
+    "app.updates.check.for.updates": "更新を確認",
     "localize.task.config.auto.detect": "自動検出",
     "localize.task.config.remote": "リモート",
     "localize.task.config.output": "出力",

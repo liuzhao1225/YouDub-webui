@@ -37,6 +37,7 @@
     "auth.signIn": "登录",
     "auth.sessionLoading": "正在检查登录状态...",
     "auth.logout": "退出登录",
+    "app.updates.check.for.updates": "检查更新",
     "localize.task.config.auto.detect": "自动识别",
     "localize.task.config.remote": "远端",
     "localize.task.config.output": "输出",
