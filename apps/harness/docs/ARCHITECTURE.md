@@ -111,7 +111,7 @@ sequenceDiagram
 
 ## 数据隔离与完整性
 
-桌面默认配置 home 为 `.cache/harness/desktop`，首次启动先选择语言和独立安装目录。业务数据、Python/venv、媒体工具、缓存和模型使用该保存的目录；既有明确配置的旧目录继续读取。Electron 用户数据位于相邻的 `desktop-user-data`。显式 `DSH_HOME` 可隔离首启实验；浏览器入口默认使用另一个 home。详见[路径表](DEVELOPMENT.md#数据与配置)。
+桌面默认配置 home 为 `.cache/harness/desktop`，首次启动先选择语言和独立安装目录。业务数据、Python/venv、媒体工具、缓存和模型使用该保存的目录；既有明确配置的旧目录继续读取。Electron 用户数据位于相邻的 `desktop-user-data`。显式 `YOUDUB_HOME` 可隔离首启实验；浏览器入口默认使用另一个 home。详见[路径表](DEVELOPMENT.md#数据与配置)。
 
 保留的 Harness 源码直接复用其组件与服务；产品差异在 Git 中维护。框架来源见[源码说明](../../../vendor/deepseek-harness/README.md)。
 

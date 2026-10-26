@@ -1,4 +1,4 @@
-# Copy the fields you need into $DSH_HOME/profiles/youdub/cordis.patch.yml.
+# Copy the fields you need into $YOUDUB_HOME/profiles/youdub/cordis.patch.yml.
 # Harness replaces the whole config of a row, so retain all three required fields.
 - id: youdub-subtitles
   config:

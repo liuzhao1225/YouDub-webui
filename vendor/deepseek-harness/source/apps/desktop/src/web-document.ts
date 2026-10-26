@@ -77,7 +77,7 @@ const PLUGIN_BUNDLE_PATH = /^\/plugins\//u
 export async function forwardWebRequest(request: Request, host: string, cookie: string): Promise<Response> {
   const source = new URL(request.url)
   const origin = request.headers.get('origin')
-  if (origin !== null && origin !== 'dsh-app://app') return new Response(null, { status: 403 })
+  if (origin !== null && origin !== 'youdub-app://app') return new Response(null, { status: 403 })
   const target = new URL(host)
   target.pathname = source.pathname
   target.search = source.search

@@ -27,6 +27,8 @@ SolidCompression=yes
 WizardStyle=modern
 CloseApplications=yes
 RestartApplications=no
+; Upgrade only closes this product; never the upstream Harness executable.
+CloseApplicationsFilter=YouDub.exe
 
 [Languages]
 Name: "chinesesimplified"; MessagesFile: "{#RepoRoot}\apps\desktop\windows\ChineseSimplified.isl"
@@ -38,9 +40,15 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "{#RepoRoot}\dist\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[InstallDelete]
+; Replace application-owned code on upgrade. Runtime, models and credentials
+; live in YouDub's separate data directory and are never installer payloads.
+Type: filesandordirs; Name: "{app}\resources\app"
+Type: filesandordirs; Name: "{app}\resources\youdub"
+
 [Icons]
-Name: "{group}\YouDub"; Filename: "{app}\YouDub.exe"
-Name: "{autodesktop}\YouDub"; Filename: "{app}\YouDub.exe"; Tasks: desktopicon
+Name: "{group}\YouDub"; Filename: "{app}\YouDub.exe"; AppUserModelID: "com.youdub.desktop"
+Name: "{autodesktop}\YouDub"; Filename: "{app}\YouDub.exe"; Tasks: desktopicon; AppUserModelID: "com.youdub.desktop"
 
 [Run]
 Filename: "{app}\YouDub.exe"; Description: "{cm:LaunchProgram,YouDub}"; Flags: nowait postinstall skipifsilent

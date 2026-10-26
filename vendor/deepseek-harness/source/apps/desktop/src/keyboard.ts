@@ -53,7 +53,7 @@ export function installDesktopShortcuts(
     closeBinding = close?.issue === null && close.conflicts.length === 0 ? close.binding : null
     if (wasEnabled !== (revision !== undefined) || previousAccelerator !== closeAccelerator()) updateMenu()
     const window = getWindow()
-    if (window !== undefined && !window.isDestroyed() && window.webContents.mainFrame.url.startsWith('dsh-app://app/')) {
+    if (window !== undefined && !window.isDestroyed() && window.webContents.mainFrame.url.startsWith('youdub-app://app/')) {
       window.webContents.send(DESKTOP_IPC.shortcutsChanged, snapshot)
     }
   }

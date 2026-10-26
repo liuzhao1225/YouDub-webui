@@ -16,9 +16,9 @@ export interface DesktopUpdateScheduleConfig {
  * @returns Validated durations and fractional jitter.
  */
 export function resolveDesktopUpdateScheduleConfig(env: NodeJS.ProcessEnv): DesktopUpdateScheduleConfig {
-  const intervalMs = resolveDurationMs(env, 'DSH_DESKTOP_UPDATE_CHECK_INTERVAL_MS', 600_000)
-  const maxBackoffMs = resolveDurationMs(env, 'DSH_DESKTOP_UPDATE_CHECK_MAX_BACKOFF_MS', Math.max(intervalMs, 3_600_000))
-  const jitter = Number(env.DSH_DESKTOP_UPDATE_CHECK_JITTER ?? 0.2)
+  const intervalMs = resolveDurationMs(env, 'YOUDUB_DESKTOP_UPDATE_CHECK_INTERVAL_MS', 600_000)
+  const maxBackoffMs = resolveDurationMs(env, 'YOUDUB_DESKTOP_UPDATE_CHECK_MAX_BACKOFF_MS', Math.max(intervalMs, 3_600_000))
+  const jitter = Number(env.YOUDUB_DESKTOP_UPDATE_CHECK_JITTER ?? 0.2)
   if (!Number.isFinite(jitter) || jitter < 0 || jitter > 1 || maxBackoffMs < intervalMs) {
     throw new Error('desktop update: check jitter must be in [0, 1] and max backoff must cover the check interval')
   }

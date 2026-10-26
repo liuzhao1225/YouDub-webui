@@ -123,4 +123,13 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   const update = await waitFor('update-tasks', message => message.type === 'update-tasks' && message.requestId === 2);
   assert.equal(update.error, undefined);
   assert.equal(typeof update.active, 'boolean');
+  if (!skipSetup) {
+    const installationPath = join(directory, 'YouDub media');
+    const configured = await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ method: 'POST', path: '/api/setup', body: { action: 'configure', path: installationPath } }) });
+    const body = await configured.text();
+    assert.equal(configured.status, 200, body);
+    assert.equal(JSON.parse(body).installation.path, await realpath(installationPath));
+    assert.match(await readFile(join(profile, 'cordis.patch.yml'), 'utf8'), /YouDub\s+media/);
+  }
 });

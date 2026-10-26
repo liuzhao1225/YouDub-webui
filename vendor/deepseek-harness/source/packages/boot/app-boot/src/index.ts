@@ -258,7 +258,12 @@ export function loadLayeredEnv(
   ])
 }
 
-const bootstrapIncludes = new WeakMap<Context, Entry>()
+// The running Loader owns the bootstrap entry. Module-local state splits when
+// packaged plugins resolve another copy of app-boot (including upgrade remnants).
+function bootstrapInclude(ctx: Context): Entry | undefined {
+  const entry = ctx.get('loader')?.store.include
+  return entry?.options.name === 'cordis:include' ? entry : undefined
+}
 
 // The include's YAML dialect (`!!js` scalars become expression nodes the
 // Loader interpolates against each entry's injection-ready context), imported
@@ -333,7 +338,7 @@ async function recompose(
   // The rows stopped first, which a failure before the generation applies puts back.
   let stopped: StoppedRow[] = []
   try {
-    const entry = bootstrapIncludes.get(ctx)
+    const entry = bootstrapInclude(ctx)
     if (entry === undefined) throw new Error(`${binName}: profile reload requires the root Include entry`)
     // Reading the prior state imports nothing, so plugin code does not run before the next resolution publishes.
     const previousFailures = (await inactiveEntries(ctx, false)).map((failure): RecordedFailure => ({
@@ -785,7 +790,6 @@ export async function mountRootInclude(
   const loader = ctx.get('loader')
   if (loader === undefined) return undefined
   const entry = loader.resolve(includeId)
-  bootstrapIncludes.set(ctx, entry)
   return entry
 }
 
@@ -1152,7 +1156,7 @@ export async function auditStartupEntries(
   warn: (line: string) => void = line => void process.stderr.write(line),
 ): Promise<void> {
   const failures = await inactiveEntries(ctx)
-  const required = new Set(failures.filter(({ entry }) => entry === bootstrapIncludes.get(ctx)
+  const required = new Set(failures.filter(({ entry }) => entry === bootstrapInclude(ctx)
     || requiredStartupEntryIds.has(entry.options.id)).map(({ entry }) => entry))
   if (required.size > 0) {
     throw new StartupError(startupDiagnostic(binName, failures, required), failures.map(({ entry, outcome }) => ({

@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { afterAll, afterEach, describe, expect, it, onTestFinished } from 'vitest'
+import { afterAll, afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Include, { type PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
@@ -331,6 +331,17 @@ describe('Loader entry disabled interpolation', () => {
 })
 
 describe('profile reconciliation settlement', () => {
+  it('reconciles the running Loader when the editor imports another boot module instance', async () => {
+    const dir = tmp()
+    writeFileSync(join(dir, 'cordis.yml'), '[]\n')
+    const ctx = await boot(NAME, join(dir, 'cordis.yml'))
+    onTestFinished(() => ctx.fiber.dispose())
+    vi.resetModules()
+    const editorBoot = await import('../src/index.ts')
+    expect(editorBoot.reconcileProfilePatches).not.toBe(reconcileProfilePatches)
+    await expect(editorBoot.reconcileProfilePatches(ctx, [], NAME)).resolves.toEqual([])
+  })
+
   it('retains unchanged import diagnostics across profile reconciliation', async () => {
     const dir = tmp()
     writeFileSync(join(dir, 'cordis.yml'), '[]\n')

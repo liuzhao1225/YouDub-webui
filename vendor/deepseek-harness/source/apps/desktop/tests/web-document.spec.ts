@@ -18,13 +18,13 @@ it('serves the Web entry and assets without starting or contacting a Host', asyn
   await writeFile(join(root, 'assets/entry.js'), 'globalThis.entryLoaded = true')
   const fetch = vi.fn()
   vi.stubGlobal('fetch', fetch)
-  const response = await serveWebDocument(new Request('dsh-app://app/'), root)
+  const response = await serveWebDocument(new Request('youdub-app://app/'), root)
   const html = await response.text()
   expect(html.indexOf('Promise.withResolvers()')).toBeLessThan(html.indexOf('assets/entry.js'))
-  expect(await (await serveWebDocument(new Request('dsh-app://app/assets/entry.js'), root)).text()).toContain('entryLoaded')
+  expect(await (await serveWebDocument(new Request('youdub-app://app/assets/entry.js'), root)).text()).toContain('entryLoaded')
   expect(fetch).not.toHaveBeenCalled()
-  expect((await serveWebDocument(new Request('dsh-app://app/%2e%2e%2fprivate'), root)).status).toBe(403)
-  expect((await serveWebDocument(new Request('dsh-app://app/missing.js'), root)).status).toBe(404)
+  expect((await serveWebDocument(new Request('youdub-app://app/%2e%2e%2fprivate'), root)).status).toBe(403)
+  expect((await serveWebDocument(new Request('youdub-app://app/missing.js'), root)).status).toBe(404)
 })
 
 it('requires the Host authentication exchange and retains only its cookie value', async () => {
@@ -39,8 +39,8 @@ it('forwards upload bytes and cancellation with Host credentials while keeping t
   const body = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('stream')); controller.close() } })
   const fetch = vi.fn().mockResolvedValue(new Response(body, { headers: { 'content-encoding': 'gzip', 'set-cookie': 'private' } }))
   vi.stubGlobal('fetch', fetch)
-  const request = new Request('dsh-app://app/api/upload?name=file', {
-    method: 'POST', body: 'upload bytes', headers: { origin: 'dsh-app://app', cookie: 'untrusted' },
+  const request = new Request('youdub-app://app/api/upload?name=file', {
+    method: 'POST', body: 'upload bytes', headers: { origin: 'youdub-app://app', cookie: 'untrusted' },
   })
   const response = await forwardWebRequest(request, 'http://127.0.0.1:1234/?token=secret', 'session=owned')
   const [target, init] = fetch.mock.calls[0] as [URL, RequestInit]
@@ -60,7 +60,7 @@ it('drops connection-level headers the Host wrote for its own transport', async 
     'content-type': 'text/plain', 'cache-control': 'no-cache', etag: '"1"',
   } }))
   vi.stubGlobal('fetch', fetch)
-  const response = await forwardWebRequest(new Request('dsh-app://app/api/read'), 'http://127.0.0.1:1234/', 'session=owned')
+  const response = await forwardWebRequest(new Request('youdub-app://app/api/read'), 'http://127.0.0.1:1234/', 'session=owned')
   for (const name of ['transfer-encoding', 'connection', 'keep-alive', 'trailer', 'te']) expect(response.headers.get(name)).toBeNull()
   expect(response.headers.get('content-type')).toBe('text/plain')
   expect(response.headers.get('cache-control')).toBe('no-cache')
@@ -71,18 +71,18 @@ it('replaces the immutable cache header of plugin bundles with no-store and leav
   const immutable = 'public, max-age=31536000, immutable'
   const fetch = vi.fn().mockImplementation(async () => new Response('js', { headers: { 'cache-control': immutable } }))
   vi.stubGlobal('fetch', fetch)
-  const bundle = await forwardWebRequest(new Request('dsh-app://app/plugins/??a/client.js&rev=1'), 'http://127.0.0.1:1234/', 'c')
+  const bundle = await forwardWebRequest(new Request('youdub-app://app/plugins/??a/client.js&rev=1'), 'http://127.0.0.1:1234/', 'c')
   expect(bundle.headers.get('cache-control')).toBe('no-store')
-  const chunk = await forwardWebRequest(new Request('dsh-app://app/plugins/a/client.x.js?rev=1'), 'http://127.0.0.1:1234/', 'c')
+  const chunk = await forwardWebRequest(new Request('youdub-app://app/plugins/a/client.x.js?rev=1'), 'http://127.0.0.1:1234/', 'c')
   expect(chunk.headers.get('cache-control')).toBe('no-store')
-  const asset = await forwardWebRequest(new Request('dsh-app://app/api/plugins/list'), 'http://127.0.0.1:1234/', 'c')
+  const asset = await forwardWebRequest(new Request('youdub-app://app/api/plugins/list'), 'http://127.0.0.1:1234/', 'c')
   expect(asset.headers.get('cache-control')).toBe(immutable)
 })
 
 it('refuses another page origin without forwarding its request', async () => {
   const fetch = vi.fn()
   vi.stubGlobal('fetch', fetch)
-  const response = await forwardWebRequest(new Request('dsh-app://app/api/read', { headers: { origin: 'https://other.example' } }), 'http://127.0.0.1:1234/', 'session=owned')
+  const response = await forwardWebRequest(new Request('youdub-app://app/api/read', { headers: { origin: 'https://other.example' } }), 'http://127.0.0.1:1234/', 'session=owned')
   expect(response.status).toBe(403)
   expect(fetch).not.toHaveBeenCalled()
 })
@@ -93,7 +93,7 @@ it('preserves media byte ranges and uncompressed lengths for native seeking', as
     'content-type': 'audio/wav', 'content-length': '5', 'content-range': 'bytes 10-14/100', 'accept-ranges': 'bytes',
   } }))
   vi.stubGlobal('fetch', fetch)
-  const response = await forwardWebRequest(new Request('dsh-app://app/api/audio', { headers: { range: 'bytes=10-14' } }), 'http://127.0.0.1:1234/', 'session=owned')
+  const response = await forwardWebRequest(new Request('youdub-app://app/api/audio', { headers: { range: 'bytes=10-14' } }), 'http://127.0.0.1:1234/', 'session=owned')
   expect(new Headers(fetch.mock.calls[0]![1].headers).get('range')).toBe('bytes=10-14')
   expect(response.status).toBe(206)
   expect(response.headers.get('content-length')).toBe('5')
@@ -104,7 +104,7 @@ it('preserves media byte ranges and uncompressed lengths for native seeking', as
 
 it('drops encoded length after Node fetch decompresses a response', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('decoded', { headers: { 'content-encoding': 'gzip', 'content-length': '40' } })))
-  const response = await forwardWebRequest(new Request('dsh-app://app/api/read'), 'http://127.0.0.1:1234/', 'session=owned')
+  const response = await forwardWebRequest(new Request('youdub-app://app/api/read'), 'http://127.0.0.1:1234/', 'session=owned')
   expect(response.headers.get('content-length')).toBeNull()
   expect(response.headers.get('content-encoding')).toBeNull()
   expect(await response.text()).toBe('decoded')
