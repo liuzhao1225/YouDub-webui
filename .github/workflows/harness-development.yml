@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      package_desktop:
+        description: 构建桌面安装包并运行安装验收
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -101,6 +106,7 @@ jobs:
           npm --prefix apps/harness test
           .venv/bin/python -m pytest backend/tests
       - name: 打包并验证独立 macOS 应用
+        if: github.event_name == 'workflow_dispatch' && inputs.package_desktop
         env:
           # The candidate uses identity "-" (ad-hoc); Apple credentials only exist in the release job.
           CSC_FOR_PULL_REQUEST: "true"
@@ -110,6 +116,7 @@ jobs:
           node apps/harness/test/package-smoke.mjs dist/mac-arm64/YouDub.app dist/package-smoke-mac-workbench --workbench
           tar -czf dist/youdub-macos-unsigned.tar.gz -C dist/mac-arm64 YouDub.app
       - name: 保存 macOS 候选包与首启证据
+        if: github.event_name == 'workflow_dispatch' && inputs.package_desktop
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: youdub-macos-unsigned
@@ -189,6 +196,7 @@ jobs:
           npm run typecheck
           npm --prefix apps/harness run check:locales
       - name: 打包并验证独立 Windows 应用
+        if: github.event_name == 'workflow_dispatch' && inputs.package_desktop
         run: |
           npm run package:desktop -- --dir
           node apps/harness/test/package-smoke.mjs dist/win-unpacked dist/package-smoke-windows
@@ -201,7 +209,7 @@ jobs:
             sha256sum --check "$file.sha256"
           done
       - name: 保存 Windows 安装失败诊断
-        if: failure()
+        if: failure() && github.event_name == 'workflow_dispatch' && inputs.package_desktop
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: youdub-windows-install-failure
@@ -211,6 +219,7 @@ jobs:
             dist/package-smoke-windows-installed/
           if-no-files-found: warn
       - name: 保存 Windows 安装包与首启证据
+        if: github.event_name == 'workflow_dispatch' && inputs.package_desktop
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: youdub-windows-release
