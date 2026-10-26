@@ -77,7 +77,7 @@ try {
     };
   });
   const page = await application.firstWindow({ timeout: 30_000 });
-  await page.waitForURL('dsh-app://app/');
+  await page.waitForURL('dsh-app://app/', { timeout: 30_000 });
   await page.waitForFunction(() => document.body?.innerText?.length > 40);
   await page.screenshot({ path: join(evidence, 'first-launch.png') });
   await writeFile(join(evidence, 'rendered.txt'), await page.locator('body').innerText());
@@ -140,6 +140,10 @@ try {
   if (process.platform === 'darwin') execFileSync('codesign', ['--verify', '--deep', '--strict', installed], { stdio: 'pipe' });
   complete = true;
   console.log(`Packaged YouDub ${appManifest.version}: relocated ${workbench ? 'workbench and Python worker' : 'first setup'}, local workflow sample and clean exit passed.`);
+} catch (error) {
+  // CI must retain the original startup diagnostic even when the renderer stays blank.
+  console.error(output.slice(-16_384).replace(/(token[=:]\s*)[^\s&"']+/gi, '$1[redacted]'));
+  throw error;
 } finally {
   if (!complete && child.exitCode === null) child.kill('SIGKILL');
   // Preserve diagnostic evidence privately. Local launch tokens are redacted before persistence.

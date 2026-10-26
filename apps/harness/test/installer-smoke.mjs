@@ -26,7 +26,7 @@ smoke('clean');
 const home = join(state, 'user data/harness');
 const patch = join(home, 'profiles/desktop/cordis.patch.yml');
 const files = new Map([[patch, await readFile(patch)],
-  [join(home, '.credentials.yaml'), Buffer.from('# YouDub saved credentials\nrefs: {}\n')],
+  [join(home, '.credentials.yaml'), Buffer.from('# YouDub saved credentials\nversion: 1\nrefs: {}\n')],
   [join(state, 'YouDub media/models/preserved-model.bin'), Buffer.from('existing model')],
   [join(state, 'YouDub media/tasks/preserved-task.txt'), Buffer.from('existing task')]]);
 for (const [file, value] of files) {
