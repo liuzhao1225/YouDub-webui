@@ -41,7 +41,7 @@ export function WorkflowResources({ resources, types, disabled = false, hideRead
   const details = state?.status !== 'ready' && (requirements.length > 0 || Boolean(state?.entries?.length)) && <Surface as="div" className="divide-y divide-border px-4">
     {requirements.map(item => {
       const provider = types.find(type => type.providerId === item.providerId)?.provider
-      const label = text(provider?.label, language) || item.providerId
+      const label = provider?.legacy && provider.capability === 'translation' ? tx('workflow.resources.translation.service') : text(provider?.label, language) || item.providerId
       const reason = item.reason === 'Provider connection is not configured.' ? tx("workflow.resources.configure.the.service.url.api.key.and.model") : item.reason
       return <div key={`${item.providerId}:${item.model}`} className="flex flex-wrap items-start justify-between gap-3 py-4"><div className="min-w-0 flex-auto"><p className="font-medium">{label}{item.model ? ` · ${item.model}` : ''}</p>{reason && <p className="mt-0.5 break-words text-xs text-muted-foreground">{subtitle(reason)}</p>}</div><Tag tone={item.configurationRequired || !item.automatic ? 'warning' : 'neutral'}>{item.configurationRequired ? tx("workflow.resources.not.configured") : item.automatic ? tx("setup.pending") : tx("settings.resources.manual.setup.required")}</Tag></div>
     })}
