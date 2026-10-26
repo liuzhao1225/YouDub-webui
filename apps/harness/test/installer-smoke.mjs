@@ -39,7 +39,7 @@ smoke('clean');
 const home = join(state, 'user data/harness');
 const patch = join(home, 'profiles/desktop/cordis.patch.yml');
 const files = new Map([[patch, await readFile(patch)],
-  [join(home, '.credentials.yaml'), Buffer.from('# YouDub saved credentials\nversion: 1\nrefs: {}\n')],
+  [join(home, '.credentials.yaml'), await readFile(join(home, '.credentials.yaml'))],
   [join(state, 'YouDub media/models/preserved-model.bin'), Buffer.from('existing model')],
   [join(state, 'YouDub media/tasks/preserved-task.txt'), Buffer.from('existing task')]]);
 for (const [file, value] of files) {
@@ -53,9 +53,9 @@ await mkdir(obsolete, { recursive: true });
 await writeFile(join(obsolete, 'index.js'), 'throw new Error("Obsolete upgrade dependency was loaded")');
 install('overwrite-install');
 await assert.rejects(access(obsolete), { code: 'ENOENT' });
-for (const [file, value] of files) assert.deepEqual(await readFile(file), value, `Upgrade changed user data: ${file}`);
+for (const [file, value] of files) assert((await readFile(file)).equals(value), `Upgrade changed user data: ${file}`);
 smoke('upgrade', '--configured');
-for (const [file, value] of files) assert.deepEqual(await readFile(file), value, `Restart changed saved data: ${file}`);
+for (const [file, value] of files) assert((await readFile(file)).equals(value), `Restart changed saved data: ${file}`);
 const uninstaller = (await readdir(application)).find(name => /^unins\d+\.exe$/i.test(name));
 assert(uninstaller, 'Inno Setup uninstaller missing');
 runStep('uninstall', join(application, uninstaller), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART',
@@ -67,6 +67,6 @@ while (true) {
   if (Date.now() > deadline) throw new Error('Uninstaller did not remove the application executable');
   await delay(200);
 }
-for (const [file, value] of files) assert.deepEqual(await readFile(file), value, `Uninstall removed user data: ${file}`);
+for (const [file, value] of files) assert((await readFile(file)).equals(value), `Uninstall removed user data: ${file}`);
 assert.equal(registration(), null, 'YouDub uninstall registration must be removed with its application');
 console.log('Windows installer: in-place Chinese setup, overwrite upgrade, data preservation, Harness isolation, restart and uninstall passed.');
