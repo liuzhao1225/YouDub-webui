@@ -1,6 +1,6 @@
 # 桌面版本发布
 
-版本来自根 `package.json` 与 `package-lock.json`。先通过 PR 合入 `main`，再为该提交创建匹配的 `v<version>` tag。正式发布由 `.github/workflows/release.yml` 执行；不覆盖已发布 tag。
+版本来自根 `package.json` 与 `package-lock.json`。先通过 PR 合入 `main`，手动构建并验收该提交的双平台候选包，再为该提交创建匹配的 `v<version>` tag。正式发布由 `.github/workflows/release.yml` 执行；不覆盖已发布 tag。
 
 ## 候选包
 
@@ -36,7 +36,7 @@ Electron 语言资源仅保留产品支持的中、英、日；第三方 SDK 的
 
 ## 正式发行
 
-tag 工作流核对版本、提交与 main 来源，等待同一 SHA 的 main 检查成功，再按运行 ID 下载候选包。缺少该运行、验收失败或产物已过期时停止发布。Windows 从已验证的 `win-unpacked` 制作 ZIP，并复用原 Inno Setup 脚本和 AppId 制作 EXE。macOS 将候选 App 交给受保护的 `macos-release` 环境，使用现有 Apple 证书与 API 凭据；通过 `@electron/osx-sign` 签名后重新检查首启，再制作 DMG、公证、装订票据并执行 Gatekeeper 校验。签名材料只在临时目录生成，结束时清除。
+tag 工作流核对版本、提交与 main 来源，等待同一 SHA 的 main 手动检查成功，并核对 `youdub-macos-unsigned` 和 `youdub-windows-release` 两个未过期产物，再按运行 ID 下载候选包。候选构建命令为 `gh workflow run harness-development.yml --ref main -F package_desktop=true`；运行完成后核对提交 SHA，再推送该提交的 tag。缺少该运行、验收失败、未启用打包或产物已过期时停止发布。Windows 从已验证的 `win-unpacked` 制作 ZIP，并复用原 Inno Setup 脚本和 AppId 制作 EXE。macOS 将候选 App 交给受保护的 `macos-release` 环境，使用现有 Apple 证书与 API 凭据；通过 `@electron/osx-sign` 签名后重新检查首启，再制作 DMG、公证、装订票据并执行 Gatekeeper 校验。签名材料只在临时目录生成，结束时清除。
 
 两个平台通过后创建 GitHub 草稿 Release。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256，成功后公开 Release 并设为 latest。官网在发布成功后刷新与客户端共用的版本列表，并回读确认部署内容。
 
