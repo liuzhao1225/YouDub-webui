@@ -97,7 +97,6 @@ it.each([false, true])('tracks the Web carrier lifetime when server-first is %s'
   const modules = await ctx.plugin(ClientModuleRegistry)
   const service = ctx.get('clientModules')!
   expect(service.graph().entries).toEqual([])
-  expect((await service.fetchBundle(new Request('http://localhost/plugins/missing'))).status).toBe(404)
   if (!serverFirst) {
     expect(routes.size).toBe(0)
     server = await mountServer()
@@ -106,7 +105,6 @@ it.each([false, true])('tracks the Web carrier lifetime when server-first is %s'
   await server!.dispose()
   await expect.poll(() => routes.size).toBe(0)
   expect(modules.state).toBe(FiberState.ACTIVE)
-  expect((await service.fetchBundle(new Request('http://localhost/plugins/missing'))).status).toBe(404)
   await mountServer()
   await expect.poll(() => routes.size).toBe(1)
   await modules.dispose()
@@ -185,13 +183,12 @@ function constructWithRoute(
     },
   })
   const route = Promise.withResolvers<WebRoute>()
-  const webServer: Pick<WebServer, 'port' | 'register' | 'tapIndex'> = {
+  const webServer: Pick<WebServer, 'port' | 'register'> = {
     port: 0,
     register: (candidate) => {
       if (candidate.path === '/plugins') route.resolve(candidate)
       return () => {}
     },
-    tapIndex: () => () => {},
   }
   ctx.provide('webServer', webServer as WebServer)
   const service = new ClientModuleRegistry(ctx)
@@ -905,10 +902,6 @@ describe('client bundle activation', () => {
     expect(batchScript.status).toBe(200)
     expect(batchScript.headers?.['cache-control']).toBe('public, max-age=31536000, immutable')
     expect(batchScript.body.toString('utf8')).toContain(`//# sourceMappingURL=${mapReference(batch.url)}`)
-    const shellResponse = await service.fetchBundle(new Request(`youdub-app://app/${batch.url}`))
-    expect(shellResponse.status).toBe(200)
-    expect(shellResponse.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
-    expect(await shellResponse.text()).toBe(batchScript.body.toString('utf8'))
     expect((await routeRequest(route, batch.url, 'HEAD')).body).toHaveLength(0)
     expect((await routeRequest(route, batch.url, 'POST')).status).toBe(405)
     const batchMap = await routeRequest(route, mapUrl(batch.url))

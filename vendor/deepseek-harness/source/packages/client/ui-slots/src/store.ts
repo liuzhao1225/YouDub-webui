@@ -6,7 +6,6 @@ export type {
   BoundActions,
   DefineStore,
   HandleOf,
-  MaybeSnapshotSelectorHook,
   PropsStore,
   SnapshotSelectorHook,
   StoreDecl,

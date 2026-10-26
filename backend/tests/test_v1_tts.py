@@ -71,7 +71,7 @@ def context(tmp_path, monkeypatch):
         "tts": {"adapter": "voxcpm", "model": "VoxCPM2", "device": "cpu", "voice": {"mode": "source_clone"}},
         "separation": {"adapter": "demucs", "model": "htdemucs", "device": "cpu"},
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1, stage="tts", config=config,
+    return StageContext(stage="tts", config=config,
                         input_files={"transcript": transcript_path, "translation": translation_path, "vocals": source},
                         work_dir=tmp_path / "work")
 

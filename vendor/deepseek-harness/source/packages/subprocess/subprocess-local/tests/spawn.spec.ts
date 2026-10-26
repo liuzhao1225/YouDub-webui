@@ -549,9 +549,10 @@ describe('OutputCollector', () => {
   it('keeps the tail of a single oversized chunk', () => {
     const collector = new OutputCollector(10, 'test', spillOptions(100).options)
     collector.push(Buffer.from('0123456789abcdef'))
-    const out = collector.finalize()
+    collector.seal()
+    const out = collector.readFrom(0)
     expect(out.text).toBe('6789abcdef')
-    expect(out.truncated).toBe(true)
+    expect(out.lossy).toBe(true)
     expect(readFileSync(out.spillPath!, 'utf8')).toBe('0123456789abcdef')
   })
 
@@ -562,10 +563,11 @@ describe('OutputCollector', () => {
     collector.push(Buffer.from('aaaa'))
     collector.push(Buffer.from('bbbbbb'))
     collector.push(Buffer.from('cc'))
-    const out = collector.finalize()
+    collector.seal()
+    const out = collector.readFrom(0)
     expect(out.text).toBe('aabbbbbbcc')
     expect(Buffer.byteLength(out.text)).toBe(10)
-    expect(out.truncated).toBe(true)
+    expect(out.lossy).toBe(true)
   })
 
   it('readFrom returns increments and flags lossy reads', () => {
@@ -596,12 +598,12 @@ describe('OutputCollector', () => {
     expect(collector.readFrom(0).spillPath).toBeDefined()
 
     failNextClose.value = true
-    let out: ReturnType<typeof collector.finalize>
-    expect(() => { out = collector.finalize() }).not.toThrow()
+    let out: ReturnType<typeof collector.readFrom>
+    expect(() => { collector.seal(); out = collector.readFrom(0) }).not.toThrow()
 
     expect(failNextClose.value).toBe(false)
     expect(out!.text).toBe('bbbb')
-    expect(out!.truncated).toBe(true)
+    expect(out!.lossy).toBe(true)
     expect(out!.spillPath).toBeUndefined()
   })
 
@@ -614,9 +616,10 @@ describe('OutputCollector', () => {
 
     collector.push(Buffer.from('c'))
     collector.push(Buffer.from('dddd'))
-    const out = collector.finalize()
+    collector.seal()
+    const out = collector.readFrom(0)
     expect(out.text).toBe('dddd')
-    expect(out.truncated).toBe(true)
+    expect(out.lossy).toBe(true)
     expect(out.spillPath).toBeUndefined()
     expect(() => readFileSync(spillPath)).toThrow()
   })
@@ -624,9 +627,10 @@ describe('OutputCollector', () => {
   it('does not create a spill when the first overflowing chunk exceeds the cap', () => {
     const collector = new OutputCollector(4, 'no-spill', spillOptions(4).options)
     collector.push(Buffer.from('abcdefgh'))
-    const out = collector.finalize()
+    collector.seal()
+    const out = collector.readFrom(0)
     expect(out.text).toBe('efgh')
-    expect(out.truncated).toBe(true)
+    expect(out.lossy).toBe(true)
     expect(out.spillPath).toBeUndefined()
   })
 
@@ -641,7 +645,8 @@ describe('OutputCollector', () => {
     expect(() => { collector.push(Buffer.from('c')) }).not.toThrow()
     expect(failNextClose.value).toBe(false)
     expect(failNextUnlink.value).toBe(false)
-    expect(collector.finalize().spillPath).toBeUndefined()
+    collector.seal()
+    expect(collector.readFrom(0).spillPath).toBeUndefined()
     unlinkSync(spillPath)
   })
 
@@ -656,9 +661,10 @@ describe('OutputCollector', () => {
     expect(failures).toHaveLength(1)
     expect((failures[0]!.error as NodeJS.ErrnoException).code).toBe('ENOENT')
     expect(failures[0]!.label).toBe('enoent')
-    const out = collector.finalize()
+    collector.seal()
+    const out = collector.readFrom(0)
     expect(out.text).toBe('bbcc')
-    expect(out.truncated).toBe(true)
+    expect(out.lossy).toBe(true)
     expect(out.spillPath).toBeUndefined()
   })
 
@@ -671,7 +677,8 @@ describe('OutputCollector', () => {
     expect(() => { collector.push(Buffer.from('bbbb')) }).not.toThrow()
     expect(failures).toHaveLength(1)
     expect(['ENOTDIR', 'ENOENT']).toContain((failures[0]!.error as NodeJS.ErrnoException).code)
-    expect(collector.finalize()).toEqual({ text: 'bbbb', truncated: true })
+    collector.seal()
+    expect(collector.readFrom(0)).toEqual({ text: 'bbbb', nextOffset: 8, lossy: true })
   })
 
   it('withdraws a spill whose append fails after the file exists (ENOSPC on write)', () => {
@@ -691,9 +698,10 @@ describe('OutputCollector', () => {
 
     collector.push(Buffer.from('dd'))
     expect(failures).toHaveLength(1)
-    const out = collector.finalize()
+    collector.seal()
+    const out = collector.readFrom(0)
     expect(out.text).toBe('ccdd')
-    expect(out.truncated).toBe(true)
+    expect(out.lossy).toBe(true)
     expect(out.spillPath).toBeUndefined()
   })
 
@@ -707,7 +715,8 @@ describe('OutputCollector', () => {
     expect(failNextOpen.value).toBe(false)
     expect((failures[0]!.error as NodeJS.ErrnoException).code).toBe('EEXIST')
     expect(unlinked).toEqual([])
-    expect(collector.finalize()).toEqual({ text: 'bbbb', truncated: true })
+    collector.seal()
+    expect(collector.readFrom(0)).toEqual({ text: 'bbbb', nextOffset: 8, lossy: true })
   })
 
   it('contains a reporter that throws and keeps collecting', () => {
@@ -721,7 +730,8 @@ describe('OutputCollector', () => {
       collector.push(Buffer.from('cc'))
       expect(stderr).toHaveBeenCalledOnce()
       expect(String(stderr.mock.calls[0]![0])).toContain('spill failure reporter threw: Error: logger down')
-      expect(collector.finalize()).toEqual({ text: 'bbcc', truncated: true })
+      collector.seal()
+      expect(collector.readFrom(0)).toEqual({ text: 'bbcc', nextOffset: 10, lossy: true })
     } finally {
       stderr.mockRestore()
     }

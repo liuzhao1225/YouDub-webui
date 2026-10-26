@@ -96,7 +96,6 @@ it('invalidates resource changes while leaving language settings and task mutati
   expect(changesResources('/api/v2/settings', 'PATCH', JSON.stringify({ connection: { model: 'new' } }))).toBe(true)
   expect(changesResources('/api/v2/resources/check', 'POST', '{}')).toBe(false)
   expect(changesResources('/api/v2/resources/prepare', 'POST', '{}')).toBe(true)
-  expect(changesResources('/api/v2/extensions/example', 'DELETE')).toBe(true)
   expect(changesResources('/api/v2/tasks', 'POST', new FormData())).toBe(false)
   expect(changesResources('/api/v2/models/settings', 'PATCH')).toBe(true)
   expect(changesResources('/api/v2/models/credentials/EXAMPLE_KEY', 'PUT')).toBe(true)

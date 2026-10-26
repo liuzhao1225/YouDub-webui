@@ -56,20 +56,14 @@ async function writePackage(
     await writeFile(join(dir, 'typert.host.js'), options.typertSource)
   }
 }
-
 function typertSource(pkgName: string, entryName: string): string {
-  return [
-    'import { z } from \'zod\'',
-    `export const ${entryName} = () => z.object({ id: z.string() })`,
-    'export const TYPERT = {',
-    `  package: '${pkgName}',`,
-    '  face: \'host\',',
-    `  schemas: [{ name: '${entryName}', create: ${entryName} }],`,
-    '  model: { services: [], events: [], objects: [] },',
-    '  invocations: [],',
-    '}',
-    '',
-  ].join('\n')
+  return `import { z } from 'zod'
+export const TYPERT = {
+  package: ${JSON.stringify(pkgName)}, face: 'host', invocations: [{
+    id: ${JSON.stringify(pkgName+'#'+entryName+'/run')}, service: ${JSON.stringify(entryName)}, namespace: ${JSON.stringify(entryName)}, method: 'run',
+    invocation: { kind: 'direct' }, parameters: [], result: { mode: 'strict', typeSymbol: 'fixture#Text', create: () => z.string() },
+  }],
+}`
 }
 
 /** Native fixture imports use current factory source, never a previously built protocol artifact. */
@@ -112,8 +106,6 @@ function invocationTypertSource(pkgName: string, factoryUrl: string): string {
     'export const TYPERT = {',
     '  package: REMOTE_INFO.package,',
     '  face: \'host\',',
-    '  schemas: [],',
-    '  model: { services: [], events: [], objects: [] },',
     '  invocations: REMOTE_INFO.descriptors,',
     '}',
     '',
@@ -165,10 +157,10 @@ describe('typert loader', () => {
 
     const fiber = mountTypertLoader(ctx, { packages: ['@fixture/nested'] })
     await fiber
-    expect(ctx.typert.get('@fixture/nested#Nested')).toBeDefined()
+    expect(ctx.typert.local.get('Nested/run')).toBeDefined()
 
     await fiber.dispose()
-    expect(ctx.typert.getPackage('@fixture/nested')).toBeUndefined()
+    expect(ctx.typert.local.get('Nested/run')).toBeUndefined()
   })
 
   it('retains generated flat MethodInfo through native artifact import and loader disposal', LOADER_TEST_TIMEOUT, async () => {
@@ -240,25 +232,25 @@ describe('typert loader', () => {
     await mountTypertLoader(ctx)
     await ctx.loader.await()
 
-    const record = ctx.typert.get('@fixture/with-typert#Thing')
-    expect(record).toMatchObject({ package: '@fixture/with-typert', face: 'host', name: 'Thing' })
-    expect(record?.schema.safeParse({ id: 'x' }).success).toBe(true)
+    const record = ctx.typert.local.get('Thing/run')
+    expect(record).toMatchObject({ id: '@fixture/with-typert#Thing/run', service: 'Thing' })
+    expect(record?.result.mode).toBe('strict')
     // The plain package is silently skipped.
-    expect(ctx.typert.list().map(r => r.key)).toEqual(['@fixture/with-typert#Thing'])
+    expect(ctx.typert.local.list().map(r => r.id)).toEqual(['@fixture/with-typert#Thing/run'])
 
     const mounted = [...ctx.loader.entries()].find(entry => entry.options.name === '@fixture/with-typert')
     if (mounted?.fiber === undefined) throw new Error('fixture loader entry has no fiber')
     ctx.emit('internal/plugin', mounted.fiber)
     ctx.emit('internal/plugin', mounted.fiber)
     await new Promise(resolve => setTimeout(resolve, 20))
-    expect(ctx.typert.list()).toHaveLength(1)
+    expect(ctx.typert.local.list()).toHaveLength(1)
 
     ctx.loader.remove(id)
     await ctx.loader.await()
     // The unmount reconciliation rides a queued microtask flush that settles
     // after loader.await(); poll for the withdrawal.
     await vi.waitFor(() => {
-      expect(ctx.typert.get('@fixture/with-typert#Thing')).toBeUndefined()
+      expect(ctx.typert.local.get('Thing/run')).toBeUndefined()
     }, { timeout: 10_000 })
     ctx.loader.remove(plainId)
     await ctx.loader.await()
@@ -267,7 +259,7 @@ describe('typert loader', () => {
     await ctx.loader.create({ name: '@fixture/with-typert' })
     await ctx.loader.await()
     await vi.waitFor(() => {
-      expect(ctx.typert.get('@fixture/with-typert#Thing')).toBeDefined()
+      expect(ctx.typert.local.get('Thing/run')).toBeDefined()
     }, { timeout: 10_000 })
   })
 
@@ -289,8 +281,8 @@ describe('typert loader', () => {
 
     await mountTypertLoader(ctx)
 
-    expect(ctx.typert.getPackage('@fixture/subpath')).toBeUndefined()
-    expect(ctx.typert.get('@fixture/actual#Aliased')).toBeDefined()
+    expect(ctx.typert.local.get('Subpath/run')).toBeUndefined()
+    expect(ctx.typert.local.get('Aliased/run')).toBeDefined()
   })
 
   it('follows entries mounted after activation', LOADER_TEST_TIMEOUT, async () => {
@@ -300,12 +292,12 @@ describe('typert loader', () => {
     const ctx = await boot()
     await mountTypertLoader(ctx)
 
-    expect(ctx.typert.get('@fixture/late#Late')).toBeUndefined()
+    expect(ctx.typert.local.get('Late/run')).toBeUndefined()
     await ctx.loader.create({ name: '@fixture/late' })
     await ctx.loader.await()
     // Contributor import settles after Loader's own await boundary.
     await vi.waitFor(() => {
-      expect(ctx.typert.get('@fixture/late#Late')).toBeDefined()
+      expect(ctx.typert.local.get('Late/run')).toBeDefined()
     }, { timeout: 10_000 })
   })
 
@@ -325,15 +317,7 @@ describe('typert loader', () => {
         'import { z } from \'zod\'',
         'globalThis.__dshTypertLoaderGate.started()',
         'await globalThis.__dshTypertLoaderGate.wait',
-        'export const Pending = () => z.object({ id: z.string() })',
-        'export const TYPERT = {',
-        '  package: \'@fixture/pending\',',
-        '  face: \'host\',',
-        '  schemas: [{ name: \'Pending\', create: Pending }],',
-        '  model: { services: [], events: [], objects: [] },',
-        '  invocations: [],',
-        '}',
-        '',
+        typertSource('@fixture/pending', 'Pending').replace("import { z } from 'zod'", ''),
       ].join('\n'),
     })
     const ctx = await boot()
@@ -358,14 +342,14 @@ describe('typert loader', () => {
     releaseImport?.()
     await new Promise(resolve => setTimeout(resolve, 20))
 
-    expect(ctx.typert.getPackage('@fixture/pending')).toBeUndefined()
+    expect(ctx.typert.local.get('Pending/run')).toBeUndefined()
   })
 
   it('fails activation loud when an already-mounted contributor is malformed', LOADER_TEST_TIMEOUT, async () => {
     root = await mkdtemp(join(tmpdir(), 'dsh-typert-loader-'))
     await linkZod(root)
     await writePackage(root, '@fixture/broken', {
-      typertSource: 'export const TYPERT = { package: \'@fixture/broken\', face: \'host\', schemas: [{ name: \'\', create: {} }], model: { services: [], events: [], objects: [] }, invocations: [] }\n',
+      typertSource: 'export const TYPERT = { package: \'@fixture/broken\', face: \'host\', invocations: [{ id: \'\' }] }\n',
     })
     const ctx = await boot()
     await ctx.loader.create({ name: '@fixture/broken' })
@@ -402,8 +386,8 @@ describe('typert loader', () => {
 
     await mountTypertLoader(ctx)
 
-    expect(ctx.typert.get('@fixture/conditional#Conditional')).toBeDefined()
-    expect(ctx.typert.getPackage('@fixture/no-exports')).toBeUndefined()
+    expect(ctx.typert.local.get('Conditional/run')).toBeDefined()
+    expect(ctx.typert.local.get('NoExports/run')).toBeUndefined()
   })
 
   it('aggregates unsupported package export shapes during activation', LOADER_TEST_TIMEOUT, async () => {
@@ -440,7 +424,7 @@ describe('typert loader', () => {
 
     await mountTypertLoader(ctx)
 
-    expect(ctx.typert.getPackage('virtual-plugin')).toBeUndefined()
+    expect(ctx.typert.local.get('Virtual/run')).toBeUndefined()
   })
 
   it('requires a config-tree resolution anchor', LOADER_TEST_TIMEOUT, async () => {
@@ -468,103 +452,22 @@ describe('typert loader', () => {
     await vi.waitFor(() => {
       expect(logged).toHaveBeenCalledWith(expect.objectContaining({ message: 'register failed' }))
     }, { timeout: 10_000 })
-    expect(ctx.typert.getPackage('@fixture/steady-failure')).toBeUndefined()
+    expect(ctx.typert.local.get('Steady/run')).toBeUndefined()
   })
 })
 
 describe('validateTypertManifest', () => {
-  const zodish = { _zod: {} }
-
-  it('accepts a well-formed manifest and rejects each malformed field loudly', () => {
-    expect(validateTypertManifest('pkg', {
-      package: 'pkg',
-      face: 'host',
-      schemas: [{ name: 'A', create: () => zodish }],
-      model: { services: [], events: [], objects: [] },
-      invocations: [],
-    }).schemas).toHaveLength(1)
-
+  it('validates the package identity, face and invocation list', () => {
+    expect(validateTypertManifest('pkg', completeManifest()).invocations).toEqual([])
     expect(() => validateTypertManifest('pkg', undefined)).toThrow('no TYPERT manifest object')
     expect(() => validateTypertManifest('pkg', { package: 'other' })).toThrow('must be owned by the package')
     expect(() => validateTypertManifest('pkg', { package: 'pkg', face: 'client' })).toThrow('TYPERT.face is not "host"')
-    expect(() => validateTypertManifest('pkg', { package: 'pkg', face: 'host', schemas: 'x' })).toThrow('schemas must be an array')
-    expect(() => validateTypertManifest('pkg', { package: 'pkg', face: 'host', schemas: [null] })).toThrow('non-object schema')
-    expect(() => validateTypertManifest('pkg', { package: 'pkg', face: 'host', schemas: [{ name: '', create: () => zodish }] }))
-      .toThrow('missing or empty name')
-    expect(() => validateTypertManifest('pkg', { package: 'pkg', face: 'host', schemas: [{ name: 'A', create: {} }] }))
-      .toThrow('has no create() factory')
-    expect(() => validateTypertManifest('pkg', {
-      package: 'pkg',
-      face: 'host',
-      schemas: [],
-      model: { services: [{ key: 'tools', exportName: 'ToolRuntime', tags: [], members: 'x', types: [] }], events: [], objects: [] },
-    })).toThrow('service "tools".members must be an array')
-  })
-
-  it('validates service, event, object, member, type, and documentation records', () => {
-    const complete = completeManifest(zodish)
-    expect(validateTypertManifest('pkg', complete)).toBe(complete)
-
-    expect(() => validateTypertManifest('pkg', { ...complete, model: [] }))
-      .toThrow('TYPERT.model must be an object')
-    expect(() => validateTypertManifest('pkg', { ...complete, model: { ...complete.model, services: [null] } }))
-      .toThrow('service must be an object')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, services: [{ ...complete.model.services[0], tags: 'bad' }] },
-    })).toThrow('service.tags must be an array')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, services: [{ ...complete.model.services[0], description: 1 }] },
-    })).toThrow('service.description must be a string')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, services: [{ ...complete.model.services[0], key: '' }] },
-    })).toThrow('service has a missing or empty key')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, services: [{ ...complete.model.services[0], members: [null] }] },
-    })).toThrow('member must be an object')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: {
-        ...complete.model,
-        services: [{ ...complete.model.services[0], members: [{ name: 'member', signature: 'member(): void', kind: 1 }] }],
-      },
-    })).toThrow('has invalid kind')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: {
-        ...complete.model,
-        services: [{ ...complete.model.services[0], members: [{ name: 'member', signature: 'member(): void', kind: 'future' }] }],
-      },
-    })).toThrow('has invalid kind')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, services: [{ ...complete.model.services[0], types: [null] }] },
-    })).toThrow('type must be an object')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: {
-        ...complete.model,
-        services: [{ ...complete.model.services[0], types: [{ name: 'Type', declaration: '' }] }],
-      },
-    })).toThrow('type has a missing or empty declaration')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, events: [{ ...complete.model.events[0], mode: 1 }] },
-    })).toThrow('mode must be a string')
-    expect(() => validateTypertManifest('pkg', { ...complete, model: { ...complete.model, objects: [null] } }))
-      .toThrow('object must be an object')
-    expect(() => validateTypertManifest('pkg', {
-      ...complete,
-      model: { ...complete.model, objects: [{ ...complete.model.objects[0], exportName: '' }] },
-    })).toThrow('object has a missing or empty exportName')
+    expect(() => validateTypertManifest('pkg', { ...completeManifest(), invocations: 'x' })).toThrow('invocations must be an array')
   })
 
   it('validates invocation documentation and stream mode', () => {
     const method = strictInvocation()
-    const manifest = { ...completeManifest(zodish), invocations: [method] }
+    const manifest = { ...completeManifest(), invocations: [method] }
     const documented = {
       ...method, description: '', mode: 'stream',
       parameters: method.parameters.map(parameter => ({ ...parameter, description: 'Goal title.' })),
@@ -582,7 +485,7 @@ describe('validateTypertManifest', () => {
   })
 
   it('requires and validates strict invocation descriptors', () => {
-    const base = completeManifest(zodish)
+    const base = completeManifest()
     const { invocations: _invocations, ...missingInvocations } = base
     expect(() => validateTypertManifest('pkg', missingInvocations))
       .toThrow('TYPERT.invocations must be an array')
@@ -635,7 +538,7 @@ describe('validateTypertManifest', () => {
     })).toThrow('cancellation parameter must be "signal"')
     expect(() => validateTypertManifest('pkg', {
       ...base,
-      invocations: [{ ...descriptor, result: { mode: 'strict', typeSymbol: 'pkg#Result', create: zodish } }],
+      invocations: [{ ...descriptor, result: { mode: 'strict', typeSymbol: 'pkg#Result', create: {} } }],
     })).toThrow('result codec has no create() factory')
     expect(() => validateTypertManifest('pkg', {
       ...base,
@@ -750,37 +653,6 @@ function strictInvocation() {
     sourceLocation: { file: 'src/index.ts', line: 1, column: 1 },
   }
 }
-
-function completeManifest(zodish: object) {
-  const member = { name: 'member', signature: 'member(): void', kind: 'method' }
-  const type = { name: 'Value', declaration: 'export interface Value {}' }
-  return {
-    package: 'pkg',
-    face: 'host',
-    schemas: [{ name: 'Schema', create: () => zodish }],
-    invocations: [],
-    model: {
-      services: [{
-        key: 'service',
-        exportName: 'Service',
-        description: 'Service description.',
-        summary: 'Service description.',
-        jsDoc: '/** Service description. */',
-        tags: [],
-        members: [member],
-        types: [type],
-      }],
-      events: [
-        { name: 'event/with-mode', mode: 'emit', signature: "'event/with-mode'(): void", tags: [] },
-        { name: 'event/without-mode', signature: "'event/without-mode'(): void", tags: [] },
-      ],
-      objects: [{
-        name: 'Object',
-        exportName: 'Object',
-        tags: [],
-        members: [member],
-        types: [type],
-      }],
-    },
-  }
+function completeManifest() {
+  return { package: 'pkg', face: 'host', invocations: [] }
 }

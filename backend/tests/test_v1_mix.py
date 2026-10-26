@@ -58,8 +58,7 @@ def context(tmp_path):
         "tts": {"adapter": "voxcpm", "model": "test-model", "device": "cpu", "voice": {"mode": "source_clone"}},
         "separation": {"adapter": "demucs", "model": "htdemucs", "device": "cpu"},
     })
-    context = StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                           stage="mix", config=config, input_files=files, work_dir=work)
+    context = StageContext(   stage="mix", config=config, input_files=files, work_dir=work)
     write_manifest(context)
     return context
 

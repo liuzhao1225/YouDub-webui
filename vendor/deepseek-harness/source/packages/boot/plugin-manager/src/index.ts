@@ -14,8 +14,8 @@ import { pluginEntryId, readPluginInventory } from '@deepseek-ai/dsh-host-plugin
 import {
   readPluginMeta, readProfileManifest, resolveBundleDir, loadOverlayPatches, composeEntries,
   readProfilePatches, bundlePatchPaths,
-  evaluatePluginCompatibility, readProfileCompatibility, readProfileVersionExemptions,
-  setProfileVersionExemption, PROFILE_COMPATIBILITY_FILENAME,
+  evaluatePluginCompatibility, readProfileVersionExemptions,
+  PROFILE_COMPATIBILITY_FILENAME,
   ResolutionRestartRequired,
 } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-hmr'
@@ -257,31 +257,6 @@ export class PluginManager extends TypertRemoteService {
       this.abort.abort()
       await Promise.allSettled([...this.packageOperations])
     }, 'plugin-manager: package cancellation')
-  }
-
-  /** Read exact plugin-version exemptions saved in this profile.
-   * @returns Accepted package-name@version keys with the runtime versions they may run on, and any
-   * record or file problem the reader rejected, which the caller reports instead of failing.
-   */
-  @Remote
-  listVersionExemptions(): { exemptions: Record<string, string[]>; warnings: string[] } {
-    const { exemptions, warnings } = readProfileCompatibility(this.profile.dir)
-    return { exemptions, warnings }
-  }
-
-  /** Grant or revoke one exact plugin/runtime exemption and reevaluate live plugins.
-   * @param packageVersion Exact manifest package name followed by @ and its version; never an installation spec or alias.
-   * @param runtimeVersion Exact current DSH version for grants; revocation may name a previous runtime.
-   * @param enabled Whether to grant rather than revoke the exemption.
-   * @param acceptRisk Required true for grants after the user accepts possible crashes and data loss.
-   * @returns Saved and runtime outcomes. Startup-only profiles require restart.
-   */
-  @Remote
-  setVersionExemption(packageVersion: string, runtimeVersion: string, enabled: boolean, acceptRisk?: boolean): Promise<ChangeResult> {
-    return this.change(result => this.configure(async () => {
-      await setProfileVersionExemption(this.profile.dir, packageVersion, runtimeVersion, enabled, acceptRisk === true)
-      Object.assign(result, await this.reload())
-    }), { stage: 'enable', target: packageVersion, enabled }, 'bundle')
   }
 
   /** Read current plugins, including why a row cannot be changed through the profile patch.

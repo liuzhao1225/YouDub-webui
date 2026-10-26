@@ -24,7 +24,6 @@ async function setup(t: any) {
     } })
     context.reflect.provide('catalog', {})
     context.reflect.provide('settings', {})
-    context.reflect.provide('extensions', {})
     await context.plugin(Processes)
     await context.plugin(Files, { root })
     await context.plugin(Tasks)

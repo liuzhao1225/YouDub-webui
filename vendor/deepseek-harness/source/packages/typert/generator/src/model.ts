@@ -30,7 +30,7 @@ export type KeywordTypeName =
 /** Prefix operators accepted on TypeScript type nodes. */
 export type TypeOperatorName = 'keyof' | 'readonly' | 'unique'
 
-/** Source position retained for diagnostics and source-edit mode. */
+/** Source position retained for diagnostics and declaration maps. */
 export interface SourceLocation {
   readonly file: string
   readonly line: number
@@ -42,49 +42,19 @@ export interface ExportModel {
   readonly subpath: string
   readonly name: string
   readonly symbol: SymbolId
-  readonly aliases: readonly string[]
 }
 
-/** One structured JSDoc tag, retaining its original text for unknown tags. */
+/** One structured JSDoc tag used for Remote parameter descriptions. */
 export interface JsDocTagModel {
   readonly name: string
   readonly argument?: string
   readonly comment?: string
-  readonly text: string
 }
 
 /** JSDoc retained as a standard part of every documented model element. */
 export interface DocumentationModel {
   readonly description?: string
-  readonly summary?: string
   readonly tags: readonly JsDocTagModel[]
-  readonly jsDoc?: string
-}
-
-/** One Cordis Context contribution. */
-export interface ServiceModel extends DocumentationModel {
-  readonly key: string
-  readonly symbol: SymbolId
-  readonly export: ExportModel
-  readonly members: readonly string[]
-  readonly location: SourceLocation
-}
-
-/** One Cordis Events contribution. */
-export interface EventModel extends DocumentationModel {
-  readonly name: string
-  readonly signature: TypeNodeId
-  /** Body-free declaration text retained for byte-stable source projections. */
-  readonly text: string
-  readonly mode?: string
-  readonly location: SourceLocation
-}
-
-/** One explicitly exported reference-passed object. */
-export interface ObjectModel extends DocumentationModel {
-  readonly export: ExportModel
-  readonly symbol: SymbolId
-  readonly passing: 'reference'
 }
 
 /** One explicitly selected value type for schema generation. */
@@ -161,22 +131,8 @@ export interface InvocationModel extends DocumentationModel {
 export interface PackageModel {
   readonly name: string
   readonly root: string
-  readonly exports: readonly ExportModel[]
-  readonly services: readonly ServiceModel[]
-  readonly events: readonly EventModel[]
-  readonly objects: readonly ObjectModel[]
   readonly schemas: readonly SchemaModel[]
   readonly invocations: readonly InvocationModel[]
-}
-
-/** One explicit import/re-export edge between independently compiled faces. */
-export interface CrossFaceLink {
-  readonly fromFace: TypertFace
-  readonly fromPackage: string
-  readonly toFace: TypertFace
-  readonly toPackage: string
-  readonly subpath: string
-  readonly name: string
 }
 
 /** Complete analysis result for an independently compiled face. */
@@ -189,17 +145,6 @@ export interface FaceModel {
 /** Complete host/client analysis result. */
 export interface WorkspaceModel {
   readonly faces: readonly FaceModel[]
-  readonly crossFaceLinks: readonly CrossFaceLink[]
-}
-
-/** One top-level authored type declaration indexed without making it a graph root. */
-export interface SourceDeclarationModel {
-  readonly face: TypertFace
-  readonly package: string
-  readonly name: string
-  readonly kind: 'interface' | 'class' | 'alias' | 'enum'
-  readonly location: SourceLocation
-  readonly text: string
 }
 
 /** Visibility recorded on class members. */
@@ -247,9 +192,6 @@ export interface MemberBase extends DocumentationModel {
   readonly abstract: boolean
   readonly static: boolean
   readonly visibility: MemberVisibility
-  readonly location: SourceLocation
-  /** Body-free declaration text retained for byte-stable source projections. */
-  readonly text: string
 }
 
 /** A property member. */
@@ -287,34 +229,17 @@ export type MemberModel =
 export interface EnumMemberModel extends DocumentationModel {
   readonly name: string
   readonly initializer?: string
-  readonly location: SourceLocation
-}
-
-/** One authored part of a merged interface declaration. */
-export interface TypeDeclarationPartModel extends DocumentationModel {
-  readonly package: string
-  readonly location: SourceLocation
-  readonly typeParameters: readonly TypeParameterModel[]
-  readonly extends: readonly TypeNodeId[]
-  readonly members: readonly string[]
 }
 
 /** A declared interface, class, or alias. */
 export interface TypeDeclarationModel extends DocumentationModel {
   readonly id: SymbolId
-  readonly package: string
   readonly name: string
   readonly kind: 'interface' | 'class' | 'alias' | 'enum'
-  readonly abstract: boolean
-  readonly exported: boolean
-  readonly location: SourceLocation
-  /** Canonical body-free declaration text retained alongside the type tree. */
-  readonly text: string
   readonly typeParameters: readonly TypeParameterModel[]
   readonly extends: readonly TypeNodeId[]
   readonly implements: readonly TypeNodeId[]
   readonly members: readonly MemberModel[]
-  readonly parts?: readonly TypeDeclarationPartModel[]
   readonly type?: TypeNodeId
   readonly enumMembers?: readonly EnumMemberModel[]
 }

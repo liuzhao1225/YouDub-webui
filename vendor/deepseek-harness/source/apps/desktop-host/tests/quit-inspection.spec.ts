@@ -41,21 +41,21 @@ afterEach(async () => { await ctx.fiber.dispose() })
 
 describe('Desktop Host quit inspection', () => {
   it('inspects an idle product without Agent or Session services', async () => {
-    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+    expect(await inspect()).toEqual({ activeTasks: false })
   })
 
   it('uses the product work state without starting or stopping tasks', async () => {
     productActive = true
-    expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: false })
+    expect(await inspect()).toEqual({ activeTasks: true })
     productActive = false
-    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+    expect(await inspect()).toEqual({ activeTasks: false })
   })
 
   it.each(['running', 'stopping'] as const)('counts %s global jobs', async (status) => {
     jobs = [status]
-    expect(await inspect()).toEqual({ activeTasks: true, scheduledTasks: false })
+    expect(await inspect()).toEqual({ activeTasks: true })
     jobs = ['completed']
-    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+    expect(await inspect()).toEqual({ activeTasks: false })
   })
 
   it('rejects an absent or failing product inspector instead of reporting idle', async () => {
@@ -77,7 +77,7 @@ describe('Desktop Host quit inspection', () => {
   })
 
   it('refuses inspection after disposal', async () => {
-    expect(await inspect()).toEqual({ activeTasks: false, scheduledTasks: false })
+    expect(await inspect()).toEqual({ activeTasks: false })
     await ctx.fiber.dispose()
     await expect(inspect()).rejects.toThrow('Host is stopping')
   })

@@ -609,7 +609,6 @@ export default class Tasks extends Service implements TasksService {
       })
     } finally { await release() }
   }
-  async idle() { return !(await this.ctx.store.call('store.list', { active: true, limit: 1, offset: 0 })).items.length }
   private async stop() {
     this.stopping.abort(); this.active?.controller.abort(new AppError('APP_INTERRUPTED', 'Application shutdown interrupted this task.', 503))
     if (this.running) await this.running

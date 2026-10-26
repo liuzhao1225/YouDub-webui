@@ -23,7 +23,6 @@ async function setup(t: any, fileService = Files) {
       services.reflect.provide('youdubWorker', {})
       services.reflect.provide('settings', { locked: async (action: () => Promise<any>) => action(), read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
       services.reflect.provide('store', { call: async (method: string) => { if (method === 'settings.raw') return {}; throw new Error(`Unexpected store call: ${method}`) } })
-      services.reflect.provide('extensions', {})
       services.reflect.provide('catalog', { listProviders: () => [], describe: () => ({ workflows: [] }), workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
       services.reflect.provide('tasks', {
         assertReady() { if (unavailable) throw new AppError('TASK_RUNTIME_UNAVAILABLE', 'Queue stopped.', 503) },

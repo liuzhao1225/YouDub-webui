@@ -12,11 +12,10 @@ import requirements from '../../../../backend/requirements/resources.json'
 const render = (element: Parameters<typeof testingRender>[0]) => testingRender(element, { wrapper: LanguageProvider })
 afterEach(() => { cleanup(); window.localStorage.clear() })
 
-const state: SetupState = { phase: 'models', version: '0.0.6', platform: 'darwin', arch: 'arm64', token: 'setup-token', canRetry: true,
+const state: SetupState = { phase: 'models', version: '0.0.6', platform: 'darwin', arch: 'arm64', canRetry: true,
   environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }],
   models: [{ id: 'qwen', name: 'Qwen3 Aligner', variant: '0.6B', purpose: '字幕对齐', status: 'downloading', received: 50, total: 100, speed: 10 }],
 }
-const response = (value: unknown, status = 200) => ({ ok: status === 200, status, text: async () => JSON.stringify(value) })
 const modelItems = Object.entries(requirements.providers).flatMap(([providerId, value]) => 'model' in value
   ? [{ providerId, model: value.model.id, downloadId: value.model.downloadId, label: providerId, automatic: true }] : [])
 const modelChoices: SetupState = {
@@ -170,15 +169,14 @@ describe('first-run setup', () => {
     expect(screen.queryByText('待下载')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '准备全部模型' })).not.toBeInTheDocument()
   })
-  it('keeps the workbench gated during downloads and sends the setup token with pause', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(response(state)).mockResolvedValue(response({ ...state, models: [{ ...state.models[0], status: 'paused' }] }))
-    vi.stubGlobal('fetch', fetch)
-    const view = render(<SetupGate><div>实际工作台</div></SetupGate>)
+  it('keeps the workbench gated during downloads and pauses through the injected transport', async () => {
+    const request = vi.fn().mockResolvedValueOnce(state).mockResolvedValue({ ...state, models: [{ ...state.models[0], status: 'paused' }] })
+    const view = render(<SetupGate request={request as never}><div>实际工作台</div></SetupGate>)
     await screen.findByText('Qwen3 Aligner')
     expect(screen.queryByText('实际工作台')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '查看官网示例' })).toHaveAttribute('href', 'https://liuzhao1225.github.io/YouDub-webui/#demo')
     fireEvent.click(screen.getByRole('button', { name: '暂停 Qwen3 Aligner' }))
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/setup', expect.objectContaining({ method: 'POST', headers: expect.objectContaining({ 'X-YouDub-Setup': 'setup-token' }), body: JSON.stringify({ action: 'pause', id: 'qwen' }) })))
+    await waitFor(() => expect(request).toHaveBeenCalledWith('/api/setup', expect.objectContaining({ method: 'POST', body: JSON.stringify({ action: 'pause', id: 'qwen' }) })))
     expect((await screen.findAllByText('已暂停')).length).toBeGreaterThan(0)
     view.unmount(); vi.unstubAllGlobals()
   })
@@ -214,12 +212,11 @@ describe('first-run setup', () => {
     view.unmount()
   })
   it('surfaces failed requests without automatically retrying or opening the workbench', async () => {
-    const fetch = vi.fn().mockResolvedValue(response({ error: 'backend unavailable' }, 503))
-    vi.stubGlobal('fetch', fetch)
-    const view = render(<SetupGate><div>实际工作台</div></SetupGate>)
+    const request = vi.fn().mockRejectedValue(new Error('HTTP 503: backend unavailable'))
+    const view = render(<SetupGate request={request as never}><div>实际工作台</div></SetupGate>)
     expect(await screen.findByRole('alert')).toHaveTextContent('503')
     expect(screen.queryByText('实际工作台')).not.toBeInTheDocument()
-    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(request).toHaveBeenCalledTimes(1)
     view.unmount(); vi.unstubAllGlobals()
   })
   it('shows original failures and includes Qwen without an optional checkbox', () => {
@@ -239,7 +236,6 @@ describe('first-run setup', () => {
     await screen.findByRole('button', { name: '已复制日志' })
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining(error))
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('YouDub: 0.0.6'))
-    expect(writeText.mock.calls[0][0]).not.toContain('setup-token')
     expect(screen.getByRole('alert')).toHaveTextContent('Whisper requires ffmpeg in PATH.')
     view.unmount(); vi.unstubAllGlobals()
   })
@@ -254,7 +250,6 @@ describe('first-run setup', () => {
     expect(url.searchParams.get('title')).toBe('[环境配置] 模型准备')
     const body = url.searchParams.get('body')!
     expect(body).toContain('阶段: 模型准备')
-    expect(body).not.toContain(state.token)
     expect(link).toHaveAttribute('target', '_blank')
     link.addEventListener('click', event => event.preventDefault())
     fireEvent.click(link)
@@ -277,8 +272,8 @@ describe('first-run setup', () => {
     view.unmount(); vi.unstubAllGlobals()
   })
   it('provides feedback even when the first setup request fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Failed to fetch')))
-    const view = render(<SetupGate><div>实际工作台</div></SetupGate>)
+    const request = vi.fn().mockRejectedValue(new Error('Failed to fetch'))
+    const view = render(<SetupGate request={request as never}><div>实际工作台</div></SetupGate>)
     await screen.findByRole('button', { name: '重新连接' })
     const body = new URL(screen.getByRole('link', { name: '反馈 Issue' }).getAttribute('href')!).searchParams.get('body')!
     expect(body).toContain('连接准备服务')

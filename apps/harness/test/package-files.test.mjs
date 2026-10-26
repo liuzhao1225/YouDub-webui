@@ -9,7 +9,7 @@ test('product resources retain runtime requirement groups without development an
   for (const path of ['backend/app/config.py', 'backend/workers/store.py', 'backend/requirements/base.txt', 'backend/requirements/whisper.txt', 'backend/requirements/resources.json']) {
     assert.equal(includes(path), true, path);
   }
-  for (const path of ['backend/requirements.txt', 'backend/requirements-test.txt', 'backend/tests/fixtures/legacy_schema_v1.sql', 'backend/tests/test_plugin_store.py']) {
+  for (const path of ['backend/requirements-test.txt', 'backend/tests/fixtures/legacy_schema_v1.sql', 'backend/tests/test_plugin_store.py']) {
     assert.equal(includes(path), false, path);
   }
 });

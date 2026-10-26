@@ -18,7 +18,6 @@ export function registerTaskRoutes(ctx: any, http: any) {
     http.json(request, 200, { status: 'ready', api_version: 'v2' })
   })
   route('GET', '/api/v2/catalog', async request => { await ctx.catalog.refresh(); http.json(request, 200, ctx.catalog.describe()) })
-  route('GET', '/api/v2/workflows', request => http.json(request, 200, { items: ctx.catalog.describe().workflows }))
   const base = '/api/v2'
   const templates = async () => workflowTemplates(ctx.catalog, await ctx.settings.read())
   let migrationFailure: DefaultsMigration | undefined

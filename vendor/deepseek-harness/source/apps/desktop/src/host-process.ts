@@ -21,7 +21,6 @@ type DesktopHostEvent = ReadyEvent | FatalEvent | { readonly type: 'shutdown-com
   readonly type: 'quit-inspection'
   readonly requestId: number
   readonly activeTasks: boolean
-  readonly scheduledTasks: boolean
   readonly error?: string
 }
 
@@ -31,7 +30,6 @@ type DesktopHostControlResponse = Extract<DesktopHostEvent, { readonly requestId
 /** What quitting now would affect, as reported by the Host. */
 export interface DesktopQuitInspection {
   readonly activeTasks: boolean
-  readonly scheduledTasks: boolean
 }
 
 /** Quit inspection deadline; a slower Host counts as unknown work and the shell asks before quitting. */
@@ -51,7 +49,7 @@ function isDesktopHostEvent(message: unknown): message is DesktopHostEvent {
       return typeof candidate.message === 'string' && (candidate.diagnostic === undefined || typeof candidate.diagnostic === 'string')
     case 'quit-inspection':
       return Number.isSafeInteger(candidate.requestId) && typeof candidate.activeTasks === 'boolean'
-        && typeof candidate.scheduledTasks === 'boolean' && (candidate.error === undefined || typeof candidate.error === 'string')
+        && (candidate.error === undefined || typeof candidate.error === 'string')
     default:
       return false
   }
@@ -195,12 +193,12 @@ export class DesktopHostProcess {
 
   /**
    * Ask the Host what quitting now would interrupt.
-   * @returns Active tasks and armed scheduled reminders; rejects when the Host is unavailable or misses
+   * @returns Active tasks; rejects when the Host is unavailable or misses
    * {@link QUIT_INSPECTION_DEADLINE_MS}, and the shell then asks before quitting.
    */
   async inspectQuit(): Promise<DesktopQuitInspection> {
     const response = await this.control({ type: 'quit-inspection' }, QUIT_INSPECTION_DEADLINE_MS, 'desktop quit: inspection timed out')
-    return { activeTasks: response.activeTasks, scheduledTasks: response.scheduledTasks }
+    return { activeTasks: response.activeTasks }
   }
 
   private async control(

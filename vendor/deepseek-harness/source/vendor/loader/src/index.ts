@@ -77,10 +77,6 @@ export namespace Loader {
 export class Loader extends EntryTree {
   declare [Service.config]: Loader.Intercept
 
-  public envData = process.env.CORDIS_SHARED
-    ? JSON.parse(process.env.CORDIS_SHARED)
-    : { startTime: Date.now() }
-
   public name = 'loader'
   public internal = ModuleLoader.fromInternal()
 
@@ -181,16 +177,6 @@ export class Loader extends EntryTree {
   showLog(entry: Entry, type: string) {
     if (entry.options.group || !entry.parent.tree.enableLogs) return
     this.ctx.root.logger?.('loader').info('%s plugin %C', type, entry.options.name)
-  }
-
-  /** Return the loader entry id that owns `fiber`, if any. */
-  locate(fiber = this.ctx.fiber) {
-    while (1) {
-      if (fiber.entry) return fiber.entry.id
-      const next = fiber.parent.fiber
-      if (fiber === next) return
-      fiber = next
-    }
   }
 
   /** Hook for hosts that can restart the process on full-reload requests. */

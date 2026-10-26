@@ -2,7 +2,7 @@
  * REAL-composition coverage: a test-only cordis.yml booted through the
  * vendored Loader mounts the webserver row, and every assertion observes the
  * user-visible HTTP surface of the running server (routing precedence, index
- * taps, fallback-seat semantics, per-request error containment, the TLS
+ * injections, fallback-seat semantics, per-request error containment, the TLS
  * listener and its teardown). The bind-address schema and both address
  * predicates are asserted directly, before any server binds; one wildcard load
  * denial goes through the real Loader.
@@ -150,14 +150,14 @@ function boundPort(port: number | undefined): number {
   return port
 }
 
-/** GET (by default) one path against the running server; returns status plus a body prefix. */
+/** GET (by default) one path against the running server; returns status, headers, and the complete body. */
 async function request(
   port: number | undefined,
   path: string,
   init?: RequestInit,
 ): Promise<{ status: number; body: string; headers: Headers }> {
   const response = await fetch(`http://127.0.0.1:${String(boundPort(port))}${path}`, init)
-  return { status: response.status, body: (await response.text()).slice(0, 80), headers: response.headers }
+  return { status: response.status, body: await response.text(), headers: response.headers }
 }
 
 /** Open one raw upgrade request and return after the handler writes its response. */
@@ -379,12 +379,12 @@ describe('real Loader composition', () => {
     })
 
     const compressed = await request(server.port, '/text', { headers: { 'accept-encoding': 'br, gzip, deflate' } })
-    expect(compressed).toMatchObject({ status: 200, body: body.slice(0, 80) })
+    expect(compressed).toMatchObject({ status: 200, body })
     expect(compressed.headers.get('content-encoding')).toBe('gzip')
     expect(compressed.headers.get('content-length')).toBeNull()
     expect(compressed.headers.get('vary')).toBe('Accept-Encoding')
     const streamed = await request(server.port, '/stream', { headers: { 'accept-encoding': 'gzip' } })
-    expect(streamed).toMatchObject({ body: body.slice(0, 80) })
+    expect(streamed).toMatchObject({ body })
     expect(streamed.headers.get('content-encoding')).toBe('gzip')
     expect((await request(server.port, '/small', { headers: { 'accept-encoding': 'gzip' } }))
       .headers.get('content-encoding')).toBeNull()
@@ -405,7 +405,7 @@ describe('real Loader composition', () => {
   // Real-Loader composition resolves workspace packages through tsx at test
   // time; first resolution after the host/client program split is slow enough
   // to trip the default 5s budget on cold caches.
-  it('serves registered routes, index taps, and the fallback-seat semantics', { timeout: 60_000 }, async () => {
+  it('serves registered routes, index injections, and the fallback-seat semantics', { timeout: 60_000 }, async () => {
     const loaded = await loadComposition()
     const unloaded = [...loaded.loader.entries()]
       .filter(entry => entry.fiber === undefined && !entry.disabled)
@@ -430,21 +430,23 @@ describe('real Loader composition', () => {
     expect(await request(port, '/api/anything', { method: 'POST' })).toMatchObject({ status: 200, body: 'API' })
 
     // Fallback seat: 404 while unclaimed; the owner answers everything no
-    // named route matches; index taps are the owner's to apply; the seat
+    // named route matches; index injections are the owner's to apply; the seat
     // admits exactly one owner and the disposer releases it.
     expect((await request(port, '/no/such/route')).status).toBe(404)
-    const untap = server.tapIndex(html => html.replace('<head>', '<head><script>window.__T__=1</script>'))
-    expect(server.applyIndexTaps('<head></head>')).toContain('__T__')
+    const removeInjection = loaded.on('webserver/index-inject', rows => {
+      rows.push({ kind: 'script', placement: 'head', text: 'window.__T__=1' })
+    })
+    expect(server.renderIndex('<head></head>')).toContain('__T__')
     const releaseFallback = server.registerFallback((req, res) => {
       // Decode like a real static server would — a malformed %-escape throws
       // here, probing the webserver's per-request error containment.
       decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname)
       res.writeHead(200, { 'content-type': 'text/html' })
-      res.end(server.applyIndexTaps('<head></head><body>shell</body>'))
+      res.end(server.renderIndex('<head></head><body>shell</body>'))
     })
     expect(() => server.registerFallback(() => {})).toThrow(/fallback already registered/)
     expect((await request(port, '/no/such/route')).body).toContain('__T__')
-    untap()
+    removeInjection()
     expect((await request(port, '/no/such/route')).body).not.toContain('__T__')
     expect((await request(port, '/no/such/route')).body).toContain('shell')
 
@@ -553,11 +555,6 @@ describe('real Loader composition', () => {
     // Fresh collection per render: the listener reads live state at emit time.
     flag = 'light'
     expect(server.renderIndex('<head></head><body></body>')).toContain('window.__P__="light"')
-
-    // Raw taps still run, over the already-rendered rows.
-    const untap = server.tapIndex(h => h.replace('window.__Q__=1', 'window.__Q__=2'))
-    expect(server.renderIndex('<head></head><body></body>')).toContain('window.__Q__=2')
-    untap()
 
     // Tag-less fragments: head rows prepend, body rows append, and the
     // boot-readiness tail lands after the last body row.

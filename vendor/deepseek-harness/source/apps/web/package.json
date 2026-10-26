@@ -26,19 +26,14 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
     "@deepseek-ai/dsh-client-web": "workspace:*",
     "@types/node": "^22.20.1",
-    "@types/ws": "8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
-    "fflate": "^0.8.2",
-    "playwright": "^1.49.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^6.0.3",
     "vite": "^6.4.3",
     "vitest": "^4.1.11",
-    "ws": "8.21.3",
     "@deepseek-ai/dsh-client-ui-theme": "workspace:*"
   }
 }

@@ -15,7 +15,7 @@ it('validates invocation facts without materializing schemas', () => {
       result: { ...codec, description: 'Created goal.' },
     },
   } })
-  const manifest = { package: 'pkg', face: 'host', schemas: [], model: { services: [], events: [], objects: [] }, invocations: info.descriptors }
+  const manifest = { package: 'pkg', face: 'host', invocations: info.descriptors }
   expect(validateTypertManifest('pkg', manifest)).toBe(manifest)
   expect(create).not.toHaveBeenCalled()
   expect(manifest.invocations[0]!.parameters[0]!.codec).toBe(codec)

@@ -22,8 +22,6 @@ async function hasDesktopActiveTasks(ctx: Context): Promise<boolean> {
 export interface DesktopQuitInspection {
   /** Product work and live background jobs. */
   readonly activeTasks: boolean
-  /** Reserved by the existing Desktop IPC protocol; YouDub schedules no reminders. */
-  readonly scheduledTasks: false
 }
 
 /**
@@ -36,6 +34,6 @@ export function installDesktopQuitInspection(ctx: Context): () => Promise<Deskto
   ctx.effect(() => () => { stopped = true })
   return async () => {
     if (stopped) throw new Error('desktop quit: Host is stopping')
-    return { activeTasks: await hasDesktopActiveTasks(ctx), scheduledTasks: false }
+    return { activeTasks: await hasDesktopActiveTasks(ctx) }
   }
 }

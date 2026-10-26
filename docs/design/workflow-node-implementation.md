@@ -347,11 +347,11 @@ type NodeDetailProps = {
 
 ### 8.2 HTTP
 
-沿用现有 `/api/v2` 认证和 CSRF。为避免改变已有 `/workflows` 的 catalog 语义，用户图文档使用 `/workflow-documents`：
+`/api/v2` 通过 Harness Connection 调用，由 Host 校验连接凭据与请求来源。模板由 `/catalog` 提供，用户图文档使用 `/workflow-documents`：
 
 | 方法与路径 | 作用 |
 | --- | --- |
-| `GET /api/v2/workflows` | 保留旧列表，新增可选图能力和模板来源描述 |
+| `GET /api/v2/catalog` | 节点、提供商和内置工作流模板目录 |
 | `GET /api/v2/node-types` | 可用节点类型、端口、参数 schema、页面 ID |
 | `GET/POST /api/v2/workflow-documents` | 用户图文档列表 / 新建 |
 | `GET/PUT/DELETE /api/v2/workflow-documents/:id` | 读取 / CAS 保存 / 删除用户定义 |

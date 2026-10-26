@@ -1420,41 +1420,6 @@ it('answers the configured registries in pnpm\'s comparison form with what pnpm 
   expect(() => PluginManager.Config({ fallbackRegistries: ['ftp://npm.corp.example/'] })).toThrow()
 })
 
-it.each(['live', 'startup'] as const)('requires exact risk acknowledgement and preserves exemptions in a %s profile', async (mode) => {
-  const { manager, dir, ctx } = await fixture(mode, false, undefined, {}, undefined, (dir) => {
-    const file = join(dir, 'node_modules', 'extra', 'package.json')
-    const metadata = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
-    writeFileSync(file, JSON.stringify({ ...metadata, peerDependencies: { '@deepseek-ai/dsh': '999.0.0' } }))
-  })
-  const runtime = getDshRuntimeVersion()
-  const managed = () => [...ctx.loader.entries()].find(entry => entry.id === 'include:managed')
-  // The bundle's own peers are incompatible, so its whole layer is skipped and contributes no row.
-  expect(managed()).toBeUndefined()
-  expect((await manager.listBundles()).find(bundle => bundle.name === 'extra')?.error).toEqual({
-    code: 'incompatible-version',
-    incompatible: [{ name: 'extra', version: '1.0.0', runtimeVersion: runtime, requirements: { '@deepseek-ai/dsh': '999.0.0' } }],
-  })
-  expect(await manager.setBundleEnabled('extra', true)).toMatchObject({ changed: false, application: 'failed' })
-  expect(await manager.setVersionExemption('extra@1.0.0', runtime, true)).toMatchObject({ changed: false, application: 'failed' })
-  expect(manager.listVersionExemptions()).toEqual({ exemptions: {}, warnings: [] })
-  expect(existsSync(join(dir, 'compatibility.json'))).toBe(false)
-  expect(await manager.setVersionExemption('extra@1.0.0', runtime, true, true)).toMatchObject({
-    changed: true, application: mode === 'live' ? 'applied' : 'restart-required',
-  })
-  expect(manager.listVersionExemptions()).toEqual({ exemptions: { 'extra@1.0.0': [runtime] }, warnings: [] })
-  // The grant is persisted only in the profile's compatibility file, never in its package manifest.
-  expect(JSON.parse(readFileSync(join(dir, 'compatibility.json'), 'utf8'))).toEqual({ 'extra@1.0.0': [runtime] })
-  expect(readProfileManifest('test', dir).dsh?.profile?.bundles).toEqual(['core', 'extra'])
-  // `setVersionExemption` reconciles the profile itself, so a live tree re-admits the bundle here;
-  // no manifest watch or Loader instrumentation participates. A startup-only profile keeps it out until restart.
-  if (mode === 'live') expect(managed()?.fiber?.state).toBe(2)
-  else expect(managed()).toBeUndefined()
-  expect(await manager.setVersionExemption('extra@1.0.0', runtime, false)).toMatchObject({ changed: true })
-  expect(manager.listVersionExemptions()).toEqual({ exemptions: {}, warnings: [] })
-  expect(JSON.parse(readFileSync(join(dir, 'compatibility.json'), 'utf8'))).toEqual({})
-  if (mode === 'live') expect(managed()).toBeUndefined()
-})
-
 it('reports a package run refused for compatibility as a typed refusal', async () => {
   const { manager } = await fixture()
   const incompatible = [{ name: 'dsh-x', version: '2.0.0', runtimeVersion: getDshRuntimeVersion(), requirements: { '@deepseek-ai/dsh': '999.0.0' } }]
@@ -1469,7 +1434,7 @@ it('reports a package run refused for compatibility as a typed refusal', async (
 
 it.each([false, true])('rechecks installed bundle peers before accepting a disabled installation (exempted=%s)', async (exempted) => {
   const { manager, dir, bundle } = await fixture()
-  if (exempted) await manager.setVersionExemption('incompatible@1.0.0', getDshRuntimeVersion(), true, true)
+  if (exempted) writeFileSync(join(dir, 'compatibility.json'), JSON.stringify({ 'incompatible@1.0.0': [getDshRuntimeVersion()] }))
   const before = readFileSync(join(dir, 'package.json'), 'utf8')
   const install = vi.spyOn(operations, 'runProfilePnpm').mockImplementation(async () => {
     bundle('incompatible', [])

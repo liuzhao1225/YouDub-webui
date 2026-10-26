@@ -4,9 +4,9 @@
 
 ## 范围与结论
 
-本次对当前 67 个框架源码包、YouDub 前后端、SDK、三个插件示例、桌面入口、工程工具、依赖和测试完成统一审计。所有已确认的删除/合并候选均在本次处理；剩余模块的具体用途见下表。历史分轮报告保存在 Git，本文只维护当前结论。
+本次对当前 67 个框架源码包、YouDub 前后端、SDK、三个插件示例、桌面入口、工程工具、依赖和测试完成统一审计。审计按“核实消费者 → 清理依赖闭包 → 重新扫描 → 交叉复核”循环，最后各分区完整复扫均无新增明确可删项；剩余模块的具体用途见下表。历史分轮报告保存在 Git，本文只维护当前结论。
 
-依据包括生产入口、配置与动态服务名、插件注册、实际 bundle 输入、测试独立行为、编译及界面验收。导出扫描只用来发现候选；类型契约、生命周期和动态注入继续按真实消费判断。保留量不代表每一行达到理论最小值；继续减少功能性模块需要改变当前产品或插件支持范围。
+依据包括生产入口、配置与动态服务名、插件注册、实际 bundle 输入、测试独立行为、编译及界面验收。导出扫描只用来发现候选；类型契约、生命周期和动态注入继续按真实消费判断。此前只看导出引用遗漏了内部互相引用的旧系统，本轮补查方法、生产者字段、生成器元数据、测试专用 API、清单与样式。保留量不代表每一行达到理论最小值；结论限定为当前产品范围和已核验的扫描结果。
 
 当前维护 67 个框架源码包，运行项目使用其中 59 个；其余用于构建和契约生成。YouDub 媒体、任务、工作流、校对、字幕、配音、下载、资源准备和插件能力继续保留。
 
@@ -14,27 +14,26 @@
 
 | 范围 | 删除/收敛 | 保留边界 |
 | --- | --- | --- |
-| Typert | 旧 tools 的命名 input/invoke、methods 索引、tool JSON Schema、严格输入副本和专属测试 | 正常 namespace RPC、Zod codec、Context/lookup、scope、stream/uplink、取消、字节编解码与生成类型 |
+| Typert | 旧 tools 合同、schema/package 反射目录、无消费者资源权限注解、源文档渲染、跨 face 记录侧索引、仅为反射生成的声明元数据及专属测试 | 正常 namespace RPC、Zod codec、Context/lookup、scope、stream/uplink、取消、字节编解码与生成类型 |
 | 作业与进程 | 无消费者 Jobs 输出环/read/readAt/events/result、fd7 控制流及专属测试 | 真实进度、停止/等待/退出、标准 stdin/stdout/stderr、runner IPC、Windows Job 和进程树释放 |
 | 启动与辅助 | 无调用的命名 profile 包装、插件清单重算、stdin 自动退出、native 通用打开/探测、部分 JSON 解析/工具、错误格式化与判别包装 | 应用显式 profile、原始错误、设置文件打开、配置迁移；Gateway/HMR 动态使用的 AppReady 完整保留 |
-| 前端 | 旧登录/资源/设置文案、无使用 CSS/类型/schema、react-virtual 隐式预载、测试专用几何模拟与辅助函数、3 个旧静态资产 | 原大标题与动态 Logo、真实窗口拖动 DOM、明暗/多语言、组件/键盘/无障碍、工作流画布 |
-| 业务后端 | 测试专用取消异常、旧弱探针、未执行的上传参数、恒定资源 phase、无调用模型探针动作、Context 别名、旧量化 DiffQ 开发依赖 | 真实 WorkerError 取消、四模型准备、媒体算法、数据迁移、原始结果及旧任务已审批指纹 |
-| 构建与通用工具 | 旧 release 执行包装、无调用 Worker banner、分析构建旁路、部分 Cosmokit 工具与未用 timer API | 当前源码构建、产物输入验证、代码生成、签名/安装/覆盖升级脚本和测试环境隔离 |
+| 前端 | 旧设置向导、无注册的全局第三栏/底栏、闲置动态主题 API、session store 尾部、RAF 自测支路、空 setup token/重复 HTTP 请求和无用依赖 | 原大标题与动态 Logo、真实窗口拖动 DOM、明暗/多语言、组件/键盘/无障碍、工作流画布 |
+| 业务后端 | 重复扩展 HTTP 和旧 workflows 路由、测试专用身份字段/常量、无人读取的资源元数据、旧弱探针与量化开发依赖 | 真实 WorkerError 取消、四模型准备、媒体算法、数据迁移、原始结果及旧任务已审批指纹 |
+| 框架服务与工程 | Cordis 只写不读的诊断采集、LLM 独立查询旁路、raw HTML 注入、恒 false 的定时任务状态、插件版本豁免写入接口、代理诊断镜像、Loader 共享环境尾部及无用依赖 | 当前源码构建、产物输入验证、代码生成、签名/安装/覆盖升级脚本和测试环境隔离 |
 
 旧 Agent、会话、终端、内嵌浏览器、文档预览、工具执行及上游发布系统已在此前退出产品。历史源码由 Git 保留；Demucs 子模块原提交、许可证和来源信息不变。
 
 ## 当前行数
 
-| 范围 | 本次前 `368268d8` | 当前 | 本次净减 |
+| 范围 | 本次前 `c02824db` | 当前 | 本次净减 |
 | --- | ---: | ---: | ---: |
-| 生产源码 | 86,907 | 83,813 | 3,094 |
-| 测试及源码夹具 | 74,433 | 73,081 | 1,352 |
-| 构建和工程工具 | 9,992 | 9,561 | 431 |
+| 生产源码 | 83,813 | 81,996 | 1,817 |
+| 测试及源码夹具 | 73,081 | 72,104 | 977 |
+| 构建和工程工具 | 9,561 | 8,774 | 787 |
 | 官网和文档示例 | 599 | 599 | 0 |
-| 合计 | 171,931 | 167,054 | 4,877 |
+| 合计 | 167,054 | 163,473 | 3,581 |
 
-当前生产源码中 Harness 为 **70,024 行**，YouDub 业务与适配为 **13,789 行**。相对最初 `main/aaba8ef3` 的 202,077 行，累计净减 **35,023 行（17.33%）**。本次物理行 186,036 → 180,747；源码文件 1,143 → 1,125。
-
+当前生产源码中 Harness 为 **68,343 行**，YouDub 业务与适配为 **13,653 行**。相对最初 `main/aaba8ef3` 的 202,077 行，累计净减 **38,604 行（19.10%）**。本次物理行 180,747 → 176,882；源码文件 1,125 → 1,121。
 
 口径为 Git 跟踪源码扩展名的非空行，含注释。依赖、缓存、生成产物、JSON/YAML、Markdown、快照和媒体不计入；Demucs 子模块另计 6,393 行，未修改。物理行和文件数另列，避免混用。历史 main 基线含后来删除的 178 行生成夹具；严格排除它们时，累计减量相应减 178，当前总量不变。
 
@@ -88,10 +87,10 @@
 | [packages/subprocess/subprocess](../../../vendor/deepseek-harness/source/packages/subprocess/subprocess/package.json) | YouDub Python/FFmpeg 的标准进程合同与环境过滤。 |
 | [packages/subprocess/subprocess-local](../../../vendor/deepseek-harness/source/packages/subprocess/subprocess-local/package.json) | 标准流、进程树、停止升级、资源释放及 runner IPC。 |
 | [packages/subprocess/win32-process](../../../vendor/deepseek-harness/source/packages/subprocess/win32-process/package.json) | Windows CreateProcessW、Job Object、参数及句柄生命周期。 |
-| [packages/typert/generator](../../../vendor/deepseek-harness/source/packages/typert/generator/package.json) | 构建时生成服务/事件/Remote 类型图、codec、声明与 source map。 |
+| [packages/typert/generator](../../../vendor/deepseek-harness/source/packages/typert/generator/package.json) | 构建时生成实际 schema factory、Remote codec、声明与 source map。 |
 | [packages/typert/loader](../../../vendor/deepseek-harness/source/packages/typert/loader/package.json) | 加载并验证生成合同，跟随插件注册与卸载。 |
 | [packages/typert/protocol](../../../vendor/deepseek-harness/source/packages/typert/protocol/package.json) | Remote 声明、普通 codec、流、Context/lookup 和二进制合同。 |
-| [packages/typert/registry](../../../vendor/deepseek-harness/source/packages/typert/registry/package.json) | 实际服务、对象、事件及 Remote 描述符索引。 |
+| [packages/typert/registry](../../../vendor/deepseek-harness/source/packages/typert/registry/package.json) | 按包和 face 管理 Remote 描述符、lookup/context 及注册释放。 |
 | [packages/util/atomic-write](../../../vendor/deepseek-harness/source/packages/util/atomic-write/package.json) | 凭据与配置锁、原子写入及真实失败恢复。 |
 | [packages/util/brand](../../../vendor/deepseek-harness/source/packages/util/brand/package.json) | ID 字符串类型品牌。 |
 | [packages/util/crypto](../../../vendor/deepseek-harness/source/packages/util/crypto/package.json) | 浏览器非安全 HTTP 环境可用的 UUID。 |
@@ -128,15 +127,14 @@
 
 ## 验证和实际限制
 
-- 新源码框架、YouDub Host/Client/Electron 编译与装配检查通过；root/web 类型检查和中英日检查通过（547 业务键、7 个框架 namespace）。
-- 最终全框架 **246 文件，3,850 项通过，0 失败，19 项跳过**。跳过项为当前 macOS 无法执行的 Windows/Linux 原生检查及大小写敏感文件系统案例。
-- YouDub 宿主 **80 项**、builtin **141 项**、Python **422 项**、Web **245 项**通过；共 **4,738 个唯一通过用例**。重复定向重跑不重复计数。builtin 封面测试初次误用缺库的 Homebrew FFmpeg；改为 YouDub 私有 FFmpeg，仅重跑失败的 3 项通过。
-- 最终独立中文 Electron profile 检查工作台大标题和运行中的 Logo 动效、视频输入、任务库、内置工作流/画布、资源、插件详情/安装弹窗、明暗设置和模型页；页面运行错误为 0。测试配置如实显示未准备的资源。
-- 四方交叉审查与最后的函数/常量/动态服务复扫完成；已发现候选没有遗留。剩余单处函数引用为插件示例消费的 `registerPythonProvider` 和验证实际 Win32 ABI 的结构 getter。
+- 最新源码的框架与 YouDub Host/Client/Electron 编译、装配检查通过；root/web 类型检查、中英日检查通过（547 业务键、7 个框架 namespace）。
+- 最终全框架覆盖 **245 文件**。合并完整执行与失败文件复验后，**3,779 项通过，0 失败，19 项跳过**。首次完整执行唯一失败由旧测试辅助函数把 HTML 截断到 80 字符造成；修正为完整响应断言，该文件 16 项复验通过。生产行为未因断言修改。
+- YouDub Host **80 项**、SDK/builtin **141 项**、Python **421 项**、Web **245 项**通过。合计 **4,666 个唯一通过用例**；重复的定向重跑不重复计数。
+- 独立中文 Electron profile 实测工作台大标题、运行中的 Logo 动效、视频输入、任务库、内置工作流与画布、资源、插件详情与安装弹窗、明暗设置和模型页；页面运行错误为 0。测试配置如实显示未准备的资源。
+- 四方分区审计和交叉核验完成，删除后反复复扫生产方法、字段、生成合同、清单、动态服务、样式及测试。最后全仓 640 个 TS/JS 生产/工程文件的 14 个单处名称候选均有实际消费者：测试绑定、构建工具 Hook、默认插件导出、SDK 回调、生成 Remote、Win32 ABI getter。框架编译发现的 3 个孤立 SVG 定义已一并移除；再次复扫无新增确认候选。
 
+所有已确认候选均已处理。保留的 67 个框架包与业务模块在上表列明用途；测试保留协议、鉴权、升级、取消、数据一致性和媒体等独立行为，不按行数削弱失败检测。六个本轮改动的 Python provider 已同步执行指纹，并保留旧任务批准记录。
 
-交叉审查纠正了 AppReady 的动态消费者误判，恢复真实启动语义；没有删除消费者来维持减量。SDK 的类型导入与退役接口的旧测试也在本次验证中修正。业务的 8 个 provider/workflow、20 个既往 hash 已逐项确认仍被批准兼容。
+公开子集的退役 API 与兼容边界详见[框架接口范围](../../../vendor/deepseek-harness/README.md)。依赖旧接口的外部插件需适配；当前三个插件示例使用保留合同。
 
-当前公开子集发生的退役 API 详见[维护中的接口范围](../../../vendor/deepseek-harness/README.md#维护中的接口范围)。使用旧接口的外部插件需适配；当前三个插件示例使用保留合同。没有承诺任意上游插件原样兼容。
-
-详细四方审计、统计、测试日志和中文截图保存在本地 `output/full-pruning-2026-10-26/`。本次未调用外部 LLM，未重新进行四模型真实视频端到端推理、Windows/Linux 实机或安装覆盖验收；这些不计入通过结果。未打包、推送或发布。
+详细审计、统计、测试日志和中文截图位于本地 `output/pruning-convergence-2026-10-26/`。本轮未调用外部 LLM，未重新进行四模型真实视频端到端推理、Windows/Linux 实机或安装覆盖验收；这些不计入通过结果。19 项跳过用例为当前 macOS 不具备的 Windows/Linux 原生检查和大小写敏感文件系统案例。未打包、推送或发布。

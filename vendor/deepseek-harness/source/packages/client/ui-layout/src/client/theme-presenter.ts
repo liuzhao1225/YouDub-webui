@@ -2,7 +2,7 @@
  * Global theme DOM applier: projects the resolved ThemeSnapshot onto the
  * document — `html { color-scheme }` for native UA chrome (scrollbars, form
  * controls), `body[data-ds-dark-theme]` for the token palette, the active
- * theme's alias-token overrides as inline CSS variables on body, the content
+ * content
  * font-size axis (`--dsh-content-font-size`), the code size
  * (`--dsh-code-font-size`), the user font lists
  * (`--dsh-font-family-<role>`), `html[data-ds-theme-source]`
@@ -22,7 +22,7 @@ export const DARK_ATTRIBUTE = 'data-ds-dark-theme'
  * forwards it to `nativeTheme.themeSource`, so native chrome, renderer
  * `prefers-color-scheme` queries, and Platform login links follow the app
  * palette on every platform). `system` only when the preference is `system`;
- * a fixed preference (including registered theme ids) publishes its resolved
+ * a fixed preference publishes its resolved
  * scheme.
  */
 export const THEME_SOURCE_ATTRIBUTE = 'data-ds-theme-source'
@@ -44,8 +44,6 @@ const FONT_FAMILY_VARIABLES = {
 
 /** Applies theme snapshots to the document; one instance per plugin fiber. */
 export class ThemePresenter {
-  /** Token names this presenter wrote in the last apply (its retraction set). */
-  private appliedTokens: string[] = []
   /** The single metadata node this presenter inserts and removes. */
   private readonly themeColorMeta: HTMLMetaElement
 
@@ -58,8 +56,7 @@ export class ThemePresenter {
   /**
    * Project a snapshot onto the document: set root `color-scheme` and the body
    * palette attribute from `active.colorScheme` (never the id — `system` is
-   * resolved upstream), publish the font sizes and font lists, then replace the
-   * previously applied token variables with `active.tokens`. Browser
+   * resolved upstream), then publish the font sizes and font lists. Browser
    * theme-color metadata follows the computed body background after those
    * writes, so the rendered palette remains the color authority.
    * @param snapshot - resolved theme snapshot from ctx.theme.
@@ -80,19 +77,13 @@ export class ThemePresenter {
       if (list === '') body.style.removeProperty(name)
       else body.style.setProperty(name, list)
     }
-    for (const name of this.appliedTokens) body.style.removeProperty(name)
-    this.appliedTokens = []
-    for (const [name, value] of Object.entries(snapshot.active.tokens)) {
-      body.style.setProperty(name, value)
-      this.appliedTokens.push(name)
-    }
     this.themeColorMeta.content = getComputedStyle(body).backgroundColor
     if (!this.themeColorMeta.isConnected) document.head.append(this.themeColorMeta)
   }
 
   /**
    * Retract root color-scheme, the theme-source attribute, the palette
-   * attribute, token variables, the font sizes, font lists, and the owned metadata node.
+   * attribute, font sizes, font lists, and the owned metadata node.
    */
   dispose(): void {
     document.documentElement.style.removeProperty('color-scheme')
@@ -101,8 +92,6 @@ export class ThemePresenter {
     body.removeAttribute(DARK_ATTRIBUTE)
     for (const name of Object.values(FONT_SIZE_VARIABLES)) body.style.removeProperty(name)
     for (const name of Object.values(FONT_FAMILY_VARIABLES)) body.style.removeProperty(name)
-    for (const name of this.appliedTokens) body.style.removeProperty(name)
-    this.appliedTokens = []
     this.themeColorMeta.remove()
   }
 }

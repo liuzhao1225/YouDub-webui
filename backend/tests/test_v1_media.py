@@ -25,7 +25,7 @@ def prepare_operation(context, progress):
     wire = Wire()
     wire.check_cancel = context.check_cancel
     wire.progress = progress
-    return Operation({"taskId": context.task_id, "attempt": context.attempt, "operation": "media.prepare/v1",
+    return Operation({"taskId": "00000000-0000-0000-0000-000000000001", "attempt": 1, "operation": "media.prepare/v1",
                       "taskDir": str(context.work_dir.parent), "workDir": str(context.work_dir),
                       "inputs": {"video": {"path": str(context.input_files["video"])}}}, wire).execute()
 
@@ -46,8 +46,7 @@ def context_for(source: Path, work_dir: Path) -> StageContext:
         "translation": {"adapter": "openai", "model": "test-model", "device": "remote"},
         "tts": None, "separation": None,
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                        stage="prepare", config=config, input_files={"video": source}, work_dir=work_dir)
+    return StageContext(stage="prepare", config=config, input_files={"video": source}, work_dir=work_dir)
 
 
 def test_inspection_reads_first_streams_and_fractional_frame_rate(monkeypatch, tmp_path, probe_data):

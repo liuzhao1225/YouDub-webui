@@ -94,8 +94,7 @@ class Operation:
         if stage not in fields:
             raise WorkerError("INVALID_OPERATION", f"No parameter contract for {stage}.")
         config = SimpleNamespace(**fields[stage]())
-        return StageContext(task_id=self.request["taskId"], attempt=self.request["attempt"], stage=stage,
-                            config=config, input_files=files, work_dir=self.work,
+        return StageContext(stage=stage, config=config, input_files=files, work_dir=self.work,
                             check_cancel=self.wire.check_cancel)
 
     def execute(self):

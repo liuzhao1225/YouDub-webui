@@ -3,7 +3,7 @@
  * @module @deepseek-ai/dsh-api-gateway/types
  */
 
-import type { PeerScope, RemoteUplinkWindow, TypertResourceReader } from '@deepseek-ai/dsh-typert-protocol'
+import type { PeerScope, RemoteUplinkWindow } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteEventHostInfo } from './stream-protocol.ts'
 
 /** One Remote method request after a carrier has decoded its envelope. */
@@ -33,12 +33,6 @@ export interface TypertRemoteEventFrame {
   readonly event: string
   /** Original event argument list after the owner validates it for JSON transport. */
   readonly args: readonly unknown[]
-  /**
-   * Readers of the resources the arguments carry, keyed by resource kind and
-   * called with the arguments as positional parameters. Absent or empty for
-   * a notification that touches the global resource.
-   */
-  readonly resources?: Readonly<Record<string, TypertResourceReader>>
 }
 
 /**

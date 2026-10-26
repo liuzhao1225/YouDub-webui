@@ -8,7 +8,7 @@ import { SetupController } from '@/runtime/onboarding'
 import { useObservableSource } from '@/plugin/view-hooks'
 import { SetupPage } from './setup-page'
 
-export function SetupGate({ children, request, screenProps, onReady }: { children: ReactNode; request?: Request; screenProps?: SetupScreenOptions; onReady?: () => void }) {
+export function SetupGate({ children, request, screenProps, onReady }: { children: ReactNode; request: Request; screenProps?: SetupScreenOptions; onReady?: () => void }) {
   const text = useText()
   const [controller] = useState(() => new SetupController(request))
   const { state, error, busy } = useObservableSource(controller)

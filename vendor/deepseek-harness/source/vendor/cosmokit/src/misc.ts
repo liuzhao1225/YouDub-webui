@@ -29,12 +29,9 @@ export function filterKeys(object: {}, filter: (key: string, value: any) => bool
 }
 
 /** Map object values while preserving the original key set. */
-export function mapValues<U, T, K extends string>(object: Dict<T, K>, transform: (value: T, key: K) => U) {
+export function valueMap<U, T, K extends string>(object: Dict<T, K>, transform: (value: T, key: K) => U) {
   return Object.fromEntries(Object.entries(object).map(([key, value]) => [key, (transform as any)(value, key)])) as Dict<U, K>
 }
-
-/** Alias for `mapValues`. */
-export { mapValues as valueMap }
 
 /** Pick selected keys from an object, optionally including `undefined` values. */
 export function pick<T extends object, K extends keyof T>(source: T, keys?: Iterable<K>, forced?: boolean) {

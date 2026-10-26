@@ -4,7 +4,7 @@ import { feedbackIssue, redactDiagnostics, setupIssue, setupReport } from './set
 import { resourceSetupState } from '@/runtime/setup-contracts'
 
 const state: SetupState = {
-  version: '0.0.6', platform: 'win32', arch: 'x64', osVersion: '10.0.26100', phase: 'failed', token: 'private-setup-token', canRetry: true,
+  version: '0.0.6', platform: 'win32', arch: 'x64', osVersion: '10.0.26100', phase: 'failed', canRetry: true,
   error: 'Python exited (1).\nTraceback:\nModuleNotFoundError: torch',
   environment: [{ id: 'dependencies', name: '运行依赖', status: 'failed', source: '阿里 PyPI', detail: 'No matching distribution found' }],
   models: [{ id: 'qwen', name: 'Qwen3 Aligner', variant: '0.6B', purpose: '字幕对齐', status: 'failed', received: 12, total: 100, speed: 0, source: 'ModelScope', error: 'HTTP 503: https://modelscope.cn/model' }],
@@ -33,10 +33,9 @@ describe('setup diagnostic reports', () => {
     expect(setupReport(projected)).toContain('last cause')
     expect(projected.environment).toEqual(resources.environment)
   })
-  it('includes version, platform, environment and model failures without copying the setup token', () => {
+  it('includes version, platform, environment and model failures', () => {
     const report = setupReport(state)
     for (const text of ['0.0.6', 'win32 x64 / 10.0.26100', '运行依赖', '阿里 PyPI', state.error!, 'No matching distribution', 'Qwen3 Aligner', '12/100 bytes', 'HTTP 503']) expect(report).toContain(text)
-    expect(report).not.toContain(state.token)
     const issue = setupIssue(report, state)
     const url = new URL(issue.url)
     expect(url.origin + url.pathname).toBe('https://github.com/liuzhao1225/YouDub-webui/issues/new')
@@ -67,9 +66,9 @@ describe('setup diagnostic reports', () => {
       'https://alice:pass@example.com/python.tar.gz?X-Amz-Signature=signed-value#private-fragment',
       'Authorization: Bearer access-value', 'API_KEY="key value"', '{"token":"json-value"}',
       'C:\\Users\\Alice\\YouDub\\python.exe exited (9009)', '/Users/bob/Library/log', '/home/carol/log',
-      'setup: private-setup-token',
+      'SETUP_TOKEN: private-setup-token',
     ].join('\n') })
-    for (const secret of ['alice', 'pass@', 'signed-value', 'private-fragment', 'access-value', 'key value', 'json-value', 'Alice', 'bob', 'carol', state.token]) expect(report).not.toContain(secret)
+    for (const secret of ['alice', 'pass@', 'signed-value', 'private-fragment', 'access-value', 'key value', 'json-value', 'Alice', 'bob', 'carol', 'private-setup-token']) expect(report).not.toContain(secret)
     expect(report).toContain('exited (9009)')
     expect(report).toContain('example.com/python.tar.gz')
     expect(redactDiagnostics('bad URL: https://[invalid?token=hidden')).not.toContain('hidden')

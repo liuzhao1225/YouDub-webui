@@ -1,11 +1,8 @@
 /**
  * LayoutController: the cross-plugin panel-action face behind ctx.layout.
  * Panel geometry and main-panel selection live in the root layout store;
- * the current-session selection lives with the runtime sessions service, and
- * the per-session active view dissolved into ui-conversation's session store
- * (its only consumer). What remains here is the contract other plugins'
- * apply worlds reach for panel transitions (main-panel selection and sidebar toggle,
- * right-panel show/hide from ui-sidebar-right) — writes stay inside the
+ * apply worlds use this service for main-panel selection and sidebar toggles.
+ * Writes stay inside the
  * store's declared action set, shared with the root registration.
  */
 import type { BoundActions, HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
@@ -41,16 +38,6 @@ export interface ILayout {
   beginNavigation(): AbortSignal
   /** Toggle the sidebar panel (closed ⟷ contract default width). */
   toggleSidebar(): void
-  /**
-   * Report the right panel's presentation without changing its expanded state.
-   * @param track - whether the normal panel width reserves a grid track,
-   *   including beneath a fullscreen overlay.
-   * @param fullscreen - whether the panel covers the frame and hides its outer
-   *   resize handle; independent of the underlying grid track.
-   */
-  openRightbar(track: boolean, fullscreen: boolean): void
-  /** Report the right panel as hidden: no track, no handle. */
-  closeRightbar(): void
 }
 
 /** Cross-plugin panel-action face (ctx.layout). */
@@ -94,13 +81,4 @@ export class LayoutController implements ILayout {
     this.panels.toggleSidebar()
   }
 
-  /** Report the right panel's track and fullscreen presentation. */
-  openRightbar(track: boolean, fullscreen: boolean): void {
-    this.panels.openRightbar(track, fullscreen)
-  }
-
-  /** Report the right panel as hidden: no track, no handle. */
-  closeRightbar(): void {
-    this.panels.closeRightbar()
-  }
 }

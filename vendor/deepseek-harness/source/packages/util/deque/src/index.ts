@@ -32,17 +32,6 @@ export class Deque<T> {
   }
 
   /**
-   * Insert one entry before the current head.
-   * @param value - entry to prepend.
-   */
-  pushFront(value: T): void {
-    this.ensureCapacity()
-    this.head = this.head === 0 ? this.buffer.length - 1 : this.head - 1
-    this.buffer[this.head] = value
-    this.count += 1
-  }
-
-  /**
    * Remove the current head entry and clear its retained reference.
    * Callers whose element type includes `undefined` use {@link size} to
    * distinguish an empty deque from an `undefined` entry.

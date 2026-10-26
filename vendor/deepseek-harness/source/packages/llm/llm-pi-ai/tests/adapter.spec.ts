@@ -1,3 +1,4 @@
+import { inspectModel } from '../../llm/tests/model-info.ts'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, { CONTEXT_WINDOW_EXCEEDED_CODE, LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
@@ -368,7 +369,7 @@ describe('provider profile lifecycle', () => {
       inputModalities: ['text', 'image'],
     })
     expect(models.every(model => model.provider === 'openai')).toBe(true)
-    const info = await ctx.llm.resolveModelInfo('openai', 'gpt-4.1')
+    const info = await inspectModel(ctx.llm, 'openai', 'gpt-4.1')
     expect(typeof info.context?.contextWindow).toBe('number')
   })
 
@@ -379,7 +380,7 @@ describe('provider profile lifecycle', () => {
       providers: { deepseek: {}, openai: {} },
     })
 
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'deepseek-flash'))
+    await expect(inspectModel(ctx.llm, 'deepseek', 'deepseek-flash'))
       .resolves.toMatchObject({
         reasoning: {
           efforts: [
@@ -390,7 +391,7 @@ describe('provider profile lifecycle', () => {
           ],
         },
       })
-    const extended = await ctx.llm.resolveModelInfo('openai', 'gpt-5.6-sol')
+    const extended = await inspectModel(ctx.llm, 'openai', 'gpt-5.6-sol')
     expect(extended.reasoning?.efforts.map(effort => effort.id)).toEqual([
       ReasoningEffortId('off'),
       ReasoningEffortId('low'),
@@ -403,7 +404,7 @@ describe('provider profile lifecycle', () => {
     // one: pi-ai reports the single level `off`, which translates to omitting
     // the reasoning option — exactly what naming no effort already does. The
     // capability is reported unavailable rather than offering that control.
-    expect((await ctx.llm.resolveModelInfo('openai', 'gpt-4.1')).reasoning).toBeUndefined()
+    expect((await inspectModel(ctx.llm, 'openai', 'gpt-4.1')).reasoning).toBeUndefined()
   })
 
   it('uses a supported profile reasoning value as the model default and rejects an unsupported one', async () => {
@@ -412,11 +413,11 @@ describe('provider profile lifecycle', () => {
     await supported.plugin(LlmPiAi, {
       providers: { deepseek: { reasoning: 'max' } },
     })
-    await expect(supported.llm.resolveModelInfo('deepseek', 'deepseek-flash'))
+    await expect(inspectModel(supported.llm, 'deepseek', 'deepseek-flash'))
       .resolves.toMatchObject({ reasoning: { defaultEffort: ReasoningEffortId('max') } })
 
     // A profile level this model cannot take DESCRIBES as no default rather
-    // than failing: resolveModelInfo builds the model catalog, and a catalog
+    // than failing: model preparation reads the model catalog, and a catalog
     // that throws takes its whole provider out of every picker — one mis-set
     // field would hide every model on the route, including the ones that do
     // support the level. The request path below is where it is refused.
@@ -425,7 +426,7 @@ describe('provider profile lifecycle', () => {
     await unsupported.plugin(LlmPiAi, {
       providers: { deepseek: { reasoning: 'medium' } },
     })
-    const described = await unsupported.llm.resolveModelInfo('deepseek', 'deepseek-flash')
+    const described = await inspectModel(unsupported.llm, 'deepseek', 'deepseek-flash')
     expect(described.reasoning?.defaultEffort).toBeUndefined()
     expect(described.reasoning?.efforts.length).toBeGreaterThan(0)
     await expect(assemble(unsupported, {
@@ -439,7 +440,7 @@ describe('provider profile lifecycle', () => {
     await disabled.plugin(LlmPiAi, {
       providers: { deepseek: { reasoning: 'off' } },
     })
-    await expect(disabled.llm.resolveModelInfo('deepseek', 'deepseek-flash'))
+    await expect(inspectModel(disabled.llm, 'deepseek', 'deepseek-flash'))
       .resolves.toMatchObject({ reasoning: { defaultEffort: ReasoningEffortId('off') } })
   })
 
@@ -465,7 +466,7 @@ describe('provider profile lifecycle', () => {
 
     // Declared levels reach the same seam catalog metadata does, so the
     // effort picker works for a model pi-ai has never heard of.
-    await expect(ctx.llm.resolveModelInfo('acme-gateway', 'acme-think')).resolves.toMatchObject({
+    await expect(inspectModel(ctx.llm, 'acme-gateway', 'acme-think')).resolves.toMatchObject({
       reasoning: {
         efforts: [
           { id: ReasoningEffortId('off'), name: 'Off' },
@@ -695,9 +696,9 @@ describe('provider profile lifecycle', () => {
       messages: [],
     })
 
-    await expect(ctx.llm.resolveModelInfo('adaptive-gateway', 'always-thinks'))
+    await expect(inspectModel(ctx.llm, 'adaptive-gateway', 'always-thinks'))
       .resolves.toMatchObject({ reasoning: { efforts: [{ id: 'low' }, { id: 'high' }, { id: 'max' }] } })
-    await expect(ctx.llm.resolveModelInfo('adaptive-gateway', 'may-think'))
+    await expect(inspectModel(ctx.llm, 'adaptive-gateway', 'may-think'))
       .resolves.toMatchObject({ reasoning: { efforts: [{ id: 'off' }, { id: 'low' }, { id: 'high' }, { id: 'max' }] } })
 
     await request('always-thinks', 'max')

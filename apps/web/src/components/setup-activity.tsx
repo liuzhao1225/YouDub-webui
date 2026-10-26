@@ -25,7 +25,7 @@ export function SetupActivity({ state, stage }: { state: SetupState; stage: 'env
       return { time: timestamp ? Date.parse(timestamp) : 0, text: timestamp ? `${timestamp} [${item.name}] ${chunk.slice(timestamp.length + 1).trimEnd()}` : `[${item.name}] ${chunk.trimEnd()}` }
     })).sort((left, right) => left.time - right.time).map(item => item.text)
   const errors = [...new Set([state.error, state.resources?.error, ...(stage === 'environment' ? environment.filter(step => step.status === 'failed').map(step => step.detail) : models.map(model => model.error))].filter(Boolean))]
-  const log = redactDiagnostics([...output, ...errors.filter(error => !output.some(chunk => chunk.includes(error!)))].join('\n'), state.token, state.homeDir)
+  const log = redactDiagnostics([...output, ...errors.filter(error => !output.some(chunk => chunk.includes(error!)))].join('\n'), state.homeDir)
   const viewport = useRef<HTMLPreElement>(null)
   const [following, setFollowing] = useState(true)
   const [now, setNow] = useState(() => Date.now())
@@ -52,7 +52,7 @@ export function SetupActivity({ state, stage }: { state: SetupState; stage: 'env
     </div>
     {activity && <p role="status" className={`flex items-center gap-2 px-4 pt-3 text-xs ${failed ? 'text-status-danger-fg' : 'text-foreground'}`}>
       {running ? <Loader2 aria-hidden="true" className="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" /> : failed ? <CircleAlert aria-hidden="true" className="size-3.5 shrink-0" /> : null}
-      <span className="min-w-0 truncate" title={redactDiagnostics(activity, state.token, state.homeDir)}>{redactDiagnostics(activity, state.token, state.homeDir)}</span>
+      <span className="min-w-0 truncate" title={redactDiagnostics(activity, state.homeDir)}>{redactDiagnostics(activity, state.homeDir)}</span>
     </p>}
     <pre ref={viewport} role="log" aria-label={text('setup.liveLogs')} aria-live="off" tabIndex={0}
       onScroll={event => { const node = event.currentTarget; setFollowing(node.scrollHeight - node.scrollTop - node.clientHeight <= 1) }}

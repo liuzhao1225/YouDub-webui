@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 
 def _no_cancel() -> None:
@@ -14,8 +14,6 @@ def _no_cancel() -> None:
 
 @dataclass(frozen=True)
 class StageContext:
-    task_id: str
-    attempt: int
     stage: str
     config: Any
     input_files: dict[str, Path]
@@ -26,4 +24,3 @@ class StageContext:
 @dataclass(frozen=True)
 class Completed:
     output_files: dict[str, Path]
-    state: Literal["completed"] = field(default="completed", init=False)

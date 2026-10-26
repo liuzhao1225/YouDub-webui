@@ -162,20 +162,6 @@ export const IconDeliverDocRegular = (props: IconProps) => (
   <IconDeliverDocArtwork {...props} strokeWidth={ICON_REGULAR_STROKE} />
 )
 
-const IconAgentPresetOutlineArtwork = ({ size = 16, className, strokeWidth }: WeightedIconProps) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" strokeWidth={strokeWidth}>
-    <path d="M6.51867 12.3282C7.29816 12.6011 8.16475 12.6514 9.02269 12.4216C9.57879 12.2726 10.0784 12.0185 10.5087 11.6888C10.7819 12.0555 11.1606 12.3304 11.5913 12.4805C10.9688 13.029 10.2149 13.4478 9.35911 13.6771C8.13946 14.0038 6.90632 13.8971 5.82126 13.4533C6.15821 13.1562 6.4021 12.7652 6.51867 12.3282ZM9.17629 2.89409C11.1101 3.34433 12.739 4.81872 13.2889 6.87043C13.4219 7.3665 13.4811 7.8649 13.4774 8.35466C13.0924 8.13213 12.6422 8.01837 12.1741 8.05276L12.1711 8.05257C12.1539 7.77199 12.109 7.48889 12.0334 7.20684C11.6363 5.72533 10.5048 4.6372 9.13549 4.22844C9.25559 3.87667 9.29214 3.49087 9.22309 3.09892C9.2108 3.02922 9.19451 2.96108 9.17629 2.89409ZM4.7311 3.89107L4.78302 4.11879C4.87648 4.4488 5.04146 4.74263 5.25579 4.98896C3.98078 6.01355 3.35848 7.72904 3.8089 9.41059C3.81828 9.44559 3.82866 9.48025 3.83885 9.51479C3.38217 9.61268 2.98548 9.84137 2.68107 10.1556C2.63414 10.022 2.5897 9.88632 2.55244 9.74726C1.93301 7.43489 2.86717 5.07173 4.71504 3.76697L4.7311 3.89107Z" fill="currentColor" />
-    <path d="M7.99136 5.28105C8.87501 5.28105 9.59136 4.56471 9.59136 3.68105C9.59136 2.7974 8.87501 2.08105 7.99136 2.08105C7.1077 2.08105 6.39136 2.7974 6.39136 3.68105C6.39136 4.56471 7.1077 5.28105 7.99136 5.28105Z" stroke="currentColor" />
-    <path d="M3.94009 12.9417C4.82374 12.9417 5.54009 12.2254 5.54009 11.3417C5.54009 10.458 4.82374 9.7417 3.94009 9.7417C3.05643 9.7417 2.34009 10.458 2.34009 11.3417C2.34009 12.2254 3.05643 12.9417 3.94009 12.9417Z" stroke="currentColor" />
-    <path d="M12.0851 12.9417C12.9688 12.9417 13.6851 12.2254 13.6851 11.3417C13.6851 10.458 12.9688 9.7417 12.0851 9.7417C11.2015 9.7417 10.4851 10.458 10.4851 11.3417C10.4851 12.2254 11.2015 12.9417 12.0851 12.9417Z" stroke="currentColor" />
-  </svg>
-)
-
-/** Medium IconAgentPresetOutline artwork with a 1.3px stroke. */
-export const IconAgentPresetOutlineMedium = (props: IconProps) => (
-  <IconAgentPresetOutlineArtwork {...props} strokeWidth={ICON_MEDIUM_STROKE} />
-)
-
 const IconTrashOutlineArtwork = ({ size = 16, className, strokeWidth }: WeightedIconProps) => (
   <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" strokeWidth={strokeWidth}>
     <path d="M1.28149 3.88831H14.7187" stroke="currentColor" />
@@ -214,18 +200,6 @@ const IconCheckCircleFillArtwork = ({ size = 16, className, strokeWidth }: Weigh
 /** Regular IconCheckCircleFill artwork (circled check); its fill-only geometry is weight-independent. */
 export const IconCheckCircleFillRegular = (props: IconProps) => (
   <IconCheckCircleFillArtwork {...props} strokeWidth={ICON_REGULAR_STROKE} />
-)
-
-const IconUserOutlineArtwork = ({ size = 16, className, strokeWidth }: WeightedIconProps) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" strokeWidth={strokeWidth}>
-    <path d="M8 8.25C9.51878 8.25 10.75 7.01878 10.75 5.5C10.75 3.98122 9.51878 2.75 8 2.75C6.48122 2.75 5.25 3.98122 5.25 5.5C5.25 7.01878 6.48122 8.25 8 8.25Z" stroke="currentColor" />
-    <path d="M2.5 14.5C2.5 11.5 5.25 10.25 8 10.25C10.75 10.25 13.5 11.5 13.5 14.5" stroke="currentColor" />
-  </svg>
-)
-
-/** Medium IconUserOutline artwork with a 1.3px stroke. */
-export const IconUserOutlineMedium = (props: IconProps) => (
-  <IconUserOutlineArtwork {...props} strokeWidth={ICON_MEDIUM_STROKE} />
 )
 
 const IconLoadingOutlineArtwork = ({ size = 16, className, strokeWidth }: WeightedIconProps) => (
@@ -350,19 +324,6 @@ const IconPluginPinwheelOutlineArtwork = ({ size = 16, className, strokeWidth }:
 /** Regular one-pixel plugin pinwheel artwork. */
 export const IconPluginPinwheelOutlineRegular = (props: IconProps) => (
   <IconPluginPinwheelOutlineArtwork {...props} strokeWidth={ICON_REGULAR_STROKE} />
-)
-
-const IconArchiveOutlineArtwork = ({ size = 20, className, strokeWidth }: WeightedIconProps) => (
-  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" strokeWidth={strokeWidth}>
-    <path d="M13.5 2.5H2.5C1.94772 2.5 1.5 2.94772 1.5 3.5V4.5C1.5 5.05228 1.94772 5.5 2.5 5.5H13.5C14.0523 5.5 14.5 5.05228 14.5 4.5V3.5C14.5 2.94772 14.0523 2.5 13.5 2.5Z" stroke="currentColor" />
-    <path d="M2.5 5.5V13.5C2.5 13.7652 2.60536 14.0196 2.79289 14.2071C2.98043 14.3946 3.23478 14.5 3.5 14.5H12.5C12.7652 14.5 13.0196 14.3946 13.2071 14.2071C13.3946 14.0196 13.5 13.7652 13.5 13.5V5.5" stroke="currentColor" />
-    <path d="M6.5 9.5H9.5" stroke="currentColor" />
-  </svg>
-)
-
-/** Medium IconArchiveOutline artwork with a 1.3px stroke. */
-export const IconArchiveOutlineMedium = (props: IconProps) => (
-  <IconArchiveOutlineArtwork {...props} strokeWidth={ICON_MEDIUM_STROKE} />
 )
 
 const IconCheckCircleOutlineArtwork = ({ size = 16, className, strokeWidth }: WeightedIconProps) => (

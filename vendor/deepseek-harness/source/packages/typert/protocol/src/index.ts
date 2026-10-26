@@ -7,10 +7,7 @@
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import type {
-  RemoteWireArgs,
   TypertContextMap,
-  TypertResourceReader,
-  TypertResourceReaders,
 } from './types.ts'
 
 export { RemoteError, remoteErrorOf } from './remote-error.ts'
@@ -18,8 +15,6 @@ export { TYPERT_OWNED_VALUE, isTypertOwnedValue, typertOwnedValue } from './owne
 export type { TypertOwnedValue } from './owned-value.ts'
 export { isRemoteJsonValue, isRemoteUplinkItem } from './json-value.ts'
 export { createTypertRemoteInfo } from './remote-info.ts'
-export { principalOf } from './principal.ts'
-export type { RemoteAccessResource, RemoteAccessResourceKind, RemoteAccessResourceOf } from './remote-access.ts'
 
 const TYPERT_REMOTE_SEGMENT_PATTERN = /^[A-Za-z0-9_$.-]+$/
 
@@ -64,15 +59,6 @@ export type {
   TypertForwardableEventEntry,
   TypertHostContextAdapter,
   TypertHostContextResolver,
-  TypertResource,
-  TypertResourceDeclaration,
-  TypertResourceEntry,
-  TypertResourceId,
-  TypertResourceKind,
-  TypertResourceMap,
-  TypertResourceReader,
-  TypertResourceReaders,
-  TypertResourceRegistry,
   TypertLocalRegistry,
   TypertLookup,
   TypertLookupDefinition,
@@ -131,54 +117,19 @@ export interface RemoteMethodMarker {
   /** Stream methods yield many independently validated result items. */
   readonly mode?: 'stream'
   readonly invocation: RemoteInvocationMarker
-  /**
-   * Declared `resources` readers keyed by resource kind. Callers spread the
-   * method's wire arguments into each one and validate its result.
-   */
-  readonly resources?: Readonly<Record<string, TypertResourceReader>>
 }
 
-/**
- * Explicit endpoint and resource choices for one Remote Scope method.
- * @template WireArgs - the decorated method's positional parameters as the
- *   wire carries them; the default `never` admits readers of any tuple.
- */
-export interface RemoteScopeOptions<WireArgs extends readonly unknown[] = never> {
+/** Explicit endpoint choice for one Remote Scope method. */
+export interface RemoteScopeOptions {
   /** Exported endpoint method; omission retains the implementation member name. */
   readonly name?: string
-  /**
-   * Per-kind readers of the resources one call touches. Each receives the
-   * method's arguments as its own parameters, JSON arguments as their Typert
-   * codecs validated them, a lookup parameter as its wire identity and a
-   * cancellation parameter as the call's signal, so it performs plain reads
-   * only, and returns one identity, several, or `undefined` for none. A
-   * throw, an empty list, or an identity other than a non-empty string
-   * refuses the call. For a kind without a reader, the Gateway reads the
-   * identity of a scoped Context whose Host adapter declares that `resource`
-   * and of lookup parameters declaring it, else the field registered in
-   * `typert.resources`: a top-level argument or, failing that, the first
-   * object argument. A call that carries no identity touches `global`. The
-   * readers and these defaults together must name every resource the method
-   * accesses: access control never checks a resource they omit.
-   */
-  readonly resources?: TypertResourceReaders<WireArgs>
 }
 
-/**
- * Explicit endpoint, stream, and resource choices for one direct Remote method.
- * @template WireArgs - the decorated method's positional parameters as the
- *   wire carries them; the default `never` admits readers of any tuple.
- */
-export interface RemoteMethodOptions<WireArgs extends readonly unknown[] = never> extends RemoteScopeOptions<WireArgs> {
+/** Explicit endpoint and stream choices for one Remote method. */
+export interface RemoteMethodOptions extends RemoteScopeOptions {
   /** `stream`: deliver each Iterable item over the shared logical-stream carrier. */
   readonly mode?: 'stream'
 }
-
-/** A decorator whose `resources` readers were checked against the decorated method's parameters. */
-type RemoteTypedMethodDecorator<This extends object, Args extends unknown[], Result> = (
-  method: (this: This, ...args: Args) => Result,
-  context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Result>,
-) => void
 
 type RemoteMethodDecorator = <This extends object, Args extends unknown[], Result>(
   method: (this: This, ...args: Args) => Result,
@@ -196,14 +147,12 @@ interface StoredRemoteMethodMarker {
   readonly exportName?: string
   readonly mode?: 'stream'
   readonly invocation: RemoteInvocationMarker
-  readonly resources?: Readonly<Record<string, TypertResourceReader>>
 }
 
 /** Marker fields selected by decorator arguments. */
 interface RemoteMarkerOptions {
   readonly mode?: 'stream'
   readonly exportName?: string
-  readonly resources?: Readonly<Record<string, TypertResourceReader>>
 }
 
 interface StoredRemoteMethod extends StoredRemoteMethodMarker {
@@ -284,13 +233,11 @@ export function Remote<This extends object, Args extends unknown[], Result>(
  */
 export function Remote(name: string): RemoteMethodDecorator
 /**
- * Mark one public instance method with endpoint, stream, or resource options.
- * @param options - Remote options; each reader's parameters are inferred from the decorated method.
+ * Mark one public instance method with endpoint or stream options.
+ * @param options - endpoint and stream options.
  * @returns a standard method decorator.
  */
-export function Remote<This extends object, Args extends unknown[], Result>(
-  options: NoInfer<RemoteMethodOptions<RemoteWireArgs<Args>>>,
-): RemoteTypedMethodDecorator<This, Args, Result>
+export function Remote(options: RemoteMethodOptions): RemoteMethodDecorator
 export function Remote<This extends object, Args extends unknown[], Result>(
   methodExportOrOptions: string | RemoteMethodOptions | ((this: This, ...args: Args) => Result),
   context?: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Result>,
@@ -303,15 +250,15 @@ export function Remote<This extends object, Args extends unknown[], Result>(
     return remoteDecorator({ kind: 'direct' }, markerOptions(
       methodExportOrOptions,
       REMOTE_OPTION_KEYS,
-      'Remote options require name, mode: "stream", or resources',
+      'Remote options require name or mode: "stream"',
     ))
   }
   if (context === undefined) throw new TypeError('typert-protocol: Remote decorator context is missing')
   addMarkerInitializer(context, { kind: 'direct' })
 }
 
-const REMOTE_OPTION_KEYS: ReadonlySet<string> = new Set(['name', 'mode', 'resources'])
-const REMOTE_SCOPE_OPTION_KEYS: ReadonlySet<string> = new Set(['name', 'resources'])
+const REMOTE_OPTION_KEYS: ReadonlySet<string> = new Set(['name', 'mode'])
+const REMOTE_SCOPE_OPTION_KEYS: ReadonlySet<string> = new Set(['name'])
 
 /** Validate one decorator options object against its accepted keys and select the marker fields. */
 function markerOptions(options: RemoteMethodOptions, accepted: ReadonlySet<string>, requirement: string): RemoteMarkerOptions {
@@ -320,26 +267,12 @@ function markerOptions(options: RemoteMethodOptions, accepted: ReadonlySet<strin
     || (Object.hasOwn(options, 'mode') && options.mode !== 'stream')) {
     throw new TypeError(`typert-protocol: ${requirement}`)
   }
-  const { mode, name, resources } = options
+  const { mode, name } = options
   if (name !== undefined) validateName('Remote export name', name)
   return {
     ...(mode === undefined ? {} : { mode }),
     ...(name === undefined ? {} : { exportName: name }),
-    ...(resources === undefined ? {} : { resources: resourceReaders(resources) }),
   }
-}
-
-/** Freeze declared readers into the marker record; a misdeclared reader fails at decoration. */
-function resourceReaders(resources: object): Readonly<Record<string, TypertResourceReader>> {
-  const readers: Record<string, TypertResourceReader> = {}
-  for (const [kind, reader] of Object.entries(resources as Readonly<Record<string, unknown>>)) {
-    if (typeof reader !== 'function') {
-      throw new TypeError(`typert-protocol: Remote resource reader "${kind}" must be a function`)
-    }
-    readers[kind] = reader as TypertResourceReader
-  }
-  if (Object.keys(readers).length === 0) throw new TypeError('typert-protocol: Remote resources require at least one reader')
-  return Object.freeze(readers)
 }
 
 function remoteDecorator(
@@ -362,15 +295,12 @@ function remoteDecorator(
  */
 export function RemoteScope(key: Extract<keyof TypertContextMap, string>, name?: string): RemoteMethodDecorator
 /**
- * Create a decorator for a Remote Scope method with endpoint or resource options.
+ * Create a decorator for a Remote Scope method with endpoint options.
  * @param key - scope key declared through the Context map.
- * @param options - Remote Scope options; each reader's parameters are inferred from the decorated method.
+ * @param options - endpoint options.
  * @returns a standard method decorator that records a versioned prototype descriptor.
  */
-export function RemoteScope<This extends object, Args extends unknown[], Result>(
-  key: Extract<keyof TypertContextMap, string>,
-  options: NoInfer<RemoteScopeOptions<RemoteWireArgs<Args>>>,
-): RemoteTypedMethodDecorator<This, Args, Result>
+export function RemoteScope(key: Extract<keyof TypertContextMap, string>, options: RemoteScopeOptions): RemoteMethodDecorator
 export function RemoteScope(
   key: Extract<keyof TypertContextMap, string>,
   option?: string | RemoteScopeOptions,
@@ -385,7 +315,7 @@ export function RemoteScope(
   return remoteDecorator(invocation, markerOptions(
     option,
     REMOTE_SCOPE_OPTION_KEYS,
-    'RemoteScope options require name or resources',
+    'RemoteScope options require name',
   ))
 }
 
@@ -441,7 +371,7 @@ function mark(
   prototype: object,
   method: string,
   invocation: RemoteInvocationMarker,
-  { mode, exportName, resources }: RemoteMarkerOptions,
+  { mode, exportName }: RemoteMarkerOptions,
 ): void {
   const descriptor = readRemoteMethodDescriptor(prototype)
   const marker: StoredRemoteMethod = Object.freeze({
@@ -449,14 +379,12 @@ function mark(
     ...(exportName === undefined || exportName === method ? {} : { exportName }),
     ...(mode === undefined ? {} : { mode }),
     invocation: Object.freeze(invocation),
-    ...(resources === undefined ? {} : { resources }),
   })
   const current = descriptor?.methods.find(candidate => candidate.method === method)
   if (current !== undefined) {
     // One decorator application owns one frozen reader record, so identity marks the same declaration.
     if (current.exportName === marker.exportName
       && current.mode === marker.mode
-      && current.resources === marker.resources
       && sameInvocation(current.invocation, invocation)) return
     throw new Error(`typert-protocol: Remote method "${method}" has conflicting invocation markers`)
   }

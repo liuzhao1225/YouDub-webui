@@ -1,8 +1,6 @@
 import type { Readable } from 'node:stream'
 import type {} from 'cordis'
 
-export const SDK_VERSION = '1.1.0'
-export const WORKER_PROTOCOL = 'youdub-worker/v1'
 export type JsonObject = Record<string, any>
 export type Disposer = () => void | Promise<void>
 export type TaskStatus = 'queued' | 'running' | 'waiting' | 'paused' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'
@@ -146,7 +144,7 @@ export interface TasksService {
   approve(id: string, nodeId: string, request: ReviewCommand): Promise<NodeActionReceipt>;
   correct(id: string, nodeId: string, request: ReviewCommand & { patch: JsonObject; continue?: boolean }): Promise<NodeActionReceipt>;
   action(id: string, actionId: string): Promise<NodeActionReceipt | null>;
-  delete(id: string, expectedAttempt: number): Promise<void>; idle(): Promise<boolean>
+  delete(id: string, expectedAttempt: number): Promise<void>
 }
 export type OutputValidator = (value: any, context: { inputs: JsonObject; outputs: JsonObject }) => void
 export interface CatalogService {

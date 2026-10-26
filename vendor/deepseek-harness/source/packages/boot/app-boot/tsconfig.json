@@ -28,9 +28,6 @@
     },
     {
       "path": "../../util/package-manifest"
-    },
-    {
-      "path": "../../util/atomic-write"
     }
   ]
 }

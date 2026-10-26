@@ -20,10 +20,8 @@ function setup(platform: NodeJS.Platform, inspect: () => Promise<DesktopQuitInsp
 
 describe('quit prompt selection', () => {
   it.each([
-    [{ activeTasks: false, scheduledTasks: false }, undefined],
-    [{ activeTasks: true, scheduledTasks: false }, 'quitActiveTasks'],
-    [{ activeTasks: false, scheduledTasks: true }, 'quitScheduledTasks'],
-    [{ activeTasks: true, scheduledTasks: true }, 'quitActiveAndScheduledTasks'],
+    [{ activeTasks: false }, undefined],
+    [{ activeTasks: true }, 'quitActiveTasks'],
     ['unknown', 'quitActiveTasks'],
   ] as const)('maps %j to %s', (inspection, prompt) => {
     expect(resolveDesktopQuitPrompt(inspection)).toBe(prompt)
@@ -32,7 +30,7 @@ describe('quit prompt selection', () => {
 
 describe('DesktopQuitConfirmation', () => {
   it('quits silently when nothing is running and no Host is ready', async () => {
-    const idle = setup('darwin', async () => ({ activeTasks: false, scheduledTasks: false }))
+    const idle = setup('darwin', async () => ({ activeTasks: false }))
     expect(await idle.confirmation.confirm()).toBe(true)
     const starting = setup('darwin', () => undefined)
     expect(await starting.confirmation.confirm()).toBe(true)
@@ -40,22 +38,22 @@ describe('DesktopQuitConfirmation', () => {
   })
 
   it('shows the macOS alert with the warning icon, Chinese copy, and Quit as the default right-hand button', async () => {
-    const f = setup('darwin', async () => ({ activeTasks: true, scheduledTasks: true }))
+    const f = setup('darwin', async () => ({ activeTasks: true }))
     expect(await f.confirmation.confirm()).toBe(true)
     expect(f.shown).toEqual([{
       type: 'warning', title: 'YouDub', message: '退出 YouDub？',
-      detail: '当前正在运行的任务将会中断，且应用关闭期间，定时任务不会运行',
+      detail: '当前正在运行的任务将会中断',
       buttons: ['退出', '取消'], defaultId: 0, cancelId: 1, noLink: true,
     }])
   })
 
   it('shows the Windows task dialog with the application icon and plain buttons in English', async () => {
-    const f = setup('win32', async () => ({ activeTasks: false, scheduledTasks: true }), 'en')
+    const f = setup('win32', async () => ({ activeTasks: true }), 'en')
     f.answer(1)
     expect(await f.confirmation.confirm()).toBe(false)
     expect(f.shown).toEqual([{
       type: 'none', icon: f.icon, title: 'YouDub', message: 'Quit YouDub?',
-      detail: 'Scheduled tasks will not run while the app is closed.',
+      detail: 'Running tasks will be interrupted.',
       buttons: ['Quit', 'Cancel'], defaultId: 0, cancelId: 1, noLink: true,
     }])
   })
@@ -78,7 +76,7 @@ describe('DesktopQuitConfirmation', () => {
     expect(second).toBe(first)
     expect(f.focus).toHaveBeenCalledOnce()
     expect(inspect).toHaveBeenCalledOnce()
-    inspected.resolve({ activeTasks: true, scheduledTasks: false })
+    inspected.resolve({ activeTasks: true })
     expect(await first).toBe(true)
     expect(f.shown).toHaveLength(1)
     // The decision is closed: the next request starts a fresh inspection.
@@ -91,7 +89,7 @@ describe('DesktopQuitConfirmation', () => {
     const f = setup('darwin', () => inspected.promise)
     const pending = f.confirmation.confirm()
     f.confirmation.dispose()
-    inspected.resolve({ activeTasks: true, scheduledTasks: false })
+    inspected.resolve({ activeTasks: true })
     expect(await pending).toBe(false)
     expect(f.shown).toEqual([])
     expect(await f.confirmation.confirm()).toBe(false)
@@ -101,7 +99,7 @@ describe('DesktopQuitConfirmation', () => {
   it('does not approve a quit from a box answered after disposal', async () => {
     const answered = Promise.withResolvers<MessageBoxReturnValue>()
     const confirmation = new DesktopQuitConfirmation({
-      locale: () => resolveDesktopLocale('en'), inspect: async () => ({ activeTasks: true, scheduledTasks: false }),
+      locale: () => resolveDesktopLocale('en'), inspect: async () => ({ activeTasks: true }),
       focus: () => {}, platform: 'darwin', show: () => answered.promise,
     })
     const pending = confirmation.confirm()

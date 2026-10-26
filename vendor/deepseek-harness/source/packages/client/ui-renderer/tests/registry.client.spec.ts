@@ -52,15 +52,14 @@ async function boot(): Promise<Bench> {
   return { ctx, svc, erased: svc }
 }
 
-/** Engine-shaped instance stub (bare-source form: subscribe/getSnapshot + baked actions + clearPersisted). */
+/** Engine-shaped instance stub (bare-source form: subscribe/getSnapshot + baked actions). */
 interface FakeInstance {
   getSnapshot: () => undefined
   subscribe: () => () => void
   actions: Record<string, never>
-  clearPersisted: ReturnType<typeof vi.fn>
 }
 
-/** Fake store handle factory (create-count and clearPersisted observable). */
+/** Fake store handle factory (observable create-count). */
 function fakeHandle(persist?: string) {
   const created: FakeInstance[] = []
   const handle = {
@@ -69,10 +68,10 @@ function fakeHandle(persist?: string) {
       actions: {},
       ...(persist === undefined ? {} : { persist }),
     },
-    create: vi.fn((_scopeKey?: string): FakeInstance => {
+    create: vi.fn((): FakeInstance => {
       const instance: FakeInstance = {
         getSnapshot: () => undefined, subscribe: () => () => undefined,
-        actions: {}, clearPersisted: vi.fn(),
+        actions: {},
       }
       created.push(instance)
       return instance
@@ -162,7 +161,6 @@ describe('Factory definition ledger', () => {
     expect(host.factoryStoreOf(definition, firstOccurrence)).toBe(first)
     expect(factory).toHaveBeenCalledTimes(2)
     releaseReplay(); releaseSecond(); dispose()
-    expect(handles.every(item => item.created.every(instance => instance.clearPersisted.mock.calls.length === 0))).toBe(true)
     expect(() => host.factoryStoreOf(definition, {})).toThrow(StaleAuthorizationError)
     expect(() => host.retainFactoryOccurrence(definition, {})()).not.toThrow()
   })

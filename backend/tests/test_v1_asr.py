@@ -46,8 +46,7 @@ def context(tmp_path, monkeypatch):
         "translation": {"adapter": "openai", "model": "test-model", "device": "remote"},
         "tts": None, "separation": None,
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                        stage="asr", config=config, input_files={"source_audio": source, "media_info": info},
+    return StageContext(stage="asr", config=config, input_files={"source_audio": source, "media_info": info},
                         work_dir=tmp_path / "asr")
 
 

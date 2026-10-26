@@ -120,7 +120,6 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   const inspection = await waitFor('quit-inspection', message => message.type === 'quit-inspection' && message.requestId === 1);
   assert.equal(inspection.error, undefined);
   assert.equal(typeof inspection.activeTasks, 'boolean');
-  assert.equal(inspection.scheduledTasks, false);
   if (!skipSetup) {
     const installationPath = join(directory, 'YouDub media');
     const configured = await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie },

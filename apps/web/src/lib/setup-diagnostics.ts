@@ -3,9 +3,8 @@ import type { SetupState } from '@/runtime/setup-contracts'
 const phases = { installation: '安装设置', environment: '环境准备', models: '模型准备', starting: '启动工作台', ready: '已就绪', failed: '准备失败' }
 const statuses = { pending: '等待中', running: '准备中', downloading: '下载中', paused: '已暂停', ready: '已就绪', failed: '失败' }
 
-// Only the explicit fields below enter a report; never serialize the setup token or configuration.
-export function redactDiagnostics(text: string, token?: string, homeDir?: string) {
-  if (token) text = text.replaceAll(token, '[REDACTED]')
+// Only the explicit fields below enter a report; never serialize private configuration.
+export function redactDiagnostics(text: string, homeDir?: string) {
   if (homeDir) text = text.replaceAll(homeDir, '[HOME]').replaceAll(homeDir.replaceAll('\\', '/'), '[HOME]')
   return text
     .replace(/https?:\/\/[^\s<>"']+/gi, raw => raw
@@ -51,7 +50,7 @@ export function setupReport(state?: SetupState | null, requestError = '') {
   const logs = [...(state?.environment || []), ...(state?.models || [])].filter(item => item.log)
   if (logs.length) { lines.push('', '下载与安装日志:'); for (const item of logs) lines.push(`[${item.name}]`, item.log!) }
   if (errors.length) lines.push('', '错误日志:', ...errors)
-  return redactDiagnostics(lines.join('\n'), state?.token, state?.homeDir)
+  return redactDiagnostics(lines.join('\n'), state?.homeDir)
 }
 
 function codeBlock(text: string) {

@@ -35,7 +35,7 @@ const TYPESCRIPT_MODULE = /^[^?]*\.[cm]?tsx?(?:\?|$)/
 const DECORATOR_SYNTAX = /^\s*@[A-Za-z_$][\w$]*/m
 
 // Full builds and typecheck own TypeScript diagnostics. Benchmark-only emission
-// defers them to the required full-build CI jobs; Typert generates reflection
+// defers them to the required full-build CI jobs; Typert generates Remote contracts
 // without repeating those diagnostics.
 const TSC_OWNED_DIAGNOSTICS = { checkDiagnostics: false } as const
 

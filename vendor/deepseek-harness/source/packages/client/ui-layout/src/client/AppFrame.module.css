@@ -1,7 +1,7 @@
 .frame {
   position: relative; /* anchors the drag handles, which straddle column borders */
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   overflow: hidden;
   background: var(--dsw-alias-bg-base);
@@ -154,15 +154,6 @@
   border-left: 0.5px solid var(--dsw-alias-border-l3);
 }
 
-/* The right track paints the base ground on the transparent frame: while the
-   track and the occupant's translateX slide ride the same curve, the grid
-   eases in layout and the transform on the compositor, so frames where they
-   diverge would otherwise show vibrancy glass between the centre's right edge
-   and the incoming panel. The occupant's opaque panel covers this at rest. */
-:global([data-platform='darwin']) .rightbarCol {
-  background: var(--dsw-alias-bg-base);
-}
-
 /* The darwin closed sidebar has no rail: the centre reaches the window edge,
    where a separator would draw a seam against nothing. */
 :global([data-platform='darwin']) [data-sidebar-collapsed] .centerCol {
@@ -202,7 +193,7 @@
 /* The seat itself: the two 28px controls centered on the conversation title
    row (10px header inset + 30px row → centre y 25) and level with the traffic
    lights (centre y ≈ 24). Sits above column content, below frame overlays
-   (20) and the fullscreen right panel (40). The box subtracts itself from any
+   (20). The box subtracts itself from any
    window drag row beneath (Electron app-regions are geometry, not stacking). */
 .leadingSeat {
   position: absolute;
@@ -214,12 +205,7 @@
   -webkit-app-region: no-drag;
 }
 
-/* Drag handles are frame children (columns clip overflow): an 8px hit strip
-   centered on the column border via inline left, above column content. No
-   handle draws a visible pill: the details column was the only one that did,
-   and the right column never had one. The right handle sits above the right
-   panel (which states z-index 10) so it stays grabbable when the panel hangs
-   over the centre. */
+/* An 8px hit strip straddles the sidebar edge above column content. */
 .handle {
   position: absolute;
   grid-area: 1 / 1 / 2 / -1;
@@ -243,39 +229,10 @@
   transition: none;
 }
 
-/* Fullscreen covers the frame while its underlying columns enter or exit. */
-.frame[data-rightbar-fullscreen],
-.frame[data-rightbar-fullscreen] .handle,
-.frame[data-rightbar-instant],
-.frame[data-rightbar-instant] .handle {
-  transition: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .frame[data-animating] .handle {
     transition: none;
   }
-}
-
-/*
- * The right column never clips: its occupant anchors a fixed-width panel to the
- * column's right edge (the frame's edge, which never moves) and lets the track
- * decide whether the centre makes room. With no track the panel hangs over the
- * centre from a zero-width column, and while the track animates the panel stays
- * where it is. The occupant draws its own left border.
- */
-.rightbarCol {
-  position: relative;
-  min-width: 0;
-  overflow: visible;
-}
-
-.bottomRow {
-  grid-column: 1 / -1;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  background: var(--dsw-alias-bg-base);
 }
 
 .overlayLayer {

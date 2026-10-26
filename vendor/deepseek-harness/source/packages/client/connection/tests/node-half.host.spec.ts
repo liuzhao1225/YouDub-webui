@@ -26,7 +26,7 @@ function fakeHttpServer(
   upgrades: WebUpgradeRoute[],
   host = '127.0.0.1',
   protocol: WebServer['protocol'] = 'http:',
-): Pick<WebServer, 'register' | 'registerUpgrade' | 'tapIndex' | 'port' | 'host' | 'protocol'> {
+): Pick<WebServer, 'register' | 'registerUpgrade' | 'port' | 'host' | 'protocol'> {
   return {
     host,
     protocol,
@@ -41,7 +41,6 @@ function fakeHttpServer(
       upgrades.push(route)
       return () => { upgrades.splice(upgrades.indexOf(route), 1) }
     },
-    tapIndex: () => () => {},
     port: 0,
   }
 }

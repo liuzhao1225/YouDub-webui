@@ -34,7 +34,6 @@ test('official Host scope preserves root services and requires all first-run mod
     child.reflect.provide('settings', forms);
     child.reflect.provide('credentials', { describe: async () => ({ configured: false }), resolve: async () => undefined });
     child.reflect.provide('llm', { listProviders: () => [], listConfigurableProviders: () => [] });
-    child.reflect.provide('pluginManager', { listBundles: async () => [], listPlugins: async () => [] });
   } }); await services;
   const plugin = ctx.plugin({ name: host.name, inject: host.inject, apply: child => host.apply(child, { python, modelsDir: join(data, 'models/whisper'), dataDir: data, installation: { get: () => null }, preferences: { get: () => preferences } }) });
   const watchdog = setTimeout(() => console.error('Host activation pending', plugin.status), 10000);
@@ -116,7 +115,6 @@ test('official Host scope preserves root services and requires all first-run mod
     await t.test('unsupported routes and malformed envelopes fail explicitly', async () => {
       assert.equal((await call('GET', '/api/v2/missing')).body.error.code, 'ENVIRONMENT_NOT_READY');
       const malformed = await handlers.get('/api/youdub/v2').fetch(new Request('http://localhost/api/youdub/v2', { method: 'POST', body: '{' })); assert.equal(malformed.status, 400);
-      assert.equal((await call('GET', '/api/v2/extensions')).body.error.code, 'ENVIRONMENT_NOT_READY');
     });
   } finally { clearTimeout(watchdog); await plugin.dispose(); await services.dispose(); await jobs.dispose(); await sub.dispose(); await rm(data, { recursive: true, force: true }); }
 });
@@ -129,7 +127,7 @@ test('missing explicit Python keeps official setup accessible and reports the or
   const jobs = ctx.plugin(LocalJobs); await jobs;
   const services = ctx.plugin({ name: 'test-setup-seams', apply(child) {
     child.reflect.provide('connection', { fetch: { register(route) { handlers.set(route.path, route); return () => handlers.delete(route.path); } } });
-    for (const name of ['settings', 'credentials', 'llm', 'pluginManager']) child.reflect.provide(name, {});
+    for (const name of ['settings', 'credentials', 'llm']) child.reflect.provide(name, {});
   } }); await services;
   const previous = process.env.YOUDUB_PYTHON, python = join(data, 'missing/bin/python');
   process.env.YOUDUB_PYTHON = python;

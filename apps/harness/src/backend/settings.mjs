@@ -81,7 +81,7 @@ export default class YouDubSettings extends Service {
     const runtime = await this.ctx.store.call('runtime.info');
     runtime.capabilities = this.ctx.catalog.describe().providers.filter(item => item.capability && !item.legacy).map(provider => ({ adapter: provider.adapter ?? provider.id,
       capability: provider.capability, execution: provider.execution, available: provider.available ?? false, unavailable_reason: provider.unavailableReason ?? null,
-      requires_api_key: provider.requiresApiKey ?? provider.execution === 'remote', models: provider.models ?? [], data_sent: provider.dataSent ?? [], remote_operations: provider.remoteOperations ?? null }));
+      models: provider.models ?? [] }));
     runtime.status = runtime.capabilities.filter(item => item.capability !== 'subtitle_alignment').every(item => item.available) ? 'ready' : 'degraded';
     return runtime;
   }

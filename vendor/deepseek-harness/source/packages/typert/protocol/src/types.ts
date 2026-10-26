@@ -12,7 +12,6 @@ import type { TypertOwnedValue } from './owned-value.ts'
 declare const LOOKUP_HOST: unique symbol
 declare const LOOKUP_WIRE: unique symbol
 declare const CONTEXT_WIRE: unique symbol
-declare const RESOURCE_ID: unique symbol
 
 /** Type-level association between a Host object and its wire identity. */
 export interface TypertLookup<Host, Wire> {
@@ -39,45 +38,6 @@ export interface TypertLookupMap {}
 
 /** Merge-extensible scoped Context declarations. */
 export interface TypertContextMap {}
-
-/** Type-level association between a resource kind and its identity type. */
-export interface TypertResource<Id> {
-  readonly [RESOURCE_ID]: Id
-}
-
-/** Extract the identity type associated with one resource declaration. */
-export type TypertResourceId<Resource> = Resource extends TypertResource<infer Id> ? Id : never
-
-/**
- * Merge-extensible resource kinds whose identities a Remote call or forwarded
- * event may carry. The package that owns an identity type declares its kind;
- * the value is that kind's identity type, a string type such as a branded id.
- * `global` names the built-in identity-less resource and is never a kind here.
- */
-export interface TypertResourceMap {}
-
-/** One declared resource kind. */
-export type TypertResourceKind = Extract<keyof TypertResourceMap, string>
-
-/**
- * Per-kind resource readers called with one argument tuple spread
- * positionally: plain reads returning one identity, several, or `undefined`
- * for none.
- * @template Args - the argument tuple the readers receive as parameters.
- */
-export type TypertResourceReaders<Args extends readonly unknown[]> = {
-  readonly [Kind in TypertResourceKind]?: (...args: Args) =>
-    | TypertResourceId<TypertResourceMap[Kind]>
-    | readonly TypertResourceId<TypertResourceMap[Kind]>[]
-    | undefined
-}
-
-/**
- * Type-erased resource reader as runtime carriers store it; callers spread
- * the argument tuple into it and validate its result. Declared through a
- * method so a reader typed by its own parameters is assignable without a cast.
- */
-export type TypertResourceReader = { read(...args: readonly unknown[]): unknown }['read']
 
 type TypertLookupEntry = TypertLookupMap[keyof TypertLookupMap]
 type TypertWireForHost<Value, Entry> = Entry extends unknown
@@ -180,9 +140,6 @@ export interface RemoteStreamHandle<Out, In> extends AsyncIterable<Out> {
 /** Merge-extensible scoped Remote method signatures generated for consumers. */
 export interface TypertRemoteScopeMap {}
 
-type TypertEventParameters<Event extends keyof Events> =
-  Events[Event] extends (...args: infer Args) => unknown ? Args : never
-
 type TypertEventResult<Event extends keyof Events> =
   Events[Event] extends (...args: never[]) => infer Result ? Result : never
 
@@ -196,18 +153,11 @@ export type TypertForwardableEvent = {
     : never
 }[keyof Events]
 
-/**
- * Event and dispatch mode accepted by the Remote Event source. An `emit` entry
- * may declare readers of the resources its payload carries; an
- * entry without `resources` touches the built-in `global` resource. A
- * non-owner Peer receives an `emit` notification only after an access
- * decision.
- */
+/** Event and dispatch mode accepted by the owner-authenticated Remote Event source. */
 export type TypertForwardableEventEntry = {
   [Event in TypertForwardableEvent]: {
     readonly event: Event
     readonly mode: 'emit'
-    readonly resources?: TypertResourceReaders<TypertEventParameters<Event>>
   }
 }[TypertForwardableEvent]
 
@@ -544,19 +494,12 @@ export type TypertLookupResolver<Host = unknown, Wire = unknown> = (
   id: Wire,
 ) => Host | undefined | Promise<Host | undefined>
 
-/** Resource kinds whose identity type is a wire identity; every kind for a type-erased provider. */
-type TypertResourceKindFor<Wire> = unknown extends Wire
-  ? TypertResourceKind
-  : { [Kind in TypertResourceKind]: [Wire] extends [TypertResourceId<TypertResourceMap[Kind]>] ? Kind : never }[TypertResourceKind]
-
 /** Runtime provider for one declared Host object lookup. */
 export interface TypertLookupProvider<Host = unknown, Wire = unknown> {
   /** Source parameter name recognized by the SRC weak parser. */
   readonly parameter: string
   /** Wire field replacing the Host object parameter. */
   readonly wire: string
-  /** Resource kind the wire identity names; a parameter of this lookup carries that resource. */
-  readonly resource?: TypertResourceKindFor<Wire>
   /** Canonical Host type symbol used by strict generation. */
   readonly hostTypeSymbol: string
   /** Canonical wire type symbol used by strict generation. */
@@ -589,8 +532,6 @@ export interface TypertHostContextAdapter<Wire = unknown> {
   readonly wire: string
   /** Canonical wire type symbol used by strict generation. */
   readonly wireTypeSymbol: string
-  /** Resource kind the wire identity names; a call scoped to this Context carries that resource. */
-  readonly resource?: TypertResourceKindFor<Wire>
   /**
    * Resolve a validated wire identity to a live Host Context.
    * @param id - validated wire identity.
@@ -622,7 +563,7 @@ export interface TypertClientContextAdapter<Wire = unknown> {
 
 /** Notification emitted after a Typert runtime registry changes. */
 export interface TypertRegistryChange {
-  readonly kind: 'local' | 'remote' | 'lookup' | 'host-context' | 'client-context' | 'resource'
+  readonly kind: 'local' | 'remote' | 'lookup' | 'host-context' | 'client-context'
   readonly key: string
 }
 
@@ -758,7 +699,7 @@ export interface TypertContextRegistry {
     adapter: TypertClientContextAdapter<TypertContextWire<TypertContextMap[K]>>,
   ): TypertDisposer
   /**
-   * Look up a Host Context adapter; a configured resolver keeps the adapter's declaration and `resource`.
+   * Look up a Host Context adapter; a configured resolver keeps the adapter's declaration.
    * @param key - descriptor Context key.
    * @returns the adapter, or `undefined` when absent.
    */
@@ -777,52 +718,12 @@ export interface TypertContextRegistry {
   subscribe(listener: TypertRegistryListener): TypertDisposer
 }
 
-/** Default wire field of one resource kind. */
-export interface TypertResourceDeclaration {
-  /** Top-level or first-object wire field holding one identity of the kind. */
-  readonly field: string
-}
-
-/** One registered resource kind with its default wire field. */
-export interface TypertResourceEntry extends TypertResourceDeclaration {
-  /** Registered resource kind. */
-  readonly kind: string
-}
-
-/** Runtime registry of resource kinds' default wire fields. */
-export interface TypertResourceRegistry {
-  /**
-   * Register one kind's default wire field for the calling fiber. Only the
-   * domain that owns the kind registers it.
-   * @param kind - merge-declared resource kind.
-   * @param declaration - the kind's default wire field.
-   * @returns disposer withdrawing the exact registration.
-   * @throws Error when the kind is already registered or is `global`, the built-in resource kind.
-   */
-  register(kind: TypertResourceKind, declaration: TypertResourceDeclaration): TypertDisposer
-  /**
-   * Look up one kind's declaration.
-   * @param kind - resource kind.
-   * @returns the live declaration, or `undefined` when unregistered.
-   */
-  get(kind: string): TypertResourceDeclaration | undefined
-  /** @returns a registration-order snapshot of registered kinds with their fields. */
-  entries(): readonly TypertResourceEntry[]
-  /**
-   * Observe later resource-kind changes.
-   * @param listener - synchronous contained observer.
-   * @returns disposer for this subscription.
-   */
-  subscribe(listener: TypertRegistryListener): TypertDisposer
-}
-
 /** Minimal Typert runtime consumed through dependency inversion. */
 export interface TypertRegistryContract {
   readonly local: TypertLocalRegistry
   readonly remotes: TypertRemoteRegistry
   readonly lookups: TypertLookupRegistry
   readonly contexts: TypertContextRegistry
-  readonly resources: TypertResourceRegistry
 }
 
 declare module '@deepseek-ai/cordis' {

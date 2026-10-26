@@ -2,7 +2,6 @@ import type { ResourceSelection, SetupAction, SetupState } from '@/runtime/setup
 import { createStore, type StoreApi } from '@/lib/store'
 import type { Request } from '@/plugin/runtime/types'
 import type { Catalog } from '@/plugin/contracts'
-import { responseBody } from './http'
 
 class SnapshotStore<T extends object> {
   private readonly store: StoreApi<T>
@@ -20,7 +19,7 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
   private controller: AbortController | null = null
   private timer: ReturnType<typeof setTimeout> | undefined
   private mutationRevision = 0
-  constructor(private readonly api?: Request) { super({ state: null, error: '', busy: false }) }
+  constructor(private readonly api: Request) { super({ state: null, error: '', busy: false }) }
   start = () => {
     this.stop()
     this.controller = new AbortController()
@@ -34,11 +33,7 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
   }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async request(controller: AbortController, init?: RequestInit): Promise<SetupState> {
-    if (this.api) return this.api<SetupState>('/api/setup', { ...init, signal: controller.signal })
-    const response = await fetch('/api/setup', { ...init, signal: controller.signal, cache: 'no-store', credentials: 'same-origin' })
-    const body = await response.text()
-    if (!response.ok) throw new Error(`环境准备请求失败 (${response.status})：${body}`)
-    return JSON.parse(body)
+    return this.api<SetupState>('/api/setup', { ...init, signal: controller.signal })
   }
   private async poll(controller: AbortController) {
     const revision = this.mutationRevision
@@ -61,7 +56,7 @@ export class SetupController extends SnapshotStore<SetupSnapshot> {
     if (!state || busy || !controller) return
     this.update({ busy: true })
     try {
-      const next = await this.request(controller, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-YouDub-Setup': state.token }, body: JSON.stringify(body) })
+      const next = await this.request(controller, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (this.current(controller)) { this.mutationRevision++; this.update({ state: next }) }
     } catch (failure) {
       if (this.current(controller)) {
@@ -88,9 +83,8 @@ function translationAvailability(catalog: Catalog) {
 
 /** First run shares the same provider editor and availability rules as Settings. */
 export class TranslationSetupController extends SnapshotStore<TranslationSnapshot> {
-  private csrf = ''
   private controller: AbortController | null = null
-  constructor(private readonly suppliedRequest?: Request) { super({ loaded: false, configured: false, ready: false, busy: false, error: '' }) }
+  constructor(private readonly suppliedRequest: Request) { super({ loaded: false, configured: false, ready: false, busy: false, error: '' }) }
   readonly request: Request = <T>(path: string, init?: RequestInit) => {
     if (!this.controller) return Promise.reject(new Error('Translation setup is closed.'))
     return this.api<T>(this.controller, path, init)
@@ -116,24 +110,12 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
   continue = () => { if (this.controller && this.snapshot.configured) this.update({ ready: true }) }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async api<T>(controller: AbortController, path: string, init?: RequestInit): Promise<T> {
-    if (this.suppliedRequest) {
-      const signal = init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal
-      return this.suppliedRequest<T>(path, { ...init, signal })
-    }
-    const headers = new Headers(init?.headers)
-    if (init?.body) headers.set('Content-Type', 'application/json')
-    if (init?.method && !['GET', 'HEAD'].includes(init.method.toUpperCase())) headers.set('X-CSRF-Token', this.csrf)
     const signal = init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal
-    const response = await fetch(path, { ...init, headers, signal, credentials: 'same-origin', cache: 'no-store' })
-    return responseBody<T>(response)
+    return this.suppliedRequest<T>(path, { ...init, signal })
   }
+
   private async load(controller: AbortController) {
     try {
-      if (!this.suppliedRequest) {
-        const session = await this.api<{ csrf_token: string }>(controller, '/api/auth/session')
-        if (!this.current(controller)) return
-        this.csrf = session.csrf_token
-      }
       const [settings, catalog] = await Promise.all([
         this.api<{ plugins?: Record<string, { translationDeferred?: boolean }> }>(controller, '/api/v2/settings'),
         this.api<Catalog>(controller, '/api/v2/catalog'),

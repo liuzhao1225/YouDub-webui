@@ -4,22 +4,16 @@ from __future__ import annotations
 import importlib.metadata
 import importlib.util
 import os
-import platform
 import shutil
 from copy import deepcopy
 from importlib.machinery import PathFinder
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 from ..config import ffmpeg_binary, ffprobe_binary
 from ..accelerators import detect_devices
 from ..resources import missing_modules, version_supported, version_requirement
 from .segments import LANGUAGES
-
-
-INSTANCE_ID = str(uuid4())
-
 
 
 def _detect_devices() -> list[dict[str, Any]]:
@@ -32,7 +26,6 @@ def _model(
     return {
         "id": model_id, "devices": devices, "source_languages": source_languages,
         "target_languages": target_languages, "voice_modes": [], "voices": [],
-        "input_limits": {"max_reference_duration_ms": None},
     }
 
 
@@ -130,12 +123,7 @@ def _subtitle_alignment_models(devices: list[dict[str, Any]]) -> tuple[list[dict
 
 def runtime_info() -> dict[str, Any]:
     """Environment metadata without probing model assets or credentials."""
-    system = platform.system()
-    platforms = {"Darwin": "macos", "Windows": "windows", "Linux": "linux"}
-    if system not in platforms:
-        raise RuntimeError(f"Unsupported operating system: {system}")
-    return {"instance_id": INSTANCE_ID, "platform": platforms[system], "arch": platform.machine(),
-            "devices": _detect_devices()}
+    return {"devices": _detect_devices()}
 
 
 def probe_capability(adapter: str) -> dict[str, Any]:
@@ -148,5 +136,4 @@ def probe_capability(adapter: str) -> dict[str, Any]:
     kind, probe = probes[adapter]
     models, reason = probe(_detect_devices())
     return {"adapter": adapter, "capability": kind, "execution": "local",
-            "available": bool(models), "unavailable_reason": reason, "requires_api_key": False,
-            "models": models, "data_sent": [], "remote_operations": None}
+            "available": bool(models), "unavailable_reason": reason, "models": models}

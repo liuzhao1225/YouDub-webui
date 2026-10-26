@@ -5,7 +5,7 @@ import type { DesktopQuitInspection } from './host-process.ts'
 import type { DesktopLocale, DesktopMessages } from './locale.ts'
 
 /** Locale key of the explanation shown before quitting, or none when quitting interrupts nothing. */
-export type DesktopQuitPrompt = Extract<keyof DesktopMessages, 'quitActiveTasks' | 'quitScheduledTasks' | 'quitActiveAndScheduledTasks'> | undefined
+export type DesktopQuitPrompt = Extract<keyof DesktopMessages, 'quitActiveTasks'> | undefined
 
 /**
  * Choose the confirmation copy for one inspection result.
@@ -13,11 +13,7 @@ export type DesktopQuitPrompt = Extract<keyof DesktopMessages, 'quitActiveTasks'
  * @returns the explanation key; an unknown state warns about running tasks rather than quitting silently.
  */
 export function resolveDesktopQuitPrompt(inspection: DesktopQuitInspection | 'unknown'): DesktopQuitPrompt {
-  if (inspection === 'unknown') return 'quitActiveTasks'
-  if (inspection.activeTasks && inspection.scheduledTasks) return 'quitActiveAndScheduledTasks'
-  if (inspection.activeTasks) return 'quitActiveTasks'
-  if (inspection.scheduledTasks) return 'quitScheduledTasks'
-  return undefined
+  return inspection === 'unknown' || inspection.activeTasks ? 'quitActiveTasks' : undefined
 }
 
 /** Main-process collaborators of the confirmation. */

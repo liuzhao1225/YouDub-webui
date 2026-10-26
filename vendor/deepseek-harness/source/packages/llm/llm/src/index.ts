@@ -659,32 +659,6 @@ export class LlmRuntime extends TypertRemoteService {
     })
   }
 
-  /**
-   * Resolve and validate all metadata from the adapter that owns one exact
-   * route. The result is detached from adapter-owned objects; catalog
-   * membership remains advisory and does not control request routing.
-   * @param provider - registered provider route to inspect.
-   * @param model - exact model id passed to the adapter.
-   * @param signal - optional cancellation for adapter-owned asynchronous lookup.
-   * @returns exact model identity plus available context and reasoning metadata.
-   */
-  async resolveModelInfo(
-    provider: string,
-    model: string,
-    signal?: AbortSignal,
-  ): Promise<LlmResolvedModelInfo> {
-    return this.resolveModelInfoFor(this.registration(provider), model, signal)
-  }
-
-  private async resolveModelInfoFor(
-    registration: AdapterRegistration,
-    model: string,
-    signal?: AbortSignal,
-  ): Promise<LlmResolvedModelInfo> {
-    const resolved = await registration.adapter.resolveModel(registration.provider.id, model, signal)
-    return this.normalizeModelInfo(registration, model, resolved)
-  }
-
   /** Validate and detach one adapter-returned exact model result. */
   private normalizeModelInfo(
     registration: AdapterRegistration,
@@ -776,29 +750,6 @@ export class LlmRuntime extends TypertRemoteService {
         ...reasoning.defaultEffort === undefined ? {} : { defaultEffort: reasoning.defaultEffort },
       },
     }
-  }
-
-  /**
-   * Validate a conversation call config against its exact model capability and
-   * materialize adapter-configured defaults. Unsupported explicit efforts
-   * reject before provider I/O; no clamping or aliasing is performed. This
-   * standalone query does not bind a later dispatch; use {@link prepareCall}
-   * when logging and streaming must share one adapter registration.
-   * @param config - provider/model route and optional request controls.
-   * @param signal - optional cancellation for adapter-owned capability lookup.
-   * @returns a detached config only when a default must be materialized.
-   */
-  async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig> {
-    return (await this.resolveCallFor(this.registration(config.provider), config, signal)).config
-  }
-
-  private async resolveCallFor(
-    registration: AdapterRegistration,
-    config: LlmCallConfig,
-    signal?: AbortSignal,
-  ): Promise<{ config: LlmCallConfig; context?: LlmModelContext; modelInfo: LlmResolvedModelInfo }> {
-    const info = await this.resolveModelInfoFor(registration, config.model, signal)
-    return this.resolveCallWithInfo(config, info)
   }
 
   /** Validate request controls against one already-bound exact model result. */

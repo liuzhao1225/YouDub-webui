@@ -690,23 +690,6 @@ export class ClientModuleRegistry extends Service {
   }
 
   /**
-   * Serve an advertised revisioned bundle or source map without a Web server.
-   * Unknown URLs return 404, unsupported methods return 405, and `HEAD`
-   * returns the same immutable headers without materializing a body. Each body
-   * is built once on its first `GET`; script construction never reads maps.
-   * @param request - shell-carrier request for a `/plugins` resource.
-   * @returns the exact response also exposed by the optional Web route.
-   */
-  async fetchBundle(request: Request): Promise<Response> {
-    const resource = await this.bundleResource(request.method, request.url)
-    const body = resource.body === undefined ? null : Uint8Array.from(resource.body)
-    return new Response(body, {
-      status: resource.status,
-      ...(resource.headers === undefined ? {} : { headers: resource.headers }),
-    })
-  }
-
-  /**
    * Filesystem baseline captured before an entry's current bytes were read.
    * HMR compares it with the live files when installing a watch, so a write
    * between startup composition and watch installation cannot disappear into

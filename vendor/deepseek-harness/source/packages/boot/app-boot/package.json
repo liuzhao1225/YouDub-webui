@@ -32,7 +32,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/dsh-package-manifest": "workspace:*",
     "js-yaml": "^4.3.2",
     "node-addon-require-builtin": "^0.1.9",
@@ -48,11 +47,9 @@
     "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/schemastery": "workspace:~",
     "@deepseek-ai/cordis-plugin-group": "workspace:~",
     "@deepseek-ai/cordis-plugin-include": "workspace:~",
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",
-    "@deepseek-ai/cordis-plugin-timer": "workspace:~",
     "@deepseek-ai/dsh-launch-environment": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "workspace:*",
     "@types/js-yaml": "^4.0.9",

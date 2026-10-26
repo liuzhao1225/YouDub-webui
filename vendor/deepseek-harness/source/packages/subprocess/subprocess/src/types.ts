@@ -12,22 +12,6 @@ import type { Readable, Writable } from 'node:stream'
 /** Namespace prefix reserved for DeepSeek Harness-managed child environment facts. */
 export const DSH_ENV_PREFIX = 'DSH_' as const
 
-/** One environment key inside the managed {@link DSH_ENV_PREFIX} namespace. */
-export type DshEnvironmentKey = `${typeof DSH_ENV_PREFIX}${string}`
-
-/** Trusted DeepSeek Harness variables for one child-process execution. */
-export type DshEnvironment = Readonly<Record<DshEnvironmentKey, string>>
-
-/** One captured stream: the (possibly truncated) text plus recovery info. */
-export interface CollectedOutput {
-  /** Collected text — the TAIL of the stream when truncated. */
-  text: string
-  /** True when bytes were dropped from `text`. */
-  truncated: boolean
-  /** Path to a file holding the COMPLETE stream, when truncated and available. */
-  spillPath?: string
-}
-
 /**
  * stdin disposition. `'ignore'` leaves fd 0 on `/dev/null`; `'pipe'` exposes
  * {@link SubprocessHandle.stdin} for the caller's ongoing protocol writes;
@@ -134,8 +118,7 @@ export interface SubprocessOutputRead {
  * Cursor-free incremental access to one collected output stream. Offsets are
  * whole-stream byte coordinates owned by the caller, so independent readers
  * cannot consume one another's output; `readFrom(0)` after settlement is the
- * batch result (`lossy` then means the in-memory tail lost its head — the
- * {@link CollectedOutput.truncated} fact).
+ * batch result (`lossy` then means the in-memory tail lost its head).
  */
 export interface SubprocessOutputReader {
   /**

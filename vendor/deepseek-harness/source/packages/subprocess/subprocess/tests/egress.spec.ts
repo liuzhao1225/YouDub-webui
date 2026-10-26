@@ -2,9 +2,10 @@ import { createServer, type Server } from 'node:http'
 import { spawn } from 'node:child_process'
 import type { AddressInfo } from 'node:net'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { clearedProxyEnv, installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
+import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
 import { createLaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { scrubbedParentEnv } from '../src/index.ts'
+import { PROXY_ENV_NAMES } from '../../../util/http-proxy/src/policy.ts'
 
 /**
  * Whether this runtime honors `NODE_USE_ENV_PROXY`, which is how a child Node receives the policy.
@@ -45,7 +46,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   seen = []
-  const names = Object.keys(clearedProxyEnv())
+  const names = PROXY_ENV_NAMES
   saved = Object.fromEntries(names.map(name => [name, process.env[name]]))
   for (const name of names) Reflect.deleteProperty(process.env, name)
 })

@@ -1,3 +1,4 @@
+import { inspectModel } from '../../llm/tests/model-info.ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
@@ -89,7 +90,7 @@ describe('hand-declared providers', () => {
     expect(await ctx.llm.listModels('acme-gateway')).toEqual([
       { provider: 'acme-gateway', id: 'acme-large', name: 'Acme Large', inputModalities: ['text'] },
     ])
-    const info = await ctx.llm.resolveModelInfo('acme-gateway', 'acme-large')
+    const info = await inspectModel(ctx.llm, 'acme-gateway', 'acme-large')
     expect(info).toMatchObject({
       provider: 'acme-gateway',
       id: 'acme-large',
@@ -108,14 +109,14 @@ describe('hand-declared providers', () => {
     // byte-for-byte the same request as naming no effort — so a provider whose
     // own default is to think would keep thinking with `off` selected. The
     // capability is reported unavailable instead of offering that control.
-    expect((await ctx.llm.resolveModelInfo('acme-gateway', 'acme-large')).reasoning).toBeUndefined()
+    expect((await inspectModel(ctx.llm, 'acme-gateway', 'acme-large')).reasoning).toBeUndefined()
 
     // A catalog route is unaffected: its models carry the metadata that makes
     // `off` actually disable thinking.
     const withCatalog = await harness({ providers: { deepseek: { baseURL: server.url } } })
     const [catalogModel] = getBuiltinModels('deepseek')
     if (catalogModel === undefined) throw new Error('the installed catalog ships no deepseek model')
-    expect((await withCatalog.llm.resolveModelInfo('deepseek', catalogModel.id)).reasoning?.efforts.map(e => e.id))
+    expect((await inspectModel(withCatalog.llm, 'deepseek', catalogModel.id)).reasoning?.efforts.map(e => e.id))
       .toContain('off')
   })
 
@@ -234,13 +235,13 @@ describe('hand-declared providers', () => {
 
     expect(await listed('acme-gateway')).toEqual({ bare: ['text'], seeing: ['text', 'image'] })
     expect(await listed('vision-gateway')).toEqual({ bare: ['text', 'image'], deaf: ['text'] })
-    expect((await ctx.llm.resolveModelInfo('acme-gateway', 'seeing')).inputModalities).toEqual(['text', 'image'])
+    expect((await inspectModel(ctx.llm, 'acme-gateway', 'seeing')).inputModalities).toEqual(['text', 'image'])
 
     // A catalog vision model keeps what the catalog records even under a
     // narrower route default: the route value is a fallback, not an override.
     const vision = getBuiltinModels('anthropic').find(model => model.input.includes('image'))
     if (vision === undefined) throw new Error('the installed catalog ships no anthropic vision model')
-    expect((await ctx.llm.resolveModelInfo('anthropic', vision.id)).inputModalities).toEqual(vision.input)
+    expect((await inspectModel(ctx.llm, 'anthropic', vision.id)).inputModalities).toEqual(vision.input)
   })
 
   it('reads an entry’s empty modality list as no answer, and the route’s as unserviceable', () => {
@@ -496,7 +497,7 @@ describe('catalog routes with per-model configuration', () => {
       },
     })
 
-    const info = await ctx.llm.resolveModelInfo('deepseek', catalogModel.id)
+    const info = await inspectModel(ctx.llm, 'deepseek', catalogModel.id)
     // The configured field wins and the name still comes from the catalog. The
     // catalog's own output cap is the model's capability, not a cap anyone
     // chose, so it must not arrive as the request default.
@@ -522,7 +523,7 @@ describe('catalog routes with per-model configuration', () => {
 
     // Configuring the cap is the deployment choosing one, so it becomes the
     // default the seam materializes into requests that name none.
-    expect((await ctx.llm.resolveModelInfo('deepseek', catalogModel.id)).defaultMaxTokens).toBe(4096)
+    expect((await inspectModel(ctx.llm, 'deepseek', catalogModel.id)).defaultMaxTokens).toBe(4096)
   })
 
   it('adds a model the installed catalog does not describe to a catalog route', async () => {

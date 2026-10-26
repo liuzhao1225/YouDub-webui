@@ -4,10 +4,8 @@ import type { AddressInfo } from 'node:net'
 import { afterEach, beforeAll, afterAll, describe, expect, it } from 'vitest'
 import { getGlobalDispatcher } from 'undici'
 import {
-  clearedProxyEnv,
   installProxyFromEnvironment,
   proxyEnvironmentForChild,
-  proxyRouteFor,
 } from '../src/index.ts'
 import { PROXY_ENV_NAMES } from '../src/policy.ts'
 
@@ -158,15 +156,14 @@ describe('installProxyFromEnvironment', () => {
     }
   })
 
-  it('restores the dispatcher, the route, and the environment on disposal', async () => {
+  it('restores the dispatcher and the environment on disposal', async () => {
     const before = getGlobalDispatcher()
     const beforeEnv = process.env.HTTP_PROXY
     const { dispose } = await install(proxyAll())
     expect(getGlobalDispatcher()).not.toBe(before)
-    expect(proxyRouteFor(new URL(proxyTarget)).proxied).toBe(true)
+    await expect((await fetch(proxyTarget)).text()).resolves.toBe('VIA-PROXY')
     await dispose()
     expect(getGlobalDispatcher()).toBe(before)
-    expect(proxyRouteFor(new URL(proxyTarget)).proxied).toBe(false)
     expect(process.env.HTTP_PROXY).toBe(beforeEnv)
     await expect((await fetch(originUrl)).text()).resolves.toBe('DIRECT')
   })
@@ -179,7 +176,6 @@ describe('installProxyFromEnvironment', () => {
       expect(getGlobalDispatcher()).toBe(before)
       expect(process.env.HTTP_PROXY).toBe('http://untouched.example')
       expect(reported).toEqual([])
-      expect(proxyRouteFor(new URL(proxyTarget))).toEqual({ proxied: false })
     } finally {
       await dispose()
       delete process.env.HTTP_PROXY
@@ -206,38 +202,23 @@ describe('installProxyFromEnvironment', () => {
   })
 })
 
-describe('proxyRouteFor', () => {
-  it('carries the dispatcher already routing, so a branch and its request agree', async () => {
+describe('installed dispatcher lifecycle', () => {
+  it('lets an in-flight request finish when the installed dispatcher is disposed', async () => {
     const { dispose } = await install(proxyAll())
-    const route = proxyRouteFor(new URL(proxyTarget))
-    expect(route).toMatchObject({ proxied: true, proxy: proxyUrl })
-    if (!route.proxied) throw new Error('unreachable: asserted proxied above')
-    // One transport, not a copy: a caller that branched on this route sends its request through the
-    // very agent the branch described, so no second read can put the two on different routes.
-    expect(route.dispatcher).toBe(getGlobalDispatcher())
     const undici = await import('undici')
     // Disposing the install while a request is in flight: the shared dispatcher is closed, not
     // destroyed, so the hop that already left finishes.
-    const inFlight = undici.fetch(proxyTarget, { dispatcher: route.dispatcher })
+    const inFlight = undici.fetch(proxyTarget, { dispatcher: getGlobalDispatcher() })
     await dispose()
     await expect((await inFlight).text()).resolves.toBe('VIA-PROXY')
     expect(proxied).toEqual([`GET ${proxyTarget}`])
   })
 
-  it('is direct for a bypassed URL, and direct with nothing installed', async () => {
-    const { dispose } = await install(proxyAll('origin.test'))
-    try {
-      expect(proxyRouteFor(new URL(proxyTarget))).toEqual({ proxied: false })
-    } finally {
-      await dispose()
-    }
-    expect(proxyRouteFor(new URL(proxyTarget))).toEqual({ proxied: false })
-  })
-
   it('is direct for a loopback URL under a policy that proxies everything', async () => {
     const { dispose } = await install(proxyAll())
     try {
-      expect(proxyRouteFor(new URL(originUrl))).toEqual({ proxied: false })
+      await expect((await fetch(originUrl)).text()).resolves.toBe('DIRECT')
+      expect(proxied).toEqual([])
     } finally {
       await dispose()
     }
@@ -375,13 +356,11 @@ describe('installing over an existing installation', () => {
         // launcher's agent keeps tunnelling. A direct hop needs a host that answers, so this one
         // reaches the real origin rather than the name only the proxy can resolve.
         await expect((await fetch(originUrl)).text()).resolves.toBe('DIRECT')
-        expect(proxyRouteFor(new URL(proxyTarget))).toEqual({ proxied: false })
       } finally {
         await off.dispose()
       }
       // Disposing the direct policy restores the proxy the launcher installed.
       await expect((await fetch(proxyTarget)).text()).resolves.toBe('VIA-PROXY')
-      expect(proxyRouteFor(new URL(proxyTarget)).proxied).toBe(true)
     } finally {
       await outer.dispose()
     }
@@ -446,13 +425,5 @@ describe('the published environment', () => {
     expect(process.env.HTTP_PROXY).toBe('http://before.example')
     delete process.env.http_proxy
     delete process.env.HTTP_PROXY
-  })
-})
-
-describe('clearedProxyEnv', () => {
-  it('names every proxy variable for removal, so a replay reaches its own fixture server', () => {
-    const cleared = clearedProxyEnv()
-    expect(Object.keys(cleared).sort()).toEqual([...PROXY_ENV_NAMES].sort())
-    expect(Object.values(cleared).every(value => value === undefined)).toBe(true)
   })
 })

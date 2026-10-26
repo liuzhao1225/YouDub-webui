@@ -26,7 +26,7 @@ def test_qwen_child_uses_selected_device_and_existing_cancellation_path(tmp_path
     adjusted.mkdir()
     (adjusted / "0001.wav").write_bytes(b"complete adjusted speech fixture")
     check_cancel = lambda: None
-    context = StageContext(task_id="test", attempt=1, stage="export", config=config, input_files={},
+    context = StageContext(stage="export", config=config, input_files={},
                            work_dir=tmp_path, check_cancel=check_cancel)
     monkeypatch.setattr(forced_alignment, "available_models", lambda: [forced_alignment.MODEL_NAME])
     monkeypatch.setattr(forced_alignment, "model_directory", lambda: tmp_path / "model")

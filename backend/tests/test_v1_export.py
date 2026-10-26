@@ -43,8 +43,7 @@ def context(tmp_path):
         "translation": {"adapter": "openai", "model": "test-model", "device": "remote"},
         "tts": None, "separation": None,
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                        stage="export", config=config, input_files=files, work_dir=work)
+    return StageContext(stage="export", config=config, input_files=files, work_dir=work)
 
 
 def test_srt_splits_display_only_preserves_inputs_and_joins_translation_by_id(monkeypatch, context):

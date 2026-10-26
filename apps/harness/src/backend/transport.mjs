@@ -13,7 +13,7 @@ export class YouDubTransport {
     const names = [];
     const expression = '^' + path.split('/').map(part => {
       if (!part.startsWith(':')) return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      names.push(part.slice(1).replace(/\*$/, '')); return part.endsWith('*') ? '(.*)' : '([^/]+)';
+      names.push(part.slice(1)); return '([^/]+)';
     }).join('/') + '$';
     const route = { method, pattern: new RegExp(expression), names, handler };
     this.routes.push(route); return () => { this.routes.splice(this.routes.indexOf(route), 1); };

@@ -12,7 +12,6 @@ import {
   type TypertContext,
   type TypertForwardableEvent,
   type TypertForwardableEventEntry,
-  type TypertResource,
   type TypertLookup,
   type TypertRemoteEvent,
 } from '@deepseek-ai/dsh-typert-protocol'
@@ -52,11 +51,6 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertContextMap {
     metaFixture: TypertContext<string>
     otherFixture: TypertContext<string>
-  }
-
-  interface TypertResourceMap {
-    /** Test-only resource kind read from fixture event payloads. */
-    'meta-fixture-id': TypertResource<string>
   }
 
   interface TypertRemoteEventSelection extends
@@ -297,7 +291,7 @@ describe('typert-protocol Remote declarations', () => {
     expect(() => Remote({ mode: 'stream', extra: true } as unknown as { mode: 'stream' })).toThrow('Remote options require')
     const bogusMode: string = 'duplex'
     expect(() => Remote({ mode: bogusMode } as { mode: 'stream' }))
-      .toThrow('Remote options require name, mode: "stream", or resources')
+      .toThrow('Remote options require name or mode: "stream"')
     expect(() => Remote({})).toThrow('Remote options require')
     expect(() => RemoteScope('' as 'metaFixture')).toThrow('Scope key')
     expect(() => RemoteScope('metaFixture', 'bad/name')).toThrow('export name')
@@ -417,24 +411,6 @@ describe('typert-protocol Remote declarations', () => {
 
     expectTypeOf<{ event: 'meta-fixture/forwardable'; mode: 'emit' }>()
       .toExtend<TypertForwardableEventEntry>()
-  })
-
-  it('types the resource readers of an emit entry by its own event parameters', () => {
-    const entries = [
-      {
-        event: 'meta-fixture/forwardable',
-        mode: 'emit',
-        resources: { 'meta-fixture-id': (value) => { expectTypeOf(value).toEqualTypeOf<string>(); return value } },
-      },
-    ] as const satisfies readonly TypertForwardableEventEntry[]
-    const wrong = [{
-      event: 'meta-fixture/forwardable',
-      mode: 'emit',
-      // @ts-expect-error -- a reader returns the kind's identity type, not the payload's length.
-      resources: { 'meta-fixture-id': value => value.length },
-    }] as const satisfies readonly TypertForwardableEventEntry[]
-    expect(entries[0].resources['meta-fixture-id']('s1')).toBe('s1')
-    expect(wrong).toHaveLength(1)
   })
 
   it('preserves Client listener arguments from the selected Cordis notification declaration', () => {

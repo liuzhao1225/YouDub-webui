@@ -1,3 +1,4 @@
+import { inspectModel } from './model-info.ts'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, {
@@ -516,10 +517,10 @@ describe('LlmRuntime', () => {
     expect(ctx.llm.listProviders()).toEqual([{ id: 'plain', name: 'plain' }])
     await expect(ctx.llm.listModels('plain')).resolves.toEqual([])
     await expect(ctx.llm.listModels('missing')).rejects.toMatchObject({ code: 'NO_ADAPTER' })
-    await expect(ctx.llm.resolveModelInfo('plain', 'unlisted')).resolves.toEqual({
+    await expect(inspectModel(ctx.llm, 'plain', 'unlisted')).resolves.toEqual({
       provider: 'plain', id: 'unlisted', name: 'unlisted',
     })
-    await expect(ctx.llm.resolveModelInfo('missing', 'm')).rejects.toMatchObject({ code: 'NO_ADAPTER' })
+    await expect(inspectModel(ctx.llm, 'missing', 'm')).rejects.toMatchObject({ code: 'NO_ADAPTER' })
   })
 
   it.each([
@@ -539,7 +540,7 @@ describe('LlmRuntime', () => {
     }(SCRIPT)
     ctx.llm.registerAdapter(['route'], adapter)
 
-    await expect(ctx.llm.resolveModelInfo('route', 'model'))
+    await expect(inspectModel(ctx.llm, 'route', 'model'))
       .rejects.toMatchObject({ code: 'INVALID_MODEL_INFO' })
   })
 
@@ -557,7 +558,7 @@ describe('LlmRuntime', () => {
 
     // Model selectors use this exact field; a
     // rebuild that drops it silently reads as "modalities unknown".
-    await expect(ctx.llm.resolveModelInfo('route', 'model')).resolves.toEqual({
+    await expect(inspectModel(ctx.llm, 'route', 'model')).resolves.toEqual({
       provider: 'route', id: 'model', name: 'Model',
       inputModalities: ['text', 'image'],
     })
@@ -572,11 +573,11 @@ describe('LlmRuntime', () => {
       { unlisted: source },
     ))
 
-    const resolved = await ctx.llm.resolveModelInfo('route', 'unlisted')
+    const resolved = await inspectModel(ctx.llm, 'route', 'unlisted')
     expect(resolved.context).toEqual({ contextWindow: 32_000 })
     source.contextWindow = 64_000
     expect(resolved.context).toEqual({ contextWindow: 32_000 })
-    await expect(ctx.llm.resolveModelInfo('route', 'other')).resolves.toEqual({
+    await expect(inspectModel(ctx.llm, 'route', 'other')).resolves.toEqual({
       provider: 'route', id: 'other', name: 'other',
     })
   })
@@ -602,19 +603,19 @@ describe('LlmRuntime', () => {
       },
     ))
 
-    const resolved = await ctx.llm.resolveModelInfo('route', 'model')
+    const resolved = await inspectModel(ctx.llm, 'route', 'model')
     expect(resolved.reasoning).toEqual(source)
     source.efforts[0]!.name = 'mutated'
     expect(resolved.reasoning?.efforts[0]?.name).toBe('Standard')
-    await expect(ctx.llm.resolveCallConfig({ provider: 'route', model: 'model' })).resolves.toEqual({
+    await expect(ctx.llm.prepareCall({ provider: 'route', model: 'model' }).then(prepared => prepared.config)).resolves.toEqual({
       provider: 'route',
       model: 'model',
       reasoningEffort: ReasoningEffortId('standard'),
     })
     const explicit = { provider: 'route', model: 'model', reasoningEffort: ReasoningEffortId('ultra') }
-    await expect(ctx.llm.resolveCallConfig(explicit)).resolves.toBe(explicit)
+    await expect(ctx.llm.prepareCall(explicit).then(prepared => prepared.config)).resolves.toEqual(explicit)
     const providerDefault = { provider: 'route', model: 'providerDefault' }
-    await expect(ctx.llm.resolveCallConfig(providerDefault)).resolves.toBe(providerDefault)
+    await expect(ctx.llm.prepareCall(providerDefault).then(prepared => prepared.config)).resolves.toEqual(providerDefault)
   })
 
   it('materializes an adapter-owned maxTokens default while preserving an explicit cap', async () => {
@@ -627,19 +628,19 @@ describe('LlmRuntime', () => {
       { model: 256_000 },
     ))
 
-    await expect(ctx.llm.resolveModelInfo('route', 'model')).resolves.toMatchObject({
+    await expect(inspectModel(ctx.llm, 'route', 'model')).resolves.toMatchObject({
       defaultMaxTokens: 256_000,
     })
-    await expect(ctx.llm.resolveCallConfig({ provider: 'route', model: 'model' })).resolves.toEqual({
+    const preparedDefault = await ctx.llm.prepareCall({ provider: 'route', model: 'model' })
+    expect(preparedDefault.config).toEqual({
       provider: 'route',
       model: 'model',
       maxTokens: 256_000,
     })
-    const preparedDefault = await ctx.llm.prepareCall({ provider: 'route', model: 'model' })
     expect(preparedDefault.adapterDefaults).toEqual({ maxTokens: true })
     const explicit: LlmCallConfig = { provider: 'route', model: 'model', maxTokens: 8_192 }
-    await expect(ctx.llm.resolveCallConfig(explicit)).resolves.toBe(explicit)
     const preparedExplicit = await ctx.llm.prepareCall(explicit)
+    expect(preparedExplicit.config).toEqual(explicit)
     expect(preparedExplicit.adapterDefaults).toEqual({})
   })
 
@@ -655,7 +656,7 @@ describe('LlmRuntime', () => {
       }(SCRIPT)
       ctx.llm.registerAdapter(['route'], adapter)
 
-      await expect(ctx.llm.resolveModelInfo('route', 'model'))
+      await expect(inspectModel(ctx.llm, 'route', 'model'))
         .rejects.toMatchObject({ code: 'INVALID_MODEL_MAX_TOKENS' })
     },
   )
@@ -675,7 +676,7 @@ describe('LlmRuntime', () => {
       {},
       { model: metadata as unknown as LlmModelReasoningInfo },
     ))
-    await expect(ctx.llm.resolveModelInfo('route', 'model'))
+    await expect(inspectModel(ctx.llm, 'route', 'model'))
       .rejects.toMatchObject({ code: 'INVALID_MODEL_REASONING' })
   })
 
@@ -688,16 +689,16 @@ describe('LlmRuntime', () => {
       { model: { efforts: [{ id: ReasoningEffortId('ultra'), name: 'Ultra' }] } },
     ))
 
-    await expect(ctx.llm.resolveCallConfig({
+    await expect(ctx.llm.prepareCall({
       provider: 'route',
       model: 'model',
       reasoningEffort: ReasoningEffortId('standard'),
-    })).rejects.toMatchObject({ code: 'UNSUPPORTED_REASONING_EFFORT' })
-    await expect(ctx.llm.resolveCallConfig({
+    }).then(prepared => prepared.config)).rejects.toMatchObject({ code: 'UNSUPPORTED_REASONING_EFFORT' })
+    await expect(ctx.llm.prepareCall({
       provider: 'route',
       model: 'plain',
       reasoningEffort: ReasoningEffortId('standard'),
-    })).rejects.toMatchObject({ code: 'UNSUPPORTED_REASONING_EFFORT' })
+    }).then(prepared => prepared.config)).rejects.toMatchObject({ code: 'UNSUPPORTED_REASONING_EFFORT' })
   })
 
   it('resolves reasoning defaults at the final adapter boundary after routing middleware', async () => {
@@ -1073,10 +1074,7 @@ describe('LlmRuntime', () => {
     }(SCRIPT)
     ctx.llm.registerAdapter(['route'], adapter)
     const controller = new AbortController()
-    const resolving = ctx.llm.resolveCallConfig(
-      { provider: 'route', model: 'model' },
-      controller.signal,
-    )
+    const resolving = ctx.llm.prepareCall({ provider: 'route', model: 'model' }, controller.signal).then(prepared => prepared.config)
 
     await started.promise
     const reason = new Error('cancel reasoning')
@@ -1094,7 +1092,7 @@ describe('LlmRuntime', () => {
         [],
         { model: { contextWindow } },
       ))
-      await expect(ctx.llm.resolveModelInfo('route', 'model'))
+      await expect(inspectModel(ctx.llm, 'route', 'model'))
         .rejects.toMatchObject({ code: 'INVALID_MODEL_CONTEXT' })
     },
   )

@@ -2,7 +2,6 @@ import type { ComponentType } from 'react'
 import type { Diagnostic, GraphNode, JsonObject, JsonSchema, LocalizedText, NodeTypeDefinition, TaskNodeDetail, TaskView } from './contracts'
 export type * from './contracts'
 
-export const SDK_VERSION = '1.1.0'
 import type { Request } from './runtime/types'
 import type { QueryResult, WorkflowDocuments } from './runtime/query'
 import type { WorkflowResourcesResult } from './runtime/workflow-resources'

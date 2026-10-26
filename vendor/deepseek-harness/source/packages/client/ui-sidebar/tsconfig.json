@@ -21,13 +21,7 @@
       "path": "../ui-primitives"
     },
     {
-      "path": "../ui-renderer"
-    },
-    {
       "path": "../ui-layout"
-    },
-    {
-      "path": "../locale/tsconfig.client.json"
     },
     {
       "path": "../shortcuts/tsconfig.client.json"

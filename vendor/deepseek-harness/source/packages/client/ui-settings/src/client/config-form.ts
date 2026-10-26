@@ -287,37 +287,4 @@ export class ConfigForms extends Service {
     return form
   }
 
-  /**
-   * Keep a registration alive while the Host serves any of some namespaces:
-   * `register` runs once one of them is in the describe mirror, and its
-   * disposer runs when none is or when the returned disposer runs. A plugin
-   * whose page edits a namespace another plugin owns registers the page
-   * through this, so a deployment that never composed the owner shows no
-   * trace of the page. The caller owns the returned disposer and wraps it in
-   * `ctx.effect`; unlike {@link bind}, nothing is registered on the caller's
-   * context here.
-   * @param namespaces - the settings namespaces the registration follows.
-   * @param register - registers the contribution, given every namespace the Host serves; returns its disposer.
-   * @returns the disposer ending the watch and any live registration.
-   */
-  whileServed(namespaces: readonly string[], register: (served: ReadonlySet<string>) => () => void): () => void {
-    let off: (() => void) | undefined
-    const sync = (): void => {
-      const served = new Set(this.mirror.getSnapshot().view?.namespaces.map(view => view.ns) ?? [])
-      const watched = namespaces.some(namespace => served.has(namespace))
-      if (watched && off === undefined) off = register(served)
-      else if (!watched && off !== undefined) {
-        off()
-        off = undefined
-      }
-    }
-    const unsubscribe = this.mirror.subscribe(sync)
-    void this.mirror.ensure()
-    sync()
-    return () => {
-      unsubscribe()
-      off?.()
-      off = undefined
-    }
-  }
 }

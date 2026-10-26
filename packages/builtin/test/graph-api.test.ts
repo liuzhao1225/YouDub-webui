@@ -94,7 +94,6 @@ async function setup(t: any, execution: 'local' | 'remote' = 'local') {
     await context.plugin({ inject: ['catalog'], apply(scope) { scope.effect(() => scope.catalog.registerProvider(provider)) } })
     await context.plugin(Graph, { integrity: 'graph-api-fixed' })
     await context.plugin(Tasks, { pollMs: 5 })
-    await context.plugin(scope => { scope.reflect.provide('extensions', {}) })
     await context.plugin({ inject: ['tasks', 'catalog', 'files', 'settings', 'store'], apply(scope) { nativeRequest = taskApi(scope).request } })
   })
   t.after(async () => {

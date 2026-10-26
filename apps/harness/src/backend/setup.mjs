@@ -77,7 +77,7 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
       resourceSelection: { required: selectionRequired, selections: selected ?? items.map(selectionOf), items, prepared: phase === 'ready' },
       ...(installation ? { installation: { required: phase === 'installation', path: config.root } } : {}),
       entries: resources?.entries ?? resourceEntries({ status: phase === 'environment' ? 'preparing' : phase, environment: environment?.steps ?? [] }),
-      error: failure, canRetry: Boolean(domain) || !bootAttempted, token: '' };
+      error: failure, canRetry: Boolean(domain) || !bootAttempted };
   };
   const prepare = () => {
     if (preparing) return;

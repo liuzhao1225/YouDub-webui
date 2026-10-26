@@ -31,7 +31,6 @@ export async function apply(ctx: Context, config: PythonProviderConfig) {
         if (capability.adapter !== config.runtimeAdapter || capability.capability !== description.capability) throw new AppError('INVALID_PLUGIN', `Invalid runtime capability for ${config.runtimeAdapter}.`, 500)
         Object.assign(description, { ...capability, id: description.id, label: description.label,
           available: capability.available, unavailableReason: capability.unavailable_reason,
-          dataSent: capability.data_sent, remoteOperations: capability.remote_operations,
         })
       } else if (config.dependencyGroups) {
         try {

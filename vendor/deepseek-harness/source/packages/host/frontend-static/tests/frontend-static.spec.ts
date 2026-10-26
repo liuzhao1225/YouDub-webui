@@ -144,12 +144,12 @@ describe('real Loader composition', () => {
     // Unknown extension ships as octet-stream.
     expect(await request(port, '/blob.bin')).toMatchObject({ status: 200, type: 'application/octet-stream', body: 'BLOB' })
 
-    // Only the root and index path render index.html through registered taps.
-    const untap = server.tapIndex(html => html.replace('<head>', '<head><script>window.__T__=1</script>'))
+    // Only the root and index path render index.html through registered rows.
     // A plugin row stands in for the Host's plugin-resource rows: the base the
     // shell inserts must precede it, not merely exist.
     const offRows = loaded.on('webserver/index-inject', (rows) => {
       rows.push({ kind: 'script-preload', src: 'plugins/boot.js' })
+      rows.push({ kind: 'script', placement: 'head', text: 'window.__T__=1' })
     })
     for (const path of ['/', '/index.html', '/?view=test']) {
       const got = await request(port, path, authenticated())
@@ -158,7 +158,7 @@ describe('real Loader composition', () => {
       expect(got.body).toContain('__T__')
       expect(got.body).toContain('shell')
       // The served document carries the entry-directory base exactly once, and
-      // it precedes every injected row and tap markup, so the shell's
+      // it precedes every injected row, so the shell's
       // app-owned routes and the Host's resource rows resolve under one mount.
       expect(got.body.match(/<base\b/g)).toHaveLength(1)
       const base = got.body.indexOf('<base href="./">')
@@ -171,7 +171,6 @@ describe('real Loader composition', () => {
       type: 'text/html; charset=utf-8',
       body: '',
     })
-    untap()
     expect((await request(port, '/', authenticated())).body).not.toContain('__T__')
 
     // A missing configured index follows the same empty-404 contract for both

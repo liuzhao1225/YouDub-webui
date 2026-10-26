@@ -140,8 +140,7 @@ def alignment_context(tmp_path, monkeypatch):
         "subtitle_alignment": {"adapter": "qwen_forced_aligner", "model": forced_alignment.MODEL_NAME, "device": "cpu"},
     })
     monkeypatch.setattr(forced_alignment, "available_models", lambda: [forced_alignment.MODEL_NAME])
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                        stage="export", config=config, input_files={}, work_dir=work)
+    return StageContext(stage="export", config=config, input_files={}, work_dir=work)
 
 
 @pytest.mark.parametrize("first_clip_end_ms", [8000, 7172])

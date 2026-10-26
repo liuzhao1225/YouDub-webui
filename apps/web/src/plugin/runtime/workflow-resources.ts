@@ -26,18 +26,17 @@ export function changesResources(path: string, method: string, body?: BodyInit |
     return Object.keys(patch).some(key => key !== 'ui_language')
   }
   return method === 'POST' && /^\/api\/v2\/(?:resources\/(?:prepare|action)|workflow-documents\/resources\/prepare)$/.test(path)
-    || ['POST', 'PATCH', 'DELETE'].includes(method) && /^\/api\/v2\/extensions(?:\/|$)/.test(path)
 }
 
 /** One API session owns a check for each distinct provider/model requirement set. */
 export class WorkflowResourceChecks {
-  private entries = new Map<string, WorkflowResourcesController>()
+  private entries = new Map<string, ResourcesController>()
   private invalidationQueued = false
   constructor(private request: Request, private onReady: () => void = () => {}) {}
   get(document: WorkflowDocument) {
     const key = resourceKey(document)
     let resource = this.entries.get(key)
-    if (!resource) { resource = new WorkflowResourcesController(this.request, document, this.onReady); this.entries.set(key, resource) }
+    if (!resource) { resource = new ResourcesController(this.request, document, this.onReady); this.entries.set(key, resource) }
     resource.setDocument(document)
     return resource
   }
@@ -144,4 +143,3 @@ export class ResourcesController {
     }
   }
 }
-export class WorkflowResourcesController extends ResourcesController {}
