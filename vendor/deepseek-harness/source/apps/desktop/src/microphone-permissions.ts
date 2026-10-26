@@ -4,7 +4,7 @@ import { systemPreferences, type Session, type WebContents } from 'electron'
 function applicationFrame(url: string): boolean {
   try {
     const parsed = new URL(url)
-    return parsed.protocol === 'dsh-app:' && parsed.hostname === 'app'
+    return parsed.protocol === 'youdub-app:' && parsed.hostname === 'app'
   } catch (_error) { return false /* Invalid frame URLs cannot request microphone access. */ }
 }
 

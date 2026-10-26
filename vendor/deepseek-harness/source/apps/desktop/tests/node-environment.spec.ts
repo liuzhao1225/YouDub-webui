@@ -13,7 +13,7 @@ it('keeps private Desktop launchers out of the Host environment inherited by PTC
 it('provides private launchers only to package installation processes', () => {
   expect(desktopNodeEnvironment('/desktop/electron', '/desktop/bin', { PATH: '/user/bin' })).toEqual({
     ELECTRON_RUN_AS_NODE: '1',
-    DSH_DESKTOP_NODE_EXECUTABLE: '/desktop/electron',
+    YOUDUB_DESKTOP_NODE_EXECUTABLE: '/desktop/electron',
     PATH: `/desktop/bin${delimiter}/user/bin`,
   })
 })

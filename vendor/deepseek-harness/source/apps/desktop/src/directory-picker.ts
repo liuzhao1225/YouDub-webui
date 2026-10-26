@@ -13,7 +13,7 @@ export function installDesktopDirectoryPicker(getWindow: () => BrowserWindow | u
     const window = getWindow()
     if (window === undefined || window.isDestroyed() || event.sender !== window.webContents
       || event.senderFrame !== window.webContents.mainFrame) {
-      throw new Error('dsh desktop: rejected directory picker from an unowned renderer')
+      throw new Error('YouDub desktop: rejected directory picker from an unowned renderer')
     }
     assertDesktopSender(event, ['app'])
     const existing = pending.get(window)

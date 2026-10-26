@@ -23,7 +23,7 @@ export function parseDesktopRelease(value: unknown): DesktopRelease {
     || valid(value.version) === null || value.hostProtocolVersion !== DESKTOP_HOST_PROTOCOL_VERSION
     || typeof value.nodeVersion !== 'string' || valid(value.nodeVersion) === null
     || typeof value.pnpmVersion !== 'string' || valid(value.pnpmVersion) === null) {
-    throw new Error('dsh desktop: invalid desktop release metadata')
+    throw new Error('YouDub desktop: invalid desktop release metadata')
   }
   return {
     schemaVersion: 1,

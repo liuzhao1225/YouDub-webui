@@ -151,7 +151,7 @@ export async function writeCrashReport(directory: string, input: CrashReportInpu
     await writeFile(path, renderCrashReport(input), { mode: 0o600, flag: 'wx' })
     return path
   } catch (error) {
-    console.error('dsh desktop: crash report could not be written', path, error)
+    console.error('YouDub desktop: crash report could not be written', path, error)
     return undefined
   }
 }
@@ -169,7 +169,7 @@ export async function pruneCrashReports(directory: string, retained = CRASH_REPO
     names = await readdir(directory)
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
-    console.error('dsh desktop: crash report directory could not be listed', directory, error)
+    console.error('YouDub desktop: crash report directory could not be listed', directory, error)
     return
   }
   const reports = names.filter(name => CRASH_REPORT_NAME.test(name)).sort()
@@ -178,7 +178,7 @@ export async function pruneCrashReports(directory: string, retained = CRASH_REPO
     try {
       await unlink(join(directory, name))
     } catch (error) {
-      console.error('dsh desktop: stale crash report could not be removed', join(directory, name), error)
+      console.error('YouDub desktop: stale crash report could not be removed', join(directory, name), error)
     }
   }
 }

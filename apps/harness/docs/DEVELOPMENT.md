@@ -167,6 +167,10 @@ test .env -ef env.txt
 
 已安装版本默认使用 Electron 的 YouDub 用户数据目录下的 `harness` 子目录，Windows 为 `%APPDATA%\YouDub\harness`。保留这个既有目录可继续使用旧版的配置、凭据与任务。业务安装目录仍以首启页面保存的选择为准。`YOUDUB_HOME` 是 YouDub 的显式路径覆盖；外部 `DSH_*` 环境变量不会选择 YouDub 的数据或运行时，框架内部使用的 `DSH_HOME` 由 YouDub 启动入口赋值。
 
-Windows 使用独立的安装器 AppId `{C28A6869-1C98-4FA0-BBE5-E5C579B0A602}`、应用标识 `com.youdub.desktop`、`YouDub.exe`、开始菜单及卸载项。安装器覆盖旧版时替换 `resources/app` 和 `resources/youdub`，保留应用目录以外的配置、凭据、环境、模型和任务。更新和卸载均不操作 Harness 的目录或注册项。`dsh-app://app` 仅是 Electron 会话内部页面协议，不注册为系统 URL 协议。
+Windows 使用独立的安装器 AppId `{C28A6869-1C98-4FA0-BBE5-E5C579B0A602}`、应用标识 `com.youdub.desktop`、`YouDub.exe`、开始菜单及卸载项。安装器覆盖旧版时替换 `resources/app` 和 `resources/youdub`，保留应用目录以外的配置、凭据、环境、模型和任务。更新和卸载均不操作 Harness 的目录或注册项。`youdub-app://app` 仅是 Electron 会话内部页面协议，不注册为系统 URL 协议。
+
+桌面入口、预加载接口和 IPC 分别使用 YouDub 自己的可执行文件、`youdubDesktop` / `youdubDesktopBoot` 和 `youdub-desktop:*`。启动器以 `YOUDUB_DESKTOP_RUNTIME_DIR`、`YOUDUB_DESKTOP_PNPM_ENTRY` 指向随应用提供的运行时；桌面路径解析必须接收 YouDub 的明确数据根目录，不回落到原版 Harness home。保留的框架包名及许可证只记录代码来源。已移除原版欢迎登录、dsh 命令注册和强制更新文案，以及未使用的上游安装器验证程序。
+
+本地验收只启动 YouDub。隔离测试通过外部 `DSH_*` 环境变量和独立目录哨兵检查，不启动、注册或卸载机器上已有的 DeepSeek Harness。
 
 安装回归覆盖真实安装位置下的中文确认按钮、带外部 Harness 环境变量的启动、重启后安装目录恢复、旧代码清理与用户数据保留。测试不将环境下载开始视为所有模型准备完成。

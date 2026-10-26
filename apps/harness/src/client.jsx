@@ -51,7 +51,7 @@ function SettingsLauncher({ openSettings, registerSettingsLauncher }) {
 }
 function UpdateVersionView(props) {
   const tx=useText(),[busy,setBusy]=useState(false),[error,setError]=useState('')
-  const updates=globalThis.dshDesktop?.updates
+  const updates=globalThis.youdubDesktop?.updates
   const check=async () => {
     setBusy(true);setError('')
     try { await updates.open() } catch(error) { setError(error.message) } finally { setBusy(false) }
@@ -156,7 +156,7 @@ export function apply(ctx) {
   const pageRegistry = { subscribe:listener => ctx.slots.subscribe('youdub.page',listener), getSnapshot:() => ctx.slots.getVersion('youdub.page'), entries:() => ctx.slots.entriesOfSlot('youdub.page') }
   const injected = () => ({features,navigate,localeSource,themeSource,pageRegistry,toggleSidebar:() => ctx.layout.toggleSidebar(),hooks:{panels,shortcuts:ctx.shortcuts.catalog}})
   if (!globalThis.__YOUDUB_TEST_SKIP_SETUP__) ctx.effect(() => {
-    const dispose=ctx.slots.register({name:'root',priority:-10,children:{'youdub.setup.models':{kind:'single',scope:'root'}},inject:() => ({features,localeSource,themeSource,translationModels,pickDirectory:globalThis.__DSH_DIRECTORY_PICKER__?.pick,onReady:() => dispose()})},Startup)
+    const dispose=ctx.slots.register({name:'root',priority:-10,children:{'youdub.setup.models':{kind:'single',scope:'root'}},inject:() => ({features,localeSource,themeSource,translationModels,pickDirectory:globalThis.__YOUDUB_DIRECTORY_PICKER__?.pick,onReady:() => dispose()})},Startup)
     return dispose
   })
   ctx.effect(() => { const previous=document.title;document.title='YouDub';return () => {document.title=previous} })

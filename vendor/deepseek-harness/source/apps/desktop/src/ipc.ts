@@ -5,25 +5,25 @@ import type { IpcMainInvokeEvent } from 'electron'
 
 /** IPC channel names kept private to the desktop application bundle. */
 export const DESKTOP_IPC = {
-  updatesStatus: 'dsh-desktop:updates-status',
-  updatesOpen: 'dsh-desktop:updates-open',
-  updatesChanged: 'dsh-desktop:updates-changed',
-  shortcutsInput: 'dsh-desktop:shortcuts-input',
-  shortcutsCloseWindow: 'dsh-desktop:shortcuts-close-window',
-  shortcutsGet: 'dsh-desktop:shortcuts-get',
-  shortcutsEdit: 'dsh-desktop:shortcuts-edit',
-  shortcutsChanged: 'dsh-desktop:shortcuts-changed',
-  shortcutsRecording: 'dsh-desktop:shortcuts-recording',
-  boot: 'dsh-desktop:boot',
-  bootFailed: 'dsh-desktop:boot-failed',
-  directoryPick: 'dsh-desktop:directory-pick',
-  deviceInfo: 'dsh-desktop:device-info',
-  localeBootstrap: 'dsh-desktop:locale-bootstrap',
-  localeChanged: 'dsh-desktop:locale-changed',
-  nativeThemeSet: 'dsh-desktop:native-theme-set',
-  windowFullscreen: 'dsh-desktop:window-fullscreen',
-  windowsAppearance: 'dsh-desktop:windows-appearance',
-  windowsMenu: 'dsh-desktop:windows-menu',
+  updatesStatus: 'youdub-desktop:updates-status',
+  updatesOpen: 'youdub-desktop:updates-open',
+  updatesChanged: 'youdub-desktop:updates-changed',
+  shortcutsInput: 'youdub-desktop:shortcuts-input',
+  shortcutsCloseWindow: 'youdub-desktop:shortcuts-close-window',
+  shortcutsGet: 'youdub-desktop:shortcuts-get',
+  shortcutsEdit: 'youdub-desktop:shortcuts-edit',
+  shortcutsChanged: 'youdub-desktop:shortcuts-changed',
+  shortcutsRecording: 'youdub-desktop:shortcuts-recording',
+  boot: 'youdub-desktop:boot',
+  bootFailed: 'youdub-desktop:boot-failed',
+  directoryPick: 'youdub-desktop:directory-pick',
+  deviceInfo: 'youdub-desktop:device-info',
+  localeBootstrap: 'youdub-desktop:locale-bootstrap',
+  localeChanged: 'youdub-desktop:locale-changed',
+  nativeThemeSet: 'youdub-desktop:native-theme-set',
+  windowFullscreen: 'youdub-desktop:window-fullscreen',
+  windowsAppearance: 'youdub-desktop:windows-appearance',
+  windowsMenu: 'youdub-desktop:windows-menu',
 } as const
 
 /** Check-only presentation, compatible with Harness's settings/update indicators. */
@@ -36,7 +36,7 @@ export interface DesktopUpdateState {
 }
 
 /** Operations exposed by the YouDub desktop shell. */
-export interface DshDesktopProductApi {
+export interface YouDubDesktopProductApi {
   readonly protocolVersion: 1
   readonly updates: {
     status(): Promise<DesktopUpdateState>
@@ -53,7 +53,7 @@ export interface DshDesktopProductApi {
 }
 
 /** Scheme of Desktop-owned application documents. */
-export const SCHEME = 'dsh-app'
+export const SCHEME = 'youdub-app'
 
 /**
  * Reject IPC outside the allowed Desktop document origins.
@@ -62,9 +62,9 @@ export const SCHEME = 'dsh-app'
  */
 export function assertDesktopSender(event: IpcMainInvokeEvent, hostnames: readonly string[]): void {
   const senderFrame = event.senderFrame
-  if (senderFrame === null) throw new Error('dsh desktop: rejected IPC without a sender frame')
+  if (senderFrame === null) throw new Error('YouDub desktop: rejected IPC without a sender frame')
   const url = new URL(senderFrame.url)
   if (url.protocol !== `${SCHEME}:` || !hostnames.includes(url.hostname)) {
-    throw new Error('dsh desktop: rejected IPC from an unowned renderer')
+    throw new Error('YouDub desktop: rejected IPC from an unowned renderer')
   }
 }

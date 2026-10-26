@@ -59,7 +59,7 @@ child.stdout.on('data', value => { output += value; });
 child.stderr.on('data', value => { output += value; });
 try {
   const ownership = await application.evaluate(({ app }) => ({
-    name: app.getName(), home: process.env.DSH_HOME, runtime: process.env.DSH_DESKTOP_DSH_DIR,
+    name: app.getName(), home: process.env.DSH_HOME, runtime: process.env.YOUDUB_DESKTOP_RUNTIME_DIR,
     primaryRuntime: process.env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR, userData: app.getPath('userData'),
   }));
   assert.equal(ownership.name, 'YouDub');
@@ -78,7 +78,7 @@ try {
   });
   const page = await application.firstWindow({ timeout: 30_000 });
   page.setDefaultTimeout(30_000);
-  await page.waitForURL('dsh-app://app/', { timeout: 30_000 });
+  await page.waitForURL('youdub-app://app/', { timeout: 30_000 });
   await page.waitForFunction(() => document.body?.innerText?.length > 40);
   await page.screenshot({ path: join(evidence, 'first-launch.png') });
   await writeFile(join(evidence, 'rendered.txt'), await page.locator('body').innerText());
@@ -97,6 +97,25 @@ try {
   assert.equal(setup.testMode, workbench ? true : undefined);
   if (!configured) assert.equal(setup.environment.length, 0);
   const text = await evaluate('document.body.innerText');
+  const menuLabels = await application.evaluate(({ Menu }) => {
+    const labels = [];
+    const visit = menu => { for (const item of menu?.items ?? []) { labels.push(item.label); visit(item.submenu); } };
+    visit(Menu.getApplicationMenu());
+    return labels.join('\n');
+  });
+  assert.doesNotMatch(menuLabels, /DeepSeek|Harness|\bdsh\b/i);
+  assert.match(menuLabels, /YouDub/);
+  assert.equal(await page.title(), 'YouDub');
+  const manifest = await page.evaluate(async () => {
+    const response = await fetch('/manifest.webmanifest');
+    if (!response.ok) throw new Error('Application manifest HTTP ' + response.status);
+    return response.json();
+  });
+  assert.equal(manifest.name, 'YouDub');
+  assert.equal(manifest.short_name, 'YouDub');
+  assert.doesNotMatch(text, /DeepSeek Harness/);
+  assert.equal(await page.evaluate(() => typeof globalThis.youdubDesktopBoot?.ready), 'function');
+  assert.equal(await page.evaluate(() => typeof globalThis.dshDesktopBoot), 'undefined');
   if (!configured) assert.match(text, workbench ? /工作台|Workbench/ : /安装|Install|installation|开始|Get started/);
   if (workbench) {
     const tasks = await evaluate(`(async () => {

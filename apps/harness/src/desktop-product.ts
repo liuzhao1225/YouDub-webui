@@ -39,16 +39,15 @@ let backendReady = false
 const rendererConsole = new RendererConsoleTail()
 app.setAppLogsPath()
 function currentDesktopLocale(): ReturnType<typeof resolveDesktopLocale> {
-  const locale = resolveDesktopLocale(windowsLanguage ?? app.getLocale())
-  return { ...locale, messages: { ...locale.messages, aboutProduct: 'YouDub',
-    quitTitle: locale.id === 'ja' ? 'YouDub を終了しますか？' : locale.id === 'zh-CN' ? '退出 YouDub？' : 'Quit YouDub?' } }
+  return resolveDesktopLocale(windowsLanguage ?? app.getLocale())
 }
 function quitWithoutConfirmation(): void { skipQuitConfirmation = true; app.quit() }
 function runtimeResources() {
-  const dsh = process.env.DSH_DESKTOP_DSH_DIR
-  const pnpm = process.env.DSH_DESKTOP_PNPM_ENTRY
-  if (!dsh || !pnpm) throw new Error('YouDub Desktop runtime is not prepared. Run desktop.mjs --prepare-only.')
-  return { node: process.execPath, nodeBin: join(app.getAppPath(), 'scripts/node-bin'), pnpm, dsh }
+  const dsh = process.env.YOUDUB_DESKTOP_RUNTIME_DIR
+  const pnpm = process.env.YOUDUB_DESKTOP_PNPM_ENTRY
+  const home = process.env.YOUDUB_HOME
+  if (!home || !dsh || !pnpm) throw new Error('YouDub Desktop runtime is not prepared. Run desktop.mjs --prepare-only.')
+  return { node: process.execPath, nodeBin: join(app.getAppPath(), 'scripts/node-bin'), pnpm, dsh, home }
 }
 function persistCrashReport(error: unknown, source: CrashReportSource) {
   return writeCrashReport(app.getPath('logs'), {
@@ -64,7 +63,8 @@ const recovery = new DesktopFatalRecovery({
   show: options => dialog.showMessageBox(options),
   stop: () => { shuttingDown = true; return stopForRecovery() },
   disablePlugins: async () => {
-    const backup = await new DesktopProjectManager(resolveDesktopPaths(), runtimeResources()).disableAllPlugins()
+    const resources = runtimeResources()
+    const backup = await new DesktopProjectManager(resolveDesktopPaths(resources.home), resources).disableAllPlugins()
     console.info('Desktop profile recovery:', { backup: backup ?? null })
   },
   exit: quitWithoutConfirmation,
@@ -197,7 +197,7 @@ async function main(): Promise<void> {
   await pruneCrashReports(app.getPath('logs'))
   const resources = runtimeResources()
   const manifest = JSON.parse(await readFile(join(app.getAppPath(), 'package.json'), 'utf8'))
-  const paths = resolveDesktopPaths()
+  const paths = resolveDesktopPaths(resources.home)
   const manager = new DesktopProjectManager(paths, resources)
   const loginShellRead = new AbortController()
   app.on('will-quit', () => loginShellRead.abort())
@@ -278,7 +278,7 @@ async function main(): Promise<void> {
     const target = new URL(hostUrl), requested = new URL(details.url)
     if (requested.host !== target.host || requested.protocol !== (target.protocol === 'https:' ? 'wss:' : 'ws:')) { callback({}); return }
     const headers = Object.fromEntries(Object.entries(details.requestHeaders).map(([name, value]) => [name.toLowerCase(), value]))
-    if (headers.origin !== 'dsh-app://app') { callback({ cancel: true }); return }
+    if (headers.origin !== 'youdub-app://app') { callback({ cancel: true }); return }
     callback({ requestHeaders: { ...headers, origin: target.origin, cookie: hostCookie, 'sec-fetch-site': 'same-origin' } })
   })
   const refreshApplicationMenu = (): void => {

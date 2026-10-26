@@ -1,22 +1,21 @@
 /** Filesystem ownership for the Electron-managed desktop installation. */
 
 import { join } from 'node:path'
-import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 
-/** Stable desktop installation paths under the shared Harness home. */
+/** Stable desktop installation paths under the application's own home. */
 export interface DesktopPaths {
   readonly profile: string
   readonly lock: string
 }
 
 /**
- * Resolve every Electron-owned path without changing the shared data roots.
- * @param dshHome - Harness home shared with npm-installed dsh.
+ * Resolve every Electron-owned path from the product entry's explicit data root.
+ * @param home - YouDub-owned home selected by its launcher.
  * @returns immutable desktop path set.
  */
-export function resolveDesktopPaths(dshHome: string = resolveDshHome()): DesktopPaths {
+export function resolveDesktopPaths(home: string): DesktopPaths {
   return {
-    profile: join(dshHome, 'profiles', 'desktop'),
-    lock: join(dshHome, 'profiles', 'desktop', 'lock'),
+    profile: join(home, 'profiles', 'desktop'),
+    lock: join(home, 'profiles', 'desktop', 'lock'),
   }
 }

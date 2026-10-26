@@ -119,9 +119,6 @@ importers:
       '@deepseek-ai/dsh-client-shortcuts':
         specifier: workspace:*
         version: link:../../packages/client/shortcuts
-      '@deepseek-ai/dsh-home-paths':
-        specifier: workspace:*
-        version: link:../../packages/util/home-paths
       semver:
         specifier: ^7.8.5
         version: 7.8.5
