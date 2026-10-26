@@ -48,7 +48,7 @@ export class DesktopUpdates {
   private async present(check: () => Promise<DesktopUpdateState>): Promise<void> {
     const state = await check()
     const { messages } = this.options.locale()
-    const base = { title: messages.updateTitle.replace('DeepSeek Harness', 'YouDub'), noLink: true }
+    const base = { title: messages.updateTitle, noLink: true }
     if (state.phase === 'error') {
       await this.options.show({ ...base, type: 'error', message: messages.updateCheckFailedTitle,
         detail: state.message, buttons: [messages.updateClose] })

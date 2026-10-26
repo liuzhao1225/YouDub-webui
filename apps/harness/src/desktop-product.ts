@@ -39,9 +39,7 @@ let backendReady = false
 const rendererConsole = new RendererConsoleTail()
 app.setAppLogsPath()
 function currentDesktopLocale(): ReturnType<typeof resolveDesktopLocale> {
-  const locale = resolveDesktopLocale(windowsLanguage ?? app.getLocale())
-  return { ...locale, messages: { ...locale.messages, aboutProduct: 'YouDub',
-    quitTitle: locale.id === 'ja' ? 'YouDub を終了しますか？' : locale.id === 'zh-CN' ? '退出 YouDub？' : 'Quit YouDub?' } }
+  return resolveDesktopLocale(windowsLanguage ?? app.getLocale())
 }
 function quitWithoutConfirmation(): void { skipQuitConfirmation = true; app.quit() }
 function runtimeResources() {
@@ -291,7 +289,7 @@ async function main(): Promise<void> {
     Menu.setApplicationMenu(Menu.buildFromTemplate(items))
   }
   const applicationItems = (): MenuItemConstructorOptions[] => [
-    { role: 'about', label: locale.id === 'ja' ? 'YouDub について' : locale.id === 'zh-CN' ? '关于 YouDub' : 'About YouDub' },
+    { role: 'about', label: currentDesktopLocale().messages.aboutMenu },
     { label: currentDesktopLocale().messages.updateCheckTitle, click: () => { void checkUpdates().catch(console.error) } },
     { type: 'separator' }, { role: 'reload' }, { role: 'toggleDevTools', visible: false },
     ...(process.platform === 'darwin' ? [{ role: 'hide' as const }, { role: 'hideOthers' as const }, { role: 'unhide' as const }, { type: 'separator' as const }] : []),

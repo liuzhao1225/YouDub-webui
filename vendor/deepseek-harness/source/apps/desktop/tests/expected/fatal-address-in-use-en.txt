@@ -1,5 +1,5 @@
-DeepSeek Harness is unavailable
+YouDub could not start
 The application could not start or stopped unexpectedly.
-Another DSH instance (such as dsh web or the desktop app) is running. They cannot start at the same time. Quit the other running DSH instance, then restart.
+The local service port is already in use. Close the process using that port, then restart YouDub.
 Exit
 Restart

@@ -48,11 +48,11 @@ const env = { ...youdubEnvironment(process.env), YOUDUB_HOME: home, DSH_HOME: ho
 delete env.ELECTRON_RUN_AS_NODE;
 delete env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR;
 if (values['prepare-only']) {
-  console.log(`Prepared YouDub Desktop source runtime: ${project}\nHarness profile: ${profile}\nOfficial source workspace: ${source}`);
+  console.log(`Prepared YouDub Desktop source runtime: ${project}\nYouDub profile: ${profile}\nFramework source workspace: ${source}`);
 } else {
   const executable = electron;
   await access(executable);
-  console.log(`Starting YouDub from ${executable}\nHarness profile: ${profile}`);
+  console.log(`Starting YouDub from ${executable}\nYouDub profile: ${profile}`);
   if (values['skip-setup']) console.log('UI test mode: environment and model configuration are skipped; media readiness is not verified.');
   const args = [`--user-data-dir=${userData}`, output];
   const child = spawn(executable, args, { cwd: root, env, stdio: 'inherit' });

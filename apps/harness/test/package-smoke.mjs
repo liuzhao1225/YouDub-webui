@@ -24,6 +24,11 @@ const installed = await realpath(destination);
 const resources = join(installed, ...(process.platform === 'darwin' ? ['Contents', 'Resources'] : ['resources']));
 const runtime = join(resources, 'app');
 const appManifest = JSON.parse(await readFile(join(runtime, 'package.json'), 'utf8'));
+const webRoot = join(runtime, 'node_modules/@deepseek-ai/dsh-web-frontend/dist');
+assert.match(await readFile(join(webRoot, 'index.html'), 'utf8'), /<title>YouDub<\/title>/);
+const webManifest = JSON.parse(await readFile(join(webRoot, 'manifest.webmanifest'), 'utf8'));
+assert.equal(webManifest.name, 'YouDub');
+assert.equal(webManifest.short_name, 'YouDub');
 async function verifyLinks(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
@@ -79,6 +84,8 @@ try {
   const page = await application.firstWindow({ timeout: 30_000 });
   await page.waitForURL('dsh-app://app/');
   await page.waitForFunction(() => document.body?.innerText?.length > 40);
+  assert.equal(await page.title(), 'YouDub');
+  assert.doesNotMatch(await page.locator('body').innerText(), /DeepSeek Harness|DSH Local Build/);
   await page.screenshot({ path: join(evidence, 'first-launch.png') });
   await writeFile(join(evidence, 'rendered.txt'), await page.locator('body').innerText());
   const evaluate = expression => page.evaluate(expression);

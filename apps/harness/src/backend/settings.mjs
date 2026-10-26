@@ -24,7 +24,7 @@ export default class YouDubSettings extends Service {
   }
   async write(next) {
     const descriptor = this.config.forms.describe().find(item => item.ns === 'youdub-subtitles');
-    if (!descriptor) throw fail('HARNESS_CONFIG_UNAVAILABLE', 'YouDub profile entry is not addressable by Harness settings.', 503);
+    if (!descriptor) throw fail('HARNESS_CONFIG_UNAVAILABLE', 'YouDub profile entry is unavailable in model settings.', 503);
     await this.config.forms.update('youdub-subtitles', { preferences: next }, descriptor.revision);
   }
   patch(patch) { return this.locked(async () => {
@@ -42,7 +42,7 @@ export default class YouDubSettings extends Service {
     } else if (Object.hasOwn(patch, 'connection')) {
       const input = patch.connection;
       if (!object(input) || typeof input.adapter !== 'string' || Object.keys(input).some(key => !['adapter', 'base_url', 'model', 'api_key'].includes(key))) throw fail('INVALID_CONFIG', 'Invalid connection.');
-      if (input.adapter === 'openai' || input.adapter.startsWith('llm.')) throw fail('HARNESS_MODELS_REQUIRED', '请在 Harness 模型设置中配置翻译供应商。', 409);
+      if (input.adapter === 'openai' || input.adapter.startsWith('llm.')) throw fail('HARNESS_MODELS_REQUIRED', '请在模型设置中配置翻译供应商。', 409);
       const previous = current.connections?.find(item => item.adapter === input.adapter);
       const next = { ...previous, adapter: input.adapter, ...(input.base_url ? { base_url: input.base_url } : {}), ...(input.model ? { model: input.model } : {}) };
       const url = new URL(next.base_url); if (!['https:', 'http:'].includes(url.protocol)) throw fail('INVALID_CONFIG', 'Connection requires an HTTP(S) URL.');
@@ -85,5 +85,5 @@ export default class YouDubSettings extends Service {
     runtime.status = runtime.capabilities.filter(item => item.capability !== 'subtitle_alignment').every(item => item.available) ? 'ready' : 'degraded';
     return runtime;
   }
-  async testConnection() { throw fail('HARNESS_MODELS_REQUIRED', '请使用 Harness 模型设置检查供应商连接。', 409); }
+  async testConnection() { throw fail('HARNESS_MODELS_REQUIRED', '请在模型设置中检查供应商连接。', 409); }
 }

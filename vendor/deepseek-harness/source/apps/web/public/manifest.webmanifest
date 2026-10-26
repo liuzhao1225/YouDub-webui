@@ -1,6 +1,6 @@
 {
-  "name": "DeepSeek Harness",
-  "short_name": "DSH",
+  "name": "YouDub",
+  "short_name": "YouDub",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

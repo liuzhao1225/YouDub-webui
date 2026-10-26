@@ -2,6 +2,8 @@
 
 YouDub Desktop 保留 DeepSeek Harness 的 Electron 桌面能力、UI、Host 插件运行时、LLM、RPC 和生命周期管理。Agent 执行、聊天与会话产品逻辑已移除。视频处理、图工作流、人工订正和文件产物属于 YouDub 业务层，通过一个 DSH bundle 接入。
 
+产品启动只进入 YouDub，首屏、窗口、原生错误提示、更新提示、Web manifest 和图标统一使用 YouDub。原 Harness 欢迎、账号登录、命令注册和强制更新引导不参与构建；内部包名与来源许可保留。开发与安装包验收只启动候选 YouDub，不自动打开本机安装的 Harness。
+
 业务 API 统一由 `src/backend/api.ts` 注册，通过 Harness Connection 传输；访问权限由 Connection 管理。旧独立 HTTP 服务、Cookie 会话、Loader 装配和网页更新轮询已移除。接口测试直接调用这套业务路由，桌面 Host 测试覆盖实际权限与启动边界。
 
 ## 分层与源码位置
