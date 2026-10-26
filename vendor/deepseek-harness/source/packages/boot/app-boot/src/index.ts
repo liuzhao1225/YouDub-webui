@@ -84,27 +84,6 @@ export {
 } from './profile-resolution/service.ts'
 export { ResolutionRestartRequired } from './profile-resolution/resolver.ts'
 
-/**
- * Load the optional gitignored `.env` from `dir`. Missing files fall back to the
- * ambient environment; other read failures are reported through `warn`.
- * @param binName - the diagnostic prefix on the warn line.
- * @param dir - the directory whose `.env` to load.
- * @param warn - sink for the one-line misconfiguration diagnostic.
- */
-export function loadEnv(
-  binName: string, dir: string = process.cwd(),
-  warn: (line: string) => void = line => void process.stderr.write(line),
-): void {
-  try {
-    process.loadEnvFile(resolve(dir, '.env'))
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException | null)?.code !== 'ENOENT') {
-      warn(`${binName}: failed to load .env: ${String(error)}\n`)
-    }
-    // ENOENT (no .env) is fine — rely on the ambient environment.
-  }
-}
-
 /** Exact names no discovered file may set. */
 const BOOTSTRAP_NAMES = new Set([
   // Process launch and module resolution.

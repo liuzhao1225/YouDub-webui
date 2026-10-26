@@ -6,7 +6,6 @@
     "tsBuildInfoFile": "lib/tsconfig.host.tsbuildinfo"
   },
   "files": [
-    "src/developer-tools-settings.ts",
     "src/index.ts"
   ],
   "references": [

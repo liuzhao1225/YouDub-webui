@@ -169,7 +169,6 @@ export function apply(ctx) {
   for(const [id,Icon] of [['/',Sparkles],['/tasks',History],['/workflows',Branch],['/resources',Folder],['plugins',Plugin]]) ctx.slots.inject('sidebar.panellist',() => ctx.slots.register({name:'sidebar.panellist',id},({size}) => <Icon size={size} />))
   ctx.slots.inject('sidebar.workspaces',() => ctx.slots.register({name:'sidebar.workspaces',store,inject:injected,children:{'youdub.navigation':{kind:'list',scope:'root'}}},SidebarExtensions))
   ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id:'current-version',priority:-10,order:100,locale:'settings',inject:() => ({localeSource})},UpdateVersionRow))
-  for(const id of ['developer-tools','font-size']) ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id,priority:-10},() => null))
   ctx.slots.inject('settings.launcher',() => ctx.slots.register({name:'settings.launcher',inject:() => ({registerSettingsLauncher})},SettingsLauncher))
   const children = {'youdub.page':{kind:'keyed',scope:'root'},...Object.fromEntries(domainSlots.map(slot => [`youdub.${slot}`,{kind:'list',scope:'root'}]))}
   ctx.effect(() => ctx.slots.registerFactory({name:'youdub.main',scope:'root',store,inject:injected,children},Main))

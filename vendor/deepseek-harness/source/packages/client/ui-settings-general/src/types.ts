@@ -1,23 +1,10 @@
 /** Type-only Electron update declarations shared by the settings UI and Desktop compatibility checks. */
 
-/** Classified failure copy selected by the Web locale without exposing raw updater diagnostics. */
-export type DesktopUpdateFailureKind =
-  | 'check'
-  | 'check-network'
-  | 'download'
-  | 'download-network'
-  | 'install'
-  | 'install-network'
-  | 'stop-failed'
-  | 'tasks-changed'
-  | 'tasks-unavailable'
-
 /** Public semantic preload fields consumed by the settings row. */
 export interface DesktopUpdatePresentation {
-  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error'
+  readonly phase: 'idle' | 'checking' | 'available' | 'error'
   readonly version?: string
-  readonly percent?: number
-  readonly failure?: DesktopUpdateFailureKind
+  readonly failure?: 'check'
 }
 
 /** Optional carrier API; it cannot select artifacts or authorize installation. */

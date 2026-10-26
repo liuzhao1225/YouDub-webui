@@ -1,18 +1,17 @@
 /**
  * The slots the Plugins page declares for other plugins. Three carry a
- * plugin's own configuration: the official plugins listed beside the official
- * bundles, one bundle's configuration on its page, and one row's configuration
- * opened from that row. Three more take contributions to any detail page —
+ * plugin's own configuration: registered configuration items, a bundle's page,
+ * and a row's page. Three more take contributions to any detail page —
  * its head actions, the badges beside its title, and the sections under its
  * own content — from a plugin that has something to say about bundles, rows,
- * or official plugins it does not own. A registrant merges this contract with
+ * or configuration items it does not own. A registrant merges this contract with
  * `import type` and registers through `ctx.slots`; it never imports this
  * package at runtime.
  *
  * A contributed tab, such as Discover, installs through the page's own dialog.
  *
  * Entries accept `page` for the form with its own save control and `summary`
- * for an official card's one-liner or a row's missing-description fallback.
+ * for a configuration card's one-liner or a row's missing-description fallback.
  * Bundle configuration renders only `page`. A detail contribution is rendered
  * with the subject of the open page and decides from it whether to render at
  * all. The page draws the title, icon, and crumb itself.
@@ -50,15 +49,13 @@ export interface PluginPackageRef {
   readonly installed: boolean
   /** Readable package location; missing entries can retain a dependency declaration. */
   readonly availability: BundleInfo['availability']
-  /** Whether the installation offers this package in Official. */
-  readonly official: boolean
   /** Whether the bundle is switched on. */
   readonly enabled: boolean
   /** The rows the bundle declares. */
   readonly rows: readonly PluginRowRef[]
 }
 
-/** What a detail page is about: a bundle, one row of a bundle, or an official plugin listed by its `plugins.item` id. */
+/** What a detail page is about: a bundle, one row of a bundle, or a configuration item listed by its `plugins.item` id. */
 export type PluginsSubject =
   | { readonly kind: 'bundle'; readonly pkg: PluginPackageRef }
   | { readonly kind: 'row'; readonly pkg: PluginPackageRef; readonly row: PluginRowRef }
@@ -106,7 +103,7 @@ export interface PluginTabProps {
   readonly openPackage: (packageName: string) => void
 }
 
-/** Add-plugin menu actions, independent of any selected bundle or Session. */
+/** Add-plugin menu actions, independent of any selected bundle. */
 export interface PluginAddActionsProps {
   /** Close the add-plugin menu before starting the contributed action. */
   readonly onDismiss: () => void
@@ -125,12 +122,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     /** Optional guidance after the user enables a bundle from the list, keyed by npm package name. */
     'plugins.bundle.activation': { kind: 'keyed'; scope: 'root'; owner: PluginActivationOwnerProps }
     /**
-     * One official plugin the Plugins page lists in its Official group after
-     * the official bundles: `label` is the card's title and `order` its place.
+     * One registered configuration item the Plugins page lists before
+     * installed bundles: `label` is the card's title and `order` its place.
      * The page renders the entry as the card's one-liner (`view: 'summary'`)
      * and, once the card is opened, as the body of the plugin's own page
-     * (`view: 'page'`). OCCUPIED by the official settings pages, one companion
-     * package per host-plane namespace; a bundle's configuration belongs in
+     * (`view: 'page'`). YouDub's built-in plugin overview uses this slot;
+     * a bundle's configuration belongs in
      * `plugins.bundle.config` or `plugins.row.config` instead.
      */
     'plugins.item': { kind: 'list'; scope: 'root'; owner: PluginConfigViewProps }
@@ -161,7 +158,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'plugins.detail.badge': { kind: 'list'; scope: 'root'; owner: PluginDetailProps }
     /**
      * Sections under a detail page's own content: after the rows on a bundle's
-     * page, after the configuration on a row's or an official plugin's page.
+     * page, after the configuration on a row's or a registered configuration page.
      * An entry draws its own section chrome and renders null for a subject it
      * has nothing for.
      */

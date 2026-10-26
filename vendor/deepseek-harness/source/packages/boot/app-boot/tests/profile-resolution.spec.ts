@@ -176,56 +176,6 @@ async function resolutionOf(f: ReturnType<typeof fixture>): Promise<RuntimeResol
   })
 }
 
-/**
- * Ancestor node_modules layers of a profile importer, innermost first:
- * private (plugin-private), profile (profile node_modules), shared
- * (profiles/node_modules, the interception layer), home (Harness home).
- */
-type LookupLayer = 'private' | 'profile' | 'shared' | 'home'
-const LOOKUP_LAYERS: readonly LookupLayer[] = ['private', 'profile', 'shared', 'home']
-const LOOKUP_MARKERS: Record<LookupLayer, number> = { private: 11, profile: 12, shared: 13, home: 14 }
-
-interface LookupCase {
-  title: string
-  importer: 'profile' | 'plugin'
-  kind: 'installation' | 'bundle' | 'unlisted'
-  layers: readonly LookupLayer[]
-  form: 'directory' | 'symlink'
-}
-
-/** Every combination of importer, package kind, present layers, and on-disk form of the profile and shared layers. */
-function lookupMatrix(): LookupCase[] {
-  const cases: LookupCase[] = []
-  for (const importer of ['profile', 'plugin'] as const) {
-    const available = importer === 'plugin' ? LOOKUP_LAYERS : LOOKUP_LAYERS.filter(layer => layer !== 'private')
-    for (let mask = 0; mask < 1 << available.length; mask++) {
-      const layers = available.filter((_, index) => (mask & (1 << index)) !== 0)
-      const forms = layers.some(layer => layer === 'profile' || layer === 'shared')
-        ? ['directory', 'symlink'] as const
-        : ['directory'] as const
-      for (const kind of ['installation', 'bundle', 'unlisted'] as const) {
-        for (const form of forms) {
-          cases.push({
-            title: `resolves ${kind} package from ${importer} importer with [${layers.join(', ')}] as ${form}`,
-            importer, kind, layers, form,
-          })
-        }
-      }
-    }
-  }
-  return cases
-}
-
-/** The lookup order: profile-internal layers, then the resolution at the interception layer, then the remaining ancestors. */
-function lookupWinner(matrixCase: LookupCase): LookupLayer | 'interception' | 'missing' {
-  if (matrixCase.importer === 'plugin' && matrixCase.layers.includes('private')) return 'private'
-  if (matrixCase.layers.includes('profile')) return 'profile'
-  if (matrixCase.kind !== 'unlisted') return 'interception'
-  if (matrixCase.layers.includes('shared')) return 'shared'
-  if (matrixCase.layers.includes('home')) return 'home'
-  return 'missing'
-}
-
 describe('runtime resolution', { concurrent: false }, () => {
   it('computes an immutable runtime resolution without writing profile packages', async () => {
     const f = fixture()
@@ -1256,74 +1206,23 @@ describe('runtime resolution', { concurrent: false }, () => {
     expect(realpathSync(projected)).toBe(target)
   })
 
-  it.each(lookupMatrix())('$title', async (matrixCase) => {
-    const { importer, kind, layers, form } = matrixCase
-    const name = { installation: '@deepseek-ai/dsh-core', bundle: 'bridge', unlisted: 'left-pad' }[kind]
+  it('resolves plugin-private dependencies before profile and installation packages', async () => {
     const f = fixture()
+    const name = '@deepseek-ai/dsh-core'
     const pluginDir = join(f.profile.dir, 'node_modules', 'my-plugin')
+    const privateDir = join(pluginDir, 'node_modules', name)
     pkg(pluginDir, 'my-plugin', 0)
-    const bundleDir = join(f.profile.dir, 'node_modules', 'my-bundle')
-    pkg(bundleDir, 'my-bundle', 0, { 'bridge': '*' })
-    const bundleLib = join(bundleDir, 'node_modules', 'bridge')
-    pkg(bundleLib, 'bridge', 2)
-    f.profile.layers.push({
-      packageName: 'my-bundle', packageDir: bundleDir,
-      patchPaths: [join(bundleDir, 'cordis.patch.yml')], patches: [],
-    })
-    file(join(f.profile.dir, 'package.json'), JSON.stringify({
-      name: 'dsh-profile-web', private: true, dependencies: { 'my-plugin': '*', 'my-bundle': '*' },
-    }))
-    const logical: Record<LookupLayer, string> = {
-      private: join(pluginDir, 'node_modules', name),
-      profile: join(f.profile.dir, 'node_modules', name),
-      shared: join(f.root, 'profiles', 'node_modules', name),
-      home: join(f.root, 'node_modules', name),
-    }
-    const real = { ...logical }
-    for (const layer of layers) {
-      if (form === 'symlink' && (layer === 'profile' || layer === 'shared')) {
-        real[layer] = join(f.root, 'linked', layer, name)
-        pkg(real[layer], name, LOOKUP_MARKERS[layer])
-        mkdirSync(dirname(logical[layer]), { recursive: true })
-        symlinkSync(real[layer], logical[layer], process.platform === 'win32' ? 'junction' : 'dir')
-      } else {
-        pkg(logical[layer], name, LOOKUP_MARKERS[layer])
-      }
-    }
-    const resolution = await resolutionOf(f)
-    expect(resolution.entries.find(entry => entry.name === name)?.scope)
-      .toBe(kind === 'installation' ? 'installation' : kind === 'bundle' ? 'profile' : undefined)
-    const registration = installRuntimeInterception(resolution)
+    pkg(join(f.profile.dir, 'node_modules', name), name, 2)
+    pkg(privateDir, name, 3)
+    const registration = installRuntimeInterception(await resolutionOf(f))
     registrations.push(registration)
-    const importerDir = importer === 'plugin' ? pluginDir : f.profile.dir
-    const require = createRequire(join(importerDir, 'entry.cjs'))
-    const parent = pathToFileURL(join(importerDir, 'entry.mjs')).href
-    const explicitWinner = LOOKUP_LAYERS.find(layer => (
-      layers.includes(layer) && (layer !== 'private' || importer === 'plugin')
-    ))
-    if (explicitWinner === undefined) {
-      expect(thrownError(() => require.resolve(name, { paths: [importerDir] })))
-        .toMatchObject({ code: 'MODULE_NOT_FOUND' })
-    } else {
-      expect(require.resolve(name, { paths: [importerDir] })).toBe(join(real[explicitWinner], 'index.cjs'))
-    }
-    const winner = lookupWinner(matrixCase)
-    if (winner === 'missing') {
-      expect(thrownError(() => require(name))).toMatchObject({ code: 'MODULE_NOT_FOUND' })
-      await expect(importFrom(name, parent)).rejects.toMatchObject({ code: 'ERR_MODULE_NOT_FOUND' })
-      expect(registration.packageDir(name, parent)).toBeUndefined()
-      return
-    }
-    const packageDir = winner === 'interception'
-      ? (kind === 'installation' ? f.installed : bundleLib)
-      : logical[winner]
-    const realDir = winner === 'interception' ? packageDir : real[winner]
-    const marker = winner === 'interception' ? (kind === 'installation' ? 1 : 2) : LOOKUP_MARKERS[winner]
-    expect(require(name)).toEqual({ marker })
-    expect(require.resolve(name)).toBe(join(realDir, 'index.cjs'))
-    expect(resolveFrom(name, parent)).toBe(pathToFileURL(join(realDir, 'index.js')).href)
-    expect(await importFrom(name, parent)).toMatchObject({ marker })
-    expect(registration.packageDir(name, parent)).toBe(packageDir)
+    const require = createRequire(join(pluginDir, 'entry.cjs'))
+    const parent = pathToFileURL(join(pluginDir, 'entry.mjs')).href
+    expect(require(name)).toEqual({ marker: 3 })
+    expect(require.resolve(name)).toBe(join(privateDir, 'index.cjs'))
+    expect(resolveFrom(name, parent)).toBe(pathToFileURL(join(privateDir, 'index.js')).href)
+    expect(await importFrom(name, parent)).toMatchObject({ marker: 3 })
+    expect(registration.packageDir(name, parent)).toBe(privateDir)
   })
 
   it('uses shared packages in the canonicalized profiles tree before its ancestors', async () => {

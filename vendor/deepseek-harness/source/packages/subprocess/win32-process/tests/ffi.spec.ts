@@ -1,9 +1,6 @@
-import koffi from 'koffi'
 import { describe, expect, it, vi } from 'vitest'
 import {
   Win32Error,
-  allocPtrSlot,
-  decodePtr,
   isNullPtr,
   throwLastError,
 } from '../src/index.ts'
@@ -17,9 +14,7 @@ describe('shared Win32 process ABI', () => {
     expect(processInformationType().size).toBe(PROCESS_INFORMATION_SIZE)
   })
 
-  it('handles NULL pointer out-parameters', () => {
-    const slot = allocPtrSlot()
-    expect(decodePtr(slot)).toBeNull()
+  it('recognizes NULL process handles', () => {
     expect(isNullPtr(0n as NativePtr)).toBe(true)
     expect(isNullPtr(1n as NativePtr)).toBe(false)
   })
@@ -37,9 +32,4 @@ describe('shared Win32 process ABI', () => {
     expect(new Win32Error('CloseHandle', 6).message).toBe('CloseHandle failed (Win32 6)')
   })
 
-  it('decodes a pointer stored by Koffi', () => {
-    const slot = allocPtrSlot()
-    koffi.encode(slot, koffi.pointer('void'), 42n)
-    expect(decodePtr(slot)).toBe(42n)
-  })
 })

@@ -1,8 +1,8 @@
 /**
  * Which plugins bring their own configuration to the Plugins page, read from
- * the three slots the page declares: the official plugins listed beside the
- * official bundles, the bundles with a form on their page, and the rows with a
- * page of their own. The projection follows the slot ledgers and the active
+ * three slots: registered configuration items, bundles with a form on their
+ * page, and rows with a page of their own. The projection follows the slot
+ * ledgers and the active
  * locale and keeps its snapshot until one of them moves.
  */
 
@@ -10,19 +10,19 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { resolveSlotLabel, type HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from './slot-contract.ts'
 
-/** One official plugin as the page lists it: its registration id and its title in the active locale. */
-export interface OfficialItem {
+/** One registered configuration item: its registration id and its title in the active locale. */
+export interface ConfigItem {
   readonly id: string
   readonly label: string
 }
 
 /**
- * The plugins carrying configuration: the official plugins in ledger order,
+ * The plugins carrying configuration: configuration items in ledger order,
  * the package names of the bundles with a page-level form, and the keys
  * ({@link rowConfigKey}) of the rows with a page.
  */
 export interface ConfigLedger {
-  readonly items: readonly OfficialItem[]
+  readonly items: readonly ConfigItem[]
   readonly bundles: ReadonlySet<string>
   readonly rows: ReadonlySet<string>
 }

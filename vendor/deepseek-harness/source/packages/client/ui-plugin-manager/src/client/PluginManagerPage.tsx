@@ -1,6 +1,6 @@
 /**
- * Global plugin management: grouped cards for official configuration and
- * optional bundles, the Installed group's cards for the profile's bundles,
+ * Global plugin management: registered configuration cards and
+ * the profile's installed bundles,
  * their row switches, the install dialog with its guide and folded pnpm
  * output, the uninstall confirmation, and the toasts an action's outcome
  * becomes. A bundle's page lists the rows it contributes as the Host runs
@@ -22,7 +22,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { createNavigationStore } from './navigation-store.ts'
-import { rowConfigKey, type OfficialItem } from './config-ledger.ts'
+import { rowConfigKey, type ConfigItem } from './config-ledger.ts'
 import { INSTALL_GIT_EXAMPLE, INSTALL_PATH_EXAMPLE, type PluginManagerLocaleKey } from './locales.ts'
 import {
   asksMirror, githubRecoveryRegistry, isInstallPending, offeredRegistries, rowKey,
@@ -293,7 +293,7 @@ function RowsSection({ rows, t, resolveText, toggle, configure }: {
 
 /** Declared install source and versions; unavailable files retain their recorded dependency spec. */
 function SourceSection({ pkg, t }: { readonly pkg: PackageView; readonly t: Translate }): ReactNode {
-  if (pkg.source === undefined && !pkg.installed && pkg.availability === 'installation' && !pkg.optional) return null
+  if (pkg.source === undefined && !pkg.installed && pkg.availability === 'installation') return null
   return (
     <section className={css.detailSection} data-plugin-source>
       <h4 className={css.sectionTitle}>{t('sourceTitle')}</h4>
@@ -465,11 +465,11 @@ function PackageCard({ pkg, t, resolveText, busy, highlighted, onOpen, onSetEnab
 }
 
 /**
- * One official plugin as a card that opens its page: its icon, its title from
+ * One registered configuration item as a card that opens its page: its icon, its title from
  * the registration, and the one-liner the entry renders in its summary view.
  */
 function ItemCard({ item, t, onOpen, renderSlot }: {
-  readonly item: OfficialItem
+  readonly item: ConfigItem
   readonly t: Translate
   readonly onOpen: () => void
   readonly renderSlot: RenderConfig
@@ -493,19 +493,18 @@ function packageRef(pkg: PackageView): PluginPackageRef {
     ...pkg.version === undefined ? {} : { version: pkg.version },
     installed: pkg.installed,
     availability: pkg.availability,
-    official: pkg.official,
     enabled: pkg.enabled,
     rows: pkg.rows.map(rowRef),
   }
 }
 
 /**
- * An official plugin's page: the crumb back to the cards, its icon with the
+ * A registered configuration page: the crumb back to the cards, its icon with the
  * contributed actions, its title with the contributed badges over its
  * one-liner, the form the entry renders, and the contributed sections.
  */
 function ItemDetail({ item, t, onBack, renderSlot, form }: {
-  readonly item: OfficialItem
+  readonly item: ConfigItem
   readonly t: Translate
   readonly onBack: () => void
   readonly renderSlot: RenderConfig
@@ -591,7 +590,7 @@ function RowDetail({ pkg, row, t, resolveText, onBack, renderSlot, form }: {
  * and configure controls; and where it comes from.
  */
 function PackageDetail({
-  pkg, t, resolveText, busy, rowBusy, configured, configure, renderSlot, inMore,
+  pkg, t, resolveText, busy, rowBusy, configured, configure, renderSlot,
   onBack, onSetEnabled, onUninstall, onSetRowEnabled,
 }: {
   readonly pkg: PackageView
@@ -604,7 +603,6 @@ function PackageDetail({
   readonly configured: boolean
   readonly configure: RowConfigure
   readonly renderSlot: RenderConfig
-  readonly inMore: boolean
   readonly onBack: () => void
   readonly onSetEnabled: (enabled: boolean) => void
   readonly onUninstall: () => void
@@ -616,8 +614,8 @@ function PackageDetail({
   return (
     <div className={css.detail} data-plugin-detail={pkg.name}>
       <DetailTop
-        crumbLabel={inMore ? t('backToPackage', { name: t('moreTitle') }) : t('backToList')}
-        crumbText={t(inMore ? 'moreTitle' : 'crumbRoot')}
+        crumbLabel={t('backToList')}
+        crumbText={t('crumbRoot')}
         onBack={onBack}
         icon={<PackageArtwork key={pkg.meta?.icon} src={pkg.meta?.icon} />}
         actions={(
@@ -1380,7 +1378,7 @@ function ConfirmDialog({ name, t, onConfirm, onCancel }: {
   )
 }
 
-/** Render the plugin manager: the official plugins and installed bundles, their pages, the install dialog, and the confirmation. */
+/** Render registered configuration items and installed bundles, their pages and install actions. */
 export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   const { t, ensure, renderSlot, resolveText } = props
   const configurations = props.useConfigurations(snapshot => snapshot.view?.namespaces)
@@ -1414,16 +1412,9 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   }, [highlight, clearHighlight])
   const noticeLine = state.notice === null || state.notice.kind === 'refresh-failed' ? null : noticeText(state.notice, t)
 
-  // The page manages what the person installed, what the installation ships for them to switch on, and a
-  // selected name the Host cannot read; the installation's other bundles are inspected in the Settings
-  // Plugins section's Plugin list tab.
+  // Installation-owned bundles remain available in the built-in item; this list manages profile dependencies and errors.
   const listed = state.packages.filter(pkg => !BUILTIN_PROFILE_BUNDLES.has(pkg.name)
-    && (pkg.installed || pkg.official || pkg.error !== undefined))
-  const mine = listed.filter(pkg => !pkg.official)
-  const official = listed.filter(pkg => pkg.official)
-  // The Host owns the offered inventory and its order. Activation does not hide or reorder packages.
-  const extensions = official
-  const more = official
+    && (pkg.installed || pkg.error !== undefined))
   const loaded = state.status === 'ready' || state.status === 'error'
   const refreshing = state.refreshStatus === 'refreshing'
   const openPkg = view.kind === 'package' || view.kind === 'row' ? listed.find(pkg => pkg.name === view.name) : undefined
@@ -1431,14 +1422,8 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   const openRow = view.kind === 'row' && openPkg !== undefined ? openPkg.rows.find(row => row.rowId === view.rowId) : undefined
   const onInstalled = tab === INSTALLED_TAB
   const showsCards = !onInstalled || (openPkg === undefined && openItem === undefined)
-  const detailFromMore = (view.kind === 'package' || view.kind === 'row')
-    && view.from === 'more'
-  const showsMoreList = onInstalled && showsCards && (view.kind === 'more' || detailFromMore)
-  const showsMainList = showsCards && !showsMoreList
   const installedCards = onInstalled && showsCards
-  const openPkgInMore = openPkg !== undefined && openPkg.official && detailFromMore
-  // The Installed tab's panel, whatever it currently shows; the More list is not a tab panel.
-  const installedPanel = tabs.length === 0 || showsMoreList
+  const installedPanel = tabs.length === 0
     ? {}
     : { role: 'tabpanel', id: `${tabsId}-${INSTALLED_TAB}-panel`, 'aria-labelledby': `${tabsId}-${INSTALLED_TAB}` }
   const activated = listed.find(pkg => pkg.name === activation && pkg.enabled && !state.busy.includes(pkg.name))
@@ -1448,7 +1433,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
   }
   const configure = (pkg: PackageView): RowConfigure => ({
     has: row => ledger.rows.has(rowConfigKey(pkg.name, row.rowId)),
-    open: (row) => { setView({ kind: 'row', name: pkg.name, rowId: row.rowId, ...openPkgInMore ? { from: 'more' } : {} }) },
+    open: (row) => { setView({ kind: 'row', name: pkg.name, rowId: row.rowId }) },
   })
   const packageBusy = (pkg: PackageView): boolean => state.busy.includes(pkg.name)
     || (state.install.subject?.name === pkg.name && (isInstallPending(state.install.phase) || state.install.phase === 'checking'))
@@ -1460,34 +1445,28 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
       resolveText={resolveText}
       busy={packageBusy(pkg)}
       highlighted={state.highlight === pkg.name}
-      onOpen={() => { setActivation(null); setView({ kind: 'package', name: pkg.name, ...showsMoreList ? { from: 'more' } : {} }) }}
+      onOpen={() => { setActivation(null); setView({ kind: 'package', name: pkg.name }) }}
       onSetEnabled={(enabled) => { setActivation(enabled ? pkg.name : null); props.setEnabled(pkg.name, enabled) }}
     />
   )
   const basicCards = ledger.items.map(item => (
     <ItemCard key={`item:${item.id}`} item={item} t={t} renderSlot={renderSlot} onOpen={() => { setView({ kind: 'item', id: item.id }) }} />
   ))
-  const renderGroup = (id: 'basic' | 'extensions' | 'bundles', heading: string, cards: readonly ReactNode[]): ReactNode => {
-    const offersMore = id === 'extensions' && more.length > 0
-    if (cards.length === 0 && !offersMore) return null
+  const renderGroup = (id: 'basic' | 'bundles', heading: string, cards: readonly ReactNode[]): ReactNode => {
+    if (cards.length === 0) return null
     return (
       <section className={css.group} data-plugin-scope="global" data-plugin-group={id}>
         <div className={css.groupHead}>
           <h3 className={css.groupTitle}>{heading}</h3>
-          {offersMore ? (
-            <Button size="sm" className={css.groupMore} onClick={() => { setView({ kind: 'more' }) }}>
-              {t('moreAction')}<IconChevronRightOutlineRegular size={14} aria-hidden="true" />
-            </Button>
-          ) : null}
         </div>
-        {cards.length > 0 ? <ul className={css.cards}>{cards}</ul> : null}
+        <ul className={css.cards}>{cards}</ul>
       </section>
     )
   }
 
   return (
     <section className={css.page} data-plugin-panel aria-busy={state.status === 'loading' || refreshing}>
-      {showsMainList
+      {showsCards
         ? (
           <header className={css.pageHead} data-window-drag>
             <div className={css.pageHeading}>
@@ -1518,7 +1497,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
           </header>
         )
         : null}
-      {showsMainList && tabs.length > 0
+      {showsCards && tabs.length > 0
         ? (
           <div className={css.pageTabs}>
             <SegmentedTabs
@@ -1544,14 +1523,6 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
           </div>
         )
         : null}
-      {showsMoreList ? (
-        <header className={css.moreHead} data-window-drag>
-          <Button size="sm" className={css.moreBack} aria-label={t('backToList')} onClick={() => { setView({ kind: 'list' }) }}>
-            <IconChevronLeftOutlineMedium size={20} aria-hidden="true" />
-          </Button>
-          <h1 className={css.pageTitle}>{t('moreTitle')}</h1>
-        </header>
-      ) : null}
       {installedCards && !loaded ? (
         <div className={css.installedPanel} {...installedPanel}>
           {state.status === 'loading' ? <ListSkeleton label={t('loading')} /> : null}
@@ -1592,7 +1563,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
             t={t}
             resolveText={resolveText}
             renderSlot={renderSlot}
-            onBack={() => { setView({ kind: 'package', name: openPkg.name, ...openPkgInMore ? { from: 'more' } : {} }) }}
+            onBack={() => { setView({ kind: 'package', name: openPkg.name }) }}
           />
         )
         : null}
@@ -1607,8 +1578,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
             configured={ledger.bundles.has(openPkg.name)}
             configure={configure(openPkg)}
             renderSlot={renderSlot}
-            inMore={openPkgInMore}
-            onBack={() => { setView({ kind: openPkgInMore ? 'more' : 'list' }) }}
+            onBack={() => { setView({ kind: 'list' }) }}
             onSetEnabled={(enabled) => { props.setEnabled(openPkg.name, enabled) }}
             onUninstall={() => { props.uninstall(openPkg.name) }}
             onSetRowEnabled={setRowEnabled}
@@ -1619,21 +1589,12 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
         ? <ItemDetail form={formFor(openItem.id)} item={openItem} t={t} renderSlot={renderSlot} onBack={() => { setView({ kind: 'list' }) }} />
         : null}
       {loaded && installedCards
-        ? basicCards.length === 0 && official.length === 0 && mine.length === 0 && state.status !== 'error'
+        ? basicCards.length === 0 && listed.length === 0 && state.status !== 'error'
           ? <div className={css.installedPanel} {...installedPanel}><p className={css.empty}>{t('empty')}</p></div>
           : (
             <div className={css.installedPanel} {...installedPanel}>
-              {showsMoreList ? (
-                <section className={css.group} data-plugin-scope="global" data-plugin-group="more">
-                  <ul className={css.cards}>{more.map(packageCard)}</ul>
-                </section>
-              ) : (
-                <>
-                  {renderGroup('basic', t('basicTitle'), basicCards)}
-                  {renderGroup('extensions', t('extensionsTitle'), extensions.map(packageCard))}
-                  {renderGroup('bundles', t('bundlesTitle'), mine.map(packageCard))}
-                </>
-              )}
+              {renderGroup('basic', t('basicTitle'), basicCards)}
+              {renderGroup('bundles', t('bundlesTitle'), listed.map(packageCard))}
               {/* A failed package read trails the groups it left incomplete: right under the groups on a
                   first-load failure, and after the kept cards when a refresh fails over stale data. */}
               {state.status === 'error' && !refreshing
@@ -1655,7 +1616,7 @@ export function PluginManagerPage(props: PluginManagerPageProps): ReactNode {
           onDismiss: () => { setActivation(null) },
           onOpenDetails: () => {
             setActivation(null)
-            setView({ kind: 'package', name: activated.name, ...showsMoreList ? { from: 'more' } : {} })
+            setView({ kind: 'package', name: activated.name })
           },
         }, { entryKey: activated.name }) : null}
       <InstallDialog

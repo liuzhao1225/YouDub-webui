@@ -661,15 +661,6 @@ it('reports a replaced entry whose package entry point now fails to import', asy
   await expect(f.reconcile()).rejects.toThrow('did not activate')
 })
 
-it('does not start the new code of a plugin its new bundle patch disables', async () => {
-  const f = await fixture()
-  f.trace.length = 0
-  addon(f.dir, '2', plugin('2'))
-  file(join(f.dir, 'node_modules', 'addon', 'cordis.patch.yml'), '- insert:\n    - id: addon\n      name: addon\n      disabled: true\n')
-  await expect(f.reconcile()).resolves.toEqual({ warnings: [], pending: [] })
-  expect(f.trace).toEqual(['stop:1'])
-})
-
 it('replaces the importers of a changed shared dependency only', async () => {
   const f = await fixture()
   f.trace.length = 0
@@ -686,30 +677,21 @@ it('replaces a plugin of a linked package whose target changed', async () => {
   expect(f.trace).toEqual(['start:linked:1', 'stop:linked', 'start:linked:2'])
 })
 
-it('stops a plugin whose replacement fails to load and starts its corrected files', async () => {
+it.each([1, 2])('stops a failed replacement and restarts its correction with shared dependency version %s', async (dependencyVersion) => {
   const f = await fixture()
   quiet(f.ctx)
   f.trace.length = 0
+  if (dependencyVersion === 2) shared(f.dir, dependencyVersion)
   addon(f.dir, '2', plugin('2', 'missing-lib'))
   await expect(f.reconcile()).rejects.toThrow(/failed to import: .*'missing-lib'/u)
   expect(f.trace).toEqual(['stop:1'])
-  // An unchanged failure is reported without rejecting later recompositions.
-  await expect(f.reconcile()).resolves.toEqual({ warnings: [expect.stringContaining("'missing-lib'")], pending: [] })
+  if (dependencyVersion === 1) {
+    // An unchanged failure is reported without rejecting later recompositions.
+    await expect(f.reconcile()).resolves.toEqual({ warnings: [expect.stringContaining("'missing-lib'")], pending: [] })
+  }
   addon(f.dir, '3')
   await expect(f.reconcile()).resolves.toEqual({ warnings: [], pending: [] })
-  expect(f.trace).toEqual(['stop:1', 'start:3:1:-'])
-})
-
-it('loads a changed dependency together with the corrected plugin that failed to load', async () => {
-  const f = await fixture()
-  quiet(f.ctx)
-  f.trace.length = 0
-  shared(f.dir, 2)
-  addon(f.dir, '2', plugin('2', 'missing-lib'))
-  await expect(f.reconcile()).rejects.toThrow('missing-lib')
-  addon(f.dir, '3')
-  await expect(f.reconcile()).resolves.toEqual({ warnings: [], pending: [] })
-  expect(f.trace).toEqual(['stop:1', 'start:3:2:-'])
+  expect(f.trace).toEqual(['stop:1', `start:3:${dependencyVersion}:-`])
 })
 
 it('loads a plugin whose missing dependency was installed after its replacement failed', async () => {

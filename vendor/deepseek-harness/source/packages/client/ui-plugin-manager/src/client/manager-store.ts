@@ -80,8 +80,6 @@ export interface PackageRow {
 /** One bundle as the page shows it: the Host's bundle joined with the entries its rows run as. */
 export interface PackageView {
   readonly name: string
-  /** Project-maintained optional bundle identity is independent of selection. */
-  readonly official: boolean
   /** Readable package location, separately from the profile dependency declaration. */
   readonly availability: BundleInfo['availability']
   readonly version?: string
@@ -92,8 +90,6 @@ export interface PackageView {
   readonly installed: boolean
   /** Present for a profile dependency the installation does not also supply: the spec `pnpm add` accepts. */
   readonly source?: string
-  /** Whether the installation ships the bundle for the person to switch on: official, off until selected, never removable. */
-  readonly optional: boolean
   /** Whether the Host removes the bundle: a profile dependency, or a selection that neither the profile nor the installation holds. */
   readonly removable: boolean
   /** Whether the bundle is in the profile's layer list. */
@@ -450,10 +446,8 @@ export function packageView(bundle: BundleInfo, plugins: readonly PluginInfo[]):
   })
   return {
     name: bundle.name,
-    official: bundle.official,
     availability: bundle.availability,
     installed: bundle.installed,
-    optional: bundle.optional,
     removable: bundle.removable,
     enabled: bundle.enabled,
     rows,

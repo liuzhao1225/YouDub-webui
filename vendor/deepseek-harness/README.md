@@ -26,4 +26,10 @@ Gateway 直接要求经过认证的 owner，非 owner 在方法解析和事件�
 
 配置表单继续使用 Harness 的原生 ConfigForms。无产品入口的 JSON Schema 导出（`generateConfigSchema`、`createConfigProjector`、`isNativeConfigSchema`）和 `renderConfigDump` 已退役。普通子进程仍通过 `ctx.subprocess.spawn` 执行并管理进程树；PTY 的 `spawnTerminal`、`terminalEnvironment`、终端相关类型与 `node-pty` 依赖已移除。旧版 profile 中的 `node-pty` 文本仅用于识别并迁移历史安装配置。
 
+插件列表的 `BundleInfo` / `PackageView` 不再提供恒为 false 的 `official` / `optional`，`PluginPackageRef.official` 同步退役，`OfficialItem` 改名为 `ConfigItem`。官方扩展 / More 分组已移除；`plugins.item` 配置扩展槽、YouDub 内置项和用户插件完整生命周期继续保留。依赖旧字段或类型的外部插件需要修改声明。
+
+图标入口保留当前页面、共享组件与插件示例实际使用的 30 个 `Icon*` 导出；其余图标不再随子集维护。通用设置已删除原本被 YouDub 隐藏的编码视图、字体行及专用 store；主题引擎、字号快捷键和历史字体配置继续生效。旧 `ui-settings.enabled` 仍被接受。桌面更新展示合同收敛为生产者实际提供的 `idle/checking/available/error`；版本检查、失败重试和打开下载页继续使用当前桌面入口。
+
+Windows 媒体进程继续使用 `spawnCurrentTokenJobProcess` 和 Job Object。未使用的 `spawnPipedProcess`、`spawnInheritedJobProcess`、`RestrictedProcessSpawnOptions`、`drainPipe`、`waitForProcessExit` 及专用 Win32 绑定已退役；普通进程的停止、轮询、句柄释放与原始错误保留。启动环境继续使用 `loadLayeredEnv`；无调用的另一入口 `loadEnv` 已退役。
+
 测试维护范围覆盖产品启动、配置重载、插件生命周期、普通子进程停止与平台隔离。已移除退出产品的终端和配置导出测试，以及穷举 Node 模块查找布局的差分矩阵；模块解析的直接回归与真实主机退出测试继续保留。

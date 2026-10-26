@@ -33,7 +33,7 @@ declare module '@deepseek-ai/cordis' {
     /** Cross-plugin navigation to the Plugins panel. */
     pluginNavigation: {
       /**
-       * Open a bundle's details without changing the current Session.
+       * Open a bundle's details in the Plugins panel.
        * An absent bundle displays the plugin list after loading.
        * @param packageName - npm package name of the bundle.
        */
@@ -43,7 +43,7 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export type { PluginManagerPageProps } from './PluginManagerPage.tsx'
-export type { ConfigLedger, OfficialItem } from './config-ledger.ts'
+export type { ConfigLedger, ConfigItem } from './config-ledger.ts'
 export type { PluginManagerFace } from './manager-store.ts'
 export type { PluginManagerLocaleKey } from './locales.ts'
 export type {
@@ -93,8 +93,8 @@ export function apply(ctx: ClientContext): void {
     return () => { for (const dispose of disposers) dispose() }
   }, 'ui-plugin-manager: host invalidations')
 
-  // The page is a global panel: it belongs to the profile, not to a Session,
-  // and the sidebar's entry selects it. What is installed and switched on is
+  // The page belongs to the profile and the sidebar entry selects it.
+  // What is installed and switched on is
   // the page's own; a plugin's configuration arrives through the slots the
   // page declares here, so the page never names a configurable plugin.
   const configLedger = configLedgerSource(ctx)

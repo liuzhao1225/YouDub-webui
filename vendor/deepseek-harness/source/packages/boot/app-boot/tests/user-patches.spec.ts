@@ -262,42 +262,21 @@ describe('Loader config interpolation', () => {
 })
 
 describe('Loader entry disabled interpolation', () => {
-  it('evaluates a !!js disabled expression against the loader context', async () => {
+  it.each([
+    { expression: 'process.version.length > 0', disabled: true },
+    { expression: 'process.version.length === 0', disabled: false },
+    { expression: 'process.platform === "win32"', disabled: process.platform === 'win32' },
+  ])('evaluates $expression while retaining its serialized form', async ({ expression, disabled }) => {
     const dir = tmp()
     writeFileSync(join(dir, 'noop.mjs'), 'export function apply() {}\n')
-    writeFileSync(join(dir, 'cordis.yml'), [
-      '- id: expr-off',
-      '  name: ./noop.mjs',
-      '  disabled: !!js process.version.length > 0',
-      '- id: expr-on',
-      '  name: ./noop.mjs',
-      '  disabled: !!js process.version.length === 0',
-      '',
-    ].join('\n'))
-    const ctx = await boot(NAME, join(dir, 'cordis.yml'))
-    try {
-      const off = [...ctx.loader.entries()].find(entry => entry.options.id === 'expr-off')
-      const on = [...ctx.loader.entries()].find(entry => entry.options.id === 'expr-on')
-      expect(off?.disabled).toBe(true)
-      expect(off?.fiber).toBeUndefined()
-      expect(on?.disabled).toBe(false)
-      expect(on?.fiber).toBeDefined()
-    } finally {
-      await ctx.fiber.dispose()
-    }
-  })
-
-  it('keeps the raw expression in the options so write-back preserves the !!js form', async () => {
-    const dir = tmp()
-    writeFileSync(join(dir, 'noop.mjs'), 'export function apply() {}\n')
-    writeFileSync(join(dir, 'cordis.yml'), '- id: expr\n  name: ./noop.mjs\n  disabled: !!js process.platform === "win32"\n')
+    writeFileSync(join(dir, 'cordis.yml'), '- id: expr\n  name: ./noop.mjs\n  disabled: !!js ' + expression + '\n')
     const ctx = await boot(NAME, join(dir, 'cordis.yml'))
     try {
       const entry = [...ctx.loader.entries()].find(item => item.options.id === 'expr')
-      // The evaluated boolean drives the mount decision; the serialized
-      // expression node stays in the options for the file-backed tree.
-      expect(entry?.options.disabled).toEqual({ __jsExpr: 'process.platform === "win32"' })
-      expect(entry?.disabled).toBe(process.platform === 'win32')
+      expect(entry?.options.disabled).toEqual({ __jsExpr: expression })
+      expect(entry?.disabled).toBe(disabled)
+      if (disabled) expect(entry?.fiber).toBeUndefined()
+      else expect(entry?.fiber).toBeDefined()
     } finally {
       await ctx.fiber.dispose()
     }

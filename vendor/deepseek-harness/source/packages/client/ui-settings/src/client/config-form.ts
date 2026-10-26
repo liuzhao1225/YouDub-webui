@@ -1,7 +1,5 @@
 /** Shared entry values and ordered writes over the Host configuration mirror. */
 
-import { DeveloperToolsPreference } from './developer-tools.ts'
-import { DEVELOPER_TOOLS_NAMESPACE } from '../developer-tools-settings.ts'
 import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
 import type {
@@ -235,8 +233,6 @@ declare module '@deepseek-ai/cordis' {
  */
 export class ConfigForms extends Service {
   private readonly forms = new Map<string, ConfigFormController<unknown>>()
-  /** Shared developer-tool preference owned by this settings provider. */
-  readonly developerTools: DeveloperToolsPreference
   private readonly mirror: SettingsDescribeMirror
   private readonly schema: SettingsSchemaService
   /**
@@ -259,7 +255,6 @@ export class ConfigForms extends Service {
     this.mirror = config.mirror
     this.schema = config.schema
     this.owner = ctx
-    this.developerTools = new DeveloperToolsPreference(this.get(DEVELOPER_TOOLS_NAMESPACE))
     ctx.effect(() => async () => {
       await Promise.all([...this.forms.values()].map(form => form.dispose()))
       this.forms.clear()

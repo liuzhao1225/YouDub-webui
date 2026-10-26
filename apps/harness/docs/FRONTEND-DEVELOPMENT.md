@@ -68,6 +68,10 @@
 
 在 Harness 专属组件中可以直接导入 `@deepseek-ai/dsh-client-ui-primitives`。原 YouDub 的通用控件属性差异在原 `components/ui/*` 统一处理；焦点、键盘、Portal、弹层和滚动条遵循官方实现。业务画布、视频播放器与逐句编辑继续使用现有领域组件。
 
+框架图标子集当前提供实际引用的 30 个图标；新增图标先检查现有业务图标入口，需要补入上游 SVG 时直接复用其源码。插件管理保留 `plugins.item` 和用户插件全部操作；`official/optional` 恒值字段和无数据源的 More 分组已经退役，配置项类型统一为 `ConfigItem`。
+
+通用设置直接注册外观、语言和版本等现有行，编码工作视图和字体配置行的组件、状态及屏蔽插槽已删除。字号快捷键和主题服务保存的字体偏好继续生效。桌面更新 UI 只接收当前 shell 提供的检查状态，失败可重试，发现版本后打开下载入口。
+
 菜单测试通过可见菜单项选择，保留原业务结果、字段类型、禁用与草稿断言。`controls.test.tsx` 检查键盘选项跳转、关闭和焦点返回。
 
 `frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；语言测试通过测试目录里的 locale source 接入同一 Harness Provider；主题 Provider 位于 `frontend/theme-context.tsx`，由桌面主题入口和测试直接复用，偏好持久化、系统配色与 DOM 呈现均由保留的框架服务负责。旧 Web localStorage 主题实现已移除。`sdk`、文件 URL与剪贴板边界服务于官方导航、Connection 文件授权和官方剪贴板。播放器直接复用业务 `VideoPlayer`，其倍速菜单通过同一 `harness-primitives` 入口使用 Harness `Menu`，不再保留第二套播放器适配。继续通过构建清单核对。

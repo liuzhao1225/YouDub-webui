@@ -191,26 +191,14 @@ describe('profile package metadata service', () => {
     expect(ctx.pluginPackages.packageOf('@scope/metadata', parentURL)).toBe(first)
     expect(ctx.pluginPackages.packageOf('missing-package', parentURL)).toBeUndefined()
     expect(ctx.pluginPackages.packageOf('@scope', parentURL)).toBeUndefined()
+    const anonymous = join(root, 'node_modules', 'anonymous')
+    file(join(anonymous, 'package.json'), '{}')
+    expect(ctx.pluginPackages.packageOf('anonymous', parentURL)).toMatchObject({
+      name: 'anonymous', version: undefined, dir: anonymous,
+    })
     expect(() => { ctx.pluginPackages.replace({
       profilesDir: join(root, 'profiles'), profileDir: undefined, localPackageNames: [], linkedRoots: [], entries: [],
     }) }).toThrow(/runtime resolution is not installed/u)
-  })
-
-  it('rejects malformed package metadata selected by the resolver', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'dsh-invalid-package-service-'))
-    roots.push(root)
-    const anonymous = join(root, 'node_modules', 'anonymous')
-    file(join(anonymous, 'package.json'), '{}')
-    const ctx = new Context()
-    contexts.push(ctx)
-    await ctx.plugin(PluginPackages)
-    const parentURL = pathToFileURL(join(root, 'entry.mjs')).href
-    expect(ctx.pluginPackages.packageOf('missing', parentURL)).toBeUndefined()
-    expect(ctx.pluginPackages.packageOf('anonymous', parentURL)).toMatchObject({
-      name: 'anonymous',
-      version: undefined,
-      dir: anonymous,
-    })
   })
 
   it('returns undefined when a selected package directory has no manifest', async () => {
@@ -282,7 +270,6 @@ describe('profile package metadata service', () => {
     ctx.pluginPackages.replace(removed)
     expectSelectedPackage(local, '2.0.0')
     const removedWorkerData = getEnvironmentData(key)
-    expect(removedWorkerData).toEqual({ resolution: removed })
     expect(removedWorkerData).toEqual({ resolution: removed })
     // A link name may point to another directory once the plugins of its previous target stopped.
     ctx.pluginPackages.replace(relinked)

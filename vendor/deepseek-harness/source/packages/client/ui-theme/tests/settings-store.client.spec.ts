@@ -1,6 +1,6 @@
-/** Appearance and font-size row stores: snapshot-mirror actions and the revision guards. */
+/** Appearance row store: snapshot-mirror actions and the revision guards. */
 import { describe, expect, it } from 'vitest'
-import { createAppearanceRowStore, createFontRowStore } from '../src/client/settings-store.ts'
+import { createAppearanceRowStore } from '../src/client/settings-store.ts'
 
 describe('createAppearanceRowStore', () => {
   it('init shape: system preference with revision at -1', () => {
@@ -23,25 +23,6 @@ describe('createAppearanceRowStore', () => {
     store.actions.sync('system', 2)
     store.actions.sync('system', 3)
     expect(store.getSnapshot().preference).toBe('dark')
-    expect(store.getSnapshot().revision).toBe(3)
-  })
-})
-
-describe('createFontRowStore', () => {
-  it('init shape: default size with revision at -1', () => {
-    const store = createFontRowStore().create()
-    expect(store.getSnapshot()).toEqual({ fontSizes: { text: 14, code: 11 }, fontFamilies: { text: '', code: '' }, revision: -1 })
-  })
-
-  it('sync mirrors the size; the revision guard drops stale and duplicate writes', () => {
-    const store = createFontRowStore().create()
-    const sizes = { text: 16, code: 12 }
-    const fonts = { text: '"Inter"', code: '' }
-    store.actions.sync(sizes, { ...fonts }, 3)
-    expect(store.getSnapshot()).toEqual({ fontSizes: sizes, fontFamilies: fonts, revision: 3 })
-    store.actions.sync({ ...sizes, text: 12 }, fonts, 2)
-    store.actions.sync({ ...sizes, text: 12 }, fonts, 3)
-    expect(store.getSnapshot().fontSizes.text).toBe(16)
     expect(store.getSnapshot().revision).toBe(3)
   })
 })

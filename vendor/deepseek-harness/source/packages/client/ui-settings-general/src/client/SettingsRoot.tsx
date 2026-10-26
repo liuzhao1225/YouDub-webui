@@ -231,7 +231,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           </button>
         </Tooltip> })}
         <ConnectionIndicator
-          state={wide && desktopUpdate.presentation?.phase !== 'installing' ? connectionIndicator : undefined}
+          state={wide ? connectionIndicator : undefined}
           disconnectedLabel={t('connection.error')}
           connectingLabel={t('connection.connecting')}
           recoveredLabel={t('connection.connected')}
@@ -239,7 +239,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           restartActionLabel={t('connection.restart')}
           onReconnect={reconnect}
         />
-        <DesktopUpdateIndicator wide={wide} hidden={connectionIndicator !== undefined && desktopUpdate.presentation?.phase !== 'installing'}
+        <DesktopUpdateIndicator wide={wide} hidden={connectionIndicator !== undefined}
           t={t} view={desktopUpdate} onOpen={openDesktopUpdate} />
       </div>
       {open && (

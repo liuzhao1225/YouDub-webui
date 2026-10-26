@@ -46,7 +46,6 @@ function api(overrides: Partial<CurrentTokenProcessBindings> = {}): CurrentToken
       information.writeUInt32LE(0, JOBOBJECT_BASIC_ACCOUNTING_ACTIVE_PROCESSES_OFFSET)
       return 1
     }),
-    getStdHandle: vi.fn((selector: number) => BigInt(100 - selector)),
     uvGetOsfhandle: vi.fn((fileDescriptor: number) => BigInt(100 + fileDescriptor)),
     setHandleInformation: vi.fn(() => 1),
     createProcessW: vi.fn((_app, _line, _pa, _ta, _inherit, _flags, _env, _cwd, _startup, info) => {
@@ -169,17 +168,6 @@ describe('ordinary Job process operations', () => {
     expect(events).toContain('close:61')
   })
 
-  it('reports CreateProcessW failure without replaying another creator', () => {
-    const bindings = api({ createProcessW: vi.fn(() => 0) })
-    let caught: unknown
-    try {
-      spawnCurrentTokenJobProcess(bindings, options({ command: 'missing.exe' }))
-    } catch (error) {
-      caught = error
-    }
-    expect(caught).toMatchObject({ api: 'CreateProcessW', win32Code: 5 })
-  })
-
   it('resolves the target carrier descriptors and restores their handle flags', () => {
     let startup: Record<string, unknown> | undefined
     const setHandleInformation = vi.fn(() => 1)
@@ -284,4 +272,93 @@ describe('ordinary Job process operations', () => {
       expectFailure(invalid as NativePtr | null)
     }
   })
+  it('restores enabled stdio and closes the Job when inheritance setup fails', () => {
+    let calls = 0
+    const bindings = api({
+      setHandleInformation: vi.fn((_handle, _mask, flags) => flags === 0 || ++calls !== 2 ? 1 : 0),
+    })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow(Win32Error)
+    expect(bindings.setHandleInformation).toHaveBeenCalledWith(104n, 1, 0)
+    expect(bindings.closeHandle).toHaveBeenCalledExactlyOnceWith(50n)
+    expect(bindings.createProcessW).not.toHaveBeenCalled()
+  })
+
+  it('preserves the CreateProcessW error when cleanup changes last-error', () => {
+    let lastError = 87
+    const bindings = api({
+      createProcessW: vi.fn(() => 0),
+      getLastError: vi.fn(() => lastError),
+      setHandleInformation: vi.fn((_handle, _mask, flags) => {
+        if (flags === 0) lastError = 999
+        return 1
+      }),
+      closeHandle: vi.fn(() => { lastError = 998; return 1 }),
+    })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow(
+      expect.objectContaining({ api: 'CreateProcessW', win32Code: 87 }),
+    )
+    expect(bindings.closeHandle).toHaveBeenCalledExactlyOnceWith(50n)
+  })
+
+  it.each([null, 60n])('reclaims a suspended child with process %s and a null thread', (process) => {
+    const bindings = api({
+      createProcessW: vi.fn((_app, _line, _pa, _ta, _inherit, _flags, _env, _cwd, _startup, info) => {
+        koffi.encode(info, processInformationType(), {
+          hProcess: process, hThread: null, dwProcessId: 1234, dwThreadId: 0,
+        })
+        return 1
+      }),
+    })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow('null process/thread handles')
+    expect(vi.mocked(bindings.closeHandle).mock.calls).toEqual(process === null ? [[50n]] : [[50n], [60n]])
+    if (process === null) expect(bindings.terminateProcess).not.toHaveBeenCalled()
+    else expect(bindings.terminateProcess).toHaveBeenCalledExactlyOnceWith(60n, 1)
+    expect(bindings.resumeThread).not.toHaveBeenCalled()
+  })
+
+  it('terminates the suspended child before releasing handles when Job assignment fails', () => {
+    const events: string[] = []
+    const bindings = api({
+      assignProcessToJobObject: vi.fn(() => 0),
+      terminateProcess: vi.fn((process, code) => { events.push(`terminate:${process}:${code}`); return 1 }),
+      closeHandle: vi.fn(handle => { events.push(`close:${handle}`); return 1 }),
+    })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow(
+      expect.objectContaining({ api: 'AssignProcessToJobObject', win32Code: 5 }),
+    )
+    expect(events).toEqual(['terminate:60:1', 'close:61', 'close:60', 'close:50'])
+    expect(bindings.resumeThread).not.toHaveBeenCalled()
+  })
+
+  it('closes the assigned child and kill-on-close Job when ResumeThread fails', () => {
+    const bindings = api({ resumeThread: vi.fn(() => 0xFFFFFFFF) })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow(
+      expect.objectContaining({ api: 'ResumeThread', win32Code: 5 }),
+    )
+    expect(vi.mocked(bindings.closeHandle).mock.calls).toEqual([[61n], [60n], [50n]])
+  })
+
+  it('preserves Job configuration errors across handle cleanup', () => {
+    let lastError = 5
+    const bindings = api({
+      setInformationJobObject: vi.fn(() => 0),
+      getLastError: vi.fn(() => lastError),
+      closeHandle: vi.fn(() => { lastError = 999; return 1 }),
+    })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow(
+      expect.objectContaining({ api: 'SetInformationJobObject', win32Code: 5 }),
+    )
+    expect(bindings.closeHandle).toHaveBeenCalledExactlyOnceWith(50n)
+    expect(bindings.createProcessW).not.toHaveBeenCalled()
+  })
+
+  it('reports a null Job without starting a child', () => {
+    const bindings = api({ createJobObjectW: vi.fn(() => 0n as NativePtr) })
+    expect(() => spawnCurrentTokenJobProcess(bindings, options())).toThrow(
+      expect.objectContaining({ api: 'CreateJobObjectW', win32Code: 5 }),
+    )
+    expect(bindings.createProcessW).not.toHaveBeenCalled()
+    expect(bindings.closeHandle).not.toHaveBeenCalled()
+  })
+
 })

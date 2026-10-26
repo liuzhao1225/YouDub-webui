@@ -39,7 +39,7 @@ export async function extensionInventory(manager) {
     return { id: bundle.name, version: bundle.version, source: bundle.source ?? bundle.name, installed: bundle.installed,
       enabled: bundle.enabled, active,
       activation: bundle.error || rows.some(row => row?.fiberPhase === 'failed') ? 'failed' : active ? 'active' : bundle.enabled ? 'pending' : 'disabled',
-      removable: bundle.removable, official: bundle.official, ...(bundle.error ? { error: bundle.error } : {}) };
+      removable: bundle.removable, ...(bundle.error ? { error: bundle.error } : {}) };
   }) };
 }
 

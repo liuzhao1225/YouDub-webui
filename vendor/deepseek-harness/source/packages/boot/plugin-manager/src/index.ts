@@ -306,10 +306,10 @@ export class PluginManager extends TypertRemoteService {
     })
   }
 
-  /** Read installed and installation-provided bundles, plus selected non-bundle names.
+  /** Read profile-installed and installation-provided bundles, plus selected non-bundle names.
    * A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.
-   * @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows, optional
-   * display metadata, activation selections, whether the installation offers the bundle, and removal availability.
+   * @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows,
+   * display metadata, activation selections, file availability and removal permissions.
    */
   @Remote
   listBundles(): Promise<BundleInfo[]> {
@@ -323,8 +323,6 @@ export class PluginManager extends TypertRemoteService {
     const bundles: BundleInfo[] = []
     for (const name of names) {
       const installed = dependencies.includes(name)
-      const optional = false
-      const official = optional
       const enabled = selected.includes(name)
       const shipped = Object.hasOwn(installation.dependencies ?? {}, name)
       // Installation-owned copies remain protected even if a profile also declares their names.
@@ -339,8 +337,8 @@ export class PluginManager extends TypertRemoteService {
         const info = bundleManifest(name, this.profile.dir, this.profile.installAnchor)
         availability = shipped ? 'installation' : 'profile'
         if (info === undefined) {
-          if (enabled) bundles.push({ name, official, availability,
-            ...sourceOf(), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
+          if (enabled) bundles.push({ name, availability,
+            ...sourceOf(), enabled, installed, removable: removable && readOnlyReason === undefined,
             ...(readOnlyReason === undefined ? {} : { readOnlyReason }), error: { code: 'not-bundle' }, rows: [], overrides: [] })
           continue
         }
@@ -349,16 +347,16 @@ export class PluginManager extends TypertRemoteService {
         if (compatibility !== undefined && !compatibility.exempted) throw new ManagementFailure('incompatible-version', [incompatiblePlugin(compatibility)])
         const dir = resolveBundleDir('dsh', name, this.profile.installAnchor, this.profile.dir)
         const meta = readPluginMeta(info.name ?? name, pathToFileURL(join(dir, 'package.json')).href)
-        bundles.push({ name, official, availability, ...(version === undefined ? {} : { version }),
+        bundles.push({ name, availability, ...(version === undefined ? {} : { version }),
           ...(info.description === undefined || info.description === '' ? {} : { description: info.description }),
           ...meta === undefined ? {} : { meta },
-          ...sourceOf(info.name), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
+          ...sourceOf(info.name), enabled, installed, removable: removable && readOnlyReason === undefined,
           ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
           ...this.declaredRows(name, info) })
       } catch (error) {
-        if (enabled || installed || optional) {
-          bundles.push({ name, official, availability, ...(version === undefined ? {} : { version }),
-            ...sourceOf(), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
+        if (enabled || installed) {
+          bundles.push({ name, availability, ...(version === undefined ? {} : { version }),
+            ...sourceOf(), enabled, installed, removable: removable && readOnlyReason === undefined,
             ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
             error: managementError(error), rows: [], overrides: [] })
         }

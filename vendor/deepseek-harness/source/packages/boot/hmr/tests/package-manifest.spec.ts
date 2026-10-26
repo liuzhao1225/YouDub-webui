@@ -176,6 +176,10 @@ describe('package manifest invalidation', { concurrent: false }, () => {
     file(f.manifest, JSON.stringify({ name: 'pkg', main: './a.cjs' }))
     f.manifests.invalidate(f.manifest)
     expect(importerRequire.resolve('pkg')).toBe(join(f.dir, 'a.cjs'))
+    file(f.manifest, JSON.stringify({ name: 'pkg', main: './b.cjs' }))
+    expect(importerRequire.resolve('pkg')).toBe(join(f.dir, 'a.cjs'))
+    f.manifests.invalidate(f.manifest)
+    expect(importerRequire.resolve('pkg')).toBe(join(f.dir, 'b.cjs'))
   })
 
   it('updates package type, scope, and nearest-package reads inside the directory', () => {
@@ -183,12 +187,16 @@ describe('package manifest invalidation', { concurrent: false }, () => {
     file(f.manifest, JSON.stringify({ name: 'pkg', type: 'commonjs' }))
     const source = join(f.dir, 'lib', 'entry.js')
     file(source, 'export {}')
+    const extensionless = pathToFileURL(join(f.dir, 'bin', 'tool'))
+    file(join(f.dir, 'bin', 'tool'), '')
+    expect(formats.defaultGetFormatWithoutErrors(extensionless)).toBe('commonjs')
     expect(formats.defaultGetFormatWithoutErrors(pathToFileURL(source))).toBe('commonjs')
     expect(reader.getNearestParentPackageJSON(source)?.data.type).toBe('commonjs')
 
     file(f.manifest, JSON.stringify({ name: 'pkg', type: 'module' }))
     f.manifests.invalidate(f.manifest)
     expect(formats.defaultGetFormatWithoutErrors(pathToFileURL(source))).toBe('module')
+    expect(formats.defaultGetFormatWithoutErrors(extensionless)).toBe('module')
     expect(reader.getNearestParentPackageJSON(source)?.data.type).toBe('module')
     expect(reader.getPackageScopeConfig(pathToFileURL(source).href)).toMatchObject({
       exists: true, type: 'module', pjsonPath: toNamespacedPath(f.manifest),
@@ -342,29 +350,6 @@ describe('package manifest reader parity', { concurrent: false }, () => {
     const expected = outcome(() => reader.read(f.manifest))
     f.manifests.invalidate(f.manifest)
     expect(outcome(() => reader.read(f.manifest))).toEqual(expected)
-  })
-
-  it('refreshes a changed CommonJS main after a cached lookup', () => {
-    const f = fixture()
-    file(f.manifest, JSON.stringify({ name: 'pkg', main: './a.cjs' }))
-    const importerRequire = createRequire(f.importer)
-    expect(importerRequire.resolve('pkg')).toBe(join(f.dir, 'a.cjs'))
-    file(f.manifest, JSON.stringify({ name: 'pkg', main: './b.cjs' }))
-    expect(importerRequire.resolve('pkg')).toBe(join(f.dir, 'a.cjs'))
-    f.manifests.invalidate(f.manifest)
-    expect(importerRequire.resolve('pkg')).toBe(join(f.dir, 'b.cjs'))
-  })
-
-  it('updates the package type of extensionless files', () => {
-    const f = fixture()
-    file(f.manifest, JSON.stringify({ name: 'pkg', type: 'commonjs' }))
-    const extensionless = pathToFileURL(join(f.dir, 'bin', 'tool'))
-    file(join(f.dir, 'bin', 'tool'), '')
-    const before = formats.defaultGetFormatWithoutErrors(extensionless)
-    file(f.manifest, JSON.stringify({ name: 'pkg', type: 'module' }))
-    f.manifests.invalidate(f.manifest)
-    expect(formats.defaultGetFormatWithoutErrors(extensionless)).not.toBe(before)
-    expect(formats.defaultGetFormatWithoutErrors(extensionless)).toBe('module')
   })
 
   it('continues to the enclosing scope after the manifest is deleted', () => {

@@ -374,8 +374,9 @@ describe('spawnSubprocess', () => {
   })
 
   it('rejects with a spawn error for a nonexistent cwd', async () => {
-    await expect(spawnSubprocess(spec('echo hi', { cwd: '/nonexistent-dir-dsh-test' })).done)
-      .rejects.toThrow(/ENOENT/)
+    const running = spawnSubprocess(spec('echo hi', { cwd: '/nonexistent-dir-dsh-test' }))
+    await expect(running.done).rejects.toThrow(/ENOENT/)
+    await expect(running.waitForExit()).resolves.toBe(true)
   })
 
   it('terminate() is idempotent (second call does not restart escalation)', async () => {
@@ -1280,11 +1281,6 @@ describe('coverage seams', () => {
     await waitGone(helper)
   })
 
-  it('a spawn-failed handle rejects done while waitForExit reports gone', async () => {
-    const running = spawnSubprocess(spec('true', { cwd: '/nonexistent-dir-dsh-dispose-test' }))
-    await expect(running.done).rejects.toThrow()
-    await expect(running.waitForExit()).resolves.toBe(true)
-  })
 
   it("an 'inherit' stdout with collected stderr wires only the requested collector", async () => {
     const running = spawnSubprocess({
@@ -1347,11 +1343,6 @@ describe('coverage seams', () => {
     }
   })
 
-  it('waitForExit on a failed spawn reports exited immediately', async () => {
-    const running = spawnSubprocess(spec('true', { cwd: '/nonexistent-dir-dsh-spawn-test' }))
-    await expect(running.done).rejects.toThrow()
-    await expect(running.waitForExit()).resolves.toBe(true)
-  })
 
   it('a batch-stdin handle exposes no stdin surface', async () => {
     const running = spawnSubprocess(spec('cat', { stdin: 'batch\n' }))

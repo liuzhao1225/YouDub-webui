@@ -4,7 +4,7 @@
  * `prefers-color-scheme`, and publishes immutable snapshots; it never touches
  * the DOM — ui-layout's presenter consumes the resolved snapshot. The Host
  * settings scope loads and stores the preference in the user-settings
- * document. The plugin also registers the Appearance and font settings rows
+ * document. The plugin also registers the Appearance row
  * into the settings General section — the theme feature owns its own settings
  * surface. Desktop shortcuts adjust text and code font sizes together.
  */
@@ -21,9 +21,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { AppearanceRow } from './AppearanceRow.tsx'
-import type { FontSettingsInjected } from './FontSettingsGroup.tsx'
-import { FontSettingsGroup } from './FontSettingsGroup.tsx'
-import { createAppearanceRowStore, createFontRowStore } from './settings-store.ts'
+import { createAppearanceRowStore } from './settings-store.ts'
 import { installThemeStyles } from './styles.ts'
 import { en, zh, type ThemeKey } from './locales.ts'
 import {
@@ -34,8 +32,7 @@ import {
 } from '../theme-settings.ts'
 
 export type { AppearanceRowComponentProps, AppearanceRowInjected } from './AppearanceRow.tsx'
-export type { FontSettingsGroupProps, FontSettingsInjected } from './FontSettingsGroup.tsx'
-export type { AppearanceRowState, FontRowState } from './settings-store.ts'
+export type { AppearanceRowState } from './settings-store.ts'
 export type { ThemeKey } from './locales.ts'
 export type { FontFamilies, FontRole, FontSizes, ThemePreference, ThemeSettings } from '../theme-settings.ts'
 
@@ -535,9 +532,9 @@ export const inject = ['slots', 'locale', 'remote', 'configForms']
 
 /**
  * Client plugin body: provide the theme service and register the
- * feature-owned Appearance and font settings rows into the General section's item
+ * feature-owned Appearance row into the General section's item
  * slot (a feature owns its settings surface). Desktop font-size shortcuts share
- * all three font-size settings when the keyboard service is available.
+ * text and code font sizes when the keyboard service is available.
  * @param ctx - client cordis context.
  */
 export function apply(ctx: ClientContext): void {
@@ -549,11 +546,8 @@ export function apply(ctx: ClientContext): void {
 
   const store = createAppearanceRowStore()
   let bound: BoundActions<typeof store> | undefined
-  const fontStore = createFontRowStore()
-  let fontBound: BoundActions<typeof fontStore> | undefined
   const sync = (snapshot: ThemeSnapshot): void => {
     bound?.sync(snapshot.preference, snapshot.revision)
-    fontBound?.sync(snapshot.fontSizes, snapshot.fontFamilies, snapshot.revision)
   }
   ctx.on('theme/change', sync)
   const injected = (actions: BoundActions<typeof store>): AppearanceRowInjected => {
@@ -574,19 +568,4 @@ export function apply(ctx: ClientContext): void {
     inject: injected,
   }, AppearanceRow))
 
-  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
-    name: 'settings.general.item',
-    id: 'font-size',
-    order: 11,
-    store: fontStore,
-    locale: SETTINGS_NS,
-    inject: (actions: BoundActions<typeof fontStore>): FontSettingsInjected => {
-      fontBound = actions
-      sync(theme.getTheme())
-      return {
-        setFontFamily: (role, value) => { theme.setFontFamily(role, value) },
-        setFontSize: (role, px) => { theme.setFontSize(role, px) },
-      }
-    },
-  }, FontSettingsGroup))
 }

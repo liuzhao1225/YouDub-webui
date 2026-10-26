@@ -1,5 +1,5 @@
 import { InlineAlert } from '../../../web/src/components/inline-alert'
-/** YouDub composes the unchanged Harness plugin manager and its product-specific catalog. */
+/** YouDub composes the retained Harness plugin manager and its built-in catalog. */
 import React from 'react'
 import { StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { PluginManagerPage } from '../../../../vendor/deepseek-harness/source/packages/client/ui-plugin-manager/src/client/PluginManagerPage'
@@ -38,7 +38,7 @@ export function applyPlugins(ctx:any) {
   const controller=new PluginManagerController(ctx)
   ctx.effect(() => () => controller.dispose())
   const face=controller.inject(configLedgerSource(ctx),tabLedgerSource(ctx),text => ctx.locale.resolveText(text))
-  const productFace={...face,hooks:{...face.hooks,pluginManager:project(face.hooks.pluginManager,snapshot => ({...snapshot,packages:snapshot.packages.filter((pkg:any) => pkg.name!=='@youdub/harness-subtitles' && (!pkg.official || pkg.name.startsWith('@youdub/')))})),configLedger:project(face.hooks.configLedger,ledger => ({...ledger,items:ledger.items.filter((item:any) => item.id.startsWith('youdub.'))}))}}
+  const productFace={...face,hooks:{...face.hooks,pluginManager:project(face.hooks.pluginManager,snapshot => ({...snapshot,packages:snapshot.packages.filter((pkg:any) => pkg.name!=='@youdub/harness-subtitles')})),configLedger:project(face.hooks.configLedger,ledger => ({...ledger,items:ledger.items.filter((item:any) => item.id.startsWith('youdub.'))}))}}
   ctx.effect(() => {
     const refresh=() => {if(controller.getSnapshot().status!=='idle')void controller.load()}
     const off=[ctx.remote.$on('plugin-manager/changed',refresh),ctx.remote.$on('plugin-manager/install-log',(chunk:any) => controller.appendLog(chunk)),ctx.remote.$on('plugin-manager/install-state',(progress:any) => controller.installProgress(progress)),ctx.on('connection/reset',refresh)]
