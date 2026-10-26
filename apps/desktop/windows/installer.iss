@@ -25,10 +25,10 @@ UninstallDisplayIcon={app}\YouDub.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-CloseApplications=yes
+; The user exits YouDub before upgrading. Restart Manager can close any process
+; holding an installation file, including the process supervising the installer.
+CloseApplications=no
 RestartApplications=no
-; Upgrade only closes this product; never the upstream Harness executable.
-CloseApplicationsFilter=YouDub.exe
 
 [Languages]
 Name: "chinesesimplified"; MessagesFile: "{#RepoRoot}\apps\desktop\windows\ChineseSimplified.isl"
