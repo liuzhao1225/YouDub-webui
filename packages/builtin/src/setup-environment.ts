@@ -4,6 +4,7 @@ import { delimiter, dirname, join } from 'node:path'
 import type { Context } from 'cordis'
 import { DownloadClient, fileSize, sourceName, type DownloadFile } from './setup-download.js'
 import runtimeManifest from './setup-runtime.json' with { type: 'json' }
+import { ffmpegDirectory } from './media-paths.js'
 import { dependencyGroups, acceleratedGroups, type DependencyGroup } from './runtime-resources.js'
 export { dependencyGroups, type DependencyGroup } from './runtime-resources.js'
 
@@ -211,19 +212,10 @@ export class EnvironmentSetup {
       await this.run('git', ['submodule', 'update', '--init', '--recursive', 'submodule/demucs'])
     }
   }
-  private async mediaDirectory() {
-    const directory = join(this.config.root, 'runtime', 'ffmpeg')
-    if (process.platform !== 'win32') return directory
-    for (const asset of runtimeManifest.ffmpeg['win32-x64']) {
-      const bin = join(directory, asset.directory, 'bin')
-      if (await fileSize(join(bin, 'ffmpeg.exe'))) return bin
-    }
-    return join(directory, runtimeManifest.ffmpeg['win32-x64'][0]!.directory, 'bin')
-  }
   private async media() {
     const directory = join(this.config.root, 'runtime', 'ffmpeg')
     const windows = process.platform === 'win32'
-    let binDirectory = await this.mediaDirectory()
+    let binDirectory = ffmpegDirectory(this.config.root)
     const paths: Record<string, string> = {}
     for (const name of ['ffmpeg', 'ffprobe']) {
       const envKey = name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
@@ -287,7 +279,7 @@ export class EnvironmentSetup {
   }
   private async restoreManagedPaths() {
     const windows = process.platform === 'win32'
-    const directory = await this.mediaDirectory()
+    const directory = ffmpegDirectory(this.config.root)
     const directories: string[] = []
     for (const [name, key] of [['ffmpeg', 'FFMPEG_PATH'], ['ffprobe', 'FFPROBE_PATH']] as const) {
       const path = join(directory, name + (windows ? '.exe' : ''))
