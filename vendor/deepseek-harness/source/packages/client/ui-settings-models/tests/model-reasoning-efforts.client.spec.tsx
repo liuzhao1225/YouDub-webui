@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { DeepSeekModelDraft } from '../src/client/DeepSeekModelsEditor.tsx'
-import { validateDeepSeekModels } from '../src/client/DeepSeekModelsEditor.tsx'
+import type { ModelDraft } from '../src/client/model-drafts.ts'
+import { validateModels } from '../src/client/model-drafts.ts'
 import { ModelListEditor } from '../src/client/ModelListEditor.tsx'
 import { ModelReasoningEfforts, validateReasoningEfforts } from '../src/client/ModelReasoningEfforts.tsx'
 import type { ModelsOperations } from '../src/client/operations.ts'
@@ -18,8 +18,8 @@ const DEFAULTS = { off: null, low: 'low', medium: 'medium', high: 'high' }
 const LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']
 
 /** Render the controlled group over local state, reporting every write. */
-function renderGroup(initial: DeepSeekModelDraft, options: { disabled?: boolean; levels?: readonly string[] } = {}) {
-  const writes: DeepSeekModelDraft[] = []
+function renderGroup(initial: ModelDraft, options: { disabled?: boolean; levels?: readonly string[] } = {}) {
+  const writes: ModelDraft[] = []
   function Harness() {
     const [model, setModel] = useState(initial)
     return (
@@ -234,7 +234,7 @@ describe('reasoning-level validation', () => {
   })
 
   it('stays out of the shared model checker that DeepSeek and catalog rows use', () => {
-    expect(validateDeepSeekModels([{ id: 'chat', reasoningEfforts: { off: null } }])).toBeUndefined()
+    expect(validateModels([{ id: 'chat', reasoningEfforts: { off: null } }])).toBeUndefined()
   })
 })
 
@@ -247,8 +247,8 @@ describe('reasoning levels in the model list', () => {
   }
 
   /** Render the list over local state, reporting every write. */
-  function renderList(initial: DeepSeekModelDraft[]) {
-    const writes: DeepSeekModelDraft[][] = []
+  function renderList(initial: ModelDraft[]) {
+    const writes: ModelDraft[][] = []
     function Harness() {
       const [models, setModels] = useState(initial)
       return (

@@ -5,7 +5,7 @@ import { responseBody } from '../../../web/src/runtime/http'
 import { StudioDraftStore } from '../../../web/src/runtime/studio-draft'
 const Features = createContext<any>(null)
 export const FeatureProvider = Features.Provider
-export function useFeatures() { const value = useContext(Features); if (!value) throw new Error('Harness feature bindings are unavailable'); return value }
+export function useFeatures() { const value = useContext(Features); if (!value) throw new Error('YouDub feature bindings are unavailable'); return value }
 export const domainSlots = ['config.editors','task.detail.panels','task.detail.actions','workflow.node.editors','workflow.node.details','settings.sections']
 export function createFeatures(ctx:any, navigate:(path:string) => void, blockNavigation:any) {
   const mutations = new Set<() => void>(), draftStore = new StudioDraftStore()

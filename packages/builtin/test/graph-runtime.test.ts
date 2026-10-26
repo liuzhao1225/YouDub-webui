@@ -7,12 +7,10 @@ import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { AppError, type GraphWorkflowDefinition, type OperationProvider, type WorkflowDocument, type TaskView, type ReviewCommand, type StepState, type Invocation, type InvocationContext } from '@youdub/sdk'
-import Processes from '../src/process.js'
+import { Processes, Settings } from './helpers/native-services.js'
 import Store from '../src/store.js'
 import Files from '../src/files.js'
 import Catalog from '../src/catalog.js'
-import Secrets from '../src/secrets.js'
-import Settings from '../src/settings.js'
 import Tasks from '../src/tasks.js'
 
 function graph(gate?: string): WorkflowDocument {
@@ -34,7 +32,7 @@ async function setup(t: any) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-graph-')), ctx = new Context(), fibers: Fiber[] = []
   fibers.push(await ctx.plugin(Processes), await ctx.plugin(Catalog), await ctx.plugin(Files, { root }))
   fibers.push(await ctx.plugin(Store, { root, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') }))
-  fibers.push(await ctx.plugin(Secrets), await ctx.plugin(Settings))
+  fibers.push(await ctx.plugin(Settings))
   let taskFiber = await ctx.plugin(Tasks, { pollMs: 5 })
   t.after(async () => {
     try { await ctx.parallel('app/stopping') }

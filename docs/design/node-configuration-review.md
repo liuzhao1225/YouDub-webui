@@ -72,7 +72,7 @@ provider 的 `available/unavailableReason` 只表示当前执行就绪。远端�
 | 准备媒体 `prepare` | `video` → `sourceAudio, mediaInfo` | 无业务配置 | 时长、画面、音频轨等来自媒体探测 | 无快捷字段；无语言或模型选项 |
 | 分离人声 `separate` | `sourceAudio` → `vocals, background` | 模型/设备在 provider 绑定 | 输入音频身份与分离产物 | 无语言快捷字段；保留背景音是 mix 的选择 |
 | 语音识别 `transcribe` | `audio, mediaInfo` → `transcript, raw?` | `sourceLanguage=auto/en/zh/ja`；高级 initialPrompt；模型/设备 | 结果写入真实 `detected_language`、片段与时间轴 | 快捷：原文语言；模型能力限制识别输入，`auto` 是识别策略，不作为最终语言 |
-| 翻译 `translate` | `transcript` → `translation` | `targetLanguage`；高级 maxCompletionTokens；模型/连接绑定 | 源语言从 transcript 读取，输出记录源/目标语言 | 快捷：目标语言；移除重复源语言输入；最大输出 token 至少 65,535 |
+| 翻译 `translate` | `transcript` → `translation` | `targetLanguage`；模型/连接绑定 | 源语言从 transcript 读取，输出记录源/目标语言 | 快捷：目标语言；移除重复源语言输入；输出参数沿用 Harness 模型设置 |
 | 准备参考音频 `reference` | `transcript, audio` → `references` | 无业务配置 | 原片段文本、说话人、时间位置与音频 | 无快捷字段；参考音频必须与对应 transcript 同源 |
 | 生成配音 `synthesize` | `transcript, translation, references?` → `speechAudio` | `voice`；模型/设备绑定 | 目标语言从 translation，原文/参考信息从 transcript/references | 移除“配音目标”快捷项；仅在确有可选声音时显示声音选择；原声克隆需要 references |
 | 混音 `mix` | `transcript, speechAudio, mediaInfo, background?` → `finalAudio, dubbedTimeline, adjustedSpeech` | `keepBackground` | 时间关系、音频身份来自连接数据 | 快捷：背景音；启用时必须连接背景音，缺输入不能静默关闭 |
@@ -172,7 +172,7 @@ flowchart LR
 补充验收用例：
 
 - multilingual Whisper 选择中文；英文版 Whisper 选择中文明确被限制；模型未下载时保留选择并说明资源缺失。
-- 未配置 OpenAI 连接时目标中文仍是合法选项；配置真实服务后测试使用至少 65,535 最大输出 token，不兼容时保留原错误。
+- 未配置 OpenAI 连接时目标中文仍是合法选项；配置真实服务后通过 Harness 调用，核对模型设置生效及失败原因保留。
 - catalog 返回空列表、缺能力字段、明确空能力列表、请求失败分别覆盖；未知与不支持不可混为一种状态。
 - importSubtitles 拒绝 auto；译文片段与原文不匹配时停止；实际译文语言与所选模型不兼容时定位下游节点。
 - 背景音开启但未接 background、官方克隆模式缺 references、导出音频与时间轴不成对，均保留具体端口错误；官方 TTS 不暴露 preset，日文进入当前 Qwen align 明确报不支持。

@@ -49,6 +49,8 @@ def main(argv: list[str] | None = None) -> int:
     # VoxCPM's tokenizer loader also stays offline when resolving optional files.
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    from backend.app.config import configure_windows_ffmpeg_dll_directory
+    configure_windows_ffmpeg_dll_directory()
     try:
         import numpy as np
         import soundfile as sf

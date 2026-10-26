@@ -22,11 +22,13 @@ node apps/harness/test/package-smoke.mjs dist/win-unpacked dist/package-smoke-wi
 npm run package:desktop -- --installers-only
 ```
 
-验证证据包含首启截图与 JSON 结果。PR 的原有必需检查同时覆盖这两种平台的候选包，任一打包或启动失败都会阻止合并。
+验证证据包含首启截图与 JSON 结果。手动运行「YouDub Desktop 源码开发检查」并启用 `package_desktop` 后，双平台检查同时验证候选包；任一打包或启动失败都会阻止该次检查通过。macOS 开发候选提供 ad-hoc 签名 App 压缩包，正式签名与公证 DMG 由发行流程生成。
 
 ## 检查范围
 
-每次 PR 与 main 提交保留双平台构建、桌面核心行为、产品运行依赖、YouDub 业务与界面测试，以及真实安装包首启、Python worker 和 Windows 安装/卸载验证。
+PR 与 main 的 push 不自动构建。合并前将 PR 从 Draft 手动标记为 Ready for review，触发双平台源码必需检查；已是 Ready 的 PR 先转回 Draft，再标记 Ready。该入口不打包。GitHub [不将 workflow_dispatch 的结果计入 PR 必需检查](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated)。
+
+独立验证与打包使用手动工作流入口。启用打包时增加真实安装包首启、Python worker 和 Windows 安装/卸载验证，包括已发布 v0.0.9 EXE 安装后由候选包覆盖的检查。旧安装器下载后校验固定 SHA-256，不启动旧应用。
 
 源码检查验证保留的桌面、UI、Host 与业务合同；不执行上游发布、文档、全仓规则或每文件 100% 覆盖率门禁。tag 的来源须已合入 main；发行阶段复用 main 已验收的同提交候选包。
 

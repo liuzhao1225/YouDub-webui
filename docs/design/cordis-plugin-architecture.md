@@ -2,6 +2,8 @@
 
 > 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
 
+> 2026-10-26：当前翻译输出参数沿用 [Harness 调用规则](../../apps/harness/docs/BACKEND-DEVELOPMENT.md#python-与模型调用)，已移除 YouDub 固定输出下限。下文的 65,535 约束属于历史设计，原始请求和响应保持不变。
+
 2026-10-09 · 已实施，本地集成验收进行中 · 分支 `codex/plugin`。代码基线为 `codex/mvp-mainline` 的 `e0dcb58dbbbb68ed0d0f92c3810d3e3dbe8a017a`。
 
 本方案将 Cordis 作为服务端和浏览器端的插件底座。任务、存储、凭据、进程执行、模型、处理流程、认证、API 和产品页面全部通过插件装配。官方功能与外部插件使用同一套公开契约。MVP 保留单机、单活跃任务、现有三种输出和三页界面，减少实现数量，同时建立完整的替换边界。

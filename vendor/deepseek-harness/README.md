@@ -4,7 +4,7 @@
 
 这里只维护 YouDub 使用的源码、共享组件、构建工具和相关测试。完整上游仓库、逐文件上游快照和差异清单不随产品同步；本地生成目录和迁移截图不进入 Git。变更历史由 Git 记录。
 
-当前保留 80 个源码包：72 个链接到桌面运行项目；另有 6 个共享前端包直接编入 Web/业务 bundle、1 个桌面源码包提供窗口与 preload、1 个 Typert 生成器负责构建。准确包表与使用方式见 [保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)。
+当前保留 70 个源码包：62 个链接到桌面运行项目；另有 6 个共享前端包直接编入 Web/业务 bundle、1 个桌面源码包提供窗口与 preload、1 个 Typert 生成器负责构建。准确包表与使用方式见 [保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)。
 
 构建：从仓库根运行 `npm run build:framework`。源码复制到忽略的 `.cache/harness/source-build`，依赖安装和产物生成均在该目录。构建收据只记录当前输入，防止运行陈旧产物，不再要求保存全部上游原件或更新重复的文件哈希账本。
 

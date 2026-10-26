@@ -1,4 +1,4 @@
-YouDub is unavailable
+YouDub could not start
 The application could not start or stopped unexpectedly.
 Desktop Host failed
 Plugin initialization failed

@@ -10,7 +10,7 @@ export async function readDefaultsMigration(store: StoreService): Promise<Defaul
   return raw[namespace]?.defaultsMigration ?? null
 }
 const optionFields: Record<string, string[]> = {
-  recognize: ['sourceLanguage', 'initialPrompt'], translate: ['sourceLanguage', 'targetLanguage', 'maxCompletionTokens'],
+  recognize: ['sourceLanguage', 'initialPrompt'], translate: ['sourceLanguage', 'targetLanguage'],
   synthesize: ['targetLanguage', 'voice'], mix: ['keepBackground'], align: ['targetLanguage'],
   export: ['sourceLanguage', 'targetLanguage', 'renderSubtitles'],
 }

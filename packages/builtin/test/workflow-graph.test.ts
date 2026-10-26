@@ -38,7 +38,8 @@ test('independent templates compile without mutating graph and only freeze selec
     assert.deepEqual(item.document, original)
     assert.equal(result.plan.config.graph, true)
     assert.ok(result.plan.steps.every(step => step.bindingKey === step.id))
-    assert.equal(result.plan.bindings.translate.options.maxCompletionTokens, 65535)
+    assert.equal(Object.hasOwn(item.document.nodes.find(node => node.id === 'translate')!.config, 'maxCompletionTokens'), false)
+    assert.equal(Object.hasOwn(result.plan.bindings.translate.options, 'maxCompletionTokens'), false)
     assert.ok(result.plan.steps.find(step => step.id === 'translate')!.input.transcript.from === 'step')
     return result.plan
   }))
@@ -53,6 +54,21 @@ test('independent templates compile without mutating graph and only freeze selec
   assert.equal(reviewedPlan.steps.find(step => step.id === 'recognize')?.autoContinue, false)
   assert.equal(reviewedPlan.steps.find(step => step.id === 'translate')?.autoContinue, false)
   assert.equal(plans[0].steps.find(step => step.id === 'recognize')?.autoContinue, true)
+})
+
+test('saved translation token limits are removed from compiled copies without changing the original workflow', async t => {
+  const { subtitles, compile } = await setup(t)
+  assert.equal(Object.hasOwn(operations.translate.node!.configSchema.properties, 'maxCompletionTokens'), false)
+  assert.equal(Object.hasOwn(operations.translate.node!.defaults!, 'maxCompletionTokens'), false)
+  for (const maxCompletionTokens of [2048, 65535, 131072]) {
+    const saved = structuredClone(subtitles)
+    saved.nodes.find(node => node.id === 'translate')!.config.maxCompletionTokens = maxCompletionTokens
+    const original = structuredClone(saved)
+    const result = await compile(saved)
+    assert.deepEqual(saved, original)
+    assert.equal(Object.hasOwn(result.graphSnapshot.nodes.find(node => node.id === 'translate')!.config, 'maxCompletionTokens'), false)
+    assert.equal(Object.hasOwn(result.plan.bindings.translate.options, 'maxCompletionTokens'), false)
+  }
 })
 
 test('automatic devices follow each model capability and freeze into the task snapshot', async t => {
@@ -99,14 +115,14 @@ test('auto is resolved at submission, while explicit devices remain pinned or fa
   assert.deepEqual(Graph.inspectGraph(document, ctx.catalog, {}, false).diagnostics, [])
 })
 
-test('new templates use a configured model provider and reject a model with insufficient output capacity', async t => {
+test('new templates use a configured model provider and retain model availability errors', async t => {
   const { ctx, compile } = await setup(t)
   const provider = {
     id: 'llm.custom', label: 'Custom gateway', pluginId: 'youdub.models', pluginVersion: '1', integrity: 'sha256:models',
     operations: [operations.translate], capability: 'translation', execution: 'remote' as const, available: true,
     models: [
-      { id: 'small', devices: ['remote'], available: false, unavailableReason: 'Maximum output is below 65535.', source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'] },
-      { id: 'translation-large', devices: ['remote'], available: true, source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'] },
+      { id: 'disabled', devices: ['remote'], available: false, unavailableReason: 'Model is disabled.', source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'] },
+      { id: 'translation-model', devices: ['remote'], available: true, source_languages: ['en', 'ja'], target_languages: ['zh', 'ja'] },
     ],
   }
   const plugin = await ctx.plugin({ inject: ['catalog'], apply(scope) {
@@ -118,11 +134,11 @@ test('new templates use a configured model provider and reject a model with insu
   t.after(() => plugin.dispose())
   const document = workflowTemplates(ctx.catalog, {})[0].document
   const node = document.nodes.find(node => node.id === 'translate')!
-  assert.deepEqual(node.provider, { id: 'llm.custom', model: 'translation-large', device: 'remote' })
+  assert.deepEqual(node.provider, { id: 'llm.custom', model: 'translation-model', device: 'remote' })
   const result = await compile(document)
   assert.equal(result.plan.bindings.translate.providerId, provider.id)
-  node.provider.model = 'small'
-  assert.ok(Graph.inspectGraph(document, ctx.catalog).diagnostics.some(item => item.nodeId === 'translate' && item.message.includes('65535')))
+  node.provider.model = 'disabled'
+  assert.ok(Graph.inspectGraph(document, ctx.catalog).diagnostics.some(item => item.nodeId === 'translate' && item.message === 'Model is disabled.'))
   await assert.rejects(compile(document))
 })
 

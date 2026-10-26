@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { IconPlusOutlineRegular, IconTrashOutlineRegular, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { DeepSeekModelDraft } from './DeepSeekModelsEditor.tsx'
-import { modelDrafts } from './DeepSeekModelsEditor.tsx'
+import type { ModelDraft } from './model-drafts.ts'
+import { modelDrafts } from './model-drafts.ts'
 import type { ModelsKey } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
@@ -36,7 +36,7 @@ function acceptedValue(level: string, wire: unknown): boolean {
  * @returns the entries; empty for a valueless field, which pi-ai refuses, and
  * `undefined` when the field is absent or `false`.
  */
-function readEfforts(model: DeepSeekModelDraft): Entries | undefined {
+function readEfforts(model: ModelDraft): Entries | undefined {
   const value = model['reasoningEfforts']
   if (value === null) return []
   if (typeof value !== 'object' || Array.isArray(value)) return undefined
@@ -49,7 +49,7 @@ function readEfforts(model: DeepSeekModelDraft): Entries | undefined {
  * @param entries - the levels to write in row order, or `undefined` to remove the field.
  * @returns the replacement row.
  */
-function withEfforts(model: DeepSeekModelDraft, entries: Entries | undefined): DeepSeekModelDraft {
+function withEfforts(model: ModelDraft, entries: Entries | undefined): ModelDraft {
   const next = { ...model }
   if (entries === undefined) {
     // Absent is how a hand-declared model says it does not reason.
@@ -87,7 +87,7 @@ export function validateReasoningEfforts(value: unknown): ReasoningEffortsFailur
 /** Props of {@link ModelReasoningEfforts}. */
 interface ModelReasoningEffortsProps {
   /** Effective model row, including fields outside the curated editor. */
-  model: DeepSeekModelDraft
+  model: ModelDraft
   /** Levels the adapter's schema accepts as `reasoningEfforts` keys, in escalation order. */
   levels: readonly string[]
   /** One-based row position for accessible names. */
@@ -97,7 +97,7 @@ interface ModelReasoningEffortsProps {
   /** Section copy. */
   t: (key: ModelsKey) => string
   /** Replace this row, preserving unrelated configuration. */
-  onChange: (model: DeepSeekModelDraft) => void
+  onChange: (model: ModelDraft) => void
 }
 
 /**

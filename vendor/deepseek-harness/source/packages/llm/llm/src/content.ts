@@ -4,7 +4,7 @@ import type { ContentBlock, ImageBlock, LlmImageRequestBudget, ToolSchema, ToolU
 import type { RequestMessage } from './types.ts'
 import type { Message } from './message.ts'
 import type {
-  AttachmentStore, FileAttachmentRef, ImageAttachmentRef, ImageMediaType, RequestImageAttachment,
+  FileAttachmentRef, ImageAttachmentRef, ImageMediaType, RequestImageAttachment,
 } from '@deepseek-ai/dsh-attachment'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 
@@ -20,27 +20,6 @@ export interface ImageAttachmentAccess {
  * @returns a read-only execution-world path, or undefined when unavailable.
  */
 export type ImageAttachmentAccessResolver = (ref: ImageAttachmentRef) => ImageAttachmentAccess | undefined
-
-/**
- * Bridge one attachment provider's host object location into the mounted
- * tool execution world. The consumer supplies the current filesystem
- * provider's mapping without making attachment or LLM definitions depend on it.
- * @param attachments - provider that owns the normalized attachment object.
- * @param mapHostPath - map one absolute host path into the current tool execution world.
- * @param ref - durable normalized attachment reference.
- * @returns a read-only execution-world path, or undefined when either provider exposes no mapping.
- * @throws an attachment error when the durable reference is invalid.
- */
-export function resolveImageAttachmentAccess(
-  attachments: AttachmentStore,
-  mapHostPath: (hostPath: string) => string | undefined,
-  ref: ImageAttachmentRef,
-): ImageAttachmentAccess | undefined {
-  const hostPath = attachments.imageHostPath(ref)
-  if (hostPath === undefined) return undefined
-  const readonlyPath = mapHostPath(hostPath)
-  return readonlyPath === undefined ? undefined : { readonlyPath }
-}
 
 function quoted(value: string): string {
   return JSON.stringify(value)

@@ -1,5 +1,5 @@
-YouDub is unavailable
+YouDub could not start
 The application could not start or stopped unexpectedly.
-YouDub could not start because its local service address is already in use. Close the process using that address, then restart YouDub.
+The local service port is already in use. Close the process using that port, then restart YouDub.
 Exit
 Restart

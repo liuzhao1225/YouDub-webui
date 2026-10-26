@@ -26,7 +26,7 @@ Windows AMD ROCm 7.2.1 专用依赖暂无已核实的阿里或 ModelScope 镜像
 
 应用与数据分开保存。替换 `/Applications/YouDub.app` 会保留 `~/Library/Application Support/YouDub`。v0.0.8 的默认 Harness profile 位于该目录的 `harness/profiles/desktop`，默认业务目录为 `harness/youdub`；首启可另选数据目录。旧版本数据保留原位，供应商与凭据改由 Harness 设置管理，需要重新确认配置。升级前退出应用并保留原数据目录。
 
-首次安装会准备 Python 和基础依赖，FFmpeg、推理依赖与模型按工作流准备；已有安装可能需要更新配套依赖。翻译服务需配置兼容接口、模型和密钥，并支持至少 65535 token 的最大输出参数。正式安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-<版本号>-macOS-arm64.dmg.sha256` 核验。
+首次安装会准备 Python 和基础依赖，FFmpeg、推理依赖与模型按工作流准备；已有安装可能需要更新配套依赖。翻译服务通过 Harness 模型设置配置接口、模型和密钥，输出参数沿用 Harness 的调用规则。正式安装包已签名、公证，附带校验文件可用 `shasum -a 256 -c YouDub-<版本号>-macOS-arm64.dmg.sha256` 核验。
 
 ## Windows 桌面版
 

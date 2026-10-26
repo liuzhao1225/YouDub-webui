@@ -1,6 +1,6 @@
 # Host、工作流与扩展开发
 
-YouDub Host 插件运行在官方 Harness Host 内。官方 Loader、Connection、Settings、Credentials、LLM、Subprocess、Jobs 和 PluginManager 管理通用能力；原 YouDub 任务、图调度、存储与媒体代码作为领域服务被装配进来。
+YouDub Host 插件装配任务、工作流、存储、资源与媒体服务。共用 Loader、Connection、Settings、Credentials、LLM、Subprocess、Jobs 和 PluginManager 提供插件生命周期与运行能力。
 
 ## Host 初始化与服务隔离
 
@@ -16,6 +16,8 @@ export const inject = [
 `apply` 创建独立领域 context，将 `catalog`、`store`、`files`、`tasks`、`settings` 五个名字隔离到 YouDub 的标签中。Host 根 context 的 `settings` 仍指官方配置服务；领域 context 的 `settings` 负责 YouDub 偏好。两者通过适配器传入的 `forms` 关联，避免同名服务互相替换。
 
 首先注册 worker、传输端点、示例和环境准备接口。基础环境就绪后，`activateDomain` 装配原 Store/Files、媒体提供商、LLM 目录、图工作流、Tasks、Resources 与业务 API。完整首启资源验证通过后才启动任务队列。[首启状态实现](../src/backend/setup.mjs)要求 Whisper、VoxCPM2、Demucs、Qwen Aligner 四项模型及其运行依赖全部 ready；翻译服务配置随后由前端官方模型组件承载。
+
+模型翻译统一经过 `backend/llm.mjs` 与框架 LLM；Python 只执行本地媒体操作和资源探测。偏好与密钥分别由产品 Settings 适配器和框架 Credentials 保存。旧 Python 翻译、密钥库、连接测试，以及 builtin 的另一套 Settings/Secrets/Processes 已删除。SQLite bridge 保留历史任务、默认配置迁移和现用的存储接口。
 
 ## 常见修改位置
 
@@ -80,7 +82,7 @@ export const inject = [
 
 翻译使用官方模型表单保存配置，`registerModels` 将官方 LLM 提供商映射为 `llm.<provider>` 领域提供商。旧模板中的 `openai` ID 保留为不可执行占位，供用户选定已配置模型后重新绑定。
 
-[`translateWithHarness`](../src/backend/llm.mjs) 在请求前校验输出上限至少为 `65,535`，检查模型声明的容量、API 协议和上下文余量，再调用 `llm.prepareCall`。上限不满足或被修改时停止调用。翻译分批保持段落 ID，保存原始请求、流事件和响应到任务工作目录的 `translation_raw`；用户订正另行保存。新增 LLM 路径需要保持这些请求约束与证据规则。
+[`translateWithHarness`](../src/backend/llm.mjs) 调用 `llm.prepareCall({ provider, model }, signal)`，再使用返回的配置与 `prepared.stream`。输出参数、协议和模型容量沿用 Harness 模型设置与适配器规则；YouDub 不再指定固定输出下限，也不使用旧节点的 `maxCompletionTokens` 覆盖请求。模型目录采用 `ctx.llm.listModels` 返回的候选与 Credentials 配置状态。翻译分批保持段落 ID，保存原始请求、流事件和响应到任务工作目录的 `translation_raw`；用户订正另行保存。供应商拒绝或响应不完整时保留原始失败，历史请求与响应保持不变。
 
 API 密钥、提供商 URL 和模型选择通过 YouDub 的官方模型设置页面配置和测试。不要把真实凭据写入插件源码、模板、测试夹具或验证报告。
 

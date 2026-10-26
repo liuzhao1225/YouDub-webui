@@ -2,6 +2,8 @@ import { Service } from '@deepseek-ai/cordis';
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../../../packages/sdk/src/index.ts';
 import { StringDecoder } from 'node:string_decoder';
+import { delimiter, join } from 'node:path';
+import { ffmpegDirectory } from '../../../../packages/builtin/src/media-paths.ts';
 import { runProcess, runWorker } from '../process.mjs';
 const fail = (code, message, status = 503, details) => new AppError(code, message, status, details);
 
@@ -10,15 +12,24 @@ const fail = (code, message, status = 503, details) => new AppError(code, messag
 export default class YouDubWorker extends Service {
   static inject = ['subprocess'];
   constructor(ctx, config) { super(ctx, 'youdubWorker'); this.config = config; }
-  request(request) { return { ...request, env: { ...this.config.env, ...request.env } }; }
+  request(request) {
+    const env = { ...this.config.env };
+    // Setup can install a different archive after this service has started.
+    // Resolve the installed directory for each new process, including probes.
+    if (env.YOUDUB_DESKTOP_DATA_DIR) {
+      const directory = ffmpegDirectory(env.YOUDUB_DESKTOP_DATA_DIR);
+      env.FFMPEG_PATH = join(directory, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+      env.FFPROBE_PATH = join(directory, process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe');
+      env.PATH = [directory, env.PATH ?? process.env.PATH ?? ''].join(delimiter);
+    }
+    return { ...request, env: { ...env, ...request.env } };
+  }
   run(request) { return runProcess(this.ctx.subprocess, this.request(request)); }
   worker(request, invocation, context) { return runWorker(this.ctx.subprocess, this.request(request), invocation, context); }
   async rpc(request) {
     const handle = this.ctx.subprocess.spawn({ argv: [request.command, ...request.args], cwd: request.cwd,
-      env: { ...this.config.env, ...request.env, PYTHONUNBUFFERED: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
+      env: { ...this.request(request).env, PYTHONUNBUFFERED: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8' },
       signal: request.signal, graceMs: 5000, stdio: { stdin: 'pipe', stdout: 'pipe', stderr: { maxBytes: 1024 * 1024 } } });
-    const storageBridge = request.args.includes('backend.workers.bridge');
-    const storageMethods = new Set(['settings.raw', 'settings.validate_defaults', 'runtime.info', 'runtime.probe']);
     const pending = new Map(); let inputSeq = 0, outputSeq = 0, fatal, closing = false, closingPromise;
     const rejectAll = error => {
       fatal ??= error;
@@ -56,10 +67,13 @@ export default class YouDubWorker extends Service {
       finally { handle.terminate(); if (!await handle.waitForExit(AbortSignal.timeout(10000))) throw fail('CANCEL_TIMEOUT', 'Storage process range did not stop.'); }
     })();
     this.ctx.effect(() => close);
-    return { call(method, params = {}) {
-      if (storageBridge && (!(method.startsWith('store.') || storageMethods.has(method) || method === 'settings.write' && params.key === 'plugin:youdub.localize') || method === 'runtime.probe' && params.adapter === 'openai')) return Promise.reject(fail('HARNESS_SERVICES_REQUIRED', 'Authentication, credentials and model configuration belong to Harness services.', 409));
+    return { call: (method, params = {}) => {
       if (fatal) return Promise.reject(fatal);
       if (closing) return Promise.reject(fail('STORE_UNAVAILABLE', 'Storage bridge is closed.'));
+      if (method === 'runtime.probe' && request.args.includes('backend.workers.bridge')) {
+        const env = this.request(request).env;
+        params = { ...params, mediaEnvironment: { FFMPEG_PATH: env.FFMPEG_PATH, FFPROBE_PATH: env.FFPROBE_PATH, PATH: env.PATH } };
+      }
       const requestId = randomUUID();
       return new Promise((resolve, reject) => {
         pending.set(requestId, { resolve, reject, method });

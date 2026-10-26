@@ -318,15 +318,19 @@ def child_request(context):
 
 
 def test_child_loads_local_model_once_and_calls_generate_once_per_exact_text(context, monkeypatch):
+    from backend.app import config
+
     monkeypatch.setenv("HF_HUB_OFFLINE", "0")
     monkeypatch.setenv("TRANSFORMERS_OFFLINE", "0")
-    loaded, generated = [], []
+    loaded, generated, configured = [], [], []
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", lambda: configured.append(True))
 
     def generate(**kwargs):
         generated.append(kwargs)
         return np.full(4800, 0.25)
 
     def load(*args, **kwargs):
+        assert configured == [True]
         loaded.append((args, kwargs))
         return SimpleNamespace(tts_model=SimpleNamespace(sample_rate=48000), generate=generate)
 
@@ -341,6 +345,23 @@ def test_child_loads_local_model_once_and_calls_generate_once_per_exact_text(con
                           "normalize": False, "denoise": False, "retry_badcase": False} for clip in clips]
     assert all(sf.info(clip["output_path"]).samplerate == 48000 for clip in clips)
     assert all(sf.info(clip["output_path"]).frames == 4800 for clip in clips)
+
+
+def test_child_preserves_ffmpeg_dll_error_before_importing_model(context, monkeypatch):
+    from backend.app import config
+
+    original = RuntimeError("Failed to register the FFmpeg DLL directory: C:/YouDub/runtime/ffmpeg/bin")
+
+    def configure():
+        raise original
+
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", configure)
+    monkeypatch.setitem(sys.modules, "voxcpm", None)
+    clips, arguments = child_request(context)
+    with pytest.raises(RuntimeError) as result:
+        tts_process.main(arguments)
+    assert result.value is original
+    assert not any(Path(clip["output_path"]).exists() for clip in clips)
 
 
 @pytest.mark.parametrize("reference_text", [None, "", " \n", 12])

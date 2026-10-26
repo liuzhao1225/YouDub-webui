@@ -149,9 +149,6 @@
       "path": "./packages/credentials/credentials-local"
     },
     {
-      "path": "./packages/credentials/authorization"
-    },
-    {
       "path": "./packages/subprocess/subprocess"
     },
     {

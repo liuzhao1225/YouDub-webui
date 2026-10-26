@@ -1,12 +1,43 @@
 # Harness 保留范围
 
-更新：2026-10-24。来源见 [upstream.json](../../../vendor/deepseek-harness/upstream.json)。
+更新：2026-10-26。来源见 [upstream.json](../../../vendor/deepseek-harness/upstream.json)。
+
+## 按核心功能继续裁剪（2026-10-26）
+
+保留范围从 YouDub 的实际任务出发：媒体导入、识别与翻译、配音与对齐、工作流编排、人工审核、任务产物、资源准备和插件扩展。调用与源码映射见[应用架构](ARCHITECTURE.md#核心功能)。
+
+- 删除没有产品入口的授权登录服务及 LLM 登录桥接，源码包数 **70 → 69**。供应商 API key、现有凭据读取与刷新、DeepSeek 等模型配置继续保留。
+- 删除聊天流持久化、重放与压缩记录，以及没有调用的图片计价和截图坐标转发方法。实际翻译继续使用同一 LLM 服务与流装配器。
+- 删除旧 Python 翻译、系统密钥库、连接测试与设置写入实现；移除 OpenAI SDK、HTTPX/SOCKS 和 keyring 的直接安装声明。当前模型配置与翻译使用框架服务，历史任务与默认配置的读取迁移保留。
+- 删除旧 builtin Settings、Secrets、Processes 实现。图与任务测试接入现有产品服务，避免为测试保留第二套进程/配置实现。
+- 删除无调用的麦克风申请、设备信息与聊天文件路径桥接；删除已被 YouDub 打包流程替代的 tarball 安装与全文件 inventory 校验链。窗口、退出、更新检测、插件恢复和当前打包校验保留。
+- 删除旧 Base UI、Lucide 和 shadcn 依赖及独立前端配置；Web lock 净移除 294 个节点，没有引入新包或升级版本。实际 CSS 和图标构建使用的 Tailwind PostCSS、Sharp 保留。
+- 本次 Python 清理不改变保留提供商的执行行为；更新显式兼容记录，使清理前的任务执行指纹仍可继续使用。没有放宽未知实现的指纹检查。
+
+桌面产品只加载 YouDub 自身入口与运行目录，开发和验收不启动原 DeepSeek Harness 应用。内部包名、IPC/插件合同、已有数据路径及来源许可保留。
+
+验证：框架与产品构建、业务及页面类型、装配和中英日语言检查通过；Python/媒体 122 项、LLM 250 项、桌面 55 项、产品启动/模型/资源 34 项、业务工作流 74 项，共 **535 个唯一测试通过**。1 项 Windows 专用测试在 macOS 跳过。媒体检查初次遇到本机 Homebrew FFmpeg 缺失动态库，改用 YouDub 自带 FFmpeg 后仅重跑失败的 3 项并通过；测试装配的 Context 绑定修复后仅重跑受影响的两个文件。
+
+实际 Electron 首启安装页、明暗工作台、侧栏收放、任务库、工作流列表/画布、资源、插件与设置页面通过截图和交互核对，无页面运行错误。独立测试 profile 使用显式 UI 测试模式检查工作台，不调用外部模型；此轮未重新打包、安装或发布版本。截图和检查记录在本地 `output/core-function-prune/`，不提交 Git。
+
+## 产品残留清理（2026-10-26）
+
+- 删除无调用的 Office 引擎启动解析、旧 Windows 安装器验收脚本、Agent 共享目录助手和失效的 E2E 排除清单。
+- 更新功能保留 YouDub 的版本检测、提示和下载入口；移除无调用的应用内安装锁及其 Host IPC、旧安装文案，以及 `electron-updater` 和 4 个独占依赖条目。退出时的任务检查与优雅停止继续使用原实现。
+- 删除空的上游官方插件目录及安装目标分支；本地和第三方插件的安装、激活、配置、卸载继续使用现有插件管理器。
+- 删除已退出组合的 `llm-deepseek` 专用配置分支和重复编辑视图。DeepSeek 与其他供应商统一使用 `llm-pi-ai`；API 地址、模型目录、凭据、协议适配及共用的模型编辑函数继续保留。
+- 移除请求中强制设置 `deepseek-harness` User-Agent 的归因层；保留供应商 SDK 的默认请求行为和用户配置的请求头。
+- 清理用户界面与运行错误中的上游产品文案，删除运行时替换品牌名称的包装。框架包名、插件清单与 IPC 协议、已有数据路径和任务指纹继续保留，避免破坏插件与用户数据。许可证和来源记录继续保留。
+
+上一批主要删除包内死代码，当时源码包数为 70；上述后续裁剪减少至 69。包数与删除的代码量分别统计。
+
+验证：框架 Host/Client、Web 与产品桌面入口构建通过；业务与页面类型、装配和中英日语言检查通过。模型目录与请求、插件生命周期、桌面退出/更新、Web 鉴权和子进程的 545 项定向回归通过。本轮未制作或发布新安装包。
 
 ## 统计口径
 
-原始源码 203 个包，历次裁剪为 156 → 87 → 80 → **70 个**。本轮移除 10 个无实际调用的 Agent、会话及配套包，并清理保留包中的专用分支和依赖。
+原始源码 203 个包，历次裁剪为 156 → 87 → 80 → 70 → **69 个**。最近一轮删除无入口的授权登录包；其余删除集中在保留包内部。
 
-源码包数按 `vendor/deepseek-harness/source` 中的工作区 `package.json` 统计，不包含仓库根清单。原先“78 个”和上轮“72 个”统计的是开发运行项目链接的包，与源码包总数口径不同；本轮重新生成开发运行项目后为 **62 个运行包**（上轮 72 个）。余下 8 个源码包用于前端编译、桌面构建和类型生成。
+源码包数按 `vendor/deepseek-harness/source` 中的工作区 `package.json` 统计，不包含仓库根清单。原先“78 个”和上轮“72 个”统计的是开发运行项目链接的包，与源码包总数口径不同；当前重新生成的开发运行项目为 **61 个运行包**（前两轮分别为 72、62 个）。余下 8 个源码包用于前端编译、桌面构建和类型生成。
 
 依赖安装目录、构建缓存与本地验收证据不属于源码包。源码数量和安装包体积分别统计。
 
@@ -37,7 +68,7 @@
 - YouDub 中旧版模型服务、模型设置界面、独立静态服务器、旧插件加载器和旧页面外壳；生产入口直接复用当前 Harness 服务与组件。
 - 未使用的构建模式、重复的源码校验，以及每次测试前重复安装 Electron 的步骤。
 
-本轮移除的 10 个包：
+前轮移除的 10 个包：
 
 | 包 | 删除原因 |
 | --- | --- |
@@ -80,7 +111,6 @@
 | @deepseek-ai/dsh-app-boot | [packages/boot/app-boot](../../../vendor/deepseek-harness/source/packages/boot/app-boot/package.json) |
 | @deepseek-ai/dsh-atomic-write | [packages/util/atomic-write](../../../vendor/deepseek-harness/source/packages/util/atomic-write/package.json) |
 | @deepseek-ai/dsh-attachment | [packages/attachment/attachment](../../../vendor/deepseek-harness/source/packages/attachment/attachment/package.json) |
-| @deepseek-ai/dsh-authorization | [packages/credentials/authorization](../../../vendor/deepseek-harness/source/packages/credentials/authorization/package.json) |
 | @deepseek-ai/dsh-brand | [packages/util/brand](../../../vendor/deepseek-harness/source/packages/util/brand/package.json) |
 | @deepseek-ai/dsh-client-connection | [packages/client/connection](../../../vendor/deepseek-harness/source/packages/client/connection/package.json) |
 | @deepseek-ai/dsh-client-hmr | [packages/client/hmr](../../../vendor/deepseek-harness/source/packages/client/hmr/package.json) |

@@ -70,7 +70,6 @@ import { assertServiceable, Config, resolveProfiles } from './config.ts'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { discoverModels } from './discovery.ts'
 import type { StoredModelDiscoveryProfile } from './discovery.ts'
-import { registerPiAiFlows } from './login.ts'
 import { providerDefaultsOf } from './provider-data.ts'
 
 export { PiAiAdapter } from './adapter.ts'
@@ -211,7 +210,7 @@ export function apply(ctx: Context, config: Config): void {
 
   // One store and one ambient context for the whole plugin instance: both read
   // through `ctx` per call, so they stay correct across the collection rebuilds
-  // a configuration change causes, and a sign-in survives one.
+  // a configuration change causes.
   const auth = { credentials: credentialStoreFrom(ctx), authContext: authContextFrom(ctx) }
   const adapter = new PiAiAdapter({
     profiles,
@@ -225,12 +224,6 @@ export function apply(ctx: Context, config: Config): void {
       )
     },
   })
-  // Independent of the route set: signing in is what makes a route worth
-  // adding, so the flows are offered before any profile names their provider.
-  // Scoped to the authorization seam rather than injected outright, because a
-  // composition without it (headless, ACP) simply has no surface to sign in
-  // from, while everything else this plugin does still works.
-  ctx.inject(['authorization'], (authorized) => { registerPiAiFlows(authorized, auth) })
   // The full installed catalog is configurable from the moment the plugin
   // mounts — dormant or not — so configuration surfaces can offer every
   // pi-ai provider before any route exists. Hand-declared routes join it as

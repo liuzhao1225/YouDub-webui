@@ -80,12 +80,10 @@ export interface PackageRow {
 /** One bundle as the page shows it: the Host's bundle joined with the entries its rows run as. */
 export interface PackageView {
   readonly name: string
-  /** Official catalog identity is independent of installation and selection. */
+  /** Project-maintained optional bundle identity is independent of selection. */
   readonly official: boolean
   /** Readable package location, separately from the profile dependency declaration. */
   readonly availability: BundleInfo['availability']
-  /** Host-derived exact version offered for installation or an explicit update. */
-  readonly installTarget?: NonNullable<BundleInfo['installTarget']>
   readonly version?: string
   readonly description?: string
   /** Local package display text and metadata diagnostics supplied by the Host. */
@@ -110,10 +108,6 @@ export interface PackageView {
 /** The typed spec as the Host read it, on the installing, installed, and failed screens. */
 export type InstallSubject = Extract<PluginSpecInspection, { status: 'accepted' }> & {
   readonly spec: string
-  /** Present for a catalog install or update: desired selection after installation. */
-  readonly selection?: boolean
-  /** Save an exact dependency version through the generic installer. */
-  readonly saveExact?: boolean
 }
 
 /** The registry the person picked for an install: one the Host offers, or a typed URL. */
@@ -224,7 +218,7 @@ export interface InstallState {
   readonly runs: readonly InstallRun[]
   /** Whether the run's command and output are unfolded, including after reopening. */
   readonly detailsOpen: boolean
-  /** The bundle the finished run added; ordinary installs await enablement, catalog operations carry their selection. */
+  /** The bundle the finished run added, awaiting enablement. */
   readonly installed: string | null
   /** The version the finished run installed, when its manifest declares one; null otherwise. */
   readonly installedVersion: string | null
@@ -372,8 +366,6 @@ export interface PluginManagerFace {
   clearHighlight: () => void
   /** Put a bundle into, or take it out of, the profile's layer list. */
   setEnabled: (packageName: string, enabled: boolean) => void
-  /** Remove an installed package and install the host's catalog version, selected as the package was. */
-  update: (packageName: string) => void
   /** Ask before removing a package from the profile. */
   uninstall: (packageName: string) => void
   confirm: () => void
@@ -460,7 +452,6 @@ export function packageView(bundle: BundleInfo, plugins: readonly PluginInfo[]):
     name: bundle.name,
     official: bundle.official,
     availability: bundle.availability,
-    ...bundle.installTarget === undefined ? {} : { installTarget: bundle.installTarget },
     installed: bundle.installed,
     optional: bundle.optional,
     removable: bundle.removable,
@@ -496,7 +487,6 @@ function specAgain(install: InstallState): InstallState {
   const { open, spec, registries, registry, mirrorRecovery, confirmed } = install
   return {
     ...IDLE_INSTALL, open, spec, registries, registry,
-    ...install.subject?.selection === undefined ? {} : { subject: install.subject },
     ...mirrorRecovery === undefined ? {} : { mirrorRecovery }, ...confirmed === undefined ? {} : { confirmed },
   }
 }
@@ -669,35 +659,9 @@ export class PluginManagerController {
       enableInstalled: () => { void this.enableInstalled() },
       clearHighlight: () => { if (this.getSnapshot().highlight !== null) this.patch({ highlight: null }) },
       setEnabled: (packageName, enabled) => {
-        const pkg = this.getSnapshot().packages.find(pkg => pkg.name === packageName)
-        if (enabled && pkg?.availability === 'missing' && pkg.installTarget !== undefined) {
-          this.openCatalogInstall(pkg, pkg.installTarget, true)
-          return
-        }
         void this.run(packageName, { packageName, action: enabled ? 'enable' : 'disable' }, async () => {
           const result = await this.ctx.remote.pluginManager.setBundleEnabled(packageName, enabled)
           this.applied(result, packageName)
-        })
-      },
-      update: (packageName) => {
-        const pkg = this.getSnapshot().packages.find(pkg => pkg.name === packageName)
-        const target = pkg?.installTarget
-        if (pkg === undefined || target === undefined || pkg.availability === 'installation') return
-        if (!pkg.installed) {
-          this.openCatalogInstall(pkg, target, pkg.enabled)
-          return
-        }
-        // An installed package is removed before another version is installed. Without HMR a running bundle stays
-        // installed, and the installation over it waits for the restart.
-        void this.run(packageName, { packageName, action: 'uninstall' }, async () => {
-          const removed = await this.ctx.remote.pluginManager.removeBundle(packageName)
-          if (removed.ok && removed.value.error?.code === 'stop-profile') {
-            this.openCatalogInstall(pkg, target, pkg.enabled)
-            return
-          }
-          // A failed removal throws; without HMR a removal waits for the restart, and the installation follows it.
-          this.applied(removed, packageName)
-          this.openCatalogInstall(pkg, target, pkg.enabled)
         })
       },
       uninstall: (packageName) => {
@@ -916,29 +880,6 @@ export class PluginManagerController {
     return this.disposed || signal.aborted
   }
 
-  /** Reuse the install dialog with an exact catalog target and an explicit selection outcome. */
-  private openCatalogInstall(pkg: PackageView, target: NonNullable<BundleInfo['installTarget']>, enabled: boolean): void {
-    if (this.disposed) return
-    const { phase } = this.getSnapshot().install
-    if (phase === 'checking' || isInstallPending(phase)) {
-      this.patchInstall({ open: true })
-      return
-    }
-    this.abortInspect()
-    const registry = this.registryMemory.getSnapshot() ?? OFFICIAL_REGISTRY
-    const local = target.spec.startsWith('link:')
-    const subject: InstallSubject = {
-      status: 'accepted', kind: local ? 'path' : 'registry', name: pkg.name, version: target.version, bundle: true,
-      spec: target.spec, registry: registry.kind === 'custom' ? registry.url : registry.registry,
-      selection: enabled, ...local ? {} : { saveExact: true },
-    }
-    this.patch({ install: { ...IDLE_INSTALL, open: true, spec: subject.spec, registry, subject } })
-    const read: RegistryRead = { choice: registry }
-    this.registryRead = read
-    read.done = this.readRegistries(read).finally(() => { delete read.done })
-    void this.runInstall()
-  }
-
   /**
    * Check the typed spec, then install it. The Host reads what the spec
    * names first; a refused spec returns to the field with the reason, an
@@ -951,8 +892,7 @@ export class PluginManagerController {
     if (install.phase === 'checking' || isInstallPending(install.phase) || spec === '') return
     // A name the list already shows is refused at once, before the Host is asked.
     const listed = state.packages.find(pkg => pkg.name === spec)
-    const catalogSubject = install.subject?.selection === undefined || install.subject.spec !== spec ? undefined : install.subject
-    if (listed !== undefined && listed.availability !== 'missing' && catalogSubject === undefined) {
+    if (listed !== undefined && listed.availability !== 'missing') {
       this.patchInstall({ phase: 'idle', inputError: { problem: listed.availability === 'installation' ? 'shipped' : 'already-installed', reason: spec } })
       return
     }
@@ -966,7 +906,7 @@ export class PluginManagerController {
     const controller = new AbortController()
     this.inspectAbort = controller
     this.patchInstall({
-      phase: 'checking', inputError: null, subject: catalogSubject ?? null, runs: [], detailsOpen: false, attempts: null, registryOpen: false,
+      phase: 'checking', inputError: null, subject: null, runs: [], detailsOpen: false, attempts: null, registryOpen: false,
       installed: null, installedVersion: null, restartRequired: false, failure: null, approvedBuilds: [],
     })
     const read = this.registryRead
@@ -978,11 +918,6 @@ export class PluginManagerController {
     const selected = currentChoice.kind === 'custom' ? { ...currentChoice, url: currentChoice.url.trim() } : currentChoice
     const registry: Registry = selected.kind === 'custom' ? selected.url : selected.registry
     if (!this.transientRegistry) this.registryMemory.set(selected)
-    if (catalogSubject !== undefined) {
-      this.inspectAbort = undefined
-      await this.startInstall({ ...catalogSubject, registry })
-      return
-    }
     const inspected = await this.ctx.remote.pluginManager.inspect(spec, { registry }, controller.signal)
     if (this.gone(controller.signal)) return
     this.inspectAbort = undefined
@@ -1013,8 +948,7 @@ export class PluginManagerController {
     // the wire, and every such event reads again; those reads must not cancel
     // the run's settlement.
     const result = await this.ctx.remote.pluginManager.installBundle(spec, {
-      enabled: subject.selection ?? false, requestId, registry,
-      ...subject.saveExact === undefined ? {} : { saveExact: subject.saveExact },
+      enabled: false, requestId, registry,
       ...approvedBuilds === undefined ? {} : { approvedBuilds: [...approvedBuilds] },
     })
     if (this.disposed || this.request !== request) return
@@ -1075,11 +1009,6 @@ export class PluginManagerController {
         approvedBuilds: result.approvedBuilds ?? [],
         ...asked,
       })
-    }
-    const completed = this.getSnapshot().install
-    if (completed.phase === 'done' && completed.subject?.selection !== undefined && result.bundle !== undefined) {
-      this.applied({ ok: true, value: result }, result.bundle)
-      this.patch({ highlight: result.bundle })
     }
     const phase = this.getSnapshot().install.phase
     if (phase === 'done' || phase === 'failed') this.notifyHiddenInstall(phase)

@@ -9,14 +9,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@base-ui/react": "^1.4.1",
     "@deepseek-ai/schemastery": "3.18.1",
     "@tabler/icons-react": "3.49.0",
     "@xyflow/react": "^12.12.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "immer": "10.1.1",
-    "lucide-react": "^1.8.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.5.0",
@@ -34,7 +32,6 @@
     "eslint": "^9",
     "eslint-plugin-react-hooks": "7.1.1",
     "jsdom": "^29.1.1",
-    "shadcn": "4.3.1",
     "sharp": "0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5",

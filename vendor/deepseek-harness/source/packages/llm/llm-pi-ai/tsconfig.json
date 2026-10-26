@@ -33,9 +33,6 @@
       "path": "../../credentials/credentials"
     },
     {
-      "path": "../../credentials/authorization"
-    },
-    {
       "path": "../../util/http-proxy"
     },
     {

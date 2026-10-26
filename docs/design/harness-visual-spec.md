@@ -1,6 +1,6 @@
-# Harness × YouDub 视觉与组件规范 v2
+# YouDub 视觉与组件规范 v2
 
-2026-10-22 · 以仓库内 vendored Harness 源码为准。规范覆盖 Web 与 Harness 桌面承载的全部 YouDub 组件。
+2026-10-22 · 以仓库内 vendored Harness 源码为准。规范覆盖 YouDub Web 与桌面组件。
 
 ## 1. 来源与职责
 

@@ -188,37 +188,6 @@ export interface TokenUsage {
   reasoningTokens?: number
 }
 
-/**
- * Request price of one ordered image occurrence under one exact model route's
- * request projection. Every occurrence resolves to the pair the wire actually
- * carries: provider visual tokens for a retained image, plus the model-visible
- * text sent with or instead of it (request-preview handle, offload placeholder,
- * or text-only substitution). The caller prices `text` with its own text
- * estimator so provider pricing never fixes a text tokenization.
- */
-export interface LlmImageRequestPrice {
-  /** Provider visual tokens for the retained request image; 0 when only text represents this occurrence. */
-  visualTokens: number
-  /** Model-visible text sent for this occurrence, to be priced by the caller's text estimator. */
-  text: string
-}
-
-/**
- * Provider-side request-image pricing for one exact model route. Implemented
- * by adapters whose provider charges visual tokens; consumers (the token
- * meter) resolve it synchronously per measurement, so implementations must not
- * perform I/O.
- */
-export interface LlmImageRequestPricing {
-  /**
-   * Price every image occurrence of one request projection.
-   * @param images - surface image blocks in request order, one entry per occurrence; an `offloaded` block
-   *   is priced as its placeholder text.
-   * @returns one price per occurrence, aligned by index with `images`.
-   */
-  priceImages(images: readonly ImageBlock[]): readonly LlmImageRequestPrice[]
-}
-
 /** Display metadata for one registered provider route. */
 export interface LlmProviderInfo {
   /** Provider route key used by {@link GenerateOptions.provider}. */

@@ -5,6 +5,7 @@ import { chmod, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { DownloadClient } from '../packages/builtin/src/setup-download.js'
+import { ffmpegDirectory } from '../packages/builtin/src/media-paths.js'
 import manifest from '../packages/builtin/src/setup-runtime.json' with { type: 'json' }
 
 const platform = `${process.platform}-${process.arch}` as keyof typeof manifest.python
@@ -24,28 +25,38 @@ try {
   await run(python, ['-m', 'venv', join(root, 'venv')], { signal, windowsHide: true })
   const venv = join(root, 'venv', windows ? 'Scripts/python.exe' : 'bin/python')
   const version = await run(venv, ['-c', 'import sys, ssl, lzma, ensurepip; assert sys.version_info[:2] == (3,12); print(sys.version)'], { signal, windowsHide: true })
-  const media = join(root, 'media')
-  await mkdir(media, { recursive: true })
-  for (const file of manifest.ffmpeg[platform]) {
-    const path = join(media, file.path)
-    await client.download(file, path, signal, () => {})
-    if (windows) await run(venv, ['-c', 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2], filter="data")', path, media], { signal, windowsHide: true })
-    else await chmod(path, 0o700)
+  const sources = windows ? manifest.ffmpeg['win32-x64'].map(file => [file]) : [manifest.ffmpeg[platform]]
+  const verifiedMedia = []
+  for (const [index, files] of sources.entries()) {
+    const mediaRoot = windows ? join(root, `ffmpeg-source-${index + 1}`) : root
+    const media = join(mediaRoot, 'runtime', 'ffmpeg')
+    await mkdir(media, { recursive: true })
+    for (const file of files) {
+      const path = join(media, file.path)
+      await client.download(file, path, signal, () => {})
+      if (windows) {
+        const args = file.path.endsWith('.zip')
+          ? ['-m', 'zipfile', '-e', path, media]
+          : ['-c', 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2], filter="data")', path, media]
+        await run(venv, args, { signal, windowsHide: true })
+      } else await chmod(path, 0o700)
+    }
+    const bin = ffmpegDirectory(mediaRoot)
+    const ffmpeg = join(bin, windows ? 'ffmpeg.exe' : `ffmpeg-${platform}`)
+    const ffprobe = join(bin, windows ? 'ffprobe.exe' : `ffprobe-${platform}`)
+    const filters = await run(ffmpeg, ['-hide_banner', '-filters'], { signal, windowsHide: true })
+    assert.match(filters.stdout, /\bsubtitles\b/)
+    if (windows) assert.ok((await readdir(bin)).some(file => /^avcodec-\d+\.dll$/.test(file)))
+    const audio = join(mediaRoot, '声音.wav')
+    await run(ffmpeg, ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=duration=0.1', audio], { signal, windowsHide: true })
+    const probe = await run(ffprobe, ['-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'json', audio], { signal, windowsHide: true })
+    assert.equal(JSON.parse(probe.stdout).streams[0].codec_name, 'pcm_s16le')
+    verifiedMedia.push({ files: files.map(file => file.path), result: 'subtitles + audio encode/decode passed' })
   }
-  const bin = windows ? join(media, 'ffmpeg-7.1.5-win32-x64-gpl-shared/bin') : media
-  const ffmpeg = join(bin, windows ? 'ffmpeg.exe' : `ffmpeg-${platform}`)
-  const ffprobe = join(bin, windows ? 'ffprobe.exe' : `ffprobe-${platform}`)
-  const filters = await run(ffmpeg, ['-hide_banner', '-filters'], { signal, windowsHide: true })
-  assert.match(filters.stdout, /\bsubtitles\b/)
-  if (windows) assert.ok((await readdir(bin)).some(file => /^avcodec-\d+\.dll$/.test(file)))
-  const audio = join(root, '声音.wav')
-  await run(ffmpeg, ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=duration=0.1', audio], { signal, windowsHide: true })
-  const probe = await run(ffprobe, ['-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'json', audio], { signal, windowsHide: true })
-  assert.equal(JSON.parse(probe.stdout).streams[0].codec_name, 'pcm_s16le')
   await client.download(manifest.punkt, join(root, manifest.punkt.path), signal, () => {})
   await run(venv, ['-m', 'zipfile', '-e', join(root, manifest.punkt.path), join(root, 'nltk_data')], { signal, windowsHide: true })
   assert.equal((await readdir(join(root, 'nltk_data/punkt_tab/english'))).length, 4)
-  const result = { platform, python: version.stdout.trim(), ffmpeg: 'subtitles + audio encode/decode passed', proxy: 'unreachable proxy bypassed', resources: 'SHA-256 verified' }
+  const result = { platform, python: version.stdout.trim(), ffmpeg: verifiedMedia, proxy: 'unreachable proxy bypassed', resources: 'SHA-256 verified' }
   await writeFile(resolve('.cache/runtime-download-smoke/result.json'), JSON.stringify(result, null, 2) + '\n')
   console.log(result)
 } finally { await client.close() }

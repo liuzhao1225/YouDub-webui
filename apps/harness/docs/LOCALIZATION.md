@@ -1,6 +1,6 @@
 # 界面语言
 
-YouDub Harness 版在「设置 → 通用 → 语言」中选择界面语言，直接使用 Harness 的 LanguageRow、locale 和 configForms 服务。侧边栏不再放固定的三语言按钮。界面语言与识别、翻译、配音的目标语言分别配置。
+YouDub 在「设置 → 通用 → 语言」中选择界面语言，直接使用框架的 LanguageRow、locale 和 configForms 服务。界面语言与识别、翻译、配音的目标语言分别配置。
 
 ## 文案来源
 

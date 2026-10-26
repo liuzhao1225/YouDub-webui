@@ -207,7 +207,7 @@ it('starts with no exemptions and a warning when the permission file is unparsab
   writeFileSync(join(f.dir, PROFILE_COMPATIBILITY_FILENAME), '{ not json')
   expect(await f.run(insert('denied-plugin'))).toEqual([])
   expect(f.warnings.join('\n')).toContain('is not valid JSON')
-  expect(f.warnings.join('\n')).toContain('is incompatible with dsh')
+  expect(f.warnings.join('\n')).toContain('is incompatible with plugin runtime')
 })
 
 describe('manifest resolution', () => {

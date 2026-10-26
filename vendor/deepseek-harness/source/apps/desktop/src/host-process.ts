@@ -18,11 +18,6 @@ interface FatalEvent {
 }
 
 type DesktopHostEvent = ReadyEvent | FatalEvent | { readonly type: 'shutdown-complete' } | {
-  readonly type: 'update-tasks'
-  readonly requestId: number
-  readonly active: boolean
-  readonly error?: string
-} | {
   readonly type: 'quit-inspection'
   readonly requestId: number
   readonly activeTasks: boolean
@@ -54,9 +49,6 @@ function isDesktopHostEvent(message: unknown): message is DesktopHostEvent {
       return typeof candidate.url === 'string'
     case 'fatal':
       return typeof candidate.message === 'string' && (candidate.diagnostic === undefined || typeof candidate.diagnostic === 'string')
-    case 'update-tasks':
-      return Number.isSafeInteger(candidate.requestId) && typeof candidate.active === 'boolean'
-        && (candidate.error === undefined || typeof candidate.error === 'string')
     case 'quit-inspection':
       return Number.isSafeInteger(candidate.requestId) && typeof candidate.activeTasks === 'boolean'
         && typeof candidate.scheduledTasks === 'boolean' && (candidate.error === undefined || typeof candidate.error === 'string')
@@ -202,35 +194,22 @@ export class DesktopHostProcess {
   }
 
   /**
-   * Inspect active work or lock request admission for update handoff.
-   * @param action - Read-only inspection, admission lock, or recovery unlock.
-   * @returns Whether live tasks would be affected. Locking drains admitted API requests before inspecting tasks;
-   * an unanswered drain fails at the control-request deadline without authorizing installation.
-   */
-  async updateTasks(action: 'inspect' | 'lock' | 'unlock'): Promise<boolean> {
-    const response = await this.control({ type: 'update-tasks', action }, 10_000, 'desktop update: task inspection timed out')
-    if (response.type !== 'update-tasks') throw new Error('desktop update: Host answered with a different control response')
-    return response.active
-  }
-
-  /**
    * Ask the Host what quitting now would interrupt.
    * @returns Active tasks and armed scheduled reminders; rejects when the Host is unavailable or misses
    * {@link QUIT_INSPECTION_DEADLINE_MS}, and the shell then asks before quitting.
    */
   async inspectQuit(): Promise<DesktopQuitInspection> {
     const response = await this.control({ type: 'quit-inspection' }, QUIT_INSPECTION_DEADLINE_MS, 'desktop quit: inspection timed out')
-    if (response.type !== 'quit-inspection') throw new Error('desktop quit: Host answered with a different control response')
     return { activeTasks: response.activeTasks, scheduledTasks: response.scheduledTasks }
   }
 
   private async control(
-    request: { readonly type: 'update-tasks'; readonly action: 'inspect' | 'lock' | 'unlock' } | { readonly type: 'quit-inspection' },
+    request: { readonly type: 'quit-inspection' },
     deadlineMs: number, deadlineMessage: string,
   ): Promise<DesktopHostControlResponse> {
     const child = this.child
     if (child === undefined || !child.connected || this.failureReported || this.stopping) {
-      throw new Error(`${request.type === 'update-tasks' ? 'desktop update' : 'desktop quit'}: Host is unavailable`)
+      throw new Error('desktop quit: Host is unavailable')
     }
     const requestId = this.nextControlId++
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -248,8 +227,8 @@ export class DesktopHostProcess {
 
   /**
    * Request teardown and await child exit, escalating termination when needed.
-   * @param requireGraceful - Reject update handoff after forced termination or unsuccessful child exit.
-   * @returns Completion of owned process teardown. DesktopHostUncleanExitError confirms exit but refuses installation;
+   * @param requireGraceful - Reject forced termination or unsuccessful child teardown.
+   * @returns Completion of owned process teardown. DesktopHostUncleanExitError confirms exit but reports incomplete cleanup;
    * other failures do not confirm exit.
    */
   async stop(requireGraceful = false): Promise<void> {
@@ -269,7 +248,7 @@ export class DesktopHostProcess {
     this.child = undefined
     if (requireGraceful && (!graceful || child.exitCode !== 0 || !this.shutdownCompleted)) {
       // This diagnostic reaches expandable UI; arbitrary plugin stderr can contain credentials.
-      throw new DesktopHostUncleanExitError(`desktop update: Host did not complete graceful task teardown (exit ${String(child.exitCode)}, signal ${String(child.signalCode)}, shutdown acknowledged ${String(this.shutdownCompleted)}, graceful deadline exceeded ${String(!graceful)})`)
+      throw new DesktopHostUncleanExitError(`YouDub desktop host did not complete graceful task teardown (exit ${String(child.exitCode)}, signal ${String(child.signalCode)}, shutdown acknowledged ${String(this.shutdownCompleted)}, graceful deadline exceeded ${String(!graceful)})`)
     }
   }
 
@@ -280,7 +259,7 @@ export class DesktopHostProcess {
     if (!this.failureReported && !this.stopping) {
       this.failureReported = true
       try { this.onFailure?.(error) } catch (listenerError) {
-        console.error('desktop host failure listener failed', listenerError)
+        console.error('YouDub desktop host failure listener failed', listenerError)
       }
     }
   }

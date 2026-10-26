@@ -16,7 +16,7 @@
 - [Harness 桌面更新说明](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/apps/desktop/README.md#updates)：沿用自动检查、前台/唤醒触发、原生菜单与状态提示。
 - [Harness 发版说明](https://github.com/deepseek-ai/deepseek-harness/blob/687f282e8625c6b8d11ff58211a90524be2e4317/apps/desktop/publishing/README.md)：安装包先发布、更新入口最后切换，并保留版本化下载和最新版本别名。
 
-YouDub 使用现有 `packages/builtin/src/updates.ts` 检查 GitHub Pages 发布列表，保留版本比较、平台匹配及仓库地址验证。本次只增加一个上游源码文件，包数量仍为 80。未引入上游自动安装、强制更新策略、COS 发布工具或完整更新协调器。
+YouDub 使用现有 `packages/builtin/src/updates.ts` 检查 GitHub Pages 发布列表，保留版本比较、平台匹配及仓库地址验证。沿用更新调度和通知组件；自动安装、强制更新策略、COS 发布工具和完整更新协调器不在产品范围内。
 
 ## 发布链路
 

@@ -111,7 +111,7 @@ QQ 交流群：`618246010`
 
 ## 从源码运行 YouDub Desktop
 
-YouDub 使用 DeepSeek Harness 前后端框架与 Electron，保留视频工作流和业务界面。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。
+YouDub 提供视频翻译、配音、工作流编排与人工审核，使用 Electron 和裁剪后的 DeepSeek Harness 框架。开发请从[文档索引](apps/harness/docs/README.md)、[架构说明](apps/harness/docs/ARCHITECTURE.md)和[本地运行](apps/harness/docs/DEVELOPMENT.md)开始。
 
 使用 Node.js `^22.19.0 || >=24.0.0`、npm、Git 和平台构建工具，首次检出时初始化子模块。在仓库根目录执行：
 
@@ -132,14 +132,14 @@ npm start
 
 ## Everything is a plugin
 
-YouDub Desktop 使用 Harness 的 Cordis 运行时装配前后端。Electron 窗口、Host 生命周期、Connection、模型配置、LLM、Subprocess、Jobs 和插件管理复用 Harness；YouDub 的任务、工作流、字幕、配音、资源与业务页面作为插件接入。[产品组合](apps/harness/cordis.patch.yml)定义当前服务与页面。
+YouDub 使用 Cordis 插件运行时装配任务、工作流、字幕、配音、资源与业务页面。桌面窗口、连接、模型配置、LLM、子进程、Jobs 和插件管理复用保留的框架代码；应用使用自己的启动入口与运行目录。[产品组合](apps/harness/cordis.patch.yml)定义当前服务与页面。
 
 ```text
-YouDub Electron → Harness Desktop Host ← 官方 Connection ← YouDub 页面
+YouDub Electron → Desktop Host ← Connection ← YouDub 页面
                          ↓
                  YouDub 工作流与任务插件
                          ↓
-             Harness LLM / Subprocess / Jobs
+                 LLM / Subprocess / Jobs
                          ↓
                  翻译 / Python 媒体处理
 ```

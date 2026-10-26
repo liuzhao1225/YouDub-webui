@@ -15,7 +15,6 @@ import type {
   LlmConfigurableProvider,
   LlmDiscoveredModel,
   LlmFailure,
-  LlmImageRequestPricing,
   LlmModelContext,
   LlmModelDiscoveryRequest,
   LlmModelInfo,
@@ -37,17 +36,14 @@ import { HarnessError, INVALID_CREDENTIAL_CODE } from './error.ts'
 import { normalizeLlmFailure } from './adapter-failure.ts'
 import { normalizeApiKey } from './api-key.ts'
 import {
-  contentHasFile, contentHasImage, fileHandleText, projectFilesToText, projectImagesForTextModel, projectToolUpdates,
+  contentHasFile, contentHasImage, projectFilesToText, projectImagesForTextModel, projectToolUpdates,
 } from './content.ts'
-import type { FileAttachmentRef, ImageAttachmentRef, ImageRequestTarget } from '@deepseek-ai/dsh-attachment'
 
-export * from './attribution.ts'
 export * from './brand.ts'
 export * from './error.ts'
 export * from './api-key.ts'
 export * from './types.ts'
 export * from './content.ts'
-export * from './assistant-stream.ts'
 export * from './message.ts'
 export * from './retry-policy.ts'
 export { BlockAssembler } from './assembler.ts'
@@ -196,10 +192,8 @@ export interface PreparedAdapterCall {
 }
 
 /**
- * Provider-wire adapter for the harness message and stream vocabulary. Register implementations
- * with `ctx.llm.registerAdapter(providers, adapter)`. Every provider HTTP request must include
- * `attributionHeaders()`; prove the headers are added in the wire request or library header hook. The direct-fetch
- * DeepSeek and library-backed pi-ai adapters meet this contract through different internals.
+ * Provider-wire adapter for the shared message and stream vocabulary. Register implementations
+ * with `ctx.llm.registerAdapter(providers, adapter)`.
  */
 export abstract class LlmAdapter {
   /**
@@ -218,31 +212,6 @@ export abstract class LlmAdapter {
    */
   providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined {
     return undefined
-  }
-
-  /**
-   * Resolve provider-side request-image pricing for one exact model route.
-   * The default declares none, so consumers fall back to their own neutral
-   * estimate. Implementations must answer synchronously without I/O; the
-   * token meter resolves this per measurement.
-   * @param _provider - a route passed to `registerAdapter()` for this instance.
-   * @param _model - exact model id passed to {@link GenerateOptions.model}.
-   * @returns route-owned image pricing, or `undefined` when the route declares none.
-   */
-  imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined {
-    return undefined
-  }
-
-  /**
-   * Resolve the image dimensions and byte target this adapter sends to the model.
-   * The default preserves normalized images; adapters that resize must override it.
-   * @param _provider - registered provider route.
-   * @param _model - exact model id.
-   * @param image - normalized image whose request projection is being resolved.
-   * @returns the same target used by request serialization, before provider-internal processing.
-   */
-  imageRequestTarget(_provider: string, _model: string, image: ImageAttachmentRef): ImageRequestTarget {
-    return { width: image.width, height: image.height, maxBytes: image.bytes }
   }
 
   /**
@@ -663,40 +632,6 @@ export class LlmRuntime extends TypertRemoteService {
    */
   providerRetryPolicy(provider: string): ResolvedRetryPolicy {
     return this.registration(provider).retryPolicy
-  }
-
-  /**
-   * Resolve provider-side request-image pricing for one exact route, or
-   * `undefined` when the provider is unregistered or declares none. Unknown
-   * providers degrade to `undefined` rather than throwing because callers
-   * price durable history whose route may no longer be mounted.
-   * @param provider - provider route named by a request header.
-   * @param model - exact model id named by the same header.
-   * @returns the owning adapter's image pricing for the route, when declared.
-   */
-  imageRequestPricing(provider: string, model: string): LlmImageRequestPricing | undefined {
-    return this.adapters.get(provider)?.adapter.imageRequestPricing(provider, model)
-  }
-
-  /**
-   * Resolve the image projection for an exact registered model route.
-   * @param provider - registered provider route.
-   * @param model - exact model id.
-   * @param image - normalized image reference.
-   * @returns dimensions and byte target used by the adapter's request serializer.
-   */
-  imageRequestTarget(provider: string, model: string, image: ImageAttachmentRef): ImageRequestTarget {
-    return this.registration(provider).adapter.imageRequestTarget(provider, model, image)
-  }
-
-  /**
-   * Resolve the exact text one durable file occurrence contributes to every
-   * provider request in the current execution environment.
-   * @param ref - durable verbatim file reference from model history.
-   * @returns the same deterministic handle text used at adapter dispatch.
-   */
-  fileRequestText(ref: FileAttachmentRef): string {
-    return fileHandleText(ref, undefined)
   }
 
   /** Detach typed adapter-owned modality metadata. */

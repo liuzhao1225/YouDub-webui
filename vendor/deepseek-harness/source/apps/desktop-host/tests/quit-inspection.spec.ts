@@ -3,7 +3,6 @@ import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
 import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { installDesktopQuitInspection } from '../src/quit-inspection.ts'
-import type {} from '../src/update-tasks.ts'
 
 let ctx: Context
 let inspect: ReturnType<typeof installDesktopQuitInspection>

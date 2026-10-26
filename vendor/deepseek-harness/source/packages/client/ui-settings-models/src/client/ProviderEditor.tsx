@@ -1,24 +1,7 @@
 /**
- * One provider's editor card, hand-written per adapter family: the primary
- * field is a single write-only **API key** input (the page never asks for an
- * environment-variable name — a typed key stores through `credentials/set`
- * under the profile's reference, deriving `<ROUTE>_API_KEY` when the profile
- * has none. The pi-ai profile records that derivation as `apiKeyEnv` only when
- * a key is entered; a blank key materializes a reference-free profile for
- * provider-native authentication);
- * the collapsed 自定义设置 area carries the per-family extras (`baseURL` for
- * both families, DeepSeek's id/name/context-window model catalog, and the
- * display name and wire protocol of a pi-ai route the adapter does not ship —
- * the two fields the create card asked that route for, editable here for the
- * same reason).
- * Reasoning effort is deliberately absent: it is a per-MODEL capability, and
- * the models under one provider disagree about it, so a provider-scoped
- * control can only be set to a value some of them reject. The composer's
- * model picker offers each model its own levels; `cordis.patch.yml` keeps the
- * profile field for a deployment that knows its route. Everything else stays
- * owned by `cordis.patch.yml`. Profile edits land as minimal `settings.mutate`
- * path ops against the stored section — the card names only the fields it can
- * see instead of rebuilding the whole subtree from a partial descriptor.
+ * Edit a provider's API key and curated pi-ai settings through path operations.
+ * Model capabilities stay in the shared catalog editor; unknown adapter
+ * namespaces keep their configuration-owned fields.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -29,9 +12,9 @@ import type { CredentialInfo, LlmNativeAuth, SettingsNamespaceView, SettingsPath
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
-  DeepSeekModelsEditor, modelDrafts, validateDeepSeekModels,
-} from './DeepSeekModelsEditor.tsx'
-import type { DeepSeekModelsValidationFailure } from './DeepSeekModelsEditor.tsx'
+  modelDrafts, validateModels,
+} from './model-drafts.ts'
+import type { ModelsValidationFailure } from './model-drafts.ts'
 import { apiKeyFailure } from './apiKey.ts'
 import { EditorFooter } from './EditorFooter.tsx'
 import { ModelListEditor } from './ModelListEditor.tsx'
@@ -46,9 +29,7 @@ import { ApiKeyInput } from './ApiKeyInput.tsx'
 import styles from './ModelsSection.module.css'
 
 /** Per-adapter-family curated field sets (unknown namespaces get the hint alone). */
-type EditorLayout = 'deepseek' | 'pi-ai' | 'unknown'
-
-
+type EditorLayout = 'pi-ai' | 'unknown'
 
 /** Props of {@link ProviderEditor}. */
 export interface ProviderEditorProps {
@@ -142,7 +123,6 @@ export function pathOps(
 
 /** The editor layout the owning namespace selects. */
 function layoutOf(ns: string): EditorLayout {
-  if (ns === 'llm-deepseek') return 'deepseek'
   if (ns === 'llm-pi-ai') return 'pi-ai'
   return 'unknown'
 }
@@ -208,14 +188,14 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     // A value of nothing but whitespace is cleared, not stored: `stringAt`
     // already reports it as absent, so the field would otherwise render empty
     // while the draft still carried the spaces into `cordis.patch.yml`, where
-    // both adapters would accept that non-empty string as a real value.
+    // the adapter would accept that non-empty string as a real value.
     const value = next === undefined || next.trim().length === 0 ? undefined : next
     setDraft(current => value === undefined
       ? schema.deletePath(current, [key])
       : schema.setPath(current, [key], value))
   }
 
-  // The model list is validated by the same per-row checker for both families,
+  // The model list is validated by the shared per-row checker,
   // so a bad row is named by its position rather than by a blanket message.
   // Only a hand-declared pi-ai route's rows edit reasoning levels — the one
   // model list with no installed catalog behind it — so only there are the
@@ -225,9 +205,9 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     [layout, props.declared, namespace, schema],
   )
   const editsReasoning = reasoningLevels.length > 0
-  const validateModels = (value: unknown): DeepSeekModelsValidationFailure | ReasoningEffortsFailure | undefined =>
-    validateDeepSeekModels(value) ?? (editsReasoning ? validateReasoningEfforts(value) : undefined)
-  const modelFailure = validateModels(schema.getPath(draft, ['models']))
+  const validateModelDraft = (value: unknown): ModelsValidationFailure | ReasoningEffortsFailure | undefined =>
+    validateModels(value) ?? (editsReasoning ? validateReasoningEfforts(value) : undefined)
+  const modelFailure = validateModelDraft(schema.getPath(draft, ['models']))
   const keyFailure = apiKeyFailure(keyDraft)
   // What a probe or a write must carry: the typed key with paste whitespace
   // removed. A blank field yields an empty string, which both call sites read
@@ -265,7 +245,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     // with a bad row; it stays because the schema check below would refuse
     // the write with a message naming a path instead of the row, and because
     // nothing but this function decides what is written.
-    const failure = validateModels(schema.getPath(next, ['models']))
+    const failure = validateModelDraft(schema.getPath(next, ['models']))
     /* v8 ignore next 3 -- unreachable from the card: the same failure disables submit */
     if (failure !== undefined) {
       return `${t('model')} ${String(failure.index + 1)}: ${t(failure.key)}`
@@ -330,26 +310,16 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     return pinned ?? schema.nodeAtPath(root, [...settingsPath, 'models'])?.meta.default
   }
 
-  /**
-   * The curated fields of one known adapter family. The family arrives
-   * narrowed so the per-family branches below are total: an unknown namespace
-   * renders the hint instead and never reaches this body.
-   */
-  const curatedFields = (family: 'deepseek' | 'pi-ai'): ReactNode => {
-    // What a hand-declared route names for itself and nothing else can supply.
-    // A whole-section `llm-deepseek` profile is a composition fact with no
-    // per-route identity for its schema to carry, hence the family test.
-    const ownsIdentity = family === 'pi-ai' && props.declared === true
+  /** Curated fields for the registered pi-ai adapter. */
+  const curatedFields = (): ReactNode => {
+    const ownsIdentity = props.declared === true
     const customModels = schema.getPath(draft, ['models'])
     const modelsOverridden = schema.hasPath(draft, ['models'])
     const models = modelDrafts(modelsOverridden ? customModels : inheritedModels())
-    const defaultContextWindow = schema.getPath(fallback, ['defaultContextWindow'])
-    const defaultMaxTokens = schema.getPath(fallback, ['maxTokens'])
     const defaultInput = schema.getPath(fallback, ['defaultInput'])
     const baseURL = stringAt(fallback, 'baseURL') ?? props.defaultBaseURL
     const endpointEnv = props.baseURLEnv ?? []
-    const endpointHint = family === 'deepseek' ? t('deepSeekEndpointHint')
-      : baseURL === undefined && endpointEnv.length > 0 ? t('baseUrlEnvironment').replace('{env}', () => endpointEnv.join(', ')) : undefined
+    const endpointHint = baseURL === undefined && endpointEnv.length > 0 ? t('baseUrlEnvironment').replace('{env}', () => endpointEnv.join(', ')) : undefined
     // A named reference is the only credential the adapter reads for this
     // route. Without one, a catalog route authenticates the way the directory
     // reports, and a declared route sends no key at all.
@@ -386,7 +356,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
     const keyPlaceholder = detected?.[1]?.preview ?? (detected?.[1]?.configured ? '***'
       : keyHint === undefined ? t('keyPlaceholder')
       : t('keyPlaceholderFallback').replace('{hint}', () => keyHint))
-    /** What both family editors take: the rows, whose layer owns them, and the two writes. */
+    /** Shared catalog rows and layer operations. */
     const catalogProps = {
       models,
       overridden: modelsOverridden,
@@ -455,10 +425,8 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                 className={styles['input']}
                 type="text"
                 value={stringAt(draft, 'baseURL') ?? ''}
-                placeholder={family === 'deepseek'
-                  ? t('deepSeekBaseUrl')
-                  : baseURL === undefined ? t(endpointEnv.length > 0 ? 'baseUrlConfigured' : 'baseUrlDefault')
-                    : t('baseUrlPlaceholder').replace('{url}', () => baseURL)}
+                placeholder={baseURL === undefined ? t(endpointEnv.length > 0 ? 'baseUrlConfigured' : 'baseUrlDefault')
+                  : t('baseUrlPlaceholder').replace('{url}', () => baseURL)}
                 aria-describedby={endpointHint === undefined ? undefined : `${props.provider}-endpoint-hint`}
                 aria-label={t('baseUrl')}
                 disabled={disabled}
@@ -493,31 +461,16 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                 </div>
               )
               : null}
-            {/* Both families edit the same rows through the same contract; only
-                the extras differ — DeepSeek's inherited capacities, pi-ai's
-                endpoint interrogation. */}
-            {family === 'deepseek'
-              ? (
-                <DeepSeekModelsEditor
-                  {...catalogProps}
-                  defaultContextWindow={typeof defaultContextWindow === 'number'
-                    ? defaultContextWindow
-                    : undefined}
-                  defaultMaxTokens={typeof defaultMaxTokens === 'number' ? defaultMaxTokens : undefined}
-                />
-              )
-              : (
-                <ModelListEditor
-                  {...catalogProps}
-                  catalogProvider={props.declared === true ? undefined : props.provider}
-                  reasoningLevels={reasoningLevels}
-                  defaultInput={Array.isArray(defaultInput) ? defaultInput : undefined}
-                  probe={probe}
-                  probeBlocked={keyFailure}
-                  operations={operations}
-                  onBusyChange={setListBusy}
-                />
-              )}
+            <ModelListEditor
+              {...catalogProps}
+              catalogProvider={props.declared === true ? undefined : props.provider}
+              reasoningLevels={reasoningLevels}
+              defaultInput={Array.isArray(defaultInput) ? defaultInput : undefined}
+              probe={probe}
+              probeBlocked={keyFailure}
+              operations={operations}
+              onBusyChange={setListBusy}
+            />
           </div>
         </details>
       </>
@@ -538,7 +491,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
         )}
       {layout === 'unknown'
         ? <p className={styles['advancedHint']}>{`${t('advancedHint')} (${namespace.ns})`}</p>
-        : curatedFields(layout)}
+        : curatedFields()}
       {failure !== undefined ? <p className={styles['error']}>{failure}</p> : null}
       {modelFailure === undefined
         ? null

@@ -2,6 +2,8 @@
 
 > 历史阶段记录：本文中的独立 Host、Vite 启动和插件 CLI 已在 Harness 分支退役。当前开发与扩展入口见 [YouDub Desktop 开发指南](../../apps/harness/docs/DEVELOPMENT.md)；下文历史命令和验收事实保留原义。
 
+> 2026-10-26：当前翻译输出参数沿用 [Harness 调用规则](../../apps/harness/docs/BACKEND-DEVELOPMENT.md#python-与模型调用)，已移除 YouDub 固定输出下限。下文的 65,535 约束属于历史实现，原始请求和响应保持不变。
+
 本文记录旧独立产品的 Cordis Host、React/Vite Client 与 Python 执行桥。前端分层与参考来源见[前端实现说明](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/harness-frontend-migration.md)。历史媒体流程测试、浏览器和切换记录见[迁移与验收记录](https://github.com/liuzhao1225/YouDub-webui/blob/c92b670f079428eed40ca6ab7bdfd69e3328fef4/docs/design/cordis-plugin-migration.md)，各记录中的日期、环境与验证范围保留原义。
 
 节点工作流和按图准备资源见[使用指南](../workflows.md)及 [2026-10-20 验收记录](../validation/workflow-nodes-2026-10-20.md)。旧版首次启动流程保留在 [2026-10-14 验收记录](../validation/first-run-setup-2026-10-14.md)。

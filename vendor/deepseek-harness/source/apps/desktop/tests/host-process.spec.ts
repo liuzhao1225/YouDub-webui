@@ -30,10 +30,6 @@ server.listen(0, '127.0.0.1', () => {
   process.send({ type: 'ready', url: 'http://127.0.0.1:' + server.address().port + '/?token=fixture' })
 })
 process.on('message', message => {
-  if (message.type === 'update-tasks') {
-    process.send({ type: 'update-tasks', requestId: message.requestId, active: message.action === 'lock' })
-    return
-  }
   if (message.type === 'quit-inspection') {
     // Ids divisible by three never answer; the others report scheduled work for odd ids.
     if (message.requestId % 3 === 0) return
@@ -72,24 +68,14 @@ afterEach(async () => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-describe('desktop host process', () => {
-  it('correlates task inspections and admission changes over private IPC', async () => {
-    const host = hostProcess(projectWithHost())
-    await expect(host.updateTasks('inspect')).rejects.toThrow('Host is unavailable')
-    await host.start()
-    expect(await Promise.all([host.updateTasks('inspect'), host.updateTasks('lock'), host.updateTasks('unlock')]))
-      .toEqual([false, true, false])
-    await host.stop(true)
-    await expect(host.updateTasks('inspect')).rejects.toThrow('Host is unavailable')
-  })
-
-  it('correlates quit inspections with task requests and fails an unanswered one at its own deadline', async () => {
+describe('YouDub desktop host process', () => {
+  it('correlates quit inspections and fails an unanswered one at its own deadline', async () => {
     const host = hostProcess(projectWithHost())
     await expect(host.inspectQuit()).rejects.toThrow('desktop quit: Host is unavailable')
     await host.start()
-    // Request ids 1 and 2: the fixture answers by id parity, so both control kinds share one id space.
-    expect(await Promise.all([host.inspectQuit(), host.updateTasks('inspect')]))
-      .toEqual([{ activeTasks: false, scheduledTasks: true }, false])
+    // Request ids 1 and 2: the fixture answers by id parity to distinguish concurrent inspections.
+    expect(await Promise.all([host.inspectQuit(), host.inspectQuit()]))
+      .toEqual([{ activeTasks: false, scheduledTasks: true }, { activeTasks: false, scheduledTasks: false }])
     const started = Date.now()
     await expect(host.inspectQuit()).rejects.toThrow('desktop quit: inspection timed out')
     expect(Date.now() - started).toBeGreaterThanOrEqual(QUIT_INSPECTION_DEADLINE_MS - 50)
@@ -99,7 +85,7 @@ describe('desktop host process', () => {
   it.each([
     'process.exit(17)',
     'process.exit(0)',
-  ])('refuses installation when exit lacks successful teardown acknowledgement: %s', async (exit) => {
+  ])('reports unclean teardown when exit lacks successful acknowledgement: %s', async (exit) => {
     const host = hostProcess(projectWithHost(`
       process.send({ type: 'ready', url: 'http://127.0.0.1:3080/' })
       process.on('message', message => {
@@ -123,9 +109,10 @@ describe('desktop host process', () => {
     expect(new URL(ready.url).searchParams.get('token')).toBe('fixture')
     expect(await host.start()).toEqual(ready)
     expect((await fetch(ready.url)).status).toBe(200)
-    await host.stop()
+    await host.stop(true)
     expect(existsSync(join(runtime, 'stopped'))).toBe(true)
     await expect(fetch(ready.url)).rejects.toThrow()
+    await expect(host.inspectQuit()).rejects.toThrow('desktop quit: Host is unavailable')
     expect(failure).not.toHaveBeenCalled()
   })
 

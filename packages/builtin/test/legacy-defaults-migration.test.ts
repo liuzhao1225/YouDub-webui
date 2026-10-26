@@ -6,10 +6,8 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { AppError, type JsonObject } from '@youdub/sdk'
 import Catalog from '../src/catalog.js'
-import Processes from '../src/process.js'
+import { Processes, Settings } from './helpers/native-services.js'
 import Store from '../src/store.js'
-import Secrets from '../src/secrets.js'
-import Settings from '../src/settings.js'
 import * as Localize from '../src/workflow-localize.js'
 import { operations } from '../src/media-contracts.js'
 import { validateMediaCorrection } from '../src/node-contracts.js'
@@ -30,7 +28,7 @@ async function setup(t: any) {
   const app = await ctx.plugin(async context => {
     await context.plugin(Processes)
     await context.plugin(Store, { root, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') })
-    await context.plugin(Catalog); await context.plugin(Secrets); await context.plugin(Settings)
+    await context.plugin(Catalog); await context.plugin(Settings)
     await context.plugin({ inject: ['catalog'], apply(scope) {
       for (const [id, kinds, capability] of [['youdub.media', ['prepare', 'reference', 'mix', 'export']], ['whisper', ['recognize'], 'asr'], ['openai', ['translate'], 'translation'], ['voxcpm', ['synthesize'], 'tts'], ['demucs', ['separate'], 'separation'], ['qwen_forced_aligner', ['align'], 'subtitle_alignment']] as const) {
         scope.effect(() => scope.catalog.registerProvider({ id,
@@ -53,6 +51,8 @@ test('all legacy modes preserve every selection and optional branch without requ
     const workflow = ctx.catalog.workflow('youdub.localize')
     assert.ok('plan' in workflow)
     const original = await workflow.plan({}, validated, ctx.catalog)
+    assert.ok(Object.values(original.bindings).every(binding => !Object.hasOwn(binding.options, 'maxCompletionTokens')))
+    assert.ok(document.nodes.every(node => !Object.hasOwn(node.config, 'maxCompletionTokens')))
     assert.deepEqual(document.nodes.map(node => node.id), original.steps.map(step => step.id))
     assert.deepEqual(inspectGraph(document, ctx.catalog, {}, false).diagnostics, [])
     for (const node of document.nodes) {

@@ -1,10 +1,9 @@
 name: YouDub Desktop 源码开发检查
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
     inputs:
       package_desktop:
@@ -192,7 +191,8 @@ jobs:
       - name: 运行实际 Electron Host 与产品合同
         run: |
           node -e "require('./apps/harness/node_modules/electron')"
-          node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs
+          node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs apps/harness/test/worker-media-paths.test.mjs
+          node --import tsx --test packages/builtin/test/media-paths.test.ts packages/builtin/test/setup.test.ts
           npm run typecheck
           npm --prefix apps/harness run check:locales
       - name: 打包并验证独立 Windows 应用
@@ -203,6 +203,9 @@ jobs:
           node apps/harness/test/package-smoke.mjs dist/win-unpacked dist/package-smoke-windows-workbench --workbench
           npm run package:desktop -- --installers-only
           node apps/harness/test/installer-smoke.mjs
+          curl --fail --location --output dist/previous-YouDub-0.0.9-Setup.exe https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.9/YouDub-0.0.9-windows-x64-Setup.exe
+          echo '6ebc698bf49b3107280f17b8368c117aaee4671edaf6dfd9c24b53c443ad7c34  dist/previous-YouDub-0.0.9-Setup.exe' | sha256sum --check
+          node apps/harness/test/installer-smoke.mjs --previous-installer=dist/previous-YouDub-0.0.9-Setup.exe
           cd dist
           for file in YouDub-*.exe YouDub-*.zip; do
             sha256sum "$file" > "$file.sha256"
@@ -217,6 +220,7 @@ jobs:
             dist/package-smoke-windows/
             dist/package-smoke-windows-workbench/
             dist/package-smoke-windows-installed/
+            dist/package-smoke-windows-previous-upgrade/
           if-no-files-found: warn
       - name: 保存 Windows 安装包与首启证据
         if: github.event_name == 'workflow_dispatch' && inputs.package_desktop
@@ -230,6 +234,7 @@ jobs:
             dist/package-smoke-windows/
             dist/package-smoke-windows-workbench/
             dist/package-smoke-windows-installed/
+            dist/package-smoke-windows-previous-upgrade/
           if-no-files-found: error
       - name: 保存 Windows 源码构建证据
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

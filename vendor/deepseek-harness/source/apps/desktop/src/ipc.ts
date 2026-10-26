@@ -17,7 +17,6 @@ export const DESKTOP_IPC = {
   boot: 'youdub-desktop:boot',
   bootFailed: 'youdub-desktop:boot-failed',
   directoryPick: 'youdub-desktop:directory-pick',
-  deviceInfo: 'youdub-desktop:device-info',
   localeBootstrap: 'youdub-desktop:locale-bootstrap',
   localeChanged: 'youdub-desktop:locale-changed',
   nativeThemeSet: 'youdub-desktop:native-theme-set',
@@ -45,11 +44,6 @@ export interface YouDubDesktopProductApi {
   }
   readonly keyboard: DesktopKeyboardApi
   readonly shortcuts: DesktopShortcutsApi
-  /**
-   * Local machine description for the feedback questionnaire.
-   * @returns `name=value` fields separated by `; `, with no hostname, user name, or serial number.
-   */
-  deviceInfo(): Promise<string>
 }
 
 /** Scheme of Desktop-owned application documents. */

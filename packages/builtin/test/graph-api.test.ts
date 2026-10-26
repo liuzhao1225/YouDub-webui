@@ -7,12 +7,10 @@ import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { AppError, type OperationProvider, type WorkflowDocument, type NodeResultView } from '@youdub/sdk'
-import Processes from '../src/process.js'
+import { Processes, Settings } from './helpers/native-services.js'
 import Store from '../src/store.js'
 import Files from '../src/files.js'
 import Catalog from '../src/catalog.js'
-import Secrets from '../src/secrets.js'
-import Settings from '../src/settings.js'
 import Tasks from '../src/tasks.js'
 import * as Graph from '../src/workflow-graph.js'
 import { taskApi } from './helpers/task-api.js'
@@ -92,7 +90,6 @@ async function setup(t: any, execution: 'local' | 'remote' = 'local') {
     await context.plugin(Catalog)
     await context.plugin(Files, { root })
     await context.plugin(Store, { root, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') })
-    await context.plugin(Secrets)
     await context.plugin(Settings)
     await context.plugin({ inject: ['catalog'], apply(scope) { scope.effect(() => scope.catalog.registerProvider(provider)) } })
     await context.plugin(Graph, { integrity: 'graph-api-fixed' })

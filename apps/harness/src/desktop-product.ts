@@ -10,10 +10,8 @@ import { resolveDesktopPaths } from '../../../vendor/deepseek-harness/source/app
 import { DesktopProjectManager } from '../../../vendor/deepseek-harness/source/apps/desktop/src/project-manager.ts'
 import { DesktopHostFatalError, DesktopHostProcess } from '../../../vendor/deepseek-harness/source/apps/desktop/src/host-process.ts'
 import { installDesktopDirectoryPicker } from '../../../vendor/deepseek-harness/source/apps/desktop/src/directory-picker.ts'
-import { installMicrophonePermissions } from '../../../vendor/deepseek-harness/source/apps/desktop/src/microphone-permissions.ts'
 import { DesktopBackendController } from '../../../vendor/deepseek-harness/source/apps/desktop/src/backend-controller.ts'
 import { DESKTOP_IPC, SCHEME, assertDesktopSender } from '../../../vendor/deepseek-harness/source/apps/desktop/src/ipc.ts'
-import { readDeviceInfo } from '../../../vendor/deepseek-harness/source/apps/desktop/src/device-info.ts'
 import { resolveDesktopLocale, resolveDesktopStartupLocale } from '../../../vendor/deepseek-harness/source/apps/desktop/src/locale.ts'
 import { claimDesktopSingleInstance } from '../../../vendor/deepseek-harness/source/apps/desktop/src/single-instance.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from '../../../vendor/deepseek-harness/source/apps/desktop/src/web-document.ts'
@@ -78,20 +76,19 @@ function reportFatal(error: unknown, source: CrashReportSource): void {
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME,
   privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true, codeCache: true } }])
 
-// Copied verbatim from upstream apps/desktop/src/main.ts (dsh-v0.2.1-rc.2).
-// These private window helpers have no exported API; retain the native security and material behavior.
+// Preserve the framework's native window security and material behavior.
 function chromeFallbackFill(): string {
   return nativeTheme.shouldUseDarkColors ? '#1b1b1c' : '#f9fafb'
 }
 
-function createWindow(preload: string, show = false, primary = false): BrowserWindow {
+function createWindow(preload: string): BrowserWindow {
   const window = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 520,
     minHeight: 600,
-    show,
-    ...(process.platform === 'win32' && primary ? {
+    show: false,
+    ...(process.platform === 'win32' ? {
       titleBarStyle: 'hidden' as const,
       titleBarOverlay: { height: WINDOWS_TITLEBAR_HEIGHT, color: chromeFallbackFill(),
         symbolColor: nativeTheme.shouldUseDarkColors ? '#f9fafb' : '#0f1115' },
@@ -113,7 +110,6 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
-      webviewTag: primary,
       devTools: true,
     },
   })
@@ -291,15 +287,16 @@ async function main(): Promise<void> {
     Menu.setApplicationMenu(Menu.buildFromTemplate(items))
   }
   const applicationItems = (): MenuItemConstructorOptions[] => [
-    { role: 'about', label: locale.id === 'ja' ? 'YouDub について' : locale.id === 'zh-CN' ? '关于 YouDub' : 'About YouDub' },
+    { role: 'about', label: currentDesktopLocale().messages.aboutMenu },
     { label: currentDesktopLocale().messages.updateCheckTitle, click: () => { void checkUpdates().catch(console.error) } },
     { type: 'separator' }, { role: 'reload' }, { role: 'toggleDevTools', visible: false },
     ...(process.platform === 'darwin' ? [{ role: 'hide' as const }, { role: 'hideOthers' as const }, { role: 'unhide' as const }, { type: 'separator' as const }] : []),
     { role: 'quit' },
   ]
   installDesktopDirectoryPicker(() => mainWindow)
-  // Retain the official media permission boundary even without a recording UI.
-  installMicrophonePermissions(session.defaultSession, () => mainWindow?.webContents)
+  // YouDub processes supplied media files and does not capture camera or microphone input.
+  session.defaultSession.setPermissionCheckHandler((_contents, permission) => permission !== 'media')
+  session.defaultSession.setPermissionRequestHandler((_contents, permission, callback) => { callback(permission !== 'media') })
   const shortcuts = installDesktopShortcuts(() => mainWindow, app.getPath('userData'),
     process.platform === 'darwin' ? 'macos' : process.platform === 'win32' ? 'windows' : 'linux',
     refreshApplicationMenu)
@@ -343,7 +340,6 @@ async function main(): Promise<void> {
     locale = resolveDesktopStartupLocale(next, systemLanguages); windowsLanguage = locale.id
     refreshApplicationMenu()
   })
-  ipcMain.handle(DESKTOP_IPC.deviceInfo, event => { assertProductSender(event); return readDeviceInfo() })
   ipcMain.handle(DESKTOP_IPC.updatesStatus, event => { assertProductSender(event); return updates.state })
   ipcMain.handle(DESKTOP_IPC.updatesOpen, event => { assertProductSender(event); return checkUpdates() })
 
@@ -434,7 +430,7 @@ async function main(): Promise<void> {
   })
   if (process.platform !== 'win32') powerMonitor.on('shutdown', () => { sessionEnding = true })
   const createMainWindow = (): BrowserWindow => {
-    const window = createWindow(join(app.getAppPath(), 'lib/preload-app.cjs'), false, true)
+    const window = createWindow(join(app.getAppPath(), 'lib/preload-app.cjs'))
     mainWindow = window
     shortcuts.attach(window)
     window.on('close', event => {

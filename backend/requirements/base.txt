@@ -1,4 +1,3 @@
 python-dotenv
 pydantic
-keyring>=25.6,<26
 packaging

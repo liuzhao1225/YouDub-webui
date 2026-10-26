@@ -36,10 +36,10 @@ def test_base_and_subtitles_do_not_inspect_or_import_optional_tts(monkeypatch):
     }[name])
     monkeypatch.setattr(setup_probe.importlib, "import_module", lambda name: imported.append(name))
     assert setup_probe.verify(["base"]) == {"ready": True}
-    assert set(imported) == {"dotenv", "pydantic", "keyring", "packaging"}
+    assert set(imported) == {"dotenv", "pydantic", "packaging"}
     imported.clear()
-    assert setup_probe.verify(["base", "media", "whisper", "openai"]) == {"ready": True}
-    assert "whisper" in imported and "openai" in imported
+    assert setup_probe.verify(["base", "media", "whisper"]) == {"ready": True}
+    assert "whisper" in imported
     assert not forbidden.intersection(checked + imported)
 
 
@@ -64,12 +64,17 @@ def test_selected_provider_import_failure_preserves_original_exception(monkeypat
     (["qwen_forced_aligner"], "2.9.0", False),
 ])
 def test_verify_imports_codec_only_for_the_execution_path(monkeypatch, groups, audio_version, needs_codec):
+    from backend.app import config
+
     imported = []
+    configured = []
     original = OSError("libavcodec shared library cannot be loaded")
     monkeypatch.setattr(setup_probe, "missing_dependencies", lambda _groups: [])
     monkeypatch.setattr(setup_probe.importlib.metadata, "version", lambda _name: audio_version)
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", lambda: configured.append(True))
 
     def import_module(module):
+        assert configured == ([True] if needs_codec else [])
         imported.append(module)
         if module == "torchcodec":
             raise original
@@ -84,6 +89,25 @@ def test_verify_imports_codec_only_for_the_execution_path(monkeypatch, groups, a
         assert "torchcodec" not in imported
 
 
+def test_verify_stops_before_imports_when_ffmpeg_dll_registration_fails(monkeypatch):
+    from backend.app import config
+
+    original = RuntimeError("Failed to register the FFmpeg DLL directory: C:/YouDub/runtime/ffmpeg/bin")
+    imported = []
+    monkeypatch.setattr(setup_probe, "missing_dependencies", lambda _groups: [])
+    monkeypatch.setattr(setup_probe.importlib.metadata, "version", lambda _name: "2.9.1")
+    monkeypatch.setattr(setup_probe.importlib, "import_module", lambda name: imported.append(name))
+
+    def configure():
+        raise original
+
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", configure)
+    with pytest.raises(RuntimeError) as result:
+        setup_probe.verify(["voxcpm"])
+    assert result.value is original
+    assert not imported
+
+
 def test_codec_version_is_checked_even_when_its_native_library_is_not_used(monkeypatch):
     monkeypatch.setattr(setup_probe.importlib.util, "find_spec", lambda _module: object())
     versions = {"torch": "2.8.0", "torchcodec": "0.8.1", "voxcpm": "2.0.3", "transformers": "5.17.0"}
@@ -93,8 +117,8 @@ def test_codec_version_is_checked_even_when_its_native_library_is_not_used(monke
 
 def test_missing_provider_never_requires_an_unselected_group(monkeypatch):
     monkeypatch.setattr(setup_probe.importlib.util, "find_spec", lambda module: None)
-    assert setup_probe.missing_dependencies(["openai"]) == ["openai", "httpx", "socksio"]
-    assert "voxcpm" not in setup_probe.missing_dependencies(["base", "media", "whisper", "openai"])
+    assert setup_probe.missing_dependencies(["media"]) == ["soundfile", "numpy"]
+    assert "voxcpm" not in setup_probe.missing_dependencies(["base", "media", "whisper"])
     assert "voxcpm" in setup_probe.missing_dependencies(["voxcpm"])
 
 

@@ -315,27 +315,3 @@ describe('model discovery registry', () => {
     await expect(ctx.llm.discoverModels('llm-example', { provider: 'known-route' })).resolves.toEqual([])
   })
 })
-
-describe('imageRequestPricing resolution', () => {
-  it('resolves the owning adapter declaration and degrades everywhere else to undefined', async () => {
-    const ctx = await setup()
-    const pricing = { priceImages: () => [] }
-    class PricingAdapter extends NoopAdapter {
-      override imageRequestPricing(provider: string, model: string): typeof pricing | undefined {
-        return provider === 'a' && model === 'vision' ? pricing : undefined
-      }
-    }
-    const dispose = ctx.llm.registerAdapter(['a'], new PricingAdapter())
-    ctx.llm.registerAdapter(['plain'], new NoopAdapter())
-
-    expect(ctx.llm.imageRequestPricing('a', 'vision')).toBe(pricing)
-    expect(ctx.llm.imageRequestPricing('a', 'other')).toBeUndefined()
-    // The base adapter declares none.
-    expect(ctx.llm.imageRequestPricing('plain', 'vision')).toBeUndefined()
-    // Unregistered providers degrade instead of throwing: callers price
-    // durable history whose route may no longer be mounted.
-    expect(ctx.llm.imageRequestPricing('missing', 'vision')).toBeUndefined()
-    dispose()
-    expect(ctx.llm.imageRequestPricing('a', 'vision')).toBeUndefined()
-  })
-})

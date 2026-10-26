@@ -63,7 +63,6 @@ const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile
   alias: { '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@': resolve(web, 'src') },
   plugins: [sourceBuiltImports, officialAssets, { name: 'youdub-component-boundaries', setup(builder) {
     builder.onResolve({ filter: /^cordis$/ }, () => ({ path: '@deepseek-ai/cordis', external: true }));
-    builder.onResolve({ filter: /^lucide-react$/ }, args => args.importer !== resolve(frontend, 'icons.tsx') ? { path: resolve(frontend, 'icons.tsx') } : undefined);
     // Both tests and Desktop use the same YouDub wrappers. Only resolve their shared
     // framework dependency to the module already owned by the official client loader.
     builder.onResolve({ filter: /(?:^|\/)harness-primitives$/ }, args => {

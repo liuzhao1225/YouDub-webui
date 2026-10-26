@@ -3,7 +3,7 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime, { userAgent } from '@deepseek-ai/dsh-llm'
+import LlmRuntime from '@deepseek-ai/dsh-llm'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
 import { discoverModels } from '../src/discovery.ts'
@@ -140,7 +140,6 @@ describe('draft-provider model discovery', () => {
     ])
     expect(server.paths).toEqual(['/v1/models'])
     expect(server.headers[0]?.authorization).toBe('Bearer probe-key')
-    expect(server.headers[0]?.['user-agent']).toBe(userAgent())
   })
 
   it('reads an enriched models map using route ids and nested capacities', async () => {
@@ -217,7 +216,6 @@ describe('draft-provider model discovery', () => {
     expect(server.headers.map(headers => headers['anthropic-version']))
       .toEqual(['2023-06-01', '2023-06-01', '2023-06-01'])
     expect(server.headers.map(headers => headers.authorization)).toEqual([undefined, undefined, undefined])
-    expect(server.headers.map(headers => headers['user-agent'])).toEqual([userAgent(), userAgent(), userAgent()])
   })
 
   it('prefers the standard data array when both supported formats are present', async () => {

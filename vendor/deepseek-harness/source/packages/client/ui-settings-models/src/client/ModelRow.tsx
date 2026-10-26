@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import {
   IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconTrashOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { DeepSeekModelDraft } from './DeepSeekModelsEditor.tsx'
+import type { ModelDraft } from './model-drafts.ts'
 import type { ModelsKey } from './locales.ts'
 import { ModelInputTypes } from './ModelInputTypes.tsx'
 import { ModelReasoningEfforts } from './ModelReasoningEfforts.tsx'
@@ -20,7 +20,7 @@ interface CapacityInput {
 
 /** Adapter-owned data and actions for one model row. */
 interface ModelRowProps {
-  model: DeepSeekModelDraft
+  model: ModelDraft
   position: number
   inputField: 'inputModalities' | 'input'
   inputFallback?: readonly string[] | undefined
@@ -34,7 +34,7 @@ interface ModelRowProps {
   maxTokens: CapacityInput
   onFieldChange: (field: 'id' | 'name', value: string | undefined) => void
   onIdBlur?: (value: string) => void
-  onChange: (model: DeepSeekModelDraft) => void
+  onChange: (model: ModelDraft) => void
   onToggle: () => void
   onRemove: () => void
 }

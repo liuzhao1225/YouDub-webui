@@ -187,7 +187,6 @@ declare module 'cordis' {
   interface Context {
     catalog: CatalogService; tasks: TasksService; store: StoreService; settings: SettingsService;
     files: FilesService; youdubWorker: ProcessService;
-    secrets: { get(reference: string): Promise<string | null>; set(reference: string, value: string): Promise<void>; delete(reference: string): Promise<void> }
   }
 }
 export type YouDubContext = Context

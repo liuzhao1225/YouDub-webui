@@ -397,7 +397,7 @@ it('reports an unrepaired node_modules when the restoring install fails', async 
   })
   expect(outcome).toMatchObject({ exitCode: 1 })
   expect(outcome.output).toContain('node_modules could not be reinstalled')
-  expect(outcome.output).toContain("run 'dsh plugin install'")
+  expect(outcome.output).toContain('reinstall dependencies in the plugin directory')
 })
 
 it('detects a version update that keeps the dependency spec and removes a lockfile the run created', async () => {

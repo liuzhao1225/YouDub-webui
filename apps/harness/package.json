@@ -50,7 +50,6 @@
     "@electron/osx-sign": "2.3.0",
     "electron": "44.7.0",
     "electron-builder": "26.17.0",
-    "electron-updater": "6.8.9",
     "esbuild": "0.25.10",
     "lightningcss": "1.33.0",
     "playwright": "1.61.1",

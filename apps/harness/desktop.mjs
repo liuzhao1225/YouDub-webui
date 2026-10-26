@@ -51,7 +51,7 @@ if (values['prepare-only']) {
 } else {
   const executable = electron;
   await access(executable);
-  console.log(`Starting YouDub from ${executable}\nHarness profile: ${profile}`);
+  console.log(`Starting YouDub from ${executable}\nYouDub profile: ${profile}`);
   if (values['skip-setup']) console.log('UI test mode: environment and model configuration are skipped; media readiness is not verified.');
   const args = [`--user-data-dir=${userData}`, output];
   const child = spawn(executable, args, { cwd: root, env, stdio: 'inherit' });

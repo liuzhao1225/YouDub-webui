@@ -34,5 +34,8 @@ export function parseWorkflowDocument(value: unknown): WorkflowDocument {
   const result = structuredClone(document)
   for (const input of result.inputs) delete input.maxBytes
   for (const node of result.nodes) if (node.type === 'youdub.download') delete node.config.maxBytes
+  // Output limits now belong to the model provider. Normalize saved workflows
+  // before validating the current node contract, leaving the original untouched.
+  for (const node of result.nodes) if (node.type === 'youdub.translate') delete node.config.maxCompletionTokens
   return result
 }

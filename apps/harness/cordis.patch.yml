@@ -31,8 +31,6 @@
     - id: settings
       name: '@deepseek-ai/dsh-settings'
       disabled: !!js '!ctx.get(''profileContext'')'
-    - id: authorization
-      name: '@deepseek-ai/dsh-authorization'
     - id: credentials
       name: '@deepseek-ai/dsh-credentials-local'
     - id: llm-pi-ai

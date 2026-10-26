@@ -8,6 +8,7 @@ import { delimiter, join, resolve } from 'node:path'
 import { homedir, tmpdir } from 'node:os'
 import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
+import manifest from '../src/setup-runtime.json' with { type: 'json' }
 
 // Installer processes are faked in these unit tests; source connectivity is tested separately.
 const actualFetch = globalThis.fetch
@@ -115,12 +116,21 @@ async function waitFor(predicate: () => boolean) {
   while (!predicate()) { if (Date.now() > deadline) throw new Error('setup test timed out'); await new Promise(resolve => setTimeout(resolve, 10)) }
 }
 
-test('private environment installs media tools inside YouDub instead of using machine paths', async t => {
+for (const platform of new Set([process.platform, 'win32'])) test(`private ${platform} environment installs media tools inside YouDub instead of using machine paths`, async t => {
+  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform')!
+  const originalArch = Object.getOwnPropertyDescriptor(process, 'arch')!
+  Object.defineProperty(process, 'platform', { value: platform })
+  if (platform === 'win32') Object.defineProperty(process, 'arch', { value: 'x64' })
+  t.after(() => {
+    Object.defineProperty(process, 'platform', originalPlatform)
+    Object.defineProperty(process, 'arch', originalArch)
+  })
   const root = await mkdtemp(join(tmpdir(), 'youdub-private-environment-'))
   const python = join(root, 'python')
   await writeFile(python, 'test Python')
   const previous = { ...process.env }
   const client = new DownloadClient(), commands: string[] = [], downloads: string[] = []
+  const windows = process.platform === 'win32'
   t.after(async () => {
     await client.close()
     for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
@@ -133,6 +143,11 @@ test('private environment installs media tools inside YouDub instead of using ma
   const ctx = { logger: { info() {} }, youdubWorker: { run: async ({ command, args }: { command: string; args: string[] }) => {
     commands.push(command)
     assert.ok(!command.startsWith('/machine/'))
+    if (windows && args[1] === 'zipfile') {
+      const bin = join(root, 'runtime', 'ffmpeg', manifest.ffmpeg['win32-x64'][0]!.directory, 'bin')
+      await mkdir(bin, { recursive: true })
+      for (const file of ['ffmpeg.exe', 'ffprobe.exe', 'avcodec-61.dll']) await writeFile(join(bin, file), 'downloaded media binary')
+    }
     return { stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' subtitles ' : '3.12.12', stderr: '' }
   } } } as unknown as Context
   t.mock.method(client, 'download', async (_asset: unknown, target: string) => {
@@ -140,16 +155,18 @@ test('private environment installs media tools inside YouDub instead of using ma
     downloads.push(target); await mkdir(join(target, '..'), { recursive: true }); await writeFile(target, 'test media executable')
   })
   await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python, privateEnvironment: true }, client, new AbortController().signal).prepare(['media'])
-  assert.ok(downloads.length > 0)
+  assert.equal(downloads.length, windows ? 1 : 2, 'Both Windows executables come from the same download')
   assert.ok(commands.some(command => command.startsWith(join(root, 'runtime', 'ffmpeg'))))
-  assert.ok(process.env.FFMPEG_PATH!.startsWith(join(root, 'runtime', 'ffmpeg')))
-  assert.ok(process.env.FFPROBE_PATH!.startsWith(join(root, 'runtime', 'ffmpeg')))
+  const bin = join(root, 'runtime', 'ffmpeg', ...(windows ? [manifest.ffmpeg['win32-x64'][0]!.directory, 'bin'] : []))
+  assert.equal(process.env.FFMPEG_PATH, join(bin, windows ? 'ffmpeg.exe' : 'ffmpeg'))
+  assert.equal(process.env.FFPROBE_PATH, join(bin, windows ? 'ffprobe.exe' : 'ffprobe'))
+  assert.equal(process.env.PATH?.split(delimiter)[0], bin)
   assert.equal(process.env.NLTK_DATA, join(root, 'nltk_data'))
 })
 test('base restart restores existing managed FFmpeg and NLTK paths without installing inference dependencies', async t => {
   const root = await mkdtemp(join(tmpdir(), 'youdub-managed-resource-restart-'))
   const windows = process.platform === 'win32'
-  const bin = join(root, 'runtime', 'ffmpeg', ...(windows ? ['ffmpeg-7.1.5-win32-x64-gpl-shared', 'bin'] : []))
+  const bin = join(root, 'runtime', 'ffmpeg', ...(windows ? [manifest.ffmpeg['win32-x64'][0]!.directory, 'bin'] : []))
   await mkdir(bin, { recursive: true })
   const python = join(root, 'python')
   await writeFile(python, 'test executable')

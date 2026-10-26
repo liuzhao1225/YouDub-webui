@@ -21,11 +21,14 @@ def verify(groups):
     selected = distributions(groups)
     if "torchcodec" in selected:
         from packaging.version import Version
-        # VoxCPM 1.x uses torchaudio.load; that API requires TorchCodec since 2.9.
+        # VoxCPM uses torchaudio.load; that API requires TorchCodec since 2.9.
         # TorchAudio 2.8 uses SoundFile, and our aligner receives decoded arrays.
         # Do not require FFmpeg shared libraries for those execution paths.
         if "voxcpm" not in groups or Version(importlib.metadata.version("torchaudio")) < Version("2.9"):
             selected.pop("torchcodec")
+    if "torchcodec" in selected:
+        from backend.app.config import configure_windows_ffmpeg_dll_directory
+        configure_windows_ffmpeg_dll_directory()
     for module in selected:
         importlib.import_module(module)
     return {"ready": True}

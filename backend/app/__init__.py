@@ -1,1 +1,1 @@
-"""YouDub FastAPI backend."""
+"""YouDub local media workers."""

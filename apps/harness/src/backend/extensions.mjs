@@ -5,7 +5,7 @@ const object = value => value && typeof value === 'object' && !Array.isArray(val
 
 /** Keep the domain API usable while Harness owns installation and activation. */
 export function extensionSpec(input) {
-  if (!object(input) || typeof input.source !== 'string' || !input.source.trim()) throw fail('INVALID_CONFIG', '请输入 Harness 插件包、Git 仓库或本地绝对路径。');
+  if (!object(input) || typeof input.source !== 'string' || !input.source.trim()) throw fail('INVALID_CONFIG', '请输入插件包、Git 仓库或本地绝对路径。');
   if (Object.keys(input).some(key => !['source', 'ref', 'enabled', 'config', 'requestId', 'approvedBuilds'].includes(key))) throw fail('INVALID_CONFIG', '插件安装请求包含未知字段。');
   let spec = input.source.trim().replace(/^npm:/, '');
   if (input.ref !== undefined && (typeof input.ref !== 'string' || !input.ref.trim() || /[\s#\x00-\x1f]/.test(input.ref) || input.ref.startsWith('-'))) throw fail('INVALID_CONFIG', '插件版本或 Git ref 无效。');
@@ -14,7 +14,7 @@ export function extensionSpec(input) {
     spec += '#' + input.ref;
   }
   if (input.enabled !== undefined && typeof input.enabled !== 'boolean') throw fail('INVALID_CONFIG', 'enabled 必须为布尔值。');
-  if (input.config !== undefined && (!object(input.config) || Object.keys(input.config).length)) throw fail('HARNESS_PLUGIN_CONFIG_REQUIRED', '插件配置由 Harness 配置服务管理；安装后请在官方插件设置中填写。');
+  if (input.config !== undefined && (!object(input.config) || Object.keys(input.config).length)) throw fail('HARNESS_PLUGIN_CONFIG_REQUIRED', '请在安装后的插件设置中填写配置。');
   if (input.approvedBuilds !== undefined && (!Array.isArray(input.approvedBuilds) || input.approvedBuilds.some(name => typeof name !== 'string' || !name))) throw fail('INVALID_CONFIG', 'approvedBuilds 必须包含明确批准的依赖包名。');
   if (input.requestId !== undefined && (typeof input.requestId !== 'string' || !input.requestId.trim())) throw fail('INVALID_CONFIG', '安装 requestId 无效。');
   return spec;
@@ -24,7 +24,7 @@ export function extensionSpec(input) {
 export function requireAppliedChange(result) {
   if (result.application === 'failed' || result.application === 'cancelled' || result.application === 'overridden' || result.error) {
     throw fail(result.error?.code ?? (result.application === 'cancelled' ? 'PLUGIN_INSTALL_CANCELLED' : 'PLUGIN_CHANGE_FAILED'),
-      result.error?.diagnostic ?? result.packageResult?.output ?? `Harness 插件操作未生效：${result.application}`,
+      result.error?.diagnostic ?? result.packageResult?.output ?? `插件操作未生效：${result.application}`,
       result.application === 'cancelled' || result.application === 'overridden' ? 409 : 422, result);
   }
   return result;
@@ -45,7 +45,7 @@ export async function extensionInventory(manager) {
 
 export function registerExtensionRoutes(ctx, http) {
   const manager = ctx.pluginManager;
-  if (!manager) throw fail('HARNESS_PLUGIN_MANAGER_UNAVAILABLE', 'Harness 官方插件管理服务未启动。', 503);
+  if (!manager) throw fail('HARNESS_PLUGIN_MANAGER_UNAVAILABLE', '插件管理服务未启动。', 503);
   const route = (method, path, handler) => ctx.effect(() => http.register(method, path, handler));
   route('GET', '/api/v2/extensions', async request => http.json(request, 200, await extensionInventory(manager)));
   route('POST', '/api/v2/extensions/inspect', async request => {
@@ -57,7 +57,7 @@ export function registerExtensionRoutes(ctx, http) {
     const inspected = await manager.inspect(spec, { registry: 'https://registry.npmmirror.com' });
     if (inspected.status === 'refused') throw fail(inspected.problem,
       inspected.problem === 'not-a-bundle'
-        ? `${inspected.reason} 旧 YouDub 插件须声明 dsh.bundle 与官方 Host/Client 入口；迁移说明见 apps/harness/docs/FUSION-COVERAGE.md。`
+        ? `${inspected.reason} 请使用声明 dsh.bundle 的兼容插件包。`
         : inspected.reason, 422, inspected);
     const result = requireAppliedChange(await manager.installBundle(spec, { enabled: input.enabled ?? true, saveExact: true,
       registry: 'https://registry.npmmirror.com', ...(input.requestId ? { requestId: input.requestId } : {}),

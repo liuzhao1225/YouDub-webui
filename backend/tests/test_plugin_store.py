@@ -156,7 +156,7 @@ def test_multiple_review_nodes_persist_without_claiming_the_execution_slot(tmp_p
 
 
 def test_workflow_crud_roundtrip_and_concurrent_saves_keep_winning_document(tmp_path):
-    bridge = Bridge(tmp_path, credentials=Credentials())
+    bridge = Bridge(tmp_path)
     document = {"id": "user-subtitles", "title": "字幕", "nodes": [{"id": "recognize"}], "edges": []}
     saved = bridge.call("store.workflow_create", {"document": document})
     assert saved["document"] == document and saved["revision"] == 1
@@ -208,92 +208,24 @@ def test_legacy_outputs_register_only_existing_files_inside_task_directory(tmp_p
     assert next(iter(migrated["artifacts"].values()))["path"] == "output/video.mp4"
 
 
-class Credentials:
-    def __init__(self):
-        self.values = {}
-    def get(self, ref):
-        return self.values.get(ref)
-    def set(self, ref, value):
-        self.values[ref] = value
-    def delete(self, ref):
-        del self.values[ref]
-
-
-def test_rotated_connection_keeps_credentials_pinned_by_plugin_task(tmp_path):
-    credentials = Credentials()
-    bridge = Bridge(tmp_path, credentials=credentials)
-    bridge.call("settings.patch", {"patch": {"connection": {"adapter": "openai", "base_url": "https://example.test/v1", "api_key": "first-key"}}})
-    ref = bridge.call("settings.raw", {})["connections"][0]["credential_ref"]
-    bridge.store.create(task(credentialRefs={"openai": ref}))
-    result = bridge.call("settings.patch", {"patch": {"connection": {"adapter": "openai", "api_key": "second-key"}}})
-    assert credentials.get(ref) == "first-key"
-    assert result["connections"][0]["has_api_key"] is True
-    assert "first-key" not in json.dumps(result) and "second-key" not in json.dumps(result)
-
-
-def test_local_runtime_probe_does_not_read_credentials(tmp_path, monkeypatch):
+def test_local_runtime_probe_dispatches_to_provider(tmp_path, monkeypatch):
     from backend.app.v1 import runtime
-    bridge = Bridge(tmp_path, credentials=Credentials())
-    monkeypatch.setattr(bridge, "settings", lambda: pytest.fail("local probe must not read keyring"))
+    bridge = Bridge(tmp_path)
     monkeypatch.setattr(runtime, "probe_capability", lambda adapter: {"adapter": adapter})
     assert bridge.call("runtime.probe", {"adapter": "whisper"}) == {"adapter": "whisper"}
 
 
-def test_settings_connection_omission_rotation_clear_and_address_binding(tmp_path):
-    credentials = Credentials()
-    bridge = Bridge(tmp_path, credentials=credentials)
-    def patch(**values):
-        return bridge.call("settings.patch", {"patch": {"connection": {"adapter": "openai", **values}}})
-    result = patch(base_url="https://first.example/v1", api_key="synthetic-secret")
-    assert result["connections"][0]["api_key_hint"] == "synthe****"
-    assert "synthetic-secret" not in json.dumps(result)
-    assert "credential_ref" not in json.dumps(result)
-    assert bridge.settings() == result
-    original = bridge.call("settings.raw", {})["connections"][0]["credential_ref"]
-    assert patch(base_url="https://first.example/v1")["connections"][0]["has_api_key"]
-    assert bridge.call("settings.raw", {})["connections"][0]["credential_ref"] == original
-    assert patch(api_key="replacement-secret")["connections"][0]["api_key_hint"] == "replac****"
-    assert original not in credentials.values
-    assert len(credentials.values) == 1
-    changed = patch(base_url="https://second.example/v1")["connections"][0]
-    assert not changed["has_api_key"] and changed["api_key_hint"] is None
-    assert not credentials.values
-    patch(api_key="last-secret")
-    cleared = patch(api_key=None)["connections"][0]
-    assert not cleared["has_api_key"] and cleared["api_key_hint"] is None
-    assert not credentials.values
-    with bridge.store.connect() as conn:
-        assert "secret" not in "\n".join(conn.iterdump())
-
-
-@pytest.mark.parametrize("key", ["x", "short-key", "1234567890"])
-def test_short_saved_keys_are_fully_masked(tmp_path, key):
-    bridge = Bridge(tmp_path, credentials=Credentials())
-    result = bridge.patch_settings({"connection": {"adapter": "openai", "base_url": "https://example.test/v1", "api_key": key}})
-    assert result["connections"][0]["has_api_key"]
-    assert result["connections"][0]["api_key_hint"] == "****"
-
-
-def test_settings_failures_are_visible_before_and_after_credential_write(tmp_path, monkeypatch):
-    from backend.app.v1.credentials import CredentialStoreError
-    credentials = Credentials()
-    bridge = Bridge(tmp_path, credentials=credentials)
-    patch = {"connection": {"adapter": "openai", "base_url": "https://example.test/v1", "api_key": "synthetic-key"}}
-    with monkeypatch.context() as scoped:
-        def fail_keyring(*args):
-            raise CredentialStoreError("keyring locked")
-        scoped.setattr(credentials, "set", fail_keyring)
-        with pytest.raises(CredentialStoreError, match="keyring locked"):
-            bridge.patch_settings(patch)
-    assert bridge.store.settings_values() == {}
-    def fail_store(*args):
-        raise sqlite3.OperationalError("synthetic write failure")
-    monkeypatch.setattr(bridge.store, "write_setting", fail_store)
-    with pytest.raises(WorkerError) as error:
-        bridge.patch_settings(patch)
-    assert error.value.code == "SETTINGS_PARTIALLY_APPLIED"
-    assert len(credentials.values) == 1
-    assert bridge.store.settings_values() == {}
+def test_local_runtime_probe_refreshes_media_paths_after_installation(tmp_path, monkeypatch):
+    import os
+    from backend.app.v1 import runtime
+    from backend.app.config import ffmpeg_binary, ffprobe_binary
+    monkeypatch.setenv("FFMPEG_PATH", "not-yet-installed/ffmpeg.exe")
+    monkeypatch.setenv("FFPROBE_PATH", "not-yet-installed/ffprobe.exe")
+    monkeypatch.setenv("PATH", "system-tools")
+    bridge = Bridge(tmp_path)
+    monkeypatch.setattr(runtime, "probe_capability", lambda adapter: (ffmpeg_binary(), ffprobe_binary(), os.environ["PATH"]))
+    installed = {"FFMPEG_PATH": "installed/bin/ffmpeg.exe", "FFPROBE_PATH": "installed/bin/ffprobe.exe", "PATH": "installed/bin;system-tools"}
+    assert bridge.call("runtime.probe", {"adapter": "whisper", "mediaEnvironment": installed}) == tuple(installed.values())
 
 
 def test_current_store_rejects_redirected_database_without_touching_target(tmp_path):
@@ -311,24 +243,3 @@ def test_current_store_rejects_redirected_database_without_touching_target(tmp_p
     with pytest.raises(RuntimeSecurityError):
         SqliteStore(root)
     assert outside.read_bytes() == b"existing-data"
-
-
-@pytest.mark.parametrize("patch", [
-    {"connection": {"adapter": "openai", "api_key": ["SYNTHETIC-CREDENTIAL"]}},
-    {"connection": {"adapter": "openai", "base_url": "https://user:SYNTHETIC-CREDENTIAL@example.test/v1"}},
-])
-def test_invalid_settings_are_422_without_credentials_in_error_or_traceback(tmp_path, patch):
-    import traceback
-    from backend.workers.protocol import error_payload
-    bridge = Bridge(tmp_path, credentials=Credentials())
-    try:
-        bridge.patch_settings(patch)
-    except Exception as exc:
-        payload = error_payload(exc)
-        assert payload["code"] == "INVALID_CONFIG"
-        assert payload["status"] == 422
-        assert "SYNTHETIC-CREDENTIAL" not in json.dumps(payload)
-        assert "SYNTHETIC-CREDENTIAL" not in "".join(traceback.format_exception(exc))
-    else:
-        pytest.fail("Invalid settings were accepted")
-    assert bridge.store.settings_values() == {}

@@ -305,8 +305,7 @@ describe('LlmRuntime', () => {
     }))
 
     const projected = adapter.lastOptions?.messages[0]?.content[0]
-    expect(projected).toEqual({ type: 'text', text: ctx.llm.fileRequestText(attachment) })
-    expect(ctx.llm.fileRequestText(attachment)).toContain('current execution environment cannot access a readable path')
+    expect(projected).toMatchObject({ type: 'text', text: expect.stringContaining('current execution environment cannot access a readable path') })
   })
 
   it('captures provider-owned retry policy at registration and defaults omission', async () => {
@@ -1645,20 +1644,4 @@ describe('LlmRuntime', () => {
     handle()
     expect(ctx.llm.listProviders()).toEqual([])
   })
-})
-
-it('delegates image coordinate projections and preserves images for adapters without a resize policy', async () => {
-  const ctx = new Context()
-  await ctx.plugin(LlmRuntime)
-  try {
-    const image = { attachmentId: AttachmentId('sha256:' + 'a'.repeat(64)), mediaType: 'image/png' as const, bytes: 200, width: 640, height: 480 }
-    ctx.llm.registerAdapter(['identity'], new ScriptedAdapter([]))
-    expect(ctx.llm.imageRequestTarget('identity', 'vision', image)).toEqual({ width: 640, height: 480, maxBytes: 200 })
-    class ResizingAdapter extends ScriptedAdapter {
-      override imageRequestTarget() { return { width: 320, height: 240, maxBytes: 100 } }
-    }
-    ctx.llm.registerAdapter(['resized'], new ResizingAdapter([]))
-    expect(ctx.llm.imageRequestTarget('resized', 'vision', image)).toEqual({ width: 320, height: 240, maxBytes: 100 })
-    expect(() => ctx.llm.imageRequestTarget('absent', 'vision', image)).toThrow()
-  } finally { await ctx.fiber.dispose() }
 })

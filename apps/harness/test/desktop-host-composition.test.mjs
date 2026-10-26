@@ -119,10 +119,6 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   assert.equal(inspection.error, undefined);
   assert.equal(typeof inspection.activeTasks, 'boolean');
   assert.equal(inspection.scheduledTasks, false);
-  child.send({ type: 'update-tasks', requestId: 2, action: 'inspect' });
-  const update = await waitFor('update-tasks', message => message.type === 'update-tasks' && message.requestId === 2);
-  assert.equal(update.error, undefined);
-  assert.equal(typeof update.active, 'boolean');
   if (!skipSetup) {
     const installationPath = join(directory, 'YouDub media');
     const configured = await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie },

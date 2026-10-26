@@ -18,7 +18,6 @@ export const executionFiles: Record<string, string[]> = {
   'youdub.download': [...worker, 'backend/workers/download.py', 'packages/sdk/src/video-source.ts', 'backend/requirements/download.txt'],
   'youdub.media': [...worker, ...python(...media, 'mix.py', 'export.py', 'sentence_split.py', 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
   whisper: [...worker, ...python(...media, 'asr.py', 'asr_process.py'), 'backend/requirements/whisper.txt'],
-  openai: [...worker, ...python('translate.py'), 'backend/requirements/openai.txt'],
   voxcpm: [...worker, ...python(...media, 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
   demucs: [...worker, ...python(...media, 'separate.py', 'separate_process.py'), 'backend/requirements/demucs.txt'],
   qwen_forced_aligner: [...worker, ...python(...media, 'export.py', 'sentence_split.py', 'forced_alignment.py', 'forced_alignment_process.py'), 'backend/requirements/qwen_forced_aligner.txt'],
@@ -27,7 +26,7 @@ export const executionFiles: Record<string, string[]> = {
 }
 const operationKeys: Record<string, string[]> = {
   'youdub.download': ['download'], 'youdub.media': ['prepare', 'reference', 'mix', 'export', 'importSubtitles'],
-  whisper: ['recognize'], openai: ['translate'], voxcpm: ['synthesize'], demucs: ['separate'], qwen_forced_aligner: ['align'],
+  whisper: ['recognize'], voxcpm: ['synthesize'], demucs: ['separate'], qwen_forced_aligner: ['align'],
 }
 function executionContract(value: any, fieldMap = false): any {
   if (Array.isArray(value)) return value.map(item => executionContract(item))

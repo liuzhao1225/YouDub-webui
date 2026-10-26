@@ -1,4 +1,4 @@
-# Harness 版本地开发
+# YouDub 本地开发
 
 以下命令在 `main` 或从 main 创建的功能分支执行。源码启动与正式安装包共用同一产品组合；安装包、签名和发布见[发行流程](../../../docs/releasing.md)。
 
@@ -30,7 +30,7 @@ npm run build:youdub
 | --- | --- |
 | 安装根依赖 | 原 YouDub 领域源码和开发工具依赖 |
 | 安装 Web 依赖 | 复用业务组件、React Flow、Tailwind 与测试所需依赖 |
-| 安装 Harness 接入依赖 | 产品构建工具、本仓库 Electron；不安装第二套 Harness 发布包 |
+| 安装产品依赖 | 产品构建工具、本仓库 Electron |
 | `build:framework` | 读取当前源码，构建到 `.cache/harness/source-build`；内部使用官方 `scripts/build.ts --scope artifacts` |
 | `build:youdub` | 生成 `apps/harness/dist/host.mjs`、`client.js` 和桌面产品入口 |
 
@@ -63,7 +63,9 @@ npm start
 
 Electron 主进程通过官方控制器启动 Host，端口由桌面运行时管理，实际地址从启动输出读取。测试文件选择、保存、窗口行为及退出确认时使用这个 Electron 实例。
 
-PR 和 main 的 push 自动运行源码构建与回归检查，不生成桌面安装包。需要统一测试打包时，手动运行「YouDub Desktop 源码开发检查」，启用 `package_desktop`；这会增加 macOS/Windows 独立应用首启及 Windows EXE 首装、覆盖升级、卸载验收，并保存候选包与证据。该选项默认关闭，不发布正式版本。
+PR 和 main 的 push 不触发源码构建。需要合并时，将 PR 从 Draft 手动标记为 Ready for review，触发双平台源码检查；已处于 Ready 状态的 PR 先转为 Draft，再标记 Ready。后续提交需要再次触发，最新提交的必需检查通过后才能合并。
+
+独立验证和统一打包仍通过手动运行「YouDub Desktop 源码开发检查」。需要打包时启用 `package_desktop`，增加 macOS/Windows 独立应用首启及 Windows EXE 首装、覆盖升级、卸载验收，并保存候选包与证据；该选项默认关闭，不发布正式版本。GitHub [不将 workflow_dispatch 的结果计入 PR 必需检查](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated)，合并应使用上述 Ready 入口；Ready 入口不打包。
 
 ### 浏览器开发
 
@@ -80,9 +82,9 @@ npm --prefix apps/harness start
 
 | 命令或目录 | 当前用途 |
 | --- | --- |
-| `npm start` / `npm run dev` | 当前 Harness Electron 产品 |
+| `npm start` / `npm run dev` | 当前 YouDub Electron 产品 |
 | `npm run build:youdub` / `npm run build:desktop` | 同一 Electron 开发构建，不生成安装包 |
-| `npm run dev:web` / `npm --prefix apps/harness start` | 同一 Harness Host 的浏览器开发入口 |
+| `npm run dev:web` / `npm --prefix apps/harness start` | 同一 YouDub Host 的浏览器开发入口 |
 | `apps/web/src` | 直接复用的业务组件和领域测试，无独立 Web 启动入口 |
 | `packages/builtin/test/helpers` | 领域回归使用的隔离组合夹具，不进入产品构建 |
 
@@ -102,6 +104,8 @@ npm --prefix apps/harness start
 | Node / pnpm | 本工作区 `apps/harness/node_modules/electron` 与 `pnpm` |
 | 桌面源码运行时链接 | `apps/harness/dist/desktop/runtime-project` |
 | 浏览器 home / profile | `.cache/harness/dsh` / `profiles/youdub` |
+
+媒体工具以保存的业务安装目录为根解析。Windows 的两种下载包拥有不同的内部目录，安装器和 Worker 共用 `ffmpegDirectory` 查找实际安装的 `bin`，FFmpeg、FFprobe 和共享 DLL 保持在一起。安装完成后，新子进程和已启动的 Python Bridge 都使用更新后的 `FFMPEG_PATH`、`FFPROBE_PATH` 与 `PATH`。原生音频库的 DLL 搜索目录由各自的 Python 子进程注册。
 
 首启实验使用新的 home：
 
@@ -136,7 +140,7 @@ test .env -ef env.txt
 | 文档 | 文件链接、命令与脚本一致，`git diff --check` |
 | 产品组合、Host/Client 接入 | `npm --prefix apps/harness test`，构建后执行 `npm --prefix apps/harness run check:composition` |
 | 领域逻辑 | 根目录 `npm test`，或 `node --import tsx --test packages/builtin/test/<文件>.test.ts` |
-| 原页面组件 | `npm --prefix apps/web test -- src/<相关测试>.test.tsx`，相关类型检查与实际 Harness 页面 |
+| 原页面组件 | `npm --prefix apps/web test -- src/<相关测试>.test.tsx`，相关类型检查与实际 YouDub 页面 |
 | 语言 | `npm --prefix apps/harness run check:locales`，实际设置页面切换与重启读回 |
 | Python 操作 | `.venv/bin/pytest backend/tests/<相关文件>.py`，受影响的真实媒体任务 |
 | 框架输入与产物 | `npm run build:framework` |
@@ -157,10 +161,10 @@ test .env -ef env.txt
 | 找不到 `.dsh-build/client-build-environment.json` 或 profile runner/Host | `build:framework` 是否成功，源码构建目录是否完整 |
 | Electron 或 pnpm 缺失 | `npm --prefix apps/harness ci` 是否成功，Electron 平台二进制是否安装完整 |
 | Host / web boot 报 pending service | 官方诊断中的条目与 `inject`，产品 patch 是否关闭了所需服务 |
-| `Legacy platform code entered the Harness plugin bundle` | 构建输入中的旧框架依赖，修正导入/接线后重建 |
+| `Legacy platform code entered the YouDub plugin bundle` | 构建输入中的旧框架依赖，修正导入/接线后重建 |
 | 修改页面后界面未变化 | 是否构建产品并重启正确的 Electron/浏览器实例，当前使用哪个 home |
 | 初始化停在模型阶段 | 四模型及全部依赖的实际 ready 状态，资源页面的原始错误 |
-| 翻译不可用或输出容量错误 | 官方模型页的 API 协议、URL、凭据、模型与输出容量至少 65,535 的配置 |
+| 翻译不可用或模型调用失败 | 官方模型页的 URL、凭据、模型配置与 Harness 返回的原始错误；输出参数沿用 Harness 规则 |
 | 扩展提示 `not-a-bundle` | 是否声明 `dsh.bundle` 和官方入口，参照[外部插件说明](BACKEND-DEVELOPMENT.md#外部插件) |
 
 启动器输出 profile 路径，桌面错误界面显示官方诊断报告路径。保留失败原因，修正后重新验证受影响路径；不要删去必需服务或吞掉错误来跳过启动检查。

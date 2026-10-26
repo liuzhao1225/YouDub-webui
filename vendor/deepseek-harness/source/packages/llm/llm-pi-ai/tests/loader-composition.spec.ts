@@ -8,8 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader, { type ModuleLoaderV2 } from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import LlmRuntime, { createMessage, createUserMessage, userAgent } from '@deepseek-ai/dsh-llm'
-import AuthorizationService from '@deepseek-ai/dsh-authorization'
+import LlmRuntime, { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import LocalCredentialProvider from '@deepseek-ai/dsh-credentials-local'
 import { profileComposition } from '../../../settings/settings/tests/profile-composition.ts'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
@@ -51,8 +50,6 @@ async function loadComposition(): Promise<{ ctx: Context; settingsPath: string }
     '  config:',
     `    path: ${JSON.stringify(join(root, '.credentials.yaml'))}`,
     '    debounceMs: 10',
-    '- id: authorization',
-    "  name: '@deepseek-ai/dsh-authorization'",
     '- id: llm-pi-ai',
     "  name: '@deepseek-ai/dsh-llm-pi-ai'",
     '',
@@ -66,7 +63,6 @@ async function loadComposition(): Promise<{ ctx: Context; settingsPath: string }
   const modules = new Map<string, unknown>([
     ['test-llm-service', LlmRuntime],
     ['@deepseek-ai/dsh-credentials-local', LocalCredentialProvider],
-    ['@deepseek-ai/dsh-authorization', AuthorizationService],
     ['@deepseek-ai/dsh-llm-pi-ai', LlmPiAi],
   ])
   const internal: ModuleLoaderV2 = {
@@ -121,17 +117,6 @@ describe('llm-pi-ai real dormant composition', () => {
     expect(server.headers[0]?.authorization).toBe('Bearer key-from-store')
   })
 
-  it('offers OpenAI sign-in by API key only, while other subscription logins stay', async () => {
-    const { ctx } = await loadComposition()
-    const methods = (provider: string): string[] | undefined => ctx.authorization.list()
-      .find(entry => entry.key === LlmPiAi.recordKeyFor(provider))?.methods.map(method => method.id)
-
-    // pi-ai's Sign in with ChatGPT needs an installation ID the harness does
-    // not supply, so the route offers only its key login.
-    expect(methods('openai')).toEqual(['api-key'])
-    expect(methods('anthropic')).toEqual(['oauth', 'api-key'])
-  })
-
   it('uses settings-only route headers for model discovery', async () => {
     vi.stubEnv('PI_COMPOSITION_KEY', '')
     const server = await mockServer([{ body: JSON.stringify({ data: [{ id: 'acme-private' }] }) }])
@@ -166,7 +151,7 @@ describe('llm-pi-ai real dormant composition', () => {
     expect(server.headers[0]?.['x-company-code']).toBe('private-tenant')
     expect(server.headers[0]?.authorization).toBe('Bearer key-from-store')
     expect(server.headers[0]?.accept).toBe('application/json')
-    expect(server.headers[0]?.['user-agent']).toBe(userAgent())
+    expect(server.headers[0]?.['user-agent']).toBe('deployment-owned')
   })
 
   it('continues natively after max-token assembly drops a tool call, with pruned replay metadata', async () => {
