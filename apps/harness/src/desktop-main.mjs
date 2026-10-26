@@ -1,12 +1,17 @@
 import { app, nativeImage } from 'electron';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 // Product composition uses the reviewed Harness Desktop fork.
 app.setName('YouDub');
+if (process.platform === 'win32') app.setAppUserModelId('com.youdub.desktop');
+// Keep the existing YouDub home for upgrades, but never inherit Harness's home.
+process.env.DSH_HOME = resolve(process.env.YOUDUB_HOME || join(app.getPath('userData'), 'harness'));
 if (app.isPackaged) {
   // Installed builds own their runtime; Finder and Explorer supply no development paths.
   const runtime = app.getAppPath();
-  process.env.DSH_HOME ||= join(app.getPath('userData'), 'harness');
+  for (const name of Object.keys(process.env)) {
+    if (name.toUpperCase().startsWith('DSH_') && name !== 'DSH_HOME') delete process.env[name];
+  }
   process.env.DSH_DESKTOP_DSH_DIR = runtime;
   process.env.DSH_DESKTOP_PNPM_ENTRY = join(runtime, 'node_modules/pnpm/bin/pnpm.mjs');
   process.env.YOUDUB_HARNESS_PLUGIN_ROOT = join(runtime, 'node_modules/@youdub/harness-subtitles');

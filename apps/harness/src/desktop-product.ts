@@ -1,6 +1,7 @@
 /** YouDub product assembly using the reviewed Harness framework fork. */
 import { prepareYouDubProfile } from '../prepare-profile.mjs'
 import { assertYouDubProfile } from '../check-profile.mjs'
+import { youdubEnvironment } from '../product-environment.mjs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { app, BrowserWindow, dialog, ipcMain, Menu, powerMonitor, nativeTheme, net, protocol, session, shell,
@@ -312,7 +313,7 @@ async function main(): Promise<void> {
     await assertYouDubProfile(paths.profile, join(resources.dsh, 'package.json'))
     hostEnvironment = await loginShell
     // Product paths must win over login-shell variables during source development.
-    hostEnvironment = { ...hostEnvironment, DSH_HOME: process.env.DSH_HOME,
+    hostEnvironment = { ...youdubEnvironment(hostEnvironment), DSH_HOME: process.env.DSH_HOME,
       YOUDUB_MEDIA_ROOT: process.env.YOUDUB_MEDIA_ROOT, YOUDUB_NODE_PATH: process.env.YOUDUB_NODE_PATH,
       YOUDUB_TEST_SKIP_SETUP: process.env.YOUDUB_TEST_SKIP_SETUP, YOUDUB_TEST_PYTHON: process.env.YOUDUB_TEST_PYTHON }
   })

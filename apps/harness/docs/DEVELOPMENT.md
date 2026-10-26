@@ -90,13 +90,13 @@ npm --prefix apps/harness start
 
 | 内容 | 桌面默认路径 |
 | --- | --- |
-| Harness home | `.cache/harness/desktop` |
+| YouDub home（开发） | `.cache/harness/desktop` |
 | Electron 用户数据 | `.cache/harness/desktop-user-data` |
-| 桌面 profile | `$DSH_HOME/profiles/desktop` |
-| YouDub 任务、配置与产物根 | `$DSH_HOME/youdub` |
-| Python / venv | `$DSH_HOME/youdub/runtime/python`、`runtime/venv` |
-| 模型 | `$DSH_HOME/youdub/models` |
-| 媒体工具与分句资源 | `$DSH_HOME/youdub/runtime/ffmpeg`、`$DSH_HOME/youdub/nltk_data` |
+| 桌面 profile | `$YOUDUB_HOME/profiles/desktop` |
+| YouDub 任务、配置与产物根 | `$YOUDUB_HOME/youdub` |
+| Python / venv | `$YOUDUB_HOME/youdub/runtime/python`、`runtime/venv` |
+| 模型 | `$YOUDUB_HOME/youdub/models` |
+| 媒体工具与分句资源 | `$YOUDUB_HOME/youdub/runtime/ffmpeg`、`$YOUDUB_HOME/youdub/nltk_data` |
 | Node / pnpm | 本工作区 `apps/harness/node_modules/electron` 与 `pnpm` |
 | 桌面源码运行时链接 | `apps/harness/dist/desktop/runtime-project` |
 | 浏览器 home / profile | `.cache/harness/dsh` / `profiles/youdub` |
@@ -104,7 +104,7 @@ npm --prefix apps/harness start
 首启实验使用新的 home：
 
 ```sh
-DSH_HOME="$PWD/.cache/harness/desktop-fresh" npm start
+YOUDUB_HOME="$PWD/.cache/harness/desktop-fresh" npm start
 ```
 
 Electron 用户数据跟随为该 home 加 `-user-data`。新 home 复用工作区的 Electron、pnpm 和源码构建，独立保存 profile、业务环境、模型和数据；重新使用同一路径会继续读取前次实验数据。不要通过删除用户 home 来制造首启场景。
@@ -162,3 +162,11 @@ test .env -ef env.txt
 | 扩展提示 `not-a-bundle` | 是否声明 `dsh.bundle` 和官方入口，参照[外部插件说明](BACKEND-DEVELOPMENT.md#外部插件) |
 
 启动器输出 profile 路径，桌面错误界面显示官方诊断报告路径。保留失败原因，修正后重新验证受影响路径；不要删去必需服务或吞掉错误来跳过启动检查。
+
+### 已安装应用与 Harness 隔离
+
+已安装版本默认使用 Electron 的 YouDub 用户数据目录下的 `harness` 子目录，Windows 为 `%APPDATA%\YouDub\harness`。保留这个既有目录可继续使用旧版的配置、凭据与任务。业务安装目录仍以首启页面保存的选择为准。`YOUDUB_HOME` 是 YouDub 的显式路径覆盖；外部 `DSH_*` 环境变量不会选择 YouDub 的数据或运行时，框架内部使用的 `DSH_HOME` 由 YouDub 启动入口赋值。
+
+Windows 使用独立的安装器 AppId `{C28A6869-1C98-4FA0-BBE5-E5C579B0A602}`、应用标识 `com.youdub.desktop`、`YouDub.exe`、开始菜单及卸载项。安装器覆盖旧版时替换 `resources/app` 和 `resources/youdub`，保留应用目录以外的配置、凭据、环境、模型和任务。更新和卸载均不操作 Harness 的目录或注册项。`dsh-app://app` 仅是 Electron 会话内部页面协议，不注册为系统 URL 协议。
+
+安装回归覆盖真实安装位置下的中文确认按钮、带外部 Harness 环境变量的启动、重启后安装目录恢复、旧代码清理与用户数据保留。测试不将环境下载开始视为所有模型准备完成。
