@@ -1,6 +1,6 @@
 /**
  * Harness error base with a stable machine-routable code and chained cause.
- * Package errors extend it so tool results and replay can retain failure class.
+ * Model request errors extend it to retain the original failure class and cause.
  * @module @deepseek-ai/dsh-llm/error
  */
 
@@ -26,9 +26,6 @@ export const CONTEXT_WINDOW_EXCEEDED_CODE = 'CONTEXT_WINDOW_EXCEEDED'
 
 /** Canonical provider-neutral code for an exhausted account quota or balance. */
 export const QUOTA_EXCEEDED_CODE = 'QUOTA'
-
-/** Account-token quota that can be replenished through the first-party billing page. */
-export const ACCOUNT_QUOTA_EXCEEDED_CODE = 'ACCOUNT_QUOTA'
 
 /**
  * Canonical provider-neutral code for a response that completed normally but
@@ -101,75 +98,3 @@ export function isQuotaExceededError(detail: string): boolean {
     || /\b(?:balance|credits?)[\s_-]+(?:exhausted|depleted)\b/i.test(detail)
     || /\bout[\s_-]+of[\s_-]+(?:credits?|budget)\b/i.test(detail)
 }
-
-/**
- * Render a thrown value with its full `cause` chain and AggregateError
- * members, so transport wrappers like undici's `TypeError: fetch failed`
- * surface the underlying failure instead of masking it. Plain structured
- * failures render their own data-backed `message`. Diagnostic-surface
- * rendering only (messages, notices, logs) — never parse the result; route on
- * {@link HarnessError.code}.
- * @param value - the caught value (`unknown` in catch clauses).
- * @returns the outermost message first, each cause appended with `: ` (skipped
- * when it repeats the wrapper message verbatim), and AggregateError members
- * bracketed and `; `-joined.
- */
-export function errorChain(value: unknown): string {
-  // Tracks the active recursion path (entries removed on exit), so only true
-  // cycles are flagged and a diamond-shared cause still renders in full.
-  const path = new Set<unknown>()
-  const render = (current: unknown): string => {
-    if (path.has(current)) return '<circular cause>'
-    path.add(current)
-    try {
-      if (!(current instanceof Error)) {
-        if (typeof current === 'object' && current !== null) {
-          const descriptor = Object.getOwnPropertyDescriptor(current, 'message')
-          if (descriptor !== undefined && 'value' in descriptor && typeof descriptor.value === 'string') {
-            return descriptor.value
-          }
-        }
-        return String(current)
-      }
-      const message = current.message === '' ? current.name : current.message
-      const members = current instanceof AggregateError && current.errors.length > 0
-        ? ` [${current.errors.map(render).join('; ')}]`
-        : ''
-      const causeText = current.cause === undefined || current.cause === null
-        ? ''
-        : render(current.cause)
-      // Wrappers like `new HarnessError(String(value), code, { cause: value })`
-      // repeat their cause verbatim; rendering it again would only add noise.
-      const cause = causeText === '' || causeText === message ? '' : `: ${causeText}`
-      return `${message}${members}${cause}`
-    } catch {
-      // Only hostile coercion or hostile accessors (a throwing toString /
-      // Symbol.toPrimitive on a non-Error, or a throwing message/name/cause/
-      // errors getter on an Error subclass): this renderer feeds UI notices
-      // and logs, so nothing may escape. Inner frames catch their own throws,
-      // so only the hostile node collapses, not the whole chain.
-      return '<unrenderable value>'
-    } finally {
-      path.delete(current)
-    }
-  }
-  return render(value)
-}
-
-/**
- * Narrow an arbitrary thrown value to a HarnessError (for `instanceof` at runtime boundaries).
- * @param value - the caught value (`unknown` in catch clauses).
- * @returns true only for real instances; duck-typed or cross-realm errors do not narrow.
- */
-export function isHarnessError(value: unknown): value is HarnessError {
-  return value instanceof HarnessError
-}
-
-/**
- * Canonical code for a request an image-capable route cannot send until more
- * of its images are offloaded. The failure's `offloadImages` names how many
- * more of the oldest retained occurrences must be offloaded;
- * `dsh-compaction-image-offload` records an `image/offload` selection before
- * the agent or summarizer retries with freshly derived input.
- */
-export const IMAGE_OFFLOAD_REQUIRED_CODE = 'IMAGE_OFFLOAD_REQUIRED'

@@ -187,7 +187,7 @@ Logo 保留红 `#FF0033`、粉 `#FB7299`、蓝 `#00AEEC` 和字标渐变。工�
 - [design-platform](../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/design-platform.css)
 - [scrollbar](../../vendor/deepseek-harness/source/packages/client/ui-theme/src/styles/scrollbar.css)
 
-[YouDub主题](../../apps/web/src/app/globals.css) · [桌面控件适配](../../apps/harness/src/frontend/controls.tsx) · [视觉速查页](ui-design-reference.html)
+[YouDub主题](../../apps/web/src/app/globals.css) · [桌面控件适配](../../apps/harness/src/frontend/controls.tsx) · [视觉速查页生成脚本](../../scripts/build-ui-design-reference.mjs)
 
 ## 10. 页面内容边界
 

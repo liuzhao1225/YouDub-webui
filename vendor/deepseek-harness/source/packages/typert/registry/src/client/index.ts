@@ -3,7 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { TypertRegistry } from '../service.ts'
 
-/** Required services: none; this is the Client reflection root. */
+/** Required services: none; this is the Client Remote registry root. */
 export const inject: string[] = []
 
 /**

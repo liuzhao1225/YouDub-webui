@@ -42,16 +42,6 @@
   transform: translate(-50%, -100%);
 }
 
-/* End alignment: `left` carries the anchor's right edge, so the bubble sits
-   fully left of it instead of centering. */
-.bubble[data-side='bottom'][data-align='end'] {
-  transform: translateX(-100%);
-}
-
-.bubble[data-side='top'][data-align='end'] {
-  transform: translate(-100%, -100%);
-}
-
 @keyframes tooltip-in {
   from { opacity: 0; }
 }

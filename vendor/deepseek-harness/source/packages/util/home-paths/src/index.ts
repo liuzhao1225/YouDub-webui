@@ -11,9 +11,6 @@ import { basename, dirname, join, resolve } from 'node:path'
 /** Directory name for the default DeepSeek Harness home under the OS home. */
 export const DSH_HOME_DIR_NAME = '.dsh'
 
-/** Stable user-facing display form for the default DeepSeek Harness home. */
-export const DEFAULT_DSH_HOME_DISPLAY = `~/${DSH_HOME_DIR_NAME}`
-
 /** Environment variable that overrides the default DeepSeek Harness home. */
 export const DSH_HOME_ENV = 'DSH_HOME'
 
@@ -93,18 +90,6 @@ function resolveRoot(
 }
 
 /**
- * Label one resolved user-data root symbolically for user-facing display.
- * @param resolvedRoot - absolute path returned by the matching resolver.
- * @param defaultRoot - absolute default root whose symbolic label applies to a match.
- * @param defaultLabel - symbolic label for the default root.
- * @param envName - environment variable name that labels any other root.
- * @returns the symbolic label.
- */
-function rootDisplay(resolvedRoot: string, defaultRoot: string, defaultLabel: string, envName: string): string {
-  return resolvedRoot === resolve(defaultRoot) ? defaultLabel : `$${envName}`
-}
-
-/**
  * Resolve the single-root DeepSeek Harness home.
  *
  * Precedence, highest first: an explicit configured path, `$DSH_HOME`, then
@@ -126,27 +111,4 @@ export function resolveDshHome(configured?: string, env: Record<string, string |
  */
 export function dshHomePath(...segments: string[]): string {
   return join(resolveDshHome(), ...segments)
-}
-
-/**
- * Join path segments onto the resolved Harness home's `cache` directory without creating it; no arguments returns the directory itself.
- * @param optionsOrSegment - explicit home override, or the first path segment; omission uses the default home resolution.
- * @param segments - additional path segments after the first child, if any.
- * @returns the normalized absolute cache path.
- */
-export function dshCachePath(optionsOrSegment: { dshHome?: string } | string = {}, ...segments: string[]): string {
-  if (typeof optionsOrSegment === 'string') return dshHomePath('cache', optionsOrSegment, ...segments)
-  return join(resolveDshHome(optionsOrSegment.dshHome), 'cache', ...segments)
-}
-
-/**
- * Describe a resolved harness home symbolically for user-facing display.
- *
- * It never returns an absolute machine path: the default home is labelled
- * `~/.dsh`, and any configured home is labelled `$DSH_HOME`.
- * @param resolvedHome - the absolute path returned by {@link resolveDshHome}.
- * @returns `~/.dsh` for the default home, otherwise `$DSH_HOME`.
- */
-export function dshHomeDisplay(resolvedHome: string): string {
-  return rootDisplay(resolvedHome, defaultDshHome(), DEFAULT_DSH_HOME_DISPLAY, DSH_HOME_ENV)
 }

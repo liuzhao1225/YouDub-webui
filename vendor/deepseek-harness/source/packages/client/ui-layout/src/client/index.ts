@@ -77,27 +77,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'main': { kind: 'keyed'; scope: 'root' }
     /**
-     * The right column: a track the centre makes room for, or nothing. OCCUPIED
-     * by the right Sidebar, which uses the resolved column width in normal
-     * mode and covers the viewport in fullscreen, retaining the wide-screen
-     * column reservation underneath.
-     *
-     * Whether the panel is shown, and whether it takes a track, is the
-     * occupant's own recorded business — it reports the composition of its
-     * expanded and presentation state through `ctx.layout`, and the frame sizes
-     * the track and places the resize handle from that. The expand control is
-     * not this column's: it is a button in the conversation header. The root
-     * occupant decides when to render its Session-bound content.
-     */
-    'rightbar': { kind: 'single'; scope: 'root'; owner: RightbarOwnerProps }
-    /**
-     * Full-width bottom content below all three columns. Its rendered height
-     * reduces the columns' available height; empty content reserves no space.
-     * The occupant owns its height, visibility, and controls. It receives no
-     * Session binding and remains mounted across main-panel navigation.
-     */
-    'shell.bottom': { kind: 'single'; scope: 'root' }
-    /**
      * Frame-wide floating layer, above every column and outside their scroll
      * containers. Deliberately generic and unowned by any feature: a badge, a
      * toast stack or a status pill all belong here, and entries order among
@@ -152,19 +131,6 @@ export interface SidebarPanelIconOwnerProps {
   active: boolean
 }
 
-/** Right column owner share: resolved normal geometry and opening eligibility. */
-export interface RightbarOwnerProps {
-  /** Resolved normal panel width in px, not the saved preference; zero if it cannot fit. */
-  width: number
-  /** Current frame width in px. */
-  viewportWidth: number
-  /**
-   * Whether a normal right panel can retain 300px beside a 400px center.
-   * Before a narrow opening, includes the space from collapsing the left sidebar.
-   */
-  canShow: boolean
-}
-
 /** Required services (cordis fiber inject — the loader passes all module exports as an object plugin). */
 export const inject = ['slots', 'theme', 'locale', 'shortcuts']
 
@@ -200,8 +166,6 @@ export function apply(ctx: ClientContext): void {
       children: {
         'sidebar': { kind: 'single', scope: 'root' },
         'main': { kind: 'keyed', scope: 'root' },
-        'rightbar': { kind: 'single', scope: 'root' },
-        'shell.bottom': { kind: 'single', scope: 'root' },
         'shell.overlay': { kind: 'list', scope: 'root' },
         'shell.leading': { kind: 'single', scope: 'root' },
       },

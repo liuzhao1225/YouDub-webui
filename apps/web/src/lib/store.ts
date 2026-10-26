@@ -2,10 +2,9 @@
 import { createSnapshotStore } from './harness-store'
 
 export function createStore<T>(initial: () => T) {
-  const value = initial(), state = createSnapshotStore(value)
+  const state = createSnapshotStore(initial())
   return {
     getState: state.getSnapshot,
-    getInitialState: () => value,
     subscribe: state.subscribe,
     setState(next: Partial<T> | T | ((current: T) => Partial<T> | T), replace = false) {
       const current = state.getSnapshot()

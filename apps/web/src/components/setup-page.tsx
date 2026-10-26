@@ -4,7 +4,7 @@ import { Page, pageLayoutStyles } from './page-layout'
 
 /** Shared boundary for installation, preparation and provider configuration. */
 export function SetupPage({ children, actions, wordmarkSrc, className }: {
-  children: ReactNode; actions?: ReactNode; wordmarkSrc?: string; className?: string
+  children: ReactNode; actions?: ReactNode; wordmarkSrc: string; className?: string
 }) {
   return <Page width="form" className={className}>
     <header className={`${pageLayoutStyles.header} items-center`}>

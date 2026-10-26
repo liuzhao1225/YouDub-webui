@@ -10,7 +10,7 @@ export type JsonSchema = {
   'x-optionsFrom'?: string
   'x-short-title'?: LocalizedText
 }
-export type InputSlot = { name: string; label: LocalizedText; required: boolean; acceptedMimeTypes: string[]; maxBytes?: number }
+export type InputSlot = { name: string; label: LocalizedText; required: boolean; acceptedMimeTypes: string[] }
 export type WorkflowDescription = {
   id: string; version: string; label: LocalizedText; description?: LocalizedText
   inputs: InputSlot[]; configSchema: JsonSchema; defaults?: JsonObject
@@ -18,12 +18,12 @@ export type WorkflowDescription = {
   graphTemplate?: WorkflowDocument
 }
 export type ProviderDescription = {
-  id: string; label?: LocalizedText; operations: { id: string }[]; capability?: string; adapter?: string; contractVersion?: string
+  id: string; label?: LocalizedText; operations: { id: string }[]; capability?: string; adapter?: string
   execution?: 'local' | 'remote'
   legacy?: boolean
   ready?: boolean; available?: boolean; reason?: string; unavailableReason?: string
   models?: Array<string | { id: string; name?: string; available?: boolean; unavailableReason?: string; maxTokens?: number; devices?: string[]; languages?: string[]; voice_modes?: string[]; voices?: { id: string; label?: LocalizedText; languages?: string[] }[] }>
-  configSchema?: JsonSchema; parametersSchema?: JsonSchema
+  configSchema?: JsonSchema
 }
 export type Catalog = { workflows: WorkflowDescription[]; providers: ProviderDescription[] }
 export type TaskStatus = 'queued' | 'running' | 'waiting' | 'paused' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'
@@ -50,11 +50,6 @@ export type TaskView = {
 }
 export type TaskSummary = Omit<TaskView, 'config' | 'graphSnapshot' | 'nodeRuntimeInputs'>
 export type TaskPage = { items: TaskSummary[]; hasMore: boolean; limit: number; offset: number }
-export type ClientModule = {
-  id: string; version: string; access: 'public' | 'authenticated'; url: string
-  css?: string[]; config?: JsonObject
-}
-export type ClientManifest = { version: 1; sdkVersion: '1.1.0'; platformVersion: '1'; modules: ClientModule[] }
 export type Diagnostic = { field?: string; message: string; code?: string; nodeId?: string; portId?: string; edgeId?: string }
 export type Endpoint = { nodeId: string; portId: string }
 export type GraphNode = {

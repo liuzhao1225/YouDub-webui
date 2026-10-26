@@ -4,12 +4,11 @@ import { fileURLToPath } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
 
-const [kind, trigger, root] = process.argv.slice(2)
-if ((kind !== 'ordinary' && kind !== 'terminal')
-  || (trigger !== 'direct' && trigger !== 'uncaught-exception'
+const [trigger, root] = process.argv.slice(2)
+if ((trigger !== 'direct' && trigger !== 'uncaught-exception'
     && trigger !== 'unhandled-rejection' && trigger !== 'dispose')
   || root === undefined) {
-  throw new Error('usage: process-exit-host.ts <ordinary|terminal> <direct|uncaught-exception|unhandled-rejection|dispose> <root>')
+  throw new Error('usage: process-exit-host.ts <direct|uncaught-exception|unhandled-rejection|dispose> <root>')
 }
 
 const treeState = join(root, 'tree.json')
@@ -21,7 +20,8 @@ async function waitForFile(path: string): Promise<void> {
     try {
       await access(path)
       return
-    } catch (_notReady) {
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
       await new Promise(resolve => setTimeout(resolve, 10))
     }
   }
@@ -34,34 +34,26 @@ const ownedListeners = process.listeners('exit').filter(listener => !listenersBe
 // Independent process-lifetime listeners may be installed after this provider.
 const unrelatedListener = (): void => {}
 if (trigger === 'dispose') process.once('exit', unrelatedListener)
-if (kind === 'ordinary') {
-  ctx.subprocess.spawn({
-    argv: [process.execPath, managedTree, treeState],
-    cwd: process.cwd(),
-    stdio: {
-      stdin: 'ignore',
-      stdout: { maxBytes: 1024 },
-      stderr: { maxBytes: 1024 },
-    },
-    graceMs: trigger === 'dispose' ? 100 : 30_000,
-  })
-} else {
-  await ctx.subprocess.spawnTerminal({
-    argv: [process.execPath, managedTree, treeState],
-    cwd: process.cwd(),
-    rows: 24,
-    cols: 80,
-    terminalType: 'dumb',
-    graceMs: 30_000,
-  })
-}
+const child = ctx.subprocess.spawn({
+  argv: [process.execPath, managedTree, treeState],
+  cwd: process.cwd(),
+  stdio: {
+    stdin: 'ignore',
+    stdout: { maxBytes: 1024 },
+    stderr: { maxBytes: 1024 },
+  },
+  graceMs: trigger === 'dispose' ? 100 : 30_000,
+})
+const prematureExit = child.done.then(outcome => {
+  throw new Error(`managed tree exited before the host trigger: ${JSON.stringify(outcome)}; ${child.collected.stderr?.readFrom(0).text ?? ''}`)
+})
 
-await waitForFile(treeState)
+await Promise.race([waitForFile(treeState), prematureExit])
 const published = JSON.parse(await readFile(treeState, 'utf8')) as { root?: unknown; descendant?: unknown }
 if (!Number.isSafeInteger(published.root) || !Number.isSafeInteger(published.descendant)) {
   throw new Error('managed tree published invalid process ids')
 }
-await waitForFile(proceed)
+await Promise.race([waitForFile(proceed), prematureExit])
 
 if (trigger === 'dispose') {
   await fiber.dispose()

@@ -5,7 +5,7 @@
  */
 
 import { Service } from '@deepseek-ai/cordis'
-import { RemoteError, isRemoteUplinkItem, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import { RemoteError, isRemoteUplinkItem } from '@deepseek-ai/dsh-typert-protocol'
 export type { TypertGatewayFaultDetails } from '../remote-error-codes.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type {
@@ -35,17 +35,8 @@ import {
 } from './remote-stream.ts'
 
 export { RemoteStreamCarrierError } from './stream-client.ts'
-export { RemoteJournalStream } from './journal-stream.ts'
-export type {
-  RemoteJournalChange,
-  RemoteJournalFrame,
-  RemoteJournalStreamOptions,
-  RemoteStreamFactory,
-} from './journal-stream.ts'
 export { RemoteStream } from './remote-stream.ts'
 export type { RemoteStreamItem, RemoteStreamOptions } from './remote-stream.ts'
-export { RemoteSnapshotStream } from './snapshot-stream.ts'
-export type { RemoteSnapshotStreamOptions } from './snapshot-stream.ts'
 
 interface MountToken {
   active: boolean
@@ -848,17 +839,6 @@ export function cancelledFailure(endpoint: string, cause: unknown): Extract<Remo
 
 function internalFailure(message: string): Extract<RemoteResult<never>, { readonly ok: false }> {
   return { ok: false, error: new RemoteError('gateway/internal', message, {}) }
-}
-
-/**
- * Whether a caught value is a Remote failure this face delivered or threw.
- * The one consumer-facing discrimination point: marked instances carry their
- * Host code; anything else is a local fault the caller should let crash.
- * @param error - a caught value.
- * @returns true when the value narrows to RemoteFailure.
- */
-export function isRemoteFailure(error: unknown): error is RemoteFailure {
-  return remoteErrorOf(error) !== undefined
 }
 
 /**

@@ -78,7 +78,7 @@ flowchart TB
 
 YouDub 的 patch 正向声明所需框架服务与业务插件。DeepSeek 账号、聊天、编码 Agent、终端工作区和计划任务等产品入口不参与装配。用户的本地配置继续使用框架 profile/home patch 规则，实际结果以框架配置解析器为准。
 
-模型设置和插件管理通过产品选择的 Remote 命名空间装配。聊天、会话控制、Agent 执行循环、浏览器、文档预览、定时任务及其专用类型与测试已删除。Jobs 内的 Agent/会话归属、会话遥测和远端 Agent waterfall 也已移除。通用 RPC、双向流、Context 映射及资源权限继续保留。实际服务以[当前 patch](../cordis.patch.yml)和[保留范围](FRAMEWORK-SCOPE.md)为准。
+模型设置和插件管理通过产品选择的 Remote 命名空间装配。聊天、会话控制、Agent 执行循环、浏览器、文档预览、定时任务及其专用类型与测试已删除。Jobs 内的 Agent/会话归属、会话遥测和远端 Agent waterfall 也已移除。通用 RPC、双向流、Context 映射及 Connection 认证继续保留；Gateway 只接受已认证 owner，闲置的 RemoteAccess 多角色策略服务已退役。实际服务以[当前 patch](../cordis.patch.yml)和[保留范围](FRAMEWORK-SCOPE.md)为准。
 
 插件入口使用 `inject` 声明服务依赖，由 Loader 安排激活和销毁。监听、插槽、路由和进程资源通过框架 context 生命周期释放。必需条目出现 pending/failed 时需要修复依赖与配置，启动诊断保留具体原因。
 

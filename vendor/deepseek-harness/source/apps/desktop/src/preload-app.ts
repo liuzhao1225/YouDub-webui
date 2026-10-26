@@ -23,12 +23,6 @@ function createProductApi(): YouDubDesktopProductApi {
       closeWindow: revision => ipcRenderer.invoke(DESKTOP_IPC.shortcutsCloseWindow, revision) as Promise<void>,
       subscribe: (listener) => {
         const handle = (_event: Electron.IpcRendererEvent, input: DesktopShortcutInput): void => {
-          if (input.kind === 'iframe') {
-            const element = document.activeElement
-            if (!(element instanceof HTMLIFrameElement) || !element.isConnected
-              || !element.matches('iframe[data-sidebar-browser-frame], iframe[data-html-preview]')) return
-            if (input.frameName === '' || element.name !== input.frameName) return
-          }
           listener(input)
         }
         ipcRenderer.on(DESKTOP_IPC.shortcutsInput, handle)

@@ -61,7 +61,7 @@ async function main(): Promise<void> {
           await send({ type: 'quit-inspection', requestId, ...inspection })
         } catch (error) {
           // The shell treats an unknown state as interruptible work and asks before quitting.
-          await send({ type: 'quit-inspection', requestId, activeTasks: true, scheduledTasks: false,
+          await send({ type: 'quit-inspection', requestId, activeTasks: true,
             error: error instanceof Error ? error.message : String(error) })
         }
       })().catch((error: unknown) => { console.error(error) })

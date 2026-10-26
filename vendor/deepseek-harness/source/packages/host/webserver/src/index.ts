@@ -308,7 +308,6 @@ export class WebServer extends Service {
    * for the plain listener, whose connections closeAllConnections() reaches.
    */
   private readonly tlsConnections = new Set<Duplex>()
-  private readonly indexTaps: ((html: string) => string)[] = []
   private fallback: WebRoute['handler'] | undefined
   private server!: Server
   private listenedPort: number | undefined
@@ -400,21 +399,6 @@ export class WebServer extends Service {
     }
     this.fallback = handler
     return () => { this.fallback = undefined }
-  }
-
-  /**
-   * Register a raw-HTML index transform, the escape hatch for markup no
-   * {@link IndexInjection} row expresses: {@link renderIndex} applies taps in
-   * registration order after rendering the structured rows.
-   * @param transform - pure html-to-html function.
-   * @returns the disposer removing the transform.
-   */
-  tapIndex(transform: (html: string) => string): () => void {
-    this.indexTaps.push(transform)
-    return () => {
-      const at = this.indexTaps.indexOf(transform)
-      if (at !== -1) this.indexTaps.splice(at, 1)
-    }
   }
 
   /** Listen; resolves once the socket is bound (rejection = FAILED fiber). */
@@ -552,18 +536,6 @@ export class WebServer extends Service {
   }
 
   /**
-   * Run an index.html body through the registered taps in registration order
-   * — called by the fallback owner on every index response it renders.
-   * @param html - the raw index.html body.
-   * @returns the transformed body.
-   */
-  applyIndexTaps(html: string): string {
-    let out = html
-    for (const transform of this.indexTaps) out = transform(out)
-    return out
-  }
-
-  /**
    * Gather the structured injection table: one `webserver/index-inject` emit,
    * every subscriber pushes its current rows. Fresh per call, so subscribers
    * read live state (module graph, theme preference) at emit time.
@@ -576,13 +548,12 @@ export class WebServer extends Service {
   }
 
   /**
-   * Render one index.html body: the structured injection table first, then
-   * the raw `tapIndex` transforms over the result.
+   * Render one index.html body with the current structured injection table.
    * @param html - the raw index.html body.
    * @returns the transformed body.
    */
   renderIndex(html: string): string {
-    return this.applyIndexTaps(renderIndexInjections(html, this.collectIndexInjections()))
+    return renderIndexInjections(html, this.collectIndexInjections())
   }
 }
 

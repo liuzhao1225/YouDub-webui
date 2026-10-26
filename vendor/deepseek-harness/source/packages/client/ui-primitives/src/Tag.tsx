@@ -9,12 +9,8 @@ import css from './Tag.module.css'
 export type TagTone =
   /** Hairline outline on tertiary text: the read-only default. */
   | 'outline'
-  /** Inverted fill: one tag per group that names the current selection. */
-  | 'solid'
   /** Platform-gray fill: a neutral fact with no status meaning. */
   | 'neutral'
-  /** Text only, no fill: a fact stated more quietly than `neutral`. */
-  | 'quiet'
   /** Tinted green: a healthy or enabled state. */
   | 'success'
   /** Tinted blue: informational classification, not health. */

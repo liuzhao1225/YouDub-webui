@@ -15,23 +15,6 @@
     "types": [
       "node"
     ],
-    "paths": {
-      "@deepseek-ai/cordis": [
-        "./cordis.d.ts"
-      ],
-      "@fixture/host": [
-        "./packages/host/src/index.ts"
-      ],
-      "@fixture/host/*": [
-        "./packages/host/src/*"
-      ],
-      "@fixture/client": [
-        "./packages/client/src/index.ts"
-      ],
-      "@fixture/write": [
-        "./packages/write/src/index.ts"
-      ]
-    },
     "skipLibCheck": true
   }
 }

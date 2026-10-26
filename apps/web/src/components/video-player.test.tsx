@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { VideoPlayer } from "@/components/video-player"
-import { LanguageProvider } from "@/lib/i18n"
+import { LanguageProvider } from '@/test/language-provider'
 
 // jsdom 没有实现媒体播放和全屏，这里只验证播放器把操作正确转给了 video 元素。
 beforeEach(() => {

@@ -1,172 +1,155 @@
-# Harness 保留范围
+# YouDub 框架保留范围与完整精简审计
 
-更新：2026-10-26。来源见 [upstream.json](../../../vendor/deepseek-harness/upstream.json)。
+更新：2026-10-26。当前分支：`codex/product-code-pruning`。来源与许可证见 [upstream.json](../../../vendor/deepseek-harness/upstream.json) 和[框架说明](../../../vendor/deepseek-harness/README.md)。
 
-## 按核心功能继续裁剪（2026-10-26）
+## 范围与结论
 
-保留范围从 YouDub 的实际任务出发：媒体导入、识别与翻译、配音与对齐、工作流编排、人工审核、任务产物、资源准备和插件扩展。调用与源码映射见[应用架构](ARCHITECTURE.md#核心功能)。
+本次以基线 `fac73ac3` 的 1,540 个 Git 跟踪文件建立审计矩阵，覆盖 67 个框架源码包、YouDub 前后端、SDK、三个插件示例、桌面入口、隐藏文件、资源、工程工具、依赖和测试。审计按“核实消费者 → 清理依赖闭包 → 重新扫描 → 交叉复核”循环，最后各分区完整复扫均无新增明确可删项；剩余模块的具体用途见下表。历史分轮报告保存在 Git，本文只维护当前结论。
 
-- 删除没有产品入口的授权登录服务及 LLM 登录桥接，源码包数 **70 → 69**。供应商 API key、现有凭据读取与刷新、DeepSeek 等模型配置继续保留。
-- 删除聊天流持久化、重放与压缩记录，以及没有调用的图片计价和截图坐标转发方法。实际翻译继续使用同一 LLM 服务与流装配器。
-- 删除旧 Python 翻译、系统密钥库、连接测试与设置写入实现；移除 OpenAI SDK、HTTPX/SOCKS 和 keyring 的直接安装声明。当前模型配置与翻译使用框架服务，历史任务与默认配置的读取迁移保留。
-- 删除旧 builtin Settings、Secrets、Processes 实现。图与任务测试接入现有产品服务，避免为测试保留第二套进程/配置实现。
-- 删除无调用的麦克风申请、设备信息与聊天文件路径桥接；删除已被 YouDub 打包流程替代的 tarball 安装与全文件 inventory 校验链。窗口、退出、更新检测、插件恢复和当前打包校验保留。
-- 删除旧 Base UI、Lucide 和 shadcn 依赖及独立前端配置；Web lock 净移除 294 个节点，没有引入新包或升级版本。实际 CSS 和图标构建使用的 Tailwind PostCSS、Sharp 保留。
-- 本次 Python 清理不改变保留提供商的执行行为；更新显式兼容记录，使清理前的任务执行指纹仍可继续使用。没有放宽未知实现的指纹检查。
+依据包括生产入口、配置与动态服务名、插件注册、实际 bundle 输入、测试独立行为、编译及界面验收。导出扫描只用来发现候选；类型契约、生命周期和动态注入继续按真实消费判断。此前只看导出引用遗漏了内部互相引用的旧系统，本轮补查方法、生产者字段、生成器元数据、测试专用 API、清单与样式。保留量不代表每一行达到理论最小值；结论限定为当前产品范围和已核验的扫描结果。
 
-桌面产品只加载 YouDub 自身入口与运行目录，开发和验收不启动原 DeepSeek Harness 应用。内部包名、IPC/插件合同、已有数据路径及来源许可保留。
+当前维护 67 个框架源码包，运行项目使用其中 59 个；其余用于构建和契约生成。YouDub 媒体、任务、工作流、校对、字幕、配音、下载、资源准备和插件能力继续保留。
 
-验证：框架与产品构建、业务及页面类型、装配和中英日语言检查通过；Python/媒体 122 项、LLM 250 项、桌面 55 项、产品启动/模型/资源 34 项、业务工作流 74 项，共 **535 个唯一测试通过**。1 项 Windows 专用测试在 macOS 跳过。媒体检查初次遇到本机 Homebrew FFmpeg 缺失动态库，改用 YouDub 自带 FFmpeg 后仅重跑失败的 3 项并通过；测试装配的 Context 绑定修复后仅重跑受影响的两个文件。
+## 已完成的精简
 
-实际 Electron 首启安装页、明暗工作台、侧栏收放、任务库、工作流列表/画布、资源、插件与设置页面通过截图和交互核对，无页面运行错误。独立测试 profile 使用显式 UI 测试模式检查工作台，不调用外部模型；此轮未重新打包、安装或发布版本。截图和检查记录在本地 `output/core-function-prune/`，不提交 Git。
+| 范围 | 删除/收敛 | 保留边界 |
+| --- | --- | --- |
+| Typert | 旧 tools 合同、schema/package 反射目录、无消费者资源权限注解、源文档渲染、跨 face 记录侧索引、仅为反射生成的声明元数据及专属测试 | 正常 namespace RPC、Zod codec、Context/lookup、scope、stream/uplink、取消、字节编解码与生成类型 |
+| 作业与进程 | 无消费者 Jobs 输出环/read/readAt/events/result、fd7 控制流及专属测试 | 真实进度、停止/等待/退出、标准 stdin/stdout/stderr、runner IPC、Windows Job 和进程树释放 |
+| 启动与辅助 | 无调用的命名 profile 包装、插件清单重算、stdin 自动退出、native 通用打开/探测、部分 JSON 解析/工具、错误格式化与判别包装 | 应用显式 profile、原始错误、设置文件打开、配置迁移；Gateway/HMR 动态使用的 AppReady 完整保留 |
+| 前端 | 旧设置向导、无注册的全局第三栏/底栏、闲置动态主题 API、session store 尾部、RAF 自测支路、空 setup token/重复 HTTP 请求和无用依赖 | 原大标题与动态 Logo、真实窗口拖动 DOM、明暗/多语言、组件/键盘/无障碍、工作流画布 |
+| 业务后端 | 重复扩展 HTTP 和旧 workflows 路由、测试专用身份字段/常量、无人读取的资源元数据、旧弱探针与量化开发依赖 | 真实 WorkerError 取消、四模型准备、媒体算法、数据迁移、原始结果及旧任务已审批指纹 |
+| 框架服务与工程 | Cordis 只写不读的诊断采集、LLM 独立查询旁路、raw HTML 注入、恒 false 的定时任务状态、插件版本豁免写入接口、代理诊断镜像、Loader 共享环境尾部及无用依赖 | 当前源码构建、产物输入验证、代码生成、签名/安装/覆盖升级脚本和测试环境隔离 |
 
-## 产品残留清理（2026-10-26）
+旧 Agent、会话、终端、内嵌浏览器、文档预览、工具执行及上游发布系统已在此前退出产品。历史源码由 Git 保留；Demucs 子模块原提交、许可证和来源信息不变。
 
-- 删除无调用的 Office 引擎启动解析、旧 Windows 安装器验收脚本、Agent 共享目录助手和失效的 E2E 排除清单。
-- 更新功能保留 YouDub 的版本检测、提示和下载入口；移除无调用的应用内安装锁及其 Host IPC、旧安装文案，以及 `electron-updater` 和 4 个独占依赖条目。退出时的任务检查与优雅停止继续使用原实现。
-- 删除空的上游官方插件目录及安装目标分支；本地和第三方插件的安装、激活、配置、卸载继续使用现有插件管理器。
-- 删除已退出组合的 `llm-deepseek` 专用配置分支和重复编辑视图。DeepSeek 与其他供应商统一使用 `llm-pi-ai`；API 地址、模型目录、凭据、协议适配及共用的模型编辑函数继续保留。
-- 移除请求中强制设置 `deepseek-harness` User-Agent 的归因层；保留供应商 SDK 的默认请求行为和用户配置的请求头。
-- 清理用户界面与运行错误中的上游产品文案，删除运行时替换品牌名称的包装。框架包名、插件清单与 IPC 协议、已有数据路径和任务指纹继续保留，避免破坏插件与用户数据。许可证和来源记录继续保留。
+## 当前行数
 
-上一批主要删除包内死代码，当时源码包数为 70；上述后续裁剪减少至 69。包数与删除的代码量分别统计。
+| 范围 | 本次前 `fac73ac3` | 当前 | 本次净减 |
+| --- | ---: | ---: | ---: |
+| 生产源码 | 79,980 | 79,803 | 177 |
+| 测试及源码夹具 | 70,368 | 70,164 | 204 |
+| 构建和工程工具 | 8,560 | 8,538 | 22 |
+| 官网和文档示例 | 599 | 599 | 0 |
+| 合计 | 159,507 | 159,104 | 403 |
 
-验证：框架 Host/Client、Web 与产品桌面入口构建通过；业务与页面类型、装配和中英日语言检查通过。模型目录与请求、插件生命周期、桌面退出/更新、Web 鉴权和子进程的 545 项定向回归通过。本轮未制作或发布新安装包。
+当前生产源码中 Harness 为 **66,277 行**，YouDub 业务与适配为 **13,526 行**。相对最初 `main/aaba8ef3` 的 202,077 行，累计净减 **42,973 行（21.27%）**。本次物理行 172,600 → 172,163；源码文件 1,106 → 1,104。
 
-## 统计口径
+口径为 Git 跟踪源码扩展名的非空行，含注释、内置数据与可执行测试夹具。依赖、缓存、构建产物、JSON/YAML、Markdown、文本快照和媒体不计入；Demucs 子模块另计 6,393 行，未修改。物理行和文件数另列，避免混用。历史 main 基线含后来删除的 178 行生成夹具；严格排除它们时，累计减量相应减 178，当前总量不变。
 
-原始源码 203 个包，历次裁剪为 156 → 87 → 80 → 70 → **69 个**。最近一轮删除无入口的授权登录包；其余删除集中在保留包内部。
+## 全部框架包的保留依据
 
-源码包数按 `vendor/deepseek-harness/source` 中的工作区 `package.json` 统计，不包含仓库根清单。原先“78 个”和上轮“72 个”统计的是开发运行项目链接的包，与源码包总数口径不同；当前重新生成的开发运行项目为 **61 个运行包**（前两轮分别为 72、62 个）。余下 8 个源码包用于前端编译、桌面构建和类型生成。
+下表每一行均已核对源码入口、包声明和对应测试。大量类型与配置由 Cordis/Typert 动态消费，不按静态 import 次数删除。
 
-依赖安装目录、构建缓存与本地验收证据不属于源码包。源码数量和安装包体积分别统计。
-
-## UI 与构建相关源码为何保留
-
-| 包目录 | 实际用途 |
+| 源码包目录 | 当前责任 |
 | --- | --- |
-| [apps/desktop](../../../vendor/deepseek-harness/source/apps/desktop/package.json) | 桌面窗口、菜单、快捷键与 preload；编入 YouDub 桌面产物。 |
-| [packages/client/store](../../../vendor/deepseek-harness/source/packages/client/store/package.json) | 前端组件的共享状态存储。 |
-| [packages/client/ui-plugin-manager](../../../vendor/deepseek-harness/source/packages/client/ui-plugin-manager/package.json) | 插件管理界面及仓库探测 Remote。 |
-| [packages/client/ui-primitives](../../../vendor/deepseek-harness/source/packages/client/ui-primitives/package.json) | 实际复用的按钮、图标、弹层等基础组件。 |
-| [packages/client/ui-sidebar](../../../vendor/deepseek-harness/source/packages/client/ui-sidebar/package.json) | 侧栏、折叠和标题栏控制组件。 |
-| [packages/client/ui-slots](../../../vendor/deepseek-harness/source/packages/client/ui-slots/package.json) | 共享组件插槽与语言契约。 |
-| [packages/client/web](../../../vendor/deepseek-harness/source/packages/client/web/package.json) | Web 入口、平台桥接和基础样式。 |
-| [packages/typert/generator](../../../vendor/deepseek-harness/source/packages/typert/generator/package.json) | 构建时生成服务与 Remote 的契约；不进入运行项目。 |
+| [apps/cli](../../../vendor/deepseek-harness/source/apps/cli/package.json) | 显式应用 profile 启动、AppReady 信号、异常与有序退出。 |
+| [apps/desktop](../../../vendor/deepseek-harness/source/apps/desktop/package.json) | 窗口与 preload、IPC、原生快捷键、配置升级、Host 生命周期及故障记录。 |
+| [apps/desktop-host](../../../vendor/deepseek-harness/source/apps/desktop-host/package.json) | 隔离的 Host 进程、就绪 IPC、任务活动与退出检查。 |
+| [apps/web](../../../vendor/deepseek-harness/source/apps/web/package.json) | 框架浏览器入口与实际 Web 产物构建。 |
+| [packages/api/gateway](../../../vendor/deepseek-harness/source/packages/api/gateway/package.json) | 经过 owner 认证的 RPC、事件、流、取消与二进制传输。 |
+| [packages/api/remotes](../../../vendor/deepseek-harness/source/packages/api/remotes/package.json) | 设置、凭据、模型等服务的事件转发。 |
+| [packages/api/settings-controller](../../../vendor/deepseek-harness/source/packages/api/settings-controller/package.json) | 设置 Remote、凭据安全视图与原生配置文件打开。 |
+| [packages/boot/app-boot](../../../vendor/deepseek-harness/source/packages/boot/app-boot/package.json) | Loader/profile 合成、应用与插件解析、升级兼容和旧链接清理。 |
+| [packages/boot/cmdline](../../../vendor/deepseek-harness/source/packages/boot/cmdline/package.json) | 启动参数、命令解析、AppReady 与应用退出服务。 |
+| [packages/boot/config-editor](../../../vendor/deepseek-harness/source/packages/boot/config-editor/package.json) | 持久化用户 patch 并接入已有配置重载。 |
+| [packages/boot/hmr](../../../vendor/deepseek-harness/source/packages/boot/hmr/package.json) | 源码开发和用户插件安装/配置后的模块热更新。 |
+| [packages/boot/plugin-manager](../../../vendor/deepseek-harness/source/packages/boot/plugin-manager/package.json) | 本地与第三方插件安装、构建批准、配置、启停及卸载。 |
+| [packages/bundle/web-app](../../../vendor/deepseek-harness/source/packages/bundle/web-app/package.json) | dev:web 参数、监听地址、TLS、受信任 Host 和浏览器启动。 |
+| [packages/client/connection](../../../vendor/deepseek-harness/source/packages/client/connection/package.json) | Host 连接、RPC/HTTP、认证、代际失效与重连。 |
+| [packages/client/hmr](../../../vendor/deepseek-harness/source/packages/client/hmr/package.json) | 客户端模块与样式的开发热更新。 |
+| [packages/client/locale](../../../vendor/deepseek-harness/source/packages/client/locale/package.json) | 语言注册、选择、持久化和缺失词条解析。 |
+| [packages/client/modules](../../../vendor/deepseek-harness/source/packages/client/modules/package.json) | 插件前端模块图、动态加载、失败与卸载。 |
+| [packages/client/shortcuts](../../../vendor/deepseek-harness/source/packages/client/shortcuts/package.json) | 键盘/菜单、输入框与 IME 隔离及快捷键偏好。 |
+| [packages/client/store](../../../vendor/deepseek-harness/source/packages/client/store/package.json) | 共享状态、快照、订阅与 action；现有 Zustand/Immer。 |
+| [packages/client/ui-layout](../../../vendor/deepseek-harness/source/packages/client/ui-layout/package.json) | AppFrame、列布局及产品/插件公共布局槽。 |
+| [packages/client/ui-plugin-manager](../../../vendor/deepseek-harness/source/packages/client/ui-plugin-manager/package.json) | 插件列表、详情、配置、安装进度与失败恢复控件。 |
+| [packages/client/ui-primitives](../../../vendor/deepseek-harness/source/packages/client/ui-primitives/package.json) | 产品和插件示例实际使用的基础控件及图标。 |
+| [packages/client/ui-renderer](../../../vendor/deepseek-harness/source/packages/client/ui-renderer/package.json) | React 渲染桥、组件工厂、状态绑定、订阅与释放。 |
+| [packages/client/ui-settings](../../../vendor/deepseek-harness/source/packages/client/ui-settings/package.json) | 设置对话框与表单注册。 |
+| [packages/client/ui-settings-general](../../../vendor/deepseek-harness/source/packages/client/ui-settings-general/package.json) | 外观、语言、版本与通用偏好页面。 |
+| [packages/client/ui-settings-models](../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/package.json) | 供应商、协议、URL、凭据遮罩和模型目录编辑。 |
+| [packages/client/ui-sidebar](../../../vendor/deepseek-harness/source/packages/client/ui-sidebar/package.json) | 原生风格侧栏与折叠组件。 |
+| [packages/client/ui-slots](../../../vendor/deepseek-harness/source/packages/client/ui-slots/package.json) | root single/list/keyed/chain、注入、实例隔离和插件扩展。 |
+| [packages/client/ui-theme](../../../vendor/deepseek-harness/source/packages/client/ui-theme/package.json) | 明暗主题、样式 token、字号偏好与系统主题。 |
+| [packages/client/web](../../../vendor/deepseek-harness/source/packages/client/web/package.json) | 平台模块、浏览器启动、基础样式和窗口拖动 DOM 标记。 |
+| [packages/core/scope](../../../vendor/deepseek-harness/source/packages/core/scope/package.json) | 连接拥有的子 Context 与等待完整释放的边界。 |
+| [packages/credentials/credentials](../../../vendor/deepseek-harness/source/packages/credentials/credentials/package.json) | 模型提供商凭据引用、记录及安全投影合同。 |
+| [packages/credentials/credentials-local](../../../vendor/deepseek-harness/source/packages/credentials/credentials-local/package.json) | 私有凭据、原有文件迁移、锁、监听和写入。 |
+| [packages/host/frontend-static](../../../vendor/deepseek-harness/source/packages/host/frontend-static/package.json) | 实际前端资源服务、路由与 Connection 注入。 |
+| [packages/host/plugin-inventory](../../../vendor/deepseek-harness/source/packages/host/plugin-inventory/package.json) | 当前插件能力、来源和版本清单。 |
+| [packages/host/webserver](../../../vendor/deepseek-harness/source/packages/host/webserver/package.json) | HTTP/TLS、连接升级、Origin/Host 认证与上传。 |
+| [packages/jobs/jobs](../../../vendor/deepseek-harness/source/packages/jobs/jobs/package.json) | 活动作业合同、控制器及取消。 |
+| [packages/jobs/jobs-local](../../../vendor/deepseek-harness/source/packages/jobs/jobs-local/package.json) | 活动作业注册、退出取消、释放及 Host 退出检查。 |
+| [packages/llm/llm](../../../vendor/deepseek-harness/source/packages/llm/llm/package.json) | Harness prepareCall → stream、模型配置、文本/思考/用量和错误。 |
+| [packages/llm/llm-pi-ai](../../../vendor/deepseek-harness/source/packages/llm/llm-pi-ai/package.json) | 实际供应商 SDK 适配、协议默认值、模型目录与取消。 |
+| [packages/settings/settings](../../../vendor/deepseek-harness/source/packages/settings/settings/package.json) | 插件配置 schema、解析、凭据隔离和配置变更。 |
+| [packages/subprocess/subprocess](../../../vendor/deepseek-harness/source/packages/subprocess/subprocess/package.json) | YouDub Python/FFmpeg 的标准进程合同与环境过滤。 |
+| [packages/subprocess/subprocess-local](../../../vendor/deepseek-harness/source/packages/subprocess/subprocess-local/package.json) | 标准流、进程树、停止升级、资源释放及 runner IPC。 |
+| [packages/subprocess/win32-process](../../../vendor/deepseek-harness/source/packages/subprocess/win32-process/package.json) | Windows CreateProcessW、Job Object、参数及句柄生命周期。 |
+| [packages/typert/generator](../../../vendor/deepseek-harness/source/packages/typert/generator/package.json) | 构建时生成实际 schema factory、Remote codec、声明与 source map。 |
+| [packages/typert/loader](../../../vendor/deepseek-harness/source/packages/typert/loader/package.json) | 加载并验证生成合同，跟随插件注册与卸载。 |
+| [packages/typert/protocol](../../../vendor/deepseek-harness/source/packages/typert/protocol/package.json) | Remote 声明、普通 codec、流、Context/lookup 和二进制合同。 |
+| [packages/typert/registry](../../../vendor/deepseek-harness/source/packages/typert/registry/package.json) | 按包和 face 管理 Remote 描述符、lookup/context 及注册释放。 |
+| [packages/util/atomic-write](../../../vendor/deepseek-harness/source/packages/util/atomic-write/package.json) | 凭据与配置锁、原子写入及真实失败恢复。 |
+| [packages/util/brand](../../../vendor/deepseek-harness/source/packages/util/brand/package.json) | ID 字符串类型品牌。 |
+| [packages/util/crypto](../../../vendor/deepseek-harness/source/packages/util/crypto/package.json) | 浏览器非安全 HTTP 环境可用的 UUID。 |
+| [packages/util/deque](../../../vendor/deepseek-harness/source/packages/util/deque/package.json) | Gateway/事件队列。 |
+| [packages/util/home-paths](../../../vendor/deepseek-harness/source/packages/util/home-paths/package.json) | YouDub 所有的 home/profile 路径规范化。 |
+| [packages/util/http-proxy](../../../vendor/deepseek-harness/source/packages/util/http-proxy/package.json) | 启动、模型及下载代理与 loopback 绕过。 |
+| [packages/util/launch-environment](../../../vendor/deepseek-harness/source/packages/util/launch-environment/package.json) | 启动环境快照、变量分层和 SSH 状态。 |
+| [packages/util/lazy-require](../../../vendor/deepseek-harness/source/packages/util/lazy-require/package.json) | 按实际平台延迟载入原生 Koffi。 |
+| [packages/util/native-command](../../../vendor/deepseek-harness/source/packages/util/native-command/package.json) | 原生文本配置打开、Windows/WSL 路径与取消。 |
+| [packages/util/package-manifest](../../../vendor/deepseek-harness/source/packages/util/package-manifest/package.json) | 动态插件包入口和元数据解析。 |
+| [packages/util/timeout](../../../vendor/deepseek-harness/source/packages/util/timeout/package.json) | LLM 空闲超时、取消、超时分类、timer 范围和释放。 |
+| [packages/util/values](../../../vendor/deepseek-harness/source/packages/util/values/package.json) | 无损 JSON 校验、相等与冻结；保留深层/跨 realm/原错误语义。 |
+| [vendor/cordis](../../../vendor/deepseek-harness/source/vendor/cordis/package.json) | Context、Service、注入、fiber、事件与日志底座。 |
+| [vendor/cosmokit](../../../vendor/deepseek-harness/source/vendor/cosmokit/package.json) | 上述底座实际使用的对象、相等、复制、volatile 与输入转换。 |
+| [vendor/group](../../../vendor/deepseek-harness/source/vendor/group/package.json) | 配置树分组插件。 |
+| [vendor/include](../../../vendor/deepseek-harness/source/vendor/include/package.json) | 配置文件、patch 层次、写入与重载。 |
+| [vendor/loader](../../../vendor/deepseek-harness/source/vendor/loader/package.json) | 插件解析、服务隔离、配置树和生命周期。 |
+| [vendor/schemastery](../../../vendor/deepseek-harness/source/vendor/schemastery/package.json) | 官方 ConfigForms 的配置验证，字段由插件动态声明。 |
+| [vendor/timer](../../../vendor/deepseek-harness/source/vendor/timer/package.json) | HMR 使用的 fiber 绑定 debounce。 |
 
-## 已移除
+## YouDub、工程和测试保留依据
 
-- Agent 执行循环、预设清单、聊天与会话控制、定时任务、目标管理、文档预览、内嵌浏览器、插件市场和相应的专用类型、测试。
-- 上游发布、基准和完整仓库校验工具；独立更新遮罩及其输入分支。保留 YouDub 实际使用的窗口、菜单、更新入口、插件管理和视频处理功能。
-- 全量 source-manifest.json、fork.json、冻结快照验证以及重复源码清单。只保存来源信息、许可证与维护中的源码。
-- 历史融合计划、验收截图、模型实验记录移到本地 output/archived-harness-migration/，原始内容保留；output/ 已加入 Git 忽略规则。
-
-前轮已移除：
-
-- 插件管理的闲置 Agent 工具入口及其依赖：tools、working-directory、ptc-runtime、sandbox-policy、user-approval。
-- 未使用的 Markdown、Diff、代码高亮、数学公式、文件预览等基础组件及其依赖：code-language、workspace-path、Shiki、KaTeX 和 Markdown 解析器。日志视图、实际表单控件与业务引用的样式继续保留。
-- YouDub 中旧版模型服务、模型设置界面、独立静态服务器、旧插件加载器和旧页面外壳；生产入口直接复用当前 Harness 服务与组件。
-- 未使用的构建模式、重复的源码校验，以及每次测试前重复安装 Electron 的步骤。
-
-前轮移除的 10 个包：
-
-| 包 | 删除原因 |
+| 范围 | 必须保留的当前行为 |
 | --- | --- |
-| `@deepseek-ai/dsh-agent` | Agent 调度、归属和消息投影；YouDub 节点执行由自身工作流和 Jobs 管理。 |
-| `@deepseek-ai/dsh-session` | 聊天会话、分叉、历史与修复。 |
-| `@deepseek-ai/dsh-system-prompt` | Agent 系统提示装配。YouDub 翻译继续使用现有 LLM 服务。 |
-| `@deepseek-ai/dsh-session-persistence` | 聊天会话落盘；YouDub 任务和产物已有自身持久化。 |
-| `@deepseek-ai/dsh-session-projection` | 会话视图与投影。 |
-| `@deepseek-ai/dsh-workspace` | Agent 工作区服务。 |
-| `@deepseek-ai/dsh-fs` | 已无调用的工作区文件服务。 |
-| `@deepseek-ai/dsh-sandbox` | 已无调用的 Agent 沙箱服务。 |
-| `@deepseek-ai/dsh-storage` | 随会话存储移除后无消费者的存储抽象。 |
-| `@deepseek-ai/dsh-storage-domain` | 随会话存储移除后无消费者的存储域。 |
+| `apps/web`、Harness 前端适配 | 首屏、上传/视频链接、任务库、人工修改确认、画布、播放器、资源和插件页；query 缓存、导航保护、主题和三语同步。业务薄组件复用 Harness 控件。 |
+| `packages/sdk`、`builtin`、Harness Host | 节点和图合同、队列、状态/冲突、文件归属、重跑与取消、逐项资源准备、模型配置和官方 LLM 调用。SDK 保留用于声明合并的纯类型 Cordis 导入。 |
+| Python `backend` | Demucs、Whisper/分句、VoxCPM2、Qwen 对齐、混音、字幕/视频导出、YouTube/Bilibili 下载、SQLite 与 NDJSON 协议。父进程取消与子进程模型加载责任各自保留。 |
+| 三个插件 fixture | 文件转换、图文本审核、Python 节点的可安装合同与真实集成验收，共用当前 Loader。 |
+| 桌面/启动/打包脚本 | 独立应用/数据、Windows覆盖升级、原生文件框、窗口/快捷键、退出检查和源码开发启动。源码编译、图标、签名、下载feed各有实际入口。 |
+| 测试 | 删除退役能力的自测与无业务几何模型；保留协议、鉴权/密钥、升级、文件/数据一致性、取消/释放、媒体与插件生命周期。页面和底层测试覆盖不同边界，失败分支不因行数较多而删除。 |
+| 官网/安装器/CI/资源 | 当前官网与试听、应用图标、安装覆盖与发布时验收、来源/许可证。安装包任务仍需显式开启。 |
 
-保留包内同时移除 Jobs 的 Agent/会话归属与通知、会话遥测启动 patch、Agent 远端 waterfall、终端字号与字体设置和相应专用依赖。通用 RPC、Context 映射、双向流、资源权限、插件安装启停卸载、Profile 合成及生命周期继续使用 Harness 原实现。`scope` 保留连接所需的子 Context 释放机制；`attachment` 保留现有 LLM 与通信契约所引用的类型。
+资源声明中重复的依赖属于独立安装组，单独安装每组仍需要它们；不合并为依赖用户先安装另一组的隐式前提。旧 defaults 解码、数据库升级、凭据迁移和已审批执行指纹均为现有用户使用路径。
 
-构建从当前源码树生成实际包列表。删除包或包内源码时，同步清理对应旧编译输出，避免增量构建把已删除代码带回产物。上轮框架客户端产物从 184 个降为 44 个，语言语法包和数学字体已移除；此数值统计框架构建产物，不代表安装包文件数或体积。
+## 本轮收敛复核
 
-桌面打包只收录运行模块与资源。YouDub 业务代码使用编译后的 bundle；原先整份 builtin 与 SDK 源码的复制范围缩小为运行时用于执行指纹的 6 个文件。Python 工作进程、模型实现和必要资源继续保留。框架开发源码、测试、source map、构建缓存和本地证据不进入安装包。
+前一轮遗漏了聚合测试/脚本类型检查、未注册的整套页面装配、生产路径和测试路径的分叉。本轮从实际入口与状态生命周期重新核对，处理确认项后再次扫描，并交叉审核其他分区。检查覆盖全部源码与测试；单次名称出现和静态未引用均只作为线索。
 
-今后按实际调用补入需要的内容，不再同步整份上游仓库。现有用户数据迁移仍被使用，予以保留。
+- 首页固定使用已注册的图工作流，删除旧首页选择器及父层锁状态；第三方工作流仍由 GraphStudio 调用 Composer，旧任务的 localize 编辑和重跑继续保留。GraphStudio 参数按实际唯一调用设为必传。
+- 删除未注册的旧插件管理页面装配和专用图标。YouDub 继续使用原管理器、列表、配置、安装进度、导航和插槽；Host Remote、声明合并和动态注册合同保留。
+- 文件 URL 与剪贴板统一到实际运行实现，删除构建替换和重复 SDK 重定向；测试覆盖鉴权文件路由及复制失败。删去不存在的旧模型 HTTP 路由匹配，模型更新仍接收官方服务事件。
+- 删除只被测试读取的 DesktopPaths.lock、BootSeams 和 cmdline internals，测试改用真实 profile 锁路径、模块传输入口和标准输出；浏览器启动的临时对象收回局部变量。进程退出与原生系统调用等必要测试边界保留。
+- 布局只计算真正消费的侧栏宽度，内容宽度交给现有 CSS；去掉中心宽度副本、恒定 clamp 参数和无效 title cleanup。响应式窗口尺寸、侧栏折叠和拖动保持。
+- Typert 删除无人消费的成员 abstract 与只扩展孤立工厂的 implements 边；对象成员、构造类型 abstract、extends、实际类型引用和 schema 保留。构建移除无调用参数与常量，并增加两项现有 TypeScript 聚合检查，覆盖生产引用之外的脚本和测试。
+- 内部服务按实际注入合同移除目录、安装配置和回调的虚假缺省分支；文件响应、依赖准备与节点 schema 去掉重复默认值。组件和非组件调用链均按实际参数值复查，真实空值、动态插件和工程脚本消费者保留。
+- Python 媒体取消链直接接收实际检查函数，去掉重复存在性判断；字幕语言与下载代理只由上层配置提供默认值，容器时长回退和代理规范化保留。当前执行源码指纹更新并保留此前审核记录；Worker 外部请求握手仍属于插件公开协议。
+- 凭据测试共用同包 fixture；子进程普通测试直接运行 Node，真实 POSIX 信号/进程组仍用 shell；模块加载测试复用同文件引导，原生路径案例并入原参数表。仅删除已被完整集合断言覆盖的机械测试，以及退役布局/首页专属案例。
 
-## 保留的运行基础与共享契约源码
+剩余相似代码有明确边界：独立竞态的初始化、不同平台原生协议、不同包 Loader fixture、配置草稿与已提交值、模块目标版本与已装载版本。把这些合并会新增跨边界依赖或改变行为。最后字面量归一化测试体扫描无重复候选；完整复扫与交叉复核未发现新增可安全删除项。这里记录当前功能范围下的审计结论，不把保留行数当作理论最小值。
 
-以下清单保留实际服务、通信和共享契约。运行项目的最终包数以本轮构建输出为准；上面的 UI 与构建相关源码单独列出。
+## 验证结果与边界
 
-| 包 | 源码目录 |
-| --- | --- |
-| @deepseek-ai/cordis | [vendor/cordis](../../../vendor/deepseek-harness/source/vendor/cordis/package.json) |
-| @deepseek-ai/cordis-plugin-group | [vendor/group](../../../vendor/deepseek-harness/source/vendor/group/package.json) |
-| @deepseek-ai/cordis-plugin-include | [vendor/include](../../../vendor/deepseek-harness/source/vendor/include/package.json) |
-| @deepseek-ai/cordis-plugin-loader | [vendor/loader](../../../vendor/deepseek-harness/source/vendor/loader/package.json) |
-| @deepseek-ai/cordis-plugin-timer | [vendor/timer](../../../vendor/deepseek-harness/source/vendor/timer/package.json) |
-| @deepseek-ai/cosmokit | [vendor/cosmokit](../../../vendor/deepseek-harness/source/vendor/cosmokit/package.json) |
-| @deepseek-ai/dsh | [apps/cli](../../../vendor/deepseek-harness/source/apps/cli/package.json) |
-| @deepseek-ai/dsh-api-gateway | [packages/api/gateway](../../../vendor/deepseek-harness/source/packages/api/gateway/package.json) |
-| @deepseek-ai/dsh-api-remote-access | [packages/api/remote-access](../../../vendor/deepseek-harness/source/packages/api/remote-access/package.json) |
-| @deepseek-ai/dsh-api-remotes | [packages/api/remotes](../../../vendor/deepseek-harness/source/packages/api/remotes/package.json) |
-| @deepseek-ai/dsh-api-settings-controller | [packages/api/settings-controller](../../../vendor/deepseek-harness/source/packages/api/settings-controller/package.json) |
-| @deepseek-ai/dsh-app-boot | [packages/boot/app-boot](../../../vendor/deepseek-harness/source/packages/boot/app-boot/package.json) |
-| @deepseek-ai/dsh-atomic-write | [packages/util/atomic-write](../../../vendor/deepseek-harness/source/packages/util/atomic-write/package.json) |
-| @deepseek-ai/dsh-attachment | [packages/attachment/attachment](../../../vendor/deepseek-harness/source/packages/attachment/attachment/package.json) |
-| @deepseek-ai/dsh-brand | [packages/util/brand](../../../vendor/deepseek-harness/source/packages/util/brand/package.json) |
-| @deepseek-ai/dsh-client-connection | [packages/client/connection](../../../vendor/deepseek-harness/source/packages/client/connection/package.json) |
-| @deepseek-ai/dsh-client-hmr | [packages/client/hmr](../../../vendor/deepseek-harness/source/packages/client/hmr/package.json) |
-| @deepseek-ai/dsh-client-locale | [packages/client/locale](../../../vendor/deepseek-harness/source/packages/client/locale/package.json) |
-| @deepseek-ai/dsh-client-modules | [packages/client/modules](../../../vendor/deepseek-harness/source/packages/client/modules/package.json) |
-| @deepseek-ai/dsh-client-shortcuts | [packages/client/shortcuts](../../../vendor/deepseek-harness/source/packages/client/shortcuts/package.json) |
-| @deepseek-ai/dsh-client-ui-layout | [packages/client/ui-layout](../../../vendor/deepseek-harness/source/packages/client/ui-layout/package.json) |
-| @deepseek-ai/dsh-client-ui-renderer | [packages/client/ui-renderer](../../../vendor/deepseek-harness/source/packages/client/ui-renderer/package.json) |
-| @deepseek-ai/dsh-client-ui-settings | [packages/client/ui-settings](../../../vendor/deepseek-harness/source/packages/client/ui-settings/package.json) |
-| @deepseek-ai/dsh-client-ui-settings-general | [packages/client/ui-settings-general](../../../vendor/deepseek-harness/source/packages/client/ui-settings-general/package.json) |
-| @deepseek-ai/dsh-client-ui-settings-models | [packages/client/ui-settings-models](../../../vendor/deepseek-harness/source/packages/client/ui-settings-models/package.json) |
-| @deepseek-ai/dsh-client-ui-theme | [packages/client/ui-theme](../../../vendor/deepseek-harness/source/packages/client/ui-theme/package.json) |
-| @deepseek-ai/dsh-cmdline | [packages/boot/cmdline](../../../vendor/deepseek-harness/source/packages/boot/cmdline/package.json) |
-| @deepseek-ai/dsh-config-editor | [packages/boot/config-editor](../../../vendor/deepseek-harness/source/packages/boot/config-editor/package.json) |
-| @deepseek-ai/dsh-credentials | [packages/credentials/credentials](../../../vendor/deepseek-harness/source/packages/credentials/credentials/package.json) |
-| @deepseek-ai/dsh-credentials-local | [packages/credentials/credentials-local](../../../vendor/deepseek-harness/source/packages/credentials/credentials-local/package.json) |
-| @deepseek-ai/dsh-deque | [packages/util/deque](../../../vendor/deepseek-harness/source/packages/util/deque/package.json) |
-| @deepseek-ai/dsh-desktop-host | [apps/desktop-host](../../../vendor/deepseek-harness/source/apps/desktop-host/package.json) |
-| @deepseek-ai/dsh-hmr | [packages/boot/hmr](../../../vendor/deepseek-harness/source/packages/boot/hmr/package.json) |
-| @deepseek-ai/dsh-home-paths | [packages/util/home-paths](../../../vendor/deepseek-harness/source/packages/util/home-paths/package.json) |
-| @deepseek-ai/dsh-host-frontend-static | [packages/host/frontend-static](../../../vendor/deepseek-harness/source/packages/host/frontend-static/package.json) |
-| @deepseek-ai/dsh-host-plugin-inventory | [packages/host/plugin-inventory](../../../vendor/deepseek-harness/source/packages/host/plugin-inventory/package.json) |
-| @deepseek-ai/dsh-host-webserver | [packages/host/webserver](../../../vendor/deepseek-harness/source/packages/host/webserver/package.json) |
-| @deepseek-ai/dsh-http-proxy | [packages/util/http-proxy](../../../vendor/deepseek-harness/source/packages/util/http-proxy/package.json) |
-| @deepseek-ai/dsh-jobs | [packages/jobs/jobs](../../../vendor/deepseek-harness/source/packages/jobs/jobs/package.json) |
-| @deepseek-ai/dsh-jobs-local | [packages/jobs/jobs-local](../../../vendor/deepseek-harness/source/packages/jobs/jobs-local/package.json) |
-| @deepseek-ai/dsh-launch-environment | [packages/util/launch-environment](../../../vendor/deepseek-harness/source/packages/util/launch-environment/package.json) |
-| @deepseek-ai/dsh-lazy-require | [packages/util/lazy-require](../../../vendor/deepseek-harness/source/packages/util/lazy-require/package.json) |
-| @deepseek-ai/dsh-llm | [packages/llm/llm](../../../vendor/deepseek-harness/source/packages/llm/llm/package.json) |
-| @deepseek-ai/dsh-llm-pi-ai | [packages/llm/llm-pi-ai](../../../vendor/deepseek-harness/source/packages/llm/llm-pi-ai/package.json) |
-| @deepseek-ai/dsh-native-command | [packages/util/native-command](../../../vendor/deepseek-harness/source/packages/util/native-command/package.json) |
-| @deepseek-ai/dsh-package-manifest | [packages/util/package-manifest](../../../vendor/deepseek-harness/source/packages/util/package-manifest/package.json) |
-| @deepseek-ai/dsh-plugin-manager | [packages/boot/plugin-manager](../../../vendor/deepseek-harness/source/packages/boot/plugin-manager/package.json) |
-| @deepseek-ai/dsh-scope | [packages/core/scope](../../../vendor/deepseek-harness/source/packages/core/scope/package.json) |
-| @deepseek-ai/dsh-settings | [packages/settings/settings](../../../vendor/deepseek-harness/source/packages/settings/settings/package.json) |
-| @deepseek-ai/dsh-subprocess | [packages/subprocess/subprocess](../../../vendor/deepseek-harness/source/packages/subprocess/subprocess/package.json) |
-| @deepseek-ai/dsh-subprocess-local | [packages/subprocess/subprocess-local](../../../vendor/deepseek-harness/source/packages/subprocess/subprocess-local/package.json) |
-| @deepseek-ai/dsh-timeout | [packages/util/timeout](../../../vendor/deepseek-harness/source/packages/util/timeout/package.json) |
-| @deepseek-ai/dsh-typert-loader | [packages/typert/loader](../../../vendor/deepseek-harness/source/packages/typert/loader/package.json) |
-| @deepseek-ai/dsh-typert-protocol | [packages/typert/protocol](../../../vendor/deepseek-harness/source/packages/typert/protocol/package.json) |
-| @deepseek-ai/dsh-typert-registry | [packages/typert/registry](../../../vendor/deepseek-harness/source/packages/typert/registry/package.json) |
-| @deepseek-ai/dsh-util-crypto | [packages/util/crypto](../../../vendor/deepseek-harness/source/packages/util/crypto/package.json) |
-| @deepseek-ai/dsh-util-values | [packages/util/values](../../../vendor/deepseek-harness/source/packages/util/values/package.json) |
-| @deepseek-ai/dsh-web-app | [packages/bundle/web-app](../../../vendor/deepseek-harness/source/packages/bundle/web-app/package.json) |
-| @deepseek-ai/dsh-web-frontend | [apps/web](../../../vendor/deepseek-harness/source/apps/web/package.json) |
-| @deepseek-ai/dsh-win32-process | [packages/subprocess/win32-process](../../../vendor/deepseek-harness/source/packages/subprocess/win32-process/package.json) |
-| @deepseek-ai/schemastery | [vendor/schemastery](../../../vendor/deepseek-harness/source/vendor/schemastery/package.json) |
+- 最终框架 8 步编译、YouDub 源码编译、装配检查和 root/web 类型检查通过；中英日 542 个业务键、7 个框架 namespace 校验通过。
+- 全框架 243 个测试文件：3,716 项通过、0 项失败、19 项平台用例跳过。Host 80 项、SDK/工作流 140 项、Web 240 项、Python 420 项通过，共 **4,596 个唯一通过用例**；定向预验与重复运行不累加。
+- Python 使用已安装的 YouDub 私有 Python、FFmpeg/ffprobe，覆盖真实媒体生成、字幕、混音及取消回收。环境、模型与历史用户任务不改动。
+- 首次聚合检查发现退役字段与无用导入；旧插件入口删除后遗漏的纯类型声明依赖已补齐。Web 复制日志测试改为验证正式剪贴板的失败提示，保留诊断全文。原失败日志均保留。首次安装页验收脚本先误选了 HTML img，按实际 SVG image 修正后验证内嵌资源解码和画面，产品代码无变更。
+- 并发运行多套回归时，框架有 3 项失败；独立复现的 45 项及降低并发后的完整框架回归通过，未放宽断言或超时。只以最后完整回归作为通过证据。
+- 独立中文 Electron profile 验证首屏与运行中的 Logo 动效、键盘菜单、任务库、工作流画布、资源、插件详情/安装弹窗、明暗设置和模型页。另用全新 profile 验证首次安装的语言、目录与内嵌 Logo。页面运行错误为 0，验收实例已关闭。
+- 最后分区完整复扫、全仓扫描和独立交叉复核均无新增确认可安全删除项。审计覆盖当前功能、插件合同、数据兼容、错误和安全边界；逐包用途与候选保留依据见上文。
+- 本轮未进行模型下载、外部 LLM 调用、四模型真实推理或 Windows/Linux 实机安装；未打包、推送或发布。
 
-## 验证
-
-2026-10-24 本轮裁剪后完成：
-
-- 框架 Host、Client、Web 和 YouDub 业务、Electron 入口构建通过；完整 Host/Client TypeScript、产品 TypeScript、产品组成检查通过。
-- Jobs、Scope、Profile、PluginManager、HMR、Typert、LLM 和桌面退出检查的 20 个测试文件共 492 项通过。修正一处测试夹具漏声明的 `jobs` 依赖后，仅重跑该文件。
-- 权限快照、客户端连接、共享控件与更新界面的 5 个文件共 38 项通过；桌面退出及 LLM 序列化测试 36 项通过。
-- 产品测试 68 项通过。两项桌面启动检查最初因本地依赖链接指向另一个工作树而失败，改成本工作树的独立依赖目录后，这两项重跑通过。
-- 使用真实 Desktop Host、独立 profile 和浏览器验证：插件安装、激活、自定义节点界面、工作流人工订正、导出文件下载回读、停用、重新启用、卸载全部通过，浏览器无运行错误。此验收复用原有 `graph-text-review` 示例，不调用外部模型或下载模型。
-
-本地日志、界面截图和 `acceptance.json` 位于 `output/agent-runtime-prune/`，不提交 Git。本轮没有生成或发布安装包；源码与运行包减少量不代表 DMG 体积减少量。
+本地证据目录：`output/pruning-exhaustive-2026-10-26/`，包含分类计数、全仓候选、分区报告、复扫结果、原始失败日志、最终回归和中文截图。报告在此记录已验证边界，忽略目录不进入提交。

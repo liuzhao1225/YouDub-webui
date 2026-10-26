@@ -13,7 +13,7 @@ export const desktopFiles = [
 // is already in the Host bundle. Keep the media worker and its runtime assets.
 export const productResources = [
   'package.json', 'backend/__init__.py', 'backend/app/**/*', 'backend/workers/**/*',
-  'backend/requirements*.txt', 'backend/requirements/**/*',
+  'backend/requirements/**/*',
   'packages/sdk/src/video-source.ts',
   'packages/builtin/src/workflow-localize.ts',
   'packages/builtin/src/workflow-graph.ts',

@@ -126,7 +126,7 @@ npm start
 
 `npm start` 与 `npm run dev` 启动同一 Electron 产品；`npm run build:desktop` 是 `build:youdub` 的别名，生成开发产物。`npm run package:desktop -- --dir` 生成独立应用；正式安装包、签名与发布见[发行流程](docs/releasing.md)。浏览器调试、独立数据目录和修改后重建见[本地开发](apps/harness/docs/DEVELOPMENT.md)。
 
-首次启动选择界面语言和数据安装目录，在页面准备运行资源、配置翻译模型。应用使用自己的 Python 环境、模型和配置；翻译模型须接受至少 **65,535** 个输出 token，不兼容时会明确报错。基础环境和各工作流所需资源的准备状态分别展示。
+首次启动选择界面语言和数据安装目录，在页面准备运行资源、配置翻译模型。应用使用自己的 Python 环境、模型和配置；翻译通过 Harness 模型服务调用，使用已配置的提供商协议和模型参数。基础环境和各工作流所需资源的准备状态分别展示。
 
 已发布版本的源码运行、Swift/C# 桌面壳及发行流程见[改造前说明](https://github.com/liuzhao1225/YouDub-webui/blob/711e40e8e69d2c6f2065f15aecc90550dcbf695d/README.md#main-版本源码运行)。Harness 来源与保留范围见[源码说明](vendor/deepseek-harness/README.md)中。
 

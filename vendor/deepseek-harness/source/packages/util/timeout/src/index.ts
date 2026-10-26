@@ -16,7 +16,7 @@ export class TimeoutReason extends Error {
    * @param code Capability-owned timeout code (e.g. `BASH_TIMEOUT`).
    * @param timeoutMs The deadline that elapsed, in milliseconds.
    */
-  constructor(readonly code: string, readonly timeoutMs: number) {
+  constructor(readonly code: string, timeoutMs: number) {
     super(`${code} after ${timeoutMs}ms`)
   }
 }
@@ -28,38 +28,6 @@ function assertTimerDelay(timeoutMs: number, name: string): void {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_TIMER_DELAY_MS) {
     throw new Error(`${name} must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`)
   }
-}
-
-/**
- * Validate a caller's optional timeout hint, use the backend default, then cap
- * it. Supplied values must be positive and finite; zero is not a public
- * disable-timeout sentinel.
- *
- * @param requested The caller's optional hint; validated when present.
- * @param def The backend default applied when `requested` is absent.
- * @param max The backend upper bound the result is capped to.
- * @param name Field name used in the thrown message (so the caller sees which input was
- *   bad).
- * @returns The effective timeout in milliseconds: `min(requested ?? def, max)`.
- */
-export function clampTimeout(
-  requested: number | undefined,
-  def: number,
-  max: number,
-  name = 'timeoutMs',
-): number {
-  if (requested !== undefined && (!Number.isFinite(requested) || requested <= 0)) {
-    throw new Error(`${name} must be a positive finite number`)
-  }
-  return Math.min(requested ?? def, max)
-}
-
-/** A deadline signal plus the cleanup that clears its timer (dispose-once). */
-export interface Deadline {
-  /** Aborts on upstream cancellation OR on timeout (the timeout carries a {@link TimeoutReason}). */
-  readonly signal: AbortSignal
-  /** Clear the timer. Safe to call once; `using` calls it at scope exit. */
-  [Symbol.dispose](): void
 }
 
 /** Rearmable timeout around one outstanding async-iterator demand. */
@@ -80,44 +48,8 @@ export interface IdleWatchdog {
    *   outstanding demand.
    */
   next<T>(iterator: AsyncIterator<T>): Promise<IteratorResult<T>>
-  /** Rearm an outstanding demand after transport activity that yields no iterator value; otherwise a no-op. */
-  pulse(): void
   /** Clear an armed timer; safe to call once at the owning stream's exit. */
   [Symbol.dispose](): void
-}
-
-/**
- * Fuse upstream cancellation with an identifiable timeout. `timeoutMs <= 0` is
- * the internal no-timer sentinel; the returned disposer clears an armed timer.
- * The signal only notifies, so callers must stop their own work.
- *
- * @param upstream The caller's cancellation signal, if any, fused into the result.
- * @param timeoutMs Deadline in milliseconds; `<= 0` means "no timeout" (arm no timer).
- * @param code Capability-owned code stamped onto the timeout's {@link TimeoutReason}.
- * @returns The fused {@link Deadline} (signal + timer cleanup).
- */
-export function deadline(
-  upstream: AbortSignal | undefined,
-  timeoutMs: number,
-  code: string,
-): Deadline {
-  if (timeoutMs <= 0) {
-    // No timeout (background work): forward only the upstream signal, or a never-aborting one
-    // when there is no upstream.
-    return { signal: upstream ?? new AbortController().signal, [Symbol.dispose]() {} }
-  }
-
-  assertTimerDelay(timeoutMs, 'deadline timeoutMs')
-
-  const timer = new AbortController()
-  const id = setTimeout(() => { timer.abort(new TimeoutReason(code, timeoutMs)) }, timeoutMs)
-  return {
-    // AbortSignal.any adopts the reason of whichever source aborts FIRST, so a
-    // race resolves to a single cause: timeoutOf() reads TimeoutReason only
-    // when the timeout won, and upstream-wins leaves an ordinary abort reason.
-    signal: upstream !== undefined ? AbortSignal.any([upstream, timer.signal]) : timer.signal,
-    [Symbol.dispose]() { clearTimeout(id) },
-  }
 }
 
 /**
@@ -180,10 +112,6 @@ export function idleWatchdog(
         timer = undefined
         outstanding = false
       }
-    },
-    pulse(): void {
-      if (disposed || !outstanding) return
-      arm()
     },
     [Symbol.dispose](): void {
       if (disposed) return

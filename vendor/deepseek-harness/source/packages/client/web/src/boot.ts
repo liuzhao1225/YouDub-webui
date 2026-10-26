@@ -6,9 +6,7 @@
  * @module @deepseek-ai/dsh-client-web/src/boot
  */
 import { Context } from '@deepseek-ai/cordis'
-import type {
-  BootManifest, ClientModuleCreateOptions, ClientModuleSystem, DshWindow,
-} from '@deepseek-ai/dsh-client-modules/client'
+import type { ClientModuleCreateOptions, DshWindow } from '@deepseek-ai/dsh-client-modules/client'
 import { bootClient } from './boot-client.ts'
 import { BootPage } from './boot-page.ts'
 import { mountClient } from './mount.ts'
@@ -16,27 +14,19 @@ import { getStaticModules } from './seed.ts'
 import { installWindowDragRecall } from './window-drag/recall.ts'
 import './base.css'
 
-/** Module transport hook replaced by jsdom tests. */
-export type BootSeams = Pick<ClientModuleCreateOptions, 'loadBundle'>
-
 /** Browser boot entry consumed by `apps/web`. */
 export class AppWebEntry {
   private readonly container: HTMLElement
-  private readonly seams: BootSeams | undefined
   private readonly page: BootPage
   private ctx: Context | undefined
   private stopDragRecall: (() => void) | undefined
-  private modules!: ClientModuleSystem
-  private manifest!: BootManifest
 
   /**
    * Draw the boot page; {@link run} starts the loader.
    * @param container - Application mount point.
-   * @param seams - Optional module transport replacement.
    */
-  constructor(container: HTMLElement, seams?: BootSeams) {
+  constructor(container: HTMLElement) {
     this.container = container
-    this.seams = seams
     this.page = new BootPage(container)
   }
 
@@ -61,30 +51,34 @@ export class AppWebEntry {
         throw new Error('web boot: window.__ModuleLoader__ bootstrap facade is missing')
       }
       // A pre-injected transport (the worker preview page) owns bundle bytes;
-      // its loadBundle is the default and explicit seams still win. The global
+      // its loadBundle owns module transport. The global
       // is `ClientTransportHooks`, owned by @deepseek-ai/dsh-client-connection;
       // this structural slice reads one optional member without adding a
       // package edge.
       const transport = (globalThis as {
         __DSH_TRANSPORT__?: { loadBundle?: ClientModuleCreateOptions['loadBundle'] }
       }).__DSH_TRANSPORT__
-      this.modules = moduleLoader.create({
+      const modules = moduleLoader.create({
         boot: win.__DSH_BOOT__,
         staticModules: getStaticModules(),
         ...transport?.loadBundle === undefined ? {} : { loadBundle: transport.loadBundle },
-        ...this.seams,
       })
-      this.manifest = this.modules.manifest
+      const manifest = modules.manifest
 
-      const prefetching = this.prefetchImmediateTier()
+      // Prefetch stage-one bundles and their dynamic requests before concurrent plugin imports.
+      const prefetching = Promise.all(manifest.plugins
+        .filter(row => row.immediately)
+        .map(row => modules.prefetch(row.id).catch((_prefetchError: unknown) => {
+          // Prefetch only starts transport early; the Loader import retries and reports this bundle failure.
+        })))
       const ctx = new Context()
       this.ctx = ctx
-      this.page.setTotal(this.manifest.plugins.length)
+      this.page.setTotal(manifest.plugins.length)
       await prefetching
       await bootClient({
         ctx,
-        modules: this.modules,
-        manifest: this.manifest,
+        modules,
+        manifest,
         onEntryState: (name, state) => {
           if (onFailure === undefined || state !== 'failed') this.page.setState(name, state)
         },
@@ -110,14 +104,5 @@ export class AppWebEntry {
     this.ctx = undefined
     if (ctx !== undefined) await ctx.fiber.dispose()
     this.page.dispose()
-  }
-
-  /** Prefetch stage-one bundles and their dynamic requests before concurrent plugin imports. */
-  private async prefetchImmediateTier(): Promise<void> {
-    await Promise.all(this.manifest.plugins
-      .filter(row => row.immediately)
-      .map(row => this.modules.prefetch(row.id).catch((_prefetchError: unknown) => {
-        // Prefetch only starts transport early; the Loader import retries and reports this bundle failure.
-      })))
   }
 }

@@ -65,9 +65,6 @@
       "path": "./packages/api/gateway/tsconfig.client.json"
     },
     {
-      "path": "./packages/api/remote-access/tsconfig.client.json"
-    },
-    {
       "path": "./packages/api/remotes/tsconfig.client.json"
     },
     {

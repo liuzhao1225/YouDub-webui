@@ -3,15 +3,12 @@ import { QueryClient } from '../../../web/src/plugin/runtime/query'
 import { WorkflowResourceChecks, changesResources, resourceKey } from '../../../web/src/plugin/runtime/workflow-resources'
 import { responseBody } from '../../../web/src/runtime/http'
 import { StudioDraftStore } from '../../../web/src/runtime/studio-draft'
+import type { Request } from '../../../web/src/plugin/runtime/types'
 const Features = createContext<any>(null)
 export const FeatureProvider = Features.Provider
 export function useFeatures() { const value = useContext(Features); if (!value) throw new Error('YouDub feature bindings are unavailable'); return value }
-export const domainSlots = ['config.editors','task.detail.panels','task.detail.actions','workflow.node.editors','workflow.node.details','settings.sections']
-export function createFeatures(ctx:any, navigate:(path:string) => void, blockNavigation:any) {
-  const mutations = new Set<() => void>(), draftStore = new StudioDraftStore()
-  const resources = new WorkflowResourceChecks(request, () => window.dispatchEvent(new Event('youdub:resources-ready')))
-  const invalidateConfiguration = () => { resources.invalidate(); mutations.forEach(listener => listener()) }
-  async function request<T>(path:string, init:RequestInit = {}):Promise<T> {
+export const domainSlots = ['config.editors','task.detail.panels','task.detail.actions','workflow.node.editors','workflow.node.details']
+export async function requestHarness<T>(path:string, init:RequestInit = {}):Promise<T> {
     if (!path.startsWith('/api/')) throw new Error(`Unsupported YouDub API path: ${path}`)
     const method = (init.method ?? 'GET').toUpperCase()
     const multipart = init.body instanceof FormData
@@ -20,10 +17,15 @@ export function createFeatures(ctx:any, navigate:(path:string) => void, blockNav
       headers:multipart ? undefined : { 'content-type':'application/json' },
       body:multipart ? init.body : JSON.stringify({ method, path, ...(init.body ? { body:typeof init.body === 'string' ? JSON.parse(init.body) : init.body } : {}) }),
     })
-    const result = await responseBody<T>(response)
-    if (!['GET','HEAD'].includes(method)) {
-      if (changesResources(path, method, init.body)) invalidateConfiguration()
-    }
+    return responseBody<T>(response)
+}
+export function createFeatures(ctx:any, navigate:(path:string) => void, blockNavigation:any, transport:Request = requestHarness) {
+  const mutations = new Set<() => void>(), draftStore = new StudioDraftStore()
+  const resources = new WorkflowResourceChecks(request, () => window.dispatchEvent(new Event('youdub:resources-ready')))
+  const invalidateConfiguration = () => { resources.invalidate(); mutations.forEach(listener => listener()) }
+  async function request<T>(path:string, init?:RequestInit):Promise<T> {
+    const result = await transport<T>(path, init)
+    if (changesResources(path, (init?.method ?? 'GET').toUpperCase(), init?.body)) invalidateConfiguration()
     return result
   }
   const queries = new QueryClient(request)
@@ -58,5 +60,5 @@ export function createFeatures(ctx:any, navigate:(path:string) => void, blockNav
     return () => disposers.forEach(dispose => dispose())
   })
   ctx.effect(() => { const unload = (event:BeforeUnloadEvent) => { if (Object.keys(draftStore.getSnapshot().submissions).length) { event.preventDefault(); event.returnValue = '' } }; window.addEventListener('beforeunload',unload); return () => window.removeEventListener('beforeunload',unload) })
-  return { request, navigate, replace:navigate, blockNavigation, useQuery, useWorkflowDocuments, useWorkflowResources, useSlot, draftStore, submissionStore:draftStore }
+  return { request, navigate, blockNavigation, useQuery, useWorkflowDocuments, useWorkflowResources, useSlot, draftStore, submissionStore:draftStore }
 }

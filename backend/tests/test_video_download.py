@@ -97,7 +97,7 @@ def test_harness_download_never_uses_global_node_when_private_runtime_is_missing
     monkeypatch.setenv('YOUDUB_NODE_PATH', node)
     monkeypatch.setattr(yt_dlp, 'YoutubeDL', lambda *_: pytest.fail('Missing private Node reached the downloader'))
     with pytest.raises(WorkerError) as error:
-        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Wire())
+        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Wire(), proxy_port=0)
     assert error.value.code == 'RUNTIME_UNAVAILABLE'
 
 
@@ -116,7 +116,7 @@ def test_download_failure_never_returns_an_artifact(tmp_path, monkeypatch, mode)
         def check_cancel(self): raise WorkerError('CANCELLED', 'cancelled')
     monkeypatch.setattr(yt_dlp, 'YoutubeDL', Downloader)
     with pytest.raises((RuntimeError, WorkerError)) as error:
-        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Cancelled() if mode == 'cancel' else Wire())
+        download_video('https://youtu.be/jNQXAC9IVRw', tmp_path, Cancelled() if mode == 'cancel' else Wire(), proxy_port=0)
     if mode == 'network': assert error.value is original
     else: assert error.value.code == {'live': 'UNSUPPORTED_MEDIA', 'cancel': 'CANCELLED'}[mode]
     assert not list(tmp_path.iterdir())

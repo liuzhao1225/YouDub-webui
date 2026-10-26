@@ -1,8 +1,6 @@
-import type { Context } from 'cordis'
 import type { Readable } from 'node:stream'
+import type {} from 'cordis'
 
-export const SDK_VERSION = '1.1.0'
-export const WORKER_PROTOCOL = 'youdub-worker/v1'
 export type JsonObject = Record<string, any>
 export type Disposer = () => void | Promise<void>
 export type TaskStatus = 'queued' | 'running' | 'waiting' | 'paused' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'
@@ -16,7 +14,7 @@ export interface ArtifactDescriptor { path: string; mimeType: string; schemaId: 
 export interface Artifact extends ArtifactRef {
   path: string; mimeType: string; name: string; size: number; metadata: JsonObject; invocationId: string
 }
-export interface InputSlot { name: string; label: string; required: boolean; acceptedMimeTypes: string[]; maxBytes?: number }
+export interface InputSlot { name: string; label: string; required: boolean; acceptedMimeTypes: string[] }
 export type InputRef = { from: 'task'; name: string } | { from: 'step'; stepId: string; output: string }
 export interface OutputPort { label?: LocalizedText; name: string; kind: 'artifact' | 'json'; schemaId: string; required: boolean; schema?: JsonObject }
 export interface ExactProviderBinding {
@@ -31,7 +29,6 @@ export interface WorkflowPlan {
   workflow: { id: string; version: string; pluginId: string; pluginVersion: string; integrity: string };
   config: JsonObject; bindings: Record<string, ExactProviderBinding>; steps: StepSpec[];
   outputs: { id: string; label: string; source: { stepId: string; output: string }; role: string; required: boolean }[];
-  omittedSteps?: { id: string; reason: string }[]
 }
 export interface WorkflowDescription {
   id: string; version: string; label: string; description?: string; inputs: InputSlot[];
@@ -146,7 +143,7 @@ export interface TasksService {
   approve(id: string, nodeId: string, request: ReviewCommand): Promise<NodeActionReceipt>;
   correct(id: string, nodeId: string, request: ReviewCommand & { patch: JsonObject; continue?: boolean }): Promise<NodeActionReceipt>;
   action(id: string, actionId: string): Promise<NodeActionReceipt | null>;
-  delete(id: string, expectedAttempt: number): Promise<void>; idle(): Promise<boolean>
+  delete(id: string, expectedAttempt: number): Promise<void>
 }
 export type OutputValidator = (value: any, context: { inputs: JsonObject; outputs: JsonObject }) => void
 export interface CatalogService {
@@ -168,7 +165,7 @@ export interface SettingsService {
 export interface FilesService {
   root: string; taskRoot(id: string): string;
   reserve(id: string, fresh?: boolean): Promise<Disposer>; readLock(id: string): Disposer;
-  upload(id: string, slot: string, filename: string, mime: string, input: Readable, maxBytes?: number): Promise<Artifact>;
+  upload(id: string, slot: string, filename: string, mime: string, input: Readable): Promise<Artifact>;
   register(id: string, invocationId: string, workDir: string, descriptor: ArtifactDescriptor): Promise<Artifact>;
   resolve(id: string, artifact: Artifact): Promise<string>; workDir(id: string, attempt: number, invocationId: string): Promise<string>;
   cover(id: string, artifact: Artifact): Promise<{ path: string; mimeType: string }>;
@@ -178,7 +175,7 @@ export interface FilesService {
 }
 export interface ProcessRequest { command: string; args: string[]; cwd?: string; env?: NodeJS.ProcessEnv; signal?: AbortSignal }
 export interface ProcessService {
-  run(request: ProcessRequest & { input?: string; onOutput?: (text: string, stream: 'stdout' | 'stderr') => void }): Promise<{ stdout: string; stderr: string }>;
+  run(request: ProcessRequest & { onOutput?: (text: string, stream: 'stdout' | 'stderr') => void }): Promise<{ stdout: string; stderr: string }>;
   worker(request: ProcessRequest, invocation: Invocation, context: InvocationContext): Promise<OperationResult>;
   rpc(request: ProcessRequest): Promise<{ call<T = any>(method: string, params?: JsonObject): Promise<T>; close(): Promise<void> }>
 }
@@ -189,7 +186,6 @@ declare module 'cordis' {
     files: FilesService; youdubWorker: ProcessService;
   }
 }
-export type YouDubContext = Context
 export function requireId(id: string) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) throw new AppError('INVALID_CONFIG', 'A canonical UUID is required.', 422)
 }

@@ -116,15 +116,6 @@ export class ClientEntries {
   }
 
   /**
-   * Retry failed entries against the latest graph, including an unchanged revision.
-   * @returns after retry settlement, with remaining errors in {@link state}.
-   */
-  retry(): Promise<void> {
-    const generation = ++this.generation
-    return this.enqueue(() => this.reconcile(generation))
-  }
-
-  /**
    * Replace one entry's code in the same queue as graph updates; duplicate revisions are ignored.
    * Entries missing after a failed import are reconciled; bootstrap replacement fails before teardown.
    * Ignored while the connected Host serves another release than the page's boot release.

@@ -31,9 +31,9 @@ server.listen(0, '127.0.0.1', () => {
 })
 process.on('message', message => {
   if (message.type === 'quit-inspection') {
-    // Ids divisible by three never answer; the others report scheduled work for odd ids.
+    // Ids divisible by three never answer; the others report active work for odd ids.
     if (message.requestId % 3 === 0) return
-    process.send({ type: 'quit-inspection', requestId: message.requestId, activeTasks: false, scheduledTasks: message.requestId % 2 === 1 })
+    process.send({ type: 'quit-inspection', requestId: message.requestId, activeTasks: message.requestId % 2 === 1 })
     return
   }
   if (message.type !== 'shutdown') return
@@ -75,11 +75,11 @@ describe('YouDub desktop host process', () => {
     await host.start()
     // Request ids 1 and 2: the fixture answers by id parity to distinguish concurrent inspections.
     expect(await Promise.all([host.inspectQuit(), host.inspectQuit()]))
-      .toEqual([{ activeTasks: false, scheduledTasks: true }, { activeTasks: false, scheduledTasks: false }])
+      .toEqual([{ activeTasks: true }, { activeTasks: false }])
     const started = Date.now()
     await expect(host.inspectQuit()).rejects.toThrow('desktop quit: inspection timed out')
     expect(Date.now() - started).toBeGreaterThanOrEqual(QUIT_INSPECTION_DEADLINE_MS - 50)
-    expect(await host.inspectQuit()).toEqual({ activeTasks: false, scheduledTasks: false })
+    expect(await host.inspectQuit()).toEqual({ activeTasks: false })
   }, 15_000)
 
   it.each([

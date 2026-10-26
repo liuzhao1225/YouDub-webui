@@ -10,8 +10,8 @@ import { pathToFileURL } from 'node:url'
 import { Context } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import { internals, provideCmdline } from '@deepseek-ai/dsh-cmdline'
-import { afterEach, describe, expect, it } from 'vitest'
+import { provideCmdline } from '@deepseek-ai/dsh-cmdline'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { apply, WEB_STARTUP_SERVICE, type WebStartupValues } from '../src/startup.ts'
 
 /** What one fixture boot observed. */
@@ -29,8 +29,7 @@ const tempDirs: string[] = []
 afterEach(async () => {
   for (const dispose of disposers.splice(0)) await dispose()
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
-  internals.stdout = process.stdout
-  internals.stderr = process.stderr
+  vi.restoreAllMocks()
 })
 
 /**
@@ -70,9 +69,9 @@ export const apply = ctx => globalThis.__webStartupApply(ctx)
     `  name: ${pathToFileURL(join(dir, 'provider.mjs')).href}`,
     '',
   ].join('\n'))
-  const observing = { write: (chunk: string) => { observed.out += chunk; return true } }
-  internals.stdout = observing
-  internals.stderr = observing
+  const observe = (chunk: string | Uint8Array): boolean => { observed.out += String(chunk); return true }
+  vi.spyOn(process.stdout, 'write').mockImplementation(observe)
+  vi.spyOn(process.stderr, 'write').mockImplementation(observe)
   const globals = globalThis as unknown as {
     __webStartupApply: typeof apply
     __webStartupObserved: Observed

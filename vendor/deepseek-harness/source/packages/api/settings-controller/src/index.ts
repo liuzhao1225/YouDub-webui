@@ -69,8 +69,8 @@ declare module '@deepseek-ai/cordis' {
 /**
  * Host service backing the generated `ctx.remote.settings` namespace. Every
  * remote read uses `redactSecrets: true`, so a `role('secret')` field cannot
- * ride a response. Writes expose the settings service's merge, replacement,
- * and path-addressed operations, and classify every provider refusal as
+ * ride a response. Writes apply path-addressed edits and classify every
+ * provider refusal as
  * `settings/conflict` or `settings/rejected` with the service's message.
  */
 export class SettingsController extends TypertRemoteService {
@@ -105,40 +105,6 @@ export class SettingsController extends TypertRemoteService {
   }
 
   /**
-   * Merge a patch into one namespace's stored user section.
-   * @param ns - namespace key to write.
-   * @param patch - fields to merge into the user section.
-   * @param expectedRevision - revision the caller read; `undefined` writes unconditionally.
-   * @returns the namespace's redacted view after the write.
-   * @throws RemoteError when the request is invalid, no provider is mounted, or the provider refuses the write.
-   */
-  @Remote
-  update(
-    ns: string,
-    patch: Record<string, JsonValue>,
-    expectedRevision: number | undefined,
-  ): Promise<SettingsNamespaceView> {
-    return this.write(ns, 'update', patch, expectedRevision)
-  }
-
-  /**
-   * Replace one namespace's stored user section wholesale.
-   * @param ns - namespace key to write.
-   * @param section - complete replacement user section.
-   * @param expectedRevision - revision the caller read; `undefined` writes unconditionally.
-   * @returns the namespace's redacted view after the write.
-   * @throws RemoteError when the request is invalid, no provider is mounted, or the provider refuses the write.
-   */
-  @Remote
-  replace(
-    ns: string,
-    section: Record<string, JsonValue>,
-    expectedRevision: number | undefined,
-  ): Promise<SettingsNamespaceView> {
-    return this.write(ns, 'replace', section, expectedRevision)
-  }
-
-  /**
    * Apply path-addressed edits to one namespace's user section, resolved against
    * the section as stored rather than against whatever the caller last read,
    * then answer with that namespace's new redacted view.
@@ -154,7 +120,23 @@ export class SettingsController extends TypertRemoteService {
     ops: SettingsPathOpView[],
     expectedRevision: number | undefined,
   ): Promise<SettingsNamespaceView> {
-    return this.write(ns, 'mutate', ops, expectedRevision)
+    const parsed = settingsNamespaceRequestSchema.safeParse({ ns })
+    if (!parsed.success) {
+      throw new RemoteError('gateway/bad-request', 'invalid payload for settings.mutate', { issues: parsed.error.issues })
+    }
+    const settings = this.provider()
+    const namespace = parsed.data.ns
+    try {
+      await settings.mutate(namespace, ops as SettingsPathOp[], expectedRevision)
+    } catch (error: unknown) {
+      throw rejected(ns, error)
+    }
+    const descriptor = settings.describe({ redactSecrets: true }).find(candidate => candidate.ns === namespace)
+    if (descriptor === undefined) {
+      // A concurrent registrant disposal can remove the namespace after the write commits.
+      throw new RemoteError('gateway/internal', `settings namespace "${ns}" was disposed after the mutate`, {})
+    }
+    return namespaceView(descriptor)
   }
 
   /**
@@ -182,34 +164,6 @@ export class SettingsController extends TypertRemoteService {
       if (isAborted(signal)) throw new RemoteError('gateway/cancelled', 'settings document open was aborted', {})
       throw new RemoteError('gateway/internal', `path open failed: ${messageOf(error)}`, {}, { cause: error })
     }
-  }
-
-  private async write(
-    ns: string,
-    mode: 'update' | 'replace' | 'mutate',
-    input: Record<string, JsonValue> | SettingsPathOpView[],
-    expectedRevision: number | undefined,
-  ): Promise<SettingsNamespaceView> {
-    const parsed = settingsNamespaceRequestSchema.safeParse({ ns })
-    if (!parsed.success) {
-      throw new RemoteError('gateway/bad-request', `invalid payload for settings.${mode}`, { issues: parsed.error.issues })
-    }
-    const settings = this.provider()
-    const namespace = parsed.data.ns
-    try {
-      if (mode === 'update') await settings.update(namespace, input, expectedRevision)
-      else if (mode === 'replace') await settings.replace(namespace, input, expectedRevision)
-      else await settings.mutate(namespace, input as SettingsPathOp[], expectedRevision)
-    } catch (error: unknown) {
-      throw rejected(ns, error)
-    }
-    const descriptor = settings.describe({ redactSecrets: true }).find(candidate => candidate.ns === namespace)
-    if (descriptor === undefined) {
-      // The write committed but the namespace vanished before this read: only a
-      // concurrent registrant disposal can produce it.
-      throw new RemoteError('gateway/internal', `settings namespace "${ns}" was disposed after the ${mode}`, {})
-    }
-    return namespaceView(descriptor)
   }
 
   /** Resolve the optional provider or report how to supply it. */

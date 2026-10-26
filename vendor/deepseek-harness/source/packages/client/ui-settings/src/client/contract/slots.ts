@@ -56,17 +56,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'settings.section': { kind: 'list'; scope: 'root'; owner: SettingsSectionOwnerProps }
     /**
-     * Root-scoped onboarding steps contributed by settings features. The
-     * shell mounts one ordered step at a time; the active registrant either
-     * completes itself or keeps ownership until the user completes its sole
-     * path. Registrants own readiness, copy, dialog behavior, AND visible
-     * chrome: a step wraps its visible content in its modal surface (including
-     * `#root` inert ownership) and renders null while private facts are still
-     * loading. The shell paints no chrome of its own, so a mounted-but-deciding
-     * step shows and blocks nothing.
-     */
-    'settings.onboarding': { kind: 'list'; scope: 'root'; owner: SettingsOnboardingOwnerProps }
-    /**
      * One preference row inside the General section — the additive seat for a
      * single setting that needs no page of its own (a whole page is
      * `settings.section`), contributed by the feature plugin that owns the
@@ -114,18 +103,6 @@ export interface SettingsSectionOwnerProps {
   registerLeaveGuard?: (guard: () => boolean | Promise<boolean>) => () => void
 }
 
-/** Owner share of the currently active settings-backed onboarding step. */
-export interface SettingsOnboardingOwnerProps {
-  /** Stable id of the step currently selected by the coordinator. */
-  stepId: string
-  /** User explicitly reopened this step outside first-run onboarding. */
-  explicit?: boolean
-  /** Complete or skip this step and transfer ownership to the next entry. */
-  complete: () => void
-  /** Open the settings panel directly on one registered section. */
-  openSection: (id: string) => void
-}
-
 /** Sidebar launcher geometry and settings navigation. */
 export interface SettingsLauncherOwnerProps {
   /** Whether the sidebar shows labels. */
@@ -136,6 +113,4 @@ export interface SettingsLauncherOwnerProps {
   settingsShortcut?: { readonly keys: readonly string[]; readonly aria?: string | undefined }
   /** Open the settings panel, optionally selecting a registered section. */
   openSettings: (sectionId?: string) => void
-  /** @param id - registered onboarding editor to open explicitly. */
-  openOnboarding: (id: string) => void
 }

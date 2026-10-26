@@ -5,16 +5,13 @@
  * @module @deepseek-ai/dsh-typert-generator/analyzer
  */
 
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import ts from 'typescript'
 import { findBuildOutputLoads, findUnresolvedWorkspaceImports } from './build-output-guard.ts'
 import type { BuildOutputLoad, UnresolvedWorkspaceImport } from './build-output-guard.ts'
 import type {
-  CrossFaceLink,
   DocumentationModel,
-  EventModel,
-  EnumMemberModel,
   ExportModel,
   FaceModel,
   InvocationModel,
@@ -23,16 +20,12 @@ import type {
   KeywordTypeName,
   MemberBase,
   MemberModel,
-  MemberVisibility,
-  ObjectModel,
   PackageModel,
   ParameterModel,
   RemoteBoundaryModel,
   RemoteTypeImportModel,
   SchemaModel,
-  ServiceModel,
   SignatureModel,
-  SourceDeclarationModel,
   SourceLocation,
   SymbolId,
   TypeDeclarationModel,
@@ -58,11 +51,6 @@ export class TypertAnalysisError extends Error {
   override name = 'TypertAnalysisError'
 }
 
-class SourceEditQueued extends Error {}
-
-/** Missing-annotation handling at public business boundaries. */
-export type AnalysisMode = 'check' | 'write'
-
 /** Workspace analysis configuration. */
 export interface WorkspaceAnalyzerOptions {
   /** Workspace root containing the face tsconfigs. */
@@ -77,8 +65,6 @@ export interface WorkspaceAnalyzerOptions {
   readonly faces?: readonly TypertFace[]
   /** Whether to repeat TypeScript project diagnostics before model extraction. */
   readonly checkDiagnostics?: boolean
-  /** Whether missing annotations fail or are written before a clean re-analysis. */
-  readonly mode?: AnalysisMode
   /** Shared workspace memo; supply one instance to reuse parses across analyzers. */
   readonly caches?: WorkspaceCaches
   /**
@@ -109,8 +95,6 @@ export interface ParsedConfig {
 
 /** The settings Typert reads from one face aggregate tsconfig. */
 export interface AggregateConfig {
-  /** Absolute config path. */
-  readonly path: string
   /** The aggregate's effective compiler options. */
   readonly options: ts.CompilerOptions
   /** The package projects the aggregate references. */
@@ -144,12 +128,6 @@ interface ExportRecord {
   readonly sourceFile: ts.SourceFile
 }
 
-interface SourceEdit {
-  readonly file: string
-  readonly position: number
-  readonly text: string
-}
-
 interface ModuleIdentity {
   readonly package: string
   readonly subpath: string
@@ -178,13 +156,11 @@ interface StaticLookupDeclaration {
   readonly key: string
   readonly hostSymbol: SymbolId
   readonly wireType: ts.TypeNode
-  readonly site: ts.Node
 }
 
 interface StaticContextDeclaration {
   readonly key: string
   readonly wireType: ts.TypeNode
-  readonly site: ts.Node
 }
 
 interface GatewayBinding {
@@ -194,13 +170,6 @@ interface GatewayBinding {
 }
 
 type ReferenceSite = ts.TypeReferenceNode | ts.ExpressionWithTypeArguments | ts.ImportTypeNode
-
-const EMPTY_DOCUMENTATION: DocumentationModel = { tags: [] }
-
-interface FaceProgramHost {
-  readonly host: ts.CompilerHost
-  readonly files: Map<string, ts.SourceFile | undefined>
-}
 
 /**
  * Process-wide parse cache for the bundled TypeScript default libraries.
@@ -224,12 +193,10 @@ function defaultLibraryKey(fileName: string, languageVersionOrOptions: ts.Script
 
 /**
  * Shared memo over one immutable workspace snapshot. Passing one instance to
- * several analyzers (the batched and write-mode children reuse their parent's
- * automatically) reuses parsed tsconfigs, the registration inventory, and
+ * several analyzers reuses parsed tsconfigs, the registration inventory, and
  * per-face compiler hosts whose parsed and bound source files and module
  * resolutions carry across programs. Callers that mutate workspace files
- * between analyses must start from a fresh instance; write-mode source edits
- * invalidate themselves through {@link invalidate}.
+ * between analyses must start from a fresh instance.
  */
 export class WorkspaceCaches {
   /** Parsed tsconfig files by absolute config path. */
@@ -237,7 +204,7 @@ export class WorkspaceCaches {
   /** Registration inventories keyed by root and aggregate config paths. */
   readonly registrations = new Map<string, PackageRegistration[]>()
   private readonly aggregates = new Map<string, AggregateConfig>()
-  private readonly hosts = new Map<TypertFace, FaceProgramHost>()
+  private readonly hosts = new Map<TypertFace, ts.CompilerHost>()
 
   /**
    * Parse one tsconfig once per workspace snapshot.
@@ -264,7 +231,7 @@ export class WorkspaceCaches {
     let aggregate = this.aggregates.get(path)
     if (aggregate === undefined) {
       const { parsed } = parseConfig(path, true)
-      aggregate = { path, options: parsed.options, projectReferences: parsed.projectReferences ?? [] }
+      aggregate = { options: parsed.options, projectReferences: parsed.projectReferences ?? [] }
       this.aggregates.set(path, aggregate)
     }
     return aggregate
@@ -292,7 +259,7 @@ export class WorkspaceCaches {
       const base = host.getSourceFile.bind(host)
       // The snapshot contract makes shouldCreateNewSourceFile irrelevant: it
       // only fires under oldProgram reuse, which these fresh programs never
-      // request, and invalidate() is the one supported re-read path.
+      // request; source edits require a fresh WorkspaceCaches instance.
       host.getSourceFile = (fileName, languageVersionOrOptions, onError) => {
         if (isStandardLibraryFile(fileName)) {
           const key = defaultLibraryKey(fileName, languageVersionOrOptions)
@@ -305,24 +272,10 @@ export class WorkspaceCaches {
         return files.get(fileName)
       }
       host.getModuleResolutionCache = () => resolutionCache
-      entry = { host, files }
+      entry = host
       this.hosts.set(face, entry)
     }
-    return entry.host
-  }
-
-  /**
-   * Drop cached parses of one edited source file so the next analysis reads
-   * the written content.
-   * @param file - path of the edited file.
-   */
-  invalidate(file: string): void {
-    const target = realPath(file)
-    for (const { files } of this.hosts.values()) {
-      for (const key of [...files.keys()]) {
-        if (realPath(key) === target) files.delete(key)
-      }
-    }
+    return entry
   }
 }
 
@@ -330,10 +283,8 @@ export class WorkspaceCaches {
 export class WorkspaceAnalyzer {
   private readonly options: Required<Pick<
     WorkspaceAnalyzerOptions,
-    'root' | 'hostConfig' | 'clientConfig' | 'faces' | 'checkDiagnostics' | 'mode' | 'rejectBuildOutputs'
+    'root' | 'hostConfig' | 'clientConfig' | 'faces' | 'checkDiagnostics' | 'rejectBuildOutputs'
   >> & Pick<WorkspaceAnalyzerOptions, 'packages'>
-  private queuedEdit: SourceEdit | undefined
-  private readonly crossFaceLinks = new Map<string, CrossFaceLink>()
   private readonly checkedProjects = new Set<string>()
   private registrations: PackageRegistration[] = []
   private readonly caches: WorkspaceCaches
@@ -345,7 +296,6 @@ export class WorkspaceAnalyzer {
       clientConfig: options.clientConfig ?? 'tsconfig.client.json',
       faces: options.faces ?? ['host', 'client'],
       checkDiagnostics: options.checkDiagnostics ?? true,
-      mode: options.mode ?? 'check',
       rejectBuildOutputs: options.rejectBuildOutputs ?? false,
       ...(options.packages === undefined ? {} : { packages: options.packages }),
     }
@@ -353,9 +303,8 @@ export class WorkspaceAnalyzer {
   }
 
   /**
-   * Build the workspace model. Write mode applies inferred annotations and then
-   * returns a fresh check-mode analysis of the edited projects.
-   * @returns the independent face models and their explicit cross-face links.
+   * Build the workspace model for Remote codecs and declarations.
+   * @returns the independent face models.
    */
   analyze(): WorkspaceModel {
     this.registrations = this.loadRegistrations()
@@ -363,88 +312,45 @@ export class WorkspaceAnalyzer {
       ? undefined
       : new Set(this.options.packages)
     const faces: FaceModel[] = []
-    try {
-      for (const face of this.options.faces) {
-        const registrations = this.registrations.filter(registration =>
-          registration.face === face && (selected === undefined || selected.has(registration.name)))
-        if (registrations.length === 0) continue
-        if (this.options.checkDiagnostics) {
-          for (const registration of registrations) this.checkProject(registration)
-        }
-        const aggregatePath = resolve(this.options.root, face === 'host' ? this.options.hostConfig : this.options.clientConfig)
-        const aggregate = this.caches.aggregate(aggregatePath)
-        const rootNames = [...new Set(registrations.flatMap(registration => registration.config.parsed.fileNames))]
-        const options: ts.CompilerOptions = {
-          ...aggregate.options,
-          composite: false,
-          incremental: false,
-          noEmit: true,
-        }
-        const host = this.caches.programHost(face, options)
-        const program = ts.createProgram({ rootNames, options, host })
-        if (this.options.rejectBuildOutputs) {
-          rejectBuildOutputLoads(
-            face,
-            this.options.root,
-            aggregatePath,
-            findBuildOutputLoads(program, this.options.root, host),
-            findUnresolvedWorkspaceImports(program, this.options.root, host),
-          )
-        }
-        faces.push(new FaceAnalyzer({
-          root: this.options.root,
-          face,
-          program,
-          host,
-          registrations,
-          allRegistrations: this.registrations,
-          mode: this.options.mode,
-          queueEdit: (edit) => { this.queueEdit(edit) },
-          crossFaceLinks: this.crossFaceLinks,
-        }).analyze())
+    for (const face of this.options.faces) {
+      const registrations = this.registrations.filter(registration =>
+        registration.face === face && (selected === undefined || selected.has(registration.name)))
+      if (registrations.length === 0) continue
+      if (this.options.checkDiagnostics) {
+        for (const registration of registrations) this.checkProject(registration)
       }
-    } catch (error) {
-      if (!(error instanceof SourceEditQueued) || this.options.mode !== 'write' || this.queuedEdit === undefined) throw error
-    }
-
-    if (this.queuedEdit !== undefined) {
-      this.applyEdit(this.queuedEdit)
-      return new WorkspaceAnalyzer({ ...this.options, caches: this.caches, mode: 'write' }).analyze()
-    }
-
-    if (this.options.mode === 'write') {
-      return new WorkspaceAnalyzer({ ...this.options, caches: this.caches, mode: 'check' }).analyze()
-    }
-
-    return {
-      faces,
-      crossFaceLinks: [...this.crossFaceLinks.values()].sort(compareCrossFaceLinks),
-    }
-  }
-
-  /**
-   * Analyze an explicit package selection through bounded compiler programs.
-   * The resulting model is identical in shape to {@link analyze}; stable graph
-   * ids let repeated dependency declarations merge without flattening types.
-   * @param batchSize - maximum selected packages in one face program.
-   * @returns one merged workspace model.
-   */
-  analyzeInBatches(batchSize = 8): WorkspaceModel {
-    if (this.options.packages === undefined) {
-      throw new TypertAnalysisError('typert: batched analysis requires an explicit package selection')
-    }
-    if (!Number.isInteger(batchSize) || batchSize < 1) {
-      throw new TypertAnalysisError(`typert: batch size must be a positive integer, received ${String(batchSize)}`)
-    }
-    const batches: WorkspaceModel[] = []
-    for (let index = 0; index < this.options.packages.length; index += batchSize) {
-      batches.push(new WorkspaceAnalyzer({
-        ...this.options,
-        caches: this.caches,
-        packages: this.options.packages.slice(index, index + batchSize),
+      const aggregatePath = resolve(this.options.root, face === 'host' ? this.options.hostConfig : this.options.clientConfig)
+      const aggregate = this.caches.aggregate(aggregatePath)
+      const rootNames = [...new Set(registrations.flatMap(registration => registration.config.parsed.fileNames))]
+      const options: ts.CompilerOptions = {
+        ...aggregate.options,
+        composite: false,
+        incremental: false,
+        noEmit: true,
+      }
+      const host = this.caches.programHost(face, options)
+      const program = ts.createProgram({ rootNames, options, host })
+      if (this.options.rejectBuildOutputs) {
+        rejectBuildOutputLoads(
+          face,
+          this.options.root,
+          aggregatePath,
+          findBuildOutputLoads(program, this.options.root, host),
+          findUnresolvedWorkspaceImports(program, this.options.root, host),
+        )
+      }
+      faces.push(new FaceAnalyzer({
+        root: this.options.root,
+        face,
+        program,
+        host,
+        registrations,
+        allRegistrations: this.registrations,
       }).analyze())
     }
-    return mergeWorkspaceModels(batches)
+    return {
+      faces,
+    }
   }
 
   /**
@@ -476,60 +382,8 @@ export class WorkspaceAnalyzer {
       .sort((left, right) => left.package.localeCompare(right.package))
   }
 
-  /**
-   * Index top-level exported type declarations without promoting them to graph
-   * roots. Consumers use this lexical index for ambiguity checks while all
-   * semantic traversal continues through {@link TypeGraph}.
-   * @returns declarations from the selected faces and package projects.
-   */
-  indexSourceDeclarations(): SourceDeclarationModel[] {
-    const selected = this.options.packages === undefined ? undefined : new Set(this.options.packages)
-    const declarations: SourceDeclarationModel[] = []
-    for (const registration of this.loadRegistrations(true)) {
-      if (!this.options.faces.includes(registration.face)
-        || (selected !== undefined && !selected.has(registration.name))) continue
-      for (const file of registration.config.parsed.fileNames) {
-        const relativeFile = slash(relative(this.options.root, file))
-        if (!existsSync(file)
-          || !isWithin(realPath(file), join(registration.root, 'src'))
-          || !/\.(?:cts|mts|ts)$/.test(file)
-        ) continue
-        const sourceFile = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)
-        for (const statement of sourceFile.statements) {
-          if (!isTypeDeclaration(statement)
-            || statement.name === undefined
-            || !hasModifier(statement, ts.SyntaxKind.ExportKeyword)) continue
-          const position = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile))
-          declarations.push({
-            face: registration.face,
-            package: registration.name,
-            name: statement.name.text,
-            kind: ts.isClassDeclaration(statement)
-              ? 'class'
-              : ts.isInterfaceDeclaration(statement)
-                ? 'interface'
-                : ts.isTypeAliasDeclaration(statement)
-                  ? 'alias'
-                  : 'enum',
-            location: {
-              file: relativeFile,
-              line: position.line + 1,
-              column: position.character + 1,
-            },
-            text: declarationText(statement),
-          })
-        }
-      }
-    }
-    return uniqueBy(declarations, declaration =>
-      `${declaration.face}\0${declaration.location.file}\0${String(declaration.location.line)}\0${declaration.name}`)
-      .sort((left, right) => left.face.localeCompare(right.face)
-        || left.location.file.localeCompare(right.location.file)
-        || left.location.line - right.location.line)
-  }
-
-  private loadRegistrations(includeVendor = false): PackageRegistration[] {
-    const inventoryKey = `${this.options.root}\0${this.options.hostConfig}\0${this.options.clientConfig}\0${String(includeVendor)}`
+  private loadRegistrations(): PackageRegistration[] {
+    const inventoryKey = `${this.options.root}\0${this.options.hostConfig}\0${this.options.clientConfig}`
     const cached = this.caches.registrations.get(inventoryKey)
     if (cached !== undefined) return cached
     const registrations: PackageRegistration[] = []
@@ -540,8 +394,7 @@ export class WorkspaceAnalyzer {
       for (const reference of aggregate.projectReferences) {
         const configPath = projectConfigPath(reference.path)
         const packageRoot = dirname(configPath)
-        if (!isWithin(realPath(packageRoot), join(this.options.root, 'packages'))
-          && !(includeVendor && isWithin(realPath(packageRoot), join(this.options.root, 'vendor')))) continue
+        if (!isWithin(realPath(packageRoot), join(this.options.root, 'packages'))) continue
         const manifestPath = join(packageRoot, 'package.json')
         if (!existsSync(manifestPath)) continue
         const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
@@ -648,16 +501,6 @@ export class WorkspaceAnalyzer {
         .join('\n'),
     )
   }
-
-  private queueEdit(edit: SourceEdit): void {
-    this.queuedEdit = edit
-  }
-
-  private applyEdit(edit: SourceEdit): void {
-    const source = readFileSync(edit.file, 'utf8')
-    writeFileSync(edit.file, source.slice(0, edit.position) + edit.text + source.slice(edit.position))
-    this.caches.invalidate(edit.file)
-  }
 }
 
 interface FaceAnalyzerOptions {
@@ -668,9 +511,6 @@ interface FaceAnalyzerOptions {
   readonly host: ts.CompilerHost
   readonly registrations: readonly PackageRegistration[]
   readonly allRegistrations: readonly PackageRegistration[]
-  readonly mode: AnalysisMode
-  readonly queueEdit: (edit: SourceEdit) => void
-  readonly crossFaceLinks: Map<string, CrossFaceLink>
 }
 
 class FaceAnalyzer {
@@ -681,9 +521,6 @@ class FaceAnalyzer {
   private readonly checker: ts.TypeChecker
   private readonly registrations: readonly PackageRegistration[]
   private readonly allRegistrations: readonly PackageRegistration[]
-  private readonly mode: AnalysisMode
-  private readonly queueEdit: (edit: SourceEdit) => void
-  private readonly crossFaceLinks: Map<string, CrossFaceLink>
   private readonly sourceFiles = new Map<string, ts.SourceFile>()
   private readonly declarations = new Map<SymbolId, TypeDeclarationModel>()
   private readonly declarationStates = new Set<SymbolId>()
@@ -704,9 +541,6 @@ class FaceAnalyzer {
     this.checker = options.program.getTypeChecker()
     this.registrations = options.registrations
     this.allRegistrations = options.allRegistrations
-    this.mode = options.mode
-    this.queueEdit = options.queueEdit
-    this.crossFaceLinks = options.crossFaceLinks
     for (const sourceFile of this.program.getSourceFiles()) {
       this.sourceFiles.set(realPath(sourceFile.fileName), sourceFile)
     }
@@ -718,7 +552,6 @@ class FaceAnalyzer {
     }
     const packages = this.registrations
       .map(registration => this.analyzePackage(registration))
-      .filter(hasPackageSurface)
     this.validateInvocationIdentity(packages)
     return {
       face: this.face,
@@ -733,29 +566,6 @@ class FaceAnalyzer {
   private analyzePackage(registration: PackageRegistration): PackageModel {
     const records = this.exportsByPackage.get(registration.name) as ExportRecord[]
     const reachable = this.reachableFiles(registration, records.map(record => record.sourceFile))
-    const services: ServiceModel[] = []
-    const events: EventModel[] = []
-
-    for (const sourceFile of reachable) {
-      for (const statement of sourceFile.statements) {
-        if (!ts.isModuleDeclaration(statement)
-          || !ts.isStringLiteral(statement.name)
-          || statement.name.text !== '@deepseek-ai/cordis'
-          || statement.body === undefined
-          || !ts.isModuleBlock(statement.body)) continue
-        for (const member of statement.body.statements) {
-          if (!ts.isInterfaceDeclaration(member)) continue
-          if (member.name.text === 'Context') {
-            services.push(...this.collectServices(member, records))
-          } else if (member.name.text === 'Events') {
-            events.push(...this.collectEvents(member))
-          }
-        }
-      }
-    }
-    const explicitServices = this.collectExplicitServices(records)
-
-    const objects: ObjectModel[] = []
     const schemas: SchemaModel[] = []
     const seenBusinessSymbols = new Set<SymbolId>()
     for (const record of records) {
@@ -766,36 +576,19 @@ class FaceAnalyzer {
       const symbolId = this.symbolId(symbol)
       if (seenBusinessSymbols.has(symbolId)) continue
       const mode = typertMode(declaration)
-      if (mode !== 'object' && mode !== 'schema') continue
+      if (mode !== 'schema') continue
       seenBusinessSymbols.add(symbolId)
       this.ensureDeclaration(symbol, declaration)
-      const documentation = documentationOf(declaration)
-      if (mode === 'object') {
-        objects.push({
-          ...documentation,
-          export: record.model,
-          symbol: symbolId,
-          passing: 'reference',
-        })
-      } else {
-        schemas.push({
-          ...documentation,
-          export: record.model,
-          symbol: symbolId,
-          type: this.referenceNode(symbol, declaration),
-        })
-      }
+      schemas.push({
+        export: record.model,
+        symbol: symbolId,
+        type: this.referenceNode(symbol, declaration),
+      })
     }
 
     return {
       name: registration.name,
       root: slash(relative(this.root, registration.root)),
-      exports: records.map(record => record.model)
-        .sort((left, right) => left.subpath.localeCompare(right.subpath) || left.name.localeCompare(right.name)),
-      services: uniqueBy([...explicitServices, ...services], service => service.key)
-        .sort((left, right) => left.key.localeCompare(right.key)),
-      events: uniqueBy(events, event => event.name).sort((left, right) => left.name.localeCompare(right.name)),
-      objects: objects.sort((left, right) => left.export.name.localeCompare(right.export.name)),
       schemas: schemas.sort((left, right) => left.export.name.localeCompare(right.export.name)),
       invocations: this.face === 'host'
         ? this.collectInvocations(registration, reachable).sort((left, right) => left.id.localeCompare(right.id))
@@ -825,15 +618,10 @@ class FaceAnalyzer {
       for (const exported of this.checker.getExportsOfModule(moduleSymbol)) {
         const symbol = this.resolveSymbol(exported)
         const declaration = preferredDeclaration(symbol) as ts.Declaration
-        const aliases = exported === symbol || exported.name === symbol.name
-          ? [exported.name]
-          : [exported.name, symbol.name]
         records.push({
           model: {
             subpath,
             name: exported.name,
-            symbol: this.symbolId(symbol),
-            aliases,
           },
           symbol,
           declaration,
@@ -890,7 +678,6 @@ class FaceAnalyzer {
               `cross-face re-export ${exported.requestedName} is not exported by ${module.package} at ${module.subpath}`,
             )
           }
-          this.recordCrossFaceLink(registration.name, toFace, module, name)
         }
       }
     }
@@ -997,99 +784,6 @@ class FaceAnalyzer {
     return [...explicit, ...stars]
   }
 
-  private collectServices(
-    context: ts.InterfaceDeclaration,
-    records: readonly ExportRecord[],
-  ): ServiceModel[] {
-    const bySymbol = new Map<SymbolId, ExportRecord[]>()
-    for (const record of records) {
-      const id = this.symbolId(record.symbol)
-      const matches = bySymbol.get(id) ?? []
-      matches.push(record)
-      bySymbol.set(id, matches)
-    }
-    const result: ServiceModel[] = []
-    for (const member of context.members) {
-      if (!ts.isPropertySignature(member) || member.type === undefined) continue
-      // An OPTIONAL key is not a service: `X | undefined` and `key?: X` both mark
-      // a value the launcher or boot code installs before the tree mounts (a root
-      // accessor, an environment snapshot), which no plugin provides and no
-      // consumer can reach with `inject`. Describing one as a service would answer
-      // "add the plugin that provides it" for a key where no such plugin exists.
-      if (member.questionToken !== undefined
-        || (ts.isUnionTypeNode(member.type)
-          && member.type.types.some(node => node.kind === ts.SyntaxKind.UndefinedKeyword))) continue
-      const authoredSymbol = this.symbolAtType(member.type)
-      if (authoredSymbol === undefined) continue
-      const authoredSymbolId = this.symbolId(authoredSymbol)
-      const exported = bySymbol.get(authoredSymbolId)?.find(record => record.model.name === authoredSymbol.name)
-        ?? bySymbol.get(authoredSymbolId)?.find(record => record.model.name !== 'default')
-        ?? bySymbol.get(authoredSymbolId)?.[0]
-      if (exported === undefined) continue
-      let symbol = authoredSymbol
-      let declaration = preferredDeclaration(symbol)
-      const aliases = new Set<ts.Symbol>()
-      while (declaration !== undefined && ts.isTypeAliasDeclaration(declaration)) {
-        if (aliases.has(symbol)) break
-        aliases.add(symbol)
-        const target = this.symbolAtType(declaration.type)
-        if (target === undefined) break
-        symbol = target
-        declaration = preferredDeclaration(symbol)
-      }
-      if (declaration === undefined || (!ts.isClassDeclaration(declaration) && !ts.isInterfaceDeclaration(declaration))) {
-        this.fail(member, `service ${memberName(member.name)} does not resolve to an exported class or interface`)
-      }
-      const memberOwner = this.registrationForFile(member.getSourceFile().fileName)
-      const declarationOwner = this.registrationForFile(declaration.getSourceFile().fileName)
-      if (memberOwner?.name !== declarationOwner?.name) continue
-      const symbolId = this.symbolId(symbol)
-      const model = this.ensureDeclaration(symbol, declaration)
-      const exposed = model.members
-        .filter(exposableMember)
-        .map(publicMember => publicMember.id)
-      result.push({
-        ...documentationOf(declaration),
-        key: memberName(member.name),
-        symbol: symbolId,
-        export: exported.model,
-        members: exposed,
-        location: this.location(member),
-      })
-    }
-    return result
-  }
-
-  private collectExplicitServices(records: readonly ExportRecord[]): ServiceModel[] {
-    const result: ServiceModel[] = []
-    const seen = new Set<SymbolId>()
-    for (const record of records) {
-      const tag = typertServiceTag(record.declaration)
-      if (tag === undefined) continue
-      const words = (ts.getTextOfJSDocComment(tag.comment) ?? '').trim().split(/\s+/)
-      if (words.length !== 2 || !isRemoteSegment(words[1] ?? '')) {
-        this.fail(tag, '@typert service requires exactly one nonempty Cordis service key without "/"')
-      }
-      if (!ts.isClassDeclaration(record.declaration)) {
-        this.fail(record.declaration, '@typert service requires an exported class')
-      }
-      const symbol = this.resolveSymbol(record.symbol)
-      const symbolId = this.symbolId(symbol)
-      if (seen.has(symbolId)) continue
-      seen.add(symbolId)
-      const model = this.ensureDeclaration(symbol, record.declaration)
-      result.push({
-        ...documentationOf(record.declaration),
-        key: words[1] as string,
-        symbol: symbolId,
-        export: record.model,
-        members: model.members.filter(exposableMember).map(member => member.id),
-        location: this.location(record.declaration),
-      })
-    }
-    return result
-  }
-
   private collectInvocations(
     registration: PackageRegistration,
     reachable: readonly ts.SourceFile[],
@@ -1143,7 +837,7 @@ class FaceAnalyzer {
     if ((method.typeParameters?.length ?? 0) > 0) {
       this.fail(method, 'generic Remote methods are not supported')
     }
-    const documentation = documentationOf(method)
+    const documentation = { ...documentationOf(method), tags: documentationTags(method) }
     const methodName = method.name.text
     const exportedMethod = invocation.exportName ?? methodName
 
@@ -1439,19 +1133,14 @@ class FaceAnalyzer {
     return found
   }
 
-  /**
-   * Read the options object of `@Remote` or `@RemoteScope`. `resources`
-   * accepts any expression: its readers run only at runtime, where the
-   * Gateway reads them from the prototype descriptor, so generation records
-   * nothing for them.
-   */
+  /** Read endpoint and stream options from a Remote decorator. */
   private remoteOptions(
     argument: ts.Expression,
     decorator: 'Remote' | 'RemoteScope',
   ): { readonly exportName?: string; readonly mode?: 'stream' } {
     const requirement = decorator === 'Remote'
-      ? 'Remote() options require name, mode: "stream", or resources'
-      : 'RemoteScope() options require name or resources'
+      ? 'Remote() options require name or mode: "stream"'
+      : 'RemoteScope() options require name'
     if (!ts.isObjectLiteralExpression(argument) || argument.properties.length === 0) this.fail(argument, requirement)
     let options: { readonly exportName?: string; readonly mode?: 'stream' } = {}
     for (const property of argument.properties) {
@@ -1463,7 +1152,7 @@ class FaceAnalyzer {
         const value = stringLiteralValue(property.initializer)
         if (value === undefined || !isRemoteSegment(value)) this.fail(property, `${decorator}() name must be an endpoint segment`)
         options = { ...options, exportName: value }
-      } else if (name !== 'resources') {
+      } else {
         this.fail(property, requirement)
       }
     }
@@ -1542,7 +1231,6 @@ class FaceAnalyzer {
         key,
         hostSymbol: this.symbolId(host),
         wireType,
-        site: declaration,
       }
       if (byKey.has(key)) this.fail(declaration, `duplicate TypertLookupMap key ${key}`)
       if (byHost.has(entry.hostSymbol)) this.fail(declaration, `Host type ${host.name} has more than one Typert lookup`)
@@ -1573,7 +1261,6 @@ class FaceAnalyzer {
       result.set(key, {
         key,
         wireType,
-        site: declaration,
       })
     }
     this.staticContexts = result
@@ -1809,35 +1496,20 @@ class FaceAnalyzer {
           const propertyType = this.checker.getTypeOfSymbolAtLocation(property, declaration ?? authoredType)
           const symbolKey = property.getName()
           members.push({
-            ...(declaration === undefined ? EMPTY_DOCUMENTATION : documentationOf(declaration)),
-            id: `${id}#${symbolKey}`,
+            ...(declaration === undefined ? {} : documentationOf(declaration)),
             name: symbolKey,
             ...(symbolKey.startsWith('__@') ? { computed: 'symbol' as const } : {}),
             optional: (property.flags & ts.SymbolFlags.Optional) !== 0,
             readonly: declaration !== undefined && hasModifier(declaration, ts.SyntaxKind.ReadonlyKeyword),
-            async: false,
-            abstract: false,
-            static: false,
-            visibility: 'public',
-            location: this.location(authoredType),
-            text: '',
             kind: 'property',
             type: convert(propertyType),
           })
         }
-        for (const [index, info] of this.checker.getIndexInfosOfType(type).entries()) {
+        for (const info of this.checker.getIndexInfosOfType(type)) {
           members.push({
-            ...EMPTY_DOCUMENTATION,
-            id: `${id}#index:${String(index)}`,
             name: '(index)',
             optional: false,
             readonly: info.isReadonly,
-            async: false,
-            abstract: false,
-            static: false,
-            visibility: 'public',
-            location: this.location(authoredType),
-            text: '',
             kind: 'index',
             signature: {
               typeParameters: [],
@@ -1847,7 +1519,6 @@ class FaceAnalyzer {
                 type: convert(info.keyType),
                 optional: false,
                 rest: false,
-                receiver: false,
               }],
               returns: convert(info.type),
             },
@@ -2005,18 +1676,11 @@ class FaceAnalyzer {
       id = `${this.symbolId(resolved)}#remote-codec:${resolvedType}`
       recursiveDeclarations.set(type, id)
       this.declarations.set(id, {
-        ...EMPTY_DOCUMENTATION,
         id,
-        package: owner.name,
         name: `${resolved.name}RemoteCodec`,
         kind: 'alias',
-        abstract: false,
-        exported: false,
-        location: this.location(declaration),
-        text: '',
         typeParameters: [],
         extends: [],
-        implements: [],
         members: [],
         type: resolvedType,
       })
@@ -2120,35 +1784,6 @@ class FaceAnalyzer {
     }
   }
 
-  private collectEvents(events: ts.InterfaceDeclaration): EventModel[] {
-    const result: EventModel[] = []
-    for (const member of events.members) {
-      const documentation = documentationOf(member)
-      const mode = documentation.tags.find(tag => tag.name === 'mode')?.comment?.trim()
-      if (ts.isMethodSignature(member)) {
-        const signature = this.signature(member, member.type)
-        result.push({
-          ...documentation,
-          name: memberName(member.name),
-          signature: this.addNode(member, { kind: 'function', signature }),
-          text: memberText(member),
-          ...(mode === undefined ? {} : { mode }),
-          location: this.location(member),
-        })
-      } else if (ts.isPropertySignature(member) && member.type !== undefined) {
-        result.push({
-          ...documentation,
-          name: memberName(member.name),
-          signature: this.convertType(member.type),
-          text: memberText(member),
-          ...(mode === undefined ? {} : { mode }),
-          location: this.location(member),
-        })
-      }
-    }
-    return result
-  }
-
   private ensureDeclaration(
     symbol: ts.Symbol,
     selected: ts.ClassDeclaration | ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration,
@@ -2167,8 +1802,6 @@ class FaceAnalyzer {
     if (selected.name === undefined) {
       this.fail(selected, `anonymous ${ts.SyntaxKind[selected.kind]} cannot be represented as a named type declaration`)
     }
-    const owner = this.registrationForFile(selected.getSourceFile().fileName) as PackageRegistration
-
     this.declarationStates.add(id)
     if (declarationParts.length > 1) {
       const analyzedParts = declarationParts.map((declarationPart) => {
@@ -2179,37 +1812,22 @@ class FaceAnalyzer {
         }
         const typeParameters = this.typeParameters(part.typeParameters)
         const heritage = this.heritage(part)
-        const members = this.members(part.members, id)
+        const members = this.members(part.members)
         return {
           typeParameters,
           heritage,
           members,
-          model: {
-            ...documentationOf(part),
-            package: partOwner.name,
-            location: this.location(part),
-            typeParameters,
-            extends: heritage.extends,
-            members: members.map(member => member.id),
-          },
         }
       })
       const parameters = this.mergeTypeParameters(analyzedParts.map(part => part.typeParameters), selected, resolved.name)
       const model: TypeDeclarationModel = {
         ...documentationOf(selected),
         id,
-        package: owner.name,
         name: declarationName(selected),
         kind: 'interface',
-        abstract: false,
-        exported: hasModifier(selected, ts.SyntaxKind.ExportKeyword),
-        location: this.location(selected),
-        text: declarationText(selected),
         typeParameters: parameters,
-        extends: analyzedParts.flatMap(part => part.heritage.extends),
-        implements: [],
+        extends: analyzedParts.flatMap(part => part.heritage),
         members: analyzedParts.flatMap(part => part.members),
-        parts: analyzedParts.map(part => part.model),
       }
       this.declarations.set(id, model)
       this.declarationStates.delete(id)
@@ -2217,7 +1835,7 @@ class FaceAnalyzer {
     }
     const parameters = ts.isEnumDeclaration(selected) ? [] : this.typeParameters(selected.typeParameters)
     const heritage = ts.isTypeAliasDeclaration(selected) || ts.isEnumDeclaration(selected)
-      ? { extends: [] as TypeNodeId[], implements: [] as TypeNodeId[] }
+      ? []
       : this.heritage(selected)
     const kind = ts.isClassDeclaration(selected)
       ? 'class'
@@ -2229,43 +1847,28 @@ class FaceAnalyzer {
     const model: TypeDeclarationModel = {
       ...documentationOf(selected),
       id,
-      package: owner.name,
       name: declarationName(selected),
       kind,
-      abstract: hasModifier(selected, ts.SyntaxKind.AbstractKeyword),
-      exported: hasModifier(selected, ts.SyntaxKind.ExportKeyword),
-      location: this.location(selected),
-      text: declarationText(selected),
       typeParameters: parameters,
-      extends: heritage.extends,
-      implements: heritage.implements,
+      extends: heritage,
       members: ts.isTypeAliasDeclaration(selected) || ts.isEnumDeclaration(selected)
         ? []
-        : this.members(selected.members, id),
+        : this.members(selected.members),
       ...(ts.isTypeAliasDeclaration(selected) ? { type: this.convertType(selected.type) } : {}),
-      ...(ts.isEnumDeclaration(selected) ? { enumMembers: this.enumMembers(selected) } : {}),
     }
     this.declarations.set(id, model)
     this.declarationStates.delete(id)
     return model
   }
 
-  private enumMembers(declaration: ts.EnumDeclaration): EnumMemberModel[] {
-    return declaration.members.map(member => ({
-      ...documentationOf(member),
-      name: memberName(member.name),
-      ...(member.initializer === undefined ? {} : { initializer: member.initializer.getText() }),
-      location: this.location(member),
-    }))
-  }
-
   private heritage(
     declaration: ts.ClassDeclaration | ts.InterfaceDeclaration,
-  ): { extends: TypeNodeId[]; implements: TypeNodeId[] } {
-    const result = { extends: [] as TypeNodeId[], implements: [] as TypeNodeId[] }
+  ): TypeNodeId[] {
+    const result: TypeNodeId[] = []
     for (const clause of declaration.heritageClauses ?? []) {
-      const target = clause.token === ts.SyntaxKind.ExtendsKeyword ? result.extends : result.implements
-      for (const type of clause.types) target.push(this.convertHeritage(type))
+      if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+        for (const type of clause.types) result.push(this.convertHeritage(type))
+      }
     }
     return result
   }
@@ -2282,7 +1885,6 @@ class FaceAnalyzer {
 
   private members(
     members: ts.NodeArray<ts.TypeElement | ts.ClassElement>,
-    ownerId: string,
   ): MemberModel[] {
     const result: MemberModel[] = []
     for (const member of members) {
@@ -2299,7 +1901,7 @@ class FaceAnalyzer {
       const visibility = visibilityOf(member)
       const isStatic = hasModifier(member, ts.SyntaxKind.StaticKeyword)
       if (visibility !== 'public' || isStatic || ts.isConstructorDeclaration(member)) continue
-      const base = this.memberBase(member, ownerId, visibility, isStatic)
+      const base = this.memberBase(member)
       if (ts.isPropertySignature(member) || ts.isPropertyDeclaration(member)) {
         const type = this.requiredType(member, member.type, 'property')
         result.push({ ...base, kind: 'property', type: this.convertType(type) })
@@ -2322,9 +1924,6 @@ class FaceAnalyzer {
 
   private memberBase(
     member: ts.TypeElement | ts.ClassElement,
-    ownerId: string,
-    visibility: MemberVisibility,
-    isStatic: boolean,
   ): MemberBase {
     const identity = member.name !== undefined
       ? this.memberIdentity(member.name)
@@ -2337,16 +1936,9 @@ class FaceAnalyzer {
       }
     return {
       ...documentationOf(member),
-      id: `${ownerId}#${identity.name}@${String(member.getStart())}`,
       ...identity,
       optional: 'questionToken' in member && member.questionToken !== undefined,
       readonly: hasModifier(member, ts.SyntaxKind.ReadonlyKeyword),
-      async: hasModifier(member, ts.SyntaxKind.AsyncKeyword),
-      abstract: hasModifier(member, ts.SyntaxKind.AbstractKeyword),
-      static: isStatic,
-      visibility,
-      location: this.location(member),
-      text: memberText(member),
     }
   }
 
@@ -2378,7 +1970,6 @@ class FaceAnalyzer {
       type: this.convertType(this.requiredType(parameter, parameter.type, 'parameter')),
       optional: parameter.questionToken !== undefined || parameter.initializer !== undefined,
       rest: parameter.dotDotDotToken !== undefined,
-      receiver: ts.isIdentifier(parameter.name) && parameter.name.text === 'this',
       ...(parameter.initializer === undefined ? {} : { initializer: parameter.initializer.getText() }),
     }))
     return {
@@ -2440,32 +2031,7 @@ class FaceAnalyzer {
     purpose: 'property' | 'parameter' | 'return',
   ): ts.TypeNode {
     if (type !== undefined) return type
-    if (this.mode === 'check') {
-      this.fail(owner, `public ${purpose} is missing an explicit type annotation`)
-    }
-    const inferred = this.inferType(owner, purpose)
-    const rendered = ts.createPrinter().printNode(ts.EmitHint.Unspecified, inferred, owner.getSourceFile())
-    const position = annotationPosition(owner, purpose)
-    this.queueEdit({ file: realPath(owner.getSourceFile().fileName), position, text: `: ${rendered}` })
-    throw new SourceEditQueued()
-  }
-
-  private inferType(
-    owner: ts.Node,
-    purpose: 'property' | 'parameter' | 'return',
-  ): ts.TypeNode {
-    let type: ts.Type
-    if (purpose === 'return') {
-      const signature = this.checker.getSignatureFromDeclaration(owner as ts.SignatureDeclaration) as ts.Signature
-      type = this.checker.getReturnTypeOfSignature(signature)
-    } else {
-      type = this.checker.getTypeAtLocation(owner)
-    }
-    return this.checker.typeToTypeNode(
-      type,
-      owner,
-      ts.NodeBuilderFlags.NoTruncation | ts.NodeBuilderFlags.UseAliasDefinedOutsideCurrentScope,
-    ) as ts.TypeNode
+    this.fail(owner, `public ${purpose} is missing an explicit type annotation`)
   }
 
   private convertType(node: ts.TypeNode): TypeNodeId {
@@ -2515,7 +2081,7 @@ class FaceAnalyzer {
         }),
       })
     }
-    if (ts.isTypeLiteralNode(node)) return add({ kind: 'object', members: this.members(node.members, id) })
+    if (ts.isTypeLiteralNode(node)) return add({ kind: 'object', members: this.members(node.members) })
     if (ts.isFunctionTypeNode(node)) {
       return add({ kind: 'function', signature: this.signature(node, node.type) })
     }
@@ -2671,7 +2237,6 @@ class FaceAnalyzer {
       if (exportName === undefined) {
         this.fail(site, `cross-face reference ${imported.name} is not exported by ${module.package} at ${module.subpath}`)
       }
-      this.recordCrossFaceLink(from.name, otherFace, module, exportName)
       return {
         kind: 'cross-face',
         face: otherFace,
@@ -2701,31 +2266,6 @@ class FaceAnalyzer {
     }
 
     this.fail(site, `reference to ${symbol.name} crosses a package or face without an explicit import`)
-  }
-
-  private recordCrossFaceLink(
-    fromPackage: string,
-    toFace: TypertFace,
-    module: ModuleIdentity,
-    name: string,
-  ): void {
-    const link: CrossFaceLink = {
-      fromFace: this.face,
-      fromPackage,
-      toFace,
-      toPackage: module.package,
-      subpath: module.subpath,
-      name,
-    }
-    const key = [
-      link.fromFace,
-      link.fromPackage,
-      link.toFace,
-      link.toPackage,
-      link.subpath,
-      link.name,
-    ].join('\0')
-    this.crossFaceLinks.set(key, link)
   }
 
   private packageExportName(
@@ -2816,54 +2356,6 @@ class FaceAnalyzer {
   }
 }
 
-function mergeWorkspaceModels(models: readonly WorkspaceModel[]): WorkspaceModel {
-  const faces = new Map<TypertFace, {
-    packages: Map<string, PackageModel>
-    declarations: Map<SymbolId, TypeDeclarationModel>
-    nodes: Map<TypeNodeId, TypeNodeModel>
-  }>()
-  const links = new Map<string, CrossFaceLink>()
-  for (const model of models) {
-    for (const face of model.faces) {
-      const merged = faces.get(face.face) ?? {
-        packages: new Map(),
-        declarations: new Map(),
-        nodes: new Map(),
-      }
-      for (const packageModel of face.packages) merged.packages.set(packageModel.name, packageModel)
-      for (const declaration of face.graph.declarations) {
-        if (!merged.declarations.has(declaration.id)) merged.declarations.set(declaration.id, declaration)
-      }
-      for (const node of face.graph.nodes) {
-        if (!merged.nodes.has(node.id)) merged.nodes.set(node.id, node)
-      }
-      faces.set(face.face, merged)
-    }
-    for (const link of model.crossFaceLinks) {
-      links.set([
-        link.fromFace,
-        link.fromPackage,
-        link.toFace,
-        link.toPackage,
-        link.subpath,
-        link.name,
-      ].join('\0'), link)
-    }
-  }
-  return {
-    faces: [...faces].sort(([left], [right]) =>
-      (left === 'host' ? 0 : 1) - (right === 'host' ? 0 : 1)).map(([face, model]) => ({
-      face,
-      packages: [...model.packages.values()].sort((left, right) => left.name.localeCompare(right.name)),
-      graph: {
-        declarations: [...model.declarations.values()].sort((left, right) => left.id.localeCompare(right.id)),
-        nodes: [...model.nodes.values()].sort((left, right) => left.id.localeCompare(right.id)),
-      },
-    })),
-    crossFaceLinks: [...links.values()].sort(compareCrossFaceLinks),
-  }
-}
-
 /** {@link ts.sys} config reads without directory listing, so `include` patterns match no files. */
 const UNLISTED_CONFIG_HOST: ts.ParseConfigHost = {
   useCaseSensitiveFileNames: ts.sys.useCaseSensitiveFileNames,
@@ -2926,14 +2418,6 @@ function sourceFileHasSurface(sourceFile: ts.SourceFile): boolean {
       && member.members.length > 0)) return true
   }
   return false
-}
-
-function hasPackageSurface(model: PackageModel): boolean {
-  return model.services.length > 0
-    || model.events.length > 0
-    || model.objects.length > 0
-    || model.schemas.length > 0
-    || model.invocations.length > 0
 }
 
 function isDualFacePackage(manifest: Record<string, unknown>): boolean {
@@ -3039,110 +2523,22 @@ function declarationName(
   return (declaration.name as ts.Identifier).text
 }
 
-function memberText(member: ts.TypeElement | ts.ClassElement): string {
-  const sourceFile = member.getSourceFile()
-  const full = member.getText(sourceFile)
-  const body = (member as { body?: ts.Node }).body
-  const signature = body === undefined ? full : full.slice(0, full.length - body.getText(sourceFile).length)
-  return signature.replace(/\s*;?\s*$/, '').replace(/\s+/g, ' ').trim()
-}
-
-function declarationText(
-  declaration: ts.ClassDeclaration | ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration,
-): string {
-  const printer = ts.createPrinter({ removeComments: true })
-  const projected = ts.isClassDeclaration(declaration) ? classShape(declaration) : declaration
-  return printer.printNode(ts.EmitHint.Unspecified, projected, declaration.getSourceFile()).replace(/\r/g, '')
-}
-
-function classShape(node: ts.ClassDeclaration): ts.ClassDeclaration {
-  const nonPublic = (member: ts.ClassElement): boolean =>
-    (ts.canHaveModifiers(member) ? ts.getModifiers(member) : undefined)?.some(modifier =>
-      modifier.kind === ts.SyntaxKind.PrivateKeyword || modifier.kind === ts.SyntaxKind.ProtectedKeyword) ?? false
-  const members = node.members.flatMap((member): ts.ClassElement[] => {
-    const name = ts.getNameOfDeclaration(member)
-    if (ts.isClassStaticBlockDeclaration(member) || nonPublic(member)
-      || (name !== undefined && ts.isPrivateIdentifier(name))) return []
-    if (ts.isMethodDeclaration(member)) {
-      return [ts.factory.updateMethodDeclaration(
-        member,
-        member.modifiers,
-        member.asteriskToken,
-        member.name,
-        member.questionToken,
-        member.typeParameters,
-        member.parameters,
-        member.type,
-        undefined,
-      )]
-    }
-    if (ts.isConstructorDeclaration(member)) {
-      return [ts.factory.updateConstructorDeclaration(member, member.modifiers, member.parameters, undefined)]
-    }
-    if (ts.isGetAccessorDeclaration(member)) {
-      return [ts.factory.updateGetAccessorDeclaration(
-        member,
-        member.modifiers,
-        member.name,
-        member.parameters,
-        member.type,
-        undefined,
-      )]
-    }
-    if (ts.isSetAccessorDeclaration(member)) {
-      return [ts.factory.updateSetAccessorDeclaration(
-        member,
-        member.modifiers,
-        member.name,
-        member.parameters,
-        undefined,
-      )]
-    }
-    if (ts.isPropertyDeclaration(member)) {
-      return [ts.factory.updatePropertyDeclaration(
-        member,
-        member.modifiers,
-        member.name,
-        member.questionToken ?? member.exclamationToken,
-        member.type,
-        undefined,
-      )]
-    }
-    return [member]
-  })
-  return ts.factory.updateClassDeclaration(
-    node,
-    node.modifiers,
-    node.name,
-    node.typeParameters,
-    node.heritageClauses,
-    members,
-  )
-}
-
 function documentationOf(node: ts.Node): DocumentationModel {
-  const blocks = ts.getJSDocCommentsAndTags(node).filter(ts.isJSDoc)
-  const block = blocks.at(-1)
-  if (block === undefined) return EMPTY_DOCUMENTATION
-  const description = normalizedDocText(ts.getTextOfJSDocComment(block.comment))
-  const tags: JsDocTagModel[] = ts.getJSDocTags(node).map((tag) => {
+  const block = ts.getJSDocCommentsAndTags(node).filter(ts.isJSDoc).at(-1)
+  const description = normalizedDocText(block && ts.getTextOfJSDocComment(block.comment))
+  return description === undefined ? {} : { description }
+}
+
+function documentationTags(node: ts.Node): JsDocTagModel[] {
+  return ts.getJSDocTags(node).map((tag) => {
     const named = tag as ts.JSDocTag & { name?: ts.Node }
     const comment = normalizedDocText(ts.getTextOfJSDocComment(tag.comment))
     return {
       name: tag.tagName.text,
       ...(named.name === undefined ? {} : { argument: named.name.getText() }),
       ...(comment === undefined ? {} : { comment }),
-      text: tag.getText(tag.getSourceFile()).trim(),
     }
   })
-  return {
-    ...(description === undefined ? {} : {
-      description,
-      summary: firstSentence(description),
-    }),
-    tags,
-    jsDoc: rawJsDoc(node),
-  }
 }
 
 function normalizedDocText(value: string | undefined): string | undefined {
@@ -3150,24 +2546,6 @@ function normalizedDocText(value: string | undefined): string | undefined {
   const normalized = value.replace(/\s+/g, ' ').trim()
   /* v8 ignore next -- TypeScript represents whitespace-only JSDoc as undefined before this helper is called. */
   return normalized.length === 0 ? undefined : normalized
-}
-
-function firstSentence(value: string): string {
-  return (/^(.*?[.!?])(?:\s|$)/.exec(value)?.[1] ?? value).trim()
-}
-
-function rawJsDoc(node: ts.Node): string {
-  const sourceFile = node.getSourceFile()
-  const source = sourceFile.getFullText()
-  const ranges = ts.getLeadingCommentRanges(source, node.getFullStart()) as ts.CommentRange[]
-  const range = ranges.filter(candidate => source.slice(candidate.pos, candidate.pos + 3) === '/**').at(-1) as ts.CommentRange
-  const raw = source.slice(range.pos, range.end)
-  const { line } = sourceFile.getLineAndCharacterOfPosition(range.pos)
-  const lineStart = sourceFile.getPositionOfLineAndCharacter(line, 0)
-  const indent = source.slice(lineStart, range.pos)
-  return raw.split('\n')
-    .map((text, index) => index > 0 && text.startsWith(indent) ? text.slice(indent.length) : text)
-    .join('\n')
 }
 
 function typertMode(node: ts.Node): 'object' | 'schema' | undefined {
@@ -3214,7 +2592,7 @@ function packageExportSpecifier(packageName: string, subpath: string): string {
   return subpath === '.' ? packageName : `${packageName}${subpath.slice(1)}`
 }
 
-function visibilityOf(node: ts.Node): MemberVisibility {
+function visibilityOf(node: ts.Node): 'public' | 'protected' | 'private' {
   if ('name' in node && node.name !== undefined && ts.isPrivateIdentifier(node.name as ts.Node)) return 'private'
   if (hasModifier(node, ts.SyntaxKind.PrivateKeyword)) return 'private'
   if (hasModifier(node, ts.SyntaxKind.ProtectedKeyword)) return 'protected'
@@ -3223,10 +2601,6 @@ function visibilityOf(node: ts.Node): MemberVisibility {
 
 function hasModifier(node: ts.Node, kind: ts.SyntaxKind): boolean {
   return (ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined)?.some(modifier => modifier.kind === kind) ?? false
-}
-
-function exposableMember(member: MemberModel): boolean {
-  return member.visibility === 'public' && !member.static
 }
 
 function keywordName(kind: ts.SyntaxKind): KeywordTypeName | undefined {
@@ -3277,14 +2651,6 @@ function modifierMode(token: ts.ReadonlyKeyword | ts.PlusToken | ts.MinusToken |
   if (token?.kind === ts.SyntaxKind.PlusToken) return 'add'
   if (token?.kind === ts.SyntaxKind.MinusToken) return 'remove'
   return token === undefined ? 'preserve' : 'add'
-}
-
-function annotationPosition(
-  node: ts.Node,
-  purpose: 'property' | 'parameter' | 'return',
-): number {
-  if (purpose === 'return') return (node as ts.SignatureDeclarationBase).parameters.end + 1
-  return (node as ts.ParameterDeclaration | ts.PropertyDeclaration | ts.PropertySignature).name.end
 }
 
 function moduleSpecifierOf(node: ReferenceSite): string | undefined {
@@ -3456,13 +2822,4 @@ function uniqueBy<T>(values: readonly T[], key: (value: T) => string): T[] {
   const result = new Map<string, T>()
   for (const value of values) if (!result.has(key(value))) result.set(key(value), value)
   return [...result.values()]
-}
-
-function compareCrossFaceLinks(left: CrossFaceLink, right: CrossFaceLink): number {
-  return left.fromFace.localeCompare(right.fromFace)
-    || left.fromPackage.localeCompare(right.fromPackage)
-    || left.toFace.localeCompare(right.toFace)
-    || left.toPackage.localeCompare(right.toPackage)
-    || left.subpath.localeCompare(right.subpath)
-    || left.name.localeCompare(right.name)
 }

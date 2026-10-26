@@ -1,11 +1,10 @@
-import type { Context } from 'cordis'
-import type { ComponentType } from 'react'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type NodeTypeDefinition, type RouteProps, type SlotMap, type WorkflowDocument } from './sdk'
-import { apply } from './builtin/studio'
+import { LanguageProvider } from '@/test/language-provider'
+import { type NodeTypeDefinition, type WorkflowDocument } from './sdk'
+import { StudioPage as Page } from '../../../harness/src/frontend/studio-page'
 
 const definitions: NodeTypeDefinition[] = [{
   type: 'test.process', version: '1', providerId: 'test', operation: 'process',
@@ -44,14 +43,12 @@ function mount() {
     if (path.startsWith('/api/v2/imports/') && init?.method === 'DELETE') return undefined
     throw new Error(`Unexpected request ${path}`)
   })
-  let Page!: ComponentType<RouteProps>
   const context = {
     apiClient: { request }, navigation: { push: vi.fn() },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
     effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  const page = <PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>
+  } as unknown as TestContext
+  const page = <TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>
   const view = render(page)
   return { request, user: userEvent.setup(), revisit: () => { view.rerender(<div>设置</div>); view.rerender(page) } }
 }

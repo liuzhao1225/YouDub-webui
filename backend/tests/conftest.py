@@ -34,6 +34,33 @@ def config():
     })
 
 
+@pytest.fixture
+def cancelled_media_process(monkeypatch):
+    import subprocess
+    from backend.app.v1 import media
+    from backend.workers.protocol import WorkerError
+    real_popen = subprocess.Popen
+    processes, checks = [], 0
+
+    def slow_process(command, **kwargs):
+        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
+        processes.append(process)
+        return process
+
+    def check_cancel():
+        nonlocal checks
+        if processes and processes[0].poll() is None:
+            checks += 1
+            if checks == 2:
+                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
+
+    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
+    yield check_cancel
+    assert len(processes) == 1 and checks == 2
+    assert processes[0].returncode is not None
+    assert processes[0].wait(timeout=0) != 0
+
+
 @pytest.fixture(scope="module")
 def video(tmp_path_factory):
     import subprocess

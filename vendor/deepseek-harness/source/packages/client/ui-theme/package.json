@@ -24,7 +24,6 @@
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
-    "./brand-font.css": "./lib/styles/brand-font.css",
     "./locale/*.json": "./locale/*.json"
   },
   "dsh": {
@@ -47,8 +46,6 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-api-remotes": "workspace:*",
-    "@deepseek-ai/dsh-client-connection": "workspace:*",
     "@deepseek-ai/dsh-client-locale": "workspace:*",
     "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
     "@deepseek-ai/dsh-client-store": "workspace:*",
@@ -65,7 +62,6 @@
     "locale/*.json",
     "lib/index.js",
     "lib/client.js",
-    "lib/styles",
     "lib/types/**/*.d.ts"
   ],
   "scripts": {

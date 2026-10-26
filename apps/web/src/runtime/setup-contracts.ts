@@ -29,7 +29,7 @@ export interface SetupState {
   entries?: ResourceEntry[]
   phase: 'installation' | 'environment' | 'models' | 'starting' | 'ready' | 'failed'
   platform: string; arch: string; version?: string; osVersion?: string; homeDir?: string
-  environment: EnvironmentStep[]; models: SetupModel[]; error?: string; canRetry: boolean; token: string
+  environment: EnvironmentStep[]; models: SetupModel[]; error?: string; canRetry: boolean
   installation?: { required: boolean; path: string }
   resources?: ResourcePreparation
   resourceSelection?: { required: boolean; selections: ResourceSelection[]; items: ResourceItem[]; prepared: boolean }
@@ -50,7 +50,7 @@ export function resourceSetupState(inventory: ResourceInventory, checked?: Resou
     ? resource.environment : checked?.environment || resource?.environment || inventory.environment
   const failed = resource?.status === 'failed' || environment.some(step => step.status === 'failed') || inventory.models.some(model => model.status === 'failed')
   return { ...inventory, phase: failed ? 'failed' : resource?.status === 'preparing' || checked?.status !== 'ready' ? 'models' : 'ready',
-    entries: checked?.entries, environment, models: inventory.models, error: resource?.error, resources: undefined, canRetry: true, token: '' }
+    entries: checked?.entries, environment, models: inventory.models, error: resource?.error, resources: undefined, canRetry: true }
 }
 
 export function setupResourceEntries(state: SetupState): ResourceEntry[] {

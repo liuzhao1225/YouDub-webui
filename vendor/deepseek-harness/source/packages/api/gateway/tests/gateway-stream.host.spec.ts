@@ -19,7 +19,6 @@ import {
   RemoteError,
 } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
-import RemoteAccessService from '@deepseek-ai/dsh-api-remote-access'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
@@ -1181,7 +1180,7 @@ async function setup(
     provideBrowserCredentials(ctx)
   }
   await ctx.plugin(TypertRegistry)
-  await ctx.plugin(RemoteAccessService)
+
   await ctx.plugin(TypertGatewayService, gatewayConfig)
   if (transport) {
     await ctx.plugin({ inject: [...connectionInject], apply: applyConnection })
@@ -1190,8 +1189,6 @@ async function setup(
   ctx.typert.register({
     package: '@fixture/feed',
     face: 'host',
-    schemas: [],
-    model: { services: [], events: [], objects: [] },
     invocations: descriptors(),
   })
   const receiver = ctx.get('feed') as unknown as FeedService & { [symbols.original]?: FeedService }

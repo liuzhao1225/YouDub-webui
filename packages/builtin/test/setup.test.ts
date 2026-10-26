@@ -5,14 +5,22 @@ import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
-import { homedir, tmpdir } from 'node:os'
+import { tmpdir } from 'node:os'
 import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
 import manifest from '../src/setup-runtime.json' with { type: 'json' }
 
 // Installer processes are faked in these unit tests; source connectivity is tested separately.
 const actualFetch = globalThis.fetch
-beforeEach(t => { (t as TestContext).mock.method(globalThis, 'fetch', async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => String(url).startsWith('https://') ? new Response('') : actualFetch(url, init)) })
+beforeEach(t => {
+  const context = t as TestContext
+  const previous = { ...process.env }
+  context.after(() => {
+    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
+    Object.assign(process.env, previous)
+  })
+  context.mock.method(globalThis, 'fetch', async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => String(url).startsWith('https://') ? new Response('') : actualFetch(url, init))
+})
 
 function probeResult(action: string) {
   if (action === 'dependencies') return { missing: [] }
@@ -32,17 +40,15 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
   const tar = windows ? join(process.env.SystemRoot || 'C:/Windows', 'System32', 'tar.exe') : '/usr/bin/tar'
   const run = promisify(execFile)
   await run(tar, ['-czf', fixture, 'python'], { cwd: source, windowsHide: true })
-  const previous = { PATH: process.env.PATH, YOUDUB_PYTHON: process.env.YOUDUB_PYTHON }
   const client = new DownloadClient()
   t.after(async () => {
     await client.close()
-    for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete process.env[key]; else process.env[key] = value }
     await rm(root, { recursive: true })
   })
   const aliases = join(root, 'Microsoft', 'WindowsApps')
   await mkdir(aliases, { recursive: true })
   await writeFile(join(aliases, 'python.EXE'), 'Microsoft Store placeholder, never execute', { mode: 0o700 })
-  process.env.PATH = [aliases, previous.PATH].filter(Boolean).join(delimiter)
+  process.env.PATH = [aliases, process.env.PATH].filter(Boolean).join(delimiter)
   delete process.env.YOUDUB_PYTHON
   const stop = new Error('Stop before creating venv')
   let extracted = false
@@ -63,7 +69,7 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
     await mkdir(join(data, 'runtime', 'python'), { recursive: true }); await cp(fixture, destination)
   })
   const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', windows ? 'Scripts/python.exe' : 'bin/python') }, client, new AbortController().signal)
-  await assert.rejects(setup.prepare(), error => error === stop)
+  await assert.rejects(setup.prepare(['base']), error => error === stop)
   assert.equal(extracted, true)
 })
 
@@ -78,10 +84,7 @@ test('desktop Python stays in its data directory even when a system Python is on
   await writeFile(executable, 'test executable', { mode: 0o700 })
   await writeFile(join(media, 'ffmpeg'), 'test executable', { mode: 0o700 })
   if (windows) await writeFile(join(media, 'avcodec-test.dll'), 'test shared library')
-  const previous = { ...process.env }
   t.after(async () => {
-    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
-    Object.assign(process.env, previous)
     await rm(root, { recursive: true })
   })
   process.env.PATH = bin
@@ -104,7 +107,7 @@ test('desktop Python stays in its data directory even when a system Python is on
   t.after(() => client.close())
   t.mock.method(client, 'download', async () => {})
   const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
-  await setup.prepare()
+  await setup.prepare(['base'])
   assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
   assert.equal(process.env.PATH, bin)
   assert.ok(!commands.some(args => ['acceleration', 'punkt', 'acceleration-plan'].includes(args[2] || '')))
@@ -128,13 +131,10 @@ for (const platform of new Set([process.platform, 'win32'])) test(`private ${pla
   const root = await mkdtemp(join(tmpdir(), 'youdub-private-environment-'))
   const python = join(root, 'python')
   await writeFile(python, 'test Python')
-  const previous = { ...process.env }
   const client = new DownloadClient(), commands: string[] = [], downloads: string[] = []
   const windows = process.platform === 'win32'
   t.after(async () => {
     await client.close()
-    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
-    Object.assign(process.env, previous)
     await rm(root, { recursive: true })
   })
   process.env.FFMPEG_PATH = '/machine/ffmpeg'
@@ -154,7 +154,7 @@ for (const platform of new Set([process.platform, 'win32'])) test(`private ${pla
     assert.ok(target.startsWith(join(root, 'runtime', 'ffmpeg')))
     downloads.push(target); await mkdir(join(target, '..'), { recursive: true }); await writeFile(target, 'test media executable')
   })
-  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python, privateEnvironment: true }, client, new AbortController().signal).prepare(['media'])
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare(['media'])
   assert.equal(downloads.length, windows ? 1 : 2, 'Both Windows executables come from the same download')
   assert.ok(commands.some(command => command.startsWith(join(root, 'runtime', 'ffmpeg'))))
   const bin = join(root, 'runtime', 'ffmpeg', ...(windows ? [manifest.ffmpeg['win32-x64'][0]!.directory, 'bin'] : []))
@@ -171,10 +171,7 @@ test('base restart restores existing managed FFmpeg and NLTK paths without insta
   const python = join(root, 'python')
   await writeFile(python, 'test executable')
   for (const name of ['ffmpeg', 'ffprobe']) await writeFile(join(bin, name + (windows ? '.exe' : '')), 'managed executable')
-  const previous = { ...process.env }
   t.after(async () => {
-    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
-    Object.assign(process.env, previous)
     await rm(root, { recursive: true })
   })
   delete process.env.FFMPEG_PATH; delete process.env.FFPROBE_PATH; delete process.env.NLTK_DATA
@@ -189,7 +186,7 @@ test('base restart restores existing managed FFmpeg and NLTK paths without insta
     }
     return { stdout: '3.12.12', stderr: '' }
   } } } as unknown as Context
-  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare()
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare(['base'])
   assert.equal(process.env.FFMPEG_PATH, join(bin, 'ffmpeg' + (windows ? '.exe' : '')))
   assert.equal(process.env.FFPROBE_PATH, join(bin, 'ffprobe' + (windows ? '.exe' : '')))
   assert.equal(process.env.PATH?.split(delimiter)[0], bin)
@@ -199,11 +196,9 @@ test('private dependency installation clears machine pip destinations and instal
   const root = await mkdtemp(join(tmpdir(), 'youdub-private-pip-'))
   const python = join(root, 'python'), requests: any[] = []
   await writeFile(python, 'test Python')
-  const previous = { ...process.env }, client = new DownloadClient()
+  const client = new DownloadClient()
   t.after(async () => {
     await client.close()
-    for (const key of Object.keys(process.env)) if (!(key in previous)) delete process.env[key]
-    Object.assign(process.env, previous)
     await rm(root, { recursive: true })
   })
   Object.assign(process.env, { PIP_TARGET: '/machine/packages', PIP_PREFIX: '/machine/prefix', PIP_ROOT: '/machine/root', PIP_USER: '1' })
@@ -229,7 +224,7 @@ test('private dependency installation clears machine pip destinations and instal
     return { stdout: '3.12.15', stderr: '' }
   } } } as unknown as Context
   t.mock.method(client, 'download', async () => { throw new Error('Base test must not download Python, media or models') })
-  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python, privateEnvironment: true }, client, new AbortController().signal).prepare(['base'])
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare(['base'])
   assert.equal(installed, true)
   assert.ok(!requests.some(request => ['acceleration-plan', 'acceleration', 'models'].includes(request.args[2])))
 })

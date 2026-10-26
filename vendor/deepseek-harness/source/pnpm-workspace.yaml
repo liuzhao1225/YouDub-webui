@@ -20,8 +20,6 @@ peerDependencyRules:
 # (git hooks) genuinely need theirs.
 allowBuilds:
   esbuild: true
-  # Cross-platform boundary for the persistent PTY backend, including ConPTY on Windows.
-  node-pty: true
   # Pulled in by @earendil-works/pi-ai (optional LLM API backend). pnpm lists
   # them only because they ship lifecycle scripts, but those are no-ops we don't
   # need, so we deny them — install still succeeds.
@@ -33,9 +31,6 @@ allowBuilds:
   # optional prebuilts are omitted. Upgrade all consumers together after the
   # replacement passes that build and the release packed-install check.
   koffi: true
-  # The Python runtime deploy includes the reviewed workspace postinstall that
-  # restores the executable bit on node-pty's macOS spawn helper.
-  '@deepseek-ai/dsh-subprocess-local@file:packages/subprocess/subprocess-local': true
   # electron-builder pulls in the optional Squirrel.Windows helper, whose
   # install script only selects its bundled 7-Zip executable. Desktop ships
   # Windows through NSIS, so that mutation is not part of our build.
@@ -67,4 +62,3 @@ minimumReleaseAgeExclude:
   - electron@44.7.0
 patchedDependencies:
   '@earendil-works/pi-ai@1.1.0': patches/@earendil-works__pi-ai@1.1.0.patch
-  node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch

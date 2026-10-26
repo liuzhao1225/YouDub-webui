@@ -73,7 +73,6 @@ export class EntryGroup {
 
 /** Plugin that mounts a nested loader entry group. */
 export class Group extends EntryGroup {
-  static initial: Omit<EntryOptions, 'id'>[] = []
   static readonly [EntryGroup.key] = true
 
   constructor(public ctx: Context, public config: EntryOptions[]) {

@@ -89,7 +89,7 @@ function SidebarTools(props) { return <LanguageProvider source={props.localeSour
 function Startup({ features, localeSource, themeSource, onReady, renderSlot, translationModels, pickDirectory }) {
   return <LanguageProvider source={localeSource}><ThemeProvider source={themeSource}><FeatureProvider value={features}>
     <div className="yd yd-feature-root yd-startup"><div className="yd-main-chrome" data-window-drag aria-hidden="true" /><div className="yd-startup-content">
-      <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />,className:'min-h-full'}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>
+      <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>
     </div></div>
   </FeatureProvider></ThemeProvider></LanguageProvider>
 }
@@ -169,7 +169,6 @@ export function apply(ctx) {
   for(const [id,Icon] of [['/',Sparkles],['/tasks',History],['/workflows',Branch],['/resources',Folder],['plugins',Plugin]]) ctx.slots.inject('sidebar.panellist',() => ctx.slots.register({name:'sidebar.panellist',id},({size}) => <Icon size={size} />))
   ctx.slots.inject('sidebar.workspaces',() => ctx.slots.register({name:'sidebar.workspaces',store,inject:injected,children:{'youdub.navigation':{kind:'list',scope:'root'}}},SidebarExtensions))
   ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id:'current-version',priority:-10,order:100,locale:'settings',inject:() => ({localeSource})},UpdateVersionRow))
-  for(const id of ['developer-tools','font-size']) ctx.slots.inject('settings.general.item',() => ctx.slots.register({name:'settings.general.item',id,priority:-10},() => null))
   ctx.slots.inject('settings.launcher',() => ctx.slots.register({name:'settings.launcher',inject:() => ({registerSettingsLauncher})},SettingsLauncher))
   const children = {'youdub.page':{kind:'keyed',scope:'root'},...Object.fromEntries(domainSlots.map(slot => [`youdub.${slot}`,{kind:'list',scope:'root'}]))}
   ctx.effect(() => ctx.slots.registerFactory({name:'youdub.main',scope:'root',store,inject:injected,children},Main))

@@ -54,7 +54,6 @@ export default class Resources extends Service {
   private resourceState?: ResourcePreparationSnapshot
   private resourceJob?: Promise<void>
   private resourceRequest?: Promise<ResourcePreparationSnapshot>
-  private phase = 'ready'
   private jobs = new Map<string, { controller: AbortController; promise: Promise<void> }>()
   private models: ModelDownload[] = modelManifest.map(model => ({ id: model.id, name: model.name, variant: model.variant, purpose: model.purpose, status: 'pending', received: 0, total: model.files.reduce((sum, file) => sum + file.size, 0), speed: 0 }))
   constructor(ctx: any, private config: EnvironmentConfig & { version: string; modelRoots: Record<string, string> }) {
@@ -79,7 +78,7 @@ export default class Resources extends Service {
   }
   private runJob(label: string, controller: AbortController, execute: () => Promise<void>) {
     let result!: Promise<void>
-    this.ctx.jobs.start({ kind: 'youdub-resources', label, run() {
+    this.ctx.jobs.start({ label, run() {
       result = Promise.resolve().then(execute)
       return { cancel(reason?: string) { controller.abort(new Error(reason || 'Resource preparation cancelled')) }, done: result.then(
         () => ({ status: controller.signal.aborted ? 'killed' as const : 'completed' as const }),
@@ -90,7 +89,7 @@ export default class Resources extends Service {
   }
   catalogSelections(value: ResourceSelection[]) {
     const selections = this.selections(value)
-    const providers = this.catalog!.listProviders()
+    const providers = this.catalog.listProviders()
     for (const selection of selections) {
       if (runtimeResource(selection.providerId) && !selection.model) continue
       const provider = providers.find(item => item.id === selection.providerId)
@@ -117,7 +116,7 @@ export default class Resources extends Service {
     }))
   }
   async resourceInventory() {
-    const providers = (this.catalog?.listProviders() || []).filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
+    const providers = this.catalog.listProviders().filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
     const items = providers.flatMap(provider => {
       const resources = providerResources(provider)
       const models = [...new Set([...(resources?.model ? [resources.model.id] : []), ...(provider.models || []).map(model => model.id)])]
@@ -135,7 +134,7 @@ export default class Resources extends Service {
   }
   async resourceAction(action: string, id?: string) {
     if (!['pause', 'resume', 'retry'].includes(action) || (id !== undefined && typeof id !== 'string')) throw new AppError('INVALID_INPUT', 'Invalid resource action or model.', 422)
-    if (this.phase !== 'ready' || !this.resourceState) throw new AppError('ENVIRONMENT_NOT_READY', '当前没有正在准备的运行依赖。', 409)
+    if (!this.resourceState) throw new AppError('ENVIRONMENT_NOT_READY', '当前没有正在准备的运行依赖。', 409)
     if (id !== undefined && !this.resourceState.models.some(model => model.id === id)) throw new AppError('INVALID_INPUT', '该模型不属于当前准备任务。', 422)
     const targets = this.resourceState.models.filter(model => (!id || model.id === id) && model.status !== 'ready')
     if (action === 'pause') {
@@ -159,7 +158,7 @@ export default class Resources extends Service {
       .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
   }
   private groups(selections: ResourceSelection[]) {
-    const providers = this.catalog?.listProviders() ?? []
+    const providers = this.catalog.listProviders()
     return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => {
       const runtime = runtimeResource(item.providerId)
       if (runtime) return runtime[1].groups
@@ -182,7 +181,7 @@ export default class Resources extends Service {
     let mediaReady = true, mediaReason: string | undefined, punktReady = true
     // A user may have installed a package/model outside this process. Refresh
     // only this graph's providers so validation sees the same current readiness.
-    if (this.catalog) for (const providerId of new Set(selections.map(item => item.providerId))) {
+    for (const providerId of new Set(selections.map(item => item.providerId))) {
       if (!runtimeResource(providerId)) await this.catalog.provider(providerId).probe()
     }
     for (const selection of selections) {
@@ -196,7 +195,7 @@ export default class Resources extends Service {
           ...((result.missing.length || !result.punkt) ? { reason: result.missing.length ? `缺少运行依赖：${result.missing.join(', ')}` : '缺少分句资源。' } : {}) })
         continue
       }
-      const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
+      const provider = this.catalog.listProviders().find(item => item.id === selection.providerId)
       const resources = provider && providerResources(provider)
       const groups = resources?.dependencyGroups
       if (!groups) {
@@ -237,7 +236,7 @@ export default class Resources extends Service {
     await this.refreshModelSizes(models)
     for (const model of models) {
       if (model.status !== 'ready') for (const requirement of requirements) {
-        if (requirement.automatic && this.catalog?.listProviders().some(provider => provider.id === requirement.providerId && providerResources(provider)?.model?.downloadId === model.id)) {
+        if (requirement.automatic && this.catalog.listProviders().some(provider => provider.id === requirement.providerId && providerResources(provider)?.model?.downloadId === model.id)) {
           requirement.ready = false
           requirement.reason ??= `${model.name} 模型文件未安装或不完整。`
         }
@@ -299,7 +298,6 @@ export default class Resources extends Service {
     finally { this.resourceRequest = undefined }
   }
   private async startResourcePreparation(value: ResourceSelection[]) {
-    if (this.phase !== 'ready') throw new AppError('ENVIRONMENT_NOT_READY', '请等待基础环境准备完成。', 409)
     const selections = this.selections(value)
     if (this.resourceJob) {
       if (JSON.stringify(this.resourceState!.selections) !== JSON.stringify(selections)) throw new AppError('RESOURCE_PREPARATION_BUSY', '其他工作流依赖正在准备。', 409)

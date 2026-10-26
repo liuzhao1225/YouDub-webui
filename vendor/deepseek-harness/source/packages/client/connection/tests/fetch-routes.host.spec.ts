@@ -3,6 +3,7 @@ import type { PeerScope, Principal } from '@deepseek-ai/dsh-typert-protocol'
 import { describe, expect, it, vi } from 'vitest'
 import type { BrowserAuth } from '../src/browser-auth.ts'
 import { HostConnectionService } from '../src/rpc-host.ts'
+import { Peer } from '../src/peer.ts'
 
 async function mounted(): Promise<{
   readonly connection: HostConnectionService
@@ -102,7 +103,7 @@ describe('Connection exact Fetch routes', () => {
       peers.push(peer)
       return { ok: true, value: null }
     })
-    const guest = connection.createPeer({ principal: GUEST })
+    const guest = new Peer(new Context(), { principal: GUEST })
     const shared = connection.createSharedFetchHandler('/api')
 
     const refused = await shared.fetch(new Request('http://host/api/session.export'), guest)
@@ -117,19 +118,20 @@ describe('Connection exact Fetch routes', () => {
     }), guest)
     expect(rpc.status).toBe(200)
     expect(peers).toEqual([guest])
+    await guest.dispose()
     await disposeInterceptor()
     await disposeRoute()
     await disposeFiber()
   })
 })
 
-describe('Connection in-process Peers', () => {
-  it('creates independent Peers that keep their principal and leave with the reading Context', async () => {
-    const { connection, dispose } = await mounted()
-    const first = connection.createPeer({ principal: GUEST })
-    const second = connection.createPeer({ principal: GUEST })
-    const owner = connection.createPeer({ principal: { kind: 'owner' } })
-    expect(new Set([first.id, second.id, owner.id, connection.browserPeer.id]).size).toBe(4)
+describe('Peer lifetime', () => {
+  it('keeps independent principals and releases registrations with the Peer or its owner', async () => {
+    const ctx = new Context()
+    const first = new Peer(ctx, { principal: GUEST })
+    const second = new Peer(ctx, { principal: GUEST })
+    const owner = new Peer(ctx, { principal: { kind: 'owner' } })
+    expect(new Set([first.id, second.id, owner.id]).size).toBe(3)
     expect(first.principal).toBe(GUEST)
     expect(owner.principal).toEqual({ kind: 'owner' })
     expect(first.ctx).not.toBe(second.ctx)
@@ -139,27 +141,13 @@ describe('Connection in-process Peers', () => {
     await first.dispose()
     expect(released).toHaveBeenCalledOnce()
     expect(() => first.ctx.effect(() => () => {})).toThrow()
-    // Disposing one Peer leaves the others usable.
     expect(() => second.ctx.effect(() => () => {})()).not.toThrow()
 
-    await dispose()
-  })
-
-  it('disposes a created Peer with the plugin that read the Connection', async () => {
-    const ctx = new Context()
-    const provider = ctx.plugin((pluginCtx) => { new HostConnectionService(pluginCtx, [], {} as BrowserAuth) })
-    await provider.await()
-    let created: PeerScope | undefined
-    const consumer = ctx.plugin({
-      inject: ['connection'],
-      apply: (consumerCtx: Context) => { created = consumerCtx.connection.createPeer({ principal: GUEST }) },
-    })
-    await consumer.await()
     const lingering = vi.fn()
-    created!.ctx.effect(() => lingering, 'consumer Peer registration')
-    await consumer.dispose()
+    second.ctx.effect(() => lingering, 'owner registration')
+    await ctx.fiber.dispose()
     expect(lingering).toHaveBeenCalledOnce()
-    expect(() => created!.ctx.effect(() => () => {})).toThrow()
-    await provider.dispose()
+    expect(() => second.ctx.effect(() => () => {})).toThrow()
+    expect(second.signal.aborted).toBe(true)
   })
 })

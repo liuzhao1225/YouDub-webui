@@ -35,7 +35,7 @@ export interface WorkspaceTypertGeneratorOptions {
   readonly rejectBuildOutputs?: boolean
 }
 
-/** Discover, analyze, and emit package reflection from independent faces. */
+/** Discover, analyze, and emit Remote artifacts from independent faces. */
 export class WorkspaceTypertGenerator {
   /** Parsed-config and program-host state shared by every analyzer this generator creates. */
   private readonly caches = new WorkspaceCaches()

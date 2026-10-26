@@ -38,7 +38,7 @@ it('exposes actual progress and no percentage for an unknown total', () => {
 })
 
 it('opens diagnostic details without losing their content', async () => {
-  const user = userEvent.setup(); render(<Disclosure title="任务日志"><p>下载完成</p></Disclosure>)
+  const user = userEvent.setup(); render(<Disclosure contained title="任务日志"><p>下载完成</p></Disclosure>)
   await user.click(screen.getByText('任务日志'))
   expect(screen.getByRole('button', { name: '任务日志' })).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByText('下载完成')).toBeVisible()
@@ -46,15 +46,15 @@ it('opens diagnostic details without losing their content', async () => {
 
 it('updates disclosure from its source while preserving manual collapse', async () => {
   const user = userEvent.setup()
-  const view = render(<Disclosure title="任务日志" open={false}>日志</Disclosure>)
+  const view = render(<Disclosure contained title="任务日志" open={false}>日志</Disclosure>)
   const toggle = screen.getByRole('button', { name: '任务日志' })
-  view.rerender(<Disclosure title="任务日志" open>日志</Disclosure>)
+  view.rerender(<Disclosure contained title="任务日志" open>日志</Disclosure>)
   expect(toggle).toHaveAttribute('aria-expanded', 'true')
   await user.click(toggle)
-  view.rerender(<Disclosure title="任务日志" open>新日志</Disclosure>)
+  view.rerender(<Disclosure contained title="任务日志" open>新日志</Disclosure>)
   expect(toggle).toHaveAttribute('aria-expanded', 'false')
-  view.rerender(<Disclosure title="任务日志" open={false}>新日志</Disclosure>)
-  view.rerender(<Disclosure title="任务日志" open>新日志</Disclosure>)
+  view.rerender(<Disclosure contained title="任务日志" open={false}>新日志</Disclosure>)
+  view.rerender(<Disclosure contained title="任务日志" open>新日志</Disclosure>)
   expect(toggle).toHaveAttribute('aria-expanded', 'true')
 })
 

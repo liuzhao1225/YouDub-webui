@@ -17,11 +17,9 @@ import {
   createRuntimeResolution,
   getDshRuntimeVersion,
   initProfile,
-  loadProfile,
   loadProfileDirectory,
   PROFILE_COMPATIBILITY_FILENAME,
   PROFILE_PATCH_FILENAME,
-  PROFILE_TEMPLATES,
   readProfileManifest,
   readProfilePatches,
   removeLinkProjections,
@@ -267,7 +265,7 @@ describe('resolveBundleDir', () => {
   })
 })
 
-describe('loadProfile', () => {
+describe('loadProfileDirectory', () => {
   it('loads an explicitly owned profile directory outside CLI discovery', () => {
     const anchor = stageInstallation({ 'bundle-a': { patch: '[]\n' } })
     const dir = join(tmp(), 'managed', 'desktop')
@@ -287,7 +285,7 @@ describe('loadProfile', () => {
     const dir = resolveProfileDir('demo', home)
     initProfile(dir, ['bundle-a', 'bundle-b'])
     writeFileSync(join(dir, PROFILE_PATCH_FILENAME), '- id: a\n  config:\n    v: 3\n')
-    const profile = loadProfile('t', 'demo', anchor, home)
+    const profile = loadProfileDirectory('t', dir, anchor)
     expect(profile.layers.map(layer => layer.packageName)).toEqual(['bundle-a', 'bundle-b'])
     expect(profile.patches).toHaveLength(1)
     const entries = composeEntries([
@@ -297,9 +295,9 @@ describe('loadProfile', () => {
     expect(entries).toEqual([{ id: 'a', name: 'pkg-a', config: { v: 3 } }])
     // A hand-made profile without the user layer file or dsh section: empty layers, no throw.
     rmSync(join(dir, PROFILE_PATCH_FILENAME))
-    expect(loadProfile('t', 'demo', anchor, home).patches).toEqual([])
+    expect(loadProfileDirectory('t', dir, anchor).patches).toEqual([])
     writeProfileManifest(dir, { name: 'bare' })
-    const bare = loadProfile('t', 'demo', anchor, home)
+    const bare = loadProfileDirectory('t', dir, anchor)
     expect(bare.layers).toEqual([])
   })
 
@@ -318,7 +316,7 @@ describe('loadProfile', () => {
     const home = tmp()
     const dir = resolveProfileDir('demo', home)
     initProfile(dir, ['multi', 'broken'])
-    const profile = loadProfile('t', 'demo', anchor, home)
+    const profile = loadProfileDirectory('t', dir, anchor)
     expect(profile.layers.map(layer => ({ ...layer, patches: layer.patches.length }))).toEqual([{
       packageName: 'multi',
       packageDir: bundleDir,
@@ -337,12 +335,9 @@ describe('loadProfile', () => {
   it('requires an explicitly initialized product profile and does not create Harness defaults', () => {
     const anchor = stageInstallation({})
     const home = tmp()
-    expect(PROFILE_TEMPLATES).toEqual({})
-    for (const name of ['custom', 'web', 'acp', 'headless', 'sdk', 'sdk-minimal']) {
-      expect(() => loadProfile('t', name, anchor, home))
-        .toThrow(`profile "${name}" does not exist`)
-      expect(existsSync(join(resolveProfileDir(name, home), 'package.json'))).toBe(false)
-    }
+    const dir = resolveProfileDir('custom', home)
+    expect(() => loadProfileDirectory('t', dir, anchor)).toThrow('failed to read profile manifest')
+    expect(existsSync(join(dir, 'package.json'))).toBe(false)
   })
 
   it('preserves an explicitly configured profile instead of normalizing former product names', () => {
@@ -353,7 +348,7 @@ describe('loadProfile', () => {
     initProfile(dir, bundles)
     const manifest = { ...readProfileManifest('t', dir), custom: 'retained' }
     writeProfileManifest(dir, manifest)
-    const profile = loadProfile('t', 'headless', anchor, home)
+    const profile = loadProfileDirectory('t', dir, anchor)
     expect(profile.layers.map(layer => layer.packageName)).toEqual(bundles)
     expect(readProfileManifest('t', dir)).toEqual(manifest)
   })
@@ -381,7 +376,7 @@ describe('loadProfile', () => {
       const warn = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
       onTestFinished(() => { warn.mockRestore() })
 
-      const profile = loadProfile('t', 'demo', anchor, home)
+      const profile = loadProfileDirectory('t', dir, anchor)
       // Loading only records the skip; the launcher reports it once per start.
       expect(warn).not.toHaveBeenCalled()
       expect(profile.layers.map(layer => layer.packageName)).toEqual(['before', 'after'])

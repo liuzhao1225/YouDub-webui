@@ -22,6 +22,24 @@ test('translation uses official Harness call defaults and surfaces provider reje
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = JSON.parse(raw); calls.push({ path: req.url, body });
     if (reject) { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'fixture provider rejected the request', type: 'invalid_request_error', code: 'invalid_request' } })); return; }
+    const path = new URL(req.url, 'http://localhost').pathname;
+    if (path.endsWith('/messages')) {
+      if (path !== '/v1/messages') {
+        res.writeHead(404, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: `fixture has no endpoint ${path}` } })); return;
+      }
+      res.writeHead(200, { 'content-type': 'text/event-stream' });
+      const events = [
+        { type: 'message_start', message: { id: 'msg_fixture', type: 'message', role: 'assistant', model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 10, output_tokens: 0 } } },
+        { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: JSON.stringify({ segments: [{ segment_id: 's1', text: '你好' }] }) } },
+        { type: 'content_block_stop', index: 0 },
+        { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 10 } },
+        { type: 'message_stop' },
+      ];
+      for (const event of events) res.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+      res.end(); return;
+    }
     res.writeHead(200, { 'content-type': 'text/event-stream' });
     res.write('data: ' + JSON.stringify({ id: 'fixture', object: 'chat.completion.chunk', created: 1, model: 'fixture-model', choices: [{ index: 0, delta: { role: 'assistant', content: JSON.stringify({ segments: [{ segment_id: 's1', text: '你好' }] }) }, finish_reason: null }] }) + '\n\n');
     res.write('data: ' + JSON.stringify({ id: 'fixture', object: 'chat.completion.chunk', created: 1, model: 'fixture-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 } }) + '\n\n');
@@ -35,7 +53,11 @@ test('translation uses official Harness call defaults and surfaces provider reje
   const catalogProfile = { apiKeyEnv: profile.apiKeyEnv, baseURL: profile.baseURL,
     models: ['deepseek-flash', 'deepseek-v4-pro'].map(id => ({ id, contextWindow: 8192, maxTokens: 2048 })) };
   const savedCatalogProfile = structuredClone(catalogProfile);
-  const providers = { fixture: profile, deepseek: catalogProfile,
+  const anthropicProfile = { api: 'anthropic-messages', baseURL: `http://127.0.0.1:${server.address().port}`, apiKeyEnv: profile.apiKeyEnv,
+    models: [{ id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol', contextWindow: 8192, maxTokens: 2048 }] };
+  const savedAnthropicProfile = structuredClone(anthropicProfile);
+  const providers = { fixture: profile, deepseek: catalogProfile, molifang: anthropicProfile,
+    'molifang-v1': { ...anthropicProfile, baseURL: anthropicProfile.baseURL + '/v1' },
     defaults: { ...profile, models: [{ id: 'fixture-model', contextWindow: 131072 }] } };
   const settings = { describe: () => [{ ns: 'llm-pi-ai', value: { providers } }], configure: () => () => {} };
   const services = ctx.plugin({ name: 'fixture-official-config', apply(child) {
@@ -115,6 +137,31 @@ test('translation uses official Harness call defaults and surfaces provider reje
         assert.equal(calls.at(-1).body.max_tokens, 2048);
       }
       assert.deepEqual(catalogProfile, savedCatalogProfile);
+    });
+    await t.test('custom model IDs use Anthropic Messages and preserve Harness model settings', async () => {
+      const before = calls.length;
+      const run = await execute({}, 'molifang', 'gpt-5.6-sol');
+      assert.deepEqual((await run.result).outputs.translation.segments, [{ segment_id: 's1', text: '你好' }]);
+      assert.equal(calls.length, before + 1);
+      const call = calls.at(-1);
+      assert.equal(new URL(call.path, 'http://localhost').pathname, '/v1/messages');
+      assert.equal(call.body.model, 'gpt-5.6-sol');
+      assert.equal(call.body.max_tokens, 2048);
+      assert.equal(call.body.stream, true);
+      assert.match(JSON.stringify(call.body.system), /Translate from en to zh/);
+      assert.match(JSON.stringify(call.body.messages), /hello/);
+      assert.equal(run.receipts.at(-1).state, 'succeeded');
+      assert.deepEqual(anthropicProfile, savedAnthropicProfile);
+    });
+    await t.test('Anthropic base URL paths remain unchanged and endpoint failures surface without retries', async () => {
+      const before = calls.length;
+      const run = await execute({}, 'molifang-v1', 'gpt-5.6-sol');
+      await assert.rejects(run.result, /fixture has no endpoint \/v1\/v1\/messages/);
+      assert.equal(calls.length, before + 1);
+      assert.equal(new URL(calls.at(-1).path, 'http://localhost').pathname, '/v1/v1/messages');
+      assert.equal(calls.at(-1).body.max_tokens, 2048);
+      assert.equal(providers['molifang-v1'].baseURL, anthropicProfile.baseURL + '/v1');
+      assert.deepEqual(anthropicProfile, savedAnthropicProfile);
     });
   } finally { await adapter.dispose(); await services.dispose(); await runtime.dispose(); await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true }))); }
 });

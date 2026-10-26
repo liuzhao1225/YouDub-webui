@@ -3,7 +3,7 @@
  * process-wide record of which policy is active.
  *
  * `undici` is imported dynamically so the pure {@link ProxyPolicy} half stays loadable where no Node
- * transport exists, matching how `dsh-web-fetch-http` defers its own transport import.
+ * transport exists.
  * @module @deepseek-ai/dsh-http-proxy/install
  */
 
@@ -11,7 +11,6 @@ import type { Dispatcher, Pool } from 'undici'
 import {
   isSupportedProxyUrl,
   POLICY_ENV_NAMES,
-  PROXY_ENV_NAMES,
   proxyForUrl,
   resolveProxyPolicy,
   type EnvLookup,
@@ -33,39 +32,6 @@ let active: ProxyPolicy | undefined
  * it, so a SOCKS proxy `curl` can use is not replaced by an HTTP proxy named for another scheme.
  */
 let inheritedProxyEnv: Readonly<Record<string, string | undefined>> | undefined
-
-/** The dispatcher installed with {@link active}, so a route can hand back the one already routing. */
-let installed: Dispatcher | undefined
-
-/**
- * How this process must send one request.
- *
- * A caller that branches on the answer needs the transport that answer assumed, or an install or
- * disposal landing between the two would send the request somewhere the branch did not clear. The
- * proxied arm therefore carries the dispatcher already routing by this policy: it is process-wide
- * and long-lived, so a caller uses it and never closes it. Disposal closes that dispatcher rather
- * than destroying it, so a request already dispatched when a policy is unmounted still finishes.
- */
-export type ProxyRoute =
-  | { readonly proxied: true; readonly proxy: string; readonly dispatcher: Dispatcher }
-  | { readonly proxied: false }
-
-/** A route that sends nothing through a proxy, shared because it carries no per-request state. */
-const DIRECT_ROUTE: ProxyRoute = { proxied: false }
-
-/**
- * Decide how to send one request, and hand back the transport that decision assumed.
- *
- * @param url - the request URL.
- * @returns the proxied route with its proxy URL and dispatcher, or the direct route.
- */
-export function proxyRouteFor(url: URL): ProxyRoute {
-  const policy = active
-  const dispatcher = installed
-  if (policy === undefined || dispatcher === undefined) return DIRECT_ROUTE
-  const proxy = proxyForUrl(policy, url)
-  return proxy === undefined ? DIRECT_ROUTE : { proxied: true, proxy, dispatcher }
-}
 
 /**
  * Publish a policy through the proxy environment variables, which is how the consumers that read an
@@ -185,7 +151,6 @@ async function installGlobalProxy(policy: ProxyPolicy): Promise<() => Promise<vo
         return Promise.resolve()
       }
     }
-    const previousInstalled = installed
     // The install underneath published its normalized policy into `process.env`, which is what a
     // spawned child copies. With no policy active there is no normalization to stand behind, so the
     // user's own values return for the window and the outer install's come back when it ends. An
@@ -196,11 +161,9 @@ async function installGlobalProxy(policy: ProxyPolicy): Promise<() => Promise<vo
     const direct = new undici.Agent()
     undici.setGlobalDispatcher(direct)
     active = policy
-    installed = undefined
     return async () => {
       undici.setGlobalDispatcher(previous)
       active = previousPolicy
-      installed = previousInstalled
       restoreEnv?.()
       await direct.close()
     }
@@ -208,15 +171,12 @@ async function installGlobalProxy(policy: ProxyPolicy): Promise<() => Promise<vo
   const restoreEnv = applyPolicyEnv(policy)
   const { getGlobalDispatcher, setGlobalDispatcher } = await import('undici')
   const previousDispatcher = getGlobalDispatcher()
-  const previousInstalled = installed
   const agent = await createPolicyDispatcher(policy)
   setGlobalDispatcher(agent)
   active = policy
-  installed = agent
   return async () => {
     setGlobalDispatcher(previousDispatcher)
     active = previousPolicy
-    installed = previousInstalled
     restoreEnv()
     await agent.close()
   }
@@ -300,16 +260,4 @@ export async function installProxyFromEnvironment(
   const { policy, diagnostics } = resolveProxyPolicy(env)
   for (const diagnostic of diagnostics) report(diagnostic.message)
   return await installGlobalProxy(policy)
-}
-
-/**
- * The environment overlay that removes every proxy name from a spawned child.
- *
- * A harness that replays a recorded session must reach its own fixture server, not the proxy a
- * developer or a CI runner exported; `undefined` is how a spawn removes a name it inherits.
- *
- * @returns one entry per proxy name, each `undefined`.
- */
-export function clearedProxyEnv(): Record<string, undefined> {
-  return Object.fromEntries(PROXY_ENV_NAMES.map(name => [name, undefined]))
 }

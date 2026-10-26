@@ -170,11 +170,12 @@ describe('HMR exact config paths', () => {
     }
   })
 
-  it('observes add, change, and unlink outside its module roots', { timeout: 20_000 }, async ({ task, onTestFailed }) => {
-    const dir = mkdtempSync(join(tmpdir(), 'dsh-hmr-config-'))
-    hmrRoots.push(dir)
+  it.for([false, true])('observes config add, change, and unlink outside module roots (missing parent: %s)', { timeout: 20_000 }, async (missingParent, { task, onTestFailed }) => {
+    const root = mkdtempSync(join(tmpdir(), 'dsh-hmr-config-'))
+    hmrRoots.push(root)
+    const dir = missingParent ? join(root, 'later') : root
     const filename = join(dir, 'plugins.yml')
-    const ctx = await bootHmr(dir)
+    const ctx = await bootHmr(root)
     const observed: string[] = []
     // The case budget fires before eventually() can name the pending step.
     onTestFailed(() => { console.error(`refresh observed ${JSON.stringify(observed)}`) })
@@ -187,7 +188,8 @@ describe('HMR exact config paths', () => {
           observed.push('missing')
         }
       })
-      ensureNativeWatchLive(dir)
+      ensureNativeWatchLive(root)
+      if (missingParent) mkdirSync(dir)
 
       writeFileSync(filename, 'one', { flag: 'wx' })
       await eventually(() => observed.includes('one'), 'HMR did not observe config creation', task.timeout)
@@ -195,28 +197,6 @@ describe('HMR exact config paths', () => {
       await eventually(() => observed.includes('two'), 'HMR did not observe config change', task.timeout)
       unlinkSync(filename)
       await eventually(() => observed.includes('missing'), 'HMR did not observe config removal', task.timeout)
-    } finally {
-      await ctx.fiber.dispose()
-    }
-  })
-
-  it('observes creation when the config parent did not exist at registration', { timeout: 20_000 }, async ({ task, onTestFailed }) => {
-    const root = mkdtempSync(join(tmpdir(), 'dsh-hmr-config-'))
-    hmrRoots.push(root)
-    const dir = join(root, 'later')
-    const filename = join(dir, 'plugins.yml')
-    const ctx = await bootHmr(root)
-    const observed: string[] = []
-    // The case budget fires before eventually() can name the pending step.
-    onTestFailed(() => { console.error(`refresh observed ${JSON.stringify(observed)}`) })
-    try {
-      await watchConfig(ctx, filename, {}, () => {
-        observed.push(readFileSync(filename, 'utf8'))
-      })
-      ensureNativeWatchLive(root)
-      mkdirSync(dir)
-      writeFileSync(filename, 'created')
-      await eventually(() => observed.includes('created'), 'HMR did not observe config creation under a new parent', task.timeout)
     } finally {
       await ctx.fiber.dispose()
     }

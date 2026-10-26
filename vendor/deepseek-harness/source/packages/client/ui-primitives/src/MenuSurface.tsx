@@ -5,20 +5,17 @@ import clsx from 'clsx'
 import css from './MenuSurface.module.css'
 
 /** Menu containers preserve native div props and refs. */
-export interface MenuSurfaceProps extends ComponentPropsWithoutRef<'div'> {
-  /** Match the shared compact menu's smaller outer radius. */
-  compact?: boolean
-}
+export type MenuSurfaceProps = ComponentPropsWithoutRef<'div'>
 
 /**
  * Paint a menu and, on macOS, an opaque backing behind the page content within its bounds.
  * CSS anchors keep each backing aligned during placement, resizing, and nested-menu movement.
- * @param props - Div content and placement, and compact geometry.
+ * @param props - Div content and placement.
  * @param ref - The visible menu div, excluding the non-interactive backing.
  * @returns Menu content plus a backing portal removed with the menu.
  */
 export const MenuSurface = forwardRef<HTMLDivElement, MenuSurfaceProps>(function MenuSurface({
-  compact = false, className, style, children, ...props
+  className, style, children, ...props
 }, ref) {
   const id = useId()
   const backingRef = useRef<HTMLDivElement>(null)
@@ -33,12 +30,12 @@ export const MenuSurface = forwardRef<HTMLDivElement, MenuSurfaceProps>(function
   }
   return <>
     <div {...props} ref={ref} data-menu-material="translucent"
-      className={clsx(css.surface, compact && css.compact, className)} style={{ ...style, ...anchorStyle }}>
+      className={clsx(css.surface, className)} style={{ ...style, ...anchorStyle }}>
       <div aria-hidden="true" className={css.material} />
       {children}
     </div>
     {createPortal(
-      <div ref={backingRef} aria-hidden="true" data-menu-backing="" className={clsx(css.backing, compact && css.compact)}
+      <div ref={backingRef} aria-hidden="true" data-menu-backing="" className={css.backing}
         style={{ ...anchorStyle, visibility: style?.visibility }} />,
       document.body,
     )}

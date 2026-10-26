@@ -12,7 +12,7 @@ import { ResourcesController } from '@/plugin/runtime/workflow-resources'
 import type { Request } from '@/plugin/runtime/types'
 import { mergeResourceEntries, resourceSetupState, type ResourceAction, type ResourceEntry } from '@/runtime/setup-contracts'
 
-export function SettingsResources({ request, title }: { request: Request; title?: string }) {
+export function SettingsResources({ request, title }: { request: Request; title: string }) {
   const tx = useText()
   const controller = useMemo(() => new ResourcesController(request), [request])
   const { inventory, inspection, checking, error } = useObservableSource(controller)
@@ -22,7 +22,7 @@ export function SettingsResources({ request, title }: { request: Request; title?
   const act = (action: ResourceAction, entry: ResourceEntry) => action === 'prepare' ? controller.prepareResource(entry.id) : controller.action(action, entry.id)
   const refresh = <Button variant="ghost" size="sm" disabled={checking} onClick={controller.check}><RefreshCw className={checking ? 'animate-spin' : undefined} />{tx('settings.resources.check.again')}</Button>
   return <div className="space-y-8">
-    {title ? <PageHeader title={title} actions={refresh} /> : <div className="flex justify-end">{refresh}</div>}
+    <PageHeader title={title} actions={refresh} />
     {error && <InlineAlert>{error}</InlineAlert>}
     {!inspection && <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">{checking && <Loader2 className="size-4 animate-spin" />}{tx(checking ? 'settings.resources.checking.resources' : 'settings.resources.environment.not.checked')}</p>}
     {(['environment', 'model'] as const).map(group => entries.some(entry => entry.group === group) && <SectionCard key={group} title={tx(group === 'environment' ? 'settings.resources.runtime.environment' : 'settings.resources.local.models')}><div className="divide-y divide-border px-4">

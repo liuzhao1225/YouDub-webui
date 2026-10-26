@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import { SetupInstallation } from './setup-installation'
 
 afterEach(() => { cleanup(); window.localStorage.clear() })

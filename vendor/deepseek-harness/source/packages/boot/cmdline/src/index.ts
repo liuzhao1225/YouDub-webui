@@ -75,73 +75,16 @@ export interface CmdlineHost {
 
 /**
  * Provide launcher facts on a host context before any tree entry mounts: the
- * command line, bounded exit request, and optional successful-startup signal.
- * An embedding host with no command line provides an empty argument list; a
- * host that mounts a stdio application also provides readiness.
+ * command line and bounded exit request.
+ * An embedding host with no command line provides an empty argument list.
  * @param ctx - the host context the tree will mount under.
- * @param host - the invocation's arguments, exit request, and optional readiness signal.
+ * @param host - the invocation's arguments and exit request.
  */
 export function provideCmdline(ctx: Context, host: CmdlineHost): void {
   const snapshot: readonly string[] = Object.freeze([...host.args])
   ctx.provide('cmdlineArgs', { get: () => snapshot })
   ctx.provide('appExit', host.exit)
   if (host.ready !== undefined) ctx.provide('appReady', host.ready)
-}
-
-/** Process stdin operations used to bind a stdio application's lifetime. */
-export interface AppStdin {
-  /** Whether EOF arrived before the application bound its listener. */
-  readonly readableEnded: boolean
-  /** Subscribe once to stdin EOF. */
-  once(event: 'end', listener: () => void): unknown
-  /** Remove a previously installed stdin EOF listener. */
-  off(event: 'end', listener: () => void): unknown
-}
-
-/** Process streams used by app command lines and stdio lifetime binding; tests substitute them. */
-export const internals: {
-  stdin: AppStdin
-  stdout: { write(chunk: string): unknown }
-  stderr: { write(chunk: string): unknown }
-} = {
-  stdin: process.stdin,
-  stdout: process.stdout,
-  stderr: process.stderr,
-}
-
-/**
- * Make stdin EOF request the launcher's bounded successful shutdown after
- * {@link AppReady} commits. A startup rejection therefore remains the process
- * outcome when it races EOF. The caller invokes this only after its command
- * action accepts the invocation, so help and usage failures start no transport
- * lifecycle. This listener does not read or resume stdin: the protocol
- * transport owns input and receives bytes buffered before it mounts. Disposal
- * removes the EOF and readiness listeners.
- * @param ctx - app plugin context carrying the launcher's exit request.
- * @param label - effect label naming the owning application.
- */
-export function exitOnStdinEnd(ctx: Context, label: string): void {
-  const exit = ctx.get('appExit')
-  const ready = ctx.get('appReady')
-  if (exit === undefined || ready === undefined) {
-    throw new Error('stdio app: the launcher must provide ctx.appExit and ctx.appReady before the tree mounts')
-  }
-  const stdin = internals.stdin
-  let active = true
-  let ended = false
-  let cancelReady = (): void => {}
-  const onEnd = (): void => {
-    if (!active || ended) return
-    ended = true
-    cancelReady = ready.onReady(() => { exit(0) })
-  }
-  ctx.effect(() => () => {
-    active = false
-    cancelReady()
-    stdin.off('end', onEnd)
-  }, label)
-  stdin.once('end', onEnd)
-  if (stdin.readableEnded) queueMicrotask(onEnd)
 }
 
 /**
@@ -214,8 +157,8 @@ function configureExitAndOutput(command: Command): void {
   command
     .exitOverride()
     .configureOutput({
-      writeOut: text => void internals.stdout.write(text),
-      writeErr: text => void internals.stderr.write(text),
+      writeOut: text => void process.stdout.write(text),
+      writeErr: text => void process.stderr.write(text),
     })
   for (const child of command.commands) configureExitAndOutput(child)
 }

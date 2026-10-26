@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { Context, Service } from 'cordis'
+import { Context } from 'cordis'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -11,7 +11,7 @@ import Files from '../src/files.js'
 import { taskApi } from './helpers/task-api.js'
 
 // Actual Harness routes and multipart/file streams, without loading models.
-async function setup(t: any, fileService = Files) {
+async function setup(t: any) {
   const root = await mkdtemp(join(tmpdir(), 'youdub-api-')), ctx = new Context()
   const created: any[] = [], reruns: any[] = []
   let unavailable = false
@@ -23,8 +23,7 @@ async function setup(t: any, fileService = Files) {
       services.reflect.provide('youdubWorker', {})
       services.reflect.provide('settings', { locked: async (action: () => Promise<any>) => action(), read: async () => ({ plugins: { 'youdub.updates': { automatic: false } } }) })
       services.reflect.provide('store', { call: async (method: string) => { if (method === 'settings.raw') return {}; throw new Error(`Unexpected store call: ${method}`) } })
-      services.reflect.provide('extensions', {})
-      services.reflect.provide('catalog', { listProviders: () => [], describe: () => ({ workflows: [] }), workflow: () => ({ describe: () => ({ inputs: [{ name: 'document', maxBytes: 64 }] }) }) })
+      services.reflect.provide('catalog', { listProviders: () => [], describe: () => ({ workflows: [] }), workflow: () => ({ describe: () => ({ inputs: [{ name: 'document' }] }) }) })
       services.reflect.provide('tasks', {
         assertReady() { if (unavailable) throw new AppError('TASK_RUNTIME_UNAVAILABLE', 'Queue stopped.', 503) },
         async create(input: any) { created.push(input); return { id: input.id, outputs: [] } },
@@ -32,7 +31,7 @@ async function setup(t: any, fileService = Files) {
         async rerun(id: string, request: any) { reruns.push({ id, request }); return { id: request.id, outputs: [] } },
       })
     })
-    await context.plugin(fileService, { root })
+    await context.plugin(Files, { root })
     await context.plugin({ inject: ['tasks', 'catalog', 'files', 'settings', 'store'], apply(scope) { request = taskApi(scope).request } })
   })
   t.after(async () => { await app.dispose(); await rm(root, { recursive: true }) })
@@ -45,23 +44,6 @@ async function setup(t: any, fileService = Files) {
   }
   return { ctx, request, created, reruns, post, form, failRuntime: () => { unavailable = true } }
 }
-
-test('API fixture waits for asynchronous dependency initialization before advertising readiness', async t => {
-  let release!: () => void, entered!: () => void, ready = false
-  const gate = new Promise<void>(resolve => { release = resolve })
-  const started = new Promise<void>(resolve => { entered = resolve })
-  class DelayedFiles extends Files {
-    async [Service.init]() { entered(); await gate; return super[Service.init]() }
-  }
-  const initializing = setup(t, DelayedFiles).then(value => { ready = true; return value })
-  await started
-  await nextTurn()
-  try { assert.equal(ready, false, 'API became ready while its files dependency was still initializing') }
-  finally { release() }
-  const { post, form } = await initializing
-  const response = await post(form())
-  assert.equal(response.status, 201, await response.text())
-})
 
 test('health reports a stopped task runtime as unavailable', async t => {
   const { request, failRuntime } = await setup(t)

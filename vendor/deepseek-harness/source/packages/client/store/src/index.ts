@@ -1,6 +1,6 @@
 /**
- * React-free snapshot store engine (zustand vanilla + immer + subscribeWithSelector +
- * rafFlush middleware + opt-in persist + dev freeze) plus the declarative
+ * React-free snapshot store engine (zustand vanilla + immer + opt-in persist +
+ * dev freeze) plus the declarative
  * shell over it: {@link defineStore} bakes an init/persist/actions literal
  * into a {@link StoreHandle}, the registration-side store seat of slot
  * terminals. Engine products are bare observables — subscribe/getSnapshot/
@@ -8,8 +8,6 @@
  * uSES bridge, cached per source at the binding site).
  */
 import { createStore, type StoreApi } from 'zustand/vanilla'
-import { subscribeWithSelector } from 'zustand/middleware'
-import { shallow } from 'zustand/shallow'
 import { freeze, produce } from 'immer'
 import type {
   ActionsDecl, BakedActions, ObservableSnapshot, StoreHandle, StoreInstance, StoreSpec,
@@ -18,7 +16,7 @@ import type {
 // Store contract types are ui-slots authority; re-exported beside the engine
 // so store consumers get one import path.
 export type {
-  ActionsDecl, BakedActions, BoundActions, DefineStore, HandleOf, MaybeSnapshotSelectorHook,
+  ActionsDecl, BakedActions, BoundActions, DefineStore, HandleOf,
   ObservableSnapshot, PropsStore, SnapshotSelectorHook, StoreDecl, StoreFactory,
   StoreHandle, StoreInstance, StoreSpec,
 } from './contract.ts'
@@ -58,72 +56,22 @@ export function notifySubscribers<Args extends readonly unknown[]>(
 }
 
 /**
- * Shallow equality for selector slices (zustand/shallow semantics; travels
- * with the engine so hook consumers need no zustand dependency).
- * @param a - left value.
- * @param b - right value.
- * @returns whether the values are shallowly equal.
- */
-export function shallowEqual(a: unknown, b: unknown): boolean {
-  return shallow(a, b)
-}
-
-/** Batches subscriber notification into one flush per animation frame. */
-function rafBatch(notify: () => void): () => void {
-  // Fall back to microtask batching where rAF is absent (node unit tests);
-  // both preserve the N-changes=1-notification contract within a tick.
-  const schedule: (fn: () => void) => void =
-    typeof requestAnimationFrame === 'function'
-      ? (fn) => { requestAnimationFrame(() => { fn() }) }
-      : (fn) => { queueMicrotask(fn) }
-  let scheduled = false
-  return () => {
-    if (scheduled) return
-    scheduled = true
-    schedule(() => {
-      scheduled = false
-      notify()
-    })
-  }
-}
-
-/**
  * Create a snapshot store.
  *
- * Flush default is 'sync' (controlled inputs need same-tick echo); frame-driven
- * stores opt into 'raf', where a frame's worth of updates coalesces into one
- * notification. Known raf-mode tradeoff: a component mounting mid-frame reads
- * fresh state while existing subscribers hear it next flush — transient
- * frame-level skew, same nature as the object layer's microtask batching.
- *
  * @param init - initial state.
- * @param opts - flush mode and opt-in persistence (localStorage, keyed by name).
+ * @param opts - opt-in persistence (localStorage, keyed by name).
  * @returns the store.
  */
 export function createSnapshotStore<T>(
-  init: T, opts?: { flush?: 'raf' | 'sync'; persist?: { name: string } }): SnapshotStore<T> {
+  init: T, opts?: { persist?: { name: string } }): SnapshotStore<T> {
   // Immer enters through produce() in update() below (identical semantics to
   // the immer middleware without its setState-signature mutator generics).
-  const withSelector = subscribeWithSelector(() => init)
-  const api: StoreApi<T> = createStore<T>()(withSelector)
+  const api: StoreApi<T> = createStore<T>(() => init)
   if (opts?.persist) attachPersistence(api, opts.persist.name)
-
-  let subscribe = (fn: () => void) => api.subscribe(() => {
-    notifySubscribers([fn], '[client-store]')
-  })
-  if (opts?.flush === 'raf') {
-    const listeners = new Set<() => void>()
-    const flush = rafBatch(() => { notifySubscribers(listeners, '[client-store]') })
-    api.subscribe(flush)
-    subscribe = (fn: () => void) => {
-      listeners.add(fn)
-      return () => { listeners.delete(fn) }
-    }
-  }
 
   return {
     getSnapshot: () => api.getState(),
-    subscribe: fn => subscribe(fn),
+    subscribe: fn => api.subscribe(() => { notifySubscribers([fn], '[client-store]') }),
     update: (mutator) => {
       // Immer's produce (not setState's partial-merge path) so scalar and
       // array roots replace correctly; produce also freezes in dev.
@@ -183,19 +131,18 @@ export interface EngineStoreInstance<T, A extends ActionsDecl<T>> extends StoreI
 export interface EngineStoreHandle<T, A extends ActionsDecl<T>> extends StoreHandle<T, A> {
   /**
    * Construct a live engine instance (see the contract JSDoc on
-   * {@link StoreHandle.create} for scopeKey/persist semantics).
+   * {@link StoreHandle.create} for persistence semantics).
    *
    * Known boundary: the persist key is the storage identity, so multiple live
    * instances created under the same resolved key share (and cross-pollute)
    * one localStorage entry. Instance uniqueness per key is the caller's
    * responsibility — production is safe because the framework caches one
-   * instance per handle x scope key; tests wanting isolation use distinct
-   * scope keys or persist-free declarations (multi-create freedom is a
+   * instance per handle; tests wanting isolation use distinct
+   * persist keys or persist-free declarations (multi-create freedom is a
    * feature there, so create() deliberately does not dedupe or throw).
-   * @param scopeKey - session id for session-scope instances; omitted for root scope.
    * @returns the engine instance.
    */
-  create(scopeKey?: string): EngineStoreInstance<T, A>
+  create(): EngineStoreInstance<T, A>
 }
 
 /**
@@ -218,10 +165,8 @@ export function defineStore<T, A extends ActionsDecl<T>>(
   decl: StoreSpec<T, A> & { actions: A & ActionsDecl<T> }): EngineStoreHandle<T, A> {
   return {
     spec: decl,
-    create(scopeKey?: string): EngineStoreInstance<T, A> {
-      const persistKey = decl.persist === undefined
-        ? undefined
-        : scopeKey === undefined ? decl.persist : `${decl.persist}.${scopeKey}`
+    create(): EngineStoreInstance<T, A> {
+      const persistKey = decl.persist
       const store = createSnapshotStore<T>(
         decl.init(),
         persistKey !== undefined ? { persist: { name: persistKey } } : undefined)
@@ -235,15 +180,6 @@ export function defineStore<T, A extends ActionsDecl<T>>(
         getSnapshot: () => store.getSnapshot(),
         subscribe: fn => store.subscribe(fn),
         store,
-        clearPersisted: () => {
-          if (persistKey === undefined || typeof localStorage === 'undefined') return
-          try {
-            localStorage.removeItem(persistKey)
-          } catch {
-            // Storage failures (private mode, quota teardown races) only skip
-            // cleanup — the same non-fatal contract as attachPersistence.
-          }
-        },
       }
     },
   }

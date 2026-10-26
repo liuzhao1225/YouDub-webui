@@ -1,5 +1,7 @@
 # 设置与首次准备流程统一设计
 
+当前设置扩展使用 Harness `settings.general` 的 item/section 注册；旧 `settings.sections` 插槽已退役。下文保留当时的设计与验收记录。
+
 本文保留 2026-10-21 的设计决定与阶段记录。2026-10-23 已统一使用 Harness 外壳、设置和模型服务，旧独立实现已删除；涉及旧文件的引用链接到历史提交。当前源码与验证范围见 [Harness 保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)，界面约定见 [视觉与组件规范](harness-visual-spec.md)。
 
 ## 1. 产品决定

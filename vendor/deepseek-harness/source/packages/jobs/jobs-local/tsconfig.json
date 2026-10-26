@@ -15,13 +15,7 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../../vendor/schemastery"
-    },
-    {
       "path": "../jobs"
-    },
-    {
-      "path": "../../util/timeout"
     }
   ]
 }

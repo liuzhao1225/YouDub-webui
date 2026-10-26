@@ -14,6 +14,7 @@ export interface TypertGatewayFaultDetails {
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
+    'remote-access/denied': { readonly action: string; readonly reason: string }
     'gateway/ambiguous-endpoint': TypertGatewayFaultDetails
     'gateway/arguments-invalid': TypertGatewayFaultDetails
     'gateway/binding-invalid': TypertGatewayFaultDetails

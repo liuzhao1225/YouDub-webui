@@ -29,13 +29,10 @@ class Wire:
         pass
     def progress(self, value, message):
         pass
-    def external_state(self, state):
-        raise AssertionError("This operation must not contact a supplier")
 
 
 def invoke(root, name, inputs, config=None, binding=None):
-    return Operation({"taskId": str(uuid4()), "attempt": 1, "stepId": name,
-                      "operation": name, "workDir": str(root / "work" / str(uuid4())),
+    return Operation({"operation": name, "workDir": str(root / "work" / str(uuid4())),
                       "taskDir": str(root), "inputs": inputs, "config": config or {},
                       "binding": binding or {}}, Wire())
 

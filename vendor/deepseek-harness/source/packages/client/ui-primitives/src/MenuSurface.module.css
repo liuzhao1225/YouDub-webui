@@ -3,10 +3,6 @@
   border-radius: var(--dsw-radius-lg);
 }
 
-.compact {
-  border-radius: var(--dsw-radius-md);
-}
-
 :where(.surface) {
   position: relative;
 }

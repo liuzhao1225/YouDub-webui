@@ -1,14 +1,29 @@
 {
-  "name": "youdub-example-graph-text-review",
+  "name": "@youdub/harness-example-graph-text-review",
   "version": "1.0.0",
   "type": "module",
-  "description": "Independent graph plugin with typed JSON ports, review, correction and a text artifact.",
-  "exports": { ".": "./dist/host.js" },
-  "peerDependencies": { "cordis": "4.0.0-rc.10", "@youdub/sdk": "^1.0.0", "react": "^19.0.0" },
-  "youdub": {
-    "id": "example.graph-text-review",
-    "sdkVersion": "^1.1.0",
-    "host": "dist/host.js",
-    "client": { "entry": "dist/client.js", "access": "authenticated" }
+  "description": "YouDub graph-text-review feature on the official Harness plugin loader",
+  "main": "dist/host.mjs",
+  "exports": {
+    ".": "./dist/host.mjs",
+    "./package.json": "./package.json",
+    "./client": "./dist/client.js"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@youdub/harness-subtitles": "0.1.0",
+    "react": "^18.2.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@youdub/harness-subtitles",
+        "@deepseek-ai/dsh-client-ui-renderer"
+      ]
+    }
   }
 }

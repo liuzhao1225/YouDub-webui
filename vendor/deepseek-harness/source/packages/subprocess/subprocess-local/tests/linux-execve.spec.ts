@@ -6,7 +6,7 @@ afterEach(() => {
 })
 
 describe.skipIf(process.platform !== 'linux')('Linux libc execve binding', () => {
-  it.each([undefined, 'pipe'] as const)('preserves inherited stdio with control %s and reports execve errno', async (control) => {
+  it('preserves inherited stdio and reports execve errno', async () => {
     const nativeExecve = vi.fn(() => -1)
     const nativeFcntl = vi.fn((fd: number, command: number) => {
       if (command === 2) return 0
@@ -32,7 +32,7 @@ describe.skipIf(process.platform !== 'linux')('Linux libc execve binding', () =>
 
     let failure: unknown
     try {
-      execve('/missing/tool', ['tool', 'literal arg'], { A: '1', EMPTY: '' }, control)
+      execve('/missing/tool', ['tool', 'literal arg'], { A: '1', EMPTY: '' })
     } catch (error) {
       failure = error
     }
@@ -42,7 +42,6 @@ describe.skipIf(process.platform !== 'linux')('Linux libc execve binding', () =>
       [1, 1, 0],
       [2, 1, 0],
       [2, 2, 4],
-      ...control === 'pipe' ? [[7, 1, 0], [7, 2, 0]] : [],
     ])
     expect(nativeExecve).toHaveBeenCalledExactlyOnceWith(
       '/missing/tool',

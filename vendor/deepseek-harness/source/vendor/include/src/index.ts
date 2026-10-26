@@ -22,15 +22,11 @@ const JsExpr = new yaml.Type('tag:yaml.org,2002:js', {
  */
 export const entryListSchema = yaml.JSON_SCHEMA.extend(JsExpr)
 
-const schema = entryListSchema
-
 const writable: Record<string, string> = {
   '.json': 'application/json',
   '.yaml': 'application/yaml',
   '.yml': 'application/yaml',
 }
-
-const supported = new Set(Object.keys(writable))
 
 const WRITE_RETRY_LIMIT = 10
 const WRITE_RETRY_DELAY_MS = 50
@@ -180,11 +176,11 @@ export class Include extends EntryTree {
     this.enableLogs = config.enableLogs ?? ctx.fiber.entry?.parent.tree.enableLogs ?? false
     this.filename = fileURLToPath(new URL(this.config.path, this.ctx.baseUrl))
     const ext = extname(this.filename)
-    if (!supported.has(ext)) {
+    if (!writable[ext]) {
       throw new Error(`extension "${ext}" not supported`)
     }
     this.type = writable[ext]
-    this.readonly = !this.type
+    this.readonly = false
     this.ctx.baseUrl = new URL('.', pathToFileURL(this.filename)).href
 
     ctx.on('internal/update', (config, _, next) => {
@@ -202,7 +198,6 @@ export class Include extends EntryTree {
   }
 
   private async checkAccess() {
-    if (!this.type) return
     try {
       await access(this.filename, constants.W_OK)
     } catch {
@@ -216,11 +211,8 @@ export class Include extends EntryTree {
     let data: any
     if (this.type === 'application/yaml') {
       data = yaml.load(content, { schema: entryListSchema })
-    } else if (this.type === 'application/json') {
-      data = JSON.parse(content)
     } else {
-      const module = await import(/* @vite-ignore */ this.filename)
-      data = module.default || module
+      data = JSON.parse(content)
     }
     // An empty or truncated file (common mid-edit: editors and `sed -i` write
     // through temp states) parses to `undefined`, not an error; reject every
@@ -291,8 +283,8 @@ export class Include extends EntryTree {
       throw new Error(`cannot overwrite readonly config`)
     }
     if (this.type === 'application/yaml') {
-      this.content = yaml.dump(config, { schema })
-    } else if (this.type === 'application/json') {
+      this.content = yaml.dump(config, { schema: entryListSchema })
+    } else {
       this.content = JSON.stringify(config, null, 2)
     }
     await writeFile(this.filename + '.tmp', this.content!)

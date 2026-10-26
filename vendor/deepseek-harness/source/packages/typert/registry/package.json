@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-typert-registry",
-  "description": "Runtime registry for generated package reflection and Zod schemas",
+  "description": "Plugin-owned Remote invocation and provider registry",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"
@@ -52,14 +52,12 @@
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
-  "dependencies": {
-    "zod": "4.4.3"
-  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:*"
+    "@deepseek-ai/dsh-typert-protocol": "workspace:*",
+    "zod": "4.4.3"
   }
 }

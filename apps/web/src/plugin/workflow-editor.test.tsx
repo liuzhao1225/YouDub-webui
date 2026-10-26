@@ -1,14 +1,16 @@
-import type { Context } from 'cordis'
+import { WorkflowsPage, WorkflowPage } from '../../../harness/src/frontend/workflow-pages'
+import { useFeatures } from '../../../harness/src/frontend/runtime'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { useEffect, useRef, useState } from 'react'
-import type { ComponentType, RefObject } from 'react'
+import type { RefObject } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, useClient, type NodeTypeDefinition, type RouteEntry, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord } from './sdk'
-import { apply, GraphStudio as GraphStudioView } from './builtin/workflows'
+import { LanguageProvider } from '@/test/language-provider'
+import { type NodeTypeDefinition, type WorkflowDocument, type WorkflowDocumentRecord } from './sdk'
+import { GraphStudio as GraphStudioView } from './builtin/workflows'
 import { bindTestComponent } from './test-bindings'
-const GraphStudio = bindTestComponent(GraphStudioView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
+const GraphStudio = bindTestComponent(GraphStudioView, ['draftStore', 'request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
 import { serializeWorkflowEdits, workflowDrafts, workflowViews } from './builtin/workflow-utils'
 import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 import dubbingTemplate from '../../../../packages/builtin/src/workflow-templates/source-clone-dubbing.json'
@@ -26,9 +28,9 @@ vi.mock('./builtin/workflow-canvas', () => ({
 }))
 vi.mock('./builtin/workflow-run', () => ({
   WorkflowRun: ({ onLockChange, onStarted }: { onLockChange?(locked: boolean): void; onStarted?(): void }) => {
-    const { navigation } = useClient()
+    const { navigate } = useFeatures()
     useEffect(() => { onLockChange?.(false) }, [onLockChange])
-    return <section aria-label="运行表单"><button onClick={() => onLockChange?.(true)}>模拟提交</button><button onClick={() => onLockChange?.(false)}>清理提交</button><button onClick={() => { onStarted?.(); navigation.push('/workflows') }}>提交成功</button></section>
+    return <section aria-label="运行表单"><button onClick={() => onLockChange?.(true)}>模拟提交</button><button onClick={() => onLockChange?.(false)}>清理提交</button><button onClick={() => { onStarted?.(); navigate('/workflows') }}>提交成功</button></section>
   },
 }))
 vi.mock('./builtin/workflow-rerun', () => ({ WorkflowRerun: () => <div>重跑表单</div> }))
@@ -45,7 +47,6 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
     if (init?.method === 'PUT' || init?.method === 'POST') return { ...current, revision: 2, document: JSON.parse(init.body as string).document }
     return current
   })
-  const routes = new Map<string, RouteEntry>()
   const blockers = new Set<(path: string) => Promise<boolean>>()
   let changePath: (path: string) => void = () => {}
   const navigate = async (next: string) => {
@@ -53,19 +54,18 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
     window.history.replaceState(null, '', next); changePath(next)
   }
   const push = vi.fn((next: string) => { void navigate(next) })
-  const context = { apiClient: { request }, navigation: { push, replace: push, block: (block: (path: string) => Promise<boolean>) => { blockers.add(block); return () => blockers.delete(block) } },
-    slots: { register: (slot: string, entry: RouteEntry) => { if (slot === 'shell.routes') routes.set(entry.id, entry); return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
+  const context = { apiClient: { request }, navigation: { push, block: (block: (path: string) => Promise<boolean>) => { blockers.add(block); return () => blockers.delete(block) } },
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
     effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
+  } as unknown as TestContext
   window.history.replaceState(null, '', path)
   function Host() {
     const [location, setLocation] = useState(path)
     changePath = setLocation
     const segments = location.split('?')[0].split('/').filter(Boolean)
     const route = segments.length > 3 ? 'workflow-node' : segments.length > 1 ? 'workflow-editor' : 'workflows'
-    const Page = routes.get(route)!.component as ComponentType<RouteProps>
-    return <PluginContextProvider context={context}><LanguageProvider>{options.studio ? <GraphStudio /> : <Page key={location} params={{ id: segments[1], nodeId: segments[3] }} />}</LanguageProvider></PluginContextProvider>
+    const Page = route === 'workflows' ? WorkflowsPage : WorkflowPage
+    return <TestFeatureProvider context={context}><LanguageProvider>{options.studio ? <GraphStudio additionalWorkflows={[]} renderWorkflow={() => null} /> : <Page key={location} params={{ id: segments[1], nodeId: segments[3] }} />}</LanguageProvider></TestFeatureProvider>
   }
   render(<Host />)
   return { request, push, navigate }

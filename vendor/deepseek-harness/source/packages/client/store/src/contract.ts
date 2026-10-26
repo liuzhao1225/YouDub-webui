@@ -20,15 +20,6 @@ export interface ObservableSnapshot<T> {
 export type SnapshotSelectorHook<T> = <S>(sel: (s: T) => S, eq?: (a: S, b: S) => boolean) => S
 
 /**
- * Selector hook over a source that follows the current session. The hook is
- * always present, while its selected value is absent whenever no session is
- * current. This keeps hook call sites stable across no-session/session
- * transitions without pretending that a session snapshot exists.
- */
-export type MaybeSnapshotSelectorHook<T> =
-  <S>(sel: (s: T) => S, eq?: (a: S, b: S) => boolean) => S | undefined
-
-/**
  * Action declaration table: pure immer-draft transforms over the store state,
  * declared as the store's complete write set (the audit face — components can
  * only write through these).
@@ -76,11 +67,6 @@ export interface StoreInstance<T, A extends ActionsDecl<T>> {
    * @returns unsubscribe.
    */
   subscribe(fn: () => void): () => void
-  /**
-   * Explicitly drop this instance's persisted value.
-   * Runtime scope teardown does not call this operation.
-   */
-  clearPersisted(): void
 }
 
 /**
@@ -94,12 +80,9 @@ export interface StoreHandle<T, A extends ActionsDecl<T>> {
   readonly spec: StoreSpec<T, A>
   /**
    * Create a live engine instance (framework machinery and tests only).
-   * @param scopeKey - session id for session-scope instances; suffixes the
-   * persist key so per-session instances persist independently (root-scope
-   * instances omit it).
    * @returns a fresh instance seeded from `spec.init()`.
    */
-  create(scopeKey?: string): StoreInstance<T, A>
+  create(): StoreInstance<T, A>
 }
 
 /**

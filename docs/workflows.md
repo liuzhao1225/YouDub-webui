@@ -67,7 +67,7 @@ node: {
 
 完整类型以 [Host SDK](../packages/sdk/src/index.ts) 和 [Client SDK](../apps/web/src/plugin/sdk.tsx) 为准；官方节点实现见 [节点契约](../packages/builtin/src/node-contracts.ts)。
 
-可直接安装的[文本校对插件示例](../fixtures/plugins/graph-text-review/README.md)包含多输入输出节点、模板、专属页面、订正校验和导出节点。
+[文本校对插件示例](../fixtures/plugins/graph-text-review/README.md)包含多输入输出节点、模板、校对组件、订正校验和导出节点；按示例说明构建后，可通过扩展页面安装。
 
 ## 数据与升级
 

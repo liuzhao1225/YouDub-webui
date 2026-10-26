@@ -7,7 +7,6 @@ import WebServer from '@deepseek-ai/dsh-host-webserver'
 import { Remote, TypertRemoteService, type RemoteStream } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import TypertGatewayService from '@deepseek-ai/dsh-api-gateway'
-import RemoteAccessService from '@deepseek-ai/dsh-api-remote-access'
 import { browserCookie, provideBrowserCredentials } from './browser-credentials.ts'
 import { ownerPeer } from './peer.ts'
 
@@ -76,7 +75,7 @@ async function setup(transport: boolean): Promise<Context> {
     provideBrowserCredentials(ctx)
   }
   await ctx.plugin(TypertRegistry)
-  await ctx.plugin(RemoteAccessService)
+
   await ctx.plugin(TypertGatewayService, {})
   if (transport) await ctx.plugin({ inject: [...connectionInject], apply: applyConnection })
   await ctx.plugin(EchoService)

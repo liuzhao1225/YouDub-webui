@@ -16,7 +16,7 @@ export type { RootOwnerProps } from './registry.ts'
 
 export type {
   ChainRenderOpts, HostObservable, RenderOpts, SnapshotSelectorHook, SlotRenderer,
-  ScopedStandardSourceBinding, SlotRendererHost, SlotScopeAdapter,
+  SlotRendererHost,
   StandardSourceBinding, StoreInstanceLike,
 } from '@deepseek-ai/dsh-client-ui-slots'
 

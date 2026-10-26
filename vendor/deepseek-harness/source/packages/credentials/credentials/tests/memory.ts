@@ -5,7 +5,6 @@ import type {
   CredentialKey,
   CredentialRecord,
   CredentialRecordEntry,
-  CredentialRecordInfo,
   CredentialRef,
   ResolvedCredential,
 } from '../src/index.ts'
@@ -58,13 +57,6 @@ export class MemoryCredentials extends CredentialProvider {
 
   override readRecord(key: CredentialKey): Promise<CredentialRecord | undefined> {
     return Promise.resolve(this.records.get(key))
-  }
-
-  override describeRecord(key: CredentialKey): Promise<CredentialRecordInfo> {
-    const stored = this.records.get(key)
-    return Promise.resolve(stored === undefined
-      ? { configured: false, writable: true }
-      : { configured: true, kind: stored.kind, writable: true })
   }
 
   override listRecords(): Promise<readonly CredentialRecordEntry[]> {

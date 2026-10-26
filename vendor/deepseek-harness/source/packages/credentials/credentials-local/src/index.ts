@@ -51,7 +51,6 @@ import type {
   CredentialKey,
   CredentialRecord,
   CredentialRecordEntry,
-  CredentialRecordInfo,
   CredentialRef,
   ResolvedCredential,
 } from '@deepseek-ai/dsh-credentials'
@@ -547,7 +546,7 @@ export class LocalCredentialProvider extends CredentialProvider {
     return this.closed
   }
 
-  constructor(ctx: Context, public config: Config) {
+  constructor(ctx: Context, config: Config) {
     super(ctx)
     // Programmatic construction may bypass Schemastery normalization; resolve
     // the same defaults in one explicit step either way.
@@ -655,16 +654,6 @@ export class LocalCredentialProvider extends CredentialProvider {
 
   override readRecord(key: CredentialKey): Promise<CredentialRecord | undefined> {
     return Promise.resolve(this.records.get(key))
-  }
-
-  override describeRecord(key: CredentialKey): Promise<CredentialRecordInfo> {
-    const stored = this.records.get(key)
-    // Presence is the whole fact here: no layer ranks above this document for
-    // a record, so nothing can shadow one, and an api-key record carrying
-    // neither a key nor environment values is a deliberate statement rather
-    // than a blank.
-    if (stored === undefined) return Promise.resolve({ configured: false, writable: true })
-    return Promise.resolve({ configured: true, kind: stored.kind, writable: true })
   }
 
   override listRecords(): Promise<readonly CredentialRecordEntry[]> {

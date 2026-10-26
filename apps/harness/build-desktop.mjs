@@ -26,16 +26,12 @@ records.product = (await build({ ...base, entryPoints: [join(here, 'src/desktop-
   } }],
   outfile: join(output, 'lib/youdub-main.js'),
 })).metafile;
-for (const entry of ['preload-app']) {
-  await cp(join(compiled, 'apps/desktop/lib', entry + '.cjs'), join(output, 'lib', entry + '.cjs'));
-}
+await cp(join(compiled, 'apps/desktop/lib/preload-app.cjs'), join(output, 'lib/preload-app.cjs'));
 await rm(join(output, 'renderer'), { recursive: true, force: true });
 await rm(join(output, 'resources'), { recursive: true, force: true });
 await mkdir(join(output, 'resources'), { recursive: true });
-for (const folder of ['scripts/node-bin']) {
-  await rm(join(output, folder), { recursive: true, force: true });
-  await cp(join(upstream, folder), join(output, folder), { recursive: true });
-}
+await rm(join(output, 'scripts/node-bin'), { recursive: true, force: true });
+await cp(join(upstream, 'scripts/node-bin'), join(output, 'scripts/node-bin'), { recursive: true });
 const sharp = createRequire(join(root, 'apps/web/package.json'))('sharp');
 await sharp(join(root, 'apps/desktop/icon.svg')).png().toFile(join(output, 'resources/youdub-icon.png'));
 
@@ -58,8 +54,4 @@ await writeFile(join(output, 'package.json'), JSON.stringify({ name: 'youdub', p
 }, null, 2) + '\n');
 await cp(join(here, 'src/desktop-main.mjs'), join(output, 'main.mjs'));
 await writeFile(join(output, 'build-inputs.json'), JSON.stringify(records, null, 2) + '\n');
-await writeFile(join(output, 'source-build-inputs.json'), JSON.stringify({ source: compiled,
-  preloads: ['preload-app'].map(name => `apps/desktop/lib/${name}.cjs`),
-  host: 'apps/desktop-host/lib/index.js', profileBoot: 'apps/cli/lib/profile-boot.js',
-  officialBuild: 'scripts/build.ts --scope artifacts' }, null, 2) + '\n');
 console.log(`YouDub Electron application: ${output}`);

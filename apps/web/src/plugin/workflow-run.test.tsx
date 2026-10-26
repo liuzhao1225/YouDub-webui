@@ -1,12 +1,11 @@
-import { requireActive } from './test-bindings'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { resourceEntries } from '@/runtime/setup-contracts'
-import { Context } from 'cordis'
 import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type NodeTypeDefinition, type WorkflowDocument } from './sdk'
+import { LanguageProvider } from '@/test/language-provider'
+import { type NodeTypeDefinition, type WorkflowDocument } from './sdk'
 import { WorkflowRun as WorkflowRunView } from './builtin/workflow-run'
 import { WorkflowRerun as WorkflowRerunView } from './builtin/workflow-rerun'
 import { WorkflowResources, type ResourceState } from './builtin/workflow-resources'
@@ -14,10 +13,12 @@ import { bindTestComponent } from './test-bindings'
 import type { Bindings } from './sdk'
 const WorkflowRun = bindTestComponent(WorkflowRunView, ['request', 'navigate', 'useSlot', 'useWorkflowResources'])
 const WorkflowRerun = bindTestComponent(WorkflowRerunView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowResources'])
-import { HttpError } from './builtin/api'
+import { HttpError } from '@/runtime/http'
 import { WorkflowDiagnostics } from './builtin/workflow-errors'
-import * as apiPlugin from './builtin/api'
+import { requestHarness } from '../../../harness/src/frontend/runtime'
 import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
+
+const runCallbacks = { revision: null, onStarted: () => {}, onLockChange: () => {} }
 
 const types: NodeTypeDefinition[] = [{
   type: 'test.transcribe', version: '1', providerId: 'test', operation: 'transcribe',
@@ -45,7 +46,7 @@ afterEach(() => { cleanup(); window.localStorage.clear(); vi.useRealTimers(); vi
 
 it('keeps workbench resource requirements collapsed and preserves visible failure causes', async () => {
   const state: ResourceState = { ...missing, status: 'failed', error: 'Download denied', environment: [{ id: 'python', name: 'Python 3.12', status: 'ready' }] }
-  render(<LanguageProvider><WorkflowResources resources={{ result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }} types={types} hideReady /></LanguageProvider>)
+  render(<LanguageProvider><WorkflowResources disabled={false} resources={{ result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn(), action: vi.fn() }} types={types} hideReady /></LanguageProvider>)
   expect(screen.getByText('Download denied')).toBeVisible()
   expect(screen.getByRole('button', { name: '重试' })).toBeVisible()
   const details = screen.getByRole('button', { name: '资源详情' })
@@ -62,18 +63,18 @@ it('shows both missing configuration and runtime resources without bypassing con
     { providerId: 'test', ready: false, automatic: false, configurationRequired: true },
     { providerId: 'media', ready: false, automatic: true, resourceId: 'ffmpeg' },
   ] }
-  const resources = { result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn() }
-  const { rerender } = mount(<WorkflowResources resources={resources} types={types} hideReady />, vi.fn())
+  const resources = { result: state, checking: false, ready: false, prepare: vi.fn(), check: vi.fn(), action: vi.fn() }
+  const { rerender } = mount(<WorkflowResources disabled={false} resources={resources} types={types} hideReady />, vi.fn())
   expect(screen.getByRole('status')).toHaveTextContent('语音识别未配置；运行资源未就绪')
   expect(screen.getByRole('link', { name: '配置服务连接' })).toHaveAttribute('href', '/settings/models')
   expect(screen.queryByRole('button', { name: '准备所需资源' })).not.toBeInTheDocument()
-  rerender(<WorkflowResources resources={{ ...resources, result: { ...state, requirements: state.requirements!.slice(0, 1) } }} types={types} hideReady />)
+  rerender(<WorkflowResources disabled={false} resources={{ ...resources, result: { ...state, requirements: state.requirements!.slice(0, 1) } }} types={types} hideReady />)
   expect(screen.getByRole('status')).toHaveTextContent('语音识别未配置')
   expect(screen.getByRole('status')).not.toHaveTextContent('运行资源未就绪')
 })
 
 it('rejects an unsupported dropped file with a visible error', async () => {
-  mount(<WorkflowRun document={graph()} types={types} />, vi.fn(async () => ready))
+  mount(<WorkflowRun {...runCallbacks} document={graph()} types={types} />, vi.fn(async () => ready))
   await screen.findByText('所需资源可用')
   const input = screen.getByLabelText('视频 *')
   fireEvent.drop(input.parentElement!, { dataTransfer: { files: [new File(['no'], 'notes.txt', { type: 'text/plain' })] } })
@@ -89,7 +90,7 @@ it.each(['', 'application/octet-stream'])('submits an SRT selected with unspecif
     if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
     return ready
   })
-  const { push } = mount(<WorkflowRun document={document} types={types} />, request)
+  const { push } = mount(<WorkflowRun {...runCallbacks} document={document} types={types} />, request)
   const content = '1\n00:00:00,000 --> 00:00:01,000\nHello\n'
   fireEvent.change(screen.getByLabelText('原文字幕 *'), { target: { files: [new File([content], 'captions.SRT', { type, lastModified: 1234 })] } })
   await waitFor(() => expect(screen.getByRole('button', { name: '开始运行' })).toBeEnabled())
@@ -110,7 +111,7 @@ it('keeps the original link-above-upload layout and submits URL input through a 
     if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
     return ready
   })
-  const { push } = mount(<WorkflowRun prominent document={graph()} types={withDownload} />, request)
+  const { push } = mount(<WorkflowRun {...runCallbacks} prominent document={graph()} types={withDownload} />, request)
   const user = userEvent.setup()
   const link = screen.getByLabelText('视频链接'), upload = screen.getByLabelText('视频 *')
   expect(link.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -151,8 +152,8 @@ function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
       }) }
     } },
     navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
-  } as unknown as Context
-  const wrap = (child: ReactNode) => <PluginContextProvider context={context}><LanguageProvider>{child}</LanguageProvider></PluginContextProvider>
+  } as unknown as TestContext
+  const wrap = (child: ReactNode) => <TestFeatureProvider context={context}><LanguageProvider>{child}</LanguageProvider></TestFeatureProvider>
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
 }
@@ -161,15 +162,15 @@ it('localizes the builtin video input without changing workflow data or custom l
   const document = graph()
   document.id = 'youdub.subtitles'
   document.inputs[0].id = 'video'
-  const { rerender } = mount(<WorkflowRun document={document} types={types} />, vi.fn(async () => ready))
+  const { rerender } = mount(<WorkflowRun {...runCallbacks} document={document} types={types} />, vi.fn(async () => ready))
   await screen.findByLabelText('動画 *')
   expect(document.inputs[0].label).toBe('视频')
-  rerender(<WorkflowRun document={{ ...document, inputs: [{ ...document.inputs[0], label: '自定义片源' }] }} types={types} />)
+  rerender(<WorkflowRun {...runCallbacks} document={{ ...document, inputs: [{ ...document.inputs[0], label: '自定义片源' }] }} types={types} />)
   expect(screen.getByLabelText('自定义片源 *')).toBeInTheDocument()
 })
 function ResourceView({ document = graph(), useWorkflowResources }: { document?: WorkflowDocument } & Bindings<'useWorkflowResources'>) {
   const resources = useWorkflowResources(document)
-  return <><WorkflowResources resources={resources} types={types} /><button disabled={!resources.ready}>继续</button></>
+  return <><WorkflowResources disabled={false} resources={resources} types={types} /><button disabled={!resources.ready}>继续</button></>
 }
 const Resources = bindTestComponent(ResourceView, ['useWorkflowResources'])
 it('shows connection configuration separately from language support and blocks starting', async () => {
@@ -280,7 +281,7 @@ it('keeps parent and file editing locked after an uncertain submission until cle
     if (init?.method === 'DELETE') { if (cleanupFails) throw new Error('Import is still busy'); return undefined }
     throw new Error('Connection interrupted')
   })
-  const view = mount(<WorkflowRun document={graph()} types={types} onLockChange={onLockChange} />, request)
+  const view = mount(<WorkflowRun {...runCallbacks} document={graph()} types={types} onLockChange={onLockChange} />, request)
   const user = userEvent.setup(), input = screen.getByLabelText('视频 *')
   await screen.findByText('所需资源可用')
   expect(onLockChange).toHaveBeenLastCalledWith(false)
@@ -338,36 +339,28 @@ it('prepares dependencies before rerunning, names kept/recomputed nodes and pres
 it('preserves backend diagnostics in the API error instead of only the generic message', async () => {
   const details = [{ code: 'INVALID_GRAPH', nodeId: 'node-33ed', message: 'Required input is missing.' }]
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: { code: 'INVALID_GRAPH', message: 'Workflow validation failed.', details } }, { status: 422 })))
-  const root = new Context(), fiber = root.plugin(apiPlugin)
-  await requireActive(fiber, 'api')
-  try {
-    await expect(root.apiClient.request('/api/v2/tasks/source/rerun-preview', { method: 'POST', body: '{}' })).rejects.toMatchObject({ status: 422, code: 'INVALID_GRAPH', details })
-  } finally { await fiber.dispose() }
+  await expect(requestHarness('/api/v2/tasks/source/rerun-preview', { method: 'POST', body: '{}' })).rejects.toMatchObject({ status: 422, code: 'INVALID_GRAPH', details })
 })
 
-it('keeps the resource request stable through Cordis service proxies and unrelated graph edits', async () => {
+it('keeps the resource request stable through Desktop bindings and unrelated graph edits', async () => {
   const fetch = vi.fn(async () => Response.json(ready))
   vi.stubGlobal('fetch', fetch)
-  const root = new Context(), fiber = root.plugin(apiPlugin)
-  await requireActive(fiber, 'api')
-  try {
-    expect(root.apiClient).not.toBe(root.apiClient)
-    const document = graph()
-    const wrap = (document: WorkflowDocument) => <PluginContextProvider context={root}><LanguageProvider><Resources document={document} /></LanguageProvider></PluginContextProvider>
-    const view = render(wrap(document))
-    await screen.findByText('所需资源可用')
-    const renamed = structuredClone(document); renamed.title = '已改名'; renamed.presentation.viewport.zoom = 1.5
-    view.rerender(wrap(renamed))
-    await act(async () => {})
-    expect(fetch).toHaveBeenCalledTimes(1)
-    view.unmount()
-  } finally { await fiber.dispose() }
+  const context: TestContext = { apiClient: { request: requestHarness } }
+  const document = graph()
+  const wrap = (document: WorkflowDocument) => <TestFeatureProvider context={context}><LanguageProvider><Resources document={document} /></LanguageProvider></TestFeatureProvider>
+  const view = render(wrap(document))
+  await screen.findByText('所需资源可用')
+  const renamed = structuredClone(document); renamed.title = '已改名'; renamed.presentation.viewport.zoom = 1.5
+  view.rerender(wrap(renamed))
+  await act(async () => {})
+  expect(fetch).toHaveBeenCalledTimes(1)
+  view.unmount()
 })
 
 it('unlocks after validation fails before upload and identifies the affected node', async () => {
   const onLockChange = vi.fn()
   const request = vi.fn(async (path: string) => path.startsWith(base) ? ready : { valid: false, diagnostics: [{ code: 'INVALID_GRAPH', nodeId: 'node-9fa8', message: 'Select a model.' }] })
-  mount(<WorkflowRun document={graph()} types={types} onLockChange={onLockChange} />, request)
+  mount(<WorkflowRun {...runCallbacks} document={graph()} types={types} onLockChange={onLockChange} />, request)
   await screen.findByText('所需资源可用')
   const user = userEvent.setup(), input = screen.getByLabelText('视频 *')
   await user.upload(input, new File(['file'], 'video.mp4', { type: 'video/mp4' }))

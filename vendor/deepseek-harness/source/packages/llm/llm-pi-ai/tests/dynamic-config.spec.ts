@@ -1,3 +1,4 @@
+import { inspectModel } from '../../llm/tests/model-info.ts'
 import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -111,8 +112,8 @@ describe('request-level dynamic profiles', () => {
     expect(ctx.llm.listConfigurableProviders().find(entry => entry.provider === 'retired-route')?.error)
       .toContain('resolves no models')
     expect((await ctx.llm.listModels('anthropic')).length).toBeGreaterThan(0)
-    await expect(ctx.llm.resolveModelInfo('anthropic', 'removed-model')).rejects.toThrow('modelOverrides names "removed-model"')
-    await expect(ctx.llm.resolveModelInfo('retired-route', 'anything')).rejects.toThrow('resolves no models')
+    await expect(inspectModel(ctx.llm, 'anthropic', 'removed-model')).rejects.toThrow('modelOverrides names "removed-model"')
+    await expect(inspectModel(ctx.llm, 'retired-route', 'anything')).rejects.toThrow('resolves no models')
     await configurations.get(ctx)!.replace({ providers: { anthropic: {} } })
     expect(ctx.llm.listProviders()).toEqual([{ id: 'anthropic', name: 'anthropic' }])
     expect(ctx.llm.listConfigurableProviders().find(entry => entry.provider === 'retired-route')).toBeUndefined()

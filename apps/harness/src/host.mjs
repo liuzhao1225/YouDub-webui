@@ -9,7 +9,6 @@ import YouDubSettings from './backend/settings.mjs';
 import Resources, { registerResourceRoutes } from './backend/resources.ts';
 import { YouDubTransport } from './backend/transport.mjs';
 import { registerTaskRoutes } from './backend/api.ts';
-import { registerExtensionRoutes } from './backend/extensions.mjs';
 import { registerModels } from './backend/llm.mjs';
 import { registerExampleRoutes } from './backend/examples.mjs';
 import { registerSetupRoutes } from './backend/setup.mjs';
@@ -28,7 +27,7 @@ import { builtinResources } from '../../../packages/builtin/src/runtime-resource
 import { operations } from '../../../packages/builtin/src/media-contracts.ts';
 
 export const name = 'youdub-subtitles';
-export const inject = ['connection', 'subprocess', 'jobs', 'credentials', 'llm', 'settings', 'pluginManager'];
+export const inject = ['connection', 'subprocess', 'jobs', 'credentials', 'llm', 'settings'];
 export const Config = z.object({
   python: z.string().required(),
   modelsDir: z.string().required(),
@@ -86,13 +85,13 @@ export async function apply(ctx, config) {
   registerExampleRoutes(ctx, transport, root);
   if (skipSetup) {
     const services = await activateDomain(domain, { config: runtimeConfig, root, data, forms, modelRoots, version, transport });
-    ctx.effect(() => transport.register('GET', '/api/setup', request => transport.json(request, 200, { phase: 'skipped', testMode: true, version, platform: process.platform, arch: process.arch, environment: [], models: [], canRetry: false, token: '' })));
+    ctx.effect(() => transport.register('GET', '/api/setup', request => transport.json(request, 200, { phase: 'skipped', testMode: true, version, platform: process.platform, arch: process.arch, environment: [], models: [], canRetry: false })));
     ctx.on('desktop/active-tasks', () => services.inspectTasks());
     services.start();
     return;
   }
   await domain.plugin({ name: 'youdub-environment', inject: ['jobs'], apply(child) {
-    registerSetupRoutes(child, transport, { root: data, repoRoot: root, python: runtimeConfig.python, version, privateEnvironment: true }, async () => {
+    registerSetupRoutes(child, transport, { root: data, repoRoot: root, python: runtimeConfig.python, version }, async () => {
       return activateDomain(domain, { config: runtimeConfig, root, data, forms, modelRoots, version, transport });
     }, {
       required: !savedInstallation && !legacy,
@@ -136,12 +135,11 @@ async function activateDomain(domain, { config, root, data, forms, modelRoots, v
   await domain.plugin(Localize, identities['youdub.localize']);
   await domain.plugin(Graph, identities['youdub.graph']);
   await domain.plugin(Tasks);
-  await domain.plugin(Resources, { root: data, repoRoot: root, python: config.python, modelRoots, version, privateEnvironment: true });
+  await domain.plugin(Resources, { root: data, repoRoot: root, python: config.python, modelRoots, version });
   let services;
-  await domain.plugin({ name: 'youdub-domain-api', inject: ['connection', 'catalog', 'store', 'files', 'tasks', 'settings', 'youdubResources', 'pluginManager'], apply(child) {
+  await domain.plugin({ name: 'youdub-domain-api', inject: ['connection', 'catalog', 'store', 'files', 'tasks', 'settings', 'youdubResources'], apply(child) {
     registerTaskRoutes(child, transport);
     registerResourceRoutes(child, transport);
-    registerExtensionRoutes(child, transport);
     // These domain lifecycle events start and stop only the existing graph queue;
     // the enclosing plugin and every worker remain owned by the one Harness Host.
     services = { resources: child.youdubResources, settings: child.settings,

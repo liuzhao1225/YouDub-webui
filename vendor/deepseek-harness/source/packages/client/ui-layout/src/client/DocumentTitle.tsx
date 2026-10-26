@@ -15,7 +15,6 @@ export type DocumentTitleProps = {
 export function DocumentTitle({ productTitle }: DocumentTitleProps): null {
   useEffect(() => {
     document.title = productTitle
-    return () => { document.title = productTitle }
   }, [productTitle])
   return null
 }

@@ -3,7 +3,6 @@ import { randomBytes } from 'node:crypto'
 import { closeSync, mkdtempSync, openSync, rmdirSync, unlinkSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { CollectedOutput } from '@deepseek-ai/dsh-subprocess'
 
 /**
  * Receives one spill failure so the owner can log it through its own logger.
@@ -129,7 +128,6 @@ export function prepareManagedProcessBinding(
 export class OutputCollector {
   private chunks: Buffer[] = []
   private bytes = 0
-  private dropped = false
   private spillFd: number | undefined
   private spillFile: string | undefined
   private spillDisabled: boolean
@@ -178,7 +176,6 @@ export class OutputCollector {
         this.chunks[0] = head.subarray(excess)
         this.bytes -= excess
       }
-      this.dropped = true
     }
   }
 
@@ -237,7 +234,7 @@ export class OutputCollector {
       try {
         closeSync(fd)
       } catch {
-        // Retain the descriptor so finalize can retry the failed close.
+        // Retain the descriptor so seal can retry the failed close.
         this.spillFd = fd
       }
     }
@@ -272,14 +269,6 @@ export class OutputCollector {
   }
 
   /**
-   * Copy the retained raw tail with its position in the complete observed stream.
-   * @returns independent tail bytes and the total byte count before truncation.
-   */
-  snapshot(): { bytes: Buffer; totalBytes: number } {
-    return { bytes: Buffer.concat(this.chunks), totalBytes: this.total }
-  }
-
-  /**
    * Close the spill file once the stream has ended. A failed close (delayed
    * writeback fault) stops advertising the spill path — the file may be
    * missing its tail — while every in-memory read keeps working. Idempotent;
@@ -298,16 +287,4 @@ export class OutputCollector {
     this.spillFd = undefined
   }
 
-  /**
-   * Seal the spill file and return the final output.
-   * @returns the final collected output: tail text, truncation flag, and the spill path when intact.
-   */
-  finalize(): CollectedOutput {
-    this.seal()
-    return {
-      text: Buffer.concat(this.chunks).toString('utf8'),
-      truncated: this.dropped,
-      ...this.spillFile !== undefined ? { spillPath: this.spillFile } : {},
-    }
-  }
 }

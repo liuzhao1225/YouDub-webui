@@ -55,8 +55,6 @@ export interface BundleRowInfo {
 /** One shipped, profile-installed, or selected bundle. */
 export interface BundleInfo {
   name: string
-  /** Project-maintained shipped optional bundle, independent of selection. */
-  official: boolean
   /** Readable package location; declared files may be missing. */
   availability: 'installation' | 'profile' | 'missing'
   version?: string
@@ -73,11 +71,6 @@ export interface BundleInfo {
    * paths made absolute and the user information of an http(s) URL removed.
    */
   source?: string
-  /**
-   * Whether the installation ships the bundle for the person to switch on: named by the launcher's `OPTIONAL_BUNDLES`,
-   * held by the installation's dependencies, selected by no shipped template, and never removable.
-   */
-  optional: boolean
   removable: boolean
   readOnlyReason?: ReadOnlyReason
   error?: ManagementError

@@ -18,7 +18,7 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
   const client = new DownloadClient();
   let controller, environment, preparing, phase = 'environment', failure, bootAttempted = false, domain, finishing;
   let configuring = false;
-  if (installation?.required) phase = 'installation';
+  if (installation.required) phase = 'installation';
   let selectionRequired = false, selected, selecting = false, checkedResources;
   const initialModels = modelManifest.map(model => ({ id: model.id, name: model.name, variant: model.variant, purpose: model.purpose, status: 'pending', received: 0, total: model.files.reduce((sum, file) => sum + file.size, 0), speed: 0 }));
   const modelItems = inventory => inventory.items.filter(item => item.automatic && modelManifest.some(model => model.id === item.downloadId));
@@ -75,16 +75,16 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
       osVersion: release(), homeDir: homedir(), environment: steps,
       models: resources?.models ?? initialModels.map(model => inventory?.models.find(item => item.id === model.id) ?? model), ...(resources ? { resources } : {}),
       resourceSelection: { required: selectionRequired, selections: selected ?? items.map(selectionOf), items, prepared: phase === 'ready' },
-      ...(installation ? { installation: { required: phase === 'installation', path: config.root } } : {}),
+      installation: { required: phase === 'installation', path: config.root },
       entries: resources?.entries ?? resourceEntries({ status: phase === 'environment' ? 'preparing' : phase, environment: environment?.steps ?? [] }),
-      error: failure, canRetry: Boolean(domain) || !bootAttempted, token: '' };
+      error: failure, canRetry: Boolean(domain) || !bootAttempted };
   };
   const prepare = () => {
     if (preparing) return;
     controller = new AbortController();
     phase = 'environment'; failure = undefined;
     let execution;
-    ctx.jobs.start({ kind: 'youdub-environment', label: '准备 YouDub 运行环境', run(job) {
+    ctx.jobs.start({ label: '准备 YouDub 运行环境', run() {
       execution = (async () => {
         // The installation page is available before a worker can know its paths.
         // Resolve the declared dependency only after that choice is committed.
@@ -92,10 +92,10 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
           environment = new EnvironmentSetup(scope, config, client, controller.signal);
         });
         await environment.prepare(['base']);
-        phase = 'starting'; job.updateProgress('检查运行环境');
+        phase = 'starting';
         await environment.probe('verify');
         controller.signal.throwIfAborted();
-        bootAttempted = true; job.updateProgress('检查完整模型环境');
+        bootAttempted = true;
         domain = await activate();
         controller.signal.throwIfAborted();
         const onboarding = (await domain.settings.read()).plugins?.['youdub.onboarding'];
@@ -160,5 +160,4 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
     if (path !== '/api/setup' && phase !== 'ready') throw new AppError('ENVIRONMENT_NOT_READY', failure || 'YouDub 运行环境正在准备。', 503, { phase });
   };
   if (phase !== 'installation') prepare();
-  return { snapshot };
 }

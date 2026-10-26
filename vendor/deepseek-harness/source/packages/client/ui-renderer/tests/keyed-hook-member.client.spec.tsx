@@ -25,18 +25,18 @@ describe('keyed standard Hooks', () => {
     const fork = observable(true)
     const whole = observable({ title: 'one' })
     const resolver = vi.fn<KeyedStandardSource>((key, member) =>
-      member === undefined ? (key === 's1' ? whole : undefined) : (key === 's1' && member === 'session/fork' ? fork : undefined))
+      member === undefined ? (key === 'task1' ? whole : undefined) : (key === 'task1' && member === 'task/retry' ? fork : undefined))
     const useAccess = keyedObservableHook(resolver)
 
-    const member = renderHook(() => useAccess('s1', 'session/fork'))
+    const member = renderHook(() => useAccess('task1', 'task/retry'))
     expect(member.result.current).toBe(true)
     act(() => { fork.set(false) })
     expect(member.result.current).toBe(false)
-    expect(resolver).toHaveBeenCalledWith('s1', 'session/fork')
+    expect(resolver).toHaveBeenCalledWith('task1', 'task/retry')
 
-    expect(renderHook(() => useAccess('s1', 'session/missing')).result.current).toBeUndefined()
-    expect(renderHook(() => useAccess('s1')).result.current).toEqual({ title: 'one' })
-    expect(resolver.mock.calls.some(call => call.length === 1 && call[0] === 's1')).toBe(true)
+    expect(renderHook(() => useAccess('task1', 'task/missing')).result.current).toBeUndefined()
+    expect(renderHook(() => useAccess('task1')).result.current).toEqual({ title: 'one' })
+    expect(resolver.mock.calls.some(call => call.length === 1 && call[0] === 'task1')).toBe(true)
   })
 
   it('keeps the selector, equality, and default-key call forms', () => {
@@ -54,8 +54,8 @@ describe('keyed standard Hooks', () => {
 
   it('reads undefined for every call form while the source family is absent', () => {
     const absent = keyedObservableHook(undefined)
-    expect(renderHook(() => absent('s1', 'session/fork')).result.current).toBeUndefined()
-    expect(renderHook(() => absent('s1', (value: unknown) => value ?? 'fallback')).result.current).toBe('fallback')
+    expect(renderHook(() => absent('task1', 'task/retry')).result.current).toBeUndefined()
+    expect(renderHook(() => absent('task1', (value: unknown) => value ?? 'fallback')).result.current).toBe('fallback')
     expect(renderHook(() => absent((value: unknown) => value ?? 'bare')).result.current).toBe('bare')
   })
 })

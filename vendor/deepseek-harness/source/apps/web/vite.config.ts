@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
@@ -27,20 +26,6 @@ function clientDocumentTitle(): Plugin {
   }
 }
 
-/** Keep the redistribution license beside the bundled brand font. */
-function brandFontLicense(): Plugin {
-  return {
-    name: 'dsh-brand-font-license',
-    async generateBundle() {
-      this.emitFile({
-        type: 'asset',
-        fileName: 'assets/fonts/Montserrat-OFL.txt',
-        source: await readFile(src('../../packages/client/ui-theme/src/styles/Montserrat-OFL.txt')),
-      })
-    },
-  }
-}
-
 /** Fail before a Vite dev or preview server can expose the boot-manifest-free shell. */
 function rejectStandaloneServe(): Plugin {
   return {
@@ -55,7 +40,7 @@ export default defineConfig({
   // Relative asset URLs work with the application's local Host and Electron protocol.
   base: './',
   plugins: [
-    rejectStandaloneServe(), clientDocumentTitle(), brandFontLicense(), react(),
+    rejectStandaloneServe(), clientDocumentTitle(), react(),
     productWebBundleIsolation(src('../..'), src('.')),
   ],
   build: {
@@ -68,11 +53,7 @@ export default defineConfig({
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames(asset): string {
-          const fileName = asset.names[0] ?? ''
-          const isFont = /\.(woff2?|ttf)$/.test(fileName)
-          return isFont ? 'assets/fonts/[name]-[hash][extname]' : 'assets/[name]-[hash][extname]'
-        },
+        assetFileNames: 'assets/[name]-[hash][extname]',
 
       },
     },
@@ -103,7 +84,5 @@ export default defineConfig({
     // internal slot the shell boot fills with the client module loader).
     'process.versions.node': '"0.0.0"',
     'process.execArgv': '[]',
-    // vendored loader index.ts: envData falls to its default branch.
-    'process.env.CORDIS_SHARED': 'undefined',
   },
 })

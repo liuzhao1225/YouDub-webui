@@ -1,6 +1,6 @@
 /**
  * Shared boot glue for `dsh` profiles, including the CLI packaged by the Python runtime wheel: load the gitignored
- * `.env`, install the fail-loud Loader guards, resolve the config path (snapshot-aware), load the
+ * `.env`, install the fail-loud Loader guards, resolve the config path, load the
  * optional user patch layers from the Harness home (`~/.dsh`), expose its path resolver to
  * config expressions, and drive the Cordis Loader against a leaf `cordis.yml` until the tree settles.
  * @module @deepseek-ai/dsh-app-boot
@@ -9,7 +9,7 @@
 import { pathToFileURL } from 'node:url'
 import { readFileSync } from 'node:fs'
 import { inspect, parseEnv } from 'node:util'
-import { basename, dirname, isAbsolute, resolve } from 'node:path'
+import { dirname, isAbsolute, resolve } from 'node:path'
 import * as yaml from 'js-yaml'
 import { Context, type Fiber, type FiberState } from '@deepseek-ai/cordis'
 import Loader, { type Entry, type EntryGroup, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
@@ -22,20 +22,16 @@ export { sanitizeProfile } from './profile-sanitize.ts'
 export { getDshRuntimeVersion, evaluatePluginCompatibility, pluginCompatibilityWarning, type PluginCompatibility } from './plugin-compatibility.ts'
 export {
   PROFILE_COMPATIBILITY_FILENAME, readProfileCompatibility, readProfileVersionExemptions,
-  setProfileVersionExemption, type ProfileCompatibility,
+  type ProfileCompatibility,
 } from './profile-compatibility.ts'
 import { prepareProfilePatches } from './compatibility-preflight.ts'
 import { ProfileRuntimeResolution, type RuntimeResolution } from './profile.ts'
 import { ResolutionRestartRequired } from './profile-resolution/resolver.ts'
 export { prepareProfileEntries, prepareProfilePatches } from './compatibility-preflight.ts'
 export { readPluginMeta, resolvePluginResource } from './package-meta.ts'
-export { generateConfigSchema, type ConfigSchemaDump, type NativeConfigSchema } from './config-schema/index.ts'
-export { createConfigProjector, LOADER_EXPRESSION_SCHEMA, type ConfigProjection } from './config-schema/projector.ts'
-export { isNativeConfigSchema } from './config-schema/native.ts'
 
 export {
-  readProfilePlugins, reconcileProfilePlugins, writeProfileBundles,
-  type ProfilePluginLocation, type ProfilePluginDependency, type ProfilePluginInventory, type ProfilePluginReconciliation,
+  writeProfileBundles,
 } from './profile-plugins.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -58,16 +54,12 @@ export {
   composeEntries,
   createRuntimeResolution,
   ProfileRuntimeResolution,
-  DEFAULT_PROFILE_BUNDLES,
-  OPTIONAL_BUNDLES,
   bundlePatchFiles,
   bundlePatchPaths,
   initProfile,
   removeLinkProjections,
-  loadProfile,
   loadProfileDirectory,
   PROFILE_PATCH_FILENAME,
-  PROFILE_TEMPLATES,
   PROFILES_DIR,
   readProfileManifest,
   reportSkippedBundles,
@@ -82,7 +74,6 @@ export {
   type RuntimeResolutionOptions,
   type RuntimeResolutionEntry,
   type RuntimeResolution,
-  type ProfileTemplate,
 } from './profile.ts'
 export {
   PluginPackages,
@@ -90,46 +81,6 @@ export {
   type PluginPackagesConfig,
 } from './profile-resolution/service.ts'
 export { ResolutionRestartRequired } from './profile-resolution/resolver.ts'
-
-/**
- * Resolve the config to boot. Replay swaps a `cordis.yml` basename for
- * `cordis.snapshot.yml` in the same directory; every other mode keeps the path.
- * @param configPath - the requested config path (absolute, or relative to `cwd`).
- * @param snapshotMode - the bin's `$DSH_SNAPSHOT` value; only `'replay'` swaps the
- *   basename.
- * @param cwd - the base a relative `configPath` resolves against.
- * @returns the absolute path of the config to boot.
- */
-export function resolveConfigPath(
-  configPath: string, snapshotMode: string | undefined, cwd: string = process.cwd(),
-): string {
-  const absolute = resolve(cwd, configPath)
-  if (snapshotMode !== 'replay') return absolute
-  const dir = dirname(absolute)
-  const replayName = basename(absolute).replace(/cordis\.ya?ml$/, 'cordis.snapshot.yml')
-  return resolve(dir, replayName)
-}
-
-/**
- * Load the optional gitignored `.env` from `dir`. Missing files fall back to the
- * ambient environment; other read failures are reported through `warn`.
- * @param binName - the diagnostic prefix on the warn line.
- * @param dir - the directory whose `.env` to load.
- * @param warn - sink for the one-line misconfiguration diagnostic.
- */
-export function loadEnv(
-  binName: string, dir: string = process.cwd(),
-  warn: (line: string) => void = line => void process.stderr.write(line),
-): void {
-  try {
-    process.loadEnvFile(resolve(dir, '.env'))
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException | null)?.code !== 'ENOENT') {
-      warn(`${binName}: failed to load .env: ${String(error)}\n`)
-    }
-    // ENOENT (no .env) is fine — rely on the ambient environment.
-  }
-}
 
 /** Exact names no discovered file may set. */
 const BOOTSTRAP_NAMES = new Set([
@@ -596,142 +547,6 @@ function parsePatchList(
   return anchorInsertedPluginNames(parsed as PatchOptions[], file)
 }
 
-/** One overlay patch list with the source label printed in dump comments. */
-export interface ConfigDumpLayer {
-  /** Source name shown in dump comments (a file basename or path). */
-  label: string
-  /** The layer's patches, from {@link loadOverlayPatches} / {@link loadOptionalPatches}. */
-  patches: PatchOptions[]
-}
-
-/**
- * Compose the configured entry list: parse the base config file with the
- * include's entry-list dialect, apply every layer's patches as ONE flattened
- * list through the include's own patch algorithm (`applyEntryPatches`) — the
- * same call `boot()` makes, so even patch-visibility corner cases (a later
- * layer targeting a group child a plain config replacement introduced, which
- * the single-pass id index never sees) compose identically — then render the
- * result as YAML in the same dialect (`!!js` expressions print verbatim,
- * unevaluated). Row admission is a later stage: a plugin row the compatibility
- * policy denies still appears here, while a denied bundle contributes no layer.
- *
- * Every run of rows from the same file and patch layers is preceded by a `# ==` comment
- * naming the file that contributed the rows and any layers that patched them,
- * so the output stays a loadable YAML document while showing which section
- * comes from which file. The file and patch labels are derived from single-call prefix
- * snapshots (base + layers 1..k), diffed positionally: the patch algorithm
- * only rewrites rows in place or appends, so a top-level index identifies one
- * row across snapshots, and a layer whose addition changes the row (config
- * replacement, disable, group insert) is listed as having patched it.
- *
- * A patch that matches no row is reported through `warn` with its layer
- * label, mirroring the Loader's boot-time warning. Earlier layers' patches
- * see an identical preceding state in every snapshot that includes them, so
- * each snapshot's warning list extends the previous one and the new tail
- * belongs to the added layer.
- * @param binName - the diagnostic prefix on read/parse errors.
- * @param absoluteConfigPath - the base config file `boot()` would include.
- * @param layers - overlay layers in application order (later wins).
- * @param warn - sink for skipped-patch diagnostics; defaults to stderr.
- * @returns the composed entry list rendered as a YAML document with
- * source comment separators.
- */
-export function renderConfigDump(
-  binName: string,
-  absoluteConfigPath: string,
-  layers: ConfigDumpLayer[],
-  warn: (line: string) => void = line => void process.stderr.write(`${line}\n`),
-): string {
-  let content: string
-  try {
-    content = readFileSync(absoluteConfigPath, 'utf8')
-  } catch (error) {
-    throw new Error(`${binName}: failed to read config ${absoluteConfigPath}: ${String(error)}`)
-  }
-  let parsed: unknown
-  try {
-    parsed = yaml.load(content, { schema: entryListSchema })
-  } catch (error) {
-    throw new Error(`${binName}: failed to parse config ${absoluteConfigPath}: ${String(error)}`)
-  }
-  if (!Array.isArray(parsed)) {
-    throw new Error(`${binName}: config ${absoluteConfigPath} must be a top-level YAML array of entries`)
-  }
-  const baseLabel = basename(absoluteConfigPath)
-  // YAML parsing yields untyped rows; the include validates each entry
-  // at mount, and the dump prints whatever the file holds, so `EntryOptions`
-  // here is structural trust in the same file `boot()` would include.
-  const base = parsed as Parameters<typeof applyEntryPatches>[0]
-  // snapshot_k = ONE application of layers 1..k flattened, using the exact
-  // arguments boot passes for that prefix. snapshot_N is the mounted composition.
-  // The patches are cloned per call: applyEntryPatches detaches the entry
-  // list but pushes `insert` rows by reference from the patch list, so
-  // sharing patch objects across snapshot calls would leak a later
-  // snapshot's mutations into an earlier one's result.
-  const snapshot = (count: number, warnings: string[]): ReturnType<typeof applyEntryPatches> => {
-    const flattened = structuredClone(layers.slice(0, count).flatMap(layer => layer.patches))
-    return applyEntryPatches(base, flattened, (message: string, ...args: unknown[]) => {
-      // The include logs through cordis's printf-style logger (`%C` = code); a
-      // dump has no logger, so substitute inline for a plain line.
-      let index = 0
-      warnings.push(message.replace(/%C/g, () => JSON.stringify(args[index++])))
-    })
-  }
-  let previous = base
-  let previousWarnings: string[] = []
-  const entryOrigins: { origin: string; patchedBy: string[] }[] = base.map(() => ({ origin: baseLabel, patchedBy: [] }))
-  let composed = base
-  for (let count = 1; count <= layers.length; count += 1) {
-    const layer = layers[count - 1]
-    /* v8 ignore next -- count iterates 1..length, so the slot exists */
-    if (layer === undefined) continue
-    const warnings: string[] = []
-    composed = snapshot(count, warnings)
-    for (const line of warnings.slice(previousWarnings.length)) {
-      warn(`${binName}: [${layer.label}] ${line}`)
-    }
-    const before = previous.map(entry => JSON.stringify(entry))
-    for (let index = 0; index < composed.length; index += 1) {
-      if (index >= before.length) entryOrigins.push({ origin: layer.label, patchedBy: [] })
-      else if (JSON.stringify(composed[index]) !== before[index]) entryOrigins[index]?.patchedBy.push(layer.label)
-    }
-    previous = composed
-    previousWarnings = warnings
-  }
-  return groupedDump(composed, entryOrigins)
-}
-
-/** Render the composed rows grouped under one source-and-patches comment per contiguous run. */
-function groupedDump(
-  composed: readonly unknown[],
-  entryOrigins: readonly { origin: string; patchedBy: string[] }[],
-): string {
-  const lines: string[] = []
-  let currentLabel: string | undefined
-  let group: unknown[] = []
-  const flush = (): void => {
-    if (currentLabel === undefined || group.length === 0) return
-    lines.push(`# == ${currentLabel}`)
-    lines.push(yaml.dump(group, { schema: entryListSchema, noRefs: true }).trimEnd())
-    group = []
-  }
-  for (let index = 0; index < composed.length; index += 1) {
-    const record = entryOrigins[index]
-    /* v8 ignore next -- this array is index-aligned with composed by construction */
-    if (record === undefined) continue
-    const label = record.patchedBy.length === 0
-      ? record.origin
-      : `${record.origin}, patched by ${record.patchedBy.join(', ')}`
-    if (label !== currentLabel) {
-      flush()
-      currentLabel = label
-    }
-    group.push(composed[index])
-  }
-  flush()
-  return lines.join('\n') + '\n'
-}
-
 /**
  * Mount and remember the exact root Include entry used by app boot and user patch-layer HMR.
  * @param ctx - context carrying an initialized Loader service.
@@ -1181,7 +996,7 @@ export async function auditStartupEntries(
  * helper for bare plugin specifiers; relative specifiers do not.
  * @param binName - the diagnostic prefix for load-failure errors.
  * @param absoluteConfigPath - the config to include; must already be absolute
- * (see {@link resolveConfigPath}).
+ * before boot starts.
  * @param patches - optional overlay patches applied over the included tree
  * (see {@link loadOptionalPatches}); an empty list mounts none.
  * @param prepare - optional host setup run after Loader installation and before any config-tree entry mounts.

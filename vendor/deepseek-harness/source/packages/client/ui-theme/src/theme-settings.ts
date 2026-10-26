@@ -63,12 +63,6 @@ export const DEFAULT_FONT_SIZES: FontSizes = Object.freeze({
   text: FONT_SIZE_SPECS.text.default, code: FONT_SIZE_SPECS.code.default,
 })
 
-/** Settings field carrying each role's font-family list. */
-export const FONT_FAMILY_FIELDS = {
-  text: 'textFontFamily',
-  code: 'codeFontFamily',
-} as const satisfies Record<FontRole, string>
-
 /**
  * Body variable carrying one role's normalized font list; the token sheet
  * places it ahead of that role's built-in stack.
@@ -124,15 +118,6 @@ export function isFontSize(role: FontRole, px: number): boolean {
   const spec = FONT_SIZE_SPECS[role]
   return Number.isInteger(px) && px >= spec.min && px <= spec.max
 }
-
-/** Durable theme schema; also the wire envelope the browser scope validates against. */
-export const ThemeSettingsSchema: z<ThemeSettings> = z.object({
-  [THEME_PREFERENCE_FIELD]: z.union([...THEME_PREFERENCES]).default(DEFAULT_PREFERENCE),
-  [FONT_SIZE_FIELD]: fontSizeSchema(FONT_SIZE_SPECS.text),
-  [FONT_SIZE_SPECS.code.field]: fontSizeSchema(FONT_SIZE_SPECS.code),
-  [FONT_FAMILY_FIELDS.text]: z.string().default(''),
-  [FONT_FAMILY_FIELDS.code]: z.string().default(''),
-})
 
 /** CSS Fonts generic and system family keywords, which must stay unquoted. */
 const GENERIC_FAMILIES = new Set([

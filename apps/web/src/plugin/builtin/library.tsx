@@ -2,13 +2,12 @@ import { Surface, surfaceVariants } from '@/components/ui/surface'
 import { Progress } from '@/components/ui/progress'
 import { Disclosure } from '@/components/ui/disclosure'
 import { NativeSelect, Choice } from '@/components/ui/native-select'
-import { bindComponent, type Bindings } from '../sdk'
-import { Context } from 'cordis'
+import { type Bindings } from '../sdk'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowLeft, AudioLines, Captions, Check, Download, FileText, Film, ListVideo, Loader2, RotateCw, Square, Trash2 } from '@/lib/icons'
+import { ArrowLeft, AudioLines, Captions, Check, Download, FileText, Film, Loader2, RotateCw, Square, Trash2 } from '@/lib/icons'
 import { Link, text, type Catalog, type JsonObject, type PanelProps, type RouteProps, type TaskAction, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
+import { useActiveView, useObservableSource } from '../view-hooks'
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
@@ -70,7 +69,6 @@ function RerunForm({ submissionStore, task, workflow, close, onLockChange, reque
   const failure = submission?.error ?? '', busy = !!submission?.busy, submitted = !!submission, newId = submission?.id
   const [acknowledged, setAcknowledged] = useState(savedRequest?.acknowledgeExternalRisk ?? false)
   const activeView = useActiveView()
-  usePendingUnload(submitted)
   useEffect(() => { onLockChange(submitted) }, [onLockChange, submitted])
   function openTask(next: TaskView) { if (!activeView.current) return; submissionStore.clearSubmission(submissionKey); navigate(`/tasks/${next.id}`) }
   const supported = useEditorSupported(useSlot, workflow.id, workflow.configSchema)
@@ -179,15 +177,4 @@ function TaskLog({ id, active, useQuery }: { id: string; active: boolean } & Bin
   const tx = useText()
   const { data, error, refresh } = useQuery<string>(`/api/v2/tasks/${id}/log`, active ? 2000 : undefined)
   return error ? <div className="mt-4 space-y-2"><InlineAlert>{error}</InlineAlert><Button size="sm" variant="outline" onClick={refresh}>{tx("library.reload.log")}</Button></div> : <pre className="mt-4 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-4 font-mono text-xs">{data ?? tx("library.loading")}</pre>
-}
-export const name = 'client-library'
-export const inject = ['slots', 'apiClient', 'navigation']
-export function apply(ctx: Context) {
-  const submissionStore = new StudioDraftStore()
-  ctx.effect(() => () => submissionStore.reset())
-  protectPendingSubmissions(ctx, submissionStore)
-  const BoundTaskDetail = bindComponent(ctx, ['request', 'navigate', 'useQuery', 'useSlot'], TaskDetail)
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'library', path: '/tasks', component: bindComponent(ctx, ['useQuery','navigate'], Library), access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'task-detail', path: '/tasks/:id', component: props => <BoundTaskDetail {...props} submissionStore={submissionStore} />, access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'library', routeId: 'library', label: { default: 'Library', translations: { zh: '任务库', ja: 'タスク' } }, order: 20, icon: ListVideo }))
 }

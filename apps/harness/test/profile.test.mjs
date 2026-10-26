@@ -15,7 +15,7 @@ const sourceRequire = createRequire(join(sourceBuild, 'packages/boot/plugin-mana
 const packageManager = { command: process.execPath, args: [resolve(here, 'node_modules/pnpm/bin/pnpm.mjs')] };
 const { runPluginCommand } = await import(pathToFileURL(join(sourceBuild, 'packages/boot/plugin-manager/lib/types/operations.js')));
 const required = ['@youdub/harness-subtitles'];
-const fixture = join(import.meta.dirname, 'fixtures/file-transform');
+const fixture = resolve(here, '../../fixtures/plugins/file-transform');
 const fixtureName = '@youdub/harness-example-file-transform';
 const readManifest = async profile => JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'));
 const saveManifest = (profile, manifest) => writeFile(join(profile, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
@@ -95,7 +95,7 @@ test('positive product composition contains framework services without retired p
     'product-analytics', 'desktop-product-telemetry', 'ui-chat', 'ui-conversation', 'ui-settings-account',
     'agent', 'agent-default-model', 'session', 'session-controller', 'ui-session', 'attachment-local',
     'file-upload', 'workspace', 'sandbox-policy', 'fs-sandbox', 'commands', 'job-controller',
-    'storage', 'storage-json', 'storage-domain']) {
+    'storage', 'storage-json', 'storage-domain', 'remote-access']) {
     assert.equal(rows.has(id), false, `${id} must not be loaded in YouDub`);
   }
   for (const id of ['llm', 'llm-pi-ai', 'credentials', 'settings', 'subprocess', 'jobs', 'connection',

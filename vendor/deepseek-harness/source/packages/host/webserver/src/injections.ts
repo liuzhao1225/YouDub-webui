@@ -1,11 +1,10 @@
 /**
  * Structured index injections: the typed rows plugins contribute to the boot
- * HTML instead of raw `tapIndex` string transforms. Rows are pure
+ * HTML. Rows are pure
  * JSON-serializable data because one table feeds two renderers: the served
  * form renders rows into the index.html text ({@link renderIndexInjections}),
  * and a static worker deployment ships the same rows over its boot payload
- * for a page-side interpreter. Anything not expressible as a row stays on
- * `tapIndex`, which runs after row rendering.
+ * for a page-side interpreter.
  */
 
 /** Document region a rendered row lands in: after the opening head or body tag. */

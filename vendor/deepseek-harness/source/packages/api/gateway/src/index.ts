@@ -11,8 +11,6 @@ import type {
   ConnectionRpcAttachment,
   ConnectionRpcHandler,
 } from '@deepseek-ai/dsh-client-connection'
-import type { RemoteAccessDecision } from '@deepseek-ai/dsh-api-remote-access'
-import { callResources, eventResources } from './access.ts'
 import { Deque } from '@deepseek-ai/dsh-deque'
 import type { WebUpgradeRoute } from '@deepseek-ai/dsh-host-webserver'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
@@ -28,9 +26,7 @@ import {
   type InvocationParameterDescriptor,
   type PeerScope,
   type Principal,
-  type RemoteAccessResource,
   type RemoteInvocation,
-  type RemoteMethodMarker,
   type TypertCodec,
   type TypertGatewayBinding,
 } from '@deepseek-ai/dsh-typert-protocol'
@@ -178,7 +174,7 @@ export class TypertGatewayError extends RemoteError<TypertGatewayErrorCode> {
  * @typert service typertGateway
  */
 export class TypertGatewayService extends Service implements TypertGateway {
-  static inject = ['typert', 'remoteAccess']
+  static inject = ['typert']
   static Config: z<Config> = z.object({
     websocketHeartbeatIntervalMs: z.number().step(1).min(1).max(MAX_TIMER_DELAY_MS)
       .default(DEFAULT_WEBSOCKET_HEARTBEAT_INTERVAL_MS),
@@ -327,18 +323,6 @@ export class TypertGatewayService extends Service implements TypertGateway {
     return this.srcClaims.has(endpoint)
   }
 
-  /**
-   * The `resources` readers of a method, read from the root Service's class
-   * metadata so a Context method's receiver is not resolved before access is
-   * decided; `undefined` when the Service is absent or the method declares none.
-   */
-  private resourceReaders(descriptor: InvocationDescriptor): RemoteMethodMarker['resources'] {
-    const receiver: unknown = this.ctx.get(descriptor.service)
-    if (!isObject(receiver)) return undefined
-    const member = descriptor.implementation ?? descriptor.method
-    return remoteMethods(originalOf(receiver)).find(marker => marker.method === member)?.resources
-  }
-
   private collectSrcClaims(): ReadonlySet<string> {
     const claims = new Set<string>()
     for (const [serviceKey, definition] of Object.entries(this.ctx.reflect.props)) {
@@ -451,6 +435,7 @@ export class TypertGatewayService extends Service implements TypertGateway {
       // A Gateway-owned stream reads no uplink: releasing it now keeps its items out of the bounded inbox.
       releaseUplink(uplink)
       assertPeerLive(peer, endpoint)
+      assertOwner(peer, endpoint)
       requireInteractions(peer, endpoint)
       return this.openRemoteEvents(payload, signal, peer)
     }
@@ -522,20 +507,10 @@ export class TypertGatewayService extends Service implements TypertGateway {
       event: frame.event,
       args: frame.args,
     }
-    let resolved = false
-    let resources: readonly RemoteAccessResource[] | undefined
     for (const client of this.remoteEventClients.values()) {
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- other packages merge non-owner kinds into PrincipalMap.
-      if (client.principal.kind !== 'owner') {
-        // A non-owner receives the whole notification or nothing: its resources decide, payloads are never trimmed,
-        // and a notification with invalid resources reaches no non-owner.
-        if (!resolved) {
-          resources = eventResources(frame.resources, frame.args)
-          resolved = true
-        }
-        if (resources === undefined) continue
-        if (this.ctx.remoteAccess.decide({ principal: client.principal, action: `event:${frame.event}`, resources }).kind === 'deny') continue
-      }
+      // Retain the owner boundary even if a caller violates the immutable-principal contract.
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- reject malformed external principals at runtime.
+      if (client.principal.kind !== 'owner') continue
       client.queue.push(wire)
     }
   }
@@ -577,34 +552,10 @@ export class TypertGatewayService extends Service implements TypertGateway {
   ): Promise<PreparedInvocation> {
     const endpoint = endpointOf(request.namespace, request.method)
     assertPeerLive(request.peer, endpoint)
+    assertOwner(request.peer, endpoint)
     const descriptor = this.resolveDescriptor(request.namespace, request.method, endpoint)
     assertExactArguments(request.args, descriptor, endpoint)
     const validated = validateArguments(descriptor, request.args, endpoint)
-    // Access precedes lookup resolution, so a refused call activates nothing.
-    // oxlint-disable-next-line typescript/no-unnecessary-condition -- other packages merge non-owner kinds into PrincipalMap.
-    if (request.peer.principal.kind !== 'owner') {
-      const resources = callResources(
-        this.ctx.typert,
-        this.resourceReaders(descriptor),
-        descriptor,
-        validated,
-        request.signal ?? NEVER_ABORTED_SIGNAL,
-      )
-      const decision: RemoteAccessDecision = resources === undefined
-        ? { kind: 'deny', reason: 'resource-invalid' }
-        : this.ctx.remoteAccess.decide({
-          principal: request.peer.principal,
-          action: `${descriptor.namespace}/${descriptor.method}`,
-          resources,
-          args: validated,
-        })
-      if (decision.kind === 'deny') {
-        throw new RemoteError('remote-access/denied', `remote access: ${endpoint}: access denied (${decision.reason})`, {
-          action: endpoint,
-          reason: decision.reason,
-        })
-      }
-    }
     const receiverContext = await this.resolveReceiverContext(descriptor, validated, endpoint)
     const receiver: unknown = receiverContext.get(descriptor.service)
     if (!isObject(receiver)) {
@@ -1063,6 +1014,16 @@ function methodSignal(request: InvokeRemoteRequest, control: AbortController, st
   // `AbortSignal.any` leaves each source only a weak reference to the joined signal,
   // so per-stream joins on a Host-lifetime Peer signal accumulate nothing.
   return AbortSignal.any(stream ? [...joined, request.peer.signal] : joined)
+}
+
+/** Product Remote dispatch accepts the authenticated owner only. */
+function assertOwner(peer: PeerScope, endpoint: string): void {
+  // oxlint-disable-next-line typescript/no-unnecessary-condition -- reject malformed external principals at runtime.
+  if (peer.principal.kind !== 'owner') {
+    throw new RemoteError('remote-access/denied', `remote access: ${endpoint}: owner access is required`, {
+      action: endpoint, reason: 'owner-required',
+    })
+  }
 }
 
 /**

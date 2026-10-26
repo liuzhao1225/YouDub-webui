@@ -69,14 +69,14 @@ it('keeps the newest event, hides for connection priority, and invokes only the 
     expect(f.open).toHaveBeenCalledOnce()
     f.view.rerender(<f.Indicator hidden />)
     expect(screen.queryByRole('button')).toBeNull()
-    await f.emit({ phase: 'downloading', version: available.version, percent: 58 })
+    await f.emit({ phase: 'checking', version: available.version })
     f.view.rerender(<f.Indicator />)
-    fireEvent.click(screen.getByRole('button', { name: '58%' }))
+    fireEvent.click(screen.getByRole('button', { name: '正在检查更新…' }))
     expect(f.open).toHaveBeenCalledOnce()
-    await f.emit({ phase: 'error', version: available.version, failure: 'download' })
+    await f.emit({ phase: 'error', version: available.version, failure: 'check' })
     const retry = screen.getByRole('button', { name: '重试更新' })
     fireEvent.focus(retry)
-    expect((await screen.findByRole('tooltip')).textContent).toBe('下载更新失败，请重试。')
+    expect((await screen.findByRole('tooltip')).textContent).toBe('检查更新失败，请稍后重试。')
     f.view.rerender(<f.Indicator wide={false} />)
     expect(screen.queryByRole('button')).toBeNull()
   } finally { f.view.unmount(); f.status.resolve(available) }
@@ -102,7 +102,7 @@ it('accepts initial status, coalesces actions, and ignores late events and actio
   try {
     await act(async () => { f.status.resolve(available) })
     expect(screen.getByRole('button', { name: '新版本' })).toBeTruthy()
-    await f.emit({ phase: 'verifying', version: available.version })
+    await f.emit({ phase: 'checking', version: available.version })
     f.source.open()
     expect(f.open).not.toHaveBeenCalled()
     await f.emit(available)
@@ -112,7 +112,7 @@ it('accepts initial status, coalesces actions, and ignores late events and actio
     const state = f.source.store.getSnapshot()
     f.view.unmount()
     f.source.open()
-    await f.emit({ phase: 'error', version: available.version, failure: 'install' })
+    await f.emit({ phase: 'error', version: available.version, failure: 'check' })
     await act(async () => { pending.reject(new Error('late IPC failure')) })
     expect(f.source.store.getSnapshot()).toBe(state)
   } finally { pending.resolve(undefined); f.status.resolve(available) }
@@ -137,43 +137,20 @@ it('renders the same semantic update in the active Web locale', async () => {
   } finally { f.view.unmount(); f.status.resolve(available) }
 })
 
-it('shows fallback progress and error details when the shell omits optional fields', async () => {
+it('keeps missing-version status and errors readable in both locales', async () => {
   const f = fixture()
   try {
-    await f.emit({ phase: 'downloading' })
-    const progress = screen.getByRole('button', { name: '0%' })
-    fireEvent.focus(progress)
-    expect((await screen.findByRole('tooltip')).textContent).toBe('0%')
-    await f.emit({ phase: 'downloading', version: '1.0.1' })
-    fireEvent.focus(screen.getByRole('button', { name: '0%' }))
-    expect((await screen.findByRole('tooltip')).textContent).toContain('1.0.1')
-    await f.emit({ phase: 'error' })
-    fireEvent.focus(screen.getByRole('button', { name: '重试更新' }))
-    expect((await screen.findByRole('tooltip')).textContent).toBe('安装更新失败，请稍后重试。')
-  } finally { f.view.unmount(); f.status.resolve({ phase: 'idle' }) }
-})
-
-it.each(['checking', 'verifying', 'installing'] as const)('shows only the version during %s in both locales', async (phase) => {
-  const f = fixture()
-  try {
-    await f.emit({ phase, version: '0.1.7-alpha.2' })
+    await f.emit({ phase: 'checking' })
+    fireEvent.focus(screen.getByRole('button', { name: '正在检查更新…' }))
+    expect((await screen.findByRole('tooltip')).textContent).toBe('正在检查更新…')
+    await f.emit({ phase: 'checking', version: '0.1.7-alpha.2' })
     fireEvent.focus(screen.getByRole('button'))
     expect((await screen.findByRole('tooltip')).textContent).toBe('0.1.7-alpha.2')
     f.view.rerender(<f.Indicator dictionary={en} />)
-    fireEvent.focus(screen.getByRole('button'))
+    fireEvent.focus(screen.getByRole('button', { name: 'Checking for updates…' }))
     expect((await screen.findByRole('tooltip')).textContent).toBe('0.1.7-alpha.2')
-  } finally { f.view.unmount(); f.status.resolve({ phase: 'idle' }) }
-})
-
-it.each([
-  ['checking', '正在检查更新…'],
-  ['verifying', '正在校验更新文件…'],
-  ['installing', '正在准备重启…'],
-] as const)('retains the state label when %s has no version', async (phase, label) => {
-  const f = fixture()
-  try {
-    await f.emit({ phase })
-    fireEvent.focus(screen.getByRole('button', { name: label }))
-    expect((await screen.findByRole('tooltip')).textContent).toBe(label)
+    await f.emit({ phase: 'error' })
+    fireEvent.focus(screen.getByRole('button', { name: 'Retry update' }))
+    expect((await screen.findByRole('tooltip')).textContent).toBe(en['desktop.update.checkFailed'])
   } finally { f.view.unmount(); f.status.resolve({ phase: 'idle' }) }
 })

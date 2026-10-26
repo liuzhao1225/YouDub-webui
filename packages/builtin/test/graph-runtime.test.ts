@@ -131,7 +131,7 @@ test('a persisted review releases the slot, survives restart and resumes without
   assert.equal(paused.steps[2].status, 'completed')
   assert.equal(paused.steps[3].status, 'pending')
   assert.equal(paused.nextPollAt, null)
-  assert.equal(await ctx.tasks.idle(), false)
+  assert.deepEqual((await ctx.tasks.list({ active: true })).items.map(task => task.id), [first.id])
   const second = await create()
   await until(second.id, 'succeeded')
   await restart()

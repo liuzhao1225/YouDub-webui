@@ -45,9 +45,10 @@
 | `youdub.config.editors` | 业务配置编辑器 |
 | `youdub.task.detail.panels` / `actions` | 任务详情区和操作 |
 | `youdub.workflow.node.editors` / `details` | 节点配置与结果详情 |
-| `youdub.settings.sections` | 业务设置区 |
 
-节点详情插槽的完整实例在[graph-text-review 客户端](../test/fixtures/graph-text-review/src/client.jsx)：它接收 `detail`、`outputs`、`draft`、`readOnly`、`onDraftChange`、`navigate`，将订正交还原任务页面保存。外部插件通过自己的 context 注册插槽，卸载时由官方生命周期释放。
+节点详情插槽的完整实例在[graph-text-review 客户端](../../../fixtures/plugins/graph-text-review/src/client.jsx)：它接收 `detail`、`outputs`、`draft`、`readOnly`、`onDraftChange`、`navigate`，将订正交还原任务页面保存。外部插件通过自己的 context 注册插槽，卸载时由官方生命周期释放。
+
+当前插槽使用 `root` scope，支持 single/list/keyed/chain、依赖注入和 Component Factory。同一个节点组件在不同位置渲染时保留独立状态；显式共享 store、插件卸载和重载继续由框架管理。聊天会话专用的 `session`、`session-maybe`、`SessionProvider`、`installScope`、`bindStoreScope` 及 `inject(sessionId, ...)` 已退役，旧 scope 声明在注册时明确报错。新增页面和节点插件按当前示例传递业务属性。
 
 校对编辑器展示节点声明的 `corrections.outputPorts`，其余输出由宿主统一呈现，避免重复。返回、版本、保存和确认也由宿主提供。多行文本从 `@deepseek-ai/dsh-client-ui-primitives` 导入共享 `Textarea`；历史结果使用 `readOnly`，保留选择与复制。外部插件只负责自己的内容布局，不依赖宿主 Tailwind 扫描生成样式。
 
@@ -61,14 +62,18 @@
 | 工作流离开保护、快捷字段浮层 | `workflow-guard.tsx` 直接使用官方 Modal；`ui/popover.tsx` 使用官方 Menu；已移除两类桌面适配与构建替换 |
 | 原 `plugin/sdk` 的导航与辅助接口 | `frontend/sdk.tsx` → 注入的页面导航与原领域纯函数 |
 | 查询、资源、首启和草稿状态 | `lib/store.ts` 保留原控制器的局部更新 API；`lib/harness-store.ts` 统一接到官方 `createSnapshotStore`，已移除桌面专用 Store 及 Zustand 构建替换 |
-| 原 i18n、theme、clipboard、asset-url | 对应 `frontend/*` 绑定 |
-| 图标 | `frontend/icons.tsx` 中的映射 |
+| 语言、主题、clipboard、asset-url | 对应 `frontend/*` 绑定 |
+| 图标 | 业务组件直接使用 `apps/web/src/lib/icons.ts`，桌面组件使用官方图标包 |
 
 在 Harness 专属组件中可以直接导入 `@deepseek-ai/dsh-client-ui-primitives`。原 YouDub 的通用控件属性差异在原 `components/ui/*` 统一处理；焦点、键盘、Portal、弹层和滚动条遵循官方实现。业务画布、视频播放器与逐句编辑继续使用现有领域组件。
 
+框架图标子集当前提供实际引用的 30 个图标；新增图标先检查现有业务图标入口，需要补入上游 SVG 时直接复用其源码。插件管理保留 `plugins.item` 和用户插件全部操作；`official/optional` 恒值字段和无数据源的 More 分组已经退役，配置项类型统一为 `ConfigItem`。
+
+通用设置直接注册外观、语言和版本等现有行，编码工作视图和字体配置行的组件、状态及屏蔽插槽已删除。字号快捷键和主题服务保存的字体偏好继续生效。桌面更新 UI 只接收当前 shell 提供的检查状态，失败可重试，发现版本后打开下载入口。
+
 菜单测试通过可见菜单项选择，保留原业务结果、字段类型、禁用与草稿断言。`controls.test.tsx` 检查键盘选项跳转、关闭和焦点返回。
 
-`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；原 Web 的 localStorage 实现仅由历史组件测试使用，不进入产品。`sdk`、文件 URL、剪贴板和图标的边界仍服务于官方导航、Connection 文件授权、官方剪贴板及官方图标来源。播放器直接复用业务 `VideoPlayer`，其倍速菜单通过同一 `harness-primitives` 入口使用 Harness `Menu`，不再保留第二套播放器适配。继续通过构建清单核对。
+`frontend/i18n.tsx` 和 `frontend/theme.tsx` 保留为官方服务的 React 绑定：locale 的订阅、设置及翻译读取来自 `ctx.locale`，主题的订阅和写入来自 `ctx.theme`。这些绑定没有第二份持久化状态；语言测试通过测试目录里的 locale source 接入同一 Harness Provider；主题 Provider 位于 `frontend/theme-context.tsx`，由桌面主题入口和测试直接复用，偏好持久化、系统配色与 DOM 呈现均由保留的框架服务负责。旧 Web localStorage 主题实现已移除。`sdk`、文件 URL与剪贴板边界服务于官方导航、Connection 文件授权和官方剪贴板。播放器直接复用业务 `VideoPlayer`，其倍速菜单通过同一 `harness-primitives` 入口使用 Harness `Menu`，不再保留第二套播放器适配。继续通过构建清单核对。
 
 不要为新页面创建额外 React root、Cordis 根、路由容器或模型配置表单。构建脚本仅对明确的导入边界进行替换；新增依赖后运行活动模块检查，确认没有带入旧平台实现或第二份 React。
 
@@ -113,3 +118,9 @@ npm --prefix apps/harness run check:composition
 ```
 
 示例测试文件应替换为实际修改组件的测试。纯文档修改无需运行 UI 构建与测试。涉及官方组件、设置或桌面布局时，在实际 Harness 页面检查明暗主题、中英日、窄窗口、弹层焦点、滚动和重启后的偏好；涉及文件选择、保存框和窗口操作时使用原生 Electron 验收。视频功能另需真实任务和产物校验。
+
+### 前端测试与产品运行时
+
+业务页面测试使用 `apps/harness/src/frontend/runtime.tsx` 的 `createFeatures`，默认 HTTP 调用由 `requestHarness` 发往产品 RPC；测试仅注入响应和插槽内容。旧 Web API service、会话上下文、`bindComponent` 和四组 `client-*` 注册已移除。页面路由测试直接渲染桌面页面组件，避免在测试中保留第二套导航和资源检查实现。测试装配位于 `apps/web/src/plugin/test-bindings.tsx`，不会进入产品入口。
+
+前端回归保留 YouDub 页面交互、资源与工作流、请求错误、配置刷新和订阅释放，以及框架的连接、模块加载、插槽、组件、语言和主题行为。主题覆盖分工：业务 Provider 测试检查官方 source 订阅与动作写回；`ui-theme` 的 boot/config/settings-store 与 `ui-layout` 的 theme-presenter 测试检查偏好持久化、系统配色初始化和 DOM 呈现。滚动条、焦点、菜单及窗口拖动检查继续保留。已删除没有消费者的 Markdown 快照和上游全仓圆角、阴影、拖动区域固定值扫描；产品视觉验收仍按上述实际页面检查执行。

@@ -14,7 +14,8 @@ import pytest
 from backend.app.v1 import asr, asr_process, media
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 @pytest.fixture
@@ -45,8 +46,7 @@ def context(tmp_path, monkeypatch):
         "translation": {"adapter": "openai", "model": "test-model", "device": "remote"},
         "tts": None, "separation": None,
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                        stage="asr", config=config, input_files={"source_audio": source, "media_info": info},
+    return StageContext(stage="asr", config=config, input_files={"source_audio": source, "media_info": info},
                         work_dir=tmp_path / "asr")
 
 
@@ -358,28 +358,10 @@ def test_run_requires_child_output(context, monkeypatch):
     assert error.value.content["error"]["code"] == "STAGE_OUTPUT_MISSING"
 
 
-def test_cancellation_reaps_asr_child_before_returning(context, monkeypatch):
-    real_popen = subprocess.Popen
-    children = []
-    checks = 0
-
-    def slow_child(command, **kwargs):
-        child = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        children.append(child)
-        return child
-
-    def check_cancel():
-        nonlocal checks
-        if children:
-            checks += 1
-            if checks == 2:
-                raise StageCancelled()
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_child)
-    with pytest.raises(StageCancelled):
-        asr.run(replace(context, check_cancel=check_cancel), lambda *args: None)
-    assert len(children) == 1
-    assert children[0].poll() is not None
+def test_cancellation_reaps_asr_child_before_returning(context, cancelled_media_process):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
+        asr.run(replace(context, check_cancel=cancelled_media_process), lambda *args: None)
+    assert error.value.code == "CANCELLED"
     assert not (context.work_dir / "transcript.json").exists()
 
 

@@ -40,8 +40,8 @@ export function SynthesizeNodeEditor({ node, definition, readOnly, onChange, use
     {voice?.mode === 'preset' && <label className="grid gap-2 text-sm">{tx("workflow.settings.voice")}<NativeSelect disabled={readOnly} className="min-w-0" value={voice.id ?? ''} onChange={(event) => onChange({ ...node, config: { ...node.config, voice: { mode: 'preset', id: event.target.value } } })}><option value="">{tx("workflow.settings.choose.voice")}</option>{voices.map((voice) => <option key={voice.id} value={voice.id}>{text(voice.label, language) || voice.id}</option>)}</NativeSelect></label>}
   </div>
 }
-export function NodeSettings({ document, node, types, onChange, onClose, onOpen, onDelete, readOnly = false, useSlot }: {
-  document: WorkflowDocument; node: GraphNode; types: NodeTypeDefinition[]; onChange(document: WorkflowDocument): void; onClose?(): void; onOpen?(): void; onDelete?(): void; readOnly?: boolean
+export function NodeSettings({ document, node, types, onChange, onClose, onOpen, onDelete, readOnly, useSlot }: {
+  document: WorkflowDocument; node: GraphNode; types: NodeTypeDefinition[]; onChange(document: WorkflowDocument): void; onClose?(): void; onOpen?(): void; onDelete?(): void; readOnly: boolean
 } & Bindings<'useSlot'>) {
   const tx = useText(), { language } = useI18n()
   const definition = nodeDefinition(node, types)
@@ -86,7 +86,7 @@ export function NodeSettings({ document, node, types, onChange, onClose, onOpen,
   </div>
 }
 
-export function GraphPorts({ document, types, direction, disabled = false, onChange }: { document: WorkflowDocument; types: NodeTypeDefinition[]; direction: 'inputs' | 'outputs'; disabled?: boolean; onChange(document: WorkflowDocument): void }) {
+export function GraphPorts({ document, types, direction, disabled, onChange }: { document: WorkflowDocument; types: NodeTypeDefinition[]; direction: 'inputs' | 'outputs'; disabled: boolean; onChange(document: WorkflowDocument): void }) {
   const tx = useText(), { language } = useI18n()
   const choices = sources(document, types, language).filter((source) => source.kind === 'artifact' && source.source.nodeId !== INPUTS_ID)
   return <div className="space-y-6 p-4">

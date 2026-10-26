@@ -347,16 +347,6 @@ export class SettingsForms extends Service {
     await this.write(ns, current => mergeLayers(current, input) as Record<string, unknown>, expectedRevision)
   }
 
-  /** Reset all live fields, then set the supplied fields; ordinary config is preserved.
-   * @param ns Profile entry id.
-   * @param section Complete form values.
-   * @param expectedRevision Revision returned by describe.
-   */
-  async replace(ns: string, section: object, expectedRevision?: number): Promise<void> {
-    const input = cloneJsonShaped(section)
-    await this.write(ns, (_current, base) => mergeLayers(base, input) as Record<string, unknown>, expectedRevision)
-  }
-
   /** Apply field edits without restating redacted secrets; unsetting an array index removes its element.
    * @param ns Profile entry id.
    * @param ops Ordered form edits.

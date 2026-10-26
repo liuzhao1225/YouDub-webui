@@ -1,6 +1,5 @@
 /** Generate display metadata through pi-ai's public catalog and auth context. */
 
-import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -122,10 +121,9 @@ export async function generateProviderData(providers: readonly Provider[] = buil
 /**
  * Write the deterministic catalog, or reject stale data without changing it.
  * @param check - Validate the working file instead of writing it.
- * @param cached - Validate the staged file instead; never write or stage files.
  */
-export async function syncProviderData(check: boolean, cached = false): Promise<void> {
-  const source = '/** Generated from the installed pi-ai catalog. Run pnpm gen-provider-data; do not edit. */\n\n'
+export async function syncProviderData(check: boolean): Promise<void> {
+  const source = '/** Generated from the installed pi-ai catalog. Run pnpm exec tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts; do not edit. */\n\n'
     + "import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'\n"
     + "import type { LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'\n\n"
     + "type ProviderData = Pick<LlmConfigurableProvider, 'defaultBaseURL' | 'baseURLEnv'> & { env: readonly string[] }\n\n"
@@ -141,20 +139,17 @@ export async function syncProviderData(check: boolean, cached = false): Promise<
   const path = new URL('../src/provider-data.generated.ts', import.meta.url)
   let current: string | undefined
   try {
-    current = cached ? execFileSync('git', ['show', ':packages/llm/llm-pi-ai/src/provider-data.generated.ts'], {
-      cwd: fileURLToPath(new URL('../../../../', import.meta.url)), encoding: 'utf8', stdio: 'pipe',
-    }) : readFileSync(path, 'utf8')
+    current = readFileSync(path, 'utf8')
   }
   catch (error) {
-    if (cached) throw new Error('Cannot read staged provider metadata; run pnpm gen-provider-data and stage provider-data.generated.ts', { cause: error })
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
   }
   if (current === source) return
-  if (check || cached) throw new Error(`Provider metadata is stale; run pnpm gen-provider-data${cached ? ' and stage provider-data.generated.ts' : ''}`)
+  if (check) throw new Error('Provider metadata is stale; run pnpm exec tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts')
   writeFileSync(path, source)
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  await syncProviderData(process.argv.includes('--check'), process.argv.includes('--cached'))
+  await syncProviderData(process.argv.includes('--check'))
   console.log('Provider metadata matches the installed pi-ai catalog.')
 }

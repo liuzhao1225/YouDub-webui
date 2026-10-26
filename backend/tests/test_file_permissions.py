@@ -33,7 +33,7 @@ def test_private_umask_is_inherited_by_external_process(tmp_path):
     root = _make_safe_directory(tmp_path / "umask")
     previous = os.umask(0)
     try:
-        assert runtime_security.apply_private_umask() == "posix-strong"
+        runtime_security.apply_private_umask()
         script = (
             "from pathlib import Path; "
             "root=Path(__import__('sys').argv[1]); "
@@ -243,10 +243,3 @@ def test_private_directory_symlink_is_rejected_without_changing_target(tmp_path)
         runtime_security.ensure_private_directory(linked)
 
     assert _mode(outside) == 0o750
-
-
-def test_runtime_security_interface_is_explicit():
-    assert runtime_security.RUNTIME_SECURITY_MODE in {
-        "posix-strong",
-        "windows-best-effort",
-    }

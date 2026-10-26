@@ -81,15 +81,6 @@
       "@deepseek-ai/dsh-api-settings-controller/types": [
         "./packages/api/settings-controller/src/types.ts"
       ],
-      "@deepseek-ai/dsh-api-remote-access": [
-        "./packages/api/remote-access/src/index.ts"
-      ],
-      "@deepseek-ai/dsh-api-remote-access/client": [
-        "./packages/api/remote-access/src/client/index.ts"
-      ],
-      "@deepseek-ai/dsh-api-remote-access/types": [
-        "./packages/api/remote-access/src/types.ts"
-      ],
       "@deepseek-ai/dsh-typert-protocol": [
         "./packages/typert/protocol/src/index.ts"
       ],
@@ -108,9 +99,6 @@
       "@deepseek-ai/dsh-typert-generator": [
         "./packages/typert/generator/src/index.ts"
       ],
-      "@deepseek-ai/dsh-attachment/types": [
-        "./packages/attachment/attachment/src/types.ts"
-      ],
       "@deepseek-ai/dsh-llm/types": [
         "./packages/llm/llm/src/types.ts"
       ],
@@ -120,13 +108,7 @@
       "@deepseek-ai/dsh-llm/message": [
         "./packages/llm/llm/src/message.ts"
       ],
-      "@deepseek-ai/dsh-jobs/brand": [
-        "./packages/jobs/jobs/src/brand.ts"
-      ],
-      "@deepseek-ai/dsh-jobs/view": [
-        "./packages/jobs/jobs/src/view.ts"
-      ],
-      "@deepseek-ai/dsh-credentials/types": [
+          "@deepseek-ai/dsh-credentials/types": [
         "./packages/credentials/credentials/src/types.ts"
       ],
       "@deepseek-ai/dsh-settings/types": [
@@ -210,9 +192,6 @@
       "@deepseek-ai/dsh-client-ui-theme": [
         "./packages/client/ui-theme/src"
       ],
-      "@deepseek-ai/dsh-client-ui-theme/brand-font.css": [
-        "./packages/client/ui-theme/src/styles/brand-font.css"
-      ],
       "@deepseek-ai/dsh-client-ui-settings": [
         "./packages/client/ui-settings/src"
       ],
@@ -243,17 +222,11 @@
       "@deepseek-ai/dsh-util-values": [
         "./packages/util/values/src"
       ],
-      "@deepseek-ai/dsh-native-command/types": [
-        "./packages/util/native-command/src/types.ts"
-      ],
       "@deepseek-ai/dsh-app-boot": [
         "./packages/boot/app-boot/src"
       ],
       "@deepseek-ai/dsh-atomic-write": [
         "./packages/util/atomic-write/src"
-      ],
-      "@deepseek-ai/dsh-attachment": [
-        "./packages/attachment/attachment/src"
       ],
       "@deepseek-ai/dsh-brand": [
         "./packages/util/brand/src"

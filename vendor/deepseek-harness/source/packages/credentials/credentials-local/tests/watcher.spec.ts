@@ -1,7 +1,7 @@
+import { boot, cleanups, tempDir, writeCredentials } from './fixture.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { chmod, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { LocalCredentialProvider } from '../src/index.ts'
@@ -24,10 +24,6 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     }) as typeof actual.readFile,
   }
 })
-
-function writeCredentials(file: string, text: string): Promise<void> {
-  return writeFile(file, text, { mode: 0o600 })
-}
 
 // chokidar is the nondeterministic OS boundary: faking it lets these tests
 // drive the event pipeline (error events, races with unreadable files)
@@ -63,29 +59,11 @@ async function fakeInstances(): Promise<FakeChokidar['__instances']> {
 
 const KEY = credentialRef('DSH_CRED_PIPE')
 
-const cleanups: Array<() => Promise<void>> = []
-
 afterEach(async () => {
   fsHarness.nextReadError = undefined
   while (cleanups.length > 0) await cleanups.pop()!()
   ;(await fakeInstances()).length = 0
 })
-
-async function tempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-credentials-watch-'))
-  cleanups.push(() => rm(dir, { recursive: true, force: true }))
-  return dir
-}
-
-async function boot(config: ConstructorParameters<typeof LocalCredentialProvider>[1]): Promise<Context> {
-  const ctx = new Context()
-  const fiber = ctx.plugin(LocalCredentialProvider, config)
-  cleanups.push(async () => {
-    await fiber.dispose()
-  })
-  await fiber
-  return ctx
-}
 
 describe('watcher pipeline', () => {
   it('clamps the write-settle poll interval for a zero debounce', async () => {

@@ -9,9 +9,9 @@ import { posix } from 'node:path'
 import { GenMapping, addMapping, toEncodedMap } from '@jridgewell/gen-mapping'
 import type {
   DocumentationModel,
+  MemberModel,
   FaceModel,
   InvocationModel,
-  MemberModel,
   PackageModel,
   RemoteBoundaryModel,
   RemoteTypeImportModel,
@@ -23,7 +23,6 @@ import type {
 } from './model.ts'
 import { TypeGraphRenderer } from './renderer.ts'
 import { childTypeNodeIds } from './model.ts'
-import { projectToolSchema, ToolSchemaError } from './tool-schema.ts'
 
 /** Failure to project a modeled construct into an emitted artifact. */
 export class TypertEmitError extends Error {
@@ -45,45 +44,6 @@ export interface RemoteModelEmitResult {
   readonly js: string
   readonly dts: string
   readonly dtsMap: string
-}
-
-interface RuntimeMemberModel {
-  readonly kind: MemberModel['kind']
-  readonly name: string
-  readonly signature: string
-  readonly summary?: string
-  readonly jsDoc?: string
-}
-
-interface RuntimeTypeModel {
-  readonly name: string
-  readonly declaration: string
-}
-
-interface RuntimeServiceModel extends DocumentationModel {
-  readonly key: string
-  readonly exportName: string
-  readonly members: readonly RuntimeMemberModel[]
-  readonly types: readonly RuntimeTypeModel[]
-}
-
-interface RuntimeEventModel extends DocumentationModel {
-  readonly name: string
-  readonly mode?: string
-  readonly signature: string
-}
-
-interface RuntimeObjectModel extends DocumentationModel {
-  readonly name: string
-  readonly exportName: string
-  readonly members: readonly RuntimeMemberModel[]
-  readonly types: readonly RuntimeTypeModel[]
-}
-
-interface RuntimePackageModel {
-  readonly services: readonly RuntimeServiceModel[]
-  readonly events: readonly RuntimeEventModel[]
-  readonly objects: readonly RuntimeObjectModel[]
 }
 
 /** Emit generated runtime and type artifacts from one independently analyzed face. */
@@ -113,8 +73,7 @@ export class FaceModelEmitter {
       packageModel.schemas,
       invocationBoundaryRoots(packageModel.invocations),
     )
-    const runtimeModel = this.runtimeModel(packageModel)
-    const js = this.renderJs(packageModel, schemaArtifact, runtimeModel)
+    const js = this.renderJs(packageModel, schemaArtifact)
     const dts = this.renderDts(packageModel, schemaArtifact)
     return {
       package: packageName,
@@ -128,66 +87,9 @@ export class FaceModelEmitter {
     }
   }
 
-  private runtimeModel(packageModel: PackageModel): RuntimePackageModel {
-    const services = packageModel.services.map((service): RuntimeServiceModel => {
-      const members = service.members.map(id => this.runtimeMember(this.renderer.member(id)))
-      return {
-        ...documentationLiteral(service),
-        key: service.key,
-        exportName: service.export.name,
-        members,
-        types: this.runtimeTypes(this.renderer.declarationClosureForMembers(service.members), service.symbol),
-      }
-    })
-    const events = packageModel.events.map((event): RuntimeEventModel => {
-      const node = this.renderer.node(event.signature)
-      if (node.kind !== 'function') {
-        throw new TypertEmitError(`typert emitter(${this.face.face}): event ${event.name} is not a function type`)
-      }
-      return {
-        ...documentationLiteral(event),
-        name: event.name,
-        ...(event.mode === undefined ? {} : { mode: event.mode }),
-        signature: `${quote(event.name)}${this.renderer.renderSignature(node.signature)}`,
-      }
-    })
-    const objects = packageModel.objects.map((object): RuntimeObjectModel => {
-      const declaration = this.renderer.declaration(object.symbol)
-      return {
-        ...documentationLiteral(object),
-        name: declaration.name,
-        exportName: object.export.name,
-        members: declaration.members.map(member => this.runtimeMember(member)),
-        types: this.runtimeTypes(this.renderer.declarationClosureForMembers(declaration.members.map(member => member.id)), declaration.id),
-      }
-    })
-    return { services, events, objects }
-  }
-
-  private runtimeMember(member: MemberModel): RuntimeMemberModel {
-    return {
-      kind: member.kind,
-      name: member.name,
-      signature: this.renderer.renderMember(member, true),
-      ...(member.summary === undefined ? {} : { summary: member.summary }),
-      ...(member.jsDoc === undefined ? {} : { jsDoc: member.jsDoc }),
-    }
-  }
-
-  private runtimeTypes(declarations: readonly TypeDeclarationModel[], root: SymbolId): RuntimeTypeModel[] {
-    return declarations
-      .filter(declaration => declaration.id !== root)
-      .map(declaration => ({
-        name: declaration.name,
-        declaration: this.renderer.renderDeclaration(declaration.id),
-      }))
-      .sort((left, right) => left.name.localeCompare(right.name))
-  }
-
   private renderJs(
     packageModel: PackageModel,
     schemas: SchemaArtifact,
-    runtimeModel: RuntimePackageModel,
   ): string {
     const lines = [
       '/* Generated by @deepseek-ai/dsh-typert-generator from FaceModel — do not edit. */',
@@ -201,18 +103,11 @@ export class FaceModelEmitter {
     for (const schema of schemas.exports) lines.push(`export const ${schema.exportName} = ${schema.internalName}`)
     if (schemas.exports.length > 0) lines.push('')
     if (packageModel.invocations.length > 0) lines.push(`const $remote = ${this.remoteInfoLiteral(packageModel, schemas)}`, '')
-    const model = JSON.stringify(runtimeModel, null, 2)
     lines.push('export const TYPERT = {')
     lines.push(`  package: ${quote(packageModel.name)},`)
     lines.push(`  face: ${quote(this.face.face)},`)
-    lines.push('  schemas: [')
-    for (const schema of schemas.exports) {
-      lines.push(`    { name: ${quote(schema.exportName)}, create: ${schema.exportName} },`)
-    }
-    lines.push('  ],')
     if (packageModel.invocations.length > 0) lines.push('  get invocations() { return $remote.descriptors },')
     else lines.push('  invocations: [', '  ],')
-    lines.push(`  model: ${indent(model, 2).trimStart()},`)
     lines.push('}')
     return `${lines.join('\n')}\n`
   }
@@ -265,23 +160,6 @@ export class FaceModelEmitter {
     }
   }
 
-  private remoteMethodTypes(packageModel: PackageModel): string {
-    const names = allocateRemoteImportNames(remoteImports(packageModel.invocations))
-    const entries = packageModel.invocations.filter(invocation => invocation.invocation.kind === 'direct').map((invocation) => {
-      const input = this.remoteInputType(invocation, names)
-      const result = this.renderer.renderType(invocation.result.type, names)
-      const uplink = invocation.uplink === undefined ? '' : `, ${this.renderer.renderType(invocation.uplink.boundary.type, names)}`
-      const mode = invocation.mode === 'stream' ? `, ${quote('stream')}${uplink}`
-        : containsBytes(this.renderer, invocation.result.codecType) ? `, 'unary', never, RemoteDecoded<${result}>` : ''
-      return `  readonly ${quote(`${invocation.namespace}/${invocation.method}`)}: TypertRemoteMethod<${input}, ${result}${mode}>`
-    })
-    return `{\n${entries.join('\n')}\n}`
-  }
-
-  private remoteInputType(invocation: InvocationModel, names: ReadonlyMap<SymbolId, string>): string {
-    return `{ ${invocation.parameters.map(parameter => `readonly ${quote(parameter.wire)}${parameter.boundary.acceptsUndefined ? '?' : ''}: ${this.renderer.renderType(parameter.boundary.type, names)}`).join('; ')} }`
-  }
-
   private remoteInfoLiteral(packageModel: PackageModel, schemas: SchemaArtifact): string {
     return [
       'createTypertRemoteInfo({',
@@ -290,7 +168,7 @@ export class FaceModelEmitter {
       ...packageModel.invocations.map(invocation =>
         `    ${quote(`${invocation.namespace}/${invocation.method}`)}: ${indent(this.invocationLiteral(invocation, schemas), 4).trimStart()},`),
       '  },',
-      '}, z)',
+      '})',
     ].join('\n')
   }
 
@@ -332,16 +210,10 @@ export class FaceModelEmitter {
       lines.push(`      source: ${quote(parameter.source)},`)
       if (parameter.lookup !== undefined) lines.push(`      lookup: ${quote(parameter.lookup)},`)
       if (parameter.boundary.acceptsUndefined) lines.push('      acceptsUndefined: true,')
-      for (const strict of [false, true]) {
-        lines.push(`      ${strict ? 'strictCodec' : 'codec'}: ${indent(strictCodec(
-          parameter.boundary,
-          schemas.boundary(parameterBoundaryKey(invocation, index, strict)),
-          undefined,
-          toolProjection(() => projectToolSchema(
-            this.renderer, parameter.boundary.codecType, strict, parameter.boundary.acceptsUndefined,
-          )),
-        ), 6).trimStart()},`)
-      }
+      lines.push(`      codec: ${indent(strictCodec(
+        parameter.boundary,
+        schemas.boundary(parameterBoundaryKey(invocation, index)),
+      ), 6).trimStart()},`)
       lines.push('    },')
     })
     lines.push('  ],')
@@ -361,7 +233,6 @@ export class FaceModelEmitter {
       invocation.result,
       schemas.boundary(resultBoundaryKey(invocation)),
       schemas.encoder(resultBoundaryKey(invocation)),
-      toolProjection(() => projectToolSchema(this.renderer, invocation.result.codecType)),
       returns,
     ), 2).trimStart()},`)
     lines.push(`  sourceLocation: ${JSON.stringify(invocation.location)},`)
@@ -390,7 +261,6 @@ export class FaceModelEmitter {
       '  RemoteResult,',
       ...packageModel.invocations.some(invocation => invocation.mode === 'stream') ? ['  RemoteStreamHandle,'] : [],
       '  TypertRemoteInfo,',
-      ...packageModel.invocations.some(invocation => invocation.invocation.kind === 'direct') ? ['  TypertRemoteMethod,'] : [],
       '} from \'@deepseek-ai/dsh-typert-protocol\'',
     ]
     const sourceMap = new GenMapping({ file: 'typert.remote-client.d.ts' })
@@ -432,7 +302,7 @@ export class FaceModelEmitter {
     }
     lines.push('}')
     lines.push('')
-    lines.push(`export declare const TYPERT_REMOTE: TypertRemoteInfo<${this.remoteMethodTypes(packageModel)}>`)
+    lines.push('export declare const TYPERT_REMOTE: TypertRemoteInfo')
     lines.push('export default TYPERT_REMOTE')
     lines.push('//# sourceMappingURL=typert.remote-client.d.ts.map')
     return {
@@ -562,31 +432,12 @@ interface SchemaArtifact {
 interface BoundarySchemaRoot {
   readonly key: string
   readonly type: TypeNodeId
-  /** Reject unknown fields in declared objects reached from this root. */
-  readonly closedObjects?: true
-}
-
-function toolProjection(project: () => Record<string, unknown>): string {
-  try {
-    return `jsonSchema: ${JSON.stringify(project())}`
-  } catch (error) {
-    if (!(error instanceof ToolSchemaError)) throw error
-    return `jsonSchemaError: ${quote(error.message)}`
-  }
 }
 
 function invocationSchemas(
   renderer: TypeGraphRenderer, schemas: readonly SchemaModel[], roots: readonly BoundarySchemaRoot[],
 ): SchemaArtifact {
-  const identifiers = new Set<string>()
-  const ordinary = new SchemaEmitter(renderer, schemas, roots.filter(root => !root.closedObjects), {}, identifiers).emit()
-  const closedRoots = roots.filter(root => root.closedObjects)
-  const closed = new SchemaEmitter(renderer, [], closedRoots, { closedObjects: true }, identifiers).emit()
-  const keys = new Set(closedRoots.map(root => root.key))
-  return { definitions: [...ordinary.definitions, ...closed.definitions], exports: ordinary.exports,
-    boundary: key => keys.has(key) ? closed.boundary(key) : ordinary.boundary(key),
-    encoder: key => keys.has(key) ? closed.encoder(key) : ordinary.encoder(key),
-  }
+  return new SchemaEmitter(renderer, schemas, roots).emit()
 }
 
 class ResultEncoderEmitter {
@@ -710,9 +561,8 @@ class SchemaEmitter {
     private readonly renderer: TypeGraphRenderer,
     private readonly schemas: readonly SchemaModel[],
     private readonly boundaries: readonly BoundarySchemaRoot[],
-    private readonly options: { readonly closedObjects?: boolean } = {},
-    identifiers = new Set<string>(),
   ) {
+    const identifiers = new Set<string>()
     const declarations = new Map<SymbolId, TypeDeclarationModel>()
     for (const schema of schemas) {
       for (const declaration of renderer.declarationClosureForTypes([schema.type])) {
@@ -726,7 +576,7 @@ class SchemaEmitter {
     }
     this.declarations = renderer.graph.declarations.filter(declaration => declarations.has(declaration.id))
     for (const declaration of this.declarations) {
-      const base = `${options.closedObjects ? 'closed$' : ''}${safeIdentifier(declaration.name)}$schema`
+      const base = `${safeIdentifier(declaration.name)}$schema`
       let name = base
       let suffix = 2
       while (identifiers.has(name)) name = `${base}${String(suffix++)}`
@@ -939,11 +789,8 @@ class SchemaEmitter {
   ): string {
     const properties: Extract<MemberModel, { kind: 'property' }>[] = []
     const indices: string[] = []
-    let stringIndexValue: string | undefined
-    let stringIndexType: TypeNodeId | undefined
     let symbolMembers = 0
     for (const member of members) {
-      if (member.static || member.visibility !== 'public') continue
       if (member.computed === 'symbol') {
         symbolMembers++
         continue
@@ -958,10 +805,6 @@ class SchemaEmitter {
         }
         const key = this.typeSchema(parameter.type, substitutions)
         const value = this.typeSchema(member.signature.returns, substitutions)
-        if (key === 'z.string()') {
-          stringIndexValue = value
-          stringIndexType = member.signature.returns
-        }
         indices.push(this.readonly(`z.record(${key}, ${value})`, member.readonly))
         continue
       }
@@ -973,56 +816,16 @@ class SchemaEmitter {
     if (properties.length === 0 && indices.length === 0 && symbolMembers > 0) return 'z.unknown()'
     const fields = properties.map((member) => {
       // Freezing a union may freeze its populated Uint8Array member.
-      const type = this.options.closedObjects && stringIndexType !== undefined
-        ? this.indexedPropertySchema(member.type, stringIndexType, substitutions)
-        : this.typeSchema(member.type, substitutions)
+      const type = this.typeSchema(member.type, substitutions)
       const schema = this.readonly(type,
         member.readonly && !containsBytes(this.renderer, member.type, false))
       return `${quote(member.jsonName ?? member.name)}: ${this.describe(this.optional(schema, member.optional), member)}`
     })
-    const object = `z.${this.options.closedObjects && indices.length === 0 ? 'strictObject' : 'object'}({${fields.length === 0 ? '' : `\n${fields.map(field => `  ${field},`).join('\n')}\n`}})`
+    const object = `z.object({${fields.length === 0 ? '' : `\n${fields.map(field => `  ${field},`).join('\n')}\n`}})`
     const index = indices[0]
     if (index === undefined) return object
     if (properties.length === 0) return index
-    // Named keys enforce both their declared type and the index value; the catchall checks other keys.
-    if (this.options.closedObjects && stringIndexValue !== undefined) return `${object}.catchall(${stringIndexValue})`
     return `z.intersection(${object}, ${index})`
-  }
-
-  private indexedPropertySchema(
-    declared: TypeNodeId,
-    indexed: TypeNodeId,
-    substitutions: ReadonlyMap<string, string>,
-  ): string {
-    if (declared === indexed) return this.typeSchema(declared, substitutions)
-    const own = this.renderer.node(declared)
-    const value = this.renderer.node(indexed)
-    if (own.kind === 'union') {
-      return `z.union([${own.types.map(type => this.indexedPropertySchema(type, indexed, substitutions)).join(', ')}])`
-    }
-    if (value.kind === 'union') {
-      return `z.union([${value.types.map(type => this.indexedPropertySchema(declared, type, substitutions)).join(', ')}])`
-    }
-    const ownProperties = own.kind === 'object'
-      ? own.members.filter((member): member is Extract<MemberModel, { kind: 'property' }> => member.kind === 'property') : []
-    const valueProperties = value.kind === 'object'
-      ? value.members.filter((member): member is Extract<MemberModel, { kind: 'property' }> => member.kind === 'property') : []
-    if (own.kind === 'object' && value.kind === 'object' && !own.json && !value.json
-      && ownProperties.length === own.members.length && valueProperties.length === value.members.length
-      && [...ownProperties, ...valueProperties].every(member => !member.static
-        && member.visibility === 'public' && member.computed === undefined)) {
-      const indexedFields = new Map(valueProperties.map(member => [member.jsonName ?? member.name, member]))
-      const overlaps = ownProperties.flatMap((member) => {
-        const inherited = indexedFields.get(member.jsonName ?? member.name)
-        if (inherited === undefined) return []
-        const combined = this.indexedPropertySchema(member.type, inherited.type, substitutions)
-        const schema = this.readonly(this.optional(combined, member.optional && inherited.optional),
-          (member.readonly || inherited.readonly) && !containsBytes(this.renderer, member.type, false))
-        return [`${quote(member.jsonName ?? member.name)}: ${this.describe(schema, member)}`]
-      })
-      return `z.strictObject({ ...${this.typeSchema(indexed, substitutions)}.shape, ...${this.typeSchema(declared, substitutions)}.shape${overlaps.length === 0 ? '' : `, ${overlaps.join(', ')}`} })`
-    }
-    return `z.intersection(${this.typeSchema(declared, substitutions)}, ${this.typeSchema(indexed, substitutions)})`
   }
 
   private exportSchemaName(model: SchemaModel): string {
@@ -1084,15 +887,6 @@ class SchemaEmitter {
   }
 }
 
-function documentationLiteral(documentation: DocumentationModel): DocumentationModel {
-  return {
-    ...(documentation.description === undefined ? {} : { description: documentation.description }),
-    ...(documentation.summary === undefined ? {} : { summary: documentation.summary }),
-    tags: documentation.tags,
-    ...(documentation.jsDoc === undefined ? {} : { jsDoc: documentation.jsDoc }),
-  }
-}
-
 function invocationBoundaryRoots(invocations: readonly InvocationModel[]): BoundarySchemaRoot[] {
   const result: BoundarySchemaRoot[] = []
   for (const invocation of invocations) {
@@ -1101,7 +895,6 @@ function invocationBoundaryRoots(invocations: readonly InvocationModel[]): Bound
     }
     invocation.parameters.forEach((parameter, index) => {
       result.push({ key: parameterBoundaryKey(invocation, index), type: parameter.boundary.codecType })
-      result.push({ key: parameterBoundaryKey(invocation, index, true), type: parameter.boundary.codecType, closedObjects: true })
     })
     if (invocation.uplink !== undefined) {
       result.push({ key: uplinkBoundaryKey(invocation), type: invocation.uplink.boundary.codecType })
@@ -1119,8 +912,8 @@ function uplinkBoundaryKey(invocation: InvocationModel): string {
   return `${invocation.id}:uplink`
 }
 
-function parameterBoundaryKey(invocation: InvocationModel, index: number, strict = false): string {
-  return `${invocation.id}:parameter:${String(index)}${strict ? ':strict' : ''}`
+function parameterBoundaryKey(invocation: InvocationModel, index: number): string {
+  return `${invocation.id}:parameter:${String(index)}`
 }
 
 function resultBoundaryKey(invocation: InvocationModel): string {
@@ -1151,14 +944,13 @@ function containsBytes(
   return childTypeNodeIds(node).some(child => containsBytes(renderer, child, nested, visited))
 }
 
-function strictCodec(boundary: RemoteBoundaryModel, schema: string, encoder?: string, projection?: string, description?: string): string {
+function strictCodec(boundary: RemoteBoundaryModel, schema: string, encoder?: string, description?: string): string {
   return [
     '{',
     '  mode: \'strict\',',
     `  typeSymbol: ${quote(boundary.typeSymbol)},`,
     `  create: ${schema},`,
     ...(description === undefined ? [] : [`  description: ${quote(description)},`]),
-    ...(projection === undefined ? [] : [`  ${projection},`]),
     ...(encoder === undefined ? [] : [
       `  decode: value => ${schema}().parse(value),`,
       `  encode: (value, writeBytes) => ${encoder}(value, writeBytes, [], new Map()),`,
@@ -1195,7 +987,6 @@ function allocateRemoteImportNames(imports: readonly RemoteTypeImportModel[]): R
     'RemoteResult',
     'RemoteStreamHandle',
     'TypertRemoteInfo',
-    'TypertRemoteMethod',
     'TYPERT_REMOTE',
   ])
   const names = new Map<SymbolId, string>()

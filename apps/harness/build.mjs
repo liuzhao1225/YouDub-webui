@@ -60,7 +60,7 @@ const host = await build({ ...common, entryPoints: ['src/host.mjs'], outfile: 'd
 const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile: 'dist/client.js', platform: 'browser', format: 'cjs', jsx: 'automatic', metafile: true,
   external: ['react', 'react/jsx-runtime', 'react-dom', '@deepseek-ai/cordis', '@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-store'], loader: { '.css': 'text' }, nodePaths: [resolve(here, 'node_modules'), resolve(web, 'node_modules')],
   define: { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(product.version), 'process.env.DSH_CLIENT_TITLE': JSON.stringify('YouDub'), 'process.env.DSH_CLIENT_COMMIT_HASH': 'undefined', 'process.env.DSH_CLIENT_GIT_DIRTY': 'undefined' },
-  alias: { '@/lib/asset-url': resolve(frontend, 'asset-url.ts'), '@/lib/clipboard': resolve(frontend, 'clipboard.ts'), '@/lib/i18n': resolve(frontend, 'i18n.tsx'), '@/lib/theme': resolve(frontend, 'theme.tsx'), '@': resolve(web, 'src') },
+  alias: { '@': resolve(web, 'src') },
   plugins: [sourceBuiltImports, officialAssets, { name: 'youdub-component-boundaries', setup(builder) {
     builder.onResolve({ filter: /^cordis$/ }, () => ({ path: '@deepseek-ai/cordis', external: true }));
     // Both tests and Desktop use the same YouDub wrappers. Only resolve their shared
@@ -74,11 +74,6 @@ const client = await build({ ...common, entryPoints: ['src/client.jsx'], outfile
       if (resolve(dirname(args.importer), args.path) === resolve(web, 'src/lib/harness-store')) {
         return { path: '@deepseek-ai/dsh-client-store', external: true };
       }
-    });
-    builder.onResolve({ filter: /(?:^|\/)sdk(?:\.tsx)?$/ }, args => {
-      if (!args.importer.startsWith(resolve(web, 'src'))) return;
-      const target = resolve(dirname(args.importer), args.path).replace(/\.tsx$/, '');
-      if (args.path === '@/plugin/sdk' || target === resolve(web, 'src/plugin/sdk')) return { path: resolve(frontend, 'sdk.tsx') };
     });
     builder.onResolve({ filter: /^youdub:styles$/ }, () => ({ path: 'styles', namespace: 'youdub-styles' }));
     builder.onResolve({ filter: /^youdub:logo$/ }, () => ({ path: 'logo', namespace: 'youdub-logo' }));

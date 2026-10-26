@@ -187,11 +187,11 @@ function ConfigRow({ icon: Icon, tint, title, description, children }: {
 }
 
 // 可见的是简短说明；srPrefix 补全读屏时的完整名称（如“语音识别模型”）。
-function Field({ id, caption, srPrefix, className, children }: {
-  id?: string; caption: string; srPrefix?: string; className?: string; children: ReactNode
+function Field({ id, caption, srPrefix, children }: {
+  id?: string; caption: string; srPrefix?: string; children: ReactNode
 }) {
   const label = <>{srPrefix ? <span className="sr-only">{srPrefix}</span> : null}{caption}</>
-  return <div className={cn("min-w-0 space-y-1.5", className)}>
+  return <div className="min-w-0 space-y-1.5">
     {id ? <Label htmlFor={id} className="flex h-5 items-center text-xs font-medium text-muted-foreground">{label}</Label>
       : <p className="flex h-5 items-center text-xs font-medium text-muted-foreground">{label}</p>}
     {children}
@@ -249,8 +249,8 @@ function LanguageField({ id, caption, value, options, onChange }: {
   </Field>
 }
 
-export function TaskConfigForm({ value, runtime, onChange, showTranslation = true }: {
-  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void; showTranslation?: boolean
+export function TaskConfigForm({ value, runtime, onChange }: {
+  value: TaskConfig; runtime: Runtime; onChange: (value: TaskConfig) => void
 }) {
   const text = useText()
   const tts = selectedModel(runtime, "tts", value.tts)
@@ -291,10 +291,10 @@ export function TaskConfigForm({ value, runtime, onChange, showTranslation = tru
       </Field>
     </ConfigRow>
 
-    {showTranslation && <ConfigRow icon={Languages} tint="violet" title={text("localize.task.config.translation")}
+    <ConfigRow icon={Languages} tint="violet" title={text("localize.task.config.translation")}
       description={text("localize.task.config.translates.the.transcript.sentence.by.sentence")}>
       <ModelField kind="translation" id="model-translation" caption={text("localize.task.config.model")} srPrefix={text("localize.task.config.translation.2")} value={value.translation} runtime={runtime} onChange={(translation) => change({ translation })} />
-    </ConfigRow>}
+    </ConfigRow>
 
     {value.output_mode === "both" ? <ConfigRow icon={Captions} tint="teal" title={text("localize.task.config.subtitles")}
       description={text("localize.task.config.qwen.can.align.subtitles.to.the.generated.speech.keeping.full.sen")}>

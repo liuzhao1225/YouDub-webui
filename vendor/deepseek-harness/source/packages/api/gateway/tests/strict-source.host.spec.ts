@@ -3,7 +3,6 @@ import { afterEach, expect, it } from 'vitest'
 import { z } from 'zod'
 import { bindTypertRemote, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry, { type TypertContribution } from '@deepseek-ai/dsh-typert-registry'
-import RemoteAccessService from '@deepseek-ai/dsh-api-remote-access'
 import TypertGateway from '../src/index.ts'
 import { ownerPeer } from './peer.ts'
 
@@ -11,8 +10,7 @@ const contexts: Context[] = []
 afterEach(async () => { await Promise.all(contexts.splice(0).map(ctx => ctx.fiber.dispose())) })
 
 const contribution: TypertContribution = {
-  package: '@fixture/strict', face: 'host', schemas: [],
-  model: { services: [], events: [], objects: [] },
+  package: '@fixture/strict', face: 'host',
   invocations: [{
     id: '@fixture/strict#items/read', service: 'items', namespace: 'items', method: 'read',
     invocation: { kind: 'direct' },
@@ -41,7 +39,7 @@ async function setup() {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(TypertRegistry)
-  await ctx.plugin(RemoteAccessService)
+
   await ctx.plugin(TypertGateway)
   const service = new ItemsService(ctx)
   return { ctx, service }

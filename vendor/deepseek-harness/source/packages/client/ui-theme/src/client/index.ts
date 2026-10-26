@@ -4,7 +4,7 @@
  * `prefers-color-scheme`, and publishes immutable snapshots; it never touches
  * the DOM — ui-layout's presenter consumes the resolved snapshot. The Host
  * settings scope loads and stores the preference in the user-settings
- * document. The plugin also registers the Appearance and font settings rows
+ * document. The plugin also registers the Appearance row
  * into the settings General section — the theme feature owns its own settings
  * surface. Desktop shortcuts adjust text and code font sizes together.
  */
@@ -21,21 +21,18 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { AppearanceRowInjected } from './AppearanceRow.tsx'
 import { AppearanceRow } from './AppearanceRow.tsx'
-import type { FontSettingsInjected } from './FontSettingsGroup.tsx'
-import { FontSettingsGroup } from './FontSettingsGroup.tsx'
-import { createAppearanceRowStore, createFontRowStore } from './settings-store.ts'
+import { createAppearanceRowStore } from './settings-store.ts'
 import { installThemeStyles } from './styles.ts'
 import { en, zh, type ThemeKey } from './locales.ts'
 import {
-  DEFAULT_FONT_SIZES, DEFAULT_PREFERENCE, FONT_FAMILY_FIELDS, FONT_ROLES, FONT_SIZE_SPECS,
+  DEFAULT_FONT_SIZES, DEFAULT_PREFERENCE, FONT_ROLES, FONT_SIZE_SPECS,
   fontFamilyVariable, isFontSize, isThemePreference, normalizeFontFamily, sectionFontSizes,
   THEME_PREFERENCE_FIELD, THEME_SETTINGS_NAMESPACE,
   type FontFamilies, type FontRole, type FontSizes, type ThemePreference, type ThemeSettings,
 } from '../theme-settings.ts'
 
 export type { AppearanceRowComponentProps, AppearanceRowInjected } from './AppearanceRow.tsx'
-export type { FontSettingsGroupProps, FontSettingsInjected } from './FontSettingsGroup.tsx'
-export type { AppearanceRowState, FontRowState } from './settings-store.ts'
+export type { AppearanceRowState } from './settings-store.ts'
 export type { ThemeKey } from './locales.ts'
 export type { FontFamilies, FontRole, FontSizes, ThemePreference, ThemeSettings } from '../theme-settings.ts'
 
@@ -49,37 +46,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** Theme token dictionary: --dsw-alias-* overrides keyed by variable name. */
-export type ThemeTokens = Record<string, string>
-
-/**
- * One override-layer token value: both palette modes are mandatory (repeat
- * the same value when the token is scheme-invariant) so an override never
- * goes illegible when the user switches to the other scheme.
- */
-export interface ThemeTokenModes {
-  /** Value applied while the light base palette is active. */
-  light: string
-  /** Value applied while the dark base palette is active. */
-  dark: string
-}
-
-/** Override-layer dictionary: token names to per-mode value pairs. */
-export type ThemeTokenOverrides = Record<string, ThemeTokenModes>
-
-/** One selectable theme: id, dark/light semantics, and alias-token overrides. */
-export interface ThemeDefinition {
-  /** Theme id (the setTheme argument for concrete themes). */
-  id: string
-  /**
-   * Which base palette this theme builds on. The presenter switches
-   * `body[data-ds-dark-theme]` from this field — never from the id.
-   */
-  colorScheme: 'light' | 'dark'
-  /** Alias-layer overrides applied as inline CSS variables over the base palette. */
-  tokens: ThemeTokens
-}
-
 /** Immutable theme state published on every change. */
 export interface ThemeSnapshot {
   /** The persisted preference (may be `system`). */
@@ -88,30 +54,10 @@ export interface ThemeSnapshot {
   fontSizes: FontSizes
   /** Normalized user font lists by role; `''` selects the role's built-in stack. */
   fontFamilies: FontFamilies
-  /**
-   * The resolved active theme (`system` resolved via prefers-color-scheme)
-   * with override layers folded into its tokens (seq order, later layers win
-   * per-token; each value picked for the active color scheme).
-   */
-  active: ThemeDefinition
-  /** Registered themes in registration order. */
-  themes: readonly ThemeDefinition[]
+  /** Resolved palette after applying the system color-scheme preference. */
+  active: { readonly colorScheme: 'light' | 'dark' }
   /** Monotonic change counter (registry or active changes). */
   revision: number
-}
-
-/** One theme token exposed to pre-definition Cordis inspection. */
-export interface ThemeTokenInspection {
-  /** Token name accepted by {@link ThemeRuntime.overrideTokens}. */
-  name: string
-  /** Intended visual role. */
-  description: string
-  /** CSS value category. */
-  valueType: string
-  /** Whether override layers must supply both palette modes. */
-  requiresLightAndDark: boolean
-  /** CSS custom property consumed by UI styles. */
-  cssVariable?: string
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -129,43 +75,10 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-const BUILTIN_THEMES: readonly ThemeDefinition[] = Object.freeze([
-  Object.freeze({ id: 'light', colorScheme: 'light' as const, tokens: Object.freeze({}) }),
-  Object.freeze({ id: 'dark', colorScheme: 'dark' as const, tokens: Object.freeze({}) }),
-])
-
-const BUILTIN_INSPECT_TOKENS: readonly ThemeTokenInspection[] = Object.freeze([
-  { name: '--dsw-alias-bg-base', description: 'Application base background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-bg-base' },
-  { name: '--dsw-alias-bg-layer-1', description: 'Primary raised surface background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-bg-layer-1' },
-  { name: '--dsw-alias-bg-layer-2', description: 'Secondary nested surface background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-bg-layer-2' },
-  { name: '--dsw-alias-bg-overlay', description: 'Overlay and popover background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-bg-overlay' },
-  { name: '--dsw-alias-border-l1', description: 'Primary subtle border.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-border-l1' },
-  { name: '--dsw-alias-border-l2', description: 'Secondary stronger border.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-border-l2' },
-  { name: '--dsw-alias-brand-primary', description: 'Primary brand accent.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-brand-primary' },
-  { name: '--dsw-alias-label-primary', description: 'Primary text color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-label-primary' },
-  { name: '--dsw-alias-label-secondary', description: 'Secondary text color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-label-secondary' },
-  { name: '--dsw-alias-state-error-primary', description: 'Primary error state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-state-error-primary' },
-  { name: '--dsw-alias-state-idle-primary', description: 'Primary inactive state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-state-idle-primary' },
-  { name: '--dsw-alias-state-success-primary', description: 'Primary success state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-state-success-primary' },
-  { name: '--dsw-alias-state-warn-primary', description: 'Primary warning state color.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-alias-state-warn-primary' },
-  { name: '--dsw-specific-sidebar-fill', description: 'Sidebar column and title-row background.', valueType: 'CSS color', requiresLightAndDark: true, cssVariable: '--dsw-specific-sidebar-fill' },
-])
-
-/**
- * Theme registry and preference owner. `light`/`dark` are built in (the base
- * stylesheets carry both palettes); third-party themes register alias-layer
- * overrides. Reads go through {@link getTheme}; preference writes only
- * through {@link setTheme}; continuous sync only through the `theme/change`
- * event. {@link overrideTokens} stacks partial token layers over the active
- * theme without touching the registry.
- * The service holds the `prefers-color-scheme` media query (environment
- * sensing, not presentation) and re-emits when the OS scheme flips while the
- * preference is `system`.
- */
+/** Owns durable appearance preferences and the system color-scheme listener. */
 export class ThemeRuntime {
   private readonly ctx: ClientContext
   private readonly host: ConfigForm<ThemeSettings>
-  private themes: ThemeDefinition[] = [...BUILTIN_THEMES]
   private preference: ThemePreference
   private fontSizes: FontSizes = bootstrapFontSizes()
   private fontFamilies: FontFamilies = bootstrapFontFamilies()
@@ -174,9 +87,6 @@ export class ThemeRuntime {
   private pendingWrites = 0
   private snapshot: ThemeSnapshot
   private readonly media: MediaQueryList | undefined
-  /** Override layers by source; seq (monotonic) is the stacking order. */
-  private readonly overrides = new Map<string, { seq: number; tokens: ThemeTokenOverrides }>()
-  private overrideSeq = 0
 
   /**
    * @param ctx - owning context (change events are emitted on it; the
@@ -215,52 +125,16 @@ export class ThemeRuntime {
   }
 
   /**
-   * Export the current token directory without reading DOM or computed styles.
-   * @returns stable JSON-safe token descriptions, including registered and override-only names.
-   */
-  exportInspectTokens(): ThemeTokenInspection[] {
-    const tokens = new Map(BUILTIN_INSPECT_TOKENS.map(token => [token.name, token]))
-    for (const theme of this.themes) {
-      for (const name of Object.keys(theme.tokens)) {
-        if (!tokens.has(name)) tokens.set(name, dynamicToken(name))
-      }
-    }
-    for (const layer of this.overrides.values()) {
-      for (const name of Object.keys(layer.tokens)) {
-        if (!tokens.has(name)) tokens.set(name, dynamicToken(name))
-      }
-    }
-    return [...tokens.values()].map(token => ({ ...token })).sort((left, right) => left.name.localeCompare(right.name))
-  }
-
-  /**
    * Switch the theme preference — the only user preference write entry.
    * Built-in preferences are written through the settings scope and every
    * accepted value emits `theme/change`.
-   * @param id - a registered theme id or `system`; unknown ids throw.
+   * @param id - light, dark, or system; unknown values throw.
    */
   setTheme(id: string): void {
-    if (id !== 'system' && !this.themes.some(t => t.id === id)) {
-      throw new Error(`theme "${id}" is not registered`)
-    }
+    if (!isThemePreference(id)) throw new Error(`unknown theme preference "${id}"`)
     if (this.preference === id) return
-    this.preference = id as ThemePreference
-    if (isThemePreference(id)) this.write(() => this.host.set(THEME_PREFERENCE_FIELD, id))
-    this.publish()
-  }
-
-  /**
-   * Change one role's font size. Accepted
-   * values are written through the settings scope and emit `theme/change`.
-   * @param role - font role.
-   * @param px - integer px within the role's `FONT_SIZE_SPECS` range; out-of-range or fractional values throw.
-   */
-  setFontSize(role: FontRole, px: number): void {
-    const spec = FONT_SIZE_SPECS[role]
-    if (!isFontSize(role, px)) throw new Error(`${role} font size ${px} is outside ${spec.min}..${spec.max}`)
-    if (this.fontSizes[role] === px) return
-    this.fontSizes = Object.freeze({ ...this.fontSizes, [role]: px })
-    this.write(() => this.host.set(spec.field, px))
+    this.preference = id
+    this.write(() => this.host.set(THEME_PREFERENCE_FIELD, id))
     this.publish()
   }
 
@@ -283,21 +157,6 @@ export class ThemeRuntime {
     if (ops.length === 0) return
     this.fontSizes = Object.freeze(fontSizes)
     this.write(() => this.host.mutate(ops))
-    this.publish()
-  }
-
-  /**
-   * Change one role's font list — the only font-family write entry. The value
-   * is normalized, written through the settings scope, and emits `theme/change`
-   * when the normalized list differs.
-   * @param role - font role.
-   * @param value - comma-separated family names; a value without names restores the built-in stack.
-   */
-  setFontFamily(role: FontRole, value: string): void {
-    const list = normalizeFontFamily(value)
-    if (this.fontFamilies[role] === list) return
-    this.fontFamilies = Object.freeze({ ...this.fontFamilies, [role]: list })
-    this.write(() => this.host.set(FONT_FAMILY_FIELDS[role], list))
     this.publish()
   }
 
@@ -325,92 +184,17 @@ export class ThemeRuntime {
     this.publish()
   }
 
-  /**
-   * Register a theme. Duplicate id throws (single occupant per id; the
-   * built-in pair counts; `system` is a preference, not a registrable id).
-   * @param definition - theme id, colorScheme, and alias-token overrides.
-   * @returns disposer. Disposing the theme backing the active preference
-   * resets the preference to the default so the UI never keeps tokens of an
-   * unregistered theme.
-   */
-  register(definition: ThemeDefinition): () => void {
-    if (definition.id === 'system') throw new Error('"system" is a preference, not a registrable theme id')
-    if (this.themes.some(t => t.id === definition.id)) {
-      throw new Error(`theme "${definition.id}" is already registered`)
-    }
-    this.themes = [...this.themes, definition]
-    this.publish()
-    return () => {
-      if (!this.themes.some(t => t.id === definition.id)) return
-      this.themes = this.themes.filter(t => t.id !== definition.id)
-      if (this.preference === definition.id) {
-        this.preference = DEFAULT_PREFERENCE
-      }
-      this.publish()
-    }
-  }
-
-  /**
-   * Stack a token override layer on top of the active theme — the token-level
-   * analogue of slot shading: the base theme stays untouched, layers compose
-   * in seq order with later layers winning per-token, and removing a layer
-   * restores whatever it covered. Calling again with the same source replaces
-   * that source's whole layer and restacks it on top (effect re-registration
-   * semantics). Emits `theme/change` with the recomposed snapshot.
-   * @param source - layer identity; one layer per source (dynamic packages
-   * pass their package id — the façade pins it, so it also names the layer's
-   * origin for inspection).
-   * @param tokens - token-name → `{ light, dark }` value pairs. Validated at
-   * runtime (model-authored callers reach this boundary with untyped JS);
-   * a bare string value throws a teaching error.
-   * @returns disposer removing exactly the layer this call created; a no-op
-   * once the source has re-overridden (the newer layer is not torn down).
-   */
-  overrideTokens(source: string, tokens: ThemeTokenOverrides): () => void {
-    const layer = { seq: this.overrideSeq++, tokens: validateOverrides(source, tokens) }
-    this.overrides.set(source, layer)
-    this.publish()
-    return () => {
-      if (this.overrides.get(source) !== layer) return
-      this.overrides.delete(source)
-      this.publish()
-    }
-  }
-
   private buildSnapshot(): ThemeSnapshot {
-    const resolvedId = this.preference === 'system'
+    const colorScheme = this.preference === 'system'
       ? (this.media?.matches === true ? 'dark' : 'light')
       : this.preference
-    // Both built-ins always exist; a registered preference id resolves or has
-    // been reset by its disposer, so the lookup cannot miss.
-    const active = this.themes.find(t => t.id === resolvedId)
-    /* v8 ignore next 2 -- needs a registry without light/dark, which register()/dispose() cannot produce */
-    if (active === undefined) throw new Error(`theme registry lost "${resolvedId}"`)
     return Object.freeze({
       preference: this.preference,
       fontSizes: this.fontSizes,
       fontFamilies: this.fontFamilies,
-      active: this.composeActive(active),
-      themes: Object.freeze([...this.themes]),
+      active: Object.freeze({ colorScheme }),
       revision: this.revision,
     })
-  }
-
-  /**
-   * Fold the override layers into the active definition: seq order, later
-   * layers win per-token, each value picked for the active color scheme (the
-   * presenter consumes the composed snapshot and needs no override awareness).
-   * Without layers the registered definition passes through by identity.
-   */
-  private composeActive(active: ThemeDefinition): ThemeDefinition {
-    if (this.overrides.size === 0) return active
-    const tokens: ThemeTokens = { ...active.tokens }
-    for (const layer of [...this.overrides.values()].sort((a, b) => a.seq - b.seq)) {
-      for (const [name, modes] of Object.entries(layer.tokens)) {
-        tokens[name] = modes[active.colorScheme]
-      }
-    }
-    return Object.freeze({ ...active, tokens: Object.freeze(tokens) })
   }
 
   private publish(): void {
@@ -456,43 +240,6 @@ function durableFontFamilies(section: ThemeSettings): FontFamilies {
   })
 }
 
-/**
- * Runtime shape check for one override layer (model-authored callers pass
- * untyped JS through the dynamic-package façade, so the static type cannot
- * enforce the pair shape there). Returns a defensive per-token copy so later
- * caller mutation cannot reach the stored layer.
- */function validateOverrides(source: string, tokens: ThemeTokenOverrides): ThemeTokenOverrides {
-  const validated: ThemeTokenOverrides = {}
-  for (const [name, value] of Object.entries<unknown>(tokens)) {
-    if (typeof value === 'string') {
-      throw new TypeError(
-        `theme override "${name}" from "${source}" is a bare string — pass { light: ${JSON.stringify(value)}, dark: ${JSON.stringify(value)} } `
-        + '(repeat the value when it is the same in both palettes); a single value goes illegible when the user switches color scheme',
-      )
-    }
-    if (typeof value !== 'object' || value === null
-      || typeof (value as { light?: unknown }).light !== 'string'
-      || typeof (value as { dark?: unknown }).dark !== 'string') {
-      throw new TypeError(
-        `theme override "${name}" from "${source}" must map to a { light, dark } pair of strings — one value per color scheme`,
-      )
-    }
-    const modes = value as ThemeTokenModes
-    validated[name] = { light: modes.light, dark: modes.dark }
-  }
-  return validated
-}
-
-function dynamicToken(name: string): ThemeTokenInspection {
-  return {
-    name,
-    description: 'Theme token registered by the current Client composition.',
-    valueType: 'CSS value',
-    requiresLightAndDark: true,
-    ...(name.startsWith('--') ? { cssVariable: name } : {}),
-  }
-}
-
 /** Register desktop font-size keys when keyboard and locale services are available. */
 function installFontSizeShortcuts(ctx: ClientContext, adjust: (delta: 1 | -1) => void): void {
   ctx.inject(['shortcuts', 'locale'], (scope) => {
@@ -535,9 +282,9 @@ export const inject = ['slots', 'locale', 'remote', 'configForms']
 
 /**
  * Client plugin body: provide the theme service and register the
- * feature-owned Appearance and font settings rows into the General section's item
+ * feature-owned Appearance row into the General section's item
  * slot (a feature owns its settings surface). Desktop font-size shortcuts share
- * all three font-size settings when the keyboard service is available.
+ * text and code font sizes when the keyboard service is available.
  * @param ctx - client cordis context.
  */
 export function apply(ctx: ClientContext): void {
@@ -549,11 +296,8 @@ export function apply(ctx: ClientContext): void {
 
   const store = createAppearanceRowStore()
   let bound: BoundActions<typeof store> | undefined
-  const fontStore = createFontRowStore()
-  let fontBound: BoundActions<typeof fontStore> | undefined
   const sync = (snapshot: ThemeSnapshot): void => {
     bound?.sync(snapshot.preference, snapshot.revision)
-    fontBound?.sync(snapshot.fontSizes, snapshot.fontFamilies, snapshot.revision)
   }
   ctx.on('theme/change', sync)
   const injected = (actions: BoundActions<typeof store>): AppearanceRowInjected => {
@@ -574,19 +318,4 @@ export function apply(ctx: ClientContext): void {
     inject: injected,
   }, AppearanceRow))
 
-  ctx.slots.inject('settings.general.item', () => ctx.slots.register({
-    name: 'settings.general.item',
-    id: 'font-size',
-    order: 11,
-    store: fontStore,
-    locale: SETTINGS_NS,
-    inject: (actions: BoundActions<typeof fontStore>): FontSettingsInjected => {
-      fontBound = actions
-      sync(theme.getTheme())
-      return {
-        setFontFamily: (role, value) => { theme.setFontFamily(role, value) },
-        setFontSize: (role, px) => { theme.setFontSize(role, px) },
-      }
-    },
-  }, FontSettingsGroup))
 }

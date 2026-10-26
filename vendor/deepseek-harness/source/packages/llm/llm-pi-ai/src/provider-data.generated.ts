@@ -1,4 +1,4 @@
-/** Generated from the installed pi-ai catalog. Run pnpm gen-provider-data; do not edit. */
+/** Generated from the installed pi-ai catalog. Run pnpm exec tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts; do not edit. */
 
 import type { BuiltinProvider } from '@earendil-works/pi-ai/providers/all'
 import type { LlmConfigurableProvider } from '@deepseek-ai/dsh-llm'

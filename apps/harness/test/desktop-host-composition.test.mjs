@@ -34,7 +34,8 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   assert.equal(await realpath(runtimeRequire.resolve('@youdub/harness-subtitles')), await realpath(join(plugin, 'dist/host.mjs')),
     'Source-linked extensions must resolve the application-owned YouDub SDK');
   for (const name of ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-deepseek-account', '@deepseek-ai/dsh-acp-app',
-    '@deepseek-ai/dsh-skill-office', '@deepseek-ai/dsh-tool-workspace-dependencies', '@deepseek-ai/dsh-experimental-agent-team-profile']) {
+    '@deepseek-ai/dsh-skill-office', '@deepseek-ai/dsh-tool-workspace-dependencies', '@deepseek-ai/dsh-experimental-agent-team-profile',
+    '@deepseek-ai/dsh-attachment', '@deepseek-ai/dsh-api-remote-access']) {
     assert(!inventory.sourcePackages.some(pkg => pkg.name === name), `Unrelated runtime dependency: ${name}`);
     await assert.rejects(access(join(runtime, 'node_modules', name)), { code: 'ENOENT' });
   }
@@ -85,7 +86,8 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   assert.deepEqual(Object.keys(appInfo).sort(), ['arch', 'osVersion', 'platform', 'version']);
   assert.equal(ready.injections.some(row => row.kind === 'global' && row.name === '__YOUDUB_TEST_SKIP_SETUP__' && row.value === true), skipSetup, stderr);
   for (const id of ['@deepseek-ai/dsh-client-ui-session', '@deepseek-ai/dsh-api-session-controller',
-    '@deepseek-ai/dsh-client-file-upload', '@deepseek-ai/dsh-client-ui-conversation']) assert(!ids.includes(id), id);
+    '@deepseek-ai/dsh-client-file-upload', '@deepseek-ai/dsh-client-ui-conversation',
+    '@deepseek-ai/dsh-api-remote-access']) assert(!ids.includes(id), id);
   for (const id of ['@youdub/harness-subtitles', '@deepseek-ai/dsh-client-ui-settings-models',
     '@deepseek-ai/dsh-client-ui-layout']) assert(ids.includes(id), id);
   assert(!messages.some(message => message.type === 'platform-session'));
@@ -118,7 +120,6 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
   const inspection = await waitFor('quit-inspection', message => message.type === 'quit-inspection' && message.requestId === 1);
   assert.equal(inspection.error, undefined);
   assert.equal(typeof inspection.activeTasks, 'boolean');
-  assert.equal(inspection.scheduledTasks, false);
   if (!skipSetup) {
     const installationPath = join(directory, 'YouDub media');
     const configured = await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie },

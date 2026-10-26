@@ -100,5 +100,5 @@ export async function prepareSourceDevelopment({ projectDirectory = join(here, '
   }
   await writeFile(join(project, 'youdub-source-runtime.json'), JSON.stringify({ version, source, pluginRoot,
     roots: [...selected].sort(), sourcePackages: resolved, development: true }, null, 2) + '\n');
-  return { project, pluginRoot, source, modules, pnpm, electron, node: electron, nodeBin };
+  return { project, pluginRoot, source, pnpm, electron, node: electron, nodeBin };
 }

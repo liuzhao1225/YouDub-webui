@@ -33,8 +33,5 @@
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~"
-  },
-  "dependencies": {
-    "@deepseek-ai/cosmokit": "workspace:~"
   }
 }

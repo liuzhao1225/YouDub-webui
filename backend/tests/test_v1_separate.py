@@ -11,7 +11,8 @@ import soundfile as sf
 from backend.app.v1 import media, separate, separate_process
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 @pytest.fixture
@@ -27,7 +28,7 @@ def context(tmp_path, monkeypatch, video):
         "tts": {"adapter": "voxcpm", "model": "VoxCPM2", "device": "cpu", "voice": {"mode": "source_clone"}},
         "separation": {"adapter": "demucs", "model": "htdemucs", "device": "cpu"},
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1, stage="separate",
+    return StageContext(stage="separate",
                         config=config, input_files={"video": video}, work_dir=tmp_path / "work")
 
 
@@ -91,11 +92,12 @@ def test_demucs_process_is_reaped_on_cancel(context, monkeypatch):
 
     def cancelled():
         if children:
-            raise StageCancelled()
+            raise WorkerError("CANCELLED", "The host cancelled this invocation.")
 
     monkeypatch.setattr(media, "_run_media", invoke)
-    with pytest.raises(StageCancelled):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
         separate.run(replace(context, check_cancel=cancelled), lambda *args: None)
+    assert error.value.code == "CANCELLED"
     assert children[0].poll() is not None
 
 

@@ -43,7 +43,7 @@ async function drain(adapter: PiAiAdapter): Promise<StreamChunk[]> {
 }
 
 describe('pi-ai SDK retry boundary', () => {
-  it('pins one SDK attempt even when the installed provider currently defaults to zero retries', async () => {
+  it('dispatches the declared route with its configured model and one SDK attempt', async () => {
     streamSimple.mockImplementation(() => { throw new Error('mock SDK boundary') })
 
     const chunks = await drain(gatewayAdapter())
@@ -56,12 +56,6 @@ describe('pi-ai SDK retry boundary', () => {
       type: 'finish',
       reason: { kind: 'error', failure: { message: 'mock SDK boundary' } },
     })
-  })
-
-  it('dispatches a hand-declared route to the endpoint and model its configuration describes', async () => {
-    streamSimple.mockImplementation(() => { throw new Error('mock SDK boundary') })
-
-    await drain(gatewayAdapter())
 
     expect(streamSimple.mock.calls[0]?.[0]).toMatchObject({
       id: 'local-model',

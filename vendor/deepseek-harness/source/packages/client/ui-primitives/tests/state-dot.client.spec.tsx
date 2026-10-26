@@ -57,14 +57,6 @@ describe('StateDot', () => {
   })
 })
 
-it('renders completed steps with a check and pending steps without one', () => {
-  const { container, rerender } = render(<StateDot state="done" appearance="step" size={16} />)
-  expect(container.querySelector('[data-state="done"] svg')).toBeTruthy()
-  rerender(<StateDot state="idle" appearance="step" size={16} />)
-  expect(container.querySelector('[data-state="idle"] svg')).toBeNull()
-  expect(container.firstElementChild?.className).toContain('step')
-})
-
 describe('StateDot ongoing phase', () => {
   it('pins every loader animation to document time zero on mount', () => {
     const animations = [{ startTime: 42 }, { startTime: 7 }]

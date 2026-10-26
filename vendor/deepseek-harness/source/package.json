@@ -31,7 +31,6 @@
     "@types/semver": "^7.8.0",
     "execa": "^10.0.1",
     "zod": "^4.4.3",
-    "fast-check": "^4.9.0",
     "js-yaml": "^4.3.2",
     "jsdom": "29.1.1",
     "lightningcss": "^1.33.0",

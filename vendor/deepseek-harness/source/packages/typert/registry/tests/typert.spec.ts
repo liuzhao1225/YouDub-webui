@@ -1,22 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { z } from 'zod'
 import TypertRegistry, {
   typertEndpoint,
-  typertKey,
-  typertPackageKey,
   type TypertContribution,
 } from '@deepseek-ai/dsh-typert-registry'
 import type {
   InvocationDescriptor,
   TypertContext,
-  TypertResource,
-  TypertResourceKind,
   TypertLookup,
-  TypertRegistryChange,
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
-import { createTypertRemoteInfo, isTypertRemoteMethod } from '@deepseek-ai/dsh-typert-protocol/remote-info'
+import { createTypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol/remote-info'
 import { apply as applyClientRegistry, inject as clientRegistryInject } from '../src/client/index.ts'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
@@ -28,11 +23,6 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     registryFixture: TypertContext<string>
     registryFixtureOther: TypertContext<string>
   }
-
-  interface TypertResourceMap {
-    /** Test-only resource kind whose identity is the fixture lookup's wire id. */
-    registryFixture: TypertResource<string>
-  }
 }
 
 async function makeCtx(): Promise<Context> {
@@ -40,36 +30,10 @@ async function makeCtx(): Promise<Context> {
   await ctx.plugin(TypertRegistry)
   return ctx
 }
-
-function toolsContribution(schema: z.ZodType = z.object({ name: z.string() })): TypertContribution {
-  return {
-    package: '@deepseek-ai/dsh-tools',
-    face: 'host',
-    schemas: [{ name: 'ToolInput', create: () => schema }],
-    invocations: [],
-    model: {
-      services: [{
-        key: 'tools',
-        exportName: 'ToolRuntime',
-        summary: 'Tool registry and execution pipeline.',
-        tags: [],
-        members: [{
-          kind: 'method',
-          name: 'register',
-          signature: 'register(definition: ToolDefinition): () => void',
-        }],
-        types: [{ name: 'ToolDefinition', declaration: 'export interface ToolDefinition {}' }],
-      }],
-      events: [{
-        name: 'tools/change',
-        mode: 'emit',
-        signature: "'tools/change'(): void",
-        tags: [],
-      }],
-      objects: [],
-    },
-  }
+function toolsContribution(): TypertContribution {
+  return { package: '@fixture/local', face: 'host', invocations: [invocation()] }
 }
+
 
 function invocation(id = '@fixture/remote#goals/create'): InvocationDescriptor {
   return {
@@ -110,14 +74,14 @@ function scopedInvocation(): InvocationDescriptor {
 describe('TypertRegistry', () => {
   it('indexes the same generated method objects and withdraws them with their owner', async () => {
     const ctx = await makeCtx()
-    const codec = { mode: 'strict' as const, typeSymbol: '@fixture/types#Text', create: () => z.string(), jsonSchema: { type: 'string' } }
+    const codec = { mode: 'strict' as const, typeSymbol: '@fixture/types#Text', create: () => z.string() }
     const info = createTypertRemoteInfo({ package: '@fixture/remote', methods: {
       'goals/create': {
         service: 'goals', invocation: { kind: 'direct' }, description: 'Create a goal.',
-        parameters: [{ name: 'request', source: 'json', codec, strictCodec: codec }], result: codec,
+        parameters: [{ name: 'request', source: 'json', codec }], result: codec,
       },
-    } }, z)
-    const descriptor = info.methods['goals/create']!
+    } })
+    const descriptor = info.descriptors[0]!
     expect(info.descriptors[0]).toBe(descriptor)
     try {
       const owner = ctx.plugin({
@@ -132,8 +96,7 @@ describe('TypertRegistry', () => {
         const method = registry.get('goals/create')
         expect(method).toBe(descriptor)
         expect(registry.list()[0]).toBe(descriptor)
-        if (method === undefined || !isTypertRemoteMethod(method)) throw new Error('Generated method is missing')
-        expect(method.input().create().parse({ request: 'goal' })).toEqual({ request: 'goal' })
+        if (method === undefined) throw new Error('Generated method is missing')
         expect(method.result).toBe(codec)
       }
       await owner.dispose()
@@ -159,39 +122,6 @@ describe('TypertRegistry', () => {
     expect(ctx.typert.local.get('goals/create')).toBeUndefined()
   })
 
-  it('registers and queries generated schemas separately from package reflection', async () => {
-    const ctx = await makeCtx()
-    const contribution = toolsContribution()
-    ctx.typert.register(contribution)
-
-    expect(typertKey('@deepseek-ai/dsh-tools', 'ToolInput')).toBe('@deepseek-ai/dsh-tools#ToolInput')
-    expect(typertPackageKey('@deepseek-ai/dsh-tools', 'host')).toBe('@deepseek-ai/dsh-tools#host')
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')).toMatchObject({
-      package: '@deepseek-ai/dsh-tools',
-      face: 'host',
-      name: 'ToolInput',
-    })
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')?.schema).toBe(contribution.schemas[0]?.create())
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools', 'host')).toMatchObject({
-      key: '@deepseek-ai/dsh-tools#host',
-      model: { services: [{ key: 'tools' }] },
-    })
-    expect(ctx.typert.list()).toHaveLength(1)
-    expect(ctx.typert.listPackages({ face: 'host' })).toHaveLength(1)
-  })
-
-  it('withdraws schemas and package metadata through the exact contribution disposer', async () => {
-    const ctx = await makeCtx()
-    const dispose = ctx.typert.register(toolsContribution())
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeDefined()
-
-    await dispose()
-
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')).toBeUndefined()
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeUndefined()
-    expect(ctx.typert.listPackages()).toEqual([])
-  })
-
   it('follows the registering plugin fiber lifecycle', async () => {
     const ctx = await makeCtx()
     const fiber = ctx.plugin(Object.assign(
@@ -199,76 +129,29 @@ describe('TypertRegistry', () => {
       { inject: ['typert'] },
     ))
     await fiber
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeDefined()
+    expect(ctx.typert.local.get('goals/create')).toBeDefined()
 
     await fiber.dispose()
 
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeUndefined()
-    expect(ctx.typert.list()).toEqual([])
+    expect(ctx.typert.local.get('goals/create')).toBeUndefined()
+    expect(ctx.typert.local.list()).toEqual([])
   })
-
-  it('rejects duplicate package faces and schema keys before committing', async () => {
+  it('rejects duplicate package faces before committing', async () => {
     const ctx = await makeCtx()
     const original = toolsContribution()
     ctx.typert.register(original)
-
-    expect(() => ctx.typert.register(toolsContribution(z.never()))).toThrow('package face')
-    expect(ctx.typert.get('@deepseek-ai/dsh-tools#ToolInput')?.schema).toBe(original.schemas[0]?.create())
-
-    const duplicateBatch: TypertContribution = {
-      ...toolsContribution(),
-      package: '@fixture/duplicate',
-      schemas: [
-        { name: 'Same', create: () => z.string() },
-        { name: 'Same', create: () => z.number() },
-      ],
+    expect(() => ctx.typert.register(toolsContribution())).toThrow('package face')
+    expect(ctx.typert.local.get('goals/create')).toBe(original.invocations[0])
+  })
+  it('rejects malformed contribution identities', async () => {
+    const ctx = await makeCtx()
+    for (const name of ['', 'bad#package']) {
+      expect(() => ctx.typert.register({ ...toolsContribution(), package: name })).toThrow('invalid package name')
     }
-    expect(() => ctx.typert.register(duplicateBatch)).toThrow('schema "@fixture/duplicate#Same" is already registered')
-    expect(ctx.typert.getPackage('@fixture/duplicate')).toBeUndefined()
+    expect(() => ctx.typert.register({ ...toolsContribution(), face: 'worker' as 'host' })).toThrow('invalid face')
   })
 
-  it('rejects malformed contribution identities and filters both registry views', async () => {
-    const ctx = await makeCtx()
-    ctx.typert.register(toolsContribution())
-
-    expect(() => ctx.typert.register({ ...toolsContribution(), package: '' }))
-      .toThrow('invalid package name')
-    expect(() => ctx.typert.register({ ...toolsContribution(), package: 'bad#package' }))
-      .toThrow('invalid package name')
-    expect(() => ctx.typert.register({ ...toolsContribution(), face: 'worker' as 'host' }))
-      .toThrow('invalid face')
-    expect(() => ctx.typert.register({
-      ...toolsContribution(),
-      package: '@fixture/schema-name',
-      schemas: [{ name: 'bad#name', create: () => z.string() }],
-    })).toThrow('invalid schema name')
-
-    expect(ctx.typert.list({ package: '@fixture/absent' })).toEqual([])
-    expect(ctx.typert.list({ face: 'client' })).toEqual([])
-    expect(ctx.typert.listPackages({ package: '@fixture/absent' })).toEqual([])
-    expect(ctx.typert.listPackages({ face: 'client' })).toEqual([])
-  })
-
-  it('resolves required schemas and projects fresh JSON Schema documents', async () => {
-    const ctx = await makeCtx()
-    const schema = z.object({ name: z.string() })
-    const create = vi.fn(() => schema)
-    ctx.typert.register({ ...toolsContribution(), schemas: [{ name: 'ToolInput', create }] })
-    expect(create).not.toHaveBeenCalled()
-
-    expect(ctx.typert.resolve('@deepseek-ai/dsh-tools#ToolInput').name).toBe('ToolInput')
-    expect(create).toHaveBeenCalledOnce()
-    expect(ctx.typert.resolve('@deepseek-ai/dsh-tools#ToolInput').schema).toBe(schema)
-    expect(create).toHaveBeenCalledOnce()
-    expect(() => ctx.typert.resolve('@deepseek-ai/dsh-tools#Missing')).toThrow('contributes no schema named "Missing"')
-    expect(() => ctx.typert.resolve('@fixture/absent#Value')).toThrow('has no registered contribution')
-    expect(() => ctx.typert.resolve('invalid')).toThrow('expected "<package>#<name>"')
-    const projected = ctx.typert.toJSONSchema('@deepseek-ai/dsh-tools#ToolInput')
-    expect(projected).toMatchObject({ type: 'object', properties: { name: { type: 'string' } } })
-    expect(ctx.typert.toJSONSchema('@deepseek-ai/dsh-tools#ToolInput')).not.toBe(projected)
-  })
-
-  it('registers local invocations atomically with generated reflection', async () => {
+  it('registers local invocations atomically', async () => {
     const ctx = await makeCtx()
     const descriptor = invocation()
     const contribution = { ...toolsContribution(), invocations: [descriptor] }
@@ -287,7 +170,7 @@ describe('TypertRegistry', () => {
     await dispose()
     expect(ctx.typert.local.list()).toEqual([])
     expect(ctx.typert.local.hasSeen('goals/create')).toBe(true)
-    expect(ctx.typert.getPackage('@deepseek-ai/dsh-tools')).toBeUndefined()
+    expect(ctx.typert.local.get('goals/create')).toBeUndefined()
     expect(changes).toEqual(['local:goals/create', 'local:goals/create'])
   })
 
@@ -422,73 +305,6 @@ describe('TypertRegistry', () => {
     expect(ctx.typert.lookups.definitions()).toHaveLength(1)
     expect(ctx.typert.contexts.getHost('registryFixture')).toBeUndefined()
     expect(ctx.typert.contexts.getClient('registryFixture')).toBeUndefined()
-  })
-
-  it('registers one default field per resource kind and withdraws it with its fiber', async () => {
-    const ctx = await makeCtx()
-    const changes: TypertRegistryChange[] = []
-    ctx.typert.resources.subscribe((change) => { changes.push(change) })
-    const fiber = ctx.plugin({
-      inject: ['typert'],
-      apply: (pluginCtx: Context) => { pluginCtx.typert.resources.register('registryFixture', { field: 'fixtureId' }) },
-    })
-    await fiber
-    expect(ctx.typert.resources.get('registryFixture')).toEqual({ field: 'fixtureId' })
-    expect(ctx.typert.resources.entries()).toEqual([{ kind: 'registryFixture', field: 'fixtureId' }])
-    expect(() => ctx.typert.resources.register('registryFixture', { field: 'otherId' })).toThrow('already registered')
-    expect(() => ctx.typert.resources.register('registryFixture', { field: '' })).toThrow()
-    await fiber.dispose()
-    expect(ctx.typert.resources.get('registryFixture')).toBeUndefined()
-    expect(ctx.typert.resources.entries()).toEqual([])
-    expect(changes).toEqual([
-      { kind: 'resource', key: 'registryFixture' },
-      { kind: 'resource', key: 'registryFixture' },
-    ])
-    const dispose = ctx.typert.resources.register('registryFixture', { field: 'fixtureId' })
-    await dispose()
-    expect(ctx.typert.resources.get('registryFixture')).toBeUndefined()
-  })
-
-  it('reserves the built-in global resource kind', async () => {
-    const ctx = await makeCtx()
-    const changes: TypertRegistryChange[] = []
-    ctx.typert.resources.subscribe((change) => { changes.push(change) })
-    const reserved: string = 'global'
-    expect(() => ctx.typert.resources.register(reserved as TypertResourceKind, { field: 'globalId' }))
-      .toThrow('resource kind "global" is reserved for the built-in global resource')
-    expect(ctx.typert.resources.get('global')).toBeUndefined()
-    expect(changes).toEqual([])
-  })
-
-  it('keeps a lookup provider\'s resource kind under a configured resolver', async () => {
-    const ctx = await makeCtx()
-    ctx.typert.lookups.register('fixture', {
-      parameter: 'agent',
-      wire: 'agentId',
-      resource: 'registryFixture',
-      hostTypeSymbol: '@fixture/agent#Agent',
-      wireTypeSymbol: '@fixture/session#SessionId',
-      resolve: () => undefined,
-    })
-    expect(ctx.typert.lookups.get('fixture')?.resource).toBe('registryFixture')
-    ctx.typert.lookups.configure('fixture', () => undefined)
-    expect(ctx.typert.lookups.get('fixture')?.resource).toBe('registryFixture')
-  })
-
-  it('keeps a Host Context adapter\'s resource kind under a configured resolver', async () => {
-    const ctx = await makeCtx()
-    const scoped = ctx.extend()
-    ctx.typert.contexts.registerHost('registryFixture', {
-      wire: 'agentId',
-      wireTypeSymbol: '@fixture/session#SessionId',
-      resource: 'registryFixture',
-      resolve: () => undefined,
-    })
-    expect(ctx.typert.contexts.getHost('registryFixture')?.resource).toBe('registryFixture')
-    ctx.typert.contexts.configureHost('registryFixture', id => id === 'agent-1' ? scoped : undefined)
-    const configured = ctx.typert.contexts.getHost('registryFixture')
-    expect(configured).toMatchObject({ wire: 'agentId', wireTypeSymbol: '@fixture/session#SessionId', resource: 'registryFixture' })
-    await expect(configured?.resolve('agent-1')).resolves.toBe(scoped)
   })
 
   it('configures an asynchronous lookup resolver independently of provider load order', async () => {
@@ -721,7 +537,7 @@ describe('TypertRegistry', () => {
   it('installs the registry through the Client entry without importing the Host entry', async () => {
     const ctx = new Context()
     await ctx.plugin({ inject: clientRegistryInject, apply: applyClientRegistry })
-    expect(ctx.typert.list()).toEqual([])
+    expect(ctx.typert.local.list()).toEqual([])
   })
 
   it('contains change-listener failures and still notifies later listeners', async () => {

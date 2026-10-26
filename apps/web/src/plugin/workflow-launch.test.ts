@@ -12,7 +12,7 @@ it('imports links into the real reviewed-subtitles template without changing the
   const original = structuredClone(document)
   expect(document.inputs[0].schemaId).toBe('file/v1')
   expect(videoLinkInput(document, types)?.id).toBe('video')
-  const result = withVideoLink(document, types, 'video', 'https://www.youtube.com/watch?v=12345678901')
+  const result = withVideoLink(document, types, 'video', 'https://www.youtube.com/watch?v=12345678901', 0)
   expect(document).toEqual(original)
   expect(result.document.inputs).toEqual([])
   const added = result.document.nodes.find((node) => node.type === 'youdub.download')!
@@ -39,7 +39,7 @@ it('keeps the selected proxy port on the download node and keeps the URL in per-
 it('does not offer links when a consumer cannot accept downloaded video', () => {
   const incompatible = types.map((type) => type.type === 'youdub.prepare' ? { ...type, inputs: type.inputs.map((input) => ({ ...input, acceptedSchemaIds: ['file/v1'] })) } : type)
   expect(videoLinkInput(document, incompatible)).toBeUndefined()
-  expect(() => withVideoLink(document, incompatible, 'video', 'https://youtu.be/12345678901')).toThrow()
+  expect(() => withVideoLink(document, incompatible, 'video', 'https://youtu.be/12345678901', 0)).toThrow()
 })
 
 it('preserves each compatible file once and reserves exact input matches before renamed ones', () => {

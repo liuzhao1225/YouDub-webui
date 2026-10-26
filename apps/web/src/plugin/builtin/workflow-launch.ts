@@ -31,7 +31,7 @@ export function videoLinkInput(document: WorkflowDocument, types: NodeTypeDefini
   const input = videoInputs.length === 1 ? videoInputs[0] : undefined
   return input && downloadForInput(document, types, input) ? input : undefined
 }
-export function withVideoLink(document: WorkflowDocument, types: NodeTypeDefinition[], inputId: string, url: string, proxyPort = 0): { document: WorkflowDocument; runtime: Record<string, JsonObject> } {
+export function withVideoLink(document: WorkflowDocument, types: NodeTypeDefinition[], inputId: string, url: string, proxyPort: number): { document: WorkflowDocument; runtime: Record<string, JsonObject> } {
   const input = document.inputs.find((item) => item.id === inputId)
   const { definition, output } = input && downloadForInput(document, types, input) || {}
   if (!input || !definition || !output) throw new Error('The workflow cannot import this video link.')

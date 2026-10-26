@@ -12,9 +12,6 @@
       "path": "../../util/launch-environment"
     },
     {
-      "path": "../../util/brand"
-    },
-    {
       "path": "../../../vendor/cosmokit"
     },
     {
@@ -25,9 +22,6 @@
     },
     {
       "path": "../../llm/llm"
-    },
-    {
-      "path": "../../attachment/attachment"
     },
     {
       "path": "../../credentials/credentials"

@@ -127,5 +127,5 @@ flowchart LR
 - 桌面 `/settings/resources` 跳转独立资源页；`/settings/extensions` 跳转扩展面板。版本信息放在通用设置。
 - 仓库仍有Web壳的设置实现：`general`、`models`、`resources`、`extensions`、`about`五分区。应按实际承载端核对；当前桌面导航采用上述Harness结构。来源：[Web设置](../../apps/web/src/plugin/builtin/settings.tsx)、[桌面映射](../../apps/harness/src/client.jsx)。
 - 侧栏“问题反馈”打开 GitHub 问题模板；环境诊断使用环境配置模板；GitHub图标打开仓库。这些是外部网页。
-- `ui-design-reference.html` 是设计规范工具页，不属于产品主导航。
+- `output/ui-design-reference.html` 是本地生成的设计规范工具页，不属于产品主导航。
 - 未匹配的路径显示MissingPage；额外插件可通过页面插槽注册新路径。来源：[主路由解析](../../apps/harness/src/client.jsx)。

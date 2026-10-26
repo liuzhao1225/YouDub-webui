@@ -75,10 +75,5 @@ export function TranslationSetup({ request, onReady, wordmarkSrc, renderSlot, tr
   useEffect(() => { if (models.status === 'ready') void controller.refreshConfigured() }, [controller, models])
   // onReady releases this root registration; stop rendering its outlets before that effect runs.
   if (state.ready) return null
-  return <TranslationSetupView controller={controller} wordmarkSrc={wordmarkSrc} onLeave={requestLeave} renderModels={props => <ModelsSurface busy={activity.pending > 0} onBusyChange={props.onBusyChange}>{renderSlot('youdub.setup.models', { registerLeaveGuard })}</ModelsSurface>} />
-}
-
-function ModelsSurface({ busy, onBusyChange, children }: { busy: boolean; onBusyChange(busy: boolean): void; children: React.ReactNode }) {
-  useEffect(() => onBusyChange(busy), [busy, onBusyChange])
-  return children
+  return <TranslationSetupView controller={controller} wordmarkSrc={wordmarkSrc} onLeave={requestLeave} saving={activity.pending > 0}>{renderSlot('youdub.setup.models', { registerLeaveGuard })}</TranslationSetupView>
 }

@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-jobs",
-  "description": "Background job registry (ctx.jobs) for the DeepSeek Harness \u2014 shared ids, polling, cancellation, and completion listeners",
+  "description": "Background job lifecycle registry for the YouDub Harness runtime",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"
@@ -18,14 +18,6 @@
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./brand": {
-      "types": "./lib/types/brand.d.ts",
-      "default": "./lib/types/brand.js"
-    },
-    "./view": {
-      "types": "./lib/types/view.d.ts",
-      "default": "./lib/types/view.js"
-    },
     "./src/*": "./src/*",
     "./package.json": "./package.json"
   },
@@ -36,11 +28,9 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   }
 }

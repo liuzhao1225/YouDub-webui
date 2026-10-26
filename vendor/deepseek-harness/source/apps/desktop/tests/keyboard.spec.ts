@@ -124,7 +124,7 @@ it('rejects other windows, subframes, remote/shell pages, and malformed edits', 
   f.detach(); await expect(get(f.event, f.definitions)).rejects.toThrow('rejected sender')
 })
 
-it('routes embedded input once, follows rebindings, and guards native window closure by revision and focus', async () => {
+it('routes main-document input, suppresses child-frame accelerators, and guards native closure by revision and focus', async () => {
   const f = await fixture()
   const closeItem = () => (f.keyboard.fileMenu({ fileMenu: 'File', closePage: 'Close' }).submenu as Electron.MenuItemConstructorOptions[])[0]!
   const initial = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet, [
@@ -140,12 +140,28 @@ it('routes embedded input once, follows rebindings, and guards native window clo
   expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
     expect.objectContaining({ kind: 'keyboard', code: 'KeyW' }))
   preventDefault.mockClear(); f.contents.send.mockClear()
-  Object.assign(f.contents, { focusedFrame: { name: 'embedded', parent: f.frame } })
-  f.contents.emit('before-input-event', { preventDefault }, input)
-  expect(preventDefault).toHaveBeenCalledTimes(1)
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput, expect.objectContaining({ kind: 'iframe', revision: initial.revision, frameName: 'embedded', code: 'KeyW' }))
-  f.contents.emit('before-input-event', { preventDefault }, { ...input, type: 'keyUp' })
-  expect(f.contents.send).toHaveBeenCalledTimes(1)
+  let ignoreMenuShortcuts = false
+  f.contents.setIgnoreMenuShortcuts.mockImplementation(ignore => { ignoreMenuShortcuts = ignore })
+  for (const frame of [{ name: 'embedded', parent: f.frame }, null]) {
+    Object.assign(f.contents, { focusedFrame: frame })
+    // Electron resolves menu accelerators by the logical key, even when the
+    // configured physical binding does not match the current keyboard layout.
+    for (const code of ['KeyW', 'KeyZ']) {
+      f.contents.emit('before-input-event', { preventDefault }, { ...input, code })
+      if (!preventDefault.mock.calls.length && !ignoreMenuShortcuts) (closeItem().click as () => void)()
+      expect(preventDefault).not.toHaveBeenCalled()
+      expect(ignoreMenuShortcuts).toBe(true)
+      expect(f.contents.send).not.toHaveBeenCalled()
+    }
+    await f.call(DESKTOP_IPC.shortcutsRecording, true)
+    f.contents.emit('before-input-event', { preventDefault }, { ...input, code: 'KeyX', key: 'x' })
+    expect(ignoreMenuShortcuts).toBe(true)
+    expect(f.contents.send).not.toHaveBeenCalled()
+    await f.call(DESKTOP_IPC.shortcutsRecording, false)
+    f.contents.emit('before-input-event', { preventDefault }, { ...input, code: 'KeyX', key: 'x' })
+    expect(ignoreMenuShortcuts).toBe(false)
+  }
+  Object.assign(f.contents, { focusedFrame: f.frame })
   const saved = await f.call<ShortcutSaveResult>(DESKTOP_IPC.shortcutsEdit,
     { type: 'set', id: 'page.close', binding: { code: 'KeyJ', modifiers: ['primary'] } }, initial.revision)
   expect(closeItem().accelerator).toBe('Command+J')
@@ -169,35 +185,19 @@ it('routes embedded input once, follows rebindings, and guards native window clo
   expect(f.contents.listenerCount('before-input-event')).toBe(0)
 })
 
-it.each([
-  ['browser.new', 'KeyT'], ['session.new', 'KeyN'],
-])('forwards Linux %s from embedded frames while leaving main-document input to the DOM', async (id, code) => {
+it('leaves Linux document input to the DOM and does not forward child-frame input', async () => {
   const f = await fixture('linux')
-  const initial = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet,
-    [{ id, defaults: desktopDefaults({ code, modifiers: ['primary'] }) }])
-  const input = { modifiers: ['control'], type: 'keyDown', code, key: code.slice(3).toLowerCase(),
+  await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet, f.definitions)
+  const input = { modifiers: ['control'], type: 'keyDown', code: 'KeyB', key: 'b',
     control: true, meta: false, alt: false, shift: false, isAutoRepeat: false, isComposing: false }
   const preventDefault = vi.fn()
   f.contents.send.mockClear()
-  f.contents.emit('before-input-event', { preventDefault }, input)
-  expect(preventDefault).not.toHaveBeenCalled()
-  expect(f.contents.send).not.toHaveBeenCalled()
-
-  Object.assign(f.contents, { focusedFrame: { name: 'browser', parent: f.frame } })
-  f.contents.emit('before-input-event', { preventDefault }, input)
-  expect(preventDefault).toHaveBeenCalledOnce()
-  expect(f.contents.send).toHaveBeenCalledExactlyOnceWith(DESKTOP_IPC.shortcutsInput,
-    expect.objectContaining({ kind: 'iframe', frameName: 'browser', code, revision: initial.revision }))
-  f.contents.emit('before-input-event', { preventDefault }, { ...input, type: 'keyUp' })
-  expect(f.contents.send).toHaveBeenCalledOnce()
-
-  const cleared = await f.call<ShortcutSaveResult>(DESKTOP_IPC.shortcutsEdit,
-    { type: 'set', id, binding: null }, initial.revision)
-  expect(cleared.status).toBe('saved')
-  preventDefault.mockClear(); f.contents.send.mockClear()
-  f.contents.emit('before-input-event', { preventDefault }, input)
-  expect(preventDefault).not.toHaveBeenCalled()
-  expect(f.contents.send).not.toHaveBeenCalled()
+  for (const frame of [f.frame, { name: 'embedded', parent: f.frame }]) {
+    Object.assign(f.contents, { focusedFrame: frame })
+    f.contents.emit('before-input-event', { preventDefault }, input)
+    expect(preventDefault).not.toHaveBeenCalled()
+    expect(f.contents.send).not.toHaveBeenCalled()
+  }
 })
 
 it.each([
@@ -240,7 +240,7 @@ it('refreshes the native menu only when its accelerator or availability changes'
   expect(f.updateMenu).toHaveBeenCalledTimes(3)
 })
 
-it.each(['macos', 'windows'] as const)('prioritizes %s custom editing bindings before both main and embedded frame handlers', async (platform) => {
+it.each(['macos', 'windows'] as const)('prioritizes %s custom editing bindings before main-document handlers', async (platform) => {
   const f = await fixture(platform)
   const initial = await f.call<ShortcutConfigSnapshot>(DESKTOP_IPC.shortcutsGet,
     [{ id: 'session.new', defaults: desktopDefaults({ code: 'KeyN', modifiers: ['primary'] }) }])
@@ -258,9 +258,6 @@ it.each(['macos', 'windows'] as const)('prioritizes %s custom editing bindings b
   press({ type: 'keyUp' })
   expect(preventDefault).toHaveBeenCalledTimes(2)
   expect(f.contents.send).toHaveBeenCalledOnce()
-  Object.assign(f.contents, { focusedFrame: { name: 'embedded', parent: f.frame } })
-  press()
-  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput, expect.objectContaining({ kind: 'iframe', frameName: 'embedded' }))
   await f.call(DESKTOP_IPC.shortcutsRecording, true)
   preventDefault.mockClear(); f.contents.send.mockClear()
   press()
@@ -294,23 +291,20 @@ it.each(['macos', 'windows'] as const)('intercepts complete %s chords once and l
     f.contents.emit('before-input-event', { preventDefault }, { code, key: code.slice(3), type, modifiers: [],
       control: false, alt: false, shift: false, meta: false, isAutoRepeat, isComposing: false })
   }
-  for (const embedded of [false, true]) {
-    Object.assign(f.contents, { focusedFrame: embedded ? { name: 'browser', parent: f.frame } : f.frame })
-    f.contents.send.mockClear(); preventDefault.mockClear()
-    press('KeyA'); press('KeyA', 'keyUp'); press('KeyB'); press('KeyB', 'keyUp')
-    expect(preventDefault).not.toHaveBeenCalled()
-    expect(f.contents.send).not.toHaveBeenCalled()
-    press('KeyB')
-    expect(preventDefault).not.toHaveBeenCalled()
-    press('KeyA')
-    expect(preventDefault).toHaveBeenCalledOnce()
-    expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
-      expect.objectContaining({ kind: embedded ? 'iframe' : 'keyboard', code: 'KeyA', secondCode: 'KeyB', repeat: false }))
-    press('KeyA', 'keyUp'); press('KeyB', 'keyUp')
-  }
+  f.contents.send.mockClear(); preventDefault.mockClear()
+  press('KeyA'); press('KeyA', 'keyUp'); press('KeyB'); press('KeyB', 'keyUp')
+  expect(preventDefault).not.toHaveBeenCalled()
+  expect(f.contents.send).not.toHaveBeenCalled()
+  press('KeyB')
+  expect(preventDefault).not.toHaveBeenCalled()
+  press('KeyA')
+  expect(preventDefault).toHaveBeenCalledOnce()
+  expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
+    expect.objectContaining({ kind: 'keyboard', code: 'KeyA', secondCode: 'KeyB', repeat: false }))
+  press('KeyA', 'keyUp'); press('KeyB', 'keyUp')
   for (const reset of [() => { f.window.emit('blur') },
     () => { press('MetaLeft', 'keyUp') },
-    () => { Object.assign(f.contents, { focusedFrame: f.frame }) }]) {
+    () => { f.contents.emit('blur') }]) {
     press('KeyA'); reset(); f.contents.send.mockClear(); press('KeyB')
     expect(f.contents.send).not.toHaveBeenCalled()
     press('KeyA', 'keyUp'); press('KeyB', 'keyUp')
@@ -413,16 +407,13 @@ it.each(['macos', 'windows'] as const)('keeps %s native interception identical f
       const result = await f.call<ShortcutSaveResult>(DESKTOP_IPC.shortcutsEdit, operation, snapshot.revision)
       expect(result.status).toBe('saved'); snapshot = result.snapshot
     }
-    for (const embedded of [false, true]) {
-      Object.assign(f.contents, { focusedFrame: embedded ? { name: 'browser', parent: f.frame } : f.frame })
-      const preventDefault = vi.fn()
-      f.contents.send.mockClear()
-      f.contents.emit('before-input-event', { preventDefault }, { type: 'keyDown', code: 'KeyB', key: 'b', modifiers: [],
-        control: platform === 'windows', meta: platform === 'macos', alt: false, shift: false, isAutoRepeat: false, isComposing: false })
-      expect(preventDefault).toHaveBeenCalledOnce()
-      expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
-        expect.objectContaining({ kind: embedded ? 'iframe' : 'keyboard', code: 'KeyB', revision: snapshot.revision }))
-    }
+    const preventDefault = vi.fn()
+    f.contents.send.mockClear()
+    f.contents.emit('before-input-event', { preventDefault }, { type: 'keyDown', code: 'KeyB', key: 'b', modifiers: [],
+      control: platform === 'windows', meta: platform === 'macos', alt: false, shift: false, isAutoRepeat: false, isComposing: false })
+    expect(preventDefault).toHaveBeenCalledOnce()
+    expect(f.contents.send).toHaveBeenLastCalledWith(DESKTOP_IPC.shortcutsInput,
+      expect.objectContaining({ kind: 'keyboard', code: 'KeyB', revision: snapshot.revision }))
   }
 })
 
@@ -534,30 +525,27 @@ it.each(['macos', 'windows'] as const)('requires fresh %s chord presses when Ele
       control: false, meta: false, alt: false, shift: false, isAutoRepeat: repeat, isComposing: false })
     return preventDefault.mock.calls.length > 0
   }
-  for (const embedded of [false, true]) {
-    Object.assign(f.contents, { focusedFrame: embedded ? { name: 'browser', parent: f.frame } : f.frame })
-    f.contents.send.mockClear()
-    expect(press('KeyJ')).toBe(false)
-    expect(press('KeyK')).toBe(true)
-    expect(f.contents.send).toHaveBeenCalledOnce()
-    // Electron on macOS can omit both releases after intercepting the second keydown.
-    for (const code of ['KeyJ', 'KeyK']) {
-      expect(press(code)).toBe(false)
-      expect(press(code, 'keyUp')).toBe(false)
-    }
-    expect(f.contents.send).toHaveBeenCalledOnce()
-    expect(press('KeyK')).toBe(false)
-    expect(press('KeyJ')).toBe(true)
-    expect(f.contents.send).toHaveBeenCalledTimes(2)
-    expect(press('KeyJ', 'keyDown', true)).toBe(true)
-    expect(press('KeyK', 'keyDown', true)).toBe(true)
-    expect(f.contents.send).toHaveBeenCalledTimes(2)
-    expect(press('KeyF')).toBe(false)
-    expect(press('KeyG')).toBe(true)
-    expect(f.contents.send).toHaveBeenCalledTimes(3)
-    expect(press('KeyV')).toBe(true)
-    expect(press('KeyJ')).toBe(false)
-    expect(press('KeyK')).toBe(true)
-    expect(f.contents.send).toHaveBeenCalledTimes(5)
+  f.contents.send.mockClear()
+  expect(press('KeyJ')).toBe(false)
+  expect(press('KeyK')).toBe(true)
+  expect(f.contents.send).toHaveBeenCalledOnce()
+  // Electron on macOS can omit both releases after intercepting the second keydown.
+  for (const code of ['KeyJ', 'KeyK']) {
+    expect(press(code)).toBe(false)
+    expect(press(code, 'keyUp')).toBe(false)
   }
+  expect(f.contents.send).toHaveBeenCalledOnce()
+  expect(press('KeyK')).toBe(false)
+  expect(press('KeyJ')).toBe(true)
+  expect(f.contents.send).toHaveBeenCalledTimes(2)
+  expect(press('KeyJ', 'keyDown', true)).toBe(true)
+  expect(press('KeyK', 'keyDown', true)).toBe(true)
+  expect(f.contents.send).toHaveBeenCalledTimes(2)
+  expect(press('KeyF')).toBe(false)
+  expect(press('KeyG')).toBe(true)
+  expect(f.contents.send).toHaveBeenCalledTimes(3)
+  expect(press('KeyV')).toBe(true)
+  expect(press('KeyJ')).toBe(false)
+  expect(press('KeyK')).toBe(true)
+  expect(f.contents.send).toHaveBeenCalledTimes(5)
 })

@@ -4,7 +4,6 @@ import hashlib
 import json
 import shutil
 import subprocess
-import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -16,7 +15,8 @@ from backend.app.config import ffmpeg_binary
 from backend.app.v1 import export, media
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 @pytest.fixture
@@ -42,8 +42,7 @@ def context(tmp_path):
         "translation": {"adapter": "openai", "model": "test-model", "device": "remote"},
         "tts": None, "separation": None,
     })
-    return StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                        stage="export", config=config, input_files=files, work_dir=work)
+    return StageContext(stage="export", config=config, input_files=files, work_dir=work)
 
 
 def test_srt_splits_display_only_preserves_inputs_and_joins_translation_by_id(monkeypatch, context):
@@ -112,28 +111,10 @@ def test_render_failure_is_not_reported_as_completion(monkeypatch, context, retu
     assert "private/path" not in str(error.value)
 
 
-def test_cancelling_export_reaps_child_before_returning(monkeypatch, context):
-    real_popen = subprocess.Popen
-    processes = []
-    running_checks = 0
-
-    def slow_process(command, **kwargs):
-        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        processes.append(process)
-        return process
-
-    def check_cancel():
-        nonlocal running_checks
-        if processes and processes[0].poll() is None:
-            running_checks += 1
-            if running_checks == 2:
-                raise StageCancelled()
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
-    with pytest.raises(StageCancelled):
-        export.run(replace(context, check_cancel=check_cancel), lambda value, message: None, output_dir=context.work_dir / "output")
-    assert processes[0].returncode is not None
-    assert processes[0].wait(timeout=0) != 0
+def test_cancelling_export_reaps_child_before_returning(context, cancelled_media_process):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
+        export.run(replace(context, check_cancel=cancelled_media_process), lambda value, message: None, output_dir=context.work_dir / "output")
+    assert error.value.code == "CANCELLED"
 
 
 @pytest.mark.parametrize("system,font", [
@@ -248,8 +229,8 @@ def test_subtitle_hides_trailing_separators_after_alignment_without_changing_cue
     path = tmp_path / "translated.srt"
     # Punctuation-only cues cannot silently become empty SRT entries.
     with pytest.raises(ApiError, match="contains no text"):
-        export._write_srt(path, [], translated=True, aligned_cues=cues)
-    export._write_srt(path, [], translated=True, aligned_cues=cues[:-1])
+        export._write_srt(path, [], translated=True, language="zh", aligned_cues=cues)
+    export._write_srt(path, [], translated=True, language="zh", aligned_cues=cues[:-1])
     assert [block.splitlines()[2] for block in path.read_text().strip().split("\n\n")] == [
         "第一段文字", "第二段文字", "第三段文字", "第四段文字", "仍保留内部，标点", "Use v1.2", "保留《第一章，第二章》",
     ]
@@ -387,7 +368,7 @@ def test_real_dubbing_export_uses_downloadable_final_wav_as_video_audio(context,
     spectrum = np.abs(np.fft.rfft(samples))
     frequency = np.fft.rfftfreq(len(samples), 1 / rate)[np.argmax(spectrum)]
     assert frequency == pytest.approx(660, abs=2)
-    assert media._duration_ms(media._probe(result.output_files["video"])) == pytest.approx(1000, abs=40)
+    assert media.inspect_video(result.output_files["video"], context.check_cancel)["duration_ms"] == pytest.approx(1000, abs=40)
     frame = subprocess.run([
         ffmpeg_binary(), "-v", "error", "-ss", "0.92", "-i", str(result.output_files["video"]),
         "-frames:v", "1", "-pix_fmt", "gray", "-f", "rawvideo", "-",

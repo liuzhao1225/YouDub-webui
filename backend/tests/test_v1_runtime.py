@@ -25,16 +25,11 @@ def probe_all():
 
 def test_catalogue_does_not_advertise_legacy_models_or_load_them(monkeypatch):
     monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: None)
-    monkeypatch.setattr(runtime.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(runtime.platform, "machine", lambda: "arm64")
     result = probe_all()
-    assert result["platform"] == "macos"
-    assert result["arch"] == "arm64"
     assert [item["id"] for item in result["devices"]] == ["cpu"]
     assert {item["adapter"] for item in result["capabilities"]} == {"whisper", "voxcpm", "demucs", "qwen_forced_aligner"}
     assert all(not item["available"] and item["unavailable_reason"] and not item["models"]
                for item in result["capabilities"])
-    assert result["instance_id"] == probe_all()["instance_id"]
     assert "voxcpm" not in sys.modules
     assert "whisper" not in sys.modules
 
@@ -101,7 +96,6 @@ def test_real_catalogue_reads_local_metadata_without_model_or_network(installed_
     assert whisper["models"][0]["source_languages"] == ["auto", "en", "zh", "ja"]
     assert whisper["models"][1]["source_languages"] == ["auto", "en"]
     assert all(model["devices"] == ["cpu", "cuda:0"] for model in whisper["models"])
-    assert whisper["data_sent"] == [] and whisper["remote_operations"] is None
     assert not tts["available"] and not separation["available"]
     assert tts["models"] == separation["models"] == []
 
@@ -180,15 +174,11 @@ def test_all_capabilities_ready_reads_assets_without_loading_models_or_network(a
     assert tts_capability["models"] == [{
         "id": "VoxCPM2", "devices": ["cpu", "cuda:0"], "source_languages": ["en", "zh", "ja"],
         "target_languages": ["en", "zh", "ja"], "voice_modes": ["source_clone"], "voices": [],
-        "input_limits": {"max_reference_duration_ms": None},
     }]
     assert separation["models"] == [{
         "id": "htdemucs", "devices": ["cpu", "cuda:0"], "source_languages": [], "target_languages": [],
         "voice_modes": [], "voices": [],
-        "input_limits": {"max_reference_duration_ms": None},
     }]
-    assert all(item["data_sent"] == [] and item["remote_operations"] is None and not item["requires_api_key"]
-               for item in (tts_capability, separation))
 
 
 def test_mps_is_available_for_tts_but_not_whisper_sparse_alignment(all_model_assets, monkeypatch):
@@ -278,11 +268,10 @@ def test_qwen_catalogue_uses_metadata_only(all_model_assets, monkeypatch, tmp_pa
     monkeypatch.setattr(forced_alignment, "align", lambda *args, **kwargs: pytest.fail("Runtime must not run alignment"))
     result = probe_all()
     qwen = result["capabilities"][-1]
-    assert qwen["available"] and qwen["execution"] == "local" and qwen["data_sent"] == []
+    assert qwen["available"] and qwen["execution"] == "local"
     assert qwen["models"] == [{
         "id": "Qwen3-ForcedAligner-0.6B-hf", "devices": ["cpu", "cuda:0"], "source_languages": [],
         "target_languages": ["en", "zh"], "voice_modes": [], "voices": [],
-        "input_limits": {"max_reference_duration_ms": None},
     }]
     (root / "model.safetensors").write_bytes(b"")
     result = probe_all()
@@ -316,4 +305,4 @@ def test_environment_info_does_not_probe_models(monkeypatch):
     monkeypatch.setattr(runtime, "_detect_devices", lambda: [{"id": "cpu", "available": True}])
     for name in ("_whisper_models", "_voxcpm_models", "_demucs_models", "_subtitle_alignment_models"):
         monkeypatch.setattr(runtime, name, lambda *args: pytest.fail("environment info must not probe models"))
-    assert set(runtime.runtime_info()) == {"instance_id", "platform", "arch", "devices"}
+    assert runtime.runtime_info() == {"devices": [{"id": "cpu", "available": True}]}

@@ -6,7 +6,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { DownloadClient, fileSize } from '../src/setup-download.js'
-import { platformTarget } from '../src/setup-environment.js'
+import { assertSupportedPlatform } from '../src/setup-environment.js'
 
 const data = Buffer.from('actual model bytes for range and integrity verification')
 const sha256 = createHash('sha256').update(data).digest('hex')
@@ -82,12 +82,8 @@ test('pause preserves written bytes and explicitly resumed transfer succeeds', a
 })
 
 test('OS/architecture chooses native installers and rejects unsupported platforms', () => {
-  assert.equal(platformTarget('darwin', 'arm64'), 'aarch64-apple-darwin')
-  assert.equal(platformTarget('darwin', 'x64'), 'x86_64-apple-darwin')
-  assert.equal(platformTarget('linux', 'arm64'), 'aarch64-unknown-linux-gnu')
-  assert.equal(platformTarget('linux', 'x64'), 'x86_64-unknown-linux-gnu')
-  assert.equal(platformTarget('win32', 'x64'), 'x86_64-pc-windows-msvc')
-  assert.throws(() => platformTarget('win32', 'arm64'), /暂不支持/)
+  for (const [platform, arch] of [['darwin', 'arm64'], ['darwin', 'x64'], ['linux', 'arm64'], ['linux', 'x64'], ['win32', 'x64']] as const) assert.doesNotThrow(() => assertSupportedPlatform(platform, arch))
+  assert.throws(() => assertSupportedPlatform('win32', 'arm64'), /暂不支持/)
 })
 
 test('preflight selects the official source without touching an available mirror', async t => {

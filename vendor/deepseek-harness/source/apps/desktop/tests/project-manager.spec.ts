@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
-import { readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
 
 const roots: string[] = []
@@ -28,9 +27,13 @@ function seedPlugin(manager: DesktopProjectManager): void {
   writeFileSync(join(directory, 'bundle.yml'), '[]\n')
 }
 function plugins(manager: DesktopProjectManager) {
-  return readProfilePlugins({ binName: 'dsh', profileDir: manager.paths.profile,
-    installAnchor: join(manager.runtime.dsh, 'node_modules/@deepseek-ai/dsh/package.json') }).dependencies
-    .map(({ name, version, enabled }) => ({ name, version, enabled }))
+  const manifest = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
+    dependencies?: Record<string, string>
+    dsh?: { profile?: { bundles?: string[] } }
+  }
+  return Object.entries(manifest.dependencies ?? {}).map(([name, version]) => ({
+    name, version, enabled: manifest.dsh?.profile?.bundles?.includes(name) ?? false,
+  }))
 }
 function setup(): { root: string; manager: DesktopProjectManager } {
   const root = temporaryRoot()
@@ -130,7 +133,7 @@ describe('desktop external plugin profile', () => {
     const { manager } = setup()
     await expect(manager.disableAllPlugins()).resolves.toBeUndefined()
     expect(existsSync(join(manager.paths.profile, 'package.json'))).toBe(false)
-    expect(existsSync(manager.paths.lock)).toBe(false)
+    expect(existsSync(join(manager.paths.profile, 'lock'))).toBe(false)
   })
 
   it('reports invalid profile JSON without replacing it', async () => {
@@ -140,7 +143,7 @@ describe('desktop external plugin profile', () => {
     writeFileSync(path, '{broken')
     await expect(manager.disableAllPlugins()).rejects.toThrow()
     expect(readFileSync(path, 'utf8')).toBe('{broken')
-    expect(existsSync(manager.paths.lock)).toBe(false)
+    expect(existsSync(join(manager.paths.profile, 'lock'))).toBe(false)
   })
 
   it('initializes the same pnpm settings as a Web profile without a Desktop build allowlist', async () => {
@@ -256,23 +259,23 @@ describe.each(['applyRelease', 'disableAllPlugins'] as const)('desktop profile l
     const { manager } = setup()
     mkdirSync(manager.paths.profile, { recursive: true })
     const owner = `${String(process.pid)}\n`
-    writeFileSync(manager.paths.lock, owner)
+    writeFileSync(join(manager.paths.profile, 'lock'), owner)
     await expect(manager[operation]()).rejects.toThrow('another profile operation is active')
-    expect(readFileSync(manager.paths.lock, 'utf8')).toBe(owner)
+    expect(readFileSync(join(manager.paths.profile, 'lock'), 'utf8')).toBe(owner)
     expect(readdirSync(manager.paths.profile)).toEqual(['lock'])
   })
 
   it('reclaims a stale owner lock and releases it after the operation', async () => {
     const { manager } = setup()
     mkdirSync(manager.paths.profile, { recursive: true })
-    writeFileSync(manager.paths.lock, `${String(process.pid)}\n`)
+    writeFileSync(join(manager.paths.profile, 'lock'), `${String(process.pid)}\n`)
     const probe = vi.spyOn(process, 'kill').mockImplementation(() => {
       throw Object.assign(new Error('process absent'), { code: 'ESRCH' })
     })
     try {
       await expect(manager[operation]()).resolves.toBeUndefined()
       expect(probe).toHaveBeenCalledExactlyOnceWith(process.pid, 0)
-      expect(existsSync(manager.paths.lock)).toBe(false)
+      expect(existsSync(join(manager.paths.profile, 'lock'))).toBe(false)
     } finally {
       probe.mockRestore()
     }
@@ -281,16 +284,16 @@ describe.each(['applyRelease', 'disableAllPlugins'] as const)('desktop profile l
   it.each(['invalid', '0', '-1', '9007199254740992'])('preserves a lock with invalid owner %s', async (owner) => {
     const { manager } = setup()
     mkdirSync(manager.paths.profile, { recursive: true })
-    writeFileSync(manager.paths.lock, owner)
+    writeFileSync(join(manager.paths.profile, 'lock'), owner)
     await expect(manager[operation]()).rejects.toThrow('another profile operation is active')
-    expect(readFileSync(manager.paths.lock, 'utf8')).toBe(owner)
+    expect(readFileSync(join(manager.paths.profile, 'lock'), 'utf8')).toBe(owner)
   })
 
   it('rejects a directory at the lock path', async () => {
     const { manager } = setup()
-    mkdirSync(manager.paths.lock, { recursive: true })
+    mkdirSync(join(manager.paths.profile, 'lock'), { recursive: true })
     await expect(manager[operation]()).rejects.toThrow('profile lock is not a regular file')
-    expect(lstatSync(manager.paths.lock).isDirectory()).toBe(true)
+    expect(lstatSync(join(manager.paths.profile, 'lock')).isDirectory()).toBe(true)
   })
 
   it('rejects a linked lock without touching its target', async () => {
@@ -299,13 +302,13 @@ describe.each(['applyRelease', 'disableAllPlugins'] as const)('desktop profile l
     const target = join(root, 'lock-target')
     mkdirSync(target)
     writeFileSync(join(target, 'sentinel'), 'retain')
-    symlinkSync(target, manager.paths.lock, process.platform === 'win32' ? 'junction' : 'dir')
+    symlinkSync(target, join(manager.paths.profile, 'lock'), process.platform === 'win32' ? 'junction' : 'dir')
     try {
       await expect(manager[operation]()).rejects.toThrow('profile lock is not a regular file')
-      expect(lstatSync(manager.paths.lock).isSymbolicLink()).toBe(true)
+      expect(lstatSync(join(manager.paths.profile, 'lock')).isSymbolicLink()).toBe(true)
       expect(readFileSync(join(target, 'sentinel'), 'utf8')).toBe('retain')
     } finally {
-      unlinkSync(manager.paths.lock)
+      unlinkSync(join(manager.paths.profile, 'lock'))
     }
   })
 })

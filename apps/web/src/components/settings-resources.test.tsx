@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import { resourceEntries } from '@/runtime/setup-contracts'
 import type { ResourceInventory, ResourcePreparation } from '@/runtime/setup-contracts'
 import { SettingsResources } from './settings-resources'
@@ -23,7 +23,7 @@ inspection.entries = resourceEntries({ ...inspection, requirements: inspection.r
 
 it('shows one FFmpeg row and prepares only the clicked model after explicit user action', async () => {
   const request = vi.fn(async (path: string) => path.endsWith('/resources') ? inventory : inspection)
-  render(<LanguageProvider><SettingsResources request={request as never} /></LanguageProvider>)
+  render(<LanguageProvider><SettingsResources title="资源" request={request as never} /></LanguageProvider>)
   await waitFor(() => expect(screen.getByRole('button', { name: '准备 Whisper' })).toBeEnabled())
   expect(screen.getAllByText('FFmpeg')).toHaveLength(1)
   expect(request.mock.calls.some(([path]) => path.endsWith('/prepare'))).toBe(false)
@@ -35,7 +35,7 @@ it('shows one FFmpeg row and prepares only the clicked model after explicit user
 
 it('keeps uninspected resource readiness explicit when the initial check fails', async () => {
   const request = vi.fn().mockResolvedValueOnce(inventory).mockRejectedValue(new Error('Python path unavailable'))
-  render(<LanguageProvider><SettingsResources request={request} /></LanguageProvider>)
+  render(<LanguageProvider><SettingsResources title="资源" request={request} /></LanguageProvider>)
   await waitFor(() => expect(screen.getByText('环境尚未检测')).toBeInTheDocument())
   expect(screen.queryByText('已就绪')).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /^准备 / })).not.toBeInTheDocument()

@@ -22,6 +22,8 @@ describe('typertPlugin workspace Worker Thread', { timeout: 120_000 }, () => {
 
     expect(expected.map(artifact => `${artifact.package}:${artifact.face}`))
       .toEqual(['@fixture/host:host', '@fixture/client:client'])
+    expect(expected[0]?.js).toContain('Payload')
+    expect(expected[1]?.js).toContain('ClientState')
     for (const artifact of expected) {
       const output = join(root, artifact.packageRoot, 'lib')
       expect(readFileSync(join(output, `typert.${artifact.face}.js`), 'utf8')).toBe(artifact.js)

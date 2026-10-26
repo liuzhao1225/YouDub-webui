@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
-import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -16,7 +14,8 @@ from backend.app.v1 import media, mix
 from backend.app.v1.audio_segments import Alignment, SpeechClip, SpeechClips
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 def write_tone(path: Path, duration_ms: int, frequency: int, *, rate: int = 22050):
@@ -57,8 +56,7 @@ def context(tmp_path):
         "tts": {"adapter": "voxcpm", "model": "test-model", "device": "cpu", "voice": {"mode": "source_clone"}},
         "separation": {"adapter": "demucs", "model": "htdemucs", "device": "cpu"},
     })
-    context = StageContext(task_id="00000000-0000-0000-0000-000000000001", attempt=1,
-                           stage="mix", config=config, input_files=files, work_dir=work)
+    context = StageContext(   stage="mix", config=config, input_files=files, work_dir=work)
     write_manifest(context)
     return context
 
@@ -215,26 +213,8 @@ def test_missing_background_is_not_replaced_by_original_audio(context):
     assert "background" in str(error.value)
 
 
-def test_cancelling_mix_reaps_ffmpeg_before_returning(monkeypatch, context):
-    real_popen = subprocess.Popen
-    processes = []
-    running_checks = 0
-
-    def slow_process(command, **kwargs):
-        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        processes.append(process)
-        return process
-
-    def check_cancel():
-        nonlocal running_checks
-        if processes and processes[0].poll() is None:
-            running_checks += 1
-            if running_checks == 2:
-                raise StageCancelled()
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
-    with pytest.raises(StageCancelled):
-        mix.run(replace(context, check_cancel=check_cancel), lambda value, message: None)
-    assert processes[0].returncode is not None
-    assert processes[0].wait(timeout=0) != 0
+def test_cancelling_mix_reaps_ffmpeg_before_returning(context, cancelled_media_process):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
+        mix.run(replace(context, check_cancel=cancelled_media_process), lambda value, message: None)
+    assert error.value.code == "CANCELLED"
     assert not (context.work_dir / "mixed.wav").exists()

@@ -9,28 +9,24 @@ PRIVATE_DIR_MODE = 0o700
 PRIVATE_FILE_MODE = 0o600
 PRIVATE_UMASK = 0o077
 POSIX_STRONG_PERMISSIONS = os.name == "posix"
-RUNTIME_SECURITY_MODE = (
-    "posix-strong" if POSIX_STRONG_PERMISSIONS else "windows-best-effort"
-)
 
 
 class RuntimeSecurityError(RuntimeError):
     """A runtime path cannot be used without weakening local data isolation."""
 
 
-def apply_private_umask() -> str:
+def apply_private_umask() -> None:
     """Permanently restrict newly created process and subprocess files on POSIX."""
     if POSIX_STRONG_PERMISSIONS:
         os.umask(PRIVATE_UMASK)
-    return RUNTIME_SECURITY_MODE
 
 
 def _absolute(path: Path | str) -> Path:
     return Path(os.path.abspath(os.fspath(path)))
 
 
-def _is_link_like(path: Path, metadata: os.stat_result | None = None) -> bool:
-    if metadata is not None and stat.S_ISLNK(metadata.st_mode):
+def _is_link_like(path: Path, metadata: os.stat_result) -> bool:
+    if stat.S_ISLNK(metadata.st_mode):
         return True
     if path.is_symlink():
         return True

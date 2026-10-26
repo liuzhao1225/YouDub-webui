@@ -5,7 +5,6 @@ import { join } from 'node:path'
 /** Stable desktop installation paths under the application's own home. */
 export interface DesktopPaths {
   readonly profile: string
-  readonly lock: string
 }
 
 /**
@@ -16,6 +15,5 @@ export interface DesktopPaths {
 export function resolveDesktopPaths(home: string): DesktopPaths {
   return {
     profile: join(home, 'profiles', 'desktop'),
-    lock: join(home, 'profiles', 'desktop', 'lock'),
   }
 }

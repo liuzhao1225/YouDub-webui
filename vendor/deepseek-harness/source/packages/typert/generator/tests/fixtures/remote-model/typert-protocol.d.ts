@@ -39,8 +39,6 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   export interface TypertRemoteValue<Value = unknown> {
     readonly create: () => { parse(value: unknown): Value }
     readonly description?: string
-    readonly jsonSchema?: Readonly<Record<string, unknown>>
-    readonly jsonSchemaError?: string
   }
 
   export type TypertCodec<Value = unknown> =
@@ -81,31 +79,12 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     readonly sourceLocation?: { readonly file: string; readonly line: number; readonly column: number }
   }
 
-  export interface TypertRemoteInputOptions {
-    readonly strict?: boolean
-  }
-
-  export type TypertRemoteMethod<Input extends object, Output, Mode extends 'unary' | 'stream' = 'unary', Uplink = never, DecodedOutput = Output> =
-    Omit<InvocationDescriptor, 'mode' | 'invocation' | 'result'>
-    & (Mode extends 'stream' ? { readonly mode: 'stream' } : { readonly mode?: never }) & {
-      readonly invocation: { readonly kind: 'direct' }
-      input(options?: TypertRemoteInputOptions): TypertRemoteValue<Input>
-      readonly result: Extract<TypertCodec<Output>, { readonly mode: 'strict' }>
-      invoke(remote: TypertClientRemote, input: Input, signal?: AbortSignal): Mode extends 'stream'
-        ? RemoteStreamHandle<Output, Uplink> : Promise<RemoteResult<DecodedOutput>>
-    }
-
   export interface TypertRemoteContribution {
     readonly package: string
     readonly descriptors: readonly InvocationDescriptor[]
   }
 
-  export interface TypertRemoteInfo<Methods extends Readonly<Record<string,
-    TypertRemoteMethod<object, unknown> | TypertRemoteMethod<object, unknown, 'stream', unknown>
-  >> = Readonly<Record<string, TypertRemoteMethod<object, unknown> | TypertRemoteMethod<object, unknown, 'stream', unknown>>>>
-    extends TypertRemoteContribution {
-    readonly methods: Methods
-  }
+  export type TypertRemoteInfo = TypertRemoteContribution
 
   export type RemoteStream<Out, In = never> = AsyncIterable<Out> & { readonly uplinkItem?: In }
 

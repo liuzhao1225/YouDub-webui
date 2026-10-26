@@ -85,21 +85,15 @@ it('blocks an incompatible plugin before its module is imported while a compatib
   expect(f.warnings.join('\n')).toContain('data loss')
 })
 
-it('admits the same plugin only for its exact version and the running runtime', async () => {
-  const granted = fixture()
-  granted.plugin('denied-plugin', { peer: '^9.0.0' })
-  granted.exemptions({ 'denied-plugin@1.0.0': [runtime] })
-  expect(await granted.run(insert('denied-plugin'))).toEqual(['import:denied-plugin', 'apply:denied-plugin'])
-
-  const otherVersion = fixture()
-  otherVersion.plugin('denied-plugin', { version: '2.0.0', peer: '^9.0.0' })
-  otherVersion.exemptions({ 'denied-plugin@1.0.0': [runtime] })
-  expect(await otherVersion.run(insert('denied-plugin'))).toEqual([])
-
-  const otherRuntime = fixture()
-  otherRuntime.plugin('denied-plugin', { peer: '^9.0.0' })
-  otherRuntime.exemptions({ 'denied-plugin@1.0.0': ['9.9.9'] })
-  expect(await otherRuntime.run(insert('denied-plugin'))).toEqual([])
+it.each([
+  { version: '1.0.0', exemption: runtime, admitted: true },
+  { version: '2.0.0', exemption: runtime, admitted: false },
+  { version: '1.0.0', exemption: '9.9.9', admitted: false },
+])('checks compatibility exemption for plugin $version and runtime $exemption', async ({ version, exemption, admitted }) => {
+  const f = fixture()
+  f.plugin('denied-plugin', { version, peer: '^9.0.0' })
+  f.exemptions({ 'denied-plugin@1.0.0': [exemption] })
+  expect(await f.run(insert('denied-plugin'))).toEqual(admitted ? ['import:denied-plugin', 'apply:denied-plugin'] : [])
 })
 
 const denialSpecifiers: Array<[string, (name: string, dir: string) => string]> = [

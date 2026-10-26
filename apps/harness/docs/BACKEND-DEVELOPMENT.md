@@ -49,6 +49,8 @@ export const inject = [
 
 设置、模型和插件管理的官方页面使用官方 Remote 服务。业务页面通过上述传输层访问领域 API，两条调用路径共享同一官方 Host。
 
+当前产品只使用已认证的 `owner`。Connection 保留认证、Origin 校验和请求准入；Gateway 在解析方法及打开事件流前拒绝非 owner，并在发布事件时复核。原 RemoteAccess 多角色策略包及客户端权限快照已退役。普通 RPC、二进制传输、流式视频上传、HTTP 请求上限和连接 Context 的释放机制继续保留。
+
 ## 任务与节点语义
 
 工作流文档描述节点、端口、连接和配置；任务保存本次执行的图快照、提供商/模型绑定与版本信息。修改工作流模板不会改写已创建任务。提供商的实现和模型配置使用 integrity 标识参与绑定检查。
@@ -86,9 +88,11 @@ export const inject = [
 
 API 密钥、提供商 URL 和模型选择通过 YouDub 的官方模型设置页面配置和测试。不要把真实凭据写入插件源码、模板、测试夹具或验证报告。
 
+LLM 请求合同限定为 system/user 文本，响应继续保留文本、思考、用量、结束原因和错误。图片、文件、工具及 assistant/developer/tool 历史输入会明确失败。Agent 消息构造器、`BlockAssembler`、replay API 和聊天附件服务已退役；翻译的原始请求与响应仍按上述业务路径保存。依赖退役接口的外部插件需要迁移，当前三个产品插件示例不使用这些接口。
+
 ## 外部插件
 
-直接参考已经接入的[三个示例 bundle](../test/fixtures)：`graph-text-review`、`file-transform`、`python-text`。其中 graph-text-review 展示 Host、Client、人工订正及多输入节点组合。
+直接参考已经接入的[三个示例 bundle](../../../fixtures/plugins)：`graph-text-review`、`file-transform`、`python-text`。其中 graph-text-review 展示 Host、Client、人工订正及多输入节点组合。
 
 DSH 包需要 `dsh.bundle.patch`；带界面时还需 `dsh.client`、客户端依赖和 Client 导出。Host 插件可通过产品公开的 `youdubContext` 加入领域服务：
 
@@ -104,7 +108,7 @@ export async function apply(ctx) {
 }
 ```
 
-这是服务接线示意。可安装包的 manifest、patch、业务描述、版本与 integrity 请按[完整示例](../test/fixtures/graph-text-review/package.json)和[Host 实现](../test/fixtures/graph-text-review/src/host.mjs)维护。Python 插件可使用同一产品导出的 `registerPythonProvider`，详见[Python 示例](../test/fixtures/python-text/src/host.mjs)。
+这是服务接线示意。可安装包的 manifest、patch、业务描述、版本与 integrity 请按[完整示例](../../../fixtures/plugins/graph-text-review/package.json)和[Host 实现](../../../fixtures/plugins/graph-text-review/src/host.mjs)维护。Python 插件可使用同一产品导出的 `registerPythonProvider`，详见[Python 示例](../../../fixtures/plugins/python-text/src/host.mjs)。
 
 安装、启停和卸载使用官方 PluginManager 页面与服务。旧 `package.youdub` 声明需要迁移为 DSH bundle；旧 loader 不参与当前运行。安装机制已经接通，YouDub 在线市场目录和发行源仍待建设。
 

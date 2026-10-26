@@ -10,7 +10,7 @@ afterEach(cleanup)
 
 it('keeps each backing after its menu anchor and removes it when unmounted', () => {
   const ref = createRef<HTMLDivElement>()
-  const view = render(createPortal(<MenuSurface ref={ref} role="menu" compact><button>Action</button></MenuSurface>, document.body))
+  const view = render(createPortal(<MenuSurface ref={ref} role="menu"><button>Action</button></MenuSurface>, document.body))
   const menu = screen.getByRole('menu')
   const backing = document.querySelector<HTMLElement>('[data-menu-backing]')!
   expect(ref.current).toBe(menu)

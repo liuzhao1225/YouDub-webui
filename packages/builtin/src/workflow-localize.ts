@@ -73,7 +73,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
       return errors
     },
     plan: (_, config, catalog) => {
-      const plan: WorkflowPlan = { workflow: { id: workflow.id, version, pluginId, pluginVersion: version, integrity: plugin.integrity }, config: structuredClone(config), bindings: {}, steps: [], outputs: [], omittedSteps: [] }
+      const plan: WorkflowPlan = { workflow: { id: workflow.id, version, pluginId, pluginVersion: version, integrity: plugin.integrity }, config: structuredClone(config), bindings: {}, steps: [], outputs: [] }
       const binding = (key: string, providerId: string, selection: JsonObject = {}) => {
         const provider = catalog.provider(providerId).describe()
         const options = { sourceLanguage: config.source_language, targetLanguage: config.target_language, outputMode: config.output_mode, keepBackground: config.keep_background, voice: config.tts?.voice, initialPrompt: config.asr?.initial_prompt }
@@ -97,11 +97,9 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
       add('translate', 'translation', { transcript: step('recognize', 'transcript') })
       if (config.tts) {
         if (config.tts.voice.mode === 'source_clone') add('reference', 'media', { transcript: step('recognize', 'transcript'), audio: step('separate', 'vocals') })
-        else plan.omittedSteps!.push({ id: 'reference', reason: 'Preset voice does not require source references.' })
         add('synthesize', 'tts', { transcript: step('recognize', 'transcript'), translation: step('translate', 'translation'), ...(config.tts.voice.mode === 'source_clone' ? { references: step('reference', 'references') } : {}) })
         add('mix', 'media', { transcript: step('recognize', 'transcript'), speechAudio: step('synthesize', 'speechAudio'), mediaInfo: step('prepare', 'mediaInfo'), ...(config.keep_background ? { background: step('separate', 'background') } : {}) })
         if (config.subtitle_alignment) add('align', 'subtitle_alignment', { transcript: step('recognize', 'transcript'), translation: step('translate', 'translation'), dubbedTimeline: step('mix', 'dubbedTimeline'), adjustedSpeech: step('mix', 'adjustedSpeech') })
-        else plan.omittedSteps!.push({ id: 'align', reason: 'Model subtitle alignment is disabled.' })
       }
       add('export', 'media', { video, mediaInfo: step('prepare', 'mediaInfo'), transcript: step('recognize', 'transcript'), translation: step('translate', 'translation'), ...(config.tts ? { finalAudio: step('mix', 'finalAudio'), dubbedTimeline: step('mix', 'dubbedTimeline') } : {}), ...(config.subtitle_alignment ? { wordAlignment: step('align', 'wordAlignment') } : {}) })
       const final = (id: string, output: string, label: string) => plan.outputs.push({ id, label, role: id, source: { stepId: 'export', output }, required: true })

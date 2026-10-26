@@ -5,7 +5,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { INTERACTIVE_SELECTOR } from '../src/window-drag/regions.ts'
 
 const THEME_PACKAGE = '@deepseek-ai/dsh-client-ui-theme'
 const baseCss = readFileSync(fileURLToPath(new URL('../src/base.css', import.meta.url)), 'utf8')
@@ -40,13 +39,17 @@ describe('web shell base.css', () => {
   })
 
   it('declares exactly the interactive subtraction the drag contract publishes', () => {
-    // One source for the selector: the model constant. The darwin rule must
-    // declare the same list, so a new interactive role is added in one place
-    // and a drift between the sheet and the composition model fails here.
+    // Controls and interactive surfaces must remain clickable inside drag rows.
     const rule = /html\[data-platform='darwin'\] :is\(([^)]*)\)\s*\{[^}]*app-region:\s*no-drag/.exec(normalizedCss)
     expect(rule, 'base.css declares no darwin interactive no-drag rule').not.toBeNull()
     const declared = rule![1]!.split(',').map(part => part.trim()).join(', ')
-    expect(declared).toBe(INTERACTIVE_SELECTOR)
+    expect(declared).toBe([
+      'button', 'a', 'input', 'select', 'textarea', 'summary', "[contenteditable='true']", '[tabindex]',
+      "[role='dialog']", "[role='alertdialog']", "[role='menu']", "[role='listbox']", "[role='tooltip']",
+      "[role='button']", "[role='link']", "[role='tab']", "[role='menuitem']", "[role='menuitemcheckbox']",
+      "[role='menuitemradio']", "[role='option']", "[role='checkbox']", "[role='radio']", "[role='switch']",
+      "[role='slider']", "[role='combobox']", "[role='textbox']",
+    ].join(', '))
   })
 
   it('declares the darwin drag surface through the mark chrome rows set', () => {

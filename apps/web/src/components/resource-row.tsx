@@ -11,7 +11,7 @@ import { sizeLabel } from '@/lib/format'
 const names: Record<string, MessageKey> = { acceleration: 'resource.inference', resources: 'setup.resources', 'youdub.download': 'resource.videoDownload' }
 const purposes: Record<string, MessageKey> = { whisper: 'setup.whisper', voxcpm: 'setup.voxcpm', demucs: 'setup.demucs', qwen: 'setup.qwen' }
 const icons = { prepare: Download, retry: RotateCcw, pause: Pause, resume: Play }
-export function ResourceRow({ entry, busy = false, onAction }: { entry: ResourceEntry; busy?: boolean; onAction?: (action: ResourceAction, entry: ResourceEntry) => void }) {
+export function ResourceRow({ entry, busy, onAction }: { entry: ResourceEntry; busy: boolean; onAction?: (action: ResourceAction, entry: ResourceEntry) => void }) {
   const tx = useText()
   const name = names[entry.id] ? tx(names[entry.id]) : entry.name
   const inProgress = entry.status === 'preparing' || entry.status === 'checking'

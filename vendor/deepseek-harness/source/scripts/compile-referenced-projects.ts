@@ -32,5 +32,7 @@ export function libraryBuildSteps(root: string): BuildStep[] {
     compilerStep(root, 'host'), bundle('host'),
     { label: 'Desktop bundle', command, args: [...prefix, '--filter', '@deepseek-ai/dsh-desktop', 'run', 'bundle'] },
     compilerStep(root, 'client'), bundle('client'),
+    ...['host', 'client'].map(face => ({ label: `${face} test and script types`, command: process.execPath,
+      args: [fileURLToPath(import.meta.resolve('typescript/bin/tsc')), '-p', `tsconfig.${face}.json`, '--noEmit'] })),
   ]
 }

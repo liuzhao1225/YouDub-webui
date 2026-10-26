@@ -1,4 +1,4 @@
-import { defineProperty, isNullable } from '@deepseek-ai/cosmokit'
+import { isNullable } from '@deepseek-ai/cosmokit'
 import type { Awaitable, Dict } from '@deepseek-ai/cosmokit'
 import { Context } from './context.ts'
 import type { Plugin } from './registry.ts'
@@ -92,14 +92,6 @@ type AsyncEffect<T = any> =
   | Promise<Disposable<T>>
   | AsyncIterable<Disposable<T>, void, void>
 
-/** Tree node used to expose nested effect labels for diagnostics. */
-export interface EffectMeta {
-  /** Human-readable effect label, e.g. `ctx.on("event")` or `ctx.provide("name")`. */
-  label: string
-  /** Metadata of nested effects registered while this effect ran. */
-  children: EffectMeta[]
-}
-
 interface EffectRunner<T> {
   epoch: T
   execute: () => any
@@ -121,7 +113,7 @@ function emitPluginDisposed(context: Context, fiber: Fiber) {
   const args: any[] = ['internal/plugin', fiber]
   let callbacks: Function[]
   try {
-    callbacks = context.events.dispatch('emit', args)
+    callbacks = context.events.dispatch(args)
   } catch (error) {
     context.logger.error(error)
     return
@@ -409,13 +401,13 @@ export class Fiber {
    * already disposed, and `TypeError` if `execute` returns an invalid shape.
    *
    * @param execute — the effect body; see {@link Effect} for accepted shapes.
-   * @param label — effect label shown in `getEffects()` diagnostics.
+   * @param label — optional caller label retained for plugin compatibility.
    * @returns a disposer that tears the effect down and settles once done.
    */
   effect(execute: () => SyncEffect, label?: string): Disposable<Promise<void>>
   /** Same as above for async effects; the disposer is also awaitable. */
   effect(execute: () => Effect, label?: string): AsyncDisposable<Promise<void>>
-  effect(execute: () => Effect, label = 'anonymous'): any {
+  effect(execute: () => Effect, _label?: string): any {
     this.assertActive()
     if (this.state === FiberState.UNLOADING) {
       throw new CordisError('INACTIVE_EFFECT')
@@ -441,16 +433,12 @@ export class Fiber {
       return disposalTask = task
     }
 
-    const meta: EffectMeta = { label, children: [] }
     const runner: EffectRunner<boolean> = {
       execute,
       epoch: true,
       collect: (dispose) => {
         disposables.push(dispose)
         this._disposables.delete(dispose)
-        if (dispose[symbols.effect]) {
-          meta.children.push(dispose[symbols.effect])
-        }
       },
       getOuterStack: buildOuterStack(),
     }
@@ -501,7 +489,7 @@ export class Fiber {
       return result
     }
 
-    const wrapper = defineProperty(() => {
+    const wrapper = (() => {
       // A synchronous setup failure can race an owner unload that already
       // captured this wrapper but has not invoked it yet. The failed effect is
       // never returned publicly, so let that internal caller await rollback.
@@ -511,7 +499,7 @@ export class Fiber {
         if (executing) return disposeAfter(waitForSetup())
         return task ? disposeAfter(task) : dispose()
       })
-    }, symbols.effect, meta) as AsyncDisposable
+    }) as AsyncDisposable
     effectInertia.set(wrapper, () => inFlight)
 
     // Make the effect visible to a reentrant owner unload before execute()
@@ -558,17 +546,6 @@ export class Fiber {
         .then(onFulfilled, onRejected)
     }
     return wrapper
-  }
-
-  /**
-   * Return metadata for currently registered effects.
-   *
-   * @returns one {@link EffectMeta} tree per labeled live effect.
-   */
-  getEffects() {
-    return [...this._disposables]
-      .map<EffectMeta>(dispose => dispose[symbols.effect])
-      .filter(Boolean)
   }
 
   private _getState() {

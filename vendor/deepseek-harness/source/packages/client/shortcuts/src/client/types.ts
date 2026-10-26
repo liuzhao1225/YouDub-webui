@@ -6,7 +6,7 @@ import type { BindingIssue, NormalizedBinding, ShortcutConfigSnapshot, ShortcutE
 export type ShortcutRegion = 'page' | 'editable' | 'terminal'
 /** Synchronous DOM context; owners capture business targets in resolve(). */
 export interface ShortcutContext {
-  readonly source?: 'keyboard' | 'menu' | 'iframe' | 'webview'
+  readonly source?: 'keyboard' | 'menu'
   readonly region: ShortcutRegion
   readonly modal: string | null
   /** Original input element, or null when no document target is available. */

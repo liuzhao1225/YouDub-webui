@@ -61,15 +61,20 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_SHA: ${{ needs.validate.outputs.sha }}
         run: |
-          # Only artifacts from the exact tagged commit's main push are accepted.
-          run_id="$(gh api "repos/$GH_REPO/actions/workflows/harness-development.yml/runs?head_sha=$RELEASE_SHA&event=push&branch=main" --jq '.workflow_runs[0].id // empty')"
+          # Candidates are built manually on the exact main commit being released.
+          run_id="$(gh api "repos/$GH_REPO/actions/workflows/harness-development.yml/runs?head_sha=$RELEASE_SHA&event=workflow_dispatch&branch=main" --jq '.workflow_runs[0].id // empty')"
           if [ -z "$run_id" ]; then
-            echo "::error::此 tag 提交没有 main 源码验收运行；请先完成 main 检查。"
+            echo "::error::此 tag 提交没有 main 候选包验收运行；请在 main 手动运行源码检查并启用 package_desktop。"
             exit 1
           fi
           gh run watch "$run_id" --exit-status --interval 15
           gh api "repos/$GH_REPO/actions/runs/$run_id" --jq '{head_sha,event,head_branch,conclusion}' > accepted.json
-          jq -e --arg sha "$RELEASE_SHA" '.head_sha == $sha and .event == "push" and .head_branch == "main" and .conclusion == "success"' accepted.json
+          jq -e --arg sha "$RELEASE_SHA" '.head_sha == $sha and .event == "workflow_dispatch" and .head_branch == "main" and .conclusion == "success"' accepted.json
+          gh api --paginate --slurp "repos/$GH_REPO/actions/runs/$run_id/artifacts" > artifacts.json
+          if ! jq -e '[.[].artifacts[] | select(.expired == false) | .name] | (index("youdub-macos-unsigned") != null) and (index("youdub-windows-release") != null)' artifacts.json; then
+            echo "::error::同提交验收缺少有效的双平台候选包；请启用 package_desktop 完成构建与安装验收。"
+            exit 1
+          fi
           echo "run-id=$run_id" >> "$GITHUB_OUTPUT"
           echo "复用 main 提交 $RELEASE_SHA 的候选包：https://github.com/$GH_REPO/actions/runs/$run_id" >> "$GITHUB_STEP_SUMMARY"
 

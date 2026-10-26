@@ -6,7 +6,6 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import type { AddressInfo } from 'node:net'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { AttachmentStore } from '@deepseek-ai/dsh-attachment'
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
 import type { IndexInjection, WebServer, WebRoute, WebUpgradeRoute } from '@deepseek-ai/dsh-host-webserver'
 import {
@@ -19,7 +18,6 @@ import {
   type HostConnectionHandle,
   type PeerScope,
 } from '../src/index.ts'
-import { DEFAULT_MAX_REQUEST_BODY_BYTES } from '../src/http-bridge.ts'
 import { provideBrowserCredentials } from './browser-credentials.ts'
 
 /** Structural webServer fake recording both route registries. */
@@ -28,7 +26,7 @@ function fakeHttpServer(
   upgrades: WebUpgradeRoute[],
   host = '127.0.0.1',
   protocol: WebServer['protocol'] = 'http:',
-): Pick<WebServer, 'register' | 'registerUpgrade' | 'tapIndex' | 'port' | 'host' | 'protocol'> {
+): Pick<WebServer, 'register' | 'registerUpgrade' | 'port' | 'host' | 'protocol'> {
   return {
     host,
     protocol,
@@ -43,7 +41,6 @@ function fakeHttpServer(
       upgrades.push(route)
       return () => { upgrades.splice(upgrades.indexOf(route), 1) }
     },
-    tapIndex: () => () => {},
     port: 0,
   }
 }
@@ -225,7 +222,7 @@ describe('connection node half', () => {
         await web.await()
         await expect.poll(() => routes.find(route => route.path === API_PATH)).toBeDefined()
         const bound = browserCookie(connection, '10.1.2.3:3080')
-        expect(connection.requestRejection(fakeRequest({ host: '10.1.2.3:3080', cookie: bound }))).toBeUndefined()
+        expect(connection.admit(fakeRequest({ host: '10.1.2.3:3080', cookie: bound }))).toEqual({ peer: connection.browserPeer })
       } finally {
         await web.dispose()
       }
@@ -237,9 +234,9 @@ describe('connection node half', () => {
   it('uses the TLS default port for markerless exact-authority grants', async () => {
     const { connection, dispose } = await mounted({ trustedHosts: ['tls.example:443', 'plain.example:80'] }, 'https:')
     try {
-      expect(connection.requestRejection(fakeRequest({ host: 'tls.example' }))).toBe(401)
-      expect(connection.requestRejection(fakeRequest({ host: 'plain.example' }))).toBe(403)
-      expect(connection.requestRejection(fakeRequest({ host: 'tls.example:444' }))).toBe(403)
+      expect(connection.admit(fakeRequest({ host: 'tls.example' }))).toEqual({ rejection: 401 })
+      expect(connection.admit(fakeRequest({ host: 'plain.example' }))).toEqual({ rejection: 403 })
+      expect(connection.admit(fakeRequest({ host: 'tls.example:444' }))).toEqual({ rejection: 403 })
     } finally {
       await dispose()
     }
@@ -258,10 +255,10 @@ describe('connection node half', () => {
         const setCookie = exchanged.state.headers?.['set-cookie']
         expect(setCookie?.endsWith('; Secure'), protocol).toBe(secure)
         if (setCookie === undefined) throw new Error('browser token exchange did not set a cookie')
-        expect(connection.requestRejection(fakeRequest({
+        expect(connection.admit(fakeRequest({
           host: '127.0.0.1:3080',
           cookie: setCookie.split(';', 1)[0]!,
-        }))).toBeUndefined()
+        }))).toEqual({ peer: connection.browserPeer })
       } finally {
         await dispose()
       }
@@ -295,39 +292,6 @@ describe('connection node half', () => {
     const ctx = new Context()
     await expect(apply(ctx, { recovery })).rejects.toThrow(error)
     expect(ctx.get('connection')).toBeUndefined()
-  })
-
-  it('reports allowsRemoteAuthorities from validated trustedHosts only', async () => {
-    const cases: { trustedHosts: string[]; expected: boolean }[] = [
-      { trustedHosts: ['127.0.0.1', 'localhost', '[::1]'], expected: false },
-      { trustedHosts: ['harness.example'], expected: true },
-      { trustedHosts: ['127.0.0.1', 'harness.example'], expected: true },
-    ]
-    for (const { trustedHosts, expected } of cases) {
-      const deployment = await mounted({ trustedHosts })
-      try {
-        expect(deployment.connection.allowsRemoteAuthorities, trustedHosts.join(',')).toBe(expected)
-      } finally {
-        await deployment.dispose()
-      }
-    }
-  })
-
-  it('reserves enough default carrier capacity for the 200 MiB image batch', () => {
-    expect(DEFAULT_MAX_REQUEST_BODY_BYTES).toBe(300 * 1024 * 1024)
-    expect(DEFAULT_MAX_REQUEST_BODY_BYTES).toBeGreaterThan(Math.ceil(200 * 1024 * 1024 * 4 / 3) + 1024 * 1024)
-  })
-
-  it('fails loud when the carrier cap cannot hold the configured image batch', async () => {
-    const ctx = new Context()
-    const routes: WebRoute[] = []
-    ctx.provide('webServer', fakeHttpServer(routes, []) as WebServer)
-    ctx.provide('attachments', {
-      imageLimits: { maxMessageImageBytes: 20 * 1024 * 1024 },
-    } as AttachmentStore)
-    await expect(apply(ctx, { maxRequestBodyBytes: 1024 }))
-      .rejects.toThrow(/must be at least .* aggregate image limit/)
-    expect(routes).toHaveLength(0)
   })
 
   it('fails the load on a trustedHosts entry that is not a bare authority', async () => {
@@ -424,12 +388,12 @@ describe('connection node half', () => {
     const loopback = fakeRequest({ host: '127.0.0.1:3080' })
     const declared = fakeRequest({ host: 'harness.example' })
 
-    expect(connection.requestRejection(loopback)).toBe(401)
-    expect(connection.requestRejection(declared)).toBe(401)
-    expect(connection.requestRejection(fakeRequest({
+    expect(connection.admit(loopback)).toEqual({ rejection: 401 })
+    expect(connection.admit(declared)).toEqual({ rejection: 401 })
+    expect(connection.admit(fakeRequest({
       host: 'harness.example',
       cookie: browserCookie(connection, 'harness.example'),
-    }))).toBeUndefined()
+    }))).toEqual({ peer: connection.browserPeer })
     await dispose()
   })
 

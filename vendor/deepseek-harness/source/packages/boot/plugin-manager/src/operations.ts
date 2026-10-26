@@ -7,7 +7,7 @@ import { execa } from 'execa'
 import type { EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
 import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import {
-  DEFAULT_PROFILE_BUNDLES, bundlePatchPaths, initProfile, PROFILE_TEMPLATES, readProfileManifest,
+  bundlePatchPaths, readProfileManifest,
   resolveBundleDir, resolveProfileDir, loadOverlayPatches, composeEntries, readProfileVersionExemptions,
   evaluatePluginCompatibility, pluginCompatibilityWarning, type ProfileManifest,
 } from '@deepseek-ai/dsh-app-boot'
@@ -16,7 +16,6 @@ import { parseInstallSpec } from './install-spec.ts'
 import { awaitTreeGone, leadsOwnGroup, treeAlive, type RunTree } from './run-tree.ts'
 import { incompatiblePlugin } from './failure.ts'
 import type { IncompatiblePlugin, PackageResult, Registry } from './types.ts'
-export { setProfileVersionExemption, readProfileVersionExemptions } from '@deepseek-ai/dsh-app-boot'
 
 /** Profile and invocation locations supplied by the launcher. */
 export interface PackageOperationContext {
@@ -540,7 +539,7 @@ export async function runProfilePnpm(
   }
 }
 
-/** Initialize and run a plugin package command with the same write lock as the service.
+/** Run a plugin package command against an initialized profile with the service write lock.
  * @param context Launcher-owned locations.
  * @param args Pnpm arguments.
  * @param options Output and cancellation policy.
@@ -550,13 +549,8 @@ export async function runPluginCommand(
   context: PackageOperationContext, args: readonly string[], options: PackageOperationOptions,
 ): Promise<PackageResult> {
   const dir = context.dir ?? resolveProfileDir(context.profile, context.home)
-  await mkdir(dir, { recursive: true })
   return withFileLock(join(dir, 'package.json'), async () => {
-    if (!existsSync(join(dir, 'package.json'))) {
-      const template = PROFILE_TEMPLATES[context.profile]
-      initProfile(dir, template?.bundles ?? DEFAULT_PROFILE_BUNDLES)
-      options.onOutput?.(`plugin manager: initialized profile ${context.profile} at ${dir}\n`, 'stderr')
-    }
+    readProfileManifest('dsh', dir)
     return runProfilePnpm(context, args, options)
   }, options.lockWaitMs === undefined ? undefined : { waitMs: options.lockWaitMs })
 }

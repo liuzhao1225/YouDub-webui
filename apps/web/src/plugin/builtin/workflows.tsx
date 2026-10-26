@@ -1,10 +1,9 @@
 import { Tag } from '@/components/ui/tag'
 import { Surface } from '@/components/ui/surface'
 import { NativeSelect } from '@/components/ui/native-select'
-import { bindComponent, type Bindings } from '../sdk'
-import { Context } from 'cordis'
-import { protectPendingSubmissions, useObservableSource } from '../view-hooks'
-import { StudioDraftStore } from '@/runtime/studio-draft'
+import { type Bindings } from '../sdk'
+import { useObservableSource } from '../view-hooks'
+import type { StudioDraftStore } from '@/runtime/studio-draft'
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, Copy, Download, GitBranch, Loader2, Pencil, Play, Plus, Redo2, Save, Search, FileInput, FileOutput, Trash2, Undo2, Upload, X } from '@/lib/icons'
 import { Link, text, type Diagnostic, type NodeTypeDefinition, type RouteProps, type WorkflowDocument, type WorkflowDocumentRecord, type WorkflowDescription } from '../sdk'
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { InlineAlert } from '@/components/inline-alert'
 import { Disclosure } from '@/components/ui/disclosure'
 import { WorkflowCanvas } from './workflow-canvas'
-import { GraphPorts, NodeSettings, SynthesizeNodeEditor } from './workflow-settings'
+import { GraphPorts, NodeSettings } from './workflow-settings'
 import { INPUTS_ID, OUTPUTS_ID, blankWorkflow, copyWorkflowLabels, parseWorkflow, serializeWorkflowEdits, workflowDrafts, workflowViews, workflowTemplateTitle } from './workflow-utils'
 import { useUnsavedChanges } from './workflow-guard'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
@@ -24,7 +23,6 @@ import { WorkflowOptions, optionPillClassName } from './workflow-options'
 import { WorkflowRun } from './workflow-run'
 import { WorkflowRerun } from './workflow-rerun'
 import { WorkflowDiagnostics } from './workflow-errors'
-import { TaskNodePage, TaskWorkflowPanel, TranscriptNodeDetails, TranslationNodeDetails } from './workflow-task'
 
 function workflowTitle(record: WorkflowDocumentRecord, tx: Text) {
   return record.origin === 'builtin' ? workflowTemplateTitle(record.document, tx) : record.document.title
@@ -69,29 +67,29 @@ export function WorkflowLibrary({ request, navigate, useWorkflowDocuments }: Bin
   </Page>
 }
 
-export function WorkflowRoute({ params, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: RouteProps & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+export function WorkflowRoute({ params, request, navigate, blockNavigation, useQuery, useSlot, useWorkflowResources }: RouteProps & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
-  return <>{types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><InlineAlert>{types.error}</InlineAlert>{!types.data && <Button variant="outline" onClick={types.refresh}>{tx("workflows.retry")}</Button>}</Page>}{!types.data ? !types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><p role="status">{tx("workflows.loading")}</p></Page> : params.id === 'new' ? <NewEditor query={params.__search} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} types={types.data.items} nodeId={params.nodeId} /> : <SavedEditor query={params.__search} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} id={params.id} nodeId={params.nodeId} types={types.data.items} />}</>
+  return <>{types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><InlineAlert>{types.error}</InlineAlert>{!types.data && <Button variant="outline" onClick={types.refresh}>{tx("workflows.retry")}</Button>}</Page>}{!types.data ? !types.error && <Page as="div" className={params.nodeId ? undefined : 'max-w-none'}><p role="status">{tx("workflows.loading")}</p></Page> : params.id === 'new' ? <NewEditor query={params.__search} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} types={types.data.items} nodeId={params.nodeId} /> : <SavedEditor query={params.__search} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} id={params.id} nodeId={params.nodeId} types={types.data.items} />}</>
 }
-function NewEditor({ query, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+function NewEditor({ query, types, nodeId, request, navigate, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const [record] = useState(() => {
     const document = blankWorkflow(); document.title = tx("workflows.untitled.workflow")
     return { id: 'new', revision: 0, document, origin: 'user' as const }
   })
-  return <Editor query={query} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} initial={record} types={types} nodeId={nodeId} />
+  return <Editor query={query} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} initial={record} types={types} nodeId={nodeId} />
 }
-function SavedEditor({ query, id, nodeId, types, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; id: string; nodeId?: string; types: NodeTypeDefinition[] } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+function SavedEditor({ query, id, nodeId, types, request, navigate, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; id: string; nodeId?: string; types: NodeTypeDefinition[] } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText()
   const { data, error, refresh } = useQuery<WorkflowDocumentRecord>(`/api/v2/workflow-documents/${encodeURIComponent(id)}`)
   if (error) return <Page className={nodeId ? undefined : 'max-w-none'}><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx("workflows.retry")}</Button></Page>
   if (!data) return <Page className={nodeId ? undefined : 'max-w-none'}><p role="status">{tx("workflows.loading")}</p></Page>
-  return <Editor query={query} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} replace={replace} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} key={id} initial={data} nodeId={nodeId} types={types} />
+  return <Editor query={query} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} blockNavigation={blockNavigation} useQuery={useQuery} useSlot={useSlot} key={id} initial={data} nodeId={nodeId} types={types} />
 }
 
-function Editor({ query, initial, types, nodeId, request, navigate, replace, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; initial: WorkflowDocumentRecord; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'replace' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+function Editor({ query, initial, types, nodeId, request, navigate, blockNavigation, useQuery, useSlot, useWorkflowResources }: { query?:string; initial: WorkflowDocumentRecord; types: NodeTypeDefinition[]; nodeId?: string } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const windowHeader = useWindowHeader()
   const [renaming, setRenaming] = useState(false)
@@ -165,7 +163,7 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
       const record = await request<WorkflowDocumentRecord>(create ? '/api/v2/workflow-documents' : `/api/v2/workflow-documents/${initial.id}`, { method: create ? 'POST' : 'PUT', body: JSON.stringify(create ? { document: next } : { document: next, expectedRevision: revision }) })
       workflowDrafts.delete(initial.id)
       setSaved(serializeWorkflowEdits(record.document)); setRevision(record.revision); setDocument(record.document); current.current = record.document
-      if (create) { guard.bypass(); replace(`/workflows/${record.id}${sourceQuery}`) }
+      if (create) { guard.bypass(); navigate(`/workflows/${record.id}${sourceQuery}`) }
     } catch (failure) { setError(failure instanceof Error ? failure.message : String(failure)); throw failure }
     finally { setBusy(false) }
   }
@@ -237,18 +235,16 @@ function Editor({ query, initial, types, nodeId, request, navigate, replace, blo
   </Layout>
 }
 
-export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = [], renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore?: StudioDraftStore; onLockChange?(locked: boolean): void; additionalWorkflows?: WorkflowDescription[]; renderWorkflow?(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
+export function GraphStudio({ draftStore, additionalWorkflows, renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore: StudioDraftStore; additionalWorkflows: WorkflowDescription[]; renderWorkflow(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const documents = useWorkflowDocuments()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   useEffect(() => { window.addEventListener('youdub:resources-ready', types.refresh); return () => window.removeEventListener('youdub:resources-ready', types.refresh) }, [types.refresh])
-  const [localStore] = useState(() => new StudioDraftStore())
-  const store = draftStore ?? localStore
+  const store = draftStore
   const { selected, selectedGraph, draft, overrides } = useObservableSource(store)
   const setSelected = (value: string) => store.set('selected', value)
   const setSelectedGraph = (value: string) => store.set('selectedGraph', value)
   const [locked, setLocked] = useState(false)
-  const lockChanged = useCallback((value: boolean) => { setLocked(value); onLockChange?.(value) }, [onLockChange])
   const record = documents.data?.items.find((item) => item.id === selectedGraph) ?? documents.data?.items[0]
   if ((documents.error || types.error) && (!documents.data || !types.data)) return <div className="space-y-3"><InlineAlert>{documents.error || types.error}</InlineAlert><Button variant="outline" onClick={() => { documents.refresh(); types.refresh() }}>{tx("workflows.retry")}</Button></div>
   if (!documents.data || !types.data) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx("workflows.loading.workflows")}</p>
@@ -262,23 +258,6 @@ export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = []
   </Select>
   return <section className="space-y-4">
     {(documents.error || types.error) && <InlineAlert>{documents.error || types.error}</InlineAlert>}
-    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent submissionStore={store} draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => { store.clearGraph(record.id); lockChanged(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
+    {external ? renderWorkflow(external, selector, setLocked) : <WorkflowRun prominent submissionStore={store} draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={setLocked} onStarted={() => { store.clearGraph(record.id); setLocked(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
   </section>
-}
-export const name = 'client-workflows'
-export const inject = ['slots', 'apiClient', 'navigation']
-export function apply(ctx: Context) {
-  const submissionStore = new StudioDraftStore()
-  ctx.effect(() => () => submissionStore.reset())
-  protectPendingSubmissions(ctx, submissionStore)
-  const BoundTaskNode = bindComponent(ctx, ['request', 'navigate', 'blockNavigation', 'useQuery', 'useSlot'], TaskNodePage)
-  ctx.effect(() => ctx.slots.register('workflow.node.editors', { id: 'youdub.synthesize', component: bindComponent(ctx, ['useSlot'], SynthesizeNodeEditor) }))
-  ctx.effect(() => ctx.slots.register('workflow.node.details', { id: 'youdub.transcript', component: TranscriptNodeDetails }))
-  ctx.effect(() => ctx.slots.register('workflow.node.details', { id: 'youdub.translation', component: TranslationNodeDetails }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflows', path: '/workflows', component: bindComponent(ctx, ['request', 'navigate', 'useWorkflowDocuments'], WorkflowLibrary), access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflow-editor', path: '/workflows/:id', component: bindComponent(ctx, ['request', 'navigate', 'replace', 'blockNavigation', 'useQuery', 'useSlot', 'useWorkflowResources'], WorkflowRoute), access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'workflow-node', path: '/workflows/:id/nodes/:nodeId', component: bindComponent(ctx, ['request', 'navigate', 'replace', 'blockNavigation', 'useQuery', 'useSlot', 'useWorkflowResources'], WorkflowRoute), access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'task-node', path: '/tasks/:id/nodes/:nodeId', component: props => <BoundTaskNode {...props} submissionStore={submissionStore} />, access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'workflows', routeId: 'workflows', label: { default: 'Workflows', translations: { zh: '工作流', ja: 'ワークフロー' } }, order: 25, icon: GitBranch }))
-  ctx.effect(() => ctx.slots.register('task.detail.panels', { id: 'workflow-graph', order: -10, component: bindComponent(ctx, ['request', 'navigate', 'useQuery'], TaskWorkflowPanel) }))
 }

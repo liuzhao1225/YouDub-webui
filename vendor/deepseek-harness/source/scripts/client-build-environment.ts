@@ -13,20 +13,8 @@ import { dirname, resolve } from 'node:path'
 /** Prefix reserved for build-time values that may be embedded in browser artifacts. */
 const CLIENT_BUILD_ENV_PREFIX = 'DSH_CLIENT_'
 
-/** Non-public selector used by build orchestration to request a named client profile. */
-export const CLIENT_BUILD_PROFILE_SELECTOR = 'DSH_BUILD_CLIENT_PROFILE'
-
-/** Public client environment required by official DSH artifacts. */
-const OFFICIAL_CLIENT_BUILD_ENVIRONMENT = {
-  DSH_CLIENT_BUILD_PROFILE: 'official',
-  DSH_CLIENT_TITLE: 'YouDub',
-} as const
-
 /** Public variable carrying the source commit embedded in client artifacts. */
 const CLIENT_COMMIT_HASH_VARIABLE = 'DSH_CLIENT_COMMIT_HASH'
-
-/** Public variable carrying the repository package version embedded in client artifacts. */
-const CLIENT_VERSION_VARIABLE = 'DSH_CLIENT_VERSION'
 
 /** Repository-relative path of the complete client build record. */
 export const CLIENT_BUILD_RECORD_PATH = '.dsh-build/client-build-environment.json'
@@ -132,23 +120,6 @@ export function repositoryClientBuildEnvironment(
   }
 }
 
-/**
- * Resolve the exact public values required by an official build at one commit.
- * @param root - repository root whose HEAD must match the built source.
- * @param environment - optional explicit commit source for non-Git build environments.
- * @returns complete official client environment.
- */
-export function officialClientBuildEnvironment(
-  root: string,
-  environment: NodeJS.ProcessEnv = process.env,
-): Readonly<Record<`DSH_CLIENT_${string}`, string>> {
-  return {
-    DSH_CLIENT_COMMIT_HASH: repositoryCommitHash(root, environment),
-    DSH_CLIENT_VERSION: repositoryVersion(root),
-    ...OFFICIAL_CLIENT_BUILD_ENVIRONMENT,
-  }
-}
-
 /** Digest of every client artifact produced by the complete root build. */
 interface ClientArtifactDigest {
   /** Number of files covered by the digest. */
@@ -179,35 +150,6 @@ function clientBuildEnvironment(environment: NodeJS.ProcessEnv): ClientBuildEnvi
 }
 
 /**
- * Resolve the exact public environment selected for a complete client build.
- * @param environment - parent process environment.
- * @param profile - explicit profile, or the non-public selector when omitted.
- * @returns the inherited public values when no profile is selected, otherwise the named profile.
- */
-export function resolveClientBuildEnvironment(
-  environment: NodeJS.ProcessEnv,
-  profile: string | undefined = environment[CLIENT_BUILD_PROFILE_SELECTOR],
-): ClientBuildEnvironment {
-  if (profile === undefined) return clientBuildEnvironment(environment)
-  if (profile === 'official') {
-    const commitHash = environment[CLIENT_COMMIT_HASH_VARIABLE]
-    const version = environment[CLIENT_VERSION_VARIABLE]
-    if (commitHash === undefined) {
-      throw new Error(`${CLIENT_COMMIT_HASH_VARIABLE} is required for the official client build profile`)
-    }
-    if (version === undefined) {
-      throw new Error(`${CLIENT_VERSION_VARIABLE} is required for the official client build profile`)
-    }
-    return {
-      DSH_CLIENT_COMMIT_HASH: commitHash,
-      DSH_CLIENT_VERSION: version,
-      ...OFFICIAL_CLIENT_BUILD_ENVIRONMENT,
-    }
-  }
-  throw new Error(`unknown client build profile ${JSON.stringify(profile)}; expected "official"`)
-}
-
-/**
  * Construct a subprocess environment containing exactly the selected public values.
  * @param environment - parent process environment.
  * @param clientEnvironment - complete public environment selected for the build.
@@ -219,7 +161,7 @@ export function clientBuildProcessEnvironment(
 ): NodeJS.ProcessEnv {
   const child: NodeJS.ProcessEnv = {}
   for (const [name, value] of Object.entries(environment)) {
-    if (name === CLIENT_BUILD_PROFILE_SELECTOR || name.startsWith(CLIENT_BUILD_ENV_PREFIX)) continue
+    if (name === 'DSH_BUILD_CLIENT_PROFILE' || name.startsWith(CLIENT_BUILD_ENV_PREFIX)) continue
     child[name] = value
   }
   return { ...child, ...clientEnvironment }

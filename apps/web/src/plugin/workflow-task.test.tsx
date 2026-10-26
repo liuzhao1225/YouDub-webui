@@ -1,10 +1,10 @@
-import type { Context } from 'cordis'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type NodeTypeDefinition, type SlotMap, type TaskNodeDetail, type TaskStatus, type TaskView } from './sdk'
+import { LanguageProvider } from '@/test/language-provider'
+import { type NodeTypeDefinition, type SlotMap, type TaskNodeDetail, type TaskStatus, type TaskView } from './sdk'
 import { TaskNodePage as TaskNodePageView, TaskWorkflowPanel as TaskWorkflowPanelView, TranscriptNodeDetails, TranslationNodeDetails } from './builtin/workflow-task'
 
 import { bindTestComponent } from './test-bindings'
@@ -34,11 +34,11 @@ function mount(data: Fixture, handler?: (path: string, init?: RequestInit) => Pr
     if (path === '/api/v2/tasks/task/nodes/node-primary') return structuredClone(data.detail)
     throw new Error(`Unexpected request: ${path}`)
   })
-  const context = { apiClient: { request }, navigation: { push: vi.fn(), block: () => () => {} }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: (slot: string) => slot === 'workflow.node.details' ? details : [] } } as unknown as Context
+  const context = { apiClient: { request }, navigation: { push: vi.fn(), block: () => () => {} }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: (slot: string) => slot === 'workflow.node.details' ? details : [] } } as unknown as TestContext
   const store = new StudioDraftStore()
-  const show = () => render(<PluginContextProvider context={context}><LanguageProvider>{graph ? <TaskWorkflowPanel task={data.task} refresh={() => {}} /> : <TaskNodePage submissionStore={store} params={{ id: data.task.id, nodeId: data.detail.nodeId }} />}</LanguageProvider></PluginContextProvider>)
+  const show = () => render(<TestFeatureProvider context={context}><LanguageProvider>{graph ? <TaskWorkflowPanel task={data.task} refresh={() => {}} /> : <TaskNodePage submissionStore={store} params={{ id: data.task.id, nodeId: data.detail.nodeId }} />}</LanguageProvider></TestFeatureProvider>)
   const view = show()
-  return Object.assign(request, { unmount: view.unmount, show, push: context.navigation.push })
+  return Object.assign(request, { unmount: view.unmount, show, push: context.navigation!.push })
 }
 function addHistory(data: Fixture, port: 'transcript' | 'translation' = 'transcript') {
   const outputs = structuredClone(data.detail.resultRevisions[0].outputs)
@@ -230,10 +230,10 @@ it('pairs synthesized audio with translation by segment ID, with downloads and c
   mount(speechFixture())
   const first = await screen.findByRole('listitem', { name: '配音 1' }), second = screen.getByRole('listitem', { name: '配音 2' })
   expect(within(first).getByText('第一句配音。')).toBeInTheDocument()
-  expect(within(first).getByLabelText('配音 1')).toHaveAttribute('src', '/api/v2/tasks/task/artifacts/audio-one')
+  expect(within(first).getByLabelText('配音 1')).toHaveAttribute('src', '/api/youdub/file?path=%2Fapi%2Fv2%2Ftasks%2Ftask%2Fartifacts%2Faudio-one')
   expect(within(first).getByRole('link', { name: '下载音频 1' })).toHaveAttribute('download')
   expect(within(second).getByText('第二句配音。')).toBeInTheDocument()
-  expect(within(second).getByLabelText('配音 2')).toHaveAttribute('src', '/api/v2/tasks/task/artifacts/audio-two')
+  expect(within(second).getByLabelText('配音 2')).toHaveAttribute('src', '/api/youdub/file?path=%2Fapi%2Fv2%2Ftasks%2Ftask%2Fartifacts%2Faudio-two')
   expect(screen.getByRole('button', { name: '原始数据' })).toHaveAttribute('aria-expanded', 'false')
   expect(screen.queryByRole('button', { name: '保存订正' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: '确认并继续' })).toBeEnabled()

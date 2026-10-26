@@ -40,8 +40,6 @@ export interface Context {
  * contexts without mutating their parent.
  */
 export class Context {
-  /** Symbol key under which a disposer exposes its {@link EffectMeta} diagnostics tree. */
-  static readonly effect: unique symbol = symbols.effect
   /** Symbol key for a context's listener filter, consulted on every event dispatch. */
   static readonly filter: unique symbol = symbols.filter
   /** Symbol key of the isolation map (see the `Context[symbols.isolate]` property). */

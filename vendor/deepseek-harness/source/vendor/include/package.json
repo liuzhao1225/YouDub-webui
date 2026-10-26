@@ -34,7 +34,6 @@
     "@deepseek-ai/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/cosmokit": "workspace:~",
     "js-yaml": "^4.1.0"
   }
 }

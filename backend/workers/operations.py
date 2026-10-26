@@ -94,8 +94,7 @@ class Operation:
         if stage not in fields:
             raise WorkerError("INVALID_OPERATION", f"No parameter contract for {stage}.")
         config = SimpleNamespace(**fields[stage]())
-        return StageContext(task_id=self.request["taskId"], attempt=self.request["attempt"], stage=stage,
-                            config=config, input_files=files, work_dir=self.work,
+        return StageContext(stage=stage, config=config, input_files=files, work_dir=self.work,
                             check_cancel=self.wire.check_cancel)
 
     def execute(self):
@@ -141,8 +140,7 @@ class Operation:
 
     def asr(self):
         from backend.app.v1 import asr
-        context = self.context("asr", {"source_audio": self.path(self.inputs["audio"]),
-                                       "media_info": self.json_file("mediaInfo")})
+        context = self.context("asr", {"source_audio": self.path(self.inputs["audio"])})
         result = asr.run(context, self.wire.progress)
         return {"transcript": json.loads(result.output_files["transcript"].read_text()),
                 "raw": self.artifact("raw", result.output_files["asr_raw"], "diagnostic/json/v1", "application/json")}

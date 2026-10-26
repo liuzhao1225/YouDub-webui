@@ -1,9 +1,8 @@
-/** Internal React bindings for renderer hosts and standard-source scopes. */
+/** Internal React bindings for renderer hosts and root standard sources. */
 import { createContext, useContext, type ReactNode } from 'react'
 import type {
   HostObservable,
   KeyedStandardSource,
-  MaybeSnapshotSelectorHook,
   SlotRendererHost,
   SnapshotSelectorHook,
   StandardSourceBinding,
@@ -25,7 +24,6 @@ export function useHost(): SlotRendererHost {
 }
 
 const RootBindingContext = createContext<StandardSourceBinding | null>(null)
-const ScopeBindingContext = createContext<StandardSourceBinding | null>(null)
 
 /**
  * Read the root standard-source binding.
@@ -35,30 +33,6 @@ export function useRootBinding(): StandardSourceBinding {
   const binding = useContext(RootBindingContext)
   if (binding === null) throw new SlotAssemblyError('slot rendered outside the root standard-source provider')
   return binding
-}
-
-/**
- * Read the current-session-optional binding.
- * @returns a binding whose key is absent when no Session is selected.
- */
-export function useScopeBinding(): StandardSourceBinding {
-  const binding = useContext(ScopeBindingContext)
-  if (binding === null) throw new SlotAssemblyError('scoped slot rendered outside its scope provider')
-  return binding
-}
-
-/**
- * Publish one resolved scope binding to a renderer subtree.
- * @param props - provider inputs.
- * @param props.binding - binding exposed to scoped entries.
- * @param props.children - subtree that inherits the binding.
- * @returns the scoped React provider.
- */
-export function ScopeBindingProvider({ binding, children }: {
-  binding: StandardSourceBinding
-  children: ReactNode
-}): ReactNode {
-  return <ScopeBindingContext.Provider value={binding}>{children}</ScopeBindingContext.Provider>
 }
 
 /**
@@ -79,26 +53,6 @@ const hookCache = new WeakMap<object, unknown>()
 const absentSource: HostObservable<undefined> = {
   getSnapshot: () => undefined,
   subscribe: () => () => {},
-}
-
-/**
- * Bind an optional source without changing Hook call order.
- * @param source - current source, or absence.
- * @returns selector Hook returning `undefined` while absent.
- */
-export function maybeObservableHook<T>(
-  source: HostObservable<T> | undefined,
-): MaybeSnapshotSelectorHook<T> {
-  if (source !== undefined) return observableHook(source)
-  return useAbsentSnapshot
-}
-
-function useAbsentSnapshot<S>(
-  _selector: (snapshot: never) => S,
-  _equal?: (left: S, right: S) => boolean,
-): S | undefined {
-  observableHook(absentSource)(() => undefined)
-  return undefined
 }
 
 /**
@@ -182,20 +136,4 @@ export function RootStandardProvider({ children }: { children: ReactNode }) {
   const host = useHost()
   const binding = observableHook(host.root)(value => value)
   return <RootBindingContext.Provider value={binding}>{children}</RootBindingContext.Provider>
-}
-
-/** Subscribe to the scope roster before resolving and binding its current adapter. */
-export function ScopeProvider({
-  scope,
-  children,
-}: {
-  scope: 'session' | 'session-maybe'
-  children: ReactNode
-}) {
-  const host = useHost()
-  observableHook(host.scopeRevision)(value => value)
-  const adapter = host.scope(scope)
-  if (adapter === undefined) throw new SlotAssemblyError(`scope '${scope}' rendered without an installed adapter`)
-  const binding = observableHook(adapter.current)(value => value)
-  return <ScopeBindingContext.Provider value={binding}>{children}</ScopeBindingContext.Provider>
 }

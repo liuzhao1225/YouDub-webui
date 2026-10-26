@@ -1,10 +1,7 @@
 /** Profile-local compatibility permissions readable before any Cordis plugins load. */
 import { readFileSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse } from 'semver'
-import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
-import { getDshRuntimeVersion } from './plugin-compatibility.ts'
 
 /** Independent profile metadata; neither package manifests nor Cordis patches carry grants. */
 export const PROFILE_COMPATIBILITY_FILENAME = 'compatibility.json'
@@ -21,22 +18,9 @@ function isVersionList(value: unknown): value is string[] {
  * @param value Version supplied by a manifest or user.
  * @returns False for ranges, prefixes, whitespace, and malformed versions.
  */
-export function isExactPluginVersion(value: string): boolean {
+function isExactPluginVersion(value: string): boolean {
   const parsed = parse(value)
   return parsed !== null && value === `${parsed.version}${parsed.build.length === 0 ? '' : `+${parsed.build.join('.')}`}`
-}
-
-/** Validate one explicit exemption without granting it.
- * @param packageVersion Exact npm package-name@version, never an installation spec or range.
- * @param runtimeVersion Exact DSH version, including prerelease and build metadata.
- * @throws When either identity is not canonical.
- */
-export function validatePluginVersionExemption(packageVersion: string, runtimeVersion: string): void {
-  const separator = packageVersion.lastIndexOf('@')
-  if (separator <= 0 || !PACKAGE_NAME.test(packageVersion.slice(0, separator))
-    || !isExactPluginVersion(packageVersion.slice(separator + 1)) || !isExactPluginVersion(runtimeVersion)) {
-    throw new Error('Version exemptions require an exact npm package-name@version and an exact DSH runtime version')
-  }
 }
 
 /** What one profile's compatibility file currently authorizes, and what is wrong with it. */
@@ -45,11 +29,6 @@ export interface ProfileCompatibility {
   readonly exemptions: Record<string, string[]>
   /** Human-readable problems; empty when every record was accepted. */
   readonly warnings: string[]
-  /**
-   * Whether the file holds nothing this reader rejected, so a grant or revocation may rewrite it.
-   * A false value means writing would discard content the user must repair by hand.
-   */
-  readonly rewritable: boolean
 }
 
 /** Read the profile's independent compatibility file without loading plugins.
@@ -62,11 +41,11 @@ export interface ProfileCompatibility {
 export function readProfileCompatibility(profileDir: string): ProfileCompatibility {
   const filename = join(profileDir, PROFILE_COMPATIBILITY_FILENAME)
   const unreadable = (reason: string): ProfileCompatibility =>
-    ({ exemptions: {}, warnings: [`${filename} ${reason}; treating the profile as having no exemptions`], rewritable: false })
+    ({ exemptions: {}, warnings: [`${filename} ${reason}; treating the profile as having no exemptions`] })
   let text: string
   try { text = readFileSync(filename, 'utf8') }
   catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { exemptions: {}, warnings: [], rewritable: true }
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { exemptions: {}, warnings: [] }
     return unreadable(`cannot be read (${String(error)})`)
   }
   let value: unknown
@@ -89,7 +68,7 @@ export function readProfileCompatibility(profileDir: string): ProfileCompatibili
     }
     exemptions[key] = versions
   }
-  return { exemptions, warnings, rewritable: warnings.length === 0 }
+  return { exemptions, warnings }
 }
 
 /** Read only the accepted exemptions of a profile.
@@ -98,44 +77,4 @@ export function readProfileCompatibility(profileDir: string): ProfileCompatibili
  */
 export function readProfileVersionExemptions(profileDir: string): Record<string, string[]> {
   return readProfileCompatibility(profileDir).exemptions
-}
-
-/** Persist one informed grant or revocation under the compatibility file's own lock.
- * @param profileDir Profile directory; no package manifest is created or modified.
- * @param packageVersion Exact manifest package-name@version.
- * @param runtimeVersion Exact DSH version; grants must name the current runtime, revocations may name historical ones.
- * @param enabled Whether to grant rather than revoke.
- * @param acceptRisk Required true for grants after explicit acknowledgement of possible crashes or data loss.
- * @returns After the atomic write. Existing plugin instances are not reloaded by this operation.
- * @throws For invalid identities, missing consent, a stale runtime, or a file the reader rejected,
- * which the user must repair by hand because rewriting it would discard their content.
- */
-export async function setProfileVersionExemption(
-  profileDir: string, packageVersion: string, runtimeVersion: string, enabled: boolean, acceptRisk: boolean,
-): Promise<void> {
-  validatePluginVersionExemption(packageVersion, runtimeVersion)
-  if (enabled && !acceptRisk) {
-    throw new Error('Incompatible plugins may cause crashes or data loss. To grant this exact-version exemption, explicitly acknowledge the risk with --accept-risk (acceptRisk: true).')
-  }
-  const current = getDshRuntimeVersion()
-  if (enabled && runtimeVersion !== current) {
-    throw new Error(`Cannot approve DSH ${runtimeVersion}: this application runs DSH ${current}. Use --dsh-version ${current}.`)
-  }
-  await mkdir(profileDir, { recursive: true })
-  const filename = join(profileDir, PROFILE_COMPATIBILITY_FILENAME)
-  await withFileLock(filename, async () => {
-    const current = readProfileCompatibility(profileDir)
-    if (!current.rewritable) {
-      throw new Error(`${PROFILE_COMPATIBILITY_FILENAME} must be repaired before exemptions change:\n${current.warnings.join('\n')}`)
-    }
-    const exemptions = current.exemptions
-    const versions = exemptions[packageVersion] ?? []
-    if (enabled) exemptions[packageVersion] = [...new Set([...versions, runtimeVersion])]
-    else {
-      const retained = versions.filter(version => version !== runtimeVersion)
-      if (retained.length) exemptions[packageVersion] = retained
-      else Reflect.deleteProperty(exemptions, packageVersion)
-    }
-    await writeFileAtomic(filename, JSON.stringify(exemptions, undefined, 2) + '\n', { mode: 0o600 })
-  })
 }

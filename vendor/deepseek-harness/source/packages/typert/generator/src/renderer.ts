@@ -26,7 +26,6 @@ export class TypeGraphRenderError extends Error {
 export class TypeGraphRenderer {
   private readonly nodes: ReadonlyMap<TypeNodeId, TypeNodeModel>
   private readonly declarations: ReadonlyMap<SymbolId, TypeDeclarationModel>
-  private readonly members: ReadonlyMap<string, MemberModel>
   private readonly parameterNames = new Map<string, string>()
 
   /**
@@ -36,7 +35,6 @@ export class TypeGraphRenderer {
   constructor(readonly graph: TypeGraph) {
     this.nodes = new Map(graph.nodes.map(node => [node.id, node]))
     this.declarations = new Map(graph.declarations.map(declaration => [declaration.id, declaration]))
-    this.members = new Map(graph.declarations.flatMap(declaration => declaration.members.map(member => [member.id, member] as const)))
     for (const declaration of graph.declarations) {
       this.indexParameters(declaration.typeParameters)
       for (const member of declaration.members) {
@@ -65,17 +63,6 @@ export class TypeGraphRenderer {
     const declaration = this.declarations.get(id)
     if (declaration === undefined) throw new TypeGraphRenderError(`type graph references missing declaration ${id}`)
     return declaration
-  }
-
-  /**
-   * Resolve a public member id.
-   * @param id - declaration member id.
-   * @returns the referenced member.
-   */
-  member(id: string): MemberModel {
-    const member = this.members.get(id)
-    if (member === undefined) throw new TypeGraphRenderError(`type graph references missing member ${id}`)
-    return member
   }
 
   /**
@@ -177,23 +164,20 @@ export class TypeGraphRenderer {
   }
 
   /**
-   * Render one class/interface member as a body-free declaration.
+   * Render one member of an object type.
    * @param member - modeled member.
-   * @param sourceModifiers - retain source-only modifiers for reflection text.
    * @param references - optional generated names for declaration references.
    * @returns one-line TypeScript member text.
    */
-  renderMember(member: MemberModel, sourceModifiers = false, references?: ReadonlyMap<SymbolId, string>): string {
-    if (sourceModifiers) return member.text
+  renderMember(member: MemberModel, references?: ReadonlyMap<SymbolId, string>): string {
     const name = renderPropertyName(member.name)
     const optional = member.optional ? '?' : ''
     const readonly = member.readonly ? 'readonly ' : ''
-    const abstract = member.abstract ? 'abstract ' : ''
     switch (member.kind) {
-      case 'property': return `${abstract}${readonly}${name}${optional}: ${this.renderType(member.type, references)}`
-      case 'method': return `${abstract}${name}${optional}${this.renderSignature(member.signature, references)}`
-      case 'getter': return `${abstract}get ${name}()${this.renderReturn(member.signature, references)}`
-      case 'setter': return `${abstract}set ${name}${this.renderSignatureHead(member.signature, references)}`
+      case 'property': return `${readonly}${name}${optional}: ${this.renderType(member.type, references)}`
+      case 'method': return `${name}${optional}${this.renderSignature(member.signature, references)}`
+      case 'getter': return `get ${name}()${this.renderReturn(member.signature, references)}`
+      case 'setter': return `set ${name}${this.renderSignatureHead(member.signature, references)}`
       case 'call': return this.renderSignature(member.signature, references)
       case 'construct': return `new ${this.renderSignature(member.signature, references)}`
       case 'index': {
@@ -205,55 +189,11 @@ export class TypeGraphRenderer {
   }
 
   /**
-   * Render a named declaration without JSDoc.
-   * @param id - declaration symbol id.
-   * @returns exported TypeScript declaration text.
-   */
-  renderDeclaration(id: SymbolId): string {
-    const declaration = this.declaration(id)
-    const parameters = this.renderTypeParameters(declaration.typeParameters)
-    if (declaration.kind === 'enum') {
-      const members = declaration.enumMembers?.map(member =>
-        `    ${renderPropertyName(member.name)}${member.initializer === undefined ? '' : ` = ${member.initializer}`},`) ?? []
-      return [`export enum ${declaration.name} {`, ...members, '}'].join('\n')
-    }
-    if (declaration.kind === 'alias') {
-      if (declaration.type === undefined) throw new TypeGraphRenderError(`alias ${id} has no type node`)
-      return `export type ${declaration.name}${parameters} = ${this.renderType(declaration.type)};`
-    }
-    const extendsTypes = declaration.extends.map(type => this.renderType(type))
-    const implementsTypes = declaration.implements.map(type => this.renderType(type))
-    const heritage = [
-      extendsTypes.length === 0 ? '' : ` extends ${extendsTypes.join(', ')}`,
-      implementsTypes.length === 0 ? '' : ` implements ${implementsTypes.join(', ')}`,
-    ].join('')
-    const prefix = declaration.kind === 'class' && declaration.abstract ? 'abstract ' : ''
-    const members = declaration.members.map(member => `    ${this.renderMember(member)};`)
-    return [`export ${prefix}${declaration.kind} ${declaration.name}${parameters}${heritage} {`, ...members, '}'].join('\n')
-  }
-
-  /**
-   * Find the transitive declaration closure referenced by members.
-   * @param memberIds - business-API member ids.
-   * @returns declarations in graph order, excluding no roots implicitly.
-   */
-  declarationClosureForMembers(memberIds: readonly string[]): TypeDeclarationModel[] {
-    return this.declarationClosure(memberIds, [])
-  }
-
-  /**
    * Find the transitive declaration closure referenced by type roots.
    * @param typeIds - graph type roots.
    * @returns declarations in graph order.
    */
   declarationClosureForTypes(typeIds: readonly TypeNodeId[]): TypeDeclarationModel[] {
-    return this.declarationClosure([], typeIds)
-  }
-
-  private declarationClosure(
-    memberIds: readonly string[],
-    typeIds: readonly TypeNodeId[],
-  ): TypeDeclarationModel[] {
     const found = new Set<SymbolId>()
     const visiting = new Set<SymbolId>()
     const visitNode = (id: TypeNodeId): void => {
@@ -284,13 +224,12 @@ export class TypeGraphRenderer {
         if (parameter.constraint !== undefined) visitNode(parameter.constraint)
         if (parameter.default !== undefined) visitNode(parameter.default)
       }
-      for (const type of [...declaration.extends, ...declaration.implements]) visitNode(type)
+      for (const type of declaration.extends) visitNode(type)
       if (declaration.type !== undefined) visitNode(declaration.type)
       for (const member of declaration.members) visitMember(member)
       visiting.delete(id)
       found.add(id)
     }
-    for (const id of memberIds) visitMember(this.member(id))
     for (const id of typeIds) visitNode(id)
     return this.graph.declarations.filter(declaration => found.has(declaration.id))
   }
@@ -330,7 +269,7 @@ export class TypeGraphRenderer {
 
   private renderObject(members: readonly MemberModel[], references?: ReadonlyMap<SymbolId, string>): string {
     if (members.length === 0) return '{}'
-    return `{ ${members.map(member => `${this.renderMember(member, false, references)};`).join(' ')} }`
+    return `{ ${members.map(member => `${this.renderMember(member, references)};`).join(' ')} }`
   }
 
   private indexParameters(parameters: readonly TypeParameterModel[]): void {

@@ -1,15 +1,13 @@
 /**
- * Runtime registry for generated Typert reflection, Remote invocations, and
+ * Runtime registry for Remote invocations and
  * dependency-inverted lookup/Context providers. It performs no TypeScript
  * analysis or schema generation.
  * @module @deepseek-ai/dsh-typert-registry
  */
 
 import { Context, Service } from '@deepseek-ai/cordis'
-import { z } from 'zod'
 import type {
   InvocationDescriptor,
-  RemoteAccessResourceKind,
   TypertClientContextAdapter,
   TypertContextMap,
   TypertContextRegistry,
@@ -17,8 +15,6 @@ import type {
   TypertDisposer,
   TypertHostContextAdapter,
   TypertHostContextResolver,
-  TypertResourceDeclaration,
-  TypertResourceRegistry,
   TypertLocalRegistry,
   TypertLookupHost,
   TypertLookupDefinition,
@@ -33,35 +29,7 @@ import type {
   TypertRegistryListener,
   TypertRegistryContract,
 } from '@deepseek-ai/dsh-typert-protocol'
-import type {
-  TypertContribution,
-  TypertFace,
-  TypertPackageFilter,
-  TypertPackageRecord,
-  TypertSchemaFactory,
-  TypertSchemaFilter,
-  TypertSchemaRecord,
-} from './types.ts'
-
-/**
- * Compose the global key of one generated schema.
- * @param packageName - contributing npm package.
- * @param name - schema export name.
- * @returns `<package>#<name>`.
- */
-export function typertKey(packageName: string, name: string): string {
-  return `${packageName}#${name}`
-}
-
-/**
- * Compose the identity of one package-face model.
- * @param packageName - contributing npm package.
- * @param face - independently compiled face.
- * @returns `<package>#<face>`.
- */
-export function typertPackageKey(packageName: string, face: TypertFace): string {
-  return `${packageName}#${face}`
-}
+import type { TypertContribution } from './types.ts'
 
 /**
  * Compose the endpoint key used by local and Remote invocation registries.
@@ -258,8 +226,6 @@ class LookupStore {
     return {
       parameter: provider.parameter,
       wire: provider.wire,
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- domain packages merge resource kinds into TypertResourceMap.
-      ...provider.resource === undefined ? {} : { resource: provider.resource },
       hostTypeSymbol: provider.hostTypeSymbol,
       wireTypeSymbol: provider.wireTypeSymbol,
       resolve: id => resolver.resolve(id),
@@ -377,8 +343,6 @@ class ContextStore {
     return {
       wire: adapter.wire,
       wireTypeSymbol: adapter.wireTypeSymbol,
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- domain packages merge resource kinds into TypertResourceMap.
-      ...adapter.resource === undefined ? {} : { resource: adapter.resource },
       resolve: id => resolver.resolve(id),
     }
   }
@@ -446,61 +410,18 @@ interface HostContextResolverEntry {
   resolve(id: unknown): Promise<Context | undefined>
 }
 
-/** The built-in identity-less resource kind; no declared resource kind may take its name. */
-const GLOBAL_RESOURCE_KIND = 'global' satisfies RemoteAccessResourceKind
-
-class ResourceStore {
-  private readonly declarations = new Map<string, ProviderEntry<TypertResourceDeclaration>>()
-  private readonly changes: ChangeSource
-
-  constructor(report: ReportObserverError) {
-    this.changes = new ChangeSource(report)
-  }
-
-  view(ctx: Context): TypertResourceRegistry {
-    return {
-      register: (kind, declaration) => this.register(ctx, kind, declaration),
-      get: kind => this.declarations.get(kind)?.provider,
-      entries: () => [...this.declarations].map(([kind, entry]) => Object.freeze({ kind, field: entry.provider.field })),
-      subscribe: listener => this.changes.subscribe(ctx, listener),
-    }
-  }
-
-  private register(ctx: Context, kind: string, declaration: TypertResourceDeclaration): TypertDisposer {
-    validateSegment('resource kind', kind)
-    if (kind === GLOBAL_RESOURCE_KIND) {
-      throw new Error(`typert: resource kind "${GLOBAL_RESOURCE_KIND}" is reserved for the built-in global resource`)
-    }
-    validateWireName('resource field', declaration.field)
-    if (this.declarations.has(kind)) throw new Error(`typert: resource kind "${kind}" is already registered`)
-    const entry: ProviderEntry<TypertResourceDeclaration> = { provider: { field: declaration.field }, owner: {} }
-    const { declarations, changes } = this
-    return ctx.effect(function* () {
-      declarations.set(kind, entry)
-      changes.emit({ kind: 'resource', key: kind })
-      yield () => {
-        /* v8 ignore next -- duplicate registration is rejected, so this effect remains the kind's unique owner. */
-        if (declarations.get(kind) !== entry) return
-        declarations.delete(kind)
-        changes.emit({ kind: 'resource', key: kind })
-      }
-    }, `typert.resources.register(${JSON.stringify(kind)})`)
-  }
-}
 
 /**
- * Registry of generated schemas, package reflection, invocations, and Remote
+ * Registry of generated invocations and Remote
  * dependency providers.
  * @typert service typert
  */
 export class TypertRegistry extends Service implements TypertRegistryContract {
-  private readonly schemas = new Map<string, TypertSchemaFactoryRecord>()
-  private readonly packages = new Map<string, TypertPackageRecord>()
+  private readonly packages = new Set<string>()
   private readonly localStore: DescriptorStore
   private readonly remoteStore: RemoteStore
   private readonly lookupStore: LookupStore
   private readonly contextStore: ContextStore
-  private readonly resourceStore: ResourceStore
 
   constructor(ctx: Context) {
     super(ctx, 'typert')
@@ -512,7 +433,6 @@ export class TypertRegistry extends Service implements TypertRegistryContract {
     this.remoteStore = new RemoteStore(new DescriptorStore('remote', report))
     this.lookupStore = new LookupStore(report)
     this.contextStore = new ContextStore(report)
-    this.resourceStore = new ResourceStore(report)
   }
 
   /** Current-environment invocation definitions. */
@@ -541,177 +461,35 @@ export class TypertRegistry extends Service implements TypertRegistryContract {
     return this.contextStore.view(this.ctx)
   }
 
-  /** Default wire fields of resource kinds. */
-  get resources(): TypertResourceRegistry {
-    return this.resourceStore.view(this.ctx)
-  }
-
   /**
    * Register one generated contribution atomically for the calling fiber.
-   * Duplicate package-face identities, schemas, invocation ids, or endpoints
+   * Duplicate package-face identities, invocation ids, or endpoints
    * reject the whole batch.
-   * @param contribution - generated schemas, reflection, and Host invocations.
+   * @param contribution - generated Host invocations and package identity.
    * @returns the exact effect disposer that removes this contribution.
    */
   register(contribution: TypertContribution): TypertDisposer {
-    const packageRecord = this.validatePackage(contribution)
-    const schemaRecords = this.validateSchemas(contribution)
+    validateSegment('package name', contribution.package)
+    if (contribution.face !== 'host' && contribution.face !== 'client') {
+      throw new Error('typert: invalid face — expected "host" or "client"')
+    }
+    const key = `${contribution.package}#${contribution.face}`
+    if (this.packages.has(key)) throw new Error(`typert: package face "${key}" is already registered`)
     const invocations = contribution.invocations
     this.localStore.validate(invocations)
     const owner = {}
-    const { schemas, packages, localStore } = this
+    const { packages, localStore } = this
     return this.ctx.effect(function* () {
-      packages.set(packageRecord.key, packageRecord)
-      for (const record of schemaRecords) schemas.set(record.key, record)
+      packages.add(key)
       localStore.commit(owner, invocations)
       yield () => {
         /* v8 ignore else -- duplicate package-face registration is rejected, so this effect remains its unique owner. */
-        if (packages.get(packageRecord.key) === packageRecord) packages.delete(packageRecord.key)
-        for (const record of schemaRecords) {
-          /* v8 ignore else -- duplicate schema registration is rejected, so this contribution remains each record's unique owner. */
-          if (schemas.get(record.key) === record) schemas.delete(record.key)
-        }
+        packages.delete(key)
         localStore.withdraw(owner, invocations)
       }
     }, 'typert.register()')
   }
 
-  /**
-   * Look up one schema by `<package>#<name>`.
-   * @param key - global schema key.
-   * @returns a record containing the cached schema, or `undefined` when absent.
-   */
-  get(key: string): TypertSchemaRecord | undefined {
-    const record = this.schemas.get(key)
-    return record === undefined ? undefined : materializeSchema(record)
-  }
-
-  /**
-   * Resolve one required schema.
-   * @param key - global schema key.
-   * @returns a record containing the cached schema.
-   * @throws when the key is malformed, the package face is absent, or the schema is not contributed.
-   */
-  resolve(key: string): TypertSchemaRecord {
-    const record = this.schemas.get(key)
-    if (record !== undefined) return materializeSchema(record)
-    const hash = key.indexOf('#')
-    if (hash <= 0 || hash === key.length - 1) {
-      throw new Error(`typert: invalid schema key "${key}" — expected "<package>#<name>"`)
-    }
-    const packageName = key.slice(0, hash)
-    if ([...this.packages.values()].some(candidate => candidate.package === packageName)) {
-      throw new Error(
-        `typert: cannot resolve "${key}" — package "${packageName}" is registered but contributes no schema named "${key.slice(hash + 1)}"`,
-      )
-    }
-    throw new Error(`typert: cannot resolve "${key}" — package "${packageName}" has no registered contribution`)
-  }
-
-  /**
-   * Enumerate live schemas in registration order.
-   * @param filter - optional package and face restriction.
-   * @returns matching records containing the cached schemas.
-   */
-  list(filter: TypertSchemaFilter = {}): TypertSchemaRecord[] {
-    return [...this.schemas.values()].filter(record => matches(record, filter)).map(materializeSchema)
-  }
-
-  /**
-   * Look up generated reflection for one package face.
-   * @param packageName - exact npm package name.
-   * @param face - face to query; defaults to the host runtime.
-   * @returns the live package record, or `undefined` when absent.
-   */
-  getPackage(packageName: string, face: TypertFace = 'host'): TypertPackageRecord | undefined {
-    return this.packages.get(typertPackageKey(packageName, face))
-  }
-
-  /**
-   * Enumerate generated package reflection in registration order.
-   * @param filter - optional package and face restriction.
-   * @returns matching package records.
-   */
-  listPackages(filter: TypertPackageFilter = {}): TypertPackageRecord[] {
-    return [...this.packages.values()].filter(record => matches(record, filter))
-  }
-
-  /**
-   * Project a live Zod schema to JSON Schema without caching the result.
-   * @param key - global schema key.
-   * @param params - Zod projection parameters.
-   * @returns a fresh JSON Schema document.
-   */
-  toJSONSchema(key: string, params?: z.core.ToJSONSchemaParams): z.core.JSONSchema.BaseSchema {
-    return z.toJSONSchema(this.resolve(key).schema, params)
-  }
-
-  private validatePackage(contribution: TypertContribution): TypertPackageRecord {
-    validateSegment('package name', contribution.package)
-    const face: unknown = contribution.face
-    if (face !== 'host' && face !== 'client') {
-      throw new Error(`typert: invalid face ${JSON.stringify(face)} — expected "host" or "client"`)
-    }
-    const key = typertPackageKey(contribution.package, contribution.face)
-    if (this.packages.has(key)) {
-      throw new Error(`typert: package face "${key}" is already registered`)
-    }
-    return {
-      package: contribution.package,
-      face,
-      key,
-      model: contribution.model,
-    }
-  }
-
-  private validateSchemas(contribution: TypertContribution): TypertSchemaFactoryRecord[] {
-    const records: TypertSchemaFactoryRecord[] = []
-    const batch = new Set<string>()
-    for (const schema of contribution.schemas) {
-      validateSegment('schema name', schema.name)
-      if (typeof schema.create !== 'function') {
-        throw new Error(`typert: schema "${schema.name}" has no create() factory`)
-      }
-      const key = typertKey(contribution.package, schema.name)
-      if (batch.has(key) || this.schemas.has(key)) {
-        throw new Error(`typert: schema "${key}" is already registered`)
-      }
-      batch.add(key)
-      records.push({
-        ...schema,
-        package: contribution.package,
-        face: contribution.face,
-        key,
-      })
-    }
-    return records
-  }
-}
-
-interface TypertSchemaFactoryRecord extends TypertSchemaFactory {
-  readonly package: string
-  readonly face: TypertFace
-  readonly key: string
-  value?: z.ZodType
-}
-
-function materializeSchema(record: TypertSchemaFactoryRecord): TypertSchemaRecord {
-  const schema = record.value ??= record.create()
-  return {
-    name: record.name,
-    schema,
-    package: record.package,
-    face: record.face,
-    key: record.key,
-  }
-}
-
-function matches(
-  record: { readonly package: string; readonly face: TypertFace },
-  filter: { readonly package?: string; readonly face?: TypertFace },
-): boolean {
-  return (filter.package === undefined || record.package === filter.package)
-    && (filter.face === undefined || record.face === filter.face)
 }
 
 function validateInvocation(descriptor: InvocationDescriptor): void {

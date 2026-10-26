@@ -7,26 +7,10 @@
  * @module dsh-subprocess/types
  */
 
-import type { Duplex, Readable, Writable } from 'node:stream'
+import type { Readable, Writable } from 'node:stream'
 
 /** Namespace prefix reserved for DeepSeek Harness-managed child environment facts. */
 export const DSH_ENV_PREFIX = 'DSH_' as const
-
-/** One environment key inside the managed {@link DSH_ENV_PREFIX} namespace. */
-export type DshEnvironmentKey = `${typeof DSH_ENV_PREFIX}${string}`
-
-/** Trusted DeepSeek Harness variables for one child-process execution. */
-export type DshEnvironment = Readonly<Record<DshEnvironmentKey, string>>
-
-/** One captured stream: the (possibly truncated) text plus recovery info. */
-export interface CollectedOutput {
-  /** Collected text — the TAIL of the stream when truncated. */
-  text: string
-  /** True when bytes were dropped from `text`. */
-  truncated: boolean
-  /** Path to a file holding the COMPLETE stream, when truncated and available. */
-  spillPath?: string
-}
 
 /**
  * stdin disposition. `'ignore'` leaves fd 0 on `/dev/null`; `'pipe'` exposes
@@ -64,8 +48,6 @@ export interface SubprocessStdio {
   stdin: SubprocessStdinMode
   stdout: SubprocessOutputMode
   stderr: SubprocessOutputMode
-  /** Request a separate byte-mode duplex channel; omission creates none. */
-  control?: 'pipe'
 }
 
 /**
@@ -136,8 +118,7 @@ export interface SubprocessOutputRead {
  * Cursor-free incremental access to one collected output stream. Offsets are
  * whole-stream byte coordinates owned by the caller, so independent readers
  * cannot consume one another's output; `readFrom(0)` after settlement is the
- * batch result (`lossy` then means the in-memory tail lost its head — the
- * {@link CollectedOutput.truncated} fact).
+ * batch result (`lossy` then means the in-memory tail lost its head).
  */
 export interface SubprocessOutputReader {
   /**
@@ -173,8 +154,6 @@ export interface SubprocessHandle {
   readonly stdout: Readable | undefined
   /** The child's raw stderr, present iff spawned with `stderr: 'pipe'`. */
   readonly stderr: Readable | undefined
-  /** Separate caller-owned byte channel when requested; native startup failure may leave it absent. */
-  readonly control: Duplex | undefined
   /** Offset-based readers for collect-mode streams (also readable after exit). */
   readonly collected: SubprocessCollectedOutputs
   /** Resolves with spawned-command exit facts; rejects for spawn or provider failures. */
@@ -193,105 +172,4 @@ export interface SubprocessHandle {
    * @throws when the selected provider can no longer observe its managed range.
    */
   waitForExit(signal?: AbortSignal): Promise<boolean>
-}
-
-/**
- * Signals supported by the terminal-process primitive. Kept member-identical
- * to `TerminalSignal` in `@deepseek-ai/dsh-terminal` without a cross-seam dependency;
- * change both together.
- */
-export type SubprocessTerminalSignal = 'SIGINT' | 'SIGTERM' | 'SIGKILL' | 'SIGTSTP' | 'SIGHUP'
-
-/** Shell-selection facts from the subprocess provider's execution environment. */
-export interface SubprocessTerminalEnvironment {
-  /** Operating-system family that interprets executable paths and shell arguments. */
-  platform: 'posix' | 'windows'
-  /** Login or environment-selected shell, when the provider can resolve one. */
-  defaultShell?: string
-}
-
-/** A fully specified terminal-process spawn. */
-export interface SubprocessTerminalSpawnSpec {
-  /** Executable and arguments; `argv[0]` is the program. */
-  argv: readonly string[]
-  /** Working directory in this subprocess provider's execution world. */
-  cwd: string
-  /** Explicit environment layered after the provider's ambient scrub. */
-  env?: Record<string, string> | undefined
-  /** Initial terminal row count. */
-  rows: number
-  /** Initial terminal column count. */
-  cols: number
-  /** Terminal emulation advertised to the child through TERM. */
-  terminalType: string
-  /** Request supported interactive-shell lifecycle observation; unsupported launches report unknown activity. */
-  shellActivity?: boolean | undefined
-  /** TERM-to-KILL cleanup grace for the complete terminal session. */
-  graceMs: number
-  /** Cancellation of terminal allocation; a published handle owns its later lifetime. */
-  signal?: AbortSignal | undefined
-}
-
-/** Current foreground process-group facts for one terminal. */
-export interface SubprocessTerminalForeground {
-  /** Foreground process-group id published by the terminal driver. */
-  processGroupId: number
-  /** Whether the provider can currently prove that group is waiting on terminal input. */
-  inputWaiting: boolean
-}
-
-/** Provider observation of shell lifecycle and surviving owned jobs. */
-export interface SubprocessTerminalActivity {
-  /** Idle requires positive prompt evidence and no observed foreground, background, or stopped jobs. */
-  state: 'idle' | 'busy' | 'unknown'
-  /** Changes with input, shell transitions, and changed process observations; scoped to this handle. */
-  revision: number
-}
-
-/**
- * One live terminal process and its owned OS session. Terminal allocation,
- * foreground-group inspection/signalling, and whole-session quiescence are one
- * deep subprocess primitive because none can be reconstructed from ordinary
- * piped stdio without substrate-specific process control.
- */
-export interface SubprocessTerminalHandle {
-  /** Top-level terminal process id. */
-  readonly pid: number
-  /** UTF-8 terminal output bytes in delivery order; ends after queued output when the terminal exits. */
-  readonly output: Readable
-  /** Resolves when the top-level process exits; rejects for a terminal startup, provider, or live transport failure. */
-  readonly done: Promise<SubprocessOutcome>
-  /**
-   * Write text to the terminal input.
-   * @param data - text to deliver without implicit newline conversion.
-   */
-  write(data: string): Promise<void>
-  /**
-   * Change the terminal dimensions and notify its foreground application.
-   * @param cols - positive terminal column count.
-   * @param rows - positive terminal row count.
-   */
-  resize(cols: number, rows: number): Promise<void>
-  /**
-   * Inspect the current foreground process group.
-   * @returns its id and input-wait fact, or undefined when no foreground group can be resolved.
-   */
-  inspectForeground(): Promise<SubprocessTerminalForeground | undefined>
-  /**
-   * Observe command activity without interpreting output or treating silence as completion.
-   * @returns a fresh observation; unsupported shells and incomplete observations report unknown.
-   */
-  inspectActivity(): Promise<SubprocessTerminalActivity>
-  /**
-   * Deliver a signal to the current foreground process group.
-   * @param signal - permitted terminal signal.
-   * @returns the exact group id that received it.
-   */
-  signalForeground(signal: SubprocessTerminalSignal): Promise<number>
-  /**
-   * Idempotently terminate every terminal-session member the provider can still observe and await quiescence.
-   * After settlement, no write, inspection, or signal call remains in flight.
-   * Providers document substrate-specific observability limits.
-   */
-  terminate(): Promise<void>
 }

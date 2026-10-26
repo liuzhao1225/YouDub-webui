@@ -5,18 +5,15 @@
  * close label, sections) arrives from registrants through slots; accessible
  * names resolve from localized content (trigger: shell locale; dialog:
  * aria-labelledby the title node; close: visually-hidden slot text). Modal
- * open state and the active section id belong to the declared owner store;
- * the onboarding coordinator mounts exactly one ordered registrant while the
- * sessions-derived empty-Hero fact is active. Visible dialog chrome belongs
- * to the step, so a mounted-but-deciding step paints nothing here.
+ * open state and the active section id belong to the declared owner store.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 import {
   ConnectionIndicator, Tooltip, useModalLayer,
-  IconAgentPresetOutlineMedium, IconArchiveOutlineMedium, IconCloseOutlineRegular, IconDataOutlineMedium,
-  IconPersonalizationOutlineMedium, IconSettingsOutlineMedium, IconUserOutlineMedium,
+  IconCloseOutlineRegular, IconDataOutlineMedium,
+  IconPersonalizationOutlineMedium, IconSettingsOutlineMedium,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ConnectionIndicatorState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SettingsRootComponentProps, SettingsSectionRow } from './shell-contract.ts'
@@ -31,11 +28,8 @@ const CONNECTING_MIN_VISIBLE_MS = 800
 
 /** Nav glyph by section id; unknown ids fall back to the settings gear. */
 function navIcon(id: string) {
-  if (id === 'account') return <IconUserOutlineMedium className={css.navIcon} size={16} />
   if (id === 'models') return <IconDataOutlineMedium className={css.navIcon} size={16} />
-  if (id === 'agent-presets') return <IconAgentPresetOutlineMedium className={css.navIcon} size={16} />
   if (id === 'plugins') return <IconPersonalizationOutlineMedium className={css.navIcon} size={16} />
-  if (id === 'archived-sessions') return <IconArchiveOutlineMedium className={css.navIcon} size={16} />
   return <IconSettingsOutlineMedium className={css.navIcon} size={16} />
 }
 
@@ -124,7 +118,7 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
  */
 export function SettingsRoot(props: SettingsRootComponentProps) {
   const {
-    wide, reconnect, useConnectionState, useSections, useOnboardingSteps, renderSlot, t,
+    wide, reconnect, useConnectionState, useSections, renderSlot, t,
     useDesktopUpdate, openDesktopUpdate, useStore, actions, useShortcuts,
   } = props
   const { open, activeId } = useStore(state => state)
@@ -134,7 +128,6 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     if (sectionId === undefined) actions.open()
     else openSection(sectionId)
   }, [actions, openSection])
-  const [requestedOnboarding, setRequestedOnboarding] = useState<string | undefined>()
   const [showRecovery, setShowRecovery] = useState(false)
   const [holdConnecting, setHoldConnecting] = useState(false)
   const connectingShownAt = useRef<number | undefined>(undefined)
@@ -146,20 +139,6 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
   const desktopUpdate = useDesktopUpdate(state => state)
   const connectionState = useConnectionState(state => state)
   const previousConnectionState = useRef(connectionState)
-  const onboardingSteps = useOnboardingSteps(s => s)
-  // The product owns first-run readiness. Settings only opens explicitly requested editors.
-  const onboardingStep = onboardingSteps.find(step => step.id === requestedOnboarding)
-
-  const onboardingStepSeen = useRef(onboardingStep)
-  // An onboarding step owns the viewport and marks `#root` inert. The panel portals
-  // beside `#root`, outside that mark, so a step that appears while the panel is open
-  // takes the panel down rather than leaving it focusable behind the onboarding mask.
-  useEffect(() => {
-    const appeared = onboardingStepSeen.current === undefined && onboardingStep !== undefined
-    onboardingStepSeen.current = onboardingStep
-    if (appeared && open) close()
-  }, [onboardingStep, open, close])
-
   useLayoutEffect(() => {
     const previous = previousConnectionState.current
     previousConnectionState.current = connectionState
@@ -197,10 +176,6 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
     }
   }, [connectionState])
 
-  const completeOnboardingStep = useCallback(() => {
-    setRequestedOnboarding(undefined)
-  }, [])
-
   let connectionIndicator: ConnectionIndicatorState | undefined
   if (connectionState === 'connecting' || holdConnecting) {
     connectionIndicator = 'connecting'
@@ -216,7 +191,6 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
         {renderSlot('settings.launcher', {
           wide, settingsOpen: open, openSettings,
           ...(shortcut?.keys.length ? { settingsShortcut: { keys: shortcut.keys, aria: shortcut.aria } } : {}),
-          openOnboarding: (id) => { close(); setRequestedOnboarding(id) },
         }, { fallback: <Tooltip disabled={open} label={t('trigger')} shortcutKeys={shortcut?.keys}>
           <button
             type="button"
@@ -231,7 +205,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           </button>
         </Tooltip> })}
         <ConnectionIndicator
-          state={wide && desktopUpdate.presentation?.phase !== 'installing' ? connectionIndicator : undefined}
+          state={wide ? connectionIndicator : undefined}
           disconnectedLabel={t('connection.error')}
           connectingLabel={t('connection.connecting')}
           recoveredLabel={t('connection.connected')}
@@ -239,7 +213,7 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           restartActionLabel={t('connection.restart')}
           onReconnect={reconnect}
         />
-        <DesktopUpdateIndicator wide={wide} hidden={connectionIndicator !== undefined && desktopUpdate.presentation?.phase !== 'installing'}
+        <DesktopUpdateIndicator wide={wide} hidden={connectionIndicator !== undefined}
           t={t} view={desktopUpdate} onOpen={openDesktopUpdate} />
       </div>
       {open && (
@@ -251,15 +225,6 @@ export function SettingsRoot(props: SettingsRootComponentProps) {
           onClose={close}
         />
       )}
-      {/* Dialog chrome and `#root` inert ownership live inside each step's
-          visible branch. A step still deciding (private facts loading)
-          renders null, so nothing paints or blocks while it decides. */}
-      {onboardingStep !== undefined && renderSlot('settings.onboarding', {
-        stepId: onboardingStep.id,
-        explicit: true,
-        complete: completeOnboardingStep,
-        openSection,
-      }, { only: onboardingStep.id })}
     </>
   )
 }

@@ -50,7 +50,7 @@ function bench() {
 }
 
 describe('configLedgerSource', () => {
-  it('projects the official items in ledger order with locale-following labels, and the bundle and row keys', () => {
+  it('projects registered items in ledger order with locale-following labels, and the bundle and row keys', () => {
     const b = bench()
     const source = configLedgerSource(b.ctx)
     expect(source.getSnapshot()).toEqual({ items: [], bundles: new Set(), rows: new Set() })

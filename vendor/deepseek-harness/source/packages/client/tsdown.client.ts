@@ -66,7 +66,7 @@ function styleInjectionModule(
  * Everything else under @deepseek-ai/* is either a module-table entry
  * (external) or a leak the purity gate rejects.
  */
-export const INLINE_SAFE = /^(?:@deepseek-ai\/dsh-(?:llm|brand|deque|typert-protocol|util-crypto|util-values)(?:\/|$)|@deepseek-ai\/dsh-native-command\/types$|@deepseek-ai\/dsh-plugin-manager\/registry$)/
+export const INLINE_SAFE = /^(?:@deepseek-ai\/dsh-(?:llm|brand|deque|typert-protocol|util-crypto|util-values)(?:\/|$)|@deepseek-ai\/dsh-plugin-manager\/registry$)/
 
 /**
  * Vendored framework libraries: rescoped into @deepseek-ai, so the gate below
@@ -108,7 +108,7 @@ function browserSourcePath(source: string, sourcemapPath: string): string {
  * `import.meta.dirname`. Its `package.json` name is the plugin id stamped into
  * the __ModuleLoader__.load handoff and onto the injected style tags.
  * @param libEntry - node-half entries.
- * @param options - phase placement, lib overrides, optional independently bundled Node Client, companion configs, and per-file Client banner.
+ * @param options - phase placement and optional independently bundled Node Client.
  * @returns ENV-selected tsdown config for the current build face.
  * @throws {Error} when `<packageDir>/package.json` is unreadable or declares no name.
  */
@@ -118,12 +118,12 @@ export function clientBundle(
   options: ClientBundleOptions = {},
 ): BuildFaceConfig {
   const manifest = readPackageManifest(packageDir)
-  const lib = clientLibraryConfig(manifest, libEntry, options.lib)
+  const lib = clientLibraryConfig(manifest, libEntry)
   return ({ env }) => {
     const face = buildFace(env?.DSH_BUILD_FACE)
     const clientEntry = face === undefined ? 'src/client/index.ts' : 'lib/types/client/index.js'
-    const client = clientConfig(manifest, clientEntry, options.clientBanner, options.dualClient === true)
-    const node = [lib, ...(options.companions ?? [])]
+    const client = clientConfig(manifest, clientEntry, options.dualClient === true)
+    const node = [lib]
     const clientFaces = options.dualClient === true
       ? [nodeClientConfig(manifest, clientEntry), client]
       : [client]
@@ -140,10 +140,7 @@ export function clientBundle(
  * statically (the static assembly channel: `apps/web` resolves the package
  * name, bundles the artifact, and owns the chunk layout and the CSS pipeline).
  *
- * Calling this preset is what puts a package in the static assembly channel,
- * so the call sites are the roster: gates read it through
- * {@link isStaticLinkedConfig} rather than a second hand-kept list. A package on
- * this roster must not be a module-table row as well — the browser would take
+ * A statically linked package must not be a module-table row as well — the browser would take
  * the statically linked copy and a provider's bytes would sit unused in its
  * bundle.
  *
@@ -177,31 +174,6 @@ export function staticLinked(packageDir: string, libEntry: readonly string[]): B
 }
 
 /**
- * Whether a package's tsdown configs put it in the static assembly channel.
- * The roster has no separate list: gates load each package's own
- * `tsdown.config.ts`, call it for the Client face, and ask this.
- * @param configs - configs a package's build-face function returned.
- * @returns true when at least one config was built by {@link staticLinked}.
- */
-export function isStaticLinkedConfig(configs: readonly UserConfig[]): boolean {
-  return configs.some(config => (config.plugins as readonly { name?: string }[] | undefined ?? [])
-    .some(plugin => plugin.name === STATIC_LINKED_PLUGIN))
-}
-
-/**
- * Build a Client-only Node library during the Client pass.
- * @param packageDir - The package's own directory, normally the config's
- * `import.meta.dirname`; its `package.json` name is used in tsdown diagnostics.
- * @param libEntry - Emitted JavaScript entries consumed from `lib/types`.
- * @returns ENV-selected tsdown config for the Client build face.
- * @throws {Error} when `<packageDir>/package.json` is unreadable or declares no name.
- */
-export function clientLibrary(packageDir: string, libEntry: readonly string[]): BuildFaceConfig {
-  const lib = clientLibraryConfig(readPackageManifest(packageDir), libEntry)
-  return clientOnly([lib])
-}
-
-/**
  * Select arbitrary package-local configs only during the Client pass.
  * @param configs - Node-side configs emitted after Client tsc.
  * @returns ENV-selected tsdown config for the Client build face.
@@ -217,12 +189,6 @@ interface ClientBundleOptions {
   readonly hostPhase?: boolean
   /** Emit independent ESM `client.node.js` and browser-factory `client.browser.js` from the same Client entry. */
   readonly dualClient?: boolean
-  /** Additional Node-side configs emitted alongside the package library. */
-  readonly companions?: readonly UserConfig[]
-  /** Overrides for the package's primary Node-side library config. */
-  readonly lib?: UserConfig
-  /** Optional legal or attribution text selected by emitted client filename. */
-  readonly clientBanner?: (fileName: string) => string | undefined
 }
 
 type BuildFace = 'host' | 'client' | undefined
@@ -277,12 +243,12 @@ interface AssetEmitter {
   }): string
 }
 
-function staticLinkedConfig(id: string, entry: string, outputName = basename(entry, '.js')): UserConfig {
+function staticLinkedConfig(id: string, entry: string): UserConfig {
   const emitted = new Set<string>()
   const isolation = clientInputIsolation(id)
   return {
     name: id,
-    entry: { [outputName]: entry },
+    entry: { [basename(entry, '.js')]: entry },
     outDir: 'lib',
     format: ['esm'],
     platform: 'browser',
@@ -300,8 +266,7 @@ function staticLinkedConfig(id: string, entry: string, outputName = basename(ent
     plugins: [{
       // Contract 1. `pre` because tsdown's own deps plugin would otherwise
       // resolve and inline every specifier missing from the npm production
-      // sections, which is the coupling this preset exists to remove. The name
-      // is also the roster marker {@link isStaticLinkedConfig} reads.
+      // sections, which is the coupling this preset exists to remove.
       name: STATIC_LINKED_PLUGIN,
       resolveId: {
         order: 'pre' as const,
@@ -499,7 +464,6 @@ function nodeClientConfig(manifest: PackageManifest, entry: string): UserConfig 
 function clientConfig(
   manifest: PackageManifest,
   entry: string,
-  clientBanner?: (fileName: string) => string | undefined,
   dualClient = false,
 ): UserConfig {
   const id = manifest.name
@@ -661,9 +625,7 @@ function clientConfig(
         return browserSourcePath(source, mapPath)
       },
       banner: (chunk) => {
-        const registration = `window.__ModuleLoader__.load({ id: ${JSON.stringify(id)}, ${chunk.isEntry ? '' : `chunk: ${JSON.stringify(chunk.fileName)}, `}factory: (require) => {`
-        const prefix = clientBanner?.(chunk.fileName)
-        return prefix === undefined ? registration : `${prefix}\n${registration}`
+        return `window.__ModuleLoader__.load({ id: ${JSON.stringify(id)}, ${chunk.isEntry ? '' : `chunk: ${JSON.stringify(chunk.fileName)}, `}factory: (require) => {`
       },
       footer: 'return module.exports; } });',
       intro: 'var module = { exports: {} }; var exports = module.exports;',

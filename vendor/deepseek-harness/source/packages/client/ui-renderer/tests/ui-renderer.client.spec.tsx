@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup } from '@testing-library/react'
 import { Context } from '@deepseek-ai/cordis'
 import { SlotRegistry } from '../src/client/registry.ts'
-import type { SlotScopeAdapter, StandardSourceBinding } from '../src/client/index.ts'
 import { apply as nodeApply } from '@deepseek-ai/dsh-client-ui-renderer'
 import * as UiRenderer from '../src/client/index.ts'
 
@@ -25,21 +24,6 @@ async function bench() {
   const fiber = ctx.plugin({ inject: [...UiRenderer.inject], apply: UiRenderer.apply })
   await fiber.await()
   const slots = ctx.get('slots') as SlotRegistry
-  const absentBinding: StandardSourceBinding = {
-    key: undefined,
-    hooks: {},
-    keyedHooks: {},
-    props: {},
-  }
-  const current = {
-    getSnapshot: () => absentBinding,
-    subscribe: () => () => {},
-  }
-  const adapter: SlotScopeAdapter = {
-    current,
-    bindingSource: () => current,
-  }
-  slots.installScope('session', adapter)
   return { ctx, slots, fiber }
 }
 

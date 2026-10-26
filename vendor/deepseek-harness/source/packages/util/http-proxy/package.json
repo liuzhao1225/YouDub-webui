@@ -26,13 +26,7 @@
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
-  },
   "dependencies": {
     "undici": "8.11.2"
-  },
-  "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
   }
 }

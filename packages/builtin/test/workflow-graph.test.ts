@@ -225,7 +225,7 @@ for (const end_ms of [100, 1018]) test(`correction semantics preserve source tim
 })
 
 test('third-party nodes keep their own semantics for fields named sourceLanguage and targetLanguage', async t => {
-  const { ctx, compile } = await setup(t)
+  const { ctx } = await setup(t)
   const id = 'thirdparty.text', output = { name: 'file', kind: 'artifact' as const, schemaId: 'file/v1', required: true }
   const dispose = ctx.catalog.registerProvider({ id, describe: () => ({ id, label: 'Text', pluginId: id, pluginVersion: '1', integrity: 'test', available: true,
     operations: [{ id: 'text.normalize/v1', inputSchema: { type: 'object', properties: {} }, outputs: [output], node: { type: id, version: '1', label: 'Normalize', category: 'Text', inputs: [], defaults: {}, configSchema: { type: 'object', properties: { sourceLanguage: { type: 'string' }, targetLanguage: { type: 'string' } } } } }],

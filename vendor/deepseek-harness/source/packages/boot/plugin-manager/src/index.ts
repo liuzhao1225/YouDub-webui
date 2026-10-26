@@ -13,9 +13,9 @@ import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import { pluginEntryId, readPluginInventory } from '@deepseek-ai/dsh-host-plugin-inventory'
 import {
   readPluginMeta, readProfileManifest, resolveBundleDir, loadOverlayPatches, composeEntries,
-  readProfilePatches, OPTIONAL_BUNDLES, bundlePatchPaths,
-  evaluatePluginCompatibility, readProfileCompatibility, readProfileVersionExemptions,
-  setProfileVersionExemption, PROFILE_COMPATIBILITY_FILENAME,
+  readProfilePatches, bundlePatchPaths,
+  evaluatePluginCompatibility, readProfileVersionExemptions,
+  PROFILE_COMPATIBILITY_FILENAME,
   ResolutionRestartRequired,
 } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-hmr'
@@ -70,7 +70,7 @@ const protectedModules = new Set([
   '@deepseek-ai/dsh-host-webserver', '@deepseek-ai/dsh-client-modules',
   '@deepseek-ai/dsh-client-ui-plugin-manager',
   '@deepseek-ai/dsh-host-plugin-inventory', '@deepseek-ai/dsh-typert-registry',
-  '@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-api-remote-access',
+  '@deepseek-ai/dsh-api-remotes',
   '@deepseek-ai/cordis-plugin-timer', '@deepseek-ai/dsh-client-connection',
   '@deepseek-ai/dsh-host-frontend-static',
   '@deepseek-ai/dsh-hmr',
@@ -259,31 +259,6 @@ export class PluginManager extends TypertRemoteService {
     }, 'plugin-manager: package cancellation')
   }
 
-  /** Read exact plugin-version exemptions saved in this profile.
-   * @returns Accepted package-name@version keys with the runtime versions they may run on, and any
-   * record or file problem the reader rejected, which the caller reports instead of failing.
-   */
-  @Remote
-  listVersionExemptions(): { exemptions: Record<string, string[]>; warnings: string[] } {
-    const { exemptions, warnings } = readProfileCompatibility(this.profile.dir)
-    return { exemptions, warnings }
-  }
-
-  /** Grant or revoke one exact plugin/runtime exemption and reevaluate live plugins.
-   * @param packageVersion Exact manifest package name followed by @ and its version; never an installation spec or alias.
-   * @param runtimeVersion Exact current DSH version for grants; revocation may name a previous runtime.
-   * @param enabled Whether to grant rather than revoke the exemption.
-   * @param acceptRisk Required true for grants after the user accepts possible crashes and data loss.
-   * @returns Saved and runtime outcomes. Startup-only profiles require restart.
-   */
-  @Remote
-  setVersionExemption(packageVersion: string, runtimeVersion: string, enabled: boolean, acceptRisk?: boolean): Promise<ChangeResult> {
-    return this.change(result => this.configure(async () => {
-      await setProfileVersionExemption(this.profile.dir, packageVersion, runtimeVersion, enabled, acceptRisk === true)
-      Object.assign(result, await this.reload())
-    }), { stage: 'enable', target: packageVersion, enabled }, 'bundle')
-  }
-
   /** Read current plugins, including why a row cannot be changed through the profile patch.
    * @returns Current runtime entries with persistent patch targets.
    */
@@ -306,10 +281,10 @@ export class PluginManager extends TypertRemoteService {
     })
   }
 
-  /** Read installed and installation-provided bundles, plus selected non-bundle names.
+  /** Read profile-installed and installation-provided bundles, plus selected non-bundle names.
    * A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.
-   * @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows, optional
-   * display metadata, activation selections, whether the installation offers the bundle, and removal availability.
+   * @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows,
+   * display metadata, activation selections, file availability and removal permissions.
    */
   @Remote
   listBundles(): Promise<BundleInfo[]> {
@@ -323,8 +298,6 @@ export class PluginManager extends TypertRemoteService {
     const bundles: BundleInfo[] = []
     for (const name of names) {
       const installed = dependencies.includes(name)
-      const optional = OPTIONAL_BUNDLES.includes(name)
-      const official = optional
       const enabled = selected.includes(name)
       const shipped = Object.hasOwn(installation.dependencies ?? {}, name)
       // Installation-owned copies remain protected even if a profile also declares their names.
@@ -339,8 +312,8 @@ export class PluginManager extends TypertRemoteService {
         const info = bundleManifest(name, this.profile.dir, this.profile.installAnchor)
         availability = shipped ? 'installation' : 'profile'
         if (info === undefined) {
-          if (enabled) bundles.push({ name, official, availability,
-            ...sourceOf(), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
+          if (enabled) bundles.push({ name, availability,
+            ...sourceOf(), enabled, installed, removable: removable && readOnlyReason === undefined,
             ...(readOnlyReason === undefined ? {} : { readOnlyReason }), error: { code: 'not-bundle' }, rows: [], overrides: [] })
           continue
         }
@@ -349,16 +322,16 @@ export class PluginManager extends TypertRemoteService {
         if (compatibility !== undefined && !compatibility.exempted) throw new ManagementFailure('incompatible-version', [incompatiblePlugin(compatibility)])
         const dir = resolveBundleDir('dsh', name, this.profile.installAnchor, this.profile.dir)
         const meta = readPluginMeta(info.name ?? name, pathToFileURL(join(dir, 'package.json')).href)
-        bundles.push({ name, official, availability, ...(version === undefined ? {} : { version }),
+        bundles.push({ name, availability, ...(version === undefined ? {} : { version }),
           ...(info.description === undefined || info.description === '' ? {} : { description: info.description }),
           ...meta === undefined ? {} : { meta },
-          ...sourceOf(info.name), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
+          ...sourceOf(info.name), enabled, installed, removable: removable && readOnlyReason === undefined,
           ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
           ...this.declaredRows(name, info) })
       } catch (error) {
-        if (enabled || installed || optional) {
-          bundles.push({ name, official, availability, ...(version === undefined ? {} : { version }),
-            ...sourceOf(), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
+        if (enabled || installed) {
+          bundles.push({ name, availability, ...(version === undefined ? {} : { version }),
+            ...sourceOf(), enabled, installed, removable: removable && readOnlyReason === undefined,
             ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
             error: managementError(error), rows: [], overrides: [] })
         }

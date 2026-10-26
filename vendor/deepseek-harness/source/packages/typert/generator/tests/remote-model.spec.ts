@@ -33,8 +33,6 @@ interface RuntimeDescriptor {
   }
   readonly result: {
     readonly create: () => RuntimeSchema
-    readonly jsonSchema?: Record<string, unknown>
-    readonly jsonSchemaError?: string
     readonly decode?: (value: unknown) => unknown
     readonly encode?: (value: unknown, writeBytes: (bytes: Uint8Array, path: readonly (string | number)[]) => null) => unknown
   }
@@ -44,7 +42,6 @@ interface RuntimeRemoteModule {
   readonly TYPERT_REMOTE: {
     readonly package: string
     readonly descriptors: readonly RuntimeDescriptor[]
-    readonly methods: Readonly<Record<string, RuntimeDescriptor>>
   }
 }
 
@@ -73,9 +70,6 @@ describe('Remote model generation', { timeout: 60_000 }, () => {
     const descriptor = generated.TYPERT_REMOTE.descriptors.find(invocation => invocation.id.endsWith('/bytes'))
     expect(descriptor?.result.decode).toBeTypeOf('function')
     if (descriptor === undefined) throw new Error('binary descriptor missing')
-    expect(generated.TYPERT_REMOTE.methods['goals/bytes']).toBe(descriptor)
-    expect(descriptor.result.jsonSchema).toBeUndefined()
-    expect(descriptor.result.jsonSchemaError).toContain('typert tool schema:')
     const schema = descriptor.result.create()
     for (const data of [new Uint8Array(), new Uint8Array([0, 128, 255]), new Uint8Array(new SharedArrayBuffer(3))]) {
       const parsed = schema.safeParse({ data, size: data.length })
@@ -304,7 +298,6 @@ void binaryTree
     })
 
     const model = remotePackage(fixtureRoot)
-    expect(model.services).toEqual([])
     expect(model.invocations).toHaveLength(3)
     expect(model.invocations[0]).toMatchObject({
       id: '@fixture/remote#goals/create',
@@ -505,7 +498,7 @@ export type {`,
 
     const [artifact] = new WorkspaceTypertGenerator(root).generate()
     expect(artifact?.remote?.dts).toContain(
-      "  RemoteStreamHandle,\n  TypertRemoteInfo,\n  TypertRemoteMethod,\n} from '@deepseek-ai/dsh-typert-protocol'",
+      "  RemoteStreamHandle,\n  TypertRemoteInfo,\n} from '@deepseek-ai/dsh-typert-protocol'",
     )
     expect(artifact?.remote?.dts).toContain("declare module '@deepseek-ai/dsh-typert-protocol' {")
     expect(artifact?.remote?.dts).toContain(
@@ -540,7 +533,7 @@ export type {`,
       name: 'an unknown Remote mode',
       mode: 'duplex',
       method: 'async *attach(agent: Agent, signal: AbortSignal): AsyncIterable<CreateGoalResult>',
-      message: 'Remote\\(\\) options require name, mode: "stream", or resources',
+      message: 'Remote\\(\\) options require name or mode: "stream"',
     },
   ])('rejects $name', ({ mode, method, message }) => {
     const root = copyFixture()
@@ -678,16 +671,16 @@ export interface BoxPayload {
     assertRemoteConsumerTypechecks(artifact?.remote?.dts, artifact?.remote?.dtsMap, root)
   })
 
-  it('reads export names from options whose resource readers stay runtime-only', () => {
+  it('reads direct and scoped endpoint aliases from options', () => {
     const root = copyFixture()
     editFile(root, 'packages/remote/src/index.ts', source => source
       .replace(
         '  @Remote\n  async create(',
-        "  @Remote({ name: 'createGoal', resources: { session: (agentId: string) => agentId } })\n  async create(",
+        "  @Remote({ name: 'createGoal' })\n  async create(",
       )
       .replace(
         "  @RemoteScope('agent')\n",
-        "  @RemoteScope('agent', { name: 'renameGoal', resources: { session: (request: RenameGoalRequest) => request.title } })\n",
+        "  @RemoteScope('agent', { name: 'renameGoal' })\n",
       ))
 
     const model = remotePackage(root)
@@ -696,24 +689,23 @@ export interface BoxPayload {
       ['renameGoal', 'rename'],
       ['watch', undefined],
     ])
-    expect(JSON.stringify(model.invocations)).not.toContain('resources')
   })
 
   it.each([
     {
       name: 'an unknown Remote option',
-      decorator: '@Remote({ resources: {}, audit: true })\n  async create(',
-      message: 'Remote\\(\\) options require name, mode: "stream", or resources',
+      decorator: '@Remote({ audit: true })\n  async create(',
+      message: 'Remote\\(\\) options require name or mode: "stream"',
     },
     {
       name: 'a stream option on a Remote Scope',
       decorator: "@RemoteScope('agent', { mode: 'stream' })\n  rename(",
-      message: 'RemoteScope\\(\\) options require name or resources',
+      message: 'RemoteScope\\(\\) options require name',
     },
     {
       name: 'empty Remote Scope options',
       decorator: "@RemoteScope('agent', {})\n  rename(",
-      message: 'RemoteScope\\(\\) options require name or resources',
+      message: 'RemoteScope\\(\\) options require name',
     },
     {
       name: 'a computed Remote Scope name',
@@ -722,7 +714,7 @@ export interface BoxPayload {
     },
     {
       name: 'shorthand Remote Scope options',
-      decorator: "@RemoteScope('agent', { resources })\n  rename(",
+      decorator: "@RemoteScope('agent', { name })\n  rename(",
       message: 'RemoteScope\\(\\) options must use named values',
     },
     {
@@ -734,7 +726,7 @@ export interface BoxPayload {
     const root = copyFixture()
     editFile(root, 'packages/remote/src/index.ts', source => source
       .replace(decorator.includes('create(') ? '@Remote\n  async create(' : "@RemoteScope('agent')\n  rename(", decorator)
-      .replace('export class GoalService', 'const resources = {}\n\nexport class GoalService'))
+      .replace('export class GoalService', 'const name = "rename"\n\nexport class GoalService'))
 
     expect(() => analyzeRemote(root, false)).toThrow(new RegExp(message))
   })
@@ -1012,7 +1004,6 @@ function analyzeRemote(root: string, checkDiagnostics = true): ReturnType<Worksp
 }
 
 function remotePackage(root: string): {
-  readonly services: readonly unknown[]
   readonly invocations: readonly InvocationModel[]
 } {
   const host = analyzeRemote(root).faces.find(face => face.face === 'host')

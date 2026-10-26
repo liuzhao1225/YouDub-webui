@@ -10,9 +10,9 @@ const object = (properties: Record<string, JsonObject>, required = Object.keys(p
 })
 
 /** Public references never carry provider-local paths or worker $artifact markers. */
-export const artifactRef = (...schemaIds: string[]): JsonObject => object({
+export const artifactRef = (...schemaIds: [string, ...string[]]): JsonObject => object({
   id: text,
-  schemaId: schemaIds.length ? { type: 'string', enum: schemaIds } : text,
+  schemaId: { type: 'string', enum: schemaIds },
 })
 
 const timedWord = object({ text, start_ms: milliseconds, end_ms: milliseconds })
@@ -47,10 +47,6 @@ export const dubbedTimelineSchema = object({
 })
 export const wordAlignmentSchema = array(object({ start_ms: milliseconds, end_ms: positiveInteger, text }))
 
-// Raw diagnostic objects retain supplier-specific fields unchanged. This is
-// intentionally separate from the normalized transcript contract.
-export const rawDiagnosticSchema: JsonObject = { type: 'object', additionalProperties: true }
-
 /** Inline schemas remain usable when copied into immutable task plans. */
 export const mediaSchemas: Record<string, JsonObject> = {
   'transcript/v1': transcriptSchema,
@@ -60,5 +56,4 @@ export const mediaSchemas: Record<string, JsonObject> = {
   'speech-audio/v1': speechAudioSchema,
   'dubbed-timeline/v1': dubbedTimelineSchema,
   'word-alignment/v1': wordAlignmentSchema,
-  'diagnostic/json/v1': rawDiagnosticSchema,
 }

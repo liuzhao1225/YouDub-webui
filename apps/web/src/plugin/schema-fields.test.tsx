@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import { fieldOptions, fieldType, fieldValue } from '@/runtime/schema-fields'
 import { ConfigEditor } from './builtin/schema-form'
 import type { Bindings, JsonSchema } from './sdk'

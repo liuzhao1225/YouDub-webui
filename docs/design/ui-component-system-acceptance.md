@@ -6,7 +6,7 @@
 
 - [Harness视觉与组件规范](harness-visual-spec.md)：几何、字阶、材质、动效、交互、基础组件契约、业务组合组件、配色映射与验收矩阵。
 - [组件源码索引](component-inventory.md)：按实际TSX导出生成。
-- [预览页](ui-design-reference.html)：由原始Harness CSS与YouDub主题生成，使用`node scripts/build-ui-design-reference.mjs`重建。
+- 预览页由原始 Harness CSS 与 YouDub 主题生成。使用 `node scripts/build-ui-design-reference.mjs` 重建，当前输出位于 `output/ui-design-reference.html`；历史提交保留原验收页面。
 - 输入、选择、开关、标签、提示、菜单、弹窗使用原始Harness组件或原始CSS；Surface、Disclosure、Progress作为业务组合共用。模型设置删除复制的CSS文件，直接引用原始设置样式。
 - Web和桌面构建读取同一YouDub主题映射；Logo、红色主操作、粉蓝渐变与状态颜色保留。
 

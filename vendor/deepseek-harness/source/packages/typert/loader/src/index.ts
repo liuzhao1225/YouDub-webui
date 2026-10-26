@@ -62,7 +62,6 @@ interface TypertArtifact {
   path: string
 }
 
-const MEMBER_KINDS = new Set(['property', 'method', 'getter', 'setter', 'call', 'construct', 'index'])
 
 /** Resolve the `./typert` export to a relative path, accepting the string and one-level conditional forms. */
 function typertExportOf(pkgName: string, exportsField: unknown): string | undefined {
@@ -81,8 +80,8 @@ function typertExportOf(pkgName: string, exportsField: unknown): string | undefi
  * Narrow a dynamically imported typert module's `TYPERT` export to a
  * contribution owned by `pkgName`. This is the module/file boundary: the
  * manifest crosses from a build artifact into the typed registry. Dispatch
- * facts and eager projection fields are checked; computed tool projections
- * remain lazy until a consumer requests them. Failures name the package and defect.
+ * facts and codec factories are checked without constructing parsers.
+ * Failures name the package and defect.
  * @param pkgName - the package whose typert face was imported.
  * @param exported - the module's `TYPERT` export.
  * @returns the validated contribution.
@@ -99,48 +98,6 @@ export function validateTypertManifest(pkgName: string, exported: unknown): Type
   }
   if (manifest.face !== 'host') {
     throw new Error(`typert-loader: ${pkgName} exports "${TYPERT_HOST_EXPORT}" but TYPERT.face is not "host"`)
-  }
-  if (!Array.isArray(manifest.schemas)) {
-    throw new Error(`typert-loader: ${pkgName} TYPERT.schemas must be an array`)
-  }
-  for (const value of manifest.schemas as unknown[]) {
-    if (typeof value !== 'object' || value === null) {
-      throw new Error(`typert-loader: ${pkgName} TYPERT.schemas contains a non-object schema`)
-    }
-    const schema = value as Record<string, unknown>
-    requireString(pkgName, schema, 'name', 'schema')
-    if (typeof schema.create !== 'function') {
-      throw new Error(`typert-loader: ${pkgName} TYPERT schema "${schema.name as string}" has no create() factory`)
-    }
-  }
-  const model = requireObject(pkgName, manifest.model, 'TYPERT.model')
-  const services = requireArray(pkgName, model.services, 'TYPERT.model.services')
-  const events = requireArray(pkgName, model.events, 'TYPERT.model.events')
-  const objects = requireArray(pkgName, model.objects, 'TYPERT.model.objects')
-  for (const value of services) {
-    const service = requireObject(pkgName, value, 'service')
-    requireDocumentation(pkgName, service, 'service')
-    requireString(pkgName, service, 'key', 'service')
-    requireString(pkgName, service, 'exportName', 'service')
-    requireMembers(pkgName, service.members, `service "${service.key as string}"`)
-    requireTypes(pkgName, service.types, `service "${service.key as string}"`)
-  }
-  for (const value of events) {
-    const event = requireObject(pkgName, value, 'event')
-    requireDocumentation(pkgName, event, 'event')
-    requireString(pkgName, event, 'name', 'event')
-    requireString(pkgName, event, 'signature', `event "${event.name as string}"`)
-    if (event.mode !== undefined && typeof event.mode !== 'string') {
-      throw new Error(`typert-loader: ${pkgName} event "${event.name as string}" mode must be a string`)
-    }
-  }
-  for (const value of objects) {
-    const object = requireObject(pkgName, value, 'object')
-    requireDocumentation(pkgName, object, 'object')
-    requireString(pkgName, object, 'name', 'object')
-    requireString(pkgName, object, 'exportName', 'object')
-    requireMembers(pkgName, object.members, `object "${object.name as string}"`)
-    requireTypes(pkgName, object.types, `object "${object.name as string}"`)
   }
   for (const value of requireArray(pkgName, manifest.invocations, 'TYPERT.invocations')) {
     requireInvocation(pkgName, value)
@@ -169,34 +126,6 @@ function requireString(pkgName: string, value: Record<string, unknown>, key: str
 function requireOptionalString(pkgName: string, value: Record<string, unknown>, key: string, subject: string): void {
   if (value[key] !== undefined && typeof value[key] !== 'string') {
     throw new Error(`typert-loader: ${pkgName} ${subject}.${key} must be a string`)
-  }
-}
-
-function requireDocumentation(pkgName: string, value: Record<string, unknown>, subject: string): void {
-  requireArray(pkgName, value.tags, `${subject}.tags`)
-  for (const key of ['description', 'summary', 'jsDoc'] as const) {
-    if (value[key] !== undefined && typeof value[key] !== 'string') {
-      throw new Error(`typert-loader: ${pkgName} ${subject}.${key} must be a string`)
-    }
-  }
-}
-
-function requireMembers(pkgName: string, value: unknown, subject: string): void {
-  for (const item of requireArray(pkgName, value, `${subject}.members`)) {
-    const member = requireObject(pkgName, item, `${subject} member`)
-    requireString(pkgName, member, 'name', `${subject} member`)
-    requireString(pkgName, member, 'signature', `${subject} member`)
-    if (typeof member.kind !== 'string' || !MEMBER_KINDS.has(member.kind)) {
-      throw new Error(`typert-loader: ${pkgName} ${subject} member "${member.name as string}" has invalid kind`)
-    }
-  }
-}
-
-function requireTypes(pkgName: string, value: unknown, subject: string): void {
-  for (const item of requireArray(pkgName, value, `${subject}.types`)) {
-    const type = requireObject(pkgName, item, `${subject} type`)
-    requireString(pkgName, type, 'name', `${subject} type`)
-    requireString(pkgName, type, 'declaration', `${subject} type`)
   }
 }
 
@@ -243,7 +172,6 @@ function requireInvocation(pkgName: string, value: unknown): void {
     }
     parameters.set(wire, parameter)
     requireStrictCodec(pkgName, parameter.codec, `invocation "${id}" parameter codec`)
-    if (parameter.strictCodec !== undefined) requireStrictCodec(pkgName, parameter.strictCodec, `invocation "${id}" strict input codec`)
   }
   if (invocation.cancellation !== undefined) {
     const cancellation = requireObject(pkgName, invocation.cancellation, `invocation "${id}" cancellation`)
@@ -269,17 +197,6 @@ function requireInvocation(pkgName: string, value: unknown): void {
     throw new Error(`typert-loader: ${pkgName} invocation "${id}" repeats Context wire field "${receiver.wire as string}"`)
   }
   requireStrictCodec(pkgName, invocation.result, `invocation "${id}" result codec`)
-  if (invocation.input !== undefined || invocation.invoke !== undefined) {
-    if (receiver.kind !== 'direct') {
-      throw new Error(`typert-loader: ${pkgName} invocation "${id}" input/invoke require a direct receiver`)
-    }
-    if (typeof invocation.input !== 'function') {
-      throw new Error(`typert-loader: ${pkgName} invocation "${id}" has no input() selector`)
-    }
-    if (typeof invocation.invoke !== 'function') {
-      throw new Error(`typert-loader: ${pkgName} invocation "${id}" has no invoke() function`)
-    }
-  }
   if (invocation.sourceLocation !== undefined) {
     const location = requireObject(pkgName, invocation.sourceLocation, `invocation "${id}" sourceLocation`)
     requireString(pkgName, location, 'file', `invocation "${id}" sourceLocation`)
@@ -289,22 +206,6 @@ function requireInvocation(pkgName: string, value: unknown): void {
       }
     }
   }
-}
-
-function requireSchemaProjection(pkgName: string, value: Record<string, unknown>, subject: string): void {
-  if (typeof value.create !== 'function') {
-    throw new Error(`typert-loader: ${pkgName} ${subject} has no create() factory`)
-  }
-  // Inspect supplied data without invoking the factory's cached projection getters.
-  const fields = Object.getOwnPropertyDescriptors(value)
-  for (const key of ['description', 'jsonSchemaError']) {
-    const field: unknown = fields[key]?.value
-    if (field !== undefined && typeof field !== 'string') {
-      throw new Error(`typert-loader: ${pkgName} ${subject}.${key} must be a string`)
-    }
-  }
-  const schema: unknown = fields.jsonSchema?.value
-  if (schema !== undefined) requireObject(pkgName, schema, `${subject}.jsonSchema`)
 }
 
 function requireStrictCodec(pkgName: string, value: unknown, subject: string): void {
@@ -318,7 +219,10 @@ function requireStrictCodec(pkgName: string, value: unknown, subject: string): v
       throw new Error(`typert-loader: ${pkgName} ${subject} ${method} must be a function`)
     }
   }
-  requireSchemaProjection(pkgName, codec, subject)
+  if (typeof codec.create !== 'function') {
+    throw new Error(`typert-loader: ${pkgName} ${subject} has no create() factory`)
+  }
+  requireOptionalString(pkgName, codec, 'description', subject)
 }
 
 /**

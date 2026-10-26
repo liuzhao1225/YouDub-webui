@@ -144,13 +144,13 @@ test .env -ef env.txt
 | 语言 | `npm --prefix apps/harness run check:locales`，实际设置页面切换与重启读回 |
 | Python 操作 | `.venv/bin/pytest backend/tests/<相关文件>.py`，受影响的真实媒体任务 |
 | 框架输入与产物 | `npm run build:framework` |
-| 框架 TypeScript、测试夹具或构建脚本 | 先构建框架，再在 `.cache/harness/source-build` 运行 `node node_modules/tsx/dist/cli.mjs scripts/build.ts --scope check`，并运行受影响的原测试 |
+| 框架 TypeScript、测试夹具或构建脚本 | `npm run build:framework` 包含生产引用编译及 host/client 测试与脚本的聚合类型检查；再在 `.cache/harness/source-build` 运行 `node node_modules/vitest/vitest.mjs run <相关测试路径>` |
 
 项目 `.venv` 不存在时用 `python3 -m venv .venv` 创建，依赖优先从阿里 PyPI 安装。测试具体依赖以对应 requirements 为准，不把模型大文件安装到源码测试环境来代替应用资源准备。
 
-完整来源核对命令：
+测试按现有产品行为维护：保留实际页面、Host 通信、模型配置与调用、凭据、插件生命周期、任务迁移和媒体处理的回归。退出产品的交互终端、聊天附件、Agent 工具历史、配置导出，以及生成器语法穷举不再维护专属测试。框架测试直接使用保留的源码；页面测试使用同一 Harness 绑定，仅替换传输和夹具插槽。新增测试应针对可观察的行为或已发生的回归，避免复制生产实现。
 
-
+生成的界面参考 HTML 通过 `node scripts/build-ui-design-reference.mjs` 输出到 `output/ui-design-reference.html`；源码和 CSS 只维护一份。测试快照、语言数据与源码行数分别统计。
 
 验收记录区分源码完整性、构建、插件 active、首启资源 ready、实际任务和最终媒体产物。后续实验默认使用“字幕＋配音”完整流程覆盖 Demucs、Whisper、翻译与 TTS；涉及对齐和混音时一并检查相应节点及输出。
 

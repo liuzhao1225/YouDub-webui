@@ -15,15 +15,13 @@ async function hasDesktopActiveTasks(ctx: Context): Promise<boolean> {
   const jobs = ctx.get('jobs')
   if (jobs === undefined) throw new Error('desktop activity: jobs service is unavailable')
   const active = await ctx.waterfall('desktop/active-tasks', () => Promise.reject(new Error('desktop activity: product inspector is unavailable')))
-  return active || jobs.list().some(job => job.status === 'running' || job.status === 'stopping')
+  return active || jobs.hasActiveJobs()
 }
 
 /** What quitting the Host now would affect. */
 export interface DesktopQuitInspection {
   /** Product work and live background jobs. */
   readonly activeTasks: boolean
-  /** Reserved by the existing Desktop IPC protocol; YouDub schedules no reminders. */
-  readonly scheduledTasks: false
 }
 
 /**
@@ -36,6 +34,6 @@ export function installDesktopQuitInspection(ctx: Context): () => Promise<Deskto
   ctx.effect(() => () => { stopped = true })
   return async () => {
     if (stopped) throw new Error('desktop quit: Host is stopping')
-    return { activeTasks: await hasDesktopActiveTasks(ctx), scheduledTasks: false }
+    return { activeTasks: await hasDesktopActiveTasks(ctx) }
   }
 }

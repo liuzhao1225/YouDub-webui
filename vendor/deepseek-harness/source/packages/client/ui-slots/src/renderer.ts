@@ -1,9 +1,8 @@
 /** React-free contracts between the slot host and an installed renderer. */
-import type { Context } from '@deepseek-ai/cordis'
 import type { ReactNode } from 'react'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
 import type {
-  SessionAreaProps, SlotEntryDef, SlotScope, SlotSpec, StoredEntry, StoredFactory, Translate,
+  SlotEntryDef, SlotSpec, StoredEntry, StoredFactory, Translate,
 } from './index.ts'
 
 /**
@@ -70,12 +69,9 @@ export type KeyedStandardSource = (key: string, member?: string) => HostObservab
 
 /**
  * Framework-neutral inputs from which the renderer materializes standard
- * props. A scope adapter keeps member names present while its binding is
- * absent so optional slots retain a stable Hook call order.
+ * props supplied by the root application and installed plugins.
  */
 export interface StandardSourceBinding {
-  /** Scope identity; absent for root data and an optional scope with no selection. */
-  readonly key: string | undefined
   /** Fixed-name sources; each `name` becomes a `useName` selector Hook. */
   readonly hooks: Readonly<Record<string, HostObservable<unknown> | undefined>>
   /**
@@ -86,33 +82,6 @@ export interface StandardSourceBinding {
   readonly keyedHooks: Readonly<Record<string, KeyedStandardSource | undefined>>
   /** Stable plain values copied into standard props. */
   readonly props: Readonly<Record<string, unknown>>
-}
-
-/** Materialized binding for one live non-root scope. */
-export interface ScopedStandardSourceBinding extends StandardSourceBinding {
-  readonly key: string
-  readonly ctx: Context
-}
-
-/** One installed source of bindings for a non-root Slot scope. */
-export interface SlotScopeAdapter {
-  /** Default binding inherited by scoped entries, including its absent projection. */
-  readonly current: HostObservable<StandardSourceBinding>
-  /**
-   * Resolve a stable observable for an explicit scope target or explicit absence.
-   * @param target - domain-owned Provider target, or absence.
-   * @returns the target's current standard-source binding.
-   */
-  bindingSource(target: SessionAreaProps['session']): HostObservable<StandardSourceBinding>
-  /**
-   * Render the scope owner's area seat over the current binding. The renderer
-   * binds this function to the standard `SessionProvider` prop without owning
-   * Session selection semantics.
-   * @param binding - current scope binding, including its absent projection.
-   * @param props - render-prop body and empty branch.
-   * @returns rendered scope area.
-   */
-  renderArea?(binding: StandardSourceBinding, props: SessionAreaProps): ReactNode
 }
 
 /** Root standard-source contribution installed by one domain UI package. */
@@ -194,22 +163,19 @@ export interface SlotRendererHost {
   isLive(entry: StoredEntry): boolean
   /**
    * Resolve (create or return cached) the store instance for an entry's
-   * declared handle under a scope key; lifecycle rides the ledger axis.
+   * declared handle; lifecycle rides the registration ledger.
    * @param entry - entry whose declaration carries the handle.
-   * @param scopeBinding - exact Session binding for scoped slots, undefined for root scope.
    * @returns the instance, or undefined when the entry declares no store.
    */
-  storeOf(entry: StoredEntry, scopeBinding: ScopedStandardSourceBinding | undefined): StoreInstanceLike | undefined
+  storeOf(entry: StoredEntry): StoreInstanceLike | undefined
   /**
-   * Resolve a Factory Store for one render occurrence and inherited scope.
+   * Resolve a Factory Store for one render occurrence.
    * @param definition - live Factory definition.
-   * @param scopeBinding - exact Session binding for scoped Factories, undefined for root scope.
    * @param occurrence - identity token owned by the render position.
    * @returns the occurrence Store instance, or undefined without a Store declaration.
    */
   factoryStoreOf(
     definition: StoredFactory,
-    scopeBinding: ScopedStandardSourceBinding | undefined,
     occurrence: object,
   ): StoreInstanceLike | undefined
   /**
@@ -247,15 +213,6 @@ export interface SlotRendererHost {
   isFactoryLive(definition: StoredFactory): boolean
   /** Root standard data assembled from domain-owned contributions. */
   readonly root: HostObservable<StandardSourceBinding>
-  /** Monotonic source updated whenever the installed scope-adapter roster changes. */
-  readonly scopeRevision: HostObservable<number>
-  /**
-   * Resolve the adapter installed for one non-root scope.
-   * `session` and `session-maybe` intentionally resolve the same adapter.
-   * @param scope - Slot scope.
-   * @returns adapter, or `undefined` when the composition omitted its owner.
-   */
-  scope(scope: Exclude<SlotScope, 'root'>): SlotScopeAdapter | undefined
   /**
    * Installed locale face backing the `t` standard seat (absent until the
    * locale plugin installs one; rendering an entry that declared `locale:`

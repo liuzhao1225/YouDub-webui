@@ -12,32 +12,29 @@ export type ResourceState = {
   activePreparation?: { status: string; error?: string }
 }
 type ResourceSnapshot = { result?: ResourceState; inventory?: ResourceInventory; inspection?: ResourcePreparation; error?: string; checking: boolean }
-export type WorkflowResourcesResult = ResourceSnapshot & { ready: boolean; prepare(): void; check(): void; action?(action: SetupAction, id?: string): void }
+export type WorkflowResourcesResult = ResourceSnapshot & { ready: boolean; prepare(): void; check(): void; action(action: SetupAction, id?: string): void }
 
 export function resourceKey(document: WorkflowDocument) {
   return JSON.stringify([...new Set(document.nodes.map(node => JSON.stringify([node.type, node.typeVersion, node.provider.id, node.provider.model ?? null])))].sort())
 }
 export function changesResources(path: string, method: string, body?: BodyInit | null) {
-  if (path === '/api/v2/models/settings' && method === 'PATCH') return true
-  if (/^\/api\/v2\/models\/credentials\/[^/]+$/.test(path) && ['PUT', 'DELETE'].includes(method)) return true
   if (path === '/api/v2/settings' && method === 'PATCH') {
     if (typeof body !== 'string') return true
     const patch = JSON.parse(body) as Record<string, unknown>
     return Object.keys(patch).some(key => key !== 'ui_language')
   }
   return method === 'POST' && /^\/api\/v2\/(?:resources\/(?:prepare|action)|workflow-documents\/resources\/prepare)$/.test(path)
-    || ['POST', 'PATCH', 'DELETE'].includes(method) && /^\/api\/v2\/extensions(?:\/|$)/.test(path)
 }
 
 /** One API session owns a check for each distinct provider/model requirement set. */
 export class WorkflowResourceChecks {
-  private entries = new Map<string, WorkflowResourcesController>()
+  private entries = new Map<string, ResourcesController>()
   private invalidationQueued = false
-  constructor(private request: Request, private onReady: () => void = () => {}) {}
+  constructor(private request: Request, private onReady: () => void) {}
   get(document: WorkflowDocument) {
     const key = resourceKey(document)
     let resource = this.entries.get(key)
-    if (!resource) { resource = new WorkflowResourcesController(this.request, document, this.onReady); this.entries.set(key, resource) }
+    if (!resource) { resource = new ResourcesController(this.request, document, this.onReady); this.entries.set(key, resource) }
     resource.setDocument(document)
     return resource
   }
@@ -144,4 +141,3 @@ export class ResourcesController {
     }
   }
 }
-export class WorkflowResourcesController extends ResourcesController {}

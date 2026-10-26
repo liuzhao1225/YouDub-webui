@@ -59,8 +59,7 @@
     "@deepseek-ai/schemastery": "workspace:~",
     "execa": "^10.0.1",
     "yaml": "^2.9.0",
-    "zod": "4.4.3",
-    "@deepseek-ai/dsh-util-values": "workspace:*"
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:~",
