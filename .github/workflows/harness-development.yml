@@ -1,6 +1,9 @@
 name: YouDub Desktop 源码开发检查
 
 on:
+  pull_request:
+    branches: [main]
+    types: [ready_for_review]
   workflow_dispatch:
     inputs:
       package_desktop:
