@@ -100,6 +100,8 @@ npm --prefix apps/harness start
 | 模型 | `$YOUDUB_HOME/youdub/models` |
 | 媒体工具与分句资源 | `$YOUDUB_HOME/youdub/runtime/ffmpeg`、`$YOUDUB_HOME/youdub/nltk_data` |
 | Node / pnpm | 本工作区 `apps/harness/node_modules/electron` 与 `pnpm` |
+
+媒体工具以保存的业务安装目录为根解析。Windows 的两种下载包拥有不同的内部目录，安装器和 Worker 共用 `ffmpegDirectory` 查找实际安装的 `bin`，FFmpeg、FFprobe 和共享 DLL 保持在一起。安装完成后，新子进程和已启动的 Python Bridge 都使用更新后的 `FFMPEG_PATH`、`FFPROBE_PATH` 与 `PATH`。原生音频库的 DLL 搜索目录由各自的 Python 子进程注册。
 | 桌面源码运行时链接 | `apps/harness/dist/desktop/runtime-project` |
 | 浏览器 home / profile | `.cache/harness/dsh` / `profiles/youdub` |
 

@@ -64,12 +64,17 @@ def test_selected_provider_import_failure_preserves_original_exception(monkeypat
     (["qwen_forced_aligner"], "2.9.0", False),
 ])
 def test_verify_imports_codec_only_for_the_execution_path(monkeypatch, groups, audio_version, needs_codec):
+    from backend.app import config
+
     imported = []
+    configured = []
     original = OSError("libavcodec shared library cannot be loaded")
     monkeypatch.setattr(setup_probe, "missing_dependencies", lambda _groups: [])
     monkeypatch.setattr(setup_probe.importlib.metadata, "version", lambda _name: audio_version)
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", lambda: configured.append(True))
 
     def import_module(module):
+        assert configured == ([True] if needs_codec else [])
         imported.append(module)
         if module == "torchcodec":
             raise original
@@ -82,6 +87,25 @@ def test_verify_imports_codec_only_for_the_execution_path(monkeypatch, groups, a
     else:
         assert setup_probe.verify(groups) == {"ready": True}
         assert "torchcodec" not in imported
+
+
+def test_verify_stops_before_imports_when_ffmpeg_dll_registration_fails(monkeypatch):
+    from backend.app import config
+
+    original = RuntimeError("Failed to register the FFmpeg DLL directory: C:/YouDub/runtime/ffmpeg/bin")
+    imported = []
+    monkeypatch.setattr(setup_probe, "missing_dependencies", lambda _groups: [])
+    monkeypatch.setattr(setup_probe.importlib.metadata, "version", lambda _name: "2.9.1")
+    monkeypatch.setattr(setup_probe.importlib, "import_module", lambda name: imported.append(name))
+
+    def configure():
+        raise original
+
+    monkeypatch.setattr(config, "configure_windows_ffmpeg_dll_directory", configure)
+    with pytest.raises(RuntimeError) as result:
+        setup_probe.verify(["voxcpm"])
+    assert result.value is original
+    assert not imported
 
 
 def test_codec_version_is_checked_even_when_its_native_library_is_not_used(monkeypatch):

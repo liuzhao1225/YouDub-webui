@@ -6,8 +6,9 @@
     ]
   },
   "youdub.media": {
-    "integrity": "sha256:e76c52b30b90ef51072da8d431ad3b032eeb7859af1020307762ae07dc823c89",
+    "integrity": "sha256:3bc297143b6a1f1f0aee329bafae5157f61121673c5a01c90375d02aef205a31",
     "previous": [
+      "sha256:e76c52b30b90ef51072da8d431ad3b032eeb7859af1020307762ae07dc823c89",
       "sha256:e854373ee10f056854a96e9c77c188c50ba0bd0b0194de6d8b92b87290af220d"
     ]
   },
@@ -18,8 +19,9 @@
     ]
   },
   "voxcpm": {
-    "integrity": "sha256:90a7ed922d2549377fec708394dbfa591e70a4cbf3a2e941d69ce66466feeac0",
+    "integrity": "sha256:70047ed06d353e13e8dd3cfbd30b38d1bf5e120342718cbc598db7cc94f93b9c",
     "previous": [
+      "sha256:90a7ed922d2549377fec708394dbfa591e70a4cbf3a2e941d69ce66466feeac0",
       "sha256:8dc2539c1f02bddd16d985b226873e96de4736b58b9558b54ce953f7b667d542"
     ]
   },
