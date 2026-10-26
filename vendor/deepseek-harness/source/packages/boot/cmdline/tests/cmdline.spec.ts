@@ -5,10 +5,8 @@
  */
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { EventEmitter } from 'node:events'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { PassThrough } from 'node:stream'
 import { pathToFileURL } from 'node:url'
 import { Command } from 'commander'
 import { Context } from '@deepseek-ai/cordis'
@@ -16,7 +14,7 @@ import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { exitOnStdinEnd, internals, parseCmdline, provideCmdline, type AppReady } from '../src/index.ts'
+import { internals, parseCmdline, provideCmdline } from '../src/index.ts'
 
 /** Every value one boot of the fixture tree observed. */
 interface Observed {
@@ -37,46 +35,12 @@ const disposers: (() => Promise<void>)[] = []
 /** Fixture tree roots, removed after their booted tree has been disposed. */
 const tempDirs: string[] = []
 
-const readyApp: AppReady = {
-  onReady(listener) {
-    listener()
-    return () => {}
-  },
-}
-
-function controlledAppReady(): { service: AppReady; commit(): void } {
-  const listeners = new Set<() => void>()
-  return {
-    service: {
-      onReady(listener) {
-        listeners.add(listener)
-        return () => { listeners.delete(listener) }
-      },
-    },
-    commit() {
-      for (const listener of [...listeners]) listener()
-      listeners.clear()
-    },
-  }
-}
-
 afterEach(async () => {
   for (const dispose of disposers.splice(0)) await dispose()
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
-  internals.stdin = process.stdin
   internals.stdout = process.stdout
   internals.stderr = process.stderr
 })
-
-/** In-memory stdin whose end edge and ended-before-bind state are controllable. */
-class TestStdin extends EventEmitter {
-  readableEnded = false
-
-  end(): void {
-    this.readableEnded = true
-    this.emit('end')
-  }
-}
 
 /** The fixture app's flag family: one `--port` its rows read from the service. */
 function demoCommand(): Command {
@@ -269,103 +233,5 @@ describe('provideCmdline', () => {
     expect(parseOnce()).toEqual({ port: 8080 })
     expect(parseOnce()).toEqual({ port: 8080 })
     expect(Object.isFrozen(ctx.cmdlineArgs?.get())).toBe(true)
-  })
-})
-
-describe('exitOnStdinEnd', () => {
-  it('requests bounded exit on EOF and removes the listener on disposal', async () => {
-    const ctx = new Context()
-    const stdin = new TestStdin()
-    const exits: number[] = []
-    internals.stdin = stdin
-    provideCmdline(ctx, { args: [], exit: code => void exits.push(code), ready: readyApp })
-    exitOnStdinEnd(ctx, 'test.stdin')
-    stdin.end()
-    expect(exits).toEqual([0])
-    await ctx.fiber.dispose()
-    stdin.emit('end')
-    expect(exits).toEqual([0])
-  })
-
-  it('requests exit after binding to stdin that has already ended', async () => {
-    const ctx = new Context()
-    const stdin = new TestStdin()
-    const exits: number[] = []
-    stdin.readableEnded = true
-    internals.stdin = stdin
-    provideCmdline(ctx, { args: [], exit: code => void exits.push(code), ready: readyApp })
-    exitOnStdinEnd(ctx, 'test.stdin')
-    stdin.end()
-    await Promise.resolve()
-    expect(exits).toEqual([0])
-  })
-
-  it('cancels an already-ended stream before its queued EOF handler runs', async () => {
-    const ctx = new Context()
-    const stdin = new TestStdin()
-    const exits: number[] = []
-    let queued: (() => void) | undefined
-    const queue = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((listener) => { queued = listener })
-    stdin.readableEnded = true
-    internals.stdin = stdin
-    try {
-      provideCmdline(ctx, { args: [], exit: code => void exits.push(code), ready: readyApp })
-      exitOnStdinEnd(ctx, 'test.stdin')
-      await ctx.fiber.dispose()
-      queued?.()
-      expect(exits).toEqual([])
-    } finally {
-      queue.mockRestore()
-    }
-  })
-
-  it('leaves protocol bytes buffered until the transport claims stdin', async () => {
-    const ctx = new Context()
-    const stdin = new PassThrough()
-    const exits: number[] = []
-    internals.stdin = stdin
-    provideCmdline(ctx, { args: [], exit: code => void exits.push(code), ready: readyApp })
-    exitOnStdinEnd(ctx, 'test.stdin')
-
-    const frame = '{"jsonrpc":"2.0","id":1,"method":"initialize"}\n'
-    stdin.write(frame)
-    expect(stdin.readableFlowing).not.toBe(true)
-    let received = ''
-    stdin.on('data', (chunk: Buffer) => { received += chunk.toString('utf8') })
-    const ended = new Promise<void>((resolve) => { stdin.once('end', resolve) })
-    stdin.end()
-    await ended
-
-    expect(received).toBe(frame)
-    expect(exits).toEqual([0])
-    await ctx.fiber.dispose()
-  })
-
-  it('waits for the launcher to commit successful startup after EOF', async () => {
-    const ctx = new Context()
-    const stdin = new TestStdin()
-    const exits: number[] = []
-    const ready = controlledAppReady()
-    internals.stdin = stdin
-    provideCmdline(ctx, { args: [], exit: code => void exits.push(code), ready: ready.service })
-    exitOnStdinEnd(ctx, 'test.stdin')
-
-    stdin.end()
-    expect(exits).toEqual([])
-    ready.commit()
-    expect(exits).toEqual([0])
-    await ctx.fiber.dispose()
-  })
-
-  it('fails loud without a launcher exit request', () => {
-    internals.stdin = new TestStdin()
-    expect(() => { exitOnStdinEnd(new Context(), 'test.stdin') }).toThrow('launcher must provide ctx.appExit and ctx.appReady')
-  })
-
-  it('fails loud without launcher startup readiness', () => {
-    const ctx = new Context()
-    internals.stdin = new TestStdin()
-    provideCmdline(ctx, { args: [], exit: () => {} })
-    expect(() => { exitOnStdinEnd(ctx, 'test.stdin') }).toThrow('launcher must provide ctx.appExit and ctx.appReady')
   })
 })

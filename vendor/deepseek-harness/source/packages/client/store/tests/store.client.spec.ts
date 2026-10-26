@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSnapshotStore, defineStore, shallowEqual } from '../src/index.ts'
+import { createSnapshotStore, defineStore } from '../src/index.ts'
 
 interface State {
   a: { n: number }
@@ -281,15 +281,5 @@ describe('defineStore', () => {
       actions: { inc: (d) => { d.n += 1 } },
     }).create()
     expect(() => { inst.clearPersisted() }).not.toThrow()
-  })
-})
-
-describe('shallowEqual', () => {
-  it('matches one-level-equal objects and rejects deeper drift', () => {
-    const leaf = { deep: 1 }
-    expect(shallowEqual({ x: 1, y: leaf }, { x: 1, y: leaf })).toBe(true)
-    expect(shallowEqual({ x: 1, y: { deep: 1 } }, { x: 1, y: { deep: 1 } })).toBe(false)
-    expect(shallowEqual([1, 2], [1, 2])).toBe(true)
-    expect(shallowEqual([1, 2], [2, 1])).toBe(false)
   })
 })

@@ -14,7 +14,8 @@ import pytest
 from backend.app.v1 import asr, asr_process, media
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 @pytest.fixture
@@ -373,11 +374,12 @@ def test_cancellation_reaps_asr_child_before_returning(context, monkeypatch):
         if children:
             checks += 1
             if checks == 2:
-                raise StageCancelled()
+                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
 
     monkeypatch.setattr(media.subprocess, "Popen", slow_child)
-    with pytest.raises(StageCancelled):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
         asr.run(replace(context, check_cancel=check_cancel), lambda *args: None)
+    assert error.value.code == "CANCELLED"
     assert len(children) == 1
     assert children[0].poll() is not None
     assert not (context.work_dir / "transcript.json").exists()

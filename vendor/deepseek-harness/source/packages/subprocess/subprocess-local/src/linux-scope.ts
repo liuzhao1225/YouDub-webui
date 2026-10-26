@@ -1,6 +1,5 @@
 /** Linux user-systemd scope launch and managed-range ownership. */
 
-import { controlPipe } from './control-spawn.ts'
 import { execFile, spawn, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -620,7 +619,6 @@ export function launchLinuxScope(
   const invocation = internals.runnerInvocation ?? spawnRunnerInvocation()
   const files = createLinuxLaunchFiles({
     cwd: spec.cwd, env: targetEnv,
-    ...spec.stdio.control === undefined ? {} : { control: spec.stdio.control },
   })
   const startup = new LinuxScopeStartup(files)
   const unitBase = unitStem('dsh-subprocess')
@@ -659,7 +657,6 @@ export function launchLinuxScope(
     stdin: child.stdin,
     stdout: child.stdout,
     stderr: child.stderr,
-    control: controlPipe(child, spec.stdio.control),
     direct,
     owner,
   }

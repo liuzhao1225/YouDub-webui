@@ -16,7 +16,8 @@ from backend.app.config import ffmpeg_binary
 from backend.app.v1 import export, media
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 @pytest.fixture
@@ -127,11 +128,12 @@ def test_cancelling_export_reaps_child_before_returning(monkeypatch, context):
         if processes and processes[0].poll() is None:
             running_checks += 1
             if running_checks == 2:
-                raise StageCancelled()
+                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
 
     monkeypatch.setattr(media.subprocess, "Popen", slow_process)
-    with pytest.raises(StageCancelled):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
         export.run(replace(context, check_cancel=check_cancel), lambda value, message: None, output_dir=context.work_dir / "output")
+    assert error.value.code == "CANCELLED"
     assert processes[0].returncode is not None
     assert processes[0].wait(timeout=0) != 0
 

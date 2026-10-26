@@ -117,16 +117,6 @@
   background: var(--dsw-alias-state-error-primary);
 }
 
-.accountStatus {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--dsw-alias-state-success-primary);
-}
-
 .rowActions {
   display: inline-flex;
   align-items: center;
@@ -753,20 +743,8 @@ select.input {
   background: var(--dsw-alias-interactive-bg-hover-danger);
 }
 
-/* Icon-button label seat: named for assistive tech and for the tests that
-   query these controls by their text. */
-.hiddenLabel {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .customizedSummary::before,
-  .switchThumb {
+  .customizedSummary::before {
     transition: none;
   }
 }

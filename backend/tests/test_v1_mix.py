@@ -16,7 +16,8 @@ from backend.app.v1 import media, mix
 from backend.app.v1.audio_segments import Alignment, SpeechClip, SpeechClips
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
+from backend.workers.protocol import WorkerError
 
 
 def write_tone(path: Path, duration_ms: int, frequency: int, *, rate: int = 22050):
@@ -230,11 +231,12 @@ def test_cancelling_mix_reaps_ffmpeg_before_returning(monkeypatch, context):
         if processes and processes[0].poll() is None:
             running_checks += 1
             if running_checks == 2:
-                raise StageCancelled()
+                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
 
     monkeypatch.setattr(media.subprocess, "Popen", slow_process)
-    with pytest.raises(StageCancelled):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
         mix.run(replace(context, check_cancel=check_cancel), lambda value, message: None)
+    assert error.value.code == "CANCELLED"
     assert processes[0].returncode is not None
     assert processes[0].wait(timeout=0) != 0
     assert not (context.work_dir / "mixed.wav").exists()

@@ -33,19 +33,6 @@
   --color-status-warning-fg: var(--status-warning-fg);
   --color-status-neutral: var(--status-neutral);
   --color-status-neutral-fg: var(--status-neutral-fg);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -128,28 +115,9 @@
   color: transparent;
 }
 
-@utility bg-brand-gradient {
-  background-image: linear-gradient(90deg, var(--brand-pink), var(--brand-blue));
-}
-
-@utility bg-brand-spectrum {
-  background-image: linear-gradient(90deg, var(--brand-red), var(--brand-pink) 45%, var(--brand-blue));
-}
-
 @utility bg-dot-grid {
   background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
   background-size: 22px 22px;
-}
-
-@utility glass {
-  background-color: var(--glass);
-  backdrop-filter: blur(18px) saturate(1.5);
-}
-
-@utility shimmer {
-  background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
-  background-size: 200% 100%;
-  animation: var(--animate-shimmer);
 }
 
 /* 顶部极光：logo 的红、粉、蓝三色光晕。 */
@@ -163,22 +131,6 @@
     radial-gradient(34% 50% at 82% 12%, rgb(0 174 236 / 0.2), transparent 70%),
     radial-gradient(30% 36% at 50% -4%, rgb(255 0 51 / 0.16), transparent 70%);
   filter: blur(8px);
-}
-
-/* 浅色登录页的整页光晕：logo 三色从左侧铺开，再淡淡地延伸到表单一侧。 */
-@utility login-mesh {
-  background:
-    radial-gradient(50% 55% at 4% 6%, rgb(255 0 51 / 0.13), transparent 62%),
-    radial-gradient(44% 50% at 34% 20%, rgb(251 114 153 / 0.24), transparent 66%),
-    radial-gradient(52% 58% at 12% 94%, rgb(0 174 236 / 0.2), transparent 64%),
-    radial-gradient(40% 46% at 60% 62%, rgb(124 140 255 / 0.11), transparent 70%),
-    radial-gradient(36% 44% at 98% 4%, rgb(0 174 236 / 0.09), transparent 70%);
-}
-
-/* 细颗粒噪点，压住大面积渐变产生的色带。 */
-@utility grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
 }
 
 /* Important declarations in components outrank the desktop's important utilities.

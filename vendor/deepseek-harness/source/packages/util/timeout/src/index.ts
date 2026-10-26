@@ -30,30 +30,6 @@ function assertTimerDelay(timeoutMs: number, name: string): void {
   }
 }
 
-/**
- * Validate a caller's optional timeout hint, use the backend default, then cap
- * it. Supplied values must be positive and finite; zero is not a public
- * disable-timeout sentinel.
- *
- * @param requested The caller's optional hint; validated when present.
- * @param def The backend default applied when `requested` is absent.
- * @param max The backend upper bound the result is capped to.
- * @param name Field name used in the thrown message (so the caller sees which input was
- *   bad).
- * @returns The effective timeout in milliseconds: `min(requested ?? def, max)`.
- */
-export function clampTimeout(
-  requested: number | undefined,
-  def: number,
-  max: number,
-  name = 'timeoutMs',
-): number {
-  if (requested !== undefined && (!Number.isFinite(requested) || requested <= 0)) {
-    throw new Error(`${name} must be a positive finite number`)
-  }
-  return Math.min(requested ?? def, max)
-}
-
 /** A deadline signal plus the cleanup that clears its timer (dispose-once). */
 export interface Deadline {
   /** Aborts on upstream cancellation OR on timeout (the timeout carries a {@link TimeoutReason}). */

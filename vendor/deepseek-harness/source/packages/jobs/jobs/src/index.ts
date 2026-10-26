@@ -1,39 +1,10 @@
-/**
- * The background-job Service Definition (`ctx.jobs`). It owns the contract for
- * job ids, lifecycle state, the per-job output ring —
- * one bounded stream that a consumer reads through a registry-kept cursor
- * and that any number of observers read at absolute byte offsets — and the
- * event stream announcing every commit, while producers retain their
- * execution resources. The process-local registry lives in
- * `@deepseek-ai/dsh-jobs-local`.
- * @module @deepseek-ai/dsh-jobs
- */
+/** Background job lifecycle service; producers own execution and output. */
 
 import { Context, Service } from '@deepseek-ai/cordis'
-import type { JobEvents, JobId, JobOutputRead, JobRead, JobSpec, JobView } from './types.ts'
+import type { JobId, JobSpec, JobView } from './types.ts'
 
 export { JobId } from './types.ts'
-export type {
-  JobAppendOptions,
-  JobChannel,
-  JobChunk,
-  JobEvent,
-  JobEventListener,
-  JobEvents,
-  JobHandle,
-  JobHooks,
-  JobKind,
-  JobKindMap,
-  JobOutcome,
-  JobOutputRead,
-  JobOutputSource,
-  JobRead,
-  JobSettleCause,
-  JobSourceRead,
-  JobSpec,
-  JobStatus,
-  JobView,
-} from './types.ts'
+export type { JobHandle, JobHooks, JobKind, JobOutcome, JobSpec, JobStatus, JobView } from './types.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -51,19 +22,10 @@ declare module '@deepseek-ai/cordis' {
  * - Registrations outlive producer and controller fibers. Service disposal
  *   cancels live work and awaits compliant producers; a throwing teardown
  *   cancel force-fails only the record and reports possible orphaned work.
- * - Settlement is first-wins: one terminal record, released waiters, then one
- *   round of contained event delivery, even against a late producer outcome.
+ * - Settlement is first-wins: one terminal record, released waiters, even against a late producer outcome.
  * - A settled record stays listed until service disposal or explicit removal.
  * - {@link start} refuses work without an attached job controller, so work
  *   can always be collected or stopped.
- * - Every job owns one output ring. Pull sources named by the spec are pumped
- *   by the registry and drained once more before settlement; pushed appends
- *   land whole. The consuming cursor and observers' absolute offsets
- *   read the same bytes and never disturb each other.
- * - Ring retention is bounded. Appends past the live cap drop the oldest
- *   retained bytes; a reader below the retained window gets a lossy read,
- *   never an error. Settlement trims retention to the settled cap and ends
- *   the stream; the ring has no separate lifecycle.
  */
 export abstract class JobRegistry extends Service {
   constructor(ctx: Context) {
@@ -76,15 +38,12 @@ export abstract class JobRegistry extends Service {
     super(ctx, 'jobs')
   }
 
-  /** Lifecycle and output events. */
-  abstract readonly events: JobEvents
-
   /**
    * Preflight validation and controller availability before starting and
    * atomically registering work. Any preflight
    * rejection leaves no job id or execution resource. A throwing starter
    * leaves nothing registered; after it returns, registration cannot fail.
-   * @param spec - job identity, output sources, and synchronous starter.
+   * @param spec - job identity and synchronous starter.
    * @returns the registry-issued `<kind>-<short-uuid>` id.
    */
   abstract start(spec: JobSpec): JobId
@@ -96,31 +55,11 @@ export abstract class JobRegistry extends Service {
   abstract list(): JobView[]
 
   /**
-   * Project one job without changing its cursor. Throws for an unknown job.
+   * Project one job by id. Throws for an unknown job.
    * @param id - job to look up.
    * @returns a fresh projection.
    */
   abstract get(id: JobId): JobView
-
-  /**
-   * Consume the ring from the consuming cursor and advance it to the current
-   * total. After settlement the first read also carries the producer's
-   * result. Throws for an unknown job.
-   * @param id - job to read.
-   * @returns the chunks since the cursor, the lossy flag, the result once, and the post-read projection.
-   */
-  abstract read(id: JobId): JobRead
-
-  /**
-   * Read retained ring output without moving the consuming cursor. Resume with
-   * a previous read's `next`; an offset inside a retained chunk returns the
-   * whole chunk (its `at` may precede `from`). Throws for a negative or
-   * non-integer offset, or an unknown job.
-   * @param id - job to read.
-   * @param from - absolute byte offset to read from (0 for the retained head).
-   * @returns retained chunks overlapping `[from, total)`, the resume offset, and the lossy flag.
-   */
-  abstract readAt(id: JobId, from: number): JobOutputRead
 
   /**
    * Request cancellation, then mark the job stopping. A producer throw
@@ -144,8 +83,7 @@ export abstract class JobRegistry extends Service {
   abstract wait(id: JobId, timeoutMs: number, signal?: AbortSignal): Promise<JobView>
 
   /**
-   * Drop one settled job's record from the visible set and announce
-   * `removed`. For a caller that collected the terminal state through its own
+   * Drop one settled job's record from the visible set. For a caller that collected the terminal state through its own
    * {@link wait}. Throws for a live or unknown job.
    * @param id - settled job to drop.
    */

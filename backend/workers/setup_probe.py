@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 
-from backend.app.resources import GROUPS, distributions, missing_dependencies
+from backend.app.resources import distributions, missing_dependencies
 
 
 def verify(groups):
@@ -123,9 +123,6 @@ def main():
         print(json.dumps(punkt()))
     elif action == "resources":
         print(json.dumps(resources(groups)))
-    elif action == "models":
-        from backend.app.v1.runtime import probe_capability
-        print(json.dumps({provider: probe_capability(provider) for provider in groups}, ensure_ascii=False))
     elif action == "verify":
         print(json.dumps(verify(groups)))
     else:

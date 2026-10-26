@@ -33,9 +33,6 @@
     "@deepseek-ai/dsh-timeout": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   },
-  "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:~"
-  },
   "devDependencies": {
     "@deepseek-ai/cordis-plugin-include": "workspace:~",
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",

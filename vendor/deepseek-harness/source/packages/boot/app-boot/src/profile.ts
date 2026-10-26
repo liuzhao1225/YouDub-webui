@@ -660,32 +660,6 @@ export function loadProfileDirectory(
 }
 
 /**
- * Load a profile: resolve every `dsh.profile.bundles` entry to its patch
- * layer and parse the profile's own patch file. Unreadable or incompatible bundles
- * are skipped and listed in `skippedBundles`; profile manifest and user patch errors still throw.
- * @param binName - the diagnostic prefix on thrown errors.
- * @param name - the profile name.
- * @param installAnchor - absolute path of the dsh app's package.json (first resolution anchor).
- * @param home - the Harness home; defaults to {@link resolveDshHome}.
- * @param options - `userLayer: false` skips reading `cordis.patch.yml`, so a
- * bundles-only recovery can inspect a profile with a broken user layer.
- * @returns the loaded profile (empty `patches` when the user layer is skipped).
- */
-export function loadProfile(
-  binName: string, name: string, installAnchor: string, home: string = resolveDshHome(),
-  options: { userLayer?: boolean } = {},
-): Profile {
-  const dir = resolveProfileDir(name, home)
-  if (!existsSync(join(dir, 'package.json'))) {
-    throw new Error(
-      `${binName}: profile ${JSON.stringify(name)} does not exist at ${dir}; initialize the application profile before loading it`,
-    )
-  }
-  removeLinkProjections(dir)
-  return loadProfileDirectory(binName, dir, installAnchor, options)
-}
-
-/**
  * Compose patch layers into the effective entry list over an empty root —
  * the same single `applyEntryPatches` call the boot include makes, so flag
  * derivation and config dumps see exactly what mounts.

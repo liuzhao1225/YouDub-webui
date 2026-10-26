@@ -17,7 +17,7 @@ export { RemoteError, remoteErrorOf } from './remote-error.ts'
 export { TYPERT_OWNED_VALUE, isTypertOwnedValue, typertOwnedValue } from './owned-value.ts'
 export type { TypertOwnedValue } from './owned-value.ts'
 export { isRemoteJsonValue, isRemoteUplinkItem } from './json-value.ts'
-export { createTypertRemoteInfo, isTypertRemoteMethod } from './remote-info.ts'
+export { createTypertRemoteInfo } from './remote-info.ts'
 export { principalOf } from './principal.ts'
 export type { RemoteAccessResource, RemoteAccessResourceKind, RemoteAccessResourceOf } from './remote-access.ts'
 
@@ -87,8 +87,6 @@ export type {
   TypertRemoteScopeNamespace,
   TypertRemoteContribution,
   TypertRemoteInfo,
-  TypertRemoteInputOptions,
-  TypertRemoteMethod,
   TypertRemoteValue,
   TypertRemoteCodecSpec,
   TypertRemoteParameterSpec,

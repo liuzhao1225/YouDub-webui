@@ -21,13 +21,13 @@
       "path": "../../packages/boot/cmdline"
     },
     {
-      "path": "../../packages/util/home-paths"
-    },
-    {
       "path": "../../packages/util/http-proxy"
     },
     {
       "path": "../../packages/util/launch-environment"
+    },
+    {
+      "path": "../../packages/util/home-paths"
     }
   ]
 }

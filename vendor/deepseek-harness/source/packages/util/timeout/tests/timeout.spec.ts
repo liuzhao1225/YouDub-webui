@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  clampTimeout,
   deadline,
   idleWatchdog,
   MAX_TIMER_DELAY_MS,
@@ -16,38 +15,6 @@ describe('TimeoutReason', () => {
     expect(reason.code).toBe('BASH_TIMEOUT')
     expect(reason.timeoutMs).toBe(100)
     expect(reason.message).toBe('BASH_TIMEOUT after 100ms')
-  })
-})
-
-describe('clampTimeout', () => {
-  it('fills the default when the hint is absent', () => {
-    expect(clampTimeout(undefined, 120_000, 600_000)).toBe(120_000)
-  })
-
-  it('caps the hint at max', () => {
-    expect(clampTimeout(999_999, 120_000, 600_000)).toBe(600_000)
-  })
-
-  it('keeps a valid hint under the cap', () => {
-    expect(clampTimeout(5_000, 120_000, 600_000)).toBe(5_000)
-  })
-
-  it('caps the default itself when the default exceeds max', () => {
-    // min(def, max) applies even with no hint — a misconfigured backend never
-    // exceeds its own cap.
-    expect(clampTimeout(undefined, 900_000, 600_000)).toBe(600_000)
-  })
-
-  it('rejects a non-finite hint with the caller-provided name', () => {
-    expect(() => clampTimeout(Number.NaN, 100, 200, 'bash-local: request.timeoutMs'))
-      .toThrow(/bash-local: request\.timeoutMs must be a positive finite number/)
-    expect(() => clampTimeout(Number.POSITIVE_INFINITY, 100, 200))
-      .toThrow(/timeoutMs must be a positive finite number/)
-  })
-
-  it('rejects a non-positive hint', () => {
-    expect(() => clampTimeout(0, 100, 200)).toThrow(/must be a positive finite number/)
-    expect(() => clampTimeout(-1, 100, 200)).toThrow(/must be a positive finite number/)
   })
 })
 

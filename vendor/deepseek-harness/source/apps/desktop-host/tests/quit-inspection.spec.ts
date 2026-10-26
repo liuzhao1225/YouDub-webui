@@ -10,7 +10,6 @@ let productActive = false
 let jobs: JobStatus[] = []
 /** A registry whose only served member is the global roster the inspector reads. */
 class RosterOnlyJobRegistry extends JobRegistry {
-  readonly events = { subscribe: () => () => {} }
   start(): never { throw new Error('unsupported') }
   list(): JobView[] {
     return jobs.map((status, index) => ({
@@ -19,12 +18,9 @@ class RosterOnlyJobRegistry extends JobRegistry {
       label: 'sleep 60',
       status,
       startedAt: 0,
-      output: { total: 0, earliest: 0 },
     }))
   }
   get(): never { throw new Error('unsupported') }
-  read(): never { throw new Error('unsupported') }
-  readAt(): never { throw new Error('unsupported') }
   kill(): never { throw new Error('unsupported') }
   wait(): never { throw new Error('unsupported') }
   remove(): never { throw new Error('unsupported') }

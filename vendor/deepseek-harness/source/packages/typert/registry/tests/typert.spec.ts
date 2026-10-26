@@ -16,7 +16,7 @@ import type {
   TypertRegistryChange,
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
-import { createTypertRemoteInfo, isTypertRemoteMethod } from '@deepseek-ai/dsh-typert-protocol/remote-info'
+import { createTypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol/remote-info'
 import { apply as applyClientRegistry, inject as clientRegistryInject } from '../src/client/index.ts'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
@@ -110,14 +110,14 @@ function scopedInvocation(): InvocationDescriptor {
 describe('TypertRegistry', () => {
   it('indexes the same generated method objects and withdraws them with their owner', async () => {
     const ctx = await makeCtx()
-    const codec = { mode: 'strict' as const, typeSymbol: '@fixture/types#Text', create: () => z.string(), jsonSchema: { type: 'string' } }
+    const codec = { mode: 'strict' as const, typeSymbol: '@fixture/types#Text', create: () => z.string() }
     const info = createTypertRemoteInfo({ package: '@fixture/remote', methods: {
       'goals/create': {
         service: 'goals', invocation: { kind: 'direct' }, description: 'Create a goal.',
-        parameters: [{ name: 'request', source: 'json', codec, strictCodec: codec }], result: codec,
+        parameters: [{ name: 'request', source: 'json', codec }], result: codec,
       },
-    } }, z)
-    const descriptor = info.methods['goals/create']!
+    } })
+    const descriptor = info.descriptors[0]!
     expect(info.descriptors[0]).toBe(descriptor)
     try {
       const owner = ctx.plugin({
@@ -132,8 +132,7 @@ describe('TypertRegistry', () => {
         const method = registry.get('goals/create')
         expect(method).toBe(descriptor)
         expect(registry.list()[0]).toBe(descriptor)
-        if (method === undefined || !isTypertRemoteMethod(method)) throw new Error('Generated method is missing')
-        expect(method.input().create().parse({ request: 'goal' })).toEqual({ request: 'goal' })
+        if (method === undefined) throw new Error('Generated method is missing')
         expect(method.result).toBe(codec)
       }
       await owner.dispose()

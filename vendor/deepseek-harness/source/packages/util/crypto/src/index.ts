@@ -13,20 +13,6 @@
 export type Uuid = `${string}-${string}-${string}-${string}-${string}`
 
 /**
- * Encode bytes as canonical base64 without overflowing function argument limits.
- * @param data - Bytes to encode.
- * @returns base64 text.
- */
-export function bytesToBase64(data: Uint8Array): string {
-  let binary = ''
-  const chunk = 0x8000
-  for (let offset = 0; offset < data.length; offset += chunk) {
-    binary += String.fromCharCode(...data.subarray(offset, offset + chunk))
-  }
-  return btoa(binary)
-}
-
-/**
  * Random v4 UUID, minted from `crypto.getRandomValues`.
  * @returns the UUID string.
  */

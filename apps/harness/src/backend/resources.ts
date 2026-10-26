@@ -54,7 +54,6 @@ export default class Resources extends Service {
   private resourceState?: ResourcePreparationSnapshot
   private resourceJob?: Promise<void>
   private resourceRequest?: Promise<ResourcePreparationSnapshot>
-  private phase = 'ready'
   private jobs = new Map<string, { controller: AbortController; promise: Promise<void> }>()
   private models: ModelDownload[] = modelManifest.map(model => ({ id: model.id, name: model.name, variant: model.variant, purpose: model.purpose, status: 'pending', received: 0, total: model.files.reduce((sum, file) => sum + file.size, 0), speed: 0 }))
   constructor(ctx: any, private config: EnvironmentConfig & { version: string; modelRoots: Record<string, string> }) {
@@ -135,7 +134,7 @@ export default class Resources extends Service {
   }
   async resourceAction(action: string, id?: string) {
     if (!['pause', 'resume', 'retry'].includes(action) || (id !== undefined && typeof id !== 'string')) throw new AppError('INVALID_INPUT', 'Invalid resource action or model.', 422)
-    if (this.phase !== 'ready' || !this.resourceState) throw new AppError('ENVIRONMENT_NOT_READY', '当前没有正在准备的运行依赖。', 409)
+    if (!this.resourceState) throw new AppError('ENVIRONMENT_NOT_READY', '当前没有正在准备的运行依赖。', 409)
     if (id !== undefined && !this.resourceState.models.some(model => model.id === id)) throw new AppError('INVALID_INPUT', '该模型不属于当前准备任务。', 422)
     const targets = this.resourceState.models.filter(model => (!id || model.id === id) && model.status !== 'ready')
     if (action === 'pause') {
@@ -299,7 +298,6 @@ export default class Resources extends Service {
     finally { this.resourceRequest = undefined }
   }
   private async startResourcePreparation(value: ResourceSelection[]) {
-    if (this.phase !== 'ready') throw new AppError('ENVIRONMENT_NOT_READY', '请等待基础环境准备完成。', 409)
     const selections = this.selections(value)
     if (this.resourceJob) {
       if (JSON.stringify(this.resourceState!.selections) !== JSON.stringify(selections)) throw new AppError('RESOURCE_PREPARATION_BUSY', '其他工作流依赖正在准备。', 409)

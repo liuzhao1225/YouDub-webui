@@ -3,7 +3,6 @@ import { defineConfig } from 'tsdown'
 export default defineConfig({
   entry: {
     index: 'lib/types/index.js',
-    control: 'lib/types/control.js',
   },
   outDir: 'lib',
   format: ['esm'],

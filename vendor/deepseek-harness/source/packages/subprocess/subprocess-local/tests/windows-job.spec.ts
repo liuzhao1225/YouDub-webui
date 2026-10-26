@@ -162,20 +162,6 @@ describe('Windows parent runner contract', () => {
     expect(await range).toBeInstanceOf(Error)
   })
 
-  it('keeps the requested control endpoint separate from runner IPC and ordinary output', () => {
-    const child = new FakeChild()
-    const control = new PassThrough()
-    child.stdio.push(control)
-    const request = { ...spec, stdio: { ...spec.stdio, control: 'pipe' as const } }
-    const { result, spawn } = launch(child, request)
-    expect(result.control).toBe(control)
-    expect(child.sent).toEqual([{ type: 'start', cwd: 'C:\\target', env: { TARGET: 'yes' }, control: 'pipe' }])
-    expect(spawn).toHaveBeenCalledWith('C:\\node.exe', expect.any(Array), expect.objectContaining({
-      stdio: ['ignore', 'ignore', 'ignore', 'ipc', 'pipe', 'pipe', 2, 'overlapped'],
-    }))
-    control.destroy()
-  })
-
   it('isolates runner stdio, carries target stdio on fd 4 through fd 6, and sends cwd/env', () => {
     const { child, result, spawn } = launch()
     expect(spawn).toHaveBeenCalledWith('C:\\node.exe', [

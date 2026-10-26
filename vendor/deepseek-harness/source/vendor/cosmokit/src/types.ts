@@ -28,7 +28,6 @@ function isArrayBufferSource(value: any): value is Binary.Source {
 export namespace Binary {
   export type Source<T extends ArrayBufferLike = ArrayBufferLike> = T | ArrayBufferView<T>
 
-  export const is = isArrayBufferLike
   export const isSource = isArrayBufferSource
 
   export function fromSource<T extends ArrayBufferLike>(source: Source<T>): T {
@@ -40,28 +39,9 @@ export namespace Binary {
     }
   }
 
-  export function toBase64(source: Source) {
-    source = fromSource(source)
-    if (typeof Buffer !== 'undefined') {
-      return Buffer.from(source).toString('base64')
-    }
-    let binary = ''
-    const bytes = new Uint8Array(source)
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i])
-    }
-    return btoa(binary)
-  }
-
   export function fromBase64(source: string) {
     if (typeof Buffer !== 'undefined') return fromSource(Buffer.from(source, 'base64'))
     return Uint8Array.from(atob(source), c => c.charCodeAt(0))
-  }
-
-  export function toHex(source: Source) {
-    source = fromSource(source)
-    if (typeof Buffer !== 'undefined') return Buffer.from(source).toString('hex')
-    return Array.from(new Uint8Array(source), byte => byte.toString(16).padStart(2, '0')).join('')
   }
 
   export function fromHex(source: string) {
@@ -74,15 +54,6 @@ export namespace Binary {
     return Uint8Array.from(buffer).buffer
   }
 }
-
-/** Decode a base64 string into binary data. */
-export const base64ToArrayBuffer = Binary.fromBase64
-/** Encode binary data as base64. */
-export const arrayBufferToBase64 = Binary.toBase64
-/** Decode a hex string into binary data. */
-export const hexToArrayBuffer = Binary.fromHex
-/** Encode binary data as hex. */
-export const arrayBufferToHex = Binary.toHex
 
 /** Deep-clone common JavaScript values while preserving prototypes. */
 export function clone<T>(source: T): T

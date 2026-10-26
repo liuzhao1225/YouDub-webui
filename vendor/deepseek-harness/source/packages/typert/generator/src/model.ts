@@ -392,7 +392,7 @@ export type TypeNodeModel = (
   | { readonly id: TypeNodeId; readonly kind: 'predicate'; readonly asserts: boolean; readonly parameter: string; readonly type?: TypeNodeId }
   | { readonly id: TypeNodeId; readonly kind: 'this' }
 ) & {
-  /** Canonical lossless JsonValue, represented without recursive tool-schema references. */
+  /** Canonical lossless JsonValue, emitted with the runtime JSON parser. */
   readonly json?: true
 }
 

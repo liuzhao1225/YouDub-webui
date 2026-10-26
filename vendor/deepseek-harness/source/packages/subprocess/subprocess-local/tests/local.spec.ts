@@ -1,4 +1,3 @@
-import { PassThrough } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -580,66 +579,6 @@ describe('LocalSubprocessRuntime', () => {
     const outcome = await handle.done
     expect(outcome.exitCode).toBe(0)
     await fiber.dispose()
-  })
-
-  it('waits for retained control endpoint closure after a process range completes', async () => {
-    const destroying = Promise.withResolvers<undefined>()
-    const finishClose = Promise.withResolvers<undefined>()
-    const control = new PassThrough({
-      destroy(_error, callback) {
-        destroying.resolve(undefined)
-        void finishClose.promise.then(() => { callback(null) })
-      },
-    })
-    const terminate = vi.fn()
-    const waitForExit = vi.fn(() => Promise.resolve(true))
-    const handle = {
-      control,
-      collected: {},
-      done: Promise.resolve({ exitCode: 0, signal: null }),
-      terminate,
-      terminateForHostExit: vi.fn(),
-      waitForExit,
-    }
-    vi.resetModules()
-    mockWin32ForIsolatedRuntime()
-    vi.doMock('../src/spawn.ts', async importOriginal => ({
-      ...await importOriginal<typeof import('../src/spawn.ts')>(),
-      spawnSubprocess: vi.fn(() => handle),
-    }))
-    let fiber: { dispose(): Promise<void> } | undefined
-    try {
-      const { default: IsolatedLocalSubprocessRuntime } = await import('../src/index.ts')
-      const ctx = new Context()
-      fiber = await ctx.plugin(IsolatedLocalSubprocessRuntime)
-      const runtime = ctx.subprocess as InstanceType<typeof IsolatedLocalSubprocessRuntime>
-      runtime.internals = { platform: 'darwin' }
-      const spawned = runtime.spawn(spec('true', {
-        stdio: { stdin: 'ignore', stdout: 'inherit', stderr: 'inherit', control: 'pipe' },
-      }))
-      await spawned.done
-      await new Promise(resolve => setImmediate(resolve))
-      expect(waitForExit).toHaveBeenCalledOnce()
-      expect(control.destroyed).toBe(false)
-
-      let disposed = false
-      const disposal = fiber.dispose().then(() => { disposed = true })
-      await destroying.promise
-      expect(control.destroyed).toBe(true)
-      expect(control.closed).toBe(false)
-      expect(disposed).toBe(false)
-      expect(terminate).not.toHaveBeenCalled()
-      finishClose.resolve(undefined)
-      await disposal
-      expect(control.closed).toBe(true)
-    } finally {
-      finishClose.resolve(undefined)
-      control.destroy()
-      await fiber?.dispose()
-      vi.doUnmock('../src/spawn.ts')
-      unmockWin32ForIsolatedRuntime()
-      vi.resetModules()
-    }
   })
 
   it('disposal tolerates a handle whose spawn already failed', async () => {

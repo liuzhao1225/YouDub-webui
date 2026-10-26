@@ -17,7 +17,6 @@ import { basename, dirname, isAbsolute, join } from 'node:path'
 export interface LinuxLaunchRequest {
   cwd: string
   env: Record<string, string>
-  control?: 'pipe'
 }
 
 /** Bounded Node-shaped error fields allowed across a private runner boundary. */
@@ -38,7 +37,6 @@ export interface WindowsStartRequest {
   type: 'start'
   cwd: string
   env: Record<string, string>
-  control?: 'pipe'
 }
 
 /** The only parent-to-runner control message on Windows. */
@@ -139,12 +137,11 @@ export function consumeLinuxLaunchRequest(requestPath: string): LinuxLaunchReque
   const text = readFileSync(requestPath, 'utf8')
   unlinkSync(requestPath)
   const value: unknown = JSON.parse(text)
-  if (!isRecord(value) || !hasExactKeys(value, ['cwd', 'env'], ['control'])
-    || typeof value.cwd !== 'string' || !isStringRecord(value.env)
-    || (value.control !== undefined && value.control !== 'pipe')) {
+  if (!isRecord(value) || !hasExactKeys(value, ['cwd', 'env'])
+    || typeof value.cwd !== 'string' || !isStringRecord(value.env)) {
     throw new Error('subprocess runner received an invalid Linux launch request')
   }
-  return { cwd: value.cwd, env: value.env, ...value.control === 'pipe' ? { control: 'pipe' as const } : {} }
+  return { cwd: value.cwd, env: value.env }
 }
 
 /**
@@ -174,12 +171,11 @@ export function readLinuxStartupError(path: string): LinuxStartupError | undefin
  * @returns validated target start request.
  */
 export function parseWindowsStartRequest(value: unknown): WindowsStartRequest {
-  if (!isRecord(value) || !hasExactKeys(value, ['type', 'cwd', 'env'], ['control'])
-    || value.type !== 'start' || typeof value.cwd !== 'string' || !isStringRecord(value.env)
-    || (value.control !== undefined && value.control !== 'pipe')) {
+  if (!isRecord(value) || !hasExactKeys(value, ['type', 'cwd', 'env'])
+    || value.type !== 'start' || typeof value.cwd !== 'string' || !isStringRecord(value.env)) {
     throw new Error('subprocess runner received an invalid Windows start request')
   }
-  return { type: 'start', cwd: value.cwd, env: value.env, ...value.control === 'pipe' ? { control: 'pipe' as const } : {} }
+  return { type: 'start', cwd: value.cwd, env: value.env }
 }
 
 /**

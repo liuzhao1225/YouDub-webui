@@ -6,6 +6,4 @@
 -r backend/requirements/voxcpm.txt
 -r backend/requirements/demucs.txt
 -r backend/requirements/qwen_forced_aligner.txt
-# Only quantized legacy Demucs checkpoints need DiffQ.
-diffq>=0.2.1; sys_platform != "win32"
 pytest

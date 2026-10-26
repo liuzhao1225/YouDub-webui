@@ -14,15 +14,15 @@
 
 ## 维护中的接口范围
 
-API Gateway 的 `RemoteJournalStream` 及其专用类型（`RemoteJournalChange`、`RemoteJournalFrame`、`RemoteJournalStreamOptions`、`RemoteStreamFactory`）没有产品消费者，已退役。普通远程调用、事件订阅、`RemoteStream` 和 `RemoteSnapshotStream` 保留。
+API Gateway 的 `RemoteJournalStream` 及其专用类型（`RemoteJournalChange`、`RemoteJournalFrame`、`RemoteJournalStreamOptions`、`RemoteStreamFactory`）没有产品消费者，已退役。无消费者的 `RemoteSnapshotStream`/`RemoteSnapshotStreamOptions` 和 `isRemoteFailure` 也已退役；普通远程调用、事件订阅、`RemoteStream` 及实际错误对象保留。
 
-当前子集已退役文件关联应用枚举和指定应用打开接口（`nativeFileApplications`、`openNativeFileApplication`、`desktopEntryFields`、`desktopDataDirectories`、`desktopApplicationIcon` 及 `native-command/types`）。配置文件仍通过 `openNativeTextFile` 打开。
+当前子集已退役文件关联应用枚举和指定应用打开接口（`nativeFileApplications`、`openNativeFileApplication`、`desktopEntryFields`、`desktopDataDirectories`、`desktopApplicationIcon` 及 `native-command/types`）。通用打开/显示文件、`canOpenNativePath` 和关联/浏览器探测已退出；配置文件仍通过 `openNativeTextFile` 打开。
 
 桌面快捷键只承接 YouDub 主文档和原生菜单输入，原内嵌浏览器、HTML 预览的 iframe/webview 转发协议已退役。UI 插槽只承接当前页面与节点插件使用的 `root` scope，保留 single/list/keyed/chain、Component Factory、依赖注入和按渲染位置隔离的状态生命周期。`session`、`session-maybe`、`SessionProvider`、`installScope`、`bindStoreScope` 和 `inject(sessionId, ...)` 已退役，旧 scope 声明会在注册时明确报错。原聊天输入框专用的 `ChainRenderOpts.overlay` 和未使用的 `ResourceProtocolMap` 已移除。
 
 LLM 继续使用原 Harness `prepareCall → stream`、模型发现、配置、凭据及供应商适配。请求支持 system/user 文本，响应保留文本、思考、用量、结束原因和原始错误；图片、文件、工具、工具历史和 assistant/developer/tool 历史输入明确拒绝。Agent 消息构造器、`BlockAssembler`、replay API 和附件包已退役。历史图片预算字段仍可随旧配置加载，原值不改写；新请求和表单不再使用这些字段。
 
-Gateway 直接要求经过认证的 owner，非 owner 在方法解析和事件订阅前被拒绝；原多角色策略注册、权限快照/follow 和客户端权限 Hooks 已退役。HTTP 认证、请求上限、二进制 RPC、上传和通用流仍保留。空的上游默认 profile 模板和 snapshot replay 入口已退役，已有命名 profile、显式应用 profile、用户配置和外部插件继续通过原 Loader 加载。
+Gateway 直接要求经过认证的 owner，非 owner 在方法解析和事件订阅前被拒绝；原多角色策略注册、权限快照/follow 和客户端权限 Hooks 已退役。HTTP 认证、请求上限、二进制 RPC、上传和通用流仍保留。空的上游默认 profile 模板和 snapshot replay 入口已退役，现有用户 profile、配置和外部插件继续通过原 Loader 加载；启动必须传入应用已解析的 profile。未消费的 `loadProfile` 命名包装、插件清单重算接口和 `exitOnStdinEnd` 已退役。Gateway/HMR 通过动态服务名读取的 `AppReady` 继续保留。
 
 配置表单继续使用 Harness 的原生 ConfigForms。无产品入口的 JSON Schema 导出（`generateConfigSchema`、`createConfigProjector`、`isNativeConfigSchema`）和 `renderConfigDump` 已退役。普通子进程仍通过 `ctx.subprocess.spawn` 执行并管理进程树；PTY 的 `spawnTerminal`、`terminalEnvironment`、终端相关类型与 `node-pty` 依赖已移除。旧版 profile 中的 `node-pty` 文本仅用于识别并迁移历史安装配置。
 
@@ -33,3 +33,11 @@ Gateway 直接要求经过认证的 owner，非 owner 在方法解析和事件�
 Windows 媒体进程继续使用 `spawnCurrentTokenJobProcess` 和 Job Object。未使用的 `spawnPipedProcess`、`spawnInheritedJobProcess`、`RestrictedProcessSpawnOptions`、`drainPipe`、`waitForProcessExit` 及专用 Win32 绑定已退役；普通进程的停止、轮询、句柄释放与原始错误保留。启动环境继续使用 `loadLayeredEnv`；无调用的另一入口 `loadEnv` 已退役。
 
 测试维护范围覆盖产品启动、配置重载、插件生命周期、普通子进程停止与平台隔离。已移除退出产品的终端和配置导出测试，以及穷举 Node 模块查找布局的差分矩阵；模块解析的直接回归与真实主机退出测试继续保留。
+
+Typert 仅保留产品使用的 namespace Remote 和描述符合同。旧工具系统的 `TypertRemoteMethod`、`TypertRemoteInputOptions`、`isTypertRemoteMethod`、`info.methods`、命名 `input/invoke`、`strictCodec` 输入副本及 codec 的 `jsonSchema/jsonSchemaError` 投影已退役；实际 wire codec、Context/scope、流/取消和字节编解码保留。生成 factory 不再需要第二个 Zod runtime 参数。
+
+Jobs 保留 start/get/list/kill/wait/remove、controller、progress、done 与错误；没有消费者的输出环、read/readAt/events/result 及相关配置表单退役，业务日志仍由 YouDub 持久化。普通子进程不再提供 `./control` 和 fd7；标准流、runner IPC 与平台进程树控制不变。退役的 Jobs 输出或 stdio.control 请求会明确拒绝，旧 Jobs 环大小配置仍可加载。
+
+`PartialArguments`、`snapshotJsonValue`、`WeakMapWithValues`、数字 brand、bytesToBase64、clampTimeout、未用 home 显示/cache helper、LLM `errorChain/isHarnessError/ACCOUNT_QUOTA_EXCEEDED_CODE` 及闲置 Cosmokit array/time/string/binary 输出工具不再提供。原错误分类、cause、JSON 验证、配置锁和实际 native 文本打开保留。Timer 当前只提供 HMR 实际使用的 `debounce`，随 fiber 释放。
+
+前端不再隐式共享 `@tanstack/react-virtual`，使用它的外部插件须声明并自行打包；旧 `ClientManifest/ClientModule`、孤立的复合 locale/theme schema、`resultOf`、store `shallowEqual` 和测试专用窗口几何模型退出。真实 Connection、store selector、拖动 DOM/CSS 与键盘仍保留。YouDub SDK 退出未使用的 `YouDubContext` 别名、无效 `Files.upload` 大小参数；纯类型 Cordis 导入继续支撑 Context 声明合并。

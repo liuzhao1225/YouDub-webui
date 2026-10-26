@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
-from copy import deepcopy
 from pathlib import Path
 from threading import Barrier
 from uuid import uuid4

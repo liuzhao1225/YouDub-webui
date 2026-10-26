@@ -1,6 +1,5 @@
 /** Windows parent-side launch and ownership for the private Job runner. */
 
-import { controlPipe } from './control-spawn.ts'
 import { spawn } from 'node:child_process'
 import { closeSync, openSync } from 'node:fs'
 import { devNull } from 'node:os'
@@ -209,7 +208,7 @@ export function launchWindowsJob(
     runnerSpawned = true
     try {
       if (child.send === undefined) throw new Error('subprocess-local: Windows runner has no IPC channel')
-      child.send({ type: 'start', cwd: spec.cwd, env: targetEnv, ...spec.stdio.control === undefined ? {} : { control: spec.stdio.control } }, (error) => {
+      child.send({ type: 'start', cwd: spec.cwd, env: targetEnv }, (error) => {
         if (error === null) return
         failInfrastructure(error)
         owner.terminateForHostExit()
@@ -240,7 +239,6 @@ export function launchWindowsJob(
     stdin: spec.stdio.stdin === 'ignore' ? null : targetStdin,
     stdout: child.stdio[5] as Readable | null,
     stderr: child.stdio[6] as Readable | null,
-    control: controlPipe(child, spec.stdio.control),
     direct: direct.promise,
     owner,
   }

@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import { useId } from 'react';
 import { Textarea } from '@deepseek-ai/dsh-client-ui-primitives';
 export const inject = ['slots'];
 function TextReviewDetails({ outputs, draft, readOnly, onDraftChange }) {

@@ -9,7 +9,6 @@
     "src/client/index.ts",
     "src/client/remote-events.ts",
     "src/client/remote-stream.ts",
-    "src/client/snapshot-stream.ts",
     "src/client/stream-client.ts",
     "src/remote-error-codes.ts",
     "src/stream-protocol.ts"

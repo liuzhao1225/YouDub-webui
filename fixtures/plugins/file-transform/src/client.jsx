@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button, IconDeliverDocRegular } from '@deepseek-ai/dsh-client-ui-primitives';
 export const inject = ['slots'];
 function Page() {

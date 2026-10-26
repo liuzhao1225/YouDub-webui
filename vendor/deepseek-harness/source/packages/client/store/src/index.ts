@@ -9,7 +9,6 @@
  */
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { shallow } from 'zustand/shallow'
 import { freeze, produce } from 'immer'
 import type {
   ActionsDecl, BakedActions, ObservableSnapshot, StoreHandle, StoreInstance, StoreSpec,
@@ -55,17 +54,6 @@ export function notifySubscribers<Args extends readonly unknown[]>(
       console.error(`${label} subscriber failed:`, error)
     }
   }
-}
-
-/**
- * Shallow equality for selector slices (zustand/shallow semantics; travels
- * with the engine so hook consumers need no zustand dependency).
- * @param a - left value.
- * @param b - right value.
- * @returns whether the values are shallowly equal.
- */
-export function shallowEqual(a: unknown, b: unknown): boolean {
-  return shallow(a, b)
 }
 
 /** Batches subscriber notification into one flush per animation frame. */

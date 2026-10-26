@@ -4,7 +4,7 @@ import { AppError, type ProviderDescription, type OperationProvider } from '@you
 
 export interface PythonProviderConfig {
   descriptor: ProviderDescription; command: string; args: string[]; cwd: string;
-  runtimeAdapter?: string; probeMediaTools?: boolean; dependencyGroups?: string[]; options?: Record<string, any>;
+  runtimeAdapter?: string; dependencyGroups?: string[]; options?: Record<string, any>;
   corrections?: 'media' | 'schema';
   $plugin?: { id: string; version: string; integrity: string }
 }
@@ -40,17 +40,6 @@ export async function apply(ctx: Context, config: PythonProviderConfig) {
           if (!Array.isArray(state.missing) || typeof state.media !== 'boolean') throw new Error('Invalid resource probe result.')
           description.unavailableReason = state.missing.length ? `Missing dependencies: ${state.missing.join(', ')}` : !state.media ? state.mediaReason || 'Media tools are unavailable.' : !state.punkt ? 'Whisper sentence resources are unavailable.' : !state.demucsSource ? 'Demucs source is unavailable.' : null
           description.available = !description.unavailableReason
-        } catch (error) {
-          description.available = false
-          description.unavailableReason = error instanceof Error ? error.message : String(error)
-        }
-      } else if (config.probeMediaTools) {
-        try {
-          for (const command of [process.env.FFMPEG_PATH?.trim() || 'ffmpeg', process.env.FFPROBE_PATH?.trim() || 'ffprobe']) {
-            await ctx.youdubWorker.run({ command, args: ['-version'], cwd: config.cwd })
-          }
-          description.available = true
-          description.unavailableReason = null
         } catch (error) {
           description.available = false
           description.unavailableReason = error instanceof Error ? error.message : String(error)

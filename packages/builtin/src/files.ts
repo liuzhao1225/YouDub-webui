@@ -36,7 +36,7 @@ export default class Files extends Service implements FilesService {
     let released = false
     return () => { if (released) return; released = true; const count = this.readers.get(id)! - 1; if (count) this.readers.set(id, count); else this.readers.delete(id) }
   }
-  async upload(id: string, slot: string, filename: string, mime: string, input: Readable, _maxBytes?: number) {
+  async upload(id: string, slot: string, filename: string, mime: string, input: Readable) {
     if (!/^[a-zA-Z][\w-]{0,63}$/.test(slot)) throw new AppError('INVALID_CONFIG', 'Invalid input slot.', 422)
     const clean = path.basename(filename.replaceAll('\\', '/'))
     if (!clean || /[\x00-\x1f]/.test(clean)) throw new AppError('INVALID_CONFIG', 'Invalid file name.', 422)

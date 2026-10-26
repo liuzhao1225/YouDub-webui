@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
-import { homedir, tmpdir } from 'node:os'
+import { tmpdir } from 'node:os'
 import { DownloadClient } from '../src/setup-download.js'
 import { EnvironmentSetup } from '../src/setup-environment.js'
 import manifest from '../src/setup-runtime.json' with { type: 'json' }

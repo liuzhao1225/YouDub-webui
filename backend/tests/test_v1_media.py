@@ -18,7 +18,7 @@ from backend.workers.protocol import WorkerError
 from backend.tests.test_plugin_operations import Wire
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
-from backend.app.v1.steps import StageCancelled, StageContext
+from backend.app.v1.steps import StageContext
 
 
 def prepare_operation(context, progress):
@@ -196,13 +196,14 @@ def test_prepare_cancellation_waits_for_media_process_exit(monkeypatch, tmp_path
         if processes and processes[0].poll() is None:
             checks_while_running += 1
             if checks_while_running == 2:
-                raise StageCancelled()
+                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
 
     monkeypatch.setattr(media.subprocess, "Popen", slow_process)
     if cancel_during == "ffmpeg":
         monkeypatch.setattr(media, "inspect_video", lambda path, limits, *args, **kwargs: {"duration_ms": 1000})
-    with pytest.raises(StageCancelled):
+    with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
         prepare_operation(replace(context, check_cancel=check_cancel), lambda progress, message: None)
+    assert error.value.code == "CANCELLED"
     assert len(processes) == 1
     assert processes[0].returncode is not None
     assert processes[0].wait(timeout=0) != 0

@@ -1,5 +1,5 @@
-import type { Context } from 'cordis'
 import type { Readable } from 'node:stream'
+import type {} from 'cordis'
 
 export const SDK_VERSION = '1.1.0'
 export const WORKER_PROTOCOL = 'youdub-worker/v1'
@@ -168,7 +168,7 @@ export interface SettingsService {
 export interface FilesService {
   root: string; taskRoot(id: string): string;
   reserve(id: string, fresh?: boolean): Promise<Disposer>; readLock(id: string): Disposer;
-  upload(id: string, slot: string, filename: string, mime: string, input: Readable, maxBytes?: number): Promise<Artifact>;
+  upload(id: string, slot: string, filename: string, mime: string, input: Readable): Promise<Artifact>;
   register(id: string, invocationId: string, workDir: string, descriptor: ArtifactDescriptor): Promise<Artifact>;
   resolve(id: string, artifact: Artifact): Promise<string>; workDir(id: string, attempt: number, invocationId: string): Promise<string>;
   cover(id: string, artifact: Artifact): Promise<{ path: string; mimeType: string }>;
@@ -189,7 +189,6 @@ declare module 'cordis' {
     files: FilesService; youdubWorker: ProcessService;
   }
 }
-export type YouDubContext = Context
 export function requireId(id: string) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) throw new AppError('INVALID_CONFIG', 'A canonical UUID is required.', 422)
 }

@@ -1,10 +1,10 @@
 /** Locale service fixture; views render through the same provider as Desktop. */
 import { useMemo, type ReactNode } from 'react'
 import { LanguageProvider as HarnessLanguageProvider } from '../../../harness/src/frontend/i18n'
-import { isLanguage, translateMessage, type Text } from '../locales'
+import { languagePacks, translateMessage, type Text } from '../locales'
 function localeSource() {
     const saved = localStorage.getItem('youdub-ui-language')
-    let snapshot = { active: isLanguage(saved) ? saved : 'zh', revision: 0 }
+    let snapshot = { active: languagePacks.find(pack => pack.id === saved)?.id ?? 'zh', revision: 0 }
     const listeners = new Set<() => void>()
     return {
       getSnapshot: () => snapshot,

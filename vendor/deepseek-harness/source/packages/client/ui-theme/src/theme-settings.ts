@@ -125,15 +125,6 @@ export function isFontSize(role: FontRole, px: number): boolean {
   return Number.isInteger(px) && px >= spec.min && px <= spec.max
 }
 
-/** Durable theme schema; also the wire envelope the browser scope validates against. */
-export const ThemeSettingsSchema: z<ThemeSettings> = z.object({
-  [THEME_PREFERENCE_FIELD]: z.union([...THEME_PREFERENCES]).default(DEFAULT_PREFERENCE),
-  [FONT_SIZE_FIELD]: fontSizeSchema(FONT_SIZE_SPECS.text),
-  [FONT_SIZE_SPECS.code.field]: fontSizeSchema(FONT_SIZE_SPECS.code),
-  [FONT_FAMILY_FIELDS.text]: z.string().default(''),
-  [FONT_FAMILY_FIELDS.code]: z.string().default(''),
-})
-
 /** CSS Fonts generic and system family keywords, which must stay unquoted. */
 const GENERIC_FAMILIES = new Set([
   'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif',

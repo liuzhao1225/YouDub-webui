@@ -22,8 +22,6 @@ import type {
 } from '@deepseek-ai/dsh-subprocess'
 import type { BoundProcessOwner, ManagedProcessLaunch } from './managed-owner.ts'
 import { waitWithAbort } from './managed-owner.ts'
-import { controlEnvironment, controlPipe } from './control-spawn.ts'
-import { SUBPROCESS_CONTROL_FD } from '@deepseek-ai/dsh-subprocess/control'
 import { linuxProcessGroupHasLiveMembers } from './process-inspector.ts'
 import { OutputCollector, prepareManagedProcessBinding, type SpillFailureReporter } from './output.ts'
 
@@ -162,6 +160,9 @@ function signalTree(
  * @throws when grace, cancellation, or argv is invalid before launch.
  */
 export function validateSubprocessSpec(spec: SubprocessSpawnSpec): void {
+  if (Object.hasOwn(spec.stdio, 'control')) {
+    throw new Error('subprocess stdio.control is no longer supported')
+  }
   if (!Number.isFinite(spec.graceMs) || spec.graceMs <= 0 || spec.graceMs > MAX_TIMER_DELAY_MS) {
     throw new Error(`subprocess graceMs must be a positive finite number no greater than ${MAX_TIMER_DELAY_MS}`)
   }
@@ -432,7 +433,6 @@ export function bindManagedProcess(
     stdin: stdinMode === 'pipe' ? stdin ?? undefined : undefined,
     stdout: outMode === 'pipe' ? stdout ?? undefined : undefined,
     stderr: errMode === 'pipe' ? stderr ?? undefined : undefined,
-    control: launch.control,
     /* v8 ignore stop */
     collected: {
       ...stdoutCollector !== undefined ? { stdout: stdoutCollector } : {},
@@ -460,13 +460,9 @@ export function spawnSubprocess(spec: SubprocessSpawnSpec, internals: SpawnInter
     spec.stdio.stdout === 'inherit' ? 'inherit' : 'pipe',
     spec.stdio.stderr === 'inherit' ? 'inherit' : 'pipe',
   ]
-  if (spec.stdio.control === 'pipe') {
-    while (stdio.length < SUBPROCESS_CONTROL_FD) stdio.push('ignore')
-    stdio.push('overlapped')
-  }
   const child = (internals.spawn ?? spawn)(program as string, args, {
     cwd: spec.cwd,
-    env: controlEnvironment(childEnv(spec.env), spec.stdio.control),
+    env: childEnv(spec.env),
     stdio,
     detached: platform !== 'win32',
     windowsHide: platform === 'win32',
@@ -485,7 +481,6 @@ export function spawnSubprocess(spec: SubprocessSpawnSpec, internals: SpawnInter
     stdin: child.stdin,
     stdout: child.stdout,
     stderr: child.stderr,
-    control: controlPipe(child, spec.stdio.control),
     direct,
     owner,
   }, binding)

@@ -24,7 +24,8 @@ import {
 } from '../src/profile-resolution/resolver.ts'
 import {
   createRuntimeResolution,
-  loadProfile,
+  loadProfileDirectory,
+  removeLinkProjections,
   type Profile,
   type RuntimeResolution,
 } from '../src/profile.ts'
@@ -1168,7 +1169,8 @@ describe('runtime resolution', { concurrent: false }, () => {
       dsh: { profile: { bundles: ['bundle-b'] } },
     }))
 
-    const profile = loadProfile('dsh', 'web', f.installAnchor, f.root)
+    removeLinkProjections(profileDir)
+    const profile = loadProfileDirectory('dsh', profileDir, f.installAnchor)
     expect(profile.layers.map(layer => layer.packageName)).toEqual(['bundle-b'])
     expect(existsSync(join(profileDir, '.dsh-module-fallback'))).toBe(false)
     expect(existsSync(join(modules, plugin))).toBe(false)

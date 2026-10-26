@@ -1,7 +1,6 @@
 /** Typed Win32 process operations over the shared binding table. */
 
 import * as abi from './abi.ts'
-import { inheritedControlStdio } from './control-stdio.ts'
 import {
   allocProcessInfo,
   allocStartupInfo,
@@ -91,8 +90,6 @@ export interface CurrentTokenStdioFileDescriptors {
   stdin: number
   stdout: number
   stderr: number
-  /** Optional carrier and target descriptor for the inherited control pipe. */
-  control?: 7
 }
 
 /** Suspended child assigned to one caller-owned kill-on-close Job before resume. */
@@ -138,7 +135,6 @@ interface ProcessStandardHandles {
   stdin: NativePtr
   stdout: NativePtr
   stderr: NativePtr
-  control?: { fileDescriptor: 7; handle: NativePtr }
 }
 
 // Koffi exposes PVOID as an unsigned 64-bit bigint on supported Windows hosts.
@@ -165,9 +161,6 @@ function targetCarrierHandles(
     stdin: descriptorHandle(api, descriptors.stdin, 'stdin'),
     stdout: descriptorHandle(api, descriptors.stdout, 'stdout'),
     stderr: descriptorHandle(api, descriptors.stderr, 'stderr'),
-    ...descriptors.control === undefined ? {} : {
-      control: { fileDescriptor: descriptors.control, handle: descriptorHandle(api, descriptors.control, 'control') },
-    },
   }
 }
 
@@ -182,7 +175,6 @@ function spawnJobProcess(
   const enabled: NativePtr[] = []
   let startupInfo: NativePtr | undefined
   let processInfo: NativePtr | undefined
-  let controlDescriptorBlock: { pointer: NativePtr; length: number } | undefined
   let created = 0
   let createFailureCode = 0
   try {
@@ -192,20 +184,11 @@ function spawnJobProcess(
       [stdio.stdout, 'stdout'],
       [stdio.stderr, 'stderr'],
     ]
-    if (stdio.control !== undefined) inherited.push([stdio.control.handle, 'control'])
     for (const [handle, label] of inherited) {
       if (api.setHandleInformation(handle, abi.HANDLE_FLAG_INHERIT, abi.HANDLE_FLAG_INHERIT) === 0) {
         throwLastError(api, 'SetHandleInformation', `${label} (enable inherit)`)
       }
       enabled.push(handle)
-    }
-    const controlBytes = stdio.control === undefined
-      ? undefined
-      : inheritedControlStdio(api, { ...stdio, control: stdio.control })
-    if (controlBytes !== undefined) {
-      const koffi = requireKoffi()
-      controlDescriptorBlock = { pointer: koffi.alloc('uint8', controlBytes.length) as NativePtr, length: controlBytes.length }
-      koffi.encode(controlDescriptorBlock.pointer, 'uint8', controlBytes, controlBytes.length)
     }
     startupInfo = allocStartupInfo()
     encodeStartupInfo(startupInfo, {
@@ -216,10 +199,6 @@ function spawnJobProcess(
       hStdInput: stdio.stdin,
       hStdOutput: stdio.stdout,
       hStdError: stdio.stderr,
-      ...controlDescriptorBlock === undefined ? {} : {
-        cbReserved2: controlDescriptorBlock.length,
-        lpReserved2: controlDescriptorBlock.pointer,
-      },
     })
     processInfo = allocProcessInfo()
     created = create(startupInfo, processInfo)
@@ -230,7 +209,6 @@ function spawnJobProcess(
     throw error
   } finally {
     freeNative(startupInfo)
-    freeNative(controlDescriptorBlock?.pointer)
     for (const handle of enabled) {
       // The runner spawns nothing else; cleanup failure must not mask the child.
       api.setHandleInformation(handle, abi.HANDLE_FLAG_INHERIT, 0)

@@ -212,6 +212,12 @@ describe('spawnSubprocess', () => {
     },
   )
 
+  it('rejects the retired auxiliary channel before launching', () => {
+    const request = spec('echo hi')
+    Object.assign(request.stdio, { control: 'pipe' })
+    expect(() => validateSubprocessSpec(request)).toThrow('stdio.control is no longer supported')
+  })
+
   it('captures stdout on success', async () => {
     const result = await finish(spawnSubprocess(spec('echo hello')))
     expect(result.exitCode).toBe(0)

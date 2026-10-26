@@ -4,7 +4,6 @@ import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
-import { readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
 
 const roots: string[] = []
@@ -28,9 +27,13 @@ function seedPlugin(manager: DesktopProjectManager): void {
   writeFileSync(join(directory, 'bundle.yml'), '[]\n')
 }
 function plugins(manager: DesktopProjectManager) {
-  return readProfilePlugins({ binName: 'dsh', profileDir: manager.paths.profile,
-    installAnchor: join(manager.runtime.dsh, 'node_modules/@deepseek-ai/dsh/package.json') }).dependencies
-    .map(({ name, version, enabled }) => ({ name, version, enabled }))
+  const manifest = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
+    dependencies?: Record<string, string>
+    dsh?: { profile?: { bundles?: string[] } }
+  }
+  return Object.entries(manifest.dependencies ?? {}).map(([name, version]) => ({
+    name, version, enabled: manifest.dsh?.profile?.bundles?.includes(name) ?? false,
+  }))
 }
 function setup(): { root: string; manager: DesktopProjectManager } {
   const root = temporaryRoot()

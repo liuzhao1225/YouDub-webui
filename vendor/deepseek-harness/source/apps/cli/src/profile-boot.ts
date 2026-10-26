@@ -12,7 +12,6 @@
 
 import { writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { FiberState, type Context } from '@deepseek-ai/cordis'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import {
@@ -21,10 +20,7 @@ import {
   createRuntimeResolution,
   installFailLoud,
   loadOverlayPatches,
-  loadProfile,
-  reportSkippedBundles,
   PluginPackages,
-  PROFILE_PATCH_FILENAME,
   type ProfileContext,
   type Profile,
   type RuntimeResolution,
@@ -61,19 +57,6 @@ function createAppReady(): { service: AppReady; commit(): void } {
   }
 }
 
-/**
- * The home-level user patch layer (`$DSH_HOME/cordis.patch.yml`), applied
- * over every profile's own layer. Resolved per call, not at module load:
- * `$DSH_HOME` may be set by the test or launcher after import.
- * @returns the absolute patch-file path.
- */
-export function homePatchPath(): string {
-  return join(resolveDshHome(), PROFILE_PATCH_FILENAME)
-}
-
-/** Absolute path of this dsh installation's package.json (both anchors: src/ and lib/ sit one level under apps/cli). */
-export const INSTALL_ANCHOR = fileURLToPath(new URL('../package.json', import.meta.url))
-
 /** The empty root entry list every profile tree patches over. */
 const PROFILE_ROOT_CONFIG = `# dsh profile root — an empty entry list. The tree is composed as patches:
 # each bundle in package.json's dsh.profile.bundles, then cordis.patch.yml, then any
@@ -83,25 +66,6 @@ const PROFILE_ROOT_CONFIG = `# dsh profile root — an empty entry list. The tre
 
 /** Root config filename inside a profile directory. */
 export const PROFILE_ROOT_FILENAME = 'cordis.yml'
-
-/**
- * Load a resolved profile for `name` and (re)write the empty root config. The
- * root is always rewritten: the whole composition is patch layers, and the
- * vendored Loader's tree write-back (a plugin self-disposing persists the
- * current tree) can bake composed rows into this file — which would duplicate
- * every bundle insert on the next boot. The file exists on disk only because
- * the Loader needs a real include root to anchor `baseUrl` at the profile
- * directory.
- * @param name - the profile name.
- * @param userLayer - `false` skips parsing `cordis.patch.yml`.
- * @returns the loaded profile.
- */
-export function prepareProfile(name: string, userLayer = true): Profile {
-  const profile = loadProfile(NAME, name, INSTALL_ANCHOR, undefined, { userLayer })
-  reportSkippedBundles(NAME, profile)
-  writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)
-  return profile
-}
 
 /** One profile's patch layers, in application order. */
 interface ComposedProfile {
@@ -113,25 +77,23 @@ interface ComposedProfile {
 }
 
 /**
- * Load `name` and compose its effective patch stack: bundle layers in
+ * Compose the application profile’s effective patch stack: bundle layers in
  * `dsh.profile.bundles` order (a base-backed profile gets the base bundle's
  * platform-gated shell rows), the profile's user layer, the home-level user
  * layer (`$DSH_HOME/cordis.patch.yml` — machine-local preferences that apply
  * to every profile, so it outranks the per-profile layer), `--patch` overlays,
  * then user-supplied overlays.
- * @param name - the profile name.
  * @param patchFiles - `--patch` overlay paths, in argv order.
  * @param resolvedProfile - application-owned profile and installation.
  * @returns the profile and its patch layers.
  */
 async function composeProfile(
-  name: string,
   patchFiles: readonly string[],
-  resolvedProfile?: ResolvedProfileRuntime,
+  resolvedProfile: ResolvedProfileRuntime,
 ): Promise<ComposedProfile> {
-  const profile = resolvedProfile?.profile ?? prepareProfile(name)
-  if (resolvedProfile !== undefined) writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)
-  const resolutionOptions = { installAnchor: resolvedProfile?.installAnchor ?? INSTALL_ANCHOR, profile }
+  const profile = resolvedProfile.profile
+  writeFileSync(join(profile.dir, PROFILE_ROOT_FILENAME), PROFILE_ROOT_CONFIG)
+  const resolutionOptions = { installAnchor: resolvedProfile.installAnchor, profile }
   const resolution = await createRuntimeResolution(resolutionOptions)
   const overlays = patchFiles.flatMap(file => loadOverlayPatches(NAME, resolve(file)))
   return { profile, resolution, overlays }
@@ -151,8 +113,8 @@ export interface RunProfileOptions {
   environment: LaunchEnvironmentSnapshot
   /** The profile name to boot. */
   profile: string
-  /** Loaded application profile; bypasses named profile initialization when supplied. */
-  resolvedProfile?: ResolvedProfileRuntime | undefined
+  /** Loaded application-owned profile and installation root. */
+  resolvedProfile: ResolvedProfileRuntime
   /** `--patch` overlay paths, in argv order. */
   patchFiles: readonly string[]
   /** The invocation's inner arguments, handed to the tree through `ctx.cmdlineArgs`. */
@@ -190,7 +152,7 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
   })()
   try {
     const composed = await composeProfile(
-      options.profile, options.patchFiles, options.resolvedProfile,
+      options.patchFiles, options.resolvedProfile,
     )
     const appReady = createAppReady()
     const shutdown = createProcessShutdown(dispose)
@@ -215,7 +177,7 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
       name: options.profile,
       ...(options.packageManager === undefined ? {} : { packageManager: options.packageManager }),
       dir: composed.profile.dir, patchPath: composed.profile.patchPath,
-      installAnchor: options.resolvedProfile?.installAnchor ?? INSTALL_ANCHOR,
+      installAnchor: options.resolvedProfile.installAnchor,
       startedBundles: composed.profile.layers.map(layer => layer.packageName),
       cwd: process.cwd(), home: resolveDshHome(),
       overlays: composed.overlays,

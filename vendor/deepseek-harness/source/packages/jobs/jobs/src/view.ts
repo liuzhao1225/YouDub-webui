@@ -1,6 +1,5 @@
 /**
- * Client-safe job vocabulary: the read-only projection of one job and the
- * chunks its output ring hands out. This leaf reaches no Host package, so
+ * Client-safe job vocabulary. This leaf reaches no Host package, so
  * browser programs and Remote wire types import it without pulling the
  * registry's Host declaration merges.
  * @module @deepseek-ai/dsh-jobs/view
@@ -15,36 +14,8 @@ import type { JobId } from './brand.ts'
  */
 export type JobStatus = 'running' | 'stopping' | 'completed' | 'killed' | 'failed'
 
-/**
- * Producer-defined job kinds. Plugins extend this map by declaration merging;
- * the registry treats every value as an opaque id namespace.
- */
-export interface JobKindMap {
-  bash: 'bash'
-}
-
-/** The merge-extensible union of registered producer kind names. */
-export type JobKind = JobKindMap[keyof JobKindMap]
-
-/**
- * Stream label of one output chunk. `stdout` and `stderr` reach the consuming reader’s
- * consuming read; `log` marks producer narration (a workflow's phase lines)
- * that only observers see. Consumers treat an unrecognized label like an
- * absent one.
- */
-export type JobChannel = 'stdout' | 'stderr' | 'log'
-
-/** One chunk of a job's output ring: absolute offset, text, channel, and loss marker. */
-export interface JobChunk {
-  /** Absolute offset of the chunk's first byte; offsets never move once assigned. */
-  readonly at: number
-  /** Chunk text exactly as appended (possibly tail-trimmed by retention). */
-  readonly text: string
-  /** Stream label, when the producer supplied one. */
-  readonly channel?: JobChannel
-  /** Bytes immediately before this chunk were lost, at the producer or to retention. */
-  readonly gapBefore?: true
-}
+/** Producer-defined id namespace. */
+export type JobKind = string
 
 /**
  * Read-only projection of one job — a fresh object per call, never live
@@ -57,7 +28,7 @@ export interface JobView {
   /**
    * The producer kind the job was registered with: a Host-registered
    * `JobKind`, carried as an open string because a browser bundle or a Remote
-   * codec sees only the `JobKindMap` merges its own program compiles.
+   * codec sees only the producer types its own program compiles.
    */
   readonly kind: string
   /** The producer-supplied one-line label. */
@@ -72,14 +43,4 @@ export interface JobView {
   readonly startedAt: number
   /** Epoch ms when the job settled; absent while live. */
   readonly finishedAt?: number
-  /**
-   * The output ring's absolute coordinates and the complete-stream files
-   * behind it. `total` is the offset the next chunk starts at (0 while
-   * nothing was written); `earliest` is the oldest retained byte, greater
-   * than zero exactly when retention dropped the head. `spillPaths` lists the
-   * spill files the job's pull sources currently keep, in source order and
-   * deduplicated, and is absent while no source keeps one: it outlives any
-   * chunk, so a reader below `earliest` can still name where the bytes went.
-   */
-  readonly output: { readonly total: number; readonly earliest: number; readonly spillPaths?: readonly string[] }
 }

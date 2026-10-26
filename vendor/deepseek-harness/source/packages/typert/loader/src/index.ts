@@ -81,8 +81,8 @@ function typertExportOf(pkgName: string, exportsField: unknown): string | undefi
  * Narrow a dynamically imported typert module's `TYPERT` export to a
  * contribution owned by `pkgName`. This is the module/file boundary: the
  * manifest crosses from a build artifact into the typed registry. Dispatch
- * facts and eager projection fields are checked; computed tool projections
- * remain lazy until a consumer requests them. Failures name the package and defect.
+ * facts and codec factories are checked without constructing parsers.
+ * Failures name the package and defect.
  * @param pkgName - the package whose typert face was imported.
  * @param exported - the module's `TYPERT` export.
  * @returns the validated contribution.
@@ -243,7 +243,6 @@ function requireInvocation(pkgName: string, value: unknown): void {
     }
     parameters.set(wire, parameter)
     requireStrictCodec(pkgName, parameter.codec, `invocation "${id}" parameter codec`)
-    if (parameter.strictCodec !== undefined) requireStrictCodec(pkgName, parameter.strictCodec, `invocation "${id}" strict input codec`)
   }
   if (invocation.cancellation !== undefined) {
     const cancellation = requireObject(pkgName, invocation.cancellation, `invocation "${id}" cancellation`)
@@ -269,17 +268,6 @@ function requireInvocation(pkgName: string, value: unknown): void {
     throw new Error(`typert-loader: ${pkgName} invocation "${id}" repeats Context wire field "${receiver.wire as string}"`)
   }
   requireStrictCodec(pkgName, invocation.result, `invocation "${id}" result codec`)
-  if (invocation.input !== undefined || invocation.invoke !== undefined) {
-    if (receiver.kind !== 'direct') {
-      throw new Error(`typert-loader: ${pkgName} invocation "${id}" input/invoke require a direct receiver`)
-    }
-    if (typeof invocation.input !== 'function') {
-      throw new Error(`typert-loader: ${pkgName} invocation "${id}" has no input() selector`)
-    }
-    if (typeof invocation.invoke !== 'function') {
-      throw new Error(`typert-loader: ${pkgName} invocation "${id}" has no invoke() function`)
-    }
-  }
   if (invocation.sourceLocation !== undefined) {
     const location = requireObject(pkgName, invocation.sourceLocation, `invocation "${id}" sourceLocation`)
     requireString(pkgName, location, 'file', `invocation "${id}" sourceLocation`)
@@ -289,22 +277,6 @@ function requireInvocation(pkgName: string, value: unknown): void {
       }
     }
   }
-}
-
-function requireSchemaProjection(pkgName: string, value: Record<string, unknown>, subject: string): void {
-  if (typeof value.create !== 'function') {
-    throw new Error(`typert-loader: ${pkgName} ${subject} has no create() factory`)
-  }
-  // Inspect supplied data without invoking the factory's cached projection getters.
-  const fields = Object.getOwnPropertyDescriptors(value)
-  for (const key of ['description', 'jsonSchemaError']) {
-    const field: unknown = fields[key]?.value
-    if (field !== undefined && typeof field !== 'string') {
-      throw new Error(`typert-loader: ${pkgName} ${subject}.${key} must be a string`)
-    }
-  }
-  const schema: unknown = fields.jsonSchema?.value
-  if (schema !== undefined) requireObject(pkgName, schema, `${subject}.jsonSchema`)
 }
 
 function requireStrictCodec(pkgName: string, value: unknown, subject: string): void {
@@ -318,7 +290,10 @@ function requireStrictCodec(pkgName: string, value: unknown, subject: string): v
       throw new Error(`typert-loader: ${pkgName} ${subject} ${method} must be a function`)
     }
   }
-  requireSchemaProjection(pkgName, codec, subject)
+  if (typeof codec.create !== 'function') {
+    throw new Error(`typert-loader: ${pkgName} ${subject} has no create() factory`)
+  }
+  requireOptionalString(pkgName, codec, 'description', subject)
 }
 
 /**

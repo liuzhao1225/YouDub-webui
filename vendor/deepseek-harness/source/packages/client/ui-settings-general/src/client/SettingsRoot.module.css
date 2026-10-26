@@ -51,11 +51,6 @@
   padding: 0;
 }
 
-.triggerLabel {
-  overflow: hidden;
-  white-space: nowrap;
-}
-
 /* Full-viewport layer (figma Mask 501:29946 #000@24%): mask tokens match the
    Modal primitive (--dsw-alias-bg-mask-1 + --dsw-mask-blur). */
 .overlay {

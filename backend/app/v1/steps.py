@@ -8,10 +8,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 
-class StageCancelled(Exception):
-    """The current local step must stop before another Task can run."""
-
-
 def _no_cancel() -> None:
     pass
 

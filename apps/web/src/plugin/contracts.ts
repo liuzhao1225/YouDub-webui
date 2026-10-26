@@ -50,11 +50,6 @@ export type TaskView = {
 }
 export type TaskSummary = Omit<TaskView, 'config' | 'graphSnapshot' | 'nodeRuntimeInputs'>
 export type TaskPage = { items: TaskSummary[]; hasMore: boolean; limit: number; offset: number }
-export type ClientModule = {
-  id: string; version: string; access: 'public' | 'authenticated'; url: string
-  css?: string[]; config?: JsonObject
-}
-export type ClientManifest = { version: 1; sdkVersion: '1.1.0'; platformVersion: '1'; modules: ClientModule[] }
 export type Diagnostic = { field?: string; message: string; code?: string; nodeId?: string; portId?: string; edgeId?: string }
 export type Endpoint = { nodeId: string; portId: string }
 export type GraphNode = {

@@ -11,7 +11,6 @@
 import { constants } from 'node:fs'
 import { access, stat } from 'node:fs/promises'
 import { delimiter, extname, isAbsolute, resolve } from 'node:path'
-import type { Duplex } from 'node:stream'
 import { Context } from '@deepseek-ai/cordis'
 import { SubprocessRuntime, SubprocessExecutableNotFoundError } from '@deepseek-ai/dsh-subprocess'
 import type {
@@ -51,7 +50,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
   /** Live handles retained for normal disposal and synchronous host-exit finalization. */
   private live = new Set<LocalSubprocessHandle>()
   /** Caller endpoints retained until close, independently of managed process lifetime. */
-  private controlChannels = new Set<Duplex>()
   /** Test hook: process, spill, and platform operations forwarded to spawnSubprocess. */
   internals: SpawnInternals = {}
   /** Provider-lifetime latch suppressing repeated weaker-containment warnings. */
@@ -110,11 +108,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
       ]).then(() => { this.live.delete(handle) }))
     }
     const outcomes = await Promise.allSettled(pending)
-    await Promise.all([...this.controlChannels].map(control => new Promise<void>((resolveClose) => {
-      control.once('close', () => { resolveClose() })
-      control.destroy()
-    })))
-    this.controlChannels.clear()
     const failures: unknown[] = []
     for (const outcome of outcomes) {
       if (outcome.status === 'rejected') failures.push(outcome.reason)
@@ -184,11 +177,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
       if (linuxScope !== undefined) this.watchLinuxScopeStart(handle.done, linuxScope.generation)
     }
     this.live.add(handle)
-    const control = handle.control
-    if (control !== undefined) {
-      this.controlChannels.add(control)
-      control.once('close', () => { this.controlChannels.delete(control) })
-    }
     // Release ownership only once the whole managed range is gone, not at direct-child
     // settlement — a TERM-trapping helper that outlives the leader must stay
     // owned so teardown can still escalate it. For the common no-survivor

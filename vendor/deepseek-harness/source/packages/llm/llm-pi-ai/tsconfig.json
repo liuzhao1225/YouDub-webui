@@ -12,9 +12,6 @@
       "path": "../../util/launch-environment"
     },
     {
-      "path": "../../util/brand"
-    },
-    {
       "path": "../../../vendor/cosmokit"
     },
     {

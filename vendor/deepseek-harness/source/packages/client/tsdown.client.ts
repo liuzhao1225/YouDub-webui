@@ -140,10 +140,7 @@ export function clientBundle(
  * statically (the static assembly channel: `apps/web` resolves the package
  * name, bundles the artifact, and owns the chunk layout and the CSS pipeline).
  *
- * Calling this preset is what puts a package in the static assembly channel,
- * so the call sites are the roster: gates read it through
- * {@link isStaticLinkedConfig} rather than a second hand-kept list. A package on
- * this roster must not be a module-table row as well — the browser would take
+ * A statically linked package must not be a module-table row as well — the browser would take
  * the statically linked copy and a provider's bytes would sit unused in its
  * bundle.
  *
@@ -174,31 +171,6 @@ export function staticLinked(packageDir: string, libEntry: readonly string[]): B
     throw new Error(`tsdown: ${id} entries collide on an output name: ${libEntry.join(', ')}`)
   }
   return clientOnly(libEntry.map(entry => staticLinkedConfig(id, entry)))
-}
-
-/**
- * Whether a package's tsdown configs put it in the static assembly channel.
- * The roster has no separate list: gates load each package's own
- * `tsdown.config.ts`, call it for the Client face, and ask this.
- * @param configs - configs a package's build-face function returned.
- * @returns true when at least one config was built by {@link staticLinked}.
- */
-export function isStaticLinkedConfig(configs: readonly UserConfig[]): boolean {
-  return configs.some(config => (config.plugins as readonly { name?: string }[] | undefined ?? [])
-    .some(plugin => plugin.name === STATIC_LINKED_PLUGIN))
-}
-
-/**
- * Build a Client-only Node library during the Client pass.
- * @param packageDir - The package's own directory, normally the config's
- * `import.meta.dirname`; its `package.json` name is used in tsdown diagnostics.
- * @param libEntry - Emitted JavaScript entries consumed from `lib/types`.
- * @returns ENV-selected tsdown config for the Client build face.
- * @throws {Error} when `<packageDir>/package.json` is unreadable or declares no name.
- */
-export function clientLibrary(packageDir: string, libEntry: readonly string[]): BuildFaceConfig {
-  const lib = clientLibraryConfig(readPackageManifest(packageDir), libEntry)
-  return clientOnly([lib])
 }
 
 /**
@@ -300,8 +272,7 @@ function staticLinkedConfig(id: string, entry: string, outputName = basename(ent
     plugins: [{
       // Contract 1. `pre` because tsdown's own deps plugin would otherwise
       // resolve and inline every specifier missing from the npm production
-      // sections, which is the coupling this preset exists to remove. The name
-      // is also the roster marker {@link isStaticLinkedConfig} reads.
+      // sections, which is the coupling this preset exists to remove.
       name: STATIC_LINKED_PLUGIN,
       resolveId: {
         order: 'pre' as const,

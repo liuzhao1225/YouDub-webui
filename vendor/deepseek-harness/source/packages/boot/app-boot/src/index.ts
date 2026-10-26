@@ -31,8 +31,7 @@ export { prepareProfileEntries, prepareProfilePatches } from './compatibility-pr
 export { readPluginMeta, resolvePluginResource } from './package-meta.ts'
 
 export {
-  readProfilePlugins, reconcileProfilePlugins, writeProfileBundles,
-  type ProfilePluginLocation, type ProfilePluginDependency, type ProfilePluginInventory, type ProfilePluginReconciliation,
+  writeProfileBundles,
 } from './profile-plugins.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -59,7 +58,6 @@ export {
   bundlePatchPaths,
   initProfile,
   removeLinkProjections,
-  loadProfile,
   loadProfileDirectory,
   PROFILE_PATCH_FILENAME,
   PROFILES_DIR,

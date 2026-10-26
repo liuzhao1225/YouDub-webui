@@ -1,21 +1,9 @@
 /** String/symbol keyed dictionary type. */
 export type Dict<T = any, K extends string | symbol = string> = { [key in K]: T }
-/** Safely read `T[K]`, returning `never` when `K` is not a key of `T`. */
-export type Get<T extends {}, K> = K extends keyof T ? T[K] : never
-/** Conditional extraction helper with a configurable return type. */
-export type Extract<S, T, U = S> = S extends T ? U : never
-/** Accept a value or an array, unless the value is already an array type. */
-export type MaybeArray<T> = [T] extends [unknown[]] ? T : T | T[]
 /** Wrap a value in `Promise`, preserving the resolved type of existing promises. */
 export type Promisify<T> = Promise<T extends Promise<infer S> ? S : T>
 /** Accept a value or promise unless the value type is already promise-like. */
 export type Awaitable<T> = [T] extends [Promise<unknown>] ? T : T | Promise<T>
-/** Convert a union type to an intersection type. */
-export type Intersect<U> = (U extends any ? (arg: U) => void : never) extends ((arg: infer I) => void) ? I : never
-
-/** No-op callback returning `undefined` at runtime and `any` at type level. */
-export function noop(): any {}
-
 /** Return true when a value is `null` or `undefined`. */
 export function isNullable(value: any): value is null | undefined | void {
   return value === null || value === undefined
@@ -54,16 +42,6 @@ export function pick<T extends object, K extends keyof T>(source: T, keys?: Iter
   const result = {} as Pick<T, K>
   for (const key of keys) {
     if (forced || source[key] !== undefined) result[key] = source[key]
-  }
-  return result
-}
-
-/** Omit selected keys from a shallow object copy. */
-export function omit<T, K extends keyof T>(source: T, keys?: Iterable<K>) {
-  if (!keys) return { ...source }
-  const result = { ...source } as Omit<T, K>
-  for (const key of keys) {
-    Reflect.deleteProperty(result, key)
   }
   return result
 }

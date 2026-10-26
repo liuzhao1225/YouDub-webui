@@ -6,15 +6,9 @@
 export { runNativeCommand } from './runner.ts'
 export type { NativeCommandRunner } from './runner.ts'
 export {
-  canOpenNativePath,
-  nativeFileManager,
-  revealNativePath,
-  openNativePath,
-  openNativeAssociatedPath,
   openNativeTextFile,
 } from './path-opener.ts'
 export type {
-  NativeFileManager,
   PathOpenerInternals,
   PathOpenerRunner,
 } from './path-opener.ts'

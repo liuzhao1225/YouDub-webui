@@ -50,8 +50,7 @@ class FakeChild extends EventEmitter {
   stdin = new PassThrough()
   stdout = new PassThrough()
   stderr = new PassThrough()
-  control = new PassThrough()
-  stdio = [this.stdin, this.stdout, this.stderr, null, null, null, null, this.control]
+  stdio = [this.stdin, this.stdout, this.stderr]
   kills: NodeJS.Signals[] = []
 
   kill(signal: NodeJS.Signals): boolean {
@@ -419,14 +418,12 @@ describe('Linux scope establishment and quiescence', () => {
     result.owner.cleanup?.()
   })
 
-  it.each([undefined, 'pipe'] as const)('accepts request consumption and rapid --collect unload with control %s', async (control) => {
+  it('accepts request consumption and rapid --collect unload', async () => {
     const states = [activeUnit(), unloadedUnit()]
-    const controlOptions = control === undefined ? {} : { control }
     const { child, result, requestPath } = launch(async () => states.shift() ?? missingUnit(), {}, {
-      ...spec(), stdio: { ...spec().stdio, ...controlOptions },
+      ...spec(),
     })
-    expect(consumeLinuxLaunchRequest(requestPath)).toEqual({ cwd: '/target', env: { TARGET: 'yes' }, ...controlOptions })
-    expect(result.control).toBe(control === undefined ? undefined : child.control)
+    expect(consumeLinuxLaunchRequest(requestPath)).toEqual({ cwd: '/target', env: { TARGET: 'yes' } })
     const waiting = result.owner.waitForExit()
     child.exit(0, null)
     await expect(result.direct).resolves.toEqual({ exitCode: 0, signal: null })
@@ -680,7 +677,7 @@ describe('Linux scope establishment and quiescence', () => {
       const spawnSync = recordingSystemctl()
         .mockReturnValueOnce({ status: 1, stdout: '', stderr: 'Invalid argument' })
       const launched = launch(query, { sleep, spawnSync: spawnSync as never }, {
-        ...spec(), stdio: { ...spec().stdio, control: 'pipe' },
+        ...spec(),
       })
       consumeLinuxLaunchRequest(launched.requestPath)
       launched.result.owner.signal('SIGKILL')
@@ -700,15 +697,12 @@ describe('Linux scope establishment and quiescence', () => {
         else await expect(waiting).rejects.toThrow('Invalid argument')
         expect(query).toHaveBeenCalledTimes(2)
         expect(sleep).not.toHaveBeenCalled()
-        expect(launched.result.control).toBe(launched.child.control)
         expect(launched.child.stdout.destroyed).toBe(false)
-        expect(launched.child.control.destroyed).toBe(false)
       } finally {
         launched.child.exit(null, 'SIGKILL')
         await launched.result.direct
         launched.child.stdout.destroy()
         launched.child.stderr.destroy()
-        launched.child.control.destroy()
         launched.result.owner.cleanup?.()
       }
     },

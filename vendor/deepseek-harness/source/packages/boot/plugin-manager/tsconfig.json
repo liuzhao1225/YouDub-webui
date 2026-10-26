@@ -36,9 +36,6 @@
       "path": "../../typert/protocol"
     },
     {
-      "path": "../../util/values"
-    },
-    {
       "path": "../hmr"
     },
     {
