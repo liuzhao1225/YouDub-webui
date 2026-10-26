@@ -23,12 +23,15 @@ async function runStep(name, executable, args, timeout) {
   const log = args.find(value => value.startsWith('/LOG='))?.slice(5);
   let previous = '';
   const progress = log && setInterval(() => {
-    if (!existsSync(log)) return;
+    if (!existsSync(log)) { console.log(`Windows installer: ${name} is waiting for its log file.`); return; }
     const tail = readFileSync(log, 'utf8').split('\n').slice(-8).join('\n');
     if (tail !== previous) { console.log(tail); previous = tail; }
+    else console.log(`Windows installer: ${name} is still running; log unchanged.`);
   }, 5_000);
   try {
-    const result = await promisify(execFile)(executable, args, { timeout });
+    const pending = promisify(execFile)(executable, args, { timeout });
+    console.log(`Windows installer: ${name} spawned process ${pending.child.pid}.`);
+    const result = await pending;
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
   } catch (error) {

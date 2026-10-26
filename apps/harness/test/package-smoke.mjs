@@ -155,6 +155,18 @@ try {
   const [code, signal] = await Promise.race([closed, delay(15_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application did not close cleanly'); })]);
   assert.equal(signal, null);
   assert.equal(code, 0);
+  if (process.platform === 'win32') {
+    const deadline = Date.now() + 10_000;
+    while (true) {
+      const remaining = JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+        "$ErrorActionPreference = 'Stop'; ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process -Filter \"Name = 'YouDub.exe'\" | Where-Object { $_.ExecutablePath -eq $env:YOUDUB_SMOKE_EXECUTABLE } | Select-Object ProcessId,ParentProcessId)"],
+      { encoding: 'utf8', env: { ...process.env, YOUDUB_SMOKE_EXECUTABLE: executable }, timeout: 15_000 }).trim());
+      if (remaining.length === 0) break;
+      assert(Date.now() < deadline, `YouDub processes survived quit: ${JSON.stringify(remaining)}`);
+      await delay(200);
+    }
+    console.log('Packaged YouDub: all processes using its installed executable have exited.');
+  }
   assert.deepEqual(await readdir(harnessHome), ['.credentials.yaml']);
   assert.equal(await readFile(join(harnessHome, '.credentials.yaml'), 'utf8'), sentinel);
   if (process.platform === 'darwin') execFileSync('codesign', ['--verify', '--deep', '--strict', installed], { stdio: 'pipe' });
