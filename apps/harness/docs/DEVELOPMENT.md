@@ -63,7 +63,7 @@ npm start
 
 Electron 主进程通过官方控制器启动 Host，端口由桌面运行时管理，实际地址从启动输出读取。测试文件选择、保存、窗口行为及退出确认时使用这个 Electron 实例。
 
-PR 和 main 的 push 自动运行源码构建与回归检查，不生成桌面安装包。需要统一测试打包时，手动运行「YouDub Desktop 源码开发检查」，启用 `package_desktop`；这会增加 macOS/Windows 独立应用首启及 Windows EXE 首装、覆盖升级、卸载验收，并保存候选包与证据。该选项默认关闭，不发布正式版本。
+源码构建与回归检查仅在明确安排构建后，手动运行「YouDub Desktop 源码开发检查」；PR 和 main 的 push 不触发该工作流。需要统一测试打包时，再启用 `package_desktop`；这会增加 macOS/Windows 独立应用首启及 Windows EXE 首装、覆盖升级、卸载验收，并保存候选包与证据。该选项默认关闭，不发布正式版本。受保护分支要求的检查仍需通过后才能合并。
 
 ### 浏览器开发
 
