@@ -14,14 +14,9 @@ import {
   writeSync,
 } from 'node:fs'
 import { join } from 'node:path'
-import {
-  DESKTOP_HOST_PACKAGE,
-  desktopCorePackageOverrides,
-  verifyDesktopCorePackageSet,
-} from './core-package-set.ts'
 import type { DesktopPaths } from './paths.ts'
 import type { DesktopRelease } from './release.ts'
-import { readDesktopRuntime } from './runtime-tree.ts'
+import { DESKTOP_HOST_PACKAGE, readDesktopRuntime } from './runtime-tree.ts'
 import {
   initProfile, removeLinkProjections, sanitizeProfile,
 } from '@deepseek-ai/dsh-app-boot'
@@ -31,21 +26,9 @@ const DSH_PACKAGE = '@deepseek-ai/dsh'
 const CORE_BUILD_PACKAGE = '@deepseek-ai/dsh-subprocess-local'
 const PRODUCT_BUNDLES = ['@youdub/harness-subtitles']
 const WORKSPACE_SETTINGS = 'nodeLinker: hoisted\nautoInstallPeers: false\n'
+const WORKSPACE_FILE = `packages:\n  - .\n\n${WORKSPACE_SETTINGS}`
 function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, undefined, 2)}\n`, { mode: 0o600 })
-}
-
-function workspaceFile(overrides: Readonly<Record<string, string>> = {}): string {
-  const entries = Object.entries(overrides).sort(([left], [right]) => left.localeCompare(right))
-  const overrideSection = entries.length === 0
-    ? ''
-    : `overrides:\n${entries.map(([name, spec]) => `  ${JSON.stringify(name)}: ${JSON.stringify(spec)}`).join('\n')}\n`
-  if (entries.length === 0) return `packages:\n  - .\n\n${WORKSPACE_SETTINGS}`
-  const coreBuildSpec = overrides[CORE_BUILD_PACKAGE]
-  const coreBuildKey = coreBuildSpec === undefined
-    ? CORE_BUILD_PACKAGE
-    : `${CORE_BUILD_PACKAGE}@${coreBuildSpec.replace('file:./', 'file:')}`
-  return `packages:\n  - .\n\n${overrideSection}${WORKSPACE_SETTINGS}allowBuilds:\n  node-pty: true\n  koffi: true\n  fs-ext: true\n  ${JSON.stringify(coreBuildKey)}: true\n  '@google/genai': false\n  protobufjs: false\n  node-addon-require-builtin: false\n`
 }
 
 function migrateProfileSettings(projectDir: string): void {
@@ -53,7 +36,7 @@ function migrateProfileSettings(projectDir: string): void {
   if (!existsSync(path)) return
   const legacy = `packages:\n  - .\n\n${WORKSPACE_SETTINGS}strictDepBuilds: true\nallowBuilds:\n  node-pty: true\n  koffi: true\n  fs-ext: true\n  "${CORE_BUILD_PACKAGE}": true\n  '@google/genai': false\n  protobufjs: false\n  node-addon-require-builtin: false\n`
   if (readFileSync(path, 'utf8').replaceAll('\r\n', '\n') === legacy) {
-    writeFileSync(path, workspaceFile())
+    writeFileSync(path, WORKSPACE_FILE)
   }
 }
 
@@ -130,25 +113,6 @@ export class DesktopProjectManager {
   }
 }
 
-/** Create build-only project metadata for materializing the signed runtime. */
-export function createRuntimeProjectMetadata(projectDir: string, release: DesktopRelease): void {
-  mkdirSync(projectDir, { recursive: true, mode: 0o700 })
-  const packageSet = verifyDesktopCorePackageSet(projectDir, release.version)
-  const manifest = {
-    name: PROJECT_NAME,
-    private: true,
-    version: '0.0.0',
-    dependencies: desktopCorePackageOverrides(packageSet),
-    dsh: { profile: { bundles: [...PRODUCT_BUNDLES] } },
-  }
-  writeJson(join(projectDir, 'package.json'), manifest)
-  writeFileSync(
-    join(projectDir, 'pnpm-workspace.yaml'),
-    workspaceFile(desktopCorePackageOverrides(packageSet)),
-    { mode: 0o600 },
-  )
-}
-
 /**
  * Create metadata for the unpackaged development project that links the current workspace.
  * @param projectDir - Disposable development profile directory.
@@ -167,7 +131,7 @@ export function createDevelopmentProjectMetadata(projectDir: string, release: De
     dsh: { profile: { bundles: [...PRODUCT_BUNDLES] } },
   }
   writeJson(join(projectDir, 'package.json'), manifest)
-  writeFileSync(join(projectDir, 'pnpm-workspace.yaml'), workspaceFile(), { mode: 0o600 })
+  writeFileSync(join(projectDir, 'pnpm-workspace.yaml'), WORKSPACE_FILE, { mode: 0o600 })
 }
 
 /** Create the first external plugin profile without running a package manager. */

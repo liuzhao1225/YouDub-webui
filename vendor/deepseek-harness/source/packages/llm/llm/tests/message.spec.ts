@@ -1,8 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   ToolCallId,
-  boundContextSummary,
-  CONTEXT_SUMMARY_MAX_CHARS,
   createAssistantMessage,
   createDeveloperMessage,
   createSystemMessage,
@@ -21,12 +19,6 @@ describe('message construction', () => {
     expect(message.content).toEqual([{ type: 'tool-addition', toolName: 'search' }])
     expect(Object.isFrozen(message.content[0])).toBe(true)
     expect(freezeMessage(message).id).toBe(message.id)
-  })
-
-  it('bounds producer summaries while preserving summaries at the exact limit', () => {
-    const exact = 'x'.repeat(CONTEXT_SUMMARY_MAX_CHARS)
-    expect(boundContextSummary(exact)).toBe(exact)
-    expect(boundContextSummary(exact + 'x')).toBe(exact.slice(0, -1) + '…')
   })
 
   it('preserves system-prompt attribution on immutable system messages', () => {

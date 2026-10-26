@@ -6,7 +6,6 @@ import importlib.util
 import os
 import platform
 import shutil
-from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from importlib.machinery import PathFinder
 from pathlib import Path
@@ -70,36 +69,6 @@ def _whisper_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
         name, available_devices.copy(), ["auto", "en"] if name.endswith(".en") else ["auto", *LANGUAGES], [],
     ) for name in available_models()]
     return models, None if models else "未找到非空的本地 Whisper .pt 权重；请安装到 Whisper 模型目录。"
-
-
-def _translation_models(
-    connections: Sequence[Mapping[str, Any]], translation_model: str | None,
-) -> tuple[list[dict[str, Any]], str | None]:
-    if importlib.util.find_spec("openai") is None:
-        return [], "OpenAI 兼容翻译需要安装 openai SDK。"
-    from .contracts import _valid_base_url
-    connection = next((item for item in connections if item["adapter"] == "openai"), None)
-    if connection is None:
-        return [], "Provider connection is not configured."
-    try:
-        _valid_base_url(str(connection.get("base_url", "")))
-    except ValueError:
-        return [], "Provider base URL is invalid."
-    if not connection.get("has_api_key", False):
-        return [], "Provider API key is not configured."
-    # These are configured candidates, not a discovery/health response from the
-    # provider. No client is constructed and no remote request is made here.
-    configured = os.getenv("YOUDUB_TRANSLATION_MODELS", "gpt-4.1-mini")
-    candidates = [name.strip() for name in configured.split(",") if name.strip()]
-    model = connection.get("model")
-    if model and model.strip():
-        candidates.insert(0, model.strip())
-    elif translation_model and translation_model.strip():
-        # Compatibility for direct callers predating connection.model.
-        candidates.append(translation_model.strip())
-    models = [_model(name, ["remote"], list(LANGUAGES), list(LANGUAGES))
-              for name in dict.fromkeys(candidates)]
-    return models, None if models else "未配置翻译模型；请设置 YOUDUB_TRANSLATION_MODELS。"
 
 
 def _voxcpm_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
@@ -169,23 +138,15 @@ def runtime_info() -> dict[str, Any]:
             "devices": _detect_devices()}
 
 
-def probe_capability(adapter: str, *, connections: Sequence[Mapping[str, Any]] = (),
-                     translation_model: str | None = None) -> dict[str, Any]:
+def probe_capability(adapter: str) -> dict[str, Any]:
     """Inspect exactly one installed provider; no inference or network access."""
     probes = {"whisper": ("asr", _whisper_models), "voxcpm": ("tts", _voxcpm_models),
               "demucs": ("separation", _demucs_models),
               "qwen_forced_aligner": ("subtitle_alignment", _subtitle_alignment_models)}
-    remote = adapter == "openai"
-    if remote:
-        kind = "translation"
-        models, reason = _translation_models(connections, translation_model)
-    else:
-        if adapter not in probes:
-            raise ValueError(f"Unknown Python provider: {adapter}")
-        kind, probe = probes[adapter]
-        models, reason = probe(_detect_devices())
-    return {"adapter": adapter, "capability": kind, "execution": "remote" if remote else "local",
-            "available": bool(models), "unavailable_reason": reason, "requires_api_key": remote,
-            "models": models, "data_sent": ["text"] if remote else [],
-            "remote_operations": {"submit_mode": "sync", "can_poll": False, "can_cancel": False,
-                                  "can_lookup_request_key": False} if remote else None}
+    if adapter not in probes:
+        raise ValueError(f"Unknown Python provider: {adapter}")
+    kind, probe = probes[adapter]
+    models, reason = probe(_detect_devices())
+    return {"adapter": adapter, "capability": kind, "execution": "local",
+            "available": bool(models), "unavailable_reason": reason, "requires_api_key": False,
+            "models": models, "data_sent": [], "remote_operations": None}

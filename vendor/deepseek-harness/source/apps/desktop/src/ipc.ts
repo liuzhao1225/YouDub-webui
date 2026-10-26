@@ -17,7 +17,6 @@ export const DESKTOP_IPC = {
   boot: 'dsh-desktop:boot',
   bootFailed: 'dsh-desktop:boot-failed',
   directoryPick: 'dsh-desktop:directory-pick',
-  deviceInfo: 'dsh-desktop:device-info',
   localeBootstrap: 'dsh-desktop:locale-bootstrap',
   localeChanged: 'dsh-desktop:locale-changed',
   nativeThemeSet: 'dsh-desktop:native-theme-set',
@@ -45,11 +44,6 @@ export interface DshDesktopProductApi {
   }
   readonly keyboard: DesktopKeyboardApi
   readonly shortcuts: DesktopShortcutsApi
-  /**
-   * Local machine description for the feedback questionnaire.
-   * @returns `name=value` fields separated by `; `, with no hostname, user name, or serial number.
-   */
-  deviceInfo(): Promise<string>
 }
 
 /** Scheme of Desktop-owned application documents. */

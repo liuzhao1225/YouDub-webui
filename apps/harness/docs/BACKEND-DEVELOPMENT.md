@@ -1,6 +1,6 @@
 # Host、工作流与扩展开发
 
-YouDub Host 插件运行在官方 Harness Host 内。官方 Loader、Connection、Settings、Credentials、LLM、Subprocess、Jobs 和 PluginManager 管理通用能力；原 YouDub 任务、图调度、存储与媒体代码作为领域服务被装配进来。
+YouDub Host 插件装配任务、工作流、存储、资源与媒体服务。共用 Loader、Connection、Settings、Credentials、LLM、Subprocess、Jobs 和 PluginManager 提供插件生命周期与运行能力。
 
 ## Host 初始化与服务隔离
 
@@ -16,6 +16,8 @@ export const inject = [
 `apply` 创建独立领域 context，将 `catalog`、`store`、`files`、`tasks`、`settings` 五个名字隔离到 YouDub 的标签中。Host 根 context 的 `settings` 仍指官方配置服务；领域 context 的 `settings` 负责 YouDub 偏好。两者通过适配器传入的 `forms` 关联，避免同名服务互相替换。
 
 首先注册 worker、传输端点、示例和环境准备接口。基础环境就绪后，`activateDomain` 装配原 Store/Files、媒体提供商、LLM 目录、图工作流、Tasks、Resources 与业务 API。完整首启资源验证通过后才启动任务队列。[首启状态实现](../src/backend/setup.mjs)要求 Whisper、VoxCPM2、Demucs、Qwen Aligner 四项模型及其运行依赖全部 ready；翻译服务配置随后由前端官方模型组件承载。
+
+模型翻译统一经过 `backend/llm.mjs` 与框架 LLM；Python 只执行本地媒体操作和资源探测。偏好与密钥分别由产品 Settings 适配器和框架 Credentials 保存。旧 Python 翻译、密钥库、连接测试，以及 builtin 的另一套 Settings/Secrets/Processes 已删除。SQLite bridge 保留历史任务、默认配置迁移和现用的存储接口。
 
 ## 常见修改位置
 

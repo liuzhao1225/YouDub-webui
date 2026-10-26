@@ -2,9 +2,8 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { DESKTOP_HOST_RUNTIME_FILES } from '../src/core-package-set.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
-import { writeDesktopRuntime, type DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
+import { DESKTOP_RUNTIME_FILE, type DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 
 /**
  * Write a package fixture with explicit runtime exports.
@@ -23,11 +22,11 @@ export function writePackage(modules: string, name: string, fields: Record<strin
 }
 
 /**
- * Seal a minimal release containing Host entry files and a shared Cordis package.
+ * Write a minimal release containing Host entry files and shared package metadata.
  * @param root - New runtime directory.
  * @param version - Shell and dsh version.
  * @param nodeVersion - Bundled Node version recorded in resource metadata.
- * @returns Sealed runtime metadata.
+ * @returns Runtime metadata used by profile tests.
  */
 export function runtimeFixture(root: string, version = '1.0.0', nodeVersion = '24.17.0'): DesktopRuntimeDescriptor {
   const names = ['@deepseek-ai/dsh', '@deepseek-ai/dsh-desktop-host', '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/cordis']
@@ -40,11 +39,17 @@ export function runtimeFixture(root: string, version = '1.0.0', nodeVersion = '2
     })
     if (bundle) writeFileSync(join(path, 'bundle.yml'), '[]\n')
   }
-  for (const file of DESKTOP_HOST_RUNTIME_FILES) {
-    const path = join(root, 'node_modules', '@deepseek-ai/dsh-desktop-host', file)
-    mkdirSync(join(path, '..'), { recursive: true })
-    writeFileSync(path, '')
-  }
+  const hostEntry = join(root, 'node_modules', '@deepseek-ai/dsh-desktop-host', 'lib/index.js')
+  mkdirSync(join(hostEntry, '..'), { recursive: true })
+  writeFileSync(hostEntry, '')
   writeFileSync(join(root, 'package.json'), '{"type":"module"}\n')
-  return writeDesktopRuntime(root, { schemaVersion: 1, version, nodeVersion, pnpmVersion: '11.7.0', hostProtocolVersion: DESKTOP_HOST_PROTOCOL_VERSION }, names)
+  const descriptor: DesktopRuntimeDescriptor = {
+    schemaVersion: 1,
+    release: { schemaVersion: 1, version, nodeVersion, pnpmVersion: '11.7.0', hostProtocolVersion: DESKTOP_HOST_PROTOCOL_VERSION },
+    platform: process.platform, arch: process.arch,
+    sharedPackages: names.map(name => ({ name, version, path: `node_modules/${name}` })),
+    files: [],
+  }
+  writeFileSync(join(root, DESKTOP_RUNTIME_FILE), JSON.stringify(descriptor))
+  return descriptor
 }

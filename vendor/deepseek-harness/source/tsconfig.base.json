@@ -117,9 +117,6 @@
       "@deepseek-ai/dsh-llm/brand": [
         "./packages/llm/llm/src/brand.ts"
       ],
-      "@deepseek-ai/dsh-llm/assistant-stream": [
-        "./packages/llm/llm/src/assistant-stream.ts"
-      ],
       "@deepseek-ai/dsh-llm/message": [
         "./packages/llm/llm/src/message.ts"
       ],
@@ -131,9 +128,6 @@
       ],
       "@deepseek-ai/dsh-credentials/types": [
         "./packages/credentials/credentials/src/types.ts"
-      ],
-      "@deepseek-ai/dsh-authorization/types": [
-        "./packages/credentials/authorization/src/types.ts"
       ],
       "@deepseek-ai/dsh-settings/types": [
         "./packages/settings/settings/src/types.ts"
@@ -260,9 +254,6 @@
       ],
       "@deepseek-ai/dsh-attachment": [
         "./packages/attachment/attachment/src"
-      ],
-      "@deepseek-ai/dsh-authorization": [
-        "./packages/credentials/authorization/src"
       ],
       "@deepseek-ai/dsh-brand": [
         "./packages/util/brand/src"

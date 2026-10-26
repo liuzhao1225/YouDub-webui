@@ -1,7 +1,7 @@
-/** Origin-scoped boot, native directory selection, host paths of picked files and native shortcuts. */
+/** Origin-scoped boot, native directory selection and native shortcuts. */
 
 import type { DesktopShortcutInput, ShortcutConfigSnapshot, ShortcutSaveResult } from '@deepseek-ai/dsh-client-shortcuts/protocol'
-import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { DESKTOP_IPC, SCHEME, type DshDesktopProductApi } from './ipc.ts'
 import { markDocumentPlatform, syncWindowFullscreen } from './preload-platform.ts'
 import { syncNativeTheme } from './preload-theme.ts'
@@ -19,7 +19,6 @@ function createProductApi(): DshDesktopProductApi {
         return () => { ipcRenderer.off(DESKTOP_IPC.updatesChanged, handle) }
       },
     },
-    deviceInfo: () => ipcRenderer.invoke(DESKTOP_IPC.deviceInfo) as Promise<string>,
     keyboard: {
       closeWindow: revision => ipcRenderer.invoke(DESKTOP_IPC.shortcutsCloseWindow, revision) as Promise<void>,
       subscribe: (listener) => {
@@ -53,12 +52,6 @@ if (location.protocol === `${SCHEME}:` && location.hostname === 'app') {
   syncWindowsAppearance()
   contextBridge.exposeInMainWorld('__DSH_DIRECTORY_PICKER__', {
     pick: () => ipcRenderer.invoke(DESKTOP_IPC.directoryPick) as Promise<string | null>,
-  })
-  // The composer cites dropped, picked, and pasted files and folders that
-  // have a real path as `@path` references instead of uploading them; a
-  // File without one (pasted bytes) answers '' and uploads as before.
-  contextBridge.exposeInMainWorld('__DSH_HOST_PATHS__', {
-    pathFor: (file: File) => webUtils.getPathForFile(file),
   })
   contextBridge.exposeInMainWorld('dshDesktopBoot', {
     ready: () => ipcRenderer.invoke(DESKTOP_IPC.boot) as Promise<unknown>,

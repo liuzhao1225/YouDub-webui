@@ -1,11 +1,10 @@
-"""Serial persistent RPC bridge for SQLite and narrow OS integrations."""
+"""Persistent RPC bridge for SQLite and local model readiness."""
 from __future__ import annotations
 
 import argparse
 import json
 import sys
 import traceback
-import uuid
 from pathlib import Path
 
 from .protocol import VERSION, WorkerError, encode, error_payload
@@ -13,77 +12,11 @@ from .store import SqliteStore
 
 
 class Bridge:
-    def __init__(self, root: Path, legacy_db: Path | None = None, credentials=None):
-        from backend.app.v1.credentials import SystemCredentials
+    def __init__(self, root: Path, legacy_db: Path | None = None):
         self.store = SqliteStore(root, legacy_db)
-        self.credentials = credentials if credentials is not None else SystemCredentials()
         self.store.migrate_connection_model()
 
-    def settings(self):
-        values = self.store.settings_values()
-        connections = []
-        for item in values.get("connections", []):
-            key = self.credentials.get(item["credential_ref"]) if item.get("credential_ref") else None
-            hint = (key[:6] + "****" if len(key) > 10 else "****") if key else None
-            connections.append({"adapter": item["adapter"], "base_url": item["base_url"],
-                                "has_api_key": bool(key), "api_key_hint": hint,
-                                **({"model": item["model"]} if "model" in item else {})})
-        return {"defaults": values.get("defaults"), "connections": connections,
-                "ui_language": values.get("ui_language", "en")}
-
-    def patch_settings(self, patch):
-        from pydantic import ValidationError
-        from backend.app.v1.contracts import SettingsPatch
-        try:
-            validated = SettingsPatch.model_validate(patch)
-        except ValidationError as exc:
-            raise WorkerError("INVALID_CONFIG", "Settings do not match the required format.",
-                              exc.errors(include_input=False, include_context=False, include_url=False)) from exc
-        if "defaults" in validated.model_fields_set:
-            self.store.write_setting("defaults", validated.defaults.model_dump(mode="json"))
-        elif "ui_language" in validated.model_fields_set:
-            self.store.write_setting("ui_language", validated.ui_language)
-        else:
-            update = validated.connection
-            connections = self.store.settings_values().get("connections", [])
-            old = next((item for item in connections if item["adapter"] == update.adapter), None)
-            base = str(update.base_url) if "base_url" in update.model_fields_set else (old or {}).get("base_url")
-            if not base:
-                raise WorkerError("INVALID_CONFIG", "A new connection requires a base URL.")
-            previous = (old or {}).get("credential_ref")
-            reference = previous if old and old["base_url"] == base else None
-            model = update.model.strip() if "model" in update.model_fields_set else (old or {}).get("model")
-            changed = False
-            cleared = None
-            try:
-                if "api_key" in update.model_fields_set:
-                    if update.api_key is None:
-                        if reference:
-                            self.credentials.delete(reference)
-                            changed, cleared = True, reference
-                        reference = None
-                    else:
-                        reference = str(uuid.uuid4())
-                        self.credentials.set(reference, update.api_key.get_secret_value())
-                        changed = True
-                if previous and previous not in {reference, cleared} and not self.store.credential_pinned(previous):
-                    self.credentials.delete(previous)
-                    changed = True
-                connections = [item for item in connections if item["adapter"] != update.adapter]
-                connections.append({"adapter": update.adapter, "base_url": base, "credential_ref": reference,
-                                    **({"model": model} if model is not None else {})})
-                self.store.write_setting("connections", connections)
-            except Exception as exc:
-                if changed:
-                    raise WorkerError("SETTINGS_PARTIALLY_APPLIED", "Credentials changed before the remaining settings operation failed.",
-                                      {"cause": type(exc).__name__, "message": str(exc)}) from exc
-                raise
-        return self.settings()
-
     def call(self, method, params):
-        if method == 'settings.test_connection':
-            from backend.app.v1.connection_test import check_connection
-            return check_connection(params, self)
         if method.startswith("store."):
             operation = method.removeprefix("store.")
             functions = {"create": self.store.create, "get": self.store.get, "list": self.store.list,
@@ -95,12 +28,8 @@ class Bridge:
             if operation not in functions:
                 raise WorkerError("UNKNOWN_METHOD", f"Unknown storage operation: {operation}")
             return functions[operation](**params)
-        if method == "settings.get":
-            return self.settings()
         if method == "settings.raw":
             return {"defaults": None, "connections": [], "ui_language": "en", **self.store.settings_values()}
-        if method == "settings.patch":
-            return self.patch_settings(params["patch"])
         if method == "settings.validate_defaults":
             from pydantic import ValidationError
             from backend.app.v1.contracts import TaskConfig
@@ -125,19 +54,7 @@ class Bridge:
             from backend.app.accelerators import detect_devices
             from backend.app.v1.runtime import probe_capability
             detect_devices.cache_clear()
-            adapter = params["adapter"]
-            if adapter == "openai":
-                settings = self.settings()
-                return probe_capability(adapter, connections=settings["connections"])
-            return probe_capability(adapter)
-        if method in {"secrets.get", "secrets.set", "secrets.delete"}:
-            if method == "secrets.get":
-                return self.credentials.get(params["reference"])
-            if method == "secrets.set":
-                self.credentials.set(params["reference"], params["value"])
-            else:
-                self.credentials.delete(params["reference"])
-            return None
+            return probe_capability(params["adapter"])
         raise WorkerError("UNKNOWN_METHOD", f"Unknown bridge method: {method}")
 
 

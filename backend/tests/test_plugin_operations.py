@@ -394,15 +394,14 @@ except BaseException as exc:
 
 
 def test_stage_parameters_do_not_construct_unrelated_model_selections(tmp_path):
-    operation = invoke(tmp_path, "text.translate/v1", {},
+    operation = invoke(tmp_path, "speech.transcribe/v1", {},
                        config={"graph": True},
-                       binding={"model": "qwen3-max", "device": "remote",
-                                "options": {"targetLanguage": "ja", "voice": "unrelated legacy value"}})
-    context = operation.context("translate", {})
-    assert vars(context.config).keys() == {"target_language", "max_completion_tokens", "record_raw", "translation"}
-    assert context.config.translation.model == "qwen3-max"
-    assert context.config.target_language == "ja"
-    assert context.config.max_completion_tokens == 65535
+                       binding={"model": "small", "device": "cpu",
+                                "options": {"sourceLanguage": "ja", "voice": "unrelated legacy value"}})
+    context = operation.context("asr", {})
+    assert vars(context.config).keys() == {"source_language", "asr"}
+    assert context.config.asr.model == "small"
+    assert context.config.source_language == "ja"
 
 
 def test_shared_audio_validation_reports_the_actual_operation(tmp_path):

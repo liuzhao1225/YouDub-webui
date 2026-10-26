@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
-from backend.app.v1.contracts import ConnectionPatch, SettingsPatch, TaskConfig
+from backend.app.v1.contracts import TaskConfig
 
 
 @pytest.fixture
@@ -65,66 +65,3 @@ def test_subtitle_alignment_requires_complete_dubbed_audio_and_subtitle_output(c
     else:
         with pytest.raises(ValidationError, match="subtitle_alignment requires both"):
             TaskConfig.model_validate(config)
-
-
-@pytest.mark.parametrize(
-    "payload",
-    [
-        {},
-        {"ui_language": "zh", "defaults": None},
-        {"ui_language": "zh", "connection": {"adapter": "demo", "api_key": None}},
-        {"ui_language": None},
-        {"defaults": None},
-        {"connection": None},
-        {"connection": {"adapter": "demo"}},
-        {"connection": {"adapter": "demo", "base_url": None}},
-        {"connection": {"adapter": "demo", "api_key": ""}},
-        {"connection": {"adapter": "demo", "model": ""}},
-        {"connection": {"adapter": "demo", "model": "   "}},
-        {"connection": {"adapter": "demo", "model": None}},
-    ],
-)
-def test_settings_patch_requires_one_non_null_group(payload):
-    with pytest.raises(ValidationError):
-        SettingsPatch.model_validate(payload)
-
-
-def test_connection_model_can_be_updated_independently():
-    patch = ConnectionPatch.model_validate({"adapter": "openai", "model": "qwen3-max"})
-    assert patch.model == "qwen3-max"
-    assert "base_url" not in patch.model_fields_set
-    assert "api_key" not in patch.model_fields_set
-
-
-def test_api_key_preserve_replace_clear_are_distinct():
-    preserve = ConnectionPatch(adapter="demo", base_url="http://localhost:8080/v1")
-    replace = ConnectionPatch(adapter="demo", api_key="a-real-secret")
-    clear = ConnectionPatch(adapter="demo", api_key=None)
-    assert "api_key" not in preserve.model_fields_set
-    assert replace.api_key.get_secret_value() == "a-real-secret"
-    assert "a-real-secret" not in repr(replace)
-    assert "a-real-secret" not in replace.model_dump_json()
-    assert clear.model_dump(exclude_unset=True) == {"adapter": "demo", "api_key": None}
-
-
-@pytest.mark.parametrize(
-    "url",
-    [
-        "https://user:password@example.org/v1",
-        "https://example.org/v1?key=secret",
-        "https://example.org/v1#secret",
-        "https://example.org/v1?",
-        "https://example.org:99999/v1",
-        "https://example.org/white space",
-        "file:///tmp/key.txt",
-        "https:///missing-host",
-    ],
-)
-def test_connection_urls_cannot_carry_secrets_or_non_http_paths(url):
-    with pytest.raises(ValidationError):
-        ConnectionPatch(adapter="demo", base_url=url)
-
-
-@pytest.mark.parametrize("url", ["http://127.0.0.1:8000/v1", "http://[::1]:8000/v1", "https://example.org/v1/"])
-def test_http_connection_urls_remain_unmodified(url):
-    assert ConnectionPatch(adapter="demo", base_url=url).base_url == url

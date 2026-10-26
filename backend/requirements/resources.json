@@ -2,9 +2,8 @@
   "groups": {
     "acceleration": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio" } },
     "punkt": { "modules": { "nltk": "nltk" } },
-    "base": { "modules": { "dotenv": "python-dotenv", "pydantic": "pydantic", "keyring": "keyring", "packaging": "packaging" } },
+    "base": { "modules": { "dotenv": "python-dotenv", "pydantic": "pydantic", "packaging": "packaging" } },
     "media": { "modules": { "soundfile": "soundfile", "numpy": "numpy" } },
-    "openai": { "modules": { "openai": "openai", "httpx": "httpx", "socksio": "socksio" } },
     "download": { "modules": { "yt_dlp": "yt-dlp" } },
     "whisper": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "whisper": "openai-whisper", "nltk": "nltk" } },
     "voxcpm": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "torchcodec": "torchcodec", "voxcpm": "voxcpm", "transformers": "transformers", "librosa": "librosa", "einops": "einops", "huggingface_hub": "huggingface-hub", "safetensors": "safetensors", "tqdm": "tqdm" } },
@@ -15,7 +14,6 @@
   "providers": {
     "youdub.media": { "dependencyGroups": ["media"] },
     "youdub.download": { "dependencyGroups": ["download", "media"] },
-    "openai": { "dependencyGroups": ["openai"] },
     "whisper": { "dependencyGroups": ["media", "whisper"], "model": { "id": "tiny", "downloadId": "whisper" } },
     "voxcpm": { "dependencyGroups": ["media", "voxcpm"], "model": { "id": "VoxCPM2", "downloadId": "voxcpm" } },
     "demucs": { "dependencyGroups": ["media", "demucs"], "model": { "id": "htdemucs", "downloadId": "demucs" } },

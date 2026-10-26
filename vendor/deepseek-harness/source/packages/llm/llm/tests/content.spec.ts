@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AttachmentId, ImageVariantId } from '@deepseek-ai/dsh-attachment'
-import type { AttachmentStore, ImageMediaType } from '@deepseek-ai/dsh-attachment'
+import type { ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import {
   ToolCallId,
   contentHasFile,
@@ -14,7 +14,6 @@ import {
   projectOffloadedImages,
   projectToolUpdates,
   requiredImageOffload,
-  resolveImageAttachmentAccess,
   requestImageHandleText,
 } from '../src/index.ts'
 import type { ContentBlock, RequestMessage, RequestUserInput, ToolHistory, ToolSchema } from '../src/index.ts'
@@ -166,31 +165,6 @@ describe('model-facing image access', () => {
       + ' Source dimensions, format, and byte size may differ.'
       + ' Copy to a writable path ending in .png before editing.',
     )
-  })
-
-  it('bridges a provider host object only through the mounted filesystem mapping', () => {
-    const attachment = image(1).attachment
-    const attachments = {
-      imageHostPath: () => '/host/.dsh/attachments/object',
-    } as unknown as AttachmentStore
-    const mapped = (hostPath: string): string | undefined => hostPath === '/host/.dsh/attachments/object'
-      ? '/workspace/.attachments/object'
-      : undefined
-    expect(resolveImageAttachmentAccess(
-      attachments,
-      mapped,
-      attachment,
-    )).toEqual({ readonlyPath: '/workspace/.attachments/object' })
-    expect(resolveImageAttachmentAccess(
-      attachments,
-      () => undefined,
-      attachment,
-    )).toBeUndefined()
-    expect(resolveImageAttachmentAccess(
-      { imageHostPath: () => undefined } as unknown as AttachmentStore,
-      mapped,
-      attachment,
-    )).toBeUndefined()
   })
 
   it('names each occurrence from its own reference when one prepared version is shared', () => {

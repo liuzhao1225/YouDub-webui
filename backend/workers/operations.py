@@ -61,14 +61,14 @@ class Operation:
         from backend.app.v1.steps import StageContext
         def selection(name, adapter):
             original = self.options.get(name) or {}
-            active = {"asr": "asr", "translate": "translation", "tts": "tts",
+            active = {"asr": "asr", "tts": "tts",
                       "separate": "separation", "align": "subtitle_alignment"}.get(stage)
             values = {**original}
             if name == active:
                 values.update({key: self.binding[key] for key in ("model", "device") if key in self.binding})
             values.setdefault("adapter", adapter)
             values.setdefault("model", None)
-            values.setdefault("device", "remote" if name == "translation" else "cpu")
+            values.setdefault("device", "cpu")
             if name == "asr":
                 values["initial_prompt"] = self.option("initialPrompt", "initial_prompt", values.get("initial_prompt"))
             if name == "tts":
@@ -79,9 +79,6 @@ class Operation:
         fields = {
             "asr": lambda: {"source_language": self.option("sourceLanguage", "source_language", "auto"),
                     "asr": selection("asr", "whisper")},
-            "translate": lambda: {"target_language": self.option("targetLanguage", "target_language", "zh"),
-                          "max_completion_tokens": self.option("maxCompletionTokens", "max_completion_tokens", 65535),
-                          "record_raw": True, "translation": selection("translation", "openai")},
             "tts": lambda: {"target_language": self.option("targetLanguage", "target_language", "zh"),
                     "tts": selection("tts", "voxcpm")},
             "separate": lambda: {"separation": selection("separation", "demucs")},
@@ -99,13 +96,12 @@ class Operation:
         config = SimpleNamespace(**fields[stage]())
         return StageContext(task_id=self.request["taskId"], attempt=self.request["attempt"], stage=stage,
                             config=config, input_files=files, work_dir=self.work,
-                            connections=self.request.get("credentials", {}), check_cancel=self.wire.check_cancel,
-                            set_external_state=self.wire.external_state)
+                            check_cancel=self.wire.check_cancel)
 
     def execute(self):
         method = {
             "media.download/v1": self.download, "media.prepare/v1": self.prepare, "audio.separate/v1": self.separate,
-            "speech.transcribe/v1": self.asr, "text.translate/v1": self.translate,
+            "speech.transcribe/v1": self.asr,
             "voice.reference/v1": self.reference, "speech.synthesize/v1": self.tts,
             "audio.mix/v1": self.mix, "text.align/v1": self.align,
             "media.export/v1": self.export, "subtitles.import/v1": self.import_subtitles,
@@ -150,15 +146,6 @@ class Operation:
         result = asr.run(context, self.wire.progress)
         return {"transcript": json.loads(result.output_files["transcript"].read_text()),
                 "raw": self.artifact("raw", result.output_files["asr_raw"], "diagnostic/json/v1", "application/json")}
-
-    def translate(self):
-        from backend.app.v1 import translate
-        result = translate.run(self.context("translate", {"transcript": self.json_file("transcript")}), self.wire.progress)
-        output = {"translation": json.loads(result.output_files["translation"].read_text())}
-        raw = self.work / "translation_raw"
-        for path in sorted(raw.glob("*.json")) if raw.exists() else []:
-            self.artifact("raw." + path.stem, path, "diagnostic/json/v1", "application/json")
-        return output
 
     def reference(self):
         from backend.app.v1.segments import Transcript

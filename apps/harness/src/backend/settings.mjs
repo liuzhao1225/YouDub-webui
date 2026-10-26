@@ -85,5 +85,4 @@ export default class YouDubSettings extends Service {
     runtime.status = runtime.capabilities.filter(item => item.capability !== 'subtitle_alignment').every(item => item.available) ? 'ready' : 'degraded';
     return runtime;
   }
-  async testConnection() { throw fail('HARNESS_MODELS_REQUIRED', '请在模型设置中检查供应商连接。', 409); }
 }

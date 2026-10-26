@@ -80,9 +80,6 @@ export function registerTaskRoutes(ctx: any, http: any) {
   })
   route('GET', `${base}/runtime`, async request => http.json(request, 200, await ctx.settings.runtime()))
   route('GET', `${base}/settings`, async request => http.json(request, 200, await ctx.settings.read()))
-  route('POST', `${base}/settings/test-connection`, async request => {
-    http.json(request, 200, await ctx.settings.testConnection(await readJson(request)))
-  })
   route('PATCH', `${base}/settings`, async request => {
     const patch = await readJson(request)
     http.json(request, 200, await ctx.settings.patch(patch))

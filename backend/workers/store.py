@@ -388,10 +388,3 @@ class SqliteStore:
         with self.connect() as conn:
             conn.execute("INSERT INTO settings VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at",
                          (key, serialized(value), now_iso()))
-
-    def credential_pinned(self, reference):
-        with self.connect() as conn:
-            return bool(conn.execute("""SELECT 1 FROM tasks WHERE
-                EXISTS(SELECT 1 FROM json_each(tasks.stage_context_json,'$.credential_refs') WHERE value=?)
-                OR EXISTS(SELECT 1 FROM json_each(tasks.plugin_json,'$.credentialRefs') WHERE value=?) LIMIT 1""",
-                                     (reference, reference)).fetchone())

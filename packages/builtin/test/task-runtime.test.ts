@@ -7,12 +7,10 @@ import { join, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { AppError, type InvocationContext, type OperationProvider, type WorkflowDefinition, type TaskView, type OutputPort } from '@youdub/sdk'
-import Processes from '../src/process.js'
+import { Processes, Settings } from './helpers/native-services.js'
 import Store from '../src/store.js'
 import Files from '../src/files.js'
 import Catalog from '../src/catalog.js'
-import Secrets from '../src/secrets.js'
-import Settings from '../src/settings.js'
 import Tasks from '../src/tasks.js'
 
 async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgraded' = 'artifact', expectedShutdownFailure?: RegExp, stepIds = ['process']) {
@@ -20,7 +18,7 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
   const fibers: Fiber[] = []
   fibers.push(await ctx.plugin(Processes), await ctx.plugin(Catalog), await ctx.plugin(Files, { root }))
   fibers.push(await ctx.plugin(Store, { root, repoRoot: process.cwd(), python: process.env.YOUDUB_TEST_PYTHON || resolve('.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') }))
-  fibers.push(await ctx.plugin(Secrets), await ctx.plugin(Settings), await ctx.plugin(Tasks, { pollMs: 10 }))
+  fibers.push(await ctx.plugin(Settings), await ctx.plugin(Tasks, { pollMs: 10 }))
   t.after(async () => {
     try { await ctx.parallel('app/stopping') }
     catch (error: any) {

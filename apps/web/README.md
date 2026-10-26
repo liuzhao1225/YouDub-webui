@@ -7,6 +7,6 @@
 - `src/plugin/builtin/`：工作台、任务库、工作流、画布和任务校对组件。
 - `src/components/`：业务组件；通用控件在产品构建中接入 Harness 实现。
 - `src/locales/`：中文、英文、日语业务文案。
-- `src/plugin/sdk.tsx`、`loader.ts`：保留组件及领域测试使用的合同，产品接入由 Harness 侧负责。
+- `src/plugin/sdk.tsx`：保留组件及领域测试使用的合同，产品接入由 Harness 侧负责。
 
 在本目录执行 `npm test`、`npm run typecheck` 和 `npm run lint`。修改当前产品请阅读[前端开发说明](../harness/docs/FRONTEND-DEVELOPMENT.md)与[本地运行](../harness/docs/DEVELOPMENT.md)。

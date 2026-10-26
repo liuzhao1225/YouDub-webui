@@ -8,63 +8,31 @@ from backend.workers.protocol import WorkerError
 from backend.workers.store import SqliteStore
 
 
-class Credentials:
-    def __init__(self):
-        self.values = {}
-
-    def get(self, reference):
-        return self.values.get(reference)
-
-    def set(self, reference, value):
-        self.values[reference] = value
-
-    def delete(self, reference):
-        self.values.pop(reference, None)
-
-
 def defaults():
     return {"source_language": "auto", "target_language": "ja", "output_mode": "subtitles", "keep_background": False,
             "asr": {"adapter": "whisper", "model": "small", "device": "cpu", "initial_prompt": "Names"},
             "translation": {"adapter": "openai", "model": "qwen3-max", "device": "remote"}, "tts": None, "separation": None}
 
 
-def test_connection_model_saves_with_address_and_key_and_preserves_omitted_fields(tmp_path):
-    credentials = Credentials()
-    bridge = Bridge(tmp_path, credentials=credentials)
-    bridge.store.write_setting("defaults", defaults())
-    result = bridge.patch_settings({"connection": {"adapter": "openai", "base_url": "https://example.test/v1", "api_key": "test-private-key", "model": " qwen-plus "}})
-    assert result["connections"][0]["model"] == "qwen-plus"
-    reference = bridge.store.settings_values()["connections"][0]["credential_ref"]
-    result = bridge.patch_settings({"connection": {"adapter": "openai", "model": "deepseek-chat"}})
-    assert result["connections"][0]["model"] == "deepseek-chat"
-    assert result["connections"][0]["has_api_key"]
-    assert bridge.store.settings_values()["connections"][0]["credential_ref"] == reference
-    assert bridge.patch_settings({"connection": {"adapter": "openai", "api_key": None}})["connections"][0]["model"] == "deepseek-chat"
-    assert bridge.store.settings_values()["defaults"] == defaults()
-
-
-def test_connection_model_migration_only_fills_matching_missing_model_and_is_idempotent(tmp_path, monkeypatch):
+def test_connection_model_migration_only_fills_matching_missing_model_and_is_idempotent(tmp_path):
     store = SqliteStore(tmp_path)
     store.write_setting("defaults", defaults())
     connections = [{"adapter": "openai", "base_url": "https://example.test/v1", "credential_ref": "key-ref"},
                    {"adapter": "other", "base_url": "https://other.test/v1", "credential_ref": None}]
     store.write_setting("connections", connections)
-    bridge = Bridge(tmp_path, credentials=Credentials())
+    bridge = Bridge(tmp_path)
     migrated = bridge.store.settings_values()
     assert migrated["connections"][0] == {**connections[0], "model": "qwen3-max"}
     assert migrated["connections"][1] == connections[1]
     assert migrated["defaults"] == defaults()
-    bridge.patch_settings({"connection": {"adapter": "openai", "model": "new-model"}})
-    reopened = Bridge(tmp_path, credentials=Credentials())
-    assert next(item for item in reopened.settings()["connections"] if item["adapter"] == "openai")["model"] == "new-model"
-    from backend.app.v1 import runtime
-    monkeypatch.setattr(runtime, "probe_capability", lambda adapter, **kwargs: kwargs)
-    assert next(item for item in reopened.call("runtime.probe", {"adapter": "openai"})["connections"] if item["adapter"] == "openai")["model"] == "new-model"
-    assert "translation_model" not in reopened.call("runtime.probe", {"adapter": "openai"})
+    migrated["connections"][0]["model"] = "new-model"
+    bridge.store.write_setting("connections", migrated["connections"])
+    reopened = Bridge(tmp_path)
+    assert reopened.call("settings.raw", {})["connections"][0]["model"] == "new-model"
 
 
 def test_empty_install_does_not_create_defaults_or_connection(tmp_path):
-    bridge = Bridge(tmp_path, credentials=Credentials())
+    bridge = Bridge(tmp_path)
     assert bridge.store.settings_values() == {}
 
 

@@ -4,10 +4,8 @@
 # are mocked or lazily imported by tests and intentionally do not belong here.
 pydantic
 python-dotenv
-openai
 nltk==3.10.3
 numpy
 soundfile
 pytest
-httpx[socks]
 yt-dlp[default]==2026.8.19

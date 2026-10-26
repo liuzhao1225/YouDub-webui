@@ -3,41 +3,13 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal, Self
-from urllib.parse import urlsplit
 
-from pydantic import (
-    AfterValidator,
-    Field,
-    SecretStr,
-    model_validator,
-)
+from pydantic import Field, model_validator
 
-
-from .data_contracts import Contract, NonEmptyString, PositiveInt
+from .data_contracts import Contract, NonEmptyString
 
 
 OutputMode = Literal["subtitles", "dubbing", "both"]
-UiLanguage = Literal["en", "zh", "ja"]
-
-
-def _valid_base_url(value: str) -> str:
-    parsed = urlsplit(value)
-    if (
-        parsed.scheme not in {"http", "https"}
-        or not parsed.hostname
-        or parsed.username is not None
-        or parsed.password is not None
-        or "?" in value
-        or "#" in value
-        or any(character.isspace() for character in value)
-    ):
-        raise ValueError("base_url must be an HTTP(S) URL without credentials, query or fragment")
-    # Accessing port also rejects malformed and out-of-range port numbers.
-    _ = parsed.port
-    return value
-
-
-BaseUrl = Annotated[str, Field(pattern=r"^https?://"), AfterValidator(_valid_base_url)]
 
 
 class ModelSelection(Contract):
@@ -95,32 +67,4 @@ class TaskConfig(Contract):
             raise ValueError("background preservation and source cloning require separation")
         if not needs_separation and self.separation is not None:
             raise ValueError("separation must be null when it is not used")
-        return self
-
-
-class ConnectionPatch(Contract):
-    adapter: NonEmptyString
-    # An absent base_url is allowed; an explicitly null base_url is rejected.
-    base_url: BaseUrl = Field(default=None)
-    model: Annotated[str, Field(min_length=1, pattern=r"\S")] = Field(default=None)
-    api_key: Annotated[SecretStr, Field(min_length=1)] | None = None
-
-    @model_validator(mode="after")
-    def require_change(self) -> Self:
-        if not self.model_fields_set.intersection({"base_url", "api_key", "model"}):
-            raise ValueError("a connection update requires base_url, api_key or model")
-        return self
-
-
-class SettingsPatch(Contract):
-    # Supplied groups must be non-null. model_fields_set identifies the group
-    # while ConnectionPatch distinguishes an omitted key from an explicit clear.
-    defaults: TaskConfig = Field(default=None)
-    ui_language: UiLanguage = Field(default=None)
-    connection: ConnectionPatch = Field(default=None)
-
-    @model_validator(mode="after")
-    def require_one_group(self) -> Self:
-        if len(self.model_fields_set) != 1:
-            raise ValueError("update exactly one of defaults, ui_language or connection")
         return self

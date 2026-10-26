@@ -69,10 +69,11 @@ describe('built sandboxed Desktop preloads', () => {
       exports: {},
     })
     if (name === 'preload-app') {
-      const product = exposed.get('dshDesktop') as { deviceInfo(): Promise<string> }
-      invoke.mockResolvedValueOnce('platform=darwin; memory_gib=32.0')
-      await expect(product.deviceInfo()).resolves.toBe('platform=darwin; memory_gib=32.0')
-      expect(invoke).toHaveBeenCalledWith('dsh-desktop:device-info')
+      const product = exposed.get('dshDesktop') as { updates: { status(): Promise<unknown> } }
+      const update = { phase: 'available', version: '0.0.9' }
+      invoke.mockResolvedValueOnce(update)
+      await expect(product.updates.status()).resolves.toBe(update)
+      expect(invoke).toHaveBeenCalledWith('dsh-desktop:updates-status')
       browser.loadTheme('dark')
       expect(send).toHaveBeenCalledWith('dsh-desktop:native-theme-set', 'dark')
       browser.changeTheme('light')
