@@ -20,7 +20,7 @@ import {
   type TypertLookup,
   type TypertLookupProvider,
 } from '@deepseek-ai/dsh-typert-protocol'
-import TypertRegistry, { type TypertContribution } from '@deepseek-ai/dsh-typert-registry'
+import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import TypertGatewayService, { TypertGatewayError } from '@deepseek-ai/dsh-api-gateway'
 import { provideBrowserCredentials } from './browser-credentials.ts'
 import { ownerPeer } from './peer.ts'
@@ -46,12 +46,6 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     'session/agent-busy': { readonly reason: string }
   }
-}
-
-const emptyModel: TypertContribution['model'] = {
-  services: [],
-  events: [],
-  objects: [],
 }
 
 class GoalService extends Service {
@@ -987,8 +981,6 @@ describe('TypertGatewayService', () => {
     ctx.typert.register({
       package: '@fixture/plain',
       face: 'host',
-      schemas: [],
-      model: emptyModel,
       invocations: [{
         ...passthroughDescriptor(),
         id: '@fixture/plain#plain/run',
@@ -1450,8 +1442,6 @@ function registerStrict(ctx: Context, descriptors: readonly InvocationDescriptor
   return ctx.typert.register({
     package: '@fixture/gateway',
     face: 'host',
-    schemas: [],
-    model: emptyModel,
     invocations: descriptors,
   })
 }

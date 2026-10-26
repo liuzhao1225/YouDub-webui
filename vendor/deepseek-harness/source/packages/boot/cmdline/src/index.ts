@@ -87,15 +87,6 @@ export function provideCmdline(ctx: Context, host: CmdlineHost): void {
   if (host.ready !== undefined) ctx.provide('appReady', host.ready)
 }
 
-/** Process streams used by app command lines; tests substitute them. */
-export const internals: {
-  stdout: { write(chunk: string): unknown }
-  stderr: { write(chunk: string): unknown }
-} = {
-  stdout: process.stdout,
-  stderr: process.stderr,
-}
-
 /**
  * Parse the launcher's immutable argument snapshot with an app's commander
  * program. Commander runs the program's own synchronous action handler on a
@@ -166,8 +157,8 @@ function configureExitAndOutput(command: Command): void {
   command
     .exitOverride()
     .configureOutput({
-      writeOut: text => void internals.stdout.write(text),
-      writeErr: text => void internals.stderr.write(text),
+      writeOut: text => void process.stdout.write(text),
+      writeErr: text => void process.stderr.write(text),
     })
   for (const child of command.commands) configureExitAndOutput(child)
 }

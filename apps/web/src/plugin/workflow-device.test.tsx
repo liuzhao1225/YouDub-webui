@@ -22,7 +22,7 @@ function mount(device = 'auto') {
       nodes: [{ id: 'separate', type: definition.type, typeVersion: definition.version, provider: { id: definition.providerId, model: 'htdemucs', device }, config: {}, autoContinue: true }],
       presentation: { positions: {}, viewport: { x: 0, y: 0, zoom: 1 } },
     })
-    return <NodeSettings document={document} node={document.nodes[0]} types={[definition]} useSlot={useSlot} onChange={next => { changed(next); setDocument(next) }} />
+    return <NodeSettings readOnly={false} document={document} node={document.nodes[0]} types={[definition]} useSlot={useSlot} onChange={next => { changed(next); setDocument(next) }} />
   }
   render(<LanguageProvider><View /></LanguageProvider>)
   return changed

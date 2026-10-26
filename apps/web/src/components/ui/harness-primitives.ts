@@ -11,3 +11,4 @@ export { SegmentedControl } from '../../../../../vendor/deepseek-harness/source/
 export { Tooltip } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tooltip'
 export { Tag } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/Tag'
 export { DisclosureRow } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/DisclosureRow'
+export { writeClipboard } from '../../../../../vendor/deepseek-harness/source/packages/client/ui-primitives/src/clipboard'

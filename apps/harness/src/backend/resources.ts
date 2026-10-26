@@ -89,7 +89,7 @@ export default class Resources extends Service {
   }
   catalogSelections(value: ResourceSelection[]) {
     const selections = this.selections(value)
-    const providers = this.catalog!.listProviders()
+    const providers = this.catalog.listProviders()
     for (const selection of selections) {
       if (runtimeResource(selection.providerId) && !selection.model) continue
       const provider = providers.find(item => item.id === selection.providerId)
@@ -116,7 +116,7 @@ export default class Resources extends Service {
     }))
   }
   async resourceInventory() {
-    const providers = (this.catalog?.listProviders() || []).filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
+    const providers = this.catalog.listProviders().filter(provider => provider.execution !== 'remote' && !provider.models?.some(model => model.devices?.includes('remote')))
     const items = providers.flatMap(provider => {
       const resources = providerResources(provider)
       const models = [...new Set([...(resources?.model ? [resources.model.id] : []), ...(provider.models || []).map(model => model.id)])]
@@ -158,7 +158,7 @@ export default class Resources extends Service {
       .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
   }
   private groups(selections: ResourceSelection[]) {
-    const providers = this.catalog?.listProviders() ?? []
+    const providers = this.catalog.listProviders()
     return [...new Set<DependencyGroup>(['base', ...selections.flatMap(item => {
       const runtime = runtimeResource(item.providerId)
       if (runtime) return runtime[1].groups
@@ -181,7 +181,7 @@ export default class Resources extends Service {
     let mediaReady = true, mediaReason: string | undefined, punktReady = true
     // A user may have installed a package/model outside this process. Refresh
     // only this graph's providers so validation sees the same current readiness.
-    if (this.catalog) for (const providerId of new Set(selections.map(item => item.providerId))) {
+    for (const providerId of new Set(selections.map(item => item.providerId))) {
       if (!runtimeResource(providerId)) await this.catalog.provider(providerId).probe()
     }
     for (const selection of selections) {
@@ -195,7 +195,7 @@ export default class Resources extends Service {
           ...((result.missing.length || !result.punkt) ? { reason: result.missing.length ? `缺少运行依赖：${result.missing.join(', ')}` : '缺少分句资源。' } : {}) })
         continue
       }
-      const provider = this.catalog?.listProviders().find(item => item.id === selection.providerId)
+      const provider = this.catalog.listProviders().find(item => item.id === selection.providerId)
       const resources = provider && providerResources(provider)
       const groups = resources?.dependencyGroups
       if (!groups) {
@@ -236,7 +236,7 @@ export default class Resources extends Service {
     await this.refreshModelSizes(models)
     for (const model of models) {
       if (model.status !== 'ready') for (const requirement of requirements) {
-        if (requirement.automatic && this.catalog?.listProviders().some(provider => provider.id === requirement.providerId && providerResources(provider)?.model?.downloadId === model.id)) {
+        if (requirement.automatic && this.catalog.listProviders().some(provider => provider.id === requirement.providerId && providerResources(provider)?.model?.downloadId === model.id)) {
           requirement.ready = false
           requirement.reason ??= `${model.name} 模型文件未安装或不完整。`
         }

@@ -51,7 +51,7 @@ def _srt_time(ms: int) -> str:
     return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
 
 
-def subtitle_style_for_orientation(orientation: str, font: str, lang: str = "zh") -> str:
+def subtitle_style_for_orientation(orientation: str, font: str, lang: str) -> str:
     sizes = SUBTITLE_FONT_SIZES.get(lang, SUBTITLE_FONT_SIZES["zh"])
     margin_v = 70 if orientation == "portrait" else 5
     return _subtitle_style(font, size=sizes[orientation], margin_v=margin_v)
@@ -85,7 +85,7 @@ def _subtitle_rows(transcript: Transcript, translation: Translation) -> list[tup
 
 
 def _write_srt(path: Path, rows: list[tuple[Segment, str]], *, translated: bool,
-               language: str = "zh",
+               language: str,
                aligned_cues: list[tuple[int, int, str]] | None = None) -> None:
     cues = []
     display = aligned_cues if aligned_cues is not None else [
@@ -116,7 +116,7 @@ def _validate_prepared_cues(cues: list[tuple[int, int, str]], rows: list[tuple[S
         raise _invalid("Aligned subtitle cues do not preserve the complete translation.")
 
 
-def _display_parts(text: str, language: str = "zh") -> list[str]:
+def _display_parts(text: str, language: str) -> list[str]:
     """Split subtitle display text without changing a translation/TTS unit."""
     if language == "zh":
         # The original splitter omits separators and normalizes whitespace.
@@ -179,7 +179,7 @@ def _display_parts(text: str, language: str = "zh") -> list[str]:
     return merged
 
 
-def _display_cues(text: str, start_ms: int, end_ms: int, language: str = "zh") -> list[tuple[int, int, str]]:
+def _display_cues(text: str, start_ms: int, end_ms: int, language: str) -> list[tuple[int, int, str]]:
     """Estimate display timing inside a whole utterance's source/dubbed span.
 
     This follows youdub-backend's character-weighted subtitle timing. These

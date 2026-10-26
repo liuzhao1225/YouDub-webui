@@ -89,7 +89,7 @@ function SidebarTools(props) { return <LanguageProvider source={props.localeSour
 function Startup({ features, localeSource, themeSource, onReady, renderSlot, translationModels, pickDirectory }) {
   return <LanguageProvider source={localeSource}><ThemeProvider source={themeSource}><FeatureProvider value={features}>
     <div className="yd yd-feature-root yd-startup"><div className="yd-main-chrome" data-window-drag aria-hidden="true" /><div className="yd-startup-content">
-      <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />,className:'min-h-full'}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>
+      <SetupGate request={features.request} screenProps={{pickDirectory,wordmarkSrc:logo,themeControl:<ThemeToggle />}}><TranslationSetup request={features.request} onReady={onReady} wordmarkSrc={logo} renderSlot={renderSlot} translationModels={translationModels} /></SetupGate>
     </div></div>
   </FeatureProvider></ThemeProvider></LanguageProvider>
 }

@@ -182,7 +182,6 @@ export interface MemberBase extends DocumentationModel {
   readonly computed?: 'symbol' | 'dynamic'
   readonly optional: boolean
   readonly readonly: boolean
-  readonly abstract: boolean
 }
 
 /** A property member. */
@@ -223,7 +222,6 @@ export interface TypeDeclarationModel extends DocumentationModel {
   readonly kind: 'interface' | 'class' | 'alias' | 'enum'
   readonly typeParameters: readonly TypeParameterModel[]
   readonly extends: readonly TypeNodeId[]
-  readonly implements: readonly TypeNodeId[]
   readonly members: readonly MemberModel[]
   readonly type?: TypeNodeId
 }

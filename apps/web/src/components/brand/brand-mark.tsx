@@ -19,7 +19,7 @@ const BLUE_BARS = [
 export function BrandMark({
   animated = false,
   wordmark = false,
-  wordmarkSrc = "/youdub-logo.svg",
+  wordmarkSrc,
   className,
 }: {
   animated?: boolean

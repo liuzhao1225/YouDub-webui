@@ -18,7 +18,7 @@ import { useActiveView, useObservableSource, usePendingUnload } from '../view-ho
 import { StudioDraftStore, type WorkflowRunDraft } from '@/runtime/studio-draft'
 export type { WorkflowRunDraft } from '@/runtime/studio-draft'
 
-export function WorkflowRun({ document, types, revision = null, afterInputs, prominent = false, submissionStore, draft, onDraftChange, onStarted, onLockChange, request, navigate, useSlot, useWorkflowResources }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision?: number | null; afterInputs?: ReactNode; prominent?: boolean; submissionStore?: StudioDraftStore; draft?: WorkflowRunDraft; onDraftChange?: Dispatch<SetStateAction<WorkflowRunDraft>>; onStarted?(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot' | 'useWorkflowResources'>) {
+export function WorkflowRun({ document, types, revision, afterInputs, prominent = false, submissionStore, draft, onDraftChange, onStarted, onLockChange, request, navigate, useSlot, useWorkflowResources }: { document: WorkflowDocument; types: NodeTypeDefinition[]; revision: number | null; afterInputs?: ReactNode; prominent?: boolean; submissionStore?: StudioDraftStore; draft?: WorkflowRunDraft; onDraftChange?: Dispatch<SetStateAction<WorkflowRunDraft>>; onStarted(): void; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const [localDraft, setLocalDraft] = useState<WorkflowRunDraft>({ selectedFiles: [], sourceUrl: '', runtimeByDocument: {} })
   const { selectedFiles, sourceUrl, proxyPort = 0, runtimeByDocument } = draft ?? localDraft
@@ -48,7 +48,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   const activeView = useActiveView()
   function openTask(task: TaskView) {
     if (!activeView.current) return
-    store.clearSubmission(submissionKey); onStarted?.(); navigate(`/tasks/${task.id}`)
+    store.clearSubmission(submissionKey); onStarted(); navigate(`/tasks/${task.id}`)
   }
   const activeRuntime = Object.fromEntries(document.nodes.filter((node) => runtime[node.id]).map((node) => [node.id, runtime[node.id]]))
   const runRuntime = { ...activeRuntime, ...imported?.runtime }
@@ -56,7 +56,7 @@ export function WorkflowRun({ document, types, revision = null, afterInputs, pro
   const complete = !linkError && document.inputs.every((input) => !input.required || files[input.id] || (input.id === linkInput?.id && source))
   const locked = busy || !!pending
   usePendingUnload(locked)
-  useEffect(() => { onLockChange?.(locked) }, [locked, onLockChange])
+  useEffect(() => { onLockChange(locked) }, [locked, onLockChange])
   async function run() {
     if (locked || !complete || !resources.ready) return
     setValidating(true); setError(''); setDiagnostics([])

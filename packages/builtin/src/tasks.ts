@@ -18,7 +18,7 @@ const validator = new Ajv({ allErrors: true, strict: false })
 function validate(schema: JsonObject, value: unknown, label: string, code = 'INVALID_CONFIG') {
   if (!validator.validate(schema, value)) throw new AppError(code, `${label}: ${validator.errorsText()}`, code === 'INVALID_CONFIG' ? 422 : 500)
 }
-function redact(message: string, credentials: InvocationContext['credentials'] = {}) {
+function redact(message: string, credentials: InvocationContext['credentials']) {
   for (const value of Object.values(credentials)) if (value.api_key) message = message.replaceAll(value.api_key, '[redacted]')
   return message.replace(/(authorization|api[_-]?key|cookie)\s*[:=]\s*[^\r\n]+/gi, '$1: [redacted]')
 }

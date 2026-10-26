@@ -235,7 +235,7 @@ function Editor({ query, initial, types, nodeId, request, navigate, blockNavigat
   </Layout>
 }
 
-export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = [], renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore: StudioDraftStore; onLockChange?(locked: boolean): void; additionalWorkflows?: WorkflowDescription[]; renderWorkflow?(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
+export function GraphStudio({ draftStore, additionalWorkflows, renderWorkflow, request, navigate, useQuery, useSlot, useWorkflowDocuments, useWorkflowResources }: { draftStore: StudioDraftStore; additionalWorkflows: WorkflowDescription[]; renderWorkflow(workflow: WorkflowDescription, selector: ReactNode, onLockChange: (locked: boolean) => void): ReactNode } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowDocuments' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const documents = useWorkflowDocuments()
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
@@ -245,7 +245,6 @@ export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = []
   const setSelected = (value: string) => store.set('selected', value)
   const setSelectedGraph = (value: string) => store.set('selectedGraph', value)
   const [locked, setLocked] = useState(false)
-  const lockChanged = useCallback((value: boolean) => { setLocked(value); onLockChange?.(value) }, [onLockChange])
   const record = documents.data?.items.find((item) => item.id === selectedGraph) ?? documents.data?.items[0]
   if ((documents.error || types.error) && (!documents.data || !types.data)) return <div className="space-y-3"><InlineAlert>{documents.error || types.error}</InlineAlert><Button variant="outline" onClick={() => { documents.refresh(); types.refresh() }}>{tx("workflows.retry")}</Button></div>
   if (!documents.data || !types.data) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx("workflows.loading.workflows")}</p>
@@ -259,6 +258,6 @@ export function GraphStudio({ draftStore, onLockChange, additionalWorkflows = []
   </Select>
   return <section className="space-y-4">
     {(documents.error || types.error) && <InlineAlert>{documents.error || types.error}</InlineAlert>}
-    {external && renderWorkflow ? renderWorkflow(external, selector, lockChanged) : <WorkflowRun prominent submissionStore={store} draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={lockChanged} onStarted={() => { store.clearGraph(record.id); lockChanged(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
+    {external ? renderWorkflow(external, selector, setLocked) : <WorkflowRun prominent submissionStore={store} draft={draft} onDraftChange={value => store.set('draft', value)} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useSlot={useSlot} document={document} types={types.data.items} revision={changes ? null : record.revision} onLockChange={setLocked} onStarted={() => { store.clearGraph(record.id); setLocked(false) }} afterInputs={<div className="flex flex-wrap items-center gap-2">{selector}<WorkflowOptions document={document} types={types.data.items} disabled={locked} useSlot={useSlot} onChange={(nodeId, config) => store.set('overrides', (current) => ({ ...current, [record.id]: { ...current[record.id], [nodeId]: config } }))} /></div>} />}
   </section>
 }

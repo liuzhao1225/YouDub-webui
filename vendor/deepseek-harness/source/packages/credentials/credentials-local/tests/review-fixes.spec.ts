@@ -1,38 +1,16 @@
+import { boot, cleanups, tempDir, writeCredentials } from './fixture.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { credentialKey, credentialRef } from '@deepseek-ai/dsh-credentials'
-import { LocalCredentialProvider } from '../src/index.ts'
-
-function writeCredentials(file: string, text: string): Promise<void> {
-  return writeFile(file, text, { mode: 0o600 })
-}
 
 const ALPHA = credentialRef('DSH_REVIEW_ALPHA')
 const BETA = credentialRef('DSH_REVIEW_BETA')
 const INNER = credentialRef('DSH_REVIEW_INNER')
 
-const cleanups: Array<() => Promise<void>> = []
-
 afterEach(async () => {
   while (cleanups.length > 0) await cleanups.pop()!()
 })
-
-async function tempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-cred-review-'))
-  cleanups.push(() => rm(dir, { recursive: true, force: true }))
-  return dir
-}
-
-async function boot(config: ConstructorParameters<typeof LocalCredentialProvider>[1]): Promise<Context> {
-  const ctx = new Context()
-  const fiber = ctx.plugin(LocalCredentialProvider, config)
-  cleanups.push(async () => { await fiber.dispose() })
-  await fiber
-  return ctx
-}
 
 describe('read-modify-write', () => {
   it('folds an unobserved external edit into a write instead of overwriting it', async () => {

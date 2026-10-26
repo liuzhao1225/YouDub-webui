@@ -19,24 +19,21 @@ def _invalid(message: str) -> ApiError:
 
 
 def _run_media(
-    command: list[str], *, check_cancel: Callable[[], None] | None = None,
+    command: list[str], *, check_cancel: Callable[[], None],
     cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Poll cancellation while draining process output, and always reap it."""
-    if check_cancel:
-        check_cancel()
+    check_cancel()
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=cwd) as process:
         try:
             while True:
-                if check_cancel:
-                    check_cancel()
+                check_cancel()
                 try:
                     stdout, stderr = process.communicate(timeout=0.1)
                     break
                 except subprocess.TimeoutExpired:
                     continue
-            if check_cancel:
-                check_cancel()
+            check_cancel()
         except BaseException:
             if process.poll() is None:
                 process.terminate()
@@ -49,7 +46,7 @@ def _run_media(
         return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
 
 
-def _probe(path: Path, check_cancel: Callable[[], None] | None = None) -> dict[str, Any]:
+def _probe(path: Path, check_cancel: Callable[[], None]) -> dict[str, Any]:
     if not path.is_file() or path.stat().st_size == 0:
         raise _invalid("The input media file is missing or empty.")
     try:
@@ -78,10 +75,10 @@ def _positive_number(value: Any) -> float | None:
     return number if math.isfinite(number) and number > 0 else None
 
 
-def _duration_ms(data: dict[str, Any], stream: dict[str, Any] | None = None) -> int:
+def _duration_ms(data: dict[str, Any], stream: dict[str, Any]) -> int:
     # MP4 commonly exposes stream duration; Matroska commonly exposes only the
     # container duration. Prefer the selected video stream when it is available.
-    seconds = _positive_number(stream.get("duration")) if stream else None
+    seconds = _positive_number(stream.get("duration"))
     if seconds is None:
         container = data.get("format")
         seconds = _positive_number(container.get("duration")) if isinstance(container, dict) else None
@@ -103,7 +100,7 @@ def _stream_start_ms(stream: dict[str, Any]) -> int:
 
 
 def inspect_video(
-    path: Path, check_cancel: Callable[[], None] | None = None,
+    path: Path, check_cancel: Callable[[], None],
 ) -> dict[str, Any]:
     """Inspect the exact first video/audio streams later used by ffmpeg.
 

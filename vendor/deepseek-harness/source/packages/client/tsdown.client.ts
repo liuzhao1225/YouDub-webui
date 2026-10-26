@@ -108,7 +108,7 @@ function browserSourcePath(source: string, sourcemapPath: string): string {
  * `import.meta.dirname`. Its `package.json` name is the plugin id stamped into
  * the __ModuleLoader__.load handoff and onto the injected style tags.
  * @param libEntry - node-half entries.
- * @param options - phase placement, lib overrides, optional independently bundled Node Client, companion configs, and per-file Client banner.
+ * @param options - phase placement and optional independently bundled Node Client.
  * @returns ENV-selected tsdown config for the current build face.
  * @throws {Error} when `<packageDir>/package.json` is unreadable or declares no name.
  */
@@ -118,12 +118,12 @@ export function clientBundle(
   options: ClientBundleOptions = {},
 ): BuildFaceConfig {
   const manifest = readPackageManifest(packageDir)
-  const lib = clientLibraryConfig(manifest, libEntry, options.lib)
+  const lib = clientLibraryConfig(manifest, libEntry)
   return ({ env }) => {
     const face = buildFace(env?.DSH_BUILD_FACE)
     const clientEntry = face === undefined ? 'src/client/index.ts' : 'lib/types/client/index.js'
-    const client = clientConfig(manifest, clientEntry, options.clientBanner, options.dualClient === true)
-    const node = [lib, ...(options.companions ?? [])]
+    const client = clientConfig(manifest, clientEntry, options.dualClient === true)
+    const node = [lib]
     const clientFaces = options.dualClient === true
       ? [nodeClientConfig(manifest, clientEntry), client]
       : [client]
@@ -189,12 +189,6 @@ interface ClientBundleOptions {
   readonly hostPhase?: boolean
   /** Emit independent ESM `client.node.js` and browser-factory `client.browser.js` from the same Client entry. */
   readonly dualClient?: boolean
-  /** Additional Node-side configs emitted alongside the package library. */
-  readonly companions?: readonly UserConfig[]
-  /** Overrides for the package's primary Node-side library config. */
-  readonly lib?: UserConfig
-  /** Optional legal or attribution text selected by emitted client filename. */
-  readonly clientBanner?: (fileName: string) => string | undefined
 }
 
 type BuildFace = 'host' | 'client' | undefined
@@ -249,12 +243,12 @@ interface AssetEmitter {
   }): string
 }
 
-function staticLinkedConfig(id: string, entry: string, outputName = basename(entry, '.js')): UserConfig {
+function staticLinkedConfig(id: string, entry: string): UserConfig {
   const emitted = new Set<string>()
   const isolation = clientInputIsolation(id)
   return {
     name: id,
-    entry: { [outputName]: entry },
+    entry: { [basename(entry, '.js')]: entry },
     outDir: 'lib',
     format: ['esm'],
     platform: 'browser',
@@ -470,7 +464,6 @@ function nodeClientConfig(manifest: PackageManifest, entry: string): UserConfig 
 function clientConfig(
   manifest: PackageManifest,
   entry: string,
-  clientBanner?: (fileName: string) => string | undefined,
   dualClient = false,
 ): UserConfig {
   const id = manifest.name
@@ -632,9 +625,7 @@ function clientConfig(
         return browserSourcePath(source, mapPath)
       },
       banner: (chunk) => {
-        const registration = `window.__ModuleLoader__.load({ id: ${JSON.stringify(id)}, ${chunk.isEntry ? '' : `chunk: ${JSON.stringify(chunk.fileName)}, `}factory: (require) => {`
-        const prefix = clientBanner?.(chunk.fileName)
-        return prefix === undefined ? registration : `${prefix}\n${registration}`
+        return `window.__ModuleLoader__.load({ id: ${JSON.stringify(id)}, ${chunk.isEntry ? '' : `chunk: ${JSON.stringify(chunk.fileName)}, `}factory: (require) => {`
       },
       footer: 'return module.exports; } });',
       intro: 'var module = { exports: {} }; var exports = module.exports;',

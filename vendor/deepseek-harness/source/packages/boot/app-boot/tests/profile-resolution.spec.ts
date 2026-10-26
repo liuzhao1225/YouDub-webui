@@ -77,6 +77,22 @@ function conditionalPkg(dir: string, name: string, importMarker: number, require
   return join(dir, 'package.json')
 }
 
+function cjsLoader() {
+  const addon = createRequire(import.meta.url)('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
+  return addon.requireBuiltin('internal/modules/cjs/loader') as {
+    Module: {
+      new(id?: string): { children: unknown[]; filename?: string; paths?: string[] }
+      _nodeModulePaths(path: string): string[]
+      _resolveFilename(
+        request: string,
+        parent: { filename?: string; paths?: string[] } | undefined,
+        isMain: boolean,
+        options?: { conditions: Set<string> },
+      ): string
+    }
+  }
+}
+
 async function importFrom(specifier: string, parent: string): Promise<Record<string, unknown>> {
   const addon = createRequire(import.meta.url)('node-addon-require-builtin') as {
     requireBuiltin(id: string): unknown
@@ -805,14 +821,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     expect(resolveFrom('fs', parent)).toBe('node:fs')
     expect(resolveFrom('node:path', pathToFileURL(join(f.root, 'outside.mjs')).href, {}, true)).toBe('node:path')
 
-    const addon = createRequire(import.meta.url)('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
-    const internal = addon.requireBuiltin('internal/modules/cjs/loader') as {
-      Module: {
-        _resolveFilename(
-          request: string, parent: { filename?: string } | undefined, isMain: boolean,
-        ): string
-      }
-    }
+    const internal = cjsLoader()
     expect(internal.Module._resolveFilename('node:path', undefined, false)).toBe('node:path')
   })
 
@@ -1265,19 +1274,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     registrations.push(registration)
     expect(await importFrom('conditional-lib', pathToFileURL(join(f.profile.dir, 'entry.mjs')).href))
       .toMatchObject({ marker: 21 })
-    const addon = createRequire(import.meta.url)('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
-    const internal = addon.requireBuiltin('internal/modules/cjs/loader') as {
-      Module: {
-        new(id?: string): { filename?: string; paths?: string[] }
-        _nodeModulePaths(path: string): string[]
-        _resolveFilename(
-          request: string,
-          parent: { filename?: string; paths?: string[] },
-          isMain: boolean,
-          options: { conditions: Set<string> },
-        ): string
-      }
-    }
+    const internal = cjsLoader()
     const parentFile = join(f.profile.dir, 'conditional-entry.cjs')
     const parent = new internal.Module(parentFile)
     parent.filename = parentFile
@@ -1295,19 +1292,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     conditionalPkg(f.installed, 'conditional-lib', 11, 12)
     const registration = installRuntimeInterception(await resolutionOf(f))
     registrations.push(registration)
-    const addon = createRequire(import.meta.url)('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
-    const internal = addon.requireBuiltin('internal/modules/cjs/loader') as {
-      Module: {
-        new(id?: string): { filename?: string; paths?: string[] }
-        _nodeModulePaths(path: string): string[]
-        _resolveFilename(
-          request: string,
-          parent: { filename?: string; paths?: string[] },
-          isMain: boolean,
-          options: { conditions: Set<string> },
-        ): string
-      }
-    }
+    const internal = cjsLoader()
     const parentFile = join(f.profile.dir, 'conditional-entry.cjs')
     const parent = new internal.Module(parentFile)
     parent.filename = parentFile
@@ -1322,18 +1307,7 @@ describe('runtime resolution', { concurrent: false }, () => {
     const f = fixture()
     const registration = installRuntimeInterception(await resolutionOf(f))
     registrations.push(registration)
-    const addon = createRequire(import.meta.url)('node-addon-require-builtin') as { requireBuiltin(id: string): unknown }
-    const internal = addon.requireBuiltin('internal/modules/cjs/loader') as {
-      Module: {
-        new(id?: string): { children: unknown[]; filename?: string; paths?: string[] }
-        _nodeModulePaths(path: string): string[]
-        _resolveFilename(
-          request: string,
-          parent: { children: unknown[]; filename?: string; paths?: string[] },
-          isMain: boolean,
-        ): string
-      }
-    }
+    const internal = cjsLoader()
     const parentFile = join(f.profile.dir, 'entry.cjs')
     const parent = new internal.Module(parentFile)
     parent.filename = parentFile

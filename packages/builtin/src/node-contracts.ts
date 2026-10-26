@@ -1,7 +1,7 @@
 import { AppError, type JsonObject, type NodeDescriptor, type OperationProvider } from '@youdub/sdk'
 import { isDeepStrictEqual } from 'node:util'
 
-const object = (properties: JsonObject = {}, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties, required })
+const object = (properties: JsonObject, required: string[] = []) => ({ type: 'object', additionalProperties: false, properties, required })
 const language = { type: 'string', minLength: 2 }
 const languageOptions = [
   { value: 'auto', label: { default: 'Auto detect', translations: { zh: '自动识别', ja: '自動検出' } } },

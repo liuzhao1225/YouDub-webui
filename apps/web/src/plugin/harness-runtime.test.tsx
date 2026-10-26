@@ -24,14 +24,14 @@ it('refreshes mounted model choices and workflows on configuration changes witho
   await screen.findByText('models-1'); await screen.findByText('workflow-1')
   fireEvent.change(screen.getByLabelText('draft'), { target: { value: 'unsaved video link' } })
   const reads = request.mock.calls.length
-  await act(() => host.value.request('/api/v2/models/discover', { method: 'POST' }))
-  await act(() => host.value.request('/api/v2/models/credentials/describe', { method: 'POST' }))
+  await act(() => host.value.request('/api/v2/resources/check', { method: 'POST' }))
+  await act(() => host.value.request('/api/v2/tasks/task/log'))
   expect(request).toHaveBeenCalledTimes(reads + 2)
   revision = 2; fail = true
-  await expect(host.value.request('/api/v2/models/settings', { method: 'PATCH' })).rejects.toThrow('Invalid model')
+  await expect(host.value.request('/api/v2/settings', { method: 'PATCH' })).rejects.toThrow('Invalid model')
   expect(screen.getByText('models-1')).toBeInTheDocument()
   fail = false
-  await act(() => host.value.request('/api/v2/models/settings', { method: 'PATCH' }))
+  await act(() => host.value.request('/api/v2/settings', { method: 'PATCH' }))
   await screen.findByText('models-2'); await screen.findByText('workflow-2')
   revision = 3
   act(() => host.emit('llm/adapters-updated'))
@@ -40,4 +40,23 @@ it('refreshes mounted model choices and workflows on configuration changes witho
   expect(host.listenerCount()).toBe(5)
   unmount(); host.dispose()
   expect(host.listenerCount()).toBe(0)
+})
+
+
+it('protects shared submissions while pending and after an uncertain response, until cleared or disposed', async () => {
+  let reject!: (error: Error) => void
+  const request = vi.fn(() => new Promise((_, fail) => { reject = fail }))
+  const host = testHost({ apiClient: { request } } as TestContext)
+  const canUnload = () => window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+  expect(canUnload()).toBe(true)
+  const pending = host.value.draftStore.submit('composer:test', host.value.request, JSON.stringify({ id: 'pending' }))
+  expect(canUnload()).toBe(false)
+  reject(new Error('Connection interrupted'))
+  await pending
+  expect(host.value.draftStore.getSnapshot().submissions['composer:test'].error).toBe('Connection interrupted')
+  expect(canUnload()).toBe(false)
+  host.value.draftStore.clearSubmission('composer:test')
+  expect(canUnload()).toBe(true)
+  host.dispose()
+  expect(canUnload()).toBe(true)
 })

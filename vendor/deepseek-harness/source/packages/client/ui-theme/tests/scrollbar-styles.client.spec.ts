@@ -106,8 +106,8 @@ const lightTokens = definedTokens(false)
 const darkTokens = definedTokens(true)
 const allTokens = new Set([...lightTokens, ...darkTokens])
 
-/** Every scrollbar token any package stylesheet references, mapped to the files referencing it. */
-const referencedTokens = new Map<string, string[]>()
+/** Every scrollbar token any package stylesheet references. */
+const referencedTokens = new Set<string>()
 /** Every indirection property any package stylesheet outside ui-theme declares, mapped to its declaring rules. */
 const rebindRules: { file: string; rule: CssRule }[] = []
 /**
@@ -202,7 +202,7 @@ for (const file of packageStylesheets()) {
       if (SURFACE_PROPERTIES.includes(property)) ruleSurfaces.push(...varReferences(value))
       for (const token of varReferences(value)) {
         if (!token.startsWith(TOKEN_PREFIX)) continue
-        referencedTokens.set(token, [...referencedTokens.get(token) ?? [], file])
+        referencedTokens.add(token)
       }
     }
     for (const token of ruleSurfaces) {
@@ -238,19 +238,11 @@ describe('design-platform.css scrollbar tokens', () => {
 })
 
 describe('scrollbar token consumers', () => {
-  it('every defined scrollbar token is referenced by some package stylesheet', () => {
+  it('defined and referenced scrollbar tokens match', () => {
     // Before scrollbar.css existed these tokens had no consumer at all and
     // every scroll container rendered the unthemed UA bar. A fifth token, or a
     // rename on one side only, leaves the new name unreferenced here.
-    expect(sorted(referencedTokens.keys())).toEqual(sorted(allTokens))
-  })
-
-  it('every referenced scrollbar token is defined in design-platform.css', () => {
-    // A dangling var() renders the UA default instead of failing loudly, so a
-    // rename has to move the reference and the definition together.
-    for (const [token, files] of referencedTokens) {
-      expect(allTokens, files.join(', ')).toContain(token)
-    }
+    expect(sorted(referencedTokens)).toEqual(sorted(allTokens))
   })
 })
 

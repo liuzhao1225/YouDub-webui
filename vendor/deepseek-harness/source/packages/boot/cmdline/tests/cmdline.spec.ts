@@ -14,7 +14,7 @@ import Loader from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { internals, parseCmdline, provideCmdline } from '../src/index.ts'
+import { parseCmdline, provideCmdline } from '../src/index.ts'
 
 /** Every value one boot of the fixture tree observed. */
 interface Observed {
@@ -38,8 +38,7 @@ const tempDirs: string[] = []
 afterEach(async () => {
   for (const dispose of disposers.splice(0)) await dispose()
   for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true })
-  internals.stdout = process.stdout
-  internals.stderr = process.stderr
+  vi.restoreAllMocks()
 })
 
 /** The fixture app's flag family: one `--port` its rows read from the service. */
@@ -87,9 +86,9 @@ export const inject = ['cmdlineArgs']
 export function apply(ctx) { return globalThis.__provideDemoArgs(ctx) }
 `)
   writeFileSync(join(dir, 'cordis.yml'), '[]\n')
-  const observing = { write: (chunk: string) => { observed.out += chunk; return true } }
-  internals.stdout = observing
-  internals.stderr = observing
+  const observe = (chunk: string | Uint8Array): boolean => { observed.out += String(chunk); return true }
+  vi.spyOn(process.stdout, 'write').mockImplementation(observe)
+  vi.spyOn(process.stderr, 'write').mockImplementation(observe)
   const globals = globalThis as unknown as { __observed: Observed; __provideDemoArgs: (ctx: Context) => void }
   globals.__observed = observed
   globals.__provideDemoArgs = (ctx: Context) => {
@@ -202,7 +201,7 @@ describe('provideCmdline', () => {
     const ctx = new Context()
     const exits: number[] = []
     let err = ''
-    internals.stderr = { write: (chunk: string) => { err += chunk; return true } }
+    vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => { err += String(chunk); return true })
     provideCmdline(ctx, { args: ['serve'], exit: code => void exits.push(code) })
     // The root declares no action of its own: the tree-wide guard accepts the
     // subcommand's, and the subcommand inherits the exit and output routing.

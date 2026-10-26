@@ -12,14 +12,12 @@ export type ResourceState = {
   activePreparation?: { status: string; error?: string }
 }
 type ResourceSnapshot = { result?: ResourceState; inventory?: ResourceInventory; inspection?: ResourcePreparation; error?: string; checking: boolean }
-export type WorkflowResourcesResult = ResourceSnapshot & { ready: boolean; prepare(): void; check(): void; action?(action: SetupAction, id?: string): void }
+export type WorkflowResourcesResult = ResourceSnapshot & { ready: boolean; prepare(): void; check(): void; action(action: SetupAction, id?: string): void }
 
 export function resourceKey(document: WorkflowDocument) {
   return JSON.stringify([...new Set(document.nodes.map(node => JSON.stringify([node.type, node.typeVersion, node.provider.id, node.provider.model ?? null])))].sort())
 }
 export function changesResources(path: string, method: string, body?: BodyInit | null) {
-  if (path === '/api/v2/models/settings' && method === 'PATCH') return true
-  if (/^\/api\/v2\/models\/credentials\/[^/]+$/.test(path) && ['PUT', 'DELETE'].includes(method)) return true
   if (path === '/api/v2/settings' && method === 'PATCH') {
     if (typeof body !== 'string') return true
     const patch = JSON.parse(body) as Record<string, unknown>
@@ -32,7 +30,7 @@ export function changesResources(path: string, method: string, body?: BodyInit |
 export class WorkflowResourceChecks {
   private entries = new Map<string, ResourcesController>()
   private invalidationQueued = false
-  constructor(private request: Request, private onReady: () => void = () => {}) {}
+  constructor(private request: Request, private onReady: () => void) {}
   get(document: WorkflowDocument) {
     const key = resourceKey(document)
     let resource = this.entries.get(key)

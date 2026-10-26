@@ -6,8 +6,8 @@ import { ChevronRight } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
 /** Harness owns disclosure keyboard handling, chevrons, type and states. */
-export function Disclosure({ title, children, contained = true, inline = false, open = false, onOpenChange }: {
-  title: string; children: ReactNode; contained?: boolean; inline?: boolean
+export function Disclosure({ title, children, contained, inline = false, open = false, onOpenChange }: {
+  title: string; children: ReactNode; contained: boolean; inline?: boolean
   open?: boolean; onOpenChange?: (open: boolean) => void
 }) {
   const [state, setState] = useState({ source: open, expanded: open })

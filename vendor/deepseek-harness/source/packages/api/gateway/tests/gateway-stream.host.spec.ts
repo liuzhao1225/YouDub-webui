@@ -1189,8 +1189,6 @@ async function setup(
   ctx.typert.register({
     package: '@fixture/feed',
     face: 'host',
-    schemas: [],
-    model: { services: [], events: [], objects: [] },
     invocations: descriptors(),
   })
   const receiver = ctx.get('feed') as unknown as FeedService & { [symbols.original]?: FeedService }

@@ -229,8 +229,8 @@ def test_subtitle_hides_trailing_separators_after_alignment_without_changing_cue
     path = tmp_path / "translated.srt"
     # Punctuation-only cues cannot silently become empty SRT entries.
     with pytest.raises(ApiError, match="contains no text"):
-        export._write_srt(path, [], translated=True, aligned_cues=cues)
-    export._write_srt(path, [], translated=True, aligned_cues=cues[:-1])
+        export._write_srt(path, [], translated=True, language="zh", aligned_cues=cues)
+    export._write_srt(path, [], translated=True, language="zh", aligned_cues=cues[:-1])
     assert [block.splitlines()[2] for block in path.read_text().strip().split("\n\n")] == [
         "第一段文字", "第二段文字", "第三段文字", "第四段文字", "仍保留内部，标点", "Use v1.2", "保留《第一章，第二章》",
     ]
@@ -368,7 +368,7 @@ def test_real_dubbing_export_uses_downloadable_final_wav_as_video_audio(context,
     spectrum = np.abs(np.fft.rfft(samples))
     frequency = np.fft.rfftfreq(len(samples), 1 / rate)[np.argmax(spectrum)]
     assert frequency == pytest.approx(660, abs=2)
-    assert media._duration_ms(media._probe(result.output_files["video"])) == pytest.approx(1000, abs=40)
+    assert media.inspect_video(result.output_files["video"], context.check_cancel)["duration_ms"] == pytest.approx(1000, abs=40)
     frame = subprocess.run([
         ffmpeg_binary(), "-v", "error", "-ss", "0.92", "-i", str(result.output_files["video"]),
         "-frames:v", "1", "-pix_fmt", "gray", "-f", "rawvideo", "-",

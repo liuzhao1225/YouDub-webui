@@ -14,7 +14,7 @@ function document(id = 'one'): WorkflowDocument {
 }
 it('reuses a dependency check across routes, node duplicates and config changes, then invalidates explicitly', async () => {
   const request = vi.fn().mockResolvedValue({ status: 'ready', requirements: [] })
-  const checks = new WorkflowResourceChecks(request)
+  const checks = new WorkflowResourceChecks(request, () => {})
   const first = checks.get(document()), stop = first.subscribe(() => {})
   await vi.waitFor(() => expect(first.getSnapshot().checking).toBe(false))
   stop()
@@ -33,7 +33,7 @@ it('reuses a dependency check across routes, node duplicates and config changes,
 })
 it('retains a failed check on remount and does not silently retry it', async () => {
   const request = vi.fn().mockRejectedValue(new Error('Resource check failed'))
-  const checks = new WorkflowResourceChecks(request), resource = checks.get(document())
+  const checks = new WorkflowResourceChecks(request, () => {}), resource = checks.get(document())
   const stop = resource.subscribe(() => {})
   await vi.waitFor(() => expect(resource.getSnapshot().error).toBe('Resource check failed'))
   stop()
@@ -46,7 +46,7 @@ it('retains a failed check on remount and does not silently retry it', async () 
 })
 it('isolates a node type version failure from a valid graph using the same model', async () => {
   const request = vi.fn().mockRejectedValueOnce(new Error('NODE_TYPE_UNAVAILABLE')).mockResolvedValueOnce({ status: 'ready', requirements: [] })
-  const checks = new WorkflowResourceChecks(request), old = document()
+  const checks = new WorkflowResourceChecks(request, () => {}), old = document()
   old.nodes[0].typeVersion = 'removed'
   const invalid = checks.get(old), stop = invalid.subscribe(() => {})
   await vi.waitFor(() => expect(invalid.getSnapshot().error).toBe('NODE_TYPE_UNAVAILABLE'))
@@ -61,7 +61,7 @@ it('isolates a node type version failure from a valid graph using the same model
 it('keeps a failed progress poll visible when returning to a preparing workflow', async () => {
   vi.useFakeTimers()
   const request = vi.fn().mockResolvedValueOnce({ status: 'preparing' }).mockRejectedValue(new Error('Progress read failed'))
-  const resource = new WorkflowResourceChecks(request).get(document())
+  const resource = new WorkflowResourceChecks(request, () => {}).get(document())
   const stop = resource.subscribe(() => {})
   await vi.advanceTimersByTimeAsync(1200)
   expect(resource.getSnapshot().error).toBe('Progress read failed')
@@ -74,7 +74,7 @@ it('keeps a failed progress poll visible when returning to a preparing workflow'
 })
 it('does not abort its own preparation on mutation invalidation and continues progress polling', async () => {
   vi.useFakeTimers()
-  const checks = new WorkflowResourceChecks(request)
+  const checks = new WorkflowResourceChecks(request, () => {})
   const signals: AbortSignal[] = []
   let prepared = false
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -97,11 +97,6 @@ it('invalidates resource changes while leaving language settings and task mutati
   expect(changesResources('/api/v2/resources/check', 'POST', '{}')).toBe(false)
   expect(changesResources('/api/v2/resources/prepare', 'POST', '{}')).toBe(true)
   expect(changesResources('/api/v2/tasks', 'POST', new FormData())).toBe(false)
-  expect(changesResources('/api/v2/models/settings', 'PATCH')).toBe(true)
-  expect(changesResources('/api/v2/models/credentials/EXAMPLE_KEY', 'PUT')).toBe(true)
-  expect(changesResources('/api/v2/models/credentials/EXAMPLE_KEY', 'DELETE')).toBe(true)
-  expect(changesResources('/api/v2/models/credentials/describe', 'POST')).toBe(false)
-  expect(changesResources('/api/v2/models/discover', 'POST')).toBe(false)
 })
 
 it('checks selections on mount without preparing, prepares only the selected resource and stops reads on disposal', async () => {

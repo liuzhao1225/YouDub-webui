@@ -13,7 +13,7 @@ const { existingInstallation, installationDirectory, privatePython } = await sou
 after(() => source.unregister());
 const normalize = value => [...new Map(value.map(item => [JSON.stringify(item), item])).values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
-async function fixture(t, savedState = {}, readyModels = [], installation) {
+async function fixture(t, savedState = {}, readyModels = [], installation = { required: false }) {
   t.mock.method(EnvironmentSetup.prototype, 'prepare', async function () { this.steps = [{ id: 'python', status: 'ready' }, { id: 'dependencies', status: 'ready', log: 'bootstrap: installed uv and base dependencies' }]; });
   t.mock.method(EnvironmentSetup.prototype, 'probe', async () => ({ ready: true }));
   const events = new Map(), routes = new Map(), disposers = [], errors = [], writes = [], actions = [], calls = [];
@@ -57,7 +57,7 @@ async function fixture(t, savedState = {}, readyModels = [], installation) {
   registerSetupRoutes(ctx, transport, { root: '/unused', repoRoot: '/unused', python: '/unused/python', version: 'test' }, async () => { activated = true; return domain; }, installation);
   const request = async (method, body) => { const request = { body }; await routes.get(method + ' /api/setup')(request); return request.result.value; };
   t.after(async () => { for (const dispose of disposers.reverse()) await dispose(); });
-  for (let i = 0; !activated && !installation?.required; i++) { assert(i < 30); await new Promise(resolve => setTimeout(resolve, 1)); }
+  for (let i = 0; !activated && !installation.required; i++) { assert(i < 30); await new Promise(resolve => setTimeout(resolve, 1)); }
   // Let the same bootstrap turn finish reading the saved preference.
   await new Promise(resolve => setTimeout(resolve, 0));
   return { request, transport, domain, items, models, calls, writes, actions, errors, inspectActivity: () => events.get('desktop/active-tasks')(), get started() { return started; }, get resources() { return resources; } };

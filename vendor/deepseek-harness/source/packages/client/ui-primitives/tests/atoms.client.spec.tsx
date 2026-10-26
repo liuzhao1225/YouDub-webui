@@ -33,11 +33,6 @@ describe('Button', () => {
     fireEvent.click(screen.getByRole('button'))
     expect(onClick).not.toHaveBeenCalled()
   })
-
-  it('outline variant renders a bordered cancel-style button', () => {
-    render(<Button variant="outline">Cancel</Button>)
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDefined()
-  })
 })
 
 describe('Pill', () => {

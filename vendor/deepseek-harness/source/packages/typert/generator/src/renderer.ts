@@ -164,7 +164,7 @@ export class TypeGraphRenderer {
   }
 
   /**
-   * Render one class/interface member as a body-free declaration.
+   * Render one member of an object type.
    * @param member - modeled member.
    * @param references - optional generated names for declaration references.
    * @returns one-line TypeScript member text.
@@ -173,12 +173,11 @@ export class TypeGraphRenderer {
     const name = renderPropertyName(member.name)
     const optional = member.optional ? '?' : ''
     const readonly = member.readonly ? 'readonly ' : ''
-    const abstract = member.abstract ? 'abstract ' : ''
     switch (member.kind) {
-      case 'property': return `${abstract}${readonly}${name}${optional}: ${this.renderType(member.type, references)}`
-      case 'method': return `${abstract}${name}${optional}${this.renderSignature(member.signature, references)}`
-      case 'getter': return `${abstract}get ${name}()${this.renderReturn(member.signature, references)}`
-      case 'setter': return `${abstract}set ${name}${this.renderSignatureHead(member.signature, references)}`
+      case 'property': return `${readonly}${name}${optional}: ${this.renderType(member.type, references)}`
+      case 'method': return `${name}${optional}${this.renderSignature(member.signature, references)}`
+      case 'getter': return `get ${name}()${this.renderReturn(member.signature, references)}`
+      case 'setter': return `set ${name}${this.renderSignatureHead(member.signature, references)}`
       case 'call': return this.renderSignature(member.signature, references)
       case 'construct': return `new ${this.renderSignature(member.signature, references)}`
       case 'index': {
@@ -225,7 +224,7 @@ export class TypeGraphRenderer {
         if (parameter.constraint !== undefined) visitNode(parameter.constraint)
         if (parameter.default !== undefined) visitNode(parameter.default)
       }
-      for (const type of [...declaration.extends, ...declaration.implements]) visitNode(type)
+      for (const type of declaration.extends) visitNode(type)
       if (declaration.type !== undefined) visitNode(declaration.type)
       for (const member of declaration.members) visitMember(member)
       visiting.delete(id)

@@ -18,7 +18,7 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
   const client = new DownloadClient();
   let controller, environment, preparing, phase = 'environment', failure, bootAttempted = false, domain, finishing;
   let configuring = false;
-  if (installation?.required) phase = 'installation';
+  if (installation.required) phase = 'installation';
   let selectionRequired = false, selected, selecting = false, checkedResources;
   const initialModels = modelManifest.map(model => ({ id: model.id, name: model.name, variant: model.variant, purpose: model.purpose, status: 'pending', received: 0, total: model.files.reduce((sum, file) => sum + file.size, 0), speed: 0 }));
   const modelItems = inventory => inventory.items.filter(item => item.automatic && modelManifest.some(model => model.id === item.downloadId));
@@ -75,7 +75,7 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
       osVersion: release(), homeDir: homedir(), environment: steps,
       models: resources?.models ?? initialModels.map(model => inventory?.models.find(item => item.id === model.id) ?? model), ...(resources ? { resources } : {}),
       resourceSelection: { required: selectionRequired, selections: selected ?? items.map(selectionOf), items, prepared: phase === 'ready' },
-      ...(installation ? { installation: { required: phase === 'installation', path: config.root } } : {}),
+      installation: { required: phase === 'installation', path: config.root },
       entries: resources?.entries ?? resourceEntries({ status: phase === 'environment' ? 'preparing' : phase, environment: environment?.steps ?? [] }),
       error: failure, canRetry: Boolean(domain) || !bootAttempted };
   };

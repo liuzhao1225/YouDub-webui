@@ -13,7 +13,7 @@ import { WorkflowResources } from './workflow-resources'
 import { workflowDiagnostics, WorkflowDiagnostics } from './workflow-errors'
 
 type Preview = { reusedSteps: string[]; dirtySteps: string[]; expectedAttempt: number; expectedTaskRevision: number; sourceRevisions: Record<string, number> }
-export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange, request, navigate, useQuery, useSlot, useWorkflowResources }: { taskId: string; document: WorkflowDocument; types: NodeTypeDefinition[]; onStarted(): void; onLockChange?(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
+export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange, request, navigate, useQuery, useSlot, useWorkflowResources }: { taskId: string; document: WorkflowDocument; types: NodeTypeDefinition[]; onStarted(): void; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useQuery' | 'useSlot' | 'useWorkflowResources'>) {
   const tx = useText(), { language } = useI18n()
   const activeView = useActiveView()
   const task = useQuery<TaskView>(`/api/v2/tasks/${taskId}`, 2000, taskNeedsPolling)
@@ -27,7 +27,7 @@ export function WorkflowRerun({ taskId, document, types, onStarted, onLockChange
   const current = preview?.document === fingerprint && preview.result.expectedAttempt === task.data?.attempt && preview.result.expectedTaskRevision === task.data?.revision ? preview.result : null
   const terminal = task.data && ['succeeded', 'failed', 'cancelled'].includes(task.data.status)
   const locked = busy || !!pending
-  useEffect(() => { onLockChange?.(locked) }, [locked, onLockChange])
+  useEffect(() => { onLockChange(locked) }, [locked, onLockChange])
   const nodeNames = (ids: string[]) => ids.map((id) => {
     const node = document.nodes.find((node) => node.id === id)
     return node?.label || (node && text(nodeDefinition(node, types)?.label, language)) || text(task.data?.steps.find((step) => step.id === id)?.label, language) || tx("workflow.rerun.node")

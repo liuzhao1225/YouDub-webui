@@ -10,8 +10,7 @@ const contexts: Context[] = []
 afterEach(async () => { await Promise.all(contexts.splice(0).map(ctx => ctx.fiber.dispose())) })
 
 const contribution: TypertContribution = {
-  package: '@fixture/strict', face: 'host', schemas: [],
-  model: { services: [], events: [], objects: [] },
+  package: '@fixture/strict', face: 'host',
   invocations: [{
     id: '@fixture/strict#items/read', service: 'items', namespace: 'items', method: 'read',
     invocation: { kind: 'direct' },

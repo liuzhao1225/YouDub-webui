@@ -6,7 +6,7 @@ import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-sto
 import type { MainPanelId } from './service.ts'
 import {
   clampWidth,
-  SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN,
+  SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT,
 } from './columns.ts'
 
 /**
@@ -65,7 +65,7 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
         }
       },
       setSidebar: (d, px: number) => {
-        d.layoutInfo.sidebar = clampWidth(px, SIDEBAR_MIN, SIDEBAR_MAX)
+        d.layoutInfo.sidebar = clampWidth(px)
       },
       // Narrow toggles flip only the override: the width preference survives
       // untouched, so re-widening restores the pre-squeeze layout.

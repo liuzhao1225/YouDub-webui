@@ -52,7 +52,7 @@ class DownloadLog:
     error = debug
 
 
-def download_video(url: str, work: Path, wire, *, proxy_port: int | None = 0) -> tuple[Path, dict]:
+def download_video(url: str, work: Path, wire, *, proxy_port: int | None) -> tuple[Path, dict]:
     from yt_dlp import YoutubeDL
     from yt_dlp.utils.networking import std_headers
     from backend.app.config import ffmpeg_binary

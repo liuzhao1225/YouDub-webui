@@ -26,14 +26,14 @@ function hashString(value: string) {
 export function TaskCover({
   id,
   src,
-  processing = false,
-  size = "md",
+  processing,
+  size,
   className,
 }: {
   id: string
   src?: string
-  processing?: boolean
-  size?: "sm" | "md" | "lg"
+  processing: boolean
+  size: "sm" | "md" | "lg"
   className?: string
 }) {
   const tx = useText()

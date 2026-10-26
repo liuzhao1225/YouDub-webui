@@ -17,14 +17,13 @@ import { ResourceRow } from './resource-row'
 import { Surface } from './ui/surface'
 
 export interface SetupScreenOptions {
-  wordmarkSrc?: string
+  wordmarkSrc: string
   themeControl?: ReactNode
   pickDirectory?: () => Promise<string | null>
-  className?: string
 }
 
-export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfigure, pickDirectory, wordmarkSrc, themeControl, className = 'min-h-screen' }: {
-  state: SetupState; busy?: boolean; onConfigure?: (path: string) => Promise<void>; onAction: (action: SetupAction, id?: string) => void; onPrepare?: (selections: ResourceSelection[]) => void
+export function SetupScreen({ state, busy, onAction, onPrepare, onConfigure, pickDirectory, wordmarkSrc, themeControl }: {
+  state: SetupState; busy: boolean; onConfigure: (path: string) => Promise<void>; onAction: (action: SetupAction, id?: string) => void; onPrepare: (selections: ResourceSelection[]) => void
 } & SetupScreenOptions) {
   const text = useText()
   const environment = state.resources?.environment ?? state.environment
@@ -54,18 +53,18 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfig
     : state.phase === 'failed' ? state.canRetry && <Button disabled={busy} onClick={() => onAction('retry')}><RotateCcw />{text('resource.action.retry')}</Button>
     : showModels && state.phase === 'models' ? <Button variant="outline" size="lg" disabled={busy || (!active && !failed && !entries.some(entry => entry.status === 'paused'))} onClick={() => onAction(active ? 'pause' : failed ? 'retry' : 'resume')}>{active ? <Pause /> : failed ? <RotateCcw /> : <ArrowDownToLine />}{active ? text('setup.pauseAll') : failed ? text('resource.action.retry') : text('resource.action.resume')}</Button>
     : state.phase === 'starting' && <Loader2 aria-label={text('setup.starting')} className="size-5 animate-spin text-status-running-fg" />
-  return <SetupPage wordmarkSrc={wordmarkSrc} className={className} actions={<>
+  return <SetupPage wordmarkSrc={wordmarkSrc} className="min-h-full" actions={<>
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Cpu className="size-3.5 shrink-0" />{platform} · {arch}</span>
       {themeControl}
     </>}>
-      {state.phase === 'installation' && state.installation && onConfigure ? <SetupInstallation path={state.installation.path} busy={busy} configure={onConfigure} pickDirectory={pickDirectory} /> : <>
+      {state.phase === 'installation' && state.installation ? <SetupInstallation path={state.installation.path} busy={busy} configure={onConfigure} pickDirectory={pickDirectory} /> : <>
       <div className="flex min-w-0 flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
       <h1 className="flex items-center gap-3 text-base font-medium">
         {state.phase === 'failed' ? <CircleAlert className="size-4 text-status-danger-fg" /> : currentStep || active || verifying ? <Loader2 className="size-4 animate-spin text-status-running-fg" /> : null}
         {text(showModels ? 'setup.models' : 'setup.environment')}
       </h1>
-      {awaitingPreparation && <Button disabled={busy || state.phase !== 'models' || !requiredResources.length || !onPrepare} onClick={() => onPrepare?.(requiredResources)}>{allReady ? <Check /> : <ArrowDownToLine />}{text(allReady ? 'setup.openWorkbench' : showModels ? 'setup.prepareAll' : 'setup.startPreparation')}</Button>}
+      {awaitingPreparation && <Button disabled={busy || state.phase !== 'models' || !requiredResources.length} onClick={() => onPrepare(requiredResources)}>{allReady ? <Check /> : <ArrowDownToLine />}{text(allReady ? 'setup.openWorkbench' : showModels ? 'setup.prepareAll' : 'setup.startPreparation')}</Button>}
       </div>
       <div className="flex min-w-0 flex-col gap-4">
       <SetupActivity key={showModels ? 'models' : 'environment'} state={state} stage={showModels ? 'models' : 'environment'} />

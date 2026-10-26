@@ -273,7 +273,7 @@ export class EnvironmentSetup {
     if (directories.length) process.env.PATH = [...new Set([...directories, ...(process.env.PATH || '').split(delimiter)])].join(delimiter)
     process.env.NLTK_DATA = join(this.config.root, 'nltk_data')
   }
-  async prepare(groups: DependencyGroup[] = ['base']) {
+  async prepare(groups: DependencyGroup[]) {
     assertSupportedPlatform()
     if (groups.some(group => !dependencyGroups.includes(group))) throw new Error('Unknown dependency group.')
     await this.restoreManagedPaths()

@@ -1,4 +1,4 @@
-import { TestFeatureProvider, type TestContext } from './test-bindings'
+import { TestFeatureProvider, testHost, type TestContext } from './test-bindings'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -29,7 +29,7 @@ it('keeps dropped media across workflows and edits only each node’s declared b
     if (path === '/api/v2/tasks' && init?.method === 'POST') throw new Error('Connection interrupted')
     throw new Error(`Unexpected request ${path}`)
   })
-  mount(request)
+  mount(request, false)
   await screen.findByText('拖入视频，或点击选择文件')
   expect(screen.getByRole('heading', { name: '让视频说另一种语言' })).toBeInTheDocument()
   expect(screen.queryByText('处理流程')).not.toBeInTheDocument()
@@ -74,11 +74,7 @@ it('submits declared input slots and preserves an uncertain creation ID until ex
     if (init?.method === 'DELETE') return undefined
     throw new Error('Connection interrupted')
   })
-  const context = {
-    apiClient: { request }, navigation: { push: vi.fn() },
-    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
-    effect: (effect: () => unknown) => effect(),
-  } as unknown as TestContext
+  const context = externalContext(request)
   render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   const input = await screen.findByLabelText('Document *')
   expect(screen.getByRole('link', { name: '查看官网示例' })).toHaveAttribute('href', 'https://liuzhao1225.github.io/YouDub-webui/#demo')
@@ -113,9 +109,7 @@ it('locks workflow selection while a submitted import still needs reconciliation
     if (init?.method === 'DELETE') return undefined
     throw new Error('Connection interrupted')
   })
-  const context = { apiClient: { request }, navigation: { push: vi.fn() },
-    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as TestContext
+  const context = externalContext(request)
   render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   const input = await screen.findByLabelText('Document *')
   const user = userEvent.setup()
@@ -141,9 +135,7 @@ it('retains each external composer draft after visiting settings and clears only
     return { items: [], hasMore: false }
   })
   const push = vi.fn()
-  const context = { apiClient: { request }, navigation: { push },
-    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as TestContext
+  const context = externalContext(request, push)
   const showStudio = () => render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   let view = showStudio()
   const user = userEvent.setup()
@@ -179,11 +171,25 @@ it('retains each external composer draft after visiting settings and clears only
   expect(screen.getByText('text.txt')).toBeInTheDocument()
 })
 
-function mount(request: ReturnType<typeof vi.fn>) {
+// The Host always registers Graph before exposing the catalog. External workflows
+// run inside GraphStudio, with their persisted selection owned by the same draft store.
+function externalContext(request: (path: string, init?: RequestInit) => Promise<unknown>, push = vi.fn()): TestContext {
+  const context = { apiClient: { request: async (path: string, init?: RequestInit) => {
+    if (path.startsWith('/api/v2/workflow-documents?')) return { items: [{ id: reviewedSubtitles.id, revision: 0, origin: 'builtin', document: reviewedSubtitles }] }
+    if (path === '/api/v2/node-types') return { items: [] }
+    if (path === '/api/v2/catalog') {
+      const result = await request(path, init) as Catalog
+      return { ...result, workflows: [{ ...catalog.workflows[0], id: 'youdub.graph' }, ...result.workflows] }
+    }
+    return request(path, init)
+  } }, navigation: { push } } as TestContext
+  testHost(context).value.draftStore.set('selected', 'workflow:external.text')
+  return context
+}
+
+function mount(request: (path: string, init?: RequestInit) => Promise<unknown>, external = true) {
   const push = vi.fn()
-  const context = { apiClient: { request }, navigation: { push },
-    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as TestContext
+  const context = external ? externalContext(request, push) : { apiClient: { request }, navigation: { push } } as TestContext
   render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   return push
 }
@@ -278,45 +284,6 @@ it('places the link first, switches between sources and submits a canonical URL 
   expect(body.has('input.video')).toBe(false)
 })
 
-it.each([null, {}, { adapter: 'openai', model: '', device: 'remote' }])('guides deferred translation setup and blocks submission for %j', async (translation) => {
-  const localize: Catalog = { providers: [], workflows: [{
-    ...catalog.workflows[0], id: 'youdub.localize', ui: { sourceUrlInput: 'video' },
-    inputs: [{ name: 'video', label: '视频', acceptedMimeTypes: ['video/*'], required: false }],
-    configSchema: { type: 'object', properties: {} }, defaults: { translation },
-  }] }
-  const request = vi.fn(async (path: string) => path === '/api/v2/catalog' ? localize : { items: [], hasMore: false })
-  const push = mount(request)
-  const link = await screen.findByLabelText('视频链接')
-  await userEvent.setup().type(link, 'https://youtu.be/jNQXAC9IVRw')
-  expect(screen.getByText('开始任务前，请配置翻译连接和模型。')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '下载并处理' })).toBeDisabled()
-  // Guard native form submissions as well as clicks on the disabled button.
-  fireEvent.submit(link.closest('form')!)
-  expect(request.mock.calls.some(([path]) => path === '/api/v2/tasks')).toBe(false)
-  await userEvent.setup().click(screen.getByRole('link', { name: '打开设置' }))
-  expect(push).toHaveBeenCalledWith('/settings/models')
-})
-
-it.each(['deepseek-flash', 'deepseek-v4-pro', 'custom-model'])('submits a configured translation model unchanged: %s', async (model) => {
-  const translation = { adapter: 'openai', model, device: 'remote' }
-  const localize: Catalog = { providers: [], workflows: [{
-    ...catalog.workflows[0], id: 'youdub.localize', inputs: [],
-    configSchema: { type: 'object', properties: {} }, defaults: { translation },
-  }] }
-  const request = vi.fn(async (path: string, init?: RequestInit) => {
-    if (path === '/api/v2/catalog') return localize
-    if (init?.method === 'POST') return { id: 'translated' }
-    return { items: [], hasMore: false }
-  })
-  const push = mount(request)
-  await userEvent.setup().click(await screen.findByRole('button', { name: '开始处理' }))
-  await waitFor(() => expect(push).toHaveBeenCalledWith('/tasks/translated'))
-  const body = request.mock.calls.find(([, init]) => init?.method === 'POST')![1]!.body as FormData
-  expect(JSON.parse(body.get('request') as string).config.translation).toEqual(translation)
-  expect(screen.queryByRole('link', { name: '打开设置' })).not.toBeInTheDocument()
-})
-
-
 it('retains a submission across a route unmount and does not navigate from its late response', async () => {
   let finish!: (task: { id: string }) => void
   const request = vi.fn(async (path: string, init?: RequestInit) => {
@@ -326,9 +293,7 @@ it('retains a submission across a route unmount and does not navigate from its l
     throw new Error('Unexpected request ' + path)
   })
   const push = vi.fn()
-  const context = { apiClient: { request }, navigation: { push },
-    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as TestContext
+  const context = externalContext(request, push)
   const show = () => render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   const first = show(), user = userEvent.setup()
   const input = await screen.findByLabelText('Document *')

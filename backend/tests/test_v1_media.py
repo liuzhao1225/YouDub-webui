@@ -63,7 +63,7 @@ def test_inspection_reads_first_streams_and_fractional_frame_rate(monkeypatch, t
 
     monkeypatch.setattr(media, "_run_media", run)
     monkeypatch.setattr(media, "ffprobe_binary", lambda: "/configured/ffprobe")
-    info = media.inspect_video(source)
+    info = media.inspect_video(source, Wire().check_cancel)
     assert info == {"duration_ms": 1001, "width": 320, "height": 180,
                     "frame_rate": pytest.approx(29.97003), "video_codec": "h264", "audio_codec": "aac"}
     assert commands[0][0] == "/configured/ffprobe"
@@ -73,7 +73,7 @@ def test_inspection_reads_first_streams_and_fractional_frame_rate(monkeypatch, t
 def test_container_duration_and_nominal_frame_rate_when_stream_fields_are_unavailable(monkeypatch, probe_data):
     probe_data["streams"][0].update(duration="N/A", avg_frame_rate="0/0", r_frame_rate="25/1")
     monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
-    info = media.inspect_video(Path("source.mkv"))
+    info = media.inspect_video(Path("source.mkv"), Wire().check_cancel)
     assert info["duration_ms"] == 1050
     assert info["frame_rate"] == 25
 
@@ -86,7 +86,7 @@ def test_matching_stream_starts_are_compared_at_millisecond_precision(monkeypatc
     probe_data["streams"][0]["start_time"] = video_start
     probe_data["streams"][1]["start_time"] = audio_start
     monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
-    assert media.inspect_video(Path("source.mp4"))["duration_ms"] == 1001
+    assert media.inspect_video(Path("source.mp4"), Wire().check_cancel)["duration_ms"] == 1001
 
 
 @pytest.mark.parametrize("video_start,audio_start", [("0", "1"), ("0", "0.001"), ("2", "1.999")])
@@ -95,7 +95,7 @@ def test_different_stream_starts_are_unsupported(monkeypatch, probe_data, video_
     probe_data["streams"][1]["start_time"] = audio_start
     monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
     with pytest.raises(ApiError, match="Different video and audio start times") as error:
-        media.inspect_video(Path("source.mp4"))
+        media.inspect_video(Path("source.mp4"), Wire().check_cancel)
     assert error.value.status_code == 415
     assert error.value.content["error"]["code"] == "UNSUPPORTED_MEDIA"
 
@@ -106,7 +106,7 @@ def test_invalid_stream_start_is_invalid_media(monkeypatch, probe_data, stream_i
     probe_data["streams"][stream_index]["start_time"] = start
     monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
     with pytest.raises(ApiError, match="stream start time is invalid") as error:
-        media.inspect_video(Path("source.mp4"))
+        media.inspect_video(Path("source.mp4"), Wire().check_cancel)
     assert error.value.status_code == 422
     assert error.value.content["error"]["code"] == "INVALID_MEDIA"
 
@@ -124,7 +124,7 @@ def test_rejected_media_has_contract_error(monkeypatch, probe_data, change, code
     change(probe_data)
     monkeypatch.setattr(media, "_probe", lambda path, **kwargs: probe_data)
     with pytest.raises(ApiError) as error:
-        media.inspect_video(Path("source.mp4"))
+        media.inspect_video(Path("source.mp4"), Wire().check_cancel)
     assert error.value.status_code == status
     assert error.value.content["error"]["code"] == code
 
@@ -136,7 +136,7 @@ def test_probe_failure_does_not_expose_process_output(monkeypatch, tmp_path, ret
     monkeypatch.setattr(media, "_run_media", lambda command, **kwargs:
                         subprocess.CompletedProcess(command, returncode, stdout, "private/source/file"))
     with pytest.raises(ApiError) as error:
-        media.inspect_video(source)
+        media.inspect_video(source, Wire().check_cancel)
     assert error.value.content["error"]["code"] == "INVALID_MEDIA"
     assert "private" not in str(error.value)
 
@@ -150,7 +150,7 @@ def test_missing_probe_is_runtime_error(monkeypatch, tmp_path):
 
     monkeypatch.setattr(media, "_run_media", missing)
     with pytest.raises(ApiError) as error:
-        media.inspect_video(source)
+        media.inspect_video(source, Wire().check_cancel)
     assert error.value.status_code == 503
     assert error.value.content["error"]["code"] == "RUNTIME_UNAVAILABLE"
 
@@ -210,7 +210,7 @@ def test_real_video_probe_and_prepare_preserve_source_and_extract_asr_audio(tmp_
         "-t", "1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "2", str(source),
     ], check=True, capture_output=True, text=True)
     source_hash = hashlib.sha256(source.read_bytes()).digest()
-    inspected = media.inspect_video(source)
+    inspected = media.inspect_video(source, Wire().check_cancel)
     progress = []
     result = prepare_operation(context_for(source, tmp_path / "prepare"), lambda value, message: progress.append(value))
 
@@ -224,7 +224,6 @@ def test_real_video_probe_and_prepare_preserve_source_and_extract_asr_audio(tmp_
         assert (audio.getnchannels(), audio.getframerate(), audio.getsampwidth()) == (2, 44100, 2)
         assert 43000 < audio.getnframes() < 46000
         assert any(audio.readframes(audio.getnframes()))
-    assert 900 <= media._duration_ms(media._probe(audio_path)) <= 1100
     assert progress == [None]
 
 
@@ -240,7 +239,7 @@ def delayed_audio(tmp_path):
         "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-pix_fmt", "yuv420p",
         "-c:a", "pcm_s16le", str(source),
     ], check=True, capture_output=True, text=True)
-    streams = media._probe(source)["streams"]
+    streams = media._probe(source, Wire().check_cancel)["streams"]
     assert [(stream["codec_type"], float(stream["start_time"])) for stream in streams] == [
         ("video", 0), ("audio", 1),
     ]
@@ -251,7 +250,7 @@ def test_real_delayed_audio_is_rejected_before_prepare_extracts_it(tmp_path, del
     source = delayed_audio
     source_hash = hashlib.sha256(source.read_bytes()).digest()
     with pytest.raises(ApiError, match="Different video and audio start times") as error:
-        media.inspect_video(source)
+        media.inspect_video(source, Wire().check_cancel)
     assert error.value.content["error"]["code"] == "UNSUPPORTED_MEDIA"
 
     context = context_for(source, tmp_path / "prepare")

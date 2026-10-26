@@ -1,44 +1,23 @@
+import { boot, cleanups, tempDir, writeCredentials } from './fixture.ts'
 // The record half of the seam: the store keeps an owner's payload verbatim,
 // presence rather than content answers "configured", and every write goes
 // through one serialized read-modify-write so a rotating credential cannot be
 // lost between processes.
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { credentialKey, credentialKeyScope, credentialRef, parseCredentialKey } from '@deepseek-ai/dsh-credentials'
 import type { CredentialKey, CredentialRecord } from '@deepseek-ai/dsh-credentials'
 import { LocalCredentialProvider } from '../src/index.ts'
 
-/** Credential documents are seeded owner-only, exactly as the provider creates them. */
-function writeCredentials(file: string, text: string): Promise<void> {
-  return writeFile(file, text, { mode: 0o600 })
-}
-
 const CODEX = credentialKey('llm-pi-ai', 'openai-codex')
 const BEDROCK = credentialKey('llm-pi-ai', 'amazon-bedrock')
 const OTHER_OWNER = credentialKey('llm-kimi', 'openai-codex')
 
-const cleanups: Array<() => Promise<void>> = []
-
 afterEach(async () => {
   while (cleanups.length > 0) await cleanups.pop()!()
 })
-
-async function tempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-cred-records-'))
-  cleanups.push(() => rm(dir, { recursive: true, force: true }))
-  return dir
-}
-
-async function boot(config: ConstructorParameters<typeof LocalCredentialProvider>[1]): Promise<Context> {
-  const ctx = new Context()
-  const fiber = ctx.plugin(LocalCredentialProvider, config)
-  cleanups.push(async () => { await fiber.dispose() })
-  await fiber
-  return ctx
-}
 
 /** Store one record outright; the seam offers only the read-modify-write path. */
 function put(ctx: Context, key: CredentialKey, record: CredentialRecord): Promise<CredentialRecord | undefined> {

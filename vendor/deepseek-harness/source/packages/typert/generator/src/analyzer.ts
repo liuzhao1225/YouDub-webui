@@ -1501,7 +1501,6 @@ class FaceAnalyzer {
             ...(symbolKey.startsWith('__@') ? { computed: 'symbol' as const } : {}),
             optional: (property.flags & ts.SymbolFlags.Optional) !== 0,
             readonly: declaration !== undefined && hasModifier(declaration, ts.SyntaxKind.ReadonlyKeyword),
-            abstract: false,
             kind: 'property',
             type: convert(propertyType),
           })
@@ -1511,7 +1510,6 @@ class FaceAnalyzer {
             name: '(index)',
             optional: false,
             readonly: info.isReadonly,
-            abstract: false,
             kind: 'index',
             signature: {
               typeParameters: [],
@@ -1683,7 +1681,6 @@ class FaceAnalyzer {
         kind: 'alias',
         typeParameters: [],
         extends: [],
-        implements: [],
         members: [],
         type: resolvedType,
       })
@@ -1829,8 +1826,7 @@ class FaceAnalyzer {
         name: declarationName(selected),
         kind: 'interface',
         typeParameters: parameters,
-        extends: analyzedParts.flatMap(part => part.heritage.extends),
-        implements: [],
+        extends: analyzedParts.flatMap(part => part.heritage),
         members: analyzedParts.flatMap(part => part.members),
       }
       this.declarations.set(id, model)
@@ -1839,7 +1835,7 @@ class FaceAnalyzer {
     }
     const parameters = ts.isEnumDeclaration(selected) ? [] : this.typeParameters(selected.typeParameters)
     const heritage = ts.isTypeAliasDeclaration(selected) || ts.isEnumDeclaration(selected)
-      ? { extends: [] as TypeNodeId[], implements: [] as TypeNodeId[] }
+      ? []
       : this.heritage(selected)
     const kind = ts.isClassDeclaration(selected)
       ? 'class'
@@ -1854,8 +1850,7 @@ class FaceAnalyzer {
       name: declarationName(selected),
       kind,
       typeParameters: parameters,
-      extends: heritage.extends,
-      implements: heritage.implements,
+      extends: heritage,
       members: ts.isTypeAliasDeclaration(selected) || ts.isEnumDeclaration(selected)
         ? []
         : this.members(selected.members),
@@ -1868,11 +1863,12 @@ class FaceAnalyzer {
 
   private heritage(
     declaration: ts.ClassDeclaration | ts.InterfaceDeclaration,
-  ): { extends: TypeNodeId[]; implements: TypeNodeId[] } {
-    const result = { extends: [] as TypeNodeId[], implements: [] as TypeNodeId[] }
+  ): TypeNodeId[] {
+    const result: TypeNodeId[] = []
     for (const clause of declaration.heritageClauses ?? []) {
-      const target = clause.token === ts.SyntaxKind.ExtendsKeyword ? result.extends : result.implements
-      for (const type of clause.types) target.push(this.convertHeritage(type))
+      if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+        for (const type of clause.types) result.push(this.convertHeritage(type))
+      }
     }
     return result
   }
@@ -1943,7 +1939,6 @@ class FaceAnalyzer {
       ...identity,
       optional: 'questionToken' in member && member.questionToken !== undefined,
       readonly: hasModifier(member, ts.SyntaxKind.ReadonlyKeyword),
-      abstract: hasModifier(member, ts.SyntaxKind.AbstractKeyword),
     }
   }
 

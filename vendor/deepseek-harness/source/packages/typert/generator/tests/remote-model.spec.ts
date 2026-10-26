@@ -1004,7 +1004,6 @@ function analyzeRemote(root: string, checkDiagnostics = true): ReturnType<Worksp
 }
 
 function remotePackage(root: string): {
-  readonly services: readonly unknown[]
   readonly invocations: readonly InvocationModel[]
 } {
   const host = analyzeRemote(root).faces.find(face => face.face === 'host')

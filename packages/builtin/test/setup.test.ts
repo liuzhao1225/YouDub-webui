@@ -69,7 +69,7 @@ test('first-run skips Windows Store Python aliases and extracts Python in Unicod
     await mkdir(join(data, 'runtime', 'python'), { recursive: true }); await cp(fixture, destination)
   })
   const setup = new EnvironmentSetup(ctx, { root: data, repoRoot: resolve('.'), python: join(data, 'runtime', 'venv', windows ? 'Scripts/python.exe' : 'bin/python') }, client, new AbortController().signal)
-  await assert.rejects(setup.prepare(), error => error === stop)
+  await assert.rejects(setup.prepare(['base']), error => error === stop)
   assert.equal(extracted, true)
 })
 
@@ -107,7 +107,7 @@ test('desktop Python stays in its data directory even when a system Python is on
   t.after(() => client.close())
   t.mock.method(client, 'download', async () => {})
   const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
-  await setup.prepare()
+  await setup.prepare(['base'])
   assert.ok(commands.some(args => args[1] === 'venv' && args[2] === environment))
   assert.equal(process.env.PATH, bin)
   assert.ok(!commands.some(args => ['acceleration', 'punkt', 'acceleration-plan'].includes(args[2] || '')))
@@ -186,7 +186,7 @@ test('base restart restores existing managed FFmpeg and NLTK paths without insta
     }
     return { stdout: '3.12.12', stderr: '' }
   } } } as unknown as Context
-  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare()
+  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare(['base'])
   assert.equal(process.env.FFMPEG_PATH, join(bin, 'ffmpeg' + (windows ? '.exe' : '')))
   assert.equal(process.env.FFPROBE_PATH, join(bin, 'ffprobe' + (windows ? '.exe' : '')))
   assert.equal(process.env.PATH?.split(delimiter)[0], bin)

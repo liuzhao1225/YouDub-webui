@@ -8,7 +8,7 @@ import { formatBytes } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
-export function UploadSlot({ slot, file, disabled, alternative = false, onChange }: { slot: InputSlot; file?: File; disabled: boolean; alternative?: boolean; onChange(file?: File): void }) {
+export function UploadSlot({ slot, file, disabled, alternative, onChange }: { slot: InputSlot; file?: File; disabled: boolean; alternative: boolean; onChange(file?: File): void }) {
   const tx = useText()
   const { language } = useI18n()
   const input = useRef<HTMLInputElement>(null)

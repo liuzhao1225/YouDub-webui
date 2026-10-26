@@ -79,11 +79,15 @@ Connection 的重复 `requestRejection/createPeer` 包装、未读 `allowsRemote
 
 YouDub 首次模型设置直接消费 Harness activity，移除重复回传状态；旧 `youdub.settings.sections/settings.sections` 空插槽退出，设置扩展使用实际 Harness item/section 注册。模型编辑器仅保留当前 `input` 字段，供应商目录探测对历史字段的转换继续保留。通用词条只维护实际调用项，插件仍通过原语言服务注册自身词条。
 
+YouDub 直接组合插件管理页面，框架包保留管理组件、Host Remote 和类型合同，未注册的旧侧栏装配入口退出。`BootSeams`、`DesktopPaths.lock` 和 cmdline `internals` 测试入口退出；测试使用真实模块传输、profile 锁路径和标准输出。布局不再保存无人消费的中心列宽度；响应式尺寸、拖动和折叠保留。
+
 ## 工具、测试与兼容边界
 
 `PartialArguments`、`snapshotJsonValue`、`WeakMapWithValues`、数字 brand、`bytesToBase64`、`clampTimeout`、无消费者的 home 显示/cache helper 和 Cosmokit array/time/string/binary 输出工具已退役。`mapValues` 的同义别名退出，实际 `valueMap` 保留；Deque 保留使用中的 `pushBack/popFront`，移除 `pushFront`。Timer 只维护 HMR 使用的 `debounce`，随 fiber 释放，未消费的返回 `.dispose` 属性退出。无生产调用的 `deadline/Deadline`、只供测试的 FFI 类型 getter 和 Deque benchmark 退出；LLM 空闲超时、真实 Koffi ABI/句柄验证保留。JSON 验证、配置锁和原错误传播保留。
 
-生成器不再保留无读的成员标记、枚举初始化值和重复文档元数据；实际 schema 描述、Remote 参数/返回说明和错误源位置保留。构建脚本退出不可达的 official profile 和旧 staged provider metadata 校验；当前源码/产物收据验证继续生效。
+生成器不再保留无读的成员标记、枚举初始化值和重复文档元数据；实际 schema 描述、Remote 参数/返回说明和错误源位置保留。内部资源服务只使用实际注入的目录，安装配置、文件选项和依赖组由真实调用方提供。媒体取消和字幕语言参数沿既有工作流传递；当前执行指纹更新保留已审核的兼容记录。Worker 外部请求握手、凭据审批映射和必要的 I/O 测试边界继续保留。
+
+构建脚本退出不可达的 official profile 和旧 staged provider metadata 校验；当前源码/产物收据验证继续生效。host/client 聚合类型检查覆盖生产引用之外的测试和工程脚本。
 
 测试维护范围覆盖实际协议请求、鉴权、凭据脱敏、配置重载和迁移、插件生命周期、启动就绪、取消、普通子进程停止及平台隔离。退出产品的终端、配置导出和反射接口专属测试，以及穷举 Node 模块查找布局的重复矩阵已移除；实际模块解析、主机退出、媒体和工作流回归继续保留。
 

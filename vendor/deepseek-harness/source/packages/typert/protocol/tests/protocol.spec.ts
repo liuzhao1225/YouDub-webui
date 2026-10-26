@@ -227,7 +227,7 @@ describe('typert-protocol Remote declarations', () => {
       follow(): void {}
     }
     const initializers: Array<(this: Jobs) => void> = []
-    Remote<Jobs, unknown[], unknown>({ mode: 'stream' })(Reflect.get(Jobs.prototype, 'follow'), methodContext('follow', initializers))
+    Remote({ mode: 'stream' })(Reflect.get(Jobs.prototype, 'follow'), methodContext('follow', initializers))
     const jobs = new Jobs()
     for (const initialize of initializers) initialize.call(jobs)
     expect(remoteMethods(jobs)).toEqual([

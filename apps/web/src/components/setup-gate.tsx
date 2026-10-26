@@ -8,12 +8,12 @@ import { SetupController } from '@/runtime/onboarding'
 import { useObservableSource } from '@/plugin/view-hooks'
 import { SetupPage } from './setup-page'
 
-export function SetupGate({ children, request, screenProps }: { children: ReactNode; request: Request; screenProps?: SetupScreenOptions }) {
+export function SetupGate({ children, request, screenProps }: { children: ReactNode; request: Request; screenProps: SetupScreenOptions }) {
   const text = useText()
   const [controller] = useState(() => new SetupController(request))
   const { state, error, busy } = useObservableSource(controller)
   useEffect(() => { controller.start(); return controller.stop }, [controller])
-  if (error) return <SetupPage wordmarkSrc={screenProps?.wordmarkSrc} actions={screenProps?.themeControl}><SetupDiagnostics state={state} requestError={error} /><div><Button onClick={controller.start}>{text('setup.reconnect')}</Button></div></SetupPage>
+  if (error) return <SetupPage wordmarkSrc={screenProps.wordmarkSrc} actions={screenProps.themeControl}><SetupDiagnostics state={state} requestError={error} /><div><Button onClick={controller.start}>{text('setup.reconnect')}</Button></div></SetupPage>
   if (state?.phase === 'ready') return children
-  return state ? <SetupScreen {...screenProps} state={state} busy={busy} onAction={controller.action} onPrepare={controller.prepare} onConfigure={controller.configure} /> : <SetupPage wordmarkSrc={screenProps?.wordmarkSrc} actions={screenProps?.themeControl}><p role="status" className="text-sm text-muted-foreground">{text('setup.detecting')}</p></SetupPage>
+  return state ? <SetupScreen {...screenProps} state={state} busy={busy} onAction={controller.action} onPrepare={controller.prepare} onConfigure={controller.configure} /> : <SetupPage wordmarkSrc={screenProps.wordmarkSrc} actions={screenProps.themeControl}><p role="status" className="text-sm text-muted-foreground">{text('setup.detecting')}</p></SetupPage>
 }

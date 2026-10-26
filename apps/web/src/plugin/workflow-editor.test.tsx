@@ -65,7 +65,7 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
     const segments = location.split('?')[0].split('/').filter(Boolean)
     const route = segments.length > 3 ? 'workflow-node' : segments.length > 1 ? 'workflow-editor' : 'workflows'
     const Page = route === 'workflows' ? WorkflowsPage : WorkflowPage
-    return <TestFeatureProvider context={context}><LanguageProvider>{options.studio ? <GraphStudio /> : <Page key={location} params={{ id: segments[1], nodeId: segments[3] }} />}</LanguageProvider></TestFeatureProvider>
+    return <TestFeatureProvider context={context}><LanguageProvider>{options.studio ? <GraphStudio additionalWorkflows={[]} renderWorkflow={() => null} /> : <Page key={location} params={{ id: segments[1], nodeId: segments[3] }} />}</LanguageProvider></TestFeatureProvider>
   }
   render(<Host />)
   return { request, push, navigate }

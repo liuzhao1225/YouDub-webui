@@ -1,9 +1,8 @@
 import { Surface, surfaceVariants } from '@/components/ui/surface'
-import { NativeSelect } from '@/components/ui/native-select'
 import { type Bindings } from '../sdk'
 import { useEffect, useState, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import { ArrowRight, ChevronRight, Link2, Loader2, X } from '@/lib/icons'
-import { Link, text, type Catalog, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
+import { Link, type Catalog, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { videoSource } from '@youdub/sdk/video-source'
 import { Input } from '@/components/ui/input'
 import { useI18n, useText } from '@/lib/i18n'
@@ -14,16 +13,15 @@ import { TaskCover } from '@/components/task-cover'
 import { PageContainer } from '@/components/page-layout'
 import { InlineAlert } from '@/components/inline-alert'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { ACTIVE_STATUSES, TaskProgress, TaskState, taskDisplayName } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
-import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
+import { useActiveView, useObservableSource } from '../view-hooks'
 import { StudioDraftStore, type ComposerDraft } from '@/runtime/studio-draft'
 import { GraphStudio } from './workflows'
 import { UploadSlot } from './media-upload'
 
 
-function Composer({ workflow, draftStore, afterInputs, onLockChange, request, navigate, useSlot }: { workflow: WorkflowDescription; draftStore: StudioDraftStore; afterInputs?: ReactNode; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot'>) {
+function Composer({ workflow, draftStore, afterInputs, onLockChange, request, navigate, useSlot }: { workflow: WorkflowDescription; draftStore: StudioDraftStore; afterInputs: ReactNode; onLockChange(locked: boolean): void } & Bindings<'request' | 'navigate' | 'useSlot'>) {
   const tx = useText()
   const draftKey = `${workflow.id}:${workflow.version}`
   const { composers, submissions } = useObservableSource(draftStore)
@@ -38,7 +36,6 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
   const setSourceUrl = (sourceUrl: string) => updateDraft(current => ({ ...current, sourceUrl }))
   const [localError, setError] = useState('')
   const error = submission?.error || localError, busy = submission?.busy ?? false, pendingId = submission?.id ?? ''
-  usePendingUnload(!!pendingId)
   useEffect(() => { onLockChange(busy || !!pendingId) }, [busy, pendingId, onLockChange])
   const [linkTouched, setLinkTouched] = useState(false)
   function openTask(task: TaskView) {
@@ -56,10 +53,8 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
   const supported = useEditorSupported(useSlot, workflow.id, workflow.configSchema)
   const requiredFiles = workflow.inputs.filter((slot) => slot.required || slot.name === linkSlot).every((slot) => Boolean(files[slot.name]) || (slot.name === linkSlot && Boolean(source)))
   const taskConfig = { ...config, ...(source ? { source_url: source.url } : {}) }
-  const translation = config.translation as JsonObject | null | undefined
-  const translationMissing = workflow.id === 'youdub.localize' && (!translation || typeof translation !== 'object' || Array.isArray(translation) || !translation.adapter || !translation.model || !translation.device)
   async function submit(event: FormEvent) {
-    event.preventDefault(); if (busy || !supported || !requiredFiles || linkError || translationMissing) return
+    event.preventDefault(); if (busy || !supported || !requiredFiles || linkError) return
     const missing = schemaProblems(workflow.configSchema).length ? [] : validateConfig(workflow.configSchema, taskConfig)
     if (missing.length) { setError(`${tx("studio.check.options")}${missing.join(', ')}`); return }
     const id = pendingId || crypto.randomUUID()
@@ -90,14 +85,13 @@ function Composer({ workflow, draftStore, afterInputs, onLockChange, request, na
           if (file && slot.name === linkSlot) { setSourceUrl(''); setLinkTouched(false) }
           setError(''); setFiles((current) => { const next = { ...current }; if (file) next[slot.name] = file; else delete next[slot.name]; return next })
         }} />)}</div>
-        {afterInputs && <div className="pt-4">{afterInputs}</div>}
+        <div className="pt-4">{afterInputs}</div>
         <div className={cn('flex flex-wrap items-center gap-3 pt-4', workflow.inputs.length > 0 && 'mt-2 border-t border-border')}>
           <div className="min-w-0 flex-[1_1_36rem]"><ConfigEditor useSlot={useSlot} mode="options" ownerId={workflow.id} value={config} schema={workflow.configSchema} diagnostics={[]} readOnly={busy || !!pendingId} onChange={setConfig} /></div>
-          <Button type="submit" size="xl" className="ml-auto w-full shrink-0 @min-[36rem]/launch:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError) || translationMissing}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx("studio.submit.with.the.same.id") : source ? tx("studio.download.and.process") : tx("studio.start.processing")}</Button>
+          <Button type="submit" size="xl" className="ml-auto w-full shrink-0 @min-[36rem]/launch:w-auto" disabled={busy || !supported || !requiredFiles || Boolean(linkError)}>{busy ? <Loader2 className="animate-spin" /> : <ArrowRight />}{pendingId ? tx("studio.submit.with.the.same.id") : source ? tx("studio.download.and.process") : tx("studio.start.processing")}</Button>
         </div>
       </div>
     </Surface>
-    {translationMissing && <div className="mt-4"><InlineAlert>{tx("studio.configure.a.translation.connection.and.model.before.starting.a.ta")} <Link href="/settings/models" className="underline underline-offset-4">{tx("studio.open.settings")}</Link></InlineAlert></div>}
     {(error || (pendingId && !busy)) && <div className="mt-4 space-y-3">
       {error && <InlineAlert>{error}</InlineAlert>}
       {pendingId && !busy && <div className="space-y-2 text-sm"><p className="break-all text-muted-foreground">{tx("studio.task.id")}{pendingId}</p><div className="flex flex-wrap gap-2">
@@ -117,10 +111,6 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
   const { data: catalog, error, refresh } = useQuery<Catalog>('/api/v2/catalog')
   const { data: tasks, error: taskError, refresh: refreshTasks } = useQuery<TaskPage>('/api/v2/tasks?limit=12&offset=0', 3000)
   const { language, t } = useI18n()
-  const { selected } = useObservableSource(draftStore)
-  const setSelected = (id: string) => draftStore.set('selected', `workflow:${id}`)
-  const [locked, setLocked] = useState(false)
-  const workflow = catalog?.workflows.find((item) => item.id === 'youdub.graph') ?? catalog?.workflows.find((item) => `workflow:${item.id}` === selected) ?? catalog?.workflows[0]
   const active = tasks?.items.filter((task) => ACTIVE_STATUSES.has(task.status)) ?? []
   const awaitingReview = active.flatMap((task) => task.steps.filter((step) => step.status === 'awaiting_review').map((step) => ({ task, step })))
   const processing = active.filter((task) => task.status !== 'paused')
@@ -138,11 +128,10 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
         <div className="mt-8 animate-rise [animation-delay:120ms] [@media(max-height:820px)]:mt-6">
           {error && <div className="mb-4 space-y-2"><InlineAlert>{error}</InlineAlert><Button variant="outline" onClick={refresh}>{tx("studio.reload")}</Button></div>}
           {!catalog && !error && <p role="status" className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{tx("studio.loading")}</p>}
-          {catalog && !workflow && <InlineAlert>{tx("studio.no.workflows.are.available")}</InlineAlert>}
-          {workflow && (workflow.id === 'youdub.graph' ? <GraphStudio draftStore={draftStore} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} useWorkflowDocuments={useWorkflowDocuments} onLockChange={setLocked}
-            additionalWorkflows={catalog!.workflows.filter((item) => item.id !== 'youdub.graph' && item.id !== 'youdub.localize' && !item.graphTemplate)}
+          {catalog && <GraphStudio draftStore={draftStore} useWorkflowResources={useWorkflowResources} request={request} navigate={navigate} useQuery={useQuery} useSlot={useSlot} useWorkflowDocuments={useWorkflowDocuments}
+            additionalWorkflows={catalog.workflows.filter((item) => item.id !== 'youdub.graph' && item.id !== 'youdub.localize' && !item.graphTemplate)}
             renderWorkflow={(item, selector, lockChanged) => <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${item.id}:${item.version}`} workflow={item} afterInputs={selector} onLockChange={lockChanged} />}
-          /> : <Composer request={request} navigate={navigate} useSlot={useSlot} draftStore={draftStore} key={`${workflow.id}:${workflow.version}`} workflow={workflow} onLockChange={setLocked} afterInputs={catalog!.workflows.length > 1 ? <div className="flex items-center gap-3"><Label htmlFor="workflow">{tx("studio.workflow")}</Label><NativeSelect id="workflow" disabled={locked} value={workflow.id} onChange={(event) => setSelected(event.target.value)} className="min-w-0 flex-1">{catalog!.workflows.map((item) => <option key={item.id} value={item.id}>{text(item.label, language)}</option>)}</NativeSelect></div> : undefined} />)}
+          />}
         </div>
         <div className="mt-4 flex justify-center"><a href="https://liuzhao1225.github.io/YouDub-webui/#demo" target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{tx("studio.view.built.in.examples")}</a></div>
         {!!active.length && <div className="mt-6 flex flex-wrap justify-center gap-3">

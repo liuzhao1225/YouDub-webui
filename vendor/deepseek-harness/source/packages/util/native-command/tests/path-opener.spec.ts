@@ -100,6 +100,8 @@ describe('native path opener', () => {
     ['\\\\?\\UNC\\server\\share\\a,b.txt', 'file://server/share/a%2Cb.txt'],
     ['\\\\.\\C:\\work\\a,b.txt', 'file://./C:/work/a%2Cb.txt'],
     ['\\\\wsl$\\Ubuntu\\home\\t,est a.txt', 'file://wsl$/Ubuntu/home/t%2Cest%20a.txt'],
+    ['C:\\work\\dir,comma', 'file:///C:/work/dir%2Ccomma'],
+    ['C:\\work\\settings.yaml', 'file:///C:/work/settings.yaml'],
   ] as const)('opens %s through the one encoded Explorer target', async (path, target) => {
     const run = vi.fn<PathOpenerRunner>(async () => ({ stdout: '', stderr: '' }))
     await openNativeTextFile(path, signal(), { platform: 'win32', run })
@@ -115,28 +117,6 @@ describe('native path opener', () => {
     expect(run).toHaveBeenCalledExactlyOnceWith(
       'explorer.exe',
       [process.platform === 'win32' ? 'file:///C:/' : 'file:///C://'],
-      expect.any(AbortSignal),
-      'visible',
-    )
-  })
-
-  it('encodes a directory target the same way it encodes a file target', async () => {
-    const run = vi.fn<PathOpenerRunner>(async () => ({ stdout: '', stderr: '' }))
-    await openNativeTextFile('C:\\work\\dir,comma', signal(), { platform: 'win32', run })
-    expect(run).toHaveBeenCalledWith(
-      'explorer.exe',
-      ['file:///C:/work/dir%2Ccomma'],
-      expect.any(AbortSignal),
-      'visible',
-    )
-  })
-
-  it('uses the Windows desktop association for text documents', async () => {
-    const run = vi.fn<PathOpenerRunner>(async () => ({ stdout: '', stderr: '' }))
-    await openNativeTextFile('C:\\work\\settings.yaml', signal(), { platform: 'win32', run })
-    expect(run).toHaveBeenCalledWith(
-      'explorer.exe',
-      ['file:///C:/work/settings.yaml'],
       expect.any(AbortSignal),
       'visible',
     )

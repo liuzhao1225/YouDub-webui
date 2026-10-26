@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowLeft, AudioLines, Captions, Check, Download, FileText, Film, Loader2, RotateCw, Square, Trash2 } from '@/lib/icons'
 import { Link, text, type Catalog, type JsonObject, type PanelProps, type RouteProps, type TaskAction, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { StudioDraftStore } from '@/runtime/studio-draft'
-import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
+import { useActiveView, useObservableSource } from '../view-hooks'
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
 import { useReleaseMediaOnUnmount } from '@/lib/media'
@@ -69,7 +69,6 @@ function RerunForm({ submissionStore, task, workflow, close, onLockChange, reque
   const failure = submission?.error ?? '', busy = !!submission?.busy, submitted = !!submission, newId = submission?.id
   const [acknowledged, setAcknowledged] = useState(savedRequest?.acknowledgeExternalRisk ?? false)
   const activeView = useActiveView()
-  usePendingUnload(submitted)
   useEffect(() => { onLockChange(submitted) }, [onLockChange, submitted])
   function openTask(next: TaskView) { if (!activeView.current) return; submissionStore.clearSubmission(submissionKey); navigate(`/tasks/${next.id}`) }
   const supported = useEditorSupported(useSlot, workflow.id, workflow.configSchema)

@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 import type {
   PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
 } from '@deepseek-ai/dsh-client-ui-slots'
-import { computeColumns, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT } from './columns.ts'
+import { clampWidth, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT } from './columns.ts'
 import { DocumentTitle } from './DocumentTitle.tsx'
 import type { createLayoutStore } from './stores.ts'
 import css from './AppFrame.module.css'
@@ -143,9 +143,9 @@ export function AppFrame({
   const darwin = document.documentElement.dataset.platform === 'darwin'
   const collapsedWidth = darwin
     || document.documentElement.hasAttribute('data-windows-titlebar') ? 0 : SIDEBAR_COLLAPSED
-  const cols = computeColumns(viewport, sidebarPreference, collapsedWidth)
-  const colsRef = useRef(cols)
-  colsRef.current = cols
+  const sidebarWidth = sidebarPreference === 0 ? collapsedWidth : clampWidth(sidebarPreference)
+  const sidebarWidthRef = useRef(sidebarWidth)
+  sidebarWidthRef.current = sidebarWidth
 
   // The drag base is the rendered width captured at drag start (grabbing a
   // concession-clamped panel must not jump back to the stored preference);
@@ -191,15 +191,15 @@ export function AppFrame({
     }
   }, [animating])
   const onDragEnd = useCallback(() => { setDragging(false) }, [])
-  const onSidebarStart = useCallback(() => { sidebarBase.current = colsRef.current.sidebar; setDragging(true) }, [])
+  const onSidebarStart = useCallback(() => { sidebarBase.current = sidebarWidthRef.current; setDragging(true) }, [])
   const onSidebarDrag = useCallback((dx: number) => {
     actions.setSidebar(sidebarBase.current + dx)
   }, [actions])
   const productTitle = process.env.DSH_CLIENT_TITLE ?? t('brand.localBuild')
   const sidebar = useMemo(() => renderSlot('sidebar', {
     collapsed: sidebarCollapsed,
-    width: cols.sidebar,
-  }), [renderSlot, sidebarCollapsed, cols.sidebar])
+    width: sidebarWidth,
+  }), [renderSlot, sidebarCollapsed, sidebarWidth])
   const main = useMemo(() => (
     <MainPanel usePanelInfo={usePanelInfo} renderSlot={renderSlot} />
   ), [usePanelInfo, renderSlot])
@@ -218,8 +218,8 @@ export function AppFrame({
       className={css.frame}
       style={{
         ...(document.documentElement.hasAttribute('data-windows-titlebar')
-          ? { '--dsh-windows-sidebar-width': `${cols.sidebar}px` } : {}),
-        gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr)`,
+          ? { '--dsh-windows-sidebar-width': `${sidebarWidth}px` } : {}),
+        gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)`,
       }}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-dragging={dragging || undefined}
@@ -241,7 +241,7 @@ export function AppFrame({
         </div>
       )}
       {/* The collapsed rail is fixed-width: no resize handle while closed. */}
-      {!sidebarCollapsed && <DragHandle left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
+      {!sidebarCollapsed && <DragHandle left={sidebarWidth} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
     </div>
   )
 }

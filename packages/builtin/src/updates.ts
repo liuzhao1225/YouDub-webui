@@ -42,7 +42,7 @@ export function availableUpdate(value: unknown, current: string, platform: Platf
   }
   return latest
 }
-export async function checkForUpdates(current: string, platform: Platform | null = updatePlatform, request = fetch) {
+export async function checkForUpdates(current: string, platform: Platform | null = updatePlatform, request: typeof fetch) {
   if (!platform) throw new AppError('UPDATE_UNSUPPORTED', 'No desktop release is available for this platform.', 422)
   try {
     const response = await request(releasesURL, { signal: AbortSignal.timeout(15_000), redirect: 'error', cache: 'no-store', credentials: 'omit', headers: { Accept: 'application/json' } })

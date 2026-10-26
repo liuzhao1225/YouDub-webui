@@ -16,9 +16,6 @@ const CLIENT_BUILD_ENV_PREFIX = 'DSH_CLIENT_'
 /** Public variable carrying the source commit embedded in client artifacts. */
 const CLIENT_COMMIT_HASH_VARIABLE = 'DSH_CLIENT_COMMIT_HASH'
 
-/** Public variable carrying the repository package version embedded in client artifacts. */
-const CLIENT_VERSION_VARIABLE = 'DSH_CLIENT_VERSION'
-
 /** Repository-relative path of the complete client build record. */
 export const CLIENT_BUILD_RECORD_PATH = '.dsh-build/client-build-environment.json'
 

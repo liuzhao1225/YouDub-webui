@@ -11,7 +11,7 @@ export function TranslationSetupView({ controller, children, saving, wordmarkSrc
   controller: TranslationSetupController
   children: ReactNode
   saving: boolean
-  wordmarkSrc?: string
+  wordmarkSrc: string
   onLeave(action: () => void): void
 }) {
   const tx = useText()

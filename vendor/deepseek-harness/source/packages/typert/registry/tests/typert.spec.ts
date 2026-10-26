@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { z } from 'zod'
 import TypertRegistry, {
@@ -9,7 +9,6 @@ import type {
   InvocationDescriptor,
   TypertContext,
   TypertLookup,
-  TypertRegistryChange,
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
 import { createTypertRemoteInfo } from '@deepseek-ai/dsh-typert-protocol/remote-info'

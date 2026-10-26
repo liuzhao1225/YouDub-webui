@@ -80,11 +80,12 @@ describe('bootstrap failure rendering', () => {
       entries: [{ id: 'broken', url: '/broken.js', rev: '1' }],
       batches: [{ phase: 'application', url: '/application.js', rev: '1', entries: ['broken'] }],
     }
-    const entry = new AppWebEntry(container, {
+    transportGlobal.__DSH_TRANSPORT__ = {
       loadBundle: async () => {
         target.load({ id: 'broken', factory: () => ({ apply() { throw new Error('plugin activation failed') } }) })
       },
-    })
+    }
+    const entry = new AppWebEntry(container)
     const report = vi.fn<(reason: unknown) => void>()
     try {
       await entry.run(carrier ? report : undefined)
@@ -250,12 +251,13 @@ describe('plugin activation', () => {
         }),
       }],
     ])
-    const entry = new AppWebEntry(container, {
+    transportGlobal.__DSH_TRANSPORT__ = {
       loadBundle: async (url) => {
         if (url !== '/application.js') throw new Error(`missing fixture batch ${url}`)
         for (const registration of registrations.values()) target.load(registration)
       },
-    })
+    }
+    const entry = new AppWebEntry(container)
 
     await entry.run()
 

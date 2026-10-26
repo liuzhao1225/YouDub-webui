@@ -144,7 +144,7 @@ test .env -ef env.txt
 | 语言 | `npm --prefix apps/harness run check:locales`，实际设置页面切换与重启读回 |
 | Python 操作 | `.venv/bin/pytest backend/tests/<相关文件>.py`，受影响的真实媒体任务 |
 | 框架输入与产物 | `npm run build:framework` |
-| 框架 TypeScript、测试夹具或构建脚本 | `npm run build:framework` 包含类型编译；再在 `.cache/harness/source-build` 运行 `node node_modules/vitest/vitest.mjs run <相关测试路径>` |
+| 框架 TypeScript、测试夹具或构建脚本 | `npm run build:framework` 包含生产引用编译及 host/client 测试与脚本的聚合类型检查；再在 `.cache/harness/source-build` 运行 `node node_modules/vitest/vitest.mjs run <相关测试路径>` |
 
 项目 `.venv` 不存在时用 `python3 -m venv .venv` 创建，依赖优先从阿里 PyPI 安装。测试具体依赖以对应 requirements 为准，不把模型大文件安装到源码测试环境来代替应用资源准备。
 

@@ -1,42 +1,20 @@
+import { boot, cleanups, tempDir, writeCredentials } from './fixture.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { createLaunchEnvironmentSnapshot, DSH_LAUNCH_ENVIRONMENT_KEY } from '@deepseek-ai/dsh-launch-environment'
 import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
 import { LocalCredentialProvider, resolveSpec } from '../src/index.ts'
 
-function writeCredentials(file: string, text: string): Promise<void> {
-  return writeFile(file, text, { mode: 0o600 })
-}
-
 const KEY = credentialRef('DSH_CRED_TEST')
 const OTHER = credentialRef('DSH_CRED_OTHER')
-
-const cleanups: Array<() => Promise<void>> = []
 
 afterEach(async () => {
   vi.unstubAllEnvs()
   while (cleanups.length > 0) await cleanups.pop()!()
 })
-
-async function tempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-credentials-local-'))
-  cleanups.push(() => rm(dir, { recursive: true, force: true }))
-  return dir
-}
-
-async function boot(config: ConstructorParameters<typeof LocalCredentialProvider>[1]): Promise<Context> {
-  const ctx = new Context()
-  const fiber = ctx.plugin(LocalCredentialProvider, config)
-  cleanups.push(async () => {
-    await fiber.dispose()
-  })
-  await fiber
-  return ctx
-}
 
 function updates(ctx: Context): CredentialRef[] {
   const seen: CredentialRef[] = []
