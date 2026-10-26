@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader, { type ModuleLoaderV2 } from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import LlmRuntime, { createMessage, createUserMessage, userAgent } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import AuthorizationService from '@deepseek-ai/dsh-authorization'
 import LocalCredentialProvider from '@deepseek-ai/dsh-credentials-local'
 import { profileComposition } from '../../../settings/settings/tests/profile-composition.ts'
@@ -166,7 +166,7 @@ describe('llm-pi-ai real dormant composition', () => {
     expect(server.headers[0]?.['x-company-code']).toBe('private-tenant')
     expect(server.headers[0]?.authorization).toBe('Bearer key-from-store')
     expect(server.headers[0]?.accept).toBe('application/json')
-    expect(server.headers[0]?.['user-agent']).toBe(userAgent())
+    expect(server.headers[0]?.['user-agent']).toBe('deployment-owned')
   })
 
   it('continues natively after max-token assembly drops a tool call, with pruned replay metadata', async () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context } from '@deepseek-ai/cordis'
 import { AttachmentId, AttachmentStore, ImageVariantId } from '@deepseek-ai/dsh-attachment'
 import type {
   ImageAttachmentLimits,
@@ -9,7 +9,7 @@ import type {
   SaveImageAttachment,
   StoredImageAttachment,
 } from '@deepseek-ai/dsh-attachment'
-import LlmRuntime, { createToolResultMessage, createUserMessage, CONTEXT_WINDOW_EXCEEDED_CODE, LlmError, ReasoningEffortId, userAgent } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { createToolResultMessage, createUserMessage, CONTEXT_WINDOW_EXCEEDED_CODE, LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
@@ -32,19 +32,6 @@ const IMAGE_REF: ImageAttachmentRef = {
   width: 1,
   height: 1,
 }
-const HOST_IMAGE_PATH = '/host/.dsh/attachments/objects/aa/object'
-const MODEL_IMAGE_PATH = '/model/.dsh/attachments/objects/aa/object'
-
-class MappedFileSystem extends Service {
-  constructor(ctx: Context) {
-    super(ctx, 'fs')
-  }
-
-  processPathFromHostPath(hostPath: string): string | undefined {
-    return hostPath === HOST_IMAGE_PATH ? MODEL_IMAGE_PATH : undefined
-  }
-}
-
 async function harness(baseURL: string, overrides: Record<string, unknown> = {}): Promise<Context> {
   vi.stubEnv('PI_TEST_KEY', 'test-key')
   const ctx = new Context()
@@ -114,14 +101,14 @@ describe('PiAiAdapter provider routing', () => {
     expect(second.requests).toHaveLength(0)
   })
 
-  it('merges profile headers with Harness attribution winning', async () => {
+  it('preserves configured request headers', async () => {
     const server = await mockServer([{ events: textEvents }])
     const ctx = await harness(server.url, {
-      headers: { 'x-company': 'private', 'User-Agent': 'wrong' },
+      headers: { 'x-company': 'private', 'User-Agent': 'deployment-owned' },
     })
     await assemble(ctx, { model: 'deepseek-flash', messages: [] })
     expect(server.headers[0]?.['x-company']).toBe('private')
-    expect(server.headers[0]?.['user-agent']).toBe(userAgent())
+    expect(server.headers[0]?.['user-agent']).toBe('deployment-owned')
   })
 
   it('forwards common stream options and profile reasoning', async () => {
@@ -241,7 +228,7 @@ describe('PiAiAdapter provider routing', () => {
     expect(server.paths).toEqual(['/v1/responses'])
   })
 
-  it('resolves attachment and filesystem services mounted after the adapter when dispatching an image', async () => {
+  it('resolves an attachment service mounted after the adapter when dispatching an image', async () => {
     const server = await mockServer([{ status: 401, body: JSON.stringify({ error: { message: 'expected mock failure' } }) }])
     const attachmentId = AttachmentId(`sha256:${'a'.repeat(64)}`)
     const ref: ImageAttachmentRef = {
@@ -294,10 +281,6 @@ describe('PiAiAdapter provider routing', () => {
         return readImage(value)
       }
 
-      override imageHostPath(_ref: ImageAttachmentRef): string {
-        return HOST_IMAGE_PATH
-      }
-
       override readImageRequest(
         value: ImageAttachmentRef,
         policy: ImageRequestTarget,
@@ -313,7 +296,6 @@ describe('PiAiAdapter provider routing', () => {
       providers: { openai: { apiKeyEnv: 'PI_TEST_KEY', baseURL: `${server.url}/v1` } },
     })
     await ctx.plugin(LateAttachmentStore)
-    await ctx.plugin(MappedFileSystem)
 
     const result = await assemble(ctx, {
       provider: 'openai',
@@ -330,7 +312,14 @@ describe('PiAiAdapter provider routing', () => {
       height: 1,
       maxBytes: 1024 * 1024,
     }, expect.any(AbortSignal))
-    expect(JSON.stringify(server.requests[0])).toContain(MODEL_IMAGE_PATH)
+    expect(server.requests[0]).toMatchObject({
+      input: [{
+        role: 'user',
+        content: expect.arrayContaining([
+          { type: 'input_image', detail: 'auto', image_url: 'data:image/png;base64,AQ==' },
+        ]),
+      }],
+    })
     expect(server.paths).toEqual(['/v1/responses'])
   })
 
@@ -440,9 +429,9 @@ describe('PiAiAdapter provider routing', () => {
 })
 
 describe('provider profile lifecycle', () => {
-  it('keeps adapter helpers off the package root', () => {
+  it('exports profile resolution and keeps stream helpers off the package root', () => {
+    expect(LlmPiAi.resolveProfiles).toBe(resolveProfiles)
     for (const helper of [
-      'resolveProfiles',
       'toPiContext',
       'toPiReplayState',
       'toPiAssistant',

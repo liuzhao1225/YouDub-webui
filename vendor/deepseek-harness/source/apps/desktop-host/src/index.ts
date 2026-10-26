@@ -7,7 +7,6 @@ import { runProfile } from '@deepseek-ai/dsh/profile-boot'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
-import { installDesktopUpdateTaskControl } from './update-tasks.ts'
 import { installDesktopQuitInspection } from './quit-inspection.ts'
 
 async function main(): Promise<void> {
@@ -36,7 +35,6 @@ async function main(): Promise<void> {
   })
   let stopping: Promise<void> | undefined
   const control: {
-    updateTasks?: ReturnType<typeof installDesktopUpdateTaskControl>
     quitInspection?: ReturnType<typeof installDesktopQuitInspection>
   } = {}
   const send = (message: object): Promise<void> => new Promise((resolve, reject) => {
@@ -69,22 +67,9 @@ async function main(): Promise<void> {
       })().catch((error: unknown) => { console.error(error) })
       return
     }
-    if (message.type !== 'update-tasks' || !('requestId' in message) || !Number.isSafeInteger(message.requestId)
-      || !('action' in message) || !['inspect', 'lock', 'unlock'].includes(String(message.action))) return
-    void (async () => {
-      try {
-        if (stopping !== undefined || control.updateTasks === undefined) throw new Error('desktop update: Host is unavailable')
-        const active = await control.updateTasks(message.action as 'inspect' | 'lock' | 'unlock')
-        await send({ type: 'update-tasks', requestId: message.requestId, active })
-      } catch (error) {
-        await send({ type: 'update-tasks', requestId: message.requestId, active: true,
-          error: error instanceof Error ? error.message : String(error) })
-      }
-    })().catch((error: unknown) => { console.error(error) })
   })
   process.once('disconnect', () => { void stop() })
   const { ctx } = await application
-  control.updateTasks = installDesktopUpdateTaskControl(ctx)
   control.quitInspection = installDesktopQuitInspection(ctx)
   const url = ctx.connection.authenticatedUrl(`${ctx.webServer.protocol}//127.0.0.1:${String(ctx.webServer.port)}`)
   if (process.connected) process.send?.({ type: 'ready', url, injections: ctx.webServer.collectIndexInjections() }, (error) => { if (error !== null) console.error(error) })

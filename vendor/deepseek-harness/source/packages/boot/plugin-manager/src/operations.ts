@@ -324,7 +324,7 @@ export async function runProfilePnpm(
   /** Packages a compatibility check refused; callers render them for their own surface. */
   const incompatible: IncompatiblePlugin[] = []
   const rejected = async (warnings: readonly string[], restoration: string): Promise<PackageResult> => {
-    const diagnostic = `\ndsh: installation rejected: ${warnings.join('\n')}\ndsh: ${restoration}.\n`
+    const diagnostic = `\nplugin manager: installation rejected: ${warnings.join('\n')}\nplugin manager: ${restoration}.\n`
     await log.write(diagnostic)
     options.onOutput?.(diagnostic, 'stderr')
     append(Buffer.from(diagnostic))
@@ -518,7 +518,7 @@ export async function runProfilePnpm(
         exitCode = 1
         const restoration = repaired.exitCode === 0
           ? 'restored package.json, pnpm-lock.yaml, and node_modules'
-          : "restored package.json and pnpm-lock.yaml, but node_modules could not be reinstalled; run 'dsh plugin install'"
+          : "restored package.json and pnpm-lock.yaml, but node_modules could not be reinstalled; reinstall dependencies in the plugin directory"
         const diagnostic = `\ndsh: installation rejected: ${warnings.join('\n')}\ndsh: ${restoration}.\n`
         await log.write(diagnostic)
         options.onOutput?.(diagnostic, 'stderr')
@@ -540,7 +540,7 @@ export async function runProfilePnpm(
   }
 }
 
-/** Initialize and run the dsh plugin command with the same write lock as the service.
+/** Initialize and run a plugin package command with the same write lock as the service.
  * @param context Launcher-owned locations.
  * @param args Pnpm arguments.
  * @param options Output and cancellation policy.
@@ -555,7 +555,7 @@ export async function runPluginCommand(
     if (!existsSync(join(dir, 'package.json'))) {
       const template = PROFILE_TEMPLATES[context.profile]
       initProfile(dir, template?.bundles ?? DEFAULT_PROFILE_BUNDLES)
-      options.onOutput?.(`dsh: initialized profile ${context.profile} at ${dir}\n`, 'stderr')
+      options.onOutput?.(`plugin manager: initialized profile ${context.profile} at ${dir}\n`, 'stderr')
     }
     return runProfilePnpm(context, args, options)
   }, options.lockWaitMs === undefined ? undefined : { waitMs: options.lockWaitMs })

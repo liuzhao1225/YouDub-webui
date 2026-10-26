@@ -1,4 +1,4 @@
-# Harness 版本地开发
+# YouDub 本地开发
 
 以下命令在 `main` 或从 main 创建的功能分支执行。源码启动与正式安装包共用同一产品组合；安装包、签名和发布见[发行流程](../../../docs/releasing.md)。
 
@@ -30,7 +30,7 @@ npm run build:youdub
 | --- | --- |
 | 安装根依赖 | 原 YouDub 领域源码和开发工具依赖 |
 | 安装 Web 依赖 | 复用业务组件、React Flow、Tailwind 与测试所需依赖 |
-| 安装 Harness 接入依赖 | 产品构建工具、本仓库 Electron；不安装第二套 Harness 发布包 |
+| 安装产品依赖 | 产品构建工具、本仓库 Electron |
 | `build:framework` | 读取当前源码，构建到 `.cache/harness/source-build`；内部使用官方 `scripts/build.ts --scope artifacts` |
 | `build:youdub` | 生成 `apps/harness/dist/host.mjs`、`client.js` 和桌面产品入口 |
 
@@ -78,9 +78,9 @@ npm --prefix apps/harness start
 
 | 命令或目录 | 当前用途 |
 | --- | --- |
-| `npm start` / `npm run dev` | 当前 Harness Electron 产品 |
+| `npm start` / `npm run dev` | 当前 YouDub Electron 产品 |
 | `npm run build:youdub` / `npm run build:desktop` | 同一 Electron 开发构建，不生成安装包 |
-| `npm run dev:web` / `npm --prefix apps/harness start` | 同一 Harness Host 的浏览器开发入口 |
+| `npm run dev:web` / `npm --prefix apps/harness start` | 同一 YouDub Host 的浏览器开发入口 |
 | `apps/web/src` | 直接复用的业务组件和领域测试，无独立 Web 启动入口 |
 | `packages/builtin/test/helpers` | 领域回归使用的隔离组合夹具，不进入产品构建 |
 
@@ -134,7 +134,7 @@ test .env -ef env.txt
 | 文档 | 文件链接、命令与脚本一致，`git diff --check` |
 | 产品组合、Host/Client 接入 | `npm --prefix apps/harness test`，构建后执行 `npm --prefix apps/harness run check:composition` |
 | 领域逻辑 | 根目录 `npm test`，或 `node --import tsx --test packages/builtin/test/<文件>.test.ts` |
-| 原页面组件 | `npm --prefix apps/web test -- src/<相关测试>.test.tsx`，相关类型检查与实际 Harness 页面 |
+| 原页面组件 | `npm --prefix apps/web test -- src/<相关测试>.test.tsx`，相关类型检查与实际 YouDub 页面 |
 | 语言 | `npm --prefix apps/harness run check:locales`，实际设置页面切换与重启读回 |
 | Python 操作 | `.venv/bin/pytest backend/tests/<相关文件>.py`，受影响的真实媒体任务 |
 | 框架输入与产物 | `npm run build:framework` |
@@ -155,7 +155,7 @@ test .env -ef env.txt
 | 找不到 `.dsh-build/client-build-environment.json` 或 profile runner/Host | `build:framework` 是否成功，源码构建目录是否完整 |
 | Electron 或 pnpm 缺失 | `npm --prefix apps/harness ci` 是否成功，Electron 平台二进制是否安装完整 |
 | Host / web boot 报 pending service | 官方诊断中的条目与 `inject`，产品 patch 是否关闭了所需服务 |
-| `Legacy platform code entered the Harness plugin bundle` | 构建输入中的旧框架依赖，修正导入/接线后重建 |
+| `Legacy platform code entered the YouDub plugin bundle` | 构建输入中的旧框架依赖，修正导入/接线后重建 |
 | 修改页面后界面未变化 | 是否构建产品并重启正确的 Electron/浏览器实例，当前使用哪个 home |
 | 初始化停在模型阶段 | 四模型及全部依赖的实际 ready 状态，资源页面的原始错误 |
 | 翻译不可用或输出容量错误 | 官方模型页的 API 协议、URL、凭据、模型与输出容量至少 65,535 的配置 |

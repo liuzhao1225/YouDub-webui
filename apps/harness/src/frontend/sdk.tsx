@@ -2,7 +2,7 @@
 export type * from '../../../web/src/plugin/sdk'
 import React, { createContext, useContext } from 'react'
 /** Legacy apply functions are not part of the Harness composition. */
-export function bindComponent(..._args:any[]):never { throw new Error('Register YouDub views through Harness slots; legacy client bindings are unavailable') }
+export function bindComponent(..._args:any[]):never { throw new Error('Register YouDub views through UI slots; legacy client bindings are unavailable') }
 export const NavigationContext = createContext<(path:string) => void>(() => { throw new Error('YouDub page navigation is unavailable') })
 export function Link({ href='/', onClick, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
   const navigate = useContext(NavigationContext)

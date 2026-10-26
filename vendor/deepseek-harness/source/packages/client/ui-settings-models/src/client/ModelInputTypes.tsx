@@ -2,14 +2,14 @@
 
 import type { ReactNode } from 'react'
 import { Checkbox } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { DeepSeekModelDraft } from './DeepSeekModelsEditor.tsx'
+import type { ModelDraft } from './model-drafts.ts'
 import type { ModelsKey } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
 /** Props of {@link ModelInputTypes}. */
 interface ModelInputTypesProps {
   /** Effective model row, including fields outside the curated editor. */
-  model: DeepSeekModelDraft
+  model: ModelDraft
   /** Adapter-owned field; pi-ai inherits capabilities when absent or empty. */
   field: 'inputModalities' | 'input'
   /** One-based row position for the accessible group label. */
@@ -21,7 +21,7 @@ interface ModelInputTypesProps {
   /** Section copy. */
   t: (key: ModelsKey) => string
   /** Replace this row, preserving unrelated configuration. */
-  onChange: (model: DeepSeekModelDraft) => void
+  onChange: (model: ModelDraft) => void
 }
 
 /**

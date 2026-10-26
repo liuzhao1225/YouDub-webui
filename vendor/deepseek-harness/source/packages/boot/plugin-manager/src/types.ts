@@ -52,15 +52,13 @@ export interface BundleRowInfo {
   entryId?: PluginEntryId
 }
 
-/** One shipped, profile-installed, or discoverable on-demand bundle. */
+/** One shipped, profile-installed, or selected bundle. */
 export interface BundleInfo {
   name: string
-  /** Project-maintained shipped optional bundle or on-demand catalog entry, independent of installation and selection. */
+  /** Project-maintained shipped optional bundle, independent of selection. */
   official: boolean
-  /** Readable package location; on-demand catalog entries exclude undeclared transitive copies, and declared files may be missing. */
+  /** Readable package location; declared files may be missing. */
   availability: 'installation' | 'profile' | 'missing'
-  /** Exact released Host version or same-checkout development link offered for an on-demand catalog entry. */
-  installTarget?: { spec: string; version: string }
   version?: string
   /** Local display text with available translations or literal fallbacks, or a metadata diagnostic. */
   meta?: PluginLocalizedMeta

@@ -8,7 +8,7 @@ export function ThemeProvider({source,children}:any) {
   const state=useSyncExternalStore(source.subscribe,source.getSnapshot)
   return <Theme.Provider value={{theme:state.preference,setTheme:source.setTheme}}>{children}</Theme.Provider>
 }
-export function useTheme(){const value=useContext(Theme);if(!value)throw new Error('Harness theme provider is required');return value}
+export function useTheme(){const value=useContext(Theme);if(!value)throw new Error('YouDub theme provider is required');return value}
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()

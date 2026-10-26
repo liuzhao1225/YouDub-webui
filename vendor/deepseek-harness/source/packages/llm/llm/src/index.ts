@@ -41,7 +41,6 @@ import {
 } from './content.ts'
 import type { FileAttachmentRef, ImageAttachmentRef, ImageRequestTarget } from '@deepseek-ai/dsh-attachment'
 
-export * from './attribution.ts'
 export * from './brand.ts'
 export * from './error.ts'
 export * from './api-key.ts'
@@ -196,10 +195,8 @@ export interface PreparedAdapterCall {
 }
 
 /**
- * Provider-wire adapter for the harness message and stream vocabulary. Register implementations
- * with `ctx.llm.registerAdapter(providers, adapter)`. Every provider HTTP request must include
- * `attributionHeaders()`; prove the headers are added in the wire request or library header hook. The direct-fetch
- * DeepSeek and library-backed pi-ai adapters meet this contract through different internals.
+ * Provider-wire adapter for the shared message and stream vocabulary. Register implementations
+ * with `ctx.llm.registerAdapter(providers, adapter)`.
  */
 export abstract class LlmAdapter {
   /**

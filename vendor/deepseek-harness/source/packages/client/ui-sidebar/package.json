@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-sidebar",
-  "description": "Sidebar plugin: session multi-level tree, search, grouping, state dots",
+  "description": "Shared application sidebar, navigation slots, and header controls",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"
@@ -29,11 +29,8 @@
   "dsh": {
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-api-workspace-controller",
         "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-session",
-        "@deepseek-ai/dsh-client-ui-workspace",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-shortcuts"
       ],

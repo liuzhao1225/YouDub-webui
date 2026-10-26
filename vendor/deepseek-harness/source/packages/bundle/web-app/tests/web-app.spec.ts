@@ -115,12 +115,12 @@ describe('web-app runtime glue', () => {
     apply(ctx, new Config({ openBrowser: true, printUrl: true }))
     await vi.waitFor(() => { expect(openBrowser).toHaveBeenCalled() })
 
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
-    expect(log).toHaveBeenCalledWith('dsh web: opening the default browser; pass --no-open to disable')
+    expect(log).toHaveBeenCalledWith('YouDub web: http://127.0.0.1:4567/?token=test-token')
+    expect(log).toHaveBeenCalledWith('YouDub web: opening the default browser; pass --no-open to disable')
     expect(openBrowser).toHaveBeenCalledWith('http://127.0.0.1:4567/?token=test-token')
     expect(lifecycle).toEqual([
-      'dsh web: http://127.0.0.1:4567/?token=test-token',
-      'dsh web: opening the default browser; pass --no-open to disable',
+      'YouDub web: http://127.0.0.1:4567/?token=test-token',
+      'YouDub web: opening the default browser; pass --no-open to disable',
       'open:http://127.0.0.1:4567/?token=test-token',
     ])
     expect(ctx.webApp.getAdvertisedUrl()).toBe('http://127.0.0.1:4567')
@@ -146,8 +146,8 @@ describe('web-app runtime glue', () => {
     await vi.waitFor(() => { expect(openBrowser).toHaveBeenCalled() })
 
     expect(lifecycle).toEqual([
-      'dsh web: https://proxy.example:8443/web/?token=test-token',
-      'dsh web: opening the default browser; pass --no-open to disable',
+      'YouDub web: https://proxy.example:8443/web/?token=test-token',
+      'YouDub web: opening the default browser; pass --no-open to disable',
       'open:https://proxy.example:8443/web/?token=test-token',
     ])
     // The service advertises the row's effective publicUrl, whether it came from --public-url or a profile override.
@@ -188,7 +188,7 @@ describe('web-app runtime glue', () => {
     const openBrowser = vi.fn(async () => {})
     internals.openBrowser = openBrowser
     apply(ctx, new Config({ openBrowser: false, printUrl: true }))
-    await vi.waitFor(() => { expect(log).toHaveBeenCalledWith(`dsh web: http://${printed}:4567/?token=test-token`) })
+    await vi.waitFor(() => { expect(log).toHaveBeenCalledWith(`YouDub web: http://${printed}:4567/?token=test-token`) })
     expect(warn).not.toHaveBeenCalled()
     expect(openBrowser).not.toHaveBeenCalled()
   })
@@ -215,9 +215,9 @@ describe('web-app runtime glue', () => {
     // root names the bind address; startup warns that the port is plain HTTP.
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn).toHaveBeenCalledWith(
-      `dsh web: listening on ${bind} over plain HTTP; restrict this port to a trusted proxy or network`,
+      `YouDub web: listening on ${bind} over plain HTTP; restrict this port to a trusted proxy or network`,
     )
-    expect(log).toHaveBeenCalledWith(`dsh web: http://${printed}:4567/?token=test-token`)
+    expect(log).toHaveBeenCalledWith(`YouDub web: http://${printed}:4567/?token=test-token`)
     expect(openBrowser).toHaveBeenCalledWith(`http://${printed}:4567/?token=test-token`)
   })
 
@@ -235,7 +235,7 @@ describe('web-app runtime glue', () => {
     apply(ctx, new Config({ openBrowser: false, printUrl: true }))
     await vi.waitFor(() => { expect(log).toHaveBeenCalled() })
 
-    expect(log).toHaveBeenCalledWith('dsh web: http://[::1]:4567/?token=test-token')
+    expect(log).toHaveBeenCalledWith('YouDub web: http://[::1]:4567/?token=test-token')
   })
 
   it.each(['fe80::1%lo', '::127.0.0.1%lo'])('refuses its own activation when %s carries an interface zone id', async (bind) => {
@@ -260,7 +260,7 @@ describe('web-app runtime glue', () => {
       openBrowser: false, printUrl: true, publicUrl: 'https://app.example/ui/',
     }))
     await vi.waitFor(() => { expect(log).toHaveBeenCalled() })
-    expect(log).toHaveBeenCalledWith('dsh web: https://app.example/ui/?token=test-token')
+    expect(log).toHaveBeenCalledWith('YouDub web: https://app.example/ui/?token=test-token')
   })
 
 
@@ -290,7 +290,7 @@ describe('web-app runtime glue', () => {
     provideConnection(ctx)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     apply(ctx, new Config({ openBrowser: false, printUrl: true, publicUrl: null as never }))
-    await vi.waitFor(() => { expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token') })
+    await vi.waitFor(() => { expect(log).toHaveBeenCalledWith('YouDub web: http://127.0.0.1:4567/?token=test-token') })
   })
 
   it.each([
@@ -307,7 +307,7 @@ describe('web-app runtime glue', () => {
     internals.openBrowser = openBrowser
     apply(ctx, new Config({ openBrowser: true, printUrl: true }))
     await new Promise(resolve => setTimeout(resolve, 0))
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
+    expect(log).toHaveBeenCalledWith('YouDub web: http://127.0.0.1:4567/?token=test-token')
     expect(openBrowser).not.toHaveBeenCalled()
     await ctx.fiber.dispose()
   })
@@ -331,7 +331,7 @@ describe('web-app runtime glue', () => {
     expect(openBrowser).not.toHaveBeenCalled()
     release!()
     await new Promise(resolve => setTimeout(resolve, 0))
-    expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
+    expect(log).toHaveBeenCalledWith('YouDub web: http://127.0.0.1:4567/?token=test-token')
     expect(openBrowser).toHaveBeenCalledWith('http://127.0.0.1:4567/?token=test-token')
     await settled.fiber.dispose()
 
@@ -397,7 +397,7 @@ describe('web-app runtime glue', () => {
     await vi.waitFor(() => { expect(audit).toHaveBeenCalledOnce() })
     await Promise.allSettled(audit.mock.results.map(result => result.value as Promise<void>))
     if (announces) {
-      expect(log).toHaveBeenCalledWith('dsh web: http://127.0.0.1:4567/?token=test-token')
+      expect(log).toHaveBeenCalledWith('YouDub web: http://127.0.0.1:4567/?token=test-token')
       expect(openBrowser).toHaveBeenCalledWith('http://127.0.0.1:4567/?token=test-token')
     } else {
       expect(log).not.toHaveBeenCalled()
@@ -426,9 +426,9 @@ describe('web-app runtime glue', () => {
     const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
     apply(ctx, new Config({ openBrowser: true, printUrl: false }))
     await new Promise(resolve => setTimeout(resolve, 0))
-    expect(log).toHaveBeenCalledWith('dsh web: opening the default browser; pass --no-open to disable')
+    expect(log).toHaveBeenCalledWith('YouDub web: opening the default browser; pass --no-open to disable')
     expect(diagnostic).toHaveBeenCalledWith(
-      `web-app: could not open the default browser because ${reason}; use the dsh web URL printed at startup`,
+      `web-app: could not open the default browser because ${reason}; use the YouDub web URL printed at startup`,
     )
     expect(ctx.get('webServer')).toBeDefined()
     await ctx.fiber.dispose()

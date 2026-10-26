@@ -18,10 +18,10 @@ async function usingProcess(subprocess, request, stdio, consume) {
   try {
     handle.terminate();
     if (!await handle.waitForExit(AbortSignal.timeout(10000))) {
-      throw errorWithCode('CANCEL_TIMEOUT', `Harness subprocess did not stop: ${request.command}`);
+      throw errorWithCode('CANCEL_TIMEOUT', `Subprocess did not stop: ${request.command}`);
     }
   } catch (error) {
-    if (failed) throw new AggregateError([failure, error], 'Worker failed and its Harness process range did not stop', { cause: failure });
+    if (failed) throw new AggregateError([failure, error], 'Worker failed and its process range did not stop', { cause: failure });
     throw error;
   }
   if (failed) throw failure;
@@ -131,7 +131,7 @@ export async function runWorker(subprocess, request, invocation, context) {
       observe(handle.done),
       observe(readStderr()),
     ]);
-    if (failures.length > 1) throw new AggregateError(failures, 'Harness worker transport failed', { cause: failures[0] });
+    if (failures.length > 1) throw new AggregateError(failures, 'Worker transport failed', { cause: failures[0] });
     if (failures.length) throw failures[0];
     if (inputError) throw inputError;
     assertExit(handle, workerRequest, outcomes[2].value, 'WORKER_EXITED', context.log ? stderrTail : undefined);

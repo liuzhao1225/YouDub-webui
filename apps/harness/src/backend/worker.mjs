@@ -57,7 +57,7 @@ export default class YouDubWorker extends Service {
     })();
     this.ctx.effect(() => close);
     return { call(method, params = {}) {
-      if (storageBridge && (!(method.startsWith('store.') || storageMethods.has(method) || method === 'settings.write' && params.key === 'plugin:youdub.localize') || method === 'runtime.probe' && params.adapter === 'openai')) return Promise.reject(fail('HARNESS_SERVICES_REQUIRED', 'Authentication, credentials and model configuration belong to Harness services.', 409));
+      if (storageBridge && (!(method.startsWith('store.') || storageMethods.has(method) || method === 'settings.write' && params.key === 'plugin:youdub.localize') || method === 'runtime.probe' && params.adapter === 'openai')) return Promise.reject(fail('HARNESS_SERVICES_REQUIRED', 'Use the application services for authentication, credentials and model configuration.', 409));
       if (fatal) return Promise.reject(fatal);
       if (closing) return Promise.reject(fail('STORE_UNAVAILABLE', 'Storage bridge is closed.'));
       const requestId = randomUUID();

@@ -16,7 +16,7 @@ export function LanguageProvider({ source, children }: { source: Source; childre
   const value = useMemo(() => ({ language: snapshot.active, setLanguage: source.setLanguage, t: sharedMessages(source.text), text: source.text }), [snapshot, source])
   return <Locale.Provider value={value}>{children}</Locale.Provider>
 }
-export function useI18n() { const value = useContext(Locale); if (!value) throw new Error('Harness locale provider is required'); return value }
+export function useI18n() { const value = useContext(Locale); if (!value) throw new Error('YouDub locale provider is required'); return value }
 // A new locale revision must also invalidate callbacks which captured text.
 export function useText(): Text {
   const { text, language, t } = useI18n()

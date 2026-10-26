@@ -44,41 +44,16 @@ export const en = {
   reloadPageMenu: 'Reload Page',
   restartAppHostMenu: 'Restart App and Host',
   updateCheckFailedTitle: 'Update Check Failed',
-  updateCheckFailed: 'Could not check for updates. Please try again later.',
   updateDownloadFailed: 'Could not download the update. Please try again.',
-  updateInstallFailed: 'Could not install the update. Please try again later.',
-  updateCheckNetworkFailed: 'Could not check for updates. Check your connection and try again.',
-  updateDownloadNetworkFailed: 'Could not download the update. Check your connection and try again.',
-  updateInstallNetworkFailed: 'Could not install the update. Check your connection and try again.',
-  unknownError: 'Unknown error',
   updateCheckTitle: 'Check for Updates',
   updateCurrentDetail: 'Current version: {version}',
   updateCurrent: 'You’re up to date!',
-  updateChecking: 'Checking for updates…',
   updateDownload: 'Download update',
-  updateDownloadedTitle: 'Version {version} is ready to install',
-  updateDownloadedDetail: 'The app will close during the update and reopen automatically when it is complete.',
-  updateDownloadedDetailWindows: 'The app will close temporarily during the update and reopen automatically when it is complete.\n\nThe update may take some time. Please wait and do not launch the app again during installation.',
   updateClose: 'Close',
-  updateAcknowledge: 'OK',
   updateLater: 'Update later',
-  updateDownloading: 'Downloading {percent}%…',
-  updateVerifying: 'Verifying update files…',
-  updateInstalling: 'Preparing to restart…',
-  updateRetry: 'Retry update',
-  updateActiveTasks: 'Tasks are still in progress',
-  updateActiveTasksDetail: 'Updating will stop the tasks in progress and restart the app. Continue?',
-  updateStopTasks: 'Stop tasks and update',
-  updateTasksChanged: 'New tasks have started. Confirm again to stop the tasks and update.',
-  updateTasksUnavailable: 'Task status is unavailable. Try updating again when the workspace is ready.',
-  updateStopFailed: 'Could not safely stop the tasks. The update has not been installed. Please try again later.',
-  updateTechnicalDetails: 'View technical details',
   updateTitle: 'YouDub Update',
   updateAvailable: 'New version available: {version}',
   updateDetail: 'Once the download is complete, you can install the update and restart the app.',
-  installAndRestart: 'Install and Restart',
-  later: 'Later',
-  updateFailedTitle: 'Update Failed',
 } as const
 
 /** Every Desktop locale supplies the complete English key set. */
@@ -128,41 +103,16 @@ export const zh = {
   reloadPageMenu: '刷新页面',
   restartAppHostMenu: '重启应用与 Host',
   updateCheckFailedTitle: '更新检查失败',
-  updateCheckFailed: '检查更新失败，请稍后重试。',
   updateDownloadFailed: '下载更新失败，请重试。',
-  updateInstallFailed: '安装更新失败，请稍后重试。',
-  updateCheckNetworkFailed: '检查更新失败，请检查网络连接后重试。',
-  updateDownloadNetworkFailed: '下载更新失败，请检查网络连接后重试。',
-  updateInstallNetworkFailed: '安装更新失败，请检查网络连接后重试。',
-  unknownError: '未知错误',
   updateCheckTitle: '检查更新',
   updateCurrentDetail: '当前版本：{version}',
   updateCurrent: '已是最新版本',
-  updateChecking: '正在检查更新…',
   updateDownload: '下载更新',
-  updateDownloadedTitle: '新版本 {version} 已准备就绪',
-  updateDownloadedDetail: '更新期间应用将暂时关闭，完成后会自动打开。',
-  updateDownloadedDetailWindows: '更新期间应用将暂时关闭，完成后会自动打开。\n\n更新可能需要一些时间，请耐心等待，期间请勿重复启动应用。',
   updateClose: '关闭',
-  updateAcknowledge: '确定',
   updateLater: '稍后更新',
-  updateDownloading: '正在下载 {percent}%…',
-  updateVerifying: '正在校验更新文件…',
-  updateInstalling: '正在准备重启…',
-  updateRetry: '重试更新',
-  updateActiveTasks: '仍有进行中的任务',
-  updateActiveTasksDetail: '更新将停止进行中的任务并重启应用，是否继续？',
-  updateStopTasks: '停止任务并更新',
-  updateTasksChanged: '有新任务开始运行，请重新确认是否停止任务并更新。',
-  updateTasksUnavailable: '无法确认任务状态，请在工作区就绪后重试更新。',
-  updateStopFailed: '未能安全停止任务，更新尚未安装，请稍后重试。',
-  updateTechnicalDetails: '查看技术详情',
   updateTitle: 'YouDub 更新',
   updateAvailable: '发现新版本 {version}',
   updateDetail: '下载完成后，可安装并重启应用。',
-  installAndRestart: '安装并重启',
-  later: '稍后',
-  updateFailedTitle: '更新失败',
 } as const satisfies DesktopMessages
 
 /** Japanese copy for the desktop surfaces used by YouDub. */
@@ -222,22 +172,4 @@ export function formatDesktopMessage(
   values: Readonly<Record<string, string>>,
 ): string {
   return message.replaceAll(/\{([^{}]+)\}/gu, (placeholder, key: string) => values[key] ?? placeholder)
-}
-
-/**
- * Select localized copy for an ordinary downloaded-update confirmation.
- * @param messages - Selected Desktop dictionary.
- * @param version - Prepared update version, including any prerelease suffix.
- * @param platform - Operating system presenting the confirmation.
- * @returns The versioned title and installation guidance.
- */
-export function desktopUpdateReadyConfirmation(
-  messages: DesktopMessages,
-  version: string,
-  platform: string,
-): { message: string; detail: string } {
-  return {
-    message: formatDesktopMessage(messages.updateDownloadedTitle, { version }),
-    detail: platform === 'win32' ? messages.updateDownloadedDetailWindows : messages.updateDownloadedDetail,
-  }
 }

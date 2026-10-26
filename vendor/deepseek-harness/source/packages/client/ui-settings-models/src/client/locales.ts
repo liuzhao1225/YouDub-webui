@@ -3,7 +3,6 @@
 /** English strings (the key-set source of truth for this pair). */
 export const en = {
   nav: 'Models',
-  deepSeekAccount: 'DeepSeek Account',
   title: 'Models',
   loading: 'Loading providers…',
   edit: 'Edit',
@@ -59,8 +58,6 @@ export const en = {
   baseUrlEnvironment: 'Provider endpoint configuration: {env}',
   baseUrlConfigured: 'Provider-configured endpoint',
   baseUrlPlaceholder: '{url}',
-  deepSeekBaseUrl: 'https://api.deepseek.com/anthropic (Default to use DEEPSEEK_BASE_URL)',
-  deepSeekEndpointHint: 'Use an API endpoint compatible with Anthropic Messages.',
   models: 'Models',
   modelsInherited: 'Using the adapter defaults',
   modelsCustomized: 'Customized model catalog',
@@ -139,7 +136,6 @@ export type ModelsKey = keyof typeof en
 /** Chinese strings (same keys as {@link en}). */
 export const zh: { [Key in keyof typeof en]: string } = {
   nav: '模型',
-  deepSeekAccount: 'DeepSeek 账号',
   title: '模型',
   loading: '正在加载提供商…',
   edit: '编辑',
@@ -195,8 +191,6 @@ export const zh: { [Key in keyof typeof en]: string } = {
   baseUrlEnvironment: '提供方地址配置：{env}',
   baseUrlConfigured: '由提供方配置地址',
   baseUrlPlaceholder: '{url}',
-  deepSeekBaseUrl: 'https://api.deepseek.com/anthropic（默认使用环境 DEEPSEEK_BASE_URL）',
-  deepSeekEndpointHint: '请填写兼容 Anthropic Messages 协议的 API 地址。',
   models: '模型目录',
   modelsInherited: '正在使用适配器默认模型',
   modelsCustomized: '已自定义模型目录',

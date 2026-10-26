@@ -16,13 +16,12 @@ import {
   readProfilePatches, OPTIONAL_BUNDLES, bundlePatchPaths,
   evaluatePluginCompatibility, readProfileCompatibility, readProfileVersionExemptions,
   setProfileVersionExemption, PROFILE_COMPATIBILITY_FILENAME,
-  OFFICIAL_ON_DEMAND_CATALOG, getDshRuntimeVersion, ResolutionRestartRequired,
+  ResolutionRestartRequired,
 } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-hmr'
 import type { ProfileContext, ProfileManifest } from '@deepseek-ai/dsh-app-boot'
 import { bundleManifest, readProfileRegistry, registryArguments, runProfilePnpm, saveManifest, viewProfilePackage } from './operations.ts'
 import { classifyInstallFailure } from './install-failure.ts'
-import { officialBundleInstallTarget } from './official-install-target.ts'
 import { dependencySpec, InvalidInstallSpecError, parseInstallSpec, type ParsedInstallSpec } from './install-spec.ts'
 import { attributeFailure, normalizeRegistry, NPMMIRROR_REGISTRY, registryPlan } from './registry.ts'
 import { flatten, writePluginEnabled } from './patch.ts'
@@ -307,7 +306,7 @@ export class PluginManager extends TypertRemoteService {
     })
   }
 
-  /** Read installed, installation-provided, and offline Official catalog bundles, plus selected non-bundle names.
+  /** Read installed and installation-provided bundles, plus selected non-bundle names.
    * A dependency without a bundle patch is listed, as a `not-bundle` problem, only while it is selected.
    * @returns Package versions, manifest descriptions, the installable spec of profile dependencies, rows, optional
    * display metadata, activation selections, whether the installation offers the bundle, and removal availability.
@@ -320,30 +319,14 @@ export class PluginManager extends TypertRemoteService {
     const recorded = manifest.dependencies ?? {}
     const dependencies = Object.keys(recorded)
     const installation = JSON.parse(readFileSync(this.profile.installAnchor, 'utf8')) as InstallationManifest
-    const catalog = new Map(OFFICIAL_ON_DEMAND_CATALOG.map(entry => [entry.packageName, entry]))
-    const names = [...new Set([...selected, ...dependencies, ...Object.keys(installation.dependencies ?? {}), ...catalog.keys()])]
+    const names = [...new Set([...selected, ...dependencies, ...Object.keys(installation.dependencies ?? {})])]
     const bundles: BundleInfo[] = []
-    const runtimeVersion = getDshRuntimeVersion()
     for (const name of names) {
       const installed = dependencies.includes(name)
       const optional = OPTIONAL_BUNDLES.includes(name)
+      const official = optional
       const enabled = selected.includes(name)
       const shipped = Object.hasOwn(installation.dependencies ?? {}, name)
-      const offered = catalog.get(name)
-      const official = optional || offered !== undefined
-      let target: Pick<BundleInfo, 'installTarget'> = {}
-      let targetError: ManagementError | undefined
-      if (offered !== undefined) {
-        try { target = { installTarget: officialBundleInstallTarget(name, this.profile.installAnchor, runtimeVersion) } }
-        catch (error) { targetError = managementError(error) }
-      }
-      const catalogMeta = offered === undefined ? {} : { meta: offered.meta }
-      if (offered !== undefined && !installed && !shipped) {
-        bundles.push({ name, official, availability: 'missing', ...catalogMeta, ...target, enabled, installed, optional,
-          removable: enabled, rows: [], overrides: [],
-          ...targetError !== undefined ? { error: targetError } : enabled ? { error: { code: 'not-bundle' } } : {} })
-        continue
-      }
       // Installation-owned copies remain protected even if a profile also declares their names.
       const owned = installed && !shipped
       const removable = owned || (enabled && !installed && !shipped)
@@ -356,29 +339,28 @@ export class PluginManager extends TypertRemoteService {
         const info = bundleManifest(name, this.profile.dir, this.profile.installAnchor)
         availability = shipped ? 'installation' : 'profile'
         if (info === undefined) {
-          if (enabled || offered !== undefined) bundles.push({ name, official, availability, ...catalogMeta, ...target,
+          if (enabled) bundles.push({ name, official, availability,
             ...sourceOf(), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
-            ...(readOnlyReason === undefined ? {} : { readOnlyReason }), error: targetError ?? { code: 'not-bundle' }, rows: [], overrides: [] })
+            ...(readOnlyReason === undefined ? {} : { readOnlyReason }), error: { code: 'not-bundle' }, rows: [], overrides: [] })
           continue
         }
         version = info.version
         const compatibility = evaluatePluginCompatibility(info, exemptions)
         if (compatibility !== undefined && !compatibility.exempted) throw new ManagementFailure('incompatible-version', [incompatiblePlugin(compatibility)])
         const dir = resolveBundleDir('dsh', name, this.profile.installAnchor, this.profile.dir)
-        const meta = offered?.meta ?? readPluginMeta(info.name ?? name, pathToFileURL(join(dir, 'package.json')).href)
-        bundles.push({ name, official, availability, ...target, ...(version === undefined ? {} : { version }),
+        const meta = readPluginMeta(info.name ?? name, pathToFileURL(join(dir, 'package.json')).href)
+        bundles.push({ name, official, availability, ...(version === undefined ? {} : { version }),
           ...(info.description === undefined || info.description === '' ? {} : { description: info.description }),
           ...meta === undefined ? {} : { meta },
           ...sourceOf(info.name), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
           ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
-          ...this.declaredRows(name, info),
-          ...targetError === undefined ? {} : { error: targetError } })
+          ...this.declaredRows(name, info) })
       } catch (error) {
-        if (enabled || installed || optional || offered !== undefined) {
-          bundles.push({ name, official, availability, ...catalogMeta, ...target, ...(version === undefined ? {} : { version }),
+        if (enabled || installed || optional) {
+          bundles.push({ name, official, availability, ...(version === undefined ? {} : { version }),
             ...sourceOf(), enabled, installed, optional, removable: removable && readOnlyReason === undefined,
             ...(readOnlyReason === undefined ? {} : { readOnlyReason }),
-            error: targetError ?? managementError(error), rows: [], overrides: [] })
+            error: managementError(error), rows: [], overrides: [] })
         }
       }
     }
