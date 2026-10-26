@@ -3,12 +3,12 @@ import '@deepseek-ai/dsh-client-ui-theme/brand-font.css'
 import { AppWebEntry, applyIndexInjections } from '@deepseek-ai/dsh-client-web'
 
 interface DesktopBootGlobal {
-  dshDesktopBoot?: {
+  youdubDesktopBoot?: {
     failed(message: string): Promise<void>
     ready(): Promise<{ injections: Parameters<typeof applyIndexInjections>[0]; streamBaseUrl: string }>
   }
 }
-const desktop = (globalThis as DesktopBootGlobal).dshDesktopBoot
+const desktop = (globalThis as DesktopBootGlobal).youdubDesktopBoot
 const reportFailure = (reason: unknown): void => {
   if (desktop === undefined) throw reason
   void desktop.failed(reason instanceof Error ? reason.message : String(reason)).catch(console.error)

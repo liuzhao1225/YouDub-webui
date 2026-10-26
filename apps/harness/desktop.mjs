@@ -39,14 +39,13 @@ if (values.python || values['models-dir']) {
   await writeFile(patchPath, original.replace(/^\s*\[\]\s*$/m, '').trimEnd() + '\n' + patch);
 }
 await assertYouDubProfile(profile, join(project, 'package.json'));
-const env = { ...youdubEnvironment(process.env), YOUDUB_HOME: home, DSH_HOME: home, DSH_DESKTOP_DSH_DIR: project,
-  DSH_DESKTOP_PNPM_ENTRY: pnpm,
+const env = { ...youdubEnvironment(process.env), YOUDUB_HOME: home, DSH_HOME: home, YOUDUB_DESKTOP_RUNTIME_DIR: project,
+  YOUDUB_DESKTOP_PNPM_ENTRY: pnpm,
   YOUDUB_HARNESS_PLUGIN_ROOT: pluginRoot, YOUDUB_MEDIA_ROOT: root, YOUDUB_NODE_PATH: node,
   YOUDUB_TEST_SKIP_SETUP: values['skip-setup'] ? '1' : '0',
   ...(testPython ? { YOUDUB_TEST_PYTHON: testPython } : {}),
 };
 delete env.ELECTRON_RUN_AS_NODE;
-delete env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR;
 if (values['prepare-only']) {
   console.log(`Prepared YouDub Desktop source runtime: ${project}\nYouDub profile: ${profile}\nFramework source workspace: ${source}`);
 } else {

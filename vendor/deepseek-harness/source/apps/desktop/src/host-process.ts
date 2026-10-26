@@ -165,14 +165,14 @@ export class DesktopHostProcess {
     child.stdout?.pipe(process.stdout)
     child.on('message', (message: unknown) => {
       if (!isDesktopHostEvent(message)) {
-        this.fail(new Error('desktop host sent an invalid IPC event'))
+        this.fail(new Error('YouDub desktop host sent an invalid IPC event'))
         child.kill('SIGTERM')
         return
       }
       if (message.type === 'ready') this.readyResolve({ url: message.url, injections: message.injections })
       else if (message.type === 'shutdown-complete') {
         if (this.stopping) this.shutdownCompleted = true
-        else this.fail(new Error('desktop host acknowledged an unrequested shutdown'))
+        else this.fail(new Error('YouDub desktop host acknowledged an unrequested shutdown'))
       }
       else if (message.type === 'fatal') this.fail(new DesktopHostFatalError(message.message, message.diagnostic))
       else {
@@ -185,8 +185,8 @@ export class DesktopHostProcess {
     this.exitPromise = new Promise<void>((resolve) => {
       child.once('close', (code) => {
         const suffix = this.stderr.trim() === '' ? '' : `: ${this.stderr.trim()}`
-        if (code !== 0 && code !== null) this.fail(new Error(`desktop host exited with ${String(code)}${suffix}`))
-        else this.fail(new Error(`desktop host stopped${suffix}`))
+        if (code !== 0 && code !== null) this.fail(new Error(`YouDub desktop host exited with ${String(code)}${suffix}`))
+        else this.fail(new Error(`YouDub desktop host stopped${suffix}`))
         resolve()
       })
     })
@@ -242,13 +242,13 @@ export class DesktopHostProcess {
     if (!await exitsWithin(exited, 5_000)) {
       child.kill('SIGKILL')
       if (!await exitsWithin(exited, 5_000)) {
-        throw new Error('desktop host did not exit after SIGKILL')
+        throw new Error('YouDub desktop host did not exit after SIGKILL')
       }
     }
     this.child = undefined
     if (requireGraceful && (!graceful || child.exitCode !== 0 || !this.shutdownCompleted)) {
       // This diagnostic reaches expandable UI; arbitrary plugin stderr can contain credentials.
-      throw new DesktopHostUncleanExitError(`desktop host did not complete graceful task teardown (exit ${String(child.exitCode)}, signal ${String(child.signalCode)}, shutdown acknowledged ${String(this.shutdownCompleted)}, graceful deadline exceeded ${String(!graceful)})`)
+      throw new DesktopHostUncleanExitError(`YouDub desktop host did not complete graceful task teardown (exit ${String(child.exitCode)}, signal ${String(child.signalCode)}, shutdown acknowledged ${String(this.shutdownCompleted)}, graceful deadline exceeded ${String(!graceful)})`)
     }
   }
 
@@ -259,7 +259,7 @@ export class DesktopHostProcess {
     if (!this.failureReported && !this.stopping) {
       this.failureReported = true
       try { this.onFailure?.(error) } catch (listenerError) {
-        console.error('desktop host failure listener failed', listenerError)
+        console.error('YouDub desktop host failure listener failed', listenerError)
       }
     }
   }

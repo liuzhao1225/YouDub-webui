@@ -27,7 +27,7 @@ async function main(): Promise<void> {
         args: ['--expose-internals', process.argv[4]],
         env: {
           ELECTRON_RUN_AS_NODE: '1',
-          DSH_DESKTOP_NODE_EXECUTABLE: process.execPath,
+          YOUDUB_DESKTOP_NODE_EXECUTABLE: process.execPath,
           PATH: `${process.argv[5] ?? ''}${delimiter}${process.env.PATH ?? ''}`,
         },
       },

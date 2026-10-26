@@ -36,5 +36,5 @@ export function webShortcutStorage(window: Window, platform: ShortcutPlatform,
  * @returns the restricted Desktop API, or undefined while the preload is unavailable.
  */
 export function desktopShortcutStorage(window: Window): DesktopShortcutsApi | undefined {
-  return (window as Window & { dshDesktop?: { shortcuts?: DesktopShortcutsApi } }).dshDesktop?.shortcuts
+  return (window as Window & { youdubDesktop?: { shortcuts?: DesktopShortcutsApi } }).youdubDesktop?.shortcuts
 }

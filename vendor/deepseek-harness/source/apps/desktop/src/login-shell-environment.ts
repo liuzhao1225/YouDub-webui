@@ -14,7 +14,7 @@ const PROBE_ENVIRONMENT = { DISABLE_AUTO_UPDATE: 'true', ZSH_TMUX_AUTOSTARTED: '
 /** Variables that describe the probe shell process rather than the user's configuration. */
 const SHELL_SESSION_KEYS = new Set(['PWD', 'OLDPWD', 'SHLVL', '_', ...Object.keys(PROBE_ENVIRONMENT)])
 /** Desktop resolves paths such as `DSH_HOME` before the read, so the Host keeps the same inherited values. */
-const LAUNCHER_OWNED_PREFIXES = ['DSH_', 'ELECTRON_'] as const
+const LAUNCHER_OWNED_PREFIXES = ['DSH_', 'YOUDUB_', 'ELECTRON_'] as const
 
 /** Validated login-shell read settings. */
 export interface DesktopLoginShellConfig {
@@ -52,10 +52,10 @@ export interface DesktopLoginShellReadOptions {
 /**
  * Resolve login-shell read settings.
  * @param env - Desktop process environment.
- * @returns Validated per-candidate deadline; `DSH_DESKTOP_LOGIN_SHELL_TIMEOUT_MS` defaults to 10000.
+ * @returns Validated per-candidate deadline; `YOUDUB_DESKTOP_LOGIN_SHELL_TIMEOUT_MS` defaults to 10000.
  */
 export function resolveDesktopLoginShellConfig(env: NodeJS.ProcessEnv): DesktopLoginShellConfig {
-  return { timeoutMs: resolveDurationMs(env, 'DSH_DESKTOP_LOGIN_SHELL_TIMEOUT_MS', 10_000) }
+  return { timeoutMs: resolveDurationMs(env, 'YOUDUB_DESKTOP_LOGIN_SHELL_TIMEOUT_MS', 10_000) }
 }
 
 /**

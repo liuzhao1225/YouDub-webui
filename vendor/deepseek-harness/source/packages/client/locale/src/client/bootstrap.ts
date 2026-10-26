@@ -8,7 +8,7 @@ export interface LocaleBootstrap {
   readonly preference: string | null
 }
 
-/** Optional page-global bridge named __DSH_LOCALE__; ordinary browsers omit it. */
+/** Optional page-global bridge named __YOUDUB_LOCALE__; ordinary browsers omit it. */
 export interface LocaleBridge {
   /** Read current initialization data through the shell's isolated preload. @returns unvalidated IPC data. */
   read(): Promise<unknown>

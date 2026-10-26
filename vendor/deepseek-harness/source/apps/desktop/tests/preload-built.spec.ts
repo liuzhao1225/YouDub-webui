@@ -65,24 +65,24 @@ describe('built sandboxed Desktop preloads', () => {
         return electron
       },
       process: { argv: ['electron'], isMainFrame: true },
-      location: new URL('dsh-app://app/'),
+      location: new URL('youdub-app://app/'),
       exports: {},
     })
     if (name === 'preload-app') {
-      const product = exposed.get('dshDesktop') as { updates: { status(): Promise<unknown> } }
+      const product = exposed.get('youdubDesktop') as { updates: { status(): Promise<unknown> } }
       const update = { phase: 'available', version: '0.0.9' }
       invoke.mockResolvedValueOnce(update)
       await expect(product.updates.status()).resolves.toBe(update)
-      expect(invoke).toHaveBeenCalledWith('dsh-desktop:updates-status')
+      expect(invoke).toHaveBeenCalledWith('youdub-desktop:updates-status')
       browser.loadTheme('dark')
-      expect(send).toHaveBeenCalledWith('dsh-desktop:native-theme-set', 'dark')
+      expect(send).toHaveBeenCalledWith('youdub-desktop:native-theme-set', 'dark')
       browser.changeTheme('light')
-      expect(send).toHaveBeenCalledWith('dsh-desktop:native-theme-set', 'light')
-      const bridge = exposed.get('__DSH_LOCALE__') as { read(): unknown; onChange(locale: string): void }
+      expect(send).toHaveBeenCalledWith('youdub-desktop:native-theme-set', 'light')
+      const bridge = exposed.get('__YOUDUB_LOCALE__') as { read(): unknown; onChange(locale: string): void }
       bridge.read()
-      expect(invoke).toHaveBeenCalledWith('dsh-desktop:locale-bootstrap')
+      expect(invoke).toHaveBeenCalledWith('youdub-desktop:locale-bootstrap')
       bridge.onChange('zh')
-      expect(send).toHaveBeenCalledWith('dsh-desktop:locale-changed', 'zh')
+      expect(send).toHaveBeenCalledWith('youdub-desktop:locale-changed', 'zh')
 
     }
   })

@@ -68,7 +68,7 @@ afterEach(async () => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-describe('desktop host process', () => {
+describe('YouDub desktop host process', () => {
   it('correlates quit inspections and fails an unanswered one at its own deadline', async () => {
     const host = hostProcess(projectWithHost())
     await expect(host.inspectQuit()).rejects.toThrow('desktop quit: Host is unavailable')
@@ -145,7 +145,7 @@ describe('desktop host process', () => {
     const { url } = await host.start()
     await fetch(new URL('/crash', url))
     await expect.poll(() => failure.mock.calls.length).toBe(1)
-    expect(failure).toHaveBeenCalledWith(new Error('desktop host exited with 7: plugin crashed'))
+    expect(failure).toHaveBeenCalledWith(new Error('YouDub desktop host exited with 7: plugin crashed'))
   })
 
   it('retains only recent diagnostics from a noisy child', async () => {

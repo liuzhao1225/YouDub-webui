@@ -22,7 +22,7 @@ it('forwards client initialization failures to native recovery', async () => {
   const gate = Promise.withResolvers<undefined>()
   const failed = vi.fn(async () => {})
   vi.stubGlobal('__DSH_BOOT_READY__', gate)
-  vi.stubGlobal('dshDesktopBoot', { ready: async () => ({ injections: [], streamBaseUrl: 'http://127.0.0.1:3080' }), failed })
+  vi.stubGlobal('youdubDesktopBoot', { ready: async () => ({ injections: [], streamBaseUrl: 'http://127.0.0.1:3080' }), failed })
   vi.stubGlobal('__DSH_TRANSPORT__', undefined)
   await import('../src/main.ts')
   await gate.promise
@@ -38,7 +38,7 @@ it('rejects the shared boot wait when the Desktop Host cannot start', async () =
   const failure = new Error('Host failed')
   const rejected = expect(gate.promise).rejects.toBe(failure)
   vi.stubGlobal('__DSH_BOOT_READY__', gate)
-  vi.stubGlobal('dshDesktopBoot', { ready: async () => { throw failure }, failed: vi.fn() })
+  vi.stubGlobal('youdubDesktopBoot', { ready: async () => { throw failure }, failed: vi.fn() })
   await import('../src/main.ts')
   await rejected
   expect(boot.applyIndexInjections).not.toHaveBeenCalled()
@@ -47,7 +47,7 @@ it('rejects the shared boot wait when the Desktop Host cannot start', async () =
 
 it('leaves browser failure presentation with the Web boot kernel', async () => {
   document.body.innerHTML = '<div id="root"></div>'
-  vi.stubGlobal('dshDesktopBoot', undefined)
+  vi.stubGlobal('youdubDesktopBoot', undefined)
   await import('../src/main.ts')
   expect(boot.run).toHaveBeenCalledWith(undefined)
 })
@@ -55,7 +55,7 @@ it('leaves browser failure presentation with the Web boot kernel', async () => {
 it.each(['root', 'readiness'])('reports missing %s before client plugin startup', async (missing) => {
   if (missing !== 'root') document.body.innerHTML = '<div id="root"></div>'
   const failed = vi.fn(async () => {})
-  vi.stubGlobal('dshDesktopBoot', { ready: vi.fn(), failed })
+  vi.stubGlobal('youdubDesktopBoot', { ready: vi.fn(), failed })
   vi.stubGlobal('__DSH_BOOT_READY__', undefined)
   await import('../src/main.ts')
   expect(failed).toHaveBeenCalledWith(missing === 'root'

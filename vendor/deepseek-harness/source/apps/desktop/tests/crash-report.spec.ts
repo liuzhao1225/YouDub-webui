@@ -39,14 +39,14 @@ it('names files by sortable time and source', () => {
 it('renders the facts header, the inspected error with its properties and cause, and the renderer console', () => {
   const text = renderCrashReport(input({
     error: new Error('wrapper', { cause: input().error }),
-    rendererConsole: ['dsh-app://app/assets/entry.js:12 client-modules: bundle script plugins/??a/client.js&rev=1 failed to load'],
+    rendererConsole: ['youdub-app://app/assets/entry.js:12 client-modules: bundle script plugins/??a/client.js&rev=1 failed to load'],
   }))
   expect(text).toContain('time: 2026-09-22T10:30:00.123Z\nsource: host\nphase: running\napp: YouDub 0.1.7\nplatform: win32 x64\nelectron: 44.0.0\nnode: 24.18.1\nlocale: zh_CN\n')
   expect(text).toContain('--- error ---\nError: wrapper')
   expect(text).toContain("syscall: 'open'")
   expect(text).toContain("path: 'C:\\\\Temp\\\\dsh-subprocess-x\\\\out.log'")
   expect(text).toContain('[cause]: Error: ENOENT')
-  expect(text).toContain('--- renderer console (error level, oldest first) ---\ndsh-app://app/assets/entry.js:12 client-modules: bundle script')
+  expect(text).toContain('--- renderer console (error level, oldest first) ---\nyoudub-app://app/assets/entry.js:12 client-modules: bundle script')
   expect(text.endsWith('\n')).toBe(true)
 })
 
@@ -78,7 +78,7 @@ it('returns undefined and logs when the report cannot be written', async () => {
   const blocked = join(root, 'not-a-directory')
   await writeFile(blocked, '')
   expect(await writeCrashReport(blocked, input())).toBeUndefined()
-  expect(error).toHaveBeenCalledWith('dsh desktop: crash report could not be written', expect.stringContaining('crash-'), expect.anything())
+  expect(error).toHaveBeenCalledWith('YouDub desktop: crash report could not be written', expect.stringContaining('crash-'), expect.anything())
 })
 
 it('prunes only the oldest crash reports and leaves other files alone', async () => {

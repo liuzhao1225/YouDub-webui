@@ -64,7 +64,7 @@ child.stdout.on('data', value => { output += value; });
 child.stderr.on('data', value => { output += value; });
 try {
   const ownership = await application.evaluate(({ app }) => ({
-    name: app.getName(), home: process.env.DSH_HOME, runtime: process.env.DSH_DESKTOP_DSH_DIR,
+    name: app.getName(), home: process.env.DSH_HOME, runtime: process.env.YOUDUB_DESKTOP_RUNTIME_DIR,
     primaryRuntime: process.env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR, userData: app.getPath('userData'),
   }));
   assert.equal(ownership.name, 'YouDub');
@@ -82,7 +82,8 @@ try {
     };
   });
   const page = await application.firstWindow({ timeout: 30_000 });
-  await page.waitForURL('dsh-app://app/');
+  page.setDefaultTimeout(30_000);
+  await page.waitForURL('youdub-app://app/', { timeout: 30_000 });
   await page.waitForFunction(() => document.body?.innerText?.length > 40);
   assert.equal(await page.title(), 'YouDub');
   assert.doesNotMatch(await page.locator('body').innerText(), /DeepSeek Harness|DSH Local Build/);
@@ -103,6 +104,25 @@ try {
   assert.equal(setup.testMode, workbench ? true : undefined);
   if (!configured) assert.equal(setup.environment.length, 0);
   const text = await evaluate('document.body.innerText');
+  const menuLabels = await application.evaluate(({ Menu }) => {
+    const labels = [];
+    const visit = menu => { for (const item of menu?.items ?? []) { labels.push(item.label); visit(item.submenu); } };
+    visit(Menu.getApplicationMenu());
+    return labels.join('\n');
+  });
+  assert.doesNotMatch(menuLabels, /DeepSeek|Harness|\bdsh\b/i);
+  assert.match(menuLabels, /YouDub/);
+  assert.equal(await page.title(), 'YouDub');
+  const manifest = await page.evaluate(async () => {
+    const response = await fetch('/manifest.webmanifest');
+    if (!response.ok) throw new Error('Application manifest HTTP ' + response.status);
+    return response.json();
+  });
+  assert.equal(manifest.name, 'YouDub');
+  assert.equal(manifest.short_name, 'YouDub');
+  assert.doesNotMatch(text, /DeepSeek Harness/);
+  assert.equal(await page.evaluate(() => typeof globalThis.youdubDesktopBoot?.ready), 'function');
+  assert.equal(await page.evaluate(() => typeof globalThis.dshDesktopBoot), 'undefined');
   if (!configured) assert.match(text, workbench ? /工作台|Workbench/ : /安装|Install|installation|开始|Get started/);
   if (workbench) {
     const tasks = await evaluate(`(async () => {
@@ -142,11 +162,27 @@ try {
   const [code, signal] = await Promise.race([closed, delay(15_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application did not close cleanly'); })]);
   assert.equal(signal, null);
   assert.equal(code, 0);
+  if (process.platform === 'win32') {
+    const deadline = Date.now() + 10_000;
+    while (true) {
+      const remaining = JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+        "$ErrorActionPreference = 'Stop'; ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process -Filter \"Name = 'YouDub.exe'\" | Where-Object { $_.ExecutablePath -eq $env:YOUDUB_SMOKE_EXECUTABLE } | Select-Object ProcessId,ParentProcessId)"],
+      { encoding: 'utf8', env: { ...process.env, YOUDUB_SMOKE_EXECUTABLE: executable }, timeout: 15_000 }).trim());
+      if (remaining.length === 0) break;
+      assert(Date.now() < deadline, `YouDub processes survived quit: ${JSON.stringify(remaining)}`);
+      await delay(200);
+    }
+    console.log('Packaged YouDub: all processes using its installed executable have exited.');
+  }
   assert.deepEqual(await readdir(harnessHome), ['.credentials.yaml']);
   assert.equal(await readFile(join(harnessHome, '.credentials.yaml'), 'utf8'), sentinel);
   if (process.platform === 'darwin') execFileSync('codesign', ['--verify', '--deep', '--strict', installed], { stdio: 'pipe' });
   complete = true;
   console.log(`Packaged YouDub ${appManifest.version}: relocated ${workbench ? 'workbench and Python worker' : 'first setup'}, local workflow sample and clean exit passed.`);
+} catch (error) {
+  // CI must retain the original startup diagnostic even when the renderer stays blank.
+  console.error(output.slice(-16_384).replace(/(token[=:]\s*)[^\s&"']+/gi, '$1[redacted]'));
+  throw error;
 } finally {
   if (!complete && child.exitCode === null) child.kill('SIGKILL');
   // Preserve diagnostic evidence privately. Local launch tokens are redacted before persistence.

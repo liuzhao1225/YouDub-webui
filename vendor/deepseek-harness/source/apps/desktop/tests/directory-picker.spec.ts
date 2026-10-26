@@ -12,7 +12,7 @@ const { installDesktopDirectoryPicker } = await import('../src/directory-picker.
 beforeEach(() => { vi.resetAllMocks() })
 
 function fixture() {
-  const frame = { url: 'dsh-app://app/' }
+  const frame = { url: 'youdub-app://app/' }
   const window = {
     webContents: { mainFrame: frame },
     isDestroyed: vi.fn(() => false),
@@ -69,7 +69,7 @@ describe('Desktop directory picker', () => {
     const f = fixture()
     await expect(f.handler({ ...f.event, sender: {} } as IpcMainInvokeEvent)).rejects.toThrow('unowned renderer')
     await expect(f.handler({ ...f.event, senderFrame: {} } as IpcMainInvokeEvent)).rejects.toThrow('unowned renderer')
-    for (const url of ['dsh-app://shell/startup.html', 'https://example.com/', 'http://127.0.0.1/']) {
+    for (const url of ['youdub-app://shell/startup.html', 'https://example.com/', 'http://127.0.0.1/']) {
       f.frame.url = url
       await expect(f.handler(f.event)).rejects.toThrow('unowned renderer')
     }

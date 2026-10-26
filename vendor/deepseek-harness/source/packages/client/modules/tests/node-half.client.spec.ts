@@ -905,7 +905,7 @@ describe('client bundle activation', () => {
     expect(batchScript.status).toBe(200)
     expect(batchScript.headers?.['cache-control']).toBe('public, max-age=31536000, immutable')
     expect(batchScript.body.toString('utf8')).toContain(`//# sourceMappingURL=${mapReference(batch.url)}`)
-    const shellResponse = await service.fetchBundle(new Request(`dsh-app://app/${batch.url}`))
+    const shellResponse = await service.fetchBundle(new Request(`youdub-app://app/${batch.url}`))
     expect(shellResponse.status).toBe(200)
     expect(shellResponse.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
     expect(await shellResponse.text()).toBe(batchScript.body.toString('utf8'))

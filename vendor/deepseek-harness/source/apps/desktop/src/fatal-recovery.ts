@@ -111,7 +111,7 @@ export class DesktopFatalRecovery {
         new Promise<undefined>((resolve) => { timer = setTimeout(() => { resolve(undefined) }, CRASH_REPORT_WAIT_MS) }),
       ])
     } catch (failure) {
-      console.error('dsh desktop: crash report failed', failure)
+      console.error('YouDub desktop: crash report failed', failure)
       return undefined
     } finally {
       clearTimeout(timer)
