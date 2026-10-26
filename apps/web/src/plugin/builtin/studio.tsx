@@ -1,9 +1,8 @@
 import { Surface, surfaceVariants } from '@/components/ui/surface'
 import { NativeSelect } from '@/components/ui/native-select'
-import { bindComponent, type Bindings } from '../sdk'
-import { Context } from 'cordis'
+import { type Bindings } from '../sdk'
 import { useEffect, useState, type FormEvent, type ReactNode, type SetStateAction } from 'react'
-import { ArrowRight, ChevronRight, Link2, Loader2, Sparkles, X } from '@/lib/icons'
+import { ArrowRight, ChevronRight, Link2, Loader2, X } from '@/lib/icons'
 import { Link, text, type Catalog, type JsonObject, type TaskPage, type TaskView, type WorkflowDescription } from '../sdk'
 import { videoSource } from '@youdub/sdk/video-source'
 import { Input } from '@/components/ui/input'
@@ -18,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ACTIVE_STATUSES, TaskProgress, TaskState, taskDisplayName } from './task-status'
 import { ConfigEditor, defaultConfig, schemaProblems, useEditorSupported, validateConfig } from './schema-form'
-import { protectPendingSubmissions, useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
+import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
 import { StudioDraftStore, type ComposerDraft } from '@/runtime/studio-draft'
 import { GraphStudio } from './workflows'
 import { UploadSlot } from './media-upload'
@@ -162,14 +161,4 @@ export function Studio({ draftStore, request, navigate, useQuery, useSlot, useWo
       </TaskSection>
     </PageContainer>
   </main>
-}
-export const name = 'client-studio'
-export const inject = ['slots', 'apiClient', 'navigation']
-export function apply(ctx: Context) {
-  const draftStore = new StudioDraftStore()
-  ctx.effect(() => () => draftStore.reset())
-  protectPendingSubmissions(ctx, draftStore)
-  const BoundStudio = bindComponent(ctx, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'], Studio)
-  ctx.effect(() => ctx.slots.register('shell.routes', { id: 'studio', path: '/', component: () => <BoundStudio draftStore={draftStore} />, access: 'authenticated' }))
-  ctx.effect(() => ctx.slots.register('shell.navigation', { id: 'studio', routeId: 'studio', label: { default: 'Studio', translations: { zh: '工作台', ja: 'スタジオ' } }, order: 10, icon: Sparkles }))
 }

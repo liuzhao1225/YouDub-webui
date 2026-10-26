@@ -1,24 +1,22 @@
-import type { Context } from 'cordis'
-import type { ComponentType } from 'react'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type Catalog, type RouteProps, type SlotMap, type TaskView } from './sdk'
-import { apply } from './builtin/library'
+import { LanguageProvider } from '@/test/language-provider'
+import { type Catalog, type TaskView } from './sdk'
+import { TasksPage, TaskPage } from '../../../harness/src/frontend/task-pages'
 
 const workflow = { id: 'external.text', version: '2.0.0', label: 'Text workflow', inputs: [], configSchema: { type: 'object', properties: { mode: { type: 'string', enum: ['upper', 'lower'] } }, required: ['mode'] }, defaults: { mode: 'upper' } }
 const catalog: Catalog = { providers: [], workflows: [workflow, { ...workflow, id: 'another', label: 'Another workflow' }] }
 const task: TaskView = { id: 'original', attempt: 2, status: 'succeeded', sourceName: 'document.txt', createdAt: '2026-10-09T00:00:00Z', workflowId: workflow.id, workflowVersion: workflow.version, config: { mode: 'upper' }, steps: [], outputs: [], allowedActions: ['rerun', 'delete'] }
 function mount(request: ReturnType<typeof vi.fn>, route = 'task-detail') {
   const push = vi.fn()
-  let Page!: ComponentType<RouteProps>
+  const Page = route === 'library' ? TasksPage : TaskPage
   const context = { apiClient: { request }, navigation: { push },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes' && entry.id === route) Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
     effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  const show = () => render(<PluginContextProvider context={context}><LanguageProvider><Page params={{ id: task.id }} /></LanguageProvider></PluginContextProvider>)
+  } as unknown as TestContext
+  const show = () => render(<TestFeatureProvider context={context}><LanguageProvider><Page params={{ id: task.id }} /></LanguageProvider></TestFeatureProvider>)
   const view = show()
   return Object.assign(push, { unmount: view.unmount, show })
 }
@@ -86,7 +84,7 @@ it('keeps rerun state until the user checks or clears the failed import, then al
   expect(screen.getByLabelText('mode *')).toBeDisabled()
   await user.click(screen.getByRole('button', { name: '查询创建结果' }))
   await screen.findByText(/Task not found/)
-  expect(request).toHaveBeenCalledWith(`/api/v2/tasks/${first.id}`)
+  expect(request).toHaveBeenCalledWith(`/api/v2/tasks/${first.id}`, undefined)
   await user.click(screen.getByRole('button', { name: '清理本次导入' }))
   await waitFor(() => expect(workflowSelect).toBeEnabled())
   expect(request).toHaveBeenCalledWith(`/api/v2/imports/${first.id}`, { method: 'DELETE' })

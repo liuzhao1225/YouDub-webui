@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { PassThrough } from 'node:stream'
 import { Context } from '@deepseek-ai/cordis'
 import { scrubbedParentEnv, SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import type {
   SubprocessHandle,
   SubprocessOutputRead,
   SubprocessSpawnSpec,
-  SubprocessTerminalHandle,
-  SubprocessTerminalSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
 
 /**
@@ -16,7 +13,6 @@ import type {
  * is all an implementation owes the abstract class.
  */
 class StubSubprocessRuntime extends SubprocessRuntime {
-  async terminalEnvironment() { return { platform: 'posix' as const } }
   async resolveExecutable(command: string): Promise<string> {
     return `/bin/${command}`
   }
@@ -35,20 +31,6 @@ class StubSubprocessRuntime extends SubprocessRuntime {
       done: Promise.resolve({ exitCode: 0, signal: null }),
       terminate: () => {},
       waitForExit: () => Promise.resolve(true),
-    }
-  }
-
-  async spawnTerminal(spec: SubprocessTerminalSpawnSpec): Promise<SubprocessTerminalHandle> {
-    return {
-      pid: spec.argv.length,
-      output: new PassThrough(),
-      done: Promise.resolve({ exitCode: 0, signal: null }),
-      write: async () => {},
-      resize: async () => {},
-      inspectActivity: async () => ({ state: 'unknown' as const, revision: 0 }),
-      inspectForeground: async () => ({ processGroupId: 1, inputWaiting: true }),
-      signalForeground: async () => 1,
-      terminate: async () => {},
     }
   }
 }

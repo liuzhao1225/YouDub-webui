@@ -13,8 +13,8 @@ from .store import SqliteStore
 
 
 class Bridge:
-    def __init__(self, root: Path, legacy_db: Path | None = None):
-        self.store = SqliteStore(root, legacy_db)
+    def __init__(self, root: Path):
+        self.store = SqliteStore(root)
         self.store.migrate_connection_model()
 
     def call(self, method, params):
@@ -68,14 +68,13 @@ class Bridge:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", required=True, type=Path)
-    parser.add_argument("--legacy-db", type=Path, default=Path(__file__).resolve().parents[2] / "data" / "youdub.sqlite")
     args = parser.parse_args()
     output = sys.stdout
     sys.stdout = sys.stderr
     # Load application environment without importing the old application entry.
     from backend.app import config  # noqa: F401
     try:
-        bridge = Bridge(args.data_dir, args.legacy_db)
+        bridge = Bridge(args.data_dir)
     except BaseException:
         traceback.print_exc(file=sys.stderr)
         return 1

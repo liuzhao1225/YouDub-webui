@@ -10,20 +10,13 @@
 
 import { constants } from 'node:fs'
 import { access, stat } from 'node:fs/promises'
-import { userInfo } from 'node:os'
 import { delimiter, extname, isAbsolute, resolve } from 'node:path'
 import type { Duplex } from 'node:stream'
 import { Context } from '@deepseek-ai/cordis'
-import type * as NodePty from 'node-pty'
-import type { IPtyForkOptions, IWindowsPtyForkOptions } from 'node-pty'
-import { createLazyRequire } from '@deepseek-ai/dsh-lazy-require'
 import { SubprocessRuntime, SubprocessExecutableNotFoundError } from '@deepseek-ai/dsh-subprocess'
 import type {
   SubprocessHandle,
   SubprocessSpawnSpec,
-  SubprocessTerminalHandle,
-  SubprocessTerminalEnvironment,
-  SubprocessTerminalSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
 import {
   bindManagedProcess,
@@ -38,21 +31,14 @@ import {
   LinuxScopeNotStartedError,
   launchLinuxScope,
   linuxManagerListener,
-  prepareLinuxTerminalScope,
   probeLinuxNative,
-  signalLinuxDirectProcess,
   systemdRunIdentity,
 } from './linux-scope.ts'
 import { LinuxScopeSelector } from './linux-scope-selector.ts'
 import type { LinuxScopeDecision } from './linux-scope-selector.ts'
 import { launchWindowsJob, probeWindowsJob } from './windows-job.ts'
 import { targetEnvironment } from './runner-launch.ts'
-import { createProcessInspector } from './process-inspector.ts'
-import type { ProcessInspector } from './process-inspector.ts'
-import { LocalTerminalHandle } from './terminal.ts'
-import { prepareShellActivity } from './shell-activity.ts'
 
-const requireNodePty = createLazyRequire<typeof NodePty>('node-pty', import.meta.url)
 
 /**
  * Local subprocess service: platform-selected managed ranges, Node-shaped stdio
@@ -64,8 +50,6 @@ const requireNodePty = createLazyRequire<typeof NodePty>('node-pty', import.meta
 export class LocalSubprocessRuntime extends SubprocessRuntime {
   /** Live handles retained for normal disposal and synchronous host-exit finalization. */
   private live = new Set<LocalSubprocessHandle>()
-  /** Live terminals retained through normal quiescence or host-exit finalization. */
-  private terminals = new Set<LocalTerminalHandle>()
   /** Caller endpoints retained until close, independently of managed process lifetime. */
   private controlChannels = new Set<Duplex>()
   /** Test hook: process, spill, and platform operations forwarded to spawnSubprocess. */
@@ -84,8 +68,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
   })
   /** Scope decision of the launch in progress; selectContainmentMode sets it immediately before the launch reads it. */
   private linuxScopeDecision: Extract<LinuxScopeDecision, { kind: 'scope' }> | undefined
-  /** Test hook for platform process inspection; production resolves lazily on terminal spawn. */
-  terminalInspector: ProcessInspector | undefined
 
   constructor(ctx: Context) {
     super(ctx)
@@ -110,19 +92,12 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
         // Host exit cannot await or report one target; continue with the rest.
       }
     }
-    for (const terminal of this.terminals) {
-      try {
-        terminal.terminateForHostExit()
-      } catch (_terminalTerminationFailed) {
-        // One terminal must not prevent final termination of another target.
-      }
-    }
   }
 
   private async disposeManagedProcesses(): Promise<void> {
     // Request termination, then await MANAGED-RANGE exit — not just the
     // direct command's settlement — so even a surviving descendant cannot
-    // outlive the fiber. Keep both sets authoritative while these waits are
+    // outlive the fiber. Keep ownership authoritative while these waits are
     // pending so a shorter process-level exit bound can still force-kill them.
     const pending: Promise<unknown>[] = []
     for (const handle of this.live) {
@@ -133,9 +108,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
         handle.done.catch(() => {}),
         handle.waitForExit(),
       ]).then(() => { this.live.delete(handle) }))
-    }
-    for (const terminal of this.terminals) {
-      pending.push(terminal.terminate().then(() => { this.terminals.delete(terminal) }))
     }
     const outcomes = await Promise.allSettled(pending)
     await Promise.all([...this.controlChannels].map(control => new Promise<void>((resolveClose) => {
@@ -197,7 +169,7 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
   spawn(spec: SubprocessSpawnSpec): SubprocessHandle {
     validateSubprocessSpec(spec)
     const env = targetEnvironment(spec)
-    const containmentMode = this.selectContainmentMode('ordinary')
+    const containmentMode = this.selectContainmentMode()
     let handle: LocalSubprocessHandle
     const internals: SpawnInternals = { ...this.internals, onSpillFailure: this.reportSpillFailure }
     if (containmentMode === 'fallback') {
@@ -234,9 +206,7 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
     })
   }
 
-  private selectContainmentMode(
-    kind: 'ordinary' | 'terminal',
-  ): 'linux-scope' | 'windows-job' | 'fallback' {
+  private selectContainmentMode(): 'linux-scope' | 'windows-job' | 'fallback' {
     const platform = this.internals.platform ?? process.platform
     let fallbackReason: string | undefined
     if (platform === 'linux') {
@@ -249,17 +219,16 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
       }
       fallbackReason = 'the current user-systemd scope or private bootstrap is unavailable'
     }
-    if (kind === 'ordinary' && platform === 'win32') {
+    if (platform === 'win32') {
       const available = probeWindowsJob()
       if (available) return 'windows-job'
     }
-    this.warnFallback(platform, kind, fallbackReason)
+    this.warnFallback(platform, fallbackReason)
     return 'fallback'
   }
 
   private warnFallback(
     platform: NodeJS.Platform,
-    kind: 'ordinary' | 'terminal',
     selectedReason?: string,
   ): void {
     if (this.fallbackWarningIssued) return
@@ -267,99 +236,11 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
     const reason = selectedReason ?? (platform === 'darwin'
       ? 'macOS has no supported persistent process-range owner'
       : platform === 'win32'
-        ? kind === 'terminal'
-          ? 'Windows ConPTY remains outside Job containment'
-          : 'the Win32 Job runner is unavailable'
+        ? 'the Win32 Job runner is unavailable'
         : `platform ${platform} has no native managed range`)
     this.ctx.logger.warn(
       `subprocess-local is using weaker process-tree containment because ${reason}; descendants that escape the process group or direct-parent tree are not guaranteed to terminate or delay waitForExit()`,
     )
-  }
-
-  /** @inheritdoc */
-  // oxlint-disable-next-line typescript/require-await -- Keep the provider promise rejection semantics for cancelled inspection.
-  async terminalEnvironment(signal?: AbortSignal): Promise<SubprocessTerminalEnvironment> {
-    signal?.throwIfAborted()
-    const platform = process.platform === 'win32' ? 'windows' : 'posix'
-    const defaultShell = platform === 'windows' ? process.env.ComSpec || undefined : process.env.SHELL || userInfo().shell || undefined
-    return { platform, ...defaultShell === undefined ? {} : { defaultShell } }
-  }
-
-  // Local PTY allocation is synchronous, but the provider contract permits remote asynchronous allocation.
-  // oxlint-disable-next-line typescript/require-await -- Preserve promise rejection semantics at the async provider contract.
-  async spawnTerminal(spec: SubprocessTerminalSpawnSpec): Promise<SubprocessTerminalHandle> {
-    const file = spec.argv[0]
-    if (file === undefined || file.length === 0) {
-      throw new Error('subprocess-local: terminal argv must contain a program')
-    }
-    spec.signal?.throwIfAborted()
-    const inspector = this.terminalInspector ?? createProcessInspector()
-    const containmentMode = this.selectContainmentMode('terminal')
-    const env = targetEnvironment(spec)
-    const platform = this.internals.platform ?? process.platform
-    const activity = prepareShellActivity(spec, env, platform)
-    const launch = activity === undefined ? spec : { ...spec, argv: activity.argv, env: activity.env }
-    const options: IPtyForkOptions | IWindowsPtyForkOptions = {
-      name: spec.terminalType,
-      rows: spec.rows,
-      cols: spec.cols,
-      cwd: spec.cwd,
-      env: { ...activity?.env ?? env, TERM: spec.terminalType },
-      // Windows' own console host (the standby pool runs Server 2022 and
-      // Windows 10 22H2) renders the persistent-pwsh prompt tail in a form the
-      // readiness path cannot match; the console host node-pty ships emits it
-      // verbatim, see [Agent Note](../../../../.agents/notes/implemented/bug-fix/2026-09-28-pty-bundled-console-host.md).
-      ...(platform === 'win32' ? { useConptyDll: true } : {}),
-    }
-    const linuxScope = containmentMode === 'linux-scope' ? this.linuxScopeDecision : undefined
-    let scope: ReturnType<typeof prepareLinuxTerminalScope> | undefined
-    let terminal: NodePty.IPty
-    try {
-      scope = linuxScope === undefined
-        ? undefined
-        : prepareLinuxTerminalScope(launch, { ...activity?.env ?? env, PWD: spec.cwd, TERM: spec.terminalType }, linuxScope.literalArgv)
-      if (scope !== undefined) { options.cwd = scope.cwd; options.env = scope.env }
-      terminal = requireNodePty().spawn(
-        scope?.command ?? file,
-        scope?.args ?? [...launch.argv.slice(1)],
-        options,
-      )
-    } catch (error) {
-      scope?.cleanup()
-      activity?.dispose()
-      throw error
-    }
-    // oxlint-disable-next-line eslint/prefer-const -- The owner can query readiness before the handle is published.
-    let handle: LocalTerminalHandle | undefined
-    const directSettlement = Promise.withResolvers<void>()
-    const owner = scope?.bindOwner({
-      running: () => handle?.running ?? true,
-      settled: directSettlement.promise,
-      // node-pty swallows signal errors; the scope owner requires their delivery result.
-      signal: signal => signalLinuxDirectProcess(terminal.pid, () => process.kill(terminal.pid, signal)),
-    })
-    handle = new LocalTerminalHandle(
-      terminal,
-      inspector,
-      spec.graceMs,
-      platform,
-      owner,
-      scope?.resolveOutcome,
-      activity,
-      () => { this.terminals.delete(handle as LocalTerminalHandle) },
-      spec.shellActivity === true,
-    )
-    this.terminals.add(handle)
-    if (linuxScope !== undefined) this.watchLinuxScopeStart(handle.done, linuxScope.generation)
-    const release = async (): Promise<void> => {
-      // terminate() can wait on this direct-exit promise.
-      directSettlement.resolve()
-      if (spec.shellActivity === true) return
-      await handle.terminate()
-      this.terminals.delete(handle)
-    }
-    void handle.done.then(release, release).catch(() => {})
-    return handle
   }
 }
 

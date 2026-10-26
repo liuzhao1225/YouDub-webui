@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import LlmRuntime, {
   errorChain,
   GenerateOptions,
@@ -14,8 +13,6 @@ import LlmRuntime, {
   resolveRetryPolicy,
   StreamChunk,
   createMessage,
-  createDeveloperMessage,
-  createUserMessage,
 } from '@deepseek-ai/dsh-llm'
 import type {
   LlmCallConfig,
@@ -25,7 +22,6 @@ import type {
   LlmModelReasoningInfo,
   LlmProviderInfo,
   LlmResolvedModelInfo,
-  SystemPromptUpdate,
 } from '@deepseek-ai/dsh-llm'
 
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
@@ -71,7 +67,6 @@ class CatalogAdapter extends ScriptedAdapter {
     private readonly contexts: Readonly<Record<string, LlmModelContext>> = {},
     private readonly reasoning: Readonly<Record<string, LlmModelReasoningInfo>> = {},
     private readonly defaultMaxTokens: Readonly<Record<string, number>> = {},
-    private readonly systemPromptUpdate: Readonly<Record<string, string>> = {},
   ) {
     super(SCRIPT)
   }
@@ -95,9 +90,6 @@ class CatalogAdapter extends ScriptedAdapter {
       ...this.contexts[model] === undefined ? {} : { context: this.contexts[model] },
       ...this.reasoning[model] === undefined ? {} : { reasoning: this.reasoning[model] },
       ...this.defaultMaxTokens[model] === undefined ? {} : { defaultMaxTokens: this.defaultMaxTokens[model] },
-      ...this.systemPromptUpdate[model] === undefined
-        ? {}
-        : { systemPromptUpdate: this.systemPromptUpdate[model] as SystemPromptUpdate },
     })
   }
 }
@@ -200,70 +192,6 @@ describe('LlmRuntime', () => {
     expect(chunks).toEqual(SCRIPT)
   })
 
-  it('sends complete declarations without deferred loading or developer updates on an undeclared route', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    const adapter = new RecordingAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['test-provider'], adapter)
-    const changes = createDeveloperMessage({ source: { kind: 'test' }, content: [{ type: 'tool-addition', toolName: 'search' }] })
-    const search = { name: 'search', description: 'Search', parameters: {} }
-    await collect(ctx.llm.stream({
-      provider: 'test-provider',
-      model: 'test-model',
-      messages: [createUserMessage({ content: [{ type: 'text', text: 'hi' }], source: { kind: 'user' } }), changes],
-      tools: [{ ...search, deferLoading: true }],
-      toolHistory: { tools: [], updates: [{ messageId: changes.id, additions: [search] }] },
-    }))
-    expect(adapter.lastOptions?.tools).toEqual([search])
-    expect(adapter.lastOptions?.messages.map(message => message.role)).toEqual(['user'])
-  })
-
-  it.each(['in-history', 'addition-only'] as const)('projects additions and removals before %s adapter dispatch', async (mode) => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    class ToolUpdateAdapter extends RecordingAdapter {
-      override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
-        return { provider, id: model, name: model, toolUpdate: mode }
-      }
-    }
-    const adapter = new ToolUpdateAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['test-provider'], adapter)
-    try {
-      const search = { name: 'search', description: 'Search', parameters: {} }
-      const added = createDeveloperMessage({ source: { kind: 'test' }, content: [{ type: 'tool-addition', toolName: 'search' }] })
-      const removed = createDeveloperMessage({ source: { kind: 'test' }, content: [{ type: 'tool-removal', toolName: 'search' }] })
-      const prepared = await ctx.llm.prepareCall({ provider: 'test-provider', model: 'test-model' })
-      await collect(prepared.stream({
-        ...prepared.config,
-        messages: [added],
-        tools: [search],
-        toolHistory: { tools: [], updates: [{ messageId: added.id, additions: [search] }] },
-      }))
-      expect(adapter.lastOptions?.tools).toEqual([{ ...search, deferLoading: true }])
-      expect(adapter.lastOptions?.messages).toEqual([added])
-
-      const afterRemoval = await ctx.llm.prepareCall({ provider: 'test-provider', model: 'test-model' })
-      await collect(afterRemoval.stream({
-        ...afterRemoval.config,
-        messages: [added, removed],
-        tools: [],
-        toolHistory: { tools: [], updates: [
-          { messageId: added.id, additions: [search] },
-          { messageId: removed.id, additions: [] },
-        ] },
-      }))
-      if (mode === 'in-history') {
-        expect(adapter.lastOptions?.tools).toEqual([{ ...search, deferLoading: true }])
-        expect(adapter.lastOptions?.messages).toEqual([added, removed])
-      } else {
-        expect(adapter.lastOptions?.tools).toEqual([])
-        expect(adapter.lastOptions?.messages).toEqual([])
-      }
-    } finally {
-      await ctx.fiber.dispose()
-    }
-  })
-
   it('trusts the immutable message creation boundary for direct calls', async () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
@@ -282,30 +210,6 @@ describe('LlmRuntime', () => {
     })) { /* drain */ }
 
     expect(adapter.lastOptions?.messages[0]).toBe(message)
-  })
-
-  it('projects file blocks to their handle without an Agent filesystem', async () => {
-    const attachment = {
-      attachmentId: AttachmentId(`sha256:${'ab'.repeat(32)}`),
-      name: 'notes.txt',
-      bytes: 3,
-    }
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    const adapter = new RecordingAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['test-provider'], adapter)
-
-    await collect(ctx.llm.stream({
-      provider: 'test-provider',
-      model: 'test-model',
-      messages: [createUserMessage({
-        content: [{ type: 'file', attachment }],
-        source: { kind: 'user' },
-      })],
-    }))
-
-    const projected = adapter.lastOptions?.messages[0]?.content[0]
-    expect(projected).toMatchObject({ type: 'text', text: expect.stringContaining('current execution environment cannot access a readable path') })
   })
 
   it('captures provider-owned retry policy at registration and defaults omission', async () => {
@@ -1212,62 +1116,6 @@ describe('LlmRuntime', () => {
     expect(dispatched).toBe('first')
   })
 
-  it('projects historical images to stable text only after the loop-visible waterfall', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    const seen: GenerateOptions[] = []
-    const adapter = new class extends ScriptedAdapter {
-      override resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
-        return Promise.resolve({ provider, id: model, name: model, inputModalities: ['text'] })
-      }
-
-      override async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-        seen.push(options)
-        yield * super.stream(options)
-      }
-    }(SCRIPT)
-    ctx.llm.registerAdapter(['route'], adapter)
-    const attachment = {
-      attachmentId: AttachmentId(`sha256:${'a'.repeat(64)}`),
-      mediaType: 'image/png' as const,
-      bytes: 3,
-      width: 1,
-      height: 1,
-    }
-    const waterfall: GenerateOptions[] = []
-    ctx.on('llm/stream', async function* (options, next) {
-      waterfall.push(options)
-      yield * next()
-    })
-
-    await collect(ctx.llm.stream({
-      provider: 'route',
-      model: 'text-only',
-      messages: [createUserMessage({
-        content: [{ type: 'image', attachment }],
-        source: { kind: 'test' },
-      })],
-    }))
-
-    expect(waterfall[0]?.messages[0]?.content).toEqual([{ type: 'image', attachment }])
-    expect(seen[0]?.messages[0]?.content).toEqual([{
-      type: 'text',
-      text: '[image omitted because this model accepts text only; attachment sha256:aaaaaaaa]',
-    }])
-
-    const frozen = Object.freeze({
-      provider: 'route',
-      model: 'text-only',
-      messages: [createUserMessage({
-        content: [{ type: 'image', attachment }],
-        source: { kind: 'test' as const },
-      })],
-    })
-    await collect(ctx.llm.stream(frozen))
-    expect(Object.isFrozen(seen[1])).toBe(true)
-    expect(Object.isFrozen(seen[1]?.messages)).toBe(true)
-  })
-
   it('passes cancellation through exact-model resolution', async () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
@@ -1321,29 +1169,6 @@ describe('LlmRuntime', () => {
         .rejects.toMatchObject({ code: 'INVALID_MODEL_CONTEXT' })
     },
   )
-
-  it('captures a declared in-history system prompt update mode and rejects any other mode', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    ctx.llm.registerAdapter(['route'], new CatalogAdapter(
-      { id: 'route', name: 'Route' },
-      [],
-      {},
-      {},
-      {},
-      { capable: 'in-history', bogus: 'leading' },
-    ))
-    await expect(ctx.llm.resolveModelInfo('route', 'capable'))
-      .resolves.toMatchObject({ systemPromptUpdate: 'in-history' })
-    await expect(ctx.llm.resolveModelInfo('route', 'plain'))
-      .resolves.not.toHaveProperty('systemPromptUpdate')
-    await expect(ctx.llm.resolveModelInfo('route', 'bogus'))
-      .rejects.toMatchObject({ code: 'INVALID_MODEL_INFO' })
-    const capable = await ctx.llm.prepareCall({ provider: 'route', model: 'capable' })
-    expect(capable.systemPromptUpdate).toBe('in-history')
-    const plain = await ctx.llm.prepareCall({ provider: 'route', model: 'plain' })
-    expect(plain).not.toHaveProperty('systemPromptUpdate')
-  })
 
   it.each([
     [{ id: 1, name: 'Name' }, 'non-string id'],
@@ -1416,113 +1241,6 @@ describe('LlmRuntime', () => {
 
     for await (const _chunk of ctx.llm.stream({ provider: 'initial', model: 'm', messages: [] })) { /* drain */ }
     expect(adapter.lastOptions?.provider).toBe('routed')
-  })
-
-  it('dispatches identity-free user input beside durable assistant history', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    ctx.llm.registerAdapter(['historical'], new RecordingAdapter(SCRIPT))
-    const target = new RecordingAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['target'], target)
-    const input = { role: 'user' as const, content: [{ type: 'text' as const, text: 'summarize' }] }
-    const assistant = createMessage({
-      role: 'assistant',
-      content: [{ type: 'text', text: 'old response' }],
-      source: { kind: 'model', provider: 'historical', model: 'old-model', replayState: { private: 'state' } },
-    })
-    for await (const _chunk of ctx.llm.stream({
-      provider: 'target', model: 'new-model', messages: [assistant, input],
-    })) { /* drain */ }
-    expect(target.lastOptions?.messages[1]).toBe(input)
-    expect(target.lastOptions?.messages[1]).toEqual({ role: 'user', content: [{ type: 'text', text: 'summarize' }] })
-    expect(target.lastOptions?.messages[0]).toEqual({
-      ...assistant, source: { kind: 'model', provider: 'historical', model: 'old-model' },
-    })
-    expect(assistant.source.replayState).toEqual({ private: 'state' })
-  })
-
-  it('keeps replay state when historical and target providers belong to the same adapter instance', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    const adapter = new RecordingAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['historical', 'target'], adapter)
-    const replayState = { private: 'state' }
-
-    for await (const _chunk of ctx.llm.stream({
-      provider: 'target',
-      model: 'new-model',
-      messages: [createMessage({
-        role: 'assistant',
-        content: [{ type: 'text', text: 'old response' }],
-        source: {
-          kind: 'model',
-          ...{ provider: 'historical', model: 'old-model', replayState },
-        },
-      })],
-    })) { /* drain */ }
-
-    expect(adapter.lastOptions?.messages[0]?.source).toEqual({
-      kind: 'model', provider: 'historical', model: 'old-model', replayState,
-    })
-  })
-
-  it('strips replay state but preserves provider and model when the target uses a different adapter instance', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    ctx.llm.registerAdapter(['historical'], new RecordingAdapter(SCRIPT))
-    const target = new RecordingAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['target'], target)
-
-    for await (const _chunk of ctx.llm.stream({
-      provider: 'target',
-      model: 'new-model',
-      messages: [createMessage({
-        role: 'assistant',
-        content: [{ type: 'text', text: 'old response' }],
-        source: {
-          kind: 'model',
-          ...{ provider: 'historical', model: 'old-model', replayState: { private: 'state' } },
-        },
-      })],
-    })) { /* drain */ }
-
-    expect(target.lastOptions?.messages[0]?.source).toEqual({
-      kind: 'model',
-      provider: 'historical',
-      model: 'old-model',
-    })
-  })
-
-  it('preserves immutability while stripping replay state from frozen requests', async () => {
-    const ctx = new Context()
-    await ctx.plugin(LlmRuntime)
-    ctx.llm.registerAdapter(['historical'], new RecordingAdapter(SCRIPT))
-    const target = new RecordingAdapter(SCRIPT)
-    ctx.llm.registerAdapter(['target'], target)
-    const options = Object.freeze({
-      provider: 'target',
-      model: 'new-model',
-      messages: [createMessage({
-        role: 'assistant' as const,
-        content: [{ type: 'text' as const, text: 'old response' }],
-        source: {
-          kind: 'model',
-          provider: 'historical',
-          model: 'old-model',
-          replayState: { private: 'state' },
-        },
-      })],
-    })
-
-    for await (const _chunk of ctx.llm.stream(options)) { /* drain */ }
-
-    expect(target.lastOptions).not.toBe(options)
-    expect(Object.isFrozen(target.lastOptions)).toBe(true)
-    expect(target.lastOptions?.messages[0]?.source).toEqual({
-      kind: 'model',
-      provider: 'historical',
-      model: 'old-model',
-    })
   })
 
   it('creates LlmError with a code for programmatic handling', () => {

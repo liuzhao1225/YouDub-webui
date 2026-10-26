@@ -116,7 +116,7 @@ it('withholds the product API from same-origin child frames', async () => {
   expect(electron.contextBridge.exposeInMainWorld).toHaveBeenCalledWith('youdubDesktop', { protocolVersion: 1 })
 })
 
-it('forwards only the focused product iframe and releases native input subscriptions', async () => {
+it('forwards product keyboard and menu input and releases subscriptions', async () => {
   vi.stubGlobal('location', new URL('youdub-app://app/'))
   await import('../src/preload-app.ts')
   const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'youdubDesktop')?.[1] as YouDubDesktopProductApi
@@ -124,23 +124,9 @@ it('forwards only the focused product iframe and releases native input subscript
   const off = api.keyboard.subscribe(listener)
   const handler = electron.ipcRenderer.on.mock.calls.find(([name]) => name === DESKTOP_IPC.shortcutsInput)![1] as
     (event: unknown, state: unknown) => void
-  const input = { kind: 'iframe', frameName: 'preview', revision: 'current' }
-  handler({}, input)
-  const frame = document.createElement('iframe')
-  document.body.append(frame)
-  frame.name = 'preview'
-  frame.focus()
-  handler({}, input)
-  expect(listener).not.toHaveBeenCalled()
-  frame.setAttribute('data-html-preview', '')
-  handler({}, { ...input, frameName: 'stale' })
-  handler({}, { ...input, frameName: '' })
-  expect(listener).not.toHaveBeenCalled()
+  const input = { kind: 'keyboard', code: 'KeyW', revision: 'current' }
   handler({}, input)
   expect(listener).toHaveBeenCalledExactlyOnceWith(input)
-  frame.remove()
-  handler({}, input)
-  expect(listener).toHaveBeenCalledTimes(1)
   const menu = { kind: 'menu', commandId: 'page.close', revision: 'current' }
   handler({}, menu)
   expect(listener).toHaveBeenLastCalledWith(menu)

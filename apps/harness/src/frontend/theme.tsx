@@ -1,15 +1,10 @@
 /** Theme controls read and write the persisted Harness theme preference. */
-import React, { createContext, useContext, useState, useSyncExternalStore } from 'react'
+import React, { useState } from 'react'
+import { useTheme } from './theme-context'
+export { ThemeProvider, useTheme } from './theme-context'
 import { Button, Menu, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { IconMoon, IconSun, IconSunMoon } from '@tabler/icons-react'
 import { useText } from './i18n'
-const Theme = createContext<any>(null)
-export function ThemeProvider({source,children}:any) {
-  const state=useSyncExternalStore(source.subscribe,source.getSnapshot)
-  return <Theme.Provider value={{theme:state.preference,setTheme:source.setTheme}}>{children}</Theme.Provider>
-}
-export function useTheme(){const value=useContext(Theme);if(!value)throw new Error('YouDub theme provider is required');return value}
-
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const tx = useText()

@@ -1,3 +1,1 @@
-# These ESM modules are the editable fixture sources, not generated output.
-!dist/
-!dist/*.js
+dist/

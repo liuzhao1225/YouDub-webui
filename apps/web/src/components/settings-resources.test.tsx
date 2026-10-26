@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import { resourceEntries } from '@/runtime/setup-contracts'
 import type { ResourceInventory, ResourcePreparation } from '@/runtime/setup-contracts'
 import { SettingsResources } from './settings-resources'

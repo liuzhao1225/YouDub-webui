@@ -1,8 +1,8 @@
 /**
  * Service Definition for the subprocess capability seam (`ctx.subprocess`): execution-world executable lookup,
  * fully specified provider-managed process ranges with raw or
- * collected stdio, and one terminal-process primitive. Command defaulting,
- * shell semantics, deadlines, protocol framing, terminal readiness, and
+ * collected stdio. Command defaulting,
+ * shell semantics, deadlines, protocol framing, and
  * presentation belong to consumers. The local implementation lives in
  * `@deepseek-ai/dsh-subprocess-local`.
  * @module @deepseek-ai/dsh-subprocess
@@ -12,7 +12,6 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import { proxyEnvironmentForChild } from '@deepseek-ai/dsh-http-proxy'
 import { DSH_ENV_PREFIX } from './types.ts'
 import type { SubprocessHandle, SubprocessSpawnSpec } from './types.ts'
-import type { SubprocessTerminalEnvironment, SubprocessTerminalHandle, SubprocessTerminalSpawnSpec } from './types.ts'
 
 export { DSH_ENV_PREFIX } from './types.ts'
 export type {
@@ -29,12 +28,6 @@ export type {
   SubprocessSpawnSpec,
   SubprocessStdinMode,
   SubprocessStdio,
-  SubprocessTerminalForeground,
-  SubprocessTerminalActivity,
-  SubprocessTerminalEnvironment,
-  SubprocessTerminalHandle,
-  SubprocessTerminalSignal,
-  SubprocessTerminalSpawnSpec,
 } from './types.ts'
 
 /**
@@ -56,8 +49,7 @@ export const SENSITIVE_ENV_PATTERN = /KEY|PASSWORD|SECRET|TOKEN/i
  * Windows environment names are case-insensitive, so a parent `dsh_*` entry
  * would otherwise survive and read back as `$env:DSH_*` in the child;
  * deliberate lowercase `dsh_*` names on POSIX are implausible. Exported as a plain function so spawners
- * that cannot route through the service (node-pty backends, SDK-managed
- * transports) share the one scrub definition.
+ * that cannot route through the service (SDK-managed transports) share the one scrub definition.
  *
  * When a proxy is active the result also carries the resolved proxy names and the flag a child Node
  * needs to honor them, so a child inherits the same routing as its parent.
@@ -108,11 +100,6 @@ declare module '@deepseek-ai/cordis' {
  *   provider documents its signalling and observability limits.
  * - Disposal of the service terminates all still-running managed processes
  *   and awaits their exit.
- * - {@link spawnTerminal} owns terminal allocation, text transport,
- *   foreground groups, signalling, and whole-session quiescence behind one
- *   awaited termination method; readiness and persistent-shell policy stay
- *   in the PTY consumer. Its output stream ends after queued terminal output
- *   when the top-level process exits.
  */
 export abstract class SubprocessRuntime extends Service {
   constructor(ctx: Context) {
@@ -137,13 +124,6 @@ export abstract class SubprocessRuntime extends Service {
   ): Promise<string>
 
   /**
-   * Inspect shell-selection facts in the provider's execution environment.
-   * @param signal - cancellation of remote environment inspection.
-   * @returns platform and preferred shell; executable lookup and allocation remain separate operations.
-   */
-  abstract terminalEnvironment(signal?: AbortSignal): Promise<SubprocessTerminalEnvironment>
-
-  /**
    * Start one managed child process from a fully-specified spec; this seam
    * applies no defaults.
    * @param spec - argv, directory, stdio dispositions, grace, cancellation, and environment.
@@ -151,15 +131,6 @@ export abstract class SubprocessRuntime extends Service {
    * @throws synchronously when pre-aborted or when argv, cwd, environment, or grace is invalid before handle creation.
    */
   abstract spawn(spec: SubprocessSpawnSpec): SubprocessHandle
-
-  /**
-   * Allocate a real terminal and start one owned process session. This is the
-   * only non-pipe process primitive: implementations own terminal byte I/O,
-   * foreground groups, signals, and whole-session quiescence.
-   * @param spec - fully specified argv, cwd, environment, dimensions, grace, and allocation cancellation.
-   * @returns the live terminal handle after allocation succeeds.
-   */
-  abstract spawnTerminal(spec: SubprocessTerminalSpawnSpec): Promise<SubprocessTerminalHandle>
 }
 
 export default SubprocessRuntime

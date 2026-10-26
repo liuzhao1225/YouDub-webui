@@ -35,13 +35,6 @@ import {
 } from './remote-stream.ts'
 
 export { RemoteStreamCarrierError } from './stream-client.ts'
-export { RemoteJournalStream } from './journal-stream.ts'
-export type {
-  RemoteJournalChange,
-  RemoteJournalFrame,
-  RemoteJournalStreamOptions,
-  RemoteStreamFactory,
-} from './journal-stream.ts'
 export { RemoteStream } from './remote-stream.ts'
 export type { RemoteStreamItem, RemoteStreamOptions } from './remote-stream.ts'
 export { RemoteSnapshotStream } from './snapshot-stream.ts'

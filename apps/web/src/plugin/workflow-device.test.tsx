@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import { NodeSettings } from './builtin/workflow-settings'
 import type { Bindings, NodeTypeDefinition, WorkflowDocument } from './sdk'
 

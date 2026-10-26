@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, it } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import type { TaskView } from './sdk'
 import { TaskProgress, TaskState } from './builtin/task-status'
 

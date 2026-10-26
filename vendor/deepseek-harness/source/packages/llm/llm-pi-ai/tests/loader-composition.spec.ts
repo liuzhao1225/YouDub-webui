@@ -8,21 +8,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Loader, { type ModuleLoaderV2 } from '@deepseek-ai/cordis-plugin-loader'
 import Include from '@deepseek-ai/cordis-plugin-include'
-import LlmRuntime, { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
+import LlmRuntime from '@deepseek-ai/dsh-llm'
 import LocalCredentialProvider from '@deepseek-ai/dsh-credentials-local'
 import { profileComposition } from '../../../settings/settings/tests/profile-composition.ts'
 import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
 import { assemble } from './assemble.ts'
 import { closeMockServers, mockServer, textEvents } from './mock-server.ts'
-
-/** One text block, then a tool call truncated by the output-token ceiling. */
-const truncatedToolCallEvents = [
-  '{"choices":[{"delta":{"role":"assistant","content":""},"index":0,"finish_reason":null}]}',
-  '{"choices":[{"delta":{"content":"partial"},"index":0,"finish_reason":null}]}',
-  '{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","type":"function","function":{"name":"echo","arguments":"{\\"text\\":"}}]},"index":0,"finish_reason":null}]}',
-  '{"choices":[{"delta":{},"index":0,"finish_reason":"length"}],"usage":{"prompt_tokens":3,"completion_tokens":4}}',
-  '[DONE]',
-]
 
 let root: string | undefined
 let context: Context | undefined
@@ -152,126 +143,5 @@ describe('llm-pi-ai real dormant composition', () => {
     expect(server.headers[0]?.authorization).toBe('Bearer key-from-store')
     expect(server.headers[0]?.accept).toBe('application/json')
     expect(server.headers[0]?.['user-agent']).toBe('deployment-owned')
-  })
-
-  it('continues natively after max-token assembly drops a tool call, with pruned replay metadata', async () => {
-    vi.stubEnv('PI_COMPOSITION_KEY', '')
-    const server = await mockServer([
-      { events: truncatedToolCallEvents },
-      { events: textEvents },
-    ])
-    const { ctx, settingsPath } = await loadComposition()
-    await writeFile(settingsPath, [
-      '- id: llm-pi-ai',
-      '  config:',
-      '    providers:',
-      '      deepseek:',
-      '        apiKeyEnv: PI_COMPOSITION_KEY',
-      `        baseURL: ${server.url}`,
-      '',
-    ].join('\n'))
-    await vi.waitFor(() => {
-      expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['deepseek'])
-    }, { timeout: 5000 })
-
-    const truncated = await assemble(ctx, {
-      provider: 'deepseek',
-      model: 'deepseek-flash',
-      messages: [],
-    })
-    expect(truncated.finish).toEqual({ kind: 'max-tokens' })
-    expect(truncated.message.content).toEqual([{ type: 'text', text: 'partial' }])
-    expect(truncated.message.source).toEqual({
-      kind: 'model',
-      provider: 'deepseek',
-      model: 'deepseek-flash',
-      replayState: {
-        response: {
-          kind: 'pi-ai',
-          version: 2,
-          api: 'openai-completions',
-          provider: 'deepseek',
-          model: 'deepseek-flash',
-          stopReason: 'length',
-        },
-        blocks: [{ type: 'text' }],
-      },
-    })
-
-    const continued = await assemble(ctx, {
-      provider: 'deepseek',
-      model: 'deepseek-flash',
-      messages: [
-        truncated.message,
-        createUserMessage({ content: [{ type: 'text', text: 'continue' }], source: { kind: 'user' } }),
-      ],
-    })
-    expect(continued.message.content).toEqual([{ type: 'text', text: 'hello' }])
-    expect(server.requests).toHaveLength(2)
-    expect(server.requests[1]).toMatchObject({
-      messages: [
-        { role: 'assistant', content: 'partial' },
-        { role: 'user', content: 'continue' },
-      ],
-    })
-    const followup = server.requests[1] as { messages?: unknown[] }
-    expect(followup.messages?.[0]).not.toHaveProperty('tool_calls')
-  })
-
-  it('continues a legacy session whose stored replay state no longer matches its content', async () => {
-    vi.stubEnv('PI_COMPOSITION_KEY', '')
-    const server = await mockServer([{ events: textEvents }])
-    const { ctx, settingsPath } = await loadComposition()
-    await writeFile(settingsPath, [
-      '- id: llm-pi-ai',
-      '  config:',
-      '    providers:',
-      '      deepseek:',
-      '        apiKeyEnv: PI_COMPOSITION_KEY',
-      `        baseURL: ${server.url}`,
-      '',
-    ].join('\n'))
-    await vi.waitFor(() => {
-      expect(ctx.llm.listProviders().map(provider => provider.id)).toEqual(['deepseek'])
-    }, { timeout: 5000 })
-
-    // A pre-envelope session log entry: max-token assembly dropped the tool
-    // call from content while the flat v1 state still describes both blocks.
-    const poisoned = createMessage({
-      role: 'assistant',
-      content: [{ type: 'text', text: 'partial' }],
-      source: {
-        kind: 'model',
-        ...{
-          provider: 'deepseek',
-          model: 'deepseek-flash',
-          replayState: {
-            kind: 'pi-ai',
-            version: 1,
-            api: 'openai-completions',
-            provider: 'deepseek',
-            model: 'deepseek-flash',
-            stopReason: 'length',
-            blocks: [{ type: 'text' }, { type: 'tool-call' }],
-          },
-        },
-      },
-    })
-    const continued = await assemble(ctx, {
-      provider: 'deepseek',
-      model: 'deepseek-flash',
-      messages: [
-        poisoned,
-        createUserMessage({ content: [{ type: 'text', text: 'continue' }], source: { kind: 'user' } }),
-      ],
-    })
-    expect(continued.finish).toEqual({ kind: 'stop' })
-    expect(continued.message.content).toEqual([{ type: 'text', text: 'hello' }])
-    expect(server.requests[0]).toMatchObject({
-      messages: [
-        { role: 'assistant', content: 'partial' },
-        { role: 'user', content: 'continue' },
-      ],
-    })
   })
 })

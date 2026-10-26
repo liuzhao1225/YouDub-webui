@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getNodeModuleFileMatcher } from 'app-builder-lib/out/fileMatcher.js';
-import { desktopFiles } from '../package-files.mjs';
+import { FileMatcher, getNodeModuleFileMatcher } from 'app-builder-lib/out/fileMatcher.js';
+import { desktopFiles, productResources } from '../package-files.mjs';
+
+test('product resources retain runtime requirement groups without development and migration test inputs', () => {
+  const filter = new FileMatcher('/workspace', '/output', value => value, productResources).createFilter();
+  const includes = path => filter('/workspace/' + path, { isDirectory: () => false });
+  for (const path of ['backend/app/config.py', 'backend/workers/store.py', 'backend/requirements/base.txt', 'backend/requirements/whisper.txt', 'backend/requirements/resources.json']) {
+    assert.equal(includes(path), true, path);
+  }
+  for (const path of ['backend/requirements.txt', 'backend/requirements-test.txt', 'backend/tests/fixtures/legacy_schema_v1.sql', 'backend/tests/test_plugin_store.py']) {
+    assert.equal(includes(path), false, path);
+  }
+});
 
 test('desktop dependency selection keeps executable modules and assets without framework sources', () => {
   const matcher = getNodeModuleFileMatcher('/app', '/output', value => value, {}, {

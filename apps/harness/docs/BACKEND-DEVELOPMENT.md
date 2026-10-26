@@ -88,7 +88,7 @@ API 密钥、提供商 URL 和模型选择通过 YouDub 的官方模型设置页
 
 ## 外部插件
 
-直接参考已经接入的[三个示例 bundle](../test/fixtures)：`graph-text-review`、`file-transform`、`python-text`。其中 graph-text-review 展示 Host、Client、人工订正及多输入节点组合。
+直接参考已经接入的[三个示例 bundle](../../../fixtures/plugins)：`graph-text-review`、`file-transform`、`python-text`。其中 graph-text-review 展示 Host、Client、人工订正及多输入节点组合。
 
 DSH 包需要 `dsh.bundle.patch`；带界面时还需 `dsh.client`、客户端依赖和 Client 导出。Host 插件可通过产品公开的 `youdubContext` 加入领域服务：
 
@@ -104,7 +104,7 @@ export async function apply(ctx) {
 }
 ```
 
-这是服务接线示意。可安装包的 manifest、patch、业务描述、版本与 integrity 请按[完整示例](../test/fixtures/graph-text-review/package.json)和[Host 实现](../test/fixtures/graph-text-review/src/host.mjs)维护。Python 插件可使用同一产品导出的 `registerPythonProvider`，详见[Python 示例](../test/fixtures/python-text/src/host.mjs)。
+这是服务接线示意。可安装包的 manifest、patch、业务描述、版本与 integrity 请按[完整示例](../../../fixtures/plugins/graph-text-review/package.json)和[Host 实现](../../../fixtures/plugins/graph-text-review/src/host.mjs)维护。Python 插件可使用同一产品导出的 `registerPythonProvider`，详见[Python 示例](../../../fixtures/plugins/python-text/src/host.mjs)。
 
 安装、启停和卸载使用官方 PluginManager 页面与服务。旧 `package.youdub` 声明需要迁移为 DSH bundle；旧 loader 不参与当前运行。安装机制已经接通，YouDub 在线市场目录和发行源仍待建设。
 

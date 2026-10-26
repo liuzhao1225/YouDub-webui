@@ -1,5 +1,4 @@
 import type {LocalizedText} from './contracts'
-import type {RouteEntry} from './sdk'
 
 export function text(value: LocalizedText | undefined, language = 'zh'): string {
   return typeof value === 'string' ? value : value?.translations?.[language] ?? value?.default ?? ''
@@ -15,7 +14,7 @@ export function matchRoute(path: string, pattern: string): Record<string, string
   }
   return params
 }
-export function resolveRoute(routes: RouteEntry[], path: string, authenticated: boolean) {
+export function resolveRoute<T extends { path: string; access?: 'public' | 'authenticated' }>(routes: T[], path: string, authenticated: boolean) {
   // Static segments take precedence over parameters, independently of plugin
   // installation order (for example /tasks/help before /tasks/:id).
   const specificity = (pattern: string) => pattern.split('/').map((part) => part.startsWith(':') ? '0' : '1').join('')

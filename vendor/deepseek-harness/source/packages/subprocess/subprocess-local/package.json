@@ -36,12 +36,8 @@
     "lib/runner.js",
     "lib/runner-*.js",
     "lib/output.js",
-    "scripts/ensure-spawn-helper.mjs",
     "lib/types/**/*.d.ts"
   ],
-  "scripts": {
-    "postinstall": "node scripts/ensure-spawn-helper.mjs"
-  },
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/dsh-subprocess": "workspace:*",
@@ -51,8 +47,7 @@
   "dependencies": {
     "@deepseek-ai/dsh-lazy-require": "workspace:*",
     "@deepseek-ai/dsh-win32-process": "workspace:*",
-    "koffi": "3.1.1",
-    "node-pty": "1.2.0-beta.15"
+    "koffi": "3.1.1"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-subprocess": "workspace:*",

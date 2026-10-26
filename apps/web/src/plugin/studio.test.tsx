@@ -1,11 +1,10 @@
-import type { Context } from 'cordis'
-import type { ComponentType } from 'react'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type Catalog, type NodeTypeDefinition, type RouteProps, type SlotMap, type TaskView, type WorkflowDocument } from './sdk'
-import { apply } from './builtin/studio'
+import { LanguageProvider } from '@/test/language-provider'
+import { type Catalog, type NodeTypeDefinition, type TaskView, type WorkflowDocument } from './sdk'
+import { StudioPage as Page } from '../../../harness/src/frontend/studio-page'
 import reviewedSubtitles from '../../../../packages/builtin/src/workflow-templates/reviewed-subtitles.json'
 import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 
@@ -75,14 +74,12 @@ it('submits declared input slots and preserves an uncertain creation ID until ex
     if (init?.method === 'DELETE') return undefined
     throw new Error('Connection interrupted')
   })
-  let Page!: ComponentType<RouteProps>
   const context = {
     apiClient: { request }, navigation: { push: vi.fn() },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
     effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+  } as unknown as TestContext
+  render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   const input = await screen.findByLabelText('Document *')
   expect(screen.getByRole('link', { name: '查看官网示例' })).toHaveAttribute('href', 'https://liuzhao1225.github.io/YouDub-webui/#demo')
   const user = userEvent.setup()
@@ -116,12 +113,10 @@ it('locks workflow selection while a submitted import still needs reconciliation
     if (init?.method === 'DELETE') return undefined
     throw new Error('Connection interrupted')
   })
-  let Page!: ComponentType<RouteProps>
   const context = { apiClient: { request }, navigation: { push: vi.fn() },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as TestContext
+  render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   const input = await screen.findByLabelText('Document *')
   const user = userEvent.setup()
   await user.upload(input, new File(['hello'], 'input.txt', { type: 'text/plain' }))
@@ -145,13 +140,11 @@ it('retains each external composer draft after visiting settings and clears only
     if (path === '/api/v2/tasks' && init?.method === 'POST') return { id: 'created' }
     return { items: [], hasMore: false }
   })
-  let Page!: ComponentType<RouteProps>
   const push = vi.fn()
   const context = { apiClient: { request }, navigation: { push },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  const showStudio = () => render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as TestContext
+  const showStudio = () => render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   let view = showStudio()
   const user = userEvent.setup()
   await user.upload(await screen.findByLabelText('Document *'), new File(['text draft'], 'text.txt', { type: 'text/plain' }))
@@ -187,13 +180,11 @@ it('retains each external composer draft after visiting settings and clears only
 })
 
 function mount(request: ReturnType<typeof vi.fn>) {
-  let Page!: ComponentType<RouteProps>
   const push = vi.fn()
   const context = { apiClient: { request }, navigation: { push },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as TestContext
+  render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   return push
 }
 
@@ -334,13 +325,11 @@ it('retains a submission across a route unmount and does not navigate from its l
     if (path === '/api/v2/tasks' && init?.method === 'POST') return new Promise<{ id: string }>(resolve => { finish = resolve })
     throw new Error('Unexpected request ' + path)
   })
-  let Page!: ComponentType<RouteProps>
   const push = vi.fn()
   const context = { apiClient: { request }, navigation: { push },
-    slots: { register: (slot: string, entry: SlotMap['shell.routes']) => { if (slot === 'shell.routes') Page = entry.component; return () => {} }, subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
-  } as unknown as Context
-  apply(context)
-  const show = () => render(<PluginContextProvider context={context}><LanguageProvider><Page params={{}} /></LanguageProvider></PluginContextProvider>)
+    slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] }, effect: (effect: () => unknown) => effect(),
+  } as unknown as TestContext
+  const show = () => render(<TestFeatureProvider context={context}><LanguageProvider><Page /></LanguageProvider></TestFeatureProvider>)
   const first = show(), user = userEvent.setup()
   const input = await screen.findByLabelText('Document *')
   await user.upload(input, new File(['data'], 'pending.txt', { type: 'text/plain' }))

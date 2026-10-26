@@ -18,11 +18,10 @@ def serialized(value):
 
 
 class SqliteStore:
-    def __init__(self, root: Path, legacy_db: Path | None = None):
+    def __init__(self, root: Path):
         from backend.app import runtime_security
         self.root = root.resolve()
         self.path = self.root / "desktop.sqlite"
-        self.legacy_db = legacy_db
         runtime_security.ensure_private_directory(self.root)
         runtime_security.secure_sqlite_database_file(self.path)
         self.migrate()
@@ -93,17 +92,6 @@ class SqliteStore:
             id TEXT PRIMARY KEY NOT NULL, revision INTEGER NOT NULL,
             document_json TEXT NOT NULL CHECK(json_valid(document_json)),
             created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""")
-
-    @contextmanager
-    def legacy_connection(self):
-        if self.legacy_db is None or not self.legacy_db.is_file():
-            raise WorkerError("LEGACY_NOT_FOUND", "The legacy database does not exist.")
-        conn = sqlite3.connect(self.legacy_db.resolve().as_uri() + "?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-        finally:
-            conn.close()
 
     def decode(self, row):
         if row is None:

@@ -1,5 +1,7 @@
 # YouDub 插件与 Workflow 契约
 
+本文保留 2026-10-20 独立 Cordis 产品的契约记录。当前桌面组合、通信与插件装配以 [Harness 后端开发](../../apps/harness/docs/BACKEND-DEVELOPMENT.md)、[前端开发](../../apps/harness/docs/FRONTEND-DEVELOPMENT.md)和现有 SDK 源码为准；下文旧 Client 清单、会话、`bindComponent`/`web-react` 加载方式已退出产品。
+
 2026-10-20 · SDK 协议 `1.1.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
 
 可视化节点、多 workflow 编辑和人工订正已在当前分支实现；使用方式见[节点工作流](../workflows.md)，设计依据见[产品设计](workflow-node-design.md)和[接口设计](workflow-node-implementation.md)。旧 plan-only workflow 继续兼容。

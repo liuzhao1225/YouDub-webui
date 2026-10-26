@@ -15,7 +15,7 @@ const sourceRequire = createRequire(join(sourceBuild, 'packages/boot/plugin-mana
 const packageManager = { command: process.execPath, args: [resolve(here, 'node_modules/pnpm/bin/pnpm.mjs')] };
 const { runPluginCommand } = await import(pathToFileURL(join(sourceBuild, 'packages/boot/plugin-manager/lib/types/operations.js')));
 const required = ['@youdub/harness-subtitles'];
-const fixture = join(import.meta.dirname, 'fixtures/file-transform');
+const fixture = resolve(here, '../../fixtures/plugins/file-transform');
 const fixtureName = '@youdub/harness-example-file-transform';
 const readManifest = async profile => JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'));
 const saveManifest = (profile, manifest) => writeFile(join(profile, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');

@@ -1,6 +1,6 @@
 import { cleanup, render as testingRender, screen, waitFor, fireEvent } from '@testing-library/react'
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
+import { LanguageProvider } from '@/test/language-provider'
 import { SetupGate } from './setup-gate'
 import { SetupScreen, type SetupState } from './setup-screen'
 import { sizeLabel } from '@/lib/format'

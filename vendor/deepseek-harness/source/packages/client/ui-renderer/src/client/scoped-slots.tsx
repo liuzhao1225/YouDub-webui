@@ -1116,7 +1116,7 @@ function renderOutletContent(
     throw new SlotAssemblyError(`scope '${spec.scope}' rendered without an installed adapter`)
   }
   if (spec.kind === 'chain' && opts?.fallbackOnly === true) {
-    return renderChainResult(slotKey, null, opts, Anchor)
+    return <>{opts?.fallback ?? null}</>
   }
   if (spec.scope === 'session' && scopeBinding.key === undefined) {
     throw new SlotAssemblyError(`strict session slot '${slotKey}' rendered without a scope binding`)
@@ -1223,7 +1223,7 @@ function renderOutletContent(
         break
       }
     }
-    return renderChainResult(slotKey, elected, opts, Anchor)
+    return elected ?? <>{opts?.fallback ?? null}</>
   }
   // list: one row per id cell — the cell's shadowing winner, or the crash
   // face once every entry of the cell abdicated (a dry cell must not
@@ -1252,27 +1252,6 @@ function renderOutletContent(
       {list.map((item, i) => item.entry !== undefined
         ? guarded(item.entry, `e${entryKeyOf(item.entry)}`)
         : <Anchor data-slot-error={slotKey} key={`x${item.id ?? i}`} />)}
-    </>
-  )
-}
-
-/** Render a chain election while preserving the overlay fallback's tree position. */
-function renderChainResult(
-  slotKey: string,
-  elected: ReactNode,
-  opts: (RenderOpts & ChainRenderOpts) | undefined,
-  Anchor: SlotAnchorTag,
-): ReactNode {
-  if (!opts?.overlay) return elected ?? <>{opts?.fallback ?? null}</>
-  return (
-    <>
-      <Anchor
-        data-chain-overlay-fallback={slotKey}
-        style={{ display: elected === null ? 'contents' : 'none' }}
-      >
-        {opts.fallback ?? null}
-      </Anchor>
-      {elected}
     </>
   )
 }

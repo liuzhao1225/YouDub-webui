@@ -31,7 +31,7 @@ def old_database(root, status="succeeded"):
     root.mkdir()
     path = root / "desktop.sqlite"
     with sqlite3.connect(path) as conn:
-        conn.executescript((Path(__file__).parents[1] / "app" / "v1" / "schema.sql").read_text())
+        conn.executescript((Path(__file__).parent / "fixtures" / "legacy_schema_v1.sql").read_text())
         record = {"id": str(uuid4()), "attempt": 3, "source_name": "old.mp4", "source_size_bytes": 128,
                   "source_duration_ms": 1000, "input_path": str(root / "input.mp4"), "config_json": "{}",
                   "status": status, "current_stage": "done" if status == "succeeded" else "asr", "stage_progress": 1,

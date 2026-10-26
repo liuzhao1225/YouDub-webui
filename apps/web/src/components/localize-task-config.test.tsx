@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { TaskConfigForm, TaskOptions } from "@/components/localize-task-config"
-import { LanguageProvider } from "@/lib/i18n"
+import { LanguageProvider } from '@/test/language-provider'
 import type { Runtime, TaskConfig } from "@/plugin/builtin/localize-contracts"
 const testConfig: TaskConfig = {
   source_language: "en", target_language: "zh", output_mode: "subtitles", keep_background: false,

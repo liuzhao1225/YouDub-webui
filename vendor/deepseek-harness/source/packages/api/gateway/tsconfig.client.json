@@ -7,7 +7,6 @@
   },
   "files": [
     "src/client/index.ts",
-    "src/client/journal-stream.ts",
     "src/client/remote-events.ts",
     "src/client/remote-stream.ts",
     "src/client/snapshot-stream.ts",

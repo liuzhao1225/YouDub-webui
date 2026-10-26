@@ -11,7 +11,6 @@ import {
   LinuxScopeNotStartedError,
   launchLinuxScope,
   linuxManagerListener,
-  prepareLinuxTerminalScope,
   probeLinuxBootstrap,
   probeLinuxManager,
   probeLinuxNative,
@@ -1082,86 +1081,6 @@ describe('Linux scope establishment and quiescence', () => {
   })
 })
 
-describe('Linux PTY bootstrap reuse', () => {
-  const terminalSpec = {
-    argv: ['bash', '--noprofile'],
-    cwd: '/target',
-    env: { TARGET: 'yes' },
-    rows: 24,
-    cols: 80,
-    terminalType: 'dumb',
-    graceMs: 100,
-  } as const
-
-  it.each(['SIGTERM', 'SIGKILL'] as const)('preserves %s before bootstrap consumption and joins the empty scope', async (signal) => {
-    const scope = prepareLinuxTerminalScope(terminalSpec, { TARGET: 'yes' }, ['--expand-environment=no'], {
-      spawnSync: vi.fn(() => missingUnit()) as never,
-      systemctlQuery: async () => missingUnit(),
-    })
-    const requestPath = scope.env[SUBPROCESS_RUNNER_ENV]
-    if (requestPath === undefined) throw new Error('missing PTY request')
-    directories.push(linuxLaunchFilesFromLocator(requestPath).directory)
-    let running = true
-    const kill = vi.fn()
-    const owner = scope.bindOwner({ running: () => running, signal: kill.mockReturnValue(true), settled: Promise.resolve() })
-    owner.signal(signal)
-    expect(kill).toHaveBeenCalledExactlyOnceWith(signal)
-    running = false
-    expect(existsSync(requestPath)).toBe(true)
-    expect(scope.resolveOutcome({ exitCode: 0, signal })).toEqual({ exitCode: 0, signal })
-    await expect(owner.waitForExit()).resolves.toBeUndefined()
-    scope.cleanup()
-    expect(existsSync(linuxLaunchFilesFromLocator(requestPath).directory)).toBe(false)
-  })
-
-  it('uses the same request/bootstrap, preserves argv, and cleans after owner settlement', async () => {
-    const scope = prepareLinuxTerminalScope(terminalSpec, { TARGET: 'yes' }, [], {
-      systemdRun: '/bin/systemd-run',
-      systemctl: '/bin/systemctl',
-      runnerInvocation: ['/usr/bin/node', '/runner.js'],
-      spawnSync: vi.fn(() => ({ status: 0 })) as never,
-      systemctlQuery: async () => missingUnit(),
-    })
-    const requestPath = scope.env[SUBPROCESS_RUNNER_ENV]
-    if (requestPath === undefined) throw new Error('missing PTY request')
-    expect(scope.args).toEqual([
-      '--user', '--scope', '--quiet', '--collect', expect.stringMatching(/^--unit=dsh-terminal-/u),
-      '--', '/usr/bin/node', '/runner.js', '--', 'bash', '--noprofile',
-    ])
-    expect(consumeLinuxLaunchRequest(requestPath)).toEqual({ cwd: '/target', env: { TARGET: 'yes' } })
-    const owner = scope.bindOwner({ running: () => false, signal: vi.fn(() => true), settled: Promise.resolve() })
-    await expect(owner.waitForExit()).resolves.toBeUndefined()
-    expect(scope.resolveOutcome({ exitCode: 0, signal: null })).toEqual({ exitCode: 0, signal: null })
-    scope.cleanup()
-    expect(existsSync(linuxLaunchFilesFromLocator(requestPath).directory)).toBe(false)
-  })
-
-  it('surfaces PTY pre-exec errors instead of launcher outcomes', () => {
-    const scope = prepareLinuxTerminalScope(terminalSpec, { TARGET: 'yes' }, ['--expand-environment=no'])
-    const requestPath = scope.env[SUBPROCESS_RUNNER_ENV]
-    if (requestPath === undefined) throw new Error('missing PTY request')
-    const files = linuxLaunchFilesFromLocator(requestPath)
-    unlinkSync(requestPath)
-    writeLinuxStartupError(files, {
-      type: 'error', error: { name: 'Error', message: 'bad cwd', code: 'ENOENT' },
-    })
-    expect(() => scope.resolveOutcome({ exitCode: 127, signal: null })).toThrow('bad cwd')
-    scope.cleanup()
-  })
-
-  it('uses default owner dependencies and rejects an unconsumed request', () => {
-    const scope = prepareLinuxTerminalScope(terminalSpec, { TARGET: 'yes' }, ['--expand-environment=no'])
-    const requestPath = scope.env[SUBPROCESS_RUNNER_ENV]
-    if (requestPath === undefined) throw new Error('missing PTY request')
-    directories.push(linuxLaunchFilesFromLocator(requestPath).directory)
-    scope.bindOwner({ running: () => true, signal: vi.fn(() => true), settled: Promise.resolve() })
-    expect(() => scope.resolveOutcome({ exitCode: 1, signal: null })).toThrow(
-      'before its bootstrap consumed',
-    )
-    scope.cleanup()
-  })
-})
-
 describe('Linux ordinary launch adapters', () => {
   it('uses the default launch dependencies without changing the target request', async () => {
     const child = new FakeChild()
@@ -1195,29 +1114,4 @@ describe('Linux ordinary launch adapters', () => {
     if (requestPath === undefined) throw new Error('spawn did not receive a request locator')
     expect(existsSync(linuxLaunchFilesFromLocator(requestPath).directory)).toBe(false)
   })
-})
-
-it('observes native task counts independently from process-tree membership', () => {
-  const terminalSpec = { argv: ['/bin/bash', '-i'], cwd: process.cwd(), rows: 24, cols: 80, terminalType: 'xterm-256color', graceMs: 100 }
-  const scope = prepareLinuxTerminalScope(terminalSpec, {}, ['--expand-environment=no'], { spawnSync: childProcessMocks.spawnSync })
-  const owner = scope.bindOwner({ running: () => true, signal: () => true, settled: Promise.resolve() })
-  try {
-    for (const tasks of [1, 2, 0]) {
-      childProcessMocks.spawnSync.mockReturnValue({ status: 0, stdout: `LoadState=loaded\nActiveState=active\nTasksCurrent=${tasks}\n` })
-      expect(owner.inspectTaskCount?.()).toBe(tasks)
-    }
-    for (const response of [
-      { status: 0, stdout: 'LoadState=loaded\nActiveState=active\nTasksCurrent=[not set]\n' },
-      { status: 0, stdout: 'LoadState=not-found\nActiveState=inactive\n' },
-      { status: 0, stdout: 'LoadState=loaded\nActiveState=inactive\n' },
-      { status: 1, stdout: '' },
-      { status: 0, stdout: null },
-      { status: null, error: new Error('manager unavailable') },
-    ]) {
-      childProcessMocks.spawnSync.mockReturnValue(response)
-      expect(owner.inspectTaskCount?.()).toBeUndefined()
-    }
-    childProcessMocks.spawnSync.mockReturnValue({ status: 0, stdout: 'LoadState=loaded\nActiveState=active\nTasksCurrent=invalid\n' })
-    expect(() => owner.inspectTaskCount?.()).toThrow('non-numeric')
-  } finally { scope.cleanup() }
 })

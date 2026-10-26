@@ -1,12 +1,11 @@
-import { requireActive } from './test-bindings'
+import { TestFeatureProvider, type TestContext } from './test-bindings'
 import { resourceEntries } from '@/runtime/setup-contracts'
-import { Context } from 'cordis'
 import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, it, vi } from 'vitest'
-import { LanguageProvider } from '@/lib/i18n'
-import { PluginContextProvider, type NodeTypeDefinition, type WorkflowDocument } from './sdk'
+import { LanguageProvider } from '@/test/language-provider'
+import { type NodeTypeDefinition, type WorkflowDocument } from './sdk'
 import { WorkflowRun as WorkflowRunView } from './builtin/workflow-run'
 import { WorkflowRerun as WorkflowRerunView } from './builtin/workflow-rerun'
 import { WorkflowResources, type ResourceState } from './builtin/workflow-resources'
@@ -14,9 +13,9 @@ import { bindTestComponent } from './test-bindings'
 import type { Bindings } from './sdk'
 const WorkflowRun = bindTestComponent(WorkflowRunView, ['request', 'navigate', 'useSlot', 'useWorkflowResources'])
 const WorkflowRerun = bindTestComponent(WorkflowRerunView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowResources'])
-import { HttpError } from './builtin/api'
+import { HttpError } from '@/runtime/http'
 import { WorkflowDiagnostics } from './builtin/workflow-errors'
-import * as apiPlugin from './builtin/api'
+import { requestHarness } from '../../../harness/src/frontend/runtime'
 import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 
 const types: NodeTypeDefinition[] = [{
@@ -151,8 +150,8 @@ function mount(child: ReactNode, request: ReturnType<typeof vi.fn>) {
       }) }
     } },
     navigation: { push }, slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
-  } as unknown as Context
-  const wrap = (child: ReactNode) => <PluginContextProvider context={context}><LanguageProvider>{child}</LanguageProvider></PluginContextProvider>
+  } as unknown as TestContext
+  const wrap = (child: ReactNode) => <TestFeatureProvider context={context}><LanguageProvider>{child}</LanguageProvider></TestFeatureProvider>
   const result = render(wrap(child))
   return { ...result, push, rerender: (child: ReactNode) => result.rerender(wrap(child)) }
 }
@@ -338,30 +337,22 @@ it('prepares dependencies before rerunning, names kept/recomputed nodes and pres
 it('preserves backend diagnostics in the API error instead of only the generic message', async () => {
   const details = [{ code: 'INVALID_GRAPH', nodeId: 'node-33ed', message: 'Required input is missing.' }]
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: { code: 'INVALID_GRAPH', message: 'Workflow validation failed.', details } }, { status: 422 })))
-  const root = new Context(), fiber = root.plugin(apiPlugin)
-  await requireActive(fiber, 'api')
-  try {
-    await expect(root.apiClient.request('/api/v2/tasks/source/rerun-preview', { method: 'POST', body: '{}' })).rejects.toMatchObject({ status: 422, code: 'INVALID_GRAPH', details })
-  } finally { await fiber.dispose() }
+  await expect(requestHarness('/api/v2/tasks/source/rerun-preview', { method: 'POST', body: '{}' })).rejects.toMatchObject({ status: 422, code: 'INVALID_GRAPH', details })
 })
 
-it('keeps the resource request stable through Cordis service proxies and unrelated graph edits', async () => {
+it('keeps the resource request stable through Desktop bindings and unrelated graph edits', async () => {
   const fetch = vi.fn(async () => Response.json(ready))
   vi.stubGlobal('fetch', fetch)
-  const root = new Context(), fiber = root.plugin(apiPlugin)
-  await requireActive(fiber, 'api')
-  try {
-    expect(root.apiClient).not.toBe(root.apiClient)
-    const document = graph()
-    const wrap = (document: WorkflowDocument) => <PluginContextProvider context={root}><LanguageProvider><Resources document={document} /></LanguageProvider></PluginContextProvider>
-    const view = render(wrap(document))
-    await screen.findByText('所需资源可用')
-    const renamed = structuredClone(document); renamed.title = '已改名'; renamed.presentation.viewport.zoom = 1.5
-    view.rerender(wrap(renamed))
-    await act(async () => {})
-    expect(fetch).toHaveBeenCalledTimes(1)
-    view.unmount()
-  } finally { await fiber.dispose() }
+  const context: TestContext = { apiClient: { request: requestHarness } }
+  const document = graph()
+  const wrap = (document: WorkflowDocument) => <TestFeatureProvider context={context}><LanguageProvider><Resources document={document} /></LanguageProvider></TestFeatureProvider>
+  const view = render(wrap(document))
+  await screen.findByText('所需资源可用')
+  const renamed = structuredClone(document); renamed.title = '已改名'; renamed.presentation.viewport.zoom = 1.5
+  view.rerender(wrap(renamed))
+  await act(async () => {})
+  expect(fetch).toHaveBeenCalledTimes(1)
+  view.unmount()
 })
 
 it('unlocks after validation fails before upload and identifies the affected node', async () => {

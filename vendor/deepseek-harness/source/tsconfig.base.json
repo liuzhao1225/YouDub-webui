@@ -243,9 +243,6 @@
       "@deepseek-ai/dsh-util-values": [
         "./packages/util/values/src"
       ],
-      "@deepseek-ai/dsh-native-command/types": [
-        "./packages/util/native-command/src/types.ts"
-      ],
       "@deepseek-ai/dsh-app-boot": [
         "./packages/boot/app-boot/src"
       ],

@@ -1,9 +1,11 @@
-# External file transformation plugin
+# 文本转换插件
 
-This standalone, precompiled package adds `example.uppercase`, a task-detail panel, and `/extensions/text` with a navigation entry. It requires no YouDub source edits or web rebuild. Host code reads the uploaded UTF-8 file, writes an uppercase file in its invocation workspace, and registers the real output artifact.
+使用 Harness 的 `dsh.bundle`、官方组件与 YouDub 业务服务，将上传的 UTF-8 文本转为大写，并提供侧栏入口和任务详情面板。
 
-In YouDub, open **扩展**, select **添加插件**, and enter this directory’s absolute path. Restart the application after installation. Select **文本转大写**, upload a text file, run the task, and download the result. The detail page displays **外部文本插件** only for this workflow.
+先在仓库根目录执行 `node fixtures/plugins/build.mjs`。在 YouDub「扩展」中添加本目录的绝对路径，确认插件已激活后选择「文本转大写」、上传文本并下载结果。
 
-Open **外部文本插件** in navigation and click the counter. This page uses `React.useState` from the shared host React instance and is served through the existing catch-all route.
+- `src/host.mjs`：通过 `youdubContext` 注册业务插件。
+- `src/domain.mjs`：工作流、提供商和真实文件转换。
+- `src/client.jsx`：通过官方 Slots 注册页面、导航和详情面板。
 
-The same files can live in an independent GitHub repository. Supply its GitHub URL and a ref to install; YouDub records the resolved commit. `dist/client.js` uses the host React module through the platform import map. All contributions return their disposers to Cordis.
+源码与插件安装回归共用这一份示例。旧加载器版本保留在 `SOURCE.json` 指向的 Git 提交中。

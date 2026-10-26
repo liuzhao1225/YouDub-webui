@@ -94,8 +94,11 @@ export function installDesktopShortcuts(
     const consumed = new Map<string, 'press' | 'repeat'>()
     let inputFrame: typeof contents.focusedFrame = null
     let inputRevision: ShortcutRevision | undefined
-    const resetInput = (): void => {
+    const clearKeyState = (): void => {
       deadKey = false; held.clear(); consumed.clear(); inputFrame = null; inputRevision = undefined
+    }
+    const resetInput = (): void => {
+      clearKeyState()
       if (!contents.isDestroyed()) contents.setIgnoreMenuShortcuts(false)
     }
     const resetWindow = (): void => {
@@ -130,6 +133,9 @@ export function installDesktopShortcuts(
         && input.key.toUpperCase() === (closeBinding.code.startsWith('Key') ? closeBinding.code.slice(3) : input.code === closeBinding.code ? input.key.toUpperCase() : '')
       contents.setIgnoreMenuShortcuts(recording || match || menuMatch)
       const frame = contents.focusedFrame
+      // Child-frame and absent focus never dispatch product commands. Preserve
+      // this key's menu suppression so its native accelerator cannot bypass that boundary.
+      if (frame !== contents.mainFrame) { clearKeyState(); return }
       const composing = input.isComposing || input.key === 'Dead' || deadKey || input.modifiers.includes('altgr')
       if (input.type === 'keyDown') deadKey = input.key === 'Dead'
       if (recording || composing || frame === null) { held.clear(); consumed.clear(); return }
@@ -157,8 +163,7 @@ export function installDesktopShortcuts(
         priority = keys.has(key)
         if (codes.length === 2 && keys.has(bindingKey(pair))) { binding = pair; priority = true }
       }
-      const main = frame === contents.mainFrame
-      if (!priority && (main || !match)) return
+      if (!priority) return
       event.preventDefault()
       if (input.type !== 'keyDown') return
       if (scopedDesktop) {
@@ -172,12 +177,8 @@ export function installDesktopShortcuts(
         // Electron can omit both keyups after interception; completed presses cannot seed another chord.
         held.clear()
       }
-      let embedding = frame
-      while (!main && embedding.parent !== null && embedding.parent !== contents.mainFrame) {
-        embedding = embedding.parent
-      }
-      window.webContents.send(DESKTOP_IPC.shortcutsInput, { kind: main ? 'keyboard' : 'iframe',
-        revision, frameName: main ? '' : embedding.name,
+      window.webContents.send(DESKTOP_IPC.shortcutsInput, { kind: 'keyboard',
+        revision,
         code: binding.code, ...(binding.secondCode === undefined ? {} : { secondCode: binding.secondCode }),
         repeat: input.isAutoRepeat, control: input.control, alt: input.alt, shift: input.shift, meta: input.meta })
     }

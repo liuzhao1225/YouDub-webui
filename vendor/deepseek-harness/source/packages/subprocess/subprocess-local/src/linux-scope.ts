@@ -9,7 +9,6 @@ import { setTimeout as sleepMs } from 'node:timers/promises'
 import type {
   SubprocessOutcome,
   SubprocessSpawnSpec,
-  SubprocessTerminalSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
 import { loadLinuxExecve } from './linux-execve.ts'
 import type { BoundProcessOwner, ManagedProcessLaunch } from './managed-owner.ts'
@@ -266,7 +265,7 @@ export class LinuxScopeNotStartedError extends Error {
 class LinuxScopeStartup {
   readonly terminationSignals = new Set<NodeJS.Signals>()
 
-  constructor(readonly files: LinuxLaunchFiles, private readonly kind: 'subprocess' | 'terminal') {}
+  constructor(readonly files: LinuxLaunchFiles) {}
 
   resolveOutcome(outcome: SubprocessOutcome): SubprocessOutcome {
     const startup = readLinuxStartupError(this.files.startupErrorPath)
@@ -274,7 +273,7 @@ class LinuxScopeStartup {
     if (existsSync(this.files.requestPath)
       && !(outcome.signal !== null && this.terminationSignals.has(outcome.signal))) {
       throw new LinuxScopeNotStartedError(
-        `${this.kind} scope exited before its bootstrap consumed the launch request; the provider probes native containment again before its next command`,
+        `subprocess scope exited before its bootstrap consumed the launch request; the provider probes native containment again before its next command`,
       )
     }
     return outcome
@@ -300,15 +299,6 @@ class SystemdScopeOwner implements BoundProcessOwner {
     private readonly query: (command: string, args: readonly string[]) => Promise<SystemctlResult>,
     private readonly sleep: (delayMs: number, signal?: AbortSignal) => Promise<void>,
   ) {}
-
-  inspectTaskCount(): number | undefined {
-    const result = this.runSync(this.systemctl, [
-      '--user', 'show', '--property=LoadState', '--property=ActiveState', '--property=TasksCurrent', this.unit,
-    ], { encoding: 'utf8', env: managerEnvironment(), timeout: SYSTEMCTL_TIMEOUT_MS })
-    if (result.error !== undefined || result.status !== 0 || typeof result.stdout !== 'string') return undefined
-    const state = this.parseUnitState(result.stdout)
-    return state.loadState === 'loaded' && state.activeState === 'active' ? state.tasksCurrent : undefined
-  }
 
   signal(signal: 'SIGTERM' | 'SIGKILL'): void {
     if (this.stopped) return
@@ -613,54 +603,6 @@ function signalChildGroup(child: ReturnType<typeof spawn>, signal: 'SIGTERM' | '
   return signalLinuxDirectProcess(child.pid as number, () => process.kill(child.pid as number, signal))
 }
 
-/** Linux PTY invocation and owner for the exact one-shot scope/bootstrap. */
-export interface LinuxTerminalScopeLaunch {
-  command: string
-  args: string[]
-  cwd: string
-  env: NodeJS.ProcessEnv
-  bindOwner: (direct: DirectRange) => BoundProcessOwner
-  resolveOutcome: (outcome: SubprocessOutcome) => SubprocessOutcome
-  cleanup: () => void
-}
-
-/**
- * Prepare one Linux PTY scope using the same launch request and bootstrap core.
- * @param spec - terminal target request.
- * @param targetEnv - validated complete target environment.
- * @param literalArgv - options from the provider's positive scope probe.
- * @param internals - optional runner and systemd seams used by tests.
- * @returns invocation and ownership callbacks; requested termination preserves the observed signal even before bootstrap consumption.
- */
-export function prepareLinuxTerminalScope(
-  spec: SubprocessTerminalSpawnSpec,
-  targetEnv: Record<string, string>,
-  literalArgv: LiteralArgvOptions,
-  internals: LinuxScopeInternals = {},
-): LinuxTerminalScopeLaunch {
-  const invocation = internals.runnerInvocation ?? spawnRunnerInvocation()
-  const files = createLinuxLaunchFiles({ cwd: spec.cwd, env: targetEnv })
-  const startup = new LinuxScopeStartup(files, 'terminal')
-  const unitBase = unitStem('dsh-terminal')
-  return {
-    command: internals.systemdRun ?? 'systemd-run',
-    args: scopeArgs(unitBase, literalArgv, invocation, spec.argv),
-    cwd: process.cwd(),
-    env: runnerEnvironment(files.requestPath, invocation),
-    bindOwner: direct => new SystemdScopeOwner(
-      `${unitBase}.scope`,
-      startup,
-      direct,
-      internals.systemctl ?? 'systemctl',
-      internals.spawnSync ?? spawnSync,
-      internals.systemctlQuery ?? querySystemctl,
-      internals.sleep ?? sleepWithAbort,
-    ),
-    resolveOutcome: outcome => startup.resolveOutcome(outcome),
-    cleanup: () => { cleanupLinuxLaunchFiles(files) },
-  }
-}
-
 /**
  * Launch one ordinary target inside a transient user scope.
  * @param spec - ordinary target request.
@@ -680,7 +622,7 @@ export function launchLinuxScope(
     cwd: spec.cwd, env: targetEnv,
     ...spec.stdio.control === undefined ? {} : { control: spec.stdio.control },
   })
-  const startup = new LinuxScopeStartup(files, 'subprocess')
+  const startup = new LinuxScopeStartup(files)
   const unitBase = unitStem('dsh-subprocess')
   let child: ReturnType<typeof spawn>
   try {
