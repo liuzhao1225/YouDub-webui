@@ -12,11 +12,15 @@ const installer = resolve(process.argv[2] || `dist/YouDub-${version}-windows-x64
 const directory = await mkdtemp(join(tmpdir(), 'YouDub installed '));
 const application = join(directory, 'YouDub');
 const state = join(directory, 'user state');
+const registration = () => JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+  "$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{C28A6869-1C98-4FA0-BBE5-E5C579B0A602}_is1'; if (Test-Path $key) { Get-ItemProperty $key | Select-Object DisplayName,InstallLocation | ConvertTo-Json -Compress } else { 'null' }"], { encoding: 'utf8' }));
 const install = () => execFileSync(installer, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', `/DIR=${application}`], { timeout: 120_000, stdio: 'inherit' });
 const smoke = (name, ...args) => execFileSync(process.execPath, [join(import.meta.dirname, 'package-smoke.mjs'), application,
   resolve(`dist/package-smoke-windows-installed/${name}`), '--in-place', `--state-dir=${state}`, ...args], { timeout: 180_000, stdio: 'inherit' });
 install();
 await access(join(application, 'YouDub.exe'));
+assert.equal(registration().DisplayName, 'YouDub');
+assert.equal(resolve(registration().InstallLocation), application);
 smoke('clean');
 const home = join(state, 'user data/harness');
 const patch = join(home, 'profiles/desktop/cordis.patch.yml');
@@ -49,4 +53,5 @@ while (true) {
   await delay(200);
 }
 for (const [file, value] of files) assert.deepEqual(await readFile(file), value, `Uninstall removed user data: ${file}`);
+assert.equal(registration(), null, 'YouDub uninstall registration must be removed with its application');
 console.log('Windows installer: in-place Chinese setup, overwrite upgrade, data preservation, Harness isolation, restart and uninstall passed.');

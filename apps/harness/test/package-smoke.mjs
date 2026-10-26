@@ -63,8 +63,8 @@ try {
     primaryRuntime: process.env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR, userData: app.getPath('userData'),
   }));
   assert.equal(ownership.name, 'YouDub');
-  assert.equal(ownership.home, youdubHome);
-  assert.equal(ownership.userData, userData);
+  assert.equal(ownership.home, join(ownership.userData, 'harness'));
+  assert.equal(await realpath(ownership.userData), await realpath(userData));
   assert.equal(await realpath(ownership.runtime), await realpath(runtime));
   assert.equal(ownership.primaryRuntime, undefined);
   // Accept only the explicit quit confirmation; startup failures retain their real dialogs.
