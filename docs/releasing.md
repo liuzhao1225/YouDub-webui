@@ -40,6 +40,8 @@ tag 工作流核对版本、提交与 main 来源，等待同一 SHA 的 main �
 
 两个平台通过后创建 GitHub 草稿 Release。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256，成功后公开 Release 并设为 latest。官网在发布成功后刷新与客户端共用的版本列表，并回读确认部署内容。
 
+Windows 升级前须退出 YouDub。安装器不使用 Restart Manager 关闭占用文件的进程，避免影响监督安装的进程或其他应用；文件占用错误由安装器直接报告。覆盖安装仍清理旧应用代码并保留独立数据目录。
+
 安装包检查与完整模型准备、真实媒体任务验收分别记录。签名、公证、打包或启动失败时停止发布，保留原始诊断。
 
 ## 从已有 tag 继续发布
