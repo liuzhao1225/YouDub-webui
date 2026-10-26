@@ -35,8 +35,7 @@
       "provider": { "id": "openai" },
       "config": {
         "sourceLanguage": "auto",
-        "targetLanguage": "zh",
-        "maxCompletionTokens": 65535
+        "targetLanguage": "zh"
       },
       "autoContinue": true
     },

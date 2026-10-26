@@ -76,7 +76,7 @@ export async function apply(ctx: Context, plugin: { integrity: string; compatibl
       const plan: WorkflowPlan = { workflow: { id: workflow.id, version, pluginId, pluginVersion: version, integrity: plugin.integrity }, config: structuredClone(config), bindings: {}, steps: [], outputs: [], omittedSteps: [] }
       const binding = (key: string, providerId: string, selection: JsonObject = {}) => {
         const provider = catalog.provider(providerId).describe()
-        const options = { sourceLanguage: config.source_language, targetLanguage: config.target_language, outputMode: config.output_mode, keepBackground: config.keep_background, voice: config.tts?.voice, initialPrompt: config.asr?.initial_prompt, maxCompletionTokens: 65535 }
+        const options = { sourceLanguage: config.source_language, targetLanguage: config.target_language, outputMode: config.output_mode, keepBackground: config.keep_background, voice: config.tts?.voice, initialPrompt: config.asr?.initial_prompt }
         plan.bindings[key] = { pluginId: provider.pluginId, pluginVersion: provider.pluginVersion, integrity: provider.integrity, providerId, model: selection.model, modelRevision: null, device: selection.device, options: JSON.parse(JSON.stringify(options)) } satisfies ExactProviderBinding
       }
       binding('media', 'youdub.media')

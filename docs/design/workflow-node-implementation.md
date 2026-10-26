@@ -6,6 +6,8 @@
 
 本文中的新增类型、HTTP 路径和数据库版本均为提案。以 `cb99992` 的实现为现状依据；文中示例不代表当前 SDK 已暴露这些接口。
 
+> 2026-10-26：当前翻译节点已移除 `maxCompletionTokens`，输出参数沿用 [Harness 调用规则](../../apps/harness/docs/BACKEND-DEVELOPMENT.md#python-与模型调用)。下文保留原始设计基线；旧任务配置、原始请求与响应不改写。
+
 ## 1. 架构决策
 
 ```mermaid

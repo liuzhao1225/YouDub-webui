@@ -24,7 +24,7 @@ export const nodeDescriptors: Record<string, NodeDescriptor> = {
   prepare: make('prepare', '准备媒体', 'Prepare media', 'メディアを準備', 'media', [video()]),
   separate: make('separate', '分离人声', 'Separate vocals', '音声を分離', 'audio', [audio('sourceAudio', '原始音频')]),
   recognize: { ...make('transcribe', '语音识别', 'Transcribe', '文字起こし', 'text', [audio('audio', '音频'), media()], { ...source, initialPrompt: { type: ['string', 'null'] } }, { sourceLanguage: 'auto', initialPrompt: null }), corrections: { outputPorts: ['transcript'], schemaIds: ['transcript/v1'] }, ui: { quickFields: ['sourceLanguage'], detailId: 'youdub.transcript' } },
-  translate: { ...make('translate', '翻译', 'Translate', '翻訳', 'text', [transcript()], { ...source, ...target, maxCompletionTokens: { type: 'integer', minimum: 65535 } }, { sourceLanguage: 'auto', targetLanguage: 'zh', maxCompletionTokens: 65535 }), corrections: { outputPorts: ['translation'], schemaIds: ['translation/v1'] }, ui: { quickFields: ['targetLanguage'], detailId: 'youdub.translation' } },
+  translate: { ...make('translate', '翻译', 'Translate', '翻訳', 'text', [transcript()], { ...source, ...target }, { sourceLanguage: 'auto', targetLanguage: 'zh' }), corrections: { outputPorts: ['translation'], schemaIds: ['translation/v1'] }, ui: { quickFields: ['targetLanguage'], detailId: 'youdub.translation' } },
   reference: make('reference', '准备参考音频', 'Voice reference', '参照音声', 'audio', [transcript(), audio('audio', '人声')]),
   synthesize: make('synthesize', '生成配音', 'Synthesize speech', '吹き替え生成', 'audio', [transcript(), translation(), port('references', '参考音频', 'voice-references/v1', 'json', false)], { ...target, voice: { oneOf: [object({ mode: { const: 'source_clone' } }, ['mode']), object({ mode: { const: 'preset' }, id: { type: 'string', minLength: 1 } }, ['mode', 'id'])] } }, { targetLanguage: 'zh', voice: { mode: 'source_clone' } }),
   mix: make('mix', '混音', 'Mix audio', 'ミックス', 'audio', [transcript(), port('speechAudio', '分段配音', 'speech-audio/v1'), media(), audio('background', '背景音', false)], { keepBackground: { type: 'boolean' } }, { keepBackground: false }),
@@ -54,7 +54,7 @@ for (const descriptor of Object.values(nodeDescriptors)) for (const input of des
 
 const fieldTitles: Record<string, [string, string, string]> = {
   sourceLanguage: ['原文语言', 'Source language', '元の言語'], targetLanguage: ['目标语言', 'Target language', '翻訳先の言語'],
-  initialPrompt: ['识别提示词', 'Recognition prompt', '認識プロンプト'], maxCompletionTokens: ['最大输出 Token', 'Maximum output tokens', '最大出力トークン'],
+  initialPrompt: ['识别提示词', 'Recognition prompt', '認識プロンプト'],
   proxyPort: ['本机 HTTP 代理端口（0 为直连）', 'Local HTTP proxy port (0 for direct)', 'ローカル HTTP プロキシポート（0 は直接接続）'],
   voice: ['声音', 'Voice', '音声'], keepBackground: ['保留背景音', 'Keep background audio', '背景音を保持'],
   renderSubtitles: ['烧录字幕', 'Burn subtitles', '字幕を焼き込む'], url: ['视频链接', 'Video URL', '動画リンク'],

@@ -140,7 +140,7 @@
 
 原 `openai` connection 及 Python adapter 保留给历史任务。首次初始化模型设置时，可将旧地址、候选模型和已有凭据引用导入 `openai-compatible` route；`YOUDUB_TRANSLATION_MODELS` 只参与旧配置导入及历史路径，不持续覆盖新 profile。新设置不再写旧 connection 或 `defaults.translation`。已经运行的任务和原始响应文件保持原样。
 
-状态须分别表达配置存在、凭据已配置、模型能力满足和实际调用结果。目录条目、已存密钥、provider probe 均不等同于网络测试成功。新翻译执行通过 [Harness 翻译接入](../../apps/harness/src/backend/llm.mjs)，发送前同时检查模型声明能力与实际请求最大输出参数至少为 65,535；无法满足的模型或协议停止调用，保留具体原因。没有静默降低上限或自动换模型。
+状态须分别表达配置存在、凭据已配置、模型能力满足和实际调用结果。目录条目、已存密钥、provider probe 均不等同于网络测试成功。新翻译执行通过 [Harness 翻译接入](../../apps/harness/src/backend/llm.mjs)，调用 `llm.prepareCall({ provider, model }, signal)` 并使用其配置和流接口。输出参数与协议由 Harness 模型设置及适配器解析，YouDub 不再施加固定输出下限；旧节点的 `maxCompletionTokens` 不覆盖新请求。调用失败保留具体原因，历史请求和原始响应保持不变。
 
 密钥由现有 secrets 持有，接口只返回前缀加 `****`；短密钥全部隐藏。空输入保留原密钥，输入新值替换，环境变量提供的凭据保持只读。供应商配置和凭据按上游明确的两步操作保存；若 profile 已保存而凭据失败，显示失败并保留仅重试凭据的状态，不重新覆盖 profile，不显示整体成功。删除供应商保留历史任务所需的快照和旧 secret 引用。保存进行中阻止离开；完成后重新读取实际状态。
 

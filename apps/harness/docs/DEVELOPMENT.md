@@ -162,7 +162,7 @@ test .env -ef env.txt
 | `Legacy platform code entered the YouDub plugin bundle` | 构建输入中的旧框架依赖，修正导入/接线后重建 |
 | 修改页面后界面未变化 | 是否构建产品并重启正确的 Electron/浏览器实例，当前使用哪个 home |
 | 初始化停在模型阶段 | 四模型及全部依赖的实际 ready 状态，资源页面的原始错误 |
-| 翻译不可用或输出容量错误 | 官方模型页的 API 协议、URL、凭据、模型与输出容量至少 65,535 的配置 |
+| 翻译不可用或模型调用失败 | 官方模型页的 URL、凭据、模型配置与 Harness 返回的原始错误；输出参数沿用 Harness 规则 |
 | 扩展提示 `not-a-bundle` | 是否声明 `dsh.bundle` 和官方入口，参照[外部插件说明](BACKEND-DEVELOPMENT.md#外部插件) |
 
 启动器输出 profile 路径，桌面错误界面显示官方诊断报告路径。保留失败原因，修正后重新验证受影响路径；不要删去必需服务或吞掉错误来跳过启动检查。

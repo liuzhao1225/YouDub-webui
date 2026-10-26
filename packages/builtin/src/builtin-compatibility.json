@@ -38,14 +38,16 @@
     ]
   },
   "youdub.localize": {
-    "integrity": "sha256:4537b86d09bcdaa1285d12a55ec2c7c365ce4fd5ad090c4a8876af10c580a774",
+    "integrity": "sha256:414905c4790c00194853c6348d29433e891f00b45aa9817b398cce5ed200a2c3",
     "previous": [
+      "sha256:4537b86d09bcdaa1285d12a55ec2c7c365ce4fd5ad090c4a8876af10c580a774",
       "sha256:0d6c1b5d4d978d7e042d408703141e41fd5e2df92db6c180579ee963c53ff18e"
     ]
   },
   "youdub.graph": {
-    "integrity": "sha256:af024c0217ca40f90720c185930a34a12e43b7480c4433eeaff0f2f6f9ac04f3",
+    "integrity": "sha256:1ace34045fa8d5d4909e86b0311074af9d52e78c58724ca928d9052d6eed7585",
     "previous": [
+      "sha256:af024c0217ca40f90720c185930a34a12e43b7480c4433eeaff0f2f6f9ac04f3",
       "sha256:0d6c1b5d4d978d7e042d408703141e41fd5e2df92db6c180579ee963c53ff18e"
     ]
   }

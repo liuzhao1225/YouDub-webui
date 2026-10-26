@@ -82,7 +82,7 @@ export const inject = [
 
 翻译使用官方模型表单保存配置，`registerModels` 将官方 LLM 提供商映射为 `llm.<provider>` 领域提供商。旧模板中的 `openai` ID 保留为不可执行占位，供用户选定已配置模型后重新绑定。
 
-[`translateWithHarness`](../src/backend/llm.mjs) 在请求前校验输出上限至少为 `65,535`，检查模型声明的容量、API 协议和上下文余量，再调用 `llm.prepareCall`。上限不满足或被修改时停止调用。翻译分批保持段落 ID，保存原始请求、流事件和响应到任务工作目录的 `translation_raw`；用户订正另行保存。新增 LLM 路径需要保持这些请求约束与证据规则。
+[`translateWithHarness`](../src/backend/llm.mjs) 调用 `llm.prepareCall({ provider, model }, signal)`，再使用返回的配置与 `prepared.stream`。输出参数、协议和模型容量沿用 Harness 模型设置与适配器规则；YouDub 不再指定固定输出下限，也不使用旧节点的 `maxCompletionTokens` 覆盖请求。模型目录采用 `ctx.llm.listModels` 返回的候选与 Credentials 配置状态。翻译分批保持段落 ID，保存原始请求、流事件和响应到任务工作目录的 `translation_raw`；用户订正另行保存。供应商拒绝或响应不完整时保留原始失败，历史请求与响应保持不变。
 
 API 密钥、提供商 URL 和模型选择通过 YouDub 的官方模型设置页面配置和测试。不要把真实凭据写入插件源码、模板、测试夹具或验证报告。
 

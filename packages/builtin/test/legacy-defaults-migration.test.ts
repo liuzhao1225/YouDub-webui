@@ -51,6 +51,8 @@ test('all legacy modes preserve every selection and optional branch without requ
     const workflow = ctx.catalog.workflow('youdub.localize')
     assert.ok('plan' in workflow)
     const original = await workflow.plan({}, validated, ctx.catalog)
+    assert.ok(Object.values(original.bindings).every(binding => !Object.hasOwn(binding.options, 'maxCompletionTokens')))
+    assert.ok(document.nodes.every(node => !Object.hasOwn(node.config, 'maxCompletionTokens')))
     assert.deepEqual(document.nodes.map(node => node.id), original.steps.map(step => step.id))
     assert.deepEqual(inspectGraph(document, ctx.catalog, {}, false).diagnostics, [])
     for (const node of document.nodes) {

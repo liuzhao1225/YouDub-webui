@@ -39,6 +39,7 @@ test('localize requires available media tools before accepting any output mode',
     assert.ok((await workflow.validate({}, config, ctx.catalog)).some(error => error.field === 'video'))
     assert.ok((await workflow.validate({ video: { id: 'input-video', schemaId: 'video/mp4/v1' } }, linked, ctx.catalog)).some(error => error.field === 'video'))
     const plan = await workflow.plan({}, linked, ctx.catalog)
+    assert.ok(Object.values(plan.bindings).every(binding => !Object.hasOwn(binding.options, 'maxCompletionTokens')))
     assert.equal(plan.steps[0].operation, 'media.download/v1')
     assert.deepEqual(plan.steps[0].input, { url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw' })
     assert.equal(plan.bindings.download.options.proxyPort, 0)

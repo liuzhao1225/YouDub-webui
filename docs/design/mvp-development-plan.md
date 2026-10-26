@@ -2,6 +2,8 @@
 
 2026-09-22。开发分支：`codex/mvp-mainline`；起点：`main` 的 `0f6c75935e7a208c4b8ea56140e31c5316953fec`。
 
+> 2026-10-26：当前翻译输出参数沿用 [Harness 调用规则](../../apps/harness/docs/BACKEND-DEVELOPMENT.md#python-与模型调用)，已移除 YouDub 固定输出下限。本文保留原阶段的计划和验收记录，历史请求参数与响应保持不变。
+
 ## 当前进度
 
 - 阶段 0 已完成并推送：`ef65ea4` 设计基线、`c32ab3f` 开发计划。
