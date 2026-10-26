@@ -149,7 +149,7 @@ describe('client manifest entries', () => {
     expect(b.modules.loadCache.has('consumer')).toBe(false)
     expect(b.modules.loadCache.has('dependency')).toBe(true)
     b.ctx.loader.remove(localId)
-    await b.modules.entries.retry()
+    await b.modules.entries.sync(graph(row('existing')))
     expect(b.modules.loadCache.has('dependency')).toBe(false)
     expect(materialized.mock.calls.filter(([id]) => id === 'existing')).toHaveLength(1)
   })
@@ -165,10 +165,10 @@ describe('client manifest entries', () => {
     await b.modules.entries.sync(graph(row('healthy'), row('bad')))
     expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('download unavailable')
     b.arrival(async () => {})
-    await b.modules.entries.retry()
+    await b.modules.entries.sync(graph(row('healthy'), row('bad')))
     expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('apply unavailable')
     broken = false
-    await b.modules.entries.retry()
+    await b.modules.entries.sync(graph(row('healthy'), row('bad')))
     expect(b.modules.entries.state.getSnapshot().failures).toEqual([])
     expect(effects.mounted).toBe(1)
     expect(effects.disposed).toBe(0)
@@ -184,7 +184,7 @@ describe('client manifest entries', () => {
     await expect(b.modules.entries.reload('pet', 'r2')).rejects.toThrow('offline')
     expect(effects.mounted).toBe(2)
     b.arrival(async () => {})
-    await b.modules.entries.retry()
+    await b.modules.entries.sync(graph(row('pet', 'r2')))
     expect(effects).toEqual({ mounted: 3, disposed: 2, hits: 0 })
     expect(document.querySelectorAll('style[data-plugin=pet]')).toHaveLength(1)
   })
@@ -205,12 +205,12 @@ it('publishes stable local snapshots and contains a failing subscriber', async (
   const removeBad = b.modules.entries.state.subscribe(() => { throw new Error('subscriber') })
   const remove = b.modules.entries.state.subscribe(listener)
   expect(b.modules.entries.state.getSnapshot()).toBe(b.modules.entries.state.getSnapshot())
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph())
   expect(listener).toHaveBeenCalledTimes(2)
   expect(error).toHaveBeenCalled()
   removeBad()
   remove()
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph())
   expect(listener).toHaveBeenCalledTimes(2)
 })
 
@@ -236,7 +236,7 @@ it('reports reconciliation before startup and missing service activation without
   await b.modules.entries.sync(graph(row('pending')))
   expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('waiting for activation')
   b.ctx.provide('missing', {})
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('pending')))
   expect(b.modules.entries.state.getSnapshot().failures).toEqual([])
 })
 
@@ -252,12 +252,12 @@ it('retries a materialization failure with the same graph and cleans its partial
   await b.modules.entries.sync(graph(row('a')))
   expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('factory failed')
   expect(document.querySelectorAll('style[data-plugin=a]')).toHaveLength(0)
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('a')))
   expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('factory failed')
   await b.modules.entries.reload('a', 'r1').catch(() => {})
   expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('factory failed')
   broken = false
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('a', 'r1')))
   expect(b.modules.entries.state.getSnapshot().failures).toEqual([])
   expect(document.querySelectorAll('style[data-plugin=a]')).toHaveLength(1)
 })
@@ -328,7 +328,7 @@ it('keeps unrelated page failures visible when a rebuilt download fails', async 
     a: () => ({ apply() {} }),
     bad: () => ({ apply() { throw new Error('bad apply') } }),
   })
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('a'), row('bad')))
   b.arrival(async () => { throw new Error('a download') })
   await expect(b.modules.entries.reload('a', 'r1')).rejects.toThrow('a download')
   expect(b.modules.entries.state.getSnapshot().failures.map(failure => failure.id)).toEqual(['bad', 'a'])
@@ -342,7 +342,7 @@ it('retains a rejected Loader entry for retry instead of creating an orphan sibl
   expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('invalid plugin')
   expect([...b.ctx.loader.entries()]).toHaveLength(1)
   broken = false
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('a')))
   expect([...b.ctx.loader.entries()]).toEqual([entry])
   expect(entry.fiber?.state).toBe(2)
 })
@@ -360,7 +360,7 @@ it('reports Loader import failures and recovers the same entry after the importe
   expect(b.modules.entries.state.getSnapshot().failures[0]?.message).toContain('import failed')
   const entry = [...b.ctx.loader.entries()][0]!
   broken = false
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('a')))
   expect(entry.fiber?.state).toBe(2)
   broken = true
   await expect(b.modules.entries.reload('a', 'r1')).rejects.toThrow('import failed')
@@ -418,7 +418,7 @@ it.each(['graph', 'rebuilt'])('replaces a failed factory before entry creation o
   factories.a = () => ({ ...visible('a', effects)(), revision: 'r1' })
   if (source === 'graph') await b.modules.entries.sync(graph(row('a', 'r1')))
   else await b.modules.entries.reload('a', 'r1')
-  await b.modules.entries.retry()
+  await b.modules.entries.sync(graph(row('a', 'r1')))
   expect(b.fetched).toEqual([row('a').url, row('a', 'r1').url])
   expect(await b.modules.import('a')).toHaveProperty('revision', 'r1')
   expect(document.querySelectorAll('[data-live=a]')).toHaveLength(1)
@@ -464,7 +464,7 @@ it.each(['graph', 'rebuilt'])('preserves bootstrap and dependent fibers when a %
   if (source === 'graph') await b.modules.entries.sync(graph(row('bootstrap', 'r1'), row('consumer')))
   else await expect(b.modules.entries.reload('bootstrap', 'r1')).rejects.toThrow('requires a page reload')
   for (let retry = 0; retry < 2; retry++) {
-    await b.modules.entries.retry()
+    await b.modules.entries.sync(graph(row('bootstrap', 'r1'), row('consumer')))
     expect(b.modules.entries.state.getSnapshot().failures).toEqual([
       { id: 'bootstrap', message: 'Error: client-modules: replacing bootstrap module bootstrap requires a page reload' },
     ])

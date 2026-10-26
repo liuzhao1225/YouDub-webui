@@ -10,7 +10,7 @@ import { LanguageProvider } from '@/test/language-provider'
 import { type NodeTypeDefinition, type WorkflowDocument, type WorkflowDocumentRecord } from './sdk'
 import { GraphStudio as GraphStudioView } from './builtin/workflows'
 import { bindTestComponent } from './test-bindings'
-const GraphStudio = bindTestComponent(GraphStudioView, ['request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
+const GraphStudio = bindTestComponent(GraphStudioView, ['draftStore', 'request', 'navigate', 'useQuery', 'useSlot', 'useWorkflowDocuments', 'useWorkflowResources'])
 import { serializeWorkflowEdits, workflowDrafts, workflowViews } from './builtin/workflow-utils'
 import { nodeDescriptors } from '../../../../packages/builtin/src/node-contracts'
 import dubbingTemplate from '../../../../packages/builtin/src/workflow-templates/source-clone-dubbing.json'
@@ -54,7 +54,7 @@ function mount(path = '/workflows/example', options: { record?: WorkflowDocument
     window.history.replaceState(null, '', next); changePath(next)
   }
   const push = vi.fn((next: string) => { void navigate(next) })
-  const context = { apiClient: { request }, navigation: { push, replace: push, block: (block: (path: string) => Promise<boolean>) => { blockers.add(block); return () => blockers.delete(block) } },
+  const context = { apiClient: { request }, navigation: { push, block: (block: (path: string) => Promise<boolean>) => { blockers.add(block); return () => blockers.delete(block) } },
     slots: { subscribe: () => () => {}, getSnapshot: () => 0, list: () => [] },
     effect: (effect: () => unknown) => effect(),
   } as unknown as TestContext

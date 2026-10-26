@@ -3,13 +3,13 @@ import { spawnSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import { CLIENT_BUILD_RECORD_PATH, clientBuildProcessEnvironment, repositoryClientBuildEnvironment, resolveClientBuildEnvironment, writeClientBuildRecord } from './client-build-environment.ts'
+import { CLIENT_BUILD_RECORD_PATH, clientBuildProcessEnvironment, repositoryClientBuildEnvironment, writeClientBuildRecord } from './client-build-environment.ts'
 import { libraryBuildSteps } from './compile-referenced-projects.ts'
 import { pnpmCommand } from './release/process.ts'
 const { values } = parseArgs({ options: { scope: { type: 'string', default: 'artifacts' } } })
 if (values.scope !== 'artifacts') throw new Error('YouDub framework builds use --scope artifacts')
 const root = resolve(import.meta.dirname, '..')
-const clientEnvironment = resolveClientBuildEnvironment(repositoryClientBuildEnvironment(root, process.env))
+const clientEnvironment = repositoryClientBuildEnvironment(root, process.env)
 const env = clientBuildProcessEnvironment(process.env, clientEnvironment)
 rmSync(resolve(root, CLIENT_BUILD_RECORD_PATH), { force: true })
 const [command, ...prefix] = pnpmCommand()

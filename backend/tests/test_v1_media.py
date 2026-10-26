@@ -4,7 +4,6 @@ import hashlib
 import json
 import shutil
 import subprocess
-import sys
 import wave
 from dataclasses import replace
 from pathlib import Path
@@ -177,53 +176,16 @@ def test_prepare_decode_failure_propagates_and_does_not_publish_metadata(monkeyp
 
 
 @pytest.mark.parametrize("cancel_during", ["ffprobe", "ffmpeg"])
-def test_prepare_cancellation_waits_for_media_process_exit(monkeypatch, tmp_path, cancel_during):
+def test_prepare_cancellation_waits_for_media_process_exit(monkeypatch, tmp_path, cancel_during, cancelled_media_process):
     source = tmp_path / "source.mp4"
     source.write_bytes(b"source-video")
     context = context_for(source, tmp_path / "prepare")
-    real_popen = subprocess.Popen
-    processes = []
-    checks_while_running = 0
-
-    def slow_process(command, **kwargs):
-        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        processes.append(process)
-        return process
-
-    def check_cancel():
-        nonlocal checks_while_running
-        if processes and processes[0].poll() is None:
-            checks_while_running += 1
-            if checks_while_running == 2:
-                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
     if cancel_during == "ffmpeg":
         monkeypatch.setattr(media, "inspect_video", lambda path, limits, *args, **kwargs: {"duration_ms": 1000})
     with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
-        prepare_operation(replace(context, check_cancel=check_cancel), lambda progress, message: None)
+        prepare_operation(replace(context, check_cancel=cancelled_media_process), lambda progress, message: None)
     assert error.value.code == "CANCELLED"
-    assert len(processes) == 1
-    assert processes[0].returncode is not None
-    assert processes[0].wait(timeout=0) != 0
-    assert checks_while_running == 2
     assert not (context.work_dir / "media.json").exists()
-
-
-def test_media_timeout_reaps_the_process(monkeypatch):
-    real_popen = subprocess.Popen
-    processes = []
-
-    def track_process(*args, **kwargs):
-        process = real_popen(*args, **kwargs)
-        processes.append(process)
-        return process
-
-    monkeypatch.setattr(media.subprocess, "Popen", track_process)
-    with pytest.raises(subprocess.TimeoutExpired):
-        media._run_media([sys.executable, "-c", "import time; time.sleep(30)"], timeout=0.05)
-    assert processes[0].returncode is not None
-    assert processes[0].wait(timeout=0) != 0
 
 
 def test_probe_has_no_fixed_deadline_and_passes_cancellation(monkeypatch, tmp_path, probe_data):

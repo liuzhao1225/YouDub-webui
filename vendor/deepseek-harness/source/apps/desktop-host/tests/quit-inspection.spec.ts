@@ -1,38 +1,25 @@
 import { Context } from '@deepseek-ai/cordis'
-import { JobId, JobRegistry } from '@deepseek-ai/dsh-jobs'
-import type { JobStatus, JobView } from '@deepseek-ai/dsh-jobs'
+import { JobRegistry } from '@deepseek-ai/dsh-jobs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { installDesktopQuitInspection } from '../src/quit-inspection.ts'
 
 let ctx: Context
 let inspect: ReturnType<typeof installDesktopQuitInspection>
 let productActive = false
-let jobs: JobStatus[] = []
-/** A registry whose only served member is the global roster the inspector reads. */
-class RosterOnlyJobRegistry extends JobRegistry {
+let jobsActive = false
+/** A registry exposing only the activity state needed by quit inspection. */
+class ActivityOnlyJobRegistry extends JobRegistry {
   start(): never { throw new Error('unsupported') }
-  list(): JobView[] {
-    return jobs.map((status, index) => ({
-      id: JobId(`bash-${index + 1}`),
-      kind: 'bash',
-      label: 'sleep 60',
-      status,
-      startedAt: 0,
-    }))
-  }
-  get(): never { throw new Error('unsupported') }
-  kill(): never { throw new Error('unsupported') }
-  wait(): never { throw new Error('unsupported') }
-  remove(): never { throw new Error('unsupported') }
+  hasActiveJobs() { return jobsActive }
   attachController(): () => void { return () => {} }
 }
 
 beforeEach(() => {
   productActive = false
-  jobs = []
+  jobsActive = false
   ctx = new Context()
   // Narrow service doubles exercise the inspector against a real Cordis event lifecycle.
-  new RosterOnlyJobRegistry(ctx)
+  new ActivityOnlyJobRegistry(ctx)
   ctx.on('desktop/active-tasks', async () => productActive)
   inspect = installDesktopQuitInspection(ctx)
 })
@@ -51,17 +38,17 @@ describe('Desktop Host quit inspection', () => {
     expect(await inspect()).toEqual({ activeTasks: false })
   })
 
-  it.each(['running', 'stopping'] as const)('counts %s global jobs', async (status) => {
-    jobs = [status]
+  it('counts active background jobs', async () => {
+    jobsActive = true
     expect(await inspect()).toEqual({ activeTasks: true })
-    jobs = ['completed']
+    jobsActive = false
     expect(await inspect()).toEqual({ activeTasks: false })
   })
 
   it('rejects an absent or failing product inspector instead of reporting idle', async () => {
     const empty = new Context()
     try {
-      new RosterOnlyJobRegistry(empty)
+      new ActivityOnlyJobRegistry(empty)
       const check = installDesktopQuitInspection(empty)
       await expect(check()).rejects.toThrow('product inspector is unavailable')
       empty.on('desktop/active-tasks', async () => { throw new Error('storage unavailable') })

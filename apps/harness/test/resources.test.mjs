@@ -30,7 +30,7 @@ async function fixture(t) {
   const deps = ctx.plugin({ name: 'resource-fixture', apply(child) {
     child.reflect.provide('catalog', { listProviders: () => providers, provider: () => ({ probe: async () => {} }) });
     child.reflect.provide('youdubWorker', { run: async () => ({ stdout: '3.12.12', stderr: '' }) });
-    child.reflect.provide('jobs', { start(spec) { const job = spec.run(); jobs.push(job.done); return job; } });
+    child.reflect.provide('jobs', { start(spec) { jobs.push(spec.run().done); } });
   } }); await deps;
   const service = ctx.plugin(Resources, { root, repoRoot: root, python: '/python', version: 'test', modelRoots: { whisper: root } }); await service;
   t.after(async () => { await service.dispose(); await deps.dispose(); await rm(root, { recursive: true, force: true }); });

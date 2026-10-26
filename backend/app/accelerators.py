@@ -63,7 +63,7 @@ def hardware() -> dict:
 def installation_plan(host: dict) -> dict:
     """Pinned Torch/Audio/Codec ABI sets, never install or change OS drivers."""
     system = host["system"]
-    plan = {"backend": "cpu", "index": "https://pypi.org/simple/", "variant": "cpu",
+    plan = {"backend": "cpu", "variant": "cpu",
             "findLinks": "https://download.pytorch.org/whl/cpu/", "version": "2.8.0",
             "codec": "0.7.0", "prerequisites": [], "packages": [], "detail": "CPU：未发现受支持的 GPU 运行环境"}
     if system == "Darwin":

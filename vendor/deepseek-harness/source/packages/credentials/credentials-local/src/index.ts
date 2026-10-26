@@ -546,7 +546,7 @@ export class LocalCredentialProvider extends CredentialProvider {
     return this.closed
   }
 
-  constructor(ctx: Context, public config: Config) {
+  constructor(ctx: Context, config: Config) {
     super(ctx)
     // Programmatic construction may bypass Schemastery normalization; resolve
     // the same defaults in one explicit step either way.

@@ -5,7 +5,7 @@ const repository = 'https://github.com/liuzhao1225/YouDub-webui'
 export const updatePlatform = process.platform === 'darwin' && process.arch === 'arm64' ? 'macos-arm64'
   : process.platform === 'win32' && process.arch === 'x64' ? 'windows-x64' : null
 type Platform = 'macos-arm64' | 'windows-x64'
-export type AvailableUpdate = { version: string; url: string; download: string; checksum: string }
+export type AvailableUpdate = { version: string; download: string }
 
 function versionParts(version: string) {
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) throw new Error(`Invalid release version: ${version}`)
@@ -37,7 +37,7 @@ export function availableUpdate(value: unknown, current: string, platform: Platf
     const download = `${repository}/releases/download/v${version}/${file}`
     if (selected.url !== download || selected.checksum !== download + '.sha256') throw new Error('Release asset or checksum URL is invalid.')
     if (release === selectedRelease && compare(version, current) > 0) {
-      latest = { version, url: release.url, download, checksum: selected.checksum }
+      latest = { version, download }
     }
   }
   return latest

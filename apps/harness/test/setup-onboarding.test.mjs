@@ -52,7 +52,7 @@ async function fixture(t, savedState = {}, readyModels = [], installation) {
     async inspectTasks() { return false; },
   };
   const ctx = { async inject(dependencies, apply) { assert.deepEqual(dependencies, ['youdubWorker']); apply(ctx); }, on(event, listener) { events.set(event, listener); disposers.push(() => events.delete(event)); }, effect(action) { const dispose = action(); if (dispose) disposers.push(dispose); }, logger: { error(error) { errors.push(error); } }, jobs: {
-    attachController() { return () => {}; }, start(spec) { return spec.run({ updateProgress() {} }); },
+    attachController() { return () => {}; }, start(spec) { spec.run(); },
   } };
   registerSetupRoutes(ctx, transport, { root: '/unused', repoRoot: '/unused', python: '/unused/python', version: 'test' }, async () => { activated = true; return domain; }, installation);
   const request = async (method, body) => { const request = { body }; await routes.get(method + ' /api/setup')(request); return request.result.value; };

@@ -36,7 +36,6 @@ describe('parseInstallSpec', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(InvalidInstallSpecError)
         const failure = error as InvalidInstallSpecError
-        expect(failure.spec).toBe(spec.trim())
         expect(failure.message).toBe(`plugin-manager: ${failure.reason}: ${spec.trim()}`)
         return failure.reason
       }

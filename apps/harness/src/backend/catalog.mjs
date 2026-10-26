@@ -8,13 +8,10 @@ export default class YouDubCatalog extends Catalog {
     const execute = (method, args, context) => {
       const controller = new AbortController(), signal = AbortSignal.any([context.signal, controller.signal]);
       let result;
-      this.ctx.jobs.start({ kind: 'youdub-operation', label: provider.describe().label || provider.id, run(job) {
-        const operationContext = { ...context, signal, progress: async (value, message) => {
-          await context.progress(value, message); job.updateProgress(message || (value === null ? '' : `${Math.round(value * 100)}%`));
-        } };
-        result = Promise.resolve().then(() => method(args, operationContext));
+      this.ctx.jobs.start({ label: provider.describe().label || provider.id, run() {
+        result = Promise.resolve().then(() => method(args, { ...context, signal }));
         return { cancel(reason) { controller.abort(new Error(reason || 'YouDub operation cancelled')); }, done: result.then(
-          value => ({ status: 'completed', detail: value.state === 'waiting' ? '远端任务等待下一次检查' : undefined }),
+          () => ({ status: 'completed' }),
           cause => ({ status: signal.aborted ? 'killed' : 'failed', detail: `${cause.code ?? 'OPERATION_FAILED'}: ${cause.message}` }),
         ) };
       } });

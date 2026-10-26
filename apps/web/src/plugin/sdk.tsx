@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { Diagnostic, GraphNode, JsonObject, JsonSchema, LocalizedText, NodeTypeDefinition, TaskNodeDetail, TaskView } from './contracts'
+import type { Diagnostic, GraphNode, JsonObject, JsonSchema, NodeTypeDefinition, TaskNodeDetail, TaskView } from './contracts'
 export type * from './contracts'
 
 import type { Request } from './runtime/types'
@@ -12,7 +12,6 @@ export type UseQuery = <T>(path: string, pollMs?: number, shouldPoll?: (value: T
 export interface ClientBindings {
   request: Request
   navigate(path: string): void
-  replace(path: string): void
   blockNavigation(handler: (path: string) => Promise<boolean>): () => void
   useQuery: UseQuery
   useWorkflowDocuments(): QueryResult<WorkflowDocuments>
@@ -25,14 +24,12 @@ export type Bindings<K extends keyof ClientBindings> = Pick<ClientBindings, K>
 export type RouteProps = { params: Record<string, string> }
 export type EditorProps = { value: JsonObject; schema: JsonSchema; diagnostics: Diagnostic[]; readOnly: boolean; mode?: 'options' | 'configuration'; onChange(value: JsonObject): void }
 export type PanelProps = { task: TaskView; refresh(): void }
-export type SettingsSectionProps = { settings: JsonObject; save(patch: JsonObject): Promise<void>; onDirtyChange?(dirty: boolean): void }
 export type NodeEditorProps = { node: GraphNode; definition: NodeTypeDefinition; readOnly: boolean; diagnostics: Diagnostic[]; onChange(node: GraphNode): void }
 export type NodeDetailProps = { detail: TaskNodeDetail; outputs: JsonObject; draft: JsonObject; readOnly: boolean; onDraftChange(patch: JsonObject): void }
 export type SlotMap = {
   'config.editors': { id: string; component: ComponentType<EditorProps> }
   'task.detail.panels': { id: string; order?: number; component: ComponentType<PanelProps> }
   'task.detail.actions': { id: string; order?: number; component: ComponentType<PanelProps> }
-  'settings.sections': { id: string; order?: number; label?: LocalizedText; component: ComponentType<SettingsSectionProps> }
   'workflow.node.editors': { id: string; component: ComponentType<NodeEditorProps> }
   'workflow.node.details': { id: string; component: ComponentType<NodeDetailProps> }
 }

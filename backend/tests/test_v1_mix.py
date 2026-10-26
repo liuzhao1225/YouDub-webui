@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
-import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -215,27 +213,8 @@ def test_missing_background_is_not_replaced_by_original_audio(context):
     assert "background" in str(error.value)
 
 
-def test_cancelling_mix_reaps_ffmpeg_before_returning(monkeypatch, context):
-    real_popen = subprocess.Popen
-    processes = []
-    running_checks = 0
-
-    def slow_process(command, **kwargs):
-        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        processes.append(process)
-        return process
-
-    def check_cancel():
-        nonlocal running_checks
-        if processes and processes[0].poll() is None:
-            running_checks += 1
-            if running_checks == 2:
-                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
+def test_cancelling_mix_reaps_ffmpeg_before_returning(context, cancelled_media_process):
     with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
-        mix.run(replace(context, check_cancel=check_cancel), lambda value, message: None)
+        mix.run(replace(context, check_cancel=cancelled_media_process), lambda value, message: None)
     assert error.value.code == "CANCELLED"
-    assert processes[0].returncode is not None
-    assert processes[0].wait(timeout=0) != 0
     assert not (context.work_dir / "mixed.wav").exists()

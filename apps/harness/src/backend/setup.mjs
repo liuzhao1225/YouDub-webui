@@ -84,7 +84,7 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
     controller = new AbortController();
     phase = 'environment'; failure = undefined;
     let execution;
-    ctx.jobs.start({ kind: 'youdub-environment', label: '准备 YouDub 运行环境', run(job) {
+    ctx.jobs.start({ label: '准备 YouDub 运行环境', run() {
       execution = (async () => {
         // The installation page is available before a worker can know its paths.
         // Resolve the declared dependency only after that choice is committed.
@@ -92,10 +92,10 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
           environment = new EnvironmentSetup(scope, config, client, controller.signal);
         });
         await environment.prepare(['base']);
-        phase = 'starting'; job.updateProgress('检查运行环境');
+        phase = 'starting';
         await environment.probe('verify');
         controller.signal.throwIfAborted();
-        bootAttempted = true; job.updateProgress('检查完整模型环境');
+        bootAttempted = true;
         domain = await activate();
         controller.signal.throwIfAborted();
         const onboarding = (await domain.settings.read()).plugins?.['youdub.onboarding'];
@@ -160,5 +160,4 @@ export function registerSetupRoutes(ctx, transport, config, activate, installati
     if (path !== '/api/setup' && phase !== 'ready') throw new AppError('ENVIRONMENT_NOT_READY', failure || 'YouDub 运行环境正在准备。', 503, { phase });
   };
   if (phase !== 'installation') prepare();
-  return { snapshot };
 }

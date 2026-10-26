@@ -5,7 +5,6 @@ import {
   pollProcessExit,
 } from '../src/index.ts'
 import * as ffi from '../src/ffi.ts'
-import { processInformationType } from '../src/ffi.ts'
 import * as koffiLoader from '../src/koffi.ts'
 import type { NativePtr, CurrentTokenProcessBindings } from '../src/ffi.ts'
 
@@ -51,7 +50,7 @@ describe('spawnCurrentTokenJobProcess allocation cleanup', () => {
       uvGetOsfhandle: vi.fn((descriptor: number) => BigInt(100 + descriptor)),
       setHandleInformation: vi.fn(() => 1),
       createProcessW: vi.fn((_app, _line, _pa, _ta, _inherit, _flags, _env, _cwd, _startup, info) => {
-        koffi.encode(info, processInformationType(), {
+        koffi.encode(info, 'DSH_PROCESS_INFORMATION', {
           hProcess: 60n,
           hThread: 61n,
           dwProcessId: 1234,

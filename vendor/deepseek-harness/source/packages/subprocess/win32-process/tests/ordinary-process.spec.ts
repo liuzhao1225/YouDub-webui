@@ -17,7 +17,6 @@ import {
   JobObjectBasicAccountingInformation,
   WAIT_TIMEOUT,
 } from '../src/abi.ts'
-import { processInformationType, startupInfoType } from '../src/ffi.ts'
 import type {
   CurrentTokenProcessSpawnOptions,
   CurrentTokenProcessBindings,
@@ -49,7 +48,7 @@ function api(overrides: Partial<CurrentTokenProcessBindings> = {}): CurrentToken
     uvGetOsfhandle: vi.fn((fileDescriptor: number) => BigInt(100 + fileDescriptor)),
     setHandleInformation: vi.fn(() => 1),
     createProcessW: vi.fn((_app, _line, _pa, _ta, _inherit, _flags, _env, _cwd, _startup, info) => {
-      koffi.encode(info, processInformationType(), {
+      koffi.encode(info, 'DSH_PROCESS_INFORMATION', {
         hProcess: 60n,
         hThread: 61n,
         dwProcessId: 1234,
@@ -89,7 +88,7 @@ describe('ordinary Job process operations', () => {
       info: NativePtr,
     ) => {
       events.push('create')
-      koffi.encode(info, processInformationType(), { hProcess: 60n, hThread: 61n, dwProcessId: 1234, dwThreadId: 5678 })
+      koffi.encode(info, 'DSH_PROCESS_INFORMATION', { hProcess: 60n, hThread: 61n, dwProcessId: 1234, dwThreadId: 5678 })
       return 1
     })
     const bindings = api({
@@ -139,8 +138,8 @@ describe('ordinary Job process operations', () => {
       setHandleInformation,
       uvGetOsfhandle,
       createProcessW: vi.fn((_app, _line, _pa, _ta, _inherit, _flags, _env, _cwd, infoPtr, processInfo) => {
-        startup = koffi.decode(infoPtr, startupInfoType()) as Record<string, unknown>
-        koffi.encode(processInfo, processInformationType(), {
+        startup = koffi.decode(infoPtr, 'DSH_STARTUPINFOW') as Record<string, unknown>
+        koffi.encode(processInfo, 'DSH_PROCESS_INFORMATION', {
           hProcess: 60n,
           hThread: 61n,
           dwProcessId: 1234,
@@ -264,7 +263,7 @@ describe('ordinary Job process operations', () => {
   it.each([null, 60n])('reclaims a suspended child with process %s and a null thread', (process) => {
     const bindings = api({
       createProcessW: vi.fn((_app, _line, _pa, _ta, _inherit, _flags, _env, _cwd, _startup, info) => {
-        koffi.encode(info, processInformationType(), {
+        koffi.encode(info, 'DSH_PROCESS_INFORMATION', {
           hProcess: process, hThread: null, dwProcessId: 1234, dwThreadId: 0,
         })
         return 1

@@ -41,7 +41,6 @@ export interface SourceLocation {
 export interface ExportModel {
   readonly subpath: string
   readonly name: string
-  readonly symbol: SymbolId
 }
 
 /** One structured JSDoc tag used for Remote parameter descriptions. */
@@ -51,14 +50,13 @@ export interface JsDocTagModel {
   readonly comment?: string
 }
 
-/** JSDoc retained as a standard part of every documented model element. */
+/** Description retained for generated schemas and Remote declarations. */
 export interface DocumentationModel {
   readonly description?: string
-  readonly tags: readonly JsDocTagModel[]
 }
 
 /** One explicitly selected value type for schema generation. */
-export interface SchemaModel extends DocumentationModel {
+export interface SchemaModel {
   readonly export: ExportModel
   readonly symbol: SymbolId
   readonly type: TypeNodeId
@@ -97,6 +95,7 @@ export interface InvocationParameterModel {
 
 /** One strictly analyzed Host method exported through Typert Gateway. */
 export interface InvocationModel extends DocumentationModel {
+  readonly tags: readonly JsDocTagModel[]
   readonly id: string
   readonly service: string
   readonly namespace: string
@@ -147,9 +146,6 @@ export interface WorkspaceModel {
   readonly faces: readonly FaceModel[]
 }
 
-/** Visibility recorded on class members. */
-export type MemberVisibility = 'public' | 'protected' | 'private'
-
 /** One generic type parameter, preserving its pre-evaluation constraint/default. */
 export interface TypeParameterModel {
   readonly id: string
@@ -167,7 +163,6 @@ export interface ParameterModel {
   readonly type: TypeNodeId
   readonly optional: boolean
   readonly rest: boolean
-  readonly receiver: boolean
   readonly initializer?: string
 }
 
@@ -180,7 +175,6 @@ export interface SignatureModel {
 
 /** Shared flags of a class/interface/type-literal member. */
 export interface MemberBase extends DocumentationModel {
-  readonly id: string
   readonly name: string
   /** JSON property name when a literal computed key differs from source text. */
   readonly jsonName?: string
@@ -188,10 +182,7 @@ export interface MemberBase extends DocumentationModel {
   readonly computed?: 'symbol' | 'dynamic'
   readonly optional: boolean
   readonly readonly: boolean
-  readonly async: boolean
   readonly abstract: boolean
-  readonly static: boolean
-  readonly visibility: MemberVisibility
 }
 
 /** A property member. */
@@ -225,12 +216,6 @@ export type MemberModel =
   | AccessorMemberModel
   | SignatureMemberModel
 
-/** One enum member, retaining its developer-authored initializer. */
-export interface EnumMemberModel extends DocumentationModel {
-  readonly name: string
-  readonly initializer?: string
-}
-
 /** A declared interface, class, or alias. */
 export interface TypeDeclarationModel extends DocumentationModel {
   readonly id: SymbolId
@@ -241,7 +226,6 @@ export interface TypeDeclarationModel extends DocumentationModel {
   readonly implements: readonly TypeNodeId[]
   readonly members: readonly MemberModel[]
   readonly type?: TypeNodeId
-  readonly enumMembers?: readonly EnumMemberModel[]
 }
 
 /** Target of a named type reference. */

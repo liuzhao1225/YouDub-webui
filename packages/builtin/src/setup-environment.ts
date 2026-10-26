@@ -1,5 +1,4 @@
-import { access, chmod, mkdir, readdir, writeFile } from 'node:fs/promises'
-import { constants } from 'node:fs'
+import { chmod, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { delimiter, dirname, join } from 'node:path'
 import type { Context } from 'cordis'
 import { DownloadClient, fileSize, sourceName, type DownloadFile } from './setup-download.js'
@@ -10,21 +9,9 @@ export { dependencyGroups, type DependencyGroup } from './runtime-resources.js'
 
 export type SetupStage = 'pending' | 'running' | 'ready' | 'failed'
 export interface EnvironmentStep { id: string; name: string; status: SetupStage; detail?: string; source?: string; phase?: 'downloading' | 'installing' | 'verifying'; progress?: { received: number; total: number; speed?: number }; activity?: string; log?: string; startedAt?: number; updatedAt?: number }
-export interface EnvironmentConfig { root: string; repoRoot: string; python: string; privateEnvironment?: boolean }
-export function platformTarget(platform = process.platform, arch = process.arch) {
-  const targets: Record<string, string> = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin', 'linux-arm64': 'aarch64-unknown-linux-gnu', 'linux-x64': 'x86_64-unknown-linux-gnu', 'win32-x64': 'x86_64-pc-windows-msvc' }
-  const target = targets[`${platform}-${arch}`]
-  if (!target) throw new Error(`暂不支持 ${platform} / ${arch}，支持 macOS、Linux 的 arm64/x64 和 Windows x64。`)
-  return target
-}
-export async function executable(name: string) {
-  const suffixes = process.platform === 'win32' ? ['', ...(process.env.PATHEXT || '.EXE;.CMD;.BAT').split(';')] : ['']
-  for (const directory of (process.env.PATH || '').split(delimiter)) for (const suffix of suffixes) {
-    const path = join(directory, name + suffix)
-    try { await access(path, constants.X_OK); return path }
-    catch (error: any) { if (!['ENOENT', 'EACCES'].includes(error.code)) throw error }
-  }
-  return undefined
+export interface EnvironmentConfig { root: string; repoRoot: string; python: string }
+export function assertSupportedPlatform(platform = process.platform, arch = process.arch) {
+  if (!Object.hasOwn(runtimeManifest.python, `${platform}-${arch}`)) throw new Error(`暂不支持 ${platform} / ${arch}，支持 macOS、Linux 的 arm64/x64 和 Windows x64。`)
 }
 
 export class EnvironmentSetup {
@@ -32,7 +19,7 @@ export class EnvironmentSetup {
     { id: 'python', name: 'Python 3.12', status: 'pending' },
     { id: 'dependencies', name: '基础运行依赖', status: 'pending' },
   ]
-  private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; index: string; variant: string; findLinks: string; installed: boolean; packages: string[]; prerequisites: string[] }
+  private accelerationPlan?: { backend: string; detail: string; version: string; codec: string; variant: string; findLinks: string; installed: boolean; packages: string[]; prerequisites: string[] }
   private uvReady = false
   constructor(private ctx: Context, readonly config: EnvironmentConfig, private client: DownloadClient, private signal: AbortSignal) {}
   private run(command: string, args: string[], env?: Record<string, string>, cwd = this.config.repoRoot, onOutput?: (text: string, stream: 'stdout' | 'stderr') => void) {
@@ -107,7 +94,7 @@ export class EnvironmentSetup {
       PIP_CONFIG_FILE: process.platform === 'win32' ? 'NUL' : '/dev/null', PIP_EXTRA_INDEX_URL: '', PIP_FIND_LINKS: '',
       UV_NO_CONFIG: '1', UV_INDEX: '', UV_EXTRA_INDEX_URL: '', UV_FIND_LINKS: '', UV_HTTP_RETRIES: '0', UV_HTTP_TIMEOUT: '15',
       UV_PYTHON_DOWNLOADS: 'never', UV_CACHE_DIR: join(this.config.root, 'runtime', 'uv-cache'),
-      ...(this.config.privateEnvironment ? { PIP_TARGET: '', PIP_PREFIX: '', PIP_ROOT: '', PIP_USER: '0' } : {}),
+      PIP_TARGET: '', PIP_PREFIX: '', PIP_ROOT: '', PIP_USER: '0',
       HTTP_PROXY: '', HTTPS_PROXY: '', ALL_PROXY: '', http_proxy: '', https_proxy: '', all_proxy: '', NO_PROXY: '*', no_proxy: '*',
     }, this.config.repoRoot, (text, stream) => {
       buffers[stream] += text
@@ -163,10 +150,8 @@ export class EnvironmentSetup {
   private async pythonEnvironment() {
     const environment = dirname(dirname(this.config.python))
     if (!await fileSize(this.config.python)) {
-      if (this.config.privateEnvironment) {
-        const managed = join(this.config.root, 'runtime', 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
-        if (this.config.python !== managed) throw new Error(`配置的 Python 不存在：${this.config.python}`)
-      } else if (process.env.YOUDUB_PYTHON?.trim()) throw new Error(`YOUDUB_PYTHON 不存在：${this.config.python}`)
+      const managed = join(this.config.root, 'runtime', 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
+      if (this.config.python !== managed) throw new Error(`配置的 Python 不存在：${this.config.python}`)
       const windows = process.platform === 'win32'
       const asset = runtimeManifest.python[`${process.platform}-${process.arch}` as keyof typeof runtimeManifest.python]
       const folder = join(this.config.root, 'runtime', 'python')
@@ -220,16 +205,13 @@ export class EnvironmentSetup {
     for (const name of ['ffmpeg', 'ffprobe']) {
       const envKey = name === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
       let managed = join(binDirectory, name + (windows ? '.exe' : ''))
-      const explicit = this.config.privateEnvironment ? undefined : process.env[envKey]?.trim()
-      const path = explicit || (await fileSize(managed) ? managed : this.config.privateEnvironment ? undefined : await executable(name))
-      if (path) {
+      if (await fileSize(managed)) {
         const args = name === 'ffmpeg' ? ['-hide_banner', '-filters'] : ['-version']
-        const result = await this.run(path, args)
+        const result = await this.run(managed, args)
         const subtitles = name !== 'ffmpeg' || /\bsubtitles\b/.test(result.stdout)
-        const shared = !windows || (await readdir(dirname(path))).some(file => /^av.*\.dll$/i.test(file))
-        if (subtitles && shared) { paths[envKey] = path; continue }
-        if (explicit) throw new Error(`${envKey} 需要支持 subtitles${windows ? ' 和共享 av*.dll' : ''}：${path}`)
-        this.ctx.logger.info(`${path} 缺少所需能力，安装应用专用 FFmpeg。`)
+        const shared = !windows || (await readdir(dirname(managed))).some(file => /^av.*\.dll$/i.test(file))
+        if (subtitles && shared) { paths[envKey] = managed; continue }
+        this.ctx.logger.info(`${managed} 缺少所需能力，安装应用专用 FFmpeg。`)
       }
       await mkdir(directory, { recursive: true })
       this.source('ffmpeg', 'GitHub')
@@ -266,7 +248,7 @@ export class EnvironmentSetup {
   }
   private async resources() {
     const data = join(this.config.root, 'nltk_data')
-    process.env.NLTK_DATA = this.config.privateEnvironment ? data : [...new Set([data, ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
+    process.env.NLTK_DATA = data
     if (!(await this.probe('punkt')).ready) {
       this.source('resources', 'NLTK 官方')
       const asset = runtimeManifest.punkt
@@ -283,16 +265,16 @@ export class EnvironmentSetup {
     const directories: string[] = []
     for (const [name, key] of [['ffmpeg', 'FFMPEG_PATH'], ['ffprobe', 'FFPROBE_PATH']] as const) {
       const path = join(directory, name + (windows ? '.exe' : ''))
-      if ((this.config.privateEnvironment || !process.env[key]?.trim()) && await fileSize(path)) {
+      if (await fileSize(path)) {
         process.env[key] = path
         directories.push(directory)
       }
     }
     if (directories.length) process.env.PATH = [...new Set([...directories, ...(process.env.PATH || '').split(delimiter)])].join(delimiter)
-    process.env.NLTK_DATA = this.config.privateEnvironment ? join(this.config.root, 'nltk_data') : [...new Set([join(this.config.root, 'nltk_data'), ...(process.env.NLTK_DATA || '').split(delimiter).filter(Boolean)])].join(delimiter)
+    process.env.NLTK_DATA = join(this.config.root, 'nltk_data')
   }
   async prepare(groups: DependencyGroup[] = ['base']) {
-    platformTarget()
+    assertSupportedPlatform()
     if (groups.some(group => !dependencyGroups.includes(group))) throw new Error('Unknown dependency group.')
     await this.restoreManagedPaths()
     groups = [...new Set<DependencyGroup>(['base', ...groups])]

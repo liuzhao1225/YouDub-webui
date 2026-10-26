@@ -13,17 +13,17 @@ export class TimerService extends Service {
     ctx.mixin('timer', ['debounce'])
   }
 
-  debounce<F extends (...args: any[]) => void>(callback: F, delay: number): F & { dispose: () => void } {
+  debounce<F extends (...args: any[]) => void>(callback: F, delay: number): F {
     let timer: ReturnType<typeof setTimeout> | undefined
     let disposed = false
-    const dispose = this.ctx.effect(() => () => {
+    this.ctx.effect(() => () => {
       disposed = true
       clearTimeout(timer)
     }, 'ctx.debounce()')
-    return Object.assign(((...args: Parameters<F>) => {
+    return ((...args: Parameters<F>) => {
       clearTimeout(timer)
       if (!disposed) timer = setTimeout(callback, delay, ...args)
-    }) as F, { dispose })
+    }) as F
   }
 }
 

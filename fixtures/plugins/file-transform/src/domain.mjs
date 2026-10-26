@@ -26,7 +26,7 @@ export function apply(ctx, config = {}) {
   }
   const workflow = {
     id: 'example.uppercase', version: '1.0.0', ...identity,
-    describe: () => ({ id: 'example.uppercase', version: '1.0.0', label: '文本转大写', inputs: [{ name: 'document', label: '文本文件', required: true, acceptedMimeTypes: ['text/plain'], maxBytes: 2 * 1024 * 1024 }], configSchema: { type: 'object', properties: {}, additionalProperties: false }, defaults: {} }),
+    describe: () => ({ id: 'example.uppercase', version: '1.0.0', label: '文本转大写', inputs: [{ name: 'document', label: '文本文件', required: true, acceptedMimeTypes: ['text/plain'] }], configSchema: { type: 'object', properties: {}, additionalProperties: false }, defaults: {} }),
     validate: input => input.document ? [] : [{ code: 'INPUT_MISSING', message: '请选择文本文件。', field: 'document' }],
     plan(input, options) {
       return {

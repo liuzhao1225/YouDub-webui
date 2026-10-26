@@ -50,7 +50,7 @@ LLM 继续使用原 Harness `prepareCall → stream`、供应商适配、模型�
 
 Windows 媒体进程继续使用 `spawnCurrentTokenJobProcess` 和 Job Object。未使用的 `spawnPipedProcess`、`spawnInheritedJobProcess`、`RestrictedProcessSpawnOptions`、`drainPipe`、`waitForProcessExit` 及专用 Win32 绑定已退役；普通进程的停止、轮询、句柄释放、ABI 验证和原始错误保留。`OutputCollector.snapshot/finalize/dropped` 及 `CollectedOutput` 退出，实际 `seal/readFrom`、偏移、丢失标记、磁盘溢出与错误处理保留。
 
-Jobs 保留 start/list、controller、progress、done、真实退出取消与错误。无消费者的 get/kill/wait/remove、TASK_WAIT_TIMEOUT、输出环、read/readAt/events/result 及相关配置表单已退役，业务日志由 YouDub 持久化。退役的 Jobs 输出请求会明确拒绝，旧 Jobs 环大小配置仍可加载。
+Jobs 保留 `start/attachController/hasActiveJobs`、producer done、真实退出取消与错误。`JobHandle/JobId/JobView/list/updateProgress`、get/kill/wait/remove、TASK_WAIT_TIMEOUT、输出环、read/readAt/events/result 及相关配置表单已退役。实际进度与业务日志由 YouDub snapshot 和持久化层提供；退役的输出请求仍明确拒绝，旧环大小配置仍可加载。
 
 HTTP proxy 的 `proxyRouteFor/ProxyRoute`、仅供展示的 installed 状态副本和 `clearedProxyEnv` 已退役。实际 undici global dispatcher、进行中的请求释放、嵌套恢复、NO_PROXY/loopback、代理协议检查，以及子进程代理环境传递和 Windows 环境变量大小写处理保留。
 
@@ -75,9 +75,15 @@ UI 插槽只承接页面与节点插件使用的 `root` scope，保留 single/li
 
 前端不再隐式共享 `@tanstack/react-virtual`，使用它的外部插件须声明并自行打包。旧 `ClientManifest/ClientModule`、孤立的复合 locale/theme schema、`resultOf`、store `shallowEqual` 和测试专用窗口几何模型已退役。YouDub 的重复 `/api/v2/extensions*`、`/api/v2/client-manifest` HTTP 适配及其资源失效规则退出，扩展页继续使用官方 `uiPluginManager`。YouDub SDK 退出未使用的 `SDK_VERSION/YouDubContext` 导出和无效 `Files.upload` 大小参数，Context 声明合并保留。
 
+Connection 的重复 `requestRejection/createPeer` 包装、未读 `allowsRemoteAuthorities/isRemoteAuthority` 和 ClientEntries 的无人调用 `retry` 退出；HTTP `admit`、owner 鉴权、实际 API/browser peer 和 `sync` 重试保留。
+
+YouDub 首次模型设置直接消费 Harness activity，移除重复回传状态；旧 `youdub.settings.sections/settings.sections` 空插槽退出，设置扩展使用实际 Harness item/section 注册。模型编辑器仅保留当前 `input` 字段，供应商目录探测对历史字段的转换继续保留。通用词条只维护实际调用项，插件仍通过原语言服务注册自身词条。
+
 ## 工具、测试与兼容边界
 
-`PartialArguments`、`snapshotJsonValue`、`WeakMapWithValues`、数字 brand、`bytesToBase64`、`clampTimeout`、无消费者的 home 显示/cache helper 和 Cosmokit array/time/string/binary 输出工具已退役。`mapValues` 的同义别名退出，实际 `valueMap` 保留；Deque 保留使用中的 `pushBack/popFront`，移除 `pushFront`。Timer 只维护 HMR 使用的 `debounce`，随 fiber 释放。JSON 验证、配置锁和原错误传播保留。
+`PartialArguments`、`snapshotJsonValue`、`WeakMapWithValues`、数字 brand、`bytesToBase64`、`clampTimeout`、无消费者的 home 显示/cache helper 和 Cosmokit array/time/string/binary 输出工具已退役。`mapValues` 的同义别名退出，实际 `valueMap` 保留；Deque 保留使用中的 `pushBack/popFront`，移除 `pushFront`。Timer 只维护 HMR 使用的 `debounce`，随 fiber 释放，未消费的返回 `.dispose` 属性退出。无生产调用的 `deadline/Deadline`、只供测试的 FFI 类型 getter 和 Deque benchmark 退出；LLM 空闲超时、真实 Koffi ABI/句柄验证保留。JSON 验证、配置锁和原错误传播保留。
+
+生成器不再保留无读的成员标记、枚举初始化值和重复文档元数据；实际 schema 描述、Remote 参数/返回说明和错误源位置保留。构建脚本退出不可达的 official profile 和旧 staged provider metadata 校验；当前源码/产物收据验证继续生效。
 
 测试维护范围覆盖实际协议请求、鉴权、凭据脱敏、配置重载和迁移、插件生命周期、启动就绪、取消、普通子进程停止及平台隔离。退出产品的终端、配置导出和反射接口专属测试，以及穷举 Node 模块查找布局的重复矩阵已移除；实际模块解析、主机退出、媒体和工作流回归继续保留。
 

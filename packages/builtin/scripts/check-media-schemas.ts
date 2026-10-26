@@ -14,7 +14,6 @@ const samples: Record<string, any> = {
   'speech-audio/v1': { segments: [{ id: '1', audio, sampleRate: 48000, channels: 1, sampleCount: 48000 }] },
   'dubbed-timeline/v1': { segments: [{ segment_id: '1', source_start_ms: 0, source_end_ms: 1000, dubbed_start_ms: 0, dubbed_end_ms: 1000 }] },
   'word-alignment/v1': [{ start_ms: 0, end_ms: 1000, text: '你好。' }],
-  'diagnostic/json/v1': { provider_field: { arbitrary: [true, null, 'raw text'] } },
 }
 const malformed: Record<string, any> = {
   'transcript/v1': { detected_language: 'en', segments: [{ id: '1', start_ms: -1, end_ms: 1000, text: 'Hello.' }] },
@@ -24,7 +23,6 @@ const malformed: Record<string, any> = {
   'speech-audio/v1': { segments: [{ ...samples['speech-audio/v1'].segments[0], sampleCount: 0 }] },
   'dubbed-timeline/v1': { segments: [{ ...samples['dubbed-timeline/v1'].segments[0], dubbed_end_ms: 0 }] },
   'word-alignment/v1': [{ start_ms: 0, end_ms: 1000, text: 'Hello.', extra: true }],
-  'diagnostic/json/v1': 'invalid top-level diagnostic',
 }
 for (const [id, schema] of Object.entries(mediaSchemas)) {
   const validate = ajv.compile(schema)

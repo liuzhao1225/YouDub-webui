@@ -119,22 +119,6 @@ function win32Types(): Win32Types {
 }
 
 /**
- * Materialize the Koffi STARTUPINFOW layout on first native use.
- * @returns the cached native struct type.
- */
-export function startupInfoType(): ReturnType<Koffi['struct']> {
-  return win32Types().STARTUPINFOW
-}
-
-/**
- * Materialize the Koffi PROCESS_INFORMATION layout on first native use.
- * @returns the cached native struct type.
- */
-export function processInformationType(): ReturnType<Koffi['struct']> {
-  return win32Types().PROCESS_INFORMATION
-}
-
-/**
  * Allocate a uint32 out-parameter slot.
  * @returns allocated native slot.
  */

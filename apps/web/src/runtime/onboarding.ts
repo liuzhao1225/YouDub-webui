@@ -85,10 +85,6 @@ function translationAvailability(catalog: Catalog) {
 export class TranslationSetupController extends SnapshotStore<TranslationSnapshot> {
   private controller: AbortController | null = null
   constructor(private readonly suppliedRequest: Request) { super({ loaded: false, configured: false, ready: false, busy: false, error: '' }) }
-  readonly request: Request = <T>(path: string, init?: RequestInit) => {
-    if (!this.controller) return Promise.reject(new Error('Translation setup is closed.'))
-    return this.api<T>(this.controller, path, init)
-  }
   start = () => {
     this.stop()
     this.controller = new AbortController()
@@ -96,7 +92,6 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
     void this.load(this.controller)
   }
   stop = () => { this.controller?.abort(); this.controller = null }
-  setConfigured = (configured: boolean) => { if (this.controller) this.update({ configured }) }
   refreshConfigured = async () => {
     const controller = this.controller
     if (!controller) return
@@ -110,8 +105,7 @@ export class TranslationSetupController extends SnapshotStore<TranslationSnapsho
   continue = () => { if (this.controller && this.snapshot.configured) this.update({ ready: true }) }
   private current(controller: AbortController) { return this.controller === controller && !controller.signal.aborted }
   private async api<T>(controller: AbortController, path: string, init?: RequestInit): Promise<T> {
-    const signal = init?.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal
-    return this.suppliedRequest<T>(path, { ...init, signal })
+    return this.suppliedRequest<T>(path, { ...init, signal: controller.signal })
   }
 
   private async load(controller: AbortController) {

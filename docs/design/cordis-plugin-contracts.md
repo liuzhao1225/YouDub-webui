@@ -1,5 +1,7 @@
 # YouDub 插件与 Workflow 契约
 
+当前设置扩展使用 Harness `settings.general` 的 item/section 注册；旧 `settings.sections` 插槽已退役。下文保留当时的设计与验收记录。
+
 本文保留 2026-10-20 独立 Cordis 产品的契约记录。当前桌面组合、通信与插件装配以 [Harness 后端开发](../../apps/harness/docs/BACKEND-DEVELOPMENT.md)、[前端开发](../../apps/harness/docs/FRONTEND-DEVELOPMENT.md)和现有 SDK 源码为准；下文旧 Client 清单、会话、`bindComponent`/`web-react` 加载方式已退出产品。
 
 2026-10-20 · SDK 协议 `1.1.0` / Worker 协议 `youdub-worker/v1`。实现已落地并完成本地验收。Host 类型以 [SDK 源码](../../packages/sdk/src/index.ts)为准，Client 类型以 [Client 契约](../../apps/web/src/plugin/contracts.ts)和 [Client SDK](../../apps/web/src/plugin/sdk.tsx)为准。安装与启动见[运行指南](cordis-plugin-runtime.md)，架构依据见[架构说明](cordis-plugin-architecture.md)。
@@ -56,7 +58,6 @@ interface WorkflowDefinition {
 - `config`：固定配置；`bindings`：按 key 保存精确 provider 绑定。
 - `steps[]`：`id/label/bindingKey/operation/input/outputs`。输入为 JSON 常量、`{from:'task',name}` 或 `{from:'step',stepId,output}`。
 - `outputs[]`：从步骤的 artifact 端口选择最终下载项，包含唯一 ID、label、role、source 和 required。
-- `omittedSteps[]`：可选步骤的省略原因。
 
 步骤必须有唯一 ID，引用已出现的上游输出；provider 支持指定 operation。workflow 不得删除或降级 provider 的 required 输出。所有计划数据可序列化，不携带可执行闭包。图支持分叉、汇合和独立的节点确认，编译为静态计划并按单执行槽调度；没有同时执行多个节点、执行中插入、循环或嵌套 workflow。
 

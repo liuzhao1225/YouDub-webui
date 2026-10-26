@@ -45,7 +45,6 @@
 | `youdub.config.editors` | 业务配置编辑器 |
 | `youdub.task.detail.panels` / `actions` | 任务详情区和操作 |
 | `youdub.workflow.node.editors` / `details` | 节点配置与结果详情 |
-| `youdub.settings.sections` | 业务设置区 |
 
 节点详情插槽的完整实例在[graph-text-review 客户端](../../../fixtures/plugins/graph-text-review/src/client.jsx)：它接收 `detail`、`outputs`、`draft`、`readOnly`、`onDraftChange`、`navigate`，将订正交还原任务页面保存。外部插件通过自己的 context 注册插槽，卸载时由官方生命周期释放。
 

@@ -1,10 +1,9 @@
 /** Background job lifecycle service; producers own execution and output. */
 
 import { Context, Service } from '@deepseek-ai/cordis'
-import type { JobId, JobSpec, JobView } from './types.ts'
+import type { JobSpec } from './types.ts'
 
-export { JobId } from './types.ts'
-export type { JobHandle, JobHooks, JobKind, JobOutcome, JobSpec, JobStatus, JobView } from './types.ts'
+export type { JobHooks, JobOutcome, JobSpec } from './types.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -23,7 +22,7 @@ declare module '@deepseek-ai/cordis' {
  *   cancels live work and awaits compliant producers; a throwing teardown
  *   cancel force-fails only the record and reports possible orphaned work.
  * - Settlement is first-wins, even against a late producer outcome.
- * - A settled record stays listed until service disposal.
+ * - Settled jobs release their registry records.
  * - {@link start} refuses work without an attached job controller, so work
  *   remains covered by service teardown.
  */
@@ -41,18 +40,14 @@ export abstract class JobRegistry extends Service {
   /**
    * Preflight validation and controller availability before starting and
    * atomically registering work. Any preflight
-   * rejection leaves no job id or execution resource. A throwing starter
+   * rejection leaves no execution resource. A throwing starter
    * leaves nothing registered; after it returns, registration cannot fail.
-   * @param spec - job identity and synchronous starter.
-   * @returns the registry-issued `<kind>-<short-uuid>` id.
+   * @param spec - diagnostic label and synchronous starter.
    */
-  abstract start(spec: JobSpec): JobId
+  abstract start(spec: JobSpec): void
 
-  /**
-   * List jobs in registration order.
-   * @returns fresh projections.
-   */
-  abstract list(): JobView[]
+  /** Whether any producer is still running or finishing cancellation. */
+  abstract hasActiveJobs(): boolean
 
   /**
    * Attach an effect-scoped controller that admits jobs into the registry.

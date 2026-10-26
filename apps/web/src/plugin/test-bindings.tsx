@@ -7,7 +7,7 @@ import type { ClientBindings, Request } from './sdk'
 
 export type TestContext = {
   apiClient: { request: Request }
-  navigation?: { push(path: string): void; replace?(path: string): void; block?(handler: (path: string) => Promise<boolean>): () => void }
+  navigation?: { push(path: string): void; block?(handler: (path: string) => Promise<boolean>): () => void }
   slots?: { list?(slot: string): any[]; subscribe?(listener: () => void): () => void; getSnapshot?(): number; register?(slot: string, entry: any): () => void }
   effect?(effect: () => unknown): unknown
 }

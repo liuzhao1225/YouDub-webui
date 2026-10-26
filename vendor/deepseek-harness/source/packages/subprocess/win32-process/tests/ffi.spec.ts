@@ -4,16 +4,10 @@ import {
   isNullPtr,
   throwLastError,
 } from '../src/index.ts'
-import { PROCESS_INFORMATION_SIZE, STARTUPINFOW_SIZE } from '../src/abi.ts'
-import { errorText, processInformationType, startupInfoType } from '../src/ffi.ts'
+import { errorText } from '../src/ffi.ts'
 import type { NativePtr, Win32ProcessBindings } from '../src/index.ts'
 
 describe('shared Win32 process ABI', () => {
-  it('matches the verified x64 structure sizes', () => {
-    expect(startupInfoType().size).toBe(STARTUPINFOW_SIZE)
-    expect(processInformationType().size).toBe(PROCESS_INFORMATION_SIZE)
-  })
-
   it('recognizes NULL process handles', () => {
     expect(isNullPtr(0n as NativePtr)).toBe(true)
     expect(isNullPtr(1n as NativePtr)).toBe(false)

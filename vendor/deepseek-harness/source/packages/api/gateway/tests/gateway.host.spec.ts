@@ -145,9 +145,6 @@ class FakeConnectionService extends Service {
     }
   }
 
-  requestRejection(): undefined {
-    return undefined
-  }
 }
 
 function fakeHttpServer(routes: WebRoute[]): Pick<WebServer, 'register' | 'port'> {

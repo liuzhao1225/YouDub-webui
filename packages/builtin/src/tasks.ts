@@ -40,6 +40,10 @@ function acceptsIntegrity(current: { integrity: string; compatibleIntegrities?: 
   return current.integrity === pinned || current.compatibleIntegrities?.includes(pinned) === true
 }
 function ref(value: any): value is ArtifactRef { return value && typeof value.id === 'string' && typeof value.schemaId === 'string' && Object.keys(value).length === 2 }
+function* artifactReferences(value: unknown): Generator<ArtifactRef> {
+  if (ref(value)) yield value
+  else if (value && typeof value === 'object') for (const child of Object.values(value)) yield* artifactReferences(child)
+}
 function replaceArtifacts(value: any, copied: Record<string, ArtifactRef>): any {
   if (ref(value)) return { id: copied[value.id]!.id, schemaId: value.schemaId }
   if (Array.isArray(value)) return value.map(item => replaceArtifacts(item, copied))
@@ -220,14 +224,6 @@ export default class Tasks extends Service implements TasksService {
     const prefix = plan.steps.slice(0, index)
     if (!isDeepStrictEqual(prefix, source.plan.steps.slice(0, index))) throw new AppError('REUSE_NOT_ALLOWED', 'Earlier workflow steps changed; their outputs cannot be reused.', 409)
     const references = new Map<string, ArtifactRef>()
-    const collect = (value: any): void => {
-      if (ref(value)) {
-        const artifact = source.artifacts[value.id]
-        if (!artifact || artifact.schemaId !== value.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match its registration.', 409)
-        references.set(value.id, value)
-      } else if (Array.isArray(value)) value.forEach(collect)
-      else if (value && typeof value === 'object') Object.values(value).forEach(collect)
-    }
     const steps = prefix.map(spec => {
       const step = source.steps.find(item => item.id === spec.id)
       if (!step || step.status !== 'completed') throw new AppError('REUSE_NOT_ALLOWED', `Earlier step ${spec.id} has not completed.`, 409)
@@ -240,7 +236,10 @@ export default class Tasks extends Service implements TasksService {
         if (port.kind === 'artifact' && (!ref(output) || output.schemaId !== port.schemaId)) throw new AppError('REUSE_OUTPUT_INVALID', `Invalid ${spec.id}.${port.name}.`, 409)
         if (port.kind === 'json') validate(port.schema!, output, `${spec.id}.${port.name}`, 'REUSE_OUTPUT_INVALID')
       }
-      collect(step.outputs)
+      for (const reference of artifactReferences(step.outputs)) {
+        if (source.artifacts[reference.id]?.schemaId !== reference.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match its registration.', 409)
+        references.set(reference.id, reference)
+      }
       return structuredClone(step)
     })
     const copied = await this.ctx.files.copyArtifacts(source, id, [...references.values()])
@@ -286,15 +285,11 @@ export default class Tasks extends Service implements TasksService {
       if (port.kind === 'json' && !validator.validate(port.schema!, output)) throw new AppError(code, `${spec.id}.${port.name}: ${validator.errorsText()}`, 422)
     }
     this.validateOutputSemantics(spec, outputs, this.inputs(task, spec), code)
-    const verify = async (value: any): Promise<void> => {
-      if (ref(value)) {
-        const artifact = task.artifacts[value.id]
-        if (!artifact || artifact.schemaId !== value.schemaId) throw new AppError(code, 'Artifact does not belong to this task.', 422)
-        await this.ctx.files.resolve(task.id, artifact)
-      } else if (Array.isArray(value)) { for (const item of value) await verify(item) }
-      else if (value && typeof value === 'object') { for (const item of Object.values(value)) await verify(item) }
+    for (const reference of artifactReferences(outputs)) {
+      const artifact = task.artifacts[reference.id]
+      if (!artifact || artifact.schemaId !== reference.schemaId) throw new AppError(code, 'Artifact does not belong to this task.', 422)
+      await this.ctx.files.resolve(task.id, artifact)
     }
-    await verify(outputs)
   }
   private async correction(task: TaskRecord, spec: StepSpec, baselineOutputs: JsonObject, patch: JsonObject) {
     const provider = this.ctx.catalog.provider(task.plan.bindings[spec.bindingKey].providerId)
@@ -505,13 +500,6 @@ export default class Tasks extends Service implements TasksService {
     const reuse = await this.graphReuse(source, plan, graph, request)
     if (!request.sourceRevisions || !isDeepStrictEqual(request.sourceRevisions, reuse.sourceRevisions)) throw new AppError('OUTPUT_REVISION_CONFLICT', 'Source result revisions differ from the reuse preview.', 409)
     const references = new Map<string, ArtifactRef>()
-    const collect = (value: any): void => {
-      if (ref(value)) {
-        if (source.artifacts[value.id]?.schemaId !== value.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match the source registration.', 409)
-        references.set(value.id, value)
-      } else if (Array.isArray(value)) value.forEach(collect)
-      else if (value && typeof value === 'object') Object.values(value).forEach(collect)
-    }
     const selected = new Set([...reuse.reusedSteps, ...reuse.correctedSteps])
     const steps: StepState[] = []
     for (const spec of plan.steps) {
@@ -524,7 +512,10 @@ export default class Tasks extends Service implements TasksService {
         step.outputRevision = revision; step.outputs = reuse.corrections[spec.id]
       }
       await this.verifyOutputs(source, spec, step.outputs, 'REUSE_OUTPUT_INVALID')
-      collect(step.outputs); collect(step.resultRevisions)
+      for (const reference of artifactReferences([step.outputs, step.resultRevisions])) {
+        if (source.artifacts[reference.id]?.schemaId !== reference.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Reused artifact does not match the source registration.', 409)
+        references.set(reference.id, reference)
+      }
       step.label = spec.label; step.status = 'completed'; step.error = null; step.operation = undefined
       step.approvedRevision = corrected || spec.autoContinue !== false ? step.outputRevision : null
       step.approvalActionId = corrected ? id : null
@@ -619,7 +610,7 @@ export default class Tasks extends Service implements TasksService {
       })
     }
     while (!this.stopping.signal.aborted) {
-      const task = await this.locked(() => this.ctx.store.call<TaskRecord | null>('store.claim', { statuses: ['queued', 'waiting'], now: now() }))
+      const task = await this.locked(() => this.ctx.store.call<TaskRecord | null>('store.claim', { now: now() }))
       if (task) await this.execute(task)
       else {
         const cancelling = await this.ctx.store.call('store.list', { status: 'cancelling', limit: 1000, offset: 0 })
@@ -711,14 +702,6 @@ export default class Tasks extends Service implements TasksService {
       }
       if (result.state !== 'completed' || !result.outputs) throw new AppError('INVALID_PROVIDER_RESULT', 'Invalid operation result.', 500)
       if (Object.keys(result.outputs).some(name => !spec.outputs.some(port => port.name === name))) throw new AppError('INVALID_PROVIDER_RESULT', 'Provider returned an undeclared output port.', 500)
-      const verifyReferences = async (value: any): Promise<void> => {
-        if (ref(value)) {
-          const artifact = invocationArtifacts[value.id] ?? started.artifacts[value.id]
-          if (!artifact || artifact.schemaId !== value.schemaId) throw new AppError('INVALID_PROVIDER_RESULT', 'Artifact reference does not match its registration.', 500)
-          await this.ctx.files.resolve(initial.id, artifact)
-        } else if (Array.isArray(value)) { for (const item of value) await verifyReferences(item) }
-        else if (value && typeof value === 'object') { for (const item of Object.values(value)) await verifyReferences(item) }
-      }
       for (const output of spec.outputs) {
         const value = result.outputs[output.name]
         if (value === undefined) { if (output.required) throw new AppError('STAGE_OUTPUT_MISSING', `Missing ${spec.id}.${output.name}.`, 500); continue }
@@ -726,7 +709,11 @@ export default class Tasks extends Service implements TasksService {
         if (output.kind === 'json') validate(output.schema!, value, `${spec.id}.${output.name}`, 'INVALID_PROVIDER_RESULT')
       }
       this.validateOutputSemantics(spec, result.outputs, inputs)
-      await verifyReferences(result.outputs)
+      for (const reference of artifactReferences(result.outputs)) {
+        const artifact = invocationArtifacts[reference.id] ?? started.artifacts[reference.id]
+        if (!artifact || artifact.schemaId !== reference.schemaId) throw new AppError('INVALID_PROVIDER_RESULT', 'Artifact reference does not match its registration.', 500)
+        await this.ctx.files.resolve(initial.id, artifact)
+      }
       await this.ctx.files.log(initial.id, `[${spec.id}] completed`)
       await update(async (task, step) => {
         Object.assign(task.artifacts, invocationArtifacts)

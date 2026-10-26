@@ -220,10 +220,7 @@ class SqliteStore:
                     raise WorkerError("IMMUTABLE_SNAPSHOT", f"Task {name} snapshot cannot change.")
             return self._write(conn, {**task, "revision": expectedRevision + 1})
 
-    def claim(self, now, statuses=None):
-        statuses = ["queued", "waiting"] if statuses is None else statuses
-        if not statuses or any(status not in {"queued", "waiting"} for status in statuses):
-            raise WorkerError("INVALID_CLAIM", "Claim accepts queued/waiting candidates only.")
+    def claim(self, now):
         with self.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             if conn.execute("SELECT 1 FROM tasks WHERE status IN ('running','cancelling') LIMIT 1").fetchone():
@@ -236,11 +233,9 @@ class SqliteStore:
                 due = task.get("nextPollAt")
                 if not isinstance(due, str):
                     raise WorkerError("INVALID_TASK", "Waiting task has no nextPollAt.")
-                if "waiting" not in statuses or due > now:
+                if due > now:
                     return None
             else:
-                if "queued" not in statuses:
-                    return None
                 row = conn.execute("SELECT * FROM tasks WHERE status='queued' ORDER BY started_at IS NULL,started_at,queued_at,id LIMIT 1").fetchone()
                 if row is None:
                     return None

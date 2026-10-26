@@ -78,7 +78,7 @@ export class Loader extends EntryTree {
 
   public builtins: Dict<any> = Object.create(null)
 
-  constructor(ctx: Context, public config: Loader.Config = {}) {
+  constructor(ctx: Context, config: Loader.Config = {}) {
     super(ctx)
     if (config.baseUrl) {
       this.ctx.baseUrl = config.baseUrl

@@ -10,7 +10,7 @@ import type { Bindings } from '../sdk'
 import { useId, useLayoutEffect, useRef, useState, type ComponentProps } from 'react'
 import { ArrowLeft, Check, Copy, Download, GitBranch, Loader2, RotateCw, Save, Search } from '@/lib/icons'
 import { Link, text, type GraphNode, type JsonObject, type JsonSchema, type NodeDetailProps, type NodeTypeDefinition, type PanelProps, type RouteProps, type TaskNodeDetail, type TaskView, type WorkflowDocumentRecord } from '../sdk'
-import { StudioDraftStore } from '@/runtime/studio-draft'
+import type { StudioDraftStore } from '@/runtime/studio-draft'
 import { useActiveView, useObservableSource, usePendingUnload } from '../view-hooks'
 import { taskNeedsPolling } from '../runtime/query'
 import { useI18n, useText } from '@/lib/i18n'
@@ -90,17 +90,15 @@ function TaskGraph({ task, request, navigate, useQuery }: { task: TaskView } & B
   </Surface>
 }
 
-export function TaskNodePage({ submissionStore, params, request, navigate, blockNavigation, useQuery, useSlot }: RouteProps & { submissionStore?: StudioDraftStore } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot'>) {
+export function TaskNodePage({ submissionStore, params, request, navigate, blockNavigation, useQuery, useSlot }: RouteProps & { submissionStore: StudioDraftStore } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useQuery' | 'useSlot'>) {
   const tx = useText()
-  const [localStore] = useState(() => new StudioDraftStore())
-  const store = submissionStore ?? localStore
   const task = useQuery<TaskView>(`/api/v2/tasks/${encodeURIComponent(params.id)}`, 2000, taskNeedsPolling)
   const detail = useQuery<TaskNodeDetail>(`/api/v2/tasks/${encodeURIComponent(params.id)}/nodes/${encodeURIComponent(params.nodeId)}`, 2000, taskNeedsPolling)
   const types = useQuery<{ items: NodeTypeDefinition[] }>('/api/v2/node-types')
   const failure = task.error || detail.error || types.error
   const refresh = () => { task.refresh(); detail.refresh(); types.refresh() }
   if (!task.data || !detail.data || !types.data) return <Page>{failure ? <><InlineAlert>{failure}</InlineAlert><Button variant="outline" onClick={refresh}><RotateCw />{tx("workflow.task.reload")}</Button></> : <p role="status">{tx("workflow.task.loading")}</p>}</Page>
-  return <NodeDetail submissionStore={store} useQuery={useQuery} request={request} navigate={navigate} blockNavigation={blockNavigation} useSlot={useSlot} task={task.data} detail={detail.data} types={types.data.items} error={failure} refresh={refresh} />
+  return <NodeDetail submissionStore={submissionStore} useQuery={useQuery} request={request} navigate={navigate} blockNavigation={blockNavigation} useSlot={useSlot} task={task.data} detail={detail.data} types={types.data.items} error={failure} refresh={refresh} />
 }
 function NodeDetail({ submissionStore, task, detail, types, error, refresh, request, navigate, blockNavigation, useSlot, useQuery }: { submissionStore: StudioDraftStore; task: TaskView; detail: TaskNodeDetail; types: NodeTypeDefinition[]; error: string; refresh(): void } & Bindings<'request' | 'navigate' | 'blockNavigation' | 'useSlot' | 'useQuery'>) {
   const tx = useText(), { language } = useI18n(), windowHeader = useWindowHeader()

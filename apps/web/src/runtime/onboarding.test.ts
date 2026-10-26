@@ -85,7 +85,6 @@ it('aborts first-run provider requests when the setup view closes', async () => 
   finish({ providers: [{ capability: 'translation', available: true }] })
   await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
   expect(controller.getSnapshot().ready).toBe(false)
-  await expect(controller.request('/api/v2/models/settings')).rejects.toThrow('closed')
 })
 
 it('uses the injected Harness transport and waits for Continue after a provider becomes usable', async () => {

@@ -4,7 +4,6 @@ import hashlib
 import json
 import shutil
 import subprocess
-import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -112,29 +111,10 @@ def test_render_failure_is_not_reported_as_completion(monkeypatch, context, retu
     assert "private/path" not in str(error.value)
 
 
-def test_cancelling_export_reaps_child_before_returning(monkeypatch, context):
-    real_popen = subprocess.Popen
-    processes = []
-    running_checks = 0
-
-    def slow_process(command, **kwargs):
-        process = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        processes.append(process)
-        return process
-
-    def check_cancel():
-        nonlocal running_checks
-        if processes and processes[0].poll() is None:
-            running_checks += 1
-            if running_checks == 2:
-                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_process)
+def test_cancelling_export_reaps_child_before_returning(context, cancelled_media_process):
     with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
-        export.run(replace(context, check_cancel=check_cancel), lambda value, message: None, output_dir=context.work_dir / "output")
+        export.run(replace(context, check_cancel=cancelled_media_process), lambda value, message: None, output_dir=context.work_dir / "output")
     assert error.value.code == "CANCELLED"
-    assert processes[0].returncode is not None
-    assert processes[0].wait(timeout=0) != 0
 
 
 @pytest.mark.parametrize("system,font", [

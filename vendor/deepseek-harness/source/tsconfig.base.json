@@ -108,13 +108,7 @@
       "@deepseek-ai/dsh-llm/message": [
         "./packages/llm/llm/src/message.ts"
       ],
-      "@deepseek-ai/dsh-jobs/brand": [
-        "./packages/jobs/jobs/src/brand.ts"
-      ],
-      "@deepseek-ai/dsh-jobs/view": [
-        "./packages/jobs/jobs/src/view.ts"
-      ],
-      "@deepseek-ai/dsh-credentials/types": [
+          "@deepseek-ai/dsh-credentials/types": [
         "./packages/credentials/credentials/src/types.ts"
       ],
       "@deepseek-ai/dsh-settings/types": [

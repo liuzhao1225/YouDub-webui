@@ -4,7 +4,7 @@ import { JobRegistry } from '@deepseek-ai/dsh-jobs'
 
 class StubJobRegistry extends JobRegistry {
   start(): never { throw new Error('unused') }
-  list() { return [] }
+  hasActiveJobs() { return false }
   attachController() { return () => {} }
 }
 
@@ -13,7 +13,7 @@ describe('JobRegistry composition', () => {
     const ctx = new Context()
     try {
       await ctx.plugin(StubJobRegistry)
-      expect(ctx.jobs.list()).toEqual([])
+      expect(ctx.jobs.hasActiveJobs()).toBe(false)
       class SecondJobRegistry extends StubJobRegistry {}
       await expect(ctx.plugin(SecondJobRegistry)).rejects.toThrow(/service "jobs" has been registered/)
     } finally { await ctx.fiber.dispose() }

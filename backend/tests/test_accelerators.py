@@ -19,7 +19,6 @@ from backend.app import accelerators as a
 def test_installation_policy(system, arch, gpus, extra, backend, index):
     plan = a.installation_plan(dict(system=system, arch=arch, gpus=gpus, **extra))
     assert plan['backend'] == backend
-    assert plan['index'] == 'https://pypi.org/simple/'
     assert (plan['findLinks'].rstrip('/').endswith('/' + index) if index != 'simple' else not plan['findLinks'])
     if plan['findLinks']:
         assert plan['findLinks'] == f"https://download.pytorch.org/whl/{plan['variant']}/"

@@ -10,7 +10,7 @@ export type JsonSchema = {
   'x-optionsFrom'?: string
   'x-short-title'?: LocalizedText
 }
-export type InputSlot = { name: string; label: LocalizedText; required: boolean; acceptedMimeTypes: string[]; maxBytes?: number }
+export type InputSlot = { name: string; label: LocalizedText; required: boolean; acceptedMimeTypes: string[] }
 export type WorkflowDescription = {
   id: string; version: string; label: LocalizedText; description?: LocalizedText
   inputs: InputSlot[]; configSchema: JsonSchema; defaults?: JsonObject

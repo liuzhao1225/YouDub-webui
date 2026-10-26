@@ -38,7 +38,7 @@ export class InvalidInstallSpecError extends Error {
    * @param spec - the spec as typed, trimmed.
    * @param reason - why it is refused, as one sentence.
    */
-  constructor(readonly spec: string, readonly reason: string) {
+  constructor(spec: string, readonly reason: string) {
     super(`plugin-manager: ${reason}: ${spec}`)
     this.name = 'InvalidInstallSpecError'
   }

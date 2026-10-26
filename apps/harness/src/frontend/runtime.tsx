@@ -7,7 +7,7 @@ import type { Request } from '../../../web/src/plugin/runtime/types'
 const Features = createContext<any>(null)
 export const FeatureProvider = Features.Provider
 export function useFeatures() { const value = useContext(Features); if (!value) throw new Error('YouDub feature bindings are unavailable'); return value }
-export const domainSlots = ['config.editors','task.detail.panels','task.detail.actions','workflow.node.editors','workflow.node.details','settings.sections']
+export const domainSlots = ['config.editors','task.detail.panels','task.detail.actions','workflow.node.editors','workflow.node.details']
 export async function requestHarness<T>(path:string, init:RequestInit = {}):Promise<T> {
     if (!path.startsWith('/api/')) throw new Error(`Unsupported YouDub API path: ${path}`)
     const method = (init.method ?? 'GET').toUpperCase()
@@ -60,5 +60,5 @@ export function createFeatures(ctx:any, navigate:(path:string) => void, blockNav
     return () => disposers.forEach(dispose => dispose())
   })
   ctx.effect(() => { const unload = (event:BeforeUnloadEvent) => { if (Object.keys(draftStore.getSnapshot().submissions).length) { event.preventDefault(); event.returnValue = '' } }; window.addEventListener('beforeunload',unload); return () => window.removeEventListener('beforeunload',unload) })
-  return { request, navigate, replace:navigate, blockNavigation, useQuery, useWorkflowDocuments, useWorkflowResources, useSlot, draftStore, submissionStore:draftStore }
+  return { request, navigate, blockNavigation, useQuery, useWorkflowDocuments, useWorkflowResources, useSlot, draftStore, submissionStore:draftStore }
 }

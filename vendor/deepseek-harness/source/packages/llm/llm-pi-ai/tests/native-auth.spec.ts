@@ -1,8 +1,3 @@
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import type { Provider } from '@earendil-works/pi-ai'
 import { builtinProviders } from '@earendil-works/pi-ai/providers/all'
@@ -15,35 +10,6 @@ describe('provider metadata', () => {
   it('matches every installed public resolver and catalog, including non-chat providers', async () => {
     expect(await generateProviderData()).toEqual(PROVIDER_DATA)
     expect(Object.keys(PROVIDER_DATA)).toEqual(builtinProviders().map(provider => provider.id))
-  })
-
-  it('checks the staged snapshot even when the working file is fresh, without changing either', () => {
-    const fixture = mkdtempSync(join(tmpdir(), 'dsh-provider-data-'))
-    const relative = 'packages/llm/llm-pi-ai/src/provider-data.generated.ts'
-    const snapshot = readFileSync(new URL('../src/provider-data.generated.ts', import.meta.url), 'utf8')
-    const git = (args: readonly string[]): string => execFileSync('git', [...args], { cwd: fixture, encoding: 'utf8' })
-    const check = (): string => execFileSync(process.execPath, [
-      fileURLToPath(new URL('../scripts/gen-provider-data.ts', import.meta.url)), '--check', '--cached',
-    ], {
-      cwd: fixture, encoding: 'utf8', stdio: 'pipe',
-      env: { ...process.env, GIT_DIR: join(fixture, '.git'), GIT_WORK_TREE: fixture },
-    })
-    try {
-      git(['init', '-q'])
-      mkdirSync(join(fixture, 'packages/llm/llm-pi-ai/src'), { recursive: true })
-      writeFileSync(join(fixture, relative), `${snapshot}// stale staged snapshot\n`)
-      git(['add', relative])
-      writeFileSync(join(fixture, relative), snapshot)
-      const staged = git(['show', `:${relative}`])
-      expect(check).toThrow('Provider metadata is stale')
-      expect(git(['show', `:${relative}`])).toBe(staged)
-      expect(readFileSync(join(fixture, relative), 'utf8')).toBe(snapshot)
-      git(['add', relative])
-      expect(check()).toContain('Provider metadata matches')
-      git(['rm', '--cached', relative])
-      expect(check).toThrow('Cannot read staged provider metadata; run pnpm gen-provider-data and stage provider-data.generated.ts')
-      expect(readFileSync(join(fixture, relative), 'utf8')).toBe(snapshot)
-    } finally { rmSync(fixture, { recursive: true, force: true }) }
   })
 
   it('finds short-circuit credential pairs and federation fields missed by findEnvKeys', async () => {

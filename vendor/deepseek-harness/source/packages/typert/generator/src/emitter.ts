@@ -791,7 +791,6 @@ class SchemaEmitter {
     const indices: string[] = []
     let symbolMembers = 0
     for (const member of members) {
-      if (member.static || member.visibility !== 'public') continue
       if (member.computed === 'symbol') {
         symbolMembers++
         continue

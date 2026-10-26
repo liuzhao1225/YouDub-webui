@@ -38,7 +38,7 @@ function assertExit(handle, request, exit, code, stderrText) {
 
 export async function runProcess(subprocess, request) {
   return usingProcess(subprocess, request, {
-    stdin: request.input === undefined ? 'ignore' : { data: request.input }, stdout: 'pipe', stderr: 'pipe',
+    stdin: 'ignore', stdout: 'pipe', stderr: 'pipe',
   }, async handle => {
     const output = { stdout: '', stderr: '' }; let stderrLossy = false;
     const read = async name => {

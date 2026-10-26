@@ -15,7 +15,7 @@ async function hasDesktopActiveTasks(ctx: Context): Promise<boolean> {
   const jobs = ctx.get('jobs')
   if (jobs === undefined) throw new Error('desktop activity: jobs service is unavailable')
   const active = await ctx.waterfall('desktop/active-tasks', () => Promise.reject(new Error('desktop activity: product inspector is unavailable')))
-  return active || jobs.list().some(job => job.status === 'running' || job.status === 'stopping')
+  return active || jobs.hasActiveJobs()
 }
 
 /** What quitting the Host now would affect. */

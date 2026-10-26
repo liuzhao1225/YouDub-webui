@@ -60,7 +60,7 @@ test('official Host scope preserves root services and requires all first-run mod
       assert(attempt < 300, `Base environment did not reach full model preparation: ${setup.body.phase}`);
       await new Promise(resolve => setTimeout(resolve, 50));
     }
-    assert(ctx.jobs.list().some(job => job.kind === 'youdub-environment'));
+    assert.equal(ctx.jobs.hasActiveJobs(), false, 'Environment preparation settled before model selection');
     await t.test('official workers resolve private media, model and cache directories without user-site packages', async childTest => {
       const parentPythonHome = process.env.PYTHONHOME;
       process.env.PYTHONHOME = '/machine/python-home-that-must-not-be-used';

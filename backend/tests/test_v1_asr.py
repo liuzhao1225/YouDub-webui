@@ -358,29 +358,10 @@ def test_run_requires_child_output(context, monkeypatch):
     assert error.value.content["error"]["code"] == "STAGE_OUTPUT_MISSING"
 
 
-def test_cancellation_reaps_asr_child_before_returning(context, monkeypatch):
-    real_popen = subprocess.Popen
-    children = []
-    checks = 0
-
-    def slow_child(command, **kwargs):
-        child = real_popen([sys.executable, "-c", "import time; time.sleep(30)"], **kwargs)
-        children.append(child)
-        return child
-
-    def check_cancel():
-        nonlocal checks
-        if children:
-            checks += 1
-            if checks == 2:
-                raise WorkerError("CANCELLED", "The host cancelled this invocation.")
-
-    monkeypatch.setattr(media.subprocess, "Popen", slow_child)
+def test_cancellation_reaps_asr_child_before_returning(context, cancelled_media_process):
     with pytest.raises(WorkerError, match="The host cancelled this invocation") as error:
-        asr.run(replace(context, check_cancel=check_cancel), lambda *args: None)
+        asr.run(replace(context, check_cancel=cancelled_media_process), lambda *args: None)
     assert error.value.code == "CANCELLED"
-    assert len(children) == 1
-    assert children[0].poll() is not None
     assert not (context.work_dir / "transcript.json").exists()
 
 

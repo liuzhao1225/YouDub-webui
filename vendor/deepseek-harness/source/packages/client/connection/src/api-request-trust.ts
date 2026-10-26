@@ -85,16 +85,6 @@ function isTrustedAuthority(hostUrl: URL, trustedHosts: readonly string[], proto
 }
 
 /**
- * Classify an authority already accepted by {@link assertTrustedAuthority}.
- * @param entry - the configured authority, verbatim.
- * @returns true unless the entry parses as a loopback hostname.
- */
-export function isRemoteAuthority(entry: string): boolean {
-  const url = parseAuthority(entry)
-  return url === undefined || !isLoopbackHostname(url.hostname)
-}
-
-/**
  * Whether a parsed authority names the deployment's own bind address. A browser
  * dialing that literal sends it as Host, and accepting it grants nothing
  * further: the literal is no rebinding target, the Origin and cross-site checks

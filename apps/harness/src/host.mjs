@@ -85,13 +85,13 @@ export async function apply(ctx, config) {
   registerExampleRoutes(ctx, transport, root);
   if (skipSetup) {
     const services = await activateDomain(domain, { config: runtimeConfig, root, data, forms, modelRoots, version, transport });
-    ctx.effect(() => transport.register('GET', '/api/setup', request => transport.json(request, 200, { phase: 'skipped', testMode: true, version, platform: process.platform, arch: process.arch, environment: [], models: [], canRetry: false, token: '' })));
+    ctx.effect(() => transport.register('GET', '/api/setup', request => transport.json(request, 200, { phase: 'skipped', testMode: true, version, platform: process.platform, arch: process.arch, environment: [], models: [], canRetry: false })));
     ctx.on('desktop/active-tasks', () => services.inspectTasks());
     services.start();
     return;
   }
   await domain.plugin({ name: 'youdub-environment', inject: ['jobs'], apply(child) {
-    registerSetupRoutes(child, transport, { root: data, repoRoot: root, python: runtimeConfig.python, version, privateEnvironment: true }, async () => {
+    registerSetupRoutes(child, transport, { root: data, repoRoot: root, python: runtimeConfig.python, version }, async () => {
       return activateDomain(domain, { config: runtimeConfig, root, data, forms, modelRoots, version, transport });
     }, {
       required: !savedInstallation && !legacy,
@@ -135,7 +135,7 @@ async function activateDomain(domain, { config, root, data, forms, modelRoots, v
   await domain.plugin(Localize, identities['youdub.localize']);
   await domain.plugin(Graph, identities['youdub.graph']);
   await domain.plugin(Tasks);
-  await domain.plugin(Resources, { root: data, repoRoot: root, python: config.python, modelRoots, version, privateEnvironment: true });
+  await domain.plugin(Resources, { root: data, repoRoot: root, python: config.python, modelRoots, version });
   let services;
   await domain.plugin({ name: 'youdub-domain-api', inject: ['connection', 'catalog', 'store', 'files', 'tasks', 'settings', 'youdubResources'], apply(child) {
     registerTaskRoutes(child, transport);

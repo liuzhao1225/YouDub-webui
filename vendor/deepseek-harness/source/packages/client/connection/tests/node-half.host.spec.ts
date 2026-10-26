@@ -222,7 +222,7 @@ describe('connection node half', () => {
         await web.await()
         await expect.poll(() => routes.find(route => route.path === API_PATH)).toBeDefined()
         const bound = browserCookie(connection, '10.1.2.3:3080')
-        expect(connection.requestRejection(fakeRequest({ host: '10.1.2.3:3080', cookie: bound }))).toBeUndefined()
+        expect(connection.admit(fakeRequest({ host: '10.1.2.3:3080', cookie: bound }))).toEqual({ peer: connection.browserPeer })
       } finally {
         await web.dispose()
       }
@@ -234,9 +234,9 @@ describe('connection node half', () => {
   it('uses the TLS default port for markerless exact-authority grants', async () => {
     const { connection, dispose } = await mounted({ trustedHosts: ['tls.example:443', 'plain.example:80'] }, 'https:')
     try {
-      expect(connection.requestRejection(fakeRequest({ host: 'tls.example' }))).toBe(401)
-      expect(connection.requestRejection(fakeRequest({ host: 'plain.example' }))).toBe(403)
-      expect(connection.requestRejection(fakeRequest({ host: 'tls.example:444' }))).toBe(403)
+      expect(connection.admit(fakeRequest({ host: 'tls.example' }))).toEqual({ rejection: 401 })
+      expect(connection.admit(fakeRequest({ host: 'plain.example' }))).toEqual({ rejection: 403 })
+      expect(connection.admit(fakeRequest({ host: 'tls.example:444' }))).toEqual({ rejection: 403 })
     } finally {
       await dispose()
     }
@@ -255,10 +255,10 @@ describe('connection node half', () => {
         const setCookie = exchanged.state.headers?.['set-cookie']
         expect(setCookie?.endsWith('; Secure'), protocol).toBe(secure)
         if (setCookie === undefined) throw new Error('browser token exchange did not set a cookie')
-        expect(connection.requestRejection(fakeRequest({
+        expect(connection.admit(fakeRequest({
           host: '127.0.0.1:3080',
           cookie: setCookie.split(';', 1)[0]!,
-        }))).toBeUndefined()
+        }))).toEqual({ peer: connection.browserPeer })
       } finally {
         await dispose()
       }
@@ -292,22 +292,6 @@ describe('connection node half', () => {
     const ctx = new Context()
     await expect(apply(ctx, { recovery })).rejects.toThrow(error)
     expect(ctx.get('connection')).toBeUndefined()
-  })
-
-  it('reports allowsRemoteAuthorities from validated trustedHosts only', async () => {
-    const cases: { trustedHosts: string[]; expected: boolean }[] = [
-      { trustedHosts: ['127.0.0.1', 'localhost', '[::1]'], expected: false },
-      { trustedHosts: ['harness.example'], expected: true },
-      { trustedHosts: ['127.0.0.1', 'harness.example'], expected: true },
-    ]
-    for (const { trustedHosts, expected } of cases) {
-      const deployment = await mounted({ trustedHosts })
-      try {
-        expect(deployment.connection.allowsRemoteAuthorities, trustedHosts.join(',')).toBe(expected)
-      } finally {
-        await deployment.dispose()
-      }
-    }
   })
 
   it('fails the load on a trustedHosts entry that is not a bare authority', async () => {
@@ -404,12 +388,12 @@ describe('connection node half', () => {
     const loopback = fakeRequest({ host: '127.0.0.1:3080' })
     const declared = fakeRequest({ host: 'harness.example' })
 
-    expect(connection.requestRejection(loopback)).toBe(401)
-    expect(connection.requestRejection(declared)).toBe(401)
-    expect(connection.requestRejection(fakeRequest({
+    expect(connection.admit(loopback)).toEqual({ rejection: 401 })
+    expect(connection.admit(declared)).toEqual({ rejection: 401 })
+    expect(connection.admit(fakeRequest({
       host: 'harness.example',
       cookie: browserCookie(connection, 'harness.example'),
-    }))).toBeUndefined()
+    }))).toEqual({ peer: connection.browserPeer })
     await dispose()
   })
 

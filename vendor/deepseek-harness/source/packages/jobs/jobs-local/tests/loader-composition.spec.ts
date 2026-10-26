@@ -7,7 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import Include from '@deepseek-ai/cordis-plugin-include'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
-import type { JobHandle, JobOutcome } from '@deepseek-ai/dsh-jobs'
+import type { JobOutcome } from '@deepseek-ai/dsh-jobs'
 
 let root: string | undefined
 let context: Context | undefined
@@ -20,13 +20,11 @@ afterEach(async () => {
 })
 
 describe('jobs-local through a real Loader composition', () => {
-  it('accepts old output configuration and retains progress and settlement through a Cordis row', async () => {
+  it('tracks live work and releases settled jobs through a Cordis row', async () => {
     root = await mkdtemp(join(tmpdir(), 'dsh-jobs-local-loader-'))
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
       "- name: '@deepseek-ai/dsh-jobs-local'",
-      '  config:',
-      '    retainBytes: 8',
       '',
     ].join('\n'))
 
@@ -51,26 +49,28 @@ describe('jobs-local through a real Loader composition', () => {
     const registry = context.jobs
     const detach = registry.attachController('loader-test')
     let settle!: (outcome: JobOutcome) => void
-    let handle!: JobHandle
-    const id = registry.start({
-      kind: 'bash',
+    registry.start({
       label: 'loader operation',
-      run: (job) => {
-        handle = job
+      run: () => {
         return {
           cancel: () => { settle({ status: 'killed' }) },
           done: new Promise((resolve) => { settle = resolve }),
         }
       },
     })
-    handle.updateProgress('2/3')
-    expect(registry.list()).toEqual([expect.objectContaining({ id, status: 'running', progress: '2/3' })])
+    expect(registry.hasActiveJobs()).toBe(true)
+    const other = Promise.withResolvers<JobOutcome>()
+    registry.start({ label: 'second operation', run: () => ({
+      cancel: () => other.resolve({ status: 'killed' }), done: other.promise,
+    }) })
     settle({ status: 'completed', detail: 'operation finished' })
-    await expect.poll(() => registry.list()).toEqual([expect.objectContaining({ id, status: 'completed', detail: 'operation finished' })])
-    expect(registry.list()[0]).not.toHaveProperty('progress')
+    await Promise.resolve()
+    expect(registry.hasActiveJobs()).toBe(true)
+    other.resolve({ status: 'killed' })
+    await expect.poll(() => registry.hasActiveJobs()).toBe(false)
     detach()
     expect(() => registry.start({
-      kind: 'bash', label: 'no controller',
+      label: 'no controller',
       run: () => { throw new Error('must not start') },
     })).toThrow('no job controller attached')
   })
@@ -87,29 +87,29 @@ describe('jobs-local through a real Loader composition', () => {
     })
     let settle!: (outcome: JobOutcome) => void
     const reasons: (string | undefined)[] = []
-    const id = registry.start({
-      kind: 'bash', label: 'running on teardown',
+    registry.start({
+      label: 'running on teardown',
       run: () => ({
         cancel: (reason) => { reasons.push(reason) },
         done: new Promise(resolve => { settle = resolve }),
       }),
     })
     await controller.dispose()
-    expect(registry.list()).toEqual([expect.objectContaining({ id, status: 'running' })])
+    expect(registry.hasActiveJobs()).toBe(true)
     expect(() => registry.start({
-      kind: 'bash', label: 'controller disposed',
+      label: 'controller disposed',
       run: () => { throw new Error('must not start') },
     })).toThrow('no job controller attached')
     let disposed = false
     const disposal = service.dispose().then(() => { disposed = true })
     await expect.poll(() => reasons).toEqual(['jobs service disposed'])
     expect(disposed).toBe(false)
-    expect(registry.list()[0].status).toBe('stopping')
+    expect(registry.hasActiveJobs()).toBe(true)
     settle({ status: 'killed' })
     await disposal
     expect(disposed).toBe(true)
     expect(reasons).toEqual(['jobs service disposed'])
-    expect(registry.list()).toEqual([])
+    expect(registry.hasActiveJobs()).toBe(false)
   })
 })
 
@@ -124,30 +124,36 @@ describe('job lifecycle errors', () => {
 
   it('rejects retired output before invoking the producer and leaves throwing starters unregistered', async () => {
     const { jobs } = await registry()
-    const spec = { kind: 'media', label: 'media', run() { throw new Error('starter failed') } }
+    const spec = { label: 'media', run() { throw new Error('starter failed') } }
     expect(() => jobs.start({ ...spec, output: [] } as typeof spec)).toThrow('output sources are no longer supported')
     expect(() => jobs.start(spec)).toThrow('starter failed')
-    expect(jobs.list()).toEqual([])
+    expect(jobs.hasActiveJobs()).toBe(false)
   })
 
-  it('records producer rejection and force-fails a throwing teardown cancel before dropping records', async () => {
+  it('reports producer failures and throwing cancellation without retaining settled jobs', async () => {
     const { jobs, service } = await registry()
     const warnings: string[] = []
     context!.logger.exporter({ levels: { default: 3 }, export(message) {
       if (message.type === 'warn') warnings.push(String(message.args[0]))
     } })
-    const id = jobs.start({ kind: 'media', label: 'failed', run: () => ({
+    jobs.start({ label: 'failed', run: () => ({
       cancel() {}, done: Promise.reject(new Error('producer failed')),
     }) })
-    await expect.poll(() => jobs.list()).toEqual([expect.objectContaining({ id, status: 'failed', detail: 'Error: producer failed' })])
+    await expect.poll(() => jobs.hasActiveJobs()).toBe(false)
+    expect(warnings).toContain('jobs: failed producer done promise rejected (producer contract violation): Error: producer failed')
+    jobs.start({ label: 'reported failure', run: () => ({
+      cancel() {}, done: Promise.resolve({ status: 'failed', detail: 'model unavailable' }),
+    }) })
+    await expect.poll(() => jobs.hasActiveJobs()).toBe(false)
+    expect(warnings).toContain('jobs: reported failure failed: model unavailable')
     const late = Promise.withResolvers<JobOutcome>()
-    const active = jobs.start({ kind: 'media', label: 'teardown', run: () => ({
+    jobs.start({ label: 'teardown', run: () => ({
       cancel() { throw new Error('cancel failed') }, done: late.promise,
     }) })
     await service.dispose()
-    expect(warnings).toContain(`jobs: cancel of ${active} threw during teardown; job record forced failed and work may be orphaned: Error: cancel failed`)
+    expect(warnings).toContain('jobs: cancel of teardown threw during teardown; work may be orphaned: Error: cancel failed')
     late.resolve({ status: 'completed' })
     await late.promise
-    expect(jobs.list()).toEqual([])
+    expect(jobs.hasActiveJobs()).toBe(false)
   })
 })

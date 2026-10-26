@@ -14,7 +14,7 @@ export interface ArtifactDescriptor { path: string; mimeType: string; schemaId: 
 export interface Artifact extends ArtifactRef {
   path: string; mimeType: string; name: string; size: number; metadata: JsonObject; invocationId: string
 }
-export interface InputSlot { name: string; label: string; required: boolean; acceptedMimeTypes: string[]; maxBytes?: number }
+export interface InputSlot { name: string; label: string; required: boolean; acceptedMimeTypes: string[] }
 export type InputRef = { from: 'task'; name: string } | { from: 'step'; stepId: string; output: string }
 export interface OutputPort { label?: LocalizedText; name: string; kind: 'artifact' | 'json'; schemaId: string; required: boolean; schema?: JsonObject }
 export interface ExactProviderBinding {
@@ -29,7 +29,6 @@ export interface WorkflowPlan {
   workflow: { id: string; version: string; pluginId: string; pluginVersion: string; integrity: string };
   config: JsonObject; bindings: Record<string, ExactProviderBinding>; steps: StepSpec[];
   outputs: { id: string; label: string; source: { stepId: string; output: string }; role: string; required: boolean }[];
-  omittedSteps?: { id: string; reason: string }[]
 }
 export interface WorkflowDescription {
   id: string; version: string; label: string; description?: string; inputs: InputSlot[];
@@ -176,7 +175,7 @@ export interface FilesService {
 }
 export interface ProcessRequest { command: string; args: string[]; cwd?: string; env?: NodeJS.ProcessEnv; signal?: AbortSignal }
 export interface ProcessService {
-  run(request: ProcessRequest & { input?: string; onOutput?: (text: string, stream: 'stdout' | 'stderr') => void }): Promise<{ stdout: string; stderr: string }>;
+  run(request: ProcessRequest & { onOutput?: (text: string, stream: 'stdout' | 'stderr') => void }): Promise<{ stdout: string; stderr: string }>;
   worker(request: ProcessRequest, invocation: Invocation, context: InvocationContext): Promise<OperationResult>;
   rpc(request: ProcessRequest): Promise<{ call<T = any>(method: string, params?: JsonObject): Promise<T>; close(): Promise<void> }>
 }

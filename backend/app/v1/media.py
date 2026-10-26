@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import math
 import subprocess
-import time
 from collections.abc import Callable
 from fractions import Fraction
 from pathlib import Path
@@ -20,23 +19,19 @@ def _invalid(message: str) -> ApiError:
 
 
 def _run_media(
-    command: list[str], *, check_cancel: Callable[[], None] | None = None, timeout: float | None = None,
+    command: list[str], *, check_cancel: Callable[[], None] | None = None,
     cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Poll cancellation while draining process output, and always reap it."""
     if check_cancel:
         check_cancel()
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=cwd) as process:
-        deadline = time.monotonic() + timeout if timeout is not None else None
         try:
             while True:
                 if check_cancel:
                     check_cancel()
-                remaining = deadline - time.monotonic() if deadline is not None else None
-                if remaining is not None and remaining <= 0:
-                    raise subprocess.TimeoutExpired(command, timeout)
                 try:
-                    stdout, stderr = process.communicate(timeout=min(0.1, remaining) if remaining is not None else 0.1)
+                    stdout, stderr = process.communicate(timeout=0.1)
                     break
                 except subprocess.TimeoutExpired:
                     continue

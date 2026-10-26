@@ -78,7 +78,7 @@ export default class Resources extends Service {
   }
   private runJob(label: string, controller: AbortController, execute: () => Promise<void>) {
     let result!: Promise<void>
-    this.ctx.jobs.start({ kind: 'youdub-resources', label, run() {
+    this.ctx.jobs.start({ label, run() {
       result = Promise.resolve().then(execute)
       return { cancel(reason?: string) { controller.abort(new Error(reason || 'Resource preparation cancelled')) }, done: result.then(
         () => ({ status: controller.signal.aborted ? 'killed' as const : 'completed' as const }),
