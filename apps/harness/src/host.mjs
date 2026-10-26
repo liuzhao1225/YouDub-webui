@@ -1,5 +1,5 @@
 import { readFile, mkdir } from 'node:fs/promises';
-import { delimiter, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { homedir, release } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import z from '@deepseek-ai/schemastery';
@@ -16,7 +16,6 @@ import { registerSetupRoutes } from './backend/setup.mjs';
 import { existingInstallation, installationDirectory, privatePython } from './backend/installation.mjs';
 import { hasInterruptibleTasks } from './backend/activity.mjs';
 import modelManifest from '../../../packages/builtin/src/setup-models.json' with { type: 'json' };
-import { ffmpegDirectory } from '../../../packages/builtin/src/media-paths.ts';
 import Store from '../../../packages/builtin/src/store.ts';
 import Files from '../../../packages/builtin/src/files.ts';
 import Tasks from '../../../packages/builtin/src/tasks.ts';
@@ -70,18 +69,15 @@ export async function apply(ctx, config) {
       return [model.id, resolve(path.startsWith('~/') ? join(homedir(), path.slice(2)) : path)];
     }));
     const modelEnvironment = Object.fromEntries(modelManifest.map(model => [model.env, modelRoots[model.id]]));
-    const mediaDirectory = ffmpegDirectory(data);
     await domain.plugin(YouDubWorker, { env: {
       YOUDUB_HARNESS_RUNTIME: '1', PYTHONPATH: root, PYTHONHOME: '', PYTHONNOUSERSITE: '1', YOUDUB_DESKTOP_DATA_DIR: data,
       YOUDUB_NODE_PATH: process.env.YOUDUB_NODE_PATH || '',
-      FFMPEG_PATH: join(mediaDirectory, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'),
-      FFPROBE_PATH: join(mediaDirectory, process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe'),
       NLTK_DATA: join(data, 'nltk_data'), HF_HOME: join(data, 'runtime', 'huggingface'),
       HF_HUB_CACHE: join(data, 'runtime', 'huggingface', 'hub'), HF_ASSETS_CACHE: join(data, 'runtime', 'huggingface', 'assets'),
       HUGGINGFACE_HUB_CACHE: join(data, 'runtime', 'huggingface', 'hub'),
       PIP_CACHE_DIR: join(data, 'runtime', 'cache', 'pip'), MODELSCOPE_CACHE: join(data, 'runtime', 'modelscope'),
       TORCH_HOME: join(data, 'runtime', 'torch'), XDG_CACHE_HOME: join(data, 'runtime', 'cache'),
-      PATH: [mediaDirectory, process.env.PATH || ''].join(delimiter), ...modelEnvironment,
+      PATH: process.env.PATH || '', ...modelEnvironment,
     } });
   };
   if (savedInstallation || legacy || skipSetup) await initialize();

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -53,6 +54,12 @@ class Bridge:
         if method == "runtime.probe":
             from backend.app.accelerators import detect_devices
             from backend.app.v1.runtime import probe_capability
+            # This bridge may predate FFmpeg installation. The Host resolves the
+            # current managed paths without restarting the SQLite process.
+            environment = params.get("mediaEnvironment", {})
+            for key in ("FFMPEG_PATH", "FFPROBE_PATH", "PATH"):
+                if key in environment:
+                    os.environ[key] = environment[key]
             detect_devices.cache_clear()
             return probe_capability(params["adapter"])
         raise WorkerError("UNKNOWN_METHOD", f"Unknown bridge method: {method}")

@@ -215,6 +215,19 @@ def test_local_runtime_probe_dispatches_to_provider(tmp_path, monkeypatch):
     assert bridge.call("runtime.probe", {"adapter": "whisper"}) == {"adapter": "whisper"}
 
 
+def test_local_runtime_probe_refreshes_media_paths_after_installation(tmp_path, monkeypatch):
+    import os
+    from backend.app.v1 import runtime
+    from backend.app.config import ffmpeg_binary, ffprobe_binary
+    monkeypatch.setenv("FFMPEG_PATH", "not-yet-installed/ffmpeg.exe")
+    monkeypatch.setenv("FFPROBE_PATH", "not-yet-installed/ffprobe.exe")
+    monkeypatch.setenv("PATH", "system-tools")
+    bridge = Bridge(tmp_path)
+    monkeypatch.setattr(runtime, "probe_capability", lambda adapter: (ffmpeg_binary(), ffprobe_binary(), os.environ["PATH"]))
+    installed = {"FFMPEG_PATH": "installed/bin/ffmpeg.exe", "FFPROBE_PATH": "installed/bin/ffprobe.exe", "PATH": "installed/bin;system-tools"}
+    assert bridge.call("runtime.probe", {"adapter": "whisper", "mediaEnvironment": installed}) == tuple(installed.values())
+
+
 def test_current_store_rejects_redirected_database_without_touching_target(tmp_path):
     from backend.app.runtime_security import RuntimeSecurityError
     root = tmp_path / "store"

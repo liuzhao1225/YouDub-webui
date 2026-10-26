@@ -192,7 +192,8 @@ jobs:
       - name: 运行实际 Electron Host 与产品合同
         run: |
           node -e "require('./apps/harness/node_modules/electron')"
-          node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs
+          node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs apps/harness/test/worker-media-paths.test.mjs
+          node --import tsx --test packages/builtin/test/media-paths.test.ts
           npm run typecheck
           npm --prefix apps/harness run check:locales
       - name: 打包并验证独立 Windows 应用
