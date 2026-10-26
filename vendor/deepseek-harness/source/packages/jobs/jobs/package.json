@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-jobs",
-  "description": "Background job registry (ctx.jobs) for the DeepSeek Harness \u2014 shared ids, polling, cancellation, and completion listeners",
+  "description": "Background job lifecycle registry for the YouDub Harness runtime",
   "version": "0.2.1-rc.2",
   "publishConfig": {
     "access": "public"

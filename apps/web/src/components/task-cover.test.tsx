@@ -22,11 +22,10 @@ describe("TaskCover", () => {
     expect(first.querySelector("img, video")).toBeNull()
   })
 
-  it("小尺寸省略角标，并可关掉声波条", () => {
-    render(<TaskCover id="task" size="sm" bars={false} />, { wrapper: LanguageProvider })
+  it("小尺寸省略角标", () => {
+    render(<TaskCover id="task" size="sm" />, { wrapper: LanguageProvider })
     const cover = screen.getByTestId("task-cover")
     expect(cover.querySelector("svg")).toBeNull()
-    expect(cover.querySelectorAll("span")).toHaveLength(0)
   })
 
   it("加载封面图片，处理结束后停止前景动画且保留封面", () => {

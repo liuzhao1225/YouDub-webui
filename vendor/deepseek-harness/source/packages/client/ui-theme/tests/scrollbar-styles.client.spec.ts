@@ -455,15 +455,12 @@ describe('elevated surface rebinds', () => {
     // remembered, and a surface nobody has rebound yet — the case the check
     // exists for — would define itself as unelevated. Anchoring it here means a
     // new palette token on an elevated rung is in scope the moment it is
-    // defined. `--dsw-specific-tip` is the regression that proved the point: it
-    // resolves to the same dark rung as the input surface, and the Todo panel
-    // scrolled on it unrebound while a rebind-derived set stayed green. The
-    // translucent menu remains explicit because its alpha color has no rung.
+    // defined. The translucent menu remains explicit because its alpha color
+    // has no rung.
     expect(elevatedSurfaces).toContain('--dsw-alias-bg-layer-2')
     expect(elevatedSurfaces).toContain('--dsw-alias-bg-layer-3')
     expect(elevatedSurfaces).toContain('--dsw-specific-menu')
     expect(elevatedSurfaces).toContain('--dsw-specific-input-major')
-    expect(elevatedSurfaces).toContain('--dsw-specific-tip')
     // Base surfaces stay out, or every scroll container would be in scope and
     // the check would say nothing.
     expect(elevatedSurfaces).not.toContain('--dsw-alias-bg-base')
@@ -474,9 +471,8 @@ describe('elevated surface rebinds', () => {
     // The failure this closes: a scroll container on an elevated surface that
     // nobody remembered to rebind renders the l1 thumb, which differs from l2
     // only in the dark palette and only for that one surface — invisible both in
-    // review and in a light-palette screenshot. Four sheets shipped that way
-    // (ui-primitives Menu, InputBar, QuestionComposer, TodoPanel) and review
-    // caught them by hand, which is what this replaces.
+    // review and in a light-palette screenshot. Check every retained sheet so
+    // newly added scroll containers receive the same protection.
     //
     // Surface-level, not element-level: the elevated card and the descendant
     // that scrolls are separate rules, and CSS text does not say which contains

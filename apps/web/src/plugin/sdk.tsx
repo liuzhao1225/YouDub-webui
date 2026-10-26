@@ -22,7 +22,7 @@ export interface ClientBindings {
   submissionStore: StudioDraftStore
 }
 export type Bindings<K extends keyof ClientBindings> = Pick<ClientBindings, K>
-export type RouteProps = { params: Record<string, string>; returnTo?: string }
+export type RouteProps = { params: Record<string, string> }
 export type EditorProps = { value: JsonObject; schema: JsonSchema; diagnostics: Diagnostic[]; readOnly: boolean; mode?: 'options' | 'configuration'; onChange(value: JsonObject): void }
 export type PanelProps = { task: TaskView; refresh(): void }
 export type SettingsSectionProps = { settings: JsonObject; save(patch: JsonObject): Promise<void>; onDirtyChange?(dirty: boolean): void }

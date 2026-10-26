@@ -22,10 +22,10 @@ declare module '@deepseek-ai/cordis' {
  * - Registrations outlive producer and controller fibers. Service disposal
  *   cancels live work and awaits compliant producers; a throwing teardown
  *   cancel force-fails only the record and reports possible orphaned work.
- * - Settlement is first-wins: one terminal record, released waiters, even against a late producer outcome.
- * - A settled record stays listed until service disposal or explicit removal.
+ * - Settlement is first-wins, even against a late producer outcome.
+ * - A settled record stays listed until service disposal.
  * - {@link start} refuses work without an attached job controller, so work
- *   can always be collected or stopped.
+ *   remains covered by service teardown.
  */
 export abstract class JobRegistry extends Service {
   constructor(ctx: Context) {
@@ -55,42 +55,7 @@ export abstract class JobRegistry extends Service {
   abstract list(): JobView[]
 
   /**
-   * Project one job by id. Throws for an unknown job.
-   * @param id - job to look up.
-   * @returns a fresh projection.
-   */
-  abstract get(id: JobId): JobView
-
-  /**
-   * Request cancellation, then mark the job stopping. A producer throw
-   * propagates without changing job state. A supplied reason is merged into
-   * terminal `detail` when the job settles `killed`. Throws for an unknown job.
-   * @param id - job to cancel.
-   * @param reason - cancellation reason forwarded verbatim to the producer.
-   * @returns `requested` for live work, otherwise `already-finished`.
-   */
-  abstract kill(id: JobId, reason?: string): 'requested' | 'already-finished'
-
-  /**
-   * Wait for settlement or timeout without cancelling the job. Caller abort
-   * rejects only while the job is live; after settlement the terminal
-   * projection wins. Rejects for an invalid timeout or an unknown job.
-   * @param id - job to wait for.
-   * @param timeoutMs - positive finite wait bound in milliseconds.
-   * @param signal - optional cancellation of the wait itself.
-   * @returns projection at settlement or timeout.
-   */
-  abstract wait(id: JobId, timeoutMs: number, signal?: AbortSignal): Promise<JobView>
-
-  /**
-   * Drop one settled job's record from the visible set. For a caller that collected the terminal state through its own
-   * {@link wait}. Throws for a live or unknown job.
-   * @param id - settled job to drop.
-   */
-  abstract remove(id: JobId): void
-
-  /**
-   * Attach an effect-scoped controller that can read and stop jobs.
+   * Attach an effect-scoped controller that admits jobs into the registry.
    * @param name - diagnostic label; duplicate names remain independent.
    * @returns disposer that detaches this controller.
    */

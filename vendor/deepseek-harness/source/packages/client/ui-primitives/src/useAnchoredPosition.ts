@@ -3,7 +3,7 @@
  *
  * A portaled panel is positioned from its anchor's viewport rect, which stops
  * being true the moment anything scrolls or the window resizes. This owns that
- * one concern: measure the anchor, offset the panel below or above it, clamp
+ * one concern: measure the anchor, offset the panel below its right edge, clamp
  * the result inside the viewport, and re-run on scroll (capture phase, so
  * scrollers nested inside the page are caught too), on resize, and on the
  * panel's own size changes while the element is open.
@@ -21,11 +21,7 @@ export interface AnchoredPositionOptions {
   anchorRef: RefObject<HTMLElement | null>
   /** The floating element, measured so the clamp uses real dimensions. */
   panelRef: RefObject<HTMLElement | null>
-  /** Which anchor edge the panel hangs from: below it (`bottom`, the default) or above it (`top`). */
-  side?: 'top' | 'bottom'
-  /** Which anchor edge the panel lines up with: its left edge (`start`, the default) or its right edge (`end`). */
-  align?: 'start' | 'end'
-  /** Distance kept between the anchor edge named by `side` and the panel. */
+  /** Distance kept between the anchor’s bottom edge and the panel. */
   gap: number
   /** Distance kept between the panel and each viewport edge; the frame's overlay inset widens the top margin. */
   margin: number
@@ -33,11 +29,11 @@ export interface AnchoredPositionOptions {
 
 /**
  * Track an anchor and return the panel's fixed coordinates.
- * @param options - the open state, the two refs, the placement side and alignment, and the gap/margin distances.
+ * @param options - the open state, the two refs, and the gap/margin distances.
  * @returns `left`/`top` for the panel, or `null` before the first measurement.
  */
 export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProperties | null {
-  const { open, anchorRef, panelRef, side = 'bottom', align = 'start', gap, margin } = options
+  const { open, anchorRef, panelRef, gap, margin } = options
   const [position, setPosition] = useState<CSSProperties | null>(null)
   useLayoutEffect(() => {
     if (!open) {
@@ -53,8 +49,8 @@ export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProper
       const panel = panelRef.current
       const width = panel?.offsetWidth ?? 0
       const height = panel?.offsetHeight ?? 0
-      let left = align === 'end' ? rect.right - width : rect.left
-      let top = side === 'top' ? rect.top - gap - height : rect.bottom + gap
+      let left = rect.right - width
+      let top = rect.bottom + gap
       if (width > 0) left = Math.min(Math.max(left, margin), window.innerWidth - width - margin)
       if (height > 0) top = Math.min(Math.max(top, overlayTopMargin(margin)), window.innerHeight - height - margin)
       /* v8 ignore stop */
@@ -81,6 +77,6 @@ export function useAnchoredPosition(options: AnchoredPositionOptions): CSSProper
       window.removeEventListener('scroll', place, true)
       window.removeEventListener('resize', place)
     }
-  }, [open, anchorRef, panelRef, side, align, gap, margin])
+  }, [open, anchorRef, panelRef, gap, margin])
   return position
 }

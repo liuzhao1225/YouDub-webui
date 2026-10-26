@@ -18,12 +18,12 @@ export type WorkflowDescription = {
   graphTemplate?: WorkflowDocument
 }
 export type ProviderDescription = {
-  id: string; label?: LocalizedText; operations: { id: string }[]; capability?: string; adapter?: string; contractVersion?: string
+  id: string; label?: LocalizedText; operations: { id: string }[]; capability?: string; adapter?: string
   execution?: 'local' | 'remote'
   legacy?: boolean
   ready?: boolean; available?: boolean; reason?: string; unavailableReason?: string
   models?: Array<string | { id: string; name?: string; available?: boolean; unavailableReason?: string; maxTokens?: number; devices?: string[]; languages?: string[]; voice_modes?: string[]; voices?: { id: string; label?: LocalizedText; languages?: string[] }[] }>
-  configSchema?: JsonSchema; parametersSchema?: JsonSchema
+  configSchema?: JsonSchema
 }
 export type Catalog = { workflows: WorkflowDescription[]; providers: ProviderDescription[] }
 export type TaskStatus = 'queued' | 'running' | 'waiting' | 'paused' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed'

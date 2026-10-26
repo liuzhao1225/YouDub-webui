@@ -19,8 +19,7 @@ export type JobKind = string
 
 /**
  * Read-only projection of one job — a fresh object per call, never live
- * registry state. The job controls, the browser roster, and the observation
- * stream all consume this one shape.
+ * registry state. Desktop shutdown inspects the live statuses.
  */
 export interface JobView {
   /** The registry-issued id (`<kind>-<short-uuid>`). */
@@ -37,7 +36,7 @@ export interface JobView {
   readonly status: JobStatus
   /** The producer's live progress line (`3/10`, the current phase); cleared at settlement. */
   readonly progress?: string
-  /** Terminal reason (`exit code: 3`); a recorded kill reason is merged in. */
+  /** Producer-reported terminal reason (`exit code: 3`). */
   readonly detail?: string
   /** Epoch ms when the job was registered. */
   readonly startedAt: number

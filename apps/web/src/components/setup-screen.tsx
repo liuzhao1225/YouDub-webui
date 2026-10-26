@@ -23,8 +23,8 @@ export interface SetupScreenOptions {
   className?: string
 }
 
-export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfigure, pickDirectory, onReset, wordmarkSrc, themeControl, className = 'min-h-screen' }: {
-  state: SetupState; busy?: boolean; onConfigure?: (path: string) => Promise<void>; onAction: (action: SetupAction, id?: string) => void; onReset?: () => void; onPrepare?: (selections: ResourceSelection[]) => void
+export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfigure, pickDirectory, wordmarkSrc, themeControl, className = 'min-h-screen' }: {
+  state: SetupState; busy?: boolean; onConfigure?: (path: string) => Promise<void>; onAction: (action: SetupAction, id?: string) => void; onPrepare?: (selections: ResourceSelection[]) => void
 } & SetupScreenOptions) {
   const text = useText()
   const environment = state.resources?.environment ?? state.environment
@@ -56,7 +56,6 @@ export function SetupScreen({ state, busy = false, onAction, onPrepare, onConfig
     : state.phase === 'starting' && <Loader2 aria-label={text('setup.starting')} className="size-5 animate-spin text-status-running-fg" />
   return <SetupPage wordmarkSrc={wordmarkSrc} className={className} actions={<>
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Cpu className="size-3.5 shrink-0" />{platform} · {arch}</span>
-      {onReset && <Button variant="ghost" size="icon-sm" aria-label={text('setup.reset')} title={text('setup.reset')} onClick={onReset}><RotateCcw /></Button>}
       {themeControl}
     </>}>
       {state.phase === 'installation' && state.installation && onConfigure ? <SetupInstallation path={state.installation.path} busy={busy} configure={onConfigure} pickDirectory={pickDirectory} /> : <>

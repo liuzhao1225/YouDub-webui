@@ -1,5 +1,4 @@
 import { defineProperty } from '@deepseek-ai/cosmokit'
-import type { Promisify } from '@deepseek-ai/cosmokit'
 import { Context } from './context.ts'
 import { Fiber, FiberState } from './fiber.ts'
 import { DisposableList, symbols } from './utils.ts'
@@ -20,16 +19,6 @@ export type Parameters<F> = F extends (...args: infer P) => any ? P : never
 export type ReturnType<F> = F extends (...args: any) => infer R ? R : never
 /** Extract the explicit `this` type from a function type. */
 export type ThisType<F> = F extends (this: infer T, ...args: any) => any ? T : never
-
-/**
- * Event dispatch strategy used by the event service.
- *
- * `emit` runs synchronous listeners without awaiting them, `parallel` awaits
- * all listeners together, `serial` awaits them in order until one bails,
- * `bail` stops on the first synchronous bail value, and `waterfall` composes
- * listeners around a final `next` callback.
- */
-export type DispatchMode = 'emit' | 'parallel' | 'serial' | 'bail' | 'waterfall'
 
 declare module './context.ts' {
   export interface Context {
@@ -53,16 +42,6 @@ declare module './context.ts' {
     emit<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): void
     /** Same as above, with an explicit `this` for listeners (also used for filtering). */
     emit<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): void
-    /**
-     * Dispatch an event, awaiting listeners in order until one bails.
-     *
-     * @param name — the event name.
-     * @param args — arguments passed to each listener.
-     * @returns the first bail value (non-null, non-false, non-undefined), if any.
-     */
-    serial<K extends keyof Events>(name: K, ...args: Parameters<Events[K]>): Promisify<ReturnType<Events[K]>>
-    /** Same as above, with an explicit `this` for listeners (also used for filtering). */
-    serial<K extends keyof Events>(thisArg: NoInfer<ThisType<Events[K]>>, name: K, ...args: Parameters<Events[K]>): Promisify<ReturnType<Events[K]>>
     /**
      * Dispatch an event, calling listeners in order until one bails.
      *
@@ -125,7 +104,7 @@ export interface Hook extends EventOptions {
 /**
  * Event bus installed as `ctx.events` and mixed into every context.
  *
- * The service supports concurrent, synchronous, serial, bail, and waterfall
+ * The service supports concurrent, synchronous, bail, and waterfall
  * dispatch and automatically disposes listeners with their owning fiber.
  */
 export class EventsService {
@@ -158,16 +137,12 @@ export class EventsService {
   /**
    * Resolve listeners for one dispatch and apply context filtering.
    *
-   * @param type — the dispatch mode, reported on `internal/dispatch`.
    * @param args — the raw dispatch arguments; consumed up to the event name.
    * @returns the matching listener callbacks, bound to the dispatch `this`.
    */
-  dispatch(type: string, args: any[]) {
+  dispatch(args: any[]) {
     const thisArg = typeof args[0] === 'object' || typeof args[0] === 'function' ? args.shift() : null
     const name: string = args.shift()
-    if (!name.startsWith('internal/')) {
-      this.emit('internal/dispatch', type, name, args, thisArg)
-    }
     const filter = thisArg?.[Context.filter]
     return (this._hooks[name] || [])
       .filter(hook => hook.global || !filter || filter.call(thisArg, hook.ctx))
@@ -181,7 +156,7 @@ export class EventsService {
    * @returns a promise resolving once every listener has settled.
    */
   async parallel(...args: any[]) {
-    const results = await Promise.allSettled(this.dispatch('emit', args).map(async cb => cb(...args)))
+    const results = await Promise.allSettled(this.dispatch(args).map(async cb => cb(...args)))
     const errors = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
     if (errors.length) throw new AggregateError(errors.map(error => error.reason))
   }
@@ -192,20 +167,7 @@ export class EventsService {
    * @param args — optional `this`, the event name, then listener arguments.
    */
   emit(...args: any[]) {
-    this.dispatch('emit', args).map(cb => cb(...args))
-  }
-
-  /**
-   * Run listeners in order, awaiting each, until one returns a bail value.
-   *
-   * @param args — optional `this`, the event name, then listener arguments.
-   * @returns the first bail value (see {@link isBailed}), if any.
-   */
-  async serial(...args: any[]) {
-    for (const cb of this.dispatch('serial', args)) {
-      const result = await cb(...args)
-      if (isBailed(result)) return result
-    }
+    this.dispatch(args).map(cb => cb(...args))
   }
 
   /**
@@ -215,7 +177,7 @@ export class EventsService {
    * @returns the first bail value (see {@link isBailed}), if any.
    */
   bail(...args: any[]) {
-    for (const cb of this.dispatch('bail', args)) {
+    for (const cb of this.dispatch(args)) {
       const result = cb(...args)
       if (isBailed(result)) return result
     }
@@ -232,7 +194,7 @@ export class EventsService {
    * @returns the outermost listener's return value.
    */
   waterfall(...args: any[]) {
-    const cbs = this.dispatch('waterfall', args)
+    const cbs = this.dispatch(args)
     const inner = args.pop()
     const next = () => {
       const cb = cbs.shift() ?? inner
@@ -323,8 +285,7 @@ export class EventsService {
  *
  * Plugin and status events track fiber lifecycle, service events observe
  * dependency registration, update/get/set/listener events allow core services
- * to intercept runtime operations, and `internal/dispatch` exposes event-bus
- * diagnostics before public events are delivered.
+ * to intercept runtime operations.
  */
 export interface Events {
   /** A plugin fiber was created or its uid was cleared on disposal. */
@@ -337,7 +298,7 @@ export interface Events {
    * @mode waterfall
    */
   'internal/config'(this: Fiber, config: any, next: () => any): any
-  /** Interception hook for a service binding (no core producer). */
+  /** A service binding changed; used by Gateway to refresh exposed services. */
   'internal/service'(this: Context, name: string, value: any): void
   /** Waterfall: a fiber config update is being applied; skip `next()` to veto. */
   'internal/update'(this: Fiber, config: any, noSave: boolean, next: () => void): void
@@ -347,6 +308,4 @@ export interface Events {
   'internal/set'(ctx: Context, name: string, value: any, error: Error, next: () => boolean): boolean
   /** Bail: a listener is being registered; a non-null result replaces registration. */
   'internal/listener'(this: Context, name: string, listener: any, prepend: boolean): void
-  /** An event is being dispatched to listeners (fired for non-internal events only). */
-  'internal/dispatch'(mode: DispatchMode, name: string, args: any[], thisArg: any): void
 }

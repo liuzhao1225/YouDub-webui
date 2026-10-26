@@ -73,27 +73,6 @@ describe('Tooltip', () => {
     expect(disconnect).toHaveBeenCalledOnce()
   })
 
-  it('resolves lazy labels only after the bubble becomes visible', () => {
-    vi.useFakeTimers()
-    try {
-      const label = vi.fn(() => 'Timing details')
-      render(
-        <Tooltip label={label} delayMs={500}>
-          <button type="button">anchor</button>
-        </Tooltip>,
-      )
-      expect(label).not.toHaveBeenCalled()
-      fireEvent.mouseEnter(screen.getByText('anchor'))
-      act(() => { vi.advanceTimersByTime(499) })
-      expect(label).not.toHaveBeenCalled()
-      act(() => { vi.advanceTimersByTime(1) })
-      expect(screen.getByRole('tooltip').textContent).toBe('Timing details')
-      expect(label).toHaveBeenCalledOnce()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
   it('can delay pointer hover without delaying keyboard focus', () => {
     vi.useFakeTimers()
     try {
@@ -132,13 +111,12 @@ describe('Tooltip', () => {
     })
 
     it('shows at 500ms, but not at 499ms', () => {
-      const label = vi.fn(() => 'Refresh')
+      const label = 'Refresh'
       render(<Tooltip label={label} delayMs={500} focusDelayMs={500}><button>anchor</button></Tooltip>)
       fireEvent.focus(screen.getByText('anchor'))
       expect(screen.queryByRole('tooltip')).toBeNull()
       act(() => { vi.advanceTimersByTime(499) })
       expect(screen.queryByRole('tooltip')).toBeNull()
-      expect(label).not.toHaveBeenCalled()
       act(() => { vi.advanceTimersByTime(1) })
       expect(screen.getByRole('tooltip').textContent).toBe('Refresh')
     })
@@ -236,24 +214,6 @@ describe('Tooltip', () => {
   // Anchor geometry and observed bubble sizes are independent browser inputs.
   const rect = (left: number, right: number): DOMRect =>
     ({ left, right, top: 0, bottom: 20, width: right - left, height: 20, x: left, y: 0, toJSON: () => ({}) })
-
-  it('aligns the end of a bottom tooltip with the anchor right edge', () => {
-    bubbleSize = { inlineSize: 100, blockSize: 20 }
-    const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(rect(100, 200))
-    try {
-      render(
-        <Tooltip label="End aligned" side="bottom" align="end">
-          <button type="button">anchor</button>
-        </Tooltip>,
-      )
-      fireEvent.mouseEnter(screen.getByText('anchor'))
-      const bubble = screen.getByRole('tooltip')
-      expect(bubble.getAttribute('data-align')).toBe('end')
-      expect(bubble.style.left).toBe('200px')
-    } finally {
-      spy.mockRestore()
-    }
-  })
 
   it('caps the bubble width where the label would otherwise slab across the surface', () => {
     render(
@@ -395,23 +355,6 @@ describe('Tooltip', () => {
       const bubble = screen.getByRole('tooltip')
       expect(bubble.getAttribute('data-side')).toBe('bottom')
       expect(bubble.style.top).toBe('48px')
-    } finally {
-      spy.mockRestore()
-    }
-  })
-
-  it.each(['bottom', 'top'] as const)('uses a custom gap to position and flip a %s tooltip', (side) => {
-    const anchorBottom = side === 'bottom' ? window.innerHeight - 36 : 56
-    const spy = placed(anchorBottom - 20, anchorBottom, 20)
-    try {
-      const view = render(<Tooltip label="Gap" side={side} gap={4}><button type="button">anchor</button></Tooltip>)
-      fireEvent.mouseEnter(screen.getByText('anchor'))
-      const bubble = screen.getByRole('tooltip')
-      expect(bubble.getAttribute('data-side')).toBe(side)
-      expect(bubble.style.top).toBe(`${side === 'bottom' ? anchorBottom + 4 : anchorBottom - 24}px`)
-      view.rerender(<Tooltip label="Gap" side={side} gap={12}><button type="button">anchor</button></Tooltip>)
-      expect(bubble.getAttribute('data-side')).toBe(side === 'bottom' ? 'top' : 'bottom')
-      expect(bubble.style.top).toBe(`${side === 'bottom' ? anchorBottom - 32 : anchorBottom + 12}px`)
     } finally {
       spy.mockRestore()
     }

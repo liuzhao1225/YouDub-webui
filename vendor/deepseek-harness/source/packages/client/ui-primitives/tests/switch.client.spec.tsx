@@ -45,10 +45,5 @@ describe('Switch', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('keeps a caller class alongside its own so a render site can place it', () => {
-    render(<Switch checked={false} className="placed" label="Toggle" onChange={() => {}} />)
-    const control = screen.getByRole('switch')
-    expect(control.classList.contains('placed')).toBe(true)
-    expect(control.classList.length).toBeGreaterThan(1)
-  })
+
 })

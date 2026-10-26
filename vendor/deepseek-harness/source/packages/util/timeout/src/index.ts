@@ -56,8 +56,6 @@ export interface IdleWatchdog {
    *   outstanding demand.
    */
   next<T>(iterator: AsyncIterator<T>): Promise<IteratorResult<T>>
-  /** Rearm an outstanding demand after transport activity that yields no iterator value; otherwise a no-op. */
-  pulse(): void
   /** Clear an armed timer; safe to call once at the owning stream's exit. */
   [Symbol.dispose](): void
 }
@@ -156,10 +154,6 @@ export function idleWatchdog(
         timer = undefined
         outstanding = false
       }
-    },
-    pulse(): void {
-      if (disposed || !outstanding) return
-      arm()
     },
     [Symbol.dispose](): void {
       if (disposed) return

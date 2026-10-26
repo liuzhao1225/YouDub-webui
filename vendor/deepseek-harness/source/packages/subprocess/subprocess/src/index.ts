@@ -1,5 +1,5 @@
 /**
- * Service Definition for the subprocess capability seam (`ctx.subprocess`): execution-world executable lookup,
+ * Service Definition for the subprocess capability seam (`ctx.subprocess`):
  * fully specified provider-managed process ranges with raw or
  * collected stdio. Command defaulting,
  * shell semantics, deadlines, protocol framing, and
@@ -104,23 +104,6 @@ export abstract class SubprocessRuntime extends Service {
   }
 
   /**
-   * Resolve one configured executable in this provider's execution world.
-   * Absolute paths are verified; bare names use the provider's scrubbed PATH
-   * plus explicit environment overrides. Relative paths containing separators
-   * are rejected: the resolution base is undefined, so providers fail loud
-   * instead of guessing.
-   * @param command - absolute executable path or bare PATH name.
-   * @param env - explicit environment entries used for lookup.
-   * @param signal - aborts remote or local lookup.
-   * @returns a canonical executable path.
-   */
-  abstract resolveExecutable(
-    command: string,
-    env?: Readonly<Record<string, string>>,
-    signal?: AbortSignal,
-  ): Promise<string>
-
-  /**
    * Start one managed child process from a fully-specified spec; this seam
    * applies no defaults.
    * @param spec - argv, directory, stdio dispositions, grace, cancellation, and environment.
@@ -131,15 +114,3 @@ export abstract class SubprocessRuntime extends Service {
 }
 
 export default SubprocessRuntime
-
-/** Executable lookup completed without finding an executable file. */
-export class SubprocessExecutableNotFoundError extends Error {
-  /**
-   * @param message - provider-specific lookup diagnostic.
-   * @param options - original provider failure, when available.
-   */
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options)
-    this.name = 'SubprocessExecutableNotFoundError'
-  }
-}

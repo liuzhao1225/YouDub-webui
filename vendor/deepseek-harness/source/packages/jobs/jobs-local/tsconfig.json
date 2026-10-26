@@ -16,9 +16,6 @@
     },
     {
       "path": "../jobs"
-    },
-    {
-      "path": "../../util/timeout"
     }
   ]
 }

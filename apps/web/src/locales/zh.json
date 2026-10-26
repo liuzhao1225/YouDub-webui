@@ -483,7 +483,6 @@
     "setup.environmentProgress": "环境准备进度",
     "setup.environmentCompleted": "环境步骤 {complete}/{total} 已完成",
     "setup.models": "模型准备",
-    "setup.reset": "重置下载预览",
     "setup.required": "初始化所需模型",
     "setup.totalSize": "全部模型大小",
     "setup.modelCount": "{count} 个 · {size}",

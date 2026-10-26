@@ -28,8 +28,6 @@ export interface DshPackageManifest {
 
 /** Public author fields under `package.json.dsh`; a package may declare several roles. */
 export interface DshManifest {
-  /** Manifest format version, independent of the npm package and Session format versions. */
-  manifestVersion?: 1
   /** Bundle metadata consumed by the profile launcher. */
   bundle?: DshBundleManifest
   /** Profile metadata consumed by the profile launcher. */
@@ -59,8 +57,6 @@ export interface DshEnginesManifest {
   dsh?: string
   /** Compatible Node.js versions. */
   node?: string
-  /** Compatible npm versions. */
-  npm?: string
   /** Requirements for additional runtimes or package managers. */
   [engine: string]: string | undefined
 }

@@ -45,10 +45,6 @@ declare module '@deepseek-ai/cordis' {
     loader: Loader
   }
 
-  interface EnvData {
-    startTime?: number
-  }
-
   interface Fiber {
     entry?: Entry
   }

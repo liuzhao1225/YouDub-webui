@@ -60,14 +60,6 @@
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-.toolbar {
-  background: var(--dsw-alias-button-tool-bar-fill);
-}
-
-.toolbar:hover:not(:disabled) {
-  background: var(--dsw-alias-button-tool-bar-hover);
-}
-
 .icon {
   display: inline-flex;
   width: 16px;

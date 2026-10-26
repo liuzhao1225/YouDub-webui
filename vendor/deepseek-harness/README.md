@@ -16,9 +16,9 @@
 
 Loader 的 `locate`、`envData` 和 `CORDIS_SHARED` 注入链已退役，实际 entry、scope、父子关系和动态加载保留。启动环境继续使用 `loadLayeredEnv`；无调用的另一入口 `loadEnv` 和闲置 `DshEnvironment/DshEnvironmentKey` 类型退出，实际环境变量清理和 Python 环境加载保留。
 
-Cordis 已退役 `EffectMeta`、`getEffects`、静态 `Context.effect` symbol 及专用元数据收集；实例方法 `ctx.effect(execute, label?)`、`effectInertia`、重入、异步初始化、释放和原始错误传播保留。Include 继续支持 JSON/YAML/YML，原文件权限、配置写入失败和重载处理保留；构造阶段已拒绝的 JavaScript 文件加载分支退出。
+Cordis 已退役 `EffectMeta`、`getEffects`、静态 `Context.effect` symbol 及专用元数据收集；无消费者的 `ctx.serial`、`Promisify`、`internal/dispatch` 诊断广播及 `DispatchMode` 也已退役；实例方法 `ctx.effect(execute, label?)`、`effectInertia`、重入、异步初始化、释放和原始错误传播保留。Include 继续支持 JSON/YAML/YML，原文件权限、配置写入失败和重载处理保留；构造阶段已拒绝的 JavaScript 文件加载分支退出。
 
-配置表单继续使用 Harness 原生 ConfigForms。无产品入口的 JSON Schema 导出（`generateConfigSchema`、`createConfigProjector`、`isNativeConfigSchema`）、`renderConfigDump` 和 `ConfigForms.whileServed` 已退役。
+配置表单继续使用 Harness 原生 ConfigForms。前端使用 settings.mutate；无消费者的 Remote settings.update/replace 和 SettingsForms.replace 已退役，后端实际调用的 Forms.update 保留。凭据继续通过 describe(ref)、readRecord/listRecords/modifyRecord 处理，describeRecord/CredentialRecordInfo 旁路已退役。无产品入口的 JSON Schema 导出（`generateConfigSchema`、`createConfigProjector`、`isNativeConfigSchema`）、`renderConfigDump` 和 `ConfigForms.whileServed` 已退役。
 
 插件列表的 `BundleInfo/PackageView` 不再提供恒为 false 的 `official/optional`，`PluginPackageRef.official` 同步退役，`OfficialItem` 改名为 `ConfigItem`。官方扩展 / More 分组已移除；`plugins.item` 配置扩展槽、YouDub 内置项和用户插件的安装、启停、配置与卸载生命周期保留。
 
@@ -46,15 +46,18 @@ LLM 继续使用原 Harness `prepareCall → stream`、供应商适配、模型�
 
 ## 子进程、任务与代理
 
-普通子进程通过 `ctx.subprocess.spawn` 执行并管理进程树。PTY 的 `spawnTerminal`、`terminalEnvironment`、终端相关类型与 `node-pty` 依赖已移除；旧 profile 中的 `node-pty` 文本仅用于识别和迁移历史安装配置。`./control` 和 fd7 退出，标准流、runner IPC 与平台进程树控制保留，旧 `stdio.control` 请求会明确拒绝。
+普通子进程通过 `ctx.subprocess.spawn` 执行并管理进程树。无消费者的 resolveExecutable 查询和 SubprocessExecutableNotFoundError 已退役，spawn 的路径解析、环境与平台处理保留。PTY 的 `spawnTerminal`、`terminalEnvironment`、终端相关类型与 `node-pty` 依赖已移除；旧 profile 中的 `node-pty` 文本仅用于识别和迁移历史安装配置。`./control` 和 fd7 退出，标准流、runner IPC 与平台进程树控制保留，旧 `stdio.control` 请求会明确拒绝。
 
 Windows 媒体进程继续使用 `spawnCurrentTokenJobProcess` 和 Job Object。未使用的 `spawnPipedProcess`、`spawnInheritedJobProcess`、`RestrictedProcessSpawnOptions`、`drainPipe`、`waitForProcessExit` 及专用 Win32 绑定已退役；普通进程的停止、轮询、句柄释放、ABI 验证和原始错误保留。`OutputCollector.snapshot/finalize/dropped` 及 `CollectedOutput` 退出，实际 `seal/readFrom`、偏移、丢失标记、磁盘溢出与错误处理保留。
 
-Jobs 保留 start/get/list/kill/wait/remove、controller、progress、done 与错误；无消费者的输出环、read/readAt/events/result 及相关配置表单已退役，业务日志由 YouDub 持久化。退役的 Jobs 输出请求会明确拒绝，旧 Jobs 环大小配置仍可加载。
+Jobs 保留 start/list、controller、progress、done、真实退出取消与错误。无消费者的 get/kill/wait/remove、TASK_WAIT_TIMEOUT、输出环、read/readAt/events/result 及相关配置表单已退役，业务日志由 YouDub 持久化。退役的 Jobs 输出请求会明确拒绝，旧 Jobs 环大小配置仍可加载。
 
 HTTP proxy 的 `proxyRouteFor/ProxyRoute`、仅供展示的 installed 状态副本和 `clearedProxyEnv` 已退役。实际 undici global dispatcher、进行中的请求释放、嵌套恢复、NO_PROXY/loopback、代理协议检查，以及子进程代理环境传递和 Windows 环境变量大小写处理保留。
 
 ## 桌面与前端
+
+客户端组件按实际调用收窄：旧菜单的子菜单、多选和分组，终端会话专属模式，旧归档 Toast，TextShimmer 及 DisclosureRow 的未使用模式已退役。当前扁平菜单、插件安装日志、展开/收起、焦点、IME、无障碍和错误提示保留。未消费的设计 token、Montserrat 字体出口及仅验证这些退役能力的测试已移除；YouDub Logo、动效、实际字号和明暗主题继续使用原实现。
+
 
 桌面快捷键承接 YouDub 主文档和原生菜单输入，原内嵌浏览器、HTML 预览的 iframe/webview 转发协议已退役。文件关联应用枚举和指定应用打开接口（`nativeFileApplications`、`openNativeFileApplication`、`desktopEntryFields`、`desktopDataDirectories`、`desktopApplicationIcon` 及 `native-command/types`）退出。未使用的通用打开/显示文件、`canOpenNativePath` 和关联/浏览器探测 helper 退出；配置文件仍通过 `openNativeTextFile` 打开。
 

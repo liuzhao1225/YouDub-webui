@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { join } from 'node:path'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
@@ -161,55 +161,15 @@ describe('LocalSubprocessRuntime', () => {
     await fiber.dispose()
   })
 
-  it('resolves absolute and PATH executables and honors lookup cancellation', async () => {
-    const ctx = new Context()
-    const fiber = await ctx.plugin(LocalSubprocessRuntime)
-    expect(await ctx.subprocess.resolveExecutable(process.execPath)).toBe(process.execPath)
-    expect(await ctx.subprocess.resolveExecutable(basename(process.execPath), {
-      PATH: dirname(process.execPath),
-    })).toBe(process.execPath)
-    expect(await ctx.subprocess.resolveExecutable(basename(process.execPath), {
-      PATH: relative(process.cwd(), dirname(process.execPath)) || '.',
-    })).toBe(process.execPath)
-    await expect(ctx.subprocess.resolveExecutable('')).rejects.toThrow('must be non-empty')
-    await expect(ctx.subprocess.resolveExecutable('./bin/tsserver'))
-      .rejects.toThrow('is a relative path')
-    await expect(ctx.subprocess.resolveExecutable('node_modules/.bin/server'))
-      .rejects.toThrow('is a relative path')
-    await expect(ctx.subprocess.resolveExecutable('dsh-command-that-does-not-exist', { PATH: '' }))
-      .rejects.toThrow('was not found on PATH')
-    await expect(ctx.subprocess.resolveExecutable('/dsh-absolute-command-that-does-not-exist'))
-      .rejects.toThrow('is not an executable file')
-    await expect(ctx.subprocess.resolveExecutable(process.cwd()))
-      .rejects.toThrow('is not an executable file')
-    await expect(ctx.subprocess.resolveExecutable(process.execPath, {}, AbortSignal.abort('stop')))
-      .rejects.toBe('stop')
-    await fiber.dispose()
-  })
-
-  it('builds Windows executable candidates with case-insensitive overrides', async () => {
-    const ctx = new Context()
-    const fiber = await ctx.plugin(LocalSubprocessRuntime)
-    const service = ctx.subprocess as LocalSubprocessRuntime
-    const candidates = (service as unknown as {
-      executableCandidates(command: string, env: NodeJS.ProcessEnv): string[]
-    }).executableCandidates.bind(service)
+  it('preserves case-insensitive Windows environment overrides', () => {
     const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     try {
       expect(Object.keys(childEnv()).filter(key => key.toUpperCase() === 'PATH')).toHaveLength(1)
       const explicit = childEnv({ Path: '/bin', PathExt: '.EXE;.CMD' })
       expect(Object.keys(explicit).filter(key => key.toUpperCase() === 'PATH')).toEqual(['Path'])
       expect(Object.keys(explicit).filter(key => key.toUpperCase() === 'PATHEXT')).toEqual(['PathExt'])
-      expect(candidates('tool', explicit)).toEqual([resolve('/bin', 'tool.EXE'), resolve('/bin', 'tool.CMD')])
-      expect(candidates('tool', { Path: '/ambient', PATH: '/explicit', PATHEXT: '.EXE' }))
-        .toEqual([resolve('/explicit', 'tool.EXE')])
-      expect(candidates('tool.exe', {})).toEqual([resolve(process.cwd(), 'tool.exe')])
-      expect(candidates('tool', { PATH: '/bin' })).toHaveLength(4)
-      await expect(ctx.subprocess.resolveExecutable(String.raw`bin\server.exe`))
-        .rejects.toThrow('is a relative path')
     } finally {
       platform.mockRestore()
-      await fiber.dispose()
     }
   })
 

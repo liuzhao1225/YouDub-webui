@@ -8,7 +8,7 @@ export type { JobKind, JobStatus, JobView } from './view.ts'
 /** Settles after the producer releases its resources. */
 export interface JobOutcome {
   status: 'completed' | 'killed' | 'failed'
-  /** A kill reason is appended only when the outcome is killed. */
+  /** Producer-reported terminal reason. */
   detail?: string
 }
 

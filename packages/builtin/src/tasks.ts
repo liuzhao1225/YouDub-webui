@@ -40,6 +40,12 @@ function acceptsIntegrity(current: { integrity: string; compatibleIntegrities?: 
   return current.integrity === pinned || current.compatibleIntegrities?.includes(pinned) === true
 }
 function ref(value: any): value is ArtifactRef { return value && typeof value.id === 'string' && typeof value.schemaId === 'string' && Object.keys(value).length === 2 }
+function replaceArtifacts(value: any, copied: Record<string, ArtifactRef>): any {
+  if (ref(value)) return { id: copied[value.id]!.id, schemaId: value.schemaId }
+  if (Array.isArray(value)) return value.map(item => replaceArtifacts(item, copied))
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replaceArtifacts(item, copied)]))
+  return value
+}
 function fingerprint(value: any): string {
   const canonical = (item: any): any => Array.isArray(item) ? item.map(canonical) : item && typeof item === 'object'
     ? Object.fromEntries(Object.keys(item).sort().filter(key => item[key] !== undefined).map(key => [key, canonical(item[key])])) : item
@@ -239,13 +245,7 @@ export default class Tasks extends Service implements TasksService {
     })
     const copied = await this.ctx.files.copyArtifacts(source, id, [...references.values()])
     for (const artifact of Object.values(copied)) artifacts[artifact.id] = artifact
-    const replace = (value: any): any => {
-      if (ref(value)) return { id: copied[value.id]!.id, schemaId: value.schemaId }
-      if (Array.isArray(value)) return value.map(replace)
-      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]))
-      return value
-    }
-    return steps.map(step => ({ ...step, outputs: replace(step.outputs) }))
+    return steps.map(step => ({ ...step, outputs: replaceArtifacts(step.outputs, copied) }))
   }
   private inputs(task: TaskRecord, spec: StepSpec, allowMissing = false): JsonObject {
     const inputs: JsonObject = {}
@@ -532,13 +532,7 @@ export default class Tasks extends Service implements TasksService {
     }
     const copied = await this.ctx.files.copyArtifacts(source, id, [...references.values()])
     for (const artifact of Object.values(copied)) artifacts[artifact.id] = artifact
-    const replace = (value: any): any => {
-      if (ref(value)) return { id: copied[value.id]!.id, schemaId: value.schemaId }
-      if (Array.isArray(value)) return value.map(replace)
-      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replace(item)]))
-      return value
-    }
-    return steps.map(step => ({ ...step, outputs: replace(step.outputs), resultRevisions: replace(step.resultRevisions) }))
+    return steps.map(step => ({ ...step, outputs: replaceArtifacts(step.outputs, copied), resultRevisions: replaceArtifacts(step.resultRevisions, copied) }))
   }
   private expected(task: TaskRecord, attempt: number) { if (task.attempt !== attempt) throw new AppError('ATTEMPT_CONFLICT', 'Task attempt changed. Refresh before acting.', 409) }
   async cancel(id: string, expectedAttempt: number, expectedTaskRevision?: number) {

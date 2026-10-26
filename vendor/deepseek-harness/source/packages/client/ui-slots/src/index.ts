@@ -198,9 +198,6 @@ export type HookContextOf<K extends keyof SlotMap & string> =
 export type SlotInjectOf<K extends keyof SlotMap & string> =
   SlotMap[K] extends { inject: infer Injected extends object } ? Injected : object
 
-/** Scope axis of a slot key's SlotMap entry. */
-export type ScopeOf<K extends keyof SlotMap & string> = SlotMap[K]['scope']
-
 /**
  * Framework standard kit delivered to EVERY slot component (the global seat).
  * Declared empty here; each owning UI adapter merges the global selector hooks

@@ -46,11 +46,10 @@ class RemoteEventQueue {
   private waiter: (() => void) | undefined
   private done = false
 
-  push(frame: TypertRemoteEventFrame): boolean {
-    if (this.done) return false
+  push(frame: TypertRemoteEventFrame): void {
+    if (this.done) return
     this.buffer.pushBack(frame)
     this.waiter?.()
-    return true
   }
 
   private end(): void {

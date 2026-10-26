@@ -30,14 +30,12 @@
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/dsh-jobs": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
     "@deepseek-ai/cordis-plugin-include": "workspace:~",
     "@deepseek-ai/cordis-plugin-loader": "workspace:~",
     "@deepseek-ai/dsh-jobs": "workspace:*",
-    "@deepseek-ai/dsh-timeout": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   }
 }

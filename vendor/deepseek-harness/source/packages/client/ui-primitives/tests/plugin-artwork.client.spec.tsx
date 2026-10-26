@@ -8,13 +8,12 @@ afterEach(cleanup)
 const artworks = { PluginArtworkDefault } as const
 
 describe('plugin artwork', () => {
-  it.each(Object.entries(artworks))('%s renders its 36-viewBox svg honoring size and className', (_name, Artwork) => {
-    const { container } = render(<Artwork size={30} className="deco" />)
+  it.each(Object.entries(artworks))('%s renders its 36-viewBox svg honoring size', (_name, Artwork) => {
+    const { container } = render(<Artwork size={30} />)
     const svg = container.querySelector('svg')
     expect(svg?.getAttribute('viewBox')).toBe('0 0 36 36')
     expect(svg?.getAttribute('width')).toBe('30')
     expect(svg?.getAttribute('height')).toBe('30')
-    expect(svg?.getAttribute('class')).toBe('deco')
   })
 
   it.each(Object.entries(artworks))('%s renders at 36 by default and repeats without document-global ids', (_name, Artwork) => {

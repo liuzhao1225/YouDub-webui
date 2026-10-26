@@ -89,7 +89,7 @@ describe('record storage', () => {
     expect(await reread.credentials.readRecord(CODEX)).toEqual({ kind: 'grant', payload })
   })
 
-  it('treats a record carrying no key and no environment as configured', async () => {
+  it('preserves a record carrying no key and no environment', async () => {
     const dir = await tempDir()
     const ctx = await boot({ path: join(dir, '.credentials.yaml'), watch: false })
     // The owner confirmed this route authenticates from its own ambient
@@ -97,14 +97,13 @@ describe('record storage', () => {
     // of the empty-value rule the reference half follows.
     await put(ctx, BEDROCK, { kind: 'api-key' })
 
-    expect(await ctx.credentials.describeRecord(BEDROCK)).toEqual({ configured: true, kind: 'api-key', writable: true })
+    expect(await ctx.credentials.readRecord(BEDROCK)).toEqual({ kind: 'api-key' })
   })
 
-  it('describes an absent record as unconfigured but writable', async () => {
+  it('returns undefined for an absent record', async () => {
     const dir = await tempDir()
     const ctx = await boot({ path: join(dir, '.credentials.yaml'), watch: false })
 
-    expect(await ctx.credentials.describeRecord(CODEX)).toEqual({ configured: false, writable: true })
     expect(await ctx.credentials.readRecord(CODEX)).toBeUndefined()
   })
 

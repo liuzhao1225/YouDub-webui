@@ -24,13 +24,3 @@ it('refuses label activation while disabled', () => {
   expect(onChange).not.toHaveBeenCalled()
   expect(screen.getByRole<HTMLInputElement>('checkbox').checked).toBe(true)
 })
-
-it('preserves caller hover text', () => {
-  const onChange = vi.fn()
-  render(<Checkbox label="Office" checked={false} onChange={onChange} title="Office tools" />)
-  expect(screen.getByText('Office')).toBeTruthy()
-  const input = screen.getByRole('checkbox', { name: 'Office' })
-  expect(input.closest('label')?.title).toBe('Office tools')
-  fireEvent.click(input)
-  expect(onChange).toHaveBeenLastCalledWith(true)
-})

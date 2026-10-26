@@ -198,9 +198,6 @@
       "@deepseek-ai/dsh-client-ui-theme": [
         "./packages/client/ui-theme/src"
       ],
-      "@deepseek-ai/dsh-client-ui-theme/brand-font.css": [
-        "./packages/client/ui-theme/src/styles/brand-font.css"
-      ],
       "@deepseek-ai/dsh-client-ui-settings": [
         "./packages/client/ui-settings/src"
       ],

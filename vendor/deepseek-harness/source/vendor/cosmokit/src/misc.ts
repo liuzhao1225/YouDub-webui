@@ -1,7 +1,5 @@
 /** String/symbol keyed dictionary type. */
 export type Dict<T = any, K extends string | symbol = string> = { [key in K]: T }
-/** Wrap a value in `Promise`, preserving the resolved type of existing promises. */
-export type Promisify<T> = Promise<T extends Promise<infer S> ? S : T>
 /** Accept a value or promise unless the value type is already promise-like. */
 export type Awaitable<T> = [T] extends [Promise<unknown>] ? T : T | Promise<T>
 /** Return true when a value is `null` or `undefined`. */

@@ -51,10 +51,10 @@ function stubResizeObserver(): Recorded[] {
  * @param props - whether the panel is open.
  * @returns the anchor and, while open, the panel carrying the position.
  */
-function Host({ open, align }: { open: boolean; align?: 'start' | 'end' }) {
+function Host({ open }: { open: boolean }) {
   const anchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const position = useAnchoredPosition({ open, anchorRef, panelRef, gap: 4, margin: 12, ...align === undefined ? {} : { align } })
+  const position = useAnchoredPosition({ open, anchorRef, panelRef, gap: 4, margin: 12 })
   return (
     <>
       <button ref={anchorRef} type="button">anchor</button>
@@ -92,11 +92,9 @@ describe('useAnchoredPosition', () => {
     vi.stubGlobal('innerWidth', 1000)
     vi.stubGlobal('innerHeight', 800)
     try {
-      const { getByTestId, rerender } = render(<Host open align="end" />)
+      const { getByTestId } = render(<Host open />)
       expect(getByTestId('panel').style.left).toBe('180px')
       expect(getByTestId('panel').style.top).toBe('34px')
-      rerender(<Host open />)
-      expect(getByTestId('panel').style.left).toBe('100px')
     } finally {
       anchorRect.mockRestore()
       width.mockRestore()

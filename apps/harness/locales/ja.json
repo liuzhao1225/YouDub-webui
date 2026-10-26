@@ -374,7 +374,6 @@
     "terminalExpandAria": "残り {n} 行を表示",
     "terminalExpand": "… 残り {n} 行",
     "terminalExitCode": "終了コード {code}",
-    "terminalSignal": "シグナル {signal}",
     "terminalNoExitCode": "正常に終了しませんでした",
     "installDoneNothing": "インストールが完了しました。追加の依存関係はありません。",
     "installDoneRestart": "インストール済みです。YouDub を再起動して読み込んでください。{reason}",

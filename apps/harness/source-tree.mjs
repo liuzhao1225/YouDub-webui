@@ -15,8 +15,8 @@ export async function sha256(path) {
   return hash.digest('hex')
 }
 
-/** Record file bytes, executable flags and symlink targets; optionally omit dependency installs. */
-export async function tree(root, { omitNodeModules = false, executableModes } = {}) {
+/** Record file bytes, executable flags and symlink targets. */
+export async function tree(root, { executableModes } = {}) {
   const entries = []
   async function walk(relative) {
     const path = join(root, relative)
@@ -24,7 +24,6 @@ export async function tree(root, { omitNodeModules = false, executableModes } = 
     if (stat.isSymbolicLink()) entries.push({ path: relative, type: 'symlink', target: await readLinkTarget(path) })
     else if (stat.isDirectory()) {
       for (const name of (await readdir(path)).sort()) {
-        if (omitNodeModules && name === 'node_modules') continue
         await walk(relative ? `${relative}/${name}` : name)
       }
     } else if (stat.isFile()) entries.push({ path: relative, type: 'file', executable: executableModes ? (executableModes.get(relative) ?? false) : Boolean(stat.mode & 0o111), size: stat.size, sha256: await sha256(path) })

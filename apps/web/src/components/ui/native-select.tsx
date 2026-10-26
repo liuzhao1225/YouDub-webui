@@ -7,19 +7,16 @@ import { cn } from '@/lib/utils'
 type FieldChange<T> = { target: T; currentTarget: T }
 type Props = Pick<ComponentProps<typeof Button>, 'id' | 'disabled' | 'className' | 'title' | 'aria-label' | 'aria-labelledby'> & {
   children: ReactNode
-  value?: string | number
-  defaultValue?: string | number
-  onChange?: (event: FieldChange<{ value: string }>) => void
+  value: string | number
+  onChange: (event: FieldChange<{ value: string }>) => void
 }
 /** Preserve domain field callbacks while Harness Menu owns focus, keyboard and portal behavior. */
-export function NativeSelect({ children, value, defaultValue = '', onChange, disabled, className, ...props }: Props) {
+export function NativeSelect({ children, value, onChange, disabled, className, ...props }: Props) {
   const [open, setOpen] = useState(false)
-  const [local, setLocal] = useState(defaultValue)
-  const items = childrenItems(children), current = String(value ?? local)
+  const items = childrenItems(children), current = String(value)
   const selected = items.find(item => item.id === current)
   return <Menu open={open} portal autoFocus selectedId={current} items={items} onClose={() => setOpen(false)} onSelect={next => {
-    setLocal(next)
-    onChange?.({ target: { value: next }, currentTarget: { value: next } })
+    onChange({ target: { value: next }, currentTarget: { value: next } })
     setOpen(false)
   }} className={cn('yd-select', layoutClasses(className))} anchor={<Button {...props} type="button" variant="outline" disabled={disabled} className={cn('gap-2 [&_svg]:size-4 [&_svg]:shrink-0', className)} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} onKeyDown={event => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true) }

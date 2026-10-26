@@ -7,10 +7,6 @@
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./models": {
-      "types": "./lib/types/models.d.ts",
-      "default": "./lib/models.js"
-    },
     "./typert": {
       "types": "./lib/typert.host.d.ts",
       "default": "./lib/typert.host.js"

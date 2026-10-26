@@ -482,7 +482,6 @@
     "setup.environmentProgress": "Environment preparation progress",
     "setup.environmentCompleted": "Environment steps {complete}/{total} completed",
     "setup.models": "Model setup",
-    "setup.reset": "Reset download preview",
     "setup.required": "Required models",
     "setup.totalSize": "Total model size",
     "setup.modelCount": "{count} models · {size}",

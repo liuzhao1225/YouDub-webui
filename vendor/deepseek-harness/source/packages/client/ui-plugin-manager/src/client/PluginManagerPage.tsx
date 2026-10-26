@@ -684,8 +684,6 @@ const INSTALL_TERMINAL_LINES = 12
 function terminalLabels(t: Translate): TerminalBlockLabels {
   return {
     commandLine: line => t('terminalCommandLine', { n: String(line) }),
-    /* v8 ignore next -- the Host reports a killed pnpm as a null exit code, never a signal name; the label interface needs one */
-    signal: signal => t('terminalSignal', { signal }),
     exitCode: code => t('terminalExitCode', { code: String(code) }),
     noExitCode: t('terminalNoExitCode'),
     running: t('terminalRunning'),
@@ -903,7 +901,7 @@ function InstallDialog({
   const specComposition = useInstallComposition(install.open && phase === 'idle')
   const registryComposition = useInstallComposition(install.open && registryShown)
   const registryPosition = useAnchoredPosition({
-    open: registryShown, anchorRef: registryToggleRef, panelRef: registryPanelRef, align: 'end', gap: 6, margin: 12,
+    open: registryShown, anchorRef: registryToggleRef, panelRef: registryPanelRef, gap: 6, margin: 12,
   })
   const registryReady = registryShown && registryPosition !== null
   useEffect(() => {

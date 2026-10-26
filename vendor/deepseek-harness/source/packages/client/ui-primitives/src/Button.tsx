@@ -6,7 +6,7 @@ import clsx from 'clsx'
 import css from './Button.module.css'
 
 /** Visual variant, each backed by its --dsw-alias-button-* token family. */
-export type ButtonVariant = 'primary' | 'ghost' | 'outline' | 'toolbar'
+export type ButtonVariant = 'primary' | 'ghost' | 'outline'
 
 type ButtonProps = {
   variant?: ButtonVariant

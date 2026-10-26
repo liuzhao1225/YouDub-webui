@@ -18,18 +18,9 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
-.tag[data-tone='solid'] {
-  background: var(--dsw-alias-label-primary);
-  color: var(--dsw-alias-bg-layer-3);
-}
-
 .tag[data-tone='neutral'] {
   background: var(--dsw-alias-bg-module-platform);
   color: var(--dsw-alias-label-secondary);
-}
-
-.tag[data-tone='quiet'] {
-  color: var(--dsw-alias-label-tertiary);
 }
 
 /* Status tones tint their own color for the fill, so a palette change moves

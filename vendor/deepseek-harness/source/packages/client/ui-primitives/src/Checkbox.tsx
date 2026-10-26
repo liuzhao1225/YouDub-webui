@@ -9,20 +9,18 @@ import css from './Checkbox.module.css'
  * @param props.onChange - receives the requested checked state.
  * @param props.label - localized visible and accessible label.
  * @param props.disabled - whether the control refuses changes.
- * @param props.title - optional localized hover text.
  * @param props.className - extra class for the label's placement.
  * @returns the label containing its checkbox.
  */
-export function Checkbox({ checked, onChange, label, disabled = false, title, className }: {
+export function Checkbox({ checked, onChange, label, disabled = false, className }: {
   checked: boolean
   onChange: (next: boolean) => void
   label: string
   disabled?: boolean
-  title?: string | undefined
   className?: string | undefined
 }) {
   return (
-    <label className={clsx(css.checkbox, className)} title={title}>
+    <label className={clsx(css.checkbox, className)}>
       <input type="checkbox" checked={checked} disabled={disabled}
         onChange={(event) => { onChange(event.target.checked) }} />
       <span>{label}</span>

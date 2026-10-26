@@ -4,8 +4,7 @@
 }
 
 /* Compact translucent dropdown card shared by feature menus. */
-.list,
-.submenu {
+.list {
   /* min-widths below are the design's outer card widths — include the pad. */
   box-sizing: border-box;
   padding: 4px;
@@ -59,9 +58,7 @@
 /* Viewport fit: the card stops 12px short of the viewport's top/bottom edges
  * (the portal MARGIN in Menu.tsx; the top side widens to the frame's published
  * overlay inset) and taller content scrolls inside
- * .viewport, so a pinned .footer stays visible. Menus with submenu rows skip
- * this class — the overflow clip would crop the side card, so they rely on
- * staying short. */
+ * .viewport. */
 .scrollable {
   max-height: calc(100vh - 12px - max(12px, var(--dsh-frame-overlay-top, 12px)));
 }
@@ -74,17 +71,6 @@
 
 .scrollable .viewport {
   overflow-y: auto;
-}
-
-/* Pinned rows below the scroll region; l2 hairline (l1 is near-invisible on
- * the menu surface) mirrors the .separator spacing. */
-.footer {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  margin-top: 3px;
-  padding-top: 3px;
-  border-top: 0.5px solid var(--dsw-alias-border-l2);
 }
 
 .itemWrap {
@@ -121,45 +107,6 @@
   outline: none;
 }
 
-.denseList .item {
-  min-height: 30px;
-  padding-block: 4px;
-}
-
-.denseList .label {
-  padding-block: 3px;
-}
-
-.list.compactList,
-.submenu.compactList {
-  min-width: 156px;
-  padding: 4px;
-}
-
-.compactList .item {
-  min-height: 24px;
-  gap: 5px;
-  padding: 2px 6px;
-  border-radius: var(--dsw-radius-sm);
-  font-size: 11px;
-  line-height: 17px;
-}
-
-.compactList .itemIcon {
-  width: 12px;
-  height: 12px;
-}
-
-.compactList .separator {
-  margin: 2px;
-}
-
-.compactList .label {
-  padding: 3px 6px;
-  font-size: 10px;
-  line-height: 15px;
-}
-
 .item:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -181,29 +128,12 @@
   height: 14px;
 }
 
-.compactList .itemIcon svg,
-.compactList .check {
-  width: 12px;
-  height: 12px;
-}
-
 .itemLabel {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.shortcut {
-  flex: none;
-  margin-inline-start: auto;
-}
-
-.shortcut .shortcutKeys {
-  color: var(--dsw-alias-label-caption);
-  font-size: 11px;
-  line-height: 16px;
 }
 
 .check {
@@ -215,71 +145,4 @@
  * class remains as a hook for owner-side emphasis. */
 .selected {
   background: transparent;
-}
-
-/* Fill-mode selection: the row holds the hover fill instead of a check. */
-.selectedFill {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
-
-/* Destructive row: error text/icon, danger hover fill. */
-.danger {
-  color: var(--dsw-alias-state-error-primary);
-}
-
-.danger .itemIcon {
-  color: var(--dsw-alias-state-error-primary);
-}
-
-.danger:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover-danger);
-}
-
-.danger:focus-visible:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover-danger);
-  outline: none;
-}
-
-/* Heading row: non-interactive small grey text, padding aligned with items. */
-.label {
-  padding: 6px 8px;
-  font-size: 11px;
-  line-height: 15px;
-  color: var(--dsw-alias-label-tertiary);
-}
-
-/* Separator cell (figma 122:9481): py 4 / px 2 around the hairline. l2, not
- * l1, for the same reason as .footer: l1 is near-invisible on this surface. */
-.separator {
-  height: 0.5px;
-  margin: 3px 2px;
-  background: var(--dsw-alias-border-l2);
-}
-
-/* A data separator directly followed by a row that starts a group draws one
- * line, not two; a group start on the list's first row draws none. */
-.separator + .separator,
-.separator + .itemWrap > .separator:first-child,
-.itemWrap:first-child > .separator:first-child {
-  display: none;
-}
-
-/* The submenu aligns with the parent's bottom edge. Its hit bridge covers
- * the menu inset and the 6px gap so pointer movement keeps it open. */
-.submenu {
-  position: absolute;
-  top: auto;
-  bottom: -4px;
-  left: calc(100% + 10px);
-  z-index: 101;
-  min-width: 163px;
-}
-
-.submenu::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -10px;
-  width: 10px;
 }

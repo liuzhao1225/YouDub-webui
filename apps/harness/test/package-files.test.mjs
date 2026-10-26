@@ -43,7 +43,6 @@ test('desktop dependency selection keeps executable modules and assets without f
     '@deepseek-ai/dsh/lib/index.js',
     '@deepseek-ai/dsh-settings/lib/types/schema.js',
     '@deepseek-ai/dsh-client-ui-theme/lib/client.js',
-    '@deepseek-ai/dsh-client-ui-theme/lib/styles/brand-font.css',
     '@deepseek-ai/dsh-client-ui-theme/locale/zh-CN.json',
     '@deepseek-ai/dsh-web-frontend/dist/index.html',
     '@deepseek-ai/dsh-web-frontend/dist/assets/app.js',

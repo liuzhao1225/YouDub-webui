@@ -5,10 +5,6 @@ import { JobRegistry } from '@deepseek-ai/dsh-jobs'
 class StubJobRegistry extends JobRegistry {
   start(): never { throw new Error('unused') }
   list() { return [] }
-  get(): never { throw new Error('unused') }
-  kill(): never { throw new Error('unused') }
-  wait(): never { throw new Error('unused') }
-  remove(): void {}
   attachController() { return () => {} }
 }
 

@@ -28,15 +28,12 @@ export function TaskCover({
   src,
   processing = false,
   size = "md",
-  bars: showBars = true,
   className,
 }: {
   id: string
   src?: string
   processing?: boolean
   size?: "sm" | "md" | "lg"
-  // 用作背景时关掉声波条，只保留配色光斑。
-  bars?: boolean
   className?: string
 }) {
   const tx = useText()
@@ -76,7 +73,7 @@ export function TaskCover({
           className="absolute inset-0 size-full object-contain" />
       )}
       {processing && <div aria-hidden="true" className="absolute inset-0 bg-black/35" />}
-      {showBars && (processing || !src) ? (
+      {processing || !src ? (
         <div
           aria-hidden="true"
           className={cn(

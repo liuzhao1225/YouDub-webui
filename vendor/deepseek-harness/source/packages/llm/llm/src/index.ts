@@ -317,7 +317,7 @@ export class LlmRuntime extends TypertRemoteService {
     // Cordis emit uses Array.map: one synchronous throw starves later
     // listeners. Registry notifications are non-vetoing, so contain each
     // callback independently.
-    for (const listener of this.ctx.events.dispatch('emit', ['llm/adapters-updated']) as Array<() => unknown>) {
+    for (const listener of this.ctx.events.dispatch(['llm/adapters-updated']) as Array<() => unknown>) {
       try {
         const returned = listener()
         if (returned != null && typeof (returned as PromiseLike<unknown>).then === 'function') {

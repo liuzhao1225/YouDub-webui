@@ -19,14 +19,6 @@
   min-width: 0;
 }
 
-.header[data-has-accessory] {
-  gap: 8px;
-}
-
-.header[data-has-accessory] .row {
-  flex: 0 1 auto;
-}
-
 .row {
   flex: 1 1 auto;
   position: relative;
@@ -37,9 +29,6 @@
   min-width: 0;
   color: var(--dsw-alias-label-tertiary);
   transition: color 100ms ease;
-}
-
-.row[data-expandable] {
   cursor: pointer;
 }
 
@@ -69,10 +58,6 @@
 .leading svg:not([data-state]) {
   width: calc(14px + var(--dsh-content-font-delta, 0px));
   height: calc(14px + var(--dsh-content-font-delta, 0px));
-}
-
-button.leading {
-  cursor: pointer;
 }
 
 .iconIdle {

@@ -8,18 +8,14 @@
  * @module @deepseek-ai/dsh-subprocess-local
  */
 
-import { constants } from 'node:fs'
-import { access, stat } from 'node:fs/promises'
-import { delimiter, extname, isAbsolute, resolve } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { SubprocessRuntime, SubprocessExecutableNotFoundError } from '@deepseek-ai/dsh-subprocess'
+import { SubprocessRuntime } from '@deepseek-ai/dsh-subprocess'
 import type {
   SubprocessHandle,
   SubprocessSpawnSpec,
 } from '@deepseek-ai/dsh-subprocess'
 import {
   bindManagedProcess,
-  childEnv,
   spawnSubprocess,
   validateSubprocessSpec,
 } from './spawn.ts'
@@ -117,48 +113,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
     if (failures.length > 1) throw new AggregateError(failures, 'local subprocess teardown failed')
   }
 
-  async resolveExecutable(
-    command: string,
-    env?: Readonly<Record<string, string>>,
-    signal?: AbortSignal,
-  ): Promise<string> {
-    if (command.length === 0) throw new Error('subprocess-local: executable must be non-empty')
-    signal?.throwIfAborted()
-    const environment = childEnv(env)
-    const absolute = isAbsolute(command)
-    if (!absolute && (command.includes('/') || (process.platform === 'win32' && command.includes('\\')))) {
-      throw new Error(
-        `subprocess-local: command ${JSON.stringify(command)} is a relative path; use an absolute path or a bare PATH name`,
-      )
-    }
-    const candidates = absolute ? [command] : this.executableCandidates(command, environment)
-    for (const candidate of candidates) {
-      signal?.throwIfAborted()
-      try {
-        const info = await stat(candidate)
-        if (!info.isFile()) continue
-        await access(candidate, constants.X_OK)
-        signal?.throwIfAborted()
-        return candidate
-      } catch {
-        // Try the next PATH candidate; the final miss receives one stable error.
-      }
-    }
-    signal?.throwIfAborted()
-    throw new SubprocessExecutableNotFoundError(absolute
-      ? `subprocess-local: command ${JSON.stringify(command)} is not an executable file`
-      : `subprocess-local: command ${JSON.stringify(command)} was not found on PATH`)
-  }
-
-  private executableCandidates(command: string, env: NodeJS.ProcessEnv): string[] {
-    const path = environmentValue(env, 'PATH') ?? ''
-    const extensions = process.platform === 'win32' && extname(command) === ''
-      ? (environmentValue(env, 'PATHEXT') ?? '.COM;.EXE;.BAT;.CMD').split(';')
-      : ['']
-    return path.split(delimiter).flatMap(directory =>
-      extensions.map(extension => resolve(process.cwd(), directory, command + extension)))
-  }
-
   spawn(spec: SubprocessSpawnSpec): SubprocessHandle {
     validateSubprocessSpec(spec)
     const env = targetEnvironment(spec)
@@ -230,14 +184,6 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
       `subprocess-local is using weaker process-tree containment because ${reason}; descendants that escape the process group or direct-parent tree are not guaranteed to terminate or delay waitForExit()`,
     )
   }
-}
-
-/** Read a Windows environment key using the platform's case-insensitive semantics. */
-function environmentValue(env: NodeJS.ProcessEnv, name: 'PATH' | 'PATHEXT'): string | undefined {
-  const exact = env[name]
-  if (exact !== undefined || process.platform !== 'win32') return exact
-  const normalized = name.toUpperCase()
-  return Object.entries(env).find(([key]) => key.toUpperCase() === normalized)?.[1]
 }
 
 export default LocalSubprocessRuntime

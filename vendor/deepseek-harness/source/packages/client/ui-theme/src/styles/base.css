@@ -7,13 +7,11 @@
   --dsh-font-family-text-default: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --dsw-font-family: var(--dsh-font-family-text-default);
-  --dsw-font-family-brand: 'Montserrat', var(--dsh-font-family-text-default);
   --dsh-font-family-code-default: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
     'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
   --ds-font-family-code: var(--dsh-font-family-code-default);
   --ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ds-transition-duration: 0.2s;
-  --ds-transition-duration-fast: 0.1s;
   --ds-transition-duration-slow: 0.3s;
   --dsw-radius-xs: 4px;
   --dsw-radius-sm: 8px;

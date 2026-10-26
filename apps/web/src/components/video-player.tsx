@@ -60,7 +60,7 @@ function ControlButton({
   )
 }
 
-export function VideoPlayer({ src, className, onError }: { src: string; className?: string; onError?: () => void }) {
+export function VideoPlayer({ src }: { src: string }) {
   const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<VideoElement>(null)
@@ -219,7 +219,6 @@ export function VideoPlayer({ src, className, onError }: { src: string; classNam
         "group/player relative overflow-hidden bg-black outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50",
         fullscreen ? "flex size-full items-center justify-center" : "aspect-video",
         !showControls && "cursor-none",
-        className,
         fullscreen && "rounded-none border-0",
       )}
     >
@@ -253,7 +252,6 @@ export function VideoPlayer({ src, className, onError }: { src: string; classNam
           setPlaying(false)
           setControlsVisible(true)
         }}
-        onError={onError}
         onEnded={() => {
           setPlaying(false)
           setControlsVisible(true)

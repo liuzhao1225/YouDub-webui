@@ -63,12 +63,6 @@ export const DEFAULT_FONT_SIZES: FontSizes = Object.freeze({
   text: FONT_SIZE_SPECS.text.default, code: FONT_SIZE_SPECS.code.default,
 })
 
-/** Settings field carrying each role's font-family list. */
-export const FONT_FAMILY_FIELDS = {
-  text: 'textFontFamily',
-  code: 'codeFontFamily',
-} as const satisfies Record<FontRole, string>
-
 /**
  * Body variable carrying one role's normalized font list; the token sheet
  * places it ahead of that role's built-in stack.

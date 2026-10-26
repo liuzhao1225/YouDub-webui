@@ -483,7 +483,6 @@
     "setup.environmentProgress": "環境準備の進捗",
     "setup.environmentCompleted": "環境準備 {complete}/{total} 完了",
     "setup.models": "モデルの準備",
-    "setup.reset": "ダウンロードプレビューをリセット",
     "setup.required": "必要なモデル",
     "setup.totalSize": "モデルの合計サイズ",
     "setup.modelCount": "{count} 個 · {size}",

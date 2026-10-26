@@ -1189,9 +1189,6 @@ importers:
       '@deepseek-ai/dsh-jobs':
         specifier: workspace:*
         version: link:../jobs
-      '@deepseek-ai/dsh-timeout':
-        specifier: workspace:*
-        version: link:../../util/timeout
 
   packages/llm/llm:
     dependencies:

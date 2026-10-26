@@ -20,9 +20,3 @@
 .interactive:hover {
   background: var(--dsw-alias-interactive-bg-hover);
 }
-
-.active {
-  color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-button-ghost-active-fill);
-  box-shadow: inset 0 0 0 1px var(--dsw-alias-button-ghost-active-border);
-}

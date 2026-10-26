@@ -6,7 +6,7 @@ import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 
 afterEach(cleanup)
 
-const TONES = ['outline', 'solid', 'neutral', 'quiet', 'success', 'info', 'warning', 'danger'] as const
+const TONES = ['outline', 'neutral', 'success', 'info', 'warning', 'danger'] as const
 
 describe('Tag', () => {
   it('renders its caller-owned copy in a non-interactive span', () => {
@@ -36,7 +36,7 @@ describe('Tag', () => {
 
   it('rejects unknown tones at the type level', () => {
     const bad = (tone: NonNullable<ComponentProps<typeof Tag>['tone']>) => tone
-    // @ts-expect-error 'muted' is not one of the eight tones
+    // @ts-expect-error 'muted' is not one of the supported tones
     expect(bad('muted')).toBe('muted')
   })
 })

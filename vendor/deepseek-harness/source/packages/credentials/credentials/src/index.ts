@@ -122,21 +122,6 @@ export interface ResolvedCredential {
   source: string
 }
 
-/** Presence and writability facts for one record, safe for configuration UIs — never the value. */
-export interface CredentialRecordInfo {
-  /**
-   * Whether a record is stored. Unlike a reference, presence alone answers
-   * this: an {@link ApiKeyRecord} carrying neither a key nor environment
-   * values states that its owner confirmed ambient authentication, which is
-   * configured, not blank.
-   */
-  configured: boolean
-  /** Discriminant of the stored record; absent while none is stored. */
-  kind?: CredentialRecord['kind']
-  /** Whether {@link CredentialProvider.modifyRecord} would currently succeed. */
-  writable: boolean
-}
-
 /** One stored record's address and tag, for enumeration — never its value. */
 export interface CredentialRecordEntry {
   /** The record's address. */
@@ -217,13 +202,6 @@ export abstract class CredentialProvider extends Service {
   abstract readRecord(key: CredentialKey): Promise<CredentialRecord | undefined>
 
   /**
-   * Describe one record for configuration surfaces without exposing its value.
-   * @param key - the record to describe.
-   * @returns presence, discriminant, and writability.
-   */
-  abstract describeRecord(key: CredentialKey): Promise<CredentialRecordInfo>
-
-  /**
    * Enumerate every stored record's address and tag. Unlike the reference
    * half, which has no enumeration because configuration surfaces learn which
    * references exist from settings schemas, records have no such discovery
@@ -282,7 +260,7 @@ export abstract class CredentialProvider extends Service {
   /** The contained dispatch both notifications run through; see {@link notifyUpdated}. */
   private fanOut(event: 'credentials/reference-updated' | 'credentials/record-updated', subject: string): void {
     const args = [event, subject]
-    for (const listener of this.ctx.events.dispatch('emit', args) as Array<(...listenerArgs: unknown[]) => unknown>) {
+    for (const listener of this.ctx.events.dispatch(args) as Array<(...listenerArgs: unknown[]) => unknown>) {
       try {
         const returned = listener(subject)
         if (returned != null && typeof (returned as PromiseLike<unknown>).then === 'function') {

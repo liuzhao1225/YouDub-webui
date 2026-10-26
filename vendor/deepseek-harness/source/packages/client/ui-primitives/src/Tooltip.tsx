@@ -30,23 +30,16 @@ interface AnchorProps {
   onBlur?: FocusEventHandler | undefined
 }
 
-type TooltipLabel = string | (() => string)
-
 /**
  * Attach a hover/focus tooltip to an anchor element.
- * @param props.label - bubble text, or a resolver evaluated only while visible; an empty string shows only shortcut keys.
+ * @param props.label - bubble text; an empty string shows only shortcut keys.
  * @param props.shortcutKeys - effective key labels rendered as platform-formatted keycaps after optional text.
  * @param props.side - placement relative to the anchor (default 'right').
- * @param props.align - horizontal anchor-edge alignment for 'bottom'/'top' bubbles: 'end' pins
- * the bubble's right edge to the anchor's (for anchors beside other hover surfaces the centered
- * bubble would overlap); default 'center'. Ignored for side 'right'.
  * @param props.portal - render the bubble under document.body, so an ancestor's clipping or its
  * stacking context (which confines the bubble's z-index to that context) cannot hide it.
  * @param props.delayMs - hover delay in milliseconds (default 0).
  * @param props.focusDelayMs - keyboard focus delay in milliseconds (default 0); blur, click,
  * mouse leave, disabling, and unmount cancel a pending show.
- * @param props.gap - anchor-to-bubble distance in pixels for 'bottom'/'top' bubbles (default 8);
- * ignored for side 'right'.
  * @param props.disabled - suppress the bubble while true; the anchor renders identically so
  * toggling never remounts it (which would cut its CSS transitions).
  * @param props.maxWidth - bubble width cap in pixels, for labels long enough that the default
@@ -59,7 +52,8 @@ type TooltipLabel = string | (() => string)
  * anchor dismisses the bubble unless openOnClick is enabled, and focus arriving after a pointer
  * interaction (a closing menu refocusing its trigger) never raises it.
  */
-export function Tooltip({ label, shortcutKeys, side = 'right', align = 'center', delayMs = 0, focusDelayMs = 0, gap = 8, disabled = false, portal = false, maxWidth, openOnClick = false, children }: { label: TooltipLabel; shortcutKeys?: readonly string[] | undefined; side?: TooltipSide; align?: 'center' | 'end'; delayMs?: number; focusDelayMs?: number; gap?: number; disabled?: boolean; portal?: boolean; maxWidth?: number; openOnClick?: boolean; children: ReactElement<AnchorProps> }) {
+export function Tooltip({ label, shortcutKeys, side = 'right', delayMs = 0, focusDelayMs = 0, disabled = false, portal = false, maxWidth, openOnClick = false, children }: { label: string; shortcutKeys?: readonly string[] | undefined; side?: TooltipSide; delayMs?: number; focusDelayMs?: number; disabled?: boolean; portal?: boolean; maxWidth?: number; openOnClick?: boolean; children: ReactElement<AnchorProps> }) {
+  const gap = 8
   const id = useId()
   const [pinned, setPinned] = useState(false)
   const anchor = useRef<HTMLElement | null>(null)
@@ -75,9 +69,6 @@ export function Tooltip({ label, shortcutKeys, side = 'right', align = 'center',
   // re-derive the bubble's own top from the opposite edge.
   const [pos, setPos] = useState<{ x: number; top: number; bottom: number } | null>(null)
   const bubble = useRef<HTMLSpanElement | null>(null)
-  const resolvedLabel = pos === null
-    ? null
-    : typeof label === 'function' ? label() : label
   const y = pos === null
     ? 0
     : side === 'right'
@@ -108,7 +99,7 @@ export function Tooltip({ label, shortcutKeys, side = 'right', align = 'center',
     const fit = () => {
       if (size === undefined) return
       const { inlineSize: width, blockSize: height } = size
-      const offset = side === 'right' ? 0 : align === 'end' ? width : width / 2
+      const offset = side === 'right' ? 0 : width / 2
       const left = Math.max(edgeMargin, Math.min(pos.x - offset, window.innerWidth - edgeMargin - width))
       const fitsBelow = pos.bottom + gap + height <= window.innerHeight - edgeMargin
       const fitsAbove = pos.top - gap - height >= edgeMargin
@@ -130,7 +121,7 @@ export function Tooltip({ label, shortcutKeys, side = 'right', align = 'center',
       observer.disconnect()
       window.removeEventListener('resize', fit)
     }
-  }, [align, gap, pos, side, suppressed, visible])
+  }, [pos, side, suppressed, visible])
   useEffect(() => {
     announce(visible)
     return () => { announce(false) }
@@ -160,7 +151,7 @@ export function Tooltip({ label, shortcutKeys, side = 'right', align = 'center',
     if (el === null) return
     const r = el.getBoundingClientRect()
     setPos({
-      x: side === 'right' ? r.right + 10 : align === 'end' ? r.right : r.left + r.width / 2,
+      x: side === 'right' ? r.right + 10 : r.left + r.width / 2,
       top: r.top,
       bottom: r.bottom,
     })
@@ -211,13 +202,12 @@ export function Tooltip({ label, shortcutKeys, side = 'right', align = 'center',
       data-side={side}
       data-portal={portal || undefined}
       data-pinned={pinned || undefined}
-      data-align={align}
       data-has-shortcut={shortcutKeys?.length ? true : undefined}
       style={{ left: pos.x, top: y, visibility: 'hidden', ...maxWidth === undefined ? {} : { maxWidth } }}
       role="tooltip"
-      aria-label={shortcutKeys?.length ? [resolvedLabel, shortcutKeys.join(' ')].filter(Boolean).join(' ') : undefined}
+      aria-label={shortcutKeys?.length ? [label, shortcutKeys.join(' ')].filter(Boolean).join(' ') : undefined}
     >
-      {resolvedLabel && <span className={css.label}>{resolvedLabel}</span>}
+      {label && <span className={css.label}>{label}</span>}
       {shortcutKeys !== undefined && shortcutKeys.length > 0 && <ShortcutKeys keys={shortcutKeys} variant="tooltip" />}
     </span>
   )

@@ -113,7 +113,7 @@ function emitPluginDisposed(context: Context, fiber: Fiber) {
   const args: any[] = ['internal/plugin', fiber]
   let callbacks: Function[]
   try {
-    callbacks = context.events.dispatch('emit', args)
+    callbacks = context.events.dispatch(args)
   } catch (error) {
     context.logger.error(error)
     return
