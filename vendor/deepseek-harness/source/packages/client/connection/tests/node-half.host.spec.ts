@@ -6,7 +6,6 @@ import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import type { AddressInfo } from 'node:net'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { AttachmentStore } from '@deepseek-ai/dsh-attachment'
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
 import type { IndexInjection, WebServer, WebRoute, WebUpgradeRoute } from '@deepseek-ai/dsh-host-webserver'
 import {
@@ -19,7 +18,6 @@ import {
   type HostConnectionHandle,
   type PeerScope,
 } from '../src/index.ts'
-import { DEFAULT_MAX_REQUEST_BODY_BYTES } from '../src/http-bridge.ts'
 import { provideBrowserCredentials } from './browser-credentials.ts'
 
 /** Structural webServer fake recording both route registries. */
@@ -311,23 +309,6 @@ describe('connection node half', () => {
         await deployment.dispose()
       }
     }
-  })
-
-  it('reserves enough default carrier capacity for the 200 MiB image batch', () => {
-    expect(DEFAULT_MAX_REQUEST_BODY_BYTES).toBe(300 * 1024 * 1024)
-    expect(DEFAULT_MAX_REQUEST_BODY_BYTES).toBeGreaterThan(Math.ceil(200 * 1024 * 1024 * 4 / 3) + 1024 * 1024)
-  })
-
-  it('fails loud when the carrier cap cannot hold the configured image batch', async () => {
-    const ctx = new Context()
-    const routes: WebRoute[] = []
-    ctx.provide('webServer', fakeHttpServer(routes, []) as WebServer)
-    ctx.provide('attachments', {
-      imageLimits: { maxMessageImageBytes: 20 * 1024 * 1024 },
-    } as AttachmentStore)
-    await expect(apply(ctx, { maxRequestBodyBytes: 1024 }))
-      .rejects.toThrow(/must be at least .* aggregate image limit/)
-    expect(routes).toHaveLength(0)
   })
 
   it('fails the load on a trustedHosts entry that is not a bare authority', async () => {

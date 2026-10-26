@@ -14,7 +14,7 @@ import type { HostObservable, SnapshotSelectorHook } from '@deepseek-ai/dsh-clie
  * subscribe/getSnapshot are captured once per source into stable closures
  * (also re-binds `this` for method-based sources), so components never
  * resubscribe across renders. Equality defaults to Object.is.
- * @param w - snapshot source (engine store, Session object, store instance).
+ * @param w - snapshot source (engine store or plugin snapshot).
  * @returns the selector hook.
  */
 export function bindSnapshotSelector<T>(w: HostObservable<T>): SnapshotSelectorHook<T> {

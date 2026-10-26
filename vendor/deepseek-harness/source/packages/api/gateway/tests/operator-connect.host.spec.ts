@@ -15,7 +15,6 @@ import WebServer from '@deepseek-ai/dsh-host-webserver'
 import * as FrontendStatic from '@deepseek-ai/dsh-host-frontend-static'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import TypertGateway from '@deepseek-ai/dsh-api-gateway'
-import RemoteAccess from '@deepseek-ai/dsh-api-remote-access'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
 import { z } from 'zod'
@@ -205,7 +204,6 @@ async function boot(): Promise<Host> {
     { name: '@deepseek-ai/dsh-client-connection' },
     { name: '@deepseek-ai/dsh-host-frontend-static', config: { distIndex } },
     { name: '@deepseek-ai/dsh-typert-registry' },
-    { name: '@deepseek-ai/dsh-api-remote-access' },
     { name: '@deepseek-ai/dsh-api-gateway' },
     { name: '@fixture/operator-connect' },
   ]
@@ -221,7 +219,6 @@ async function boot(): Promise<Host> {
       '@deepseek-ai/dsh-client-connection': Connection,
       '@deepseek-ai/dsh-host-frontend-static': FrontendStatic,
       '@deepseek-ai/dsh-typert-registry': TypertRegistry,
-      '@deepseek-ai/dsh-api-remote-access': RemoteAccess,
       '@deepseek-ai/dsh-api-gateway': TypertGateway,
       '@fixture/operator-connect': OperatorConnectFixture,
     })

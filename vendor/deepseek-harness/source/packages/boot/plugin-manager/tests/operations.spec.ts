@@ -89,6 +89,22 @@ function fixture() {
   return { home, dir, context: { home, profile: 'test', installAnchor, cwd: home }, pnpm }
 }
 
+it.each(['missing-directory', 'missing', 'malformed'] as const)('refuses a %s profile without initializing it or running pnpm', async state => {
+  const { context, dir } = fixture()
+  const manifest = join(dir, 'package.json')
+  if (state === 'missing-directory') rmSync(dir, { recursive: true })
+  else if (state === 'missing') rmSync(manifest)
+  else writeFileSync(manifest, '{invalid')
+  const operation = runPluginCommand(context, ['add', 'new'], { execution: 'service', outputBytes: 100 })
+  if (state === 'missing-directory') await expect(operation).rejects.toMatchObject({ code: 'ENOENT' })
+  else if (state === 'missing') await expect(operation).rejects.toThrow('failed to read profile manifest')
+  else await expect(operation).rejects.toBeInstanceOf(SyntaxError)
+  expect(command.run).not.toHaveBeenCalled()
+  if (state === 'missing-directory') expect(existsSync(dir)).toBe(false)
+  else if (state === 'missing') expect(existsSync(manifest)).toBe(false)
+  else expect(readFileSync(manifest, 'utf8')).toBe('{invalid')
+})
+
 function result(
   exitCode: number | undefined, output: string, mutate: () => void = () => {},
   details: { code?: string; shortMessage?: string } = {},
@@ -607,20 +623,6 @@ it('retains partial package-manager changes after a failed install without activ
   expect(readProfileManifest('test', dir).dependencies).toEqual({ partial: '1' })
   expect(readProfileManifest('test', dir).dsh?.profile?.bundles).toEqual([])
 })
-
-
-it('initializes missing profiles under the same lock and reports initialization', async () => {
-  const { home, context } = fixture()
-  const messages: string[] = []
-  for (const profile of ['custom', 'web']) {
-    await runPluginCommand({ ...context, profile }, ['root'], {
-      execution: 'service', outputBytes: 100, lockWaitMs: 1000, onOutput: (text) => { messages.push(text) },
-    })
-    expect(readProfileManifest('test', join(home, 'profiles', profile)).dsh?.profile?.bundles).toEqual([])
-  }
-  expect(messages.filter(text => text.includes('initialized profile'))).toHaveLength(2)
-})
-
 /** The record an operation leaves for the pnpm run it started. */
 function runRecord(dir: string): string {
   return join(dir, '.plugin-manager', 'run.json')

@@ -21,8 +21,6 @@
       name: '@deepseek-ai/dsh-typert-loader'
     - id: typert-gateway
       name: '@deepseek-ai/dsh-api-gateway'
-    - id: remote-access
-      name: '@deepseek-ai/dsh-api-remote-access'
     - id: jobs
       name: '@deepseek-ai/dsh-jobs-local'
     - id: config-editor

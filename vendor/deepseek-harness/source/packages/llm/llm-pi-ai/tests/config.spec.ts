@@ -19,6 +19,14 @@ const configWith = (model: Record<string, unknown>): (() => unknown) =>
   routeWith({ models: [{ id: 'm', ...model }] })
 
 describe('reasoning schema boundary', () => {
+  it('loads old image budget fields without changing active defaults or saved values', () => {
+    const legacy = { maxRequestImageBytes: 1024, requestImagePixelBudget: 2048, requestImageMaxBytes: 512 }
+    expect(routeWith(legacy)).not.toThrow()
+    const resolved = resolveProfiles({ openai: legacy } as never).get('openai')
+    expect(resolved?.provider).toBe('openai')
+    expect(resolved?.defaultMaxTokens).toBe(resolveProfiles({ openai: {} }).get('openai')?.defaultMaxTokens)
+    expect(legacy).toEqual({ maxRequestImageBytes: 1024, requestImagePixelBudget: 2048, requestImageMaxBytes: 512 })
+  })
   it('accepts an empty provider section and propagates unexpected catalog failures', () => {
     expect(() => { assertServiceable({}) }).not.toThrow()
     const failure = new TypeError('model metadata lookup failed')
@@ -82,28 +90,5 @@ describe('modality schema boundary', () => {
     const absent = configWith({})() as Materialized
     expect(absent.providers['acme-gateway']?.models?.[0]?.input).toEqual([])
     expect(absent.providers['acme-gateway']?.defaultInput).toEqual(['text'])
-  })
-})
-
-describe('request image policy bounds', () => {
-  it.each([
-    ['requestImagePixelBudget', 0, /requestImagePixelBudget must be a positive safe integer/],
-    ['requestImagePixelBudget', Number.MAX_SAFE_INTEGER + 1, /requestImagePixelBudget must be a positive safe integer/],
-    ['requestImageMaxBytes', 0, /requestImageMaxBytes must be a positive safe integer/],
-    ['requestImageMaxBytes', 1.5, /requestImageMaxBytes must be a positive safe integer/],
-  ] as const)('rejects %s=%s at service resolution', (field, value, message) => {
-    const programmatic = {
-      providers: {
-        'acme-gateway': {
-          api: 'openai-completions',
-          baseURL: 'https://acme.test',
-          models: [{ id: 'm' }],
-          [field]: value,
-        },
-      },
-    } as Options
-    expect(() => {
-      assertServiceable(programmatic)
-    }).toThrow(message)
   })
 })

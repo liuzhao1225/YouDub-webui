@@ -11,7 +11,7 @@ import type {
 import { SlotCore } from '@deepseek-ai/dsh-client-ui-slots'
 
 // Only package-unique SlotMap keys are merged here. The standard-kit
-// interfaces (SessionStandardProps/GlobalStandardProps) are NOT re-merged:
+// interface GlobalStandardProps are NOT re-merged:
 // the owning UI adapters provide the real members, and in the client aggregate
 // program a toy merge would collide with them — samples below stay
 // shape-agnostic about kit member payloads for the same reason.
@@ -19,15 +19,15 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     'chain.frame': { kind: 'single'; scope: 'root' }
     'chain.side': { kind: 'single'; scope: 'root'; owner: { collapsed: boolean; width: number } }
-    'chain.conv': { kind: 'single'; scope: 'session' }
+    'chain.conv': { kind: 'single'; scope: 'root' }
     'chain.context': {
       kind: 'single'
-      scope: 'session'
+      scope: 'root'
       hookContext: string
       inject: ContextInjected
     }
-    'chain.tools': { kind: 'keyed'; scope: 'session' }
-    'chain.takeover': { kind: 'chain'; scope: 'session'; owner: { items: readonly Item[] } }
+    'chain.tools': { kind: 'keyed'; scope: 'root' }
+    'chain.takeover': { kind: 'chain'; scope: 'root'; owner: { items: readonly Item[] } }
   }
 
   interface LocaleNamespaceMap {
@@ -36,13 +36,13 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
   interface SlotFactoryMap {
     'chain.factory': {
-      scope: 'session'
+      scope: 'root'
       props: { tone: 'quiet' | 'loud' }
       children: { 'chain.side': { kind: 'single'; scope: 'root' } }
       store: ChatHandle
       inject: { send: (text: string) => void }
       locale: 'chain.factory'
-      slots: { views: { scope: 'session'; props: { active: boolean } } }
+      slots: { views: { scope: 'root'; props: { active: boolean } } }
     }
     'chain.factory.overlap': {
       scope: 'root'
@@ -50,7 +50,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     }
     'chain.factory.bad-child': {
       scope: 'root'
-      children: { 'chain.conv': { kind: 'single'; scope: 'root' } }
+      children: { 'chain.conv': { kind: 'keyed'; scope: 'root' } }
     }
     'chain.factory.factory-store': {
       scope: 'root'
@@ -149,7 +149,7 @@ describe('terminal-design type chain', () => {
         name: 'chain.frame',
         children: {
           'chain.side': { kind: 'single', scope: 'root' },
-          'chain.conv': { kind: 'single', scope: 'session' },
+          'chain.conv': { kind: 'single', scope: 'root' },
         },
         store: createPanelStore,
         inject: (actions) => {
@@ -158,15 +158,13 @@ describe('terminal-design type chain', () => {
         },
       }, Frame)
 
-      // Conv: shared handle; inject params derive as (sessionId, actions).
+      // Conv: shared handle; inject receives the store actions.
       core.register({
         name: 'chain.conv',
         store: chat,
-        inject: (sessionId, actions) => ({
+        inject: (actions) => ({
           send: (text: string) => {
-            const sid: string = sessionId
             actions.setDraft(text)
-            void sid
           },
         }),
       }, Conv)
@@ -213,7 +211,7 @@ describe('terminal-design type chain', () => {
       core.register({
         name: 'chain.frame',
         children: {
-          'chain.context': { kind: 'single', scope: 'session', inject: CONTEXT_INJECT },
+          'chain.context': { kind: 'single', scope: 'root', inject: CONTEXT_INJECT },
         },
       }, ContextOwner)
       core.register({ name: 'chain.context' }, ContextReader)
@@ -229,13 +227,13 @@ describe('terminal-design type chain', () => {
       // children spec must match the SlotMap entry.
       core.register({
         name: 'chain.frame',
-        // @ts-expect-error chain.conv is session-scoped in SlotMap
-        children: { 'chain.conv': { kind: 'single', scope: 'root' } },
+        // @ts-expect-error retired session scope is unsupported
+        children: { 'chain.conv': { kind: 'single', scope: 'session' } },
       }, (() => null) as SlotComponent<never>)
       core.register({
         name: 'chain.frame',
         // @ts-expect-error chain.context requires its Slot-level inject declaration
-        children: { 'chain.context': { kind: 'single', scope: 'session' } },
+        children: { 'chain.context': { kind: 'single', scope: 'root' } },
       }, ContextOwner)
 
       // renderSlot key set ⊄ children declaration.
@@ -320,8 +318,8 @@ describe('terminal-design type chain', () => {
       // @ts-expect-error wrong payload type
       acts.setDraft(1)
 
-      // SessionProvider seat: derives from a session-scope child declaration.
-      fp.SessionProvider({ empty: () => null, children: null })
+      // @ts-expect-error SessionProvider has retired from the standard kit
+      fp.SessionProvider({ children: null })
       const sideOnly: PropsRenderSlots<'chain.side'> = null as never
       // @ts-expect-error only root-scope children declared → no SessionProvider seat
       void sideOnly.SessionProvider
@@ -329,18 +327,16 @@ describe('terminal-design type chain', () => {
       // Factory registration derives every supplied share from one map entry.
       core.registerFactory({
         name: 'chain.factory',
-        scope: 'session',
+        scope: 'root',
         children: { 'chain.side': { kind: 'single', scope: 'root' } },
         store: chat,
-        inject: (sessionId, actions) => ({
+        inject: (actions) => ({
           send: (text: string) => {
-            const sid: string = sessionId
             actions.setDraft(text)
-            void sid
           },
         }),
         locale: 'chain.factory',
-        slots: { views: { scope: 'session' } },
+        slots: { views: { scope: 'root' } },
       }, FactoryBody)
       fp.renderFactorySlot('chain.factory', { tone: 'quiet' }, {
         slots: { views: FactoryViews },
@@ -362,13 +358,13 @@ describe('terminal-design type chain', () => {
       fp.renderFactorySlot('chain.factory', { tone: 'quiet' }, { slots: { views: NarrowFactoryViews } })
       core.registerFactory({
         name: 'chain.factory',
-        // @ts-expect-error Factory scope must match the declaration
-        scope: 'root',
+        // @ts-expect-error retired Factory scope is unsupported
+        scope: 'session',
         children: { 'chain.side': { kind: 'single', scope: 'root' } },
         store: chat,
-        inject: (_sessionId, _actions) => ({ send: (_text: string) => {} }),
+        inject: (_actions) => ({ send: (_text: string) => {} }),
         locale: 'chain.factory',
-        slots: { views: { scope: 'session' } },
+        slots: { views: { scope: 'root' } },
       }, FactoryBody)
       // @ts-expect-error Factory input may not replace a framework-provided prop
       core.registerFactory({ name: 'chain.factory.overlap', scope: 'root' }, OverlappingFactory)
@@ -376,7 +372,7 @@ describe('terminal-design type chain', () => {
       core.registerFactory({
         name: 'chain.factory.bad-child',
         scope: 'root',
-        children: { 'chain.conv': { kind: 'single', scope: 'root' } },
+        children: { 'chain.conv': { kind: 'keyed', scope: 'root' } },
       }, BadChildFactory)
       core.registerFactory({
         name: 'chain.factory.factory-store',

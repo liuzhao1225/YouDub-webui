@@ -2,9 +2,39 @@
 
 更新：2026-10-26。来源见 [upstream.json](../../../vendor/deepseek-harness/upstream.json)。
 
-## 按实际调用精简（2026-10-26）
+## 第二轮包内精简（2026-10-26）
 
-本轮继续维护 69 个框架源码包、61 个运行包，清理集中在包内闲置能力和重复的旧实现。
+本轮以 `8c4f0599` 为基线，保留 YouDub 媒体、工作流、审核、任务、资源和插件入口，继续删除这些入口没有使用的框架能力。源码包 **69 → 67**，重新生成的开发运行项目 **61 → 59**。
+
+| 范围 | 本轮删除 | 继续保留 |
+| --- | --- | --- |
+| LLM 与附件 | 聊天图片/文件服务、Agent 消息构造器、工具历史、回放 envelope、`BlockAssembler` | Harness `prepareCall → stream`、system/user 文本、供应商及模型配置、凭据、思考与用量、取消及错误 |
+| UI 插槽 | `session` / `session-maybe` scope、SessionProvider、会话绑定与缓存 | root scope、single/list/keyed/chain、Component Factory、注入、独立实例状态、显式共享 store、插件卸载 |
+| Remote 权限 | RemoteAccess 多角色策略、权限快照与客户端 Hooks | Connection 认证与 Origin 检查、Gateway owner 限制、RPC、事件流、上传与二进制传输 |
+| Profile | 已为空的上游模板、默认模板复制、无调用的 snapshot replay | 已有 profile、用户 patch、插件及依赖元数据、YouDub 升级迁移 |
+| 测试 | 退役能力的专属矩阵、失效引用与空套件 | 拒绝非 owner、原始错误与取消、模型真实协议 fixture、配置升级、组件实例隔离及插件启停 |
+
+公开合同的变化见[框架接口范围](../../../vendor/deepseek-harness/README.md#维护中的接口范围)、[前端说明](FRONTEND-DEVELOPMENT.md#页面与插槽)和[后端说明](BACKEND-DEVELOPMENT.md#python-与模型调用)。依赖退役接口的外部插件需要迁移；当前三个 YouDub 示例插件使用保留的合同。旧图片预算配置仍可加载，历史值不改写；缺失或损坏的 profile 显式失败，插件安装不会隐式创建空配置。
+
+以下沿用上一轮非空源码行口径，注释计入。依赖、缓存、未跟踪文件、JSON/YAML、Markdown、快照与媒体单列；Demucs 子模块未改，仍单列 6,393 非空行。
+
+| 范围 | 本轮前 | 当前 | 本轮净减 | 相对 `main/aaba8ef3` 累计净减 |
+| --- | ---: | ---: | ---: | ---: |
+| 生产源码 | 93,751 | 89,217 | 4,534 | 8,891 |
+| 测试及源码夹具 | 77,804 | 75,416 | 2,388 | 16,441 |
+| 构建和工程工具 | 9,945 | 9,939 | 6 | 19 |
+| 官网和文档示例 | 599 | 599 | 0 | 1,555 |
+| 合计 | 182,099 | 175,171 | 6,928 | 26,906 |
+
+源码文件 1,176 → 1,155，物理行 197,116 → 189,652。主分支历史基线为 202,077 非空行；其中含 4 个当时跟踪的插件 dist 测试夹具，共 178 行，已在前轮删除。若历史两侧也排除这些生成夹具，累计净减为 26,728 行；本轮净减和当前总量不变。
+
+验证：框架与产品源码编译、装配、业务/页面类型和中英日语言检查通过。定向框架回归 1,747 项、构建协议 3 项、Host/模型/配置/文件集成 33 项、Web 页面 245 项，共 2,028 个唯一测试通过。1 项大小写敏感文件系统测试在当前 macOS 文件系统跳过。首次回归发现退役测试引用和请求转换时的取消分类回归；修正后仅重跑受影响文件。源码与构建包的协议测试关闭 tsconfig alias，确实验证两份 Context 的互操作。
+
+独立中文 Electron 窗口检查了首屏与运行中的 Logo 动效、任务库、三份内置工作流及字幕翻译画布、资源检测和模型设置，未出现页面运行错误。UI 验收使用独立测试 profile，资源页如实显示尚未准备的模型；没有下载模型或调用外部 LLM。本轮未重跑完整真实视频处理，也未打包、安装或发布。统计、日志和截图保存在本地 `output/code-pruning-round2-2026-10-26/`。
+
+## 上一轮按实际调用精简（2026-10-26）
+
+该轮维护 69 个框架源码包、61 个运行包，清理集中在包内闲置能力和重复的旧实现。
 
 - 移除原生文件关联应用枚举、指定应用打开接口及对应专属测试。配置文件打开继续使用 `openNativeTextFile`；退役的公开接口见[框架说明](../../../vendor/deepseek-harness/README.md#维护中的接口范围)。
 - 移除已退出产品的内嵌浏览器、HTML 预览快捷键转发，以及聊天输入框专用 overlay 渲染。保留主文档快捷键、菜单、编辑、组合键、焦点保护和通用 scope、Component Factory、插件注入机制。
@@ -17,7 +47,7 @@
 - 测试按产品行为裁剪：移除生成器语法穷举及其大快照、无引用 Markdown DOM 快照、整树 CSS 扫描、通用容器内部矩阵、聊天附件和 Agent 工具历史回放测试。保留实际协议请求、凭据与鉴权、配置重载、插件生命周期、进程取消和退出，以及 YouDub 媒体、迁移和工作流业务回归。类型生成器本身及生成后 Remote 集成验证保留。
 - 界面参考 HTML 改为由现有脚本生成到忽略的 `output/`，避免维护另一份已内嵌生产 CSS 的生成文件。
 
-生产源码、构建工具、测试和语言数据分别统计。仅用于测试的代码可以迁移到测试装配，不能因此删掉其行为覆盖；公共作用域机制和当前数据迁移不能仅因产品暂未使用所有能力而删除。
+生产源码、构建工具、测试和语言数据分别统计。仅用于测试的代码可以迁移到测试装配，不能因此删掉其行为覆盖；连接所需的 Context 释放机制和当前数据迁移继续保留。
 
 与 `main/aaba8ef3` 比较，按 Git 跟踪源码扩展名统计非空行，注释计入；依赖、缓存、编译产物、JSON/YAML、Markdown、快照和媒体不计入。两个运行时 `src/config.ts` 和一个 benchmark 在两侧同时修正归类，总数不受影响。
 
@@ -66,9 +96,9 @@
 
 ## 统计口径
 
-原始源码 203 个包，历次裁剪为 156 → 87 → 80 → 70 → **69 个**。最近一轮删除无入口的授权登录包；其余删除集中在保留包内部。
+原始源码 203 个包，历次裁剪为 156 → 87 → 80 → 70 → 69 → **67 个**。本轮删除聊天附件和 RemoteAccess 包；其余删除集中在保留包内部。
 
-源码包数按 `vendor/deepseek-harness/source` 中的工作区 `package.json` 统计，不包含仓库根清单。原先“78 个”和上轮“72 个”统计的是开发运行项目链接的包，与源码包总数口径不同；当前重新生成的开发运行项目为 **61 个运行包**（前两轮分别为 72、62 个）。余下 8 个源码包用于前端编译、桌面构建和类型生成。
+源码包数按 `vendor/deepseek-harness/source` 中的工作区 `package.json` 统计，不包含仓库根清单。原先“78 个”和“72 个”统计的是开发运行项目链接的包，与源码包总数口径不同；当前重新生成的开发运行项目为 **59 个运行包**（前几轮分别为 72、62、61 个）。余下 8 个源码包用于前端编译、桌面构建和类型生成。
 
 依赖安装目录、构建缓存与本地验收证据不属于源码包。源码数量和安装包体积分别统计。
 
@@ -114,7 +144,7 @@
 | `@deepseek-ai/dsh-storage` | 随会话存储移除后无消费者的存储抽象。 |
 | `@deepseek-ai/dsh-storage-domain` | 随会话存储移除后无消费者的存储域。 |
 
-保留包内同时移除 Jobs 的 Agent/会话归属与通知、会话遥测启动 patch、Agent 远端 waterfall、终端字号与字体设置和相应专用依赖。通用 RPC、Context 映射、双向流、资源权限、插件安装启停卸载、Profile 合成及生命周期继续使用 Harness 原实现。`scope` 保留连接所需的子 Context 释放机制；`attachment` 保留现有 LLM 与通信契约所引用的类型。
+保留包内同时移除 Jobs 的 Agent/会话归属与通知、会话遥测启动 patch、Agent 远端 waterfall、终端字号与字体设置和相应专用依赖。通用 RPC、Context 映射、双向流、Connection 认证、插件安装启停卸载、Profile 合成及生命周期继续使用 Harness 实现。`scope` 保留连接所需的子 Context 释放机制；聊天 `attachment` 服务及其 LLM 引用已经移除，Connection 二进制传输继续保留。
 
 构建从当前源码树生成实际包列表。删除包或包内源码时，同步清理对应旧编译输出，避免增量构建把已删除代码带回产物。上轮框架客户端产物从 184 个降为 44 个，语言语法包和数学字体已移除；此数值统计框架构建产物，不代表安装包文件数或体积。
 
@@ -136,12 +166,10 @@
 | @deepseek-ai/cosmokit | [vendor/cosmokit](../../../vendor/deepseek-harness/source/vendor/cosmokit/package.json) |
 | @deepseek-ai/dsh | [apps/cli](../../../vendor/deepseek-harness/source/apps/cli/package.json) |
 | @deepseek-ai/dsh-api-gateway | [packages/api/gateway](../../../vendor/deepseek-harness/source/packages/api/gateway/package.json) |
-| @deepseek-ai/dsh-api-remote-access | [packages/api/remote-access](../../../vendor/deepseek-harness/source/packages/api/remote-access/package.json) |
 | @deepseek-ai/dsh-api-remotes | [packages/api/remotes](../../../vendor/deepseek-harness/source/packages/api/remotes/package.json) |
 | @deepseek-ai/dsh-api-settings-controller | [packages/api/settings-controller](../../../vendor/deepseek-harness/source/packages/api/settings-controller/package.json) |
 | @deepseek-ai/dsh-app-boot | [packages/boot/app-boot](../../../vendor/deepseek-harness/source/packages/boot/app-boot/package.json) |
 | @deepseek-ai/dsh-atomic-write | [packages/util/atomic-write](../../../vendor/deepseek-harness/source/packages/util/atomic-write/package.json) |
-| @deepseek-ai/dsh-attachment | [packages/attachment/attachment](../../../vendor/deepseek-harness/source/packages/attachment/attachment/package.json) |
 | @deepseek-ai/dsh-brand | [packages/util/brand](../../../vendor/deepseek-harness/source/packages/util/brand/package.json) |
 | @deepseek-ai/dsh-client-connection | [packages/client/connection](../../../vendor/deepseek-harness/source/packages/client/connection/package.json) |
 | @deepseek-ai/dsh-client-hmr | [packages/client/hmr](../../../vendor/deepseek-harness/source/packages/client/hmr/package.json) |

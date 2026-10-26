@@ -1,19 +1,15 @@
 /**
  * pi-ai assistant event translation into the Harness streaming protocol.
  *
- * pi-ai tool-call arguments are parsed objects while the Harness keeps their
- * raw JSON representation. pi-ai also reports failures as terminal stream
- * events, which this module maps into Harness finish chunks.
+ * Provider failures remain terminal error or aborted finish chunks.
  *
  * @module dsh-llm-pi-ai/stream
  */
 
-import { brandString } from '@deepseek-ai/dsh-brand'
 import { CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, isContextWindowExceededError, isQuotaExceededError, LlmError, QUOTA_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
-import type { FinishReason, StreamChunk, TokenUsage, ToolCallId } from '@deepseek-ai/dsh-llm'
+import type { FinishReason, StreamChunk, TokenUsage } from '@deepseek-ai/dsh-llm'
 import { isContextOverflow } from '@earendil-works/pi-ai/utils/overflow'
 import type { AssistantMessage, AssistantMessageEvent, Usage as PiUsage } from '@earendil-works/pi-ai'
-import { toPiReplayState } from './replay.ts'
 
 /**
  * Map pi-ai usage (reasoning folded into output by pi-ai).
@@ -94,6 +90,9 @@ export function mapStopReason(message: AssistantMessage, contextWindow?: number)
 
   switch (message.stopReason) {
     case 'stop':
+      if (message.content.some(block => block.type === 'toolCall')) {
+        return { kind: 'error', failure: { message: 'YouDub model calls do not support tool responses', code: 'UNSUPPORTED_CONTENT' } }
+      }
       // A terminal stop that produced no content blocks is a degenerate
       // provider completion, not a successful (empty) assistant message.
       if (message.content.length === 0) {
@@ -107,7 +106,7 @@ export function mapStopReason(message: AssistantMessage, contextWindow?: number)
       }
       return { kind: 'stop' }
     case 'length': return { kind: 'max-tokens' }
-    case 'toolUse': return { kind: 'tool-calls' }
+    case 'toolUse': return { kind: 'error', failure: { message: 'YouDub model calls do not support tool responses', code: 'UNSUPPORTED_CONTENT' } }
     case 'pending': return {
       kind: 'error',
       failure: { message: `pi-ai stream for model "${message.model}" ended pending`, code: 'PI_AI_ERROR' },
@@ -135,7 +134,6 @@ export function mapStopReason(message: AssistantMessage, contextWindow?: number)
  * @param contextWindow - resolved catalog capacity for usage-based overflow detection.
  * @param callerSignal - caller cancellation state; an aborted caller makes any
  *   in-band terminal error an aborted finish.
- * @param requestedModel - request model identity recorded for durable replay.
  * @returns the harness chunks, ending with `usage` then `finish`; throws
  *   `LlmError` (`STREAM_CLOSED`) if the source ends without a terminal event.
  */
@@ -143,12 +141,7 @@ export async function* toStreamChunks(
   events: AsyncIterable<AssistantMessageEvent>,
   contextWindow?: number,
   callerSignal?: AbortSignal,
-  requestedModel?: string,
 ): AsyncGenerator<StreamChunk> {
-  // pi-ai contentIndex ↔ our block index map 1:1 (both count blocks from 0
-  // in stream order), but we track ids per index for tool calls.
-  const toolIds = new Map<number, { id: string; name: string }>()
-
   for await (const event of events) {
     switch (event.type) {
       case 'start':
@@ -171,46 +164,15 @@ export async function* toStreamChunks(
       case 'thinking_end':
         yield { type: 'block-end', index: event.contentIndex, block: { type: 'reasoning', text: event.content } }
         break
-      case 'toolcall_start': {
-        // The id/name live on the partial's content at this index.
-        const partial = event.partial.content[event.contentIndex]
-        const id = partial?.type === 'toolCall' ? partial.id : ''
-        const name = partial?.type === 'toolCall' ? partial.name : ''
-        toolIds.set(event.contentIndex, { id, name })
-        yield { type: 'block-start', index: event.contentIndex, blockType: 'tool-call' }
-        break
-      }
-      case 'toolcall_delta': {
-        const known = toolIds.get(event.contentIndex)
-        yield {
-          type: 'tool-call-delta',
-          index: event.contentIndex,
-          id: brandString<ToolCallId>(known?.id ?? ''),
-          ...known?.name !== undefined && known.name.length > 0 ? { name: known.name } : {},
-          argumentsDelta: event.delta,
-        }
-        break
-      }
+      case 'toolcall_start':
+      case 'toolcall_delta':
       case 'toolcall_end':
-        yield {
-          type: 'block-end',
-          index: event.contentIndex,
-          block: {
-            type: 'tool-call',
-            id: brandString<ToolCallId>(event.toolCall.id),
-            name: event.toolCall.name,
-            // pi-ai hands back the PARSED arguments; the harness vocabulary
-            // keeps the raw string.
-            arguments: JSON.stringify(event.toolCall.arguments),
-          },
-        }
-        break
+        throw new LlmError('YouDub model calls do not support tool responses', 'UNSUPPORTED_CONTENT')
       case 'done':
         yield { type: 'usage', usage: mapUsage(event.message.usage) }
         yield {
           type: 'finish',
           reason: mapStopReason(event.message, contextWindow),
-          replayState: toPiReplayState(event.message, requestedModel),
         }
         return
       case 'error':

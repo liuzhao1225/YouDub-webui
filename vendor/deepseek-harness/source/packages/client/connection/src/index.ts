@@ -2,7 +2,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import z from '@deepseek-ai/schemastery'
-import type {} from '@deepseek-ai/dsh-attachment'
 import type {} from '@deepseek-ai/dsh-credentials'
 // Activates the webServer Context merge used below.
 import type { WebRoute } from '@deepseek-ai/dsh-host-webserver'
@@ -72,23 +71,6 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-/** Headroom for RPC JSON fields around aggregate base64 image payloads. */
-const REQUEST_ENVELOPE_HEADROOM_BYTES = 1024 * 1024
-
-function assertImageBodyCapacity(ctx: Context, maxRequestBodyBytes: number): void {
-  const attachments = ctx.get('attachments')
-  if (attachments === undefined) return
-  const requiredImageBodyBytes = Math.ceil(
-    attachments.imageLimits.maxMessageImageBytes * 4 / 3,
-  ) + REQUEST_ENVELOPE_HEADROOM_BYTES
-  if (maxRequestBodyBytes < requiredImageBodyBytes) {
-    throw new Error(
-      `client-connection maxRequestBodyBytes (${String(maxRequestBodyBytes)}) must be at least `
-      + `${String(requiredImageBodyBytes)} for the configured aggregate image limit`,
-    )
-  }
-}
-
 /** Services required before providing Connection. */
 export const inject = ['credentials']
 
@@ -132,14 +114,12 @@ export async function apply(ctx: Context, config?: ConnectionConfig): Promise<vo
   // Config boundary: a malformed entry fails the load loudly here rather than
   // silently authorizing its hostname prefix at request time.
   for (const entry of trustedHosts) assertTrustedAuthority(entry)
-  assertImageBodyCapacity(ctx, maxRequestBodyBytes)
   const connection = new HostConnectionService(
     ctx,
     trustedHosts,
     await BrowserAuth.create(ctx.root, ctx.credentials, cookieMaxAgeDays),
   )
   ctx.inject(['webServer'], (webCtx) => {
-    assertImageBodyCapacity(webCtx, maxRequestBodyBytes)
     webCtx.on('webserver/index-inject', (table) => {
       table.push({ kind: 'global', name: '__DSH_CONNECTION_RECOVERY__', value: recovery })
     })
@@ -162,8 +142,5 @@ export async function apply(ctx: Context, config?: ConnectionConfig): Promise<vo
       kind: 'exact', path: CONNECT_PATH,
       handler: (req, res) => { connection.authorizeConnect(req, res) },
     }), 'client-connection: /connect route')
-  })
-  ctx.inject(['attachments'], (attachmentCtx) => {
-    assertImageBodyCapacity(attachmentCtx, maxRequestBodyBytes)
   })
 }

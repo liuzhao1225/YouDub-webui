@@ -22,7 +22,6 @@ import {
 } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry, { type TypertContribution } from '@deepseek-ai/dsh-typert-registry'
 import TypertGatewayService, { TypertGatewayError } from '@deepseek-ai/dsh-api-gateway'
-import RemoteAccessService from '@deepseek-ai/dsh-api-remote-access'
 import { provideBrowserCredentials } from './browser-credentials.ts'
 import { ownerPeer } from './peer.ts'
 
@@ -710,7 +709,7 @@ describe('TypertGatewayService', () => {
   it('seeds the no-downgrade guard from definitions present before Gateway startup', async () => {
     const ctx = new Context()
     await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
+
     const dispose = registerStrict(ctx, [passthroughDescriptor()])
     await ctx.plugin(TypertGatewayService)
     await ctx.plugin(GoalService)
@@ -727,7 +726,7 @@ describe('TypertGatewayService', () => {
   it('retains the no-downgrade guard across Gateway Service reloads', async () => {
     const ctx = new Context()
     await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
+
     const gatewayFiber = ctx.plugin(TypertGatewayService)
     await gatewayFiber
     await ctx.plugin(GoalService)
@@ -1052,7 +1051,7 @@ describe('TypertGatewayService', () => {
   it('mounts a shared /api interceptor through an optional Connection and returns existing RPC results', async () => {
     const ctx = new Context().extend({ fixtureScope: 'rpc-caller' })
     await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
+
     await ctx.plugin(FakeConnectionService)
     const gatewayFiber = ctx.plugin(TypertGatewayService)
     await gatewayFiber
@@ -1262,7 +1261,7 @@ describe('TypertGatewayService', () => {
   it('preserves a lookup policy rejection through the Connection RPC result', async () => {
     const ctx = new Context()
     await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
+
     await ctx.plugin(FakeConnectionService)
     await ctx.plugin(TypertGatewayService)
     await ctx.plugin(GoalService)
@@ -1287,7 +1286,7 @@ describe('TypertGatewayService', () => {
   it('caches SRC ownership until the Cordis Service set changes', async () => {
     const ctx = new Context()
     await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
+
     await ctx.plugin(FakeConnectionService)
     await ctx.plugin(TypertGatewayService)
     const observedFiber = ctx.plugin(ObservedClaimService)
@@ -1323,7 +1322,7 @@ describe('TypertGatewayService', () => {
     const connectionFiber = ctx.plugin({ inject: [...connectionInject], apply: applyConnection })
     await connectionFiber
     await ctx.plugin(TypertRegistry)
-    await ctx.plugin(RemoteAccessService)
+
     const gatewayFiber = ctx.plugin(TypertGatewayService)
     await gatewayFiber
     const goalFiber = ctx.plugin(GoalService)
@@ -1434,7 +1433,7 @@ async function setup(): Promise<{
 async function setupGateway(): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(TypertRegistry)
-  await ctx.plugin(RemoteAccessService)
+
   await ctx.plugin(TypertGatewayService)
   return ctx
 }

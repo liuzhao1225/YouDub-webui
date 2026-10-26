@@ -110,9 +110,6 @@
       "path": "./packages/util/atomic-write"
     },
     {
-      "path": "./packages/attachment/attachment"
-    },
-    {
       "path": "./packages/llm/llm"
     },
     {
@@ -132,9 +129,6 @@
     },
     {
       "path": "./packages/api/settings-controller"
-    },
-    {
-      "path": "./packages/api/remote-access/tsconfig.host.json"
     },
     {
       "path": "./packages/typert/loader"

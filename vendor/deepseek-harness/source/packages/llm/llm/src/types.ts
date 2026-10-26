@@ -1,13 +1,6 @@
-/**
- * Canonical provider-neutral message and streaming vocabulary for the loop,
- * session log, and plugins. Adapters alone translate provider wire messages;
- * mapped interfaces make the content, source, and finish unions extensible.
- */
+/** Provider-neutral text requests, model discovery, and streaming responses. */
 
-import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { FileAttachmentRef, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
-import type { MessageId, ToolCallId, ProviderRequestId, ReasoningEffortId } from './brand.ts'
-import type { Message, UserMessage } from './message.ts'
+import type { ProviderRequestId, ReasoningEffortId } from './brand.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Events {
@@ -24,19 +17,6 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-export type {
-  AssistantMessage,
-  DeveloperMessage,
-  AssistantProviderMetadata,
-  Message,
-  MessageSource,
-  MessageSourceMap,
-  ModelMessageSource,
-  ToolMessageSource,
-  ToolResultMessage,
-  UserMessage,
-} from './message.ts'
-
 /** Serializable provider or transport failure facts; policy decides whether they are retryable. */
 export interface LlmFailure {
   /** Human-readable provider or transport failure. */
@@ -49,13 +29,6 @@ export interface LlmFailure {
   readonly providerRetryAfterMs?: number
   /** Opaque provider-issued request identifier for diagnostics. */
   readonly requestId?: ProviderRequestId
-  /**
-   * With code `IMAGE_OFFLOAD_REQUIRED`: how many more of the oldest retained
-   * image occurrences the route needs offloaded before the same request fits
-   * its exact byte accounting. `dsh-compaction-image-offload` records the
-   * selected occurrences in an `image/offload` event and retries the step.
-   */
-  readonly offloadImages?: number
 }
 
 /** Plain text visible to the end user. */
@@ -70,78 +43,10 @@ export interface ReasoningBlock {
   text: string
 }
 
-/**
- * A durable raster image reference, valid in user or assistant content. The
- * block is deliberately role-neutral; assistant-side rendering is forward
- * compatibility — the current production adapters declare text-only output,
- * so only user messages may carry images.
- */
-export interface ImageBlock {
-  type: 'image'
-  /** Immutable bytes and intrinsic display metadata owned by the attachment service. */
-  attachment: ImageAttachmentRef
-  /**
-   * Derived from a durable image-offload decision or preserved by a message
-   * rewrite. Every route sends placeholder text naming the image and its
-   * available read-only path instead of image bytes.
-   */
-  offloaded?: true
-}
-
-/**
- * A durable verbatim file reference, valid in user content. Files never reach
- * a provider natively: request assembly projects every occurrence to
- * deterministic handle text (name, byte size, and the read-only saved path),
- * so adapters and providers see text in its place while the durable log keeps
- * the structured reference for presentation and authorization.
- */
-export interface FileBlock {
-  type: 'file'
-  /** Immutable verbatim bytes and display metadata owned by the attachment service. */
-  attachment: FileAttachmentRef
-}
-
-/** A tool invocation requested by the model. */
-export interface ToolCallBlock {
-  type: 'tool-call'
-  /** Provider-issued call id; correlates with the matching tool result. */
-  id: ToolCallId
-  name: string
-  /** Raw JSON string as produced by the model. */
-  arguments: string
-}
-
-/** Activates a tool definition from the developer event's referenced request header. */
-export interface ToolAdditionBlock {
-  type: 'tool-addition'
-  /** Name of exactly one tool in the referenced historical header. */
-  toolName: string
-  /**
-   * Reserved against inline definitions; the historical request header owns the schema.
-   * @persistenceReserved
-   */
-  tool?: never
-}
-
-/** Records the dynamic removal of a tool identified by its session-local name. */
-export interface ToolRemovalBlock {
-  type: 'tool-removal'
-  toolName: string
-}
-
-/**
- * Merge-extensible content blocks keyed by `type`. New core blocks must land
- * with adapter, UI, and compaction support. Tool-change blocks belong to
- * developer messages; `projectToolUpdates` selects what each route receives.
- */
+/** Content emitted by text and reasoning models. */
 export interface ContentBlockMap {
   'text': TextBlock
   'reasoning': ReasoningBlock
-  'image': ImageBlock
-  'file': FileBlock
-  'tool-call': ToolCallBlock
-  'tool-addition': ToolAdditionBlock
-  'tool-removal': ToolRemovalBlock
 }
 
 /** The block `type` tag vocabulary; widens as plugins add entries to {@link ContentBlockMap}. */
@@ -155,7 +60,6 @@ export type ContentBlock = ContentBlockMap[ContentBlockType]
  */
 export interface FinishReasonMap {
   'stop': { kind: 'stop' }
-  'tool-calls': { kind: 'tool-calls' }
   'max-tokens': { kind: 'max-tokens' }
   'aborted': { kind: 'aborted'; failure: LlmFailure }
   'error': { kind: 'error'; failure: LlmFailure }
@@ -333,26 +237,6 @@ export interface LlmModelContext {
   contextWindow: number
 }
 
-/**
- * Request-image budget one exact image-capable route enforces over the
- * retained occurrences' exact request-version bytes; for the `base64`
- * representation each byte count expands to its encoded length. A route whose
- * retained occurrences exceed the budget fails the request with
- * `IMAGE_OFFLOAD_REQUIRED` naming the additional occurrences to offload.
- */
-export interface LlmImageRequestBudget {
-  /** Whether the route accounts raw file bytes or inline base64 length. */
-  representation: 'raw' | 'base64'
-  /** Accumulated represented image bytes the route accepts; absent leaves bytes unbounded. */
-  maxBytes?: number
-  /** Image occurrences the route accepts; absent leaves the count unbounded. */
-  maxImages?: number
-  /** Represented bytes removed as one deterministic advance step; absent removes the minimum. */
-  byteQuantum?: number
-  /** Occurrences removed as one deterministic advance step; absent removes the minimum. */
-  countQuantum?: number
-}
-
 /** Display metadata for one adapter-owned reasoning effort. */
 export interface LlmReasoningEffortInfo {
   /** Opaque stable value accepted by {@link GenerateOptions.reasoningEffort}. */
@@ -374,25 +258,6 @@ export interface LlmModelReasoningInfo {
   defaultEffort?: ReasoningEffortId
 }
 
-/**
- * How a model applies a system prompt that changes mid-conversation.
- * `'in-history'`: the model reads the latest `system` message at any position
- * of `messages` as the complete effective system prompt, so a changed prompt
- * can follow the cached history instead of rewriting message 0.
- */
-export type SystemPromptUpdate = 'in-history'
-
-/**
- * How a model accepts native tool declarations that change mid-conversation.
- * `'addition-only'`: the model reads a `tool-addition` block in a later
- * developer message as activating a tool declared with `deferLoading`, so an
- * added tool follows the cached history instead of rewriting the declaration
- * list. `'in-history'`: the model additionally reads `tool-removal` blocks,
- * so a removed tool keeps its declaration and the removal follows the history.
- * Absent means every request declares the complete current tool list.
- */
-export type ToolUpdate = 'in-history' | 'addition-only'
-
 /** Exact-route model metadata resolved by its owning adapter. */
 export interface LlmResolvedModelInfo extends LlmModelInfo {
   /** Provider-owned context capacity when known. */
@@ -401,38 +266,13 @@ export interface LlmResolvedModelInfo extends LlmModelInfo {
   defaultMaxTokens?: number
   /** Adapter-owned selectable reasoning levels when exposed. */
   reasoning?: LlmModelReasoningInfo
-  /** Declared mid-conversation system prompt handling; absent means only a leading system message is read. */
-  systemPromptUpdate?: SystemPromptUpdate
-  /** Declared mid-conversation tool declaration handling; absent means every request declares the complete tool list. */
-  toolUpdate?: ToolUpdate
-}
-
-/**
- * Adapter-private lossless-JSON state for replaying a successful response,
- * carried by a terminal `finish` chunk and stored on the assembled assistant
- * message's model source. Both halves stay opaque to the harness; only the
- * split is shared vocabulary, so assembly can keep stored metadata aligned
- * with stored content without reading either half.
- */
-export interface ReplayEnvelope {
-  /** Response-level adapter-private metadata (ids, native stop reason). */
-  response: unknown
-  /**
-   * Per-block adapter-private metadata, one entry per emitted block in
-   * first-seen stream order. When assembly drops a block it drops the entry at
-   * the same position; entries whose length does not match the emitted block
-   * count discard the whole envelope. An adapter whose metadata is independent
-   * of block structure omits this field and the envelope passes through
-   * assembly unchanged.
-   */
-  blocks?: readonly unknown[]
 }
 
 /**
  * Raw streaming protocol emitted by adapters.
  * Block indexes correlate interleaved deltas, and `block-end` carries the
  * assembled block. Adapters emit usage before the terminal finish and nothing
- * afterward; tool arguments remain raw JSON strings. An adapter implementation
+ * afterward. An adapter implementation
  * may throw, but `LlmRuntime.stream()` normalizes that failure to a terminal
  * `error` or `aborted` finish before exposing it to consumers.
  */
@@ -440,58 +280,14 @@ export type StreamChunk =
   | { type: 'block-start'; index: number; blockType: ContentBlockType }
   | { type: 'text-delta'; index: number; text: string }
   | { type: 'reasoning-delta'; index: number; text: string }
-  | { type: 'tool-call-delta'; index: number; id: ToolCallId; name?: string; argumentsDelta: string }
   | { type: 'block-end'; index: number; block: ContentBlock }
   | { type: 'usage'; usage: TokenUsage }
-  | {
-    type: 'finish'
-    reason: FinishReason
-    /** Replay metadata for a successful response; see {@link ReplayEnvelope}. */
-    replayState?: ReplayEnvelope
-  }
+  | { type: 'finish'; reason: FinishReason }
 
-/**
- * JSON-schema description of a tool, as sent to the model.
- *
- * Declared here (not in dsh-tools) because it is part of {@link GenerateOptions};
- * dsh-tools' ToolDefinition and dsh-system-prompt's PromptAssembly both import
- * it from this package.
- */
-export interface ToolSchema {
-  /**
-   * Requests deferred loading of the tool definition into model context,
-   * independently of whether a tool-addition block records the tool.
-   * Uses Anthropic's defer_loading terminology.
-   */
-  deferLoading?: true
-  name: string
-  description: string
-  /** JSON Schema object for the arguments. */
-  parameters: Record<string, unknown>
-}
-
-/** User input for one LLM request; it has no durable Session identity or source. */
-export interface RequestUserInput {
-  readonly role: 'user'
-  readonly content: UserMessage['content']
-  readonly id?: never
-  readonly source?: never
-}
-
-/** A durable conversation message or a user input used only for one request. */
-export type RequestMessage = Message | RequestUserInput
-
-/** Logged tool declarations and update identities since the last declaration reset. */
-export interface ToolHistory {
-  /** Complete active declarations at the start of this history. */
-  readonly tools: readonly ToolSchema[]
-  /** Ordered developer messages, with additions resolved from their historical headers. */
-  readonly updates: readonly {
-    /** Identity used to locate this update in the derived request history. */
-    readonly messageId: MessageId
-    /** Added definitions resolved from the event's referenced request header. */
-    readonly additions: readonly ToolSchema[]
-  }[]
+/** Text supplied to one model request; it has no session or tool history. */
+export interface RequestMessage {
+  readonly role: 'system' | 'user'
+  readonly content: readonly TextBlock[]
 }
 
 /** A single model request, fully assembled. */
@@ -501,22 +297,10 @@ export interface GenerateOptions {
   model: string
   /** Adapter-owned reasoning effort selected for this exact model. */
   reasoningEffort?: ReasoningEffortId
-  /**
-   * Ordered conversation messages, exactly as the provider sees them. A
-   * loop-built request passes the derived history (dsh-agent-loop), whose
-   * leading system-role message carries the system prompt; a hand-built
-   * one-shot may include identity-free user inputs.
-   */
+  /** Ordered system and user text. */
   messages: RequestMessage[]
-  /**
-   * System prompt text for one-shot callers; adapters map it to the provider's
-   * system slot ahead of `messages`. Loop-built requests leave it undefined.
-   */
+  /** Initial system prompt, preceding any leading system messages. */
   system?: string
-  /** Tool schemas (adapters map to the provider's `tools` field). */
-  tools?: ToolSchema[]
-  /** Session-folded tool history used for route projection; omission sends complete declarations without tool updates. */
-  toolHistory?: ToolHistory
   temperature?: number
   maxTokens?: number
   /**
@@ -526,15 +310,4 @@ export interface GenerateOptions {
    */
   stop?: string[]
   signal?: AbortSignal
-  /**
-   * Session identity stamped by the loop for request routing. Replay uses it
-   * to separate cursors; adapters may map it to model-hidden transport metadata.
-   */
-  sessionId?: Branded<'SessionId'>
-  /**
-   * Provider-neutral classification for an auxiliary model call. Adapters may
-   * map the purpose to model-hidden transport metadata. Ordinary conversation
-   * requests leave it unset.
-   */
-  purpose?: 'compaction' | 'session-title'
 }

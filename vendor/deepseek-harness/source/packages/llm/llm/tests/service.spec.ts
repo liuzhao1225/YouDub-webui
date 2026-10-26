@@ -12,7 +12,7 @@ import LlmRuntime, {
   ReasoningEffortId,
   resolveRetryPolicy,
   StreamChunk,
-  createMessage,
+
 } from '@deepseek-ai/dsh-llm'
 import type {
   LlmCallConfig,
@@ -24,12 +24,6 @@ import type {
   LlmResolvedModelInfo,
 } from '@deepseek-ai/dsh-llm'
 
-import type { ContextFormed } from '@deepseek-ai/dsh-llm'
-declare module '@deepseek-ai/dsh-llm' {
-  interface MessageSourceMap {
-    'test': { kind: 'test' } & ContextFormed
-  }
-}
 
 class ScriptedAdapter extends LlmAdapter {
   constructor(private script: StreamChunk[]) {
@@ -108,6 +102,27 @@ async function collect(stream: AsyncIterable<StreamChunk>): Promise<StreamChunk[
 }
 
 describe('LlmRuntime', () => {
+  it.each([
+    { messages: [{ role: 'user', content: [{ type: 'image' }] }] },
+    { messages: [{ role: 'user', content: [{ type: 'file' }] }] },
+    { messages: [{ role: 'assistant', content: [{ type: 'text', text: 'old answer' }] }] },
+    { messages: [{ role: 'tool', content: [{ type: 'text', text: 'tool output' }] }] },
+    { messages: [{ role: 'developer', content: [] }] },
+    { messages: [], tools: [] },
+    { messages: [], toolHistory: { tools: [], updates: [] } },
+  ])('rejects retired request content before adapter dispatch: %j', async input => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    const adapter = new RecordingAdapter(SCRIPT)
+    ctx.llm.registerAdapter(['route'], adapter)
+    const chunks = []
+    for await (const chunk of ctx.llm.stream({ provider: 'route', model: 'm', ...input } as never)) chunks.push(chunk)
+    expect(chunks).toEqual([expect.objectContaining({ type: 'finish', reason: expect.objectContaining({
+      kind: 'error', failure: expect.objectContaining({ code: 'UNSUPPORTED_CONTENT' }),
+    }) })])
+    expect(adapter.lastOptions).toBeUndefined()
+  })
+
   it('recognizes structured and model-capacity context-window overflow details', () => {
     expect(isContextWindowExceededError('context_length_exceeded maximum context length')).toBe(true)
     expect(isContextWindowExceededError('context-window-overflowed')).toBe(true)
@@ -197,11 +212,7 @@ describe('LlmRuntime', () => {
     await ctx.plugin(LlmRuntime)
     const adapter = new RecordingAdapter(SCRIPT)
     ctx.llm.registerAdapter(['test-provider'], adapter)
-    const message = createMessage({
-      role: 'user',
-      content: [{ type: 'text', text: 'hello' }],
-      source: { kind: 'user' },
-    })
+    const message = { role: 'user' as const, content: [{ type: 'text' as const, text: 'hello' }] }
 
     for await (const _chunk of ctx.llm.stream({
       provider: 'test-provider',
@@ -578,7 +589,6 @@ describe('LlmRuntime', () => {
     [{ provider: 'route', id: 'model', name: 1 }, 'non-string name'],
     [{ provider: 'route', id: 'model', name: '' }, 'empty name'],
     [{ provider: 'route', id: 'model', name: 'Model', description: 1 }, 'non-string description'],
-    [{ provider: 'route', id: 'model', name: 'Model', toolUpdate: 'sometimes' }, 'unknown tool update mode'],
   ] as const)('rejects invalid exact model metadata (%s: %s)', async (metadata, _label) => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
@@ -601,20 +611,17 @@ describe('LlmRuntime', () => {
         return Promise.resolve({
           provider: 'route', id: 'model', name: 'Model',
           inputModalities: ['text', 'image'],
-          toolUpdate: 'in-history',
         })
       }
     }(SCRIPT)
     ctx.llm.registerAdapter(['route'], adapter)
 
-    // Downstream preflights (image admission) act on this exact field; a
+    // Model selectors use this exact field; a
     // rebuild that drops it silently reads as "modalities unknown".
     await expect(ctx.llm.resolveModelInfo('route', 'model')).resolves.toEqual({
       provider: 'route', id: 'model', name: 'Model',
       inputModalities: ['text', 'image'],
-      toolUpdate: 'in-history',
     })
-    expect((await ctx.llm.prepareCall({ provider: 'route', model: 'model' })).toolUpdate).toBe('in-history')
   })
 
   it('resolves detached model context independently of advisory catalog membership', async () => {

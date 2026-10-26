@@ -95,7 +95,7 @@ test('positive product composition contains framework services without retired p
     'product-analytics', 'desktop-product-telemetry', 'ui-chat', 'ui-conversation', 'ui-settings-account',
     'agent', 'agent-default-model', 'session', 'session-controller', 'ui-session', 'attachment-local',
     'file-upload', 'workspace', 'sandbox-policy', 'fs-sandbox', 'commands', 'job-controller',
-    'storage', 'storage-json', 'storage-domain']) {
+    'storage', 'storage-json', 'storage-domain', 'remote-access']) {
     assert.equal(rows.has(id), false, `${id} must not be loaded in YouDub`);
   }
   for (const id of ['llm', 'llm-pi-ai', 'credentials', 'settings', 'subprocess', 'jobs', 'connection',

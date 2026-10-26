@@ -26,10 +26,6 @@
       "types": "./lib/types/brand.d.ts",
       "default": "./lib/types/brand.js"
     },
-    "./message": {
-      "types": "./lib/types/message.d.ts",
-      "default": "./lib/types/message.js"
-    },
     "./typert": {
       "types": "./lib/typert.host.d.ts",
       "default": "./lib/typert.host.js"
@@ -57,7 +53,6 @@
     "@deepseek-ai/cordis": "workspace:~"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-util-crypto": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
     "zod": "4.4.3",
     "@deepseek-ai/dsh-timeout": "workspace:*",
@@ -66,7 +61,6 @@
     "@deepseek-ai/dsh-typert-protocol": "workspace:*"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-attachment": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~"
   }
 }

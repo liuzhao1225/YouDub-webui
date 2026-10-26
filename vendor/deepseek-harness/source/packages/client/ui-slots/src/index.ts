@@ -92,11 +92,8 @@ export type PropsLocale<N> = N extends keyof LocaleNamespaceMap & string
 /** Slot cardinality: single occupant, ordered list, key-dispatched, or selector-routed chain. */
 export type SlotKind = 'single' | 'list' | 'keyed' | 'chain'
 
-/** Slot data context: global, current-session-optional, or strict session-bound. */
-export type SlotScope = 'root' | 'session-maybe' | 'session'
-
-/** Declaration-merged explicit target types for non-root scope Providers. */
-export interface SlotScopeTargetMap {}
+/** YouDub UI slots use root data; task and node context is passed explicitly by owners. */
+export type SlotScope = 'root'
 
 /**
  * One SlotMap entry: kind/scope axes plus the optional owner-supplied props
@@ -205,22 +202,6 @@ export type SlotInjectOf<K extends keyof SlotMap & string> =
 export type ScopeOf<K extends keyof SlotMap & string> = SlotMap[K]['scope']
 
 /**
- * Framework standard kit delivered to every session-scope slot component.
- * Declared empty here (zero-dependency layer): `ui-session` merges the
- * Session lifecycle hook, projection hook, and Session identity; domain UI
- * adapters merge their own standard hooks exactly as consumers merge SlotMap keys.
- */
-export interface SessionStandardProps {}
-
-/**
- * Framework standard kit delivered to session-optional slots. Its hooks stay
- * callable while no session is selected and return `undefined` until one
- * becomes current; `ui-session` and domain UI adapters merge the concrete
- * members.
- */
-export interface SessionMaybeStandardProps {}
-
-/**
  * Framework standard kit delivered to EVERY slot component (the global seat).
  * Declared empty here; each owning UI adapter merges the global selector hooks
  * that shared page composition consumes.
@@ -228,21 +209,8 @@ export interface SessionMaybeStandardProps {}
 export interface GlobalStandardProps {}
 
 /**
- * The session id type as `ui-session`'s SessionStandardProps merge declares it
- * (branded); falls back to `string` in programs without the merge (this
- * package's own tests).
- */
-export type SessionIdOf = SessionStandardProps extends { sessionId: infer S } ? S : string
-
-/** Standard props selected by one declared scope. */
-export type ScopeStandardProps<S extends SlotScope> =
-  (S extends 'session' ? SessionStandardProps
-    : S extends 'session-maybe' ? SessionMaybeStandardProps
-      : object) & GlobalStandardProps
-
-/**
  * Runtime props share for a slot key: owner share (parent's renderSlot call
- * site) + session standard kit (session scope only) + the global seat.
+ * site) + the global standard kit.
  */
 export type PropsRuntime<
   K extends keyof SlotMap & string,
@@ -251,7 +219,7 @@ export type PropsRuntime<
   OwnerOf<K> &
   KeyPropsOf<K, EntryKey> &
   SlotInjectFace<SlotInjectOf<K>> &
-  ScopeStandardProps<ScopeOf<K>>
+  GlobalStandardProps
 
 /** renderSlot dispatch options: keyed dispatch key, list filtering, and empty fallback. */
 export interface RenderOpts<EntryKey extends string = string> {
@@ -329,26 +297,6 @@ type RenderSlotFn<S extends keyof SlotMap & string> =
 export type MatchedShare<E extends SlotEntryDef, M> =
   E['kind'] extends 'chain' ? { matched: M } : object
 
-/** Props of the standard-kit SessionProvider seat. */
-export interface SessionAreaProps {
-  /**
-   * Explicit Session-scope target. Omit this property to inherit the surrounding
-   * binding; pass `undefined` to establish an explicitly absent binding.
-   */
-  readonly session?: SlotScopeTargetMap[keyof SlotScopeTargetMap & 'session'] | undefined
-  /** No-session body (also covers a current id whose session cannot be resolved). */
-  empty?: (() => ReactNode) | undefined
-  /** Session body; scoped entries apply their declared remount semantics. */
-  children: ReactNode
-}
-
-/**
- * Framework-wired session area component. `ui-session` supplies the current
- * Controller binding through the renderer scope adapter; entries that declare
- * `session` or `session-maybe` children receive this component without importing it.
- */
-export type SessionProviderComponent = (props: SessionAreaProps) => ReactNode
-
 /**
  * Child-slot render share: `renderSlot` statically narrowed to the entry's
  * declared children keys. Delegation is plain props passing (hand
@@ -380,9 +328,7 @@ export type PropsRenderSlots<S extends keyof SlotMap & string> = {
    * @returns rendered node(s).
    */
   renderSlotChain: <K extends ChainKeysOf<S>>(key: K, owner: OwnerOf<K>, opts?: ChainRenderOpts) => ReactNode
-}) & ([Extract<ScopeOf<S>, 'session' | 'session-maybe'>] extends [never]
-  ? object
-  : { SessionProvider: SessionProviderComponent })
+})
 
 /**
  * Registration-position component shape: the bare call signature, so composed
@@ -433,7 +379,7 @@ export type FactoryRegistrationPropsOf<F extends keyof SlotFactoryMap & string> 
 export type FactoryComponentPropsOf<F extends keyof SlotFactoryMap & string> =
   FactoryInputPropsOf<F>
   & FactoryRegistrationPropsOf<F>
-  & ScopeStandardProps<FactoryDefOf<F>['scope']>
+  & GlobalStandardProps
   & { useFactorySlot: UseFactorySlot<F> }
 
 /** Complete props received by one caller-selected or fallback local Component. */
@@ -442,7 +388,7 @@ export type FactoryLocalComponentPropsOf<
   N extends FactoryLocalNameOf<F>,
 > = FactoryLocalInputPropsOf<F, N>
   & FactoryRegistrationPropsOf<F>
-  & ScopeStandardProps<FactoryLocalDefOf<F, N>['scope']>
+  & GlobalStandardProps
 
 /** Component accepted for one declared local Factory position. */
 export type FactoryLocalComponent<
@@ -511,12 +457,8 @@ export type KeyedSnapshotSelectorHook<Snapshot> = {
   ): Selected
 }
 
-/** Framework-owned props visible while a slot-level contextual Hook is bound. */
-export type StandardPropsOf<K extends keyof SlotMap & string> =
-  (ScopeOf<K> extends 'session' ? SessionStandardProps
-    : ScopeOf<K> extends 'session-maybe' ? SessionMaybeStandardProps
-      : object) &
-  GlobalStandardProps
+/** Framework-owned global data available to contextual Hook factories. */
+export type StandardPropsOf<_K extends keyof SlotMap & string> = GlobalStandardProps
 
 /**
  * One function-valued slot-level inject.hooks member. The factory is pure and
@@ -597,36 +539,13 @@ export type ComposedProps<
 > = PropsRuntime<K, EntryKey> & PropsRenderSlots<S> & PropsRenderFactories
   & PropsStore<H> & InjectFace<I> & MatchedShare<SlotMap[K], M> & PropsLocale<N>
 
-/**
- * Inject factory parameter list, derived from the registration's declaration:
- * strict session slots receive a definite framework-resolved `sessionId`;
- * session-maybe slots receive the current id or `undefined`; a declared store
- * appends the baked `actions` (the same callbacks the component receives).
- * Business data access happens through the apply closure's ctx — no binding
- * object parameter exists.
- */
-export type InjectParams<K extends keyof SlotMap & string, H> =
-  ScopeOf<K> extends 'session'
-    ? ([H] extends [StoreDecl] ? [sessionId: SessionIdOf, actions: BoundActions<HandleOf<H>>] : [sessionId: SessionIdOf])
-    : ScopeOf<K> extends 'session-maybe'
-      ? ([H] extends [StoreDecl]
-        ? [sessionId: SessionIdOf | undefined, actions: BoundActions<HandleOf<H>> | undefined]
-        : [sessionId: SessionIdOf | undefined])
-      : ([H] extends [StoreDecl] ? [actions: BoundActions<HandleOf<H>>] : [])
+/** Registration inject receives the declared store's actions, when present. */
+export type InjectParams<_K extends keyof SlotMap & string, H> =
+  [H] extends [StoreDecl] ? [actions: BoundActions<HandleOf<H>>] : []
 
-/** Factory inject parameters use the same scope/store matrix as ordinary registrations. */
+/** Factory inject receives the declared store's actions, when present. */
 export type FactoryInjectParams<F extends keyof SlotFactoryMap & string> =
-  FactoryDefOf<F>['scope'] extends 'session'
-    ? ([FactoryStoreOf<F>] extends [StoreDecl]
-      ? [sessionId: SessionIdOf, actions: BoundActions<FactoryStoreOf<F>>]
-      : [sessionId: SessionIdOf])
-    : FactoryDefOf<F>['scope'] extends 'session-maybe'
-      ? ([FactoryStoreOf<F>] extends [StoreDecl]
-        ? [sessionId: SessionIdOf | undefined, actions: BoundActions<FactoryStoreOf<F>> | undefined]
-        : [sessionId: SessionIdOf | undefined])
-      : ([FactoryStoreOf<F>] extends [StoreDecl]
-        ? [actions: BoundActions<FactoryStoreOf<F>>]
-        : [])
+  [FactoryStoreOf<F>] extends [StoreDecl] ? [actions: BoundActions<FactoryStoreOf<F>>] : []
 
 type FactoryField<
   F extends keyof SlotFactoryMap & string,
@@ -645,7 +564,7 @@ type FactoryInjectCollisionKeys<F extends keyof SlotFactoryMap & string> = Extra
     & PropsStore<FactoryStoreOf<F>>
     & PropsLocale<FactoryLocaleOf<F>>
     & PropsRenderFactories
-    & ScopeStandardProps<FactoryDefOf<F>['scope']>
+    & GlobalStandardProps
     & { useFactorySlot: UseFactorySlot<F> }
   )
 >
@@ -654,7 +573,7 @@ type FactoryInputCollisionKeys<F extends keyof SlotFactoryMap & string> = Extrac
   keyof FactoryInputPropsOf<F>,
   keyof (
     FactoryRegistrationPropsOf<F>
-    & ScopeStandardProps<FactoryDefOf<F>['scope']>
+    & GlobalStandardProps
     & { useFactorySlot: UseFactorySlot<F> }
   )
 >
@@ -662,14 +581,14 @@ type FactoryInputCollisionKeys<F extends keyof SlotFactoryMap & string> = Extrac
 type FactoryLocalCollisionKeys<F extends keyof SlotFactoryMap & string> = {
   [N in FactoryLocalNameOf<F>]: Extract<
     keyof FactoryLocalInputPropsOf<F, N>,
-    keyof (FactoryRegistrationPropsOf<F> & ScopeStandardProps<FactoryLocalDefOf<F, N>['scope']>)
+    keyof (FactoryRegistrationPropsOf<F> & GlobalStandardProps)
   >
 }[FactoryLocalNameOf<F>]
 
 type FactoryRegistrationLocalScopeCollisionKeys<F extends keyof SlotFactoryMap & string> = {
   [N in FactoryLocalNameOf<F>]: Extract<
     keyof FactoryRegistrationPropsOf<F>,
-    keyof ScopeStandardProps<FactoryLocalDefOf<F, N>['scope']>
+    keyof GlobalStandardProps
   >
 }[FactoryLocalNameOf<F>]
 
@@ -808,7 +727,7 @@ type BaseOptions<
   name: K
   /** Child-slot declaration + render authorization + runtime spec, in one table. */
   children?: D
-  /** Store seat: a shared handle (apply-constructed) or an exclusive factory (framework-called per entry x scope). */
+  /** Store seat: a shared handle (apply-constructed) or an exclusive factory (framework-called per entry). */
   store?: H
   /**
    * Dictionary namespace of this entry's copy. Declaring it puts the
@@ -831,7 +750,7 @@ export interface StoredEntry {
   options: { key?: string; id?: string; order?: number; label?: SlotLabel; priority?: number }
   /** Chain routing selector (type-erased like `inject`; present exactly on chain-slot entries). */
   select?: ((owner: never) => unknown) | undefined
-  /** Registrant business face; positional params derive from the declaration (sessionId?, actions?). */
+  /** Registrant business face; positional params derive from the declaration (actions?). */
   inject?: ((...args: never[]) => Record<string, unknown>) | undefined
   /** Child-slot declaration table (declaration + authorization + runtime spec in one). */
   children?: Readonly<Record<string, SlotSpec<SlotEntryDef>>> | undefined
@@ -976,8 +895,6 @@ export class SlotCore {
   private records = new Map<string, SlotRecord>()
   private factories = new Map<string, FactoryRecord>()
   private mutateListeners = new Set<(key: string) => void>()
-  /** Shared-handle scope ledger: handle → the scope it first mounted under + live mount count. */
-  private handleScopes = new Map<object, { scope: SlotScope; count: number }>()
   // Dirty records, not keys: records are never removed, so holding the
   // reference skips a lookup (and an unreachable missing-record branch) at flush.
   private dirty = new Set<SlotRecord>()
@@ -1013,6 +930,9 @@ export class SlotCore {
       slots?: Record<string, { scope: SlotScope }>
       registrant?: string
     }
+    assertRootScope(options.scope)
+    for (const spec of Object.values(options.children ?? {})) assertRootScope(spec.scope)
+    for (const spec of Object.values(options.slots ?? {})) assertRootScope(spec.scope)
     const record = this.factoryRecord(options.name)
     if (record.definition !== undefined) {
       throw new Error(`slot factory "${options.name}" already has a definition`)
@@ -1022,15 +942,6 @@ export class SlotCore {
       if (childRecord?.spec !== undefined) {
         throw new Error(`slot "${childKey}" is already declared (by ${childRecord.declaredBy ?? 'an unknown entry'})`)
       }
-    }
-    if (options.store !== undefined && typeof options.store !== 'function') {
-      const pinned = this.handleScopes.get(options.store)
-      if (pinned !== undefined && pinned.scope !== options.scope) {
-        throw new Error(
-          `store handle mounted under factory "${options.name}" (scope "${options.scope}") is already mounted under scope "${pinned.scope}" — one handle, one scope`)
-      }
-      if (pinned !== undefined) pinned.count += 1
-      else this.handleScopes.set(options.store, { scope: options.scope, count: 1 })
     }
     const definition: StoredFactory = {
       name: options.name,
@@ -1060,10 +971,6 @@ export class SlotCore {
       if (record.definition !== definition) return
       record.definition = undefined
       this.markFactoryDirty(record)
-      if (definition.store !== undefined && typeof definition.store !== 'function') {
-        const pinned = this.handleScopes.get(definition.store)
-        if (pinned !== undefined && --pinned.count === 0) this.handleScopes.delete(definition.store)
-      }
       this.releaseChildren(definition.children)
     }
   }) as RegisterFactory
@@ -1114,8 +1021,7 @@ export class SlotCore {
    * Load-time validation (misconfiguration fails loud; the render hot path
    * re-checks nothing): registering into an undeclared slot throws; declaring
    * an already-declared child key throws (one declarer per slot — the message
-   * names the first declarer); mounting one shared store handle under slots
-   * of different scopes throws. Kind constraints: keyed — missing `key`
+   * names the first declarer); unsupported scopes throw. Kind constraints: keyed — missing `key`
    * throws; list — missing `id` throws; chain — missing `select` throws (the
    * selector is the entry's routing seat, see {@link ChainSelect}).
    *
@@ -1189,6 +1095,7 @@ export class SlotCore {
   ): () => void
   /* jscpd:ignore-end */
   register(options: ErasedOptions, component: unknown): () => void {
+    for (const spec of Object.values(options.children ?? {})) assertRootScope(spec.scope)
     const rec = this.records.get(options.name)
     if (!rec?.spec) {
       throw new Error(`slot "${options.name}" is not declared (a parent entry's children table must declare it)`)
@@ -1233,17 +1140,6 @@ export class SlotCore {
           throw new Error(`slot "${childKey}" is already declared (by ${childRec.declaredBy ?? 'an unknown entry'})`)
         }
       }
-    }
-    // Shared handles pin their scope on first mount; factories are exempt
-    // (the framework creates per-entry instances, no shared identity exists).
-    if (options.store !== undefined && typeof options.store !== 'function') {
-      const pinned = this.handleScopes.get(options.store)
-      if (pinned && pinned.scope !== spec.scope) {
-        throw new Error(
-          `store handle mounted under "${options.name}" (scope "${spec.scope}") is already mounted under scope "${pinned.scope}" — one handle, one scope`)
-      }
-      if (pinned) pinned.count += 1
-      else this.handleScopes.set(options.store, { scope: spec.scope, count: 1 })
     }
 
     const entry: StoredEntry = {
@@ -1572,10 +1468,6 @@ export class SlotCore {
    * axis: ledger rows, slots, contributions, and store mounts die together.
    */
   private releaseEntry(entry: StoredEntry): void {
-    if (entry.store !== undefined && typeof entry.store !== 'function') {
-      const pinned = this.handleScopes.get(entry.store)
-      if (pinned && --pinned.count === 0) this.handleScopes.delete(entry.store)
-    }
     this.releaseChildren(entry.children)
   }
 
@@ -1654,4 +1546,9 @@ export class SlotCore {
       for (const fn of [...rec.listeners]) fn()
     }
   }
+}
+
+/** Reject retired UI scopes before committing any registration. */
+function assertRootScope(scope: unknown): asserts scope is SlotScope {
+  if (scope !== 'root') throw new Error(`unsupported UI slot scope '${String(scope)}'; YouDub supports only 'root'`)
 }

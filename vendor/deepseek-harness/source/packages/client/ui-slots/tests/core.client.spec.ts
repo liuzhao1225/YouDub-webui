@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { SlotComponent, StoreHandle } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SlotComponent } from '@deepseek-ai/dsh-client-ui-slots'
 import { SlotCore } from '@deepseek-ai/dsh-client-ui-slots'
 
 // 'root' is NOT merged here: ui-renderer owns the built-in row, and
@@ -7,10 +7,10 @@ import { SlotCore } from '@deepseek-ai/dsh-client-ui-slots'
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     'test.single': { kind: 'single'; scope: 'root' }
-    'test.session': { kind: 'single'; scope: 'session' }
+    'test.sibling': { kind: 'single'; scope: 'root' }
     'test.list': { kind: 'list'; scope: 'root' }
-    'test.keyed': { kind: 'keyed'; scope: 'session' }
-    'test.chain': { kind: 'chain'; scope: 'session'; owner: { tags: string[] } }
+    'test.keyed': { kind: 'keyed'; scope: 'root' }
+    'test.chain': { kind: 'chain'; scope: 'root'; owner: { tags: string[] } }
     'test.grandchild': { kind: 'single'; scope: 'root' }
   }
 }
@@ -20,22 +20,15 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 // RendersCheck would demand a renderSlot consumer).
 const Comp: SlotComponent<object> = () => null
 
-function fakeHandle(): StoreHandle<{ n: number }, Record<string, (d: { n: number }) => void>> {
-  return {
-    spec: { init: () => ({ n: 0 }), actions: {} },
-    create: () => { throw new Error('not under test') },
-  }
-}
-
 function mountFrame(core: SlotCore) {
   return core.register({
     name: 'root',
     children: {
       'test.single': { kind: 'single', scope: 'root' },
-      'test.session': { kind: 'single', scope: 'session' },
+      'test.sibling': { kind: 'single', scope: 'root' },
       'test.list': { kind: 'list', scope: 'root' },
-      'test.keyed': { kind: 'keyed', scope: 'session' },
-      'test.chain': { kind: 'chain', scope: 'session' },
+      'test.keyed': { kind: 'keyed', scope: 'root' },
+      'test.chain': { kind: 'chain', scope: 'root' },
     },
   // Type-level renderSlot presence is proven by the type-chain spec; erasing
   // here keeps runtime fixtures terse.
@@ -64,7 +57,6 @@ describe('a-priori root and declaration gate', () => {
   it('children declaration makes child slots registerable, with specs recorded', () => {
     const core = new SlotCore()
     mountFrame(core)
-    expect(core.specDynamic('test.session')).toEqual({ kind: 'single', scope: 'session' })
     expect(() => core.register({ name: 'test.single' }, Comp)).not.toThrow()
   })
 
@@ -73,7 +65,7 @@ describe('a-priori root and declaration gate', () => {
     mountFrame(core)
     core.register({ name: 'test.single', children: { 'test.grandchild': { kind: 'single', scope: 'root' } } }, Comp as never)
     expect(() => core.register(
-      { name: 'test.session', children: { 'test.grandchild': { kind: 'single', scope: 'root' } }, registrant: 'imposter' },
+      { name: 'test.sibling', children: { 'test.grandchild': { kind: 'single', scope: 'root' } } },
       Comp as never,
     )).toThrow(/already declared.*test\.single/)
   })
@@ -84,7 +76,7 @@ describe('lifecycle cascade (one axis)', () => {
     const core = new SlotCore()
     const observed: unknown[] = []
     core.onMutate((key) => {
-      if (key === 'test.single') observed.push(core.specDynamic('test.session'))
+      if (key === 'test.single') observed.push(core.specDynamic('test.sibling'))
     })
     const registerFactory = core.registerFactory as (
       options: object,
@@ -96,11 +88,11 @@ describe('lifecycle cascade (one axis)', () => {
       scope: 'root',
       children: {
         'test.single': { kind: 'single', scope: 'root' },
-        'test.session': { kind: 'single', scope: 'session' },
+      'test.sibling': { kind: 'single', scope: 'root' },
       },
     }, Comp)
 
-    expect(observed).toEqual([{ kind: 'single', scope: 'session' }])
+    expect(observed).toEqual([{ kind: 'single', scope: 'root' }])
   })
 
   it('disposing a declaring entry collapses child slots and their contributions recursively', () => {
@@ -204,47 +196,21 @@ describe('kind semantics', () => {
   })
 })
 
-describe('store scope pinning', () => {
-  it('one shared handle under two scopes throws at load', () => {
+describe('supported UI scopes', () => {
+  it.each(['session', 'session-maybe'])('rejects retired %s scope before publishing a registration', scope => {
     const core = new SlotCore()
-    mountFrame(core)
-    const handle = fakeHandle()
-    core.register({ name: 'test.session', store: handle }, Comp as never)
-    expect(() => core.register({ name: 'test.single', store: handle }, Comp as never))
-      .toThrow('one handle, one scope')
-  })
-
-  it('same handle under same scope is fine; full unmount releases the pin', () => {
-    const core = new SlotCore()
-    mountFrame(core)
-    const handle = fakeHandle()
-    const d1 = core.register({ name: 'test.list', id: 'x', store: handle }, Comp as never)
-    const d2 = core.register({ name: 'test.list', id: 'y', store: handle }, Comp as never)
-    d1()
-    // Still mounted once — scope stays pinned.
-    expect(() => core.register({ name: 'test.session', store: handle }, Comp as never))
-      .toThrow('one handle, one scope')
-    d2()
-    // All mounts gone: the handle may pin a new scope.
-    expect(() => core.register({ name: 'test.session', store: handle }, Comp as never)).not.toThrow()
-  })
-
-  it('factories are exempt from pinning (no shared identity)', () => {
-    const core = new SlotCore()
-    mountFrame(core)
-    const factory = () => fakeHandle()
-    core.register({ name: 'test.session', store: factory }, Comp as never)
-    expect(() => core.register({ name: 'test.single', store: factory }, Comp as never)).not.toThrow()
-  })
-
-  it('cascade releases store pins of collapsed child entries', () => {
-    const core = new SlotCore()
-    const disposeFrame = mountFrame(core)
-    const handle = fakeHandle()
-    core.register({ name: 'test.session', store: handle }, Comp as never)
-    disposeFrame()
-    mountFrame(core)
-    expect(() => core.register({ name: 'test.single', store: handle }, Comp as never)).not.toThrow()
+    const register = core.register.bind(core) as (options: object, component: unknown) => () => void
+    expect(() => register({ name: 'root', children: { 'test.single': { kind: 'single', scope } } }, Comp)).toThrow(/supports only 'root'/)
+    expect(core.entries('root')).toEqual([])
+    expect(core.specDynamic('test.single')).toBeUndefined()
+    const factory = core.registerFactory as (options: object, component: unknown) => () => void
+    for (const options of [
+      { name: 'retired', scope },
+      { name: 'retired', scope: 'root', slots: { body: { scope } } },
+      { name: 'retired', scope: 'root', children: { 'test.single': { kind: 'single', scope } } },
+    ]) expect(() => factory(options, Comp)).toThrow(/supports only 'root'/)
+    expect(core.factory('retired')).toBeUndefined()
+    expect(core.specDynamic('test.single')).toBeUndefined()
   })
 })
 
@@ -393,7 +359,6 @@ describe('subscription API', () => {
     const off = core.onMutate(key => keys.push(key))
     mountFrame(core)
     // Contribution first, then each declared child key.
-    expect(keys).toEqual(['root', 'test.single', 'test.session', 'test.list', 'test.keyed', 'test.chain'])
     keys.length = 0
     core.register({ name: 'test.list', id: 'a' }, Comp)
     expect(keys).toEqual(['test.list'])

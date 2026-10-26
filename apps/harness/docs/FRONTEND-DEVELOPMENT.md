@@ -49,6 +49,8 @@
 
 节点详情插槽的完整实例在[graph-text-review 客户端](../../../fixtures/plugins/graph-text-review/src/client.jsx)：它接收 `detail`、`outputs`、`draft`、`readOnly`、`onDraftChange`、`navigate`，将订正交还原任务页面保存。外部插件通过自己的 context 注册插槽，卸载时由官方生命周期释放。
 
+当前插槽使用 `root` scope，支持 single/list/keyed/chain、依赖注入和 Component Factory。同一个节点组件在不同位置渲染时保留独立状态；显式共享 store、插件卸载和重载继续由框架管理。聊天会话专用的 `session`、`session-maybe`、`SessionProvider`、`installScope`、`bindStoreScope` 及 `inject(sessionId, ...)` 已退役，旧 scope 声明在注册时明确报错。新增页面和节点插件按当前示例传递业务属性。
+
 校对编辑器展示节点声明的 `corrections.outputPorts`，其余输出由宿主统一呈现，避免重复。返回、版本、保存和确认也由宿主提供。多行文本从 `@deepseek-ai/dsh-client-ui-primitives` 导入共享 `Textarea`；历史结果使用 `readOnly`，保留选择与复制。外部插件只负责自己的内容布局，不依赖宿主 Tailwind 扫描生成样式。
 
 ## 控件复用与框架入口

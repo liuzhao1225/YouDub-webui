@@ -38,14 +38,12 @@ import type {
   ThinkingLevel,
 } from '@earendil-works/pi-ai'
 import {
-  contentHasImage,
   LlmAdapter,
   LlmError,
   ReasoningEffortId,
 } from '@deepseek-ai/dsh-llm'
 import type {
   GenerateOptions,
-  ImageAttachmentAccess,
   LlmModelInfo,
   LlmProviderInfo,
   LlmResolvedModelInfo,
@@ -53,24 +51,12 @@ import type {
   ReasoningEffortId as ReasoningEffortIdType,
   ResolvedRetryPolicy,
   StreamChunk,
-  ToolSchema,
 } from '@deepseek-ai/dsh-llm'
-import type { AttachmentStore, ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { toPiContext } from './context.ts'
-import { conversationUpdates, createModels, getSupportedThinkingLevels } from './models.ts'
+import { createModels, getSupportedThinkingLevels } from './models.ts'
 import { toStreamChunks } from './stream.ts'
-
-/**
- * Initially active declaration added to an Anthropic request whose projected
- * tools are all deferred, because Anthropic rejects a tool list without one.
- */
-const ANTHROPIC_TOOL_UPDATE_PLACEHOLDER: ToolSchema = {
-  name: 'DeferredToolPlaceholder',
-  description: 'Reserved placeholder that keeps deferred tool loading active; never call this tool.',
-  parameters: { type: 'object', properties: {} },
-}
 
 /** One resolution's frozen view: the profiles and the collection built from them. */
 interface PiAiSnapshot {
@@ -103,15 +89,6 @@ export interface PiAiAdapterOptions {
    * every request no matter how often the human signed in.
    */
   auth: PiAiAuthInjection
-  /** Resolve the optional durable attachment service at request time. */
-  resolveAttachments?: () => AttachmentStore | undefined
-  /** Bridge one attachment reference into the current model-tool execution world. */
-  resolveImageAccess?: (attachments: AttachmentStore, ref: ImageAttachmentRef) => ImageAttachmentAccess | undefined
-  /**
-   * Observe one assistant history message degrading to provider-neutral
-   * conversion because its stored replay state is unusable by this build.
-   */
-  onReplayDegrade?: (detail: { provider: string; model: string; reason: string }) => void
 }
 
 /** The two auth injectables a pi-ai collection is built with. */
@@ -319,7 +296,6 @@ export class PiAiAdapter extends LlmAdapter {
       context: { contextWindow: resolvedModel.contextWindow },
       ...configuredMaxTokens === undefined ? {} : { defaultMaxTokens: configuredMaxTokens },
       ...reasoningInfo(resolvedModel, defaultLevel),
-      ...conversationUpdates(resolvedModel),
     }
   }
 
@@ -349,16 +325,6 @@ export class PiAiAdapter extends LlmAdapter {
     // the one it started with and the next call picks up the new one.
     const profile = this.profileOf(snapshot, options.provider)
     const model = this.modelOf(snapshot, options.provider, options.model)
-    const updates = conversationUpdates(model)
-    // pi-ai collapses Anthropic tool updates without an initially active declaration.
-    const tools = options.tools ?? []
-    const needsPlaceholder = model.api === 'anthropic-messages' && updates.toolUpdate === 'in-history'
-      && tools.every(tool => tool.deferLoading === true)
-      && options.messages.some(message => message.role === 'developer'
-        && message.content.some(block => block.type === 'tool-addition' || block.type === 'tool-removal'))
-    const request = needsPlaceholder
-      ? { ...options, tools: [ANTHROPIC_TOOL_UPDATE_PLACEHOLDER, ...tools] }
-      : options
     const reasoning = resolveReasoningLevel(
       model,
       options.reasoningEffort ?? profile.reasoning,
@@ -373,37 +339,15 @@ export class PiAiAdapter extends LlmAdapter {
     using watchdog = idleWatchdog(upstream, streamIdleTimeoutMs, 'LLM_STREAM_IDLE_TIMEOUT')
 
     try {
-      const containsImage = options.messages.some(message => contentHasImage(message.content))
-      if (containsImage && !model.input.includes('image')) {
-        throw new LlmError(`pi-ai model "${model.id}" does not support image input`, 'UNSUPPORTED_CONTENT')
-      }
-      const attachments = containsImage ? this.config.resolveAttachments?.() : undefined
-      if (containsImage && attachments === undefined) {
-        throw new LlmError('pi-ai image input requires the durable attachment service', 'UNSUPPORTED_CONTENT')
-      }
-      const onReplayDegrade = (reason: string): void => {
-        this.config.onReplayDegrade?.({ provider: options.provider, model: options.model, reason })
-      }
-      const context = attachments === undefined
-        ? toPiContext(request, undefined, onReplayDegrade)
-        : await toPiContext({ ...request, signal: watchdog.signal }, {
-          attachments,
-          resolveImageAccess: ref => this.config.resolveImageAccess?.(attachments, ref),
-          maxRequestImageBytes: profile.maxRequestImageBytes,
-          requestImagePolicy: {
-            maxPixels: profile.requestImagePixelBudget,
-            maxBytes: profile.requestImageMaxBytes,
-          },
-        }, onReplayDegrade)
+      const context = toPiContext(options)
       const events = snapshot.models.streamSimple(model, context, {
         ...profileOptions(profile, reasoning, apiKey),
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
         ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
-        ...options.sessionId === undefined ? {} : { sessionId: String(options.sessionId) },
         signal: watchdog.signal,
         headers: { ...profile.headers },
       })
-      const iterator = toStreamChunks(events, model.contextWindow, options.signal, model.id)[Symbol.asyncIterator]()
+      const iterator = toStreamChunks(events, model.contextWindow, options.signal)[Symbol.asyncIterator]()
       let exhausted = false
       try {
         while (true) {

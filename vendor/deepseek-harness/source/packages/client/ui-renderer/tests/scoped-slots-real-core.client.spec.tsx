@@ -8,10 +8,15 @@
  * real-core semantics the fake-host suite cannot vouch for.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { act, render } from '@testing-library/react'
+import { act, fireEvent, render } from '@testing-library/react'
+import { StrictMode, type FC, type ReactNode } from 'react'
+import { Context } from '@deepseek-ai/cordis'
+import { defineStore } from '@deepseek-ai/dsh-client-store'
+import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
+import { SlotRegistry } from '../src/client/registry.ts'
 import {
   SlotCore, StaleAuthorizationError, type PropsRenderSlots, type SlotRendererHost,
-  type SlotScopeAdapter, type StandardSourceBinding,
+  type StandardSourceBinding,
 } from '@deepseek-ai/dsh-client-ui-slots'
 import { createSlotRenderer } from '../src/client/scoped-slots.tsx'
 
@@ -27,10 +32,9 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 
 type FrameSlots = PropsRenderSlots<'spec.single' | 'spec.list'>
 
-/** Passthrough host over the real core (store/session seats unused here). */
+/** Passthrough host over the real core (store seats unused here). */
 function hostOver(core: SlotCore): SlotRendererHost {
   const absentBinding: StandardSourceBinding = {
-    key: undefined,
     hooks: {},
     keyedHooks: {},
     props: {},
@@ -38,10 +42,6 @@ function hostOver(core: SlotCore): SlotRendererHost {
   const bindingSource = {
     getSnapshot: () => absentBinding,
     subscribe: () => () => {},
-  }
-  const sessionAdapter: SlotScopeAdapter = {
-    current: bindingSource,
-    bindingSource: () => bindingSource,
   }
   return {
     subscribe: (key, fn) => core.subscribe(key, fn),
@@ -60,8 +60,6 @@ function hostOver(core: SlotCore): SlotRendererHost {
     factoryOf: name => core.factory(name),
     isFactoryLive: definition => core.isFactoryLive(definition),
     root: bindingSource,
-    scopeRevision: { getSnapshot: () => 0, subscribe: () => () => {} },
-    scope: () => sessionAdapter,
   }
 }
 
@@ -79,10 +77,9 @@ function mountFrame(core: SlotCore, body: (renderSlot: FrameSlots['renderSlot'])
 }
 
 describe('createSlotRenderer over the real SlotCore', () => {
-  it('renders a root-only product without installing a Session adapter', async () => {
+  it('renders a root-only product with the root application standard sources', async () => {
     const core = new SlotCore()
     const host = hostOver(core)
-    host.scope = () => undefined
     const disposeRoot = core.register({ name: 'root', children: {
       'spec.single': { kind: 'single', scope: 'root' },
     } }, (props: PropsRenderSlots<'spec.single'>) => props.renderSlot('spec.single', {}, { fallback: <i>empty</i> }))
@@ -160,4 +157,56 @@ describe('createSlotRenderer over the real SlotCore', () => {
     dispose()
     expect(() => captured!('spec.single', {})).toThrow(StaleAuthorizationError)
   })
+})
+
+
+it('renders external Factory nodes with injected actions and independent occurrence state', async () => {
+  const ctx = new Context()
+  await ctx.plugin(SlotRegistry)
+  const slots = ctx.slots
+  slots.install(createSlotRenderer())
+  const createCounter = vi.fn(() => defineStore({
+    init: () => ({ count: 0 }), actions: { increment: (state) => { state.count += 1 } },
+  }))
+  type LocalProps = { value: number }
+  type CounterProps = {
+    label: string
+    useStore: SnapshotSelectorHook<{ count: number }>
+    increment: () => void
+    useFactorySlot(name: string, fallback: FC<LocalProps>): FC<LocalProps>
+  }
+  const Fallback: FC<LocalProps> = ({ value }) => <output>{value}</output>
+  function Counter({ label, useStore, increment, useFactorySlot }: CounterProps) {
+    const value = useStore(state => state.count)
+    const Value = useFactorySlot('value', Fallback)
+    return <section><button onClick={increment}>{label}</button><Value value={value} /></section>
+  }
+  // JavaScript plugins enter through the same runtime contract as the external node fixtures.
+  const registerFactory = slots.registerFactory.bind(slots) as (options: object, component: unknown) => () => void
+  const disposeFactory = registerFactory({
+    name: 'external.counter', scope: 'root', store: createCounter,
+    inject: (actions: { increment(): void }) => ({ increment: actions.increment }),
+    slots: { value: { scope: 'root' } },
+  }, Counter)
+  const register = slots.register.bind(slots) as (options: object, component: unknown) => () => void
+  register({ name: 'root' }, ({ renderFactorySlot }: {
+    renderFactorySlot(name: string, props: object, options?: { slots: { value: FC<LocalProps> } }): ReactNode
+  }) => <>{renderFactorySlot('external.counter', { label: 'first' })}
+    {renderFactorySlot('external.counter', { label: 'second' }, {
+      slots: { value: ({ value }) => <output>selected:{value}</output> },
+    })}</>)
+  const view = render(<StrictMode>{slots.renderSlot('root', {})}</StrictMode>)
+  expect([...view.container.querySelectorAll('output')].map(node => node.textContent)).toEqual(['0', 'selected:0'])
+  fireEvent.click(view.getByRole('button', { name: 'first' }))
+  expect([...view.container.querySelectorAll('output')].map(node => node.textContent)).toEqual(['1', 'selected:0'])
+  fireEvent.click(view.getByRole('button', { name: 'second' }))
+  expect([...view.container.querySelectorAll('output')].map(node => node.textContent)).toEqual(['1', 'selected:1'])
+  const created = createCounter.mock.calls.length
+  view.rerender(<StrictMode>{slots.renderSlot('root', {})}</StrictMode>)
+  expect(createCounter).toHaveBeenCalledTimes(created)
+  expect([...view.container.querySelectorAll('output')].map(node => node.textContent)).toEqual(['1', 'selected:1'])
+  await act(async () => { disposeFactory() })
+  expect(view.container.querySelectorAll('output')).toHaveLength(0)
+  view.unmount()
+  await ctx.fiber.dispose()
 })

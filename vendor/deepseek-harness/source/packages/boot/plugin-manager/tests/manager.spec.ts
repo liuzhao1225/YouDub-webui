@@ -735,7 +735,6 @@ it.each([
   '@deepseek-ai/dsh-host-plugin-inventory',
   '@deepseek-ai/dsh-typert-registry',
   '@deepseek-ai/dsh-api-remotes',
-  '@deepseek-ai/dsh-api-remote-access',
 ])('protects the management dependency %s and its containing bundle', async (name) => {
   const { ctx, manager, bundle, profile, dir } = await fixture('startup')
   bundle('extra', [{ id: 'dependency', name, disabled: true }])

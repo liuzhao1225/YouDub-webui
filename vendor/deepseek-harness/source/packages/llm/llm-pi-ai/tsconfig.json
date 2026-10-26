@@ -27,9 +27,6 @@
       "path": "../../llm/llm"
     },
     {
-      "path": "../../attachment/attachment"
-    },
-    {
       "path": "../../credentials/credentials"
     },
     {

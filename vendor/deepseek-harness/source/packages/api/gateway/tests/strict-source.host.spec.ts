@@ -3,7 +3,6 @@ import { afterEach, expect, it } from 'vitest'
 import { z } from 'zod'
 import { bindTypertRemote, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import TypertRegistry, { type TypertContribution } from '@deepseek-ai/dsh-typert-registry'
-import RemoteAccessService from '@deepseek-ai/dsh-api-remote-access'
 import TypertGateway from '../src/index.ts'
 import { ownerPeer } from './peer.ts'
 
@@ -41,7 +40,7 @@ async function setup() {
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(TypertRegistry)
-  await ctx.plugin(RemoteAccessService)
+
   await ctx.plugin(TypertGateway)
   const service = new ItemsService(ctx)
   return { ctx, service }

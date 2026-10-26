@@ -4,7 +4,7 @@
 
 这里只维护 YouDub 使用的源码、共享组件、构建工具和相关测试。完整上游仓库、逐文件上游快照和差异清单不随产品同步；本地生成目录和迁移截图不进入 Git。变更历史由 Git 记录。
 
-当前保留 69 个源码包：61 个链接到桌面运行项目；另有 6 个共享前端包直接编入 Web/业务 bundle、1 个桌面源码包提供窗口与 preload、1 个 Typert 生成器负责构建。准确包表与使用方式见 [保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)。
+当前保留 67 个源码包，已移除聊天附件和多角色 RemoteAccess 包；运行包表与前端、桌面构建工具的使用方式见 [保留范围](../../apps/harness/docs/FRAMEWORK-SCOPE.md)。
 
 构建：从仓库根运行 `npm run build:framework`。源码复制到忽略的 `.cache/harness/source-build`，依赖安装和产物生成均在该目录。构建收据只记录当前输入，防止运行陈旧产物，不再要求保存全部上游原件或更新重复的文件哈希账本。
 
@@ -18,7 +18,11 @@ API Gateway 的 `RemoteJournalStream` 及其专用类型（`RemoteJournalChange`
 
 当前子集已退役文件关联应用枚举和指定应用打开接口（`nativeFileApplications`、`openNativeFileApplication`、`desktopEntryFields`、`desktopDataDirectories`、`desktopApplicationIcon` 及 `native-command/types`）。配置文件仍通过 `openNativeTextFile` 打开。
 
-桌面快捷键只承接 YouDub 主文档和原生菜单输入，原内嵌浏览器、HTML 预览的 iframe/webview 转发协议已退役。插槽仍保留通用 scope adapter、Component Factory、注册和依赖注入；原聊天输入框专用的 `ChainRenderOpts.overlay` 和未使用的 `ResourceProtocolMap` 已移除。YouDub SDK 的工作流和插件接口不受这些上游专用接口清理影响。
+桌面快捷键只承接 YouDub 主文档和原生菜单输入，原内嵌浏览器、HTML 预览的 iframe/webview 转发协议已退役。UI 插槽只承接当前页面与节点插件使用的 `root` scope，保留 single/list/keyed/chain、Component Factory、依赖注入和按渲染位置隔离的状态生命周期。`session`、`session-maybe`、`SessionProvider`、`installScope`、`bindStoreScope` 和 `inject(sessionId, ...)` 已退役，旧 scope 声明会在注册时明确报错。原聊天输入框专用的 `ChainRenderOpts.overlay` 和未使用的 `ResourceProtocolMap` 已移除。
+
+LLM 继续使用原 Harness `prepareCall → stream`、模型发现、配置、凭据及供应商适配。请求支持 system/user 文本，响应保留文本、思考、用量、结束原因和原始错误；图片、文件、工具、工具历史和 assistant/developer/tool 历史输入明确拒绝。Agent 消息构造器、`BlockAssembler`、replay API 和附件包已退役。历史图片预算字段仍可随旧配置加载，原值不改写；新请求和表单不再使用这些字段。
+
+Gateway 直接要求经过认证的 owner，非 owner 在方法解析和事件订阅前被拒绝；原多角色策略注册、权限快照/follow 和客户端权限 Hooks 已退役。HTTP 认证、请求上限、二进制 RPC、上传和通用流仍保留。空的上游默认 profile 模板和 snapshot replay 入口已退役，已有命名 profile、显式应用 profile、用户配置和外部插件继续通过原 Loader 加载。
 
 配置表单继续使用 Harness 的原生 ConfigForms。无产品入口的 JSON Schema 导出（`generateConfigSchema`、`createConfigProjector`、`isNativeConfigSchema`）和 `renderConfigDump` 已退役。普通子进程仍通过 `ctx.subprocess.spawn` 执行并管理进程树；PTY 的 `spawnTerminal`、`terminalEnvironment`、终端相关类型与 `node-pty` 依赖已移除。旧版 profile 中的 `node-pty` 文本仅用于识别并迁移历史安装配置。
 

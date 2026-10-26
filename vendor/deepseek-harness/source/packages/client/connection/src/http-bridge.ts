@@ -8,10 +8,7 @@ import type { PeerScope } from '@deepseek-ai/dsh-typert-protocol'
 import { Readable } from 'node:stream'
 import type { ConnectionFetchHandler } from './rpc.ts'
 
-/** Default carrier cap for all HTTP RPC bodies: sized for the default
- * aggregate image limit (200 MiB) after base64 expansion plus envelope
- * headroom (~267.7 MiB required), rounded up for slack. The bridge buffers
- * each body in memory, so this cap is also the per-request resident bound. */
+/** Maximum buffered HTTP RPC body size. Streaming upload routes retain their own body handling. */
 export const DEFAULT_MAX_REQUEST_BODY_BYTES = 300 * 1024 * 1024
 
 interface BridgeServerResponse {

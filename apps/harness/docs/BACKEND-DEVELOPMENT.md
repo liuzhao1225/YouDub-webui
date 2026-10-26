@@ -49,6 +49,8 @@ export const inject = [
 
 设置、模型和插件管理的官方页面使用官方 Remote 服务。业务页面通过上述传输层访问领域 API，两条调用路径共享同一官方 Host。
 
+当前产品只使用已认证的 `owner`。Connection 保留认证、Origin 校验和请求准入；Gateway 在解析方法及打开事件流前拒绝非 owner，并在发布事件时复核。原 RemoteAccess 多角色策略包及客户端权限快照已退役。普通 RPC、二进制传输、流式视频上传、HTTP 请求上限和连接 Context 的释放机制继续保留。
+
 ## 任务与节点语义
 
 工作流文档描述节点、端口、连接和配置；任务保存本次执行的图快照、提供商/模型绑定与版本信息。修改工作流模板不会改写已创建任务。提供商的实现和模型配置使用 integrity 标识参与绑定检查。
@@ -85,6 +87,8 @@ export const inject = [
 [`translateWithHarness`](../src/backend/llm.mjs) 调用 `llm.prepareCall({ provider, model }, signal)`，再使用返回的配置与 `prepared.stream`。输出参数、协议和模型容量沿用 Harness 模型设置与适配器规则；YouDub 不再指定固定输出下限，也不使用旧节点的 `maxCompletionTokens` 覆盖请求。模型目录采用 `ctx.llm.listModels` 返回的候选与 Credentials 配置状态。翻译分批保持段落 ID，保存原始请求、流事件和响应到任务工作目录的 `translation_raw`；用户订正另行保存。供应商拒绝或响应不完整时保留原始失败，历史请求与响应保持不变。
 
 API 密钥、提供商 URL 和模型选择通过 YouDub 的官方模型设置页面配置和测试。不要把真实凭据写入插件源码、模板、测试夹具或验证报告。
+
+LLM 请求合同限定为 system/user 文本，响应继续保留文本、思考、用量、结束原因和错误。图片、文件、工具及 assistant/developer/tool 历史输入会明确失败。Agent 消息构造器、`BlockAssembler`、replay API 和聊天附件服务已退役；翻译的原始请求与响应仍按上述业务路径保存。依赖退役接口的外部插件需要迁移，当前三个产品插件示例不使用这些接口。
 
 ## 外部插件
 

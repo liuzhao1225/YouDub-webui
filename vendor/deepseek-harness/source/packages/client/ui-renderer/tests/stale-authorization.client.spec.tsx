@@ -10,7 +10,7 @@ import {
   StaleAuthorizationError, type SlotEntryDef, type SlotSpec, type StoredEntry,
 } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
-  RenderOpts, SlotRendererHost, SlotScopeAdapter, StandardSourceBinding,
+  RenderOpts, SlotRendererHost, StandardSourceBinding,
 } from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createSlotRenderer } from '../src/client/scoped-slots.tsx'
 
@@ -24,7 +24,6 @@ function makeHost() {
   const subs = new Map<string, Set<() => void>>()
   const live = new Set<StoredEntry>()
   const absentBinding: StandardSourceBinding = {
-    key: undefined,
     hooks: {},
     keyedHooks: {},
     props: {},
@@ -32,10 +31,6 @@ function makeHost() {
   const bindingSource = {
     getSnapshot: () => absentBinding,
     subscribe: () => () => {},
-  }
-  const sessionAdapter: SlotScopeAdapter = {
-    current: bindingSource,
-    bindingSource: () => bindingSource,
   }
   const bump = (key: string) => {
     versions.set(key, (versions.get(key) ?? 0) + 1)
@@ -65,8 +60,6 @@ function makeHost() {
     factoryOf: () => undefined,
     isFactoryLive: () => false,
     root: bindingSource,
-    scopeRevision: { getSnapshot: () => 0, subscribe: () => () => {} },
-    scope: () => sessionAdapter,
   }
   return {
     host,

@@ -73,10 +73,7 @@ export interface BundleInfo {
    * paths made absolute and the user information of an http(s) URL removed.
    */
   source?: string
-  /**
-   * Whether the installation ships the bundle for the person to switch on: named by the launcher's `OPTIONAL_BUNDLES`,
-   * held by the installation's dependencies, selected by no shipped template, and never removable.
-   */
+  /** Retained wire flag; YouDub ships no optional framework product bundles. */
   optional: boolean
   removable: boolean
   readOnlyReason?: ReadOnlyReason

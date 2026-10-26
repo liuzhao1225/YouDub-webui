@@ -1,9 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
-import { createUserMessage, CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, createMessage } from '@deepseek-ai/dsh-llm'
+import { describe, expect, it } from 'vitest'
+import { CONTEXT_WINDOW_EXCEEDED_CODE, EMPTY_RESPONSE_CODE, } from '@deepseek-ai/dsh-llm'
 import type { StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { AssistantMessage, AssistantMessageEvent, Usage } from '@earendil-works/pi-ai'
-import { transformMessages } from '@earendil-works/pi-ai/api/transform-messages'
-import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
 import { toPiContext } from '../src/context.ts'
 import { mapStopReason, mapUsage, toStreamChunks } from '../src/stream.ts'
 
@@ -43,15 +41,31 @@ async function collect(stream: AsyncIterable<StreamChunk>): Promise<StreamChunk[
 }
 
 describe('toPiContext', () => {
+  it('preserves leading and in-history system prompt order', () => {
+    expect(toPiContext({ provider: 'p', model: 'm', system: 'initial', messages: [
+      { role: 'system', content: [{ type: 'text', text: 'leading' }] },
+      { role: 'user', content: [{ type: 'text', text: 'first' }] },
+      { role: 'system', content: [{ type: 'text', text: 'updated' }] },
+      { role: 'user', content: [{ type: 'text', text: 'second' }] },
+    ] })).toEqual({ systemPrompt: 'initial\n\nleading', messages: [
+      { role: 'user', content: 'first', timestamp: 0 },
+      { role: 'system', content: 'updated', timestamp: 0 },
+      { role: 'user', content: 'second', timestamp: 0 },
+    ] })
+  })
+
+  it('rejects non-text input at the direct adapter boundary', () => {
+    expect(() => toPiContext({ provider: 'p', model: 'm', messages: [
+      { role: 'user', content: [{ type: 'image' }] },
+    ] } as never)).toThrow(expect.objectContaining({ code: 'UNSUPPORTED_CONTENT' }))
+  })
+
   it('maps system prompt and user text', () => {
     const context = toPiContext({
       provider: 'deepseek',
       model: 'deepseek-v4-flash',
       system: 'be helpful',
-      messages: [createUserMessage({
-        content: [{ type: 'text', text: 'hi' }],
-        source: { kind: 'test' },
-      })],
+      messages: [{ role: 'user' as const, content: [{ type: 'text', text: 'hi' }] }],
     })
     expect(context).toEqual({
       systemPrompt: 'be helpful',
@@ -59,54 +73,34 @@ describe('toPiContext', () => {
     })
   })
 
-  it('omits empty tools and absent system prompt', () => {
-    const context = toPiContext({ provider: 'deepseek', model: 'm', messages: [], tools: [] })
+  it('omits an absent system prompt', () => {
+    const context = toPiContext({ provider: 'deepseek', model: 'm', messages: [] })
     expect(context).toEqual({ messages: [] })
   })
 })
 
 describe('toStreamChunks', () => {
-  it.each([
-    ['claude-haiku-4-5', 'claude-haiku-4-5-20251001'],
-    ['claude-opus-5', 'kimi-for-coding'],
-    ['claude-opus-5', undefined],
-  ])('retains signed thinking for Anthropic request %s reported as %s', async (requestedModel, reportedModel) => {
-    const native = assistant({
-      api: 'anthropic-messages', provider: 'anthropic', model: requestedModel,
-      ...reportedModel === undefined ? {} : { responseModel: reportedModel },
-      providerThinkingLevel: 'high',
-      content: [{ type: 'thinking', thinking: 'reason', thinkingSignature: 'signed' }],
+  it('streams signed Anthropic thinking and final text without changing the provider response', async () => {
+    const native = assistant({ api: 'anthropic-messages', provider: 'anthropic', model: 'claude-alias',
+      content: [{ type: 'thinking', thinking: 'reason', thinkingSignature: 'signed' }, { type: 'text', text: 'answer' }],
     })
+    const original = structuredClone(native)
     const chunks = await collect(toStreamChunks(feed(
+      { type: 'thinking_delta', contentIndex: 0, delta: 'reason', partial: native },
+      { type: 'thinking_end', contentIndex: 0, content: 'reason', partial: native },
+      { type: 'text_delta', contentIndex: 1, delta: 'answer', partial: native },
+      { type: 'text_end', contentIndex: 1, content: 'answer', partial: native },
       { type: 'done', reason: 'stop', message: native },
-    ), undefined, undefined, requestedModel))
-    const finish = chunks.find(chunk => chunk.type === 'finish')
-    const replayState: unknown = JSON.parse(JSON.stringify(finish?.replayState))
-    expect(replayState).toMatchObject({ response: { model: requestedModel } })
-    if (reportedModel === undefined) {
-      expect(finish?.replayState?.response).not.toHaveProperty('responseModel')
-    } else {
-      expect(replayState).toMatchObject({ response: { responseModel: reportedModel } })
-    }
-    const onDegrade = vi.fn()
-    const context = toPiContext({
-      provider: 'anthropic', model: requestedModel,
-      messages: [createMessage({
-        role: 'assistant', content: [{ type: 'reasoning', text: 'reason' }],
-        source: { kind: 'model', provider: 'anthropic', model: requestedModel, replayState },
-      })],
-    }, undefined, onDegrade)
-    expect(onDegrade).not.toHaveBeenCalled()
-    expect(context.messages[0]).toMatchObject({
-      api: 'anthropic-messages', model: requestedModel, providerThinkingLevel: 'high',
-      content: native.content,
-    })
-    const requested = getBuiltinModels('anthropic').find(model => model.id === requestedModel)
-    if (requested === undefined) throw new Error('missing Anthropic catalog model')
-    expect(transformMessages(context.messages, requested)[0]).toMatchObject({ content: native.content })
-    expect(transformMessages(context.messages, { ...requested, id: 'other-model' })[0]).toMatchObject({
-      content: [{ type: 'text', text: 'reason' }],
-    })
+    )))
+    expect(chunks).toContainEqual({ type: 'reasoning-delta', index: 0, text: 'reason' })
+    expect(chunks).toContainEqual({ type: 'text-delta', index: 1, text: 'answer' })
+    expect(chunks.at(-1)).toEqual({ type: 'finish', reason: { kind: 'stop' } })
+    expect(native).toEqual(original)
+  })
+
+  it('refuses an unexpected provider tool call', async () => {
+    await expect(collect(toStreamChunks(feed({ type: 'toolcall_start', contentIndex: 0, partial: assistant() }))))
+      .rejects.toMatchObject({ code: 'UNSUPPORTED_CONTENT' })
   })
 
   it('maps text events to text blocks', async () => {
@@ -126,17 +120,7 @@ describe('toStreamChunks', () => {
       {
         type: 'finish',
         reason: { kind: 'stop' },
-        replayState: {
-          response: {
-            kind: 'pi-ai',
-            version: 2,
-            api: 'openai-completions',
-            provider: 'deepseek',
-            model: 'deepseek-v4-flash',
-            stopReason: 'stop',
-          },
-          blocks: [{ type: 'text' }],
-        },
+
       },
     ])
   })
@@ -194,7 +178,7 @@ describe('mapStopReason / mapUsage', () => {
   it.each([
     ['stop', { kind: 'stop' }],
     ['length', { kind: 'max-tokens' }],
-    ['toolUse', { kind: 'tool-calls' }],
+    ['toolUse', { kind: 'error', failure: { message: 'YouDub model calls do not support tool responses', code: 'UNSUPPORTED_CONTENT' } }],
     ['pending', {
       kind: 'error',
       failure: { message: 'pi-ai stream for model "deepseek-v4-flash" ended pending', code: 'PI_AI_ERROR' },

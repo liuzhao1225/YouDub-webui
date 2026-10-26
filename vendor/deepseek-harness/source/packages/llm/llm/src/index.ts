@@ -1,7 +1,7 @@
 /**
  * LLM service: adapter registry with a waterfall-interceptable streaming call
  * API. Exports the `LlmRuntime` default, the abstract `LlmAdapter` for
- * provider backends, and `BlockAssembler` for chunk assembly.
+ * provider backends and raw response chunks.
  *
  * @module @deepseek-ai/dsh-llm
  */
@@ -11,7 +11,6 @@ import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typer
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
 import type {
   GenerateOptions,
-  RequestMessage,
   LlmConfigurableProvider,
   LlmDiscoveredModel,
   LlmFailure,
@@ -22,11 +21,7 @@ import type {
   LlmProviderInfo,
   ModelModality,
   StreamChunk,
-  SystemPromptUpdate,
-  ToolSchema,
-  ToolUpdate,
 } from './types.ts'
-import { freezeMessage } from './message.ts'
 import { resolveRetryPolicy } from './retry-policy.ts'
 import type { ResolvedRetryPolicy } from './retry-policy.ts'
 import type { ProviderRequestId } from './brand.ts'
@@ -35,18 +30,14 @@ import type { ConfigureCall, LlmCallConfig, LlmCallConfigAdapterDefaults } from 
 import { HarnessError, INVALID_CREDENTIAL_CODE } from './error.ts'
 import { normalizeLlmFailure } from './adapter-failure.ts'
 import { normalizeApiKey } from './api-key.ts'
-import {
-  contentHasFile, contentHasImage, projectFilesToText, projectImagesForTextModel, projectToolUpdates,
-} from './content.ts'
+import { assertTextRequest } from './content.ts'
 
 export * from './brand.ts'
 export * from './error.ts'
 export * from './api-key.ts'
 export * from './types.ts'
 export * from './content.ts'
-export * from './message.ts'
 export * from './retry-policy.ts'
-export { BlockAssembler } from './assembler.ts'
 export { callConfigEquals } from './call-config.ts'
 export type { ConfigureCall, LlmCallConfig, LlmCallConfigAdapterDefaults, LlmCallControls } from './call-config.ts'
 
@@ -57,7 +48,7 @@ declare module '@deepseek-ai/cordis' {
 
   interface Events {
     /**
-     * Waterfall around every streaming model call (retry, replay, routing).
+     * Waterfall around every streaming model call.
      * Bound to the {@link LlmRuntime}; call `next()` to reach the resolved
      * adapter's stream, or yield your own chunks to short-circuit.
      * @param options - the full request. Callers own their request inputs and
@@ -77,8 +68,6 @@ export interface LlmErrorOptions extends ErrorOptions {
   providerRetryAfterMs?: number
   /** Non-empty opaque provider request id. */
   requestId?: ProviderRequestId
-  /** Positive count of additional oldest retained image occurrences to offload; only with `IMAGE_OFFLOAD_REQUIRED`. */
-  offloadImages?: number
 }
 
 /**
@@ -117,7 +106,6 @@ export class LlmError extends HarnessError {
       ...options?.status === undefined ? {} : { status: options.status },
       ...options?.providerRetryAfterMs === undefined ? {} : { providerRetryAfterMs: options.providerRetryAfterMs },
       ...options?.requestId === undefined ? {} : { requestId: options.requestId },
-      ...options?.offloadImages === undefined ? {} : { offloadImages: options.offloadImages },
     })
   }
 }
@@ -167,10 +155,6 @@ export interface PreparedLlmCall {
   readonly context?: LlmModelContext
   /** Exact model modalities captured with the adapter dispatch generation. */
   readonly inputModalities?: readonly ModelModality[]
-  /** Exact model system prompt update mode captured with the adapter dispatch generation. */
-  readonly systemPromptUpdate?: SystemPromptUpdate
-  /** Exact model tool update mode captured with the adapter dispatch generation. */
-  readonly toolUpdate?: ToolUpdate
   /** Config fields materialized by the captured adapter rather than proposed by the caller. */
   readonly adapterDefaults: LlmCallConfigAdapterDefaults
   /**
@@ -730,24 +714,8 @@ export class LlmRuntime extends TypertRemoteService {
       )
     }
     // Capability metadata rides through: an explicit modality omission is
-    // negative capability downstream preflights act on (image admission).
+    // provider capability remains available to model selectors.
     const inputModalities = this.detachedModalities(resolved.inputModalities)
-    // Widened: adapters derive this mode from catalog config, so the value is checked as a string.
-    const systemPromptUpdate: string | undefined = resolved.systemPromptUpdate
-    if (systemPromptUpdate !== undefined && systemPromptUpdate !== 'in-history') {
-      throw new LlmError(
-        `adapter returned invalid system prompt update mode for provider "${provider}" model "${model}"`,
-        'INVALID_MODEL_INFO',
-      )
-    }
-    // Widened for the same reason: catalog config supplies the tool update mode as text.
-    const toolUpdate: string | undefined = resolved.toolUpdate
-    if (toolUpdate !== undefined && toolUpdate !== 'in-history' && toolUpdate !== 'addition-only') {
-      throw new LlmError(
-        `adapter returned invalid tool update mode for provider "${provider}" model "${model}"`,
-        'INVALID_MODEL_INFO',
-      )
-    }
     const defaultMaxTokens = resolved.defaultMaxTokens
     if (defaultMaxTokens !== undefined
       && (!Number.isSafeInteger(defaultMaxTokens) || defaultMaxTokens <= 0)) {
@@ -764,8 +732,6 @@ export class LlmRuntime extends TypertRemoteService {
       ...inputModalities === undefined ? {} : { inputModalities },
       ...context === undefined ? {} : { context: { contextWindow: context.contextWindow } },
       ...defaultMaxTokens === undefined ? {} : { defaultMaxTokens },
-      ...resolved.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: resolved.systemPromptUpdate },
-      ...resolved.toolUpdate === undefined ? {} : { toolUpdate: resolved.toolUpdate },
     }
     const reasoning = resolved.reasoning
     if (reasoning === undefined) return info
@@ -921,8 +887,6 @@ export class LlmRuntime extends TypertRemoteService {
       ...modelInfo.inputModalities === undefined
         ? {}
         : { inputModalities: Object.freeze([...modelInfo.inputModalities]) },
-      ...modelInfo.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: modelInfo.systemPromptUpdate },
-      ...modelInfo.toolUpdate === undefined ? {} : { toolUpdate: modelInfo.toolUpdate },
       stream: (options: GenerateOptions): AsyncIterable<StreamChunk> => {
         if (dispatched) {
           throw new LlmError('a prepared LLM call can only be dispatched once', 'INVALID_PREPARED_CALL')
@@ -937,7 +901,6 @@ export class LlmRuntime extends TypertRemoteService {
         return this.streamWithRegistration(options, {
           registration,
           config: resolvedConfig,
-          modelInfo,
           dispatch: options => adapterCall.stream(options),
         })
       },
@@ -948,23 +911,6 @@ export class LlmRuntime extends TypertRemoteService {
     const registration = this.adapters.get(provider)
     if (!registration) throw new LlmError(`no adapter registered for provider "${provider}"`, 'NO_ADAPTER')
     return registration
-  }
-
-  /** Remove replay state whose historical route is owned by another adapter. */
-  private forAdapter(options: GenerateOptions, adapter: LlmAdapter): GenerateOptions {
-    const messages: RequestMessage[] = options.messages.map((message) => {
-      if (message.role !== 'assistant') return message
-      const source = message.source
-      if (source.replayState === undefined) return message
-      if (this.adapters.get(source.provider)?.adapter === adapter) return message
-      return freezeMessage({
-        ...message,
-        source: { kind: 'model', provider: source.provider, model: source.model },
-      })
-    })
-    if (messages.every((message, index) => message === options.messages[index])) return options
-    const filtered = { ...options, messages }
-    return Object.isFrozen(options) ? deepFreeze(filtered) : filtered
   }
 
   /**
@@ -978,18 +924,17 @@ export class LlmRuntime extends TypertRemoteService {
   ): AsyncGenerator<StreamChunk> {
     let iterator: AsyncIterator<StreamChunk>
     try {
+      assertTextRequest(options)
       const registration = prepared?.registration ?? this.registration(options.provider)
       const adapter = registration.adapter
-      let modelInfo: LlmResolvedModelInfo
       let resolvedConfig: LlmCallConfig
       let dispatch: (options: GenerateOptions) => AsyncIterable<StreamChunk>
       if (prepared === undefined) {
         const adapterCall = await adapter.prepareCall(options.provider, options.model, options.signal)
-        modelInfo = this.normalizeModelInfo(registration, options.model, adapterCall.model)
+        const modelInfo = this.normalizeModelInfo(registration, options.model, adapterCall.model)
         resolvedConfig = this.resolveCallWithInfo(options, modelInfo).config
         dispatch = options => adapterCall.stream(options)
       } else {
-        modelInfo = prepared.modelInfo
         resolvedConfig = prepared.config
         dispatch = prepared.dispatch
       }
@@ -1004,29 +949,7 @@ export class LlmRuntime extends TypertRemoteService {
         : Object.isFrozen(options)
           ? deepFreeze({ ...options, ...resolvedConfig })
           : { ...options, ...resolvedConfig }
-      // Files are never dispatched natively: every route receives handle text.
-      let projectedMessages: readonly RequestMessage[] = resolvedOptions.messages
-      if (projectedMessages.some(message => contentHasFile(message.content))) {
-        projectedMessages = projectFilesToText(projectedMessages, () => undefined)
-      }
-      if (modelInfo.inputModalities !== undefined
-        && !modelInfo.inputModalities.includes('image')
-        && projectedMessages.some(message => contentHasImage(message.content))) {
-        projectedMessages = projectImagesForTextModel(projectedMessages)
-      }
-      // Tool changes are logged on every route; the route's declared mode selects what it receives.
-      const projectedTools = projectToolUpdates(projectedMessages, resolvedOptions.tools, modelInfo.toolUpdate, resolvedOptions.toolHistory)
-      projectedMessages = projectedTools.messages
-      let projectedOptions = resolvedOptions
-      if (projectedMessages !== resolvedOptions.messages || projectedTools.tools !== resolvedOptions.tools) {
-        projectedOptions = {
-          ...resolvedOptions,
-          messages: projectedMessages as RequestMessage[],
-          ...projectedTools.tools === undefined ? {} : { tools: projectedTools.tools as ToolSchema[] },
-        }
-        if (Object.isFrozen(resolvedOptions)) deepFreeze(projectedOptions)
-      }
-      const stream = dispatch(this.forAdapter(projectedOptions, adapter))
+      const stream = dispatch(resolvedOptions)
       iterator = stream[Symbol.asyncIterator]()
     } catch (error: unknown) {
       yield adapterFailureChunk(error, options.signal)
@@ -1122,7 +1045,6 @@ interface AdapterRegistration {
 interface PreparedDispatch {
   readonly registration: AdapterRegistration
   readonly config: LlmCallConfig
-  readonly modelInfo: LlmResolvedModelInfo
   readonly dispatch: (options: GenerateOptions) => AsyncIterable<StreamChunk>
 }
 

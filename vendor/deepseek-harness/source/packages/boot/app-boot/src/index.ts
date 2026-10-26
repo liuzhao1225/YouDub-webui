@@ -1,6 +1,6 @@
 /**
  * Shared boot glue for `dsh` profiles, including the CLI packaged by the Python runtime wheel: load the gitignored
- * `.env`, install the fail-loud Loader guards, resolve the config path (snapshot-aware), load the
+ * `.env`, install the fail-loud Loader guards, resolve the config path, load the
  * optional user patch layers from the Harness home (`~/.dsh`), expose its path resolver to
  * config expressions, and drive the Cordis Loader against a leaf `cordis.yml` until the tree settles.
  * @module @deepseek-ai/dsh-app-boot
@@ -9,7 +9,7 @@
 import { pathToFileURL } from 'node:url'
 import { readFileSync } from 'node:fs'
 import { inspect, parseEnv } from 'node:util'
-import { basename, dirname, isAbsolute, resolve } from 'node:path'
+import { dirname, isAbsolute, resolve } from 'node:path'
 import * as yaml from 'js-yaml'
 import { Context, type Fiber, type FiberState } from '@deepseek-ai/cordis'
 import Loader, { type Entry, type EntryGroup, type EntryOptions } from '@deepseek-ai/cordis-plugin-loader'
@@ -55,8 +55,6 @@ export {
   composeEntries,
   createRuntimeResolution,
   ProfileRuntimeResolution,
-  DEFAULT_PROFILE_BUNDLES,
-  OPTIONAL_BUNDLES,
   bundlePatchFiles,
   bundlePatchPaths,
   initProfile,
@@ -64,7 +62,6 @@ export {
   loadProfile,
   loadProfileDirectory,
   PROFILE_PATCH_FILENAME,
-  PROFILE_TEMPLATES,
   PROFILES_DIR,
   readProfileManifest,
   reportSkippedBundles,
@@ -79,7 +76,6 @@ export {
   type RuntimeResolutionOptions,
   type RuntimeResolutionEntry,
   type RuntimeResolution,
-  type ProfileTemplate,
 } from './profile.ts'
 export {
   PluginPackages,
@@ -87,25 +83,6 @@ export {
   type PluginPackagesConfig,
 } from './profile-resolution/service.ts'
 export { ResolutionRestartRequired } from './profile-resolution/resolver.ts'
-
-/**
- * Resolve the config to boot. Replay swaps a `cordis.yml` basename for
- * `cordis.snapshot.yml` in the same directory; every other mode keeps the path.
- * @param configPath - the requested config path (absolute, or relative to `cwd`).
- * @param snapshotMode - the bin's `$DSH_SNAPSHOT` value; only `'replay'` swaps the
- *   basename.
- * @param cwd - the base a relative `configPath` resolves against.
- * @returns the absolute path of the config to boot.
- */
-export function resolveConfigPath(
-  configPath: string, snapshotMode: string | undefined, cwd: string = process.cwd(),
-): string {
-  const absolute = resolve(cwd, configPath)
-  if (snapshotMode !== 'replay') return absolute
-  const dir = dirname(absolute)
-  const replayName = basename(absolute).replace(/cordis\.ya?ml$/, 'cordis.snapshot.yml')
-  return resolve(dir, replayName)
-}
 
 /**
  * Load the optional gitignored `.env` from `dir`. Missing files fall back to the
@@ -1042,7 +1019,7 @@ export async function auditStartupEntries(
  * helper for bare plugin specifiers; relative specifiers do not.
  * @param binName - the diagnostic prefix for load-failure errors.
  * @param absoluteConfigPath - the config to include; must already be absolute
- * (see {@link resolveConfigPath}).
+ * before boot starts.
  * @param patches - optional overlay patches applied over the included tree
  * (see {@link loadOptionalPatches}); an empty list mounts none.
  * @param prepare - optional host setup run after Loader installation and before any config-tree entry mounts.

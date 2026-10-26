@@ -39,12 +39,6 @@ export const PROFILES_DIR = 'profiles'
 /** The user patch layer inside a profile directory (hot-reloaded on long-lived surfaces). */
 export const PROFILE_PATCH_FILENAME = 'cordis.patch.yml'
 
-/** Installation-owned defaults used when a shipped profile is first opened. */
-export interface ProfileTemplate {
-  /** Ordered bundle layer list. */
-  bundles: readonly string[]
-}
-
 /** Package metadata accepted by the profile reader; local profiles need no published identity. */
 export type ProfileManifest = Partial<DshPackageManifest>
 
@@ -174,15 +168,6 @@ export function resolveProfileDir(name: string, home: string = resolveDshHome())
   }
   return join(home, PROFILES_DIR, name)
 }
-
-/** Product profiles are initialized explicitly by the YouDub application. */
-export const PROFILE_TEMPLATES: Record<string, ProfileTemplate> = {}
-
-/** A generic new profile starts without product bundles. */
-export const DEFAULT_PROFILE_BUNDLES: readonly string[] = []
-
-/** YouDub does not ship optional Harness product bundles. */
-export const OPTIONAL_BUNDLES: readonly string[] = []
 
 const PROFILE_PATCH_TEMPLATE = `# Your patch layer for this dsh profile, applied after every bundle layer:
 # a top-level YAML array of loader patch entries (id-targeted config
@@ -683,8 +668,7 @@ export function loadProfileDirectory(
  * @param installAnchor - absolute path of the dsh app's package.json (first resolution anchor).
  * @param home - the Harness home; defaults to {@link resolveDshHome}.
  * @param options - `userLayer: false` skips reading `cordis.patch.yml`, so a
- * bundles-only consumer (`--dump-default-config`, a recovery diagnostic)
- * cannot fail on a broken user layer.
+ * bundles-only recovery can inspect a profile with a broken user layer.
  * @returns the loaded profile (empty `patches` when the user layer is skipped).
  */
 export function loadProfile(
@@ -693,13 +677,9 @@ export function loadProfile(
 ): Profile {
   const dir = resolveProfileDir(name, home)
   if (!existsSync(join(dir, 'package.json'))) {
-    const template = PROFILE_TEMPLATES[name]
-    if (template === undefined) {
-      throw new Error(
-        `${binName}: profile ${JSON.stringify(name)} does not exist at ${dir}; initialize the application profile before loading it`,
-      )
-    }
-    initProfile(dir, template.bundles)
+    throw new Error(
+      `${binName}: profile ${JSON.stringify(name)} does not exist at ${dir}; initialize the application profile before loading it`,
+    )
   }
   removeLinkProjections(dir)
   return loadProfileDirectory(binName, dir, installAnchor, options)

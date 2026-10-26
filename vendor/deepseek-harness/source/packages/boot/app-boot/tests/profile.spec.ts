@@ -21,7 +21,6 @@ import {
   loadProfileDirectory,
   PROFILE_COMPATIBILITY_FILENAME,
   PROFILE_PATCH_FILENAME,
-  PROFILE_TEMPLATES,
   readProfileManifest,
   readProfilePatches,
   removeLinkProjections,
@@ -337,7 +336,6 @@ describe('loadProfile', () => {
   it('requires an explicitly initialized product profile and does not create Harness defaults', () => {
     const anchor = stageInstallation({})
     const home = tmp()
-    expect(PROFILE_TEMPLATES).toEqual({})
     for (const name of ['custom', 'web', 'acp', 'headless', 'sdk', 'sdk-minimal']) {
       expect(() => loadProfile('t', name, anchor, home))
         .toThrow(`profile "${name}" does not exist`)
