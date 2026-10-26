@@ -7,6 +7,7 @@ import { access, cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile 
 import { tmpdir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { youdubEnvironment } from '../product-environment.mjs';
 
 const source = resolve(process.argv[2]);
 const workbench = process.argv.includes('--workbench');
@@ -39,7 +40,7 @@ const sentinel = '# Harness credentials must stay untouched\nrefs: {}\n';
 await writeFile(join(harnessHome, '.credentials.yaml'), sentinel);
 const userData = join(temporary, 'user data');
 const youdubHome = join(userData, 'harness');
-const environment = { ...process.env, DSH_HOME: harnessHome,
+const environment = { ...youdubEnvironment(process.env), dsh_home: harnessHome,
   DSH_DESKTOP_DSH_DIR: join(temporary, 'missing Harness runtime'), DSH_DESKTOP_PRIMARY_RUNTIME_DIR: harnessHome };
 for (const name of ['ELECTRON_RUN_AS_NODE', 'YOUDUB_TEST_SKIP_SETUP', 'YOUDUB_TEST_PYTHON', 'NODE_PATH',
   'YOUDUB_HOME', 'YOUDUB_HARNESS_PLUGIN_ROOT', 'YOUDUB_MEDIA_ROOT']) delete environment[name];
