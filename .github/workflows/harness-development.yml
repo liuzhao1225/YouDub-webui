@@ -200,6 +200,16 @@ jobs:
             sha256sum "$file" > "$file.sha256"
             sha256sum --check "$file.sha256"
           done
+      - name: 保存 Windows 安装失败诊断
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: youdub-windows-install-failure
+          path: |
+            dist/package-smoke-windows/
+            dist/package-smoke-windows-workbench/
+            dist/package-smoke-windows-installed/
+          if-no-files-found: warn
       - name: 保存 Windows 安装包与首启证据
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

@@ -77,6 +77,7 @@ try {
     };
   });
   const page = await application.firstWindow({ timeout: 30_000 });
+  page.setDefaultTimeout(30_000);
   await page.waitForURL('dsh-app://app/', { timeout: 30_000 });
   await page.waitForFunction(() => document.body?.innerText?.length > 40);
   await page.screenshot({ path: join(evidence, 'first-launch.png') });

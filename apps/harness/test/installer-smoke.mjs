@@ -12,12 +12,25 @@ const installer = resolve(process.argv[2] || `dist/YouDub-${version}-windows-x64
 const directory = await mkdtemp(join(tmpdir(), 'YouDub installed '));
 const application = join(directory, 'YouDub');
 const state = join(directory, 'user state');
+const evidence = resolve('dist/package-smoke-windows-installed');
+await mkdir(evidence, { recursive: true });
 const registration = () => JSON.parse(execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
   "$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{C28A6869-1C98-4FA0-BBE5-E5C579B0A602}_is1'; if (Test-Path $key) { Get-ItemProperty $key | Select-Object DisplayName,DisplayVersion,InstallLocation | ConvertTo-Json -Compress } else { 'null' }"], { encoding: 'utf8' }));
-const install = () => execFileSync(installer, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', `/DIR=${application}`], { timeout: 120_000, stdio: 'inherit' });
-const smoke = (name, ...args) => execFileSync(process.execPath, [join(import.meta.dirname, 'package-smoke.mjs'), application,
-  resolve(`dist/package-smoke-windows-installed/${name}`), '--in-place', `--state-dir=${state}`, ...args], { timeout: 180_000, stdio: 'inherit' });
-install();
+function runStep(name, executable, args, timeout) {
+  console.log(`Windows installer: ${name} started.`);
+  try {
+    execFileSync(executable, args, { timeout, stdio: 'inherit' });
+  } catch (error) {
+    console.error(`Windows installer: ${name} failed. Diagnostic logs: ${evidence}`);
+    throw error;
+  }
+  console.log(`Windows installer: ${name} finished.`);
+}
+const install = name => runStep(name, installer, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-',
+  `/DIR=${application}`, `/LOG=${join(evidence, `${name}.log`)}`], 120_000);
+const smoke = (name, ...args) => runStep(`${name} launch`, process.execPath, [join(import.meta.dirname, 'package-smoke.mjs'), application,
+  join(evidence, name), '--in-place', `--state-dir=${state}`, ...args], 180_000);
+install('clean-install');
 await access(join(application, 'YouDub.exe'));
 assert.match(registration().DisplayName, /^YouDub\b/);
 assert.equal(registration().DisplayVersion, version);
@@ -38,14 +51,15 @@ for (const [file, value] of files) {
 const obsolete = join(application, 'resources/app/node_modules/@deepseek-ai/dsh-config-editor/node_modules/obsolete-boot');
 await mkdir(obsolete, { recursive: true });
 await writeFile(join(obsolete, 'index.js'), 'throw new Error("Obsolete upgrade dependency was loaded")');
-install();
+install('overwrite-install');
 await assert.rejects(access(obsolete), { code: 'ENOENT' });
 for (const [file, value] of files) assert.deepEqual(await readFile(file), value, `Upgrade changed user data: ${file}`);
 smoke('upgrade', '--configured');
 for (const [file, value] of files) assert.deepEqual(await readFile(file), value, `Restart changed saved data: ${file}`);
 const uninstaller = (await readdir(application)).find(name => /^unins\d+\.exe$/i.test(name));
 assert(uninstaller, 'Inno Setup uninstaller missing');
-execFileSync(join(application, uninstaller), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'], { timeout: 120_000, stdio: 'inherit' });
+runStep('uninstall', join(application, uninstaller), ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART',
+  `/LOG=${join(evidence, 'uninstall.log')}`], 120_000);
 const deadline = Date.now() + 30_000;
 while (true) {
   try { await access(join(application, 'YouDub.exe')); }
