@@ -135,6 +135,57 @@ def test_sentence_bounds_follow_first_and_last_word():
                          "text": " First, second.", "speaker_id": "narrator"}]
 
 
+def test_issue_184_video_keeps_words_outside_whisper_segment_start():
+    # Raw tiny/CPU output from the video attached to GitHub issue #184.
+    raw = json.loads((Path(__file__).parent / "fixtures" / "asr_issue_184.json").read_text(encoding="utf-8"))
+    before = deepcopy(raw)
+    normalized = asr.normalize_result(raw, duration_ms=24960)
+    assert normalized["detected_language"] == "zh"
+    segments = normalized["segments"]
+    assert len(segments) == len(raw["segments"]) == 5
+    assert [segment["start_ms"] for segment in segments] == [0, 6480, 9880, 15400, 18300]
+    for segment, source in zip(segments, raw["segments"]):
+        assert segment["text"] == source["text"]
+        assert segment["end_ms"] == round(source["end"] * 1000)
+        assert segment["words"] == [
+            {"text": word["word"], "start_ms": round(word["start"] * 1000),
+             "end_ms": round(word["end"] * 1000)} for word in source["words"]
+        ]
+    assert raw == before
+
+
+@pytest.mark.parametrize("language", ["en", "zh", "ja"])
+def test_segment_bounds_include_provider_words_without_retiming(language):
+    raw = word_result([(.2, .5, " First,"), (.8, 1.4, " second.")])
+    raw["language"] = language
+    raw["segments"][0].update(start=.3, end=1.2)
+    before = deepcopy(raw)
+    segment = asr.normalize_result(raw, duration_ms=2000)["segments"][0]
+    assert (segment["start_ms"], segment["end_ms"]) == (200, 1400)
+    assert segment["text"] == raw["segments"][0]["text"]
+    assert segment["speaker_id"] == "narrator"
+    assert segment["words"] == [
+        {"text": " First,", "start_ms": 200, "end_ms": 500},
+        {"text": " second.", "start_ms": 800, "end_ms": 1400},
+    ]
+    assert raw == before
+
+
+@pytest.mark.parametrize("words", [
+    [(.2, .9, " First,"), (.8, 1.4, " second.")],  # overlapping words
+    [(.2, .5, " First,"), (.8, 2.1, " second.")],  # beyond the audio
+    [(.2, .5, " First,"), (1.4, .8, " second.")],  # reversed interval
+])
+def test_expanded_segment_still_rejects_invalid_word_timing(words):
+    raw = word_result(words)
+    raw["segments"][0].update(start=.3, end=1.2)
+    before = deepcopy(raw)
+    with pytest.raises(ApiError) as error:
+        asr.normalize_result(raw, duration_ms=2000)
+    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+    assert raw == before
+
+
 def test_sentence_splitting_preserves_each_word_including_boundary_whitespace():
     raw = word_result([(0, .5, " First."), (.8, 1.2, " Second. ")])
     raw["segments"][0]["text"] = "\n  First. Second.\t "

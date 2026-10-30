@@ -111,7 +111,8 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
     """Validate raw ASR, then form English sentence units before translation.
 
     Raw provider data stays unchanged. English bounds come from the first/last
-    word of each sentence; other languages retain the provider's segmentation.
+    word of each sentence; other languages retain the provider's segmentation,
+    expanding segment bounds when needed to include their timed words.
     """
     if not isinstance(result, dict):
         raise _invalid("Whisper did not return a transcription object.")
@@ -145,6 +146,14 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
                                      "end_ms": _milliseconds(word["end"])} for word in raw["words"]]
             except (KeyError, TypeError) as exc:
                 raise _invalid("Whisper returned invalid word timestamps.") from exc
+            if segment["words"]:
+                # Whisper's segment-boundary heuristics can leave the first or
+                # last word outside the segment. Keep word timing unchanged;
+                # the transcript contract still checks word order and text.
+                segment["start_ms"] = min(start_ms, segment["words"][0]["start_ms"])
+                segment["end_ms"] = max(end_ms, segment["words"][-1]["end_ms"])
+                if segment["end_ms"] > duration_ms:
+                    raise _invalid(f"Whisper word timing exceeds the input audio timeline (0–{duration_ms} ms).")
         segments.append(segment)
     try:
         transcript = Transcript.model_validate({"detected_language": language, "segments": segments})
