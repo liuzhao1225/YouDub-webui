@@ -1,0 +1,46 @@
+{
+  "issue": "https://github.com/liuzhao1225/YouDub-webui/issues/184",
+  "source_video": "https://github.com/user-attachments/assets/7522b7ab-f51d-4812-8583-f8000d5aa8dd",
+  "source_sha256": "9f084b480197d086b1db298b658d9b91d915de708031553bad793ef82d68fdc4",
+  "base_commit": "cc842e47",
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.12.12",
+    "openai_whisper": "20250625",
+    "model": "tiny",
+    "device": "cpu",
+    "source_language": "auto"
+  },
+  "regression": {
+    "raw_fixture": "backend/tests/fixtures/asr_issue_184.json",
+    "raw_fixture_sha256": "76736cb58e4268ad943c1b9ec62ed7e4e8a825d69dc39cd2f052d20cff6eec95",
+    "fixture_audio_sample_rate": 16000,
+    "before_fix": "Transcript validation fails at segments.3 and segments.4, matching the reported error.",
+    "segment_4": { "provider_start_ms": 15480, "first_word_start_ms": 15400 },
+    "segment_5": { "provider_start_ms": 18680, "first_word_start_ms": 18300 },
+    "checks_after_fix": {
+      "command": "python -m pytest backend/tests/test_v1_asr.py backend/tests/test_v1_export.py backend/tests/test_v1_tts.py -q --tb=short",
+      "result": "151 passed"
+    },
+    "host_checks_after_fix": {
+      "command": "node --import tsx --test packages/builtin/test/media-output-validation.test.ts",
+      "result": "3 passed, including Python/Host agreement on 21 semantic cases"
+    }
+  },
+  "actual_worker_validation": {
+    "entrypoint": "python -m backend.workers.operation",
+    "operations": ["media.prepare/v1", "speech.transcribe/v1"],
+    "prepare_state": "completed",
+    "asr_state": "completed",
+    "prepared_audio_sample_rate": 44100,
+    "detected_language": "zh",
+    "segments": 5,
+    "words": 30,
+    "starts_ms": [0, 6480, 9880, 15480, 18680],
+    "all_text_and_word_timestamps_preserved": true,
+    "all_segment_timestamps_preserved": true,
+    "host_schema_and_semantic_validation": "passed",
+    "raw_sha256": "fb1338c50578d4a6d63aaa7ed4023e5913810aec5fad89052e2ff6a1fec2e3ef"
+  },
+  "scope": "ASR normalization, actual media preparation/transcription workers, and Host validation of their real output. Word containment, word overlap and ASR audio-duration limits are removed. Basic value/interval/text checks and consumer-specific audio slicing/mixing checks remain. Translation, desktop UI, Windows installation and release distribution were not exercised in this local validation."
+}

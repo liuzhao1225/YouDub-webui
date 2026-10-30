@@ -40,11 +40,6 @@ class Segment(Contract):
         if not self.text.strip():
             raise ValueError("Segment text must not be blank")
         if self.words is not None:
-            previous_end = self.start_ms
-            for word in self.words:
-                if word.start_ms < previous_end or word.end_ms > self.end_ms:
-                    raise ValueError("Word timestamps must be monotonic inside their utterance")
-                previous_end = word.end_ms
             if not self.words or "".join(word.text for word in self.words).strip() != self.text.strip():
                 raise ValueError("Word text must reproduce the complete utterance")
         return self

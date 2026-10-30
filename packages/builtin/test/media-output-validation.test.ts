@@ -17,7 +17,7 @@ const cases = [
   { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], start_ms: 100, end_ms: 50, words: null }] }, valid: false },
   { schema: 'transcript/v1', value: { ...transcript, segments: [transcript.segments[0], transcript.segments[0]] }, valid: false },
   { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], text: 'different' }] }, valid: false },
-  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'one', start_ms: 50, end_ms: 101 }] }] }, valid: false },
+  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'one', start_ms: 50, end_ms: 101 }] }] }, valid: true },
   { schema: 'translation/v1', value: translation, valid: true },
   { schema: 'translation/v1', value: { ...translation, source_language: 'ja' }, valid: false },
   { schema: 'translation/v1', value: { ...translation, segments: [{ segment_id: 'other', text: '一' }] }, valid: false },
@@ -29,6 +29,11 @@ const cases = [
   { schema: 'dubbed-timeline/v1', value: { segments: [{ ...timeline.segments[0], source_start_ms: 9 }] }, valid: false },
   { schema: 'dubbed-timeline/v1', value: { segments: [{ ...timeline.segments[0], dubbed_end_ms: 101 }] }, valid: false },
   { schema: 'dubbed-timeline/v1', value: { segments: [{ ...timeline.segments[0], dubbed_end_ms: 0 }] }, valid: false },
+  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'one', start_ms: 0, end_ms: 100 }] }] }, valid: true },
+  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'o', start_ms: 10, end_ms: 80 }, { text: 'ne', start_ms: 50, end_ms: 100 }] }] }, valid: true },
+  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'one', start_ms: 50, end_ms: 50 }] }] }, valid: true },
+  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'one', start_ms: 50, end_ms: 49 }] }] }, valid: false },
+  { schema: 'transcript/v1', value: { ...transcript, segments: [{ ...transcript.segments[0], words: [{ text: 'one', start_ms: -1, end_ms: 100 }] }] }, valid: false },
 ]
 
 test('the producer boundary and Python consumers agree on media semantic cases', () => {
