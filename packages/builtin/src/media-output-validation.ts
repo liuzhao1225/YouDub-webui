@@ -13,10 +13,8 @@ export const mediaOutputValidators: Record<string, OutputValidator> = {
     for (const segment of value.segments) {
       if (segment.end_ms <= segment.start_ms) fail(`Segment ${segment.id} end must follow its start.`)
       if (segment.words != null) {
-        let previousEnd = segment.start_ms
         for (const word of segment.words) {
-          if (word.end_ms < word.start_ms || word.start_ms < previousEnd || word.end_ms > segment.end_ms) fail(`Word timestamps must be monotonic inside segment ${segment.id}.`)
-          previousEnd = word.end_ms
+          if (word.end_ms < word.start_ms) fail(`Word end must not precede its start in segment ${segment.id}.`)
         }
         if (!segment.words.length || segment.words.map((word: JsonObject) => word.text).join('').trim() !== segment.text.trim()) fail(`Word text must reproduce segment ${segment.id}.`)
       }

@@ -107,12 +107,11 @@ def _english_sentences(transcript: Transcript) -> list[dict]:
     return sentences
 
 
-def normalize_result(result: Any, *, duration_ms: int) -> dict:
+def normalize_result(result: Any) -> dict:
     """Validate raw ASR, then form English sentence units before translation.
 
     Raw provider data stays unchanged. English bounds come from the first/last
-    word of each sentence; other languages retain the provider's segmentation,
-    expanding segment bounds when needed to include their timed words.
+    word of each sentence; other languages retain the provider's segmentation.
     """
     if not isinstance(result, dict):
         raise _invalid("Whisper did not return a transcription object.")
@@ -127,9 +126,6 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
         if not isinstance(raw, dict) or not isinstance(raw.get("text"), str) or not raw["text"].strip():
             raise _invalid("Whisper returned an empty or invalid speech segment.")
         start_ms, end_ms = _milliseconds(raw.get("start")), _milliseconds(raw.get("end"))
-        if end_ms <= start_ms or end_ms > duration_ms:
-            raise _invalid(f"Whisper segment {start_ms}–{end_ms} ms is outside the "
-                           f"input audio timeline (0–{duration_ms} ms).")
         speaker = raw.get("speaker_id", raw.get("speaker"))
         if speaker is not None:
             if not isinstance(speaker, str) or not speaker.strip():
@@ -146,14 +142,6 @@ def normalize_result(result: Any, *, duration_ms: int) -> dict:
                                      "end_ms": _milliseconds(word["end"])} for word in raw["words"]]
             except (KeyError, TypeError) as exc:
                 raise _invalid("Whisper returned invalid word timestamps.") from exc
-            if segment["words"]:
-                # Whisper's segment-boundary heuristics can leave the first or
-                # last word outside the segment. Keep word timing unchanged;
-                # the transcript contract still checks word order and text.
-                segment["start_ms"] = min(start_ms, segment["words"][0]["start_ms"])
-                segment["end_ms"] = max(end_ms, segment["words"][-1]["end_ms"])
-                if segment["end_ms"] > duration_ms:
-                    raise _invalid(f"Whisper word timing exceeds the input audio timeline (0–{duration_ms} ms).")
         segments.append(segment)
     try:
         transcript = Transcript.model_validate({"detected_language": language, "segments": segments})
@@ -186,10 +174,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
     audio = context.input_files.get("vocals", context.input_files.get("source_audio"))
     if audio is None or not audio.is_file() or audio.stat().st_size == 0:
         raise ApiError(500, "INPUT_MISSING", "The ASR input audio is missing or empty.", stage="asr")
-    # Whisper timestamps belong to the selected WAV, whose tail can extend
-    # beyond the video stream because the audio and video end independently.
-    info = audio_info(audio, stage="asr")
-    duration_ms = round(info.frames * 1000 / info.samplerate)
+    audio_info(audio, stage="asr")
 
     context.work_dir.mkdir(parents=True, exist_ok=True)
     raw_path = context.work_dir / "asr_raw.json"
@@ -220,7 +205,7 @@ def run(context: StageContext, progress: Callable[[float | None, str], None]) ->
         raw_result = json.loads(raw_path.read_text(encoding="utf-8"))
     except ValueError as exc:
         raise _invalid("Whisper wrote invalid transcription JSON.") from exc
-    transcript = normalize_result(raw_result, duration_ms=duration_ms)
+    transcript = normalize_result(raw_result)
     context.check_cancel()
     transcript_path.write_text(json.dumps(transcript, ensure_ascii=False, indent=2), encoding="utf-8")
     progress(1.0, "Source transcription is ready")

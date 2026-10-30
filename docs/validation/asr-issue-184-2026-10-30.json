@@ -18,10 +18,13 @@
     "before_fix": "Transcript validation fails at segments.3 and segments.4, matching the reported error.",
     "segment_4": { "provider_start_ms": 15480, "first_word_start_ms": 15400 },
     "segment_5": { "provider_start_ms": 18680, "first_word_start_ms": 18300 },
-    "new_acceptance_cases_before_fix": "4 failed",
     "checks_after_fix": {
       "command": "python -m pytest backend/tests/test_v1_asr.py backend/tests/test_v1_export.py backend/tests/test_v1_tts.py -q --tb=short",
-      "result": "152 passed"
+      "result": "151 passed"
+    },
+    "host_checks_after_fix": {
+      "command": "node --import tsx --test packages/builtin/test/media-output-validation.test.ts",
+      "result": "3 passed, including Python/Host agreement on 21 semantic cases"
     }
   },
   "actual_worker_validation": {
@@ -33,9 +36,11 @@
     "detected_language": "zh",
     "segments": 5,
     "words": 30,
-    "starts_ms": [0, 6480, 9880, 15400, 18300],
+    "starts_ms": [0, 6480, 9880, 15480, 18680],
     "all_text_and_word_timestamps_preserved": true,
+    "all_segment_timestamps_preserved": true,
+    "host_schema_and_semantic_validation": "passed",
     "raw_sha256": "fb1338c50578d4a6d63aaa7ed4023e5913810aec5fad89052e2ff6a1fec2e3ef"
   },
-  "scope": "ASR normalization and actual media preparation/transcription workers. Translation, desktop UI, Windows installation and release distribution were not exercised in this local validation."
+  "scope": "ASR normalization, actual media preparation/transcription workers, and Host validation of their real output. Word containment, word overlap and ASR audio-duration limits are removed. Basic value/interval/text checks and consumer-specific audio slicing/mixing checks remain. Translation, desktop UI, Windows installation and release distribution were not exercised in this local validation."
 }

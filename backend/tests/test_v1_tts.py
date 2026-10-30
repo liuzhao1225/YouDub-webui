@@ -215,8 +215,17 @@ def long_utterance_context(context):
     return context
 
 
-def test_long_utterance_keeps_its_complete_reference_even_with_word_timestamps(long_utterance_context, model_process):
+@pytest.mark.parametrize("word_timing", ["original", "overlap", "outside-segment"])
+def test_long_utterance_keeps_its_complete_reference_even_with_word_timestamps(long_utterance_context, model_process, word_timing):
     context = long_utterance_context
+    payload = json.loads(context.input_files["transcript"].read_text())
+    words = payload["segments"][0]["words"]
+    if word_timing == "overlap":
+        words[1]["start_ms"] = 3000
+    elif word_timing == "outside-segment":
+        words[0]["start_ms"] = 1800
+        words[-1]["end_ms"] = 14300
+    context.input_files["transcript"].write_text(json.dumps(payload))
     before = {name: context.input_files[name].read_bytes() for name in ("transcript", "translation")}
     result = tts.run(context, lambda *args: None, prepared_references=prepare_references(context))
     assert {name: context.input_files[name].read_bytes() for name in before} == before
@@ -233,7 +242,7 @@ def test_long_utterance_keeps_its_complete_reference_even_with_word_timestamps(l
     assert [item.segment_id for item in read_speech_clips(result.output_files["speech_clips"], transcript).clips] == ["whole"]
 
 
-@pytest.mark.parametrize("invalid", ["word-text", "word-overlap"])
+@pytest.mark.parametrize("invalid", ["word-text", "word-reversed"])
 def test_reference_rejects_inconsistent_word_metadata_when_present(long_utterance_context, model_process, invalid):
     from pydantic import ValidationError
     context = long_utterance_context
@@ -242,7 +251,7 @@ def test_reference_rejects_inconsistent_word_metadata_when_present(long_utteranc
     if invalid == "word-text":
         segment["words"][0]["text"] = " Unrelated,"
     else:
-        segment["words"][1]["start_ms"] = 3000
+        segment["words"][1]["start_ms"] = 7000
     context.input_files["transcript"].write_text(json.dumps(raw))
     with pytest.raises(ValidationError):
         prepare_references(context)
