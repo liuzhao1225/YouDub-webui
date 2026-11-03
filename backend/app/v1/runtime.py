@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import importlib.metadata
 import importlib.util
-import os
 import shutil
 from copy import deepcopy
 from importlib.machinery import PathFinder
@@ -32,19 +31,6 @@ def _model(
 def _whisper_models(devices: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
     if importlib.util.find_spec("whisper") is None or importlib.util.find_spec("torch") is None:
         return [], "本地 Whisper 需要安装 openai-whisper 和 torch。"
-    if importlib.util.find_spec("nltk") is None:
-        return [], "Whisper 英文分句需要安装 nltk==3.10.3 和 punkt_tab 数据。"
-    from nltk.data import find
-
-    try:
-        paths = [os.environ["NLTK_DATA"]] if os.getenv("YOUDUB_HARNESS_RUNTIME") == "1" else None
-        punkt = Path(str(find("tokenizers/punkt_tab/english/", paths=paths)))
-    except LookupError:
-        return [], "缺少 Whisper 英文分句数据；请运行 .venv/bin/python -m nltk.downloader punkt_tab。"
-    if any(not (punkt / name).is_file() or (punkt / name).stat().st_size == 0 for name in (
-        "collocations.tab", "sent_starters.txt", "abbrev_types.txt", "ortho_context.tab",
-    )):
-        return [], "Whisper 英文 punkt_tab 数据不完整；请重新安装 punkt_tab。"
     if shutil.which(ffmpeg_binary()) is None or shutil.which(ffprobe_binary()) is None:
         return [], "本地媒体处理需要可执行的 FFmpeg 和 FFprobe。"
     # Whisper's own load_audio invokes `ffmpeg` by name, independently of the

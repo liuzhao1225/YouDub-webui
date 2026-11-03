@@ -1,0 +1,81 @@
+{
+  "language": "en",
+  "segments": [
+    {
+      "id": 463,
+      "seek": 257962,
+      "start": 2598.58,
+      "end": 2601.52,
+      "text": " Totally. I think you said it beautifully. Yeah.",
+      "tokens": [
+        51316,
+        22837,
+        13,
+        286,
+        519,
+        291,
+        848,
+        309,
+        16525,
+        13,
+        865,
+        13,
+        51448
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.35815517284252024,
+      "compression_ratio": 1.75,
+      "no_speech_prob": 0.14453545212745667,
+      "words": [
+        {
+          "word": " Totally.",
+          "start": 2598.58,
+          "end": 2599.06,
+          "probability": 0.14850328862667084
+        },
+        {
+          "word": " I",
+          "start": 2599.16,
+          "end": 2599.48,
+          "probability": 0.7661465406417847
+        },
+        {
+          "word": " think",
+          "start": 2599.48,
+          "end": 2599.48,
+          "probability": 0.9938607215881348
+        },
+        {
+          "word": " you",
+          "start": 2599.48,
+          "end": 2599.68,
+          "probability": 0.9793121814727783
+        },
+        {
+          "word": " said",
+          "start": 2599.68,
+          "end": 2600.02,
+          "probability": 0.45508435368537903
+        },
+        {
+          "word": " it",
+          "start": 2600.02,
+          "end": 2600.2,
+          "probability": 0.942646324634552
+        },
+        {
+          "word": " beautifully.",
+          "start": 2600.2,
+          "end": 2600.64,
+          "probability": 0.946811854839325
+        },
+        {
+          "word": " Yeah.",
+          "start": 2601.52,
+          "end": 2601.52,
+          "probability": 0.9024853706359863
+        }
+      ]
+    }
+  ]
+}

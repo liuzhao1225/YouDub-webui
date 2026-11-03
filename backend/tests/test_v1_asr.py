@@ -15,6 +15,7 @@ from backend.app.v1 import asr, asr_process, media
 from backend.app.v1.contracts import TaskConfig
 from backend.app.v1.errors import ApiError
 from backend.app.v1.steps import StageContext
+from backend.app.v1.segments import Transcript
 from backend.workers.protocol import WorkerError
 
 
@@ -72,7 +73,7 @@ def test_normalization_preserves_words_order_and_detected_language(raw_result):
     before = deepcopy(raw_result)
     normalized = asr.normalize_result(raw_result)
     assert normalized == {"detected_language": "en", "segments": [
-        {"id": "segment-000001", "start_ms": 123, "end_ms": 1456, "text": " Hello.", "speaker_id": "speaker-a",
+        {"id": "segment-000001", "start_ms": 123, "end_ms": 1456, "text": " Hello. ", "speaker_id": "speaker-a",
          "words": [{"text": " Hello.", "start_ms": 123, "end_ms": 1456}]},
         {"id": "segment-000002", "start_ms": 2000, "end_ms": 2990, "text": " World!",
          "words": [{"text": " World!", "start_ms": 2000, "end_ms": 2990}]},
@@ -127,11 +128,11 @@ def test_utterance_longer_than_eight_seconds_keeps_its_complete_text_and_interva
                          "text": " one two three four five", "speaker_id": "narrator"}]
 
 
-def test_sentence_bounds_follow_first_and_last_word():
+def test_segment_bounds_preserve_provider_timestamps():
     raw = word_result([(.2, .5, " First,"), (.8, 1.2, " second.")])
     raw["segments"][0].update(start=0.1, end=1.5)
     segments = asr.normalize_result(raw)["segments"]
-    assert [{k: v for k, v in segment.items() if k != "words"} for segment in segments] == [{"id": "segment-000001", "start_ms": 200, "end_ms": 1200,
+    assert [{k: v for k, v in segment.items() if k != "words"} for segment in segments] == [{"id": "segment-000001", "start_ms": 100, "end_ms": 1500,
                          "text": " First, second.", "speaker_id": "narrator"}]
 
 
@@ -162,7 +163,7 @@ def test_words_outside_provider_segments_keep_original_timing(language):
     raw["segments"][0].update(start=.3, end=1.2)
     before = deepcopy(raw)
     segment = asr.normalize_result(raw)["segments"][0]
-    assert (segment["start_ms"], segment["end_ms"]) == ((200, 1400) if language == "en" else (300, 1200))
+    assert (segment["start_ms"], segment["end_ms"]) == (300, 1200)
     assert segment["text"] == raw["segments"][0]["text"]
     assert segment["speaker_id"] == "narrator"
     assert segment["words"] == [
@@ -172,41 +173,43 @@ def test_words_outside_provider_segments_keep_original_timing(language):
     assert raw == before
 
 
-def test_reversed_word_interval_is_rejected():
+def test_adapter_preserves_word_timing_for_consumer_validation():
     raw = word_result([(.2, .5, " First,"), (1.4, .8, " second.")])
     raw["segments"][0].update(start=.3, end=1.2)
     before = deepcopy(raw)
-    with pytest.raises(ApiError) as error:
-        asr.normalize_result(raw)
-    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+    segment = asr.normalize_result(raw)["segments"][0]
+    assert segment["words"][1] == {"text": " second.", "start_ms": 1400, "end_ms": 800}
     assert raw == before
 
 
-def test_sentence_splitting_preserves_each_word_including_boundary_whitespace():
+def test_provider_text_and_whitespace_are_preserved_without_sentence_splitting():
     raw = word_result([(0, .5, " First."), (.8, 1.2, " Second. ")])
     raw["segments"][0]["text"] = "\n  First. Second.\t "
     segments = asr.normalize_result(raw)["segments"]
-    assert [item["text"] for item in segments] == [" First.", " Second. "]
-    assert [(s["start_ms"], s["end_ms"]) for s in segments] == [(0, 500), (800, 1200)]
+    assert [item["text"] for item in segments] == [raw["segments"][0]["text"]]
+    assert [(s["start_ms"], s["end_ms"]) for s in segments] == [(0, 1200)]
     assert [w["text"] for s in segments for w in s["words"]] == [" First.", " Second. "]
 
 
-def test_english_without_word_timestamps_fails_instead_of_estimating_sentence_times():
-    raw = {"language": "en", "segments": [{"start": 0, "end": 15, "text": " One. Two, three!"}]}
-    with pytest.raises(ApiError, match="word timestamps") as error:
-        asr.normalize_result(raw)
-    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
+@pytest.mark.parametrize("language", ["en", "zh", "ja"])
+def test_provider_segments_without_word_timestamps_are_preserved(language):
+    raw = {"language": language, "segments": [{"start": 0, "end": 15, "text": " One. Two, three!"}]}
+    assert asr.normalize_result(raw) == {"detected_language": language, "segments": [
+        {"id": "segment-000001", "start_ms": 0, "end_ms": 15000, "text": " One. Two, three!"},
+    ]}
 
 
-@pytest.mark.parametrize("parts,expected", [
-    ([" Although AI is the conversation today,", " computing is much broader than that."], 1),
-    ([" We build faster", " chips."], 1),
-    ([" I spoke to Dr.", " Smith yesterday."], 1),
-    ([" She lives in the U.S.", " and works there."], 1),
-    ([" It costs 3.5", " dollars."], 1),
-    ([' He said, "Hello."', ' Then left.'], 2),
+@pytest.mark.parametrize("parts", [
+    [" Although AI is the conversation today,", " computing is much broader than that."],
+    [" We build faster", " chips."],
+    [" I spoke to Dr.", " Smith yesterday."],
+    [" She lives in the U.S.", " and works there."],
+    [" It costs 3.5", " dollars."],
+    [' He said, "Hello."', ' Then left.'],
+    [" We build faster", "chips."],
+    [" Hello.", "How are you?"],
 ])
-def test_pretrained_punkt_merges_fragments_and_handles_english_boundaries(parts, expected):
+def test_english_fragments_keep_provider_boundaries_and_whitespace(parts):
     raw = {"language": "en", "segments": [
         {"start": i, "end": i + .8, "text": text,
          "words": [{"start": i, "end": i + .8, "word": text}]}
@@ -214,8 +217,8 @@ def test_pretrained_punkt_merges_fragments_and_handles_english_boundaries(parts,
     ]}
     before = deepcopy(raw)
     segments = asr.normalize_result(raw)["segments"]
-    assert len(segments) == expected
-    assert "".join(s["text"] for s in segments) == "".join(parts)
+    assert [s["text"] for s in segments] == parts
+    assert [(s["start_ms"], s["end_ms"]) for s in segments] == [(i * 1000, i * 1000 + 800) for i in range(len(parts))]
     assert [w for s in segments for w in s["words"]] == [
         {"text": text, "start_ms": i * 1000, "end_ms": i * 1000 + 800}
         for i, text in enumerate(parts)
@@ -232,76 +235,67 @@ def test_known_speaker_change_is_a_sentence_boundary():
     assert [(s["text"], s["speaker_id"]) for s in segments] == [(" Wait,", "a"), (" let me answer.", "b")]
 
 
-@pytest.mark.parametrize("parts,expected", [
-    ([" We build faster", "chips."], [" We build faster chips."]),
-    ([" Hello.", "How are you?"], [" Hello.", " How are you?"]),
-])
-def test_missing_segment_separator_is_normalized_without_changing_raw_or_timing(parts, expected):
-    raw = {"language": "en", "segments": [
-        word_result([(i, i + .8, text)])["segments"][0] for i, text in enumerate(parts)
-    ]}
-    before = deepcopy(raw)
-    segments = asr.normalize_result(raw)["segments"]
-    assert [s["text"] for s in segments] == expected
-    assert [(w["text"].strip(), w["start_ms"], w["end_ms"]) for s in segments for w in s["words"]] == [
-        (text.strip(), i * 1000, i * 1000 + 800) for i, text in enumerate(parts)
-    ]
-    assert raw == before
-
-
 def test_zero_duration_word_is_preserved_inside_sentence():
     raw = word_result([(0, .4, " Hello"), (.4, .4, ","), (.4, 1, " world.")])
     segment = asr.normalize_result(raw)["segments"][0]
     assert segment["words"][1] == {"text": ",", "start_ms": 400, "end_ms": 400}
 
 
-def test_boundary_inside_one_timed_word_fails_instead_of_reusing_its_full_time():
+def test_multiple_sentences_inside_one_word_keep_provider_segment():
     raw = word_result([(0, 1, " Hello. How are you?")])
-    with pytest.raises(ApiError, match="inside one Whisper word"):
-        asr.normalize_result(raw)
+    segment = asr.normalize_result(raw)["segments"][0]
+    assert segment["text"] == " Hello. How are you?"
+    assert (segment["start_ms"], segment["end_ms"]) == (0, 1000)
 
 
-def test_overlapping_words_in_merged_segments_keep_original_timing():
+def test_overlapping_provider_segments_keep_original_timing():
     raw = {"language": "en", "segments": [
         word_result([(0, 1, " Hello,")])["segments"][0],
         word_result([(.8, 2, " world.")])["segments"][0],
     ]}
     before = deepcopy(raw)
-    segment = asr.normalize_result(raw)["segments"][0]
-    assert (segment["start_ms"], segment["end_ms"]) == (0, 2000)
-    assert segment["words"] == [
+    segments = asr.normalize_result(raw)["segments"]
+    assert [(s["start_ms"], s["end_ms"]) for s in segments] == [(0, 1000), (800, 2000)]
+    assert [w for s in segments for w in s["words"]] == [
         {"text": " Hello,", "start_ms": 0, "end_ms": 1000},
         {"text": " world.", "start_ms": 800, "end_ms": 2000},
     ]
     assert raw == before
 
 
-@pytest.mark.parametrize("language", ["zh", "ja"])
-def test_non_english_keeps_provider_segments_without_english_tokenizer(language, monkeypatch):
-    monkeypatch.setattr(asr, "_english_sentences", lambda _: pytest.fail("English model used for another language"))
-    raw = {"language": language, "segments": [{"start": 0, "end": 2, "text": "第一句。第二句。"}]}
-    assert asr.normalize_result(raw)["segments"] == [
-        {"id": "segment-000001", "start_ms": 0, "end_ms": 2000, "text": "第一句。第二句。"},
+def test_english_asr_does_not_require_nltk(raw_result, monkeypatch):
+    monkeypatch.setitem(sys.modules, "nltk", None)
+    assert asr.normalize_result(raw_result)["segments"][0]["text"] == " Hello. "
+
+
+def test_issue_184_english_video_keeps_zero_duration_reply_inside_original_segment():
+    # Unchanged tiny/CPU segment from the full video in the issue's Nov 2 comment.
+    raw = json.loads((Path(__file__).parent / "fixtures" / "asr_issue_184_english.json").read_text())
+    before = deepcopy(raw)
+    normalized = asr.normalize_result(raw)
+    Transcript.model_validate(normalized)
+    assert len(normalized["segments"]) == 1
+    segment = normalized["segments"][0]
+    source = raw["segments"][0]
+    assert segment["text"] == source["text"]
+    assert (segment["start_ms"], segment["end_ms"]) == (2598580, 2601520)
+    assert segment["words"] == [
+        {"text": w["word"], "start_ms": round(w["start"] * 1000), "end_ms": round(w["end"] * 1000)}
+        for w in source["words"]
     ]
+    assert segment["words"][-1] == {"text": " Yeah.", "start_ms": 2601520, "end_ms": 2601520}
+    assert raw == before
 
 
-def test_missing_punkt_data_is_an_explicit_error(raw_result, monkeypatch):
-    import nltk.data
-    monkeypatch.setattr(nltk.data, "path", [])
-    with pytest.raises(ApiError) as error:
-        asr.normalize_result(raw_result)
-    assert error.value.content["error"]["code"] == "MODEL_NOT_READY"
-
-
-@pytest.mark.parametrize("words", [[], [{"start": .3, "end": .7, "word": " Different"}],
-                                   [{"start": -1, "end": 3, "word": " One. Two."}]])
-def test_invalid_standard_word_metadata_is_rejected(words):
+@pytest.mark.parametrize("words", [[], [{"start": .3, "end": .7, "word": " Different"}]])
+def test_adapter_preserves_model_text_and_words_independently(words):
     raw = {"language": "en", "segments": [{"start": 0, "end": 2, "text": " One. Two.", "words": words}]}
     before = deepcopy(raw)
-    with pytest.raises(ApiError) as error:
-        asr.normalize_result(raw)
-    assert error.value.content["error"]["code"] == "INVALID_PROVIDER_RESULT"
-    assert error.value.status_code == 502
+    segment = asr.normalize_result(raw)["segments"][0]
+    assert segment["text"] == " One. Two."
+    assert segment["words"] == [
+        {"text": w["word"], "start_ms": round(w["start"] * 1000), "end_ms": round(w["end"] * 1000)} for w in words
+    ]
     assert raw == before
 
 
@@ -314,7 +308,6 @@ def test_invalid_standard_word_metadata_is_rejected(words):
     lambda result: result["segments"][0].update(end=float("nan")),
     lambda result: result["segments"][0].update(end=float("inf")),
     lambda result: result["segments"][0].update(end=10 ** 500),
-    lambda result: result["segments"][0].update(end=0.123),
     lambda result: result["segments"][0].update(text=" \n"),
     lambda result: result["segments"][0].update(speaker_id=2),
 ])
