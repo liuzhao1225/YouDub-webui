@@ -24,7 +24,7 @@ npm run package:desktop -- --installers-only
 
 验证证据包含首启截图与 JSON 结果。手动运行「YouDub Desktop 源码开发检查」并启用 `package_desktop` 后，双平台检查同时验证候选包；任一打包或启动失败都会阻止该次检查通过。macOS 开发候选提供 ad-hoc 签名 App 压缩包，正式签名与公证 DMG 由发行流程生成。
 
-Windows 首启同时检查 profile 中的产品和布局目录链接为 junction，避免构建机的符号链接权限掩盖普通用户的 `EPERM` 启动失败。链接类型写入首启 JSON 证据。
+Windows 首启同时检查 YouDub 创建的布局目录链接为 junction，避免构建机的符号链接权限掩盖普通用户的 `EPERM` 启动失败。该链接与 pnpm 创建的产品链接的实际类型写入首启 JSON 证据。
 
 ## 检查范围
 

@@ -56,8 +56,8 @@ test('profile creates and updates directory links without Windows symlink privil
     ['@youdub/harness-subtitles', plugin],
     ['@deepseek-ai/dsh-client-ui-layout', join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout')],
   ];
-  const assertLinks = async () => {
-    for (const [name, target] of targets) {
+  const assertLinks = async (links = targets) => {
+    for (const [name, target] of links) {
       const link = join(profile, 'node_modules', name);
       assert.equal(await realpath(link), await realpath(target));
       if (process.platform === 'win32') {
@@ -70,6 +70,12 @@ test('profile creates and updates directory links without Windows symlink privil
       }
     }
   };
+  // pnpm owns the initial SDK link and may use a symlink when it has permission.
+  // The layout link is created directly by YouDub even on the first startup.
+  await assertLinks(targets.slice(1));
+
+  for (const [name] of targets) await rm(join(profile, 'node_modules', name));
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
   await assertLinks();
 
   const oldDirectory = join(runtime, 'old bundle');

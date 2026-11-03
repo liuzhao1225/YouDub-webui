@@ -108,7 +108,10 @@ try {
       const type = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
         '(Get-Item -LiteralPath $env:YOUDUB_PROFILE_LINK).LinkType'],
       { encoding: 'utf8', env: { ...process.env, YOUDUB_PROFILE_LINK: link } }).trim();
-      assert.equal(type, 'Junction', `Packaged profile must not require symlink privileges: ${name}`);
+      // pnpm may create the SDK link as a symlink on privileged runners.
+      if (name === '@deepseek-ai/dsh-client-ui-layout') {
+        assert.equal(type, 'Junction', `Packaged profile must not require symlink privileges: ${name}`);
+      }
       windowsProfileLinks.push({ name, type });
     }
   }
