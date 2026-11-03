@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { copyFile, mkdtemp, mkdir, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
@@ -17,6 +18,7 @@ const { runPluginCommand } = await import(pathToFileURL(join(sourceBuild, 'packa
 const required = ['@youdub/harness-subtitles'];
 const fixture = resolve(here, '../../fixtures/plugins/file-transform');
 const fixtureName = '@youdub/harness-example-file-transform';
+const directoryLinkType = process.platform === 'win32' ? 'junction' : 'dir';
 const readManifest = async profile => JSON.parse(await readFile(join(profile, 'package.json'), 'utf8'));
 const saveManifest = (profile, manifest) => writeFile(join(profile, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
 
@@ -31,7 +33,7 @@ async function copyBundle(from, to) {
 }
 
 async function temporaryProfile(t) {
-  const directory = await mkdtemp(join(tmpdir(), 'youdub-profile-'));
+  const directory = await mkdtemp(join(tmpdir(), 'YouDub profile '));
   t.after(() => rm(directory, { recursive: true, force: true }));
   // The desktop launcher replaces its runtime project. Give the real parser
   // a private application anchor and the current YouDub bundle instead.
@@ -39,14 +41,52 @@ async function temporaryProfile(t) {
   await copyBundle(here, plugin);
   await saveManifest(runtime, { name: 'youdub-profile-test', private: true, type: 'module' });
   await mkdir(join(runtime, 'node_modules/@deepseek-ai'), { recursive: true });
-  await symlink(join(source, 'packages/client/ui-layout'), join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout'), 'dir');
-  await symlink(join(sourceBuild, 'packages/boot/app-boot'), join(runtime, 'node_modules/@deepseek-ai/dsh-app-boot'), 'dir');
-  await symlink(join(sourceBuild, 'packages/boot/plugin-manager'), join(runtime, 'node_modules/@deepseek-ai/dsh-plugin-manager'), 'dir');
-  await symlink(dirname(sourceRequire.resolve('yaml/package.json')), join(runtime, 'node_modules/yaml'), 'dir');
+  await symlink(join(source, 'packages/client/ui-layout'), join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout'), directoryLinkType);
+  await symlink(join(sourceBuild, 'packages/boot/app-boot'), join(runtime, 'node_modules/@deepseek-ai/dsh-app-boot'), directoryLinkType);
+  await symlink(join(sourceBuild, 'packages/boot/plugin-manager'), join(runtime, 'node_modules/@deepseek-ai/dsh-plugin-manager'), directoryLinkType);
+  await symlink(dirname(sourceRequire.resolve('yaml/package.json')), join(runtime, 'node_modules/yaml'), directoryLinkType);
   const profile = join(directory, 'profiles/youdub');
   await prepareYouDubProfile(profile, plugin, runtime, packageManager);
   return { profile, plugin, runtime };
 }
+
+test('profile creates and updates directory links without Windows symlink privileges', async t => {
+  const { profile, plugin, runtime } = await temporaryProfile(t);
+  const targets = [
+    ['@youdub/harness-subtitles', plugin],
+    ['@deepseek-ai/dsh-client-ui-layout', join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout')],
+  ];
+  const assertLinks = async () => {
+    for (const [name, target] of targets) {
+      const link = join(profile, 'node_modules', name);
+      assert.equal(await realpath(link), await realpath(target));
+      if (process.platform === 'win32') {
+        // A privileged CI runner also accepts directory symlinks. Inspect the
+        // actual reparse type so it cannot hide the ordinary-user startup bug.
+        const type = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+          '(Get-Item -LiteralPath $env:YOUDUB_PROFILE_LINK).LinkType'],
+        { encoding: 'utf8', env: { ...process.env, YOUDUB_PROFILE_LINK: link } }).trim();
+        assert.equal(type, 'Junction', link);
+      }
+    }
+  };
+  await assertLinks();
+
+  const oldDirectory = join(runtime, 'old bundle');
+  await mkdir(oldDirectory);
+  const sentinel = join(oldDirectory, 'preserve.txt');
+  await writeFile(sentinel, 'previous installation');
+  for (const [name] of targets) {
+    const link = join(profile, 'node_modules', name);
+    await rm(link);
+    await symlink(oldDirectory, link, directoryLinkType);
+  }
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+  await assertLinks();
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+  await assertLinks();
+  assert.equal(await readFile(sentinel, 'utf8'), 'previous installation');
+});
 
 test('profile restart preserves an appended plugin bundle, dependency and user patch', async t => {
   const { profile, plugin, runtime } = await temporaryProfile(t);
@@ -56,7 +96,7 @@ test('profile restart preserves an appended plugin bundle, dependency and user p
   await saveManifest(profile, manifest);
   const fixtureLink = join(profile, 'node_modules', fixtureName);
   await mkdir(dirname(fixtureLink), { recursive: true });
-  await symlink(fixture, fixtureLink, 'dir');
+  await symlink(fixture, fixtureLink, directoryLinkType);
   const patch = '# User profile settings survive preparation.\n[]\n';
   await writeFile(join(profile, 'cordis.patch.yml'), patch);
 
@@ -118,7 +158,7 @@ test('legacy product prefix migrates once while extensions, settings and depende
   await saveManifest(profile, manifest);
   const fixtureLink = join(profile, 'node_modules', fixtureName);
   await mkdir(dirname(fixtureLink), { recursive: true });
-  await symlink(fixture, fixtureLink, 'dir');
+  await symlink(fixture, fixtureLink, directoryLinkType);
   const patch = '# User configuration\n- id: locale\n  config:\n    language: ja\n';
   await writeFile(join(profile, 'cordis.patch.yml'), patch);
 

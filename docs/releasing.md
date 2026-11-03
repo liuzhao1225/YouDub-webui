@@ -24,6 +24,8 @@ npm run package:desktop -- --installers-only
 
 验证证据包含首启截图与 JSON 结果。手动运行「YouDub Desktop 源码开发检查」并启用 `package_desktop` 后，双平台检查同时验证候选包；任一打包或启动失败都会阻止该次检查通过。macOS 开发候选提供 ad-hoc 签名 App 压缩包，正式签名与公证 DMG 由发行流程生成。
 
+Windows 首启同时检查 profile 中的产品和布局目录链接为 junction，避免构建机的符号链接权限掩盖普通用户的 `EPERM` 启动失败。链接类型写入首启 JSON 证据。
+
 ## 检查范围
 
 PR 与 main 的 push 不自动构建。合并前将 PR 从 Draft 手动标记为 Ready for review，触发双平台源码必需检查；已是 Ready 的 PR 先转回 Draft，再标记 Ready。该入口不打包。GitHub [不将 workflow_dispatch 的结果计入 PR 必需检查](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#checks-from-some-workflow-jobs-are-not-evaluated)。

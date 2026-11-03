@@ -50,6 +50,8 @@ export async function prepareYouDubProfile(profile, pluginRoot, runtimeProject, 
     }
   }
   const layout = join(runtimeProject, 'node_modules/@deepseek-ai/dsh-client-ui-layout');
+  // Directory junctions work without Windows symlink privileges or Developer Mode.
+  const linkType = process.platform === 'win32' ? 'junction' : 'dir';
   for (const [name, target] of [['@youdub/harness-subtitles', pluginRoot], ['@deepseek-ai/dsh-client-ui-layout', layout]]) {
     const link = join(profile, 'node_modules', name);
     await mkdir(dirname(link), { recursive: true });
@@ -58,11 +60,11 @@ export async function prepareYouDubProfile(profile, pluginRoot, runtimeProject, 
       if (!entry.isSymbolicLink()) throw new Error(`Unexpected installed override: ${link}`);
       if (await realpath(link) !== await realpath(target)) {
         await unlink(link);
-        await symlink(await realpath(target), link, 'dir');
+        await symlink(await realpath(target), link, linkType);
       }
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
-      await symlink(await realpath(target), link, 'dir');
+      await symlink(await realpath(target), link, linkType);
     }
   }
   await assertYouDubProfile(profile, join(runtimeProject, 'package.json'));

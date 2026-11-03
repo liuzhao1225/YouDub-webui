@@ -101,6 +101,17 @@ try {
     assert.equal(await realpath(setup.installation.path), await realpath(join(temporary, 'YouDub media')));
   } else assert.equal(setup.phase, workbench ? 'skipped' : 'installation', setup.error);
   assert.equal(setup.version, appManifest.version);
+  const windowsProfileLinks = [];
+  if (process.platform === 'win32') {
+    for (const name of ['@youdub/harness-subtitles', '@deepseek-ai/dsh-client-ui-layout']) {
+      const link = join(youdubHome, 'profiles/desktop/node_modules', name);
+      const type = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+        '(Get-Item -LiteralPath $env:YOUDUB_PROFILE_LINK).LinkType'],
+      { encoding: 'utf8', env: { ...process.env, YOUDUB_PROFILE_LINK: link } }).trim();
+      assert.equal(type, 'Junction', `Packaged profile must not require symlink privileges: ${name}`);
+      windowsProfileLinks.push({ name, type });
+    }
+  }
   assert.equal(setup.testMode, workbench ? true : undefined);
   if (!configured) assert.equal(setup.environment.length, 0);
   const text = await evaluate('document.body.innerText');
@@ -157,7 +168,7 @@ try {
   await page.screenshot({ path: join(evidence, 'first-launch.png') });
   await writeFile(join(evidence, 'result.json'), JSON.stringify({ version: appManifest.version, platform: process.platform,
     arch: process.arch, relocated: !inPlace, restored: configured, installationConfirmed: !workbench,
-    isolatedFromHarness: true, setupPhase: setup.phase, demoRange: sample, renderedText: text }, null, 2) + '\n');
+    isolatedFromHarness: true, setupPhase: setup.phase, windowsProfileLinks, demoRange: sample, renderedText: text }, null, 2) + '\n');
   await Promise.race([application.close(), delay(20_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application quit timed out'); })]);
   const [code, signal] = await Promise.race([closed, delay(15_000, undefined, { ref: false }).then(() => { throw new Error('Packaged application did not close cleanly'); })]);
   assert.equal(signal, null);
