@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, mkdir, readFile, readlink, realpath, rm, symlink, writeFile } from 'node:fs/promises';
+import fs from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, readFile, readlink, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
-import { createRequire } from 'node:module';
+import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { prepareYouDubProfile } from '../prepare-profile.mjs';
 import { assertYouDubProfile } from '../check-profile.mjs';
@@ -14,6 +15,7 @@ const sourceBuild = resolve(here, '../../.cache/harness/source-build');
 const sourceRequire = createRequire(join(sourceBuild, 'packages/boot/plugin-manager/package.json'));
 const packageManager = { command: process.execPath, args: [resolve(here, 'node_modules/pnpm/bin/pnpm.mjs')] };
 const { runPluginCommand } = await import(pathToFileURL(join(sourceBuild, 'packages/boot/plugin-manager/lib/types/operations.js')));
+const directoryLinkType = process.platform === 'win32' ? 'junction' : 'dir';
 const required = ['@youdub/harness-subtitles'];
 const fixture = resolve(here, '../../fixtures/plugins/file-transform');
 const fixtureName = '@youdub/harness-example-file-transform';
@@ -39,14 +41,54 @@ async function temporaryProfile(t) {
   await copyBundle(here, plugin);
   await saveManifest(runtime, { name: 'youdub-profile-test', private: true, type: 'module' });
   await mkdir(join(runtime, 'node_modules/@deepseek-ai'), { recursive: true });
-  await symlink(join(source, 'packages/client/ui-layout'), join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout'), 'dir');
-  await symlink(join(sourceBuild, 'packages/boot/app-boot'), join(runtime, 'node_modules/@deepseek-ai/dsh-app-boot'), 'dir');
-  await symlink(join(sourceBuild, 'packages/boot/plugin-manager'), join(runtime, 'node_modules/@deepseek-ai/dsh-plugin-manager'), 'dir');
-  await symlink(dirname(sourceRequire.resolve('yaml/package.json')), join(runtime, 'node_modules/yaml'), 'dir');
+  await symlink(join(source, 'packages/client/ui-layout'), join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout'), directoryLinkType);
+  await symlink(join(sourceBuild, 'packages/boot/app-boot'), join(runtime, 'node_modules/@deepseek-ai/dsh-app-boot'), directoryLinkType);
+  await symlink(join(sourceBuild, 'packages/boot/plugin-manager'), join(runtime, 'node_modules/@deepseek-ai/dsh-plugin-manager'), directoryLinkType);
+  await symlink(dirname(sourceRequire.resolve('yaml/package.json')), join(runtime, 'node_modules/yaml'), directoryLinkType);
   const profile = join(directory, 'profiles/youdub');
   await prepareYouDubProfile(profile, plugin, runtime, packageManager);
   return { profile, plugin, runtime };
 }
+
+test('profile first start and relocated packages work without Windows symlink privileges', async t => {
+  const originalSymlink = fs.symlink;
+  const links = [];
+  t.mock.method(fs, 'symlink', async (target, path, type) => {
+    // Hosted Windows runners have elevated privileges. Reproduce a normal
+    // installation without Developer Mode instead of allowing privileged links.
+    if (process.platform === 'win32' && type !== 'junction') {
+      throw Object.assign(new Error(`EPERM: operation not permitted, symlink '${target}' -> '${path}'`), { code: 'EPERM' });
+    }
+    links.push(path);
+    return originalSymlink(target, path, type);
+  });
+  syncBuiltinESMExports();
+  t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+
+  const { profile, plugin, runtime } = await temporaryProfile(t);
+  const layout = join(runtime, 'node_modules/@deepseek-ai/dsh-client-ui-layout');
+  const targets = [['@youdub/harness-subtitles', plugin], ['@deepseek-ai/dsh-client-ui-layout', layout]];
+  const manifest = await readManifest(profile);
+  for (const [name, target] of targets) {
+    const link = join(profile, 'node_modules', name);
+    assert.equal(await realpath(link), await realpath(target));
+    assert.equal(await readFile(join(link, 'package.json'), 'utf8'), await readFile(join(target, 'package.json'), 'utf8'));
+    const oldTarget = join(runtime, 'old', name);
+    await mkdir(oldTarget, { recursive: true });
+    await unlink(link);
+    await symlink(oldTarget, link, directoryLinkType);
+  }
+  links.length = 0;
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+  assert.equal(links.length, 2, 'Both relocated product packages must be relinked');
+  for (const [name, target] of targets) {
+    assert.equal(await realpath(join(profile, 'node_modules', name)), await realpath(target));
+  }
+  links.length = 0;
+  await prepareYouDubProfile(profile, plugin, runtime, packageManager);
+  assert.deepEqual(links, [], 'Restart keeps links that already point to the current installation');
+  assert.deepEqual(await readManifest(profile), manifest);
+});
 
 test('profile restart preserves an appended plugin bundle, dependency and user patch', async t => {
   const { profile, plugin, runtime } = await temporaryProfile(t);
@@ -56,7 +98,7 @@ test('profile restart preserves an appended plugin bundle, dependency and user p
   await saveManifest(profile, manifest);
   const fixtureLink = join(profile, 'node_modules', fixtureName);
   await mkdir(dirname(fixtureLink), { recursive: true });
-  await symlink(fixture, fixtureLink, 'dir');
+  await symlink(fixture, fixtureLink, directoryLinkType);
   const patch = '# User profile settings survive preparation.\n[]\n';
   await writeFile(join(profile, 'cordis.patch.yml'), patch);
 
@@ -118,7 +160,7 @@ test('legacy product prefix migrates once while extensions, settings and depende
   await saveManifest(profile, manifest);
   const fixtureLink = join(profile, 'node_modules', fixtureName);
   await mkdir(dirname(fixtureLink), { recursive: true });
-  await symlink(fixture, fixtureLink, 'dir');
+  await symlink(fixture, fixtureLink, directoryLinkType);
   const patch = '# User configuration\n- id: locale\n  config:\n    language: ja\n';
   await writeFile(join(profile, 'cordis.patch.yml'), patch);
 
