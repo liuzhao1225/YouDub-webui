@@ -101,6 +101,18 @@ try {
     assert.equal(await realpath(setup.installation.path), await realpath(join(temporary, 'YouDub media')));
   } else assert.equal(setup.phase, workbench ? 'skipped' : 'installation', setup.error);
   assert.equal(setup.version, appManifest.version);
+  if (process.platform === 'win32') {
+    const profileLinks = [];
+    for (const name of ['@youdub/harness-subtitles', '@deepseek-ai/dsh-client-ui-layout']) {
+      const link = join(ownership.home, 'profiles/desktop/node_modules', name);
+      const type = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+        '(Get-Item -LiteralPath $env:YOUDUB_PROFILE_LINK).LinkType'],
+      { env: { ...process.env, YOUDUB_PROFILE_LINK: link }, encoding: 'utf8' }).trim();
+      assert.equal(type, 'Junction', `${name} must work without Windows symlink privileges`);
+      profileLinks.push({ name, type, target: await realpath(link) });
+    }
+    await writeFile(join(evidence, 'profile-links.json'), JSON.stringify(profileLinks, null, 2) + '\n');
+  }
   assert.equal(setup.testMode, workbench ? true : undefined);
   if (!configured) assert.equal(setup.environment.length, 0);
   const text = await evaluate('document.body.innerText');
