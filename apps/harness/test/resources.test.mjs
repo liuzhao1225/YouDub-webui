@@ -17,7 +17,7 @@ async function fixture(t) {
   t.mock.method(EnvironmentSetup.prototype, 'probe', async (_action, groups = ['base']) => {
     if (_action === 'acceleration-plan') return { installed: installed.has('acceleration') || installed.has('whisper'), detail: 'CPU' };
     if (_action === 'acceleration') return { backend: 'cpu', devices: [], detail: 'CPU checked' };
-    return { missing: groups.filter(group => !installed.has(group)), media: installed.has('media') || !groups.includes('media'), punkt: installed.has('punkt') || installed.has('whisper') || !groups.some(group => ['punkt', 'whisper'].includes(group)), demucsSource: true };
+    return { missing: groups.filter(group => !installed.has(group)), media: installed.has('media') || !groups.includes('media'), punkt: installed.has('punkt') || !groups.includes('punkt'), demucsSource: true };
   });
   t.mock.method(EnvironmentSetup.prototype, 'prepare', async function(groups) {
     prepared.push(groups); for (const group of groups) installed.add(group);
@@ -63,6 +63,8 @@ test('preparing an existing model installs its missing dependencies and reports 
   const after = await app.resources.checkResources(target);
   assert.equal(after.status, 'ready');
   assert.deepEqual(after.entries.filter(item => item.id === 'whisper').map(item => item.status), ['ready']);
+  assert.ok(!after.entries.some(item => item.id === 'resources'));
+  assert.ok(!after.entries.find(item => item.id === 'whisper').dependencies.includes('resources'));
 });
 
 test('a different workflow reads the active preparation for its shared resources', async t => {

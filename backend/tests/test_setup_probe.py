@@ -43,6 +43,14 @@ def test_base_and_subtitles_do_not_inspect_or_import_optional_tts(monkeypatch):
     assert not forbidden.intersection(checked + imported)
 
 
+def test_whisper_resources_do_not_require_nltk_or_punkt(monkeypatch):
+    monkeypatch.setattr(setup_probe.importlib.util, "find_spec", lambda name: None if name == "nltk" else object())
+    monkeypatch.setattr(setup_probe, "punkt", lambda: pytest.fail("Whisper must not require sentence resources"))
+    assert setup_probe.resources(["whisper"]) == {
+        "missing": [], "media": True, "punkt": True, "demucsSource": True,
+    }
+
+
 def test_selected_provider_import_failure_preserves_original_exception(monkeypatch):
     original = ImportError("selected VoxCPM binary is incompatible")
     monkeypatch.setattr(setup_probe, "missing_dependencies", lambda _groups: [])

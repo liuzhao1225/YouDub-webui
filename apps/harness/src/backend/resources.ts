@@ -230,7 +230,7 @@ export default class Resources extends Service {
       }
       if (!reason && provider?.available !== true) reason = provider?.unavailableReason || '运行服务尚未就绪。'
       requirements.push({ ...selection, remote: provider?.execution === 'remote', resourceId: modelId && automatic ? modelId : selection.model ? `${selection.providerId}:${selection.model}` : selection.providerId === 'youdub.media' ? 'ffmpeg' : selection.providerId, name: modelId ? modelManifest.find(model => model.id === modelId)!.name : typeof provider?.label === 'string' ? provider.label : selection.providerId, downloadId: automatic ? modelId : undefined,
-        dependencies: ['python', ...(groups.some(group => acceleratedGroups.includes(group)) ? ['acceleration'] : []), ...(groups.includes('media') && selection.providerId !== 'youdub.media' ? ['ffmpeg'] : []), ...(groups.includes('whisper') ? ['resources'] : [])], ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
+        dependencies: ['python', ...(groups.some(group => acceleratedGroups.includes(group)) ? ['acceleration'] : []), ...(groups.includes('media') && selection.providerId !== 'youdub.media' ? ['ffmpeg'] : []), ...(groups.includes('punkt') ? ['resources'] : [])], ready: !reason, automatic, missingPackages: result.missing, ...(reason ? { reason } : {}), ...(configurationRequired ? { configurationRequired } : {}) })
     }
     const models = this.models.filter(model => requiredModels.has(model.id))
     await this.refreshModelSizes(models)
@@ -254,7 +254,7 @@ export default class Resources extends Service {
     }
     environment.push({ id: 'dependencies', name: groups.length > 1 ? '运行依赖' : '基础运行依赖', status: missingPackages.size ? 'pending' : 'ready', ...(missingPackages.size ? { detail: `缺少：${[...missingPackages].join(', ')}` } : {}) })
     if (groups.includes('media')) environment.push({ id: 'ffmpeg', name: 'FFmpeg', status: mediaReady ? 'ready' : 'pending', ...(mediaReason ? { detail: mediaReason } : {}) })
-    if (groups.includes('whisper') || groups.includes('punkt')) environment.push({ id: 'resources', name: '分句资源', status: punktReady ? 'ready' : 'pending' })
+    if (groups.includes('punkt')) environment.push({ id: 'resources', name: '分句资源', status: punktReady ? 'ready' : 'pending' })
     for (const requirement of requirements) {
       const dependency = environment.find(step => (step.id === requirement.resourceId || requirement.dependencies?.includes(step.id)) && step.status !== 'ready')
       if (dependency) { requirement.ready = false; requirement.reason ??= dependency.detail || `${dependency.name} 尚未就绪。` }

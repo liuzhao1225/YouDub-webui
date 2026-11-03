@@ -1,0 +1,64 @@
+{
+  "issue": "https://github.com/liuzhao1225/YouDub-webui/issues/184#issuecomment-6576310301",
+  "source_video": "https://www.youtube.com/watch?v=subu-xHrp1w",
+  "audio_duration_seconds": 2944,
+  "base_commit": "adefa1460187ed1a45cb2de3c63540da9f8dd419",
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.12.12",
+    "openai_whisper": "20250625",
+    "model": "tiny",
+    "device": "cpu",
+    "source_language": "auto"
+  },
+  "before_fix": {
+    "raw_segments": 509,
+    "raw_transcript_validation": "passed",
+    "postprocessed_sentences": 532,
+    "failure": "Segment end must follow its start",
+    "zero_duration_sentence_indices": [
+      201,
+      336,
+      345,
+      492,
+      523
+    ],
+    "zero_duration_sentence_times_ms": [
+      837140,
+      1668900,
+      1703660,
+      2601520,
+      2889400
+    ]
+  },
+  "after_fix": {
+    "source_audio_sha256": "bfb5af1fbde0e7f36fce86ab532d80038172ccecda6aa89f7f286e61dc9baab6",
+    "asr_state": "completed",
+    "model": "tiny",
+    "device": "cpu",
+    "source_language": "auto",
+    "detected_language": "en",
+    "segments": 509,
+    "words": 7033,
+    "all_text_and_word_timestamps_preserved": true,
+    "all_segment_timestamps_preserved": true,
+    "raw_sha256": "7086d7176bda036ba7f234f9b07ad0191388923412877dfc62fdc3e3d6d2b660",
+    "host_schema_validation": "passed",
+    "host_semantic_validation": "passed",
+    "raw_json_preserved": true
+  },
+  "regression_fixture": {
+    "path": "backend/tests/fixtures/asr_issue_184_english.json",
+    "source_segment_id": 463,
+    "sha256": "5105f53fa9cb5e90324baccc09d20d4e34827f97f5bad9568b83965c08e0a58a"
+  },
+  "local_checks": {
+    "asr_runtime_setup_probe": "133 passed",
+    "export_tts": "79 passed",
+    "host_media_setup": "13 passed",
+    "harness_resources": "5 passed",
+    "typescript": "passed",
+    "framework_build": "passed"
+  },
+  "scope": "Real full-audio ASR worker and Python/Host readback. ASR preserves provider segmentation; only names and time units are adapted. Consumer-specific validation remains. Translation, Windows runtime and release distribution require separate acceptance."
+}

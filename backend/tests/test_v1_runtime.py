@@ -49,13 +49,6 @@ def test_cuda_catalogue_queries_devices_without_loading_models(monkeypatch):
 
 @pytest.fixture
 def installed_runtime(monkeypatch, tmp_path):
-    from nltk import data as nltk_data
-
-    punkt = tmp_path / "nltk_data" / "tokenizers" / "punkt_tab" / "english"
-    punkt.mkdir(parents=True)
-    for name in ("collocations.tab", "sent_starters.txt", "abbrev_types.txt", "ortho_context.tab"):
-        (punkt / name).write_bytes(b"metadata-only fixture")
-    monkeypatch.setattr(nltk_data, "path", [str(tmp_path / "nltk_data")])
     models = tmp_path / "whisper-models"
     models.mkdir()
     (models / "tiny.pt").write_bytes(b"metadata-only test checkpoint")
@@ -78,7 +71,6 @@ def installed_runtime(monkeypatch, tmp_path):
 
 def test_real_catalogue_reads_local_metadata_without_model_or_network(installed_runtime, monkeypatch):
     import socket
-    from nltk.tokenize import punkt
 
     from backend.app.v1 import asr
 
@@ -86,7 +78,6 @@ def test_real_catalogue_reads_local_metadata_without_model_or_network(installed_
         pytest.fail("Runtime must not load a model, instantiate a provider, or connect to the network")
 
     monkeypatch.setattr(asr, "run", forbidden)
-    monkeypatch.setattr(punkt, "PunktTokenizer", forbidden)
     monkeypatch.setattr(socket, "create_connection", forbidden)
     monkeypatch.setitem(sys.modules, "whisper", SimpleNamespace(load_model=forbidden))
     result = probe_all()
@@ -100,9 +91,9 @@ def test_real_catalogue_reads_local_metadata_without_model_or_network(installed_
     assert tts["models"] == separation["models"] == []
 
 
-@pytest.mark.parametrize("missing", ["whisper", "torch", "nltk", "ffmpeg", "ffprobe", "checkpoint"])
+@pytest.mark.parametrize("missing", ["whisper", "torch", "ffmpeg", "ffprobe", "checkpoint"])
 def test_whisper_is_unavailable_when_a_real_local_prerequisite_is_missing(installed_runtime, monkeypatch, tmp_path, missing):
-    if missing in {"whisper", "torch", "nltk"}:
+    if missing in {"whisper", "torch"}:
         monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: None if name == missing else object())
     elif missing in {"ffmpeg", "ffprobe"}:
         monkeypatch.setattr(runtime.shutil, "which", lambda name: None if name == missing else f"/test/bin/{name}")
@@ -112,27 +103,14 @@ def test_whisper_is_unavailable_when_a_real_local_prerequisite_is_missing(instal
     assert not capability["available"] and capability["unavailable_reason"] and capability["models"] == []
 
 
-@pytest.mark.parametrize("name", ["collocations.tab", "sent_starters.txt", "abbrev_types.txt", "ortho_context.tab"])
-@pytest.mark.parametrize("empty", [False, True])
-def test_whisper_requires_every_english_punkt_parameter(installed_runtime, tmp_path, name, empty):
-    parameter = tmp_path / "nltk_data" / "tokenizers" / "punkt_tab" / "english" / name
-    if empty:
-        parameter.write_bytes(b"")
-    else:
-        parameter.unlink()
+def test_whisper_is_ready_without_nltk_or_sentence_resources(installed_runtime, monkeypatch, tmp_path):
+    monkeypatch.setattr(runtime.importlib.util, "find_spec", lambda name: None if name == "nltk" else object())
+    monkeypatch.setitem(sys.modules, "nltk", None)
+    monkeypatch.setenv("YOUDUB_HARNESS_RUNTIME", "1")
+    monkeypatch.setenv("NLTK_DATA", str(tmp_path / "missing-nltk-data"))
     capability = runtime.probe_capability("whisper")
-    assert not capability["available"] and capability["models"] == []
-    assert "punkt_tab" in capability["unavailable_reason"]
-
-
-def test_whisper_reports_missing_punkt_data_without_downloading(installed_runtime, monkeypatch, tmp_path):
-    from nltk import data as nltk_data, downloader
-
-    monkeypatch.setattr(nltk_data, "path", [str(tmp_path / "uninstalled-nltk-data")])
-    monkeypatch.setattr(downloader.Downloader, "download", lambda *_args, **_kwargs: pytest.fail("Runtime must not download data"))
-    capability = runtime.probe_capability("whisper")
-    assert not capability["available"] and capability["models"] == []
-    assert ".venv/bin/python -m nltk.downloader punkt_tab" in capability["unavailable_reason"]
+    assert capability["available"]
+    assert capability["unavailable_reason"] is None
 
 
 def test_configured_ffmpeg_without_path_ffmpeg_does_not_advertise_whisper(installed_runtime, monkeypatch):

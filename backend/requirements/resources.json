@@ -5,7 +5,7 @@
     "base": { "modules": { "dotenv": "python-dotenv", "pydantic": "pydantic", "packaging": "packaging" } },
     "media": { "modules": { "soundfile": "soundfile", "numpy": "numpy" } },
     "download": { "modules": { "yt_dlp": "yt-dlp" } },
-    "whisper": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "whisper": "openai-whisper", "nltk": "nltk" } },
+    "whisper": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "whisper": "openai-whisper" } },
     "voxcpm": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "torchcodec": "torchcodec", "voxcpm": "voxcpm", "transformers": "transformers", "librosa": "librosa", "einops": "einops", "huggingface_hub": "huggingface-hub", "safetensors": "safetensors", "tqdm": "tqdm" } },
     "demucs": { "accelerated": true, "modules": { "torch": "torch", "torchaudio": "torchaudio", "julius": "julius", "dora": "dora-search", "omegaconf": "omegaconf", "einops": "einops", "openunmix": "openunmix", "tqdm": "tqdm" } },
     "qwen_forced_aligner": { "accelerated": true, "modules": { "torch": "torch", "torchcodec": "torchcodec", "transformers": "transformers", "librosa": "librosa" } }

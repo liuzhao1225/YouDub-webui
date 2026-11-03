@@ -108,7 +108,13 @@ try {
       const type = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
         '(Get-Item -LiteralPath $env:YOUDUB_PROFILE_LINK).LinkType'],
       { env: { ...process.env, YOUDUB_PROFILE_LINK: link }, encoding: 'utf8' }).trim();
-      assert.equal(type, 'Junction', `${name} must work without Windows symlink privileges`);
+      // pnpm may create a valid SDK symlink on privileged machines; YouDub
+      // preserves it. The layout link is created directly by YouDub.
+      if (name === '@deepseek-ai/dsh-client-ui-layout') {
+        assert.equal(type, 'Junction', `${name} must work without Windows symlink privileges`);
+      } else {
+        assert.ok(['Junction', 'SymbolicLink'].includes(type), `${name} must be a directory link`);
+      }
       profileLinks.push({ name, type, target: await realpath(link) });
     }
     await writeFile(join(evidence, 'profile-links.json'), JSON.stringify(profileLinks, null, 2) + '\n');
