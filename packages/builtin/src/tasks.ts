@@ -545,14 +545,32 @@ export default class Tasks extends Service implements TasksService {
     this.assertReady()
     const release = await this.ctx.files.reserve(id)
     try {
-      return this.view(await this.change(id, task => {
+      return this.view(await this.change(id, async task => {
         this.expected(task, expectedAttempt)
         if (task.legacy || !['failed', 'cancelled'].includes(task.status)) throw new AppError('RETRY_NOT_ALLOWED', 'This task cannot be retried.', 409)
         if (Object.values(task.externalRequests).some(item => item.mayStillRun)) throw new AppError('EXTERNAL_RESULT_UNKNOWN', 'A remote request may still be running.', 409)
         this.checkPlan(task.plan)
+        for (const step of task.steps) {
+          if (step.status === 'completed' || task.graphSnapshot && step.outputRevision) {
+            // Saved results were validated when committed. Check their files here;
+            // reused descendants may still be blocked by an upstream review.
+            for (const reference of artifactReferences(step.outputs)) {
+              const artifact = task.artifacts[reference.id]
+              if (!artifact || artifact.schemaId !== reference.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Artifact does not belong to this task.', 422)
+              await this.ctx.files.resolve(task.id, artifact)
+            }
+          }
+        }
         task.attempt++; task.status = 'queued'; task.queuedAt = now(); task.startedAt = task.finishedAt = task.nextPollAt = null
         task.error = null; task.message = null; task.outputs = []; task.externalRequests = {}
-        task.steps = task.steps.map(step => ({ ...step, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null, operation: undefined, outputRevision: 0, approvedRevision: null, approvalActionId: null }))
+        task.steps = task.steps.map(step => {
+          if (step.status === 'completed') return step
+          // Cancelled review gates and dependency-reused results keep their current
+          // revision. advance() restores their status using the existing approvals.
+          if (task.graphSnapshot && step.outputRevision) return { ...step, status: 'pending', error: null }
+          return { ...step, status: 'pending', invocationId: null, progress: null, message: null, startedAt: null, finishedAt: null, outputs: {}, error: null, operation: undefined, outputRevision: 0, approvedRevision: null, approvalActionId: null }
+        })
+        await this.advance(task)
       }))
     } finally { await release() }
   }

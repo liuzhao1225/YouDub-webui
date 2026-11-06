@@ -214,7 +214,7 @@
     "library.submit.with.the.same.id": "同じ ID で送信",
     "library.create.task": "タスクを作成",
     "library.cancel.task": "タスクをキャンセル",
-    "library.retry.from.start": "最初から再試行",
+    "library.continue.task": "タスクを再開",
     "library.delete.task.and.files": "タスクとファイルを削除",
     "library.delete.task": "タスクを削除",
     "library.keep.task": "タスクを保持",

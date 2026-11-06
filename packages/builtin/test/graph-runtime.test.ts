@@ -101,6 +101,103 @@ async function setup(t: any) {
   return { ctx, create, until, command, executions, provider, workflow, identity, restart }
 }
 
+test('retry after restart retains corrected approvals and completed independent branches', async t => {
+  const { ctx, create, until, command, executions, provider, restart } = await setup(t)
+  const execute = provider.execute
+  let repaired = false
+  provider.execute = async (invocation, context) => {
+    if (invocation.stepId === 'join' && !repaired) throw new Error('Join unavailable')
+    return execute(invocation, context)
+  }
+  const created = await create(graph('left')), paused = await until(created.id, 'paused')
+  await ctx.tasks.correct(created.id, 'left', { ...command(paused, 'left'), patch: { document: { text: 'corrected' } }, continue: true })
+  const failed = await until(created.id, 'failed')
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right'])
+  await restart()
+  repaired = true
+  await ctx.tasks.retry(created.id, failed.attempt)
+  const completed = await until(created.id, 'succeeded')
+  assert.deepEqual(completed.steps.slice(0, 3), failed.steps.slice(0, 3))
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right', 'join'])
+  assert.equal(executions.at(-1)!.inputs.left.text, 'corrected')
+  const record = await ctx.tasks.record(created.id)
+  assert.equal(await readFile(await ctx.files.resolve(created.id, record.artifacts[record.outputs[0].artifact.id]), 'utf8'), 'corrected + /source/right/join')
+})
+
+test('retry preserves pending review results when an independent branch failed', async t => {
+  const { ctx, create, until, command, executions, provider } = await setup(t)
+  const execute = provider.execute
+  let repaired = false
+  provider.execute = async (invocation, context) => {
+    if (invocation.stepId === 'right' && !repaired) throw new Error('Right unavailable')
+    return execute(invocation, context)
+  }
+  const created = await create(graph('left')), failed = await until(created.id, 'failed')
+  assert.equal(failed.steps[1].status, 'awaiting_review')
+  repaired = true
+  await ctx.tasks.retry(created.id, failed.attempt)
+  const paused = await until(created.id, 'paused')
+  assert.deepEqual(paused.steps[1], failed.steps[1])
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right'])
+  await ctx.tasks.approve(created.id, 'left', command(paused, 'left'))
+  await until(created.id, 'succeeded')
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right', 'join'])
+})
+
+test('continuing a cancelled final review restores the review without recomputing it', async t => {
+  const { ctx, create, until, command, executions } = await setup(t)
+  const created = await create(graph('join')), paused = await until(created.id, 'paused')
+  await ctx.tasks.cancel(created.id, paused.attempt, paused.revision)
+  const resumed = await ctx.tasks.retry(created.id, paused.attempt)
+  assert.equal(resumed.status, 'paused')
+  assert.equal(resumed.steps[3].status, 'awaiting_review')
+  assert.deepEqual(resumed.steps[3].resultRevisions, paused.steps[3].resultRevisions)
+  assert.equal(resumed.steps[3].approvedRevision, null)
+  await ctx.tasks.approve(created.id, 'join', command(resumed, 'join'))
+  const completed = await until(created.id, 'succeeded')
+  assert.equal(completed.outputs.length, 1)
+  assert.deepEqual(executions.map(item => item.stepId), ['source', 'left', 'right', 'join'])
+})
+
+test('missing saved files reject continuation without changing the failed attempt', async t => {
+  const { ctx, create, until, provider } = await setup(t)
+  const execute = provider.execute
+  provider.execute = async (invocation, context) => {
+    if (invocation.stepId === 'join') throw new Error('Join unavailable')
+    return execute(invocation, context)
+  }
+  const created = await create(), failed = await until(created.id, 'failed')
+  const record = await ctx.tasks.record(created.id)
+  await rm(await ctx.files.resolve(created.id, record.artifacts[record.steps[0].outputs.file.id]))
+  await assert.rejects(ctx.tasks.retry(created.id, failed.attempt), { code: 'ENOENT' })
+  assert.deepEqual(await ctx.tasks.get(created.id), failed)
+})
+
+test('cancelled derived tasks resume with reused descendants behind unapproved review gates', async t => {
+  const { ctx, create, until, command, executions } = await setup(t)
+  const first = await create(); await until(first.id, 'succeeded')
+  const document = graph('source')
+  document.nodes.find(node => node.id === 'join')!.autoContinue = false
+  const request = { id: randomUUID(), config: {}, graphDocument: document }
+  const preview = await ctx.tasks.rerunPreview(first.id, request)
+  const derived = await ctx.tasks.rerun(first.id, { ...request, ...preview })
+  assert.equal(derived.status, 'paused')
+  assert.deepEqual(derived.steps.map(step => step.status), ['awaiting_review', 'completed', 'completed', 'pending'])
+  await ctx.tasks.cancel(derived.id, derived.attempt, derived.revision)
+  const resumed = await ctx.tasks.retry(derived.id, derived.attempt)
+  assert.equal(resumed.status, 'paused')
+  assert.deepEqual(resumed.steps.map(step => step.status), ['awaiting_review', 'completed', 'completed', 'pending'])
+  assert.deepEqual(resumed.steps.map(step => step.outputs), derived.steps.map(step => step.outputs))
+  await assert.rejects(ctx.tasks.approve(derived.id, 'join', command(resumed, 'join')), { code: 'REVIEW_NOT_ALLOWED' })
+  await ctx.tasks.approve(derived.id, 'source', command(resumed, 'source'))
+  const waitingJoin = await until(derived.id, 'paused')
+  assert.equal(waitingJoin.steps[3].status, 'awaiting_review')
+  await ctx.tasks.approve(derived.id, 'join', command(waitingJoin, 'join'))
+  const completed = await until(derived.id, 'succeeded')
+  assert.equal(completed.outputs.length, 1)
+  assert.deepEqual(executions.filter(item => item.taskId === derived.id), [])
+})
+
 test('task views expose plugin label translations without rewriting snapshots or custom labels', async t => {
   const { ctx, create, until, provider } = await setup(t)
   const describe = provider.describe

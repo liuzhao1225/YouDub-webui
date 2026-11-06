@@ -22,6 +22,35 @@ function mount(request: ReturnType<typeof vi.fn>, route = 'task-detail') {
 }
 afterEach(() => { cleanup(); window.localStorage.clear(); vi.restoreAllMocks() })
 
+it('continues a failed task through its existing retry endpoint and refreshes the same task', async () => {
+  const failed = { ...task, status: 'failed', allowedActions: ['retry', 'rerun', 'delete'], error: { code: 'FAILED', message: 'Fifth node unavailable' } }
+  let current = failed
+  const request = vi.fn(async (path: string, init?: RequestInit) => {
+    if (path.endsWith('/retry')) {
+      expect(init?.method).toBe('POST')
+      expect(JSON.parse(init!.body as string)).toEqual({ expectedAttempt: 2 })
+      current = { ...failed, status: 'queued', allowedActions: ['cancel'] }
+    }
+    return current
+  })
+  const push = mount(request)
+  await userEvent.setup().click(await screen.findByRole('button', { name: '继续任务' }))
+  await screen.findByRole('button', { name: '取消任务' })
+  expect(request).toHaveBeenCalledWith('/api/v2/tasks/original/retry', expect.anything())
+  expect(push).not.toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: '从头重试' })).not.toBeInTheDocument()
+})
+
+it('keeps the continuation error visible when retry is rejected', async () => {
+  mount(vi.fn(async (path: string) => {
+    if (path.endsWith('/retry')) throw new Error('Saved result file is missing')
+    return { ...task, status: 'failed', allowedActions: ['retry'] }
+  }))
+  await userEvent.setup().click(await screen.findByRole('button', { name: '继续任务' }))
+  expect(await screen.findByText('Saved result file is missing')).toBeVisible()
+  expect(screen.getByRole('button', { name: '继续任务' })).toBeEnabled()
+})
+
 it('shows the running step and completed step count without inventing total progress', async () => {
   const current: TaskView = { ...task, status: 'running', sourceName: 'very-long-video-title-without-any-spaces-to-keep-the-status-readable.mp4', cover: { url: '/cover/current.jpg' }, steps: [
     ...Array.from({ length: 5 }, (_, index) => ({ id: `done-${index}`, label: 'Done', status: 'completed', progress: 1 })),

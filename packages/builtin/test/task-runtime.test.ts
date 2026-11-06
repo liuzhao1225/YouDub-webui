@@ -97,8 +97,25 @@ async function setup(t: any, contract: 'artifact' | 'json' | 'omitted' | 'downgr
     throw new Error(`Task did not reach expected state: ${JSON.stringify(await ctx.tasks.get(id))}`)
   }
   ctx.emit('app/ready')
-  return { ctx, create, until, previous: () => previous!, executed, workflow, identity }
+  return { ctx, create, until, previous: () => previous!, executed, workflow, identity, provider }
 }
+
+test('linear task retry retains completed outputs and runs only unfinished steps', async t => {
+  const { ctx, create, until, provider, executed } = await setup(t, 'artifact', undefined, ['first', 'second', 'third'])
+  const execute = provider.execute
+  let repaired = false
+  provider.execute = async (invocation, context) => {
+    if (invocation.stepId === 'second' && !repaired) throw new Error('Second step unavailable')
+    return execute(invocation, context)
+  }
+  const created = await create('text'), failed = await until(created.id, task => task.status === 'failed')
+  repaired = true
+  await ctx.tasks.retry(created.id, failed.attempt)
+  const completed = await until(created.id, task => task.status === 'succeeded')
+  assert.deepEqual(completed.steps[0], failed.steps[0])
+  assert.deepEqual(executed.map(item => item.stepId), ['first', 'second', 'third'])
+  assert.equal(completed.outputs.length, 1)
+})
 
 test('real SQLite task engine keeps the execution slot during waiting and resumes the fixed invocation', async t => {
   const { ctx, create, until } = await setup(t)
