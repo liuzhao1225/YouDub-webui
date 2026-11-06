@@ -213,7 +213,7 @@
     "library.submit.with.the.same.id": "Submit with the same ID",
     "library.create.task": "Create task",
     "library.cancel.task": "Cancel task",
-    "library.retry.from.start": "Retry from start",
+    "library.continue.task": "Continue task",
     "library.delete.task.and.files": "Delete task and files",
     "library.delete.task": "Delete task",
     "library.keep.task": "Keep task",

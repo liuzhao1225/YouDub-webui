@@ -124,8 +124,45 @@ async function setup(t: any, execution: 'local' | 'remote' = 'local') {
     throw new Error(`Task ${id} never reached ${status}`)
   }
   const command = (node: NodeResultView) => ({ actionId: randomUUID(), expectedAttempt: node.attempt, expectedTaskRevision: node.taskRevision, expectedOutputRevision: node.outputRevision })
-  return { ctx, request, json, form, create, until, command, executions }
+  return { ctx, request, json, form, create, until, command, executions, provider }
 }
+
+test('retry API continues at the fifth failed node and keeps the first four results', async t => {
+  const { request, json, create, until, provider } = await setup(t)
+  const document = graph(false)
+  document.nodes = [document.nodes[0], ...['second', 'third', 'fourth', 'fifth'].map(id => ({ ...document.nodes[1], id }))]
+  document.edges = [document.edges[0], document.edges[1], ...document.nodes.slice(1).map((node, index) => ({
+    id: `edge-${node.id}`, source: { nodeId: document.nodes[index].id, portId: 'document' }, target: { nodeId: node.id, portId: 'document' },
+  }))]
+  document.outputs[0].source.nodeId = 'fifth'
+  const execute = provider.execute, calls: string[] = []
+  let repaired = false
+  provider.execute = async (invocation, context) => {
+    calls.push(invocation.stepId)
+    if (invocation.stepId === 'fifth' && !repaired) throw new AppError('TEST_FAILURE', 'Fifth node unavailable', 500)
+    return execute(invocation, context)
+  }
+  const created = await create(document), failed = await until(created.id, 'failed')
+  assert.deepEqual(failed.steps.map((step: any) => step.status), ['completed', 'completed', 'completed', 'completed', 'failed'])
+  assert.equal(failed.error.message, 'Fifth node unavailable')
+  assert.ok(failed.allowedActions.includes('retry'))
+  await json(await request(`/tasks/${created.id}/retry`, 'POST', { expectedAttempt: 1 }))
+  const failedAgain = await until(created.id, 'failed')
+  assert.equal(failedAgain.attempt, 2)
+  assert.deepEqual(failedAgain.steps.slice(0, 4), failed.steps.slice(0, 4))
+  assert.equal(failedAgain.error.message, 'Fifth node unavailable')
+  await json(await request(`/tasks/${created.id}/retry`, 'POST', { expectedAttempt: 1 }), 409)
+  repaired = true
+  await json(await request(`/tasks/${created.id}/retry`, 'POST', { expectedAttempt: 2 }))
+  const completed = await until(created.id, 'succeeded')
+  assert.equal(completed.attempt, 3)
+  assert.equal(completed.error, null)
+  assert.deepEqual(completed.steps.slice(0, 4), failed.steps.slice(0, 4))
+  assert.deepEqual(calls, ['read', 'second', 'third', 'fourth', 'fifth', 'fifth', 'fifth'])
+  const file = await request(completed.outputs[0].url)
+  assert.equal(file.status, 200)
+  assert.equal(await file.text(), 'done:done:done:done:hello|context!')
+})
 
 test('workflow documents round-trip through Harness routes and SQLite CAS without overwriting another window', async t => {
   const { request, json } = await setup(t)

@@ -214,7 +214,7 @@
     "library.submit.with.the.same.id": "使用同一 ID 提交",
     "library.create.task": "创建任务",
     "library.cancel.task": "取消任务",
-    "library.retry.from.start": "从头重试",
+    "library.continue.task": "继续任务",
     "library.delete.task.and.files": "确认删除任务与文件",
     "library.delete.task": "删除任务",
     "library.keep.task": "保留",
