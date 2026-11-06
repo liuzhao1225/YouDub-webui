@@ -11,7 +11,7 @@ declare module '@deepseek-ai/cordis' {
 }
 
 /** Read product work and background jobs without starting or stopping tasks. */
-async function hasDesktopActiveTasks(ctx: Context): Promise<boolean> {
+export async function hasDesktopActiveTasks(ctx: Context): Promise<boolean> {
   const jobs = ctx.get('jobs')
   if (jobs === undefined) throw new Error('desktop activity: jobs service is unavailable')
   const active = await ctx.waterfall('desktop/active-tasks', () => Promise.reject(new Error('desktop activity: product inspector is unavailable')))

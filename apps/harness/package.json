@@ -44,6 +44,7 @@
   "dependencies": {
     "@tabler/icons-react": "3.49.0",
     "clsx": "2.1.1",
+    "electron-updater": "6.8.9",
     "tailwind-merge": "3.5.0"
   },
   "devDependencies": {

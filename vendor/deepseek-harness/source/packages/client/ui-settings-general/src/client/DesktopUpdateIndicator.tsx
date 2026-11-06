@@ -12,6 +12,10 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
     idle: '',
     checking: t('desktop.update.checking'),
     available: t('desktop.update.available'),
+    downloading: t('desktop.update.downloading', { percent: Math.floor(state.percent ?? 0) }),
+    verifying: t('desktop.update.verifying'),
+    ready: t('desktop.update.ready'),
+    installing: t('desktop.update.installing'),
     error: t('desktop.update.retry'),
   }
   const label = labels[state.phase]
@@ -19,7 +23,8 @@ function updateCopy(state: DesktopUpdatePresentation, t: SettingsTranslate): { l
     return { label, detail: state.version ?? label }
   }
   if (state.phase === 'error') {
-    return { label, detail: t('desktop.update.checkFailed') }
+    return { label, detail: t(state.failedOperation === 'download' ? 'desktop.update.downloadFailed'
+      : state.failedOperation === 'install' ? 'desktop.update.installFailed' : 'desktop.update.checkFailed') }
   }
   return { label, detail: state.version === undefined
     ? label
@@ -44,7 +49,7 @@ export function DesktopUpdateIndicator({ wide, hidden, t, view, onOpen }: {
   const copy = state === undefined ? { label: retryLabel, detail: retryLabel } : updateCopy(state, t)
   const label = failed ? retryLabel : copy.label
   const error = failed || state?.phase === 'error'
-  const busy = opening || state?.phase === 'checking'
+  const busy = opening || ['checking', 'downloading', 'verifying', 'installing'].includes(state?.phase ?? '')
   return <Tooltip label={failed ? retryLabel : copy.detail} side="top">
     <button type="button" className={css.indicator}
       aria-label={label} aria-disabled={busy} onClick={() => { if (!busy) onOpen() }}>

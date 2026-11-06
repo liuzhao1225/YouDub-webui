@@ -1,74 +1,70 @@
 import type { MessageBoxOptions, MessageBoxReturnValue } from 'electron'
-import type { AvailableUpdate } from '../../../packages/builtin/src/updates.ts'
 import type { DesktopUpdateState } from '../../../vendor/deepseek-harness/source/apps/desktop/src/ipc.ts'
+import type { DesktopUpdateCoordinator } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-coordinator.ts'
 import { formatDesktopMessage, type resolveDesktopLocale } from '../../../vendor/deepseek-harness/source/apps/desktop/src/locale.ts'
 
-/** The native shell checks releases; only an explicit action opens the installer URL. */
+/** Native presentation around dsh's version-bound download/install coordinator. */
 export class DesktopUpdates {
-  state: DesktopUpdateState = { phase: 'idle' }
-  private available: AvailableUpdate | null = null
-  private checking: Promise<DesktopUpdateState> | undefined
   private opening: Promise<void> | undefined
+  private announced: string | undefined
 
   constructor(private readonly options: {
     version: string
-    check: () => Promise<{ available: AvailableUpdate | null }>
-    publish: (state: DesktopUpdateState) => void
+    coordinator: Pick<DesktopUpdateCoordinator, 'state' | 'check' | 'download' | 'install'>
     locale: () => ReturnType<typeof resolveDesktopLocale>
     show: (options: MessageBoxOptions) => Promise<MessageBoxReturnValue>
-    openExternal: (url: string) => Promise<unknown>
+    visible: () => boolean
+    installationErrorHandled?: () => boolean
   }) {}
 
-  private set(state: DesktopUpdateState): DesktopUpdateState {
-    this.state = state
-    this.options.publish(state)
+  get state(): DesktopUpdateState { return this.options.coordinator.state }
+
+  async check(manual = false): Promise<DesktopUpdateState> {
+    const state = await this.options.coordinator.check(manual)
+    this.promptReady()
     return state
   }
 
-  check(): Promise<DesktopUpdateState> {
-    if (this.checking) return this.checking
-    this.set({ phase: 'checking' })
-    this.checking = Promise.resolve().then(this.options.check).then(result => {
-      this.available = result.available
-      return this.set(result.available ? { phase: 'available', version: result.available.version } : { phase: 'idle' })
-    }, (error: unknown) => {
-      this.available = null
-      console.error('YouDub update check:', error)
-      return this.set({ phase: 'error', failure: 'check', failedOperation: 'check', message: error instanceof Error ? error.message : String(error) })
-    }).finally(() => { this.checking = undefined })
-    return this.checking
+  /** Hidden windows retain the ready indicator and prompt once when next shown. */
+  promptReady(): void {
+    if (this.state.phase !== 'ready' || this.announced === this.state.version || !this.options.visible() || this.opening) return
+    this.announced = this.state.version
+    void this.open().catch(error => { console.error('YouDub update prompt:', error) })
   }
 
-  open(check: () => Promise<DesktopUpdateState>): Promise<void> {
+  open(): Promise<void> {
     if (this.opening) return this.opening
-    this.opening = this.present(check).finally(() => { this.opening = undefined })
+    this.opening = this.present().finally(() => { this.opening = undefined; this.promptReady() })
     return this.opening
   }
 
-  private async present(check: () => Promise<DesktopUpdateState>): Promise<void> {
-    const state = await check()
+  private async present(): Promise<void> {
+    const { coordinator } = this.options
     const { messages } = this.options.locale()
     const base = { title: messages.updateTitle, noLink: true }
-    if (state.phase === 'error') {
-      await this.options.show({ ...base, type: 'error', message: messages.updateCheckFailedTitle,
-        detail: state.message, buttons: [messages.updateClose] })
-      return
+    let state = this.state
+    if (state.phase === 'idle' || state.phase === 'available' || state.phase === 'checking'
+      || (state.phase === 'error' && state.failedOperation === 'check')) state = await coordinator.check(true)
+    else if (state.phase === 'error' && state.failedOperation === 'download' && state.version) state = await coordinator.download(state.version)
+    if (state.phase === 'ready' || (state.phase === 'error' && state.failedOperation === 'install')) {
+      this.announced = state.version
+      const choice = await this.options.show({ ...base, type: 'info',
+        message: formatDesktopMessage(messages.updateReady, { version: state.version! }),
+        buttons: [messages.updateRestart, messages.updateLater], defaultId: 0, cancelId: 1 })
+      if (choice.response !== 0) return
+      state = await coordinator.install(state.version!)
+      if (state.phase !== 'error') return
+      if (this.options.installationErrorHandled?.()) return
     }
-    const update = this.available
-    if (!update) {
+    if (state.phase === 'error') {
+      await this.options.show({ ...base, type: 'error', message: messages.updateFailed,
+        detail: state.message, buttons: [messages.updateClose] })
+    } else if (state.phase === 'idle') {
       await this.options.show({ ...base, type: 'info', message: messages.updateCurrent,
         detail: formatDesktopMessage(messages.updateCurrentDetail, { version: this.options.version }), buttons: [messages.updateClose] })
-      return
-    }
-    const choice = await this.options.show({ ...base, type: 'info',
-      message: formatDesktopMessage(messages.updateAvailable, { version: update.version }),
-      detail: messages.updateDetail, buttons: [messages.updateDownload, messages.updateLater], defaultId: 0, cancelId: 1 })
-    if (choice.response !== 0) return
-    try { await this.options.openExternal(update.download) }
-    catch (error) {
-      console.error('YouDub installer link:', error)
-      await this.options.show({ ...base, type: 'error', message: messages.updateDownloadFailed,
-        detail: error instanceof Error ? error.message : String(error), buttons: [messages.updateClose] })
+    } else if (state.phase === 'downloading' || state.phase === 'verifying') {
+      await this.options.show({ ...base, type: 'info', message: messages.updateDownloading,
+        buttons: [messages.updateClose] })
     }
   }
 }

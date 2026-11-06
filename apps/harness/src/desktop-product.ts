@@ -25,8 +25,12 @@ import { closeRendererBeforeQuit } from './desktop-unload.ts'
 import { desktopNodeEnvironment } from '../../../vendor/deepseek-harness/source/apps/desktop/src/node-environment.ts'
 import { WINDOWS_TITLEBAR_HEIGHT } from '../../../vendor/deepseek-harness/source/apps/desktop/src/windows-layout.ts'
 import { DesktopUpdateSchedule, resolveDesktopUpdateScheduleConfig } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-schedule.ts'
-import { checkForUpdates } from '../../../packages/builtin/src/updates.ts'
+import electronUpdater from 'electron-updater'
+import { DesktopUpdateCoordinator } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-coordinator.ts'
+import { DesktopUpdatePreparationError } from '../../../vendor/deepseek-harness/source/apps/desktop/src/update-error.ts'
+import { YouDubInnoUpdater } from './desktop-inno-updater.ts'
 import { DesktopUpdates } from './desktop-updates.ts'
+import { prepareDesktopUpdateRestart } from './desktop-update-restart.ts'
 
 let focusPrimaryWindow = (): void => {}
 let stopForRecovery = async (): Promise<void> => {}
@@ -207,19 +211,35 @@ async function main(): Promise<void> {
   let closingRenderer = false
   let sessionEnding = false
   let mainWindow: BrowserWindow | undefined
+  const coordinator = new DesktopUpdateCoordinator(
+    state => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(DESKTOP_IPC.updatesChanged, state)
+      if (state.phase === 'error' && state.failedOperation === 'install' && (!mainWindow || quitting)) {
+        // A native installer may report failure after quitAndInstall returned and the Host stopped.
+        void dialog.showMessageBox({ type: 'error', title: currentDesktopLocale().messages.updateTitle,
+          message: currentDesktopLocale().messages.updateFailed, detail: state.message,
+          buttons: [currentDesktopLocale().messages.exitApplication] })
+          .then(() => { skipQuitConfirmation = true; app.quit() })
+          .catch(error => console.error('YouDub update error dialog:', error))
+      }
+      return state
+    },
+    () => prepareUpdateRestart(),
+    process.platform === 'win32' ? new YouDubInnoUpdater() : electronUpdater.autoUpdater,
+  )
   const updates = new DesktopUpdates({
     version: manifest.version,
-    check: () => checkForUpdates(manifest.version, undefined, (input, init) => net.fetch(input, init)),
+    coordinator,
     locale: currentDesktopLocale,
     show: options => mainWindow && !mainWindow.isDestroyed() ? dialog.showMessageBox(mainWindow, options) : dialog.showMessageBox(options),
-    openExternal: url => shell.openExternal(url),
-    publish: state => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(DESKTOP_IPC.updatesChanged, state) },
+    visible: () => !!mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !quitting,
+    installationErrorHandled: () => !mainWindow || quitting,
   })
   const updateSchedule = app.isPackaged ? new DesktopUpdateSchedule(updates, resolveDesktopUpdateScheduleConfig(process.env)) : undefined
-  const checkUpdates = () => updates.open(() => updateSchedule ? updateSchedule.check(true) : updates.check())
+  const checkUpdates = () => updates.open()
   const autoCheckUpdates = () => { if (updateSchedule) void updateSchedule.check().catch(console.error) }
   powerMonitor.on('resume', autoCheckUpdates)
-  app.on('will-quit', () => { updateSchedule?.dispose(); powerMonitor.off('resume', autoCheckUpdates) })
+  app.on('will-quit', () => { updateSchedule?.dispose(); coordinator.dispose(); powerMonitor.off('resume', autoCheckUpdates) })
   let hostUrl: string | undefined
   let hostCookie: string | undefined
   let injections: readonly unknown[] = []
@@ -249,7 +269,7 @@ async function main(): Promise<void> {
         locale = resolveDesktopStartupLocale(await metadata.readLocalePreference(), systemLanguages)
         windowsLanguage = locale.id
       },
-      stop: () => host.stop(true), inspectQuit: () => host.inspectQuit(),
+      stop: () => host.stop(true), inspectQuit: () => host.inspectQuit(), updateTasks: (action: 'inspect' | 'lock' | 'unlock') => host.updateTasks(action),
     }
   }, state => {
     if (state.phase === 'error') reportFatal(state.failure, 'host')
@@ -397,6 +417,31 @@ async function main(): Promise<void> {
     show: options => dialog.showMessageBox(options),
     focus: () => { if (process.platform === 'darwin') app.focus({ steal: true }) },
   })
+  // dsh admission lock + drain + recheck, with YouDub's stricter no-interruption policy.
+  const prepareUpdateRestart = async (): Promise<boolean> => {
+    const { messages } = currentDesktopLocale()
+    if (quitting || closingRenderer) return false
+    const host = backend.host
+    if (!host) throw new DesktopUpdatePreparationError('tasks-unavailable', messages.updateTasksUnavailable)
+    closingRenderer = true
+    try {
+      return await prepareDesktopUpdateRestart({
+        tasks: action => host.updateTasks(action), activeMessage: messages.updateTasksActive,
+        closeRenderer: async () => {
+          const window = mainWindow
+          return !window || closeRendererBeforeQuit(window, () => dialog.showMessageBoxSync(window, {
+            type: 'warning', title: messages.updateTitle, message: messages.quitUnsavedChanges,
+            buttons: [messages.updateRestart, messages.cancel], defaultId: 1, cancelId: 1, noLink: true,
+          }) === 0)
+        },
+        stop: async () => {
+          await backend.close()
+          quitting = true; shuttingDown = true; quitConfirmation.dispose()
+        },
+      })
+    } finally { closingRenderer = false }
+  }
+
   const finishQuit = async (): Promise<void> => {
     if (quitting) return
     quitting = true; shuttingDown = true; quitConfirmation.dispose()
@@ -446,6 +491,7 @@ async function main(): Promise<void> {
     window.on('focus', () => { sessionEnding = false })
     window.on('focus', autoCheckUpdates)
     window.on('show', () => { sessionEnding = false })
+    window.on('show', () => updates.promptReady())
     window.on('closed', () => { if (mainWindow === window) mainWindow = undefined })
     window.webContents.on('console-message', details => {
       if (details.level === 'error') rendererConsole.push(`${details.sourceId}:${String(details.lineNumber)} ${details.message}`)

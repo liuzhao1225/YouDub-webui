@@ -50,6 +50,20 @@ function fixture() {
 
 const available = { phase: 'available', version: '1.0.1' } as const
 
+it('shows background progress without accepting duplicate actions, then exposes restart', async () => {
+  const f = fixture()
+  try {
+    await f.emit({ phase: 'downloading', version: '1.0.1', percent: 42.8 })
+    fireEvent.click(screen.getByRole('button', { name: '下载更新 42%' }))
+    expect(f.open).not.toHaveBeenCalled()
+    await f.emit({ phase: 'verifying', version: '1.0.1', percent: 100 })
+    expect(screen.getByRole('button', { name: '正在校验更新…' }).getAttribute('aria-disabled')).toBe('true')
+    await f.emit({ phase: 'ready', version: '1.0.1' })
+    fireEvent.click(screen.getByRole('button', { name: '重启更新' }))
+    expect(f.open).toHaveBeenCalledOnce()
+  } finally { f.view.unmount(); f.status.resolve(available) }
+})
+
 it('renders nothing outside the Desktop carrier', () => {
   const source = new DesktopUpdateSource(undefined)
   const view = render(<DesktopUpdateIndicator wide hidden={false} t={translate(zh)}
@@ -73,7 +87,7 @@ it('keeps the newest event, hides for connection priority, and invokes only the 
     f.view.rerender(<f.Indicator />)
     fireEvent.click(screen.getByRole('button', { name: '正在检查更新…' }))
     expect(f.open).toHaveBeenCalledOnce()
-    await f.emit({ phase: 'error', version: available.version, failure: 'check' })
+    await f.emit({ phase: 'error', version: available.version, failedOperation: 'check' })
     const retry = screen.getByRole('button', { name: '重试更新' })
     fireEvent.focus(retry)
     expect((await screen.findByRole('tooltip')).textContent).toBe('检查更新失败，请稍后重试。')
@@ -112,7 +126,7 @@ it('accepts initial status, coalesces actions, and ignores late events and actio
     const state = f.source.store.getSnapshot()
     f.view.unmount()
     f.source.open()
-    await f.emit({ phase: 'error', version: available.version, failure: 'check' })
+    await f.emit({ phase: 'error', version: available.version, failedOperation: 'check' })
     await act(async () => { pending.reject(new Error('late IPC failure')) })
     expect(f.source.store.getSnapshot()).toBe(state)
   } finally { pending.resolve(undefined); f.status.resolve(available) }

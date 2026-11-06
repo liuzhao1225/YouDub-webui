@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process'
 import { randomBytes, createHash, X509Certificate } from 'node:crypto'
 import { resolve, join, basename } from 'node:path'
 import { appVersion, validateReleaseVersion } from './release-version.mjs'
+import { writeUpdateFeed } from './desktop-update-feed.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 if (process.env.GITHUB_REF_TYPE === 'tag') validateReleaseVersion(appVersion, process.env.GITHUB_REF_NAME)
@@ -92,6 +93,10 @@ try {
     run('xcrun', ['stapler', 'staple', app])
     run('xcrun', ['stapler', 'validate', app])
     run('spctl', ['--assess', '--type', 'execute', '--verbose=2', app])
+    // Squirrel.Mac consumes a ZIP of the signed app, including its stapled ticket.
+    const zip = join(root, `dist/YouDub-${appVersion}-macOS-arm64.zip`)
+    run('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', app, zip])
+    await writeUpdateFeed(join(root, 'dist'), appVersion, 'darwin')
     const { writeFile } = await import('node:fs/promises')
     await writeFile(dmg + '.sha256', createHash('sha256').update(await readFile(dmg)).digest('hex') + '  ' + basename(dmg) + '\n')
     console.log(`Signed and notarized: ${dmg}`)

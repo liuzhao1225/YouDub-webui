@@ -5,57 +5,60 @@ const { DesktopUpdates } = await tsImport('../src/desktop-updates.ts', import.me
 const { DesktopUpdateSchedule } = await tsImport('../../../vendor/deepseek-harness/source/apps/desktop/src/update-schedule.ts', import.meta.url)
 import { resolveDesktopLocale } from '../../../vendor/deepseek-harness/source/apps/desktop/src/locale.ts'
 
-const available = { version: '0.0.9', download: 'https://github.com/liuzhao1225/YouDub-webui/releases/download/v0.0.9/YouDub-0.0.9-macOS-arm64.dmg' }
-function fixture(check, response = 1) {
-  const states = [], dialogs = [], links = []
-  const updates = new DesktopUpdates({ version: '0.0.8', check, publish: state => states.push(state),
-    locale: () => resolveDesktopLocale('zh-CN'),
+function fixture(response = 1) {
+  const dialogs = [], operations = []
+  let visible = true
+  const coordinator = {
+    state: { phase: 'idle' },
+    async check() { operations.push('check'); return this.state = { phase: 'ready', version: '0.0.13' } },
+    async download(version) { operations.push('download'); return this.state = { phase: 'ready', version } },
+    async install(version) { operations.push('install'); return this.state = { phase: 'installing', version } },
+  }
+  const updates = new DesktopUpdates({ version: '0.0.12', coordinator,
+    locale: () => resolveDesktopLocale('zh-CN'), visible: () => visible,
     show: async options => { dialogs.push(options); return { response } },
-    openExternal: async url => { links.push(url) },
   })
-  return { updates, states, dialogs, links }
+  return { updates, coordinator, dialogs, operations, visibility: value => { visible = value } }
 }
 
-test('automatic and manual callers share a check; only confirmed user action opens the installer', async () => {
-  let finish, calls = 0
-  const f = fixture(() => { calls++; return new Promise(resolve => { finish = resolve }) }, 0)
-  const first = f.updates.check(), joined = f.updates.check()
-  assert.equal(first, joined)
-  await Promise.resolve()
-  finish({ available })
-  await first
-  assert.equal(calls, 1)
-  assert.deepEqual(f.states.map(state => state.phase), ['checking', 'available'])
-  assert.deepEqual(f.dialogs, [])
-  assert.deepEqual(f.links, [])
-  const open = f.updates.open(() => Promise.resolve(f.updates.state))
-  assert.equal(open, f.updates.open(() => { throw new Error('duplicate dialog') }))
-  await open
-  assert.deepEqual(f.links, [available.download])
-  assert.match(f.dialogs[0].title, /YouDub/)
-})
-
-test('later and up-to-date results never open a download', async () => {
-  const f = fixture(async () => ({ available }))
-  await f.updates.open(() => f.updates.check())
-  assert.deepEqual(f.links, [])
-  const current = fixture(async () => ({ available: null }))
-  await current.updates.open(() => current.updates.check())
-  assert.equal(current.updates.state.phase, 'idle')
-  assert.equal(current.dialogs[0].message, '已是最新版本')
-  assert.deepEqual(current.links, [])
-})
-
-test('failed checks expose the original error and clear stale availability', async t => {
-  t.mock.method(console, 'error', () => {})
-  let failed = false
-  const f = fixture(async () => { if (failed) throw new Error('HTTP 503'); return { available } })
+test('background completion prompts once; Later retains the prepared package without installation', async () => {
+  const f = fixture()
   await f.updates.check()
-  failed = true
-  await f.updates.open(() => f.updates.check())
+  await f.updates.open()
+  assert.deepEqual(f.operations, ['check'])
+  assert.equal(f.dialogs.length, 1)
+  assert.deepEqual(f.dialogs[0].buttons, ['重启更新', '稍后更新'])
+  f.updates.promptReady()
+  assert.equal(f.dialogs.length, 1)
+  assert.equal(f.updates.state.phase, 'ready')
+})
+
+test('hidden window defers its one prompt until shown and explicit acceptance installs', async () => {
+  const f = fixture(0)
+  f.visibility(false)
+  await f.updates.check()
+  assert.equal(f.dialogs.length, 0)
+  f.visibility(true)
+  f.updates.promptReady()
+  await f.updates.open()
+  assert.deepEqual(f.operations, ['check', 'install'])
+})
+
+test('manual download retry remains in the app and shows the original verification error', async () => {
+  const f = fixture()
+  f.coordinator.state = { phase: 'error', failedOperation: 'download', version: '0.0.13' }
+  f.coordinator.download = async () => f.coordinator.state = { phase: 'error', failedOperation: 'download', message: 'SHA512 mismatch' }
+  await f.updates.open()
+  assert.equal(f.dialogs[0].detail, 'SHA512 mismatch')
   assert.equal(f.updates.state.phase, 'error')
-  assert.equal(f.dialogs[0].detail, 'HTTP 503')
-  assert.deepEqual(f.links, [])
+})
+
+test('task admission failure stays visible and does not claim installation completed', async () => {
+  const f = fixture(0)
+  f.coordinator.state = { phase: 'ready', version: '0.0.13' }
+  f.coordinator.install = async () => f.coordinator.state = { phase: 'error', failedOperation: 'install', message: 'tasks active' }
+  await f.updates.open()
+  assert.equal(f.dialogs[1].detail, 'tasks active')
 })
 
 test('Harness schedule shares the deadline, backs off visible failures, and stops on disposal', async t => {

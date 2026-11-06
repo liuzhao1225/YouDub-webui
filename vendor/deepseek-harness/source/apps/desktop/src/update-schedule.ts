@@ -1,4 +1,4 @@
-/** Upstream 687f282e update scheduler; coordinator narrowed to YouDub's check-only contract. */
+/** Upstream 687f282e update scheduler, shared with YouDub's automatic download coordinator. */
 
 import { resolveDurationMs } from './duration-env.ts'
 import type { DesktopUpdateState } from './ipc.ts'

@@ -25,12 +25,15 @@ export const DESKTOP_IPC = {
   windowsMenu: 'youdub-desktop:windows-menu',
 } as const
 
-/** Check-only presentation, compatible with Harness's settings/update indicators. */
+/** Main-owned updater state, shared with Harness settings/update indicators. */
+export type DesktopUpdatePreparationFailureKind = 'tasks-unavailable' | 'tasks-active' | 'stop-failed'
 export interface DesktopUpdateState {
-  phase: 'idle' | 'checking' | 'available' | 'error'
+  phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'ready' | 'installing' | 'error'
   version?: string
-  failure?: 'check'
-  failedOperation?: 'check'
+  percent?: number
+  failedOperation?: 'check' | 'download' | 'install'
+  preparationFailure?: DesktopUpdatePreparationFailureKind
+  technicalDetails?: string
   message?: string
 }
 

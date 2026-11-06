@@ -22,7 +22,7 @@ node apps/harness/test/package-smoke.mjs dist/win-unpacked dist/package-smoke-wi
 npm run package:desktop -- --installers-only
 ```
 
-验证证据包含首启截图与 JSON 结果。手动运行「YouDub Desktop 源码开发检查」并启用 `package_desktop` 后，双平台检查同时验证候选包；任一打包或启动失败都会阻止该次检查通过。macOS 开发候选提供 ad-hoc 签名 App 压缩包，正式签名与公证 DMG 由发行流程生成。
+验证证据包含首启截图与 JSON 结果。手动运行「YouDub Desktop 源码开发检查」并启用 `package_desktop` 后，双平台检查同时验证候选包；任一打包或启动失败都会阻止该次检查通过。macOS 开发候选提供 ad-hoc 签名 App 压缩包，正式签名与公证 DMG、自动更新 ZIP 由发行流程生成。
 
 ## 检查范围
 
@@ -40,7 +40,23 @@ tag 工作流核对版本、提交与 main 来源，等待同一 SHA 的 main �
 
 两个平台通过后创建 GitHub 草稿 Release。保存版本文件名，同时提供固定的 `YouDub-macOS-arm64.dmg`、`YouDub-windows-x64-Setup.exe`、`YouDub-windows-x64.zip`。上传前与下载读回后均校验 SHA-256，成功后公开 Release 并设为 latest。官网在发布成功后刷新与客户端共用的版本列表，并回读确认部署内容。
 
-Windows 升级前须退出 YouDub。安装器不使用 Restart Manager 关闭占用文件的进程，避免影响监督安装的进程或其他应用；文件占用错误由安装器直接报告。覆盖安装仍清理旧应用代码并保留独立数据目录。
+Windows 手动覆盖安装前须退出 YouDub。应用内更新先完成任务检查和 Host 退出，再启动原 Inno Setup 安装器；安装器等待旧应用 PID 退出后覆盖文件，成功后以原用户数据目录重启应用。安装器保持现有 AppId 和卸载注册，不使用 Restart Manager；文件占用、等待退出和安装失败由安装器直接显示，并写入应用 logs 目录的 update-install.log。覆盖安装清理旧应用代码并保留独立数据目录。ZIP 便携版需先安装 Setup 版才能使用自动安装。
+
+## 应用内自动更新
+
+桌面包内的 `app-update.yml` 指向 GitHub Release 的 latest/download 更新源。每个正式版本必须同时包含 `latest-mac.yml`、`latest.yml` 和它们的 SHA-256 文件。元数据固定引用该版本的不可变资产 URL，并记录 SHA-512 与文件大小；生成和发布读回均由 [desktop-update-feed.mjs](../scripts/desktop-update-feed.mjs) 校验。
+
+- macOS：在原有签名、公证与 Gatekeeper 检查后，将已装订公证票据的 YouDub.app 打为 `YouDub-<version>-macOS-arm64.zip`，由 Squirrel.Mac 安装；DMG 继续提供给手动安装。
+- Windows：`latest.yml` 引用现有 `YouDub-<version>-windows-x64-Setup.exe`。复用 electron-updater 的完整下载、缓存与 SHA-512 校验，Inno 适配器负责安装交接，保持旧版升级身份。
+- 所有更新资产与元数据先上传到草稿 Release，下载读回并核对后一起公开。未完成签名、公证或任一平台校验时不公开该版本；候选构建不会发布或修改线上更新源。
+
+客户端复用 dsh 的更新协调器、HTTP 传输和周期检查，发现新版本即后台下载并校验，显示进度。完成后在可见窗口提示“重启更新”，隐藏窗口在下次显示时提示。选择稍后会保留更新包；普通退出不会安装。下载失败保留原始错误，由用户点击重试，不自动重下。
+
+安装前使用 dsh 的 Host admission lock 拒绝新请求、等待已接收请求结束，再通过现有 desktop/active-tasks 检查任务和 Jobs。排队、运行、等待、取消中、仍可能在远端运行的工作以及首启环境准备都会阻止更新；任务状态未知也会阻止。持久化的人工审核暂停可在重启后继续。未保存编辑仍经过现有 beforeunload 确认。Host 未正常结束时停止安装并报告错误。
+
+本次首次引入 updater 的版本仍需旧客户端手动安装一次；安装后才能使用后续版本的后台更新。当前版本号与发布 tag 无需因源码变更而提前修改。
+
+验证入口：源码工作流双平台执行真实 Electron 下载校验、缓存和任务锁测试。Windows 候选包额外验证等待旧 PID、自动覆盖与启动新进程，保留安装日志；原有 v0.0.9 覆盖升级、数据保留与卸载验收继续执行。macOS 候选验证实际安装包首启，正式签名后的 ZIP 由发布流程校验。
 
 安装包检查与完整模型准备、真实媒体任务验收分别记录。签名、公证、打包或启动失败时停止发布，保留原始诊断。
 

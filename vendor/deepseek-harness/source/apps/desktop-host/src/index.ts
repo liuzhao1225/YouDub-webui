@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
 import { installDesktopQuitInspection } from './quit-inspection.ts'
+import { installDesktopUpdateTaskControl } from './update-tasks.ts'
 
 async function main(): Promise<void> {
   const runtimeDir = process.argv[2] as string
@@ -36,6 +37,7 @@ async function main(): Promise<void> {
   let stopping: Promise<void> | undefined
   const control: {
     quitInspection?: ReturnType<typeof installDesktopQuitInspection>
+    updateTasks?: ReturnType<typeof installDesktopUpdateTaskControl>
   } = {}
   const send = (message: object): Promise<void> => new Promise((resolve, reject) => {
     if (!process.connected || process.send === undefined) { resolve(); return }
@@ -51,17 +53,23 @@ async function main(): Promise<void> {
   process.on('message', (message: unknown) => {
     if (typeof message !== 'object' || message === null || !('type' in message)) return
     if (message.type === 'shutdown') { void stop(); return }
-    if (message.type === 'quit-inspection') {
+    if (message.type === 'quit-inspection' || message.type === 'update-tasks') {
       if (!('requestId' in message) || !Number.isSafeInteger(message.requestId)) return
       const requestId = message.requestId
+      const type = message.type
       void (async () => {
         try {
           if (stopping !== undefined || control.quitInspection === undefined) throw new Error('desktop quit: Host is unavailable')
-          const inspection = await control.quitInspection()
-          await send({ type: 'quit-inspection', requestId, ...inspection })
+          if (type === 'update-tasks') {
+            if (!('action' in message) || !['inspect', 'lock', 'unlock'].includes(String(message.action)) || !control.updateTasks) throw new Error('desktop update: invalid control request')
+            const activeTasks = await control.updateTasks(message.action as 'inspect' | 'lock' | 'unlock')
+            await send({ type, requestId, activeTasks })
+          } else {
+            await send({ type, requestId, ...await control.quitInspection() })
+          }
         } catch (error) {
           // The shell treats an unknown state as interruptible work and asks before quitting.
-          await send({ type: 'quit-inspection', requestId, activeTasks: true,
+          await send({ type, requestId, activeTasks: true,
             error: error instanceof Error ? error.message : String(error) })
         }
       })().catch((error: unknown) => { console.error(error) })
@@ -71,6 +79,7 @@ async function main(): Promise<void> {
   process.once('disconnect', () => { void stop() })
   const { ctx } = await application
   control.quitInspection = installDesktopQuitInspection(ctx)
+  control.updateTasks = installDesktopUpdateTaskControl(ctx)
   const url = ctx.connection.authenticatedUrl(`${ctx.webServer.protocol}//127.0.0.1:${String(ctx.webServer.port)}`)
   if (process.connected) process.send?.({ type: 'ready', url, injections: ctx.webServer.collectIndexInjections() }, (error) => { if (error !== null) console.error(error) })
 }

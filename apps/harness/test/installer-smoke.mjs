@@ -1,6 +1,6 @@
 /** Exercise the Windows installer and its installed payload on the release runner. */
 import assert from 'node:assert/strict';
-import { execFile, execFileSync } from 'node:child_process';
+import { execFile, execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { access, mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -110,6 +110,40 @@ await install('overwrite-install');
 await verifyInstallation('overwrite-install', installer, version);
 await assert.rejects(access(obsolete), { code: 'ENOENT' });
 for (const [file, value] of files) assert((await readFile(file)).equals(value), `Upgrade changed user data: ${file}`);
+// The automatic-install entry must wait for the old PID, replace code, and relaunch
+// with the same user-data directory. A controlled process holds the old PID here;
+// real Host/task admission and updater download are exercised by their integration tests.
+const parent = spawn(process.execPath, ['-e', "process.stdin.once('data', () => process.exit(0)); setInterval(() => {}, 1000)"], { stdio: ['pipe', 'ignore', 'inherit'] });
+const automaticLog = join(evidence, 'automatic-install.log');
+const updateUserData = join(directory, 'automatic update user data');
+await mkdir(obsolete, { recursive: true });
+await writeFile(join(obsolete, 'index.js'), '// obsolete application code');
+const automatic = runStep('automatic-install', installer, ['/VERYSILENT', '/NORESTART', '/SP-', '/YOUDUBUPDATE=1',
+  '/UPDATEPID=' + parent.pid, '/UPDATEUSERDATA=' + updateUserData, '/DIR=' + application, '/LOG=' + automaticLog], 120_000);
+// Observe rejection immediately while waiting for the installer to reach its PID gate.
+let automaticFailure;
+void automatic.catch(error => { automaticFailure = error });
+try {
+  const deadline = Date.now() + 20_000;
+  while (!existsSync(automaticLog) || !readFileSync(automaticLog, 'utf8').includes('YouDub update: waiting for application process')) {
+    if (automaticFailure) throw automaticFailure;
+    if (Date.now() > deadline) throw new Error('Automatic installer did not reach its old-process gate');
+    await delay(200);
+  }
+  await access(obsolete);
+  parent.stdin.end('exit');
+  await automatic;
+  await verifyInstallation('automatic-install', installer, version);
+  await assert.rejects(access(obsolete), { code: 'ENOENT' });
+  // Inno [Run] owns restart. Verify the real new process and close its idle first-run window normally.
+  await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+    '$ErrorActionPreference = "Stop"; $deadline = (Get-Date).AddSeconds(45); do { $p = Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $env:YOUDUB_INSTALLED_EXE -and $_.CommandLine -like "*--updated*" -and $_.CommandLine -notlike "*--type=*" }; if ($p) { break }; Start-Sleep -Milliseconds 200 } while ((Get-Date) -lt $deadline); if (-not $p) { throw "Updated application did not relaunch" }; if (-not $p.CommandLine.Contains($env:YOUDUB_UPDATE_USER_DATA)) { throw "Updated application changed user data directory" }; $process = Get-Process -Id $p.ProcessId; do { $process.Refresh(); if ($process.MainWindowHandle -ne 0) { break }; Start-Sleep -Milliseconds 200 } while ((Get-Date) -lt $deadline); $heldHandle = $process.Handle; if (-not $process.CloseMainWindow()) { throw "Updated application did not show its window" }; if (-not $process.WaitForExit(30000)) { throw "Updated application did not close cleanly" }; if ($process.ExitCode -ne 0) { throw ("Updated application failed; exit code: " + $process.ExitCode + "; process handle: " + $heldHandle) }'],
+    { env: { ...process.env, YOUDUB_INSTALLED_EXE: join(application, 'YouDub.exe'), YOUDUB_UPDATE_USER_DATA: updateUserData }, timeout: 90_000 });
+  result.checks.automaticWaitAndRelaunch = true;
+  await saveResult();
+} finally {
+  if (parent.exitCode === null) parent.stdin.end('exit');
+}
 await smoke('upgrade', '--configured');
 for (const [file, value] of files) assert((await readFile(file)).equals(value), `Restart changed saved data: ${file}`);
 const uninstaller = (await readdir(application)).find(name => /^unins\d+\.exe$/i.test(name));
@@ -126,7 +160,7 @@ while (true) {
 for (const [file, value] of files) assert((await readFile(file)).equals(value), `Uninstall removed user data: ${file}`);
 assert.equal(registration(), null, 'YouDub uninstall registration must be removed with its application');
 result.status = 'passed';
-result.checks = { chineseFirstConfiguration: true, overwrite: true, obsoleteCodeRemoved: true,
+result.checks = { ...result.checks, chineseFirstConfiguration: true, overwrite: true, obsoleteCodeRemoved: true,
   dataPreservation: true, restart: true, uninstall: true };
 await saveResult();
 console.log('Windows installer: in-place Chinese setup, overwrite upgrade, data preservation, Harness isolation, restart and uninstall passed.');

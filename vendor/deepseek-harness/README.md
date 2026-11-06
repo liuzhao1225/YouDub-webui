@@ -71,7 +71,7 @@ UI 插槽只承接页面与节点插件使用的 `root` scope，保留 single/li
 
 旧 `settings.onboarding`、`openOnboarding`、`SettingsOnboarding*`、欢迎通知版本和对应样式已退役。YouDub 首次启动的语言、安装目录、环境、模型和翻译服务配置继续由 SetupGate 提供。原 setup 的恒空 token、`X-YouDub-Setup` 和仅供测试使用的 fetch 分支退出；请求统一使用注入的 Harness Connection，API 密钥、密码、token、认证头及签名 URL 的通用诊断脱敏保留。
 
-图标入口只维护当前页面、共享组件与插件示例实际使用的 `Icon*` 导出。无消费者的账号、Agent 预设、归档会话导航和相应图标退出；YouDub 首屏、动效与中文、英文、日文界面保留。桌面更新状态为 `idle/checking/available/error`，版本检查、失败重试和打开下载页保留。退出确认移除恒为空的 scheduledTasks 分支，活动任务和未知状态/超时提醒保留。
+图标入口只维护当前页面、共享组件与插件示例实际使用的 `Icon*` 导出。无消费者的账号、Agent 预设、归档会话导航和相应图标退出；YouDub 首屏、动效与中文、英文、日文界面保留。桌面更新复用上游 `update-coordinator.ts`、`update-http-executor.ts`、`update-error.ts` 与 `update-schedule.ts`。发现新版本后自动下载，状态包含下载、校验、就绪和安装；普通退出不会安装，安装前复用 `update-tasks.ts` 的请求锁并检查 YouDub 任务。Windows 只适配现有 Inno Setup 安装交接，保持原 AppId。退出确认移除恒为空的 scheduledTasks 分支，活动任务和未知状态/超时提醒保留。
 
 前端不再隐式共享 `@tanstack/react-virtual`，使用它的外部插件须声明并自行打包。旧 `ClientManifest/ClientModule`、孤立的复合 locale/theme schema、`resultOf`、store `shallowEqual` 和测试专用窗口几何模型已退役。YouDub 的重复 `/api/v2/extensions*`、`/api/v2/client-manifest` HTTP 适配及其资源失效规则退出，扩展页继续使用官方 `uiPluginManager`。YouDub SDK 退出未使用的 `SDK_VERSION/YouDubContext` 导出和无效 `Files.upload` 大小参数，Context 声明合并保留。
 

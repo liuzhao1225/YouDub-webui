@@ -2,9 +2,10 @@
 
 /** Public semantic preload fields consumed by the settings row. */
 export interface DesktopUpdatePresentation {
-  readonly phase: 'idle' | 'checking' | 'available' | 'error'
+  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'ready' | 'installing' | 'error'
   readonly version?: string
-  readonly failure?: 'check'
+  readonly percent?: number
+  readonly failedOperation?: 'check' | 'download' | 'install'
 }
 
 /** Optional carrier API; it cannot select artifacts or authorize installation. */

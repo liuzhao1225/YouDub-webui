@@ -18,7 +18,7 @@ interface FatalEvent {
 }
 
 type DesktopHostEvent = ReadyEvent | FatalEvent | { readonly type: 'shutdown-complete' } | {
-  readonly type: 'quit-inspection'
+  readonly type: 'quit-inspection' | 'update-tasks'
   readonly requestId: number
   readonly activeTasks: boolean
   readonly error?: string
@@ -48,6 +48,7 @@ function isDesktopHostEvent(message: unknown): message is DesktopHostEvent {
     case 'fatal':
       return typeof candidate.message === 'string' && (candidate.diagnostic === undefined || typeof candidate.diagnostic === 'string')
     case 'quit-inspection':
+    case 'update-tasks':
       return Number.isSafeInteger(candidate.requestId) && typeof candidate.activeTasks === 'boolean'
         && (candidate.error === undefined || typeof candidate.error === 'string')
     default:
@@ -201,8 +202,14 @@ export class DesktopHostProcess {
     return { activeTasks: response.activeTasks }
   }
 
+  /** Lock admission, drain existing requests and inspect the same authoritative task state as quit. */
+  async updateTasks(action: 'inspect' | 'lock' | 'unlock'): Promise<boolean> {
+    const response = await this.control({ type: 'update-tasks', action }, 5_000, 'desktop update: task inspection timed out')
+    return response.activeTasks
+  }
+
   private async control(
-    request: { readonly type: 'quit-inspection' },
+    request: { readonly type: 'quit-inspection' } | { readonly type: 'update-tasks'; readonly action: 'inspect' | 'lock' | 'unlock' },
     deadlineMs: number, deadlineMessage: string,
   ): Promise<DesktopHostControlResponse> {
     const child = this.child
