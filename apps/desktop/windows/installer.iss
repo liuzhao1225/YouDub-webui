@@ -52,3 +52,54 @@ Name: "{autodesktop}\YouDub"; Filename: "{app}\YouDub.exe"; Tasks: desktopicon; 
 
 [Run]
 Filename: "{app}\YouDub.exe"; Description: "{cm:LaunchProgram,YouDub}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\YouDub.exe"; Parameters: "--updated --user-data-dir=""{param:UPDATEUSERDATA}"""; Flags: nowait runasoriginaluser; Check: IsYouDubUpdate
+
+[Code]
+function OpenProcess(Access: LongWord; InheritHandle: Boolean; ProcessId: LongWord): THandle;
+  external 'OpenProcess@kernel32.dll stdcall';
+function WaitForSingleObject(Handle: THandle; Milliseconds: LongWord): LongWord;
+  external 'WaitForSingleObject@kernel32.dll stdcall';
+function CloseHandle(Handle: THandle): Boolean;
+  external 'CloseHandle@kernel32.dll stdcall';
+
+function IsYouDubUpdate: Boolean;
+begin
+  Result := ExpandConstant('{param:YOUDUBUPDATE|0}') <> '0';
+end;
+
+function InitializeSetup: Boolean;
+var
+  ProcessId: Integer;
+  Handle: THandle;
+  WaitResult: LongWord;
+begin
+  Result := True;
+  if not IsYouDubUpdate then Exit;
+  if ExpandConstant('{param:UPDATEUSERDATA|}') = '' then begin
+    MsgBox('YouDub update: user data directory is missing.', mbError, MB_OK);
+    Result := False;
+    Exit;
+  end;
+  ProcessId := StrToIntDef(ExpandConstant('{param:UPDATEPID|0}'), 0);
+  if ProcessId <= 0 then begin
+    MsgBox('YouDub update: invalid application process ID.', mbError, MB_OK);
+    Result := False;
+    Exit;
+  end;
+  Handle := OpenProcess($00100000, False, ProcessId);
+  if Handle = 0 then begin
+    { ERROR_INVALID_PARAMETER means the parent already exited. Other errors must stop installation. }
+    if DLLGetLastError <> 87 then begin
+      MsgBox('YouDub update: cannot wait for the application: ' + SysErrorMessage(DLLGetLastError), mbError, MB_OK);
+      Result := False;
+    end;
+    Exit;
+  end;
+  Log('YouDub update: waiting for application process ' + IntToStr(ProcessId));
+  WaitResult := WaitForSingleObject(Handle, 30000);
+  CloseHandle(Handle);
+  if WaitResult <> 0 then begin
+    MsgBox('YouDub update: the application did not exit. Close YouDub and try again. Wait result: ' + IntToStr(WaitResult), mbError, MB_OK);
+    Result := False;
+  end;
+end;

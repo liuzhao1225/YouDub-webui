@@ -2,6 +2,12 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'desktop.update.downloading': "下载更新 {percent}%",
+  'desktop.update.verifying': "正在校验更新…",
+  'desktop.update.ready': "重启更新",
+  'desktop.update.installing': "正在安装更新…",
+  'desktop.update.downloadFailed': "下载或校验失败，点击重试。",
+  'desktop.update.installFailed': "无法安装更新，点击重试。",
   'trigger': '设置',
   'shortcut.open': '打开设置',
   'desktop.update.available': '新版本',
@@ -34,6 +40,12 @@ export type SettingsKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
+  'desktop.update.downloading': "Downloading update {percent}%",
+  'desktop.update.verifying': "Verifying update…",
+  'desktop.update.ready': "Restart to update",
+  'desktop.update.installing': "Installing update…",
+  'desktop.update.downloadFailed': "Download or verification failed. Retry update.",
+  'desktop.update.installFailed': "Could not install the update. Retry update.",
   'trigger': 'Settings',
   'shortcut.open': 'Open settings',
   'desktop.update.available': 'Update',

@@ -1,6 +1,12 @@
 /** Typed English and Chinese copy owned by the Electron shell. */
 
 export const en = {
+  updateReady: "Update {version} is ready",
+  updateRestart: "Restart to update",
+  updateFailed: "Update failed",
+  updateDownloading: "Downloading and verifying update…",
+  updateTasksActive: "Tasks are still running. Update after they finish; the downloaded update will be kept.",
+  updateTasksUnavailable: "Could not confirm task status. Try again when the local service is available.",
   application: 'Application',
   fileMenu: 'File',
   closePage: 'Close Page or Window',
@@ -47,6 +53,12 @@ export const en = {
 export type DesktopMessages = { readonly [Key in keyof typeof en]: string }
 
 export const zh = {
+  updateReady: "新版本 {version} 已准备就绪",
+  updateRestart: "重启更新",
+  updateFailed: "更新失败",
+  updateDownloading: "正在下载并校验更新…",
+  updateTasksActive: "当前有任务正在运行，请在任务结束后重启更新。更新包已保留。",
+  updateTasksUnavailable: "无法确认任务状态，请在本地服务恢复后重试。",
   application: '应用',
   fileMenu: '文件',
   closePage: '关闭页面或窗口',
@@ -92,6 +104,12 @@ export const zh = {
 /** Japanese copy for the desktop surfaces used by YouDub. */
 export const ja = {
   ...en,
+  updateReady: "バージョン {version} の準備ができました",
+  updateRestart: "再起動して更新",
+  updateFailed: "更新に失敗しました",
+  updateDownloading: "更新をダウンロード・検証中…",
+  updateTasksActive: "タスクの完了後に更新してください。更新ファイルは保存されています。",
+  updateTasksUnavailable: "タスクの状態を確認できません。ローカルサービスの復旧後に再試行してください。",
   application: 'アプリケーション', fileMenu: 'ファイル', closePage: 'ページまたはウィンドウを閉じる',
   aboutMenu: 'YouDub について', aboutProduct: 'YouDub',
   quit: '終了', cancel: 'キャンセル',

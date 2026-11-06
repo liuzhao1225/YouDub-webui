@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { prepareSourceDevelopment } from './prepare-source-development.mjs';
 import { desktopFiles, productResources } from './package-files.mjs';
+import { desktopUpdateConfig, writeUpdateFeed } from '../../scripts/desktop-update-feed.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const here = import.meta.dirname;
@@ -36,6 +37,7 @@ if (process.argv.includes('--installers-only')) {
   const compiler = process.env.YOUDUB_ISCC || join(process.env['ProgramFiles(x86)'] || 'C:/Program Files (x86)', 'Inno Setup 6/ISCC.exe');
   await access(compiler);
   execFileSync(compiler, [`/DAppVersion=${version}`, `/DRepoRoot=${root}`, join(root, 'apps/desktop/windows/installer.iss')], { stdio: 'inherit' });
+  await writeUpdateFeed(output, version, 'win32');
 } else {
   const { project } = await prepareSourceDevelopment({ projectDirectory: stage });
   const desktop = join(here, 'dist/desktop');
@@ -92,6 +94,8 @@ if (process.argv.includes('--installers-only')) {
   const platform = process.platform === 'darwin' ? Platform.MAC : process.platform === 'win32' ? Platform.WINDOWS : undefined;
   if (!platform) throw new Error('Desktop installers are supported on macOS and Windows.');
   const arch = process.arch === 'arm64' ? Arch.arm64 : Arch.x64;
+  const updateConfig = join(root, '.cache/package/app-update.yml');
+  await writeFile(updateConfig, JSON.stringify(desktopUpdateConfig, null, 2) + '\n');
   const config = {
       appId: 'com.youdub.desktop', productName: 'YouDub',
       directories: { app: project, output }, electronVersion: ownRequire('electron/package.json').version,
@@ -99,6 +103,7 @@ if (process.argv.includes('--installers-only')) {
       electronLanguages: ['en', 'en-US', 'zh-CN', 'ja'],
       files: desktopFiles,
       extraResources: [{ from: root, to: 'youdub', filter: productResources }, { from: metadata, to: 'build.json' },
+        { from: updateConfig, to: 'app-update.yml' },
         { from: join(root, 'LICENSE'), to: 'LICENSE-YouDub.txt' },
         { from: join(root, 'vendor/deepseek-harness/source/LICENSE'), to: 'LICENSE-Harness.txt' },
         { from: join(root, 'vendor/deepseek-harness/source/THIRD_PARTY_NOTICES.md'), to: 'THIRD_PARTY_NOTICES-Harness.md' }],

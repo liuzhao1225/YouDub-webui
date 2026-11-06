@@ -35,7 +35,13 @@
     "hostRelease.page": "ページ",
     "hostRelease.unknown": "不明",
     "hostRelease.reload": "再読み込みして更新",
-    "hostRelease.later": "後で"
+    "hostRelease.later": "後で",
+    "desktop.update.downloading": "更新をダウンロード中 {percent}%",
+    "desktop.update.verifying": "更新を検証中…",
+    "desktop.update.ready": "再起動して更新",
+    "desktop.update.installing": "更新をインストール中…",
+    "desktop.update.downloadFailed": "ダウンロードまたは検証に失敗しました。再試行してください。",
+    "desktop.update.installFailed": "更新をインストールできません。再試行してください。"
   },
   "settings.theme": {
     "appearance.title": "外観",

@@ -116,6 +116,18 @@ for (const skipSetup of [false, true]) test(`real Desktop Host boots the product
     assert.equal(tasks.status, 200, await tasks.text());
   }
 
+  // Real Host admission control: authenticated product requests are refused while locked.
+  child.send({ type: 'update-tasks', action: 'lock', requestId: 90 });
+  const locked = await waitFor('update lock', message => message.type === 'update-tasks' && message.requestId === 90);
+  assert.equal(locked.error, undefined);
+  assert.equal(typeof locked.activeTasks, 'boolean');
+  const blocked = await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body });
+  assert.equal(blocked.status, 503);
+  child.send({ type: 'update-tasks', action: 'unlock', requestId: 91 });
+  const unlocked = await waitFor('update unlock', message => message.type === 'update-tasks' && message.requestId === 91);
+  assert.equal(unlocked.error, undefined);
+  assert.equal((await fetch(api, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body })).status, 200);
+
   child.send({ type: 'quit-inspection', requestId: 1 });
   const inspection = await waitFor('quit-inspection', message => message.type === 'quit-inspection' && message.requestId === 1);
   assert.equal(inspection.error, undefined);

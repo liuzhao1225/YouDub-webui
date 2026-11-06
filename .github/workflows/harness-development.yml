@@ -91,7 +91,7 @@ jobs:
         working-directory: .cache/harness/source-build
         env:
           npm_execpath: ${{ github.workspace }}/apps/harness/node_modules/pnpm/bin/pnpm.mjs
-        run: node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests/quit-inspection.spec.ts packages/client packages/host packages/api/remotes packages/api/settings-controller/tests/credentials-controller.host.spec.ts packages/boot/app-boot/tests packages/boot/plugin-manager/tests
+        run: node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests packages/client packages/host packages/api/remotes packages/api/settings-controller/tests/credentials-controller.host.spec.ts packages/boot/app-boot/tests packages/boot/plugin-manager/tests
       - name: 检查领域、界面和语言
         run: |
           npm run typecheck
@@ -187,12 +187,13 @@ jobs:
         env:
           npm_execpath: ${{ github.workspace }}/apps/harness/node_modules/pnpm/bin/pnpm.mjs
         run: |
-          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests/quit-inspection.spec.ts packages/subprocess/subprocess-local/tests packages/boot/plugin-manager/tests/operations.spec.ts packages/boot/plugin-manager/tests/operations-process.spec.ts
+          node --import ../../../apps/harness/test/source-framework.mjs node_modules/vitest/vitest.mjs run apps/desktop/tests apps/desktop-host/tests packages/subprocess/subprocess-local/tests packages/boot/plugin-manager/tests/operations.spec.ts packages/boot/plugin-manager/tests/operations-process.spec.ts
       - name: 运行实际 Electron Host 与产品合同
         run: |
           node -e "require('./apps/harness/node_modules/electron')"
           node --import ./apps/harness/test/source-framework.mjs --test apps/harness/test/desktop-host-composition.test.mjs apps/harness/test/desktop-activity.test.mjs apps/harness/test/desktop-unload.test.mjs apps/harness/test/profile.test.mjs apps/harness/test/setup-onboarding.test.mjs apps/harness/test/worker-media-paths.test.mjs
           node --import tsx --test packages/builtin/test/media-paths.test.ts packages/builtin/test/setup.test.ts
+          node --test apps/harness/test/desktop-updates.test.mjs apps/harness/test/desktop-update-restart.test.mjs apps/harness/test/desktop-update-feed.test.mjs apps/harness/test/desktop-update-download.test.mjs
           npm run typecheck
           npm --prefix apps/harness run check:locales
       - name: 打包并验证独立 Windows 应用
@@ -231,6 +232,8 @@ jobs:
             dist/YouDub-*.exe
             dist/YouDub-*.zip
             dist/YouDub-*.sha256
+            dist/latest.yml
+            dist/latest.yml.sha256
             dist/package-smoke-windows/
             dist/package-smoke-windows-workbench/
             dist/package-smoke-windows-installed/

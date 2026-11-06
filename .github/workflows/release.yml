@@ -152,6 +152,10 @@ jobs:
           path: |
             dist/YouDub-*.dmg
             dist/YouDub-*.dmg.sha256
+            dist/YouDub-*-macOS-arm64.zip
+            dist/YouDub-*-macOS-arm64.zip.sha256
+            dist/latest-mac.yml
+            dist/latest-mac.yml.sha256
             dist/dmg-notary.json
             dist/package-smoke-signed/
           retention-days: 7
@@ -186,16 +190,26 @@ jobs:
         working-directory: release
         run: |
           version="${RELEASE_TAG#v}"
-          for suffix in macOS-arm64.dmg windows-x64.zip windows-x64-Setup.exe; do
+          for suffix in macOS-arm64.dmg macOS-arm64.zip windows-x64.zip windows-x64-Setup.exe; do
             sha256sum --check "YouDub-$version-$suffix.sha256"
             cp "YouDub-$version-$suffix" "YouDub-$suffix"
             sha256sum "YouDub-$suffix" > "YouDub-$suffix.sha256"
           done
           sha256sum --check ./YouDub-macOS-arm64.dmg.sha256 ./YouDub-windows-x64.zip.sha256 ./YouDub-windows-x64-Setup.exe.sha256
+          sha256sum --check latest.yml.sha256 latest-mac.yml.sha256
+          node ../scripts/desktop-update-feed.mjs verify . "$version" darwin
+          node ../scripts/desktop-update-feed.mjs verify . "$version" win32
           cp "../docs/releases/$RELEASE_TAG.md" notes.md
-          gh release create "$RELEASE_TAG" --verify-tag --draft --title "YouDub $RELEASE_TAG" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256
+          gh release create "$RELEASE_TAG" --verify-tag --draft --title "YouDub $RELEASE_TAG" --notes-file notes.md ./YouDub-*.dmg ./YouDub-*.dmg.sha256 ./YouDub-*.zip ./YouDub-*.zip.sha256 ./YouDub-*.exe ./YouDub-*.exe.sha256 ./latest*.yml ./latest*.yml.sha256
           mkdir downloaded
           gh release download "$RELEASE_TAG" --dir downloaded --pattern 'YouDub-*'
+          gh release download "$RELEASE_TAG" --dir downloaded --pattern 'latest*.yml*'
           (cd downloaded && sha256sum --check ./*.sha256)
+          node ../scripts/desktop-update-feed.mjs verify downloaded "$version" darwin
+          node ../scripts/desktop-update-feed.mjs verify downloaded "$version" win32
           gh release edit "$RELEASE_TAG" --draft=false --latest
           test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = "$RELEASE_TAG"
+          for feed in latest.yml latest-mac.yml; do
+            curl --fail --location --proto '=https' --proto-redir '=https' "https://github.com/$GH_REPO/releases/latest/download/$feed" --output "downloaded/online-$feed"
+            cmp "$feed" "downloaded/online-$feed"
+          done
