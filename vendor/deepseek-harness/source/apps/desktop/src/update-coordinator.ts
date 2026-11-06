@@ -45,7 +45,7 @@ export class DesktopUpdateCoordinator {
    * @param updater - Process-owned Electron updater, replaceable at the network/platform test boundary.
    * @param enabled - Whether this process has a packaged update source.
    * @param currentVersion - Actual installed application version.
-   * @param channel - Installed package channel; omitted test/local callers retain nightly.
+   * @param channel - Installed package channel; YouDub defaults to stable releases.
    * @param downloadResult - Once per completed download attempt, including platform preparation failures.
    */
   constructor(
@@ -84,9 +84,9 @@ export class DesktopUpdateCoordinator {
   get state(): DesktopUpdateState { return this.current }
 
   /**
-   * Check metadata without downloading, joining any current check.
-   * @param manual - Whether a failed check must remain visible in the status indicator.
-   * @returns The check result, including a silent automatic failure when applicable.
+   * Check metadata and automatically download a newer release, joining current operations.
+   * @param manual - Explicit retry intent; automatic checks retain download failures for the user.
+   * @returns Current readiness or the visible check/download failure.
    */
   async check(manual = false): Promise<DesktopUpdateState> {
     this.assertLive()
@@ -100,7 +100,7 @@ export class DesktopUpdateCoordinator {
   }
 
   /**
-   * @param version - Version shown in the user's download confirmation.
+   * @param version - Exact version selected by the completed metadata check.
    * @returns Download readiness or failure, without authorizing installation.
    */
   async download(version: string): Promise<DesktopUpdateState> {
