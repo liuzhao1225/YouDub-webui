@@ -552,7 +552,13 @@ export default class Tasks extends Service implements TasksService {
         this.checkPlan(task.plan)
         for (const step of task.steps) {
           if (step.status === 'completed' || task.graphSnapshot && step.outputRevision) {
-            await this.verifyOutputs(task, task.plan.steps.find(spec => spec.id === step.id)!, step.outputs, 'REUSE_OUTPUT_INVALID')
+            // Saved results were validated when committed. Check their files here;
+            // reused descendants may still be blocked by an upstream review.
+            for (const reference of artifactReferences(step.outputs)) {
+              const artifact = task.artifacts[reference.id]
+              if (!artifact || artifact.schemaId !== reference.schemaId) throw new AppError('REUSE_OUTPUT_INVALID', 'Artifact does not belong to this task.', 422)
+              await this.ctx.files.resolve(task.id, artifact)
+            }
           }
         }
         task.attempt++; task.status = 'queued'; task.queuedAt = now(); task.startedAt = task.finishedAt = task.nextPollAt = null

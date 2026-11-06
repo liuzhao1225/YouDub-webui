@@ -173,6 +173,31 @@ test('missing saved files reject continuation without changing the failed attemp
   assert.deepEqual(await ctx.tasks.get(created.id), failed)
 })
 
+test('cancelled derived tasks resume with reused descendants behind unapproved review gates', async t => {
+  const { ctx, create, until, command, executions } = await setup(t)
+  const first = await create(); await until(first.id, 'succeeded')
+  const document = graph('source')
+  document.nodes.find(node => node.id === 'join')!.autoContinue = false
+  const request = { id: randomUUID(), config: {}, graphDocument: document }
+  const preview = await ctx.tasks.rerunPreview(first.id, request)
+  const derived = await ctx.tasks.rerun(first.id, { ...request, ...preview })
+  assert.equal(derived.status, 'paused')
+  assert.deepEqual(derived.steps.map(step => step.status), ['awaiting_review', 'completed', 'completed', 'pending'])
+  await ctx.tasks.cancel(derived.id, derived.attempt, derived.revision)
+  const resumed = await ctx.tasks.retry(derived.id, derived.attempt)
+  assert.equal(resumed.status, 'paused')
+  assert.deepEqual(resumed.steps.map(step => step.status), ['awaiting_review', 'completed', 'completed', 'pending'])
+  assert.deepEqual(resumed.steps.map(step => step.outputs), derived.steps.map(step => step.outputs))
+  await assert.rejects(ctx.tasks.approve(derived.id, 'join', command(resumed, 'join')), { code: 'REVIEW_NOT_ALLOWED' })
+  await ctx.tasks.approve(derived.id, 'source', command(resumed, 'source'))
+  const waitingJoin = await until(derived.id, 'paused')
+  assert.equal(waitingJoin.steps[3].status, 'awaiting_review')
+  await ctx.tasks.approve(derived.id, 'join', command(waitingJoin, 'join'))
+  const completed = await until(derived.id, 'succeeded')
+  assert.equal(completed.outputs.length, 1)
+  assert.deepEqual(executions.filter(item => item.taskId === derived.id), [])
+})
+
 test('task views expose plugin label translations without rewriting snapshots or custom labels', async t => {
   const { ctx, create, until, provider } = await setup(t)
   const describe = provider.describe
