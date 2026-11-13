@@ -284,9 +284,9 @@ export type StreamChunk =
   | { type: 'usage'; usage: TokenUsage }
   | { type: 'finish'; reason: FinishReason }
 
-/** Text supplied to one model request; it has no session or tool history. */
+/** Text supplied to one model request, including previous assistant replies. */
 export interface RequestMessage {
-  readonly role: 'system' | 'user'
+  readonly role: 'system' | 'user' | 'assistant'
   readonly content: readonly TextBlock[]
 }
 
@@ -297,8 +297,10 @@ export interface GenerateOptions {
   model: string
   /** Adapter-owned reasoning effort selected for this exact model. */
   reasoningEffort?: ReasoningEffortId
-  /** Ordered system and user text. */
+  /** Ordered conversation text. */
   messages: RequestMessage[]
+  /** Require a provider-enforced JSON Schema response. */
+  responseSchema?: { name: string; schema: Record<string, unknown> }
   /** Initial system prompt, preceding any leading system messages. */
   system?: string
   temperature?: number

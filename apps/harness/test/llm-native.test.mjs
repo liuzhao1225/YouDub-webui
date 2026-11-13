@@ -1,8 +1,7 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Context } from '@deepseek-ai/cordis';
@@ -14,154 +13,169 @@ const source = register({ namespace: 'llm-native' });
 const { translateWithHarness } = await source.import('../src/backend/llm.mjs', import.meta.url);
 after(() => source.unregister());
 
-// This endpoint is deliberately a local fixture. It verifies the actual official
-// adapter's request bytes; it makes no claim about external translation quality.
-test('translation uses official Harness call defaults and surfaces provider rejection', { timeout: 30000 }, async t => {
-  const calls = []; let reject = false;
+test('sentence translation through the Harness model adapter', { timeout: 30000 }, async t => {
+  const calls = [];
+  const outputs = new Map([['Hello.', '你好。'], ['Go now.', '现在出发。']]);
+  let malformed = 0, reject = false;
   const server = createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
-    const body = JSON.parse(raw); calls.push({ path: req.url, body });
-    if (reject) { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'fixture provider rejected the request', type: 'invalid_request_error', code: 'invalid_request' } })); return; }
     const path = new URL(req.url, 'http://localhost').pathname;
-    if (path.endsWith('/messages')) {
-      if (path !== '/v1/messages') {
-        res.writeHead(404, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ type: 'error', error: { type: 'not_found_error', message: `fixture has no endpoint ${path}` } })); return;
-      }
-      res.writeHead(200, { 'content-type': 'text/event-stream' });
+    const body = JSON.parse(raw); calls.push({ path, body });
+    if (reject) {
+      res.writeHead(400, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: { message: 'fixture provider rejected the schema', type: 'invalid_request_error' } }));
+      return;
+    }
+    const anthropic = path.endsWith('/messages');
+    const responses = path.endsWith('/responses');
+    const messages = body.messages ?? body.input;
+    const content = messages.at(-1).content;
+    const { en } = JSON.parse(typeof content === 'string' ? content : content[0].text);
+    const text = en === 'Go now.' && malformed-- > 0 ? '{"wrong":"ignored"}' : JSON.stringify({ zh: outputs.get(en) });
+    res.writeHead(200, { 'content-type': 'text/event-stream' });
+    if (anthropic) {
       const events = [
         { type: 'message_start', message: { id: 'msg_fixture', type: 'message', role: 'assistant', model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 10, output_tokens: 0 } } },
         { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: JSON.stringify({ segments: [{ segment_id: 's1', text: '你好' }] }) } },
+        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text } },
         { type: 'content_block_stop', index: 0 },
         { type: 'message_delta', delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 10 } },
         { type: 'message_stop' },
       ];
       for (const event of events) res.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
-      res.end(); return;
+      res.end();
+      return;
     }
-    res.writeHead(200, { 'content-type': 'text/event-stream' });
-    res.write('data: ' + JSON.stringify({ id: 'fixture', object: 'chat.completion.chunk', created: 1, model: 'fixture-model', choices: [{ index: 0, delta: { role: 'assistant', content: JSON.stringify({ segments: [{ segment_id: 's1', text: '你好' }] }) }, finish_reason: null }] }) + '\n\n');
-    res.write('data: ' + JSON.stringify({ id: 'fixture', object: 'chat.completion.chunk', created: 1, model: 'fixture-model', choices: [{ index: 0, delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 } }) + '\n\n');
+    if (responses) {
+      const message = { type: 'message', id: 'msg_fixture', role: 'assistant', content: [{ type: 'output_text', text, annotations: [] }], status: 'completed' };
+      const response = { id: 'resp_fixture', model: body.model, status: 'completed', output: [message], usage: { input_tokens: 10, output_tokens: 10, total_tokens: 20 } };
+      const events = [
+        { type: 'response.created', response: { ...response, status: 'in_progress', output: [] } },
+        { type: 'response.output_item.added', output_index: 0, item: { ...message, status: 'in_progress', content: [] } },
+        { type: 'response.content_part.added', item_id: message.id, output_index: 0, content_index: 0, part: { type: 'output_text', text: '', annotations: [] } },
+        { type: 'response.output_text.delta', item_id: message.id, output_index: 0, content_index: 0, delta: text },
+        { type: 'response.output_item.done', output_index: 0, item: message },
+        { type: 'response.completed', response },
+      ];
+      for (const event of events) res.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+      res.end();
+      return;
+    }
+    const envelope = { id: 'fixture', object: 'chat.completion.chunk', created: 1, model: body.model };
+    for (const choices of [
+      [{ index: 0, delta: { role: 'assistant', content: text }, finish_reason: null }],
+      [{ index: 0, delta: {}, finish_reason: 'stop' }],
+    ]) res.write('data: ' + JSON.stringify({ ...envelope, choices }) + '\n\n');
     res.end('data: [DONE]\n\n');
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
+  const baseURL = `http://127.0.0.1:${server.address().port}`;
+  const apiKeyEnv = 'YOUDUB_TEST_LOCAL_FIXTURE';
+  const models = [{ id: 'fixture-model', contextWindow: 131072, maxTokens: 65535 }];
+  const providers = {
+    fixture: { api: 'openai-completions', baseURL: baseURL + '/v1', apiKeyEnv, models, compat: { maxTokensField: 'max_tokens' } },
+    small: { api: 'openai-completions', baseURL: baseURL + '/v1', apiKeyEnv, models: [{ ...models[0], maxTokens: 2048 }] },
+    anthropic: { api: 'anthropic-messages', baseURL, apiKeyEnv, models },
+    responses: { api: 'openai-responses', baseURL: baseURL + '/v1', apiKeyEnv, models, compat: { supportsDeveloperRole: false } },
+    noCap: { api: 'openai-responses', baseURL: baseURL + '/v1', apiKeyEnv, models, compat: { supportsMaxOutputTokens: false } },
+    deepseek: { apiKeyEnv, models: [{ id: 'deepseek-flash' }] },
+  };
   const ctx = new Context(), runtime = ctx.plugin(LlmRuntime); await runtime;
-  const profile = { api: 'openai-completions', baseURL: `http://127.0.0.1:${server.address().port}/v1`, apiKeyEnv: 'YOUDUB_TEST_LOCAL_FIXTURE',
-    models: [{ id: 'fixture-model', name: 'Fixture', contextWindow: 8192, maxTokens: 2048, input: ['text'] }], compat: { maxTokensField: 'max_tokens' } };
-  const catalogProfile = { apiKeyEnv: profile.apiKeyEnv, baseURL: profile.baseURL,
-    models: ['deepseek-flash', 'deepseek-v4-pro'].map(id => ({ id, contextWindow: 8192, maxTokens: 2048 })) };
-  const savedCatalogProfile = structuredClone(catalogProfile);
-  const anthropicProfile = { api: 'anthropic-messages', baseURL: `http://127.0.0.1:${server.address().port}`, apiKeyEnv: profile.apiKeyEnv,
-    models: [{ id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol', contextWindow: 8192, maxTokens: 2048 }] };
-  const savedAnthropicProfile = structuredClone(anthropicProfile);
-  const providers = { fixture: profile, deepseek: catalogProfile, molifang: anthropicProfile,
-    'molifang-v1': { ...anthropicProfile, baseURL: anthropicProfile.baseURL + '/v1' },
-    defaults: { ...profile, models: [{ id: 'fixture-model', contextWindow: 131072 }] } };
   const settings = { describe: () => [{ ns: 'llm-pi-ai', value: { providers } }], configure: () => () => {} };
   const services = ctx.plugin({ name: 'fixture-official-config', apply(child) {
-    child.reflect.provide('settings', settings); child.reflect.provide('credentials', { resolve: async ref => ref === 'YOUDUB_TEST_LOCAL_FIXTURE' ? { value: 'test-fixture-only', source: 'process' } : undefined });
+    child.reflect.provide('settings', settings);
+    child.reflect.provide('credentials', { resolve: async () => ({ value: 'test-fixture-only', source: 'process' }) });
   } }); await services;
   const adapter = ctx.plugin(PiAi, { providers }); await adapter;
-  const dirs = [];
-  const execute = async (options, route = 'fixture', model = 'fixture-model') => {
-    const dir = await mkdtemp(join(tmpdir(), 'youdub-llm-fixture-')); dirs.push(dir);
-    const receipts = [];
-    const result = translateWithHarness(ctx.llm, route, { invocationId: 'fixture-' + dirs.length, workDir: dir, inputs: { transcript: { detected_language: 'en', segments: [{ id: 's1', start_ms: 0, end_ms: 1000, text: 'hello' }] } }, binding: { model, options: { targetLanguage: 'zh', ...options } }, config: {} }, {
-      signal: new AbortController().signal, progress: async () => {}, externalPrepare: async receipt => receipts.push(receipt), externalUpdate: async receipt => receipts.push(receipt),
-    });
-    return { result, dir, receipts };
+  const taskDir = await mkdtemp(join(tmpdir(), 'youdub-llm-fixture-'));
+  let run = 0;
+  const execute = async ({ route = 'fixture', root = taskDir, model = 'fixture-model', options = {}, sentences = ['Hello.', 'Go now.'] } = {}) => {
+    const invocationId = String(++run), workDir = join(root, invocationId);
+    await mkdir(workDir, { recursive: true });
+    const log = [], receipts = [];
+    const result = translateWithHarness(ctx.llm, route, { invocationId, workDir, taskDir: root, stepId: 'translate',
+      inputs: { transcript: { detected_language: 'en', segments: sentences.map((text, i) => ({
+        id: `s${i+1}`, start_ms: i*1000, end_ms: (i+1)*1000, text,
+      })) } }, binding: { model, integrity: 'test', options: { targetLanguage: 'zh', ...options } }, config: {},
+    }, { signal: new AbortController().signal, progress: async () => {}, log: async item => log.push(item),
+      externalPrepare: async r => receipts.push(r), externalUpdate: async r => receipts.push(r) });
+    return { result, workDir, log, receipts };
   };
   try {
-    await t.test('request uses the model setting below the former minimum and preserves raw canonical evidence', async () => {
-      const run = await execute(); const result = await run.result;
-      assert.equal(result.outputs.translation.segments[0].text, '你好'); assert.equal(calls.length, 1);
-      assert.equal(calls[0].path, '/v1/chat/completions'); assert.equal(calls[0].body.max_tokens, 2048);
-      assert.equal(calls[0].body.messages.at(-1).role, 'user');
-      assert.match(JSON.stringify(calls[0].body.messages.at(-1).content), /hello/);
-      const system = calls[0].body.messages.find(message => message.role === 'system').content;
-      assert.equal(createHash('sha256').update(system.slice(system.indexOf('\n\n') + 2)).digest('hex'),
-        '40c70237fdf1a4961bc3df9ee6f2d5c30ba361ba17904d2c4bfc0afbef3580f0');
-      assert.match(system, /对于长句，使用逗号进行更详细的分句。/);
-      assert.match(system, /必须使用标点。/);
-      assert.match(system, /Preserve every segment_id exactly once/);
-      const evidence = JSON.parse(await readFile(join(run.dir, 'translation_raw/0001.request.json'), 'utf8'));
-      assert.equal(evidence.maxTokens, 2048); assert.equal(evidence.messages[0].content[0].type, 'text');
-      assert.equal(run.receipts.at(-1).state, 'succeeded');
+    await t.test('continues from the failed sentence with the full accepted history', async () => {
+      malformed = 3;
+      const first = await execute({ options: { maxCompletionTokens: 512 } });
+      await assert.rejects(first.result, /第 2\/2 句（s2）/);
+      assert.equal(calls.length, 4);
+      assert.equal(first.log.length, 3);
+      assert.equal(first.receipts.filter(r => r.mayStillRun === false).length, 4);
+      assert.equal(calls[0].body.max_tokens, 65535);
+      assert.equal(calls[0].body.response_format.json_schema.strict, true);
+      assert.deepEqual(calls[0].body.response_format.json_schema.schema.required, ['zh']);
+      const [system, user] = calls[0].body.messages;
+      assert.match(system.content, /\["Hello\.","Go now\."\]/);
+      assert.match(system.content, /必须使用标点/);
+      assert.deepEqual(user, { role: 'user', content: '{"en":"Hello."}' });
+      const expected = [system, user, { role: 'assistant', content: '{"zh":"你好。"}' }, { role: 'user', content: '{"en":"Go now."}' }];
+      for (const call of calls.slice(1)) assert.deepEqual(call.body.messages, expected);
+      const responsePath = join(first.workDir, 'translation_raw', '000002.1.response.json');
+      const original = await readFile(responsePath, 'utf8');
+      const second = await execute();
+      assert.deepEqual((await second.result).outputs.translation.segments, [
+        { segment_id: 's1', text: '你好。' }, { segment_id: 's2', text: '现在出发。' },
+      ]);
+      assert.equal(calls.length, 5);
+      assert.deepEqual(calls.at(-1).body.messages, expected);
+      assert.equal(await readFile(responsePath, 'utf8'), original);
+      assert.equal(JSON.parse(original).text, '{"wrong":"ignored"}');
     });
-    await t.test('legacy workflow output fields do not override Harness model settings', async () => {
-      for (const maxCompletionTokens of [65535, 512]) {
-        const run = await execute({ maxCompletionTokens });
-        assert.equal((await run.result).outputs.translation.segments[0].text, '你好');
-        assert.equal(calls.at(-1).body.max_tokens, 2048);
+    await t.test('sends native output schema with Responses and Anthropic Messages', async () => {
+      for (const route of ['responses', 'anthropic']) {
+        const { result } = await execute({ route });
+        assert.equal((await result).outputs.translation.segments.length, 2);
+        const { path, body } = calls.at(-1);
+        const isResponses = route === 'responses';
+        const format = isResponses ? body.text.format : body.output_config.format;
+        assert.equal(format.type, 'json_schema');
+        assert.deepEqual(format.schema.required, ['zh']);
+        assert.equal(body.max_output_tokens ?? body.max_tokens, 65535);
+        assert.equal(path, isResponses ? '/v1/responses' : '/v1/messages');
+        assert.deepEqual((body.input ?? body.messages).slice(-3).map(m => m.role), ['user', 'assistant', 'user']);
       }
     });
-    await t.test('adapter defaults are preserved without adding an output override', async () => {
-      const defaults = await execute({}, 'defaults'); await defaults.result;
-      const evidence = JSON.parse(await readFile(join(defaults.dir, 'translation_raw/0001.request.json'), 'utf8'));
-      assert.equal(Object.hasOwn(evidence, 'maxTokens'), false);
-      assert.notEqual(calls.at(-1).body.max_tokens, 65535);
+    await t.test('the built-in DeepSeek route sends structured output to the official Responses path', async t => {
+      const fetch = globalThis.fetch;
+      t.mock.method(globalThis, 'fetch', (input, options) => {
+        const url = new URL(input instanceof Request ? input.url : input);
+        assert.equal(url.origin, 'https://api.deepseek.com');
+        return fetch(baseURL + url.pathname, options);
+      });
+      const { result } = await execute({ route: 'deepseek', model: 'deepseek-flash' });
+      assert.equal((await result).outputs.translation.segments.length, 2);
+      const { body, path } = calls.at(-1);
+      assert.equal(path, '/responses');
+      assert.equal(body.max_output_tokens, 65535);
+      assert.equal(body.text.format.type, 'json_schema');
+      assert.deepEqual(body.reasoning, { effort: 'none' });
+      assert.deepEqual(body.input.map(m => m.role), ['system', 'user', 'assistant', 'user']);
     });
-    await t.test('unknown models retain the official error without network dispatch', async () => {
+    await t.test('refuses incompatible limits before sending a request', async () => {
       const before = calls.length;
-      await assert.rejects((await execute({}, 'fixture', 'unknown-model')).result, { code: 'UNKNOWN_MODEL' });
+      await assert.rejects((await execute({ route: 'small' })).result, /required output limit 65535/);
+      const noCap = await execute({ route: 'noCap' });
+      await assert.rejects(noCap.result, { code: 'UNSUPPORTED_OUTPUT_LIMIT', status: 422 });
+      assert.equal(noCap.receipts.at(-1).state, 'failed');
+      assert.equal(noCap.receipts.at(-1).mayStillRun, false);
+      await assert.rejects((await execute({ model: 'unknown-model' })).result, { code: 'UNKNOWN_MODEL' });
       assert.equal(calls.length, before);
     });
-    await t.test('endpoint incompatibility remains a visible failure without a lower-cap retry', async () => {
+    await t.test('reports provider schema rejection without downgrading or retrying', async () => {
       reject = true;
       const before = calls.length;
-      const run = await execute(); await assert.rejects(run.result, /fixture provider rejected the request/);
-      assert.equal(calls.length, before + 1); assert.equal(calls.at(-1).body.max_tokens, 2048); // The official adapter retains the message but omits HTTP status here.
-      // Preserve the pending receipt instead of asserting an unobserved terminal state.
-      assert.equal(run.receipts.length, 1); assert.equal(run.receipts[0].state, undefined);
-    });
-    await t.test('non-Chinese translation omits Chinese punctuation rules and retains segment units', async () => {
-      reject = false;
-      const run = await execute({ targetLanguage: 'ja' }); const result = await run.result;
-      assert.deepEqual(result.outputs.translation.segments.map(segment => segment.segment_id), ['s1']);
-      assert.equal(calls.at(-1).body.max_tokens, 2048);
-      const system = calls.at(-1).body.messages.find(message => message.role === 'system').content;
-      assert.doesNotMatch(system, /对于长句，使用逗号进行更详细的分句。/);
-      assert.match(system, /Translate from en to ja/);
-    });
-    await t.test('both configured DeepSeek models reach chat completions without an explicit API protocol', async () => {
-      const models = await ctx.llm.listModels('deepseek');
-      assert.deepEqual(models.map(model => model.id), ['deepseek-flash', 'deepseek-v4-pro']);
-      assert.equal(Object.hasOwn(catalogProfile, 'api'), false);
-      for (const model of models) {
-        const run = await execute({}, 'deepseek', model.id);
-        assert.equal((await run.result).outputs.translation.segments[0].text, '你好');
-        assert.equal(calls.at(-1).path, '/v1/chat/completions');
-        assert.equal(calls.at(-1).body.model, model.id);
-        assert.equal(calls.at(-1).body.max_tokens, 2048);
-      }
-      assert.deepEqual(catalogProfile, savedCatalogProfile);
-    });
-    await t.test('custom model IDs use Anthropic Messages and preserve Harness model settings', async () => {
-      const before = calls.length;
-      const run = await execute({}, 'molifang', 'gpt-5.6-sol');
-      assert.deepEqual((await run.result).outputs.translation.segments, [{ segment_id: 's1', text: '你好' }]);
+      await assert.rejects((await execute({ sentences: ['Hello.'] })).result, /fixture provider rejected the schema/);
       assert.equal(calls.length, before + 1);
-      const call = calls.at(-1);
-      assert.equal(new URL(call.path, 'http://localhost').pathname, '/v1/messages');
-      assert.equal(call.body.model, 'gpt-5.6-sol');
-      assert.equal(call.body.max_tokens, 2048);
-      assert.equal(call.body.stream, true);
-      assert.match(JSON.stringify(call.body.system), /Translate from en to zh/);
-      assert.match(JSON.stringify(call.body.messages), /hello/);
-      assert.equal(run.receipts.at(-1).state, 'succeeded');
-      assert.deepEqual(anthropicProfile, savedAnthropicProfile);
+      assert.equal(calls.at(-1).body.response_format.type, 'json_schema');
     });
-    await t.test('Anthropic base URL paths remain unchanged and endpoint failures surface without retries', async () => {
-      const before = calls.length;
-      const run = await execute({}, 'molifang-v1', 'gpt-5.6-sol');
-      await assert.rejects(run.result, /fixture has no endpoint \/v1\/v1\/messages/);
-      assert.equal(calls.length, before + 1);
-      assert.equal(new URL(calls.at(-1).path, 'http://localhost').pathname, '/v1/v1/messages');
-      assert.equal(calls.at(-1).body.max_tokens, 2048);
-      assert.equal(providers['molifang-v1'].baseURL, anthropicProfile.baseURL + '/v1');
-      assert.deepEqual(anthropicProfile, savedAnthropicProfile);
-    });
-  } finally { await adapter.dispose(); await services.dispose(); await runtime.dispose(); await Promise.all(dirs.map(dir => rm(dir, { recursive: true, force: true }))); }
+  } finally { await adapter.dispose(); await services.dispose(); await runtime.dispose(); await rm(taskDir, { recursive: true, force: true }); }
 });

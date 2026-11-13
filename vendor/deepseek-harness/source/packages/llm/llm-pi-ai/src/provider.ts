@@ -50,6 +50,20 @@ const PROTOCOLS: Readonly<Record<string, () => ProviderStreams>> = {
   'anthropic-messages': anthropicMessagesApi,
 }
 
+// DeepSeek's Chat Completions endpoint only offers JSON mode. Its official
+// Responses endpoint accepts a JSON Schema and uses the same route and key.
+const deepSeekResponses = openAIResponsesApi()
+export function useDeepSeekResponses(model: Model<Api>, structured: boolean): Model<Api> {
+  if (!structured || model.api !== 'openai-completions') return model
+  const url = new URL(model.baseUrl)
+  if (url.origin !== 'https://api.deepseek.com' || !['/', '/v1', '/v1/'].includes(url.pathname)) return model
+  return { ...model, api: 'openai-responses', compat: { supportsDeveloperRole: false } }
+}
+
+function isDeepSeekResponses(model: Model<Api>) {
+  return model.api === 'openai-responses' && new URL(model.baseUrl).origin === 'https://api.deepseek.com'
+}
+
 /**
  * Every wire protocol a configured route may name, most-reached first. The
  * order is the table's and therefore stable; a configuration surface offering
@@ -154,7 +168,8 @@ function reuseCatalogProvider(base: Provider, spec: ProviderSpec): Provider {
     // Delegated rather than copied: the catalog provider stays the receiver, so
     // an implementation holding state on itself keeps working.
     stream: (model, context, options) => base.stream(model, context, options),
-    streamSimple: (model, context, options) => base.streamSimple(model, context, options),
+    streamSimple: (model, context, options) => isDeepSeekResponses(model)
+      ? deepSeekResponses.streamSimple(model, context, options) : base.streamSimple(model, context, options),
   }
 }
 
@@ -181,12 +196,17 @@ export function buildProvider(spec: ProviderSpec): Provider {
       + ` supported protocols are ${supportedProtocols().join(', ')}`,
     )
   }
+  const api = factory()
   return createProvider({
     id: spec.provider,
     name: spec.displayName,
     ...spec.baseURL === undefined ? {} : { baseUrl: spec.baseURL },
     auth: routeAuth(spec, catalog),
     models: spec.models,
-    api: factory(),
+    api: spec.api === 'openai-completions' ? {
+      ...api,
+      streamSimple: (model, context, options) => isDeepSeekResponses(model)
+        ? deepSeekResponses.streamSimple(model, context, options) : api.streamSimple(model, context, options),
+    } : api,
   })
 }

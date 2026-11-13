@@ -10,7 +10,11 @@ export interface PythonProviderConfig {
 }
 export const name = 'python-provider'
 export const inject = ['catalog', 'youdubWorker']
-export async function apply(ctx: Context, config: PythonProviderConfig) {
+type Postprocess = (
+  result: Extract<Awaited<ReturnType<OperationProvider['execute']>>, { state: 'completed' }>,
+  ...args: Parameters<OperationProvider['execute']>
+) => ReturnType<OperationProvider['execute']>
+export async function apply(ctx: Context, config: PythonProviderConfig, postprocess?: Postprocess) {
   const description = structuredClone(config.descriptor)
   if (config.$plugin) Object.assign(description, { pluginId: config.$plugin.id, pluginVersion: config.$plugin.version, integrity: config.$plugin.integrity })
   if (!description.id || !description.operations?.length || !config.command || !config.args?.length) throw new AppError('INVALID_PLUGIN', 'Python provider requires a description and execution entry.', 500)
@@ -48,7 +52,14 @@ export async function apply(ctx: Context, config: PythonProviderConfig) {
     },
     ...(config.corrections ? { validateCorrection: config.corrections === 'media' ? validateMediaCorrection :
       (({ baselineOutputs, patch }) => ({ ...structuredClone(baselineOutputs), ...structuredClone(patch) })) as NonNullable<OperationProvider['validateCorrection']> } : {}),
-    execute: (request, context) => ctx.youdubWorker.worker({ command: config.command, args: config.args, cwd: config.cwd }, { ...request, binding: { ...request.binding, options: request.config.graph ? request.binding.options : { ...config.options, ...request.binding.options } } }, context),
+    execute: async (request, context) => {
+      const result = await ctx.youdubWorker.worker(
+        { command: config.command, args: config.args, cwd: config.cwd },
+        { ...request, binding: { ...request.binding, options: request.config.graph ? request.binding.options : { ...config.options, ...request.binding.options } } },
+        context,
+      )
+      return result.state === 'completed' && postprocess ? postprocess(result, request, context) : result
+    },
   }
   await provider.probe()
   ctx.effect(() => ctx.catalog.registerProvider(provider))

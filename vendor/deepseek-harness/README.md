@@ -40,7 +40,7 @@ Webserver 的 `tapIndex/applyIndexTaps` 字符串改写入口已退役，真实 
 
 ## 模型与翻译
 
-LLM 继续使用原 Harness `prepareCall → stream`、供应商适配、模型发现、配置和凭据。请求支持 system/user 文本，响应保留文本、思考、用量、结束原因和原始错误；图片、文件、工具及 assistant/developer/tool 历史输入明确拒绝。Agent 消息构造器、`BlockAssembler`、replay API 和附件包已退役。历史图片预算字段仍可随旧配置加载，原值不改写；新请求和表单不再使用这些字段。
+LLM 继续使用原 Harness `prepareCall → stream`、供应商适配、模型发现、配置和凭据。请求支持 system、user、assistant 文本和可选的响应 JSON Schema，响应保留文本、思考、用量、结束原因和原始错误。图片、文件、工具及 developer/tool 历史输入明确拒绝。Agent 消息构造器、`BlockAssembler`、replay API 和附件包已退役。
 
 无消费者的 `resolveModelInfo/resolveCallConfig` 及专用包装链已退役；适配器的 `resolveModel`、实际模型元数据解析、`prepareCall`、请求参数与默认值、思考流、取消和供应商错误处理保留。`errorChain/isHarnessError/ACCOUNT_QUOTA_EXCEEDED_CODE` 已退役；`HarnessError`、原始错误及 cause 保留。
 

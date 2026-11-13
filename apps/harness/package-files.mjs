@@ -20,6 +20,7 @@ export const productResources = [
   'packages/builtin/src/workflow-document.ts',
   'packages/builtin/src/media-graph-validation.ts',
   'packages/builtin/src/media-output-validation.ts',
+  'apps/harness/src/backend/whisper-postprocess.mjs',
   'submodule/**/*', 'site/assets/jensen-en.mp4',
   '!**/__pycache__/**', '!**/.git{,/**}', '!**/node_modules/**', '!**/.env', '!**/env.txt',
 ];
