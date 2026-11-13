@@ -163,7 +163,10 @@ test('sentence translation through the Harness model adapter', { timeout: 30000 
     await t.test('refuses incompatible limits before sending a request', async () => {
       const before = calls.length;
       await assert.rejects((await execute({ route: 'small' })).result, /required output limit 65535/);
-      await assert.rejects((await execute({ route: 'noCap' })).result, /required output limit 65535/);
+      const noCap = await execute({ route: 'noCap' });
+      await assert.rejects(noCap.result, { code: 'UNSUPPORTED_OUTPUT_LIMIT', status: 422 });
+      assert.equal(noCap.receipts.at(-1).state, 'failed');
+      assert.equal(noCap.receipts.at(-1).mayStillRun, false);
       await assert.rejects((await execute({ model: 'unknown-model' })).result, { code: 'UNKNOWN_MODEL' });
       assert.equal(calls.length, before);
     });

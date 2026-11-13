@@ -120,7 +120,7 @@ function profileOptions(
   }
 }
 
-function structuredOutput(options: GenerateOptions, model: Model<Api>) {
+function structuredOutput(options: GenerateOptions, model: Model<Api>, recordRejection: (error: LlmError) => void) {
   const format = options.responseSchema
   if (!format) return {}
   const limit = options.maxTokens
@@ -135,7 +135,9 @@ function structuredOutput(options: GenerateOptions, model: Model<Api>) {
     const params = payload as Record<string, unknown>
     const actualLimit = params.max_tokens ?? params.max_completion_tokens ?? params.max_output_tokens
     if (typeof actualLimit !== 'number' || !Number.isInteger(actualLimit) || actualLimit < limit) {
-      throw new LlmError(`Model "${model.id}" cannot send the required output limit ${limit} for this conversation (wire limit ${actualLimit}).`, 'UNSUPPORTED_OUTPUT_LIMIT', { status: 422 })
+      const error = new LlmError(`Model "${model.id}" cannot send the required output limit ${limit} for this conversation (wire limit ${actualLimit}).`, 'UNSUPPORTED_OUTPUT_LIMIT', { status: 422 })
+      recordRejection(error)
+      throw error
     }
     if (api === 'openai-completions') {
       params.response_format = { type: 'json_schema', json_schema: { ...format, strict: true } }
@@ -370,7 +372,8 @@ export class PiAiAdapter extends LlmAdapter {
 
     try {
       const context = toPiContext(options, model)
-      const structured = structuredOutput(options, model)
+      let rejectedPayload: LlmError | undefined
+      const structured = structuredOutput(options, model, error => { rejectedPayload = error })
       const events = snapshot.models.streamSimple(model, context, {
         ...profileOptions(profile, reasoning, apiKey),
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
@@ -384,6 +387,9 @@ export class PiAiAdapter extends LlmAdapter {
       try {
         while (true) {
           const result = await watchdog.next(iterator)
+          // pi-ai may flatten an onPayload exception to message text. Preserve
+          // the original typed rejection, which occurred before HTTP dispatch.
+          if (rejectedPayload) throw rejectedPayload
           if (result.done) {
             exhausted = true
             return
