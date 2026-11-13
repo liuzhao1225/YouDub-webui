@@ -10,6 +10,7 @@ import Resources, { registerResourceRoutes } from './backend/resources.ts';
 import { YouDubTransport } from './backend/transport.mjs';
 import { registerTaskRoutes } from './backend/api.ts';
 import { registerModels } from './backend/llm.mjs';
+import { postprocessWhisper } from './backend/whisper-postprocess.mjs';
 import { registerExampleRoutes } from './backend/examples.mjs';
 import { registerSetupRoutes } from './backend/setup.mjs';
 import { existingInstallation, installationDirectory, privatePython } from './backend/installation.mjs';
@@ -130,7 +131,7 @@ async function activateDomain(domain, { config, root, data, forms, modelRoots, v
     dependencyGroups: capability ? undefined : ['base', ...(builtinResources(id)?.dependencyGroups ?? [])],
     descriptor: { id, label, pluginId: `youdub.provider-${id}`, pluginVersion: '1.0.0', ...identities[id], resources: builtinResources(id),
       operations: kinds.map(key => operations[key]), ...(capability ? { capability, adapter: id } : {}), execution: 'local' },
-  }); } });
+  }, id === 'whisper' ? postprocessWhisper : undefined); } });
   await domain.plugin({ name: 'youdub-harness-models', inject: ['catalog', 'llm', 'credentials'], apply: child => registerModels(child, forms) });
   await domain.plugin(Localize, identities['youdub.localize']);
   await domain.plugin(Graph, identities['youdub.graph']);

@@ -17,7 +17,7 @@ const python = (...names: string[]) => names.map(name => 'backend/app/v1/' + nam
 export const executionFiles: Record<string, string[]> = {
   'youdub.download': [...worker, 'backend/workers/download.py', 'packages/sdk/src/video-source.ts', 'backend/requirements/download.txt'],
   'youdub.media': [...worker, ...python(...media, 'mix.py', 'export.py', 'sentence_split.py', 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
-  whisper: [...worker, ...python(...media, 'asr.py', 'asr_process.py'), 'backend/requirements/whisper.txt'],
+  whisper: [...worker, ...python(...media, 'asr.py', 'asr_process.py'), 'backend/requirements/whisper.txt', 'apps/harness/src/backend/whisper-postprocess.mjs'],
   voxcpm: [...worker, ...python(...media, 'tts.py', 'tts_process.py'), 'backend/requirements/voxcpm.txt'],
   demucs: [...worker, ...python(...media, 'separate.py', 'separate_process.py'), 'backend/requirements/demucs.txt'],
   qwen_forced_aligner: [...worker, ...python(...media, 'export.py', 'sentence_split.py', 'forced_alignment.py', 'forced_alignment_process.py'), 'backend/requirements/qwen_forced_aligner.txt'],
