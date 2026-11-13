@@ -4,8 +4,8 @@ import { mkdir, open, rename, stat } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Agent, fetch } from 'undici'
 
-export interface DownloadFile { url: string; mirrors?: string[]; sourceGroup?: string; size: number; sha256: string; path: string }
-export interface DownloadSourceEvent { url: string; status: 'checking' | 'selected' | 'failed'; error?: string }
+export interface DownloadFile { url: string; mirrors?: string[]; size: number; sha256: string; path: string }
+export interface DownloadSourceEvent { url: string; status: 'connecting' | 'selected' | 'failed'; error?: string }
 export function sourceName(url: string) {
   const host = new URL(url).hostname
   return ({ 'github.com': 'GitHub', 'huggingface.co': 'Hugging Face', 'modelscope.cn': 'ModelScope', 'registry.npmmirror.com': '阿里 npmmirror', 'modelscope-open.oss-cn-hangzhou.aliyuncs.com': 'ModelScope 阿里云 OSS' } as Record<string, string>)[host] || host
@@ -26,28 +26,10 @@ export function downloadError(error: unknown, url: string): Error {
   return Object.assign(new Error(`下载失败：${url}\n${causes.join('\n')}`, { cause: error }), { code: 'DOWNLOAD_SOURCE_FAILED' })
 }
 
-/** Probe the official source first, then use declared mirrors with visible failures. */
+/** Stream from the official source first, then try declared mirrors on download failure. */
 export class DownloadClient {
   private agent = new Agent({ connect: { timeout: 10_000 }, headersTimeout: 15_000, bodyTimeout: 15_000 })
-  // Avoid repeating a blocked-host probe for every file in the same model.
-  private checks = new Map<string, { at: number; error?: Error }>()
   close() { return this.agent.close() }
-  private async check(file: DownloadFile, url: string, signal: AbortSignal) {
-    const key = file.sourceGroup ? `${file.sourceGroup}:${new URL(url).origin}` : url
-    const cached = this.checks.get(key)
-    if (cached && Date.now() - cached.at < 60_000) { if (cached.error) throw cached.error; return }
-    try {
-      const response = await fetch(url, { dispatcher: this.agent, signal: AbortSignal.any([signal, AbortSignal.timeout(3000)]), headers: { Range: 'bytes=0-0', 'Accept-Encoding': 'identity' } })
-      await response.body?.cancel()
-      if (!response.ok) throw new Error(`连通性测试 HTTP ${response.status}: ${url}`)
-      this.checks.set(key, { at: Date.now() })
-    } catch (cause) {
-      signal.throwIfAborted()
-      const error = downloadError(cause, url)
-      this.checks.set(key, { at: Date.now(), error })
-      throw error
-    }
-  }
   async download(file: DownloadFile, target: string, signal: AbortSignal, progress: (bytes: number) => void, onSource?: (event: DownloadSourceEvent) => void) {
     signal.throwIfAborted()
     await mkdir(dirname(target), { recursive: true })
@@ -64,9 +46,7 @@ export class DownloadClient {
     const failures: Error[] = []
     if (received < file.size) for (const [index, url] of urls.entries()) {
       try {
-        onSource?.({ url, status: 'checking' })
-        await this.check(file, url, signal)
-        onSource?.({ url, status: 'selected' })
+        onSource?.({ url, status: 'connecting' })
         received = await fileSize(partial)
         const response = await fetch(url, { dispatcher: this.agent, signal, headers: { 'Accept-Encoding': 'identity', ...(received ? { Range: `bytes=${received}-` } : {}) } }).catch(error => { throw downloadError(error, url) })
         if (!response.ok || !response.body) { await response.body?.cancel(); throw downloadError(new Error(`HTTP ${response.status}`), url) }
@@ -74,6 +54,7 @@ export class DownloadClient {
           await response.body.cancel()
           throw downloadError(new Error(`下载源未接受断点 ${received}，保留已下载文件：${partial}`), url)
         }
+        onSource?.({ url, status: 'selected' })
         const output = await open(partial, received ? 'a' : 'w', 0o600)
         let writing = false
         try {

@@ -351,7 +351,7 @@ export default class Resources extends Service {
       let completed = 0, previousBytes = 0, previousTime = Date.now()
       for (const file of definition.files) {
         let firstProgress = true, loggedAt = 0
-        await this.client.download({ ...file, sourceGroup: id }, join(this.root(id), file.path), signal, bytes => {
+        await this.client.download(file, join(this.root(id), file.path), signal, bytes => {
           model.received = completed + bytes
           if (firstProgress) { previousBytes = model.received; previousTime = Date.now(); firstProgress = false }
           const elapsed = (Date.now() - previousTime) / 1000
@@ -362,7 +362,7 @@ export default class Resources extends Service {
           }
         }, event => {
           model.source = sourceName(event.url)
-          log(event.status === 'failed' ? event.error! : `${event.status === 'checking' ? '测试下载源' : '下载'}：${model.source} · ${file.path}`)
+          log(event.status === 'failed' ? event.error! : `${event.status === 'connecting' ? '连接下载源' : '下载'}：${model.source} · ${file.path}`)
         })
         log(`下载及校验完成：${file.path}`)
         completed += file.size
