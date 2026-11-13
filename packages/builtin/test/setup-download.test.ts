@@ -33,9 +33,9 @@ test('resumes an existing partial file, verifies hash, and reuses the verified r
   await client.download(file, target, new AbortController().signal, value => progress.push(value))
   assert.deepEqual(await readFile(target), data)
   assert.equal(progress[0], 7)
-  assert.deepEqual(ranges, ['bytes=0-0', 'bytes=7-'])
+  assert.deepEqual(ranges, ['bytes=7-'])
   await client.download(file, target, new AbortController().signal, () => {})
-  assert.equal(ranges.length, 2)
+  assert.equal(ranges.length, 1)
 })
 
 test('checksum failures remain errors, never publish the final model, and do not retry', async t => {
@@ -44,7 +44,7 @@ test('checksum failures remain errors, never publish the final model, and do not
   await assert.rejects(client.download(file, target, new AbortController().signal, () => {}), /下载校验失败/)
   assert.equal(await fileSize(target), 0)
   assert.equal(await fileSize(target + '.part'), data.length)
-  assert.equal(requests, 2)
+  assert.equal(requests, 1)
 })
 
 test('setup downloads connect directly despite an unusable environment proxy', async t => {
@@ -86,14 +86,14 @@ test('OS/architecture chooses native installers and rejects unsupported platform
   assert.throws(() => assertSupportedPlatform('win32', 'arm64'), /暂不支持/)
 })
 
-test('preflight selects the official source without touching an available mirror', async t => {
+test('downloads from the official source in one request without touching a mirror', async t => {
   const urls: string[] = []
   const { client, file, target } = await fixture(t, (request, response) => { urls.push(request.url!); response.end(data) })
   await client.download({ ...file, mirrors: [file.url + '/mirror'] }, target, new AbortController().signal, () => {})
-  assert.deepEqual(urls, ['/model', '/model'])
+  assert.deepEqual(urls, ['/model'])
 })
 
-test('a failed official probe selects the mirror and preserves the original failure in source events', async t => {
+test('an official download failure selects the mirror and preserves the original failure in source events', async t => {
   const events: Array<{ status: string; url: string; error?: string }> = [], urls: string[] = []
   const { client, file, target } = await fixture(t, (request, response) => {
     urls.push(request.url!)
@@ -101,16 +101,15 @@ test('a failed official probe selects the mirror and preserves the original fail
     else response.end(data)
   })
   await client.download({ ...file, mirrors: [file.url + '/mirror'] }, target, new AbortController().signal, () => {}, event => events.push(event))
-  assert.deepEqual(urls, ['/model', '/model/mirror', '/model/mirror'])
-  assert.deepEqual(events.map(event => event.status), ['checking', 'failed', 'checking', 'selected'])
+  assert.deepEqual(urls, ['/model', '/model/mirror'])
+  assert.deepEqual(events.map(event => event.status), ['connecting', 'failed', 'connecting', 'selected'])
   assert.match(events[1]!.error!, /HTTP 503/)
   assert.deepEqual(await readFile(target), data)
 })
 
-test('a download failing after a successful probe still switches sources and keeps both failures if none works', async t => {
+test('keeps both source failures if neither download works', async t => {
   const events: Array<{ status: string; error?: string }> = []
   const { client, file, target } = await fixture(t, (request, response) => {
-    if (request.headers.range === 'bytes=0-0' && request.url === '/model') { response.end(data.subarray(0, 1)); return }
     response.writeHead(request.url === '/model' ? 502 : 503); response.end()
   })
   await assert.rejects(client.download({ ...file, mirrors: [file.url + '/mirror'] }, target, new AbortController().signal, () => {}, event => events.push(event)), error => error instanceof AggregateError && error.errors.length === 2 && /502/.test(error.message) && /503/.test(error.message))
@@ -118,10 +117,15 @@ test('a download failing after a successful probe still switches sources and kee
   assert.equal(await fileSize(target), 0)
 })
 
-test('a nonresponsive official endpoint is bounded by the short probe deadline', async t => {
-  const { client, file, target } = await fixture(t, (request, response) => { if (request.url !== '/model') response.end(data) })
-  const before = Date.now()
-  await client.download({ ...file, mirrors: [file.url + '/mirror'] }, target, new AbortController().signal, () => {})
-  assert.ok(Date.now() - before < 5000)
+test('retry immediately reconnects to a source that previously failed', async t => {
+  let requests = 0
+  const { client, file, target } = await fixture(t, (_request, response) => {
+    if (++requests === 1) { response.writeHead(503).end(); return }
+    response.end(data)
+  })
+  const signal = new AbortController().signal
+  await assert.rejects(client.download(file, target, signal, () => {}), /HTTP 503/)
+  await client.download(file, target, signal, () => {})
+  assert.equal(requests, 2)
   assert.deepEqual(await readFile(target), data)
 })

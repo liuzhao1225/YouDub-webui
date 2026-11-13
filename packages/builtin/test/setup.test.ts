@@ -1,8 +1,10 @@
 import { test, beforeEach, type TestContext } from 'node:test'
 import assert from 'node:assert/strict'
 import { Context } from 'cordis'
+import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
+import { createServer } from 'node:http'
 import { promisify } from 'node:util'
 import { delimiter, join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -133,10 +135,23 @@ for (const platform of new Set([process.platform, 'win32'])) test(`private ${pla
   await writeFile(python, 'test Python')
   const client = new DownloadClient(), commands: string[] = [], downloads: string[] = []
   const windows = process.platform === 'win32'
+  const bytes = Buffer.from('test media archive or executable')
+  const sha256 = createHash('sha256').update(bytes).digest('hex')
+  const ranges: Array<string | undefined> = []
+  const server = createServer((request, response) => {
+    ranges.push(request.headers.range)
+    // A valid source that responds after the former three-second probe deadline.
+    const timer = setTimeout(() => response.end(bytes), windows ? 3_250 : 0)
+    response.once('close', () => clearTimeout(timer))
+  })
   t.after(async () => {
     await client.close()
+    server.closeAllConnections()
+    await new Promise<void>(resolve => server.close(() => resolve()))
     await rm(root, { recursive: true })
   })
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address() as { port: number }
   process.env.FFMPEG_PATH = '/machine/ffmpeg'
   process.env.FFPROBE_PATH = '/machine/ffprobe'
   process.env.NLTK_DATA = '/machine/nltk_data'
@@ -144,18 +159,26 @@ for (const platform of new Set([process.platform, 'win32'])) test(`private ${pla
     commands.push(command)
     assert.ok(!command.startsWith('/machine/'))
     if (windows && args[1] === 'zipfile') {
+      assert.deepEqual(await readFile(args[3]!), bytes)
       const bin = join(root, 'runtime', 'ffmpeg', manifest.ffmpeg['win32-x64'][0]!.directory, 'bin')
       await mkdir(bin, { recursive: true })
       for (const file of ['ffmpeg.exe', 'ffprobe.exe', 'avcodec-61.dll']) await writeFile(join(bin, file), 'downloaded media binary')
     }
     return { stdout: args[1] === 'backend.workers.setup_probe' ? JSON.stringify(probeResult(args[2]!)) : args.includes('-filters') ? ' subtitles ' : '3.12.12', stderr: '' }
   } } } as unknown as Context
-  t.mock.method(client, 'download', async (_asset: unknown, target: string) => {
+  const download = client.download.bind(client)
+  t.mock.method(client, 'download', async (...[asset, target, ...args]: Parameters<DownloadClient['download']>) => {
     assert.ok(target.startsWith(join(root, 'runtime', 'ffmpeg')))
-    downloads.push(target); await mkdir(join(target, '..'), { recursive: true }); await writeFile(target, 'test media executable')
+    downloads.push(target)
+    await download({ ...asset, url: `http://127.0.0.1:${port}/${asset.path}`, mirrors: [], size: bytes.length, sha256 }, target, ...args)
   })
-  await new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal).prepare(['media'])
+  const setup = new EnvironmentSetup(ctx, { root, repoRoot: resolve('.'), python }, client, new AbortController().signal)
+  await setup.prepare(['media'])
   assert.equal(downloads.length, windows ? 1 : 2, 'Both Windows executables come from the same download')
+  assert.deepEqual(ranges, downloads.map(() => undefined))
+  const ffmpeg = setup.steps.find(step => step.id === 'ffmpeg')!
+  assert.equal(ffmpeg.status, 'ready')
+  assert.match(ffmpeg.log!, /连接下载源[^\n]*\n[^\n]*下载：[^\n]*\n[^]*下载及校验完成/)
   assert.ok(commands.some(command => command.startsWith(join(root, 'runtime', 'ffmpeg'))))
   const bin = join(root, 'runtime', 'ffmpeg', ...(windows ? [manifest.ffmpeg['win32-x64'][0]!.directory, 'bin'] : []))
   assert.equal(process.env.FFMPEG_PATH, join(bin, windows ? 'ffmpeg.exe' : 'ffmpeg'))

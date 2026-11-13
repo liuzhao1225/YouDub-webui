@@ -48,7 +48,7 @@ export class EnvironmentSetup {
     const step = this.steps.find(step => step.id === id)!
     step.phase = 'downloading'
     let previousBytes = 0, previousTime = Date.now(), loggedAt = 0
-    await this.client.download({ ...asset, sourceGroup: id }, path, this.signal, received => {
+    await this.client.download(asset, path, this.signal, received => {
       const now = Date.now(), elapsed = (now - previousTime) / 1000
       step.progress = { received, total: asset.size, speed: elapsed >= 0.5 ? (received - previousBytes) / elapsed : step.progress?.speed }
       step.updatedAt = now
@@ -59,7 +59,7 @@ export class EnvironmentSetup {
       }
     }, event => {
       step.source = sourceName(event.url)
-      this.line(step, event.status === 'failed' ? event.error! : `${event.status === 'checking' ? '测试下载源' : '下载'}：${step.source} · ${asset.path}`)
+      this.line(step, event.status === 'failed' ? event.error! : `${event.status === 'connecting' ? '连接下载源' : '下载'}：${step.source} · ${asset.path}`)
     })
     this.line(step, `下载及校验完成：${asset.path}`)
     step.phase = 'verifying'; delete step.progress
