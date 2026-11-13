@@ -21,7 +21,7 @@
     ]
   },
   "whisper": {
-    "integrity": "sha256:56eb3ae9fc0278c0673c35d453418aa61dba89d81bda79bbc7cbf386f8df3f38",
+    "integrity": "sha256:ab356ea1b518ad1295c2e3f5ae92ed5a1f1e0fcebd830d281b57f59668c9d84c",
     "previous": [
       "sha256:7776c0fcb521227636f8f19f96345b8704b3bdf625c82d3e2da51ac2d1b42dfa",
       "sha256:664a95083ee884a1b2d715aae956f7be92ff0b953de7b46dfd672f17742688c1",

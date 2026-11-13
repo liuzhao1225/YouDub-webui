@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { register } from 'tsx/esm/api';
 
 const source = register({ namespace: 'whisper-postprocess' });
-const { postprocessWhisper } = await source.import('../src/backend/whisper-postprocess.mjs', import.meta.url);
+const { postprocessWhisper, resegmentWhisper } = await source.import('../src/backend/whisper-postprocess.mjs', import.meta.url);
 source.unregister();
 
 test('Whisper postprocessing splits and joins original fragments while rebuilding the sentence timeline', async t => {
@@ -62,4 +62,17 @@ test('Whisper postprocessing reports a divergent word sequence without writing a
     { code: 'INVALID_PROVIDER_RESULT', message: 'Whisper sentence 1 does not match timed word 1.' },
   );
   await assert.rejects(readFile(join(workDir, 'transcript.json')), { code: 'ENOENT' });
+});
+
+test('sentence slices sharing a timed word keep their common interval', async () => {
+  const words = [
+    { text: ' Hello. How are you?', start_ms: 100, end_ms: 900 },
+    { text: ' Good.', start_ms: 1000, end_ms: 1200 },
+  ];
+  const result = await resegmentWhisper(' Hello. How are you? Good.', {
+    detected_language: 'en', segments: [{ id: 'raw-1', words }],
+  });
+  assert.deepEqual(result.segments, words.map((word, index) => ({
+    id: `segment-00000${index + 1}`, ...word, words: [word],
+  })));
 });

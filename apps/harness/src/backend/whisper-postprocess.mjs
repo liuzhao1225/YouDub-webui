@@ -19,36 +19,34 @@ export async function resegmentWhisper(text, transcript) {
   const slices = segment(transcript.detected_language, text);
   if (slices.join('') !== text) throw invalid('SentenceX did not preserve the full Whisper text.');
 
-  // Boundary whitespace can differ between the full transcript and timed words.
-  // Compare content in order, including punctuation, without changing the words.
+  // Compare both sequences without whitespace. A sentence boundary inside
+  // one timed word cannot be placed on the timeline, so keep its slices together.
   const withoutWhitespace = value => value.replace(/\s/gu, '');
-  const sentences = [];
-  let cursor = 0;
+  const full = withoutWhitespace(text);
+  const boundaries = new Set();
+  let sentenceEnd = 0;
   for (const slice of slices) {
-    const sentence = withoutWhitespace(slice);
-    if (!sentence) continue;
-    const first = cursor;
-    let offset = 0;
-    while (offset < sentence.length && cursor < words.length) {
-      const { word } = words[cursor];
-      const value = withoutWhitespace(word.text);
-      if (!value || !sentence.startsWith(value, offset) || word.end_ms < word.start_ms) {
-        throw invalid(`Whisper sentence ${sentences.length + 1} does not match timed word ${cursor + 1}.`);
-      }
-      cursor++;
-      offset += value.length;
+    sentenceEnd += withoutWhitespace(slice).length;
+    boundaries.add(sentenceEnd);
+  }
+  const sentences = [];
+  let first = 0, offset = 0;
+  for (const [index, { word }] of words.entries()) {
+    const value = withoutWhitespace(word.text);
+    if (!value || !full.startsWith(value, offset) || word.end_ms < word.start_ms) {
+      throw invalid(`Whisper sentence ${sentences.length + 1} does not match timed word ${index + 1}.`);
     }
-    if (offset !== sentence.length) {
-      throw invalid(`Whisper sentence ${sentences.length + 1} does not match its word sequence.`);
-    }
+    offset += value.length;
+    if (!boundaries.has(offset)) continue;
     const start_ms = words[first].word.start_ms;
-    const end_ms = words[cursor - 1].word.end_ms;
+    const end_ms = word.end_ms;
     if (end_ms < start_ms || (sentences.at(-1)?.end_ms ?? 0) > start_ms) {
       throw invalid(`Whisper sentence ${sentences.length + 1} has reversed or overlapping timestamps.`);
     }
-    sentences.push({ first, end: cursor, start_ms, end_ms });
+    sentences.push({ first, end: index + 1, start_ms, end_ms });
+    first = index + 1;
   }
-  if (cursor !== words.length) throw invalid('Whisper word timestamps do not cover the full transcript.');
+  if (offset !== full.length) throw invalid('Whisper word timestamps do not cover the full transcript.');
 
   const groups = [];
   let previous = -1, next = 0;
