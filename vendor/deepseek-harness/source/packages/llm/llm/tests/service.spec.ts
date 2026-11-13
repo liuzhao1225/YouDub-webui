@@ -109,7 +109,7 @@ describe('LlmRuntime', () => {
   it.each([
     { messages: [{ role: 'user', content: [{ type: 'image' }] }] },
     { messages: [{ role: 'user', content: [{ type: 'file' }] }] },
-    { messages: [{ role: 'assistant', content: [{ type: 'text', text: 'old answer' }] }] },
+    { messages: [{ role: 'assistant', content: [{ type: 'image' }] }] },
     { messages: [{ role: 'tool', content: [{ type: 'text', text: 'tool output' }] }] },
     { messages: [{ role: 'developer', content: [] }] },
     { messages: [], tools: [] },

@@ -57,6 +57,7 @@ import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { toPiContext } from './context.ts'
 import { createModels, getSupportedThinkingLevels } from './models.ts'
 import { toStreamChunks } from './stream.ts'
+import { useDeepSeekResponses } from './provider.ts'
 
 /** One resolution's frozen view: the profiles and the collection built from them. */
 interface PiAiSnapshot {
@@ -117,6 +118,35 @@ function profileOptions(
     // The agent recovery layer owns visible attempts; one adapter call is one SDK attempt.
     maxRetries: 0,
   }
+}
+
+function structuredOutput(options: GenerateOptions, model: Model<Api>) {
+  const format = options.responseSchema
+  if (!format) return {}
+  const limit = options.maxTokens
+  if (limit === undefined || !Number.isInteger(limit) || limit < 65_535 || limit > model.maxTokens) {
+    throw new LlmError(`Model "${model.id}" cannot use the required output limit ${limit} (capacity ${model.maxTokens}).`, 'UNSUPPORTED_OUTPUT_LIMIT', { status: 422 })
+  }
+  const api = model.api
+  if (api !== 'openai-completions' && api !== 'openai-responses' && api !== 'anthropic-messages') {
+    throw new LlmError(`Protocol "${api}" does not support structured translation.`, 'UNSUPPORTED_STRUCTURED_OUTPUT', { status: 422 })
+  }
+  return { onPayload(payload: unknown) {
+    const params = payload as Record<string, unknown>
+    const actualLimit = params.max_tokens ?? params.max_completion_tokens ?? params.max_output_tokens
+    if (typeof actualLimit !== 'number' || !Number.isInteger(actualLimit) || actualLimit < limit) {
+      throw new LlmError(`Model "${model.id}" cannot send the required output limit ${limit} for this conversation (wire limit ${actualLimit}).`, 'UNSUPPORTED_OUTPUT_LIMIT', { status: 422 })
+    }
+    if (api === 'openai-completions') {
+      params.response_format = { type: 'json_schema', json_schema: { ...format, strict: true } }
+    } else if (api === 'openai-responses') {
+      params.text = { format: { type: 'json_schema', ...format, strict: true } }
+      if (new URL(model.baseUrl).origin === 'https://api.deepseek.com') params.reasoning = { effort: 'none' }
+    } else {
+      params.output_config = { ...params.output_config as object, format: { type: 'json_schema', schema: format.schema } }
+    }
+    return params
+  } }
 }
 
 /**
@@ -324,7 +354,7 @@ export class PiAiAdapter extends LlmAdapter {
     // mid-request builds a separate snapshot, so this request finishes under
     // the one it started with and the next call picks up the new one.
     const profile = this.profileOf(snapshot, options.provider)
-    const model = this.modelOf(snapshot, options.provider, options.model)
+    const model = useDeepSeekResponses(this.modelOf(snapshot, options.provider, options.model), Boolean(options.responseSchema))
     const reasoning = resolveReasoningLevel(
       model,
       options.reasoningEffort ?? profile.reasoning,
@@ -339,13 +369,15 @@ export class PiAiAdapter extends LlmAdapter {
     using watchdog = idleWatchdog(upstream, streamIdleTimeoutMs, 'LLM_STREAM_IDLE_TIMEOUT')
 
     try {
-      const context = toPiContext(options)
+      const context = toPiContext(options, model)
+      const structured = structuredOutput(options, model)
       const events = snapshot.models.streamSimple(model, context, {
         ...profileOptions(profile, reasoning, apiKey),
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
         ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
         signal: watchdog.signal,
         headers: { ...profile.headers },
+        ...structured,
       })
       const iterator = toStreamChunks(events, model.contextWindow, options.signal)[Symbol.asyncIterator]()
       let exhausted = false

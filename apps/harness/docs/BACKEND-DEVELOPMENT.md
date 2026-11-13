@@ -84,11 +84,13 @@ export const inject = [
 
 翻译使用官方模型表单保存配置，`registerModels` 将官方 LLM 提供商映射为 `llm.<provider>` 领域提供商。旧模板中的 `openai` ID 保留为不可执行占位，供用户选定已配置模型后重新绑定。
 
-[`translateWithHarness`](../src/backend/llm.mjs) 调用 `llm.prepareCall({ provider, model }, signal)`，再使用返回的配置与 `prepared.stream`。输出参数、协议和模型容量沿用 Harness 模型设置与适配器规则；YouDub 不再指定固定输出下限，也不使用旧节点的 `maxCompletionTokens` 覆盖请求。模型目录采用 `ctx.llm.listModels` 返回的候选与 Credentials 配置状态。翻译分批保持段落 ID，保存原始请求、流事件和响应到任务工作目录的 `translation_raw`；用户订正另行保存。供应商拒绝或响应不完整时保留原始失败，历史请求与响应保持不变。
+[`translateWithHarness`](../src/backend/llm.mjs) 直接使用上游分段。固定 system 提示包含全文与翻译要求，每轮发送一个语言键对应的原句，并通过供应商的 JSON Schema 约束返回值。已校验的原句和译文进入下一轮历史。翻译使用至少 65,535 的输出上限，模型或协议不支持时报告错误。官方 DeepSeek 路由使用其 Responses 接口发送 JSON Schema。
+
+单句结构校验失败时记录原始错误并最多尝试三次。完成的原句和译文按任务、输入和模型配置保存在 `translation-progress`，任务重试复用这些结果。每次调用的公共提示、历史引用、原始流事件和响应保存在该次执行的 `translation_raw`。字幕和配音沿用相同的分段 ID。
 
 API 密钥、提供商 URL 和模型选择通过 YouDub 的官方模型设置页面配置和测试。不要把真实凭据写入插件源码、模板、测试夹具或验证报告。
 
-LLM 请求合同限定为 system/user 文本，响应继续保留文本、思考、用量、结束原因和错误。图片、文件、工具及 assistant/developer/tool 历史输入会明确失败。Agent 消息构造器、`BlockAssembler`、replay API 和聊天附件服务已退役；翻译的原始请求与响应仍按上述业务路径保存。依赖退役接口的外部插件需要迁移，当前三个产品插件示例不使用这些接口。
+LLM 请求支持 system、user、assistant 文本和可选的响应 JSON Schema，响应保留文本、思考、用量、结束原因和错误。图片、文件、工具及 developer/tool 历史输入会明确失败。
 
 ## 外部插件
 
