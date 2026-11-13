@@ -19,33 +19,26 @@ export async function resegmentWhisper(text, transcript) {
   const slices = segment(transcript.detected_language, text);
   if (slices.join('') !== text) throw invalid('SentenceX did not preserve the full Whisper text.');
 
-  // Match the two sequences exactly. Whitespace at a sentence boundary can
-  // belong to the following Whisper word or to the preceding SentenceX slice.
+  // Boundary whitespace can differ between the full transcript and timed words.
+  // Compare content in order, including punctuation, without changing the words.
+  const withoutWhitespace = value => value.replace(/\s/gu, '');
   const sentences = [];
-  let cursor = 0, wordOffset = 0, sentenceOffset = 0;
+  let cursor = 0;
   for (const slice of slices) {
-    const offset = sentenceOffset;
-    sentenceOffset += slice.length;
-    const sentence = slice.trim();
+    const sentence = withoutWhitespace(slice);
     if (!sentence) continue;
-    const start = offset + slice.length - slice.trimStart().length;
-    const end = start + sentence.length;
     const first = cursor;
-    while (cursor < words.length) {
+    let offset = 0;
+    while (offset < sentence.length && cursor < words.length) {
       const { word } = words[cursor];
-      const value = word.text;
-      const next = wordOffset + value.length;
-      const contentStart = wordOffset + value.length - value.trimStart().length;
-      const contentEnd = wordOffset + value.trimEnd().length;
-      if (!value.trim() || text.slice(wordOffset, next) !== value ||
-          contentStart < start || contentEnd > end || word.end_ms < word.start_ms) {
+      const value = withoutWhitespace(word.text);
+      if (!value || !sentence.startsWith(value, offset) || word.end_ms < word.start_ms) {
         throw invalid(`Whisper sentence ${sentences.length + 1} does not match timed word ${cursor + 1}.`);
       }
       cursor++;
-      wordOffset = next;
-      if (contentEnd === end) break;
+      offset += value.length;
     }
-    if (first === cursor || words.slice(first, cursor).map(({ word }) => word.text).join('').trim() !== sentence) {
+    if (offset !== sentence.length) {
       throw invalid(`Whisper sentence ${sentences.length + 1} does not match its word sequence.`);
     }
     const start_ms = words[first].word.start_ms;
@@ -55,7 +48,7 @@ export async function resegmentWhisper(text, transcript) {
     }
     sentences.push({ first, end: cursor, start_ms, end_ms });
   }
-  if (cursor !== words.length || wordOffset !== text.length) throw invalid('Whisper word timestamps do not cover the full transcript.');
+  if (cursor !== words.length) throw invalid('Whisper word timestamps do not cover the full transcript.');
 
   const groups = [];
   let previous = -1, next = 0;

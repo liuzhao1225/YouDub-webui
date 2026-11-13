@@ -26,7 +26,7 @@ test('Whisper postprocessing splits and joins original fragments while rebuildin
     })),
   };
   const rawPath = join(workDir, 'asr_raw.json');
-  const raw = JSON.stringify({ text: words.map(word => word.text).join(''), language: 'en' });
+  const raw = JSON.stringify({ text: words.map(word => word.text).join('').replace(' Yeah.', '  Yeah.'), language: 'en' });
   await writeFile(rawPath, raw);
   const rawRef = { id: 'raw', schemaId: 'diagnostic/json/v1' };
   const context = { signal: new AbortController().signal, resolve: async ref => {
